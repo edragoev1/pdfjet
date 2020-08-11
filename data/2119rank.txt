@@ -1,0 +1,238 @@
+Rank 	 Country 	 Population 	 Date of Information
+1 	 World 	      6,602,224,175 	 July 2007 est.
+2 	 China 	      1,321,851,888 	 July 2007 est.
+3 	 India 	      1,129,866,154 	 July 2007 est.
+4 	 European Union 	       460,827,146 	 July 2007 est.
+5 	 United States 	       301,139,947 	 July 2007 est.
+6 	 Indonesia 	       234,693,997 	 July 2007 est.
+7 	 Brazil 	       190,010,647 	 July 2007 est.
+8 	 Pakistan 	       164,741,924 	 July 2007 est.
+9 	 Bangladesh 	       150,448,339 	 July 2007 est.
+10 	 Russia 	       141,377,752 	 July 2007 est.
+11 	 Nigeria 	       135,031,164 	 July 2007 est.
+12 	 Japan 	       127,433,494 	 July 2007 est.
+13 	 Mexico 	       108,700,891 	 July 2007 est.
+14 	 Philippines 	        91,077,287 	 July 2007 est.
+15 	 Vietnam 	        85,262,356 	 July 2007 est.
+16 	 Germany 	        82,400,996 	 July 2007 est.
+17 	 Egypt 	        80,335,036 	 July 2007 est.
+18 	 Ethiopia 	        76,511,887 	 July 2007 est.
+19 	 Turkey 	        71,158,647 	 July 2007 est.
+20 	 Congo, Democratic Republic of the 	        65,751,512 	 July 2007 est.
+21 	 Iran 	        65,397,521 	 July 2007 est.
+22 	 Thailand 	        65,068,149 	 July 2007 est.
+23 	 France 	        63,713,926 	 July 2007 est.
+24 	 United Kingdom 	        60,776,238 	 July 2007 est.
+25 	 Italy 	        58,147,733 	 July 2007 est.
+26 	 Korea, South 	        49,044,790 	 July 2007 est.
+27 	 Burma 	        47,373,958 	 July 2007 est.
+28 	 Ukraine 	        46,299,862 	 July 2007 est.
+29 	 Colombia 	        44,379,598 	 July 2007 est.
+30 	 South Africa 	        43,997,828 	 July 2007 est.
+31 	 Spain 	        40,448,191 	 July 2007 est.
+32 	 Argentina 	        40,301,927 	 July 2007 est.
+33 	 Tanzania 	        39,384,223 	 July 2007 est.
+34 	 Sudan 	        39,379,358 	 July 2007 est.
+35 	 Poland 	        38,518,241 	 July 2007 est.
+36 	 Kenya 	        36,913,721 	 July 2007 est.
+37 	 Morocco 	        33,757,175 	 July 2007 est.
+38 	 Canada 	        33,390,141 	 July 2007 est.
+39 	 Algeria 	        33,333,216 	 July 2007 est.
+40 	 Afghanistan 	        31,889,923 	 July 2007 est.
+41 	 Uganda 	        30,262,610 	 July 2007 est.
+42 	 Nepal 	        28,901,790 	 July 2007 est.
+43 	 Peru 	        28,674,757 	 July 2007 est.
+44 	 Uzbekistan 	        27,780,059 	 July 2007 est.
+45 	 Saudi Arabia 	        27,601,038 	 July 2007 est.
+46 	 Iraq 	        27,499,638 	 July 2007 est.
+47 	 Venezuela 	        26,023,528 	 July 2007 est.
+48 	 Malaysia 	        24,821,286 	 July 2007 est.
+49 	 Korea, North 	        23,301,725 	 July 2007 est.
+50 	 Ghana 	        22,931,299 	 July 2007 est.
+51 	 Taiwan 	        22,858,872 	 July 2007 est.
+52 	 Romania 	        22,276,056 	 July 2007 est.
+53 	 Yemen 	        22,230,531 	 July 2007 est.
+54 	 Sri Lanka 	        20,926,315 	 July 2007 est.
+55 	 Mozambique 	        20,905,585 	 July 2007 est.
+56 	 Australia 	        20,434,176 	 July 2007 est.
+57 	 Madagascar 	        19,448,815 	 July 2007 est.
+58 	 Syria 	        19,314,747 	 July 2007 est.
+59 	 Cameroon 	        18,060,382 	 July 2007 est.
+60 	 Cote d'Ivoire 	        18,013,409 	 July 2007 est.
+61 	 Netherlands 	        16,570,613 	 July 2007 est.
+62 	 Chile 	        16,284,741 	 July 2007 est.
+63 	 Kazakhstan 	        15,284,929 	 July 2007 est.
+64 	 Burkina Faso 	        14,326,203 	 July 2007 est.
+65 	 Cambodia 	        13,995,904 	 July 2007 est.
+66 	 Ecuador 	        13,755,680 	 July 2007 est.
+67 	 Malawi 	        13,603,181 	 July 2007 est.
+68 	 Niger 	        12,894,865 	 July 2007 est.
+69 	 Guatemala 	        12,728,111 	 July 2007 est.
+70 	 Senegal 	        12,521,851 	 July 2007 est.
+71 	 Zimbabwe 	        12,311,143 	 July 2007 est.
+72 	 Angola 	        12,263,596 	 July 2007 est.
+73 	 Mali 	        11,995,402 	 July 2007 est.
+74 	 Zambia 	        11,477,447 	 July 2007 est.
+75 	 Cuba 	        11,394,043 	 July 2007 est.
+76 	 Greece 	        10,706,290 	 July 2007 est.
+77 	 Portugal 	        10,642,836 	 July 2007 est.
+78 	 Belgium 	        10,392,226 	 July 2007 est.
+79 	 Tunisia 	        10,276,158 	 July 2007 est.
+80 	 Czech Republic 	        10,228,744 	 July 2007 est.
+81 	 Serbia 	        10,150,265 	 July 2007 est.
+82 	 Hungary 	         9,956,108 	 July 2007 est.
+83 	 Guinea 	         9,947,814 	 July 2007 est.
+84 	 Rwanda 	         9,907,509 	 July 2007 est.
+85 	 Chad 	         9,885,661 	 July 2007 est.
+86 	 Belarus 	         9,724,723 	 July 2007 est.
+87 	 Dominican Republic 	         9,365,818 	 July 2007 est.
+88 	 Bolivia 	         9,119,152 	 July 2007 est.
+89 	 Somalia 	         9,118,773 	 July 2007 est.
+90 	 Sweden 	         9,031,088 	 July 2007 est.
+91 	 Haiti 	         8,706,497 	 July 2007 est.
+92 	 Burundi 	         8,390,505 	 July 2007 est.
+93 	 Austria 	         8,199,783 	 July 2007 est.
+94 	 Azerbaijan 	         8,120,247 	 July 2007 est.
+95 	 Benin 	         8,078,314 	 July 2007 est.
+96 	 Switzerland 	         7,554,661 	 July 2007 est.
+97 	 Honduras 	         7,483,763 	 July 2007 est.
+98 	 Bulgaria 	         7,322,858 	 July 2007 est.
+99 	 Tajikistan 	         7,076,598 	 July 2007 est.
+100 	 Hong Kong 	         6,980,412 	 July 2007 est.
+101 	 El Salvador 	         6,948,073 	 July 2007 est.
+102 	 Paraguay 	         6,669,086 	 July 2007 est.
+103 	 Laos 	         6,521,998 	 July 2007 est.
+104 	 Israel 	         6,426,679 	 July 2007 est.
+105 	 Sierra Leone 	         6,144,562 	 July 2007 est.
+106 	 Jordan 	         6,053,193 	 July 2007 est.
+107 	 Libya 	         6,036,914 	 July 2007 est.
+108 	 Papua New Guinea 	         5,795,887 	 July 2007 est.
+109 	 Togo 	         5,701,579 	 July 2007 est.
+110 	 Nicaragua 	         5,675,356 	 July 2007 est.
+111 	 Denmark 	         5,468,120 	 July 2007 est.
+112 	 Slovakia 	         5,447,502 	 July 2007 est.
+113 	 Kyrgyzstan 	         5,284,149 	 July 2007 est.
+114 	 Finland 	         5,238,460 	 July 2007 est.
+115 	 Turkmenistan 	         5,097,028 	 July 2007 est.
+116 	 Eritrea 	         4,906,585 	 July 2007 est.
+117 	 Georgia 	         4,646,003 	 July 2007 est.
+118 	 Norway 	         4,627,926 	 July 2007 est.
+119 	 Singapore 	         4,553,009 	 July 2007 est.
+120 	 Bosnia and Herzegovina 	         4,552,198 	 July 2007 est.
+121 	 Croatia 	         4,493,312 	 July 2007 est.
+122 	 United Arab Emirates 	         4,444,011 	 July 2007 est.
+123 	 Central African Republic 	         4,369,038 	 July 2007 est.
+124 	 Moldova 	         4,320,490 	 July 2007 est.
+125 	 Costa Rica 	         4,133,884 	 July 2007 est.
+126 	 New Zealand 	         4,115,771 	 July 2007 est.
+127 	 Ireland 	         4,109,086 	 July 2007 est.
+128 	 Puerto Rico 	         3,944,259 	 July 2007 est.
+129 	 Lebanon 	         3,925,502 	 July 2007 est.
+130 	 Congo, Republic of the 	         3,800,610 	 July 2007 est.
+131 	 Albania 	         3,600,523 	 July 2007 est.
+132 	 Lithuania 	         3,575,439 	 July 2007 est.
+133 	 Uruguay 	         3,460,607 	 July 2007 est.
+134 	 Mauritania 	         3,270,065 	 July 2007 est.
+135 	 Panama 	         3,242,173 	 July 2007 est.
+136 	 Oman 	         3,204,897 	 July 2007 est.
+137 	 Liberia 	         3,195,931 	 July 2007 est.
+138 	 Armenia 	         2,971,650 	 July 2007 est.
+139 	 Mongolia 	         2,951,786 	 July 2007 est.
+140 	 Jamaica 	         2,780,132 	 July 2007 est.
+141 	 West Bank 	         2,535,927 	 July 2004 est.
+142 	 Kuwait 	         2,505,559 	 July 2007 est.
+143 	 Bhutan 	         2,327,849 	 July 2007 est.
+144 	 Latvia 	         2,259,810 	 July 2007 est.
+145 	 Lesotho 	         2,125,262 	 July 2007 est.
+146 	 Macedonia 	         2,055,915 	 July 2007 est.
+147 	 Namibia 	         2,055,080 	 July 2007 est.
+148 	 Slovenia 	         2,009,245 	 July 2007 est.
+149 	 Botswana 	         1,815,508 	 July 2007 est.
+150 	 Gambia, The 	         1,688,359 	 July 2007 est.
+151 	 Gaza Strip 	         1,482,405 	 July 2007 est.
+152 	 Guinea-Bissau 	         1,472,780 	 July 2007 est.
+153 	 Gabon 	         1,454,867 	 July 2007 est.
+154 	 Estonia 	         1,315,912 	 July 2007 est.
+155 	 Mauritius 	         1,250,882 	 July 2007 est.
+156 	 Swaziland 	         1,133,066 	 July 2007 est.
+157 	 East Timor 	         1,084,971 	 July 2007 est.
+158 	 Trinidad and Tobago 	         1,056,608 	 July 2007 est.
+159 	 Fiji 	          918,675 	 July 2007 est.
+160 	 Qatar 	          907,229 	 July 2007 est.
+161 	 Cyprus 	          788,457 	 July 2007 est.
+162 	 Guyana 	          769,095 	 July 2007 est.
+163 	 Comoros 	          711,417 	 July 2007 est.
+164 	 Bahrain 	          708,573 	 July 2007 est.
+165 	 Montenegro 	          684,736 	 July 2007 est.
+166 	 Solomon Islands 	          566,842 	 July 2007 est.
+167 	 Equatorial Guinea 	          551,201 	 July 2007 est.
+168 	 Djibouti 	          496,374 	 July 2007 est.
+169 	 Luxembourg 	          480,222 	 July 2007 est.
+170 	 Suriname 	          470,784 	 July 2007 est.
+171 	 Macau 	          456,989 	 July 2007 est.
+172 	 Cape Verde 	          423,613 	 July 2007 est.
+173 	 Malta 	          401,880 	 July 2007 est.
+174 	 Western Sahara 	          382,617 	 July 2007 est.
+175 	 Brunei 	          374,577 	 July 2007 est.
+176 	 Maldives 	          369,031 	 July 2007 est.
+177 	 Bahamas, The 	          305,655 	 July 2007 est.
+178 	 Iceland 	          301,931 	 July 2007 est.
+179 	 Belize 	          294,385 	 July 2007 est.
+180 	 Barbados 	          280,946 	 July 2007 est.
+181 	 French Polynesia 	          278,963 	 July 2007 est.
+182 	 Netherlands Antilles 	          223,652 	 July 2007 est.
+183 	 New Caledonia 	          221,943 	 July 2007 est.
+184 	 Samoa 	          214,265 	 July 2007 est.
+185 	 Vanuatu 	          211,971 	 July 2007 est.
+186 	 Mayotte 	          208,783 	 July 2007 est.
+187 	 Sao Tome and Principe 	          199,579 	 July 2007 est.
+188 	 Guam 	          173,456 	 July 2007 est.
+189 	 Saint Lucia 	          170,649 	 July 2007 est.
+190 	 Saint Vincent and the Grenadines 	          118,149 	 July 2007 est.
+191 	 Tonga 	          116,921 	 July 2007 est.
+192 	 Virgin Islands 	          108,448 	 July 2007 est.
+193 	 Micronesia, Federated States of 	          107,862 	 July 2007 est.
+194 	 Kiribati 	          107,817 	 July 2007 est.
+195 	 Aruba 	          100,018 	 July 2007 est.
+196 	 Jersey 	           91,321 	 July 2007 est.
+197 	 Grenada 	           89,971 	 July 2007 est.
+198 	 Northern Mariana Islands 	           84,546 	 July 2007 est.
+199 	 Seychelles 	           81,895 	 July 2007 est.
+200 	 Isle of Man 	           75,831 	 July 2007 est.
+201 	 Dominica 	           72,386 	 July 2007 est.
+202 	 Andorra 	           71,822 	 July 2007 est.
+203 	 Antigua and Barbuda 	           69,481 	 July 2007 est.
+204 	 Bermuda 	           66,163 	 July 2007 est.
+205 	 Guernsey 	           65,573 	 July 2007 est.
+206 	 Marshall Islands 	           61,815 	 July 2007 est.
+207 	 American Samoa 	           57,663 	 July 2007 est.
+208 	 Greenland 	           56,344 	 July 2007 est.
+209 	 Faroe Islands 	           47,511 	 July 2007 est.
+210 	 Cayman Islands 	           46,600 	 July 2007 est.
+211 	 Saint Kitts and Nevis 	           39,349 	 July 2007 est.
+212 	 Liechtenstein 	           34,247 	 July 2007 est.
+213 	 Monaco 	           32,671 	 July 2007 est.
+214 	 San Marino 	           29,615 	 July 2007 est.
+215 	 Gibraltar 	           27,967 	 July 2007 est.
+216 	 British Virgin Islands 	           23,552 	 July 2007 est.
+217 	 Cook Islands 	           21,750 	 July 2007 est.
+218 	 Turks and Caicos Islands 	           21,746 	 July 2007 est.
+219 	 Palau 	           20,842 	 July 2007 est.
+220 	 Wallis and Futuna 	           16,309 	 July 2007 est.
+221 	 Anguilla 	           13,677 	 July 2007 est.
+222 	 Nauru 	           13,528 	 July 2007 est.
+223 	 Tuvalu 	           11,992 	 July 2007 est.
+224 	 Montserrat 	            9,538 	 July 2007 est.
+225 	 Saint Helena 	            7,543 	 July 2007 est.
+226 	 Saint Pierre and Miquelon 	            7,036 	 July 2007 est.
+227 	 Falkland Islands (Islas Malvinas) 	            3,105 	 July 2007 est.
+228 	 Svalbard 	            2,214 	 July 2007 est.
+229 	 Norfolk Island 	            2,114 	 July 2007 est.
+230 	 Niue 	            1,492 	 July 2007 est.
+231 	 Tokelau 	            1,449 	 July 2007 est.
+232 	 Christmas Island 	            1,402 	 July 2007 est.
+233 	 Holy See (Vatican City) 	             821 	 July 2007 est.
+234 	 Cocos (Keeling) Islands 	             596 	 July 2007 est.
+235 	 Pitcairn Islands 	              48 	 July 2007 est.
+
+ This file was last updated on 17 April, 2007
