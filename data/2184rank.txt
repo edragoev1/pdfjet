@@ -1,0 +1,233 @@
+Rank 	 Country 	 Internet hosts 	 Date of Information
+1 	 United States 	       195,139,000 	 2005
+2 	 European Union 	        50,500,000 	 
+3 	 Japan 	        28,322,000 	 2006
+4 	 Germany 	        11,859,000 	 2006
+5 	 Netherlands 	         8,363,000 	 2006
+6 	 Australia 	         7,773,000 	 2006
+7 	 Brazil 	         6,508,000 	 2006
+8 	 United Kingdom 	         6,065,000 	 2006
+9 	 Korea, South 	         5,434,000 	 2005
+10 	 Taiwan 	         4,320,000 	 2006
+11 	 Canada 	         3,934,000 	 2006
+12 	 Mexico 	         3,427,000 	 2006
+13 	 France 	         3,149,000 	 2006
+14 	 France 	         3,148,000 	 2006
+15 	 Sweden 	         2,958,000 	 2006
+16 	 Belgium 	         2,871,000 	 2006
+17 	 Spain 	         2,521,000 	 2006
+18 	 Switzerland 	         2,443,000 	 2006
+19 	 Denmark 	         2,416,000 	 2006
+20 	 Austria 	         2,062,000 	 2006
+21 	 Russia 	         1,980,000 	 2006
+22 	 Italy 	         1,731,000 	 2006
+23 	 Finland 	         1,634,000 	 2006
+24 	 Argentina 	         1,612,000 	 2006
+25 	 India 	         1,543,000 	 2006
+26 	 Norway 	         1,364,000 	 2006
+27 	 Turkey 	         1,313,000 	 2006
+28 	 Czech Republic 	         1,267,000 	 2006
+29 	 Israel 	         1,252,000 	 2006
+30 	 New Zealand 	         1,050,000 	 2006
+31 	 Thailand 	          938,784 	 2006
+32 	 Singapore 	          898,762 	 2006
+33 	 Portugal 	          845,980 	 2005
+34 	 Hong Kong 	          800,834 	 2006
+35 	 South Africa 	          645,179 	 2006
+36 	 Hungary 	          608,085 	 2006
+37 	 Greece 	          587,717 	 2006
+38 	 Colombia 	          581,877 	 2006
+39 	 Chile 	          506,055 	 2006
+40 	 Poland 	          358,476 	 2006
+41 	 United Arab Emirates 	          337,092 	 2006
+42 	 Peru 	          269,981 	 2006
+43 	 Ireland 	          238,191 	 2006
+44 	 China 	          232,780 	 2006
+45 	 Ukraine 	          229,110 	 2006
+46 	 Iceland 	          212,897 	 2006
+47 	 Slovakia 	          210,758 	 2006
+48 	 Bulgaria 	          184,975 	 2006
+49 	 Indonesia 	          170,834 	 2006
+50 	 Malaysia 	          158,650 	 2006
+51 	 Lithuania 	          148,675 	 2006
+52 	 Uruguay 	          145,774 	 2006
+53 	 Philippines 	          111,262 	 2006
+54 	 Dominican Republic 	           91,895 	 2006
+55 	 Luxembourg 	           88,661 	 2006
+56 	 Pakistan 	           72,765 	 2006
+57 	 Cyprus 	           67,589 	 2006
+58 	 Latvia 	           65,858 	 2006
+59 	 Slovenia 	           61,735 	 2006
+60 	 Moldova 	           58,886 	 2006
+61 	 Romania 	           57,470 	 2006
+62 	 Estonia 	           52,241 	 2006
+63 	 Venezuela 	           51,968 	 2006
+64 	 Guatemala 	           49,026 	 2006
+65 	 Belarus 	           33,641 	 2006
+66 	 Bosnia and Herzegovina 	           31,490 	 2006
+67 	 Trinidad and Tobago 	           30,732 	 2006
+68 	 Nicaragua 	           24,452 	 2006
+69 	 Kazakhstan 	           21,187 	 2006
+70 	 Bolivia 	           20,085 	 2006
+71 	 Netherlands Antilles 	           19,204 	 2006
+72 	 Ecuador 	           19,027 	 2006
+73 	 Kyrgyzstan 	           18,928 	 2006
+74 	 Croatia 	           18,825 	 2006
+75 	 Tonga 	           18,775 	 2006
+76 	 Nepal 	           17,789 	 2006
+77 	 Andorra 	           14,944 	 2006
+78 	 French Polynesia 	           14,047 	 2006
+79 	 Malta 	           14,025 	 2006
+80 	 New Caledonia 	           13,962 	 2006
+81 	 Kenya 	           13,274 	 2006
+82 	 Paraguay 	           13,178 	 2006
+83 	 Costa Rica 	           12,751 	 2006
+84 	 Monaco 	           12,720 	 2006
+85 	 Vietnam 	           12,114 	 2006
+86 	 Aruba 	           11,548 	 2006
+87 	 Saudi Arabia 	           10,931 	 2006
+88 	 Georgia 	           10,752 	 2006
+89 	 Samoa 	           10,680 	 2006
+90 	 Uzbekistan 	            9,058 	 2006
+91 	 Fiji 	            8,987 	 2006
+92 	 Greenland 	            8,851 	 2006
+93 	 Cayman Islands 	            8,611 	 2006
+94 	 Tanzania 	            8,609 	 2006
+95 	 Armenia 	            8,163 	 2006
+96 	 Bermuda 	            8,114 	 2006
+97 	 Zimbabwe 	            7,954 	 2006
+98 	 Antarctica 	            7,757 	 2006
+99 	 Bhutan 	            7,567 	 2006
+100 	 Panama 	            7,149 	 2006
+101 	 Mozambique 	            6,985 	 2006
+102 	 Faroe Islands 	            6,915 	 2006
+103 	 Sri Lanka 	            6,526 	 2006
+104 	 Botswana 	            5,499 	 2006
+105 	 Iran 	            5,242 	 2006
+106 	 Mauritius 	            4,997 	 2006
+107 	 Liechtenstein 	            4,697 	 2006
+108 	 El Salvador 	            4,682 	 2006
+109 	 Honduras 	            3,973 	 2006
+110 	 Belize 	            3,905 	 2006
+111 	 Virgin Islands 	            3,855 	 2006
+112 	 Macedonia 	            3,716 	 2006
+113 	 Oman 	            3,555 	 2006
+114 	 Namibia 	            3,527 	 2006
+115 	 Jordan 	            3,441 	 2006
+116 	 Lebanon 	            3,307 	 2006
+117 	 Zambia 	            3,227 	 2006
+118 	 Morocco 	            3,218 	 2006
+119 	 San Marino 	            3,140 	 2006
+120 	 Turks and Caicos Islands 	            2,735 	 2006
+121 	 Solomon Islands 	            2,658 	 2006
+122 	 Cote d'Ivoire 	            2,534 	 2006
+123 	 Angola 	            2,525 	 2006
+124 	 Swaziland 	            2,472 	 2006
+125 	 Christmas Island 	            2,368 	 2006
+126 	 Kuwait 	            2,310 	 2006
+127 	 Egypt 	            2,254 	 2006
+128 	 Cuba 	            2,234 	 2006
+129 	 Antigua and Barbuda 	            2,231 	 2006
+130 	 Bahrain 	            2,165 	 2006
+131 	 Congo, Democratic Republic of the 	            1,778 	 2006
+132 	 Rwanda 	            1,590 	 2006
+133 	 Papua New Guinea 	            1,573 	 2006
+134 	 Nigeria 	            1,549 	 2006
+135 	 Djibouti 	            1,540 	 2006
+136 	 Madagascar 	            1,504 	 2006
+137 	 American Samoa 	            1,456 	 2006
+138 	 Cook Islands 	            1,456 	 2006
+139 	 Jamaica 	            1,402 	 2006
+140 	 Cambodia 	            1,378 	 2006
+141 	 Uganda 	            1,365 	 2006
+142 	 Maldives 	            1,357 	 2006
+143 	 Guernsey 	            1,245 	 2006
+144 	 Jersey 	            1,240 	 2006
+145 	 Algeria 	            1,202 	 2006
+146 	 Laos 	            1,108 	 2006
+147 	 Eritrea 	            1,088 	 2006
+148 	 Guyana 	            1,046 	 2006
+149 	 Azerbaijan 	             880 	 2006
+150 	 Benin 	             867 	 2006
+151 	 Sao Tome and Principe 	             735 	 2006
+152 	 Gibraltar 	             641 	 2006
+153 	 Bahamas, The 	             591 	 2006
+154 	 Turkmenistan 	             585 	 2006
+155 	 Micronesia, Federated States of 	             550 	 2006
+156 	 British Virgin Islands 	             525 	 2006
+157 	 Togo 	             520 	 2006
+158 	 Bangladesh 	             469 	 2006
+159 	 Albania 	             430 	 2006
+160 	 Tunisia 	             428 	 2006
+161 	 Vanuatu 	             413 	 2006
+162 	 Senegal 	             412 	 2006
+163 	 Puerto Rico 	             404 	 2006
+164 	 Anguilla 	             403 	 2006
+165 	 Burkina Faso 	             399 	 2006
+166 	 Montserrat 	             386 	 2006
+167 	 Ghana 	             380 	 2006
+168 	 Malawi 	             377 	 2006
+169 	 Guinea 	             367 	 2006
+170 	 Saint Helena 	             329 	 2006
+171 	 Gabon 	             322 	 2006
+172 	 Qatar 	             301 	 2006
+173 	 Tokelau 	             298 	 2006
+174 	 Isle of Man 	             290 	 2006
+175 	 Barbados 	             282 	 2006
+176 	 Mali 	             278 	 2006
+177 	 Mongolia 	             272 	 2006
+178 	 South Georgia and the South Sandwich Islands 	             271 	 2006
+179 	 Dominica 	             263 	 2006
+180 	 Cape Verde 	             234 	 2006
+181 	 Niger 	             189 	 2006
+182 	 Yemen 	             171 	 2006
+183 	 Lesotho 	             168 	 2006
+184 	 Burundi 	             160 	 2006
+185 	 Suriname 	             126 	 2006
+186 	 Macau 	             108 	 2006
+187 	 Falkland Islands (Islas Malvinas) 	             103 	 2006
+188 	 Norfolk Island 	             100 	 2006
+189 	 Tajikistan 	              98 	 2006
+190 	 Saint Vincent and the Grenadines 	              94 	 2006
+191 	 Ethiopia 	              88 	 2006
+192 	 Guam 	              76 	 2006
+193 	 Seychelles 	              72 	 2006
+194 	 East Timor 	              68 	 2006
+195 	 Syria 	              66 	 2006
+196 	 British Indian Ocean Territory 	              65 	 2006
+197 	 Nauru 	              52 	 2006
+198 	 Saint Kitts and Nevis 	              50 	 2006
+199 	 Congo, Republic of the 	              46 	 2004
+200 	 Holy See (Vatican City) 	              45 	 2006
+201 	 Burma 	              42 	 2006
+202 	 Kiribati 	              42 	 2006
+203 	 Cameroon 	              39 	 2006
+204 	 French Southern and Antarctic Lands 	              38 	 2006
+205 	 Mauritania 	              32 	 2006
+206 	 Libya 	              31 	 2006
+207 	 Brunei 	              27 	 2005
+208 	 Afghanistan 	              22 	 2006
+209 	 Saint Lucia 	              21 	 2006
+210 	 Northern Mariana Islands 	              20 	 2005
+211 	 Sierra Leone 	              20 	 2006
+212 	 Equatorial Guinea 	              19 	 2006
+213 	 Grenada 	              17 	 2006
+214 	 Sudan 	              16 	 2006
+215 	 Gambia, The 	              14 	 2006
+216 	 Central African Republic 	              10 	 2006
+217 	 Chad 	               9 	 2006
+218 	 Liberia 	               8 	 2006
+219 	 Pitcairn Islands 	               8 	 2006
+220 	 Bouvet Island 	               6 	 2006
+221 	 Marshall Islands 	               6 	 2006
+222 	 Haiti 	               6 	 2006
+223 	 Comoros 	               5 	 2006
+224 	 Iraq 	               5 	 2006
+225 	 Guinea-Bissau 	               5 	 2006
+226 	 Palau 	               3 	 2006
+227 	 Somalia 	               3 	 2006
+228 	 Mayotte 	               1 	 2006
+229 	 Wallis and Futuna 	               1 	 2006
+230 	 Saint Pierre and Miquelon 	               0 	 2006
+
+ This file was last updated on 17 April, 2007

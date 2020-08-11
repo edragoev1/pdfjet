@@ -1,0 +1,232 @@
+Rank 	 Country 	 GDP - per capita (PPP) 	 Date of Information
+1 	 Bermuda 	 $            69,900 	 2004 est.
+2 	 Luxembourg 	 $            68,800 	 2006 est.
+3 	 Jersey 	 $            57,000 	 2005 est.
+4 	 Equatorial Guinea 	 $            50,200 	 2005 est.
+5 	 United Arab Emirates 	 $            49,700 	 2006 est.
+6 	 Norway 	 $            47,800 	 2006 est.
+7 	 Guernsey 	 $            44,600 	 2005
+8 	 Cayman Islands 	 $            43,800 	 2004 est.
+9 	 Ireland 	 $            43,600 	 2006 est.
+10 	 United States 	 $            43,500 	 2006 est.
+11 	 Andorra 	 $            38,800 	 2005
+12 	 British Virgin Islands 	 $            38,500 	 2004 est.
+13 	 Iceland 	 $            38,100 	 2006 est.
+14 	 Denmark 	 $            37,000 	 2006 est.
+15 	 Hong Kong 	 $            36,500 	 2006 est.
+16 	 Austria 	 $            35,500 	 2006 est.
+17 	 Canada 	 $            35,200 	 2006 est.
+18 	 Isle of Man 	 $            35,000 	 2005 est.
+19 	 San Marino 	 $            34,100 	 2004 est.
+20 	 Switzerland 	 $            33,600 	 2006 est.
+21 	 Japan 	 $            33,100 	 2006 est.
+22 	 Australia 	 $            32,900 	 2006 est.
+23 	 Finland 	 $            32,800 	 2006 est.
+24 	 Belgium 	 $            31,800 	 2006 est.
+25 	 Netherlands 	 $            31,700 	 2006 est.
+26 	 Sweden 	 $            31,600 	 2006 est.
+27 	 Germany 	 $            31,400 	 2006 est.
+28 	 United Kingdom 	 $            31,400 	 2006 est.
+29 	 Faroe Islands 	 $            31,000 	 2001 est.
+30 	 Singapore 	 $            30,900 	 2006 est.
+31 	 France 	 $            30,100 	 2006 est.
+32 	 Monaco 	 $            30,000 	 2006 est.
+33 	 Italy 	 $            29,700 	 2006 est.
+34 	 European Union 	 $            29,400 	 2006 est.
+35 	 Qatar 	 $            29,400 	 2006 est.
+36 	 Taiwan 	 $            29,000 	 2006 est.
+37 	 Gibraltar 	 $            27,900 	 2000 est.
+38 	 Spain 	 $            27,000 	 2006 est.
+39 	 Israel 	 $            26,200 	 2006 est.
+40 	 New Zealand 	 $            26,000 	 2006 est.
+41 	 Brunei 	 $            25,600 	 2005 est.
+42 	 Bahrain 	 $            25,300 	 2006 est.
+43 	 Falkland Islands (Islas Malvinas) 	 $            25,000 	 2002 est.
+44 	 Liechtenstein 	 $            25,000 	 1999 est.
+45 	 Macau 	 $            24,300 	 2005
+46 	 Korea, South 	 $            24,200 	 2006 est.
+47 	 Greece 	 $            23,500 	 2006 est.
+48 	 Slovenia 	 $            23,400 	 2006 est.
+49 	 Cyprus 	 $            22,700 	 2006 est.
+50 	 Aruba 	 $            21,800 	 2004 est.
+51 	 Czech Republic 	 $            21,600 	 2006 est.
+52 	 Kuwait 	 $            21,600 	 2006 est.
+53 	 Bahamas, The 	 $            21,300 	 2006 est.
+54 	 Malta 	 $            20,300 	 2006 est.
+55 	 Greenland 	 $            20,000 	 2001 est.
+56 	 Trinidad and Tobago 	 $            19,700 	 2006 est.
+57 	 Estonia 	 $            19,600 	 2006 est.
+58 	 Portugal 	 $            19,100 	 2006 est.
+59 	 Puerto Rico 	 $            19,100 	 2006 est.
+60 	 Barbados 	 $            18,200 	 2006 est.
+61 	 Slovakia 	 $            17,700 	 2006 est.
+62 	 French Polynesia 	 $            17,500 	 2003 est.
+63 	 Hungary 	 $            17,300 	 2006 est.
+64 	 Netherlands Antilles 	 $            16,000 	 2004 est.
+65 	 Latvia 	 $            15,400 	 2006 est.
+66 	 Lithuania 	 $            15,100 	 2006 est.
+67 	 Argentina 	 $            15,000 	 2006 est.
+68 	 New Caledonia 	 $            15,000 	 2003 est.
+69 	 Guam 	 $            15,000 	 2005 est.
+70 	 Virgin Islands 	 $            14,500 	 2004 est.
+71 	 Oman 	 $            14,100 	 2006 est.
+72 	 Poland 	 $            14,100 	 2006 est.
+73 	 Saudi Arabia 	 $            13,800 	 2006 est.
+74 	 Mauritius 	 $            13,500 	 2006 est.
+75 	 Croatia 	 $            13,200 	 2006 est.
+76 	 South Africa 	 $            13,000 	 2006 est.
+77 	 Chile 	 $            12,700 	 2006 est.
+78 	 Libya 	 $            12,700 	 2006 est.
+79 	 Malaysia 	 $            12,700 	 2006 est.
+80 	 Northern Mariana Islands 	 $            12,500 	 2000 est.
+81 	 Russia 	 $            12,100 	 2006 est.
+82 	 Costa Rica 	 $            12,000 	 2006 est.
+83 	 Turks and Caicos Islands 	 $            11,500 	 2002 est.
+84 	 Botswana 	 $            11,400 	 2006 est.
+85 	 Antigua and Barbuda 	 $            10,900 	 2005 est.
+86 	 Uruguay 	 $            10,700 	 2006 est.
+87 	 Mexico 	 $            10,600 	 2006 est.
+88 	 Bulgaria 	 $            10,400 	 2006 est.
+89 	 World 	 $            10,000 	 2006 est.
+90 	 Cook Islands 	 $             9,100 	 2005 est.
+91 	 Kazakhstan 	 $             9,100 	 2006 est.
+92 	 Thailand 	 $             9,100 	 2006 est.
+93 	 Iran 	 $             8,900 	 2006 est.
+94 	 Turkey 	 $             8,900 	 2006 est.
+95 	 Turkmenistan 	 $             8,900 	 2006 est.
+96 	 Anguilla 	 $             8,800 	 2004 est.
+97 	 Romania 	 $             8,800 	 2006 est.
+98 	 Brazil 	 $             8,600 	 2006 est.
+99 	 Tunisia 	 $             8,600 	 2006 est.
+100 	 Belize 	 $             8,400 	 2006 est.
+101 	 Colombia 	 $             8,400 	 2006 est.
+102 	 Macedonia 	 $             8,200 	 2006 est.
+103 	 Saint Kitts and Nevis 	 $             8,200 	 2005 est.
+104 	 Dominican Republic 	 $             8,000 	 2006 est.
+105 	 Panama 	 $             7,900 	 2006 est.
+106 	 Belarus 	 $             7,800 	 2006 est.
+107 	 Seychelles 	 $             7,800 	 2002 est.
+108 	 Algeria 	 $             7,700 	 2006 est.
+109 	 China 	 $             7,600 	 2006 est.
+110 	 Ukraine 	 $             7,600 	 2006
+111 	 Palau 	 $             7,600 	 2005 est.
+112 	 Namibia 	 $             7,400 	 2006 est.
+113 	 Azerbaijan 	 $             7,300 	 2006 est.
+114 	 Gabon 	 $             7,200 	 2006 est.
+115 	 Cyprus 	 $             7,135 	 2006 est.
+116 	 Suriname 	 $             7,100 	 2006 est.
+117 	 Saint Pierre and Miquelon 	 $             7,000 	 2001 est.
+118 	 Venezuela 	 $             6,900 	 2006 est.
+119 	 Peru 	 $             6,400 	 2006 est.
+120 	 Fiji 	 $             6,100 	 2006 est.
+121 	 Cape Verde 	 $             6,000 	 2006 est.
+122 	 American Samoa 	 $             5,800 	 2005 est.
+123 	 Niue 	 $             5,800 	 2003 est.
+124 	 Albania 	 $             5,600 	 2006 est.
+125 	 Bosnia and Herzegovina 	 $             5,500 	 2006 est.
+126 	 Lebanon 	 $             5,500 	 2006 est.
+127 	 Swaziland 	 $             5,500 	 2006 est.
+128 	 Armenia 	 $             5,400 	 2006 est.
+129 	 Nauru 	 $             5,000 	 2005 est.
+130 	 Philippines 	 $             5,000 	 2006 est.
+131 	 El Salvador 	 $             4,900 	 2006 est.
+132 	 Jordan 	 $             4,900 	 2006 est.
+133 	 Guatemala 	 $             4,900 	 2006 est.
+134 	 Mayotte 	 $             4,900 	 2005 est.
+135 	 Saint Lucia 	 $             4,800 	 2005 est.
+136 	 Guyana 	 $             4,700 	 2006 est.
+137 	 Paraguay 	 $             4,700 	 2006 est.
+138 	 Sri Lanka 	 $             4,600 	 2006 est.
+139 	 Jamaica 	 $             4,600 	 2006 est.
+140 	 Ecuador 	 $             4,500 	 2006 est.
+141 	 Morocco 	 $             4,400 	 2006 est.
+142 	 Serbia 	 $             4,400 	 2005 est.
+143 	 Angola 	 $             4,300 	 2006 est.
+144 	 Egypt 	 $             4,200 	 2006 est.
+145 	 Syria 	 $             4,000 	 2006 est.
+146 	 Cuba 	 $             3,900 	 2006 est.
+147 	 Grenada 	 $             3,900 	 2005 est.
+148 	 Maldives 	 $             3,900 	 2002 est.
+149 	 Dominica 	 $             3,800 	 2005 est.
+150 	 Georgia 	 $             3,800 	 2006 est.
+151 	 Wallis and Futuna 	 $             3,800 	 2004 est.
+152 	 Montenegro 	 $             3,800 	 2005 est.
+153 	 Indonesia 	 $             3,800 	 2006 est.
+154 	 India 	 $             3,700 	 2006 est.
+155 	 Saint Vincent and the Grenadines 	 $             3,600 	 2005 est.
+156 	 Montserrat 	 $             3,400 	 2002 est.
+157 	 Vietnam 	 $             3,100 	 2006 est.
+158 	 Bolivia 	 $             3,000 	 2006 est.
+159 	 Nicaragua 	 $             3,000 	 2006 est.
+160 	 Honduras 	 $             3,000 	 2006 est.
+161 	 Iraq 	 $             2,900 	 2006 est.
+162 	 Marshall Islands 	 $             2,900 	 2005 est.
+163 	 Vanuatu 	 $             2,900 	 2003 est.
+164 	 Kiribati 	 $             2,700 	 2004 est.
+165 	 Papua New Guinea 	 $             2,700 	 2006 est.
+166 	 Cambodia 	 $             2,600 	 2006 est.
+167 	 Pakistan 	 $             2,600 	 2006 est.
+168 	 Mauritania 	 $             2,600 	 2006 est.
+169 	 Lesotho 	 $             2,600 	 2006 est.
+170 	 Ghana 	 $             2,600 	 2006 est.
+171 	 Saint Helena 	 $             2,500 	 1998 est.
+172 	 Cameroon 	 $             2,400 	 2006 est.
+173 	 Micronesia, Federated States of 	 $             2,300 	 2005 est.
+174 	 Sudan 	 $             2,300 	 2006 est.
+175 	 Bangladesh 	 $             2,200 	 2006 est.
+176 	 Tonga 	 $             2,200 	 2005 est.
+177 	 Laos 	 $             2,100 	 2006 est.
+178 	 Samoa 	 $             2,100 	 2005 est.
+179 	 Gambia, The 	 $             2,000 	 2006 est.
+180 	 Guinea 	 $             2,000 	 2006 est.
+181 	 Moldova 	 $             2,000 	 2006 est.
+182 	 Mongolia 	 $             2,000 	 2006 est.
+183 	 Zimbabwe 	 $             2,000 	 2006 est.
+184 	 Uzbekistan 	 $             2,000 	 2006 est.
+185 	 Kyrgyzstan 	 $             2,000 	 2006 est.
+186 	 Burma 	 $             1,800 	 2006 est.
+187 	 Haiti 	 $             1,800 	 2006 est.
+188 	 Korea, North 	 $             1,800 	 2006 est.
+189 	 Senegal 	 $             1,800 	 2006 est.
+190 	 Uganda 	 $             1,800 	 2006 est.
+191 	 Togo 	 $             1,700 	 2006 est.
+192 	 Cote d'Ivoire 	 $             1,600 	 2006 est.
+193 	 Tuvalu 	 $             1,600 	 2002 est.
+194 	 Rwanda 	 $             1,600 	 2006 est.
+195 	 Chad 	 $             1,500 	 2006 est.
+196 	 West Bank 	 $             1,500 	 2005 est.
+197 	 Nepal 	 $             1,500 	 2006 est.
+198 	 Mozambique 	 $             1,500 	 2006 est.
+199 	 Gaza Strip 	 $             1,500 	 2003 est.
+200 	 Bhutan 	 $             1,400 	 2003 est.
+201 	 Nigeria 	 $             1,400 	 2006 est.
+202 	 Congo, Republic of the 	 $             1,300 	 2006 est.
+203 	 Tajikistan 	 $             1,300 	 2006 est.
+204 	 Burkina Faso 	 $             1,300 	 2006 est.
+205 	 Kenya 	 $             1,200 	 2006 est.
+206 	 Sao Tome and Principe 	 $             1,200 	 2003 est.
+207 	 Mali 	 $             1,200 	 2006 est.
+208 	 Benin 	 $             1,100 	 2006 est.
+209 	 Central African Republic 	 $             1,100 	 2006 est.
+210 	 Djibouti 	 $             1,000 	 2005 est.
+211 	 Liberia 	 $             1,000 	 2006 est.
+212 	 Zambia 	 $             1,000 	 2006 est.
+213 	 Tokelau 	 $             1,000 	 1993 est.
+214 	 Niger 	 $             1,000 	 2006 est.
+215 	 Ethiopia 	 $             1,000 	 2006 est.
+216 	 Eritrea 	 $             1,000 	 2005 est.
+217 	 Madagascar 	 $              900 	 2006 est.
+218 	 Guinea-Bissau 	 $              900 	 2006 est.
+219 	 Sierra Leone 	 $              900 	 2006 est.
+220 	 Yemen 	 $              900 	 2006 est.
+221 	 Afghanistan 	 $              800 	 2004 est.
+222 	 Tanzania 	 $              800 	 2006 est.
+223 	 East Timor 	 $              800 	 2005 est.
+224 	 Burundi 	 $              700 	 2006 est.
+225 	 Congo, Democratic Republic of the 	 $              700 	 2006 est.
+226 	 Solomon Islands 	 $              600 	 2005 est.
+227 	 Comoros 	 $              600 	 2005 est.
+228 	 Somalia 	 $              600 	 2006 est.
+229 	 Malawi 	 $              600 	 2006 est.
+
+ This file was last updated on 17 April, 2007

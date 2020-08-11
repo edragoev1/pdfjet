@@ -1,0 +1,29 @@
+Calculus
+From Wikipedia, the free encyclopedia
+This article is about the branch of mathematics. For other uses, see Calculus (disambiguation).
+    This article includes a list of references, but its sources remain unclear because it has insufficient inline citations. Please help to improve this article by introducing more precise citations. (December 2013)
+Part of a series of articles about
+Calculus
+
+    Fundamental theorem
+
+    Limits of functions Continuity 
+
+    Mean value theorem Rolle's theorem 
+
+Calculus is the mathematical study of change, in the same way that geometry is the study of shape and algebra is the study of operations and their application to solving equations. It has two major branches, differential calculus (concerning rates of change and slopes of curves),[1] and integral calculus (concerning accumulation of quantities and the areas under and between curves);[2] these two branches are related to each other by the fundamental theorem of calculus. Both branches make use of the fundamental notions of convergence of infinite sequences and infinite series to a well-defined limit. Generally, modern calculus is considered to have been developed in the 17th century by Isaac Newton and Gottfried Leibniz. Today, calculus has widespread uses in science, engineering and economics[3] and can solve many problems that algebra alone cannot.
+
+Calculus is a part of modern mathematics education. A course in calculus is a gateway to other, more advanced courses in mathematics devoted to the study of functions and limits, broadly called mathematical analysis. Calculus has historically been called "the calculus of infinitesimals", or "infinitesimal calculus". The word "calculus" comes from Latin (calculus) and refers to a small stone used for counting. Calculus (plural calculi) is also used for naming some methods of calculation or theories of computation, such as propositional calculus, calculus of variations, lambda calculus, and process calculus.
+
+Contents
+
+    1 History
+        1.1 Ancient
+        1.2 Medieval
+        1.3 Modern
+        1.4 Foundations
+        1.5 Significance
+    2 Principles
+        2.1 Limits and infinitesimals
+        2.2 Differential calculus
+        2.3 Leibniz notation

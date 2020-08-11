@@ -1,0 +1,230 @@
+Rank 	 Country 	 Telephones - mobile cellular 	 Date of Information
+1 	 World 	      2,168,433,600 	 2005
+2 	 European Union 	       466,000,000 	 2005
+3 	 China 	       437,480,000 	 2006
+4 	 United States 	       219,400,000 	 2005
+5 	 Russia 	       120,000,000 	 2005
+6 	 Japan 	        94,745,000 	 2005
+7 	 Brazil 	        86,210,000 	 2005
+8 	 Germany 	        79,200,000 	 2005
+9 	 Italy 	        72,200,000 	 2005
+10 	 India 	        69,193,000 	 2006
+11 	 United Kingdom 	        61,091,000 	 2004
+12 	 France 	        49,370,000 	 2005
+13 	 Pakistan 	        48,289,136 	 2006
+14 	 France 	        48,058,000 	 2005
+15 	 Mexico 	        47,462,000 	 2005
+16 	 Indonesia 	        46,910,000 	 2005
+17 	 Turkey 	        43,609,000 	 2005
+18 	 Spain 	        41,328,000 	 2005
+19 	 Korea, South 	        38,342,000 	 2005
+20 	 South Africa 	        33,960,000 	 2005
+21 	 Philippines 	        32,810,000 	 2005
+22 	 Poland 	        29,166,000 	 2005
+23 	 Thailand 	        27,379,000 	 2005
+24 	 Taiwan 	        22,170,000 	 2005
+25 	 Argentina 	        22,100,000 	 2005
+26 	 Colombia 	        21,850,000 	 2005
+27 	 Nigeria 	        21,571,000 	 2006
+28 	 Malaysia 	        19,545,000 	 2005
+29 	 Australia 	        18,420,000 	 2005
+30 	 Ukraine 	        17,214,000 	 2005
+31 	 Canada 	        16,600,000 	 2005
+32 	 Netherlands 	        15,834,000 	 2005
+33 	 Egypt 	        14,045,000 	 2005
+34 	 Algeria 	        13,661,000 	 2005
+35 	 Romania 	        13,354,000 	 2005
+36 	 Saudi Arabia 	        13,300,000 	 2005
+37 	 Venezuela 	        12,496,000 	 2005
+38 	 Morocco 	        12,393,000 	 2005
+39 	 Czech Republic 	        11,776,000 	 2005
+40 	 Portugal 	        11,448,000 	 2005
+41 	 Chile 	        10,570,000 	 2005
+42 	 Greece 	        10,043,000 	 2005
+43 	 Vietnam 	         9,593,000 	 2005
+44 	 Belgium 	         9,460,000 	 2005
+45 	 Hungary 	         9,320,000 	 2005
+46 	 Bangladesh 	         9,000,000 	 2005
+47 	 Iraq 	         8,700,000 	 2006
+48 	 Hong Kong 	         8,693,000 	 2005
+49 	 Iran 	         8,500,000 	 2005
+50 	 Sweden 	         8,436,000 	 2005
+51 	 Austria 	         8,160,000 	 2005
+52 	 Israel 	         7,757,000 	 2005
+53 	 Switzerland 	         6,847,000 	 2005
+54 	 Kenya 	         6,500,000 	 2006
+55 	 Ecuador 	         6,246,000 	 2005
+56 	 Bulgaria 	         6,245,000 	 2005
+57 	 Tunisia 	         5,681,000 	 2005
+58 	 Peru 	         5,583,000 	 2005
+59 	 Denmark 	         5,469,000 	 2005
+60 	 Finland 	         5,231,000 	 2005
+61 	 Serbia 	         5,229,000 	 2005
+62 	 Kazakhstan 	         4,955,000 	 2005
+63 	 Norway 	         4,755,000 	 2005
+64 	 Slovakia 	         4,540,000 	 2005
+65 	 United Arab Emirates 	         4,535,000 	 2005
+66 	 Singapore 	         4,385,000 	 2005
+67 	 Lithuania 	         4,353,000 	 2005
+68 	 Sri Lanka 	         4,284,000 	 2006
+69 	 Ireland 	         4,210,000 	 2005
+70 	 Belarus 	         4,098,000 	 2005
+71 	 Dominican Republic 	         3,623,000 	 2005
+72 	 New Zealand 	         3,530,000 	 2005
+73 	 Guatemala 	         3,168,000 	 2004
+74 	 Syria 	         3,128,000 	 2005
+75 	 Jordan 	         3,013,000 	 2005
+76 	 Croatia 	         2,984,000 	 2005
+77 	 Ghana 	         2,842,000 	 2005
+78 	 Congo, Democratic Republic of the 	         2,746,000 	 2005
+79 	 Jamaica 	         2,700,000 	 2005
+80 	 Puerto Rico 	         2,682,000 	 2004
+81 	 Kuwait 	         2,536,000 	 2006
+82 	 Bolivia 	         2,421,000 	 2005
+83 	 El Salvador 	         2,412,000 	 2005
+84 	 Cameroon 	         2,259,000 	 2005
+85 	 Azerbaijan 	         2,242,000 	 2005
+86 	 Cote d'Ivoire 	         2,190,000 	 2005
+87 	 Yemen 	         2,075,000 	 2006
+88 	 Tanzania 	         1,942,000 	 2005
+89 	 Paraguay 	         1,887,000 	 2005
+90 	 Latvia 	         1,872,000 	 2005
+91 	 Sudan 	         1,828,000 	 2005
+92 	 Slovenia 	         1,759,000 	 2005
+93 	 Senegal 	         1,730,000 	 2005
+94 	 Bosnia and Herzegovina 	         1,594,000 	 2005
+95 	 Uganda 	         1,525,000 	 2005
+96 	 Georgia 	         1,459,000 	 2005
+97 	 Estonia 	         1,445,000 	 2005
+98 	 Afghanistan 	         1,400,000 	 2005
+99 	 Panama 	         1,352,000 	 2005
+100 	 Oman 	         1,333,000 	 2005
+101 	 Honduras 	         1,282,000 	 2005
+102 	 Macedonia 	         1,261,000 	 2005
+103 	 Albania 	         1,259,000 	 2004
+104 	 Mozambique 	         1,220,000 	 2005
+105 	 Lebanon 	         1,178,000 	 2005
+106 	 Nicaragua 	         1,119,000 	 2005
+107 	 Costa Rica 	         1,101,000 	 2005
+108 	 Uzbekistan 	         1,100,000 	 2005
+109 	 Gaza Strip 	         1,095,000 	 2005
+110 	 West Bank 	         1,095,000 	 2005
+111 	 Angola 	         1,094,000 	 2005
+112 	 Moldova 	         1,090,000 	 2005
+113 	 Cambodia 	         1,062,000 	 2005
+114 	 Zambia 	          946,600 	 2005
+115 	 Mali 	          869,600 	 2005
+116 	 Qatar 	          854,900 	 2006
+117 	 Botswana 	          823,100 	 2005
+118 	 Trinidad and Tobago 	          800,000 	 2005
+119 	 Bahrain 	          748,700 	 2005
+120 	 Mauritania 	          745,600 	 2005
+121 	 Luxembourg 	          720,000 	 2005
+122 	 Cyprus 	          718,800 	 
+123 	 Mauritius 	          713,300 	 2005
+124 	 Zimbabwe 	          699,000 	 2005
+125 	 Gabon 	          649,800 	 2005
+126 	 Uruguay 	          600,000 	 2004
+127 	 Burkina Faso 	          572,200 	 2005
+128 	 Mongolia 	          557,200 	 2005
+129 	 Montenegro 	          543,220 	 2005
+130 	 Kyrgyzstan 	          541,700 	 2005
+131 	 Macau 	          532,800 	 2005
+132 	 Laos 	          520,546 	 2006
+133 	 Madagascar 	          504,700 	 2005
+134 	 Somalia 	          500,000 	 2005
+135 	 Namibia 	          495,000 	 2005
+136 	 Congo, Republic of the 	          490,000 	 2005
+137 	 Togo 	          443,600 	 2005
+138 	 Malawi 	          429,300 	 2005
+139 	 Ethiopia 	          410,600 	 2005
+140 	 Haiti 	          400,000 	 2004
+141 	 Benin 	          386,700 	 2005
+142 	 Malta 	          324,000 	 2005
+143 	 Armenia 	          320,000 	 2005
+144 	 Iceland 	          304,000 	 2005
+145 	 Niger 	          299,900 	 2005
+146 	 Rwanda 	          290,000 	 2005
+147 	 Guyana 	          281,400 	 2005
+148 	 Maldives 	          271,053 	 2006
+149 	 Tajikistan 	          265,000 	 2005
+150 	 Nepal 	          248,800 	 2005
+151 	 Gambia, The 	          247,500 	 2005
+152 	 Lesotho 	          245,100 	 2005
+153 	 Libya 	          234,800 	 2004
+154 	 Suriname 	          232,800 	 2005
+155 	 Chad 	          210,000 	 2005
+156 	 Barbados 	          206,200 	 2005
+157 	 Brunei 	          205,900 	 2004
+158 	 Netherlands Antilles 	          200,000 	 2004
+159 	 Swaziland 	          200,000 	 2005
+160 	 Guinea 	          189,000 	 2005
+161 	 Bahamas, The 	          186,000 	 2004
+162 	 Burma 	          183,400 	 2005
+163 	 Liberia 	          160,000 	 2005
+164 	 Burundi 	          153,000 	 2005
+165 	 Cyprus 	          143,178 	 
+166 	 Fiji 	          142,200 	 2004
+167 	 Cuba 	          134,500 	 2005
+168 	 New Caledonia 	          134,300 	 2005
+169 	 Sierra Leone 	          113,200 	 2003
+170 	 Aruba 	           98,400 	 2004
+171 	 Guam 	           98,000 	 2004
+172 	 Equatorial Guinea 	           96,900 	 2005
+173 	 Belize 	           93,100 	 2005
+174 	 Saint Lucia 	           93,000 	 2004
+175 	 French Polynesia 	           87,000 	 2005
+176 	 Jersey 	           83,900 	 2004
+177 	 Cape Verde 	           81,700 	 2005
+178 	 Saint Vincent and the Grenadines 	           70,600 	 2005
+179 	 Guinea-Bissau 	           67,000 	 2005
+180 	 Andorra 	           64,600 	 2005
+181 	 Virgin Islands 	           64,200 	 2004
+182 	 Central African Republic 	           60,000 	 2004
+183 	 Eritrea 	           58,000 	 2006
+184 	 Seychelles 	           57,000 	 2005
+185 	 Antigua and Barbuda 	           54,000 	 2004
+186 	 Turkmenistan 	           52,000 	 2004
+187 	 Bermuda 	           49,000 	 2004
+188 	 Mayotte 	           48,100 	 2004
+189 	 Guernsey 	           43,800 	 2004
+190 	 Grenada 	           43,300 	 2004
+191 	 Faroe Islands 	           42,500 	 2005
+192 	 Dominica 	           41,800 	 2004
+193 	 Bhutan 	           37,800 	 2005
+194 	 Djibouti 	           34,500 	 2004
+195 	 Greenland 	           32,200 	 2004
+196 	 Papua New Guinea 	           26,000 	 2005
+197 	 Samoa 	           24,000 	 2005
+198 	 Northern Mariana Islands 	           20,500 	 2004
+199 	 Monaco 	           19,300 	 2002
+200 	 Cayman Islands 	           17,000 	 2002
+201 	 San Marino 	           16,800 	 2002
+202 	 Tonga 	           16,400 	 2004
+203 	 Comoros 	           16,100 	 2005
+204 	 Micronesia, Federated States of 	           14,100 	 2005
+205 	 Vanuatu 	           12,700 	 2005
+206 	 Sao Tome and Principe 	           12,000 	 2005
+207 	 Liechtenstein 	           11,400 	 2002
+208 	 Saint Kitts and Nevis 	           10,000 	 2004
+209 	 Gibraltar 	            9,797 	 2002
+210 	 British Virgin Islands 	            8,000 	 2002
+211 	 Solomon Islands 	            6,000 	 2005
+212 	 American Samoa 	            2,377 	 1999
+213 	 Anguilla 	            1,800 	 2002
+214 	 Turks and Caicos Islands 	            1,700 	 1999
+215 	 Cook Islands 	            1,500 	 2002
+216 	 Nauru 	            1,500 	 2002
+217 	 Marshall Islands 	            1,198 	 2004
+218 	 Palau 	            1,000 	 2002
+219 	 Kiribati 	             600 	 2004
+220 	 Niue 	             400 	 2002
+221 	 Montserrat 	              70 	 1994
+222 	 Falkland Islands (Islas Malvinas) 	               0 	 2001
+223 	 Western Sahara 	               0 	 1999
+224 	 Wallis and Futuna 	               0 	 1994
+225 	 Norfolk Island 	               0 	 2002
+226 	 Tuvalu 	               0 	 2004
+227 	 Tokelau 	               0 	 2001
+
+ This file was last updated on 17 April, 2007

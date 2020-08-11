@@ -1,0 +1,217 @@
+Rank 	 Country 	 Electricity - consumption(kWh) 	 Date of Information
+1 	 World 	  16,330,000,000,000 	 2004 est.
+2 	 United States 	   3,717,000,000,000 	 2004
+3 	 European Union 	   2,822,000,000,000 	 2004 est.
+4 	 China 	   2,494,000,000,000 	 2005
+5 	 Japan 	    946,300,000,000 	 2005
+6 	 Russia 	    940,000,000,000 	 2005
+7 	 India 	    587,900,000,000 	 2004
+8 	 Germany 	    524,600,000,000 	 2004
+9 	 Canada 	    522,400,000,000 	 2004
+10 	 France 	    482,400,000,000 	 2005
+11 	 Brazil 	    415,900,000,000 	 2005
+12 	 United Kingdom 	    345,200,000,000 	 2004
+13 	 Korea, South 	    321,000,000,000 	 2004
+14 	 Italy 	    303,800,000,000 	 2004
+15 	 Spain 	    241,800,000,000 	 2004
+16 	 Mexico 	    224,600,000,000 	 2004
+17 	 Australia 	    209,500,000,000 	 2004
+18 	 South Africa 	    207,000,000,000 	 2004
+19 	 Ukraine 	    181,900,000,000 	 2006
+20 	 Taiwan 	    175,300,000,000 	 2005
+21 	 Iran 	    145,100,000,000 	 2004
+22 	 Saudi Arabia 	    144,400,000,000 	 2004
+23 	 Turkey 	    140,300,000,000 	 2005
+24 	 Sweden 	    137,800,000,000 	 2004
+25 	 Poland 	    124,100,000,000 	 2004
+26 	 Thailand 	    116,200,000,000 	 2004
+27 	 Norway 	    112,800,000,000 	 2004
+28 	 Indonesia 	    107,700,000,000 	 2005 est.
+29 	 Netherlands 	    102,400,000,000 	 2004
+30 	 Argentina 	     90,930,000,000 	 2004
+31 	 Venezuela 	     86,520,000,000 	 2004
+32 	 Egypt 	     84,490,000,000 	 2004
+33 	 Belgium 	     82,410,000,000 	 2004
+34 	 Finland 	     80,790,000,000 	 2004
+35 	 Pakistan 	     74,620,000,000 	 2004
+36 	 Malaysia 	     72,710,000,000 	 2004
+37 	 Austria 	     65,200,000,000 	 2005 est.
+38 	 Kazakhstan 	     59,200,000,000 	 2006 est.
+39 	 Czech Republic 	     58,800,000,000 	 2004
+40 	 Switzerland 	     56,930,000,000 	 2004
+41 	 Greece 	     53,500,000,000 	 2005 est.
+42 	 Philippines 	     49,750,000,000 	 2005
+43 	 Romania 	     49,620,000,000 	 2004
+44 	 Chile 	     48,520,000,000 	 2006
+45 	 Uzbekistan 	     47,000,000,000 	 2006 est.
+46 	 United Arab Emirates 	     46,050,000,000 	 2004
+47 	 Portugal 	     46,050,000,000 	 2004
+48 	 Hong Kong 	     44,550,000,000 	 2005
+49 	 Colombia 	     42,010,000,000 	 2004
+50 	 Israel 	     41,380,000,000 	 2004
+51 	 New Zealand 	     38,220,000,000 	 2004
+52 	 Kuwait 	     37,540,000,000 	 2004
+53 	 Bulgaria 	     37,400,000,000 	 2006
+54 	 Vietnam 	     37,300,000,000 	 2004
+55 	 Hungary 	     37,100,000,000 	 2004
+56 	 Denmark 	     36,410,000,000 	 2006
+57 	 Syria 	     34,000,000,000 	 2005 est.
+58 	 Iraq 	     33,300,000,000 	 2005
+59 	 Belarus 	     31,050,000,000 	 2004
+60 	 Singapore 	     30,350,000,000 	 2004
+61 	 Slovakia 	     28,570,000,000 	 2005
+62 	 Algeria 	     27,400,000,000 	 2004 est.
+63 	 Ireland 	     23,230,000,000 	 2004
+64 	 Puerto Rico 	     22,450,000,000 	 2004
+65 	 Peru 	     22,310,000,000 	 2004
+66 	 Azerbaijan 	     20,570,000,000 	 2004
+67 	 Korea, North 	     20,190,000,000 	 2004
+68 	 Morocco 	     18,890,000,000 	 2004
+69 	 Libya 	     18,080,000,000 	 2004
+70 	 Nigeria 	     17,710,000,000 	 2004
+71 	 Bangladesh 	     16,820,000,000 	 2004
+72 	 Croatia 	     16,530,000,000 	 2004
+73 	 Tajikistan 	     15,700,000,000 	 2004
+74 	 Cuba 	     14,100,000,000 	 2004
+75 	 Dominican Republic 	     13,960,000,000 	 2004
+76 	 Slovenia 	     13,710,000,000 	 2006
+77 	 Oman 	     13,330,000,000 	 2004
+78 	 Ecuador 	     12,950,000,000 	 2004
+79 	 Qatar 	     11,530,000,000 	 2004
+80 	 Bosnia and Herzegovina 	     11,030,000,000 	 2004
+81 	 Zimbabwe 	     11,000,000,000 	 2004
+82 	 Tunisia 	     10,970,000,000 	 2004
+83 	 Uruguay 	      9,939,000,000 	 2004
+84 	 Mozambique 	      9,592,000,000 	 2004
+85 	 Lebanon 	      9,529,000,000 	 2004
+86 	 Lithuania 	      9,358,000,000 	 2004
+87 	 Turkmenistan 	      9,030,000,000 	 2004
+88 	 Macedonia 	      8,929,000,000 	 2006
+89 	 Georgia 	      8,528,000,000 	 2004
+90 	 Jordan 	      8,387,000,000 	 2004
+91 	 Sri Lanka 	      8,170,000,000 	 2005
+92 	 Iceland 	      7,881,000,000 	 2004
+93 	 Costa Rica 	      7,574,000,000 	 2004
+94 	 Bahrain 	      7,248,000,000 	 2004
+95 	 Ghana 	      7,095,000,000 	 2004
+96 	 Panama 	      6,888,000,000 	 2004
+97 	 Estonia 	      6,846,000,000 	 2004
+98 	 Kyrgyzstan 	      6,777,000,000 	 2004
+99 	 Zambia 	      6,692,000,000 	 2004
+100 	 Guatemala 	      6,625,000,000 	 2005
+101 	 Jamaica 	      6,429,000,000 	 2004
+102 	 Latvia 	      6,329,000,000 	 2004
+103 	 Luxembourg 	      6,140,000,000 	 2005 est.
+104 	 Trinidad and Tobago 	      5,626,000,000 	 2004
+105 	 Kenya 	      5,459,000,000 	 2004
+106 	 Burma 	      5,325,000,000 	 FY05/06
+107 	 El Salvador 	      5,204,000,000 	 2006
+108 	 Congo, Republic of the 	      5,127,000,000 	 2004
+109 	 Honduras 	      4,824,000,000 	 2004
+110 	 Armenia 	      4,374,000,000 	 2005
+111 	 Moldova 	      4,203,000,000 	 2005
+112 	 Bolivia 	      4,168,000,000 	 2004
+113 	 Yemen 	      3,792,000,000 	 2004 est.
+114 	 Cyprus 	      3,651,000,000 	 2004
+115 	 Cameroon 	      3,649,000,000 	 2004
+116 	 Sudan 	      3,576,000,000 	 2004
+117 	 Albania 	      3,530,000,000 	 2005
+118 	 Laos 	      3,260,000,000 	 2004
+119 	 Cote d'Ivoire 	      3,202,000,000 	 2004
+120 	 Paraguay 	      3,133,000,000 	 2004
+121 	 Papua New Guinea 	      3,123,000,000 	 2004
+122 	 Mongolia 	      2,940,000,000 	 2006
+123 	 Nicaragua 	      2,929,000,000 	 2006
+124 	 Namibia 	      2,819,000,000 	 2004
+125 	 Brunei 	      2,726,000,000 	 2005 est.
+126 	 Botswana 	      2,464,000,000 	 2004
+127 	 Tanzania 	      2,383,000,000 	 2004
+128 	 Macau 	      2,159,000,000 	 2005
+129 	 Ethiopia 	      2,133,000,000 	 2004
+130 	 Malta 	      2,130,000,000 	 2004
+131 	 Angola 	      2,040,000,000 	 2004
+132 	 Mauritius 	      1,960,000,000 	 2004
+133 	 Nepal 	      1,960,000,000 	 2006
+134 	 Bahamas, The 	      1,669,000,000 	 2004
+135 	 Guam 	      1,641,000,000 	 2004
+136 	 Uganda 	      1,596,000,000 	 2004
+137 	 New Caledonia 	      1,558,000,000 	 2004
+138 	 Gabon 	      1,435,000,000 	 2004
+139 	 Suriname 	      1,403,000,000 	 2004
+140 	 Senegal 	      1,351,000,000 	 2004
+141 	 Malawi 	      1,202,000,000 	 2004
+142 	 Swaziland 	      1,123,000,000 	 2005
+143 	 Netherlands Antilles 	       934,700,000 	 2004
+144 	 Togo 	       929,200,000 	 2004
+145 	 Madagascar 	       915,100,000 	 2004
+146 	 Virgin Islands 	       911,400,000 	 2004
+147 	 Barbados 	       833,300,000 	 2004
+148 	 Guinea 	       832,900,000 	 2006
+149 	 Cyprus 	       797,900,000 	 2004
+150 	 Afghanistan 	       782,900,000 	 2004
+151 	 Guyana 	       761,500,000 	 2004
+152 	 Fiji 	       759,800,000 	 2004
+153 	 Aruba 	       716,100,000 	 2004
+154 	 Congo, Democratic Republic of the 	       658,300,000 	 2004
+155 	 Jersey 	       630,100,000 	 2004 est.
+156 	 Bermuda 	       616,700,000 	 2005
+157 	 Benin 	       576,300,000 	 2004
+158 	 French Polynesia 	       533,000,000 	 2005
+159 	 Bhutan 	       526,500,000 	 2004
+160 	 Haiti 	       498,600,000 	 2004
+161 	 Niger 	       415,800,000 	 2004
+162 	 Mali 	       381,300,000 	 2004
+163 	 Cayman Islands 	       372,000,000 	 2004
+164 	 Burkina Faso 	       372,000,000 	 2004
+165 	 Liberia 	       302,300,000 	 2004
+166 	 Greenland 	       274,400,000 	 2004
+167 	 Faroe Islands 	       272,100,000 	 2004
+168 	 Saint Lucia 	       269,700,000 	 2004
+169 	 Eritrea 	       256,700,000 	 2004
+170 	 Somalia 	       250,200,000 	 2004
+171 	 Lesotho 	       244,500,000 	 2004
+172 	 Sierra Leone 	       226,900,000 	 2004
+173 	 Rwanda 	       196,500,000 	 2004
+174 	 Seychelles 	       193,400,000 	 2004
+175 	 Djibouti 	       186,000,000 	 2004
+176 	 Micronesia, Federated States of 	       178,600,000 	 2002
+177 	 Mauritania 	       164,300,000 	 2004
+178 	 Belize 	       162,800,000 	 2004
+179 	 Grenada 	       159,300,000 	 2004
+180 	 Burundi 	       157,400,000 	 2004
+181 	 Maldives 	       139,400,000 	 2004
+182 	 Mayotte 	       139,200,000 	 2005
+183 	 Gambia, The 	       134,900,000 	 2004
+184 	 Gibraltar 	       122,000,000 	 2004
+185 	 Cambodia 	       121,800,000 	 2004
+186 	 American Samoa 	       119,000,000 	 2004
+187 	 Saint Kitts and Nevis 	       116,300,000 	 2004
+188 	 Saint Vincent and the Grenadines 	       106,000,000 	 2004
+189 	 Central African Republic 	       101,400,000 	 2004
+190 	 Samoa 	       100,500,000 	 2004
+191 	 Antigua and Barbuda 	        97,650,000 	 2004
+192 	 Chad 	        87,420,000 	 2004
+193 	 Western Sahara 	        79,050,000 	 2004
+194 	 Dominica 	        78,010,000 	 2004
+195 	 Guinea-Bissau 	        53,960,000 	 2004
+196 	 Solomon Islands 	        51,150,000 	 2004
+197 	 Saint Pierre and Miquelon 	        46,500,000 	 2004
+198 	 Cape Verde 	        40,920,000 	 2004
+199 	 Vanuatu 	        39,990,000 	 2004
+200 	 British Virgin Islands 	        39,060,000 	 2004
+201 	 Tonga 	        38,130,000 	 2004
+202 	 Nauru 	        27,900,000 	 2004
+203 	 Cook Islands 	        26,040,000 	 2004 est.
+204 	 Equatorial Guinea 	        24,180,000 	 2004
+205 	 Montenegro 	        18,600,000 	 2004
+206 	 Comoros 	        17,670,000 	 2004
+207 	 Sao Tome and Principe 	        16,740,000 	 2004
+208 	 Falkland Islands (Islas Malvinas) 	        14,880,000 	 2004
+209 	 Kiribati 	        12,090,000 	 2004
+210 	 Saint Helena 	         6,510,000 	 2004
+211 	 Turks and Caicos Islands 	         6,510,000 	 2004
+212 	 Niue 	         2,790,000 	 2004
+213 	 Montserrat 	         1,860,000 	 2003
+214 	 Gaza Strip 	          230,000 	 2005
+
+ This file was last updated on 17 April, 2007
