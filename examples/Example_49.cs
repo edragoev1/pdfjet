@@ -20,16 +20,23 @@ public class Example_49 {
                 new FileStream("Example_49.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSerif-Regular.ttf", FileMode.Open, FileAccess.Read));
+        Font f1 = new Font(pdf,
+                new FileStream(
+                        "fonts/Droid/DroidSerif-Regular.ttf.stream",
+                        FileMode.Open,
+                        FileAccess.Read),
+                Font.STREAM);
+        f1.SetSize(14f);
 
-        Font f2 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSerif-Italic.ttf", FileMode.Open, FileAccess.Read));
+        Font f2 = new Font(pdf,
+                new FileStream(
+                        "fonts/Droid/DroidSerif-Italic.ttf.stream",
+                        FileMode.Open,
+                        FileAccess.Read),
+                Font.STREAM);
+        f2.SetSize(16f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
-        f1.SetSize(14f);
-        f2.SetSize(16f);
 
         Paragraph paragraph1 = new Paragraph()
                 .Add(new TextLine(f1, "Hello"))

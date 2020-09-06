@@ -24,33 +24,37 @@ public class Example_27 {
         // Thai font
         Font f1 = new Font(pdf,
                 new FileStream(
-                        "fonts/Noto/NotoSansThai-Regular.ttf",
+                        "fonts/Noto/NotoSansThai-Regular.ttf.stream",
                         FileMode.Open,
-                        FileAccess.Read));
+                        FileAccess.Read),
+                Font.STREAM);
         f1.SetSize(14f);
 
         // Latin font
         Font f2 = new Font(pdf,
                 new FileStream(
-                        "fonts/Droid/DroidSans.ttf",
+                        "fonts/Droid/DroidSans.ttf.stream",
                         FileMode.Open,
-                        FileAccess.Read));
+                        FileAccess.Read),
+                Font.STREAM);
         f2.SetSize(12f);
 
         // Hebrew font
         Font f3 = new Font(pdf,
                 new FileStream(
-                        "fonts/Noto/NotoSansHebrew-Regular.ttf",
+                        "fonts/Noto/NotoSansHebrew-Regular.ttf.stream",
                         FileMode.Open,
-                        FileAccess.Read));
+                        FileAccess.Read),
+                Font.STREAM);
         f3.SetSize(12f);
 
         // Arabic font
         Font f4 = new Font(pdf,
                 new FileStream(
-                        "fonts/Noto/NotoNaskhArabic-Regular.ttf",
+                        "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream",
                         FileMode.Open,
-                        FileAccess.Read));
+                        FileAccess.Read),
+                Font.STREAM);
         f4.SetSize(12f);
 
         float x = 50f;
