@@ -21,28 +21,16 @@ public class Example_07 {
         // pdf.SetPageLayout(PageLayout.SINGLE_PAGE);
         // pdf.SetPageMode(PageMode.FULL_SCREEN);
 
-        Font f1 = null;
-        Font f2 = null;
-        if (fontType.Equals("OpenType")) {
-            f1 = new Font(pdf, new FileStream(
-                    "fonts/Droid/DroidSerif-Regular.ttf",
-                    FileMode.Open, FileAccess.Read));
-            f2 = new Font(pdf, new FileStream(
-                    "fonts/Droid/DroidSerif-Italic.ttf",
-                    FileMode.Open, FileAccess.Read));
-        }
-        else {
-            f1 = new Font(pdf, new FileStream(
-                    "fonts/Droid/DroidSerif-Regular.ttf.stream",
-                    FileMode.Open,
-                    FileAccess.Read), Font.STREAM);
-
-            f2 = new Font(pdf, new FileStream(
-                    "fonts/Droid/DroidSerif-Italic.ttf.stream",
-                    FileMode.Open,
-                    FileAccess.Read), Font.STREAM);
-        }
+        Font f1 = new Font(pdf, new FileStream(
+                "fonts/Droid/DroidSerif-Regular.ttf.stream",
+                FileMode.Open,
+                FileAccess.Read), Font.STREAM);
         f1.SetSize(15f);
+
+        Font f2 = new Font(pdf, new FileStream(
+                "fonts/Droid/DroidSerif-Italic.ttf.stream",
+                FileMode.Open,
+                FileAccess.Read), Font.STREAM);
         f2.SetSize(15f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

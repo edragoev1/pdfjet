@@ -197,30 +197,7 @@ class Example_50 {
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-
-//        new Example_50("50", "rc65-16e.pdf");
-
-        new Example_50("50", "PDF32000_2008.pdf");
-/*
-        new Example_50("52", "LibreOffice.pdf");
-        new Example_50("53", "Libero.pdf");
-        new Example_50("54", "50008-RON.pdf");
-        new Example_50("55", "special_event_waste_diversion_plan.pdf");
-        new Example_50("56", "waste_management_plan_for_runs.pdf");
-        new Example_50("57", "temporary_food_establishment_vendor_package.pdf");
-        new Example_50("58", "toronto_municipal_code_fireworks.pdf");
-        new Example_50("59", "toronto_municipal_code_animals.pdf");
-        new Example_50("60", "tps_notice_of_demonstration.pdf");
-        new Example_50("61", "tps_notification_of_intent_to_hold_a_parade.pdf");
-        new Example_50("62", "tssa_operating_an_amusement_device_in_ontario.pdf");
-        new Example_50("63", "waste_management_plan_for_street_events.pdf");
-        new Example_50("64", "city_gaming_services_application.pdf");
-        new Example_50("65", "letter_of_municipal_significance.pdf");
-        new Example_50("66", "protocol_services.pdf");
-        new Example_50("67", "special_event_application_city_parklands.pdf");
-        new Example_50("68", "985004-04512.pdf");
-        new Example_50("69", "_QuickReferenceChart.pdf");
-*/
+        new Example_50("50", "rc65-16e.pdf");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine("Example_50 => " + (time1 - time0));
     }

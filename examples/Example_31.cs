@@ -21,15 +21,17 @@ public class Example_31 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         Font f1 = new Font(pdf,
-                new FileStream("fonts/Noto/NotoSansDevanagari-Regular.ttf",
+                new FileStream("fonts/Noto/NotoSansDevanagari-Regular.ttf.stream",
                         FileMode.Open,
-                        FileAccess.Read));
+                        FileAccess.Read),
+                Font.STREAM);
         f1.SetSize(15f);
 
         Font f2 = new Font(pdf,
-                new FileStream("fonts/Droid/DroidSans.ttf",
+                new FileStream("fonts/Droid/DroidSans.ttf.stream",
                         FileMode.Open,
-                        FileAccess.Read));
+                        FileAccess.Read),
+                Font.STREAM);
         f2.SetSize(15f);
 
         StringBuilder buf = new StringBuilder();
