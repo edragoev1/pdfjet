@@ -17,25 +17,25 @@ public class Example_07 {
             // pdf.setPageLayout(PageLayout.SINGLE_PAGE)
             // pdf.setPageMode(PageMode.FULL_SCREEN)
 
-            var f1 = try Font(
+            let f1 = try Font(
                     pdf,
                     InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
                     Font.STREAM)
             f1.setSize(72.0)
 
-            var f2 = try Font(
+            let f2 = try Font(
                     pdf,
                     InputStream(fileAtPath: "fonts/Droid/DroidSerif-Italic.ttf.stream")!,
                     Font.STREAM)
             f2.setSize(15.0)
 
-            try page.addWatermark(f1!, "This is a Draft")
-            f1!.setSize(15.0)
+            try page.addWatermark(f1, "This is a Draft")
+            f1.setSize(15.0)
 
             var x_pos: Float = 70.0
             var y_pos: Float = 70.0
 
-            var text = TextLine(f1!).setLocation(x_pos, y_pos)
+            var text = TextLine(f1).setLocation(x_pos, y_pos)
 
             var buffer = String()
             var i = 0x20
@@ -114,7 +114,7 @@ public class Example_07 {
 
             x_pos = 370.0
             y_pos = 70.0
-            text = TextLine(f2!)
+            text = TextLine(f2)
             text.setLocation(x_pos, y_pos)
             buffer = ""
             i = 0x20

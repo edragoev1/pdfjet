@@ -645,16 +645,21 @@ public class Cell {
             }
         }
         if (barCode != null) {
-            if (GetTextAlignment() == Align.LEFT) {
-                barCode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+            try {
+                if (GetTextAlignment() == Align.LEFT) {
+                    barCode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+                }
+                else if (GetTextAlignment() == Align.CENTER) {
+                    float barcodeWidth = barCode.DrawOn(null)[0];
+                    barCode.DrawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
+                }
+                else if (GetTextAlignment() == Align.RIGHT) {
+                    float barcodeWidth = barCode.DrawOn(null)[0];
+                    barCode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+                }
             }
-            else if (GetTextAlignment() == Align.CENTER) {
-                float barcodeWidth = barCode.DrawOn(null)[0];
-                barCode.DrawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
-            }
-            else if (GetTextAlignment() == Align.RIGHT) {
-                float barcodeWidth = barCode.DrawOn(null)[0];
-                barCode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+            catch (Exception e) {
+                Console.WriteLine(e.ToString());
             }
         }
         if (textBlock != null) {

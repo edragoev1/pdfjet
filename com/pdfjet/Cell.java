@@ -689,16 +689,21 @@ public class Cell {
             }
         }
         if (barCode != null) {
-            if (getTextAlignment() == Align.LEFT) {
-                barCode.drawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+            try {
+                if (getTextAlignment() == Align.LEFT) {
+                    barCode.drawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+                }
+                else if (getTextAlignment() == Align.CENTER) {
+                    float barcodeWidth = barCode.drawOn(null)[0];
+                    barCode.drawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
+                }
+                else if (getTextAlignment() == Align.RIGHT) {
+                    float barcodeWidth = barCode.drawOn(null)[0];
+                    barCode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+                }
             }
-            else if (getTextAlignment() == Align.CENTER) {
-                float barcodeWidth = barCode.drawOn(null)[0];
-                barCode.drawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
-            }
-            else if (getTextAlignment() == Align.RIGHT) {
-                float barcodeWidth = barCode.drawOn(null)[0];
-                barCode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+            catch (Exception e) {
+                e.printStackTrace();
             }
         }
         if (textBlock != null) {

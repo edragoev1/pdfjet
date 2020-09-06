@@ -273,6 +273,23 @@ public class Font {
     }
 
 
+    // REMOVE from the Open Source Edition
+    // >>
+    /**
+     *  Constructor for OpenType and TrueType fonts.
+     *  Please see Example_06 and Example_07.
+     *
+     *  @param pdf the PDF object that requires this font.
+     *  @param inputStream the input stream to read this font from.
+     *  @throws Exception  If an input or output exception occurred
+     */
+    public Font(PDF pdf, InputStream inputStream) throws Exception {
+        OpenTypeFont.register(pdf, this, inputStream);
+        setSize(size);
+    }
+    // <<
+
+
     /**
      *  Sets the size of this font.
      *

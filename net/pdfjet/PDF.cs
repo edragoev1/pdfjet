@@ -40,6 +40,8 @@ namespace PDFjet.NET {
  */
 public class PDF {
 
+    private bool eval = false;
+
     internal int metadataObjNumber = 0;
     internal int outputIntentObjNumber = 0;
     internal List<Font> fonts = new List<Font>();
@@ -704,6 +706,39 @@ public class PDF {
 
 
     private void AddPageContent(Page page) {
+
+        //>> REMOVE FROM THE OPEN SOURCE EDITION!
+        if (eval && fonts.Count > 0) {
+            Font f1 = fonts[0];
+            float fontSize = f1.GetSize();
+            f1.SetSize(8.0f);
+            float[] tm = page.tm;
+            float[] brushColor = page.GetBrushColor();
+
+            page.SetTextDirection(0);
+            page.SetBrushColor(Color.blue);
+            String message1 =
+                    "This document was created with the evaluation version of PDFjet";
+            String message2 =
+                    "To acquire a license please visit http://pdfjet.com";
+            page.DrawString(
+                    f1,
+                    message1,
+                    (page.width - f1.StringWidth(message1))/2,
+                    10.0f);
+            page.DrawString(
+                    f1,
+                    message2,
+                    (page.width - f1.StringWidth(message2))/2,
+                    20.0f);
+
+            // Revert back to the original values:
+            f1.SetSize(fontSize);
+            page.tm = tm;
+            page.SetBrushColor(brushColor);
+        }
+        //<<
+
         MemoryStream baos = new MemoryStream();
         DeflaterOutputStream dos = new DeflaterOutputStream(baos);
         byte[] buf = page.buf.ToArray();
