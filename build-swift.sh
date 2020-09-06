@@ -29,9 +29,9 @@ swift run --configuration release Example_26
 # swift run --configuration release Example_29
 # swift run --configuration release Example_30
 # swift run --configuration release Example_31
-# swift run --configuration release Example_32
-# swift run --configuration release Example_33
-# swift run --configuration release Example_34
+swift run --configuration release Example_32
+swift run --configuration release Example_33
+swift run --configuration release Example_34
 # swift run --configuration release Example_35
 # swift run --configuration release Example_36
 # swift run --configuration release Example_37
@@ -47,4 +47,4 @@ swift run --configuration release Example_26
 # swift run --configuration release Example_47
 # swift run --configuration release Example_48
 # swift run --configuration release Example_49
-# swift run --configuration release Example_50
+swift run --configuration release Example_50
