@@ -4,15 +4,15 @@ swift run --configuration release Example_03
 swift run --configuration release Example_04
 swift run --configuration release Example_05
 swift run --configuration release Example_06
-# swift run --configuration release Example_07
-# swift run --configuration release Example_08
+swift run --configuration release Example_07
+swift run --configuration release Example_08
 # swift run --configuration release Example_09
 # swift run --configuration release Example_10
-# swift run --configuration release Example_11
+swift run --configuration release Example_11
 # swift run --configuration release Example_12
-# swift run --configuration release Example_13
-# swift run --configuration release Example_14
-# swift run --configuration release Example_15
+swift run --configuration release Example_13
+swift run --configuration release Example_14
+swift run --configuration release Example_15
 # swift run --configuration release Example_16
 # swift run --configuration release Example_17
 # swift run --configuration release Example_18
