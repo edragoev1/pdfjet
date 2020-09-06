@@ -34,6 +34,8 @@ import Foundation
 ///
 public class PDF {
 
+    private let eval = false
+
     var metadataObjNumber = 0
     var outputIntentObjNumber = 0
     var fonts = [Font]()
@@ -718,6 +720,39 @@ public class PDF {
 */
 
     private func addPageContent(_ page: inout Page) {
+/*
+        //>> REMOVE FROM THE OPEN SOURCE EDITION!
+        if eval && fonts.count > 0 {
+            let f1 = fonts[0]
+            let fontSize = f1.getSize()
+            f1.setSize(8.0)
+            let tm: [Float] = page.tm
+            let brushColor: [Float] = page.getBrushColor()
+
+            page.setTextDirection(0)
+            page.setBrushColor(Color.blue)
+            let message1 =
+                    "This document was created with the evaluation version of PDFjet"
+            let message2 =
+                    "To acquire a license please visit http://pdfjet.com"
+            page.drawString(
+                    f1,
+                    message1,
+                    (page.width - f1.stringWidth(message1))/2,
+                    10.0)
+            page.drawString(
+                    f1,
+                    message2,
+                    (page.width - f1.stringWidth(message2))/2,
+                    20.0)
+
+            // Revert back to the original values:
+            f1.setSize(fontSize)
+            page.tm = tm
+            page.setBrushColor(brushColor)
+        }
+        //<<
+*/
         var buffer = [UInt8]()
         // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         _ = LZWEncode(&buffer, &page.buf)
