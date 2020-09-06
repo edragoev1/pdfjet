@@ -18,25 +18,29 @@ public class Example_27 {
             // Thai font
             let f1 = try Font(
                     pdf,
-                    InputStream(fileAtPath: "fonts/Noto/NotoSansThai-Regular.ttf")!)
+                    InputStream(fileAtPath: "fonts/Noto/NotoSansThai-Regular.ttf.stream")!,
+                    Font.STREAM)
             f1.setSize(14.0)
 
             // Latin font
             let f2 = try Font(
                     pdf,
-                    InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf")!)
+                    InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf")!,
+                    Font.STREAM)
             f2.setSize(12.0)
 
             // Hebrew font
             let f3 = try Font(
                     pdf,
-                    InputStream(fileAtPath: "fonts/Noto/NotoSansHebrew-Regular.ttf")!)
+                    InputStream(fileAtPath: "fonts/Noto/NotoSansHebrew-Regular.ttf.stream")!,
+                    Font.STREAM)
             f3.setSize(12.0)
 
             // Arabic font
             let f4 = try Font(
                     pdf,
-                    InputStream(fileAtPath: "fonts/Noto/NotoNaskhArabic-Regular.ttf")!)
+                    InputStream(fileAtPath: "fonts/Noto/NotoNaskhArabic-Regular.ttf")!,
+                    Font.STREAM)
             f4.setSize(12.0)
 
             let x: Float = 50.0
