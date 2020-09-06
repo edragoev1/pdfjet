@@ -17,13 +17,13 @@ swift run --configuration release Example_16
 swift run --configuration release Example_17
 swift run --configuration release Example_18
 swift run --configuration release Example_19
-# swift run --configuration release Example_20
-# swift run --configuration release Example_21
+swift run --configuration release Example_20
+swift run --configuration release Example_21
 # swift run --configuration release Example_22
 # swift run --configuration release Example_23
 # swift run --configuration release Example_24
-# swift run --configuration release Example_25
-# swift run --configuration release Example_26
+swift run --configuration release Example_25
+swift run --configuration release Example_26
 # swift run --configuration release Example_27
 # swift run --configuration release Example_28
 # swift run --configuration release Example_29
