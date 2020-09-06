@@ -33,8 +33,8 @@ swift run --configuration release Example_32
 swift run --configuration release Example_33
 swift run --configuration release Example_34
 # swift run --configuration release Example_35
-# swift run --configuration release Example_36
-# swift run --configuration release Example_37
+swift run --configuration release Example_36
+swift run --configuration release Example_37
 # swift run --configuration release Example_38
 # swift run --configuration release Example_39
 # swift run --configuration release Example_40
