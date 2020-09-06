@@ -59,7 +59,7 @@ public class PDF {
     private String subject = "";
     private String keywords = "";
     private String creator = "";
-    private final String producer = "PDFjet v7.00 BETA1 (http://pdfjet.com)";
+    private final String producer = "PDFjet v7.01 (http://pdfjet.com)";
     private String creationDate;
     private String modDate;
     private String createDate;
