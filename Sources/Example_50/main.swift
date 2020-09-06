@@ -196,10 +196,9 @@ public class Example_50 {
 }   // End of Example_50.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-
-// _ = try Example_50("50", "rc65-16e.pdf")
-_ = try Example_50("50", "PDF32000_2008.pdf")
+  _ = try Example_50("50", "rc65-16e.pdf")
 /*
+_ = try Example_50("50", "PDF32000_2008.pdf")
 _ = try Example_50("52", "LibreOffice.pdf")
 _ = try Example_50("53", "Libero.pdf")
 _ = try Example_50("54", "50008-RON.pdf")
