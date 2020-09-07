@@ -262,8 +262,7 @@ public class Font {
     }
 
 
-    // REMOVE from the Open Source Edition
-    // >>
+/* TODO:
     /**
      *  Constructor for OpenType and TrueType fonts.
      *  Please see Example_06 and Example_07.
@@ -275,8 +274,7 @@ public class Font {
         OpenTypeFont.Register(pdf, this, inputStream);
         SetSize(size);
     }
-    // <<
-
+*/
 
     public Font SetSize(float fontSize) {
         this.size = fontSize;
