@@ -273,7 +273,6 @@ public class Font {
     }
 
 
-/* TODO:
     /**
      *  Constructor for OpenType and TrueType fonts.
      *  Please see Example_06 and Example_07.
@@ -282,6 +281,7 @@ public class Font {
      *  @param inputStream the input stream to read this font from.
      *  @throws Exception  If an input or output exception occurred
      */
+/* TODO:
     public Font(PDF pdf, InputStream inputStream) throws Exception {
         OpenTypeFont.register(pdf, this, inputStream);
         setSize(size);
