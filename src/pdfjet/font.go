@@ -284,6 +284,7 @@ func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font {
 	return font
 }
 
+/* TODO:
 // NewFont constructs font object from OpenType and TrueType font.
 // Please see Example_06 and Example_07.
 func NewFont(pdf *PDF, reader io.Reader) *Font {
@@ -292,6 +293,7 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 	font.SetSize(defaultFontSize)
 	return font
 }
+*/
 
 // SetSize sets the size of this font.
 func (font *Font) SetSize(fontSize float32) *Font {
