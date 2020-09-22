@@ -118,7 +118,7 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
 	pdf.compliance = pdfCompliance
-	pdf.producer = "PDFjet v7.01 (http://pdfjet.com)"
+	pdf.producer = "PDFjet v7.01.5 (http://pdfjet.com)"
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)
@@ -1281,41 +1281,27 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 			objects)
 	}
 
-	/*
-	   // See page 50 in PDF32000_2008.pdf
-	   firstObjectNumber := 0
-	   numberOfEntries := 0
-	   predictor := 0  // Predictor byte
-	*/
-	n1 := 0 // Field 1 number of bytes
-	n2 := 0 // Field 2 number of bytes
-	n3 := 0 // Field 3 number of bytes
+    // See page 50 in PDF32000_2008.pdf
+    predictor := 0  // The predictor
+	n1 := 0         // Field 1 number of bytes
+	n2 := 0         // Field 2 number of bytes
+	n3 := 0         // Field 3 number of bytes
 	length := 0
 	for i := 0; i < len(obj.dict); i++ {
 		token := obj.dict[i]
-		/*
-			if token == "/Predictor" {
-				predictor, err := strconv.Atoi(obj.dict[i+1])
+	    if token == "/Predictor" {
+			val, err := strconv.Atoi(obj.dict[i+1])
+			if err != nil {
+				log.Fatal(err)
 			}
-
-			if token == "/Size" {
-				numberOfEntries, err := strconv.Atoi(obj.dict[i+1])
-			}
-
-			if token == "/Index" {
-				firstObjectNumber, err := strconv.Atoi(obj.dict[i+2])
-				numberOfEntries, err := strconv.Atoi(obj.dict[i+3])
-			}
-		*/
-		if token == "/Length" {
+            predictor = val
+		} else if token == "/Length" {
 			len1, err := strconv.Atoi(obj.dict[i+1])
 			if err != nil {
 				log.Fatal(err)
 			}
 			length = len1
-		}
-
-		if token == "/W" {
+		} else if token == "/W" {
 			// "/W [ 1 3 1 ]"
 			num, err := strconv.Atoi(obj.dict[i+2])
 			if err != nil {
@@ -1337,26 +1323,46 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 
 	obj.SetStreamAndData(buf, length)
 
-	n := 1 + n1 + n2 + n3 // Number of bytes per entry
-	//       ^ the predictor byte
+	n := n1 + n2 + n3   // Number of bytes per entry
+    if predictor > 0 {
+        n += 1
+    }
 
 	entry := make([]byte, n)
 	for i := 0; i < len(obj.data); i += n {
-		// The predictor should be 12 so we apply the 'Up' filter.
-		for j := 1; j < n; j++ {
-			entry[j] += obj.data[i+j]
-		}
+        if predictor == 12 {
+		    // Apply the 'Up' filter.
+		    for j := 1; j < n; j++ {
+			    entry[j] += obj.data[i+j]
+		    }
+        } else {
+		    for j := 0; j < n; j++ {
+			    entry[j] = obj.data[i+j]
+		    }
+        }
 		// Process the entries in a cross-reference stream.
 		// Page 51 in PDF32000_2008.pdf
-		if entry[1] == 1 { // Type 1 entry
-			o2 := getObject(buf, toInt(entry, 1+n1, n2), len(buf))
-			num, err := strconv.Atoi(o2.dict[0])
-			if err != nil {
-				log.Fatal(err)
-			}
-			o2.number = num
-			*objects = append(*objects, o2)
-		}
+        if predictor > 0 {
+		    if entry[1] == 1 { // Type 1 entry
+			    o2 := getObject(buf, toInt(entry, 1+n1, n2), len(buf))
+			    num, err := strconv.Atoi(o2.dict[0])
+			    if err != nil {
+				    log.Fatal(err)
+			    }
+			    o2.number = num
+			    *objects = append(*objects, o2)
+		    }
+        } else {
+		    if entry[0] == 1 { // Type 1 entry
+			    o2 := getObject(buf, toInt(entry, n1, n2), len(buf))
+			    num, err := strconv.Atoi(o2.dict[0])
+			    if err != nil {
+				    log.Fatal(err)
+			    }
+			    o2.number = num
+			    *objects = append(*objects, o2)
+		    }
+        }
 	}
 }
 

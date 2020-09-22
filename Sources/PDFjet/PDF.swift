@@ -57,7 +57,7 @@ public class PDF {
     private var subject: String = ""
     private var keywords: String = ""
     private var creator: String = ""
-    private var producer = "PDFjet v7.01 (http://pdfjet.com)"
+    private var producer = "PDFjet v7.01.5 (http://pdfjet.com)"
     private var creationDate: String?
     private var modDate: String?
     private var createDate: String?
@@ -1397,13 +1397,17 @@ public class PDF {
                     &objects)
         }
 
-        var n1 = 0  // Field 1 number of bytes
-        var n2 = 0  // Field 2 number of bytes
-        var n3 = 0  // Field 3 number of bytes
+        var predictor = 0   // The predictor
+        var n1 = 0          // Field 1 number of bytes
+        var n2 = 0          // Field 2 number of bytes
+        var n3 = 0          // Field 3 number of bytes
         var length = 0
         for i in 0..<obj.dict.count {
             let token = obj.dict[i]
-            if token == "/Length" {
+            if token == "/Predictor" {
+                predictor = Int(obj.dict[i + 1])!
+            }
+            else if token == "/Length" {
                 length = Int(obj.dict[i + 1])!
             }
             else if token == "/W" {
@@ -1416,22 +1420,43 @@ public class PDF {
 
         try obj.setStreamAndData(&buf, length)
 
-        let n = 1 + n1 + n2 + n3    // Number of bytes per entry
+        var n = n1 + n2 + n3    // Number of bytes per entry
+        if predictor > 0 {
+            n += 1
+        }
+
         var entry = [UInt8](repeating: 0, count: n)
         var i = 0
         while i < obj.data.count {
-            // Here we make the assumption that "Up" predictor was used ...
             var j = 0
-            while j < n {
-                entry[j] = entry[j] &+ obj.data[i + j]
-                j += 1
+            if predictor > 0 {
+                // Apply the "Up" predictor.
+                while j < n {
+                    entry[j] = entry[j] &+ obj.data[i + j]
+                    j += 1
+                }
+            }
+            else {
+                while j < n {
+                    entry[j] = obj.data[i + j]
+                    j += 1
+                }
             }
             // Process the entries in a cross-reference stream
             // Page 51 in PDF32000_2008.pdf
-            if entry[1] == 1 {      // Type 1 entry
-                let o2 = getObject(&buf, toInt(&entry, 1 + n1, n2), buf.count)
-                o2.number = Int(o2.dict[0])!
-                objects.append(o2)
+            if predictor > 0 {
+                if entry[1] == 1 {      // Type 1 entry
+                    let o2 = getObject(&buf, toInt(&entry, 1 + n1, n2), buf.count)
+                    o2.number = Int(o2.dict[0])!
+                    objects.append(o2)
+                }
+            }
+            else {
+                if entry[0] == 1 {      // Type 1 entry
+                    let o2 = getObject(&buf, toInt(&entry, n1, n2), buf.count)
+                    o2.number = Int(o2.dict[0])!
+                    objects.append(o2)
+                }
             }
             i += n
         }

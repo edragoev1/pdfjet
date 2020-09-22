@@ -60,7 +60,7 @@ public class PDF {
     private String subject = "";
     private String keywords = "";
     private String creator = "";
-    private String producer = "PDFjet v7.01 (http://pdfjet.com)";
+    private String producer = "PDFjet v7.01.5 (http://pdfjet.com)";
     private String creationDate;
     private String modDate;
     private String createDate;
@@ -1363,13 +1363,17 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     objects);
         }
 
-        int n1 = 0; // Field 1 number of bytes
-        int n2 = 0; // Field 2 number of bytes
-        int n3 = 0; // Field 3 number of bytes
+        int predictor = 0;  // The predictor
+        int n1 = 0;         // Field 1 number of bytes
+        int n2 = 0;         // Field 2 number of bytes
+        int n3 = 0;         // Field 3 number of bytes
         int length = 0;
         for (int i = 0; i < obj.dict.Count; i++) {
             String token = obj.dict[i];
-            if (token.Equals("/Length")) {
+            if (token.Equals("/Predictor")) {
+                predictor = Int32.Parse(obj.dict[i + 1]);
+            }
+            else if (token.Equals("/Length")) {
                 length = Int32.Parse(obj.dict[i + 1]);
             }
             else if (token.Equals("/W")) {
@@ -1382,21 +1386,39 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
 
         obj.SetStreamAndData(buf, length);
 
-        int n = 1 + n1 + n2 + n3;   // Number of bytes per entry
-        //      ^ the predictor byte
+        int n = n1 + n2 + n3;   // Number of bytes per entry
+        if (predictor > 0) {
+            n += 1;
+        }
 
         byte[] entry = new byte[n];
         for (int i = 0; i < obj.data.Length; i += n) {
-            // Apply the 'Up' filter.
-            for (int j = 1; j < n; j++) {
-                entry[j] += obj.data[i + j];
+            if (predictor == 12) {
+                // Apply the 'Up' filter.
+                for (int j = 1; j < n; j++) {
+                    entry[j] += obj.data[i + j];
+                }
+            }
+            else {
+                for (int j = 0; j < n; j++) {
+                    entry[j] = obj.data[i + j];
+                }
             }
             // Process the entries in a cross-reference stream
             // Page 51 in PDF32000_2008.pdf
-            if (entry[1] == 1) {    // Type 1 entry
-                PDFobj o2 = GetObject(buf, ToInt(entry, 1 + n1, n2));
-                o2.number = Int32.Parse(o2.dict[0]);
-                objects.Add(o2);
+            if (predictor > 0) {
+                if (entry[1] == 1) {    // Type 1 entry
+                    PDFobj o2 = GetObject(buf, ToInt(entry, 1 + n1, n2));
+                    o2.number = Int32.Parse(o2.dict[0]);
+                    objects.Add(o2);
+                }
+            }
+            else {
+                if (entry[0] == 1) {    // Type 1 entry
+                    PDFobj o2 = GetObject(buf, ToInt(entry, n1, n2));
+                    o2.number = Int32.Parse(o2.dict[0]);
+                    objects.Add(o2);
+                }
             }
         }
     }

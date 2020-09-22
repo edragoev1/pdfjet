@@ -61,7 +61,7 @@ public class PDF {
     private String subject = "";
     private String keywords = "";
     private String creator = "";
-    private final String producer = "PDFjet v7.01 (http://pdfjet.com)";
+    private final String producer = "PDFjet v7.01.5 (http://pdfjet.com)";
     private String creationDate;
     private String modDate;
     private String createDate;
@@ -1412,34 +1412,18 @@ public class PDF {
                     objects);
         }
 
-/*
         // See page 50 in PDF32000_2008.pdf
-        int firstObjectNumber = 0;
-        int numberOfEntries = 0;
         int predictor = 0;  // Predictor byte
-*/
-        int n1 = 0; // Field 1 number of bytes
-        int n2 = 0; // Field 2 number of bytes
-        int n3 = 0; // Field 3 number of bytes
+        int n1 = 0;         // Field 1 number of bytes
+        int n2 = 0;         // Field 2 number of bytes
+        int n3 = 0;         // Field 3 number of bytes
         int length = 0;
         for (int i = 0; i < obj.dict.size(); i++) {
             String token = obj.dict.get(i);
-/*
-            System.out.println(token);
             if (token.equals("/Predictor")) {
                 predictor = Integer.valueOf(obj.dict.get(i + 1));
             }
-
-            if (token.equals("/Size")) {
-                numberOfEntries = Integer.valueOf(obj.dict.get(i + 1));
-            }
-
-            if (token.equals("/Index")) {
-                firstObjectNumber = Integer.valueOf(obj.dict.get(i + 2));
-                numberOfEntries = Integer.valueOf(obj.dict.get(i + 3));
-            }
-*/
-            if (token.equals("/Length")) {
+            else if (token.equals("/Length")) {
                 length = Integer.parseInt(obj.dict.get(i + 1));
             }
             else if (token.equals("/W")) {
@@ -1452,21 +1436,39 @@ public class PDF {
 
         obj.setStreamAndData(buf, length);
 
-        int n = 1 + n1 + n2 + n3;   // Number of bytes per entry
-        //      ^ the predictor byte
+        int n = n1 + n2 + n3;   // Number of bytes per entry
+        if (predictor > 0) {
+            n += 1;
+        }
 
         byte[] entry = new byte[n];
         for (int i = 0; i < obj.data.length; i += n) {
-            // The predictor should be 12 so we apply the 'Up' filter.
-            for (int j = 1; j < n; j++) {
-                entry[j] += obj.data[i + j];
+            if (predictor == 12) {
+                // Apply the 'Up' filter.
+                for (int j = 1; j < n; j++) {
+                    entry[j] += obj.data[i + j];
+                }
+            }
+            else {
+                for (int j = 0; j < n; j++) {
+                    entry[j] = obj.data[i + j];
+                }
             }
             // Process the entries in a cross-reference stream.
             // Page 51 in PDF32000_2008.pdf
-            if (entry[1] == 1) {    // Type 1 entry
-                PDFobj o2 = getObject(buf, toInt(entry, 1 + n1, n2));
-                o2.number = Integer.parseInt(o2.dict.get(0));
-                objects.add(o2);
+            if (predictor > 0) {
+                if (entry[1] == 1) {    // Type 1 entry
+                    PDFobj o2 = getObject(buf, toInt(entry, 1 + n1, n2));
+                    o2.number = Integer.parseInt(o2.dict.get(0));
+                    objects.add(o2);
+                }
+            }
+            else {
+                if (entry[0] == 1) {    // Type 1 entry
+                    PDFobj o2 = getObject(buf, toInt(entry, n1, n2));
+                    o2.number = Integer.parseInt(o2.dict.get(0));
+                    objects.add(o2);
+                }
             }
         }
     }
