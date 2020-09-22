@@ -12,55 +12,55 @@ import (
 	"time"
 )
 
-// Example27 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example27 -- TODO:
 func Example27() {
 	file, err := os.Create("Example_27.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
+    defer file.Close()
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	// Thai font
-	f, err := os.Open("fonts/Noto/NotoSansThai-Regular.ttf")
+	f, err := os.Open("fonts/Noto/NotoSansThai-Regular.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 	reader := bufio.NewReader(f)
-	f1 := pdfjet.NewFont(pdf, reader)
+	f1 := pdfjet.NewFontStream1(pdf, reader)
 	f1.SetSize(14.0)
 
 	// Latin font
-	f, err = os.Open("fonts/Droid/DroidSans.ttf")
+	f, err = os.Open("fonts/Droid/DroidSans.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 	reader = bufio.NewReader(f)
-	f2 := pdfjet.NewFont(pdf, reader)
+	f2 := pdfjet.NewFontStream1(pdf, reader)
 	f2.SetSize(12.0)
 
 	// Hebrew font
-	f, err = os.Open("fonts/Noto/NotoSansHebrew-Regular.ttf")
+	f, err = os.Open("fonts/Noto/NotoSansHebrew-Regular.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 	reader = bufio.NewReader(f)
-	f3 := pdfjet.NewFont(pdf, reader)
+	f3 := pdfjet.NewFontStream1(pdf, reader)
 	f3.SetSize(12.0)
 
 	// Arabic font
-	f, err = os.Open("fonts/Noto/NotoNaskhArabic-Regular.ttf")
+	f, err = os.Open("fonts/Noto/NotoNaskhArabic-Regular.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 	reader = bufio.NewReader(f)
-	f4 := pdfjet.NewFont(pdf, reader)
+	f4 := pdfjet.NewFontStream1(pdf, reader)
 	f4.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait, true)
@@ -182,8 +182,6 @@ func Example27() {
 	textLine.DrawOn(page)
 
 	pdf.Complete()
-
-	file.Close()
 }
 
 func main() {
