@@ -6,13 +6,13 @@ public class DonutChart {
 
 	Font f1;
     Font f2;
-	List<List<Point>> chartData;
+	// List<List<Point>> chartData;
 	float xc;
     float yc;
     float r1;
     float r2;
-	List<float> angles;
-	List<Int32> colors;
+	List<float> angles = null;
+	List<Int32> colors = null;
     bool isDonutChart = true;
     
 
