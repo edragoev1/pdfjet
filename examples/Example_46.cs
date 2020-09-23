@@ -21,42 +21,19 @@ public class Example_46 {
                 Compliance.PDF_UA);
 
         Font f1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Bold.ttf",
-                FileMode.Open,
-                FileAccess.Read));
+                "fonts/OpenSans/OpenSans-Bold.ttf.stream", FileMode.Open, FileAccess.Read),
+                Font.STREAM);
+        f1.SetSize(14f);
 
         Font f2 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf",
-                FileMode.Open,
-                FileAccess.Read));
+                "fonts/OpenSans/OpenSans-Regular.ttf.stream", FileMode.Open, FileAccess.Read),
+                Font.STREAM);
+        f2.SetSize(14f);
 
         Font f3 = new Font(pdf, new FileStream(
-                "fonts/SourceSansPro/SourceSansPro-Semibold.otf",
-                FileMode.Open,
-                FileAccess.Read));
-/*
-Used for performance testing:
-        f1 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSans-Bold.ttf",
-                FileMode.Open,
-                FileAccess.Read));
-
-        f2 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSans.ttf",
-                FileMode.Open, FileAccess.Read));
-
-        f1 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSans-Bold.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read), Font.STREAM);
-
-        f2 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSans.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read), Font.STREAM);
-*/
-        f1.SetSize(14f);
-        f2.SetSize(14f);
+                "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream", FileMode.Open, FileAccess.Read),
+                Font.STREAM);
+        f3.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
