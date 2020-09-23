@@ -198,6 +198,8 @@ class Example_50 {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_50("50", "rc65-16e.pdf");
+        // new Example_50("50", "PDF32000_2008.pdf");
+        // new Example_50("50", "NoPredictor.pdf");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine("Example_50 => " + (time1 - time0));
     }

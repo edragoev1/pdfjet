@@ -217,6 +217,8 @@ func stripSpacesAndDashes(str string) string {
 func main() {
 	start := time.Now()
 	Example50("rc65-16e.pdf")
+	// Example50("PDF32000_2008.pdf")
+	// Example50("NoPredictor.pdf")
 	elapsed := time.Since(start).String()
 	fmt.Printf("Example_50 => %s\n", elapsed[:strings.Index(elapsed, ".")])
 }
