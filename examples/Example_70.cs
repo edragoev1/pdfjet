@@ -18,17 +18,18 @@ public class Example_70 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_70.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, new BufferedStream(
+        Font f1 = new Font(pdf,
                 new FileStream(
-                        "fonts/Roboto/Roboto-Light.ttf", FileMode.Open, FileAccess.Read)));
+                        "fonts/Roboto/Roboto-Light.ttf.stream",
+                        FileMode.Open,
+                        FileAccess.Read), Font.STREAM);
+        f1.SetSize(18f);
 
         Font f2 = new Font(pdf,
                 new FileStream(
                         "fonts/Noto/NotoSansSymbols-Regular.ttf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);
-
-        f1.SetSize(18f);
         f2.SetSize(18f);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
