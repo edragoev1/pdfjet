@@ -3,9 +3,6 @@
  *
 Copyright 2020 Innovatics Inc.
 
-Portions provided by Shirley C. Christenson
-Shirley Christenson Consulting
-
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
@@ -35,6 +32,8 @@ namespace PDFjet.NET {
 /**
  *  Creates a CheckBox, which can be set checked or unchecked.
  *  By default the check box is unchecked.
+ *  Portions provided by Shirley C. Christenson
+ *  Shirley Christenson Consulting
  */
 public class CheckBox : IDrawable {
 

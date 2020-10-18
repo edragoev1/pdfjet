@@ -3,9 +3,6 @@
  *
 Copyright 2020 Innovatics Inc.
 
-Portions provided by Shirley C. Christenson
-Shirley Christenson Consulting
-
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
@@ -28,13 +25,14 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
 package com.pdfjet;
 
 
 /**
  *  Creates a CheckBox, which can be set checked or unchecked.
  *  By default the check box is unchecked.
+ *  Portions provided by Shirley C. Christenson
+ *  Shirley Christenson Consulting
  */
 public class CheckBox implements Drawable {
 
