@@ -245,17 +245,28 @@ class FontStream1 {
         pdf.Append("/FontDescriptor ");
         pdf.Append(font.fontDescriptorObjNumber);
         pdf.Append(" 0 R\n");
+
         pdf.Append("/DW ");
-        pdf.Append((int)
-                ((1000f / font.unitsPerEm) * font.advanceWidth[0]));
+        if (font.unitsPerEm == 1000) {
+            pdf.Append(font.advanceWidth[0]);
+        }
+        else {
+            pdf.Append((int) Math.Round(font.advanceWidth[0] / 2.048));
+        }
         pdf.Append('\n');
+
         pdf.Append("/W [0[\n");
         for (int i = 0; i < font.advanceWidth.Length; i++) {
-            pdf.Append((int)
-                    ((1000f / font.unitsPerEm) * font.advanceWidth[i]));
+            if (font.unitsPerEm == 1000) {
+                pdf.Append(font.advanceWidth[i]);
+            }
+            else {
+                pdf.Append((int) Math.Round(font.advanceWidth[i] / 2.048));
+            }
             pdf.Append(' ');
         }
         pdf.Append("]]\n");
+
         pdf.Append("/CIDToGIDMap /Identity\n");
         pdf.Append(">>\n");
         pdf.Endobj();

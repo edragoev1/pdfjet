@@ -23,7 +23,9 @@ func Example45() {
 	defer file.Close()
 	w := bufio.NewWriter(file)
 
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDF(w, compliance.PDFUA)
+    pdf.SetLanguage("en-US");
+    pdf.SetTitle("Hello, World!");
 
 	f, err := os.Open("fonts/Droid/DroidSerif-Regular.ttf.stream")
 	if err != nil {

@@ -18,12 +18,14 @@ public class Example_45 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_45.pdf")),
                         Compliance.PDF_UA);
+        pdf.setLanguage("en-US");
 
         Font f1 = new Font(
                 pdf,
                 getClass().getResourceAsStream(
                         "../fonts/Droid/DroidSerif-Regular.ttf.stream"),
                 Font.STREAM);
+        f1.setSize(14f);
 
         Font f2 = new Font(
                 pdf,
@@ -31,8 +33,6 @@ public class Example_45 {
                         // "../fonts/Droid/DroidSerif-Regular.ttf.stream"),
                         "../fonts/Droid/DroidSerif-Italic.ttf.stream"),
                 Font.STREAM);
-
-        f1.setSize(14f);
         f2.setSize(14f);
         // f2.setItalic(true);
 

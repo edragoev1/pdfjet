@@ -417,6 +417,7 @@ public class PDF {
         Newobj();
         Append("<<\n");
         Append("/Type /StructTreeRoot\n");
+/* This code is causing an error in the BFO PDF/UA validator.
         Append("/K [\n");
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
@@ -426,6 +427,7 @@ public class PDF {
             }
         }
         Append("]\n");
+*/
         Append("/ParentTree ");
         Append(GetObjNumber() + 1);
         Append(" 0 R\n");

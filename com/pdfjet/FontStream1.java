@@ -246,20 +246,28 @@ class FontStream1 {
         pdf.append("/FontDescriptor ");
         pdf.append(font.fontDescriptorObjNumber);
         pdf.append(" 0 R\n");
-        float factor = 1000f / font.unitsPerEm;
-        if (font.advanceWidth.length < 2) {
-            pdf.append("/DW ");
-            pdf.append((int) (font.advanceWidth[0] * factor));
-            pdf.append('\n');
+
+        pdf.append("/DW ");
+        if (font.unitsPerEm == 1000) {
+            pdf.append(font.advanceWidth[0]);
         }
         else {
-            pdf.append("/W [0[\n");
-            for (int i = 0; i < font.advanceWidth.length; i++) {
-                pdf.append((int) (font.advanceWidth[i] * factor));
-                pdf.append(' ');
-            }
-            pdf.append("]]\n");
+            pdf.append((int) Math.round(font.advanceWidth[0] / 2.048));
         }
+        pdf.append('\n');
+
+        pdf.append("/W [0[\n");
+        for (int i = 0; i < font.advanceWidth.length; i++) {
+            if (font.unitsPerEm == 1000) {
+                pdf.append(font.advanceWidth[i]);
+            }
+            else {
+                pdf.append((int) Math.round(font.advanceWidth[i] / 2.048));
+            }
+            pdf.append(' ');
+        }
+        pdf.append("]]\n");
+
         pdf.append("/CIDToGIDMap /Identity\n");
         pdf.append(">>\n");
         pdf.endobj();

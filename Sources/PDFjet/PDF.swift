@@ -429,6 +429,8 @@ public class PDF {
         newobj()
         append("<<\n")
         append("/Type /StructTreeRoot\n")
+/*
+This code is causing an error in the BFO PDF/UA validator.
         append("/K [\n")
         for page in pages {
             for structure in page.structures {
@@ -437,6 +439,7 @@ public class PDF {
             }
         }
         append("]\n")
+*/
         append("/ParentTree ")
         append(getObjNumber() + 1)
         append(" 0 R\n")
@@ -985,6 +988,15 @@ public class PDF {
         append("%%EOF\n")
 
         os!.close()
+    }
+
+
+    ///
+    /// Set the "Language" document property of the PDF file.
+    /// - Parameter language The language of this document.
+    ///
+    public func setLanguage(_ language: String) {
+        self.language = language
     }
 
 

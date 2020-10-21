@@ -410,6 +410,8 @@ func (pdf *PDF) addStructTreeRootObject() int {
 	pdf.newobj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /StructTreeRoot\n")
+/*
+This code is causing an error in the BFO PDF/UA validator.
 	pdf.appendString("/K [\n")
 	for _, page := range pdf.pages {
 		for _, structure := range page.structures {
@@ -418,6 +420,7 @@ func (pdf *PDF) addStructTreeRootObject() int {
 		}
 	}
 	pdf.appendString("]\n")
+*/
 	pdf.appendString("/ParentTree ")
 	pdf.appendInteger(pdf.getObjNumber() + 1)
 	pdf.appendString(" 0 R\n")
@@ -961,6 +964,11 @@ func (pdf *PDF) Complete() {
 	pdf.appendString("%%EOF\n")
 
 	pdf.writer.Flush()
+}
+
+// SetLanguage sets the "Language" document property of the PDF file.
+func (pdf *PDF) SetLanguage(language string) {
+	pdf.language = language
 }
 
 // SetTitle sets the "Title" document property of the PDF file.

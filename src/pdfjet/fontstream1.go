@@ -245,19 +245,20 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.appendString("/FontDescriptor ")
 	pdf.appendInteger(font.fontDescriptorObjNumber)
 	pdf.appendString(" 0 R\n")
+
 	factor := float32(1000.0) / float32(font.unitsPerEm)
-	if len(font.advanceWidth) < 2 {
-		pdf.appendString("/DW ")
-		pdf.appendInteger(int(factor * float32(font.advanceWidth[0])))
-		pdf.appendString("\n")
-	} else {
-		pdf.appendString("/W [0[\n")
-		for _, width := range font.advanceWidth {
-			pdf.appendInteger(int(factor * float32(width)))
-			pdf.appendString(" ")
-		}
-		pdf.appendString("]]\n")
+
+	pdf.appendString("/DW ")
+	pdf.appendInteger(int(factor * float32(font.advanceWidth[0])))
+	pdf.appendString("\n")
+
+	pdf.appendString("/W [0[\n")
+	for _, width := range font.advanceWidth {
+		pdf.appendInteger(int(factor * float32(width)))
+		pdf.appendString(" ")
 	}
+	pdf.appendString("]]\n")
+
 	pdf.appendString("/CIDToGIDMap /Identity\n")
 	pdf.appendString(">>\n")
 	pdf.endobj()

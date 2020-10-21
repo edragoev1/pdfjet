@@ -432,6 +432,8 @@ public class PDF {
         newobj();
         append("<<\n");
         append("/Type /StructTreeRoot\n");
+/*
+This code is causing an error in the BFO PDF/UA validator.
         append("/K [\n");
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
@@ -441,6 +443,7 @@ public class PDF {
             }
         }
         append("]\n");
+*/
         append("/ParentTree ");
         append(getObjNumber() + 1);
         append(" 0 R\n");
@@ -1033,6 +1036,15 @@ public class PDF {
         append("%%EOF\n");
 
         os.close();
+    }
+
+
+    /**
+     *  Set the "Language" document property of the PDF file.
+     *  @param language The language of this document.
+     */
+    public void setLanguage(String language) {
+        this.language = language;
     }
 
 

@@ -11,27 +11,28 @@ import com.pdfjet.*;
  */
 public class Example_07 {
 
-    public Example_07(String fontType) throws Exception {
+    public Example_07() throws Exception {
 
-        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_07.pdf")));
-        // TODO: Move this to better suited example.
-        // pdf.setPageLayout(PageLayout.SINGLE_PAGE);
-        // pdf.setPageMode(PageMode.FULL_SCREEN);
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_07.pdf")),
+                Compliance.PDF_UA);
+        pdf.setTitle("This is a PDF/UA compliant PDF.");
 
         Font f1 = new Font(pdf,
                 getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
                 Font.STREAM);
+        f1.setSize(18f);
 
         Font f2 = new Font(pdf,
                 getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Italic.ttf.stream"),
                 Font.STREAM);
+        f2.setSize(18f);
 
         Page page = new Page(pdf, A4.LANDSCAPE);
 
         f1.setSize(72f);
         page.addWatermark(f1, "This is a Draft");
         f1.setSize(18f);
-        f2.setSize(18f);
 
         float xPos = 20f;
         float yPos = 10f;
@@ -52,7 +53,7 @@ public class Example_07 {
         textLine.setText(buf.toString());
         textLine.setLocation(xPos, yPos);
         textLine.drawOn(page);
-
+/*
         yPos = 70f;
         buf.setLength(0);
         j = 0;
@@ -108,19 +109,14 @@ public class Example_07 {
         textLine.setText(buf.toString());
         textLine.setLocation(800f - f2.stringWidth(buf.toString()), yPos);
         textLine.drawOn(page);
-
+*/
         pdf.complete();
     }
 
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        if (args.length > 0 && args[0].equals("stream")) {
-            new Example_07("stream");
-        }
-        else {
-            new Example_07("OpenType");
-        }
+        new Example_07();
         long time1 = System.currentTimeMillis();
         System.out.println("Example_07 => " + (time1 - time0));
     }
