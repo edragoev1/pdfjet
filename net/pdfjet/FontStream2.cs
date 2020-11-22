@@ -256,19 +256,20 @@ class FontStream2 {
         obj.dict.Add(font.fontDescriptorObjNumber.ToString());
         obj.dict.Add("0");
         obj.dict.Add("R");
+
+        float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
         obj.dict.Add("/DW");
-        obj.dict.Add(((Int32)
-                ((1000f / font.unitsPerEm) * font.advanceWidth[0])).ToString());
+        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[0])).ToString());
         obj.dict.Add("/W");
         obj.dict.Add("[");
         obj.dict.Add("0");
         obj.dict.Add("[");
         for (int i = 0; i < font.advanceWidth.Length; i++) {
-            obj.dict.Add(((int)
-                    ((1000f / font.unitsPerEm) * font.advanceWidth[i])).ToString());
+            obj.dict.Add(((int) Math.Round(k * font.advanceWidth[i])).ToString());
         }
         obj.dict.Add("]");
         obj.dict.Add("]");
+
         obj.dict.Add("/CIDToGIDMap");
         obj.dict.Add("/Identity");
         obj.dict.Add(">>");

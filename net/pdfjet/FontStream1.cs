@@ -246,23 +246,14 @@ class FontStream1 {
         pdf.Append(font.fontDescriptorObjNumber);
         pdf.Append(" 0 R\n");
 
+        float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
         pdf.Append("/DW ");
-        if (font.unitsPerEm == 1000) {
-            pdf.Append(font.advanceWidth[0]);
-        }
-        else {
-            pdf.Append((int) Math.Round(font.advanceWidth[0] / 2.048));
-        }
+        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[0])));
         pdf.Append('\n');
 
         pdf.Append("/W [0[\n");
         for (int i = 0; i < font.advanceWidth.Length; i++) {
-            if (font.unitsPerEm == 1000) {
-                pdf.Append(font.advanceWidth[i]);
-            }
-            else {
-                pdf.Append((int) Math.Round(font.advanceWidth[i] / 2.048));
-            }
+            pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[i])));
             pdf.Append(' ');
         }
         pdf.Append("]]\n");

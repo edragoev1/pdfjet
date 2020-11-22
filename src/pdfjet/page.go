@@ -64,6 +64,8 @@ type Page struct {
 	structures    []*StructElem
 	pen           [3]float32
 	brush         [3]float32
+	penCMYK       [4]float32
+	brushCMYK     [4]float32
 	penWidth      float32
 	lineCapStyle  int
 	lineJoinStyle int
@@ -392,6 +394,24 @@ func (page *Page) SetPenColorRGB(r, g, b float32) {
 	}
 }
 
+// SetPenColorCMYK sets the color for stroking operations using CMYK.
+// The pen color is used when drawing lines and splines.
+//
+// @param c the cyan component is float value from 0.0 to 1.0.
+// @param m the magenta component is float value from 0.0 to 1.0.
+// @param y the yellow component is float value from 0.0 to 1.0.
+// @param k the black component is float value from 0.0 to 1.0.
+func (page *Page) SetPenColorCMYK(c, m, y, k float32) {
+	if page.penCMYK[0] != c || page.penCMYK[1] != m || page.penCMYK[2] != y || page.penCMYK[3] != k {
+		page.SetColorCMYK(c, m, y, k)
+		appendString(&page.buf, " K\n")
+		page.penCMYK[0] = c
+		page.penCMYK[1] = m
+		page.penCMYK[2] = y
+		page.penCMYK[3] = k
+	}
+}
+
 // setBrushColorRGB sets the color for brush operations.
 // This is the color used when drawing regular text and filling shapes.
 // @param r the red component is float value from 0.0 to 1.0.
@@ -404,6 +424,23 @@ func (page *Page) setBrushColorRGB(r, g, b float32) {
 		page.brush[0] = r
 		page.brush[1] = g
 		page.brush[2] = b
+	}
+}
+
+// SetBrushColorCMYK sets the color for brush operations using CMYK.
+// This is the color used when drawing regular text and filling shapes.
+// @param c the cyan component is float value from 0.0 to 1.0.
+// @param m the magenta component is float value from 0.0 to 1.0.
+// @param y the yellow component is float value from 0.0 to 1.0.
+// @param k the black component is float value from 0.0 to 1.0.
+func (page *Page) SetBrushColorCMYK(c, m, y, k float32) {
+	if page.brushCMYK[0] != c || page.brushCMYK[1] != m || page.brushCMYK[2] != y || page.brushCMYK[3] != k {
+		page.SetColorCMYK(c, m, y, k)
+		appendString(&page.buf, " k\n")
+		page.brushCMYK[0] = c
+		page.brushCMYK[1] = m
+		page.brushCMYK[2] = y
+		page.brushCMYK[3] = k
 	}
 }
 
@@ -426,6 +463,17 @@ func (page *Page) SetColorRGB(r, g, b float32) {
 	appendFloat32(&page.buf, g)
 	appendString(&page.buf, " ")
 	appendFloat32(&page.buf, b)
+}
+
+// SetColorCMYK sets the CMYK color.
+func (page *Page) SetColorCMYK(c, m, y, k float32) {
+	appendFloat32(&page.buf, c)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, m)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, y)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, k)
 }
 
 // SetPenColor sets the pen color.

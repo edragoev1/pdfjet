@@ -78,6 +78,23 @@ public class Example_02 {
         box.SetSize(20f, 20f);
         box.DrawOn(page);
 
+        // TODO:
+        page.SetPenColorCMYK(1.0f, 0.0f, 0.0f, 0.0f);
+        page.SetPenWidth(5.0f);
+        page.DrawLine(50f, 500f, 300f, 500f);
+
+        page.SetPenColorCMYK(0.0f, 1.0f, 0.0f, 0.0f);
+        page.SetPenWidth(5.0f);
+        page.DrawLine(50f, 550f, 300f, 550f);
+
+        page.SetPenColorCMYK(0.0f, 0.0f, 1.0f, 0.0f);
+        page.SetPenWidth(5.0f);
+        page.DrawLine(50f, 600f, 300f, 600f);
+
+        page.SetPenColorCMYK(0.0f, 0.0f, 0.0f, 1.0f);
+        page.SetPenWidth(5.0f);
+        page.DrawLine(50f, 650f, 300f, 650f);
+
         pdf.Complete();
     }
 

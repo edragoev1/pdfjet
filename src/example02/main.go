@@ -3,9 +3,7 @@ package main
 import (
 	"bufio"
 	"color"
-	"corefont"
 	"fmt"
-	"imagetype"
 	"letter"
 	"log"
 	"os"
@@ -26,32 +24,6 @@ func Example02() {
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
-
-	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-
-	file2, err := os.Open("fonts/Droid/DroidSerif-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader := bufio.NewReader(file2)
-	font2 := pdfjet.NewFontStream1(pdf, reader)
-
-	file3, err := os.Open("fonts/Droid/DroidSansMono.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file3.Close()
-	reader = bufio.NewReader(file3)
-	font3 := pdfjet.NewFontStream1(pdf, reader)
-
-	file4, err := os.Open("images/ee-map.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file4.Close()
-	reader = bufio.NewReader(file4)
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait, true)
 
@@ -115,35 +87,22 @@ func Example02() {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-	font1.SetSize(24.0)
-	textField := pdfjet.NewTextLine(font1, "Hello, World!")
-	textField.SetLocation(300.0, 300.0)
-	textField.SetColor(color.Blanchedalmond)
-	textField.DrawOn(page)
+    // TODO:
+    page.SetPenColorCMYK(1.0, 0.0, 0.0, 0.0)
+    page.SetPenWidth(5.0)
+    page.DrawLine(50.0, 500.0, 300.0, 500.0)
 
-	font2.SetSize(24.0)
-	textField2 := pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 400.0)
-	textField2.SetColor(color.Blue)
-	textField2.SetStrikeout(true)
-	textField2.SetUnderline(true)
-	textField2.DrawOn(page)
+    page.SetPenColorCMYK(0.0, 1.0, 0.0, 0.0)
+    page.SetPenWidth(5.0)
+    page.DrawLine(50.0, 550.0, 300.0, 550.0)
 
-	font2.SetSize(14.0)
-	textField2 = pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 500.0)
-	textField2.SetColor(color.Blue)
-	textField2.DrawOn(page)
+    page.SetPenColorCMYK(0.0, 0.0, 1.0, 0.0)
+    page.SetPenWidth(5.0)
+    page.DrawLine(50.0, 600.0, 300.0, 600.0)
 
-	font3.SetSize(24.0)
-	textField2 = pdfjet.NewTextLine(font3, "This is great!")
-	textField2.SetLocation(400.0, 600.0)
-	textField2.SetColor(color.Blue)
-	textField2.DrawOn(page)
-
-	image1.SetLocation(100.0, 500.0)
-	image1.ScaleBy(0.5)
-	image1.DrawOn(page)
+    page.SetPenColorCMYK(0.0, 0.0, 0.0, 1.0)
+    page.SetPenWidth(5.0)
+    page.DrawLine(50.0, 650.0, 300.0, 650.0)
 
 	pdf.Complete()
 }

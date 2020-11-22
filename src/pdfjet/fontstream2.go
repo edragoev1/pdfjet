@@ -26,6 +26,7 @@ SOFTWARE.
 
 import (
 	"io"
+    "math"
 	"strconv"
 	"strings"
 )
@@ -258,17 +259,20 @@ func addCIDFontDictionaryObject2(objects *[]*PDFobj, font *Font) {
 	obj.add(strconv.Itoa(font.fontDescriptorObjNumber))
 	obj.add("0")
 	obj.add("R")
+
+	k := float32(1000.0) / float32(font.unitsPerEm)
 	obj.add("/DW")
-	obj.add(strconv.Itoa(int(float32(1000.0) / float32(font.unitsPerEm) * float32(font.advanceWidth[0]))))
+	obj.add(strconv.Itoa(int(math.Round(float64(k * float32(font.advanceWidth[0]))))))
 	obj.add("/W")
 	obj.add("[")
 	obj.add("0")
 	obj.add("[")
 	for i := 0; i < len(font.advanceWidth); i++ {
-		obj.add(strconv.Itoa(int(float32(1000.0) / float32(font.unitsPerEm) * float32(font.advanceWidth[i]))))
+		obj.add(strconv.Itoa(int(math.Round(float64(k * float32(font.advanceWidth[i]))))))
 	}
 	obj.add("]")
 	obj.add("]")
+
 	obj.add("/CIDToGIDMap")
 	obj.add("/Identity")
 	obj.add(">>")

@@ -17,12 +17,12 @@ public class Example_48 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_48.pdf")),
                         Compliance.PDF_UA);
-
         Font f1 = new Font(
                 pdf,
                 getClass().getResourceAsStream(
                         "../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
                 Font.STREAM);
+        f1.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

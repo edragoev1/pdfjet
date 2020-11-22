@@ -21,33 +21,21 @@ public class Example_46 {
 
         Font f1 = new Font(pdf,
                 getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Bold.ttf"));
+                        "../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
+                Font.STREAM);
+        f1.setSize(14f);
 
         Font f2 = new Font(pdf,
                 getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Regular.ttf"));
+                        "../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                Font.STREAM);
+        f2.setSize(14f);
 
         Font f3 = new Font(pdf,
                 getClass().getResourceAsStream(
-                        "../fonts/SourceSansPro/SourceSansPro-Semibold.otf"));
-/*
-Used for performance testing:
-        f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans-Bold.ttf"));
-
-        f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans.ttf"));
-
-        f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans-Bold.ttf.stream"),
+                        "../fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream"),
                 Font.STREAM);
-
-        f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans.ttf.stream"),
-                Font.STREAM);
-*/
-        f1.setSize(14f);
-        f2.setSize(14f);
+        f3.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

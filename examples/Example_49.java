@@ -20,12 +20,13 @@ public class Example_49 {
                         Compliance.PDF_UA);
 
         Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSerif-Regular.ttf"));
+                getClass().getResourceAsStream("../fonts/Droid/DroidSerif-Regular.ttf.stream"),
+                Font.STREAM);
+        f1.setSize(14f);
 
         Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSerif-Italic.ttf"));
-
-        f1.setSize(14f);
+                getClass().getResourceAsStream("../fonts/Droid/DroidSerif-Italic.ttf.stream"),
+                Font.STREAM);
         f2.setSize(16f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

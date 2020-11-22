@@ -29,11 +29,11 @@ public class Example_07 {
         f2.setSize(18f);
 
         Page page = new Page(pdf, A4.LANDSCAPE);
-
+/*
         f1.setSize(72f);
         page.addWatermark(f1, "This is a Draft");
         f1.setSize(18f);
-
+*/
         float xPos = 20f;
         float yPos = 10f;
         StringBuilder buf = new StringBuilder();

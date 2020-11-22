@@ -252,15 +252,21 @@ class FontStream1 {
         pdf.append("/FontDescriptor ")
         pdf.append(font.fontDescriptorObjNumber)
         pdf.append(" 0 R\n")
+
+        var k: Float = 1.0
+        if font.unitsPerEm != 1000 {
+            k = Float(1000.0) / Float(font.unitsPerEm)
+        }
         pdf.append("/DW ")
-        pdf.append(Int32((Float(1000.0) / Float(font.unitsPerEm)) * Float(font.advanceWidth![0])))
+        pdf.append(Int32(round(k * Float(font.advanceWidth![0]))))
         pdf.append("\n")
         pdf.append("/W [0[\n")
         for i in 0..<font.advanceWidth!.count {
-            pdf.append(Int32((Float(1000.0) / Float(font.unitsPerEm)) * Float(font.advanceWidth![i])))
+            pdf.append(Int32(round(k * Float(font.advanceWidth![i]))))
             pdf.append(" ")
         }
         pdf.append("]]\n")
+
         pdf.append("/CIDToGIDMap /Identity\n")
         pdf.append(">>\n")
         pdf.endobj()

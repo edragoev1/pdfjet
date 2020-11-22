@@ -57,9 +57,10 @@ public class Page {
     internal float[] trimBox;
     internal float[] artBox;
     internal readonly List<StructElem> structures = new List<StructElem>();
-
     private float[] pen = {0f, 0f, 0f};
     private float[] brush = {0f, 0f, 0f};
+    private float[] penCMYK = {0f, 0f, 0f, 1f};
+    private float[] brushCMYK = {0f, 0f, 0f, 1f};
     private float penWidth = -1.0f;
     private int lineCapStyle;
     private int lineJoinStyle;
@@ -501,6 +502,27 @@ public class Page {
 
 
     /**
+     * Sets the color for stroking operations using CMYK.
+     * The pen color is used when drawing lines and splines.
+     *
+     * @param c the cyan component is float value from 0.0f to 1.0f.
+     * @param m the magenta component is float value from 0.0f to 1.0f.
+     * @param y the yellow component is float value from 0.0f to 1.0f.
+     * @param k the black component is float value from 0.0f to 1.0f.
+     */
+    public void SetPenColorCMYK(float c, float m, float y, float k) {
+        if (penCMYK[0] != c || penCMYK[1] != m || penCMYK[2] != y || penCMYK[3] != k) {
+            SetColorCMYK(c, m, y, k);
+            Append(" K\n");
+            penCMYK[0] = c;
+            penCMYK[1] = m;
+            penCMYK[2] = y;
+            penCMYK[3] = k;
+        }
+    }
+
+
+    /**
      * Sets the color for brush operations.
      * This is the color used when drawing regular text and filling shapes.
      *
@@ -534,6 +556,27 @@ public class Page {
 
 
     /**
+     * Sets the color for brush operations using CMYK.
+     * This is the color used when drawing regular text and filling shapes.
+     *
+     * @param c the cyan component is float value from 0.0f to 1.0f.
+     * @param m the magenta component is float value from 0.0f to 1.0f.
+     * @param y the yellow component is float value from 0.0f to 1.0f.
+     * @param k the black component is float value from 0.0f to 1.0f.
+     */
+    public void SetBrushColorCMYK(float c, float m, float y, float k) {
+        if (brushCMYK[0] != c || brushCMYK[1] != m || brushCMYK[2] != y || brushCMYK[3] != k) {
+            SetColorCMYK(c, m, y, k);
+            Append(" k\n");
+            brushCMYK[0] = c;
+            brushCMYK[1] = m;
+            brushCMYK[2] = y;
+            brushCMYK[3] = k;
+        }
+    }
+
+
+    /**
      * Sets the color for brush operations.
      *
      * @param color the color.
@@ -560,6 +603,17 @@ public class Page {
         Append(g);
         Append(' ');
         Append(b);
+    }
+
+
+    private void SetColorCMYK(float c, float m, float y, float k) {
+        Append(c);
+        Append(' ');
+        Append(m);
+        Append(' ');
+        Append(y);
+        Append(' ');
+        Append(k);
     }
 
 

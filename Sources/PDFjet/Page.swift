@@ -55,6 +55,10 @@ public class Page {
 
     private var pen: [Float] = [0.0, 0.0, 0.0]
     private var brush: [Float] = [0.0, 0.0, 0.0]
+
+    private var penCMYK: [Float] = [0.0, 0.0, 0.0, 1.0]
+    private var brushCMYK: [Float] = [0.0, 0.0, 0.0, 1.0]
+
     private var penWidth: Float = -1.0
     private var lineCapStyle: Int = 0
     private var lineJoinStyle: Int = 0
@@ -462,6 +466,27 @@ public class Page {
 
 
     ///
+    /// Sets the color for stroking operations using CMYK.
+    /// The pen color is used when drawing lines and splines.
+    ///
+    /// - Parameter c the cyan component is Float value from 0.0 to 1.0.
+    /// - Parameter m the magenta component is Float value from 0.0 to 1.0.
+    /// - Parameter y the yellow component is Float value from 0.0 to 1.0.
+    /// - Parameter k the black component is Float value from 0.0 to 1.0.
+    ///
+    public final func setPenColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
+        if penCMYK[0] != c || penCMYK[1] != m || penCMYK[2] != y || penCMYK[3] != k {
+            setColorCMYK(c, m, y, k)
+            append(" K\n")
+            penCMYK[0] = c
+            penCMYK[1] = m
+            penCMYK[2] = y
+            penCMYK[3] = k
+        }
+    }
+
+
+    ///
     /// Sets the color for brush operations.
     /// This is the color used when drawing regular text and filling shapes.
     ///
@@ -476,6 +501,27 @@ public class Page {
             brush[0] = r
             brush[1] = g
             brush[2] = b
+        }
+    }
+
+
+    ///
+    /// Sets the color for brush operations using CMYK.
+    /// This is the color used when drawing regular text and filling shapes.
+    ///
+    /// - Parameter c the cyan component is Float value from 0.0 to 1.0.
+    /// - Parameter m the magenta component is Float value from 0.0 to 1.0.
+    /// - Parameter y the yellow component is Float value from 0.0 to 1.0.
+    /// - Parameter k the black component is Float value from 0.0 to 1.0.
+    ///
+    public final func setBrushColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
+        if brushCMYK[0] != c || brushCMYK[1] != m || brushCMYK[2] != y || brushCMYK[3] != k {
+            setColorCMYK(c, m, y, k)
+            append(" k\n")
+            brushCMYK[0] = c
+            brushCMYK[1] = m
+            brushCMYK[2] = y
+            brushCMYK[3] = k
         }
     }
 
@@ -507,6 +553,17 @@ public class Page {
         append(g)
         append(" ")
         append(b)
+    }
+
+
+    private func setColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
+        append(c)
+        append(" ")
+        append(m)
+        append(" ")
+        append(y)
+        append(" ")
+        append(k)
     }
 
 

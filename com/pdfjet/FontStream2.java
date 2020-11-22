@@ -258,16 +258,16 @@ class FontStream2 {
         obj.dict.add(String.valueOf(font.fontDescriptorObjNumber));
         obj.dict.add("0");
         obj.dict.add("R");
+
+        final float k = 1000.0f / Float.valueOf(font.unitsPerEm);
         obj.dict.add("/DW");
-        obj.dict.add(String.valueOf((int)
-                ((1000f / font.unitsPerEm) * font.advanceWidth[0])));
+        obj.dict.add(String.valueOf(Math.round(k * font.advanceWidth[0])));
         obj.dict.add("/W");
         obj.dict.add("[");
         obj.dict.add("0");
         obj.dict.add("[");
         for (int i = 0; i < font.advanceWidth.length; i++) {
-            obj.dict.add(String.valueOf((int)
-                    ((1000f / font.unitsPerEm) * font.advanceWidth[i])));
+            obj.dict.add(String.valueOf(Math.round(k * font.advanceWidth[i])));
         }
         obj.dict.add("]");
         obj.dict.add("]");

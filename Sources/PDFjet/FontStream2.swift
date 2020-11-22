@@ -276,17 +276,23 @@ class FontStream2 {
         obj.dict.append(String(font.fontDescriptorObjNumber))
         obj.dict.append("0")
         obj.dict.append("R")
+
+        var k: Float = 1.0
+        if font.unitsPerEm != 1000 {
+            k = Float(1000.0) / Float(font.unitsPerEm)
+        }
         obj.dict.append("/DW")
-        obj.dict.append(String(Int32((Float(1000.0) / Float(font.unitsPerEm)) * Float(font.advanceWidth![0]))))
+        obj.dict.append(String(round(k * Float(font.advanceWidth![0]))))
         obj.dict.append("/W")
         obj.dict.append("[")
         obj.dict.append("0")
         obj.dict.append("[")
         for i in 0..<font.advanceWidth!.count {
-            obj.dict.append(String(Int32((Float(1000.0) / Float(font.unitsPerEm)) * Float(font.advanceWidth![i]))))
+            obj.dict.append(String(round(k * Float(font.advanceWidth![i]))))
         }
         obj.dict.append("]")
         obj.dict.append("]")
+
         obj.dict.append("/CIDToGIDMap")
         obj.dict.append("/Identity")
         obj.dict.append(">>")

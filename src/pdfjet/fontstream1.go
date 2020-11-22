@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"decompressor"
 	"io"
+    "math"
 	"strconv"
 	"strings"
 )
@@ -246,15 +247,15 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.appendInteger(font.fontDescriptorObjNumber)
 	pdf.appendString(" 0 R\n")
 
-	factor := float32(1000.0) / float32(font.unitsPerEm)
+	k := float32(1000.0) / float32(font.unitsPerEm)
 
 	pdf.appendString("/DW ")
-	pdf.appendInteger(int(factor * float32(font.advanceWidth[0])))
+	pdf.appendInteger(int(math.Round(float64(k * float32(font.advanceWidth[0])))))
 	pdf.appendString("\n")
 
 	pdf.appendString("/W [0[\n")
 	for _, width := range font.advanceWidth {
-		pdf.appendInteger(int(factor * float32(width)))
+		pdf.appendInteger(int(math.Round(float64(k * float32(width)))))
 		pdf.appendString(" ")
 	}
 	pdf.appendString("]]\n")

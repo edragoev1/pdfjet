@@ -81,6 +81,23 @@ public class Example_02 {
         box.setSize(20f, 20f);
         box.drawOn(page);
 
+        // TODO:
+        page.setPenColorCMYK(1.0f, 0.0f, 0.0f, 0.0f);
+        page.setPenWidth(5.0f);
+        page.drawLine(50f, 500f, 300f, 500f);
+
+        page.setPenColorCMYK(0.0f, 1.0f, 0.0f, 0.0f);
+        page.setPenWidth(5.0f);
+        page.drawLine(50f, 550f, 300f, 550f);
+
+        page.setPenColorCMYK(0.0f, 0.0f, 1.0f, 0.0f);
+        page.setPenWidth(5.0f);
+        page.drawLine(50f, 600f, 300f, 600f);
+
+        page.setPenColorCMYK(0.0f, 0.0f, 0.0f, 1.0f);
+        page.setPenWidth(5.0f);
+        page.drawLine(50f, 650f, 300f, 650f);
+
         pdf.complete();
     }
 

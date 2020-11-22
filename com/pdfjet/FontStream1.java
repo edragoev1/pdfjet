@@ -247,23 +247,14 @@ class FontStream1 {
         pdf.append(font.fontDescriptorObjNumber);
         pdf.append(" 0 R\n");
 
+        final float k = 1000.0f / Float.valueOf(font.unitsPerEm);
         pdf.append("/DW ");
-        if (font.unitsPerEm == 1000) {
-            pdf.append(font.advanceWidth[0]);
-        }
-        else {
-            pdf.append((int) Math.round(font.advanceWidth[0] / 2.048));
-        }
+        pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[0])));
         pdf.append('\n');
 
         pdf.append("/W [0[\n");
         for (int i = 0; i < font.advanceWidth.length; i++) {
-            if (font.unitsPerEm == 1000) {
-                pdf.append(font.advanceWidth[i]);
-            }
-            else {
-                pdf.append((int) Math.round(font.advanceWidth[i] / 2.048));
-            }
+            pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[i])));
             pdf.append(' ');
         }
         pdf.append("]]\n");
