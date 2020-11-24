@@ -40,7 +40,7 @@ public class StructElem {
     protected int pageObjNumber;
     protected int mcid = 0;
     protected String language = null;
-    protected String altDescription = null;
     protected String actualText = null;
+    protected String altDescription = null;
     protected Annotation annotation = null;
 }

@@ -96,12 +96,8 @@ public class TextLine implements Drawable {
      */
     public TextLine setText(String text) {
         this.text = text;
-        if (this.altDescription == null) {
-            this.altDescription = text;
-        }
-        if (this.actualText == null) {
-            this.actualText = text;
-        }
+        this.altDescription = text;
+        this.actualText = text;
         return this;
     }
 
@@ -509,13 +505,13 @@ public class TextLine implements Drawable {
      *  @param actualText the actual text for the text line.
      *  @return this TextLine.
      */
-    public TextLine setActualText(String actualText) {
+    protected TextLine setActualText(String actualText) {
         this.actualText = actualText;
         return this;
     }
 
 
-    public String getActualText() {
+    protected String getActualText() {
         return actualText;
     }
 
@@ -602,7 +598,7 @@ public class TextLine implements Drawable {
         y += yBox;
 
         page.setBrushColor(color);
-        page.addBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.addBMC(StructElem.P, language, altDescription, actualText);
         page.drawString(font, fallbackFont, text, x, y);
         page.addEMC();
 

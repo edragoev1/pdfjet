@@ -207,12 +207,12 @@ public class PDF {
             sb.append(subject);
             sb.append("</rdf:li></rdf:Alt></dc:description>\n");
             sb.append("</rdf:Description>\n");
-
+/*
             sb.append("<rdf:Description rdf:about=\"\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\">\n");
             sb.append("  <pdfaid:part>1</pdfaid:part>\n");
             sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             sb.append("</rdf:Description>\n");
-
+*/
             if (compliance == Compliance.PDF_UA) {
                 sb.append("<rdf:Description rdf:about=\"\" xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
                 sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
@@ -432,21 +432,35 @@ public class PDF {
         newobj();
         append("<<\n");
         append("/Type /StructTreeRoot\n");
-/*
-This code is causing an error in the BFO PDF/UA validator.
+        append("/ParentTree ");
+        append(getObjNumber() + 1);
+        append(" 0 R\n");
         append("/K [\n");
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            for (int j = 0; j < page.structures.size(); j++) {
-                append(page.structures.get(j).objNumber);
+        append(getObjNumber() + 2);
+        append(" 0 R\n");
+        append("]\n");
+        append(">>\n");
+        endobj();
+        return getObjNumber();
+    }
+
+
+    private int addStructDocumentObject(int parent) throws Exception {
+        newobj();
+        append("<<\n");
+        append("/Type /StructElem\n");
+        append("/S /Document\n");
+        append("/P ");
+        append(parent);
+        append(" 0 R\n");
+        append("/K [\n");
+        for (Page page : pages) {
+            for (StructElem structElement : page.structures) {
+                append(structElement.objNumber);
                 append(" 0 R\n");
             }
         }
         append("]\n");
-*/
-        append("/ParentTree ");
-        append(getObjNumber() + 1);
-        append(" 0 R\n");
         append(">>\n");
         endobj();
         return getObjNumber();
@@ -472,17 +486,13 @@ This code is causing an error in the BFO PDF/UA validator.
                 append(element.structure);
                 append("\n");
                 append("/P ");
-                append(structTreeRootObjNumber);
+                append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
                 append(" 0 R\n");
                 append("/Pg ");
                 append(element.pageObjNumber);
                 append(" 0 R\n");
-                if (element.annotation == null) {
-                    append("/K ");
-                    append(element.mcid);
-                    append("\n");
-                }
-                else {
+
+                if (element.annotation != null) {
                     append("/K <<\n");
                     append("/Type /OBJR\n");
                     append("/Obj ");
@@ -490,11 +500,15 @@ This code is causing an error in the BFO PDF/UA validator.
                     append(" 0 R\n");
                     append(">>\n");
                 }
-                if (element.language != null) {
-                    append("/Lang (");
-                    append(element.language);
-                    append(")\n");
+                else {
+                    append("/K ");
+                    append(element.mcid);
+                    append("\n");
                 }
+
+                append("/Lang (");
+                append(element.language != null ? element.language : language);
+                append(")\n");
                 append("/Alt <");
                 append(toHex(element.altDescription));
                 append(">\n");
@@ -958,7 +972,7 @@ This code is causing an error in the BFO PDF/UA validator.
         complete();
     }
 
-    // TODO:
+
     /**
      *  Writes the PDF object to the output stream.
      *  Does not close the underlying output stream.
@@ -976,6 +990,7 @@ This code is causing an error in the BFO PDF/UA validator.
             addStructElementObjects();
             structTreeRootObjNumber = addStructTreeRootObject();
             addNumsParentTree();
+            addStructDocumentObject(structTreeRootObjNumber);
         }
 
         int outlineDictNum = 0;
@@ -1391,11 +1406,11 @@ This code is causing an error in the BFO PDF/UA validator.
                 break;
             }
 
-            int n = Integer.parseInt(obj.dict.get(i++)); // Number of entries
+            int n = Integer.parseInt(obj.dict.get(i++));    // Number of entries
             for (int j = 0; j < n; j++) {
-                String offset = obj.dict.get(i++);      // Object offset
-                String number = obj.dict.get(i++);      // Generation number
-                String status = obj.dict.get(i++);      // Status keyword
+                String offset = obj.dict.get(i++);          // Object offset
+                String number = obj.dict.get(i++);          // Generation number
+                String status = obj.dict.get(i++);          // Status keyword
                 if (!status.equals("f")) {
                     PDFobj o2 = getObject(buf, Integer.parseInt(offset));
                     o2.number = Integer.parseInt(o2.dict.get(0));

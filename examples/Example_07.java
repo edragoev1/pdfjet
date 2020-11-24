@@ -29,11 +29,11 @@ public class Example_07 {
         f2.setSize(18f);
 
         Page page = new Page(pdf, A4.LANDSCAPE);
-/*
+
         f1.setSize(72f);
         page.addWatermark(f1, "This is a Draft");
         f1.setSize(18f);
-*/
+
         float xPos = 20f;
         float yPos = 10f;
         StringBuilder buf = new StringBuilder();
@@ -53,7 +53,7 @@ public class Example_07 {
         textLine.setText(buf.toString());
         textLine.setLocation(xPos, yPos);
         textLine.drawOn(page);
-/*
+
         yPos = 70f;
         buf.setLength(0);
         j = 0;
@@ -72,44 +72,11 @@ public class Example_07 {
         textLine.setLocation(xPos, yPos);
         textLine.drawOn(page);
 
-        yPos = 130f;
-        buf.setLength(0);
-        j = 0;
-        for (int i = 0x390; i < 0x3EF; i++) {
-            if (j % 64 == 0) {
-                textLine.setText(buf.toString());
-                textLine.setLocation(xPos, yPos);
-                textLine.drawOn(page);
-                buf.setLength(0);
-                yPos += 24f;
-            }
-            buf.appendCodePoint(i);
-            j++;
-        }
-        textLine.setText(buf.toString());
-        textLine.setLocation(xPos, yPos);
+        page = new Page(pdf, A4.LANDSCAPE);
+        textLine.setText("Hello, World!");
+        textLine.setLocation(xPos, 34f);
         textLine.drawOn(page);
 
-        xPos = 20f; 
-        yPos = 190f;
-        buf.setLength(0);
-        textLine.setFont(f2);
-        j = 0;
-        for (int i = 0x390; i < 0x3EF; i++) {
-            if (j % 64 == 0) {
-                textLine.setText(buf.toString());
-                textLine.setLocation(800f - f2.stringWidth(buf.toString()), yPos);
-                textLine.drawOn(page);
-                buf.setLength(0);
-                yPos += 24f;
-            }
-            buf.appendCodePoint(i);
-            j++;
-        }
-        textLine.setText(buf.toString());
-        textLine.setLocation(800f - f2.stringWidth(buf.toString()), yPos);
-        textLine.drawOn(page);
-*/
         pdf.complete();
     }
 
