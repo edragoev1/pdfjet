@@ -96,12 +96,8 @@ public class TextLine : IDrawable {
      */
     public TextLine SetText(String text) {
         this.text = text;
-        if (this.altDescription == null) {
-            this.altDescription = text;
-        }
-        if (this.actualText == null) {
-            this.actualText = text;
-        }
+        this.altDescription = text;
+        this.actualText = text;
         return this;
     }
 
@@ -484,13 +480,13 @@ public class TextLine : IDrawable {
      *  @param actualText the actual text for the text line.
      *  @return this TextLine.
      */
-    public TextLine SetActualText(String actualText) {
+    internal TextLine SetActualText(String actualText) {
         this.actualText = actualText;
         return this;
     }
 
 
-    public String GetActualText() {
+    internal String GetActualText() {
         return actualText;
     }
 
@@ -584,7 +580,7 @@ public class TextLine : IDrawable {
         y += yBox;
 
         page.SetBrushColor(color);
-        page.AddBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.AddBMC(StructElem.P, language, altDescription, actualText);
         page.DrawString(font, fallbackFont, text, x, y);
         page.AddEMC();
 
@@ -597,7 +593,7 @@ public class TextLine : IDrawable {
             double yAdjust = font.underlinePosition * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(StructElem.SPAN, language, underlineTTS, underlineTTS);
+            page.AddBMC(StructElem.P, language, underlineTTS, underlineTTS);
             page.MoveTo(x + xAdjust, y + yAdjust);
             page.LineTo(x2 + xAdjust, y2 + yAdjust);
             page.StrokePath();
@@ -612,7 +608,7 @@ public class TextLine : IDrawable {
             double yAdjust = ( font.bodyHeight / 4.0 ) * Math.Cos(radians);
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(StructElem.SPAN, language, strikeoutTTS, strikeoutTTS);
+            page.AddBMC(StructElem.P, language, strikeoutTTS, strikeoutTTS);
             page.MoveTo(x - xAdjust, y - yAdjust);
             page.LineTo(x2 - xAdjust, y2 - yAdjust);
             page.StrokePath();

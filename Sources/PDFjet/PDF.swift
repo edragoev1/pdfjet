@@ -429,8 +429,7 @@ public class PDF {
         newobj()
         append("<<\n")
         append("/Type /StructTreeRoot\n")
-/*
-This code is causing an error in the BFO PDF/UA validator.
+
         append("/K [\n")
         for page in pages {
             for structure in page.structures {
@@ -439,7 +438,7 @@ This code is causing an error in the BFO PDF/UA validator.
             }
         }
         append("]\n")
-*/
+
         append("/ParentTree ")
         append(getObjNumber() + 1)
         append(" 0 R\n")

@@ -23,11 +23,6 @@ public class Example_07 {
                 Font.STREAM);
         f1.setSize(18f);
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Italic.ttf.stream"),
-                Font.STREAM);
-        f2.setSize(18f);
-
         Page page = new Page(pdf, A4.LANDSCAPE);
 
         f1.setSize(72f);
@@ -74,6 +69,7 @@ public class Example_07 {
 
         page = new Page(pdf, A4.LANDSCAPE);
         textLine.setText("Hello, World!");
+        textLine.setUnderline(true);
         textLine.setLocation(xPos, 34f);
         textLine.drawOn(page);
 

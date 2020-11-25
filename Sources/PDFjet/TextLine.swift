@@ -96,12 +96,8 @@ public class TextLine : Drawable {
     @discardableResult
     public func setText(_ text: String) -> TextLine {
         self.text = text
-        if self.altDescription == nil {
-            self.altDescription = text
-        }
-        if self.actualText == nil {
-            self.actualText = text
-        }
+        self.altDescription = text
+        self.actualText = text
         return self
     }
 
@@ -503,13 +499,13 @@ public class TextLine : Drawable {
     /// - Returns: selt.TextLine.
     ///
     @discardableResult
-    public func setActualText(_ actualText: String?) -> TextLine {
+    internal func setActualText(_ actualText: String?) -> TextLine {
         self.actualText = actualText
         return self
     }
 
 
-    public func getActualText() -> String? {
+    internal func getActualText() -> String? {
         return self.actualText
     }
 
@@ -596,7 +592,7 @@ public class TextLine : Drawable {
         self.y += yBox
 
         page!.setBrushColor(color)
-        page!.addBMC(StructElem.SPAN, language, altDescription!, actualText!)
+        page!.addBMC(StructElem.P, language, altDescription!, actualText!)
         page!.drawString(font!, fallbackFont, text, self.x, self.y)
         page!.addEMC()
 
@@ -609,7 +605,7 @@ public class TextLine : Drawable {
             let yAdjust = font!.underlinePosition * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(StructElem.SPAN, language, underlineTTS, underlineTTS)
+            page!.addBMC(StructElem.P, language, underlineTTS, underlineTTS)
             page!.moveTo(x + xAdjust, y + yAdjust)
             page!.lineTo(x2 + xAdjust, y2 + yAdjust)
             page!.strokePath()
@@ -624,7 +620,7 @@ public class TextLine : Drawable {
             let yAdjust = (font!.bodyHeight / 4.0) * Float(cos(radians))
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(StructElem.SPAN, language, strikeoutTTS, strikeoutTTS)
+            page!.addBMC(StructElem.P, language, strikeoutTTS, strikeoutTTS)
             page!.moveTo(x - xAdjust, y - yAdjust)
             page!.lineTo(x2 - xAdjust, y2 - yAdjust)
             page!.strokePath()

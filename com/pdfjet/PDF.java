@@ -542,8 +542,7 @@ public class PDF {
             Page page = pages.get(i);
             append(i);
             append(" [\n");
-            for (int j = 0; j < page.structures.size(); j++) {
-                StructElem element = page.structures.get(j);
+            for (StructElem element : page.structures) {
                 if (element.annotation == null) {
                     append(element.objNumber);
                     append(" 0 R\n");
@@ -553,10 +552,8 @@ public class PDF {
         }
 
         int index = pages.size();
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            for (int j = 0; j < page.structures.size(); j++) {
-                StructElem element = page.structures.get(j);
+        for (Page page : pages) {
+            for (StructElem element : page.structures) {
                 if (element.annotation != null) {
                     append(index);
                     append(" ");

@@ -76,12 +76,8 @@ func NewTextLine(font *Font, text string) *TextLine {
 // @return this TextLine.
 func (textLine *TextLine) SetText(text string) *TextLine {
 	textLine.text = text
-	if textLine.altDescription == "" {
-		textLine.altDescription = text
-	}
-	if textLine.actualText == "" {
-		textLine.actualText = text
-	}
+	textLine.altDescription = text
+	textLine.actualText = text
 	return textLine
 }
 
@@ -384,7 +380,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 	textLine.y += textLine.yBox
 
 	page.SetBrushColor(textLine.color)
-	page.AddBMC("Span", textLine.language, textLine.altDescription, textLine.actualText)
+	page.AddBMC("P", textLine.language, textLine.altDescription, textLine.actualText)
 	page.DrawString(textLine.font, textLine.fallbackFont, textLine.text, textLine.x, textLine.y)
 	page.AddEMC()
 
@@ -397,7 +393,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		yAdjust := textLine.font.underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC("Span", textLine.language, textLine.underlineTTS, textLine.underlineTTS)
+		page.AddBMC("P", textLine.language, textLine.underlineTTS, textLine.underlineTTS)
 		page.MoveTo(textLine.x+xAdjust, textLine.y+yAdjust)
 		page.LineTo(x2+xAdjust, y2+yAdjust)
 		page.StrokePath()
@@ -412,7 +408,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		yAdjust := (textLine.font.bodyHeight / 4.0) * float32(math.Cos(radians))
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC("Span", textLine.language, textLine.strikeoutTTS, textLine.strikeoutTTS)
+		page.AddBMC("P", textLine.language, textLine.strikeoutTTS, textLine.strikeoutTTS)
 		page.MoveTo(textLine.x-xAdjust, textLine.y-yAdjust)
 		page.LineTo(x2-xAdjust, y2-yAdjust)
 		page.StrokePath()

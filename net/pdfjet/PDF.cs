@@ -192,12 +192,12 @@ public class PDF {
             sb.Append(subject);
             sb.Append("</rdf:li></rdf:Alt></dc:description>\n");
             sb.Append("</rdf:Description>\n");
-
+/*
             sb.Append("<rdf:Description rdf:about=\"\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\">\n");
             sb.Append("  <pdfaid:part>1</pdfaid:part>\n");
             sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             sb.Append("</rdf:Description>\n");
-
+*/
             if (compliance == Compliance.PDF_UA) {
                 sb.Append("<rdf:Description rdf:about=\"\" xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
                 sb.Append("  <pdfuaid:part>1</pdfuaid:part>\n");
@@ -417,20 +417,35 @@ public class PDF {
         Newobj();
         Append("<<\n");
         Append("/Type /StructTreeRoot\n");
-/* This code is causing an error in the BFO PDF/UA validator.
+        Append("/ParentTree ");
+        Append(GetObjNumber() + 1);
+        Append(" 0 R\n");
         Append("/K [\n");
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            for (int j = 0; j < page.structures.Count; j++) {
-                Append(page.structures[j].objNumber);
+        Append(GetObjNumber() + 2);
+        Append(" 0 R\n");
+        Append("]\n");
+        Append(">>\n");
+        Endobj();
+        return GetObjNumber();
+    }
+
+
+    private int AddStructDocumentObject(int parent) {
+        Newobj();
+        Append("<<\n");
+        Append("/Type /StructElem\n");
+        Append("/S /Document\n");
+        Append("/P ");
+        Append(parent);
+        Append(" 0 R\n");
+        Append("/K [\n");
+        foreach (Page page in pages) {
+            foreach (StructElem structElement in page.structures) {
+                Append(structElement.objNumber);
                 Append(" 0 R\n");
             }
         }
         Append("]\n");
-*/
-        Append("/ParentTree ");
-        Append(GetObjNumber() + 1);
-        Append(" 0 R\n");
         Append(">>\n");
         Endobj();
         return GetObjNumber();
@@ -456,17 +471,13 @@ public class PDF {
                 Append(element.structure);
                 Append("\n");
                 Append("/P ");
-                Append(structTreeRootObjNumber);
+                Append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
                 Append(" 0 R\n");
                 Append("/Pg ");
                 Append(element.pageObjNumber);
                 Append(" 0 R\n");
-                if (element.annotation == null) {
-                    Append("/K ");
-                    Append(element.mcid);
-                    Append("\n");
-                }
-                else {
+
+                if (element.annotation != null) {
                     Append("/K <<\n");
                     Append("/Type /OBJR\n");
                     Append("/Obj ");
@@ -474,11 +485,15 @@ public class PDF {
                     Append(" 0 R\n");
                     Append(">>\n");
                 }
-                if (element.language != null) {
-                    Append("/Lang (");
-                    Append(element.language);
-                    Append(")\n");
+                else {
+                    Append("/K ");
+                    Append(element.mcid);
+                    Append("\n");
                 }
+
+                Append("/Lang (");
+                Append(element.language != null ? element.language : language);
+                Append(")\n");
                 Append("/Alt <");
                 Append(ToHex(element.altDescription));
                 Append(">\n");
@@ -512,8 +527,7 @@ public class PDF {
             Page page = pages[i];
             Append(i);
             Append(" [\n");
-            for (int j = 0; j < page.structures.Count; j++) {
-                StructElem element = page.structures[j];
+            foreach (StructElem element in page.structures) {
                 if (element.annotation == null) {
                     Append(element.objNumber);
                     Append(" 0 R\n");
@@ -523,10 +537,8 @@ public class PDF {
         }
 
         int index = pages.Count;
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            for (int j = 0; j < page.structures.Count; j++) {
-                StructElem element = page.structures[j];
+        foreach (Page page in pages) {
+            foreach (StructElem element in page.structures) {
                 if (element.annotation != null) {
                     Append(index);
                     Append(" ");
@@ -935,6 +947,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             AddStructElementObjects();
             structTreeRootObjNumber = AddStructTreeRootObject();
             AddNumsParentTree();
+            AddStructDocumentObject(structTreeRootObjNumber);
         }
 
         int outlineDictNum = 0;

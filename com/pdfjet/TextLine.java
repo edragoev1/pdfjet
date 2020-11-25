@@ -612,7 +612,7 @@ public class TextLine implements Drawable {
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
             String underlineTTS = "underline";
-            page.addBMC(StructElem.SPAN, language, underlineTTS, underlineTTS);
+            page.addBMC(StructElem.P, language, underlineTTS, underlineTTS);
             page.moveTo(x + xAdjust, y + yAdjust);
             page.lineTo(x2 + xAdjust, y2 + yAdjust);
             page.strokePath();
@@ -628,7 +628,7 @@ public class TextLine implements Drawable {
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
             String strikeoutTTS = "strikeout";
-            page.addBMC(StructElem.SPAN, language, strikeoutTTS, strikeoutTTS);
+            page.addBMC(StructElem.P, language, strikeoutTTS, strikeoutTTS);
             page.moveTo(x - xAdjust, y - yAdjust);
             page.lineTo(x2 - xAdjust, y2 - yAdjust);
             page.strokePath();
