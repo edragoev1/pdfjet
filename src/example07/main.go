@@ -19,13 +19,13 @@ func Example07(mode string) {
 		log.Fatal(err)
 	}
 	w := bufio.NewWriter(f)
-
+/*
 	pdf := pdfjet.NewPDF(w, compliance.PDFUA)
     pdf.SetTitle("PDF/UA compliant PDF");
-/*
+*/
 	pdf := pdfjet.NewPDF(w, compliance.PDF_A_1B)
     pdf.SetTitle("PDF/A-1B compliant PDF");
-*/
+
 	var f1 *pdfjet.Font
     // Use .ttf.stream fonts
 	f, err = os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
@@ -79,13 +79,13 @@ func Example07(mode string) {
     textLine.SetText(buf.String())
     textLine.SetLocation(xPos, yPos)
     textLine.DrawOn(page)
-/*
+
 	page = pdfjet.NewPage(pdf, a4.Landscape, true)
     textLine.SetText("Hello, World!")
     textLine.SetUnderline(true)
     textLine.SetLocation(xPos, 34.0)
     textLine.DrawOn(page)
-*/
+
 	pdf.Complete()
 
 	f.Close()

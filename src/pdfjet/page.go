@@ -121,8 +121,6 @@ func NewPage(pdf *PDF, pageSize [2]float32, addPageToPDF bool) *Page {
 	page := new(Page)
 	page.pdf = pdf
 	page.contents = make([]int, 0)
-	page.annots = append(page.annots, new(Annotation))
-	page.destinations = append(page.destinations, new(Destination))
 	page.width = pageSize[0]
 	page.height = pageSize[1]
 	page.linePattern = "[] 0"
