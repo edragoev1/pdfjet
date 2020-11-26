@@ -428,7 +428,7 @@ public class PDF {
         Append(producer);
         Append(")\n");
         Append("/CreationDate (D:");
-        Append(creationDate);
+        Append(creationDate.Substring(0, creationDate.Length - 1)); // Remove the 'Z'
         Append("-05'00')\n");
 /*
         Append("/ModDate (D:");

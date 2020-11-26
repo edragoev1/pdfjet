@@ -12,17 +12,17 @@ import com.pdfjet.*;
 public class Example_07 {
 
     public Example_07() throws Exception {
-
+/*
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_07.pdf")),
                 Compliance.PDF_UA);
         pdf.setTitle("PDF/UA compliant PDF");
-/*
+*/
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_07.pdf")),
                 Compliance.PDF_A_1B);
         pdf.setTitle("PDF/A-1B compliant PDF");
-*/
+
         Font f1 = new Font(pdf,
                 getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
                 Font.STREAM);

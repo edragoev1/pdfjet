@@ -128,13 +128,13 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		} else if image.bitDepth == 1 {
 			imageData = image.getImageColorType0BitDepth1(inflatedIDAT)
 		} else {
-			log.Fatal("Image with unsupported bit depth == " + string(image.bitDepth))
+			log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
 	} else if image.colorType == 6 {
 		if image.bitDepth == 8 {
 			imageData = image.getImageColorType6BitDepth8(inflatedIDAT)
 		} else {
-			log.Fatal("Image with unsupported bit depth == " + string(image.bitDepth))
+			log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
 	} else {
 		// Color Image
@@ -156,7 +156,7 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 			} else if image.bitDepth == 1 {
 				imageData = image.getImageColorType3BitDepth1(inflatedIDAT)
 			} else {
-				log.Fatal("Image with unsupported bit depth == " + string(image.bitDepth))
+				log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 			}
 		}
 	}

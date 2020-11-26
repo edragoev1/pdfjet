@@ -19,12 +19,12 @@ public class Example_07 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_07.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
-        pdf.SetTitle("This is a PDF/UA compliant PDF.");
+        pdf.SetTitle("PDF/UA compliant PDF");
 /*
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_07.pdf", FileMode.Create)),
                 Compliance.PDF_A_1B);
-        pdf.SetTitle("This is a PDF/A compliant PDF.");
+        pdf.SetTitle("PDF/A-1B compliant PDF");
 */
         Font f1 = new Font(pdf,
                 new FileStream(

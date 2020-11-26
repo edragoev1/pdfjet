@@ -11,13 +11,13 @@ public class Example_07 {
     public init() throws {
 
         if let stream = OutputStream(toFileAtPath: "Example_07.pdf", append: false) {
-/*
+
             let pdf = PDF(stream, Compliance.PDF_UA)
             pdf.setTitle("PDF/UA compliant PDF")
-*/
+/*
             let pdf = PDF(stream, Compliance.PDF_A_1B)
             pdf.setTitle("PDF/A-1B compliant PDF")
-
+*/
             var page = Page(pdf, A4.LANDSCAPE)
 
             let f1 = try Font(

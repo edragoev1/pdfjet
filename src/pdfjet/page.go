@@ -215,8 +215,8 @@ func (page *Page) DrawString(font1 *Font, font2 *Font, text string, x, y float32
 // If the main font is missing some glyphs - the fallback font is used.
 // The baseline of the leftmost character is at position (x, y) on the page.
 func (page *Page) DrawStringUsingColorMap(
-    font, fallbackFont *Font, text string, x, y float32, colors map[string]uint32) {
-    if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
+	font, fallbackFont *Font, text string, x, y float32, colors map[string]uint32) {
+	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
 		page.drawString(font, text, x, y, colors)
 	} else {
 		activeFont := font
@@ -224,15 +224,15 @@ func (page *Page) DrawStringUsingColorMap(
 		runes := []rune(text)
 		for _, ch := range runes {
 			if activeFont.unicodeToGID[ch] == 0 {
-			    page.drawString(activeFont, buf.String(), x, y, colors)
+				page.drawString(activeFont, buf.String(), x, y, colors)
 				x += activeFont.stringWidth(buf.String())
 				buf.Reset()
-                // Switch the active font
-                if activeFont == font {
-                    activeFont = fallbackFont
-                } else {
-                    activeFont = font
-                }
+				// Switch the active font
+				if activeFont == font {
+					activeFont = fallbackFont
+				} else {
+					activeFont = font
+				}
 			}
 			buf.WriteRune(ch)
 		}
@@ -862,7 +862,7 @@ func (page *Page) setTextRenderingMode(mode int) {
 	if mode >= 0 && mode <= 7 {
 		page.renderingMode = mode
 	} else {
-		log.Fatal("Invalid text rendering mode: " + string(mode))
+		log.Fatal("Invalid text rendering mode: " + fmt.Sprint(mode))
 	}
 }
 

@@ -71,7 +71,7 @@ type PDF struct {
 	importedFonts         []string
 	extGState             string
 	eval                  bool
-    uuid                  string
+	uuid                  string
 }
 
 // NewPDF the constructor.
@@ -162,81 +162,81 @@ func (pdf *PDF) getObjNumber() int {
 
 func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	var sb strings.Builder
-    sb.WriteString("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
-    sb.WriteString("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n")
-    sb.WriteString("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n")
-    sb.WriteString("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
+	sb.WriteString("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+	sb.WriteString("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n")
+	sb.WriteString("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n")
+	sb.WriteString("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
 
-    if fontMetadataObject {
-        sb.WriteString("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")
-        sb.WriteString("<xmpRights:UsageTerms>\n")
-        sb.WriteString("<rdf:Alt>\n")
-        sb.WriteString("<rdf:li xml:lang=\"x-default\">\n")
-        sb.WriteString(notice)
-        sb.WriteString("</rdf:li>\n")
-        sb.WriteString("</rdf:Alt>\n")
-        sb.WriteString("</xmpRights:UsageTerms>\n")
-        sb.WriteString("</rdf:Description>\n")
-    } else {
-        sb.WriteString("<rdf:Description rdf:about=\"\"\n")
-        sb.WriteString("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n")
-        sb.WriteString("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n")
-        sb.WriteString("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
-        sb.WriteString("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n")
-        sb.WriteString("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n")
-        sb.WriteString("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
+	if fontMetadataObject {
+		sb.WriteString("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")
+		sb.WriteString("<xmpRights:UsageTerms>\n")
+		sb.WriteString("<rdf:Alt>\n")
+		sb.WriteString("<rdf:li xml:lang=\"x-default\">\n")
+		sb.WriteString(notice)
+		sb.WriteString("</rdf:li>\n")
+		sb.WriteString("</rdf:Alt>\n")
+		sb.WriteString("</xmpRights:UsageTerms>\n")
+		sb.WriteString("</rdf:Description>\n")
+	} else {
+		sb.WriteString("<rdf:Description rdf:about=\"\"\n")
+		sb.WriteString("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n")
+		sb.WriteString("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n")
+		sb.WriteString("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
+		sb.WriteString("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n")
+		sb.WriteString("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n")
+		sb.WriteString("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
 
-        if pdf.compliance == compliance.PDFUA {
-            sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
-        } else if pdf.compliance == compliance.PDF_A_1B {
-            sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
-            sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
-        }
+		if pdf.compliance == compliance.PDFUA {
+			sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
+		} else if pdf.compliance == compliance.PDF_A_1B {
+			sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+		}
 
-        sb.WriteString("  <pdf:Producer>")
-        sb.WriteString(pdf.producer)
-        sb.WriteString("</pdf:Producer>\n")
+		sb.WriteString("  <pdf:Producer>")
+		sb.WriteString(pdf.producer)
+		sb.WriteString("</pdf:Producer>\n")
 
-        sb.WriteString("  <pdf:Keywords>")
-        sb.WriteString(pdf.keywords)
-        sb.WriteString("</pdf:Keywords>\n")
+		sb.WriteString("  <pdf:Keywords>")
+		sb.WriteString(pdf.keywords)
+		sb.WriteString("</pdf:Keywords>\n")
 
-        sb.WriteString("  <dc:format>application/pdf</dc:format>\n")
+		sb.WriteString("  <dc:format>application/pdf</dc:format>\n")
 
-        sb.WriteString("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-        sb.WriteString(pdf.title)
-        sb.WriteString("</rdf:li></rdf:Alt></dc:title>\n")
+		sb.WriteString("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
+		sb.WriteString(pdf.title)
+		sb.WriteString("</rdf:li></rdf:Alt></dc:title>\n")
 
-        sb.WriteString("  <dc:creator><rdf:Seq><rdf:li>")
-        sb.WriteString(pdf.author)
-        sb.WriteString("</rdf:li></rdf:Seq></dc:creator>\n")
+		sb.WriteString("  <dc:creator><rdf:Seq><rdf:li>")
+		sb.WriteString(pdf.author)
+		sb.WriteString("</rdf:li></rdf:Seq></dc:creator>\n")
 
-        sb.WriteString("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-        sb.WriteString(pdf.subject)
-        sb.WriteString("</rdf:li></rdf:Alt></dc:description>\n")
+		sb.WriteString("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
+		sb.WriteString(pdf.subject)
+		sb.WriteString("</rdf:li></rdf:Alt></dc:description>\n")
 
-        sb.WriteString("  <xmp:CreatorTool>")
-        sb.WriteString(pdf.producer)
-        sb.WriteString("</xmp:CreatorTool>\n")
+		sb.WriteString("  <xmp:CreatorTool>")
+		sb.WriteString(pdf.producer)
+		sb.WriteString("</xmp:CreatorTool>\n")
 
-        sb.WriteString("  <xmp:CreateDate>")
-        sb.WriteString(pdf.createDate + "-05:00")       // Append the time zone.
-        sb.WriteString("</xmp:CreateDate>\n")
-/*
-        sb.WriteString("  <xmp:ModifyDate>")
-        sb.WriteString(pdf.modDate + "-05:00")
-        sb.WriteString("</xmp:ModifyDate>\n")
-*/
-        sb.WriteString("  <xapMM:DocumentID>uuid:")
-        sb.WriteString(pdf.uuid)
-        sb.WriteString("</xapMM:DocumentID>\n")
+		sb.WriteString("  <xmp:CreateDate>")
+		sb.WriteString(pdf.createDate + "-05:00") // Append the time zone.
+		sb.WriteString("</xmp:CreateDate>\n")
+		/*
+		   sb.WriteString("  <xmp:ModifyDate>")
+		   sb.WriteString(pdf.modDate + "-05:00")
+		   sb.WriteString("</xmp:ModifyDate>\n")
+		*/
+		sb.WriteString("  <xapMM:DocumentID>uuid:")
+		sb.WriteString(pdf.uuid)
+		sb.WriteString("</xapMM:DocumentID>\n")
 
-        sb.WriteString("  <xapMM:InstanceID>uuid:")
-        sb.WriteString(pdf.uuid)
-        sb.WriteString("</xapMM:InstanceID>\n")
+		sb.WriteString("  <xapMM:InstanceID>uuid:")
+		sb.WriteString(pdf.uuid)
+		sb.WriteString("</xapMM:InstanceID>\n")
 
-        sb.WriteString("</rdf:Description>\n")
-    }
+		sb.WriteString("</rdf:Description>\n")
+	}
 
 	if !fontMetadataObject {
 		// Add the recommended 2000 bytes padding
@@ -410,11 +410,11 @@ func (pdf *PDF) addInfoObject() int {
 	pdf.appendString("/Subject (")
 	pdf.appendString(pdf.subject)
 	pdf.appendString(")\n")
-/*
-	pdf.appendString("/Keywords (")
-	pdf.appendString(pdf.keywords)
-	pdf.appendString(")\n")
-*/
+	/*
+		pdf.appendString("/Keywords (")
+		pdf.appendString(pdf.keywords)
+		pdf.appendString(")\n")
+	*/
 	pdf.appendString("/Creator (")
 	pdf.appendString(pdf.producer)
 	pdf.appendString(")\n")
@@ -423,52 +423,52 @@ func (pdf *PDF) addInfoObject() int {
 	pdf.appendString(")\n")
 	pdf.appendString("/CreationDate (D:")
 	pdf.appendString(pdf.creationDate)
-    pdf.appendString("-05'00')\n");
-/*
-	pdf.appendString("/ModDate (D:")
-	pdf.appendString(pdf.modDate)
-    pdf.appendString("-05'00')\n");
-*/
+	pdf.appendString("-05'00')\n")
+	/*
+	   	pdf.appendString("/ModDate (D:")
+	   	pdf.appendString(pdf.modDate)
+	       pdf.appendString("-05'00')\n");
+	*/
 	pdf.appendString(">>\n")
 	pdf.endobj()
 	return pdf.getObjNumber()
 }
 
 func (pdf *PDF) addStructTreeRootObject() int {
-    pdf.newobj()
-    pdf.appendString("<<\n")
-    pdf.appendString("/Type /StructTreeRoot\n")
-    pdf.appendString("/ParentTree ")
-    pdf.appendInteger(pdf.getObjNumber() + 1)
-    pdf.appendString(" 0 R\n")
-    pdf.appendString("/K [\n")
-    pdf.appendInteger(pdf.getObjNumber() + 2)
-    pdf.appendString(" 0 R\n")
-    pdf.appendString("]\n")
-    pdf.appendString(">>\n")
-    pdf.endobj()
-    return pdf.getObjNumber()
+	pdf.newobj()
+	pdf.appendString("<<\n")
+	pdf.appendString("/Type /StructTreeRoot\n")
+	pdf.appendString("/ParentTree ")
+	pdf.appendInteger(pdf.getObjNumber() + 1)
+	pdf.appendString(" 0 R\n")
+	pdf.appendString("/K [\n")
+	pdf.appendInteger(pdf.getObjNumber() + 2)
+	pdf.appendString(" 0 R\n")
+	pdf.appendString("]\n")
+	pdf.appendString(">>\n")
+	pdf.endobj()
+	return pdf.getObjNumber()
 }
 
 func (pdf *PDF) addStructDocumentObject(parent int) int {
-    pdf.newobj()
-    pdf.appendString("<<\n")
-    pdf.appendString("/Type /StructElem\n")
-    pdf.appendString("/S /Document\n")
-    pdf.appendString("/P ")
-    pdf.appendInteger(parent)
-    pdf.appendString(" 0 R\n")
-    pdf.appendString("/K [\n")
+	pdf.newobj()
+	pdf.appendString("<<\n")
+	pdf.appendString("/Type /StructElem\n")
+	pdf.appendString("/S /Document\n")
+	pdf.appendString("/P ")
+	pdf.appendInteger(parent)
+	pdf.appendString(" 0 R\n")
+	pdf.appendString("/K [\n")
 	for _, page := range pdf.pages {
-        for _, structElement := range page.structures {
-            pdf.appendInteger(structElement.objNumber)
-            pdf.appendString(" 0 R\n")
-        }
-    }
-    pdf.appendString("]\n")
-    pdf.appendString(">>\n")
-    pdf.endobj()
-    return pdf.getObjNumber()
+		for _, structElement := range page.structures {
+			pdf.appendInteger(structElement.objNumber)
+			pdf.appendString(" 0 R\n")
+		}
+	}
+	pdf.appendString("]\n")
+	pdf.appendString(">>\n")
+	pdf.endobj()
+	return pdf.getObjNumber()
 }
 
 func (pdf *PDF) addStructElementObjects() {
@@ -487,7 +487,7 @@ func (pdf *PDF) addStructElementObjects() {
 			pdf.appendString(element.structure)
 			pdf.appendString("\n")
 			pdf.appendString("/P ")
-            pdf.appendInteger(structTreeRootObjNumber + 2)  // Use the document struct as parent!
+			pdf.appendInteger(structTreeRootObjNumber + 2) // Use the document struct as parent!
 			pdf.appendString(" 0 R\n")
 			pdf.appendString("/Pg ")
 			pdf.appendInteger(element.pageObjNumber)
@@ -504,7 +504,7 @@ func (pdf *PDF) addStructElementObjects() {
 				pdf.appendString("/K ")
 				pdf.appendInteger(element.mcid)
 				pdf.appendString("\n")
-            }
+			}
 
 			if element.language != "" {
 				pdf.appendString("/Lang (")
@@ -952,10 +952,10 @@ func (pdf *PDF) Complete() {
 
 	structTreeRootObjNumber := 0
 	if pdf.compliance == compliance.PDFUA {
-        pdf.addStructElementObjects()
-        structTreeRootObjNumber = pdf.addStructTreeRootObject()
-        pdf.addNumsParentTree()
-        pdf.addStructDocumentObject(structTreeRootObjNumber)
+		pdf.addStructElementObjects()
+		structTreeRootObjNumber = pdf.addStructTreeRootObject()
+		pdf.addNumsParentTree()
+		pdf.addStructDocumentObject(structTreeRootObjNumber)
 	}
 
 	var outlineDictNum int = 0
@@ -1334,20 +1334,20 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 			objects)
 	}
 
-    // See page 50 in PDF32000_2008.pdf
-    predictor := 0  // The predictor
-	n1 := 0         // Field 1 number of bytes
-	n2 := 0         // Field 2 number of bytes
-	n3 := 0         // Field 3 number of bytes
+	// See page 50 in PDF32000_2008.pdf
+	predictor := 0 // The predictor
+	n1 := 0        // Field 1 number of bytes
+	n2 := 0        // Field 2 number of bytes
+	n3 := 0        // Field 3 number of bytes
 	length := 0
 	for i := 0; i < len(obj.dict); i++ {
 		token := obj.dict[i]
-	    if token == "/Predictor" {
+		if token == "/Predictor" {
 			val, err := strconv.Atoi(obj.dict[i+1])
 			if err != nil {
 				log.Fatal(err)
 			}
-            predictor = val
+			predictor = val
 		} else if token == "/Length" {
 			len1, err := strconv.Atoi(obj.dict[i+1])
 			if err != nil {
@@ -1376,46 +1376,46 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 
 	obj.SetStreamAndData(buf, length)
 
-	n := n1 + n2 + n3   // Number of bytes per entry
-    if predictor > 0 {
-        n += 1
-    }
+	n := n1 + n2 + n3 // Number of bytes per entry
+	if predictor > 0 {
+		n++
+	}
 
 	entry := make([]byte, n)
 	for i := 0; i < len(obj.data); i += n {
-        if predictor == 12 {
-		    // Apply the 'Up' filter.
-		    for j := 1; j < n; j++ {
-			    entry[j] += obj.data[i+j]
-		    }
-        } else {
-		    for j := 0; j < n; j++ {
-			    entry[j] = obj.data[i+j]
-		    }
-        }
+		if predictor == 12 {
+			// Apply the 'Up' filter.
+			for j := 1; j < n; j++ {
+				entry[j] += obj.data[i+j]
+			}
+		} else {
+			for j := 0; j < n; j++ {
+				entry[j] = obj.data[i+j]
+			}
+		}
 		// Process the entries in a cross-reference stream.
 		// Page 51 in PDF32000_2008.pdf
-        if predictor > 0 {
-		    if entry[1] == 1 { // Type 1 entry
-			    o2 := getObject(buf, toInt(entry, 1+n1, n2), len(buf))
-			    num, err := strconv.Atoi(o2.dict[0])
-			    if err != nil {
-				    log.Fatal(err)
-			    }
-			    o2.number = num
-			    *objects = append(*objects, o2)
-		    }
-        } else {
-		    if entry[0] == 1 { // Type 1 entry
-			    o2 := getObject(buf, toInt(entry, n1, n2), len(buf))
-			    num, err := strconv.Atoi(o2.dict[0])
-			    if err != nil {
-				    log.Fatal(err)
-			    }
-			    o2.number = num
-			    *objects = append(*objects, o2)
-		    }
-        }
+		if predictor > 0 {
+			if entry[1] == 1 { // Type 1 entry
+				o2 := getObject(buf, toInt(entry, 1+n1, n2), len(buf))
+				num, err := strconv.Atoi(o2.dict[0])
+				if err != nil {
+					log.Fatal(err)
+				}
+				o2.number = num
+				*objects = append(*objects, o2)
+			}
+		} else {
+			if entry[0] == 1 { // Type 1 entry
+				o2 := getObject(buf, toInt(entry, n1, n2), len(buf))
+				num, err := strconv.Atoi(o2.dict[0])
+				if err != nil {
+					log.Fatal(err)
+				}
+				o2.number = num
+				*objects = append(*objects, o2)
+			}
+		}
 	}
 }
 

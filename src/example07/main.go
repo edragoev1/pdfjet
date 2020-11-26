@@ -79,13 +79,13 @@ func Example07(mode string) {
     textLine.SetText(buf.String())
     textLine.SetLocation(xPos, yPos)
     textLine.DrawOn(page)
-
+/*
 	page = pdfjet.NewPage(pdf, a4.Landscape, true)
     textLine.SetText("Hello, World!")
     textLine.SetUnderline(true)
     textLine.SetLocation(xPos, 34.0)
     textLine.DrawOn(page)
-
+*/
 	pdf.Complete()
 
 	f.Close()
