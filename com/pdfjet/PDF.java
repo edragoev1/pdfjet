@@ -57,15 +57,17 @@ public class PDF {
     private String subject = "";
     private String keywords = "";
     private String creator = "";
-    private final String producer = "PDFjet v7.01.5 (http://pdfjet.com)";
-    private String creationDate;
-    private String modDate;
-    private String createDate;
+    private final String producer = "PDFjet v7.01.5";
+    private String createDate;      // XMP
+    private String modifyDate;      // XMP
+    private String creationDate;    // PDF Info Object
+    private String modDate;         // PDF Info Object
     private int byteCount = 0;
     private int pagesObjNumber = 0;
     private String pageLayout = null;
     private String pageMode = null;
     private String language = "en-US";
+    private String uuid = null;
 
     protected Bookmark toc = null;
     protected List<String> importedFonts = new ArrayList<String>();
@@ -76,6 +78,7 @@ public class PDF {
      *
      */
     public PDF() {
+        this.uuid = (new Salsa20()).getID();
     }
 
 
@@ -123,20 +126,23 @@ public class PDF {
      *  Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
      *
      *  @param os the associated output stream.
-     *  @param compliance must be: Compliance.PDF_A_1B
+     *  @param compliance must be: Compliance.PDF_A_1B or Compliance.PDF_UA
      *  @throws Exception  If an input or output exception occurred
      */
     public PDF(OutputStream os, int compliance) throws Exception {
-
         this.os = os;
         this.compliance = compliance;
+        this.uuid = (new Salsa20()).getID();
 
         Date date = new Date();
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMddHHmmss");
-        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        creationDate = sdf1.format(date);
-        modDate = sdf1.format(date);
-        createDate = sdf2.format(date);
+
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        createDate = sdf1.format(date);     // Metadata
+        modifyDate = sdf1.format(date);     // Metadata
+
+        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
+        creationDate = sdf2.format(date);   // PDF info object
+        modDate = sdf2.format(date);        // PDF info object
 
         append("%PDF-1.5\n");
         append('%');
@@ -146,13 +152,6 @@ public class PDF {
         append((byte) 0x00F5);
         append((byte) 0x00F6);
         append('\n');
-
-        if (compliance == Compliance.PDF_A_1B ||
-                compliance == Compliance.PDF_UA) {
-            metadataObjNumber = addMetadataObject("", false);
-            outputIntentObjNumber = addOutputIntentObject();
-        }
-
     }
 
 
@@ -176,7 +175,8 @@ public class PDF {
     protected int addMetadataObject(String notice, boolean fontMetadataObject) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
-        sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n");
+        sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n");
+        sb.append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n");
         sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
 
         if (fontMetadataObject) {
@@ -191,43 +191,66 @@ public class PDF {
             sb.append("</rdf:Description>\n");
         }
         else {
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\" pdf:Producer=\"");
-            sb.append(producer);
-            sb.append("\">\n</rdf:Description>\n");
+            sb.append("<rdf:Description rdf:about=\"\"\n");
+            sb.append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n");
+            sb.append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
+            sb.append("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n");
+            sb.append("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n");
+            sb.append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
+            sb.append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
 
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n");
+            if (compliance == Compliance.PDF_UA) {
+                sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
+            }
+            else if (compliance == Compliance.PDF_A_1B) {
+                sb.append("  <pdfaid:part>1</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
+
+            sb.append("  <pdf:Producer>");
+            sb.append(producer);
+            sb.append("</pdf:Producer>\n");
+
+            sb.append("  <pdf:Keywords>");
+            sb.append(keywords);
+            sb.append("</pdf:Keywords>\n");
+
             sb.append("  <dc:format>application/pdf</dc:format>\n");
+
             sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.append(title);
             sb.append("</rdf:li></rdf:Alt></dc:title>\n");
+
             sb.append("  <dc:creator><rdf:Seq><rdf:li>");
             sb.append(author);
             sb.append("</rdf:li></rdf:Seq></dc:creator>\n");
+
             sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.append(subject);
             sb.append("</rdf:li></rdf:Alt></dc:description>\n");
-            sb.append("</rdf:Description>\n");
-/*
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\">\n");
-            sb.append("  <pdfaid:part>1</pdfaid:part>\n");
-            sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
-            sb.append("</rdf:Description>\n");
-*/
-            if (compliance == Compliance.PDF_UA) {
-                sb.append("<rdf:Description rdf:about=\"\" xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
-                sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
-                sb.append("</rdf:Description>\n");
-            }
 
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\">\n");
-            sb.append("<xmp:CreateDate>");
-            sb.append(createDate + "Z");
+            sb.append("  <xmp:CreatorTool>");
+            sb.append(producer);
+            sb.append("</xmp:CreatorTool>\n");
+
+            sb.append("  <xmp:CreateDate>");
+            sb.append(createDate + "-05:00");       // Append the time zone.
             sb.append("</xmp:CreateDate>\n");
+/*
+            sb.append("  <xmp:ModifyDate>");
+            sb.append(createDate + "-05:00");
+            sb.append("</xmp:ModifyDate>\n");
+*/
+            sb.append("  <xapMM:DocumentID>uuid:");
+            sb.append(uuid);
+            sb.append("</xapMM:DocumentID>\n");
+
+            sb.append("  <xapMM:InstanceID>uuid:");
+            sb.append(uuid);
+            sb.append("</xapMM:InstanceID>\n");
+
             sb.append("</rdf:Description>\n");
         }
-
-        sb.append("</rdf:RDF>\n");
-        sb.append("</x:xmpmeta>\n");
 
         if (!fontMetadataObject) {
             // Add the recommended 2000 bytes padding
@@ -239,6 +262,8 @@ public class PDF {
             }
         }
 
+        sb.append("</rdf:RDF>\n");
+        sb.append("</x:xmpmeta>\n");
         sb.append("<?xpacket end=\"w\"?>");
 
         byte[] xml = sb.toString().getBytes("UTF-8");
@@ -398,30 +423,34 @@ public class PDF {
         // Add the info object
         newobj();
         append("<<\n");
-        append("/Title <");
-        append(toHex(title));
-        append(">\n");
-        append("/Author <");
-        append(toHex(author));
-        append(">\n");
-        append("/Subject <");
-        append(toHex(subject));
-        append(">\n");
+        append("/Title (");
+        append(title);
+        append(")\n");
+        append("/Author (");
+        append(author);
+        append(")\n");
+        append("/Subject (");
+        append(subject);
+        append(")\n");
+/*
         append("/Keywords (");
         append(keywords);
         append(")\n");
-        append("/Creator <");
-        append(toHex(creator));
-        append(">\n");
+*/
+        append("/Creator (");
+        append(producer);
+        append(")\n");
         append("/Producer (");
         append(producer);
         append(")\n");
         append("/CreationDate (D:");
         append(creationDate);
-        append("Z)\n");
+        append("-05'00')\n");
+/*
         append("/ModDate (D:");
         append(modDate);
-        append("Z)\n");
+        append("-05'00')\n");
+*/
         append(">>\n");
         endobj();
         return getObjNumber();
@@ -607,8 +636,7 @@ public class PDF {
         append(pagesObjNumber);
         append(" 0 R\n");
 
-        if (compliance == Compliance.PDF_A_1B ||
-                compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_A_1B || compliance == Compliance.PDF_UA) {
             append("/Metadata ");
             append(metadataObjNumber);
             append(" 0 R\n");
@@ -976,6 +1004,11 @@ public class PDF {
      *  @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
+        if (compliance == Compliance.PDF_UA || compliance == Compliance.PDF_A_1B) {
+            metadataObjNumber = addMetadataObject("", false);
+            outputIntentObjNumber = addOutputIntentObject();
+        }
+
         if (pagesObjNumber == 0) {
             addPageContent(pages.get(pages.size() - 1));
             addAllPages(addResourcesObject());
@@ -1026,11 +1059,10 @@ public class PDF {
         append(rootObjNumber + 1);
         append('\n');
 
-        String id = (new Salsa20()).getID();
         append("/ID[<");
-        append(id);
+        append(uuid);
         append("><");
-        append(id);
+        append(uuid);
         append(">]\n");
 
         append("/Info ");

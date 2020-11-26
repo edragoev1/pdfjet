@@ -56,15 +56,17 @@ public class PDF {
     private String subject = "";
     private String keywords = "";
     private String creator = "";
-    private String producer = "PDFjet v7.01.5 (http://pdfjet.com)";
-    private String creationDate;
-    private String modDate;
-    private String createDate;
+    private String producer = "PDFjet v7.01.5";
+    private String createDate;      // Metadata
+    private String modifyDate;      // Metadata
+    private String creationDate;    // PDF Info Object
+    private String modDate;         // PDF Info Object
     private int byteCount = 0;
     private int pagesObjNumber = 0;
     private String pageLayout = null;
     private String pageMode = null;
     private String language = "en-US";
+    private String uuid = null;
 
     internal Bookmark toc = null;
     internal List<String> importedFonts = new List<String>();
@@ -73,10 +75,10 @@ public class PDF {
 
     /**
      * The default constructor - use when reading PDF files.
-     *
-     *
      */
-    public PDF() {}
+    public PDF() {
+        this.uuid = (new Salsa20()).GetID();
+    }
 
 
     public PDF(Stream os) : this(os, 0) {}
@@ -112,15 +114,19 @@ public class PDF {
     // xref table
     // Trailer
     public PDF(Stream os, int compliance) {
-
         this.os = os;
         this.compliance = compliance;
+        this.uuid = (new Salsa20()).GetID();
+
         DateTime date = new DateTime(DateTime.Now.Ticks);
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMddHHmmss");
-        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        creationDate = sdf1.Format(date);
-        modDate = sdf1.Format(date);
-        createDate = sdf2.Format(date);
+
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        createDate = sdf1.Format(date);     // Metadata
+        modifyDate = sdf1.Format(date);     // Metadata
+
+        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
+        creationDate = sdf2.Format(date);   // PDF Info Object
+        modDate = sdf2.Format(date);        // PDF Info Object
 
         Append("%PDF-1.5\n");
         Append('%');
@@ -130,13 +136,6 @@ public class PDF {
         Append((byte) 0x00F5);
         Append((byte) 0x00F6);
         Append('\n');
-
-        if (compliance == Compliance.PDF_A_1B ||
-                compliance == Compliance.PDF_UA) {
-            metadataObjNumber = AddMetadataObject("", false);
-            outputIntentObjNumber = AddOutputIntentObject();
-        }
-
     }
 
 
@@ -158,10 +157,10 @@ public class PDF {
 
 
     internal int AddMetadataObject(String notice, bool fontMetadataObject) {
-
         StringBuilder sb = new StringBuilder();
         sb.Append("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
-        sb.Append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n");
+        sb.Append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n");
+        sb.Append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n");
         sb.Append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
 
         if (fontMetadataObject) {
@@ -176,43 +175,66 @@ public class PDF {
             sb.Append("</rdf:Description>\n");
         }
         else {
-            sb.Append("<rdf:Description rdf:about=\"\" xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\" pdf:Producer=\"");
-            sb.Append(producer);
-            sb.Append("\">\n</rdf:Description>\n");
+            sb.Append("<rdf:Description rdf:about=\"\"\n");
+            sb.Append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n");
+            sb.Append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
+            sb.Append("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n");
+            sb.Append("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n");
+            sb.Append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
+            sb.Append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
 
-            sb.Append("<rdf:Description rdf:about=\"\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n");
+            if (compliance == Compliance.PDF_UA) {
+                sb.Append("  <pdfuaid:part>1</pdfuaid:part>\n");
+            }
+            else if (compliance == Compliance.PDF_A_1B) {
+                sb.Append("  <pdfaid:part>1</pdfaid:part>\n");
+                sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
+
+            sb.Append("  <pdf:Producer>");
+            sb.Append(producer);
+            sb.Append("</pdf:Producer>\n");
+
+            sb.Append("  <pdf:Keywords>");
+            sb.Append(keywords);
+            sb.Append("</pdf:Keywords>\n");
+
             sb.Append("  <dc:format>application/pdf</dc:format>\n");
+
             sb.Append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.Append(title);
             sb.Append("</rdf:li></rdf:Alt></dc:title>\n");
+
             sb.Append("  <dc:creator><rdf:Seq><rdf:li>");
             sb.Append(author);
             sb.Append("</rdf:li></rdf:Seq></dc:creator>\n");
+
             sb.Append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.Append(subject);
             sb.Append("</rdf:li></rdf:Alt></dc:description>\n");
-            sb.Append("</rdf:Description>\n");
-/*
-            sb.Append("<rdf:Description rdf:about=\"\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\">\n");
-            sb.Append("  <pdfaid:part>1</pdfaid:part>\n");
-            sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
-            sb.Append("</rdf:Description>\n");
-*/
-            if (compliance == Compliance.PDF_UA) {
-                sb.Append("<rdf:Description rdf:about=\"\" xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
-                sb.Append("  <pdfuaid:part>1</pdfuaid:part>\n");
-                sb.Append("</rdf:Description>\n");
-            }
 
-            sb.Append("<rdf:Description rdf:about=\"\" xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\">\n");
-            sb.Append("<xmp:CreateDate>");
-            sb.Append(createDate + "Z");
+            sb.Append("  <xmp:CreatorTool>");
+            sb.Append(producer);
+            sb.Append("</xmp:CreatorTool>\n");
+
+            sb.Append("  <xmp:CreateDate>");
+            sb.Append(createDate + "-05:00");       // Append the time zone.
             sb.Append("</xmp:CreateDate>\n");
+/*
+            sb.Append("  <xmp:ModifyDate>");
+            sb.Append(createDate + "-05:00");
+            sb.Append("</xmp:ModifyDate>\n");
+*/
+            sb.Append("  <xapMM:DocumentID>uuid:");
+            sb.Append(uuid);
+            sb.Append("</xapMM:DocumentID>\n");
+
+            sb.Append("  <xapMM:InstanceID>uuid:");
+            sb.Append(uuid);
+            sb.Append("</xapMM:InstanceID>\n");
+
             sb.Append("</rdf:Description>\n");
         }
-
-        sb.Append("</rdf:RDF>\n");
-        sb.Append("</x:xmpmeta>\n");
 
         if (!fontMetadataObject) {
             // Add the recommended 2000 bytes padding
@@ -224,6 +246,8 @@ public class PDF {
             }
         }
 
+        sb.Append("</rdf:RDF>\n");
+        sb.Append("</x:xmpmeta>\n");
         sb.Append("<?xpacket end=\"w\"?>");
 
         byte[] xml = (new System.Text.UTF8Encoding()).GetBytes(sb.ToString());
@@ -383,30 +407,34 @@ public class PDF {
         // Add the info object
         Newobj();
         Append("<<\n");
-        Append("/Title <");
-        Append(ToHex(title));
-        Append(">\n");
-        Append("/Author <");
-        Append(ToHex(author));
-        Append(">\n");
-        Append("/Subject <");
-        Append(ToHex(subject));
-        Append(">\n");
+        Append("/Title (");
+        Append(title);
+        Append(")\n");
+        Append("/Author (");
+        Append(author);
+        Append(")\n");
+        Append("/Subject (");
+        Append(subject);
+        Append(")\n");
+/*
         Append("/Keywords (");
         Append(keywords);
         Append(")\n");
-        Append("/Creator <");
-        Append(ToHex(creator));
-        Append(">\n");
+*/
+        Append("/Creator (");
+        Append(producer);
+        Append(")\n");
         Append("/Producer (");
         Append(producer);
         Append(")\n");
         Append("/CreationDate (D:");
         Append(creationDate);
-        Append(")\n");
+        Append("-05'00')\n");
+/*
         Append("/ModDate (D:");
         Append(modDate);
-        Append(")\n");
+        Append("-05'00')\n");
+*/
         Append(">>\n");
         Endobj();
         return GetObjNumber();
@@ -930,12 +958,18 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         Complete();
     }
 
-    // TODO:
+
     /**
      *  Writes the PDF object to the output stream.
      *  Does not close the underlying output stream.
      */
     public void Complete() {
+        if (compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_UA) {
+            metadataObjNumber = AddMetadataObject("", false);
+            outputIntentObjNumber = AddOutputIntentObject();
+        }
+
         if (pagesObjNumber == 0) {
             AddPageContent(pages[pages.Count - 1]);
             AddAllPages(AddResourcesObject());
@@ -987,11 +1021,10 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         Append(rootObjNumber + 1);
         Append('\n');
 
-        String id = (new Salsa20()).GetID();
         Append("/ID[<");
-        Append(id);
+        Append(uuid);
         Append("><");
-        Append(id);
+        Append(uuid);
         Append(">]\n");
 
         Append("/Info ");

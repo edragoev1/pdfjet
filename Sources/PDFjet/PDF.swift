@@ -48,20 +48,21 @@ public class PDF {
 
     private var os: OutputStream?
     private var objOffset = [Int]()
-    private var title: String = ""
-    private var author: String = ""
-    private var subject: String = ""
+    private var title: String = " "
+    private var author: String = " "
+    private var subject: String = " "
     private var keywords: String = ""
     private var creator: String = ""
-    private var producer = "PDFjet v7.01.5 (http://pdfjet.com)"
+    private var producer = "PDFjet v7.01.5"
+    private var createDate: String?
     private var creationDate: String?
     private var modDate: String?
-    private var createDate: String?
     private var byteCount = 0
     private var pagesObjNumber = 0
     private var pageLayout: String?
     private var pageMode: String?
     private var language: String = "en-US"
+    private var uuid: String?
 
 
     ///
@@ -70,6 +71,7 @@ public class PDF {
     public init() {
         formatter.decimalSeparator = ","
         formatter.maximumFractionDigits = 3
+        self.uuid = Salsa20().getID()
     }
 
 
@@ -118,24 +120,24 @@ public class PDF {
     /// Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
     ///
     /// - Parameter os the associated output stream.
-    /// - Parameter compliance must be: Compliance.PDF_A_1B
+    /// - Parameter compliance must be: Compliance.PDF_A_1B or Compliance.PDF_UA
     ///
     public init(_ os: OutputStream, _ compliance: Int) {
         os.open()
         self.os = os
         self.compliance = compliance
+        self.uuid = Salsa20().getID()
 
         let date = Date()
 
         let dateFormatter1 = DateFormatter()
-        dateFormatter1.dateFormat = "yyyyMMddhhmmss"
+        dateFormatter1.dateFormat = "yyyy-MM-dd'T'hh:mm:ss"
+        self.createDate = dateFormatter1.string(from: date)
 
         let dateFormatter2 = DateFormatter()
-        dateFormatter2.dateFormat = "yyyy-MM-dd'T'hh:mm:ss"
-
-        self.creationDate = dateFormatter1.string(from: date)
-        self.modDate = dateFormatter1.string(from: date)
-        self.createDate = dateFormatter2.string(from: date)
+        dateFormatter2.dateFormat = "yyyyMMddhhmmss"
+        self.creationDate = dateFormatter2.string(from: date)
+        self.modDate = dateFormatter2.string(from: date)
 
         append("%PDF-1.5\n")
         append("%")
@@ -145,12 +147,6 @@ public class PDF {
         append(UInt8(0x00F5))
         append(UInt8(0x00F6))
         append("\n")
-
-        if compliance == Compliance.PDF_A_1B ||
-                compliance == Compliance.PDF_UA {
-            metadataObjNumber = addMetadataObject("", false)
-            outputIntentObjNumber = addOutputIntentObject()
-        }
     }
 
 
@@ -173,59 +169,83 @@ public class PDF {
 
     func addMetadataObject(_ notice: String, _ fontMetadataObject: Bool) -> Int {
         var sb = String()
-        sb.append("<?xpacket begin='\u{FEFF}' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
-        sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n")
-        sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
+        sb.append("<?xpacket begin='\u{FEFF}' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
+        sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n");
+        sb.append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n");
+        sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
 
         if fontMetadataObject {
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")
-            sb.append("<xmpRights:UsageTerms>\n")
-            sb.append("<rdf:Alt>\n")
-            sb.append("<rdf:li xml:lang=\"x-default\">\n")
-            sb.append(notice)
-            sb.append("</rdf:li>\n")
-            sb.append("</rdf:Alt>\n")
-            sb.append("</xmpRights:UsageTerms>\n")
-            sb.append("</rdf:Description>\n")
+            sb.append("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n");
+            sb.append("<xmpRights:UsageTerms>\n");
+            sb.append("<rdf:Alt>\n");
+            sb.append("<rdf:li xml:lang=\"x-default\">\n");
+            sb.append(notice);
+            sb.append("</rdf:li>\n");
+            sb.append("</rdf:Alt>\n");
+            sb.append("</xmpRights:UsageTerms>\n");
+            sb.append("</rdf:Description>\n");
         }
         else {
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\" pdf:Producer=\"")
-            sb.append(producer)
-            sb.append("\">\n</rdf:Description>\n")
+            sb.append("<rdf:Description rdf:about=\"\"\n");
+            sb.append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n");
+            sb.append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
+            sb.append("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n");
+            sb.append("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n");
+            sb.append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
+            sb.append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
 
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n")
-            sb.append("  <dc:format>application/pdf</dc:format>\n")
-            sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-            sb.append(title)
-            sb.append("</rdf:li></rdf:Alt></dc:title>\n")
-            sb.append("  <dc:creator><rdf:Seq><rdf:li>")
-            sb.append(author)
-            sb.append("</rdf:li></rdf:Seq></dc:creator>\n")
-            sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-            sb.append(subject)
-            sb.append("</rdf:li></rdf:Alt></dc:description>\n")
-            sb.append("</rdf:Description>\n")
-
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\">\n")
-            sb.append("  <pdfaid:part>1</pdfaid:part>\n")
-            sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n")
-            sb.append("</rdf:Description>\n")
-
-            if compliance == Compliance.PDF_UA {
-                sb.append("<rdf:Description rdf:about=\"\" xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
-                sb.append("  <pdfuaid:part>1</pdfuaid:part>\n")
-                sb.append("</rdf:Description>\n")
+            if (compliance == Compliance.PDF_UA) {
+                sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
+            }
+            else if (compliance == Compliance.PDF_A_1B) {
+                sb.append("  <pdfaid:part>1</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
 
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\">\n")
-            sb.append("<xmp:CreateDate>")
-            sb.append(createDate! + "Z")
-            sb.append("</xmp:CreateDate>\n")
-            sb.append("</rdf:Description>\n")
-        }
+            sb.append("  <pdf:Producer>");
+            sb.append(producer);
+            sb.append("</pdf:Producer>\n");
 
-        sb.append("</rdf:RDF>\n")
-        sb.append("</x:xmpmeta>\n")
+            sb.append("  <pdf:Keywords>");
+            sb.append(keywords);
+            sb.append("</pdf:Keywords>\n");
+
+            sb.append("  <dc:format>application/pdf</dc:format>\n");
+
+            sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
+            sb.append(title);
+            sb.append("</rdf:li></rdf:Alt></dc:title>\n");
+
+            sb.append("  <dc:creator><rdf:Seq><rdf:li>");
+            sb.append(author);
+            sb.append("</rdf:li></rdf:Seq></dc:creator>\n");
+
+            sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">");
+            sb.append(subject);
+            sb.append("</rdf:li></rdf:Alt></dc:description>\n");
+
+            sb.append("  <xmp:CreatorTool>");
+            sb.append(producer);
+            sb.append("</xmp:CreatorTool>\n");
+
+            sb.append("  <xmp:CreateDate>");
+            sb.append(createDate! + "-05:00");      // Append the time zone.
+            sb.append("</xmp:CreateDate>\n");
+/*
+            sb.append("  <xmp:ModifyDate>");
+            sb.append(createDate! + "-05:00");
+            sb.append("</xmp:ModifyDate>\n");
+*/
+            sb.append("  <xapMM:DocumentID>uuid:");
+            sb.append(uuid!);
+            sb.append("</xapMM:DocumentID>\n");
+
+            sb.append("  <xapMM:InstanceID>uuid:");
+            sb.append(uuid!);
+            sb.append("</xapMM:InstanceID>\n");
+
+            sb.append("</rdf:Description>\n");
+        }
 
         if !fontMetadataObject {
             // Add the recommended 2000 bytes padding
@@ -237,7 +257,11 @@ public class PDF {
             }
         }
 
+        sb.append("</rdf:RDF>\n")
+        sb.append("</x:xmpmeta>\n")
         sb.append("<?xpacket end=\"w\"?>")
+
+        let buf = [UInt8](sb.utf8)
 
         // This is the metadata object
         newobj()
@@ -245,11 +269,11 @@ public class PDF {
         append("/Type /Metadata\n")
         append("/Subtype /XML\n")
         append("/Length ")
-        append(sb.count)
+        append(buf.count)
         append("\n")
         append(">>\n")
         append("stream\n")
-        append(sb)
+        append(buf)
         append("\nendstream\n")
         endobj()
 
@@ -393,32 +417,34 @@ public class PDF {
         // Add the info object
         newobj()
         append("<<\n")
-        append("/Title <")
-        append(toHex(title))
-        append(">\n")
-        append("/Author <")
-        append(toHex(author))
-        append(">\n")
-        append("/Subject <")
-        append(toHex(subject))
-        append(">\n")
-        if keywords != "" {
-            append("/Keywords (")
-            append(keywords)
-            append(")\n")
-        }
-        append("/Creator <")
-        append(toHex(creator))
-        append(">\n")
+        append("/Title (")
+        append(title)
+        append(")\n")
+        append("/Author (")
+        append(author)
+        append(")\n")
+        append("/Subject (")
+        append(subject)
+        append(")\n")
+/*
+        append("/Keywords (")
+        append(keywords)
+        append(")\n")
+*/
+        append("/Creator (")
+        append(producer)
+        append(")\n")
         append("/Producer (")
         append(producer)
         append(")\n")
         append("/CreationDate (D:")
         append(self.creationDate!)
-        append("Z)\n")
+        append("-05'00')\n");
+/*
         append("/ModDate (D:")
         append(self.modDate!)
-        append("Z)\n")
+        append("-05'00')\n");
+*/
         append(">>\n")
         endobj()
         return getObjNumber()
@@ -429,19 +455,36 @@ public class PDF {
         newobj()
         append("<<\n")
         append("/Type /StructTreeRoot\n")
+        append("/ParentTree ")
+        append(getObjNumber() + 1)
+        append(" 0 R\n")
+        append("/K [\n")
+        append(getObjNumber() + 2)
+        append(" 0 R\n")
+        append("]\n")
+        append(">>\n")
+        endobj()
+        return getObjNumber()
+    }
 
+
+    @discardableResult
+    private func addStructDocumentObject(_ parent: Int) -> Int {
+        newobj()
+        append("<<\n")
+        append("/Type /StructElem\n")
+        append("/S /Document\n")
+        append("/P ")
+        append(parent)
+        append(" 0 R\n")
         append("/K [\n")
         for page in pages {
-            for structure in page.structures {
-                append(structure.objNumber!)
+            for structElement in page.structures {
+                append(structElement.objNumber!)
                 append(" 0 R\n")
             }
         }
         append("]\n")
-
-        append("/ParentTree ")
-        append(getObjNumber() + 1)
-        append(" 0 R\n")
         append(">>\n")
         endobj()
         return getObjNumber()
@@ -464,17 +507,13 @@ public class PDF {
                 append(element.structure!)
                 append("\n")
                 append("/P ")
-                append(structTreeRootObjNumber)
+                append(structTreeRootObjNumber + 2)
                 append(" 0 R\n")
                 append("/Pg ")
                 append(element.pageObjNumber!)
                 append(" 0 R\n")
-                if element.annotation == nil {
-                    append("/K ")
-                    append(element.mcid)
-                    append("\n")
-                }
-                else {
+
+                if element.annotation != nil {
                     append("/K <<\n")
                     append("/Type /OBJR\n")
                     append("/Obj ")
@@ -482,6 +521,12 @@ public class PDF {
                     append(" 0 R\n")
                     append(">>\n")
                 }
+                else {
+                    append("/K ")
+                    append(element.mcid)
+                    append("\n")
+                }
+
                 if element.language != nil {
                     append("/Lang (")
                     append(element.language!)
@@ -576,8 +621,7 @@ public class PDF {
         append(pagesObjNumber)
         append(" 0 R\n")
 
-        if compliance == Compliance.PDF_A_1B ||
-                compliance == Compliance.PDF_UA {
+        if compliance == Compliance.PDF_A_1B || compliance == Compliance.PDF_UA {
             append("/Metadata ")
             append(metadataObjNumber)
             append(" 0 R\n")
@@ -700,7 +744,7 @@ public class PDF {
         }
     }
 
-/*
+
     // Use this method on systems that don't have Deflater stream or when troubleshooting.
     private func addPageContent(_ page: inout Page) {
         newobj()
@@ -715,10 +759,10 @@ public class PDF {
         endobj()
         page.contents.append(getObjNumber())
     }
-*/
 
-    private func addPageContent(_ page: inout Page) {
 /*
+    private func addPageContent(_ page: inout Page) {
+
         //>> REMOVE FROM THE OPEN SOURCE EDITION!
         if eval && fonts.count > 0 {
             let f1 = fonts[0]
@@ -750,7 +794,7 @@ public class PDF {
             page.setBrushColor(brushColor)
         }
         //<<
-*/
+
         var buffer = [UInt8]()
         // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         _ = LZWEncode(&buffer, &page.buf)
@@ -773,7 +817,7 @@ public class PDF {
         endobj()
         page.contents.append(getObjNumber())
     }
-
+*/
 
     @discardableResult
     private func addAnnotationObject(
@@ -914,6 +958,11 @@ public class PDF {
     /// The output stream is then closed.
     ///
     public func complete() {
+        if compliance == Compliance.PDF_A_1B || compliance == Compliance.PDF_UA {
+            metadataObjNumber = addMetadataObject("", false)
+            outputIntentObjNumber = addOutputIntentObject()
+        }
+
         if pagesObjNumber == 0 {
             addPageContent(&pages[pages.count - 1])
             addAllPages(addResourcesObject())
@@ -922,9 +971,10 @@ public class PDF {
 
         var structTreeRootObjNumber = 0
         if compliance == Compliance.PDF_UA {
-            addStructElementObjects()
-            structTreeRootObjNumber = addStructTreeRootObject()
-            addNumsParentTree()
+            addStructElementObjects();
+            structTreeRootObjNumber = addStructTreeRootObject();
+            addNumsParentTree();
+            addStructDocumentObject(structTreeRootObjNumber);
         }
 
         var outlineDictNum = 0
@@ -965,11 +1015,11 @@ public class PDF {
         append(rootObjNumber + 1)
         append("\n")
 
-        let id: String = Salsa20().getID()
+        // let id: String = Salsa20().getID()
         append("/ID[<")
-        append(id)
+        append(uuid!)
         append("><")
-        append(id)
+        append(uuid!)
         append(">]\n")
 
         append("/Info ")

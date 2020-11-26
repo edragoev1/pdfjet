@@ -5,4 +5,5 @@ package compliance
 const (
 	PDF15 = iota
 	PDFUA
+	PDF_A_1B
 )

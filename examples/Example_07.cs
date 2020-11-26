@@ -20,14 +20,18 @@ public class Example_07 {
                 new FileStream("Example_07.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
         pdf.SetTitle("This is a PDF/UA compliant PDF.");
-
+/*
+        PDF pdf = new PDF(new BufferedStream(
+                new FileStream("Example_07.pdf", FileMode.Create)),
+                Compliance.PDF_A_1B);
+        pdf.SetTitle("This is a PDF/A compliant PDF.");
+*/
         Font f1 = new Font(pdf,
                 new FileStream(
                         "fonts/OpenSans/OpenSans-Regular.ttf.stream",
                         FileMode.Open,
                         FileAccess.Read),
                 Font.STREAM);
-        f1.SetSize(18f);
 
         Page page = new Page(pdf, A4.LANDSCAPE);
 
@@ -36,7 +40,7 @@ public class Example_07 {
         f1.SetSize(18f);
 
         float xPos = 20f;
-        float yPos = 10f;
+        float yPos = 20f;
         StringBuilder buf = new StringBuilder();
         TextLine textLine = new TextLine(f1);
         int j = 0;
@@ -55,7 +59,7 @@ public class Example_07 {
         textLine.SetLocation(xPos, yPos);
         textLine.DrawOn(page);
 
-        yPos = 70f;
+        yPos += 24f;
         buf.Length = 0;
         j = 0;
         for (int i = 0x20; i < 0x7F; i++) {

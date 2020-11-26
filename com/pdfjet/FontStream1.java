@@ -144,10 +144,10 @@ class FontStream1 {
         pdf.append(font.bBoxURy);
         pdf.append("]\n");
         pdf.append("/Ascent ");
-        pdf.append(font.ascent);
+        pdf.append(font.fontAscent);
         pdf.append('\n');
         pdf.append("/Descent ");
-        pdf.append(font.descent);
+        pdf.append(font.fontDescent);
         pdf.append('\n');
         pdf.append("/ItalicAngle 0\n");
         pdf.append("/CapHeight ");

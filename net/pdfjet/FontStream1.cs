@@ -143,10 +143,10 @@ class FontStream1 {
         pdf.Append(font.bBoxURy);
         pdf.Append("]\n");
         pdf.Append("/Ascent ");
-        pdf.Append(font.ascent);
+        pdf.Append(font.fontAscent);
         pdf.Append('\n');
         pdf.Append("/Descent ");
-        pdf.Append(font.descent);
+        pdf.Append(font.fontDescent);
         pdf.Append('\n');
         pdf.Append("/ItalicAngle 0\n");
         pdf.Append("/CapHeight ");

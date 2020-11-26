@@ -11,185 +11,73 @@ public class Example_07 {
     public init() throws {
 
         if let stream = OutputStream(toFileAtPath: "Example_07.pdf", append: false) {
+/*
+            let pdf = PDF(stream, Compliance.PDF_UA)
+            pdf.setTitle("PDF/UA compliant PDF")
+*/
+            let pdf = PDF(stream, Compliance.PDF_A_1B)
+            pdf.setTitle("PDF/A-1B compliant PDF")
 
-            let pdf = PDF(stream)
-            let page = Page(pdf, Letter.PORTRAIT)
-            // pdf.setPageLayout(PageLayout.SINGLE_PAGE)
-            // pdf.setPageMode(PageMode.FULL_SCREEN)
+            var page = Page(pdf, A4.LANDSCAPE)
 
             let f1 = try Font(
                     pdf,
                     InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
                     Font.STREAM)
+
             f1.setSize(72.0)
-
-            let f2 = try Font(
-                    pdf,
-                    InputStream(fileAtPath: "fonts/Droid/DroidSerif-Italic.ttf.stream")!,
-                    Font.STREAM)
-            f2.setSize(15.0)
-
             try page.addWatermark(f1, "This is a Draft")
-            f1.setSize(15.0)
+            f1.setSize(18.0)
 
-            var x_pos: Float = 70.0
-            var y_pos: Float = 70.0
+            let xPos: Float = 20.0
+            var yPos: Float = 20.0
 
-            var text = TextLine(f1).setLocation(x_pos, y_pos)
+            let textLine = TextLine(f1).setLocation(xPos, yPos)
 
             var buffer = String()
-            var i = 0x20
-            while i < 0x7F {
-                if i % 16 == 0 {
-                    y_pos += 24.0
-                    text.setText(buffer)
-                    text.setLocation(x_pos, y_pos)
-                    text.drawOn(page)
+            var j = 0
+            var i = 0x410
+            while i < 0x46F {
+                if j % 64 == 0 {
+                    textLine.setText(buffer)
+                    textLine.setLocation(xPos, yPos)
+                    textLine.drawOn(page)
                     buffer = ""
+                    yPos += 24.0
                 }
                 buffer.append(Character(UnicodeScalar(i)!))
                 i += 1
+                j += 1
             }
+            textLine.setText(buffer)
+            textLine.setLocation(xPos, yPos)
+            textLine.drawOn(page)
 
-            y_pos += 24.0
-            text.setText(buffer)
-            text.setLocation(x_pos, y_pos)
-            text.drawOn(page);
-
-            y_pos += 24.0
-            buffer = ""
-            i = 0x390
-            while i < 0x3EF {
-                if i % 16 == 0 {
-                    y_pos += 24.0
-                    text.setText(buffer)
-                    text.setLocation(x_pos, y_pos)
-                    text.drawOn(page)
-                    buffer = ""
-                }
-                if i == 0x3A2
-                        || i == 0x3CF
-                        || i == 0x3D0
-                        || i == 0x3D3
-                        || i == 0x3D4
-                        || i == 0x3D5
-                        || i == 0x3D7
-                        || i == 0x3D8
-                        || i == 0x3D9
-                        || i == 0x3DA
-                        || i == 0x3DB
-                        || i == 0x3DC
-                        || i == 0x3DD
-                        || i == 0x3DE
-                        || i == 0x3DF
-                        || i == 0x3E0
-                        || i == 0x3EA
-                        || i == 0x3EB
-                        || i == 0x3EC
-                        || i == 0x3ED
-                        || i == 0x3EF {
-                    // Replace .notdef with space to generate PDF/A compliant PDF
-                    buffer.append(Character(UnicodeScalar(0x0020)!))
-                }
-                else {
-                    buffer.append(Character(UnicodeScalar(i)!))
-                }
-                i += 1
-            }
-
-            y_pos += 24.0
-            buffer = ""
-            i = 0x410
-            while i <= 0x46F {
-                if i % 16 == 0 {
-                    y_pos += 24.0
-                    text.setText(buffer)
-                    text.setLocation(x_pos, y_pos)
-                    text.drawOn(page)
-                    buffer = ""
-                }
-                buffer.append(Character(UnicodeScalar(i)!))
-                i += 1
-            }
-
-            x_pos = 370.0
-            y_pos = 70.0
-            text = TextLine(f2)
-            text.setLocation(x_pos, y_pos)
-            buffer = ""
+            yPos += 24.0
+            buffer = String()
+            j = 0
             i = 0x20
             while i < 0x7F {
-                if i % 16 == 0 {
-                    y_pos += 24.0
-                    text.setText(buffer)
-                    text.setLocation(x_pos, y_pos)
-                    text.drawOn(page)
+                if j % 64 == 0 {
+                    textLine.setText(buffer)
+                    textLine.setLocation(xPos, yPos)
+                    textLine.drawOn(page)
                     buffer = ""
+                    yPos += 24.0
                 }
                 buffer.append(Character(UnicodeScalar(i)!))
                 i += 1
+                j += 1
             }
+            textLine.setText(buffer)
+            textLine.setLocation(xPos, yPos)
+            textLine.drawOn(page)
 
-            y_pos += 24.0
-            text.setText(buffer)
-            text.setLocation(x_pos, y_pos)
-            text.drawOn(page)
-
-            y_pos += 24.0
-            buffer = ""
-            i = 0x390
-            while i < 0x3EF {
-                if i % 16 == 0 {
-                    y_pos += 24.0
-                    text.setText(buffer)
-                    text.setLocation(x_pos, y_pos)
-                    text.drawOn(page)
-                    buffer = ""
-                }
-                if i == 0x3A2
-                        || i == 0x3CF
-                        || i == 0x3D0
-                        || i == 0x3D3
-                        || i == 0x3D4
-                        || i == 0x3D5
-                        || i == 0x3D7
-                        || i == 0x3D8
-                        || i == 0x3D9
-                        || i == 0x3DA
-                        || i == 0x3DB
-                        || i == 0x3DC
-                        || i == 0x3DD
-                        || i == 0x3DE
-                        || i == 0x3DF
-                        || i == 0x3E0
-                        || i == 0x3EA
-                        || i == 0x3EB
-                        || i == 0x3EC
-                        || i == 0x3ED
-                        || i == 0x3EF {
-                    // Replace .notdef with space to generate PDF/A compliant PDF
-                    buffer.append(Character(UnicodeScalar(0x0020)!))
-                }
-                else {
-                    buffer.append(Character(UnicodeScalar(i)!))
-                }
-                i += 1
-            }
-
-            y_pos += 24.0
-            buffer = ""
-            i = 0x410
-            while i < 0x46F {
-                if i % 16 == 0 {
-                    y_pos += 24.0
-                    text.setText(buffer)
-                    text.setLocation(x_pos, y_pos)
-                    text.drawOn(page)
-                    buffer = ""
-                }
-                buffer.append(Character(UnicodeScalar(i)!))
-                i += 1
-            }
+            page = Page(pdf, A4.LANDSCAPE)
+            textLine.setText("Hello, World!")
+            textLine.setUnderline(true)
+            textLine.setLocation(xPos, 34.0)
+            textLine.drawOn(page)
 
             pdf.complete()
         }
