@@ -48,9 +48,9 @@ public class PDF {
 
     private var os: OutputStream?
     private var objOffset = [Int]()
-    private var title: String = " "
-    private var author: String = " "
-    private var subject: String = " "
+    private var title: String = ""
+    private var author: String = ""
+    private var subject: String = ""
     private var keywords: String = ""
     private var creator: String = ""
     private var producer = "PDFjet v7.01.5"
@@ -744,7 +744,7 @@ public class PDF {
         }
     }
 
-
+/*
     // Use this method on systems that don't have Deflater stream or when troubleshooting.
     private func addPageContent(_ page: inout Page) {
         newobj()
@@ -759,10 +759,10 @@ public class PDF {
         endobj()
         page.contents.append(getObjNumber())
     }
+*/
 
-/*
     private func addPageContent(_ page: inout Page) {
-
+/*
         //>> REMOVE FROM THE OPEN SOURCE EDITION!
         if eval && fonts.count > 0 {
             let f1 = fonts[0]
@@ -794,19 +794,19 @@ public class PDF {
             page.setBrushColor(brushColor)
         }
         //<<
-
+*/
         var buffer = [UInt8]()
         // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-        _ = LZWEncode(&buffer, &page.buf)
-        // _ = FlateEncode(&buffer, &page.buf, RLE: false)
+        // _ = LZWEncode(&buffer, &page.buf)
+        _ = FlateEncode(&buffer, &page.buf, RLE: false)
         // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
         // Swift.print(time1 - time0)
         page.buf.removeAll()   // Release the page content memory!
 
         newobj()
         append("<<\n")
-        append("/Filter /LZWDecode\n")
-        // append("/Filter /FlateDecode\n")
+        // append("/Filter /LZWDecode\n")
+        append("/Filter /FlateDecode\n")
         append("/Length ")
         append(buffer.count)
         append("\n")
@@ -817,7 +817,7 @@ public class PDF {
         endobj()
         page.contents.append(getObjNumber())
     }
-*/
+
 
     @discardableResult
     private func addAnnotationObject(
@@ -1133,6 +1133,9 @@ public class PDF {
 
 
     func append(_ str: String) {
+        if str.count == 0 {
+            return
+        }
         append(Array(str.utf8))
     }
 
