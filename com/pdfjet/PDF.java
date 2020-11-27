@@ -33,7 +33,6 @@ import java.util.zip.*;
 /**
  *  Used to create PDF objects that represent PDF documents.
  *
- *
  */
 public class PDF {
 
@@ -56,12 +55,9 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String creator = "";
-    private final String producer = "PDFjet v7.01.5";
-    private String createDate;      // XMP
-    private String modifyDate;      // XMP
+    private String creator = "PDFjet v7.01.7";
+    private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
-    private String modDate;         // PDF Info Object
     private int byteCount = 0;
     private int pagesObjNumber = 0;
     private String pageLayout = null;
@@ -126,7 +122,7 @@ public class PDF {
      *  Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
      *
      *  @param os the associated output stream.
-     *  @param compliance must be: Compliance.PDF_A_1B or Compliance.PDF_UA
+     *  @param compliance must be: Compliance.PDF_UA or Compliance.PDF_A_1A to Compliance.PDF_A_3B
      *  @throws Exception  If an input or output exception occurred
      */
     public PDF(OutputStream os, int compliance) throws Exception {
@@ -137,12 +133,10 @@ public class PDF {
         Date date = new Date();
 
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        createDate = sdf1.format(date);     // Metadata
-        modifyDate = sdf1.format(date);     // Metadata
+        createDate = sdf1.format(date);     // XMP metadata
 
         SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
         creationDate = sdf2.format(date);   // PDF info object
-        modDate = sdf2.format(date);        // PDF info object
 
         append("%PDF-1.5\n");
         append('%');
@@ -199,23 +193,34 @@ public class PDF {
             sb.append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
             sb.append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
 
+            sb.append("  <dc:format>application/pdf</dc:format>\n");
             if (compliance == Compliance.PDF_UA) {
                 sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
+            }
+            else if (compliance == Compliance.PDF_A_1A) {
+                sb.append("  <pdfaid:part>1</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
             }
             else if (compliance == Compliance.PDF_A_1B) {
                 sb.append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
-
-            sb.append("  <pdf:Producer>");
-            sb.append(producer);
-            sb.append("</pdf:Producer>\n");
-
-            sb.append("  <pdf:Keywords>");
-            sb.append(keywords);
-            sb.append("</pdf:Keywords>\n");
-
-            sb.append("  <dc:format>application/pdf</dc:format>\n");
+            else if (compliance == Compliance.PDF_A_2A) {
+                sb.append("  <pdfaid:part>2</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+            }
+            else if (compliance == Compliance.PDF_A_2B) {
+                sb.append("  <pdfaid:part>2</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
+            else if (compliance == Compliance.PDF_A_3A) {
+                sb.append("  <pdfaid:part>3</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+            }
+            else if (compliance == Compliance.PDF_A_3B) {
+                sb.append("  <pdfaid:part>3</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
 
             sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.append(title);
@@ -229,18 +234,18 @@ public class PDF {
             sb.append(subject);
             sb.append("</rdf:li></rdf:Alt></dc:description>\n");
 
+            sb.append("  <pdf:Keywords>");
+            sb.append(keywords);
+            sb.append("</pdf:Keywords>\n");
+
             sb.append("  <xmp:CreatorTool>");
-            sb.append(producer);
+            sb.append(creator);
             sb.append("</xmp:CreatorTool>\n");
 
             sb.append("  <xmp:CreateDate>");
             sb.append(createDate + "-05:00");       // Append the time zone.
             sb.append("</xmp:CreateDate>\n");
-/*
-            sb.append("  <xmp:ModifyDate>");
-            sb.append(createDate + "-05:00");
-            sb.append("</xmp:ModifyDate>\n");
-*/
+
             sb.append("  <xapMM:DocumentID>uuid:");
             sb.append(uuid);
             sb.append("</xapMM:DocumentID>\n");
@@ -432,25 +437,12 @@ public class PDF {
         append("/Subject (");
         append(subject);
         append(")\n");
-/*
-        append("/Keywords (");
-        append(keywords);
-        append(")\n");
-*/
         append("/Creator (");
-        append(producer);
-        append(")\n");
-        append("/Producer (");
-        append(producer);
+        append(creator);
         append(")\n");
         append("/CreationDate (D:");
         append(creationDate);
         append("-05'00')\n");
-/*
-        append("/ModDate (D:");
-        append(modDate);
-        append("-05'00')\n");
-*/
         append(">>\n");
         endobj();
         return getObjNumber();
@@ -636,7 +628,13 @@ public class PDF {
         append(pagesObjNumber);
         append(" 0 R\n");
 
-        if (compliance == Compliance.PDF_A_1B || compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             append("/Metadata ");
             append(metadataObjNumber);
             append(" 0 R\n");
@@ -1004,7 +1002,13 @@ public class PDF {
      *  @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
-        if (compliance == Compliance.PDF_UA || compliance == Compliance.PDF_A_1B) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             metadataObjNumber = addMetadataObject("", false);
             outputIntentObjNumber = addOutputIntentObject();
         }

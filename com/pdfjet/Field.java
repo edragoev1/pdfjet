@@ -32,8 +32,8 @@ public class Field {
 
     float x;
     String[] values;
-    String[] altDescription;
     String[] actualText;
+    String[] altDescription;
     boolean format = false;
 
 
@@ -46,11 +46,11 @@ public class Field {
         this.values = values;
         this.format = format;
         if (values != null) {
-            this.altDescription = new String[values.length];
             this.actualText     = new String[values.length];
+            this.altDescription = new String[values.length];
             for (int i = 0; i < values.length; i++) {
-                this.altDescription[i] = values[i];
                 this.actualText[i]     = values[i];
+                this.altDescription[i] = values[i];
             }
         }
     }

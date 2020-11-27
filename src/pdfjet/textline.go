@@ -49,8 +49,8 @@ type TextLine struct {
 	altDescription     string
 	actualText         string
 	uriLanguage        string
-	uriAltDescription  string
 	uriActualText      string
+	uriAltDescription  string
 }
 
 // NewTextLine is constructor for creating text line objects.
@@ -380,7 +380,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 	textLine.y += textLine.yBox
 
 	page.SetBrushColor(textLine.color)
-	page.AddBMC("P", textLine.language, textLine.altDescription, textLine.actualText)
+	page.AddBMC("P", textLine.language, textLine.actualText, textLine.altDescription)
 	page.DrawString(textLine.font, textLine.fallbackFont, textLine.text, textLine.x, textLine.y)
 	page.AddEMC()
 
@@ -424,8 +424,8 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 			textLine.x+textLine.font.StringWidth(textLine.fallbackFont, textLine.text),
 			textLine.y+textLine.font.descent,
 			textLine.uriLanguage,
-			textLine.uriAltDescription,
-			textLine.uriActualText))
+			textLine.uriActualText,
+			textLine.uriAltDescription))
 	}
 
 	page.SetTextDirection(0)

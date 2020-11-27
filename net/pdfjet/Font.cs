@@ -265,12 +265,11 @@ public class Font {
      *  @param pdf the PDF object that requires this font.
      *  @param inputStream the input stream to read this font from.
      */
-/* TODO:
     public Font(PDF pdf, System.IO.Stream inputStream) {
         OpenTypeFont.Register(pdf, this, inputStream);
         SetSize(size);
     }
-*/
+
 
     public Font SetSize(float fontSize) {
         this.size = fontSize;

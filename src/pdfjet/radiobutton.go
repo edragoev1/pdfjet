@@ -106,7 +106,7 @@ func (radioButton *RadioButton) SetActualText(actualText string) *RadioButton {
 // @param page the Page where the RadioButton is to be drawn.
 // @return x and y coordinates of the bottom right corner of this component.
 func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
-	page.AddBMC("Span", radioButton.language, radioButton.altDescription, radioButton.actualText)
+	page.AddBMC("Span", radioButton.language, radioButton.actualText, radioButton.altDescription)
 
 	radioButton.r1 = radioButton.font.GetAscent() / 2
 	radioButton.r2 = radioButton.r1 / 2
@@ -141,8 +141,8 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 			radioButton.x+3*radioButton.r1+radioButton.font.stringWidth(radioButton.label),
 			radioButton.y+radioButton.font.bodyHeight,
 			radioButton.language,
-			radioButton.altDescription,
-			radioButton.actualText))
+			radioButton.actualText,
+			radioButton.altDescription))
 	}
 
 	return []float32{

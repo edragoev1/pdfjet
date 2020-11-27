@@ -1638,24 +1638,24 @@ public class Page {
 
     public void AddBMC(
             String structure,
-            String altDescription,
-            String actualText) {
-        AddBMC(structure, null, altDescription, actualText);
+            String actualText,
+            String altDescription) {
+        AddBMC(structure, null, actualText, altDescription);
     }
 
 
     public void AddBMC(
             String structure,
             String language,
-            String altDescription,
-            String actualText) {
+            String actualText,
+            String altDescription) {
         if (pdf.compliance == Compliance.PDF_UA) {
             StructElem element = new StructElem();
             element.structure = structure;
             element.mcid = mcid;
             element.language = language;
-            element.altDescription = altDescription;
             element.actualText = actualText;
+            element.altDescription = altDescription;
             structures.Add(element);
 
             Append("/");
@@ -1683,8 +1683,8 @@ public class Page {
             StructElem element = new StructElem();
             element.structure = StructElem.LINK;
             element.language = annotation.language;
-            element.altDescription = annotation.altDescription;
             element.actualText = annotation.actualText;
+            element.altDescription = annotation.altDescription;
             element.annotation = annotation;
             structures.Add(element);
         }

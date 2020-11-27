@@ -383,7 +383,7 @@ public class Image : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
 
-        page!.addBMC(StructElem.SPAN, language, altDescription, actualText)
+        page!.addBMC(StructElem.SPAN, language, actualText, altDescription)
 
         if xBox != nil {
             x += xBox!
@@ -473,8 +473,8 @@ public class Image : Drawable {
                     (x + w!).rounded(),
                     (y + h!).rounded(),
                     language,
-                    altDescription,
-                    actualText))
+                    actualText,
+                    altDescription))
         }
 
         return [x + w!, y + h!]

@@ -55,12 +55,9 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String creator = "";
-    private String producer = "PDFjet v7.01.5";
-    private String createDate;      // Metadata
-    private String modifyDate;      // Metadata
+    private String creator = "PDFjet v7.01.7";
+    private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
-    private String modDate;         // PDF Info Object
     private int byteCount = 0;
     private int pagesObjNumber = 0;
     private String pageLayout = null;
@@ -121,12 +118,10 @@ public class PDF {
         DateTime date = new DateTime(DateTime.Now.Ticks);
 
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        createDate = sdf1.Format(date);     // Metadata
-        modifyDate = sdf1.Format(date);     // Metadata
+        createDate = sdf1.Format(date);     // XMP metadata
 
         SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
         creationDate = sdf2.Format(date);   // PDF Info Object
-        modDate = sdf2.Format(date);        // PDF Info Object
 
         Append("%PDF-1.5\n");
         Append('%');
@@ -183,23 +178,42 @@ public class PDF {
             sb.Append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
             sb.Append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
 
+            sb.Append("  <dc:format>application/pdf</dc:format>\n");
             if (compliance == Compliance.PDF_UA) {
                 sb.Append("  <pdfuaid:part>1</pdfuaid:part>\n");
+            }
+            else if (compliance == Compliance.PDF_A_1A) {
+                sb.Append("  <pdfaid:part>1</pdfaid:part>\n");
+                sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
             }
             else if (compliance == Compliance.PDF_A_1B) {
                 sb.Append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
+            else if (compliance == Compliance.PDF_A_2A) {
+                sb.Append("  <pdfaid:part>2</pdfaid:part>\n");
+                sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+            }
+            else if (compliance == Compliance.PDF_A_2B) {
+                sb.Append("  <pdfaid:part>2</pdfaid:part>\n");
+                sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
+            else if (compliance == Compliance.PDF_A_3A) {
+                sb.Append("  <pdfaid:part>3</pdfaid:part>\n");
+                sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+            }
+            else if (compliance == Compliance.PDF_A_3B) {
+                sb.Append("  <pdfaid:part>3</pdfaid:part>\n");
+                sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
 
             sb.Append("  <pdf:Producer>");
-            sb.Append(producer);
+            sb.Append(creator);
             sb.Append("</pdf:Producer>\n");
 
             sb.Append("  <pdf:Keywords>");
             sb.Append(keywords);
             sb.Append("</pdf:Keywords>\n");
-
-            sb.Append("  <dc:format>application/pdf</dc:format>\n");
 
             sb.Append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.Append(title);
@@ -214,17 +228,13 @@ public class PDF {
             sb.Append("</rdf:li></rdf:Alt></dc:description>\n");
 
             sb.Append("  <xmp:CreatorTool>");
-            sb.Append(producer);
+            sb.Append(creator);
             sb.Append("</xmp:CreatorTool>\n");
 
             sb.Append("  <xmp:CreateDate>");
             sb.Append(createDate + "-05:00");       // Append the time zone.
             sb.Append("</xmp:CreateDate>\n");
-/*
-            sb.Append("  <xmp:ModifyDate>");
-            sb.Append(createDate + "-05:00");
-            sb.Append("</xmp:ModifyDate>\n");
-*/
+
             sb.Append("  <xapMM:DocumentID>uuid:");
             sb.Append(uuid);
             sb.Append("</xapMM:DocumentID>\n");
@@ -416,25 +426,12 @@ public class PDF {
         Append("/Subject (");
         Append(subject);
         Append(")\n");
-/*
-        Append("/Keywords (");
-        Append(keywords);
-        Append(")\n");
-*/
         Append("/Creator (");
-        Append(producer);
-        Append(")\n");
-        Append("/Producer (");
-        Append(producer);
+        Append(creator);
         Append(")\n");
         Append("/CreationDate (D:");
         Append(creationDate.Substring(0, creationDate.Length - 1)); // Remove the 'Z'
         Append("-05'00')\n");
-/*
-        Append("/ModDate (D:");
-        Append(modDate);
-        Append("-05'00')\n");
-*/
         Append(">>\n");
         Endobj();
         return GetObjNumber();
@@ -522,11 +519,11 @@ public class PDF {
                 Append("/Lang (");
                 Append(element.language != null ? element.language : language);
                 Append(")\n");
-                Append("/Alt <");
-                Append(ToHex(element.altDescription));
-                Append(">\n");
                 Append("/ActualText <");
                 Append(ToHex(element.actualText));
+                Append(">\n");
+                Append("/Alt <");
+                Append(ToHex(element.altDescription));
                 Append(">\n");
                 Append(">>\n");
                 Endobj();
@@ -619,8 +616,13 @@ public class PDF {
         Append(pagesObjNumber);
         Append(" 0 R\n");
 
-        if (compliance == Compliance.PDF_A_1B ||
-                compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             Append("/Metadata ");
             Append(metadataObjNumber);
             Append(" 0 R\n");
@@ -964,8 +966,13 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
      *  Does not close the underlying output stream.
      */
     public void Complete() {
-        if (compliance == Compliance.PDF_A_1B ||
-                compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             metadataObjNumber = AddMetadataObject("", false);
             outputIntentObjNumber = AddOutputIntentObject();
         }

@@ -220,7 +220,7 @@ public class CheckBox implements Drawable {
      *  @param page the Page where the CheckBox is to be drawn.
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
 
         this.w = font.getAscent();
         this.h = this.w;
@@ -272,8 +272,8 @@ public class CheckBox implements Drawable {
                     x + 3f*w/2f + font.stringWidth(label),
                     y + font.bodyHeight,
                     language,
-                    altDescription,
-                    actualText));
+                    actualText,
+                    altDescription));
         }
 
         return new float[] { x + 3f*w + font.stringWidth(label), y + font.bodyHeight };

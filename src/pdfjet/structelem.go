@@ -31,8 +31,8 @@ type StructElem struct {
 	pageObjNumber  int
 	mcid           int
 	language       string
-	altDescription string
 	actualText     string
+	altDescription string
 	annotation     *Annotation
 }
 

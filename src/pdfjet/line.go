@@ -63,8 +63,8 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 	line.color = color.Black
 	line.width = 0.3
 	line.pattern = "[] 0"
-	line.altDescription = single.Space
 	line.actualText = single.Space
+	line.altDescription = single.Space
 	return line
 }
 
@@ -241,7 +241,7 @@ func (line *Line) DrawOn(page *Page) [2]float32 {
 	page.SetPenWidth(line.width)
 	page.SetLineCapStyle(line.capStyle)
 	page.SetLinePattern(line.pattern)
-	page.AddBMC("Span", line.language, line.altDescription, line.actualText)
+	page.AddBMC("Span", line.language, line.actualText, line.altDescription)
 	page.DrawLine(
 		line.x1+line.xBox,
 		line.y1+line.yBox,

@@ -54,8 +54,8 @@ public class Image implements Drawable {
     private boolean flipUpsideDown = false;
 
     private String language = null;
-    private String altDescription = Single.space;
     private String actualText = Single.space;
+    private String altDescription = Single.space;
 
 
     /**
@@ -401,7 +401,7 @@ public class Image implements Drawable {
      *  @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
 
         x += xBox;
         y += yBox;
@@ -487,8 +487,8 @@ public class Image implements Drawable {
                     x + w,
                     y + h,
                     language,
-                    altDescription,
-                    actualText));
+                    actualText,
+                    altDescription));
         }
 
         return new float[] {x + w, y + h};

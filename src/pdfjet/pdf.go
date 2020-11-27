@@ -58,11 +58,8 @@ type PDF struct {
 	subject               string
 	keywords              string
 	creator               string
-	producer              string
 	createDate            string
-	modifyDate            string
 	creationDate          string
-	modDate               string
 	pagesObjNumber        int
 	pageLayout            string
 	pageMode              string
@@ -110,13 +107,13 @@ type PDF struct {
  *  Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
  *
  *  @param os the associated output stream.
- *  @param compliance must be: compliance.PDF_A_1B or compliance.PDFUA
+ *  @param compliance must be: compliance.PDF_UA or compliance.PDF_A_1A to compliance.PDF_A_3B
  */
 func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
 	pdf.compliance = pdfCompliance
-	pdf.producer = "PDFjet v7.01.5"
+	pdf.creator = "PDFjet v7.01.7"
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)
@@ -130,7 +127,6 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf.creationDate =
 		strings.ReplaceAll(pdf.createDate[:10], "-", "") +
 			strings.ReplaceAll(pdf.createDate[11:], ":", "")
-	pdf.modDate = pdf.creationDate
 
 	pdf.states = make(map[string]int)
 
@@ -186,22 +182,28 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		sb.WriteString("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n")
 		sb.WriteString("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
 
-		if pdf.compliance == compliance.PDFUA {
-			sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
-		} else if pdf.compliance == compliance.PDF_A_1B {
-			sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
-			sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
-		}
-
-		sb.WriteString("  <pdf:Producer>")
-		sb.WriteString(pdf.producer)
-		sb.WriteString("</pdf:Producer>\n")
-
-		sb.WriteString("  <pdf:Keywords>")
-		sb.WriteString(pdf.keywords)
-		sb.WriteString("</pdf:Keywords>\n")
-
-		sb.WriteString("  <dc:format>application/pdf</dc:format>\n")
+        sb.WriteString("  <dc:format>application/pdf</dc:format>\n")
+        if pdf.compliance == compliance.PDF_UA {
+            sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
+        } else if pdf.compliance == compliance.PDF_A_1A {
+            sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
+            sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
+        } else if pdf.compliance == compliance.PDF_A_1B {
+            sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
+            sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+        } else if pdf.compliance == compliance.PDF_A_2A {
+            sb.WriteString("  <pdfaid:part>2</pdfaid:part>\n")
+            sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
+        } else if pdf.compliance == compliance.PDF_A_2B {
+            sb.WriteString("  <pdfaid:part>2</pdfaid:part>\n")
+            sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+        } else if pdf.compliance == compliance.PDF_A_3A {
+            sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
+            sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
+        } else if pdf.compliance == compliance.PDF_A_3B {
+            sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
+            sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+        }
 
 		sb.WriteString("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
 		sb.WriteString(pdf.title)
@@ -215,18 +217,18 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		sb.WriteString(pdf.subject)
 		sb.WriteString("</rdf:li></rdf:Alt></dc:description>\n")
 
+		sb.WriteString("  <pdf:Keywords>")
+		sb.WriteString(pdf.keywords)
+		sb.WriteString("</pdf:Keywords>\n")
+
 		sb.WriteString("  <xmp:CreatorTool>")
-		sb.WriteString(pdf.producer)
+		sb.WriteString(pdf.creator)
 		sb.WriteString("</xmp:CreatorTool>\n")
 
 		sb.WriteString("  <xmp:CreateDate>")
 		sb.WriteString(pdf.createDate + "-05:00") // Append the time zone.
 		sb.WriteString("</xmp:CreateDate>\n")
-		/*
-		   sb.WriteString("  <xmp:ModifyDate>")
-		   sb.WriteString(pdf.modDate + "-05:00")
-		   sb.WriteString("</xmp:ModifyDate>\n")
-		*/
+
 		sb.WriteString("  <xapMM:DocumentID>uuid:")
 		sb.WriteString(pdf.uuid)
 		sb.WriteString("</xapMM:DocumentID>\n")
@@ -382,7 +384,7 @@ func (pdf *PDF) addPagesObject() int {
 	pdf.appendString("/Type /Pages\n")
 	pdf.appendString("/Kids [\n")
 	for _, page := range pdf.pages {
-		if pdf.compliance == compliance.PDFUA {
+		if pdf.compliance == compliance.PDF_UA {
 			page.setStructElementsPageObjNumber(page.objNumber)
 		}
 		pdf.appendInteger(page.objNumber)
@@ -410,25 +412,12 @@ func (pdf *PDF) addInfoObject() int {
 	pdf.appendString("/Subject (")
 	pdf.appendString(pdf.subject)
 	pdf.appendString(")\n")
-	/*
-		pdf.appendString("/Keywords (")
-		pdf.appendString(pdf.keywords)
-		pdf.appendString(")\n")
-	*/
 	pdf.appendString("/Creator (")
-	pdf.appendString(pdf.producer)
-	pdf.appendString(")\n")
-	pdf.appendString("/Producer (")
-	pdf.appendString(pdf.producer)
+	pdf.appendString(pdf.creator)
 	pdf.appendString(")\n")
 	pdf.appendString("/CreationDate (D:")
 	pdf.appendString(pdf.creationDate)
 	pdf.appendString("-05'00')\n")
-	/*
-	   	pdf.appendString("/ModDate (D:")
-	   	pdf.appendString(pdf.modDate)
-	       pdf.appendString("-05'00')\n");
-	*/
 	pdf.appendString(">>\n")
 	pdf.endobj()
 	return pdf.getObjNumber()
@@ -574,7 +563,7 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Catalog\n")
 
-	if pdf.compliance == compliance.PDFUA {
+	if pdf.compliance == compliance.PDF_UA {
 		pdf.appendString("/Lang (")
 		pdf.appendString(pdf.language)
 		pdf.appendString(")\n")
@@ -605,7 +594,13 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendInteger(pdf.pagesObjNumber)
 	pdf.appendString(" 0 R\n")
 
-	if pdf.compliance == compliance.PDFUA || pdf.compliance == compliance.PDF_A_1B {
+	if pdf.compliance == compliance.PDF_UA ||
+            pdf.compliance == compliance.PDF_A_1A ||
+            pdf.compliance == compliance.PDF_A_1B ||
+            pdf.compliance == compliance.PDF_A_2A ||
+            pdf.compliance == compliance.PDF_A_2B ||
+            pdf.compliance == compliance.PDF_A_3A ||
+            pdf.compliance == compliance.PDF_A_3B {
 		pdf.appendString("/Metadata ")
 		pdf.appendInteger(pdf.metadataObjNumber)
 		pdf.appendString(" 0 R\n")
@@ -710,7 +705,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 			pdf.appendString("]\n")
 		}
 
-		if pdf.compliance == compliance.PDFUA {
+		if pdf.compliance == compliance.PDF_UA {
 			pdf.appendString("/Tabs /S\n")
 			pdf.appendString("/StructParents ")
 			pdf.appendInteger(i)
@@ -939,7 +934,13 @@ func (pdf *PDF) AddPage(page *Page) {
 
 // Complete writes the PDF to the bufio.Writer and calls the Flush method.
 func (pdf *PDF) Complete() {
-	if pdf.compliance == compliance.PDFUA || pdf.compliance == compliance.PDF_A_1B {
+	if pdf.compliance == compliance.PDF_UA ||
+            pdf.compliance == compliance.PDF_A_1A ||
+            pdf.compliance == compliance.PDF_A_1B ||
+            pdf.compliance == compliance.PDF_A_2A ||
+            pdf.compliance == compliance.PDF_A_2B ||
+            pdf.compliance == compliance.PDF_A_3A ||
+            pdf.compliance == compliance.PDF_A_3B {
 		pdf.metadataObjNumber = pdf.addMetadataObject("", false)
 		pdf.outputIntentObjNumber = pdf.addOutputIntentObject()
 	}
@@ -951,7 +952,7 @@ func (pdf *PDF) Complete() {
 	}
 
 	structTreeRootObjNumber := 0
-	if pdf.compliance == compliance.PDFUA {
+	if pdf.compliance == compliance.PDF_UA {
 		pdf.addStructElementObjects()
 		structTreeRootObjNumber = pdf.addStructTreeRootObject()
 		pdf.addNumsParentTree()

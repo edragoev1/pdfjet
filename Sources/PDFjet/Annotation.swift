@@ -37,8 +37,8 @@ class Annotation {
     var y2: Float = 0.0
 
     var language: String?
-    var altDescription: String?
     var actualText: String?
+    var altDescription: String?
 
     var fileAttachment: FileAttachment?
 
@@ -61,8 +61,8 @@ class Annotation {
             _ x2: Float,
             _ y2: Float,
             _ language: String?,
-            _ altDescription: String?,
-            _ actualText: String?) {
+            _ actualText: String?,
+            _ altDescription: String?) {
         self.uri = uri
         self.key = key
         self.x1 = x1
@@ -70,8 +70,8 @@ class Annotation {
         self.x2 = x2
         self.y2 = y2
         self.language = language
-        self.altDescription = (altDescription == nil) ? uri : altDescription
         self.actualText = (actualText == nil) ? uri : actualText
+        self.altDescription = (altDescription == nil) ? uri : altDescription
     }
 
 }

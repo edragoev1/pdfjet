@@ -53,8 +53,8 @@ public class TextBlock : IDrawable {
     private String uri = null;
     private String key = null;
     private String uriLanguage = null;
-    private String uriAltDescription = null;
     private String uriActualText = null;
+    private String uriAltDescription = null;
 
 
     /**
@@ -386,10 +386,9 @@ public class TextBlock : IDrawable {
                     x + w,
                     y + h,
                     uriLanguage,
-                    uriAltDescription,
-                    uriActualText));
+                    uriActualText,
+                    uriAltDescription));
         }
-
 
         return new float[] {this.x + this.w, this.y + this.h};
     }

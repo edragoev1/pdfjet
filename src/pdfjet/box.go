@@ -178,7 +178,7 @@ func (box *Box) ScaleBy(factor float32) {
 // @param page the page to draw this box on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (box *Box) DrawOn(page *Page) []float32 {
-	page.AddBMC("Span", box.language, box.altDescription, box.actualText)
+	page.AddBMC("Span", box.language, box.actualText, box.altDescription)
 	page.SetPenWidth(box.width)
 	page.SetLinePattern(box.pattern)
 	if box.fillShape {
@@ -206,8 +206,8 @@ func (box *Box) DrawOn(page *Page) []float32 {
 			box.x+box.w,
 			box.y+box.h,
 			box.language,
-			box.altDescription,
-			box.actualText))
+			box.actualText,
+			box.altDescription))
 	}
 
 	return []float32{box.x + box.w, box.y + box.h}

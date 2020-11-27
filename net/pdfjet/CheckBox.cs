@@ -47,8 +47,8 @@ public class CheckBox : IDrawable {
     private String uri = null;
 
     private String language = null;
-    private String altDescription = Single.space;
     private String actualText = Single.space;
+    private String altDescription = Single.space;
 
 
     /**
@@ -206,7 +206,7 @@ public class CheckBox : IDrawable {
      *  @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
 
         this.w = font.GetAscent();
         this.h = this.w;
@@ -258,8 +258,8 @@ public class CheckBox : IDrawable {
                     x + 3f*w/2f + font.StringWidth(label),
                     y + font.bodyHeight,
                     language,
-                    altDescription,
-                    actualText));
+                    actualText,
+                    altDescription));
         }
 
         return new float[] { x + 3f*w + font.StringWidth(label), y + font.bodyHeight };

@@ -277,12 +277,11 @@ public class Font {
      *  @param inputStream the input stream to read this font from.
      *  @throws Exception  If an input or output exception occurred
      */
-/* TODO:
     public Font(PDF pdf, InputStream inputStream) throws Exception {
         OpenTypeFont.register(pdf, this, inputStream);
         setSize(size);
     }
-*/
+
 
     /**
      *  Sets the size of this font.

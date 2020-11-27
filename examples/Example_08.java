@@ -18,7 +18,7 @@ public class Example_08 {
 
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_08.pdf")), Compliance.PDF_A_1B);
-
+/*
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f1.setSize(7f);
 
@@ -27,22 +27,22 @@ public class Example_08 {
 
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
         f3.setSize(7f);
-/*
+*/
         Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("fonts/OpenSans/OpenSans-Bold.ttf.stream"),
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
                 Font.STREAM);
         f1.setSize(7f);
 
         Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
                 Font.STREAM);
         f2.setSize(7f);
 
         Font f3 = new Font(pdf,
-                getClass().getResourceAsStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
                 Font.STREAM);
         f3.setSize(7f);
-*/
+
         image1 = new Image(
                 pdf,
                 getClass().getResourceAsStream("../images/fruit.jpg"),

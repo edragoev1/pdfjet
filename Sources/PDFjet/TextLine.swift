@@ -42,8 +42,6 @@ public class TextLine : Drawable {
 
     private var underline = false
     private var strikeout = false
-    private var underlineTTS: String = "underline"
-    private var strikeoutTTS: String = "strikeout"
 
     private var degrees = 0
     private var color = Color.black
@@ -56,11 +54,10 @@ public class TextLine : Drawable {
 
     private var language: String?
     private var altDescription: String?
-    private var actualText: String?
 
     private var uriLanguage: String?
-    private var uriAltDescription: String?
     private var uriActualText: String?
+    private var uriAltDescription: String?
 
 
     ///
@@ -83,7 +80,6 @@ public class TextLine : Drawable {
         self.font = font
         self.text = text
         self.altDescription = text
-        self.actualText = text
     }
 
 
@@ -97,7 +93,6 @@ public class TextLine : Drawable {
     public func setText(_ text: String) -> TextLine {
         self.text = text
         self.altDescription = text
-        self.actualText = text
         return self
     }
 
@@ -492,24 +487,6 @@ public class TextLine : Drawable {
     }
 
 
-    ///
-    /// Sets the actual text for selt.text line.
-    ///
-    /// - Parameter actualText the actual text for the text line.
-    /// - Returns: selt.TextLine.
-    ///
-    @discardableResult
-    internal func setActualText(_ actualText: String?) -> TextLine {
-        self.actualText = actualText
-        return self
-    }
-
-
-    internal func getActualText() -> String? {
-        return self.actualText
-    }
-
-
     @discardableResult
     public func setURILanguage(_ uriLanguage: String?) -> TextLine {
         self.uriLanguage = uriLanguage
@@ -592,7 +569,7 @@ public class TextLine : Drawable {
         self.y += yBox
 
         page!.setBrushColor(color)
-        page!.addBMC(StructElem.P, language, altDescription!, actualText!)
+        page!.addBMC(StructElem.P, language, text!, altDescription!)
         page!.drawString(font!, fallbackFont, text, self.x, self.y)
         page!.addEMC()
 
@@ -605,7 +582,7 @@ public class TextLine : Drawable {
             let yAdjust = font!.underlinePosition * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(StructElem.P, language, underlineTTS, underlineTTS)
+            page!.addBMC(StructElem.P, language, text!, "Underlined text: " + text!)
             page!.moveTo(x + xAdjust, y + yAdjust)
             page!.lineTo(x2 + xAdjust, y2 + yAdjust)
             page!.strokePath()
@@ -620,7 +597,7 @@ public class TextLine : Drawable {
             let yAdjust = (font!.bodyHeight / 4.0) * Float(cos(radians))
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(StructElem.P, language, strikeoutTTS, strikeoutTTS)
+            page!.addBMC(StructElem.P, language, text!, "Strikethrough text: " + text!)
             page!.moveTo(x - xAdjust, y - yAdjust)
             page!.lineTo(x2 - xAdjust, y2 - yAdjust)
             page!.strokePath()
@@ -636,8 +613,8 @@ public class TextLine : Drawable {
                     self.x + font!.stringWidth(fallbackFont, text!),
                     self.y + font!.descent,
                     uriLanguage,
-                    uriAltDescription,
-                    uriActualText))
+                    uriActualText,
+                    uriAltDescription))
         }
         page!.setTextDirection(0)
 

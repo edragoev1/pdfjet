@@ -129,11 +129,11 @@ public class Form : Drawable {
         for field in fields {
             if field.format {
                 field.values = format(field.values[0], field.values[1], self.f2!, self.rowLength)
-                field.altDescription = [String]()
                 field.actualText  = [String]()
+                field.altDescription = [String]()
                 for value in field.values {
-                    field.altDescription.append(value)
                     field.actualText.append(value)
+                    field.altDescription.append(value)
                 }
             }
             if field.x == 0.0 {
@@ -174,7 +174,6 @@ public class Form : Drawable {
                             .setColor(color)
                             .placeIn(box, field.x + font.descent, yField - font.descent)
                             .setAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
-                            .setActualText((i == 0) ? field.actualText[i] : (field.actualText[i] + ","))
                             .drawOn(page)
                     if i == (field.values.count - 1) {
                         Line(0.0, 0.0, rowLength, 0.0)

@@ -45,8 +45,8 @@ public class Box : IDrawable {
     private bool fillShape = false;
 
     private String language = null;
-    private String altDescription = Single.space;
     private String actualText = Single.space;
+    private String altDescription = Single.space;
 
     internal String uri = null;
     internal String key = null;
@@ -323,7 +323,7 @@ public class Box : IDrawable {
      *  @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
         page.SetPenWidth(width);
         page.SetLinePattern(pattern);
         if (fillShape) {
@@ -353,8 +353,8 @@ public class Box : IDrawable {
                     x + w,
                     y + h,
                     language,
-                    altDescription,
-                    actualText));
+                    actualText,
+                    altDescription));
         }
 
         return new float[] {x + w, y + h + width};

@@ -43,8 +43,6 @@ public class TextLine : IDrawable {
 
     private bool underline = false;
     private bool strikeout = false;
-    private String underlineTTS = "underline";
-    private String strikeoutTTS = "strikeout";
 
     private int degrees = 0;
     private int color = Color.black;
@@ -57,11 +55,10 @@ public class TextLine : IDrawable {
 
     private String language = null;
     private String altDescription = null;
-    private String actualText = null;
 
     private String uriLanguage = null;
-    private String uriAltDescription = null;
     private String uriActualText = null;
+    private String uriAltDescription = null;
 
 
     /**
@@ -84,7 +81,6 @@ public class TextLine : IDrawable {
         this.font = font;
         this.text = text;
         this.altDescription = text;
-        this.actualText = text;
     }
 
 
@@ -97,7 +93,6 @@ public class TextLine : IDrawable {
     public TextLine SetText(String text) {
         this.text = text;
         this.altDescription = text;
-        this.actualText = text;
         return this;
     }
 
@@ -474,23 +469,6 @@ public class TextLine : IDrawable {
     }
 
 
-    /**
-     *  Sets the actual text for this text line.
-     *
-     *  @param actualText the actual text for the text line.
-     *  @return this TextLine.
-     */
-    internal TextLine SetActualText(String actualText) {
-        this.actualText = actualText;
-        return this;
-    }
-
-
-    internal String GetActualText() {
-        return actualText;
-    }
-
-
     public TextLine SetURILanguage(String uriLanguage) {
         this.uriLanguage = uriLanguage;
         return this;
@@ -580,7 +558,7 @@ public class TextLine : IDrawable {
         y += yBox;
 
         page.SetBrushColor(color);
-        page.AddBMC(StructElem.P, language, altDescription, actualText);
+        page.AddBMC(StructElem.P, language, text, altDescription);
         page.DrawString(font, fallbackFont, text, x, y);
         page.AddEMC();
 
@@ -593,7 +571,7 @@ public class TextLine : IDrawable {
             double yAdjust = font.underlinePosition * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(StructElem.P, language, underlineTTS, underlineTTS);
+            page.AddBMC(StructElem.P, language, text, "Underlined text: " + text);
             page.MoveTo(x + xAdjust, y + yAdjust);
             page.LineTo(x2 + xAdjust, y2 + yAdjust);
             page.StrokePath();
@@ -608,7 +586,7 @@ public class TextLine : IDrawable {
             double yAdjust = ( font.bodyHeight / 4.0 ) * Math.Cos(radians);
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(StructElem.P, language, strikeoutTTS, strikeoutTTS);
+            page.AddBMC(StructElem.P, language, text, "Strikethrough text: " + text);
             page.MoveTo(x - xAdjust, y - yAdjust);
             page.LineTo(x2 - xAdjust, y2 - yAdjust);
             page.StrokePath();
@@ -624,8 +602,8 @@ public class TextLine : IDrawable {
                     x + font.StringWidth(fallbackFont, text),
                     y + font.descent,
                     uriLanguage,
-                    uriAltDescription,
-                    uriActualText));
+                    uriActualText,
+                    uriAltDescription));
         }
         page.SetTextDirection(0);
 

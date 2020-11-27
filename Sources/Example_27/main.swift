@@ -25,7 +25,7 @@ public class Example_27 {
             // Latin font
             let f2 = try Font(
                     pdf,
-                    InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf")!,
+                    InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf.stream")!,
                     Font.STREAM)
             f2.setSize(12.0)
 
@@ -39,7 +39,7 @@ public class Example_27 {
             // Arabic font
             let f4 = try Font(
                     pdf,
-                    InputStream(fileAtPath: "fonts/Noto/NotoNaskhArabic-Regular.ttf")!,
+                    InputStream(fileAtPath: "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream")!,
                     Font.STREAM)
             f4.setSize(12.0)
 

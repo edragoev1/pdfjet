@@ -31,20 +31,20 @@ public class Field {
 
     var x: Float
     var values: [String]
-    var altDescription: [String]
     var actualText: [String]
+    var altDescription: [String]
     var format: Bool = false
 
 
     public init(_ x: Float, _ values: [String], _ format: Bool) {
         self.x = x
         self.values = values
-        self.altDescription = [String]()
         self.actualText = [String]()
+        self.altDescription = [String]()
         self.format = format
         for value in self.values {
-            self.altDescription.append(value)
             self.actualText.append(value)
+            self.altDescription.append(value)
         }
     }
 

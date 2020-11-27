@@ -173,7 +173,6 @@ public class Form implements Drawable {
                             .setColor(color)
                             .placeIn(box, field.x + font.descent, yField - font.descent)
                             .setAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
-                            .setActualText((i == 0) ? field.actualText[i] : (field.actualText[i] + ","))
                             .drawOn(page);
                     if (i == (field.values.length - 1)) {
                         new Line(0f, 0f, rowLength, 0f)

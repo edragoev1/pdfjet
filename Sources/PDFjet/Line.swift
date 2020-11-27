@@ -45,8 +45,8 @@ public class Line : Drawable {
     private var capStyle: Int = 0
 
     private var language: String?
-    private var altDescription: String = Single.space
     private var actualText: String = Single.space
+    private var altDescription: String = Single.space
 
 
     ///
@@ -324,7 +324,7 @@ public class Line : Drawable {
         page!.setPenWidth(width)
         page!.setLineCapStyle(capStyle)
         page!.setLinePattern(pattern)
-        page!.addBMC(StructElem.SPAN, language, altDescription, actualText)
+        page!.addBMC(StructElem.SPAN, language, actualText, altDescription)
         page!.drawLine(
                 x1 + xBox,
                 y1 + yBox,

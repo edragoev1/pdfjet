@@ -31,8 +31,8 @@ type Annotation struct {
 	key            *string
 	x1, y1, x2, y2 float32
 	language       string
-	altDescription *string
 	actualText     *string
+	altDescription *string
 	fileAttachment *FileAttachment
 }
 
@@ -49,8 +49,8 @@ func NewAnnotation(
 	key *string,
 	x1, y1, x2, y2 float32,
 	language string,
-	altDescription string,
-	actualText string) *Annotation {
+	actualText string,
+	altDescription string) *Annotation {
 	annotation := new(Annotation)
 	annotation.uri = uri
 	annotation.key = key
@@ -59,14 +59,14 @@ func NewAnnotation(
 	annotation.x2 = x2
 	annotation.y2 = y2
 	annotation.language = language
-	annotation.altDescription = &altDescription
 	annotation.actualText = &actualText
+	annotation.altDescription = &altDescription
 
-	if annotation.altDescription == nil {
-		annotation.altDescription = uri
-	}
 	if annotation.actualText == nil {
 		annotation.actualText = uri
+	}
+	if annotation.altDescription == nil {
+		annotation.altDescription = uri
 	}
 	return annotation
 }

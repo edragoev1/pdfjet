@@ -193,7 +193,7 @@ public class CheckBox : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
 
-        page!.addBMC(StructElem.SPAN, language, altDescription, actualText)
+        page!.addBMC(StructElem.SPAN, language, actualText, altDescription)
 
         self.w = self.font.getAscent()
         self.h = self.w
@@ -245,8 +245,8 @@ public class CheckBox : Drawable {
                     x + 3.0*w/2.0 + font.stringWidth(label),
                     y + font.bodyHeight,
                     language,
-                    altDescription,
-                    actualText))
+                    actualText,
+                    altDescription))
         }
 
         return [x + 3.0*w + font.stringWidth(label), y + font.bodyHeight]

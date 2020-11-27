@@ -41,8 +41,8 @@ class Annotation {
     protected float y2;
 
     protected String language = null;
-    protected String altDescription = null;
     protected String actualText = null;
+    protected String altDescription = null;
 
     protected FileAttachment fileAttachment = null;
 
@@ -66,8 +66,8 @@ class Annotation {
             float x2,
             float y2,
             String language,
-            String altDescription,
-            String actualText) {
+            String actualText,
+            String altDescription) {
         this.uri = uri;
         this.key = key;
         this.x1 = x1;
@@ -75,8 +75,8 @@ class Annotation {
         this.x2 = x2;
         this.y2 = y2;
         this.language = language;
-        this.altDescription = (altDescription == null) ? uri : altDescription;
         this.actualText = (actualText == null) ? uri : actualText;
+        this.altDescription = (altDescription == null) ? uri : altDescription;
     }
 
 }

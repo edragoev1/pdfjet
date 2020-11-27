@@ -46,8 +46,8 @@ public class Box : Drawable {
     private var fillShape: Bool = false
 
     private var language: String?
-    private var altDescription: String = Single.space
     private var actualText: String = Single.space
+    private var altDescription: String = Single.space
 
 
     public init() {
@@ -271,7 +271,7 @@ public class Box : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBMC(StructElem.SPAN, language, altDescription, actualText)
+        page!.addBMC(StructElem.SPAN, language, actualText, altDescription)
         page!.setPenWidth(width)
         page!.setLinePattern(pattern)
         if fillShape {
@@ -301,8 +301,8 @@ public class Box : Drawable {
                     x + w,
                     y + h,
                     language,
-                    altDescription,
-                    actualText))
+                    actualText,
+                    altDescription));
         }
 
         return [x + w, y + h]

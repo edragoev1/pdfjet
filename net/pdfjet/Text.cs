@@ -125,8 +125,6 @@ public class Text : IDrawable {
                 if (i == 0) {
                     beginParagraphPoints.Add(new float[] { xText, yText });
                 }
-                textLine.SetAltDescription((i == 0) ? buf.ToString() : Single.space);
-                textLine.SetActualText((i == 0) ? buf.ToString() : Single.space);
                 float[] point = DrawTextLine(page, xText, yText, textLine);
                 xText = point[0];
                 if (textLine.GetTrailingSpace()) {
@@ -181,8 +179,6 @@ public class Text : IDrawable {
                             .SetUnderline(textLine.GetUnderline())
                             .SetStrikeout(textLine.GetStrikeout())
                             .SetLanguage(textLine.GetLanguage())
-                            .SetAltDescription(firstTextSegment ? textLine.GetAltDescription() : Single.space)
-                            .SetActualText(firstTextSegment ? textLine.GetActualText() : Single.space)
                             .DrawOn(page);
                 }
                 firstTextSegment = false;
@@ -200,8 +196,6 @@ public class Text : IDrawable {
                     .SetUnderline(textLine.GetUnderline())
                     .SetStrikeout(textLine.GetStrikeout())
                     .SetLanguage(textLine.GetLanguage())
-                    .SetAltDescription(firstTextSegment ? textLine.GetAltDescription() : Single.space)
-                    .SetActualText(firstTextSegment ? textLine.GetActualText() : Single.space)
                     .DrawOn(page);
         }
 

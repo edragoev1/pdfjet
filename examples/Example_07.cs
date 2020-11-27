@@ -15,17 +15,17 @@ using PDFjet.NET;
 public class Example_07 {
 
     public Example_07(String fontType) {
-
+/*
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_07.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
         pdf.SetTitle("PDF/UA compliant PDF");
-/*
+*/
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_07.pdf", FileMode.Create)),
                 Compliance.PDF_A_1B);
         pdf.SetTitle("PDF/A-1B compliant PDF");
-*/
+
         Font f1 = new Font(pdf,
                 new FileStream(
                         "fonts/OpenSans/OpenSans-Regular.ttf.stream",

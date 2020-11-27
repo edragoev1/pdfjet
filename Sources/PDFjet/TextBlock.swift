@@ -48,8 +48,8 @@ public class TextBlock : Drawable {
     private var uri: String?
     private var key: String?
     private var uriLanguage: String?
-    private var uriAltDescription: String?
     private var uriActualText: String?
+    private var uriAltDescription: String?
 
 
     ///
@@ -389,8 +389,8 @@ public class TextBlock : Drawable {
                     x + w,
                     y + h,
                     uriLanguage,
-                    uriAltDescription,
-                    uriActualText))
+                    uriActualText,
+                    uriAltDescription))
         }
 
         return [self.x + self.w, self.y + self.h];

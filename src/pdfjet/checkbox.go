@@ -141,7 +141,7 @@ func (checkBox *CheckBox) SetActualText(actualText string) *CheckBox {
 //
 // @param page the Page where the CheckBox is to be drawn.
 func (checkBox *CheckBox) DrawOn(page Page) []float32 {
-	page.AddBMC("Span", checkBox.language, checkBox.altDescription, checkBox.actualText)
+	page.AddBMC("Span", checkBox.language, checkBox.actualText, checkBox.altDescription)
 
 	checkBox.w = checkBox.font.ascent
 	checkBox.h = checkBox.w
@@ -191,8 +191,8 @@ func (checkBox *CheckBox) DrawOn(page Page) []float32 {
 			checkBox.x+3.0*checkBox.w/2.0+checkBox.font.stringWidth(checkBox.label),
 			checkBox.y+checkBox.font.bodyHeight,
 			checkBox.language,
-			checkBox.altDescription,
-			checkBox.actualText))
+			checkBox.actualText,
+			checkBox.altDescription))
 	}
 
 	return []float32{checkBox.x + 3.0*checkBox.w + checkBox.font.stringWidth(checkBox.label), checkBox.y + checkBox.font.descent}

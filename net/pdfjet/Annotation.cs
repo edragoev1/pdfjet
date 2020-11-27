@@ -42,8 +42,8 @@ internal class Annotation {
     internal float y2 = 0f;
 
     internal String language = null;
-    internal String altDescription = null;
     internal String actualText = null;
+    internal String altDescription = null;
 
     internal FileAttachment fileAttachment = null;
 
@@ -67,8 +67,8 @@ internal class Annotation {
             float x2,
             float y2,
             String language,
-            String altDescription,
-            String actualText) {
+            String actualText,
+            String altDescription) {
         this.uri = uri;
         this.key = key;
         this.x1 = x1;
@@ -76,8 +76,8 @@ internal class Annotation {
         this.x2 = x2;
         this.y2 = y2;
         this.language = language;
-        this.altDescription = (altDescription == null) ? uri : altDescription;
         this.actualText = (actualText == null) ? uri : actualText;
+        this.altDescription = (altDescription == null) ? uri : altDescription;
     }
 
 }

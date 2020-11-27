@@ -47,8 +47,8 @@ public class Line : IDrawable {
     private int capStyle = 0;
 
     private String language = null;
-    private String altDescription = Single.space;
     private String actualText = Single.space;
+    private String altDescription = Single.space;
 
 
     /**
@@ -392,7 +392,7 @@ public class Line : IDrawable {
         page.SetPenWidth(width);
         page.SetLineCapStyle(capStyle);
         page.SetLinePattern(pattern);
-        page.AddBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
         page.DrawLine(
                 x1 + xBox,
                 y1 + yBox,

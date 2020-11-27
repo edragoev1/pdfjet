@@ -177,7 +177,6 @@ public class Form : IDrawable {
                             .SetColor(color)
                             .PlaceIn(box, field.x + font.descent, yField - font.descent)
                             .SetAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
-                            .SetActualText((i == 0) ? field.actualText[i] : (field.actualText[i] + ","))
                             .DrawOn(page);
                     endOfLinePoints.Add(new float[] {
                             field.x + f1.descent + font.StringWidth(field.values[i]),

@@ -23,7 +23,7 @@ func Example45() {
 	defer file.Close()
 	w := bufio.NewWriter(file)
 
-	pdf := pdfjet.NewPDF(w, compliance.PDFUA)
+	pdf := pdfjet.NewPDF(w, compliance.PDF_UA)
     pdf.SetLanguage("en-US");
     pdf.SetTitle("Hello, World!");
 

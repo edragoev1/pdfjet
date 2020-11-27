@@ -47,8 +47,8 @@ type TextBlock struct {
 	uri                *string
 	key                *string
 	uriLanguage        string
-	uriAltDescription  string
 	uriActualText      string
+	uriAltDescription  string
 }
 
 // NewTextBlock returns new text block.
@@ -293,8 +293,9 @@ func (textBlock *TextBlock) drawText(page *Page) [2]float32 {
 			textBlock.x+textBlock.w,
 			textBlock.y+textBlock.h,
 			textBlock.uriLanguage,
-			textBlock.uriAltDescription,
-			textBlock.uriActualText))
+			textBlock.uriActualText,
+			textBlock.uriAltDescription))
+
 	}
 
 	return [2]float32{textBlock.x + textBlock.w, textBlock.y + textBlock.h}

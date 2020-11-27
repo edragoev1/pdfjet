@@ -52,11 +52,9 @@ public class PDF {
     private var author: String = ""
     private var subject: String = ""
     private var keywords: String = ""
-    private var creator: String = ""
-    private var producer = "PDFjet v7.01.5"
+    private var creator = "PDFjet v7.01.7"
     private var createDate: String?
     private var creationDate: String?
-    private var modDate: String?
     private var byteCount = 0
     private var pagesObjNumber = 0
     private var pageLayout: String?
@@ -120,7 +118,7 @@ public class PDF {
     /// Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
     ///
     /// - Parameter os the associated output stream.
-    /// - Parameter compliance must be: Compliance.PDF_A_1B or Compliance.PDF_UA
+    /// - Parameter compliance must be: Compliance.PDF_UA or Compliance.PDF_A_1A to Compliance.PDF_A_3B
     ///
     public init(_ os: OutputStream, _ compliance: Int) {
         os.open()
@@ -137,7 +135,6 @@ public class PDF {
         let dateFormatter2 = DateFormatter()
         dateFormatter2.dateFormat = "yyyyMMddhhmmss"
         self.creationDate = dateFormatter2.string(from: date)
-        self.modDate = dateFormatter2.string(from: date)
 
         append("%PDF-1.5\n")
         append("%")
@@ -194,23 +191,38 @@ public class PDF {
             sb.append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
             sb.append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
 
-            if (compliance == Compliance.PDF_UA) {
+            sb.append("  <dc:format>application/pdf</dc:format>\n");
+            if compliance == Compliance.PDF_UA {
                 sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
             }
-            else if (compliance == Compliance.PDF_A_1B) {
+            else if compliance == Compliance.PDF_A_1A {
+                sb.append("  <pdfaid:part>1</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+            }
+            else if compliance == Compliance.PDF_A_1B {
                 sb.append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
-
-            sb.append("  <pdf:Producer>");
-            sb.append(producer);
-            sb.append("</pdf:Producer>\n");
+            else if compliance == Compliance.PDF_A_2A {
+                sb.append("  <pdfaid:part>2</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+            }
+            else if compliance == Compliance.PDF_A_2B {
+                sb.append("  <pdfaid:part>2</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
+            else if compliance == Compliance.PDF_A_3A {
+                sb.append("  <pdfaid:part>3</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+            }
+            else if compliance == Compliance.PDF_A_3B {
+                sb.append("  <pdfaid:part>3</pdfaid:part>\n");
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            }
 
             sb.append("  <pdf:Keywords>");
             sb.append(keywords);
             sb.append("</pdf:Keywords>\n");
-
-            sb.append("  <dc:format>application/pdf</dc:format>\n");
 
             sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.append(title);
@@ -225,17 +237,13 @@ public class PDF {
             sb.append("</rdf:li></rdf:Alt></dc:description>\n");
 
             sb.append("  <xmp:CreatorTool>");
-            sb.append(producer);
+            sb.append(creator);
             sb.append("</xmp:CreatorTool>\n");
 
             sb.append("  <xmp:CreateDate>");
             sb.append(createDate! + "-05:00");      // Append the time zone.
             sb.append("</xmp:CreateDate>\n");
-/*
-            sb.append("  <xmp:ModifyDate>");
-            sb.append(createDate! + "-05:00");
-            sb.append("</xmp:ModifyDate>\n");
-*/
+
             sb.append("  <xapMM:DocumentID>uuid:");
             sb.append(uuid!);
             sb.append("</xapMM:DocumentID>\n");
@@ -426,25 +434,12 @@ public class PDF {
         append("/Subject (")
         append(subject)
         append(")\n")
-/*
-        append("/Keywords (")
-        append(keywords)
-        append(")\n")
-*/
         append("/Creator (")
-        append(producer)
-        append(")\n")
-        append("/Producer (")
-        append(producer)
+        append(creator)
         append(")\n")
         append("/CreationDate (D:")
         append(self.creationDate!)
         append("-05'00')\n");
-/*
-        append("/ModDate (D:")
-        append(self.modDate!)
-        append("-05'00')\n");
-*/
         append(">>\n")
         endobj()
         return getObjNumber()
@@ -621,7 +616,13 @@ public class PDF {
         append(pagesObjNumber)
         append(" 0 R\n")
 
-        if compliance == Compliance.PDF_A_1B || compliance == Compliance.PDF_UA {
+        if compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B {
             append("/Metadata ")
             append(metadataObjNumber)
             append(" 0 R\n")
@@ -958,7 +959,13 @@ public class PDF {
     /// The output stream is then closed.
     ///
     public func complete() {
-        if compliance == Compliance.PDF_A_1B || compliance == Compliance.PDF_UA {
+        if compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B {
             metadataObjNumber = addMetadataObject("", false)
             outputIntentObjNumber = addOutputIntentObject()
         }

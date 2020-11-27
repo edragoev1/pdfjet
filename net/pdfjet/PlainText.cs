@@ -138,7 +138,7 @@ public class PlainText : IDrawable {
         page.DrawRect(x, y, w, h);
         page.AddEMC();
 
-        page.AddBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
         page.SetTextStart();
         page.SetTextFont(font);
         page.SetBrushColor(textColor);

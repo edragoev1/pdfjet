@@ -41,8 +41,8 @@ public class StructElem {
     internal int pageObjNumber;
     internal int mcid = 0;
     internal String language = null;
-    internal String altDescription = null;
     internal String actualText = null;
+    internal String altDescription = null;
     internal Annotation annotation = null;
 }
 }   // End of namespace PDFjet.NET

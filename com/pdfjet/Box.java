@@ -44,13 +44,12 @@ public class Box implements Drawable {
     private String pattern = "[] 0";
     private boolean fillShape = false;
 
-    private String language = null;
-    private String altDescription = Single.space;
-    private String actualText = Single.space;
-
     protected String uri = null;
     protected String key = null;
 
+    private String language = null;
+    private String actualText = Single.space;
+    private String altDescription = Single.space;
 
     /**
      *  The default constructor.
@@ -330,7 +329,7 @@ public class Box implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
         page.setPenWidth(width);
         page.setLinePattern(pattern);
         if (fillShape) {
@@ -360,8 +359,8 @@ public class Box implements Drawable {
                     x + w,
                     y + h,
                     language,
-                    altDescription,
-                    actualText));
+                    actualText,
+                    altDescription));
         }
 
         return new float[] {x + w, y + h + width};

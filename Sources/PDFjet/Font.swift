@@ -265,10 +265,9 @@ public class Font {
         setSize(size)
     }
 
-/* TODO:
+
     ///
     /// Constructor for OpenType and TrueType fonts.
-    /// Please see Example_06 and Example_07.
     ///
     /// @param pdf the PDF object that requires this font.
     /// @param stream the input stream to read this font from.
@@ -277,7 +276,7 @@ public class Font {
         OpenTypeFont.register(pdf, self, stream)
         setSize(size)
     }
-*/
+
 
     ///
     /// Sets the size of this font.

@@ -124,8 +124,6 @@ public class Text implements Drawable {
                 if (i == 0) {
                     beginParagraphPoints.add(new float[] {xText, yText});
                 }
-                textLine.setAltDescription((i == 0) ? buf.toString() : Single.space);
-                textLine.setActualText((i == 0) ? buf.toString() : Single.space);
                 float[] xy = drawTextLine(page, xText, yText, textLine);
                 xText = xy[0];
                 if (textLine.getTrailingSpace()) {
@@ -179,8 +177,6 @@ public class Text implements Drawable {
                             .setUnderline(textLine.getUnderline())
                             .setStrikeout(textLine.getStrikeout())
                             .setLanguage(textLine.getLanguage())
-                            .setAltDescription(firstTextSegment ? textLine.getAltDescription() : Single.space)
-                            .setActualText(firstTextSegment ? textLine.getActualText() : Single.space)
                             .drawOn(page);
                 }
                 firstTextSegment = false;
@@ -198,8 +194,6 @@ public class Text implements Drawable {
                     .setUnderline(textLine.getUnderline())
                     .setStrikeout(textLine.getStrikeout())
                     .setLanguage(textLine.getLanguage())
-                    .setAltDescription(firstTextSegment ? textLine.getAltDescription() : Single.space)
-                    .setActualText(firstTextSegment ? textLine.getActualText() : Single.space)
                     .drawOn(page);
         }
 

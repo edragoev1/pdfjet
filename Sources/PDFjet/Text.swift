@@ -120,14 +120,6 @@ public class Text : Drawable {
                 if i == 0 {
                     beginParagraphPoints!.append([xText, yText])
                 }
-                if i == 0 {
-                    textLine!.setAltDescription(buf)
-                    textLine!.setActualText(buf)
-                }
-                else {
-                    textLine!.setAltDescription(Single.space)
-                    textLine!.setActualText(Single.space)
-                }
                 let xy = drawTextLine(page, self.xText, self.yText, textLine!)
                 self.xText = xy[0]
                 if textLine!.getTrailingSpace() {
@@ -168,7 +160,6 @@ public class Text : Drawable {
         }
 
         var buf = String()
-        var firstTextSegment: Bool = true
         for i in 0..<tokens.count {
             let token = (i == 0) ? tokens[i] : (Single.space + tokens[i])
             let lineWidth = textLine.font!.stringWidth(textLine.fallbackFont, buf)
@@ -178,12 +169,6 @@ public class Text : Drawable {
             }
             else {
                 if page != nil {
-                    var altDescription = Single.space
-                    var actualText = Single.space
-                    if firstTextSegment {
-                        altDescription = textLine.getAltDescription()!
-                        actualText = textLine.getActualText()!
-                    }
                     TextLine(textLine.font!, buf)
                             .setFallbackFont(textLine.fallbackFont)
                             .setLocation(xText, yText + textLine.getVerticalOffset())
@@ -191,11 +176,8 @@ public class Text : Drawable {
                             .setUnderline(textLine.getUnderline())
                             .setStrikeout(textLine.getStrikeout())
                             .setLanguage(textLine.getLanguage())
-                            .setAltDescription(altDescription)
-                            .setActualText(actualText)
                             .drawOn(page)
                 }
-                firstTextSegment = false
                 xText = x1
                 yText += leading
                 buf = ""
@@ -203,12 +185,6 @@ public class Text : Drawable {
             }
         }
         if page != nil {
-            var altDescription = Single.space
-            var actualText = Single.space
-            if firstTextSegment {
-                altDescription = textLine.getAltDescription()!
-                actualText = textLine.getActualText()!
-            }
             TextLine(textLine.font!, buf)
                     .setFallbackFont(textLine.fallbackFont)
                     .setLocation(xText, yText + textLine.getVerticalOffset())
@@ -216,8 +192,6 @@ public class Text : Drawable {
                     .setUnderline(textLine.getUnderline())
                     .setStrikeout(textLine.getStrikeout())
                     .setLanguage(textLine.getLanguage())
-                    .setAltDescription(altDescription)
-                    .setActualText(actualText)
                     .drawOn(page)
         }
 

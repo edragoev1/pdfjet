@@ -1530,25 +1530,25 @@ public class Page {
 
     public func addBMC(
             _ structure: String,
-            _ altDescription: String,
-            _ actualText: String) {
-        addBMC(structure, nil, altDescription, actualText)
+            _ actualText: String,
+            _ altDescription: String) {
+        addBMC(structure, nil, actualText, altDescription)
     }
 
 
     public func addBMC(
             _ structure: String,
             _ language: String?,
-            _ altDescription: String,
-            _ actualText: String) {
+            _ actualText: String,
+            _ altDescription: String) {
 
         if pdf != nil && pdf!.compliance == Compliance.PDF_UA {
             let element = StructElem()
             element.structure = structure
             element.mcid = mcid
             element.language = language
-            element.altDescription = altDescription
             element.actualText = actualText
+            element.altDescription = altDescription
             structures.append(element)
 
             append("/")
@@ -1577,8 +1577,8 @@ public class Page {
             let element = StructElem()
             element.structure = StructElem.LINK
             element.language = annotation.language
-            element.altDescription = annotation.altDescription
             element.actualText = annotation.actualText
+            element.altDescription = annotation.altDescription
             element.annotation = annotation
             self.structures.append(element)
         }

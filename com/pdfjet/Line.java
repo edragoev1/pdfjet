@@ -391,7 +391,7 @@ public class Line implements Drawable {
         page.setPenWidth(width);
         page.setLineCapStyle(capStyle);
         page.setLinePattern(pattern);
-        page.addBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
         page.drawLine(
                 x1 + xBox,
                 y1 + yBox,

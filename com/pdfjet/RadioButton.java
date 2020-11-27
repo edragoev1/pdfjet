@@ -40,8 +40,8 @@ public class RadioButton implements Drawable {
     private String uri = null;
 
     private String language = null;
-    private String altDescription = Single.space;
     private String actualText = Single.space;
+    private String altDescription = Single.space;
 
 
     /**
@@ -172,7 +172,7 @@ public class RadioButton implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
 
         this.r1 = font.getAscent()/2;
         this.r2 = r1/2;
@@ -207,8 +207,8 @@ public class RadioButton implements Drawable {
                     x + 3*r1 + font.stringWidth(label),
                     y + font.bodyHeight,
                     language,
-                    altDescription,
-                    actualText));
+                    actualText,
+                    altDescription));
         }
 
         return new float[] { x + 6*r1 + font.stringWidth(label), y + font.bodyHeight };

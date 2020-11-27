@@ -108,14 +108,6 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 			if i == 0 {
 				text.beginParagraphPoints = append(text.beginParagraphPoints, [2]float32{text.xText, text.yText})
 			}
-			altDescription := buf.String()
-			actualText := buf.String()
-			if i == 0 {
-				altDescription = single.Space
-				actualText = single.Space
-			}
-			textLine.SetAltDescription(altDescription)
-			textLine.SetActualText(actualText)
 			xy := text.drawTextLine(page, text.xText, text.yText, textLine)
 			text.xText = xy[0]
 			if textLine.GetTrailingSpace() {
@@ -149,7 +141,6 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 		tokens = strings.Fields(textLine.text)
 	}
 
-	firstTextSegment := true
 	var buf strings.Builder
 	for i, token := range tokens {
 		if i > 0 {
@@ -161,12 +152,6 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 			buf.WriteString(token)
 		} else {
 			if page != nil {
-				altDescription := single.Space
-				actualText := single.Space
-				if firstTextSegment {
-					altDescription = textLine.GetAltDescription()
-					actualText = textLine.GetActualText()
-				}
 				textLine2 := NewTextLine(textLine.font, buf.String())
 				textLine2.SetFallbackFont(textLine.fallbackFont)
 				textLine2.SetLocation(text.xText, text.yText+textLine.GetVerticalOffset())
@@ -174,11 +159,8 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 				textLine2.SetUnderline(textLine.GetUnderline())
 				textLine2.SetStrikeout(textLine.GetStrikeout())
 				textLine2.SetLanguage(textLine.GetLanguage())
-				textLine2.SetAltDescription(altDescription)
-				textLine2.SetActualText(actualText)
 				textLine2.DrawOn(page)
 			}
-			firstTextSegment = false
 			text.xText = text.x1
 			text.yText += text.leading
 			buf.Reset()
@@ -186,12 +168,6 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 		}
 	}
 	if page != nil {
-		altDescription := single.Space
-		actualText := single.Space
-		if firstTextSegment {
-			altDescription = textLine.GetAltDescription()
-			actualText = textLine.GetActualText()
-		}
 		textLine2 := NewTextLine(textLine.font, buf.String())
 		textLine2.SetFallbackFont(textLine.fallbackFont)
 		textLine2.SetLocation(text.xText, text.yText+textLine.GetVerticalOffset())
@@ -199,8 +175,6 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 		textLine2.SetUnderline(textLine.GetUnderline())
 		textLine2.SetStrikeout(textLine.GetStrikeout())
 		textLine2.SetLanguage(textLine.GetLanguage())
-		textLine2.SetAltDescription(altDescription)
-		textLine2.SetActualText(actualText)
 		textLine2.DrawOn(page)
 	}
 

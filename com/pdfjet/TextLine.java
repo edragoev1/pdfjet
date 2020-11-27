@@ -57,11 +57,10 @@ public class TextLine implements Drawable {
 
     private String language = null;
     private String altDescription = null;
-    private String actualText = null;
 
     private String uriLanguage = null;
-    private String uriAltDescription = null;
     private String uriActualText = null;
+    private String uriAltDescription = null;
 
 
     /**
@@ -84,7 +83,6 @@ public class TextLine implements Drawable {
         this.font = font;
         this.text = text;
         this.altDescription = text;
-        this.actualText = text;
     }
 
 
@@ -97,7 +95,6 @@ public class TextLine implements Drawable {
     public TextLine setText(String text) {
         this.text = text;
         this.altDescription = text;
-        this.actualText = text;
         return this;
     }
 
@@ -499,23 +496,6 @@ public class TextLine implements Drawable {
     }
 
 
-    /**
-     *  Sets the actual text for this text line.
-     *
-     *  @param actualText the actual text for the text line.
-     *  @return this TextLine.
-     */
-    protected TextLine setActualText(String actualText) {
-        this.actualText = actualText;
-        return this;
-    }
-
-
-    protected String getActualText() {
-        return actualText;
-    }
-
-
     public TextLine setURILanguage(String uriLanguage) {
         this.uriLanguage = uriLanguage;
         return this;
@@ -598,7 +578,7 @@ public class TextLine implements Drawable {
         y += yBox;
 
         page.setBrushColor(color);
-        page.addBMC(StructElem.P, language, altDescription, actualText);
+        page.addBMC(StructElem.P, language, text, altDescription);
         page.drawString(font, fallbackFont, text, x, y);
         page.addEMC();
 
@@ -611,8 +591,7 @@ public class TextLine implements Drawable {
             double yAdjust = font.underlinePosition * Math.cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
-            String underlineTTS = "underline";
-            page.addBMC(StructElem.P, language, underlineTTS, underlineTTS);
+            page.addBMC(StructElem.P, language, text, "Underlined text: " + text);
             page.moveTo(x + xAdjust, y + yAdjust);
             page.lineTo(x2 + xAdjust, y2 + yAdjust);
             page.strokePath();
@@ -627,8 +606,7 @@ public class TextLine implements Drawable {
             double yAdjust = (font.bodyHeight / 4.0) * Math.cos(radians);
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
-            String strikeoutTTS = "strikeout";
-            page.addBMC(StructElem.P, language, strikeoutTTS, strikeoutTTS);
+            page.addBMC(StructElem.P, language, text, "Strikethrough text: " + text);
             page.moveTo(x - xAdjust, y - yAdjust);
             page.lineTo(x2 - xAdjust, y2 - yAdjust);
             page.strokePath();
@@ -644,8 +622,8 @@ public class TextLine implements Drawable {
                     x + font.stringWidth(fallbackFont, text),
                     y + font.descent,
                     uriLanguage,
-                    uriAltDescription,
-                    uriActualText));
+                    uriActualText,
+                    uriAltDescription));
         }
         page.setTextDirection(0);
 

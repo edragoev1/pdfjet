@@ -42,8 +42,8 @@ public class PlainText implements Drawable {
     private int borderColor = Color.white;
     private int textColor = Color.black;
     private String language;
-    private String altDescription;
     private String actualText;
+    private String altDescription;
 
 
     public PlainText(Font font, String[] textLines) {
@@ -55,8 +55,8 @@ public class PlainText implements Drawable {
             buf.append(str);
             buf.append(' ');
         }
-        this.altDescription = buf.toString();
         this.actualText = buf.toString();
+        this.altDescription = buf.toString();
     }
 
 
@@ -140,7 +140,7 @@ public class PlainText implements Drawable {
         page.drawRect(x, y, w, h);
         page.addEMC();
 
-        page.addBMC(StructElem.SPAN, language, altDescription, actualText);
+        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
         page.setTextStart();
         page.setTextFont(font);
         page.setBrushColor(textColor);

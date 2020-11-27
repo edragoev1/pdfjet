@@ -128,7 +128,7 @@ func (text *PlainText) DrawOn(page *Page) []float32 {
 	page.DrawRect(text.x, text.y, text.w, h)
 	page.AddEMC()
 
-	page.AddBMC("Span", text.language, text.altDescription, text.actualText)
+	page.AddBMC("Span", text.language, text.actualText, text.altDescription)
 	page.SetTextStart()
 	page.SetTextFont(text.font)
 	page.SetBrushColor(text.textColor)
