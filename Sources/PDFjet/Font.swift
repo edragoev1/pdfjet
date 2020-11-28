@@ -272,11 +272,12 @@ public class Font {
     /// @param pdf the PDF object that requires this font.
     /// @param stream the input stream to read this font from.
     ///
+/*
     public init(_ pdf: PDF, _ stream: InputStream) throws {
         OpenTypeFont.register(pdf, self, stream)
         setSize(size)
     }
-
+*/
 
     ///
     /// Sets the size of this font.

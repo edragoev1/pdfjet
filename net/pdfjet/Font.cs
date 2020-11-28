@@ -260,16 +260,16 @@ public class Font {
 
     /**
      *  Constructor for OpenType and TrueType fonts.
-     *  Please see Example_06 and Example_07.
      *
      *  @param pdf the PDF object that requires this font.
      *  @param inputStream the input stream to read this font from.
      */
+/*
     public Font(PDF pdf, System.IO.Stream inputStream) {
         OpenTypeFont.Register(pdf, this, inputStream);
         SetSize(size);
     }
-
+*/
 
     public Font SetSize(float fontSize) {
         this.size = fontSize;
