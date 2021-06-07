@@ -1,13 +1,13 @@
 package main
 
 import (
-    "a4"
 	"bufio"
-    "compliance"
 	"fmt"
 	"log"
 	"os"
 	"pdfjet"
+    "pdfjet/a4"
+    "pdfjet/compliance"
 	"strings"
 	"time"
 )

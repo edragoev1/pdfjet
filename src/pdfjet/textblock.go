@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"align"
-	"color"
 	"log"
+	"pdfjet/align"
+	"pdfjet/color"
 	"strings"
 )
 

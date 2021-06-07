@@ -25,10 +25,10 @@ SOFTWARE.
 */
 
 import (
-	"compressor"
 	"io"
 	"log"
 	"math"
+	"pdfjet/compressor"
 )
 
 // BMPImage describes BMP image object.

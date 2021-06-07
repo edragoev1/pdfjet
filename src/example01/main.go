@@ -2,19 +2,19 @@ package main
 
 import (
 	"bufio"
-	"color"
 	"fmt"
 	"io/ioutil"
-	"letter"
 	"log"
 	"os"
 	"pdfjet"
+	"pdfjet/color"
+	"pdfjet/letter"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// Example01 --  TODO:
+// Example01 --  TODO: Add proper description.
 func Example01(mode string) {
 	file, err := os.Create("Example_01.pdf")
 	if err != nil {

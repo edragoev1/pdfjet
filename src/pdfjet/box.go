@@ -25,8 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"color"
-	"single"
+	"pdfjet/color"
+	"pdfjet/single"
+	"pdfjet/structuretype"
 )
 
 // Box is used to create rectangular boxes on a page.
@@ -37,11 +38,12 @@ type Box struct {
 	width          float32
 	pattern        string
 	fillShape      bool
+	uri            *string
+	key            *string
 	language       string
 	altDescription string
 	actualText     string
-	uri            *string
-	key            *string
+    structureType  string
 }
 
 // NewBox creates new Box object.
@@ -52,6 +54,7 @@ func NewBox() *Box {
 	box.pattern = "[] 0"
 	box.altDescription = single.Space
 	box.actualText = single.Space
+    box.structureType = structuretype.P
 	return box
 }
 
@@ -126,6 +129,12 @@ func (box *Box) SetActualText(actualText string) *Box {
 	return box
 }
 
+// SetStructureType sets the type of the structure.
+func (box *Box) SetStructureType(structureType string) *Box {
+	box.structureType = structureType
+	return box
+}
+
 // SetPattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
 // It is specified by a dash array and a dash phase.
 // The elements of the dash array are positive numbers that specify the lengths of
@@ -178,7 +187,7 @@ func (box *Box) ScaleBy(factor float32) {
 // @param page the page to draw this box on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (box *Box) DrawOn(page *Page) []float32 {
-	page.AddBMC("Span", box.language, box.actualText, box.altDescription)
+	page.AddBMC(box.structureType, box.language, box.actualText, box.altDescription)
 	page.SetPenWidth(box.width)
 	page.SetLinePattern(box.pattern)
 	if box.fillShape {

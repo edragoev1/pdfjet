@@ -25,11 +25,11 @@ SOFTWARE.
 */
 
 import (
-	"corefont"
-	"decompressor"
 	"fmt"
-	"letter"
 	"log"
+	"pdfjet/corefont"
+	"pdfjet/decompressor"
+	"pdfjet/letter"
 	"strconv"
 	"strings"
 	"unicode"

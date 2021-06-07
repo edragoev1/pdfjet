@@ -2,14 +2,14 @@ package main
 
 import (
 	"bufio"
-	"color"
 	"fmt"
-	"letter"
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/compliance"
-	"shape"
+	"pdfjet/color"
+	"pdfjet/compliance"
+	"pdfjet/letter"
+	"pdfjet/shape"
 	"strings"
 	"time"
 )

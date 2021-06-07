@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/color"
-	"pdfjet/src/compliance"
+	"pdfjet/color"
+	"pdfjet/compliance"
 	"strings"
 	"time"
 )

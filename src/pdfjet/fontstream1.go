@@ -26,9 +26,9 @@ SOFTWARE.
 
 import (
 	"bytes"
-	"decompressor"
 	"io"
     "math"
+	"pdfjet/decompressor"
 	"strconv"
 	"strings"
 )

@@ -26,12 +26,12 @@ SOFTWARE.
 
 import (
 	"bufio"
-	"color"
-	"compliance"
-	"compressor"
-	"djb"
 	"fmt"
 	"log"
+	"pdfjet/color"
+	"pdfjet/compliance"
+	"pdfjet/compressor"
+	"pdfjet/djb"
 	"sort"
 	"strconv"
 	"strings"

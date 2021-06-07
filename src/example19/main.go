@@ -3,12 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"letter"
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/compliance"
-	"pdfjet/src/imagetype"
+	"pdfjet/compliance"
+	"pdfjet/imagetype"
+	"pdfjet/letter"
 	"strings"
 	"time"
 )

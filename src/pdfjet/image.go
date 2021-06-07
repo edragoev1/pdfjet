@@ -25,12 +25,12 @@ SOFTWARE.
 */
 
 import (
-	"device"
-	"imagetype"
 	"io"
 	"log"
 	"math"
-	"single"
+	"pdfjet/device"
+	"pdfjet/imagetype"
+	"pdfjet/single"
 	"strconv"
 )
 

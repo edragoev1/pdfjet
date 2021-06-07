@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"align"
-	"color"
-	"shape"
+	"pdfjet/align"
+	"pdfjet/color"
+	"pdfjet/shape"
 )
 
 // Point is used to create point objects with different shapes and draw them on a page.

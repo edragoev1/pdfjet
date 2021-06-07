@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
-	"color"
-	"single"
+	"pdfjet/color"
+	"pdfjet/single"
 )
 
 // RadioButton is used to create radio button, which can be set selected or unselected.

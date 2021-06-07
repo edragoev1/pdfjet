@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
-	"color"
 	"fmt"
+	"pdfjet/color"
 	"strconv"
 	"time"
 )

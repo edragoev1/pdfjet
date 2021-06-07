@@ -2,15 +2,15 @@ package main
 
 import (
 	"bufio"
-	"corefont"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/color"
-	"pdfjet/src/compliance"
-	"pdfjet/src/imagetype"
+	"pdfjet/color"
+	"pdfjet/compliance"
+	"pdfjet/corefont"
+	"pdfjet/imagetype"
 	"strings"
 	"time"
 )

@@ -25,11 +25,12 @@ SOFTWARE.
 */
 
 import (
-	"align"
-	"border"
-	"color"
 	"log"
-	"single"
+	"pdfjet/align"
+	"pdfjet/border"
+	"pdfjet/color"
+	"pdfjet/single"
+	"pdfjet/structuretype"
 	"strings"
 )
 
@@ -530,34 +531,34 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 		cell.GetBorder(border.Bottom) &&
 		cell.GetBorder(border.Left) &&
 		cell.GetBorder(border.Right) {
-		page.AddBMC(SPAN, single.Space, single.Space, single.Space)
+		page.AddBMC(structuretype.P, single.Space, single.Space, single.Space)
 		page.DrawRect(x, y, cellW, cellH)
 		page.AddEMC()
 	} else {
 		qWidth := cell.lineWidth / 4.0
 		if cell.GetBorder(border.Top) {
-			page.AddBMC(SPAN, single.Space, single.Space, single.Space)
+			page.AddBMC(structuretype.P, single.Space, single.Space, single.Space)
 			page.MoveTo(x-qWidth, y)
 			page.LineTo(x+cellW, y)
 			page.StrokePath()
 			page.AddEMC()
 		}
 		if cell.GetBorder(border.Bottom) {
-			page.AddBMC(SPAN, single.Space, single.Space, single.Space)
+			page.AddBMC(structuretype.P, single.Space, single.Space, single.Space)
 			page.MoveTo(x-qWidth, y+cellH)
 			page.LineTo(x+cellW, y+cellH)
 			page.StrokePath()
 			page.AddEMC()
 		}
 		if cell.GetBorder(border.Left) {
-			page.AddBMC(SPAN, single.Space, single.Space, single.Space)
+			page.AddBMC(structuretype.P, single.Space, single.Space, single.Space)
 			page.MoveTo(x, y-qWidth)
 			page.LineTo(x, y+cellH+qWidth)
 			page.StrokePath()
 			page.AddEMC()
 		}
 		if cell.GetBorder(border.Right) {
-			page.AddBMC(SPAN, single.Space, single.Space, single.Space)
+			page.AddBMC(structuretype.P, single.Space, single.Space, single.Space)
 			page.MoveTo(x+cellW, y-qWidth)
 			page.LineTo(x+cellW, y+cellH+qWidth)
 			page.StrokePath()
@@ -677,7 +678,7 @@ func (cell *Cell) UnderlineText(page *Page, font *Font, text string, x, y float3
 
 // StrikeoutText strikes out the cell text.
 func (cell *Cell) StrikeoutText(page *Page, font *Font, text string, x, y float32) {
-	page.AddBMC("Spang", "", "strike out", "strike out")
+	page.AddBMC("Span", "", "strike out", "strike out")
 	page.SetPenWidth(font.underlineThickness)
 	page.MoveTo(x, y-font.GetAscent()/3.0)
 	page.LineTo(x+font.stringWidth(text), y-font.GetAscent()/3.0)

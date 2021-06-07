@@ -1,15 +1,15 @@
 package main
 
 import (
-	"a4"
 	"bufio"
-	"corefont"
 	"fmt"
-	"imagetype"
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/compliance"
+	"pdfjet/a4"
+	"pdfjet/compliance"
+	"pdfjet/corefont"
+	"pdfjet/imagetype"
 	"strings"
 	"time"
 )

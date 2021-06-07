@@ -25,9 +25,10 @@ SOFTWARE.
 */
 
 import (
-	"color"
-	"effect"
 	"math"
+	"pdfjet/color"
+	"pdfjet/effect"
+	"pdfjet/structuretype"
 )
 
 // TextLine is used to create text line objects.
@@ -51,6 +52,7 @@ type TextLine struct {
 	uriLanguage        string
 	uriActualText      string
 	uriAltDescription  string
+    structureType      string
 }
 
 // NewTextLine is constructor for creating text line objects.
@@ -68,6 +70,7 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.verticalOffset = 0.0
 	textLine.altDescription = text
 	textLine.actualText = text
+    textLine.structureType = structuretype.P
 	return textLine
 }
 
@@ -349,6 +352,12 @@ func (textLine *TextLine) SetURIActualText(uriActualText string) *TextLine {
 	return textLine
 }
 
+// SetStructureType sets the type of the structure.
+func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
+	textLine.structureType = structureType
+	return textLine
+}
+
 // PlaceInAtZeroZero places this text line in the specified box at location (0.0, 0.0)
 func (textLine *TextLine) PlaceInAtZeroZero(box *Box) *TextLine {
 	textLine.PlaceIn(box, 0.0, 0.0)
@@ -380,7 +389,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 	textLine.y += textLine.yBox
 
 	page.SetBrushColor(textLine.color)
-	page.AddBMC("P", textLine.language, textLine.actualText, textLine.altDescription)
+	page.AddBMC(textLine.structureType, textLine.language, textLine.actualText, textLine.altDescription)
 	page.DrawString(textLine.font, textLine.fallbackFont, textLine.text, textLine.x, textLine.y)
 	page.AddEMC()
 
@@ -393,7 +402,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		yAdjust := textLine.font.underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC("P", textLine.language, textLine.underlineTTS, textLine.underlineTTS)
+		page.AddBMC(textLine.structureType, textLine.language, textLine.underlineTTS, textLine.underlineTTS)
 		page.MoveTo(textLine.x+xAdjust, textLine.y+yAdjust)
 		page.LineTo(x2+xAdjust, y2+yAdjust)
 		page.StrokePath()
@@ -408,7 +417,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		yAdjust := (textLine.font.bodyHeight / 4.0) * float32(math.Cos(radians))
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC("P", textLine.language, textLine.strikeoutTTS, textLine.strikeoutTTS)
+		page.AddBMC(textLine.structureType, textLine.language, textLine.strikeoutTTS, textLine.strikeoutTTS)
 		page.MoveTo(textLine.x-xAdjust, textLine.y-yAdjust)
 		page.LineTo(x2-xAdjust, y2-yAdjust)
 		page.StrokePath()

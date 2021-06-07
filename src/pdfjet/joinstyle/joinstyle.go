@@ -1,7 +1,7 @@
-package cap
+package joinstyle
 
 /**
- * cap.go
+ * joinstyle.go
  *
 Copyright 2020 Innovatics Inc.
 
@@ -24,10 +24,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// Constants used to specify the cap style of a line.
-// See the Line class for more information.
+// Used to specify the join style when joining two lines.
+// See the Page and Line classes for more details.
 const (
-	Butt             = 0
-	Round            = 1
-	ProjectingSquare = 2
+	Miter = iota
+	Round
+	Bevel
 )

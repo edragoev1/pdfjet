@@ -2,15 +2,15 @@ package main
 
 import (
 	"bufio"
-	"color"
-	"corefont"
 	"fmt"
-	"imagetype"
-	"letter"
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/compliance"
+	"pdfjet/color"
+	"pdfjet/compliance"
+	"pdfjet/corefont"
+	"pdfjet/imagetype"
+	"pdfjet/letter"
 	"strings"
 	"time"
 )

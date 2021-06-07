@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"color"
 	"math"
-	"single"
+	"pdfjet/color"
+	"pdfjet/single"
 )
 
 // Line is used to create line objects.

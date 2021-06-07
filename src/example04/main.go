@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"letter"
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/compliance"
+	"pdfjet/compliance"
+	"pdfjet/letter"
 	"strings"
 	"time"
 )

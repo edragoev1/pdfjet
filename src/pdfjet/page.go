@@ -25,14 +25,14 @@ SOFTWARE.
 */
 
 import (
-	"color"
-	"compliance"
-	"corefont"
 	"fmt"
 	"log"
 	"math"
-	"operation"
-	"shape"
+	"pdfjet/color"
+	"pdfjet/compliance"
+	"pdfjet/corefont"
+	"pdfjet/operation"
+	"pdfjet/shape"
 	"strings"
 	"unicode"
 )

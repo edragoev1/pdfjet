@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"align"
-	"border"
-	"color"
+	"pdfjet/align"
+	"pdfjet/border"
+	"pdfjet/color"
 	"strings"
 )
 

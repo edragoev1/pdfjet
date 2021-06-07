@@ -3,11 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"letter"
 	"log"
 	"os"
 	"pdfjet"
-	"pdfjet/src/compliance"
+	"pdfjet/compliance"
+	"pdfjet/letter"
 	"strings"
 	"time"
 )

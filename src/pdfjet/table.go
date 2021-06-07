@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
-	"align"
-	"border"
+	"pdfjet/align"
+	"pdfjet/border"
 	"strings"
 	"unicode"
 )

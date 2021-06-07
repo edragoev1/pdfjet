@@ -36,13 +36,6 @@ type StructElem struct {
 	annotation     *Annotation
 }
 
-// SPAN, P, LINK
-const (
-	SPAN = "Span"
-	P    = "P"
-	LINK = "Link"
-)
-
 // NewStructElem constructor
 func NewStructElem() *StructElem {
 	structElem := new(StructElem)

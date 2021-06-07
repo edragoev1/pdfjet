@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
-	"color"
-	"single"
+	"pdfjet/color"
+	"pdfjet/single"
 	"strings"
 )
 

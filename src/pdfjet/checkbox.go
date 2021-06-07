@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"color"
-	"mark"
-	"single"
+	"pdfjet/color"
+	"pdfjet/mark"
+	"pdfjet/single"
 )
 
 // CheckBox creates a CheckBox, which can be set checked or unchecked.

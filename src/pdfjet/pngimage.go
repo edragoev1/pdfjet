@@ -25,13 +25,13 @@ SOFTWARE.
 */
 
 import (
-	"compressor"
-	"crc32util"
-	"decompressor"
 	"fmt"
 	"io"
 	"log"
 	"math"
+	"pdfjet/compressor"
+	"pdfjet/crc32util"
+	"pdfjet/decompressor"
 )
 
 // PNGImage is used to embed PNG images in the PDF document.

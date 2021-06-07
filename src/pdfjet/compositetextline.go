@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
-	"effect"
 	"math"
+	"pdfjet/effect"
 )
 
 // CompositeTextLine constructs composite text line objects.

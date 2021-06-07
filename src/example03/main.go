@@ -1,18 +1,18 @@
 package main
 
 import (
-	"a4"
 	"bufio"
-	"corefont"
 	"fmt"
-	"imagetype"
 	"log"
 	"os"
-	"pdfjet/src/compliance"
+	"pdfjet"
+	"pdfjet/a4"
+	"pdfjet/corefont"
+	"pdfjet/compliance"
+	"pdfjet/imagetype"
 	"strings"
 	"time"
 
-	"pdfjet"
 )
 
 // Example03 draws the Canadian flag using a Path object that contains both lines
