@@ -55,6 +55,7 @@ let package = Package(
         .target(name: "Example_48", dependencies: ["PDFjet"]),
         .target(name: "Example_49", dependencies: ["PDFjet"]),
         .target(name: "Example_50", dependencies: ["PDFjet"]),
+        .target(name: "Example_59", dependencies: ["PDFjet"]),
         .target(name: "Example_71", dependencies: ["PDFjet"]),
         .target(name: "Example_72", dependencies: ["PDFjet"]),
         .target(name: "Example_73", dependencies: ["PDFjet"]),
