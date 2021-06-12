@@ -14,6 +14,7 @@ public class Example_81 {
 
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_81.pdf")), Compliance.PDF_UA);
+        pdf.setTitle("PDF/UA compliant document");
 
         Font f1 = new Font(pdf,
                 getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),

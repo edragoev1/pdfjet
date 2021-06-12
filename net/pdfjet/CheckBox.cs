@@ -206,7 +206,7 @@ public class CheckBox : IDrawable {
      *  @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
 
         this.w = font.GetAscent();
         this.h = this.w;

@@ -70,7 +70,7 @@ public class Image : Drawable {
     public init(
             _ pdf: PDF,
             _ stream: InputStream,
-            _ imageType: Int) throws {
+            _ imageType: ImageType) throws {
         stream.open()
         if imageType == ImageType.JPG {
             let jpg = JPGImage(stream)
@@ -125,7 +125,7 @@ public class Image : Drawable {
     public init(
             _ objects: inout [PDFobj],
             _ stream: InputStream,
-            _ imageType: Int) throws {
+            _ imageType: ImageType) throws {
         stream.open()
         var data: [UInt8]
         var alpha = [UInt8]()
@@ -383,7 +383,7 @@ public class Image : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
 
-        page!.addBMC(StructElem.SPAN, language, actualText, altDescription)
+        page!.addBMC(StructElem.P, language, actualText, altDescription)
 
         if xBox != nil {
             x += xBox!
@@ -542,7 +542,7 @@ public class Image : Drawable {
             _ pdf: PDF,
             _ data: [UInt8],
             _ alpha: [UInt8],
-            _ imageType: Int,
+            _ imageType: ImageType,
             _ colorSpace: String,
             _ bitsPerComponent: Int)  {
 
@@ -737,7 +737,7 @@ public class Image : Drawable {
             _ objects: inout [PDFobj],
             _ data: inout [UInt8],
             _ alpha: inout [UInt8],
-            _ imageType: Int,
+            _ imageType: ImageType,
             _ colorSpace: String,
             _ bitsPerComponent: Int) {
 

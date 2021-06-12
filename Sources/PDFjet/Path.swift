@@ -43,8 +43,8 @@ public class Path : Drawable {
     private var xBox: Float = 0.0
     private var yBox: Float = 0.0
 
-    private var lineCapStyle = 0
-    private var lineJoinStyle = 0
+    private var lineCapStyle = CapStyle.BUTT
+    private var lineJoinStyle = JoinStyle.MITER
 
 
     ///
@@ -139,9 +139,10 @@ public class Path : Drawable {
     ///
     /// Sets the line cap style.
     ///
-    /// - Parameter style the cap style of this path. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+    /// - Parameter style the cap style of this path.
+    /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     ///
-    public func setLineCapStyle(_ style: Int) {
+    public func setLineCapStyle(_ style: CapStyle) {
         self.lineCapStyle = style
     }
 
@@ -151,7 +152,7 @@ public class Path : Drawable {
     ///
     /// - Returns: the line cap style for this path.
     ///
-    public func getLineCapStyle() -> Int {
+    public func getLineCapStyle() -> CapStyle {
         return self.lineCapStyle
     }
 
@@ -161,7 +162,7 @@ public class Path : Drawable {
     ///
     /// - Parameter style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
     ///
-    public func setLineJoinStyle(_ style: Int) {
+    public func setLineJoinStyle(_ style: JoinStyle) {
         self.lineJoinStyle = style
     }
 
@@ -171,7 +172,7 @@ public class Path : Drawable {
     ///
     /// - Returns: the line join style.
     ///
-    public func getLineJoinStyle() -> Int {
+    public func getLineJoinStyle() -> JoinStyle {
         return self.lineJoinStyle
     }
 

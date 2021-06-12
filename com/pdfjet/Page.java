@@ -21,7 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 package com.pdfjet;
 
 import java.io.*;
@@ -62,8 +61,8 @@ public class Page {
     private float[] penCMYK = {0f, 0f, 0f, 1f};
     private float[] brushCMYK = {0f, 0f, 0f, 1f};
     private float penWidth = -1.0f;
-    private int lineCapStyle = 0;
-    private int lineJoinStyle = 0;
+    private CapStyle lineCapStyle = CapStyle.BUTT;
+    private JoinStyle lineJoinStyle = JoinStyle.MITER;
     private String linePattern = "[] 0";
     private Font font;
     private final List<State> savedStates = new ArrayList<State>();
@@ -746,12 +745,13 @@ public class Page {
     /**
      *  Sets the current line cap style.
      *
-     *  @param style the cap style of the current line. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+     *  @param style the cap style of the current line.
+     *  Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
      */
-    public void setLineCapStyle(int style) {
+    public void setLineCapStyle(CapStyle style) {
         if (lineCapStyle != style) {
             lineCapStyle = style;
-            append(lineCapStyle);
+            append(lineCapStyle.ordinal());
             append(" J\n");
         }
     }
@@ -760,12 +760,12 @@ public class Page {
     /**
      *  Sets the line join style.
      *
-     *  @param style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+     *  @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
      */
-    public void setLineJoinStyle(int style) {
+    public void setLineJoinStyle(JoinStyle style) {
         if (lineJoinStyle != style) {
             lineJoinStyle = style;
-            append(lineJoinStyle);
+            append(lineJoinStyle.ordinal());
             append(" j\n");
         }
     }

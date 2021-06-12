@@ -160,7 +160,6 @@ public class Text implements Drawable {
         }
 
         StringBuilder buf = new StringBuilder();
-        boolean firstTextSegment = true;
         for (int i = 0; i < tokens.length; i++) {
             String token = (i == 0) ? tokens[i] : (Single.space + tokens[i]);
             float lineWidth = textLine.font.stringWidth(textLine.fallbackFont, buf.toString());
@@ -179,7 +178,6 @@ public class Text implements Drawable {
                             .setLanguage(textLine.getLanguage())
                             .drawOn(page);
                 }
-                firstTextSegment = false;
                 xText = x1;
                 yText += leading;
                 buf.setLength(0);

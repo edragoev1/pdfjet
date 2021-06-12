@@ -29,8 +29,8 @@ class State {
     private var pen: [Float]
     private var brush: [Float]
     private var penWidth: Float
-    private var lineCapStyle: Int
-    private var lineJoinStyle: Int
+    private var lineCapStyle: CapStyle
+    private var lineJoinStyle: JoinStyle
     private var linePattern: String
 
 
@@ -38,8 +38,8 @@ class State {
             _ pen: [Float],
             _ brush: [Float],
             _ penWidth: Float,
-            _ lineCapStyle: Int,
-            _ lineJoinStyle: Int,
+            _ lineCapStyle: CapStyle,
+            _ lineJoinStyle: JoinStyle,
             _ linePattern: String) {
         self.pen = [pen[0], pen[1], pen[2]]
         self.brush = [brush[0], brush[1], brush[2]]
@@ -65,12 +65,12 @@ class State {
     }
 
 
-    public func getLineCapStyle() -> Int {
+    public func getLineCapStyle() -> CapStyle {
         return self.lineCapStyle
     }
 
 
-    public func getLineJoinStyle() -> Int {
+    public func getLineJoinStyle() -> JoinStyle {
         return self.lineJoinStyle
     }
 

@@ -60,8 +60,8 @@ public class Page {
     private var brushCMYK: [Float] = [0.0, 0.0, 0.0, 1.0]
 
     private var penWidth: Float = -1.0
-    private var lineCapStyle: Int = 0
-    private var lineJoinStyle: Int = 0
+    private var lineCapStyle = CapStyle.BUTT
+    private var lineJoinStyle = JoinStyle.MITER
     private var linePattern: String = "[] 0"
     private var font: Font?
     private var savedStates = [State]()
@@ -669,12 +669,12 @@ public class Page {
     /// Sets the current line cap style.
     ///
     /// - Parameter style the cap style of the current line.
-    /// Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+    /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     ///
-    public func setLineCapStyle(_ style: Int) {
+    public func setLineCapStyle(_ style: CapStyle) {
         if self.lineCapStyle != style {
             self.lineCapStyle = style
-            append(self.lineCapStyle)
+            append(self.lineCapStyle.rawValue)
             append(" J\n")
         }
     }
@@ -685,10 +685,10 @@ public class Page {
     ///
     /// - Parameter style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
     ///
-    public func setLineJoinStyle(_ style: Int) {
+    public func setLineJoinStyle(_ style: JoinStyle) {
         if self.lineJoinStyle != style {
             self.lineJoinStyle = style
-            append(self.lineJoinStyle)
+            append(self.lineJoinStyle.rawValue)
             append(" j\n")
         }
     }

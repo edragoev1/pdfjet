@@ -24,14 +24,53 @@ SOFTWARE.
 
 
 /**
- *  Used to specify PDF structure element objects.
- *
- *
+ *  Defines the StructElem types.
  */
 public class StructElem {
-    public static let SPAN = "Span"
+    public static let DOCUMENT = "Document"
+    public static let DOCUMENTFRAGMENT = "DocumentFragment"
+    public static let PART = "Part"
+    public static let DIV = "Div"
+    public static let ASIDE = "Aside"
     public static let P = "P"
+    public static let H1 = "H1"
+    public static let H2 = "H2"
+    public static let H3 = "H3"
+    public static let H4 = "H4"
+    public static let H5 = "H5"
+    public static let H6 = "H6"
+    public static let H = "H"
+    public static let TITLE = "Title"
+    public static let FENOTE = "FENote"
+    public static let SUB = "Sub"
+    public static let LBL = "Lbl"
+    public static let SPAN = "Span"
+    public static let EM = "Em"
+    public static let STRONG = "Strong"
     public static let LINK = "Link"
+    public static let ANNOT = "Annot"
+    public static let FORM = "Form"
+    public static let RUBY = "Ruby"
+    public static let RB = "RB"
+    public static let RT = "RT"
+    public static let RP = "RP"
+    public static let WARUCHI = "Waruchi"
+    public static let WT = "WT"
+    public static let WP = "WP"
+    public static let L = "L"
+    public static let LI = "LI"
+    public static let LBODY = "LBody"
+    public static let TABLE = "Table"
+    public static let TR = "TR"
+    public static let TH = "TH"
+    public static let TD = "TD"
+    public static let THEAD = "THead"
+    public static let TBODY = "TBody"
+    public static let TFOOT = "TFoot"
+    public static let CAPTION = "Caption"
+    public static let FIGURE = "Figure"
+    public static let FORMULA = "Formula"
+    public static let ARTIFACT = "Artifact"
 
     var objNumber: Int?
     var structure: String?

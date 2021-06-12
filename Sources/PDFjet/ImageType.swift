@@ -22,16 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 /**
  *  Used to specify the image type of an image.
- *  Supported types: ImageType.JPG, ImageType.PNG, ImageType.BMP and ImageType.JET
+ *  Supported types: ImageType.JPG, ImageType.PNG, ImageType.BMP and ImageType.PNG_STREAM
  *  See the Image class for more information.
- *
  */
-public class ImageType {
-    public static let JPG = 0
-    public static let PNG = 1
-    public static let BMP = 2
-    public static let PNG_STREAM = 3
+public enum ImageType : Int {
+    case JPG
+    case PNG
+    case BMP
+    case PNG_STREAM
 }

@@ -271,7 +271,7 @@ public class Box : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBMC(StructElem.SPAN, language, actualText, altDescription)
+        page!.addBMC(StructElem.P, language, actualText, altDescription)
         page!.setPenWidth(width)
         page!.setLinePattern(pattern)
         if fillShape {

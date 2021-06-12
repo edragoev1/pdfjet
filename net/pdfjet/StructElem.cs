@@ -26,15 +26,53 @@ using System;
 
 namespace PDFjet.NET {
 /**
- *  Used to specify the text alignment in paragraphs.
- *  See the Paragraph class for more details.
- *
- *
+ *  Defines the StructElem types.
  */
 public class StructElem {
-    public const String SPAN = "Span";
+    public const String DOCUMENT = "Document";
+    public const String DOCUMENTFRAGMENT = "DocumentFragment";
+    public const String PART = "Part";
+    public const String DIV = "Div";
+    public const String ASIDE = "Aside";
     public const String P = "P";
+    public const String H1 = "H1";
+    public const String H2 = "H2";
+    public const String H3 = "H3";
+    public const String H4 = "H4";
+    public const String H5 = "H5";
+    public const String H6 = "H6";
+    public const String H = "H";
+    public const String TITLE = "Title";
+    public const String FENOTE = "FENote";
+    public const String SUB = "Sub";
+    public const String LBL = "Lbl";
+    public const String SPAN = "Span";
+    public const String EM = "Em";
+    public const String STRONG = "Strong";
     public const String LINK = "Link";
+    public const String ANNOT = "Annot";
+    public const String FORM = "Form";
+    public const String RUBY = "Ruby";
+    public const String RB = "RB";
+    public const String RT = "RT";
+    public const String RP = "RP";
+    public const String WARUCHI = "Waruchi";
+    public const String WT = "WT";
+    public const String WP = "WP";
+    public const String L = "L";
+    public const String LI = "LI";
+    public const String LBODY = "LBody";
+    public const String TABLE = "Table";
+    public const String TR = "TR";
+    public const String TH = "TH";
+    public const String TD = "TD";
+    public const String THEAD = "THead";
+    public const String TBODY = "TBody";
+    public const String TFOOT = "TFoot";
+    public const String CAPTION = "Caption";
+    public const String FIGURE = "Figure";
+    public const String FORMULA = "Formula";
+    public const String ARTIFACT = "Artifact";
 
     internal int objNumber;
     internal String structure = null;

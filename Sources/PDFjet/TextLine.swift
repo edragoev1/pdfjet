@@ -59,6 +59,8 @@ public class TextLine : Drawable {
     private var uriActualText: String?
     private var uriAltDescription: String?
 
+    private var structureType = StructElem.P
+
 
     ///
     /// Constructor for creating text line objects.
@@ -508,6 +510,13 @@ public class TextLine : Drawable {
     }
 
 
+    @discardableResult
+    public func setStructureType(_ structureType: String) -> TextLine {
+        self.structureType = structureType
+        return self
+    }
+
+
     ///
     /// Places selt.text line in the specified box.
     ///
@@ -569,7 +578,7 @@ public class TextLine : Drawable {
         self.y += yBox
 
         page!.setBrushColor(color)
-        page!.addBMC(StructElem.P, language, text!, altDescription!)
+        page!.addBMC(structureType, language, text!, altDescription!)
         page!.drawString(font!, fallbackFont, text, self.x, self.y)
         page!.addEMC()
 
@@ -582,7 +591,7 @@ public class TextLine : Drawable {
             let yAdjust = font!.underlinePosition * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(StructElem.P, language, text!, "Underlined text: " + text!)
+            page!.addBMC(structureType, language, text!, "Underlined text: " + text!)
             page!.moveTo(x + xAdjust, y + yAdjust)
             page!.lineTo(x2 + xAdjust, y2 + yAdjust)
             page!.strokePath()
@@ -597,7 +606,7 @@ public class TextLine : Drawable {
             let yAdjust = (font!.bodyHeight / 4.0) * Float(cos(radians))
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(StructElem.P, language, text!, "Strikethrough text: " + text!)
+            page!.addBMC(structureType, language, text!, "Strikethrough text: " + text!)
             page!.moveTo(x - xAdjust, y - yAdjust)
             page!.lineTo(x2 - xAdjust, y2 - yAdjust)
             page!.strokePath()

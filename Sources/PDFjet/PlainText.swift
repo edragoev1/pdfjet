@@ -118,7 +118,7 @@ public class PlainText : Drawable {
         font.setSize(fontSize)
         var yText: Float = y + font.getAscent()
 
-        page!.addBMC(StructElem.SPAN, language, Single.space, Single.space)
+        page!.addBMC(StructElem.P, language, Single.space, Single.space)
         page!.setBrushColor(backgroundColor)
         self.leading = font.getBodyHeight()
         let h = font.getBodyHeight() * Float(textLines.count)
@@ -128,7 +128,7 @@ public class PlainText : Drawable {
         page!.drawRect(x, y, w, h)
         page!.addEMC()
 
-        page!.addBMC(StructElem.SPAN, language, actualText!, altDescription!)
+        page!.addBMC(StructElem.P, language, actualText!, altDescription!)
         page!.setTextStart()
         page!.setTextFont(font)
         page!.setBrushColor(textColor)

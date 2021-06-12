@@ -160,7 +160,7 @@ public class RadioButton : IDrawable {
      *  @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
 
         this.r1 = font.GetAscent()/2;
         this.r2 = r1/2;

@@ -1,5 +1,5 @@
 /**
- *  Cap.cs
+ *  CapStyle.cs
  *
 Copyright 2020 Innovatics Inc.
 
@@ -21,7 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 using System;
 
 
@@ -31,9 +30,9 @@ namespace PDFjet.NET {
  *  See the Line class for more information.
  *
  */
-public class Cap {
-    public static readonly int BUTT = 0;
-    public static readonly int ROUND = 1;
-    public static readonly int PROJECTING_SQUARE = 2;
+public enum CapStyle : Int32 {
+    BUTT = 0,
+    ROUND,
+    PROJECTING_SQUARE
 }
 }   // End of namespace PDFjet.NET

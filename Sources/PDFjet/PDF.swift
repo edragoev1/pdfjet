@@ -52,7 +52,7 @@ public class PDF {
     private var author: String = ""
     private var subject: String = ""
     private var keywords: String = ""
-    private var creator = "PDFjet v7.01.7"
+    private var creator = "PDFjet v7.05"
     private var createDate: String?
     private var creationDate: String?
     private var byteCount = 0

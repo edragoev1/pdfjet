@@ -3,13 +3,13 @@ import PDFjet
 
 
 ///
-/// Example_09.swift
+/// Example_59.swift
 ///
-public class Example_09 {
+public class Example_59 {
 
     public init() throws {
 
-        if let stream = OutputStream(toFileAtPath: "Example_09.pdf", append: false) {
+        if let stream = OutputStream(toFileAtPath: "Example_59.pdf", append: false) {
 
             let pdf = PDF(stream)
             let page = Page(pdf, Letter.PORTRAIT)
@@ -60,7 +60,7 @@ public class Example_09 {
             path3.append(Point(80.0, 61.0))
             chartData.append(path3)
 
-            let chart = Chart(f1, f2)
+            let chart = LineChart(f1, f2)
             chart.setData(try getData("data/world-communications.txt", "|"))
             // chart.setData(chartData)
             chart.setLocation(70.0, 50.0)
@@ -68,23 +68,23 @@ public class Example_09 {
             chart.setTitle("World View - Communications")
             chart.setXAxisTitle("Cell phones per capita")
             chart.setYAxisTitle("Internet users % of the population")
-            addTrendLine(chart)
+            // addTrendLine(chart)
 
             // chart.setXAxisMinMax(0.0, 100.0, 10)
             // chart.setYAxisMinMax(0.0, 100.0, 10)
 
             chart.drawOn(page)
-
-            // f1.setSize(7.0)
-            // f2.setSize(7.0)
-            // try addTableToChart(page, chart, f1, f2)
-
+/*
+            f1.setSize(7.0)
+            f2.setSize(7.0)
+            try addTableToLineChart(page, chart, f1, f2)
+*/
             pdf.complete()
         }
     }
 
 
-    public func addTrendLine(_ chart: Chart) {
+    public func addTrendLine(_ chart: LineChart) {
         let points = chart.getData()![0]
 
         let m = chart.slope(points)
@@ -110,9 +110,9 @@ public class Example_09 {
     }
 
 
-    public func addTableToChart(
+    public func addTableToLineChart(
             _ page: Page,
-            _ chart: Chart,
+            _ chart: LineChart,
             _ f1: Font,
             _ f2: Font) throws {
         let table = Table()
@@ -223,9 +223,9 @@ public class Example_09 {
         return chartData
     }
 
-}   // End of Example_09.swift
+}   // End of Example_59.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = try Example_09()
+_ = try Example_59()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("Example_09 => \(time1 - time0)")
+print("Example_59 => \(time1 - time0)")

@@ -60,6 +60,8 @@ public class TextLine : IDrawable {
     private String uriActualText = null;
     private String uriAltDescription = null;
 
+    private String structureType = StructElem.P;
+
 
     /**
      *  Constructor for creating text line objects.
@@ -487,6 +489,12 @@ public class TextLine : IDrawable {
     }
 
 
+    public TextLine SetStructureType(String structureType) {
+        this.structureType = structureType;
+        return this;
+    }
+
+
     /**
      *  Places this text line in the specified box at position (0.0, 0.0).
      *
@@ -558,7 +566,7 @@ public class TextLine : IDrawable {
         y += yBox;
 
         page.SetBrushColor(color);
-        page.AddBMC(StructElem.P, language, text, altDescription);
+        page.AddBMC(structureType, language, text, altDescription);
         page.DrawString(font, fallbackFont, text, x, y);
         page.AddEMC();
 
@@ -571,7 +579,7 @@ public class TextLine : IDrawable {
             double yAdjust = font.underlinePosition * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(StructElem.P, language, text, "Underlined text: " + text);
+            page.AddBMC(structureType, language, text, "Underlined text: " + text);
             page.MoveTo(x + xAdjust, y + yAdjust);
             page.LineTo(x2 + xAdjust, y2 + yAdjust);
             page.StrokePath();
@@ -586,7 +594,7 @@ public class TextLine : IDrawable {
             double yAdjust = ( font.bodyHeight / 4.0 ) * Math.Cos(radians);
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(StructElem.P, language, text, "Strikethrough text: " + text);
+            page.AddBMC(structureType, language, text, "Strikethrough text: " + text);
             page.MoveTo(x - xAdjust, y - yAdjust);
             page.LineTo(x2 - xAdjust, y2 - yAdjust);
             page.StrokePath();

@@ -392,7 +392,7 @@ public class Image : IDrawable {
      *  @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
 
         x += xBox;
         y += yBox;

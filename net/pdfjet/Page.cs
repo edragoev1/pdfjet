@@ -62,8 +62,8 @@ public class Page {
     private float[] penCMYK = {0f, 0f, 0f, 1f};
     private float[] brushCMYK = {0f, 0f, 0f, 1f};
     private float penWidth = -1.0f;
-    private int lineCapStyle;
-    private int lineJoinStyle;
+    private CapStyle lineCapStyle = CapStyle.BUTT;
+    private JoinStyle lineJoinStyle = JoinStyle.MITER;
     private String linePattern = "[] 0";
     private Font font;
     private readonly List<State> savedStates = new List<State>();
@@ -726,12 +726,13 @@ public class Page {
     /**
      *  Sets the current line cap style.
      *
-     *  @param style the cap style of the current line. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+     *  @param style the cap style of the current line.
+     *  Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
      */
-    public void SetLineCapStyle(int style) {
+    public void SetLineCapStyle(CapStyle style) {
         if (lineCapStyle != style) {
             lineCapStyle = style;
-            Append(lineCapStyle);
+            Append((int) lineCapStyle);
             Append(" J\n");
         }
     }
@@ -740,12 +741,13 @@ public class Page {
     /**
      *  Sets the line join style.
      *
-     *  @param style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+     *  @param style the line join style code.
+     *  Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
      */
-    public void SetLineJoinStyle(int style) {
+    public void SetLineJoinStyle(JoinStyle style) {
         if (lineJoinStyle != style) {
             lineJoinStyle = style;
-            Append(lineJoinStyle);
+            Append((int) lineJoinStyle);
             Append(" j\n");
         }
     }

@@ -1,5 +1,5 @@
 /**
- *  Join.cs
+ *  JoinStyle.java
  *
 Copyright 2020 Innovatics Inc.
 
@@ -21,19 +21,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+package com.pdfjet;
 
-using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify the join style when joining two lines.
  *  See the Page and Line classes for more details.
- *
  */
-public class Join {
-    public static readonly int MITER = 0;
-    public static readonly int ROUND = 1;
-    public static readonly int BEVEL = 2;
+public enum JoinStyle {
+    MITER,
+    ROUND,
+    BEVEL;
 }
-}   // End of namespace PDFjet.NET

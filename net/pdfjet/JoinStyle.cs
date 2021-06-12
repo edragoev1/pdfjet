@@ -1,5 +1,5 @@
 /**
- *  Cap.java
+ *  JoinStyle.cs
  *
 Copyright 2020 Innovatics Inc.
 
@@ -21,17 +21,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+using System;
 
-package com.pdfjet;
 
-
+namespace PDFjet.NET {
 /**
- *  Used to specify the cap style of a line.
- *  See the Line class for more information.
+ *  Used to specify the join style when joining two lines.
+ *  See the Page and Line classes for more details.
  *
  */
-public class Cap {
-    public static final int BUTT = 0;
-    public static final int ROUND = 1;
-    public static final int PROJECTING_SQUARE = 2;
+public enum JoinStyle : Int32 {
+    MITER = 0,
+    ROUND,
+    BEVEL
 }
+}   // End of namespace PDFjet.NET

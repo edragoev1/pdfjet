@@ -722,35 +722,35 @@ public class Cell {
                 GetBorder(Border.BOTTOM) &&
                 GetBorder(Border.LEFT) &&
                 GetBorder(Border.RIGHT)) {
-            page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+            page.AddBMC(StructElem.P, Single.space, Single.space);
             page.DrawRect(x, y, cellW, cellH);
             page.AddEMC();
         }
         else {
             float qWidth = lineWidth / 4;
             if (GetBorder(Border.TOP)) {
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 page.MoveTo(x - qWidth, y);
                 page.LineTo(x + cellW, y);
                 page.StrokePath();
                 page.AddEMC();
             }
             if (GetBorder(Border.BOTTOM)) {
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 page.MoveTo(x - qWidth, y + cellH);
                 page.LineTo(x + cellW, y + cellH);
                 page.StrokePath();
                 page.AddEMC();
             }
             if (GetBorder(Border.LEFT)) {
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 page.MoveTo(x, y - qWidth);
                 page.LineTo(x, y + cellH + qWidth);
                 page.StrokePath();
                 page.AddEMC();
             }
             if (GetBorder(Border.RIGHT)) {
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 page.MoveTo(x + cellW, y - qWidth);
                 page.LineTo(x + cellW, y + cellH + qWidth);
                 page.StrokePath();
@@ -789,7 +789,7 @@ public class Cell {
         if (GetTextAlignment() == Align.RIGHT) {
             if (compositeTextLine == null) {
                 xText = (x + cellW) - (font.StringWidth(text) + this.rightPadding);
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 page.DrawString(font, fallbackFont, text, xText, yText);
                 page.AddEMC();
                 if (GetUnderline()) {
@@ -802,7 +802,7 @@ public class Cell {
             else {
                 xText = (x + cellW) - (compositeTextLine.GetWidth() + this.rightPadding);
                 compositeTextLine.SetLocation(xText, yText);
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 compositeTextLine.DrawOn(page);
                 page.AddEMC();
             }
@@ -811,7 +811,7 @@ public class Cell {
             if (compositeTextLine == null) {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font.StringWidth(text)) / 2);
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 page.DrawString(font, fallbackFont, text, xText, yText);
                 page.AddEMC();
                 if (GetUnderline()) {
@@ -825,7 +825,7 @@ public class Cell {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - compositeTextLine.GetWidth()) / 2);
                 compositeTextLine.SetLocation(xText, yText);
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 compositeTextLine.DrawOn(page);
                 page.AddEMC();
             }
@@ -833,7 +833,7 @@ public class Cell {
         else if (GetTextAlignment() == Align.LEFT) {
             xText = x + this.leftPadding;
             if (compositeTextLine == null) {
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 page.DrawString(font, fallbackFont, text, xText, yText);
                 page.AddEMC();
                 if (GetUnderline()) {
@@ -845,7 +845,7 @@ public class Cell {
             }
             else {
                 compositeTextLine.SetLocation(xText, yText);
-                page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+                page.AddBMC(StructElem.P, Single.space, Single.space);
                 compositeTextLine.DrawOn(page);
                 page.AddEMC();
             }
@@ -873,7 +873,7 @@ public class Cell {
 
     private void UnderlineText(
             Page page, Font font, String text, float x, float y) {
-        page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+        page.AddBMC(StructElem.P, Single.space, Single.space);
         page.SetPenWidth(font.underlineThickness);
         page.MoveTo(x, y + font.descent);
         page.LineTo(x + font.StringWidth(text), y + font.descent);
@@ -884,7 +884,7 @@ public class Cell {
 
     private void StrikeoutText(
             Page page, Font font, String text, float x, float y) {
-        page.AddBMC(StructElem.SPAN, Single.space, Single.space);
+        page.AddBMC(StructElem.P, Single.space, Single.space);
         page.SetPenWidth(font.underlineThickness);
         page.MoveTo(x, y - font.GetAscent()/3f);
         page.LineTo(x + font.StringWidth(text), y - font.GetAscent()/3f);

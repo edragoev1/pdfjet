@@ -329,7 +329,7 @@ public class Box implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.addBMC(StructElem.P, language, actualText, altDescription);
         page.setPenWidth(width);
         page.setLinePattern(pattern);
         if (fillShape) {

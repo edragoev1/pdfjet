@@ -80,6 +80,9 @@ public class TextBox implements Drawable {
     // bits 24 to 31
     private int properties = 0x000F0001;
 
+    private String language = "en-US";
+    private String altDescription = "";
+
 
     /**
      *  Creates a text box and sets the font.
@@ -665,6 +668,34 @@ public class TextBox implements Drawable {
     }
 
 
+    public TextBox setLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+
+    public String getLanguage() {
+        return this.language;
+    }
+
+
+    /**
+     *  Sets the alternate description of this text line.
+     *
+     *  @param altDescription the alternate description of the text line.
+     *  @return this TextBox.
+     */
+    public TextBox setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+
+    public String getAltDescription() {
+        return altDescription;
+    }
+
+
     /**
      *  Draws this text box on the specified page.
      *
@@ -850,7 +881,9 @@ public class TextBox implements Drawable {
             float xText,
             float yText,
             Map<String, Integer> colors) {
+        page.addBMC(StructElem.P, language, text, altDescription);
         page.drawString(font, fallbackFont, text, xText, yText, colors);
+        page.addEMC();
         float lineLength = font.stringWidth(fallbackFont, text);
         if (getUnderline()) {
             float yAdjust = font.underlinePosition;

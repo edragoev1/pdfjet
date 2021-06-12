@@ -45,8 +45,8 @@ public class Path : IDrawable {
     private float xBox;
     private float yBox;
 
-    private int lineCapStyle = 0;
-    private int lineJoinStyle = 0;
+    private CapStyle lineCapStyle = CapStyle.BUTT;
+    private JoinStyle lineJoinStyle = JoinStyle.MITER;
 
 
     /**
@@ -152,9 +152,10 @@ public class Path : IDrawable {
     /**
      *  Sets the line cap style.
      *
-     *  @param style the cap style of this path. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+     *  @param style the cap style of this path.
+     *  Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
      */
-    public void SetLineCapStyle(int style) {
+    public void SetLineCapStyle(CapStyle style) {
         this.lineCapStyle = style;
     }
 
@@ -164,7 +165,7 @@ public class Path : IDrawable {
      *
      *  @return the line cap style for this path.
      */
-    public int GetLineCapStyle() {
+    public CapStyle GetLineCapStyle() {
         return this.lineCapStyle;
     }
 
@@ -172,9 +173,9 @@ public class Path : IDrawable {
     /**
      *  Sets the line join style.
      *
-     *  @param style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+     *  @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
      */
-    public void SetLineJoinStyle(int style) {
+    public void SetLineJoinStyle(JoinStyle style) {
         this.lineJoinStyle = style;
     }
 
@@ -184,7 +185,7 @@ public class Path : IDrawable {
      *
      *  @return the line join style.
      */
-    public int GetLineJoinStyle() {
+    public JoinStyle GetLineJoinStyle() {
         return this.lineJoinStyle;
     }
 

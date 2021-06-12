@@ -128,7 +128,7 @@ public class PlainText : IDrawable {
         font.SetSize(fontSize);
         float yText = y + font.GetAscent();
 
-        page.AddBMC(StructElem.SPAN, language, Single.space, Single.space);
+        page.AddBMC(StructElem.P, language, Single.space, Single.space);
         page.SetBrushColor(backgroundColor);
         leading = font.GetBodyHeight();
         float h = font.GetBodyHeight() * textLines.Length;
@@ -138,7 +138,7 @@ public class PlainText : IDrawable {
         page.DrawRect(x, y, w, h);
         page.AddEMC();
 
-        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
         page.SetTextStart();
         page.SetTextFont(font);
         page.SetBrushColor(textColor);

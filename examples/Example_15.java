@@ -13,15 +13,33 @@ public class Example_15 {
 
     public Example_15() throws Exception {
 
-        PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_15.pdf")));
+        PDF pdf = new PDF(new BufferedOutputStream(
+                new FileOutputStream("Example_15.pdf")), Compliance.PDF_UA);
+        pdf.setTitle("PDF/UA compliant PDF");
 
+/*
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         Font f3 = new Font(pdf, CoreFont.HELVETICA);
         Font f4 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f5 = new Font(pdf, CoreFont.HELVETICA);
+*/
+
+        Font f1 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
+                Font.STREAM);
+        Font f2 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                Font.STREAM);
+        Font f3 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                Font.STREAM);
+        Font f4 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
+                Font.STREAM);
+        Font f5 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                Font.STREAM);
 
         Page page = new Page(pdf, A4.PORTRAIT);
 

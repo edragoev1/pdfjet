@@ -162,7 +162,6 @@ public class Text : IDrawable {
         }
 
         StringBuilder buf = new StringBuilder();
-        bool firstTextSegment = true;
         for (int i = 0; i < tokens.Length; i++) {
             String token = (i == 0) ? tokens[i] : (Single.space + tokens[i]);
             float lineWidth = textLine.font.StringWidth(textLine.fallbackFont, buf.ToString());
@@ -181,7 +180,6 @@ public class Text : IDrawable {
                             .SetLanguage(textLine.GetLanguage())
                             .DrawOn(page);
                 }
-                firstTextSegment = false;
                 xText = x1;
                 yText += leading;
                 buf.Length = 0;

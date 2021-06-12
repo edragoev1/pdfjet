@@ -44,7 +44,7 @@ public class Line : IDrawable {
     private int color = Color.black;
     private float width = 0.3f;
     private String pattern = "[] 0";
-    private int capStyle = 0;
+    private CapStyle capStyle = CapStyle.BUTT;
 
     private String language = null;
     private String actualText = Single.space;
@@ -265,10 +265,11 @@ public class Line : IDrawable {
     /**
      *  Sets the line cap style.
      *
-     *  @param style the cap style of the current line. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+     *  @param style the cap style of the current line.
+     *  Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
      *  @return this Line object.
      */
-    public Line SetCapStyle(int style) {
+    public Line SetCapStyle(CapStyle style) {
         this.capStyle = style;
         return this;
     }
@@ -279,7 +280,7 @@ public class Line : IDrawable {
      *
      *  @return the cap style.
      */
-    public int GetCapStyle() {
+    public CapStyle GetCapStyle() {
         return capStyle;
     }
 
@@ -392,7 +393,7 @@ public class Line : IDrawable {
         page.SetPenWidth(width);
         page.SetLineCapStyle(capStyle);
         page.SetLinePattern(pattern);
-        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
         page.DrawLine(
                 x1 + xBox,
                 y1 + yBox,

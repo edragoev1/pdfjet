@@ -323,7 +323,7 @@ public class Box : IDrawable {
      *  @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
         page.SetPenWidth(width);
         page.SetLinePattern(pattern);
         if (fillShape) {

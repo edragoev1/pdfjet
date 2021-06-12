@@ -172,7 +172,7 @@ public class RadioButton implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.addBMC(StructElem.P, language, actualText, altDescription);
 
         this.r1 = font.getAscent()/2;
         this.r2 = r1/2;

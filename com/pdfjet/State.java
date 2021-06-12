@@ -29,8 +29,8 @@ class State {
     private float[] pen;
     private float[] brush;
     private float penWidth;
-    private int lineCapStyle;
-    private int lineJoinStyle;
+    private CapStyle lineCapStyle;
+    private JoinStyle lineJoinStyle;
     private String linePattern;
 
 
@@ -38,8 +38,8 @@ class State {
             float[] pen,
             float[] brush,
             float penWidth,
-            int lineCapStyle,
-            int lineJoinStyle,
+            CapStyle lineCapStyle,
+            JoinStyle lineJoinStyle,
             String linePattern) {
         this.pen = new float[] { pen[0], pen[1], pen[2] };
         this.brush = new float[] { brush[0], brush[1], brush[2] };
@@ -65,12 +65,12 @@ class State {
     }
 
 
-    public int getLineCapStyle() {
+    public CapStyle getLineCapStyle() {
         return lineCapStyle;
     }
 
 
-    public int getLineJoinStyle() {
+    public JoinStyle getLineJoinStyle() {
         return lineJoinStyle;
     }
 

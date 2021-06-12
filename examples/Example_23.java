@@ -14,15 +14,26 @@ public class Example_23 {
 
     public Example_23() throws Exception {
 
-        PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_23.pdf")));
+        PDF pdf = new PDF(new BufferedOutputStream(
+                new FileOutputStream("Example_23.pdf")), Compliance.PDF_UA);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
+/*
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+*/
+        Font f1 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
+                Font.STREAM);
+
+        Font f2 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                Font.STREAM);
+
+        Font f3 = new Font(pdf,
+                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
+                Font.STREAM);
         f3.setSize(7f * 0.583f);
 
         Image image1 = new Image(
@@ -74,7 +85,7 @@ public class Example_23 {
         cell.setBottomPadding(5f);
         row.add(cell);
         tableData.add(row);
-
+/*
         row = new ArrayList<Cell>();
         row.add(new Cell(f2,
                 "Another row.\n\n\nMake sure that this line of text will be wrapped around correctly too."));
@@ -98,7 +109,7 @@ public class Example_23 {
         row.add(cell);
 
         tableData.add(row);
-
+*/
         Table table = new Table();
         table.setData(tableData, Table.DATA_HAS_1_HEADER_ROWS);
         table.setLocation(50f, 50f);

@@ -401,7 +401,7 @@ public class Image implements Drawable {
      *  @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.addBMC(StructElem.P, language, actualText, altDescription);
 
         x += xBox;
         y += yBox;

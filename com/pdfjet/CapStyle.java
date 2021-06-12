@@ -1,5 +1,5 @@
 /**
- *  Join.swift
+ *  CapStyle.java
  *
 Copyright 2020 Innovatics Inc.
 
@@ -21,14 +21,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+package com.pdfjet;
 
 
-///
-/// Used to specify the join style when joining two lines.
-/// See the Page and Line classes for more details.
-///
-public class Join {
-    public static let MITER = 0
-    public static let ROUND = 1
-    public static let BEVEL = 2
+/**
+ *  Used to specify the cap style of a line.
+ *  See the Line class for more information.
+ */
+public enum CapStyle {
+    BUTT,
+    ROUND,
+    PROJECTING_SQUARE;
 }

@@ -55,7 +55,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String creator = "PDFjet v7.01.7";
+    private String creator = "PDFjet v7.05";
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
     private int byteCount = 0;

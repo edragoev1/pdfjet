@@ -20,8 +20,8 @@ public class Example_07 {
 */
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_07.pdf")),
-                Compliance.PDF_A_1B);
-        pdf.setTitle("PDF/A-1B compliant PDF");
+                Compliance.PDF_A_3B);
+        pdf.setTitle("PDF/A-3B compliant PDF");
 
         Font f1 = new Font(pdf,
                 getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
@@ -30,7 +30,8 @@ public class Example_07 {
         Page page = new Page(pdf, A4.LANDSCAPE);
 
         f1.setSize(72f);
-        page.addWatermark(f1, "This is a Draft");
+        // page.addWatermark(f1, "This is a Draft");
+        page.addWatermark(f1, "€, ř, š, č This is a Draft");
         f1.setSize(18f);
 
         float xPos = 20f;

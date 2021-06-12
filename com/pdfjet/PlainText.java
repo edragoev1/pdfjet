@@ -130,7 +130,7 @@ public class PlainText implements Drawable {
         font.setSize(fontSize);
         float yText = y + font.getAscent();
 
-        page.addBMC(StructElem.SPAN, language, Single.space, Single.space);
+        page.addBMC(StructElem.P, language, Single.space, Single.space);
         page.setBrushColor(backgroundColor);
         leading = font.getBodyHeight();
         float h = font.getBodyHeight() * textLines.length;
@@ -140,7 +140,7 @@ public class PlainText implements Drawable {
         page.drawRect(x, y, w, h);
         page.addEMC();
 
-        page.addBMC(StructElem.SPAN, language, actualText, altDescription);
+        page.addBMC(StructElem.P, language, actualText, altDescription);
         page.setTextStart();
         page.setTextFont(font);
         page.setBrushColor(textColor);

@@ -42,7 +42,7 @@ public class Line : Drawable {
     private var color = Color.black
     private var width: Float = 0.3
     private var pattern: String = "[] 0"
-    private var capStyle: Int = 0
+    private var capStyle = CapStyle.BUTT
 
     private var language: String?
     private var actualText: String = Single.space
@@ -218,11 +218,11 @@ public class Line : Drawable {
     /// Sets the line cap style.
     ///
     /// @param style the cap style of the current line.
-    /// Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+    /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     /// @return this Line object.
     ///
     @discardableResult
-    public func setCapStyle(_ style: Int) -> Line {
+    public func setCapStyle(_ style: CapStyle) -> Line {
         self.capStyle = style
         return self
     }
@@ -233,7 +233,7 @@ public class Line : Drawable {
     ///
     /// @return the cap style.
     ///
-    public func getCapStyle() -> Int {
+    public func getCapStyle() -> CapStyle {
         return self.capStyle
     }
 
@@ -324,7 +324,7 @@ public class Line : Drawable {
         page!.setPenWidth(width)
         page!.setLineCapStyle(capStyle)
         page!.setLinePattern(pattern)
-        page!.addBMC(StructElem.SPAN, language, actualText, altDescription)
+        page!.addBMC(StructElem.P, language, actualText, altDescription)
         page!.drawLine(
                 x1 + xBox,
                 y1 + yBox,
