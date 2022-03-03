@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"pdfjet"
-	"pdfjet/color"
-	"pdfjet/compliance"
+	"github.com/edragoev1/pdfjet/src/pdfjet"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/compliance"
 	"strings"
 	"time"
 )
