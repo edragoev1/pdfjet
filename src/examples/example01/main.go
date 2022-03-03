@@ -17,27 +17,27 @@ import (
 // Example01 --  TODO: Add proper description.
 func Example01(mode string) {
 	file, err := os.Create("Example_01.pdf")
+	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
 	w := bufio.NewWriter(file)
 	pdf := pdfjet.NewPDF(w, 0)
 
-	file1, err := os.Open("../../fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	defer file1.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file1.Close()
 	reader := bufio.NewReader(file1)
 	font1 := pdfjet.NewFontStream1(pdf, reader)
 	font1.SetSize(12.0)
 
-	file2, err := os.Open("../../fonts/Droid/DroidSansFallback.ttf.stream")
+	file2, err := os.Open("fonts/Droid/DroidSansFallback.ttf.stream")
+	defer file2.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file2.Close()
 	reader = bufio.NewReader(file2)
 	font2 := pdfjet.NewFontStream1(pdf, reader)
 	font2.SetSize(12.0)
@@ -78,7 +78,7 @@ func Example01(mode string) {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait, true)
 
-	lcgText, err := ioutil.ReadFile("../../data/LCG.txt")
+	lcgText, err := ioutil.ReadFile("data/LCG.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func Example01(mode string) {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait, true)
 
-	cjkText, err := ioutil.ReadFile("../../data/CJK.txt")
+	cjkText, err := ioutil.ReadFile("data/CJK.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
