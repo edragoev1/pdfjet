@@ -16,7 +16,7 @@ DENSO WAVE INCORPORATED
 
 import (
 	"log"
-	"pdfjet"
+	"github.com/edragoev1/pdfjet/src/pdfjet"
 )
 
 // QRCode used to create 2D QR Code barcodes. Please see Example_20.
