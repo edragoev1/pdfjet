@@ -26,7 +26,7 @@ SOFTWARE.
 
 import (
 	"fmt"
-	"pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
 	"strconv"
 	"time"
 )

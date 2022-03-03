@@ -1,45 +1,41 @@
 package pdfjet
 
 /**
- * fontstream1.go
+ * opentypefont.go
  *
 Copyright 2020 Innovatics Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 */
 
 import (
-	"bytes"
 	"io"
     "math"
-	"github.com/edragoev1/pdfjet/src/pdfjet/decompressor"
-	"strconv"
 	"strings"
 )
 
-// FontStream1 is used to add stream fonts to the PDF.
-func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
-	readFontData(font, reader)
-	embedFontFile(pdf, font, reader)
-	addFontDescriptorObject(pdf, font)
-	addCIDFontDictionaryObject(pdf, font)
-	addToUnicodeCMapObject(pdf, font)
+func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
+	otf := NewOTF(reader)
+
+	font.name = otf.fontName
+	font.firstChar = otf.firstChar
+	font.lastChar = otf.lastChar
+	font.unicodeToGID = otf.unicodeToGID
+	font.unitsPerEm = otf.unitsPerEm
+	font.bBoxLLx = otf.bBoxLLx
+	font.bBoxLLy = otf.bBoxLLy
+	font.bBoxURx = otf.bBoxURx
+	font.bBoxURy = otf.bBoxURy
+	font.advanceWidth = otf.advanceWidth
+	font.glyphWidth = otf.glyphWidth
+	font.fontAscent = otf.ascent
+	font.fontDescent = otf.descent
+	font.fontUnderlinePosition = otf.underlinePosition
+	font.fontUnderlineThickness = otf.underlineThickness
+	font.SetSize(font.size)
+
+	embedOpenTypeFontFile(pdf, font, otf)
+	addOpenTypeFontDescriptorObject(pdf, font, otf)
+	addOpenTypeFontCIDFontDictionaryObject(pdf, font, otf)
+	addOpenTypeFontToUnicodeCMapObject(pdf, font, otf)
 
 	// Type0 Font Dictionary
 	pdf.newobj()
@@ -47,7 +43,7 @@ func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /Type0\n")
 	pdf.appendString("/BaseFont /")
-	pdf.appendString(font.name)
+	pdf.appendString(otf.fontName)
 	pdf.appendString("\n")
 	pdf.appendString("/Encoding /Identity-H\n")
 	pdf.appendString("/DescendantFonts [")
@@ -63,59 +59,52 @@ func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.fonts = append(pdf.fonts, font)
 }
 
-func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
+func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
 	// Check if the font file is already embedded
 	for _, f := range pdf.fonts {
-		if f.fileObjNumber != 0 && f.name == font.name {
+		if f.fileObjNumber != 0 && f.name == otf.fontName {
 			font.fileObjNumber = f.fileObjNumber
 			return
 		}
 	}
 
-	metadataObjNumber := pdf.addMetadataObject(font.info, true)
+	metadataObjNumber := pdf.addMetadataObject(otf.fontInfo, true)
 
 	pdf.newobj()
 	pdf.appendString("<<\n")
-
-	pdf.appendString("/Metadata ")
-	pdf.appendInteger(metadataObjNumber)
-	pdf.appendString(" 0 R\n")
-
-	if font.cff {
+	if otf.cff {
 		pdf.appendString("/Subtype /CIDFontType0C\n")
 	}
 	pdf.appendString("/Filter /FlateDecode\n")
+
 	pdf.appendString("/Length ")
-	pdf.appendInteger(font.compressedSize)
+	pdf.appendInteger(otf.compressed.Len()) // The compressed size
 	pdf.appendString("\n")
 
-	if !font.cff {
+	if !otf.cff {
 		pdf.appendString("/Length1 ")
-		pdf.appendInteger(font.uncompressedSize)
+		pdf.appendInteger(len(otf.buf)) // The uncompressed size
 		pdf.appendString("\n")
+	}
+
+	if metadataObjNumber != 0 {
+		pdf.appendString("/Metadata ")
+		pdf.appendInteger(metadataObjNumber)
+		pdf.appendString(" 0 R\n")
 	}
 
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-
-	buf := make([]byte, 4096) // We need this buffer to be non zero length!
-	for {
-		n, err := reader.Read(buf)
-		pdf.appendByteArray(buf[:n])
-		if err == io.EOF {
-			break
-		}
-	}
-
+	pdf.appendByteArray(otf.compressed.Bytes())
 	pdf.appendString("\nendstream\n")
 	pdf.endobj()
 
 	font.fileObjNumber = pdf.getObjNumber()
 }
 
-func addFontDescriptorObject(pdf *PDF, font *Font) {
+func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *OTF) {
 	for _, f := range pdf.fonts {
-		if f.fontDescriptorObjNumber != 0 && f.name == font.name {
+		if f.fontDescriptorObjNumber != 0 && f.name == otf.fontName {
 			font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
 			return
 		}
@@ -125,9 +114,9 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /FontDescriptor\n")
 	pdf.appendString("/FontName /")
-	pdf.appendString(font.name)
+	pdf.appendString(otf.fontName)
 	pdf.appendString("\n")
-	if font.cff {
+	if otf.cff {
 		pdf.appendString("/FontFile3 ")
 	} else {
 		pdf.appendString("/FontFile2 ")
@@ -136,23 +125,23 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("/Flags 32\n")
 	pdf.appendString("/FontBBox [")
-	pdf.appendInteger(int(font.bBoxLLx))
+	pdf.appendInteger(int(otf.bBoxLLx))
 	pdf.appendString(" ")
-	pdf.appendInteger(int(font.bBoxLLy))
+	pdf.appendInteger(int(otf.bBoxLLy))
 	pdf.appendString(" ")
-	pdf.appendInteger(int(font.bBoxURx))
+	pdf.appendInteger(int(otf.bBoxURx))
 	pdf.appendString(" ")
-	pdf.appendInteger(int(font.bBoxURy))
+	pdf.appendInteger(int(otf.bBoxURy))
 	pdf.appendString("]\n")
 	pdf.appendString("/Ascent ")
-	pdf.appendInteger(int(font.fontAscent))
+	pdf.appendInteger(int(otf.ascent))
 	pdf.appendString("\n")
 	pdf.appendString("/Descent ")
-	pdf.appendInteger(int(font.fontDescent))
+	pdf.appendInteger(int(otf.descent))
 	pdf.appendString("\n")
 	pdf.appendString("/ItalicAngle 0\n")
 	pdf.appendString("/CapHeight ")
-	pdf.appendInteger(int(font.capHeight))
+	pdf.appendInteger(int(otf.capHeight))
 	pdf.appendString("\n")
 	pdf.appendString("/StemV 79\n")
 	pdf.appendString(">>\n")
@@ -161,16 +150,15 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	font.fontDescriptorObjNumber = pdf.getObjNumber()
 }
 
-func addToUnicodeCMapObject(pdf *PDF, font *Font) {
+func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
 	for _, f := range pdf.fonts {
-		if f.toUnicodeCMapObjNumber != 0 && f.name == font.name {
+		if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName {
 			font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
 			return
 		}
 	}
 
 	var sb strings.Builder
-
 	sb.WriteString("/CIDInit /ProcSet findresource begin\n")
 	sb.WriteString("12 dict begin\n")
 	sb.WriteString("begincmap\n")
@@ -185,7 +173,7 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	list := make([]string, 0)
 	var buf strings.Builder
 	for cid := 0; cid <= 0xffff; cid++ {
-		gid := font.unicodeToGID[cid]
+		gid := otf.unicodeToGID[cid]
 		if gid > 0 {
 			buf.WriteString("<")
 			buf.WriteString(toHexString(gid))
@@ -223,9 +211,9 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	font.toUnicodeCMapObjNumber = pdf.getObjNumber()
 }
 
-func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
+func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *OTF) {
 	for _, f := range pdf.fonts {
-		if f.cidFontDictObjNumber != 0 && f.name == font.name {
+		if f.cidFontDictObjNumber != 0 && f.name == otf.fontName {
 			font.cidFontDictObjNumber = f.cidFontDictObjNumber
 			return
 		}
@@ -234,13 +222,13 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.newobj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Font\n")
-	if font.cff {
+	if otf.cff {
 		pdf.appendString("/Subtype /CIDFontType0\n")
 	} else {
 		pdf.appendString("/Subtype /CIDFontType2\n")
 	}
 	pdf.appendString("/BaseFont /")
-	pdf.appendString(font.name)
+	pdf.appendString(otf.fontName)
 	pdf.appendString("\n")
 	pdf.appendString("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
 	pdf.appendString("/FontDescriptor ")
@@ -248,7 +236,6 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.appendString(" 0 R\n")
 
 	k := float32(1000.0) / float32(font.unitsPerEm)
-
 	pdf.appendString("/DW ")
 	pdf.appendInteger(int(math.Round(float64(k * float32(font.advanceWidth[0])))))
 	pdf.appendString("\n")
@@ -265,71 +252,4 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.endobj()
 
 	font.cidFontDictObjNumber = pdf.getObjNumber()
-}
-
-func writeListTo(sb *strings.Builder, list []string) {
-	sb.WriteString(strconv.Itoa(len(list)))
-	sb.WriteString(" beginbfchar\n")
-	for _, s := range list {
-		sb.WriteString(s)
-	}
-	sb.WriteString("endbfchar\n")
-}
-
-func readFontData(font *Font, reader io.Reader) {
-	length := int(getUint8(reader))
-	fontName := make([]byte, length)
-	io.ReadFull(reader, fontName)
-	font.name = string(fontName)
-
-	length = int(getUint24(reader))
-	fontInfo := make([]byte, length)
-	io.ReadFull(reader, fontInfo)
-	font.info = string(fontInfo)
-
-	length = int(getUint32(reader))
-	buf := make([]byte, length)
-	io.ReadFull(reader, buf)
-
-	inflated := decompressor.Inflate(buf)
-	r2 := bytes.NewReader(inflated)
-
-	font.unitsPerEm = int(getInt32(r2))
-	font.bBoxLLx = int16(getInt32(r2))
-	font.bBoxLLy = int16(getInt32(r2))
-	font.bBoxURx = int16(getInt32(r2))
-	font.bBoxURy = int16(getInt32(r2))
-	font.fontAscent = int16(getInt32(r2))
-	font.fontDescent = int16(getInt32(r2))
-	font.firstChar = rune(getInt32(r2))
-	font.lastChar = rune(getInt32(r2))
-	font.capHeight = int16(getInt32(r2))
-	font.fontUnderlinePosition = int16(getInt32(r2))
-	font.fontUnderlineThickness = int16(getInt32(r2))
-
-	length = int(getUint32(r2))
-	font.advanceWidth = make([]uint16, length)
-	for i := 0; i < length; i++ {
-		font.advanceWidth[i] = getUint16(r2)
-	}
-
-	length = int(getUint32(r2))
-	font.glyphWidth = make([]uint16, length)
-	for i := 0; i < length; i++ {
-		font.glyphWidth[i] = getUint16(r2)
-	}
-
-	length = int(getUint32(r2))
-	font.unicodeToGID = make([]int, length)
-	for i := 0; i < length; i++ {
-		font.unicodeToGID[i] = int(getUint16(r2))
-	}
-
-	font.cff = false
-	if getUint8(reader) == 'Y' {
-		font.cff = true
-	}
-
-	font.uncompressedSize = int(getUint32(reader))
-	font.compressedSize = int(getUint32(reader))
 }

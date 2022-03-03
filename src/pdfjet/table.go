@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
-	"pdfjet/align"
-	"pdfjet/border"
+	"github.com/edragoev1/pdfjet/src/pdfjet/align"
+	"github.com/edragoev1/pdfjet/src/pdfjet/border"
 	"strings"
 	"unicode"
 )

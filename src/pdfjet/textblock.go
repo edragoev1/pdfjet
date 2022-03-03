@@ -26,8 +26,8 @@ SOFTWARE.
 
 import (
 	"log"
-	"pdfjet/align"
-	"pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/align"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
 	"strings"
 )
 

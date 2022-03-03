@@ -28,9 +28,9 @@ import (
 	"io"
 	"log"
 	"math"
-	"pdfjet/device"
-	"pdfjet/imagetype"
-	"pdfjet/single"
+	"github.com/edragoev1/pdfjet/src/pdfjet/device"
+	"github.com/edragoev1/pdfjet/src/pdfjet/imagetype"
+	"github.com/edragoev1/pdfjet/src/pdfjet/single"
 	"strconv"
 )
 

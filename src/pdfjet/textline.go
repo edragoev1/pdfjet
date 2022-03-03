@@ -26,9 +26,9 @@ SOFTWARE.
 
 import (
 	"math"
-	"pdfjet/color"
-	"pdfjet/effect"
-	"pdfjet/structuretype"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/effect"
+	"github.com/edragoev1/pdfjet/src/pdfjet/structuretype"
 )
 
 // TextLine is used to create text line objects.

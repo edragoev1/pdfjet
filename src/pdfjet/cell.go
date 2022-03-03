@@ -26,11 +26,11 @@ SOFTWARE.
 
 import (
 	"log"
-	"pdfjet/align"
-	"pdfjet/border"
-	"pdfjet/color"
-	"pdfjet/single"
-	"pdfjet/structuretype"
+	"github.com/edragoev1/pdfjet/src/pdfjet/align"
+	"github.com/edragoev1/pdfjet/src/pdfjet/border"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/single"
+	"github.com/edragoev1/pdfjet/src/pdfjet/structuretype"
 	"strings"
 )
 

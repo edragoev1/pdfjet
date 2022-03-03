@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"pdfjet/color"
-	"pdfjet/mark"
-	"pdfjet/single"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/mark"
+	"github.com/edragoev1/pdfjet/src/pdfjet/single"
 )
 
 // CheckBox creates a CheckBox, which can be set checked or unchecked.

@@ -26,8 +26,8 @@ SOFTWARE.
 
 import (
 	"math"
-	"pdfjet/color"
-	"pdfjet/single"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/single"
 )
 
 // Line is used to create line objects.

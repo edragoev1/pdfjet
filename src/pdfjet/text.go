@@ -25,7 +25,7 @@ SOFTWARE.
 */
 
 import (
-	"pdfjet/single"
+	"github.com/edragoev1/pdfjet/src/pdfjet/single"
 	"strings"
 )
 

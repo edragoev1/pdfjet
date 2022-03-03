@@ -26,7 +26,7 @@ SOFTWARE.
 
 import (
 	"math"
-	"pdfjet/effect"
+	"github.com/edragoev1/pdfjet/src/pdfjet/effect"
 )
 
 // CompositeTextLine constructs composite text line objects.

@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"pdfjet/color"
-	"pdfjet/single"
-	"pdfjet/structuretype"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/single"
+	"github.com/edragoev1/pdfjet/src/pdfjet/structuretype"
 )
 
 // Box is used to create rectangular boxes on a page.

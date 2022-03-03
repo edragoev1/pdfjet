@@ -27,9 +27,9 @@ SOFTWARE.
 import (
 	"fmt"
 	"log"
-	"pdfjet/corefont"
-	"pdfjet/decompressor"
-	"pdfjet/letter"
+	"github.com/edragoev1/pdfjet/src/pdfjet/corefont"
+	"github.com/edragoev1/pdfjet/src/pdfjet/decompressor"
+	"github.com/edragoev1/pdfjet/src/pdfjet/letter"
 	"strconv"
 	"strings"
 	"unicode"

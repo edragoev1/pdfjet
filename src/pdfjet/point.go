@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"pdfjet/align"
-	"pdfjet/color"
-	"pdfjet/shape"
+	"github.com/edragoev1/pdfjet/src/pdfjet/align"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/shape"
 )
 
 // Point is used to create point objects with different shapes and draw them on a page.

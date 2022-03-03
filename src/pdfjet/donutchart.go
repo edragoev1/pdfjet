@@ -8,7 +8,7 @@ Copyright 2020 Innovatics Inc.
 
 import (
 	"math"
-	"pdfjet/operation"
+	"github.com/edragoev1/pdfjet/src/pdfjet/operation"
 )
 
 // DonutChart is used for donut chart objects.

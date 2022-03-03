@@ -25,9 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"pdfjet/align"
-	"pdfjet/border"
-	"pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/align"
+	"github.com/edragoev1/pdfjet/src/pdfjet/border"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
 	"strings"
 )
 

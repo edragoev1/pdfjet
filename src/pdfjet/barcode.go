@@ -26,7 +26,7 @@ SOFTWARE.
 import (
 	"log"
 	"math"
-	"pdfjet/code128"
+	"github.com/edragoev1/pdfjet/src/pdfjet/code128"
 	"strconv"
 	"strings"
 )

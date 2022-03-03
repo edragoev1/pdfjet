@@ -7,7 +7,7 @@ Copyright 2020 Innovatics Inc.
 */
 
 import (
-	"pdfjet/align"
+	"github.com/edragoev1/pdfjet/src/pdfjet/align"
 )
 
 // Paragraph describes paragraph objects.

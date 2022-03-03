@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
-	"pdfjet/color"
-	"pdfjet/single"
+	"github.com/edragoev1/pdfjet/src/pdfjet/color"
+	"github.com/edragoev1/pdfjet/src/pdfjet/single"
 	"strings"
 )
 
