@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src/pdfjet"
-	"github.com/edragoev1/pdfjet/src/pdfjet/compliance"
-	"github.com/edragoev1/pdfjet/src/pdfjet/letter"
+	"github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/letter"
 	"strings"
 	"time"
 )
