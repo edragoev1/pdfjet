@@ -5,6 +5,7 @@ import PackageDescription
 let package = Package(
     name: "PDFjet",
     targets: [
+        .target(name: "PDFjet"),
         .executableTarget(name: "Example_01", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_02", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_03", dependencies: ["PDFjet"]),
@@ -55,11 +56,5 @@ let package = Package(
         .executableTarget(name: "Example_48", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_49", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_50", dependencies: ["PDFjet"]),
-        .executableTarget(name: "Example_59", dependencies: ["PDFjet"]),
-        .executableTarget(name: "Example_71", dependencies: ["PDFjet"]),
-        .executableTarget(name: "Example_72", dependencies: ["PDFjet"]),
-        .executableTarget(name: "Example_73", dependencies: ["PDFjet"]),
-        .executableTarget(name: "Example_93", dependencies: ["PDFjet"]),
-        .target(name: "PDFjet")
     ]
 )
