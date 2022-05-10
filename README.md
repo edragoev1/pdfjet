@@ -29,6 +29,7 @@ To compile and run specific Java example (from 01 to 50) use of of the following
 ./run-java.sh 07
 
 Make sure GraalVM is installed in the correct directory:
+
 ./run-graalvm.sh 07
 ./run-graalvm-native-image.sh 07
 
