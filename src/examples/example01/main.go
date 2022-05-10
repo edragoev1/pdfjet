@@ -6,43 +6,47 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/letter"
 	"strconv"
 	"strings"
 	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example01 --  TODO: Add proper description.
 func Example01(mode string) {
 	file, err := os.Create("Example_01.pdf")
-	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer file.Close()
+
 	w := bufio.NewWriter(file)
 	pdf := pdfjet.NewPDF(w, 0)
 
 	file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	defer file1.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer file1.Close()
+
 	reader := bufio.NewReader(file1)
 	font1 := pdfjet.NewFontStream1(pdf, reader)
 	font1.SetSize(12.0)
 
 	file2, err := os.Open("fonts/Droid/DroidSansFallback.ttf.stream")
-	defer file2.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer file2.Close()
+
 	reader = bufio.NewReader(file2)
 	font2 := pdfjet.NewFontStream1(pdf, reader)
 	font2.SetSize(12.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(font1, "Happy New Year!")
 	textLine.SetLocation(70.0, 70.0)
@@ -76,7 +80,7 @@ func Example01(mode string) {
 	textLine.SetLocation(300.0, 160.0)
 	textLine.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait, true)
+	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	lcgText, err := ioutil.ReadFile("data/LCG.txt")
 	if err != nil {
@@ -131,7 +135,7 @@ func Example01(mode string) {
 		textLine.DrawOn(page)
 	}
 
-	page = pdfjet.NewPage(pdf, letter.Portrait, true)
+	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	cjkText, err := ioutil.ReadFile("data/CJK.txt")
 	if err != nil {
@@ -163,6 +167,6 @@ func Example01(mode string) {
 func main() {
 	start := time.Now()
 	Example01("stream")
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_01 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_01 => %dµs\n", elapsed.Microseconds())
 }

@@ -3,7 +3,7 @@ package pdfjet
 /**
  * text.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,9 @@ SOFTWARE.
 */
 
 import (
-	"github.com/edragoev1/pdfjet/src/single"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/src/single"
 )
 
 // Text structure
@@ -50,7 +51,7 @@ func NewText(paragraphs []*Paragraph) *Text {
 	text.paragraphLeading = 2 * text.leading
 	text.beginParagraphPoints = make([][2]float32, 0)
 	text.spaceBetweenTextLines = text.font.StringWidth(text.fallbackFont, single.Space)
-    text.drawBorder = true
+	text.drawBorder = true
 	return text
 }
 
@@ -204,7 +205,7 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 	var sb strings.Builder
 	runes := []rune(textLine.text)
 	for _, ch := range runes {
-		if text.font.StringWidth(text.fallbackFont, sb.String() + string(ch)) < textWidth {
+		if text.font.StringWidth(text.fallbackFont, sb.String()+string(ch)) < textWidth {
 			sb.WriteRune(ch)
 		} else {
 			tokens = append(tokens, sb.String())

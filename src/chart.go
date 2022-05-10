@@ -3,12 +3,13 @@ package pdfjet
 /**
  * chart.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 */
 
 import (
 	"fmt"
 	"math"
+
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/operation"
 	"github.com/edragoev1/pdfjet/src/shape"

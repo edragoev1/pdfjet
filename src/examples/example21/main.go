@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/dproject"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example21 -- TODO:
@@ -27,7 +27,7 @@ func Example21() {
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(font,
 		"QR codes encoded with Low, Medium, High and Very High error correction level - Go")
@@ -71,6 +71,6 @@ func Example21() {
 func main() {
 	start := time.Now()
 	Example21()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_21 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_21 => %dµs\n", elapsed.Microseconds())
 }

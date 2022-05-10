@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/imagetype"
-	"strings"
-	"time"
 )
 
 // Example17 draws the Canadian flag using a Path object that contains both lines
@@ -21,6 +21,7 @@ func Example17() {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -300,7 +301,7 @@ func Example17() {
 	defer file55.Close()
 	image55 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	image1.SetLocation(100.0, 80.0)
 	image1.DrawOn(page)
@@ -473,6 +474,6 @@ func Example17() {
 func main() {
 	start := time.Now()
 	Example17()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_17 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_17 => %dµs\n", elapsed.Microseconds())
 }

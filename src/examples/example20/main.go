@@ -6,12 +6,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example20 -- TODO:
@@ -20,6 +20,7 @@ func Example20() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -36,6 +37,8 @@ func Example20() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer file1.Close()
+
 	reader := bufio.NewReader(file1)
 	font1 := pdfjet.NewFontStream1(pdf, reader)
 	font1.SetSize(18.0)
@@ -43,7 +46,7 @@ func Example20() {
 	pages := pdf.GetPageObjects(objects)
 	contents := pages[0].GetContentsObject(objects)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	height := float32(105.0) // The logo height in points.
 	x := float32(50.0)
@@ -104,7 +107,7 @@ func Example20() {
 
 	path.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait, true)
+	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	line := pdfjet.NewTextLine(font1, "Hello, World!")
 	line.SetLocation(50.0, 50.0)
@@ -116,11 +119,13 @@ func Example20() {
 		qr.DrawOn(page)
 	*/
 	pdf.Complete()
+
+	file.Close()
 }
 
 func main() {
 	start := time.Now()
 	Example20()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_20 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_20 => %dµs\n", elapsed.Microseconds())
 }

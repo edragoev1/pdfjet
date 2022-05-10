@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/border"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example38 draws the Canadian flag using a Path object that contains both lines
@@ -23,14 +23,14 @@ func Example38() {
 	if err != nil {
 		log.Fatal(err)
 	}
-    defer f.Close()
+	defer f.Close()
 	w := bufio.NewWriter(f)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 
-	page := pdfjet.NewPage(pdf, letter.Landscape, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Landscape)
 
 	table := pdfjet.NewTable()
 	table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)
@@ -253,6 +253,6 @@ func getCell(
 func main() {
 	start := time.Now()
 	Example38()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_38 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_38 => %dµs\n", elapsed.Microseconds())
 }

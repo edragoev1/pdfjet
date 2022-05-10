@@ -1,7 +1,7 @@
 /**
  *  pagelayout.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,19 +21,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
-package main
-
+package pagelayout
 
 /**
  *  Used to specify the PDF page layout.
  *
  */
-public class PageLayout {
-public static final String SINGLE_PAGE = "SinglePage";          // Display one page at a time
-public static final String ONE_COLUMN = "OneColumn";            // Display the pages in one column
-public static final String TWO_COLUMN_LEFT = "TwoColumnLeft";   // Odd-numbered pages on the left
-public static final String TWO_COLUMN_RIGTH = "TwoColumnRight"; // Odd-numbered pages on the right
-public static final String TWO_PAGE_LEFT = "TwoPageLeft";       // Odd-numbered pages on the left
-public static final String TWO_PAGE_RIGTH = "TwoPageRight";     // Odd-numbered pages on the right
-}
+const (
+	SinglePage     = "SinglePage"     // Display one page at a time
+	OneColumn      = "OneColumn"      // Display the pages in one column
+	TwoColumnLeft  = "TwoColumnLeft"  // Odd-numbered pages on the left
+	TwoColumnRight = "TwoColumnRight" // Odd-numbered pages on the right
+	TwoPageLeft    = "TwoPageLeft"    // Odd-numbered pages on the left
+	TwoPageRight   = "TwoPageRight"   // Odd-numbered pages on the right
+)

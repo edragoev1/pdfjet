@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
-	"strings"
-	"time"
 )
 
 // Example42 -- TODO:
@@ -30,7 +30,7 @@ func Example42() {
 	f1.SetSize(10.0)
 	f2.SetSize(8.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	var width float32 = 500.0
 	var height float32 = 13.0
@@ -66,6 +66,6 @@ func Example42() {
 func main() {
 	start := time.Now()
 	Example42()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_42 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_42 => %dµs\n", elapsed.Microseconds())
 }

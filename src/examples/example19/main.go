@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example19 draws two images and three text blocks.
@@ -28,6 +28,7 @@ func Example19() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	reader := bufio.NewReader(f)
 	f1 := pdfjet.NewFontStream1(pdf, reader)
 	f1.SetSize(10.0)
@@ -37,6 +38,7 @@ func Example19() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	reader = bufio.NewReader(f)
 	f2 := pdfjet.NewFontStream1(pdf, reader)
 	f2.SetSize(10.0)
@@ -46,6 +48,7 @@ func Example19() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	reader = bufio.NewReader(f)
 	image1 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
 
@@ -54,10 +57,11 @@ func Example19() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	reader = bufio.NewReader(f)
 	image2 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	// Columns x coordinates
 	x1 := float32(75.0)
@@ -108,6 +112,6 @@ func Example19() {
 func main() {
 	start := time.Now()
 	Example19()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_19 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_19 => %dµs\n", elapsed.Microseconds())
 }

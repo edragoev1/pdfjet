@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/imagetype"
-	"strings"
-	"time"
 )
 
 // Example47 -- TODO:
@@ -32,7 +32,7 @@ func Example47() {
 	reader := bufio.NewReader(file1)
 	image1 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	image1.SetLocation(10.0, 10.0)
 	image1.ScaleBy(0.25)
@@ -44,6 +44,6 @@ func Example47() {
 func main() {
 	start := time.Now()
 	Example47()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_47 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_47 => %dµs\n", elapsed.Microseconds())
 }

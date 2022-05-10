@@ -3,14 +3,15 @@ package pdfjet
 /**
  * textcolumn.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 */
 
 import (
 	"log"
+	"strings"
+
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/single"
-	"strings"
 )
 
 // TextColumn is used to create text column objects and draw them on a page.

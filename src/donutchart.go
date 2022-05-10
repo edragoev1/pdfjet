@@ -3,11 +3,12 @@ package pdfjet
 /**
  * donutchart.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 */
 
 import (
 	"math"
+
 	"github.com/edragoev1/pdfjet/src/operation"
 )
 

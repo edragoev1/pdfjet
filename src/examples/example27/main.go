@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/letter"
 	"strings"
 	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example27 -- TODO:
@@ -18,7 +19,7 @@ func Example27() {
 	if err != nil {
 		log.Fatal(err)
 	}
-    defer file.Close()
+	defer file.Close()
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -63,7 +64,7 @@ func Example27() {
 	f4 := pdfjet.NewFontStream1(pdf, reader)
 	f4.SetSize(12.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	x := float32(50.0)
 	y := float32(50.0)
@@ -187,6 +188,6 @@ func Example27() {
 func main() {
 	start := time.Now()
 	Example27()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_27 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_27 => %dµs\n", elapsed.Microseconds())
 }

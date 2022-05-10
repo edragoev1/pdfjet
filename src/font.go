@@ -3,7 +3,7 @@ package pdfjet
 /**
  * font.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +25,11 @@ SOFTWARE.
 */
 
 import (
-	"github.com/edragoev1/pdfjet/src/corefont"
 	"io"
 	"log"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
 // Font is used to create font objects.
@@ -337,9 +338,9 @@ func (font *Font) GetBodyHeight() float32 {
 	return font.bodyHeight
 }
 
-// getFitChars returns the number of characters from the specified text string
+// GetFitChars returns the number of characters from the specified text string
 // that will fit within the specified width.
-func (font *Font) getFitChars(text string, width float32) int {
+func (font *Font) GetFitChars(text string, width float32) int {
 	w := width * float32(font.unitsPerEm) / font.size
 	if font.isCJK {
 		return int(w / font.ascent)
@@ -465,24 +466,24 @@ func (font *Font) stringWidth(str string) float32 {
 func (font *Font) StringWidth(fallbackFont *Font, text string) float32 {
 	var width float32 = 0.0
 
-    if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
-        return font.stringWidth(text)
-    }
+	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
+		return font.stringWidth(text)
+	}
 
 	activeFont := font
 	var buf strings.Builder
 	runes := []rune(text)
 	for _, ch := range runes {
 		if activeFont.unicodeToGID[ch] == 0 {
-            width += activeFont.stringWidth(buf.String())
-            buf.Reset()
-            // Switch the active font
-            if activeFont == font {
-                activeFont = fallbackFont
-            } else {
-                activeFont = font
-            }
-        }
+			width += activeFont.stringWidth(buf.String())
+			buf.Reset()
+			// Switch the active font
+			if activeFont == font {
+				activeFont = fallbackFont
+			} else {
+				activeFont = font
+			}
+		}
 		buf.WriteRune(ch)
 	}
 	width += activeFont.stringWidth(buf.String())

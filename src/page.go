@@ -3,7 +3,7 @@ package pdfjet
 /**
  * page.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,13 +28,14 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
+	"unicode"
+
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/operation"
 	"github.com/edragoev1/pdfjet/src/shape"
-	"strings"
-	"unicode"
 )
 
 // Page is used to create PDF page objects.
@@ -99,11 +100,13 @@ const (
  *  @param pdf the pdf object.
  *  @param pageSize the page size of this page.
  */
-/*
-func NewPage(pdf PDF, pageSize []float32) {
-	return NewPage(pdf, pageSize, true)
+func NewPageAddTo(pdf *PDF, pageSize [2]float32) *Page {
+	return newPage(pdf, pageSize, true)
 }
-*/
+
+func NewPage(pdf *PDF, pageSize [2]float32) *Page {
+	return newPage(pdf, pageSize, false)
+}
 
 // NewPage constructs page object and adds it to the PDF document.
 //
@@ -117,18 +120,18 @@ func NewPage(pdf PDF, pageSize []float32) {
 // @param pdf the pdf object.
 // @param pageSize the page size of this page.
 // @param addPageToPDF boolean flag.
-func NewPage(pdf *PDF, pageSize [2]float32, addPageToPDF bool) *Page {
+func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
 	page := new(Page)
 	page.pdf = pdf
-	page.contents = make([]int, 0)
+	page.contents = []int{}
 	page.width = pageSize[0]
 	page.height = pageSize[1]
 	page.linePattern = "[] 0"
 	page.savedHeight = math.MaxFloat32
 	page.tm = [4]float32{1.0, 0.0, 0.0, 1.0}
-	page.buf = make([]byte, 0)
+	page.buf = []byte{}
 	page.penWidth = -1.0
-	if addPageToPDF {
+	if addToPDF {
 		pdf.AddPage(page)
 	}
 	return page
@@ -142,7 +145,7 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.width = pageObj.GetPageSize()[0]
 	page.height = pageObj.GetPageSize()[1]
 	page.tm = [4]float32{1.0, 0.0, 0.0, 1.0}
-	page.buf = make([]byte, 0)
+	page.buf = []byte{}
 	appendString(&page.buf, "q\n")
 	if pageObj.gsNumber != 0 {
 		appendString(&page.buf, "/GS")
@@ -177,10 +180,10 @@ func (page *Page) getContent() []byte {
 	return page.buf
 }
 
-// addDestination adds destination to this page.
+// AddDestination adds destination to this page.
 // @param name The destination name.
 // @param yPosition The vertical position of the destination on this page.
-func (page *Page) addDestination(name string, yPosition float32) *Destination {
+func (page *Page) AddDestination(name *string, yPosition float32) *Destination {
 	dest := NewDestination(name, page.height-yPosition)
 	page.destinations = append(page.destinations, dest)
 	return dest
@@ -744,7 +747,7 @@ func (page *Page) drawEllipse(x, y, r1, r2 float32, operation string) {
 // @param p the point.
 func (page *Page) DrawPoint(p *Point) {
 	if p.shape != shape.Invisible {
-		var list []*Point
+		list := []*Point{}
 		if p.shape == shape.Circle {
 			if p.fillShape {
 				page.FillCircle(p.x, p.y, p.r)
@@ -752,7 +755,6 @@ func (page *Page) DrawPoint(p *Point) {
 				page.DrawCircle(p.x, p.y, p.r)
 			}
 		} else if p.shape == shape.Diamond {
-			list = make([]*Point, 0)
 			list = append(list, NewPoint(p.x, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y))
 			list = append(list, NewPoint(p.x, p.y+p.r))
@@ -763,7 +765,6 @@ func (page *Page) DrawPoint(p *Point) {
 				page.DrawPath(list, operation.Close)
 			}
 		} else if p.shape == shape.Box {
-			list = make([]*Point, 0)
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
@@ -777,7 +778,6 @@ func (page *Page) DrawPoint(p *Point) {
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
 			page.DrawLine(p.x, p.y-p.r, p.x, p.y+p.r)
 		} else if p.shape == shape.UpArrow {
-			list = make([]*Point, 0)
 			list = append(list, NewPoint(p.x, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
@@ -787,7 +787,6 @@ func (page *Page) DrawPoint(p *Point) {
 				page.DrawPath(list, operation.Close)
 			}
 		} else if p.shape == shape.DownArrow {
-			list = make([]*Point, 0)
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x, p.y+p.r))
@@ -797,7 +796,6 @@ func (page *Page) DrawPoint(p *Point) {
 				page.DrawPath(list, operation.Close)
 			}
 		} else if p.shape == shape.LeftArrow {
-			list = make([]*Point, 0)
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y))
 			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
@@ -807,7 +805,6 @@ func (page *Page) DrawPoint(p *Point) {
 				page.DrawPath(list, operation.Close)
 			}
 		} else if p.shape == shape.RightArrow {
-			list = make([]*Point, 0)
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y))
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
@@ -836,7 +833,6 @@ func (page *Page) DrawPoint(p *Point) {
 			b := p.r * sin18
 			c := 2 * a * sin18
 			d := 2*a*cos18 - p.r
-			list = make([]*Point, 0)
 			list = append(list, NewPoint(p.x, p.y-p.r))
 			list = append(list, NewPoint(p.x+c, p.y+d))
 			list = append(list, NewPoint(p.x-a, p.y-b))
@@ -1007,13 +1003,11 @@ func (page *Page) SetTextEnd() {
 // DrawRectRoundCorners draws rectangle with rounded corners.
 // Code provided by:
 // Dominique Andre Gunia <contact@dgunia.de>
-// <<
 func (page *Page) DrawRectRoundCorners(x, y, w, h, r1, r2 float32, operation string) {
-
 	// The best 4-spline magic number
 	var m4 float32 = 0.551784
 
-	list := make([]*Point, 0)
+	list := []*Point{}
 
 	// Starting point
 	list = append(list, NewPoint(x+w-r1, y))
@@ -1083,8 +1077,6 @@ func (page *Page) restore() {
 		page.savedHeight = math.MaxFloat32
 	}
 }
-
-// <<
 
 // SetCropBox sets the page CropBox.
 // See page 77 of the PDF32000_2008.pdf specification.

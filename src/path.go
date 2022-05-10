@@ -3,7 +3,7 @@ package pdfjet
 /**
  * path.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ type Path struct {
 // NewPath - the default constructor.
 func NewPath() *Path {
 	path := new(Path)
-	path.points = make([]*Point, 0)
+	path.points = []*Point{}
 	path.color = color.Black
 	path.width = 0.3
 	path.pattern = "[] 0"
@@ -111,7 +111,7 @@ func (path *Path) SetFillShape(fillShape bool) {
 }
 
 // SetLineCapStyle sets the line cap style.
-// @param style the cap style of this path. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+// @param style the cap style of this path. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
 func (path *Path) SetLineCapStyle(style int) {
 	path.lineCapStyle = style
 }
@@ -172,7 +172,7 @@ func (path *Path) ScaleBy(factor float32) {
 // @param segment the segment to draw - please see the Segment class.
 // @return a list of the curve points.
 func GetCurvePoints(x, y, r1, r2 float32, segment int) []*Point {
-	points := make([]*Point, 0)
+	points := []*Point{}
 
 	// The best 4-spline magic number
 	var m4 float32 = 0.551784

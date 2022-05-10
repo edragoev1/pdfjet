@@ -1,7 +1,7 @@
 /**
  * pdf417.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 */
 package pdf417
 

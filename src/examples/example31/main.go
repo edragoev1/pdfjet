@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"strings"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example31 -- TODO:
@@ -48,7 +49,7 @@ func Example31() {
 	font2 := pdfjet.NewFontStream1(pdf, reader)
 	font2.SetSize(15.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	file3, err := os.Open("data/marathi.txt")
 	if err != nil {
@@ -112,6 +113,6 @@ func Example31() {
 func main() {
 	start := time.Now()
 	Example31()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_31 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_31 => %dµs\n", elapsed.Microseconds())
 }

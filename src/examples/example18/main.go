@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example18 draws donut chart or pie chart depending on R1.
@@ -21,6 +21,7 @@ func Example18() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	w := bufio.NewWriter(f)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -28,7 +29,7 @@ func Example18() {
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 	page.SetPenWidth(5.0)
 	page.SetBrushColor(0x353638)
 
@@ -48,6 +49,6 @@ func Example18() {
 func main() {
 	start := time.Now()
 	Example18()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_18 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_18 => %dµs\n", elapsed.Microseconds())
 }

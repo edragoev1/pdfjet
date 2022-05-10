@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"strconv"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // Example41 -- TODO:
@@ -34,7 +34,7 @@ func Example41() {
 	f2.SetSize(10.0)
 	f3.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	paragraphs := make([]*pdfjet.Paragraph, 0)
 
@@ -72,6 +72,6 @@ func Example41() {
 func main() {
 	start := time.Now()
 	Example41()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_41 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_41 => %dµs\n", elapsed.Microseconds())
 }

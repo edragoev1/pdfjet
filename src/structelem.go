@@ -3,7 +3,7 @@ package pdfjet
 /**
  * structelem.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,6 @@ func NewStructElem() *StructElem {
 	return structElem
 }
 
-// func (structElem *StructElem) getPageObjNumber() int {
-// 	return structElem.pageObjNumber
-// }
+func (structElem *StructElem) GetPageObjNumber() int {
+	return structElem.pageObjNumber
+}

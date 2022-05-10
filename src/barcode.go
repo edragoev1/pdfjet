@@ -3,7 +3,7 @@ package pdfjet
 /**
  *  barcode.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,10 @@ SOFTWARE.
 import (
 	"log"
 	"math"
-	"github.com/edragoev1/pdfjet/src/code128"
 	"strconv"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/src/code128"
 )
 
 // BarCode describes one dimentional barcodes - UPC, Code 39 and Code 128.
@@ -320,10 +321,10 @@ func (barcode *BarCode) drawCode128(page *Page, x1, y1 float32) []float32 {
 			list = append(list, symchar-32)
 		} else if symchar < 256 {
 			list = append(list, rune(code128.FNC4))
-			list = append(list, symchar-160)    // 128 + 32
+			list = append(list, symchar-160) // 128 + 32
 		} else {
 			// list = append(list, rune(31))    // '?'
-			list = append(list, rune(256))      // This will generate an exception.
+			list = append(list, rune(256)) // This will generate an exception.
 		}
 		if len(list) == 48 {
 			// Maximum number of data characters is 48

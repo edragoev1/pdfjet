@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"strings"
-	"time"
 )
 
 // Example46 -- TODO:
@@ -49,7 +49,7 @@ func Example46() {
 	reader = bufio.NewReader(f)
 	f3 := pdfjet.NewFontStream1(pdf, reader)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	paragraphs := make([]*pdfjet.Paragraph, 0)
 
@@ -73,7 +73,6 @@ func Example46() {
 	paragraph = pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f3, "Hello, World!"))
 	paragraphs = append(paragraphs, paragraph)
 
-
 	textArea := pdfjet.NewText(paragraphs)
 	textArea.SetLocation(70.0, 70.0)
 	textArea.SetWidth(500.0)
@@ -85,6 +84,6 @@ func Example46() {
 func main() {
 	start := time.Now()
 	Example46()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_46 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_46 => %dµs\n", elapsed.Microseconds())
 }

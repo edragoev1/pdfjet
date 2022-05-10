@@ -3,7 +3,7 @@ package pdfjet
 /**
  * destination.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ SOFTWARE.
 
 // Destination is used to create PDF destination objects.
 type Destination struct {
-	name          string
+	name          *string
 	yPosition     float32
 	pageObjNumber int
 }
@@ -35,7 +35,7 @@ type Destination struct {
 //
 // @param name the name of this destination object.
 // @param yPosition the y coordinate of the top left corner.
-func NewDestination(name string, yPosition float32) *Destination {
+func NewDestination(name *string, yPosition float32) *Destination {
 	destination := new(Destination)
 	destination.name = name
 	destination.yPosition = yPosition

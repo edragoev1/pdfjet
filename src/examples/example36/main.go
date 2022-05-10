@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/imagetype"
-	"strings"
-	"time"
 )
 
 // Example36 shows how you can add pages to PDF in random order.
@@ -51,7 +51,7 @@ func Example36() {
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page1 := pdfjet.NewPage(pdf, a4.Portrait, false)
+	page1 := pdfjet.NewPage(pdf, a4.Portrait)
 
 	text := pdfjet.NewTextLine(f1, "The map below is an embedded PNG image")
 	text.SetLocation(90.0, 30.0)
@@ -83,7 +83,7 @@ func Example36() {
 	image3.ScaleBy(0.5)
 	image3.DrawOn(page1)
 
-	page2 := pdfjet.NewPage(pdf, a4.Portrait, false)
+	page2 := pdfjet.NewPage(pdf, a4.Portrait)
 
 	text.SetText("This page was created after the second one but it was drawn first!")
 	text.SetLocation(90.0, 30.0)
@@ -101,6 +101,6 @@ func Example36() {
 func main() {
 	start := time.Now()
 	Example36()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_36 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_36 => %dµs\n", elapsed.Microseconds())
 }

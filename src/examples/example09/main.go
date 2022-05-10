@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
+	"github.com/edragoev1/pdfjet/src/shape"
 )
 
 // Example09 draws the a chart that consists of three paths.
@@ -20,6 +21,7 @@ func Example09() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	w := bufio.NewWriter(f)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -40,7 +42,7 @@ func Example09() {
 	font2 := pdfjet.NewFontStream1(pdf, reader)
 	font2.SetSize(8.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	chartData := make([][]*pdfjet.Point, 0)
 
@@ -58,7 +60,7 @@ func Example09() {
 	path2 = append(path2, pdfjet.NewPoint(50.0, 30.0).SetDrawPath().SetColor(color.Red))
 	path2 = append(path2, pdfjet.NewPoint(55.0, 35.0))
 	path2 = append(path2, pdfjet.NewPoint(60.0, 40.0))
-	path2 = append(path2, pdfjet.NewPoint(65.0, 48.0))
+	path2 = append(path2, pdfjet.NewPoint(65.0, 48.0).SetShape(shape.Diamond))
 	path2 = append(path2, pdfjet.NewPoint(70.0, 49.0))
 	path2 = append(path2, pdfjet.NewPoint(75.0, 53.0))
 	path2 = append(path2, pdfjet.NewPoint(80.0, 55.0))
@@ -84,8 +86,8 @@ func Example09() {
 	chart.SetYAxisTitle("Internet users % of the population")
 	// AddTrendLine(chart)
 
-    chart.SetXAxisMinMax(0.0, 100.0, 10)
-    chart.SetYAxisMinMax(0.0, 100.0, 10)
+	chart.SetXAxisMinMax(0.0, 100.0, 10)
+	chart.SetYAxisMinMax(0.0, 100.0, 10)
 
 	chart.DrawOn(page)
 
@@ -97,6 +99,6 @@ func Example09() {
 func main() {
 	start := time.Now()
 	Example09()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_09 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_09 => %dµs\n", elapsed.Microseconds())
 }

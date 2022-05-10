@@ -3,7 +3,7 @@ package pdfjet
 /**
  * bookmark.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -78,7 +78,7 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 		key,
 		whitespace.ReplaceAllString(title.textLine.text, " "))
 	bookmark2.parent = bookmark
-	bookmark2.dest = page.addDestination(key, title.textLine.GetDestinationY())
+	bookmark2.dest = page.AddDestination(&key, title.textLine.GetDestinationY())
 	if bookmark.children == nil {
 		bookmark.children = make([]*Bookmark, 0)
 	} else {

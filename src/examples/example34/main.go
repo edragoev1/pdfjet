@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"strconv"
+	"strings"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 	"github.com/edragoev1/pdfjet/src/shape"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // Example34 -- TODO:
@@ -165,6 +166,6 @@ func appendMissingCells(tableData [][]*pdfjet.Cell, font *pdfjet.Font) {
 func main() {
 	start := time.Now()
 	Example34()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_34 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_34 => %dµs\n", elapsed.Microseconds())
 }

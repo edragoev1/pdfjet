@@ -3,7 +3,7 @@ package pdfjet
 /**
  * point.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ type Point struct {
 	linePattern    string
 	fillShape      bool
 	isControlPoint bool
-	drawPath  bool
+	drawPath       bool
 	text           string
 	textColor      uint32
 	textDirection  int
@@ -144,8 +144,9 @@ func (point *Point) GetRadius() float32 {
 //   shape.LeftArrow
 //   shape.RightArrow
 // </pre>
-func (point *Point) SetShape(shape int) {
+func (point *Point) SetShape(shape int) *Point {
 	point.shape = shape
+	return point
 }
 
 // GetShape returns the point shape code value.
@@ -170,7 +171,7 @@ func (point *Point) GetFillShape() bool {
 // @param color the color specified as an integer.
 func (point *Point) SetColor(color uint32) *Point {
 	point.color = color
-    return point
+	return point
 }
 
 // GetColor returns the point color as an integer.
@@ -181,8 +182,9 @@ func (point *Point) GetColor() uint32 {
 
 // SetLineWidth sets the width of the lines of this point.
 // @param lineWidth the line width.
-func (point *Point) SetLineWidth(lineWidth float32) {
+func (point *Point) SetLineWidth(lineWidth float32) *Point {
 	point.lineWidth = lineWidth
+	return point
 }
 
 // GetLineWidth returns the width of the lines used to draw this point.
@@ -225,7 +227,7 @@ func (point *Point) GetLinePattern() string {
 // SetDrawPath sets this point as the start of a path that will be drawn on the chart.
 func (point *Point) SetDrawPath() *Point {
 	point.drawPath = true
-    return point
+	return point
 }
 
 // SetURIAction sets the URI for the "click point" action.

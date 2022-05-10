@@ -3,7 +3,7 @@ package pdfjet
 /**
  * box.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ type Box struct {
 	language       string
 	altDescription string
 	actualText     string
-    structureType  string
+	structureType  string
 }
 
 // NewBox creates new Box object.
@@ -54,7 +54,7 @@ func NewBox() *Box {
 	box.pattern = "[] 0"
 	box.altDescription = single.Space
 	box.actualText = single.Space
-    box.structureType = structuretype.P
+	box.structureType = structuretype.P
 	return box
 }
 

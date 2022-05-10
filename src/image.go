@@ -3,7 +3,7 @@ package pdfjet
 /**
  * image.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,10 +28,11 @@ import (
 	"io"
 	"log"
 	"math"
+	"strconv"
+
 	"github.com/edragoev1/pdfjet/src/device"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/single"
-	"strconv"
 )
 
 // Image describes an image object.

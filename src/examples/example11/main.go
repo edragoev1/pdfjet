@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example11 tests the one dimenstional barcodes.
@@ -19,6 +19,7 @@ func Example11() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	w := bufio.NewWriter(f)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -31,7 +32,7 @@ func Example11() {
 	reader := bufio.NewReader(file)
 	f1 := pdfjet.NewFontStream1(pdf, reader)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	barcode := pdfjet.NewBarCode(pdfjet.CODE128, "Hellö, World!")
 	barcode.SetLocation(170.0, 70.0)
@@ -79,6 +80,6 @@ func Example11() {
 func main() {
 	start := time.Now()
 	Example11()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_11 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_11 => %dµs\n", elapsed.Microseconds())
 }

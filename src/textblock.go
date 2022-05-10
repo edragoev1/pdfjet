@@ -3,7 +3,7 @@ package pdfjet
 /**
  * textblock.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,10 @@ SOFTWARE.
 
 import (
 	"log"
+	"strings"
+
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
-	"strings"
 )
 
 // TextBlock is used for creating blocks of text.

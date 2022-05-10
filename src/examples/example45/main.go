@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/imagetype"
-	"strings"
-	"time"
 )
 
 // Example45 -- TODO:
@@ -24,8 +24,8 @@ func Example45() {
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF_UA)
-    pdf.SetLanguage("en-US");
-    pdf.SetTitle("Hello, World!");
+	pdf.SetLanguage("en-US")
+	pdf.SetTitle("Hello, World!")
 
 	f, err := os.Open("fonts/Droid/DroidSerif-Regular.ttf.stream")
 	if err != nil {
@@ -46,7 +46,7 @@ func Example45() {
 	f1.SetSize(14.0)
 	f2.SetSize(14.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	uri := "http://pdfjet.com"
 
@@ -110,7 +110,7 @@ func Example45() {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, a4.Portrait, true)
+	page = pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	text = pdfjet.NewTextLine(f1, "")
 	text.SetLocation(70.0, 120.0)
@@ -185,6 +185,6 @@ func Example45() {
 func main() {
 	start := time.Now()
 	Example45()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_45 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_45 => %dµs\n", elapsed.Microseconds())
 }

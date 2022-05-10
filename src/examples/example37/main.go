@@ -6,11 +6,11 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"strings"
-	"time"
 )
 
 // Example37 -- TODO:
@@ -74,6 +74,6 @@ func Example37() {
 func main() {
 	start := time.Now()
 	Example37()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_37 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_37 => %dµs\n", elapsed.Microseconds())
 }

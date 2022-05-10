@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/shape"
-	"strings"
-	"time"
 )
 
 // Example39 -- TODO:
@@ -35,7 +35,7 @@ func Example39() {
 	f1.SetSize(10.0)
 	f2.SetSize(8.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	chart := pdfjet.NewChart(f1, f2)
 	chart.SetLocation(70.0, 50.0)
@@ -125,6 +125,6 @@ func getData() [][]*pdfjet.Point {
 func main() {
 	start := time.Now()
 	Example39()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_39 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_39 => %dµs\n", elapsed.Microseconds())
 }

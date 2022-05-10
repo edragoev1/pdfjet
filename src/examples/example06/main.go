@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 	"github.com/edragoev1/pdfjet/src/shape"
-	"strings"
-	"time"
 )
 
 // Example06 draws the flag of the USA.
@@ -21,6 +21,7 @@ func Example06() {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -51,7 +52,7 @@ func Example06() {
 			f,
 			true) // Compress text files.
 	*/
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	flag := pdfjet.NewBox()
 	flag.SetLocation(100.0, 100.0)
@@ -132,6 +133,6 @@ func Example06() {
 func main() {
 	start := time.Now()
 	Example06()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_06 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_06 => %dµs\n", elapsed.Microseconds())
 }

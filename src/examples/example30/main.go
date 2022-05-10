@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example30 draws the Canadian flag using a Path object that contains both lines
@@ -48,7 +48,7 @@ func Example30() {
 	image2.SetLocation(10.0, 100.0)
 
 	// Create the first page after all the resources have been added to the PDF.
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(font, "© OpenStreetMap contributors")
 	textLine.SetLocation(430.0, 655.0)
@@ -97,6 +97,6 @@ func Example30() {
 func main() {
 	start := time.Now()
 	Example30()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_30 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_30 => %dµs\n", elapsed.Microseconds())
 }

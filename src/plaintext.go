@@ -3,7 +3,7 @@ package pdfjet
 /**
  * plaintext.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,9 +25,10 @@ SOFTWARE.
 */
 
 import (
+	"strings"
+
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/single"
-	"strings"
 )
 
 // PlainText - please see Example_45

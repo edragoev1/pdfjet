@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/imagetype"
-	"strings"
 	"time"
 
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/imagetype"
 )
 
 // Example03 draws the Canadian flag using a Path object that contains both lines
@@ -23,6 +22,7 @@ func Example03() {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -37,7 +37,7 @@ func Example03() {
 	reader := bufio.NewReader(file1)
 	image1 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	file2, err := os.Open("images/fruit.jpg")
 	if err != nil {
@@ -79,15 +79,15 @@ func Example03() {
 	image3.ScaleBy(0.5)
 	image3.DrawOn(page)
 	/*
-			image2.SetLocation(260.0, point[1]+f1.GetDescent())
-			image2.ScaleBy(0.5)
-			image2.SetRotate(clockwise.NinetyDegrees)
-			image2.DrawOn(page)
+		image2.SetLocation(260.0, point[1]+f1.GetDescent())
+		image2.ScaleBy(0.5)
+		image2.SetRotate(clockwise.NinetyDegrees)
+		image2.DrawOn(page)
 
-			image2.SetLocation(350.0, point[1]+f1.GetDescent())
-			image2.SetRotate(clockwise.ZeroDegrees)
-			image2.ScaleBy(0.5)
-			image2.DrawOn(page)
+		image2.SetLocation(350.0, point[1]+f1.GetDescent())
+		image2.SetRotate(clockwise.ZeroDegrees)
+		image2.ScaleBy(0.5)
+		image2.DrawOn(page)
 
 		text = pdfjet.NewTextLine(f1, "The map on the right is an embedded BMP image")
 		text.SetColor(color.Black)
@@ -98,11 +98,11 @@ func Example03() {
 		text.SetLocation(90.0, 800.0)
 		text.DrawOn(page)
 
-			image3.SetLocation(390.0, 630.0)
-			image3.ScaleBy(0.5)
-			image3.DrawOn(page)
+		image3.SetLocation(390.0, 630.0)
+		image3.ScaleBy(0.5)
+		image3.DrawOn(page)
 
-			page2 := NewPage(pdf, a4.PORTRAIT, true)
+		page2 := NewPageAddTo(pdf, a4.Portrait)
 		var xy []float32
 
 		xy = image1.DrawOn(page2)
@@ -118,6 +118,6 @@ func Example03() {
 func main() {
 	start := time.Now()
 	Example03()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_03 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_03 => %dµs\n", elapsed.Microseconds())
 }

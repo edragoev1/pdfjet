@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example02 draws the Canadian flag using a Path object that contains both lines
@@ -21,11 +21,12 @@ func Example02() {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	flag := pdfjet.NewBoxAt(85.0, 85.0, 64.0, 32.0)
 
@@ -87,22 +88,21 @@ func Example02() {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-    // TODO:
-    page.SetPenColorCMYK(1.0, 0.0, 0.0, 0.0)
-    page.SetPenWidth(5.0)
-    page.DrawLine(50.0, 500.0, 300.0, 500.0)
+	page.SetPenColorCMYK(1.0, 0.0, 0.0, 0.0)
+	page.SetPenWidth(5.0)
+	page.DrawLine(50.0, 500.0, 300.0, 500.0)
 
-    page.SetPenColorCMYK(0.0, 1.0, 0.0, 0.0)
-    page.SetPenWidth(5.0)
-    page.DrawLine(50.0, 550.0, 300.0, 550.0)
+	page.SetPenColorCMYK(0.0, 1.0, 0.0, 0.0)
+	page.SetPenWidth(5.0)
+	page.DrawLine(50.0, 550.0, 300.0, 550.0)
 
-    page.SetPenColorCMYK(0.0, 0.0, 1.0, 0.0)
-    page.SetPenWidth(5.0)
-    page.DrawLine(50.0, 600.0, 300.0, 600.0)
+	page.SetPenColorCMYK(0.0, 0.0, 1.0, 0.0)
+	page.SetPenWidth(5.0)
+	page.DrawLine(50.0, 600.0, 300.0, 600.0)
 
-    page.SetPenColorCMYK(0.0, 0.0, 0.0, 1.0)
-    page.SetPenWidth(5.0)
-    page.DrawLine(50.0, 650.0, 300.0, 650.0)
+	page.SetPenColorCMYK(0.0, 0.0, 0.0, 1.0)
+	page.SetPenWidth(5.0)
+	page.DrawLine(50.0, 650.0, 300.0, 650.0)
 
 	pdf.Complete()
 }
@@ -110,6 +110,6 @@ func Example02() {
 func main() {
 	start := time.Now()
 	Example02()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_02 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_02 => %dµs\n", elapsed.Microseconds())
 }

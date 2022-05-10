@@ -3,7 +3,7 @@ package pdfjet
 /**
  * pdf.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,15 +28,16 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/compressor"
-	"github.com/edragoev1/pdfjet/src/djb"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/compressor"
+	"github.com/edragoev1/pdfjet/src/djb"
 )
 
 // PDF is used to create PDF objects.
@@ -182,28 +183,28 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		sb.WriteString("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n")
 		sb.WriteString("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
 
-        sb.WriteString("  <dc:format>application/pdf</dc:format>\n")
-        if pdf.compliance == compliance.PDF_UA {
-            sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
-        } else if pdf.compliance == compliance.PDF_A_1A {
-            sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
-            sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
-        } else if pdf.compliance == compliance.PDF_A_1B {
-            sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
-            sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
-        } else if pdf.compliance == compliance.PDF_A_2A {
-            sb.WriteString("  <pdfaid:part>2</pdfaid:part>\n")
-            sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
-        } else if pdf.compliance == compliance.PDF_A_2B {
-            sb.WriteString("  <pdfaid:part>2</pdfaid:part>\n")
-            sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
-        } else if pdf.compliance == compliance.PDF_A_3A {
-            sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
-            sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
-        } else if pdf.compliance == compliance.PDF_A_3B {
-            sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
-            sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
-        }
+		sb.WriteString("  <dc:format>application/pdf</dc:format>\n")
+		if pdf.compliance == compliance.PDF_UA {
+			sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
+		} else if pdf.compliance == compliance.PDF_A_1A {
+			sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
+		} else if pdf.compliance == compliance.PDF_A_1B {
+			sb.WriteString("  <pdfaid:part>1</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+		} else if pdf.compliance == compliance.PDF_A_2A {
+			sb.WriteString("  <pdfaid:part>2</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
+		} else if pdf.compliance == compliance.PDF_A_2B {
+			sb.WriteString("  <pdfaid:part>2</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+		} else if pdf.compliance == compliance.PDF_A_3A {
+			sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
+		} else if pdf.compliance == compliance.PDF_A_3B {
+			sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+		}
 
 		sb.WriteString("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
 		sb.WriteString(pdf.title)
@@ -595,12 +596,12 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString(" 0 R\n")
 
 	if pdf.compliance == compliance.PDF_UA ||
-            pdf.compliance == compliance.PDF_A_1A ||
-            pdf.compliance == compliance.PDF_A_1B ||
-            pdf.compliance == compliance.PDF_A_2A ||
-            pdf.compliance == compliance.PDF_A_2B ||
-            pdf.compliance == compliance.PDF_A_3A ||
-            pdf.compliance == compliance.PDF_A_3B {
+		pdf.compliance == compliance.PDF_A_1A ||
+		pdf.compliance == compliance.PDF_A_1B ||
+		pdf.compliance == compliance.PDF_A_2A ||
+		pdf.compliance == compliance.PDF_A_2B ||
+		pdf.compliance == compliance.PDF_A_3A ||
+		pdf.compliance == compliance.PDF_A_3B {
 		pdf.appendString("/Metadata ")
 		pdf.appendInteger(pdf.metadataObjNumber)
 		pdf.appendString(" 0 R\n")
@@ -644,14 +645,13 @@ func (pdf *PDF) setDestinationObjNumbers() {
 		for _, destination := range page.destinations {
 			destination.pageObjNumber =
 				pdf.getObjNumber() + numberOfAnnotations + i + 1
-			pdf.destinations[destination.name] = destination
+			pdf.destinations[*destination.name] = destination
 		}
 	}
 }
 
 func (pdf *PDF) addAllPages(resObjNumber int) {
 	pdf.setDestinationObjNumbers()
-
 	pdf.addAnnotDictionaries()
 
 	// Calculate the object number of the Pages object
@@ -935,12 +935,12 @@ func (pdf *PDF) AddPage(page *Page) {
 // Complete writes the PDF to the bufio.Writer and calls the Flush method.
 func (pdf *PDF) Complete() {
 	if pdf.compliance == compliance.PDF_UA ||
-            pdf.compliance == compliance.PDF_A_1A ||
-            pdf.compliance == compliance.PDF_A_1B ||
-            pdf.compliance == compliance.PDF_A_2A ||
-            pdf.compliance == compliance.PDF_A_2B ||
-            pdf.compliance == compliance.PDF_A_3A ||
-            pdf.compliance == compliance.PDF_A_3B {
+		pdf.compliance == compliance.PDF_A_1A ||
+		pdf.compliance == compliance.PDF_A_1B ||
+		pdf.compliance == compliance.PDF_A_2A ||
+		pdf.compliance == compliance.PDF_A_2B ||
+		pdf.compliance == compliance.PDF_A_3A ||
+		pdf.compliance == compliance.PDF_A_3B {
 		pdf.metadataObjNumber = pdf.addMetadataObject("", false)
 		pdf.outputIntentObjNumber = pdf.addOutputIntentObject()
 	}

@@ -3,7 +3,7 @@ package pdfjet
 /**
  * paragraph.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 */
 
 import (

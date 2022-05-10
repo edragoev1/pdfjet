@@ -3,7 +3,7 @@ package pdfjet
 /**
  * pdfobj.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,12 +27,13 @@ SOFTWARE.
 import (
 	"fmt"
 	"log"
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/decompressor"
-	"github.com/edragoev1/pdfjet/src/letter"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/decompressor"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // PDFobj is used to create Java or .NET objects that represent the objects in PDF document.

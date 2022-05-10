@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
-	"strings"
-	"time"
 )
 
 // Example44 -- TODO:
@@ -30,7 +30,7 @@ func Example44() {
 	f2 := pdfjet.NewCJKFont(pdf, "STHeitiSC-Light")
 	f2.SetSize(12.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
 	rotate := 0
 	column := pdfjet.NewTextColumn(rotate)
@@ -54,6 +54,6 @@ func Example44() {
 func main() {
 	start := time.Now()
 	Example44()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_44 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_44 => %dµs\n", elapsed.Microseconds())
 }

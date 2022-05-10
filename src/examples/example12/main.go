@@ -6,12 +6,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"strings"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example12 constructs and draws PDF417 barcode.
@@ -26,7 +27,7 @@ func Example12() {
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	var buf strings.Builder
 	content, err := ioutil.ReadFile("examples/Example_12.java")
@@ -65,6 +66,6 @@ func Example12() {
 func main() {
 	start := time.Now()
 	Example12()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_12 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_12 => %dµs\n", elapsed.Microseconds())
 }

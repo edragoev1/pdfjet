@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"strings"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example08 draws a table.
@@ -23,6 +24,7 @@ func Example08() {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
 	w := bufio.NewWriter(file)
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
@@ -187,6 +189,6 @@ func getData(
 func main() {
 	start := time.Now()
 	Example08()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_08 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_08 => %dµs\n", elapsed.Microseconds())
 }

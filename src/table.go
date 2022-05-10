@@ -3,7 +3,7 @@ package pdfjet
 /**
  * table.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +25,11 @@ SOFTWARE.
 */
 
 import (
-	"github.com/edragoev1/pdfjet/src/align"
-	"github.com/edragoev1/pdfjet/src/border"
 	"strings"
 	"unicode"
+
+	"github.com/edragoev1/pdfjet/src/align"
+	"github.com/edragoev1/pdfjet/src/border"
 )
 
 // Table is used to create table objects and draw them on a page.
@@ -308,7 +309,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [2]float32 {
 	var xy [2]float32
 	for table.HasMoreData() {
-		page := NewPage(pdf, pageSize, false)
+		page := NewPage(pdf, pageSize)
 		*pages = append(*pages, page)
 		xy = table.drawTableRows(page, table.drawHeaderRows(page))
 	}

@@ -3,7 +3,7 @@ package pdfjet
 /**
  * form.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,17 +29,17 @@ import "strings"
 // Form describes form object.
 // Please see Example_45
 type Form struct {
-	fields          []*Field
-	x               float32
-	y               float32
-	f1, f2          *Font
-	labelFontSize   float32 // = 8f
-	valueFontSize   float32 // = 10f
-	numberOfRows    int
-	rowWidth        float32 // = 500f
-	rowHeight       float32 // = 12f
-	labelColor      uint32  // = Color.black
-	valueColor      uint32  // = Color.blue
+	fields        []*Field
+	x             float32
+	y             float32
+	f1, f2        *Font
+	labelFontSize float32 // = 8f
+	valueFontSize float32 // = 10f
+	numberOfRows  int
+	rowWidth      float32 // = 500f
+	rowHeight     float32 // = 12f
+	labelColor    uint32  // = Color.black
+	valueColor    uint32  // = Color.blue
 }
 
 // NewForm constructs new form object.

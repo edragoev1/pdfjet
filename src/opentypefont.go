@@ -3,12 +3,12 @@ package pdfjet
 /**
  * opentypefont.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 */
 
 import (
 	"io"
-    "math"
+	"math"
 	"strings"
 )
 

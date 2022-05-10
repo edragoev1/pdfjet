@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
+	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"strings"
-	"time"
 )
 
 // Example48 -- TODO:
@@ -31,7 +31,7 @@ func Example48() {
 	reader := bufio.NewReader(file1)
 	f1 := pdfjet.NewFontStream1(pdf, reader)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	var toc = pdfjet.NewBookmark(pdf)
 	x := float32(70.0)
@@ -63,7 +63,7 @@ func Example48() {
 	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
 	title.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait, true)
+	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	y = 50.0
 	title = pdfjet.NewTitle(f1, "File Trailer", x, y).SetOffset(offset)
@@ -117,6 +117,6 @@ func Example48() {
 func main() {
 	start := time.Now()
 	Example48()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_48 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_48 => %dµs\n", elapsed.Microseconds())
 }

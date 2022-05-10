@@ -3,7 +3,7 @@ package pdfjet
 /**
  * textline.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ SOFTWARE.
 
 import (
 	"math"
+
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/effect"
 	"github.com/edragoev1/pdfjet/src/structuretype"
@@ -52,7 +53,7 @@ type TextLine struct {
 	uriLanguage        string
 	uriActualText      string
 	uriAltDescription  string
-    structureType      string
+	structureType      string
 }
 
 // NewTextLine is constructor for creating text line objects.
@@ -70,7 +71,7 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.verticalOffset = 0.0
 	textLine.altDescription = text
 	textLine.actualText = text
-    textLine.structureType = structuretype.P
+	textLine.structureType = structuretype.P
 	return textLine
 }
 

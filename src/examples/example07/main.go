@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
-    "github.com/edragoev1/pdfjet/src/a4"
-    "github.com/edragoev1/pdfjet/src/compliance"
 	"strings"
 	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/compliance"
 )
 
 // Example07 -- TODO:
@@ -19,15 +20,15 @@ func Example07(mode string) {
 		log.Fatal(err)
 	}
 	w := bufio.NewWriter(f)
-/*
-	pdf := pdfjet.NewPDF(w, compliance.PDFUA)
-    pdf.SetTitle("PDF/UA compliant PDF");
-*/
+	/*
+	   	pdf := pdfjet.NewPDF(w, compliance.PDFUA)
+	       pdf.SetTitle("PDF/UA compliant PDF");
+	*/
 	pdf := pdfjet.NewPDF(w, compliance.PDF_A_1B)
-    pdf.SetTitle("PDF/A-1B compliant PDF");
+	pdf.SetTitle("PDF/A-1B compliant PDF")
 
 	var f1 *pdfjet.Font
-    // Use .ttf.stream fonts
+	// Use .ttf.stream fonts
 	f, err = os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +37,7 @@ func Example07(mode string) {
 	reader := bufio.NewReader(f)
 	f1 = pdfjet.NewFontStream1(pdf, reader)
 
-	page := pdfjet.NewPage(pdf, a4.Landscape, true)
+	page := pdfjet.NewPageAddTo(pdf, a4.Landscape)
 
 	f1.SetSize(72.0)
 	page.AddWatermark(f1, "This is a Draft")
@@ -46,7 +47,7 @@ func Example07(mode string) {
 	yPos := float32(20.0)
 	textLine := pdfjet.NewTextLine(f1, "")
 	var buf strings.Builder
-    j := 0
+	j := 0
 	for i := 0x410; i < 0x46F; i++ {
 		if j%64 == 0 {
 			textLine.SetText(buf.String())
@@ -56,7 +57,7 @@ func Example07(mode string) {
 			yPos += 24.0
 		}
 		buf.WriteRune(rune(i))
-        j += 1
+		j += 1
 	}
 	textLine.SetText(buf.String())
 	textLine.SetLocation(xPos, yPos)
@@ -64,7 +65,7 @@ func Example07(mode string) {
 
 	yPos += 24.0
 	buf.Reset()
-    j = 0
+	j = 0
 	for i := 0x20; i < 0x7F; i++ {
 		if j%64 == 0 {
 			textLine.SetText(buf.String())
@@ -73,18 +74,18 @@ func Example07(mode string) {
 			buf.Reset()
 			yPos += 24.0
 		}
-        buf.WriteRune(rune(i))
-        j += 1
+		buf.WriteRune(rune(i))
+		j += 1
 	}
-    textLine.SetText(buf.String())
-    textLine.SetLocation(xPos, yPos)
-    textLine.DrawOn(page)
+	textLine.SetText(buf.String())
+	textLine.SetLocation(xPos, yPos)
+	textLine.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, a4.Landscape, true)
-    textLine.SetText("Hello, World!")
-    textLine.SetUnderline(true)
-    textLine.SetLocation(xPos, 34.0)
-    textLine.DrawOn(page)
+	page = pdfjet.NewPageAddTo(pdf, a4.Landscape)
+	textLine.SetText("Hello, World!")
+	textLine.SetUnderline(true)
+	textLine.SetLocation(xPos, 34.0)
+	textLine.DrawOn(page)
 
 	pdf.Complete()
 
@@ -94,6 +95,6 @@ func Example07(mode string) {
 func main() {
 	start := time.Now()
 	Example07("stream")
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_07 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_07 => %dµs\n", elapsed.Microseconds())
 }

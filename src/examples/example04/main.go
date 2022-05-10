@@ -6,11 +6,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/letter"
 	"strings"
 	"time"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example04 shows how to use CJK fonts.
@@ -33,7 +34,7 @@ func Example04() {
 	// Korean font
 	f4 := pdfjet.NewCJKFont(pdf, "AdobeMyungjoStd-Medium")
 
-	page := pdfjet.NewPage(pdf, letter.Portrait, true)
+	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	f1.SetSize(14.0)
 	f2.SetSize(14.0)
@@ -74,6 +75,6 @@ func Example04() {
 func main() {
 	start := time.Now()
 	Example04()
-	elapsed := time.Since(start).String()
-	fmt.Printf("Example_04 => %s\n", elapsed[:strings.Index(elapsed, ".")])
+	elapsed := time.Since(start)
+	fmt.Printf("Example_04 => %dµs\n", elapsed.Microseconds())
 }
