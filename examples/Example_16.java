@@ -19,9 +19,9 @@ public class Example_16 {
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 /*
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("fonts/Droid/DroidSerif-Italic.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSerif-Italic.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
 */
         Page page = new Page(pdf, Letter.PORTRAIT);
 

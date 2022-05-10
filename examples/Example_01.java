@@ -16,26 +16,16 @@ class Example_01 {
 
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_01.pdf")));
-/*
-        Font font1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
-        font1.setSize(12f);
 
-        Font font2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSansFallback.ttf.stream"),
-                Font.STREAM);
-        font2.setSize(12f);
-*/
-        Font font1 = new Font(pdf,
-                new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font font1 = new Font(pdf, stream, Font.STREAM);
         font1.setSize(12f);
+        stream.close();
 
-        Font font2 = new Font(pdf,
-                new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream");
+        Font font2 = new Font(pdf, stream, Font.STREAM);
         font2.setSize(12f);
+        stream.close();
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

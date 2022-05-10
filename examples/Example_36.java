@@ -21,20 +21,17 @@ public class Example_36 {
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image1 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/ee-map.png"),
-                ImageType.PNG);
+        FileInputStream stream = new FileInputStream("images/ee-map.png");
+        Image image1 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
 
-        Image image2 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/fruit.jpg"),
-                ImageType.JPG);
+        stream = new FileInputStream("images/fruit.jpg");
+        Image image2 = new Image(pdf, stream, ImageType.JPG);
+        stream.close();
 
-        Image image3 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/mt-map.bmp"),
-                ImageType.BMP);
+        stream = new FileInputStream("images/mt-map.bmp");
+        Image image3 = new Image(pdf, stream, ImageType.BMP);
+        stream.close();
 
         TextLine text = new TextLine(f1,
                 "The map below is an embedded PNG image");

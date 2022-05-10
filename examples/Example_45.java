@@ -20,43 +20,38 @@ public class Example_45 {
                         Compliance.PDF_UA);
         pdf.setLanguage("en-US");
 
-        Font f1 = new Font(
-                pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/Droid/DroidSerif-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSerif-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(14f);
 
-        Font f2 = new Font(
-                pdf,
-                getClass().getResourceAsStream(
-                        // "../fonts/Droid/DroidSerif-Regular.ttf.stream"),
-                        "../fonts/Droid/DroidSerif-Italic.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSerif-Italic.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(14f);
         // f2.setItalic(true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f1);
-        text.setLocation(70f, 70f);
-        text.setText("Hasta la vista!");
-        text.setLanguage("es-MX");
-        text.setStrikeout(true);
-        text.setUnderline(true);
-        text.setURIAction("http://pdfjet.com");
-        text.drawOn(page);
+        TextLine textLine = new TextLine(f1);
+        textLine.setLocation(70f, 70f);
+        textLine.setText("Hasta la vista!");
+        textLine.setLanguage("es-MX");
+        textLine.setStrikeout(true);
+        textLine.setUnderline(true);
+        textLine.setURIAction("http://pdfjet.com");
+        textLine.drawOn(page);
 
-        text = new TextLine(f1);
-        text.setLocation(70f, 90f);
-        text.setText("416-335-7718");
-        text.setURIAction("http://pdfjet.com");
-        text.drawOn(page);
+        textLine = new TextLine(f1);
+        textLine.setLocation(70f, 90f);
+        textLine.setText("416-335-7718");
+        textLine.setURIAction("http://pdfjet.com");
+        textLine.drawOn(page);
 
-        text = new TextLine(f1);
-        text.setLocation(70f, 120f);
-        text.setText("2014-11-25");
-        text.drawOn(page);
+        textLine = new TextLine(f1);
+        textLine.setLocation(70f, 120f);
+        textLine.setText("2014-11-25");
+        textLine.drawOn(page);
 
         List<Paragraph> paragraphs = new ArrayList<Paragraph>();
 
@@ -69,11 +64,10 @@ public class Example_45 {
 
         paragraphs.add(paragraph);
 
-        Text textArea = new Text(paragraphs);
-        textArea.setLocation(70f, 150f);
-        textArea.setWidth(500f);
-        textArea.drawOn(page);
-
+        Text text = new Text(paragraphs);
+        text.setLocation(70f, 150f);
+        text.setWidth(500f);
+        text.drawOn(page);
 
         String[] linesOfText = new String[] {
 "The Fibonacci sequence is named after Fibonacci.",
@@ -104,10 +98,10 @@ public class Example_45 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        text = new TextLine(f1);
-        text.setLocation(70f, 120f);
-        text.setText("416-877-1395");
-        text.drawOn(page);
+        textLine = new TextLine(f1);
+        textLine.setLocation(70f, 120f);
+        textLine.setText("416-877-1395");
+        textLine.drawOn(page);
 
         Line line = new Line(70f, 150f, 300f, 150f);
         line.setWidth(1f);
@@ -129,10 +123,9 @@ public class Example_45 {
         page.drawString(f1, "This is a test", 75f, 230f);
         page.addEMC();
 
-        Image image = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/fruit.jpg"),
-                ImageType.JPG);
+        stream = new FileInputStream("images/fruit.jpg");
+        Image image = new Image(pdf, stream, ImageType.JPG);
+        stream.close();
         image.setLocation(70f, 310f);
         image.scaleBy(0.5f);
         image.setAltDescription("This is an image of a strawberry.");

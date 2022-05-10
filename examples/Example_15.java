@@ -25,21 +25,25 @@ public class Example_15 {
         Font f5 = new Font(pdf, CoreFont.HELVETICA);
 */
 
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
-        Font f3 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
-        Font f4 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
-        Font f5 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
+
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
+
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
+
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f4 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
+
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f5 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
 
         Page page = new Page(pdf, A4.PORTRAIT);
 

@@ -19,8 +19,7 @@ public class Example_04 {
         String fileName = "data/happy-new-year.txt";
 
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_04.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_04.pdf")));
 
         // Chinese (Traditional) font
         Font f1 = new Font(pdf, Font.AdobeMingStd_Light);

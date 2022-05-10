@@ -22,19 +22,15 @@ public class Example_06 {
         pdf.setKeywords("Hello World This is a test");
         pdf.setCreator("Application Name");
 
-        String fileName = "linux-logo.png";
-        EmbeddedFile file1 = new EmbeddedFile(
-                pdf,
-                fileName,
-                getClass().getResourceAsStream("../images/" + fileName),
-                false);     // Don't compress images.
+        String fileName = "images/linux-logo.png";
+        FileInputStream stream = new FileInputStream(fileName);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, fileName, stream, false);    // Don't compress the image.
+        stream.close();
 
-        fileName = "Example_02.java";
-        EmbeddedFile file2 = new EmbeddedFile(
-                pdf,
-                fileName,
-                getClass().getResourceAsStream(fileName),
-                true);      // Compress text files.
+        fileName = "examples/Example_02.java";
+        stream = new FileInputStream(fileName);
+        EmbeddedFile file2 = new EmbeddedFile(pdf, fileName, stream, true);     // Compress text files.
+        stream.close();
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

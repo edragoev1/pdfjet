@@ -19,14 +19,14 @@ public class Example_49 {
                         new FileOutputStream("Example_49.pdf")),
                         Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSerif-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSerif-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(14f);
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSerif-Italic.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSerif-Italic.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(16f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

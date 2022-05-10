@@ -26,10 +26,9 @@ class Example_37 {
         List<PDFobj> objects = pdf.read(bis);
         bis.close();
 
-        Font f1 = new Font(
-                objects,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(objects, stream, Font.STREAM);
+        stream.close();
         f1.setSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");

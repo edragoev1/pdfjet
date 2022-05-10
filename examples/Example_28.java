@@ -17,14 +17,14 @@ public class Example_28 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_28.pdf")));
 
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(11f);
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSansFallback.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(11f);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);

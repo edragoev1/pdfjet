@@ -29,25 +29,25 @@ public class Example_08 {
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
         f3.setSize(7f);
 */
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(7f);
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(7f);
 
-        Font f3 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
+        Font f3 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f3.setSize(7f);
 
-        image1 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/fruit.jpg"),
-                ImageType.JPG);
+        stream = new FileInputStream("images/fruit.jpg");
+        image1 = new Image(pdf, stream, ImageType.JPG);
+        stream.close();
         image1.scaleBy(0.20f);
 
         barCode = new BarCode(BarCode.CODE128, "Hello, World!");

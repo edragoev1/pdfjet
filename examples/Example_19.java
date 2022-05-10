@@ -17,16 +17,14 @@ public class Example_19 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_19.pdf")));
 
-        Font f1 = new Font(
-                pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(10f);
 
-        Font f2 = new Font(
-                pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSansFallback.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(10f);
 
         StringBuilder buf = new StringBuilder();
@@ -49,15 +47,13 @@ public class Example_19 {
         // Width of the second column:
         float w2 = 300f;
 
-        Image image1 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/fruit.jpg"),
-                ImageType.JPG);
+        stream = new FileInputStream("images/fruit.jpg");
+        Image image1 = new Image(pdf, stream, ImageType.JPG);
+        stream.close();
 
-        Image image2 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/ee-map.png"),
-                ImageType.PNG);
+        stream = new FileInputStream("images/ee-map.png");
+        Image image2 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
 
         // Draw the first image
         image1.setLocation(x1, y1);

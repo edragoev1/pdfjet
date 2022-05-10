@@ -19,14 +19,14 @@ public class Example_31 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Noto/NotoSansDevanagari-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/Noto/NotoSansDevanagari-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(15f);
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(15f);
 
         StringBuilder buf = new StringBuilder();

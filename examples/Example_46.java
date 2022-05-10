@@ -19,22 +19,19 @@ public class Example_46 {
                         new FileOutputStream("Example_46.pdf")),
                         Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(14f);
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(14f);
 
-        Font f3 = new Font(pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream");
+        Font f3 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f3.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

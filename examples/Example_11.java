@@ -17,9 +17,9 @@ public class Example_11 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_11.pdf")));
 
-        Font f1 = new Font(pdf, new BufferedInputStream(
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream")),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

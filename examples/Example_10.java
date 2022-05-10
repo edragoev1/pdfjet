@@ -25,9 +25,10 @@ public class Example_10 {
         pdf.setSubject("Examples");
         pdf.setAuthor("Innovatics Inc.");
 
-        String fileName = "../images/sz-map.png";
-        Image image1 = new Image(pdf, new BufferedInputStream(
-                getClass().getResourceAsStream(fileName)), ImageType.PNG);
+        String fileName = "images/sz-map.png";
+        FileInputStream stream = new FileInputStream(fileName);
+        Image image1 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
         f1.setSize(10f);

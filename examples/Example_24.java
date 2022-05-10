@@ -19,25 +19,21 @@ public class Example_24 {
 
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image_00 = new Image(
-                pdf,
-                new BufferedInputStream(new FileInputStream("images/gr-map.jpg")),
-                ImageType.JPG);
+        FileInputStream stream = new FileInputStream("images/gr-map.jpg");
+        Image image_00 = new Image(pdf, stream, ImageType.JPG);
+        stream.close();
 
-        Image image_01 = new Image(
-                pdf,
-                new BufferedInputStream(new FileInputStream("images/linux-logo.png.stream")),
-                ImageType.PNG_STREAM);
+        stream = new FileInputStream("images/linux-logo.png.stream");
+        Image image_01 = new Image(pdf, stream, ImageType.PNG_STREAM);
+        stream.close();
 
-        Image image_02 = new Image(
-                pdf,
-                new BufferedInputStream(new FileInputStream("images/ee-map.png")),
-                ImageType.PNG);
+        stream = new FileInputStream("images/ee-map.png");
+        Image image_02 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
 
-        Image image_03 = new Image(
-                pdf,
-                new BufferedInputStream(new FileInputStream("images/rgb24pal.bmp")),
-                ImageType.BMP);
+        stream = new FileInputStream("images/rgb24pal.bmp");
+        Image image_03 = new Image(pdf, stream, ImageType.BMP);
+        stream.close();
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine textline_00 = new TextLine(font, "This is a JPEG image.");

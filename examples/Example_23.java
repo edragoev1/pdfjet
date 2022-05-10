@@ -23,23 +23,22 @@ public class Example_23 {
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
 */
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
 
-        Font f3 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f3 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f3.setSize(7f * 0.583f);
 
-        Image image1 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/mt-map.png"),
-                ImageType.PNG);
+        stream = new FileInputStream("images/mt-map.png");
+        Image image1 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
         image1.scaleBy(0.75f);
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();

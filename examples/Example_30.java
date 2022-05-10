@@ -18,16 +18,14 @@ public class Example_30 {
 
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image1 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/map407.png"),
-                ImageType.PNG);
+        FileInputStream stream = new FileInputStream("images/map407.png");
+        Image image1 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
         image1.setLocation(10f, 100f);
 
-        Image image2 = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/qrcode.png"),
-                ImageType.PNG);
+        stream = new FileInputStream("images/qrcode.png");
+        Image image2 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
         image2.setLocation(10f, 100f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

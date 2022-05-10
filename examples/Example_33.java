@@ -19,10 +19,9 @@ public class Example_33 {
 
         Page page = new Page(pdf, A4.PORTRAIT);
 
-        Image image = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/photoshop.jpg"),
-                ImageType.JPG);
+        FileInputStream stream = new FileInputStream("images/photoshop.jpg");
+        Image image = new Image(pdf, stream, ImageType.JPG);
+        stream.close();
         image.setLocation(10f, 10f);
         image.scaleBy(0.25f);
         image.drawOn(page);

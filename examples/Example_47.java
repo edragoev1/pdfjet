@@ -15,26 +15,24 @@ public class Example_47 {
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_47.pdf")));
 
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(12f);
 
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Italic.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Italic.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(12f);
 
-        Image image1 = new Image(pdf,
-                getClass().getResourceAsStream("../images/AU-map.png"),
-                ImageType.PNG);
+        stream = new FileInputStream("images/AU-map.png");
+        Image image1 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
         image1.scaleBy(0.50f);
 
-        Image image2 = new Image(pdf,
-                getClass().getResourceAsStream("../images/HU-map.png"),
-                ImageType.PNG);
+        stream = new FileInputStream("images/HU-map.png");
+        Image image2 = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
         image2.scaleBy(0.50f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

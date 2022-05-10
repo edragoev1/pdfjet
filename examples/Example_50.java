@@ -22,23 +22,20 @@ class Example_50 {
         List<PDFobj> objects = pdf.read(bis);
         bis.close();
 
-        Image image = new Image(
-                objects,
-                getClass().getResourceAsStream("../images/qrcode.png"),
-                ImageType.PNG);
+        FileInputStream stream = new FileInputStream("images/qrcode.png");
+        Image image = new Image(objects, stream, ImageType.PNG);
+        stream.close();
         image.setLocation(495f, 65f);
         image.scaleBy(0.40f);
 
-        Font f1 = new Font(
-                objects,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
+        Font f1 = new Font(objects, stream, Font.STREAM);
+        stream.close();
         f1.setSize(12f);
 
-        Font f2 = new Font(
-                objects,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans-Bold.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/Droid/DroidSans-Bold.ttf.stream");
+        Font f2 = new Font(objects, stream, Font.STREAM);
+        stream.close();
         f2.setSize(12f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);

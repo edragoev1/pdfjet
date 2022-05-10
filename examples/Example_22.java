@@ -18,11 +18,9 @@ public class Example_22 {
                         new FileOutputStream("Example_22.pdf")),
                         Compliance.PDF_UA);
 
-        Font f1 = new Font(
-                pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
 /*
         PDF pdf = new PDF(
                 new BufferedOutputStream(
@@ -87,10 +85,9 @@ public class Example_22 {
         path.placeIn(box);
         path.drawOn(page);
 
-        Image image = new Image(
-                pdf,
-                getClass().getResourceAsStream("../images/up-arrow.png"),
-                ImageType.PNG);
+        stream = new FileInputStream("images/up-arrow.png");
+        Image image = new Image(pdf, stream, ImageType.PNG);
+        stream.close();
         image.setLocation(40f, 40f);
         image.setGoToAction("dest#0");
         image.drawOn(page);

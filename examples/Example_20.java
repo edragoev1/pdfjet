@@ -24,9 +24,9 @@ class Example_20 {
 
         pdf.addResourceObjects(objects);
 
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream(
-                        "../fonts/OpenSans/OpenSans-Regular.ttf.stream"), Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(18f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);

@@ -20,23 +20,27 @@ public class Example_27 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Thai font
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Noto/NotoSansThai-Regular.ttf"));
+        FileInputStream stream = new FileInputStream("fonts/Noto/NotoSansThai-Regular.ttf");
+        Font f1 = new Font(pdf, stream);
+        stream.close();
         f1.setSize(14f);
 
         // Latin font
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Droid/DroidSans.ttf"));
+        stream = new FileInputStream("fonts/Droid/DroidSans.ttf");
+        Font f2 = new Font(pdf, stream);
+        stream.close();
         f2.setSize(12f);
 
         // Hebrew font
-        Font f3 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Noto/NotoSansHebrew-Regular.ttf"));
+        stream = new FileInputStream("fonts/Noto/NotoSansHebrew-Regular.ttf");
+        Font f3 = new Font(pdf, stream);
+        stream.close();
         f3.setSize(12f);
 
         // Arabic font
-        Font f4 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/Noto/NotoNaskhArabic-Regular.ttf"));
+        stream = new FileInputStream("fonts/Noto/NotoNaskhArabic-Regular.ttf");
+        Font f4 = new Font(pdf, stream);
+        stream.close();
         f4.setSize(12f);
 
         float x = 50f;

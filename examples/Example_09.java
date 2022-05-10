@@ -19,15 +19,15 @@ public class Example_09 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
+        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f1.setSize(8f);
 
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
+        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, stream, Font.STREAM);
+        stream.close();
         f2.setSize(8f);
 
         Chart chart = new Chart(f1, f2);
