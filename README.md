@@ -1,6 +1,6 @@
 # PDF library for Java, C#, Swift and Go developers
-PDF library for Java, C#, Swift and Go developers
 
+<code>
 This high performance library have no dependencies on external packages and should be usable on the widest variety of plaforms supported by the Java, C#, Swift and Go languages.
 
 
@@ -57,3 +57,4 @@ To compile and run specific Go example:
 To compile and run specific Swift example:
 
 ./run-swift.sh 15
+</code>
