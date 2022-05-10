@@ -9,11 +9,9 @@ To build the Java version of PDFjet and compile and run all examples:
 ./build-java.sh
 
 
-
 To build the C# version of PDFjet using Mono and compile and run all examples:
 
 ./build-mono.sh
-
 
 
 To build the Go version of PDFjet and compile and run all examples:
@@ -21,23 +19,18 @@ To build the Go version of PDFjet and compile and run all examples:
 ./build-go.sh
 
 
-
 To build the Swift version of PDFjet and compile and run all examples:
 
 ./build-swift.sh
 
 
-
-To compile and run specific Java example (from 01 to 50) use of of the following:
+To compile and run specific Java example (from 01 to 50) use one of the following:
 
 ./run-java.sh 07
 
-Make sure GraalVM is installed in the correct directory:
-
-./run-graalvm.sh 07
+./run-graalvm.sh 07             (Make sure GraalVM is installed in the correct directory)
 
 ./run-graalvm-native-image.sh 07
-
 
 
 To compile and run specific C# example use one of the following:
@@ -47,11 +40,9 @@ To compile and run specific C# example use one of the following:
 ./run-dotnet.sh 23
 
 
-
 To compile and run specific Go example:
 
 ./run-go.sh 05
-
 
 
 To compile and run specific Swift example:
