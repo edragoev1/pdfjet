@@ -20,7 +20,7 @@ public class Example_35 {
             let mainFont = Font(pdf, "AdobeMingStd")
             let fallbackFont = try Font(
                     pdf,
-                    InputStream(fileAtPath: "fonts/Roboto/Roboto-Regular.ttf")!)
+                    InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf")!)
 
             var textLine = TextLine(mainFont)
             textLine.setText(text)
