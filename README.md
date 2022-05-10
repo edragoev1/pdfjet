@@ -1,9 +1,9 @@
 # PDF library for Java, C#, Swift and Go developers
 
-```
 This high performance library have no dependencies on external packages and should be usable on the widest variety of plaforms supported by the Java, C#, Swift and Go languages.
 
 
+```
 To build the Java version of PDFjet and compile and run all examples:
 
 ./build-java.sh
