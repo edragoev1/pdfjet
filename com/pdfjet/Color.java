@@ -143,11 +143,17 @@ package com.pdfjet;
     public static final int greenyellow = 0xadff2f;
     /** The color named "grey" */
     public static final int grey = 0x808080;
+    /** The color named "honeydew" */
     public static final int honeydew = 0xf0fff0;
+    /** The color named "hotpink" */
     public static final int hotpink = 0xff69b4;
+    /** The color named "indianred" */
     public static final int indianred = 0xcd5c5c;
+    /** The color named "indigo" */
     public static final int indigo = 0x4b0082;
+    /** The color named "ivory" */
     public static final int ivory = 0xfffff0;
+    /** The color named "khaki" */
     public static final int khaki = 0xf0e68c;
     public static final int lavender = 0xe6e6fa;
     public static final int lavenderblush = 0xfff0f5;
