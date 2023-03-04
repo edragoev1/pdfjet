@@ -23,11 +23,7 @@ SOFTWARE.
 */
 package com.pdfjet;
 
-
-import java.lang.*;
-import java.io.*;
 import java.util.*;
-
 
 public class CalendarMonth implements Drawable {
 

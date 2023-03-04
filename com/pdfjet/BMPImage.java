@@ -64,7 +64,7 @@ class BMPImage {
            (bm[0] == 'P' && bm[1] == 'T')) {
             skipNBytes(is, 8);
             int offset = readSignedInt(is);
-            int sizeOfHeader = readSignedInt(is);
+            readSignedInt(is); // Skip the sizeOfHeader
             w = readSignedInt(is);
             h = readSignedInt(is);
             skipNBytes(is, 2);
