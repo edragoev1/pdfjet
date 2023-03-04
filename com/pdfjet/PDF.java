@@ -55,7 +55,8 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String creator = "PDFjet v7.05";
+    private String producer = "PDFjet v7.05.1";
+    private String creator = producer;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
     private int byteCount = 0;
@@ -222,6 +223,14 @@ public class PDF {
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
 
+            sb.append("  <pdf:Producer>");
+            sb.append(producer);
+            sb.append("</pdf:Producer>\n");
+
+            sb.append("  <pdf:Keywords>");
+            sb.append(keywords);
+            sb.append("</pdf:Keywords>\n");
+
             sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.append(title);
             sb.append("</rdf:li></rdf:Alt></dc:title>\n");
@@ -233,10 +242,6 @@ public class PDF {
             sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">");
             sb.append(subject);
             sb.append("</rdf:li></rdf:Alt></dc:description>\n");
-
-            sb.append("  <pdf:Keywords>");
-            sb.append(keywords);
-            sb.append("</pdf:Keywords>\n");
 
             sb.append("  <xmp:CreatorTool>");
             sb.append(creator);
@@ -436,6 +441,9 @@ public class PDF {
         append(")\n");
         append("/Subject (");
         append(subject);
+        append(")\n");
+        append("/Producer (");
+        append(producer);
         append(")\n");
         append("/Creator (");
         append(creator);

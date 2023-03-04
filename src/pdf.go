@@ -58,6 +58,7 @@ type PDF struct {
 	author                string
 	subject               string
 	keywords              string
+	producer              string
 	creator               string
 	createDate            string
 	creationDate          string
@@ -114,7 +115,8 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
 	pdf.compliance = pdfCompliance
-	pdf.creator = "PDFjet v7.05"
+	pdf.producer = "PDFjet v7.05.1"
+	pdf.creator = pdf.producer
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)
@@ -206,6 +208,14 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 			sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
 		}
 
+		sb.WriteString("  <pdf:Producer>")
+		sb.WriteString(pdf.producer)
+		sb.WriteString("</pdf:Producer>\n")
+
+		sb.WriteString("  <pdf:Keywords>")
+		sb.WriteString(pdf.keywords)
+		sb.WriteString("</pdf:Keywords>\n")
+
 		sb.WriteString("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
 		sb.WriteString(pdf.title)
 		sb.WriteString("</rdf:li></rdf:Alt></dc:title>\n")
@@ -217,10 +227,6 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		sb.WriteString("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
 		sb.WriteString(pdf.subject)
 		sb.WriteString("</rdf:li></rdf:Alt></dc:description>\n")
-
-		sb.WriteString("  <pdf:Keywords>")
-		sb.WriteString(pdf.keywords)
-		sb.WriteString("</pdf:Keywords>\n")
 
 		sb.WriteString("  <xmp:CreatorTool>")
 		sb.WriteString(pdf.creator)
@@ -412,6 +418,9 @@ func (pdf *PDF) addInfoObject() int {
 	pdf.appendString(")\n")
 	pdf.appendString("/Subject (")
 	pdf.appendString(pdf.subject)
+	pdf.appendString(")\n")
+	pdf.appendString("/Producer (")
+	pdf.appendString(pdf.producer)
 	pdf.appendString(")\n")
 	pdf.appendString("/Creator (")
 	pdf.appendString(pdf.creator)

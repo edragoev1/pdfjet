@@ -1,7 +1,7 @@
 /**
  *  PDF.swift
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2022 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,8 @@ public class PDF {
     private var author: String = ""
     private var subject: String = ""
     private var keywords: String = ""
-    private var creator = "PDFjet v7.05"
+    private var producer = "PDFjet v7.05.1"
+    private var creator = "PDFjet v7.05.1"
     private var createDate: String?
     private var creationDate: String?
     private var byteCount = 0
@@ -219,6 +220,10 @@ public class PDF {
                 sb.append("  <pdfaid:part>3</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
+
+            sb.append("  <pdf:Producer>");
+            sb.append(producer);
+            sb.append("</pdf:Producer>\n");
 
             sb.append("  <pdf:Keywords>");
             sb.append(keywords);
@@ -433,6 +438,9 @@ public class PDF {
         append(")\n")
         append("/Subject (")
         append(subject)
+        append(")\n")
+        append("/Producer (")
+        append(producer)
         append(")\n")
         append("/Creator (")
         append(creator)

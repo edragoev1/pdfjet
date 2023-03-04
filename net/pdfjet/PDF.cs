@@ -55,7 +55,8 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String creator = "PDFjet v7.05";
+    private String producer = "PDFjet v7.05.1";
+    private String creator = "PDFjet v7.05.1";
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
     private int byteCount = 0;
@@ -208,7 +209,7 @@ public class PDF {
             }
 
             sb.Append("  <pdf:Producer>");
-            sb.Append(creator);
+            sb.Append(producer);
             sb.Append("</pdf:Producer>\n");
 
             sb.Append("  <pdf:Keywords>");
@@ -425,6 +426,9 @@ public class PDF {
         Append(")\n");
         Append("/Subject (");
         Append(subject);
+        Append(")\n");
+        Append("/Producer (");
+        Append(producer);
         Append(")\n");
         Append("/Creator (");
         Append(creator);
