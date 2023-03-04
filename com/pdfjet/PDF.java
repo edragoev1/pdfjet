@@ -767,7 +767,6 @@ public class PDF {
 
 
     private void addPageContent(Page page) throws Exception {
-
         //>> REMOVE FROM THE OPEN SOURCE EDITION!
         if (eval && fonts.size() > 0) {
             Font f1 = fonts.get(0);

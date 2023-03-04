@@ -34,7 +34,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/compressor"
 	"github.com/edragoev1/pdfjet/src/djb"
@@ -69,7 +68,6 @@ type PDF struct {
 	toc                   *Bookmark
 	importedFonts         []string
 	extGState             string
-	eval                  bool
 	uuid                  string
 }
 
@@ -120,7 +118,6 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)
-	pdf.eval = false
 	pdf.uuid = djb.Salsa20()
 
 	// createDate format: "yyyy-MM-ddTHH:mm:ss"
@@ -727,38 +724,6 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 }
 
 func (pdf *PDF) addPageContent(page *Page) {
-	//>> REMOVE FROM THE OPEN SOURCE EDITION!
-	if pdf.eval && len(pdf.fonts) > 0 {
-		f1 := pdf.fonts[0]
-		fontSize := f1.GetSize()
-		f1.SetSize(8.0)
-		tm := page.tm
-		brushColor := page.GetBrushColor()
-
-		page.SetTextDirection(0)
-		page.SetBrushColor(color.Blue)
-		message1 := "This document was created with the evaluation version of PDFjet"
-		message2 := "To acquire a license please visit http://pdfjet.com"
-		page.DrawString(
-			f1,
-			nil,
-			message1,
-			(page.width-f1.stringWidth(message1))/2,
-			10.0)
-		page.DrawString(
-			f1,
-			nil,
-			message2,
-			(page.width-f1.stringWidth(message2))/2,
-			20.0)
-
-		// Revert back to the original values:
-		f1.SetSize(fontSize)
-		page.tm = tm
-		page.SetBrushColorFloat32Array(brushColor)
-	}
-	//<<
-
 	compressed := compressor.Deflate(page.buf)
 	page.buf = nil
 

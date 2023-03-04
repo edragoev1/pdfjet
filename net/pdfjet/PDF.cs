@@ -681,7 +681,6 @@ public class PDF {
 
 
     private void AddAllPages(int resObjNumber) {
-
         SetDestinationObjNumbers();
         AddAnnotDictionaries();
 
@@ -750,7 +749,6 @@ public class PDF {
 
 
     private void AddPageContent(Page page) {
-
         //>> REMOVE FROM THE OPEN SOURCE EDITION!
         if (eval && fonts.Count > 0) {
             Font f1 = fonts[0];
