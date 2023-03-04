@@ -21,52 +21,87 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 package com.pdfjet;
-
 
 /**
  * Used to specify the pen and brush colors.
  * @see <a href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</a>
  *
  */
-public class Color {
+ public class Color {
+    /** The color named "aliceblue" */
     public static final int aliceblue = 0xf0f8ff;
+    /** The color named "antiquewhite" */
     public static final int antiquewhite = 0xfaebd7;
+    /** The color named "aqua" */
     public static final int aqua = 0x00ffff;
+    /** The color named "aquamarine" */
     public static final int aquamarine = 0x7fffd4;
+    /** The color named "azure" */
     public static final int azure = 0xf0ffff;
+    /** The color named "beige" */
     public static final int beige = 0xf5f5dc;
+    /** The color named "bisque" */
     public static final int bisque = 0xffe4c4;
+    /** The color named "black" */
     public static final int black = 0x000000;
+    /** The color named "blanchedalmond" */
     public static final int blanchedalmond = 0xffebcd;
+    /** The color named "blue" */
     public static final int blue = 0x0000ff;
+    /** The color named "blueviolet" */
     public static final int blueviolet = 0x8a2be2;
+    /** The color named "brown" */
     public static final int brown = 0xa52a2a;
+    /** The color named "burlywood" */
     public static final int burlywood = 0xdeb887;
+    /** The color named "cadetblue" */
     public static final int cadetblue = 0x5f9ea0;
+    /** The color named "chartreuse" */
     public static final int chartreuse = 0x7fff00;
+    /** The color named "chocolate" */
     public static final int chocolate = 0xd2691e;
+    /** The color named "coral" */
     public static final int coral = 0xff7f50;
+    /** The color named "cornflowerblue" */
     public static final int cornflowerblue = 0x6495ed;
+    /** The color named "cornsilk" */
     public static final int cornsilk = 0xfff8dc;
+    /** The color named "crimson" */
     public static final int crimson = 0xdc143c;
+    /** The color named "cyan" */
     public static final int cyan = 0x00ffff;
+    /** The color named "darkblue" */
     public static final int darkblue = 0x00008b;
+    /** The color named "darkcyan" */
     public static final int darkcyan = 0x008b8b;
+    /** The color named "darkgoldenrod" */
     public static final int darkgoldenrod = 0xb8860b;
+    /** The color named "darkgray" */
     public static final int darkgray = 0xa9a9a9;
+    /** The color named "darkgreen" */
     public static final int darkgreen = 0x006400;
+    /** The color named "darkgrey" */
     public static final int darkgrey = 0xa9a9a9;
+    /** The color named "darkkhaki" */
     public static final int darkkhaki = 0xbdb76b;
+    /** The color named "darkmagenta" */
     public static final int darkmagenta = 0x8b008b;
+    /** The color named "darkolivegreen" */
     public static final int darkolivegreen = 0x556b2f;
+    /** The color named "darkorange" */
     public static final int darkorange = 0xff8c00;
+    /** The color named "darkorchid" */
     public static final int darkorchid = 0x9932cc;
+    /** The color named "darkred" */
     public static final int darkred = 0x8b0000;
+    /** The color named "darksalmon" */
     public static final int darksalmon = 0xe9967a;
+    /** The color named "darkseagreen" */
     public static final int darkseagreen = 0x8fbc8f;
+    /** The color named "darkslateblue" */
     public static final int darkslateblue = 0x483d8b;
+    /** The color named "darkslategray" */
     public static final int darkslategray = 0x2f4f4f;
     public static final int darkslategrey = 0x2f4f4f;
     public static final int darkturquoise = 0x00ced1;

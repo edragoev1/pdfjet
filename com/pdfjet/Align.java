@@ -21,7 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 package com.pdfjet;
 
 
@@ -29,9 +28,8 @@ package com.pdfjet;
  *  Used to specify the text alignment in paragraphs.
  *  See the Paragraph class for more details.
  *
- *
  */
-public class Align {
+ public class Align {
     public static final int LEFT    = 0x00000000;
     public static final int CENTER  = 0x00100000;
     public static final int RIGHT   = 0x00200000;
