@@ -1,7 +1,7 @@
 /**
  *  OTF.java
  *
- * Copyright 2020 Innovatics Inc.
+ * Copyright 2023 Innovatics Inc.
  */
 package com.pdfjet;
 

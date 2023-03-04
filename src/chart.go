@@ -3,7 +3,7 @@ package pdfjet
 /**
  * chart.go
  *
-Copyright 2022 Innovatics Inc.
+Copyright 2023 Innovatics Inc.
 */
 
 import (

@@ -3,7 +3,7 @@ package code128
 /**
  * code128.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2023 Innovatics Inc.
 */
 
 // TABLE for the Code 128 table.

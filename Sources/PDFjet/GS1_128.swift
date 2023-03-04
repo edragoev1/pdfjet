@@ -1,7 +1,7 @@
 /**
  *  GS1_128.swift
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2023 Innovatics Inc.
 */
 
 class GS1_128 {

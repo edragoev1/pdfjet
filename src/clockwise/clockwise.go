@@ -3,7 +3,7 @@ package clockwise
 /*
  * clockwise.go
  *
-Copyright 2020 Innovatics Inc.
+Copyright 2023 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
