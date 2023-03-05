@@ -3,11 +3,8 @@
 /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint com/pdfjet/*.java
 /opt/jdk1.5.0_22/bin/jar cf PDFjet.jar com/pdfjet/*.class
 
-/opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint util/StreamlinePNG.java
-/opt/jdk1.5.0_22/bin/jar cf StreamlinePNG.jar util/StreamlinePNG.class
-
-/opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint util/StreamlineOTF.java
-/opt/jdk1.5.0_22/bin/jar cf StreamlineOTF.jar util/StreamlineOTF.class
+# /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint util/StreamlinePNG.java
+# /opt/jdk1.5.0_22/bin/jar cf StreamlinePNG.jar util/StreamlinePNG.class
 
 /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint -cp .:PDFjet.jar examples/Example_01.java
 /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint -cp .:PDFjet.jar examples/Example_02.java

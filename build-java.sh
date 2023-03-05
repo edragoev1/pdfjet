@@ -6,9 +6,6 @@ jar cf PDFjet.jar com/pdfjet/*.class
 # javac -O -encoding utf-8 -Xlint util/StreamlinePNG.java
 # jar cf StreamlinePNG.jar util/StreamlinePNG.class
 
-# javac -O -encoding utf-8 -Xlint util/StreamlineOTF.java
-# jar cf StreamlineOTF.jar util/StreamlineOTF.class
-
 javac -O -encoding utf-8 -Xlint -cp .:PDFjet.jar examples/Example_01.java
 javac -O -encoding utf-8 -Xlint -cp .:PDFjet.jar examples/Example_02.java
 javac -O -encoding utf-8 -Xlint -cp .:PDFjet.jar examples/Example_03.java
