@@ -42,9 +42,11 @@ import (
 //
 // Please note:
 // <pre>
-//   The coordinate (0.0, 0.0) is the top left corner of the page.
-//   The size of the pages are represented in points.
-//   1 point is 1/72 inches.
+//
+//	The coordinate (0.0, 0.0) is the top left corner of the page.
+//	The size of the pages are represented in points.
+//	1 point is 1/72 inches.
+//
 // </pre>
 type Page struct {
 	pdf           *PDF
@@ -112,9 +114,11 @@ func NewPage(pdf *PDF, pageSize [2]float32) *Page {
 //
 // Please note:
 // <pre>
-//   The coordinate (0.0, 0.0) is the top left corner of the page.
-//   The size of the pages are represented in points.
-//   1 point is 1/72 inches.
+//
+//	The coordinate (0.0, 0.0) is the top left corner of the page.
+//	The size of the pages are represented in points.
+//	1 point is 1/72 inches.
+//
 // </pre>
 //
 // @param pdf the pdf object.
@@ -514,15 +518,16 @@ func (page *Page) SetDefaultLineWidth() {
 // <pre>
 // Examples of line dash patterns:
 //
-//     "[Array] Phase"     Appearance          Description
-//      _______________     _________________   ____________________________________
+//	"[Array] Phase"     Appearance          Description
+//	 _______________     _________________   ____________________________________
 //
-//      "[] 0"              -----------------   Solid line
-//      "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//      "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//      "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//      "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//      "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//	 "[] 0"              -----------------   Solid line
+//	 "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//	 "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//	 "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//	 "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//	 "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//
 // </pre>
 //
 // @param pattern the line dash pattern.

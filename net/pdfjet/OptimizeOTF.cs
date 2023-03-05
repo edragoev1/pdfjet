@@ -32,7 +32,7 @@ namespace PDFjet.NET {
  * that the original fonts.
  */
 public class OptimizeOTF {
-    private static void ConvertFontFile(String fileName) {
+    private static void optimize(String fileName) {
         FileStream fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
         OTF otf = new OTF(fis);
         fis.Close();
@@ -144,7 +144,10 @@ Use this code to streamline fonts in bulk.
             ConvertFontFile(args[0]);
         }
 */
-        ConvertFontFile(args[0]);
+        optimize(args[0]);
+        // TODO: Add code that will allow optimization of both OTF and PNG
+        // based on argument --file-type=png or --file-type=otf
+        // OptimizePNG.optimize(args[0]);
     }
 }   // End of StreamlineOTF.cs
 }   // End of namespace util
