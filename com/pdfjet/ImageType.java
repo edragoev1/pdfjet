@@ -21,7 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 package com.pdfjet;
 
 
@@ -32,8 +31,12 @@ package com.pdfjet;
  *
  */
 public class ImageType {
+    /** JPEG image */
     public static final int JPG = 0;
+    /** PNG image */
     public static final int PNG = 1;
+    /** Bitmap image */
     public static final int BMP = 2;
+    /** PNG_STREAM image */
     public static final int PNG_STREAM = 3;
 }

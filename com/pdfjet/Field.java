@@ -52,7 +52,7 @@ public class Field {
      * 
      * @param x the horizontal position within the Form
      * @param values the values contained in this field
-     * @param format
+     * @param format format the value or not ...
      */
     public Field(float x, String[] values, boolean format) {
         this.x = x;
@@ -73,7 +73,7 @@ public class Field {
      * Sets the alternative description for this field
      * 
      * @param altDescription the alternative description
-     * @return the field
+     * @return this field
      */
     public Field setAltDescription(String altDescription) {
         this.altDescription[0] = altDescription;
@@ -84,8 +84,8 @@ public class Field {
     /**
      * Sets the actual text for the field
      * 
-     * @param actualText
-     * @return
+     * @param actualText the actual text in the field
+     * @return this field
      */
     public Field setActualText(String actualText) {
         this.actualText[0] = actualText;

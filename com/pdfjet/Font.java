@@ -32,18 +32,19 @@ import java.util.List;
  *  The font objects must added to the PDF before they can be used to draw text.
  */
 public class Font {
-    // Chinese (Traditional) font
+    /** Chinese (Traditional) font */
     public static final String AdobeMingStd_Light = "AdobeMingStd-Light";
 
-    // Chinese (Simplified) font
+    /** Chinese (Simplified) font */
     public static final String STHeitiSC_Light = "STHeitiSC-Light";
 
-    // Japanese font
+    /** Japanese font */
     public static final String KozMinProVI_Regular = "KozMinProVI-Regular";
 
-    // Korean font
+    /** Korean font */
     public static final String AdobeMyungjoStd_Medium = "AdobeMyungjoStd-Medium";
 
+    /** Is this a stream font? */
     public static final boolean STREAM = true;
 
     protected String name;
@@ -255,14 +256,28 @@ public class Font {
     }
 
 
-    // Constructor for .ttf.stream fonts:
+    /**
+     * Constructor for .ttf.stream fonts
+     * 
+     * @param pdf the PDF
+     * @param inputStream the input stream
+     * @param flag the flag ...
+     * @throws Exception if the font is not found
+     */
     public Font(PDF pdf, InputStream inputStream, boolean flag) throws Exception {
         FontStream1.register(pdf, this, inputStream);
         this.setSize(size);
     }
 
 
-    // Constructor for .ttf.stream fonts:
+    /**
+     * Constructor for .ttf.stream fonts
+     * 
+     * @param objects the list of objects
+     * @param inputStream the input stream
+     * @param flag the flag ...
+     * @throws Exception is the font is not found
+     */
     public Font(List<PDFobj> objects, InputStream inputStream, boolean flag) throws Exception {
         FontStream2.register(objects, this, inputStream);
         setSize(size);
