@@ -21,7 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 package com.pdfjet;
 
 import java.util.*;
@@ -43,7 +42,6 @@ public class Text implements Drawable {
     private float leading;
     private float paragraphLeading;
     private final List<float[]> beginParagraphPoints;
-    private final List<float[]> endParagraphPoints;
     private float spaceBetweenTextLines;
     private boolean drawBorder = true;
 
@@ -55,7 +53,6 @@ public class Text implements Drawable {
         this.leading = font.getBodyHeight();
         this.paragraphLeading = 2*leading;
         this.beginParagraphPoints = new ArrayList<float[]>();
-        this.endParagraphPoints = new ArrayList<float[]>();
         this.spaceBetweenTextLines = font.stringWidth(fallbackFont, Single.space);
     }
 
