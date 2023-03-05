@@ -9,34 +9,44 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.*;
 
+/**
+ * This class parses and extracts the data from TTF and OTF font files.
+ * 
+ */
 public class OTF {
 
-    public String fontName;
-    public String fontInfo;
-    public ByteArrayOutputStream baos;
-    public int unitsPerEm;
-    public short bBoxLLx;
-    public short bBoxLLy;
-    public short bBoxURx;
-    public short bBoxURy;
-    public short ascent;
-    public short descent;
-    public int[] advanceWidth;
-    public int firstChar;
-    public int lastChar;
-    public short capHeight;
-    public int[] glyphWidth;
-    public long postVersion;
-    public long italicAngle;
-    public short underlinePosition;
-    public short underlineThickness;
-    public byte[] buf;
-    public boolean cff = false;
-    public int cffOff;
-    public int cffLen;
-    public int[] unicodeToGID = new int[0x10000];
-    private int index = 0;
+    String fontName;
+    String fontInfo;
+    ByteArrayOutputStream baos;
+    int unitsPerEm;
+    short bBoxLLx;
+    short bBoxLLy;
+    short bBoxURx;
+    short bBoxURy;
+    short ascent;
+    short descent;
+    int[] advanceWidth;
+    int firstChar;
+    int lastChar;
+    short capHeight;
+    int[] glyphWidth;
+    long postVersion;
+    long italicAngle;
+    short underlinePosition;
+    short underlineThickness;
+    byte[] buf;
+    boolean cff = false;
+    int cffOff;
+    int cffLen;
+    int[] unicodeToGID = new int[0x10000];
+    int index = 0;
 
+    /**
+     * Creates OTF object
+     * 
+     * @param stream the input stream
+     * @throws Exception if there is a problem
+     */
     public OTF(InputStream stream) throws Exception {
         this.baos = new ByteArrayOutputStream();
 
@@ -321,6 +331,12 @@ public class OTF {
         return val;
     }
 
+    /**
+     * The entry point of the this class
+     * 
+     * @param args the arguments
+     * @throws Exception if there is a problem
+     */
     public static void main(String[] args) throws Exception {
         File file = new File(args[0]);
         if (file.isDirectory()) {
@@ -418,18 +434,18 @@ public class OTF {
         fos.close();
     }
 
-    public static void writeInt16(int i, OutputStream stream) throws IOException {
+    static void writeInt16(int i, OutputStream stream) throws IOException {
         stream.write((i >>  8) & 0xff);
         stream.write((i >>  0) & 0xff);
     }
 
-    public static void writeInt24(int i, OutputStream stream) throws IOException {
+    static void writeInt24(int i, OutputStream stream) throws IOException {
         stream.write((i >> 16) & 0xff);
         stream.write((i >>  8) & 0xff);
         stream.write((i >>  0) & 0xff);
     }
 
-    public static void writeInt32(int i, OutputStream stream) throws IOException {
+    static void writeInt32(int i, OutputStream stream) throws IOException {
         stream.write((i >> 24) & 0xff);
         stream.write((i >> 16) & 0xff);
         stream.write((i >>  8) & 0xff);
