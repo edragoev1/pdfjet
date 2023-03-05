@@ -9,4 +9,3 @@ rm -rf bin
 rm -rf obj
 rm -rf .build
 rm *.pdf
-rm *build_artifacts.txt
