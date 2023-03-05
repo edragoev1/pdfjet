@@ -10,5 +10,3 @@ rm docs/_net/*.html
 # /opt/jdk1.5.0_22/bin/java util.Translate
 
 javadoc -public com/pdfjet/*.java -d docs/java
-javac util/Translate.java
-java util.Translate
