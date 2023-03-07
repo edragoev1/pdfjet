@@ -48,4 +48,6 @@ To compile and run specific Go example:
 To compile and run specific Swift example:
 
 ./run-swift.sh 15
-```
+
+If you have compile errors please run:
+sudo apt install libc6-dev
