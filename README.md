@@ -49,5 +49,18 @@ To compile and run specific Swift example:
 
 ./run-swift.sh 15
 
-If you have compile errors please run:
+NOTE: On freshly installed Ubuntu 22.04 I got two errors:
+
+fatal error: sys/types.h: No such file or directory
+
+This was fixed by running:
+
 sudo apt install libc6-dev
+
+Then I got this error:
+
+error: invalid linker name in argument '-fuse-ld=gold'
+
+I fixed this by installing the GCC:
+
+sudo apt install gcc
