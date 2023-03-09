@@ -24,17 +24,10 @@
 import Foundation
 
 public class SVG {
-    public func getSVGPaths(_ fileName: String) -> [String] {
+    public func getSVGPaths(_ fileName: String) throws -> [String] {
         var paths = [String]()
         var inPath = false
-        var buffer = String()
-        do {
-            buffer = try String(contentsOfFile: fileName, encoding: .utf8)
-        }
-        catch {
-            /* TODO: */
-            /* handle if there are any errors */
-        }
+        var buffer = try String(contentsOfFile: fileName, encoding: .utf8)
         for ch in buffer {
             if !inPath && buffer.hasSuffix("<path d=") {
                 inPath = true
