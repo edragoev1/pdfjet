@@ -171,13 +171,13 @@ public class PNGImage {
 
         LZWEncode(&deflatedImageData, &image!)
 /*
-Swift.print("image.count -> " + String(image!.count))
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
+        Swift.print("image.count -> " + String(image!.count))
+        let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         LZWEncode(&deflatedImageData, &image!)
         // _ = FlateEncode(&deflatedImageData, &image!, RLE: true)
-let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-Swift.print(time1 - time0)
-Swift.print("deflatedImageData.count -> " + String(deflatedImageData.count))
+        let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+        Swift.print(time1 - time0)
+        Swift.print("deflatedImageData.count -> " + String(deflatedImageData.count))
 */
     }
 
