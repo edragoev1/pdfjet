@@ -28,5 +28,6 @@ public class SVG {
         }
         return paths;
     }
+  
 }
 }   // End of SVG.cs
