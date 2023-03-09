@@ -8,4 +8,5 @@ rm *.dll
 rm -rf bin
 rm -rf obj
 rm -rf .build
+rm -rf out
 rm *.pdf
