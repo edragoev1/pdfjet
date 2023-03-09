@@ -37,5 +37,12 @@ public interface Drawable {
      *  @throws Exception if the draw method did not succeed.
      */
     public float[] drawOn(Page page) throws Exception;
+
+    /**
+     * Set the x and y coordinates of the drawable object
+     * 
+     * @param x the x location
+     * @param y the y location
+     */
     public void setPosition(float x, float y);
 }

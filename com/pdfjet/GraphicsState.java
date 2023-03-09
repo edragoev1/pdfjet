@@ -25,7 +25,7 @@ package com.pdfjet;
 
 
 /**
- *  Represents the graphics state
+ *  The graphics state class
  *
  */
 public class GraphicsState {
@@ -66,7 +66,7 @@ public class GraphicsState {
     }
 
     /**
-     * Get non stroking alpha color
+     * Get the non stroking alpha color
      * 
      * @return the non stroking alpha color
      */
