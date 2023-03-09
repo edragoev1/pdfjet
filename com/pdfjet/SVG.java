@@ -23,20 +23,19 @@
  */
 package com.pdfjet;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SVG {
     public static List<String> getSVGPaths(String fileName) throws IOException {
-        List<String> paths = new ArrayList<>();
+        List<String> paths = new ArrayList<String>();
         StringBuilder buf = new StringBuilder();
         boolean inPath = false;
-        String str = new String(Files.readAllBytes(Paths.get(fileName)));
-        for (int i = 0; i < str.length(); i++) {
-            char ch = str.charAt(i);
+        FileInputStream stream = new FileInputStream(fileName);
+        int ch;
+        while ((ch = stream.read()) != -1) {
             if (!inPath && buf.toString().endsWith("<path d=")) {
                 inPath = true;
                 buf.setLength(0);
@@ -45,9 +44,11 @@ public class SVG {
                 paths.add(buf.toString());
                 buf.setLength(0);
             } else {
-                buf.append(ch);
+                buf.append((char) ch);
             }
         }
+        stream.close();
+
         return paths;
     }
 }

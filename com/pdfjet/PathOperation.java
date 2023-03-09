@@ -32,11 +32,11 @@ class PathOperation {
 
     PathOperation(char command) {
         this.command = command;
-        this.arguments = new ArrayList<>();
+        this.arguments = new ArrayList<String>();
     }
 
     List<PathOperation> getPathOperations() {
-        List<PathOperation> operations = new ArrayList<>();
+        List<PathOperation> operations = new ArrayList<PathOperation>();
         int n = getNumberOfArguments();
         PathOperation operation = new PathOperation(command);
         for (String argument : arguments) {
