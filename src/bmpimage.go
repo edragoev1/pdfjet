@@ -110,25 +110,20 @@ func (image *BMPImage) parseData(reader io.Reader) []byte {
 		row = getNBytes(reader, rowsize)
 		switch image.bpp {
 		case 1:
-			row = image.bit1to8(row, image.w)
-			break // opslag i palette
+			row = image.bit1to8(row, image.w) // opslag i palette
 		case 4:
-			row = image.bit4to8(row, image.w)
-			break // opslag i palette
+			row = image.bit4to8(row, image.w) // opslag i palette
 		case 8:
-			break // opslag i palette
 		case 16:
 			if image.r5g6b5 {
 				row = image.bit16to24(row, image.w) // 5,6,5 bit
 			} else {
 				row = image.bit16to24b(row, image.w)
 			}
-			break
 		case 24:
-			break // bytes are correct
+			// bytes are correct
 		case 32:
 			row = image.bit32to24(row, image.w)
-			break
 		default:
 			log.Fatal("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images.")
 		}
@@ -236,28 +231,20 @@ func (image *BMPImage) bit1to8(row []byte, width int) []byte {
 		switch i % 8 {
 		case 0:
 			ret[i] = byte((row[i/8] & m10000000) >> 7)
-			break
 		case 1:
 			ret[i] = byte((row[i/8] & m01000000) >> 6)
-			break
 		case 2:
 			ret[i] = byte((row[i/8] & m00100000) >> 5)
-			break
 		case 3:
 			ret[i] = byte((row[i/8] & m00010000) >> 4)
-			break
 		case 4:
 			ret[i] = byte((row[i/8] & m00001000) >> 3)
-			break
 		case 5:
 			ret[i] = byte((row[i/8] & m00000100) >> 2)
-			break
 		case 6:
 			ret[i] = byte((row[i/8] & m00000010) >> 1)
-			break
 		case 7:
 			ret[i] = byte((row[i/8] & m00000001))
-			break
 		}
 	}
 	return ret
