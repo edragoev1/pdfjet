@@ -102,12 +102,10 @@ func NewBMPImage(reader io.Reader) *BMPImage {
 func (image *BMPImage) parseData(reader io.Reader) []byte {
 	// rowsize is 4 * ceil (bpp*width/32.0)
 	bmpImage := make([]byte, 3*image.w*image.h)
-
 	rowsize := 4 * int(math.Ceil(float64(image.bpp)*float64(image.w)/float64(32.0))) // 4 byte alignment
-	row := make([]byte, 0)
 	index := 0
 	for i := 0; i < image.h; i++ {
-		row = getNBytes(reader, rowsize)
+		row := getNBytes(reader, rowsize)
 		switch image.bpp {
 		case 1:
 			row = image.bit1to8(row, image.w) // opslag i palette
@@ -131,25 +129,11 @@ func (image *BMPImage) parseData(reader io.Reader) []byte {
 		index = image.w * (image.h - i - 1) * 3
 		if image.palette != nil { // indexed
 			for j := 0; j < image.w; j++ {
-				if row[j] < 0 {
-					bmpImage[index] = image.palette[int(row[j])+256][2]
-				} else {
-					bmpImage[index] = image.palette[row[j]][2]
-				}
+				bmpImage[index] = image.palette[row[j]][2]
 				index++
-
-				if row[j] < 0 {
-					bmpImage[index] = image.palette[int(row[j])+256][1]
-				} else {
-					bmpImage[index] = image.palette[row[j]][1]
-				}
+				bmpImage[index] = image.palette[row[j]][1]
 				index++
-
-				if row[j] < 0 {
-					bmpImage[index] = image.palette[int(row[j])+256][0]
-				} else {
-					bmpImage[index] = image.palette[row[j]][0]
-				}
+				bmpImage[index] = image.palette[row[j]][0]
 				index++
 			}
 		} else { // not indexed

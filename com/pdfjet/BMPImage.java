@@ -230,15 +230,13 @@ class BMPImage {
         }
     }
 
-    private byte[] getBytes(java.io.InputStream inputStream, int length)
-            throws Exception {
+    private byte[] getBytes(java.io.InputStream inputStream, int length) throws Exception {
         byte[] buf = new byte[length];
         inputStream.read(buf, 0, buf.length);
         return buf;
     }
 
-    private int read2BytesLE(java.io.InputStream inputStream)
-            throws Exception {
+    private int read2BytesLE(java.io.InputStream inputStream) throws Exception {
         byte[] buf = getBytes(inputStream, 2);
         int val = 0;
         val |= buf[ 1 ] & 0xff;
@@ -247,8 +245,7 @@ class BMPImage {
         return val;
     }
 
-    private int readSignedInt(java.io.InputStream inputStream)
-            throws Exception {
+    private int readSignedInt(java.io.InputStream inputStream) throws Exception {
         byte[] buf = getBytes(inputStream, 4);
         long val = 0L;
         val |= buf[ 3 ] & 0xff;
