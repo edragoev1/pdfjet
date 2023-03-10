@@ -40,14 +40,13 @@ public class Example_06 {
         flag.setColor(Color.white);
         flag.drawOn(page);
 
-        float[] xy = new float[] {0f, 0f};
         float sw = 7.69f;       // stripe width
         Line stripe = new Line(0.0f, sw/2, 190.0f, sw/2);
         stripe.setWidth(sw);
         stripe.setColor(Color.oldgloryred);
         for (int row = 0; row < 7; row++) {
             stripe.placeIn(flag, 0.0f, row * 2 * sw);
-            xy = stripe.drawOn(page);
+            stripe.drawOn(page);
         }
 
         Box union = new Box();
@@ -68,7 +67,7 @@ public class Example_06 {
         for (int row = 0; row < 6; row++) {
             for (int col = 0; col < 5; col++) {
                 star.placeIn(union, row * h_si, col * v_si);
-                xy = star.drawOn(page);
+                star.drawOn(page);
             }
         }
 
@@ -76,7 +75,7 @@ public class Example_06 {
         for (int row = 0; row < 5; row++) {
             for (int col = 0; col < 4; col++) {
                 star.placeIn(union, row * h_si, col * v_si);
-                xy = star.drawOn(page);
+                star.drawOn(page);
             }
         }
 

@@ -123,7 +123,6 @@ class BMPImage {
 
                 index = w*(h-i-1)*3;
                 if (palette != null) {  // indexed
-                    System.out.println("YES!!!!!!!!1");
                     for (int j = 0; j < w; j++) {
                         image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][2];
                         image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][1];
@@ -214,8 +213,7 @@ class BMPImage {
         return ret;
     }
 
-    private void parsePalette(java.io.InputStream is, int size)
-            throws Exception {
+    private void parsePalette(java.io.InputStream is, int size) throws Exception {
         palette = new byte[size][];
         for (int i = 0; i < size; i++) {
             palette[i] = getBytes(is, 4);

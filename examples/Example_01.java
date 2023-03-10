@@ -93,6 +93,8 @@ class Example_01 {
             }
             i++;
         }
+        reader.close();
+
         Text text = new Text(paragraphs);
         text.setLocation(50f, 50f);
         text.setWidth(500f);
@@ -115,7 +117,6 @@ class Example_01 {
         page = new Page(pdf, Letter.PORTRAIT);
 
         paragraphs = new ArrayList<Paragraph>();
-
         reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream("data/CJK.txt"), "UTF-8"));
         while ((line = reader.readLine()) != null) {
@@ -128,6 +129,8 @@ class Example_01 {
             paragraph.add(textLine);
             paragraphs.add(paragraph);
         }
+        reader.close();
+
         text = new Text(paragraphs);
         text.setLocation(50f, 50f);
         text.setWidth(500f);

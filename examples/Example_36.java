@@ -29,7 +29,8 @@ public class Example_36 {
         Image image2 = new Image(pdf, stream, ImageType.JPG);
         stream.close();
 
-        stream = new FileInputStream("images/mt-map.bmp");
+        // stream = new FileInputStream("images/mt-map.bmp");
+        stream = new FileInputStream("images/palette.bmp");
         Image image3 = new Image(pdf, stream, ImageType.BMP);
         stream.close();
 

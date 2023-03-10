@@ -37,7 +37,8 @@ public class Example_36 {
         Image image3 = new Image(
                 pdf,
                 new BufferedStream(new FileStream(
-                        "images/mt-map.bmp", FileMode.Open, FileAccess.Read)),
+                        // "images/mt-map.bmp", FileMode.Open, FileAccess.Read)),
+                        "images/palette.bmp", FileMode.Open, FileAccess.Read)),
                 ImageType.BMP);
 
         TextLine text = new TextLine(f1,

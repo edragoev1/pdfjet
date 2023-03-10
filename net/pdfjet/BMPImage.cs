@@ -120,9 +120,9 @@ public class BMPImage {
                 index = w*(h-i-1)*3;
                 if (palette != null) {  // indexed
                     for (int j = 0; j < w; j++) {
-                        image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][2];
-                        image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][1];
-                        image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][0];
+                        image[index++] = palette[row[j]][2];
+                        image[index++] = palette[row[j]][1];
+                        image[index++] = palette[row[j]][0];
                     }
                 } else {                // not indexed
                     for (int j = 0; j < w*3; j+=3) {
