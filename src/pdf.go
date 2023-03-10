@@ -1679,23 +1679,21 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	for _, page := range pages {
 		resObj := page.getResourcesObject(objects)
 		fonts := pdf.getFontObjects(resObj, objects)
-		if fonts != nil {
-			for _, font := range fonts {
-				resources = append(resources, font)
-				obj := pdf.getObjectFromObjects("/ToUnicode", font, objects)
+		for _, font := range fonts {
+			resources = append(resources, font)
+			obj := pdf.getObjectFromObjects("/ToUnicode", font, objects)
+			if obj != nil {
+				resources = append(resources, obj)
+			}
+			descendantFonts := pdf.getDescendantFonts(font, objects)
+			for _, descendantFont := range descendantFonts {
+				resources = append(resources, descendantFont)
+				obj = pdf.getObjectFromObjects("/FontDescriptor", descendantFont, objects)
 				if obj != nil {
 					resources = append(resources, obj)
-				}
-				descendantFonts := pdf.getDescendantFonts(font, objects)
-				for _, descendantFont := range descendantFonts {
-					resources = append(resources, descendantFont)
-					obj = pdf.getObjectFromObjects("/FontDescriptor", descendantFont, objects)
+					obj = pdf.getObjectFromObjects("/FontFile2", obj, objects)
 					if obj != nil {
 						resources = append(resources, obj)
-						obj = pdf.getObjectFromObjects("/FontFile2", obj, objects)
-						if obj != nil {
-							resources = append(resources, obj)
-						}
 					}
 				}
 			}
@@ -1748,7 +1746,7 @@ func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
 				pdf.appendString(token)
 				if strings.HasPrefix(token, "(http:") {
 					link = true
-				} else if link == true && strings.HasSuffix(token, ")") {
+				} else if link && strings.HasSuffix(token, ")") {
 					link = false
 				}
 				if i < (n - 1) {

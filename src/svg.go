@@ -31,14 +31,14 @@ import (
 )
 
 func GetSVGPaths(filename string) []string {
-	str, err := os.ReadFile(filename)
+	var paths = make([]string, 0)
+	contents, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var paths = make([]string, 0)
 	var inPath = false
 	var buffer = make([]rune, 0)
-	for _, ch := range str {
+	for _, ch := range contents {
 		if !inPath && strings.HasSuffix(string(buffer), "<path d=") {
 			inPath = true
 			buffer = nil

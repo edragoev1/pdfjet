@@ -226,8 +226,7 @@ func (page *Page) DrawStringUsingColorMap(
 	} else {
 		activeFont := font
 		var buf strings.Builder
-		runes := []rune(text)
-		for _, ch := range runes {
+		for _, ch := range text {
 			if activeFont.unicodeToGID[ch] == 0 {
 				page.drawString(activeFont, buf.String(), x, y, colors)
 				x += activeFont.stringWidth(buf.String())
@@ -1156,8 +1155,7 @@ func (page *Page) drawWord(font *Font, buf *strings.Builder, colors map[string]u
 func (page *Page) drawColoredString(font *Font, str string, colors map[string]uint32) {
 	var buf1 strings.Builder
 	var buf2 strings.Builder
-	runes := []rune(str)
-	for _, ch := range runes {
+	for _, ch := range str {
 		if unicode.IsLetter(ch) || unicode.IsDigit(ch) {
 			page.drawWord(font, &buf2, colors)
 			buf1.WriteRune(ch)
