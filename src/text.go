@@ -203,8 +203,7 @@ func (text *Text) stringIsCJK(str string) bool {
 func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 	tokens := make([]string, 0)
 	var sb strings.Builder
-	runes := []rune(textLine.text)
-	for _, ch := range runes {
+	for _, ch := range textLine.text {
 		if text.font.StringWidth(text.fallbackFont, sb.String()+string(ch)) < textWidth {
 			sb.WriteRune(ch)
 		} else {

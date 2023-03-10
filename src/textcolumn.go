@@ -183,7 +183,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 				runLength = line.font.StringWidth(line.GetFallbackFont(), token+single.Space)
 			}
 		}
-		if line.GetTrailingSpace() == false {
+		if !line.GetTrailingSpace() {
 			runLength -= line.font.StringWidth(line.GetFallbackFont(), single.Space)
 			text.SetTrailingSpace(false)
 		}
@@ -334,8 +334,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 func (textColumn *TextColumn) AddChineseParagraph(font *Font, text string) {
 	var paragraph *Paragraph
 	var buf strings.Builder
-	runes := []rune(text)
-	for _, ch := range runes {
+	for _, ch := range text {
 		if font.stringWidth(buf.String()+string(ch)) > textColumn.w {
 			paragraph = NewParagraph()
 			paragraph.Add(NewTextLine(font, buf.String()))
