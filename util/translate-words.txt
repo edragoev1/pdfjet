@@ -1,0 +1,14 @@
+# Used in the translation of the documentation from Java to C#
+java.lang.=
+java.util.=
+java.io.InputStream=Stream
+java.io.OutputStream=Stream
+>main=>Main
+com/pdfjet=net/pdfjet
+com.pdfjet=PDFjet.NET
+ByteArrayOutputStream=MemoryStream
+Map=Dictionary
+Integer=Int32
+Drawable=IDrawable
+>read=>Read
+void add(=void Add(
