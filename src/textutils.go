@@ -37,9 +37,8 @@ func SplitTextIntoTokens(text string, font, fallbackFont *Font, width float32) [
 		if font.StringWidth(fallbackFont, token) <= width {
 			tokens2 = append(tokens2, token)
 		} else {
-			runes := []rune(token)
 			var buf strings.Builder
-			for _, ch := range runes {
+			for _, ch := range token {
 				if font.StringWidth(fallbackFont, buf.String()+string(ch)) <= width {
 					buf.WriteRune(ch)
 				} else {

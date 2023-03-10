@@ -473,8 +473,7 @@ func (font *Font) StringWidth(fallbackFont *Font, text string) float32 {
 
 	activeFont := font
 	var buf strings.Builder
-	runes := []rune(text)
-	for _, ch := range runes {
+	for _, ch := range text {
 		if activeFont.unicodeToGID[ch] == 0 {
 			width += activeFont.stringWidth(buf.String())
 			buf.Reset()

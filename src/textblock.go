@@ -184,8 +184,7 @@ func (textBlock *TextBlock) SetDrawBorder(drawBorder bool) *TextBlock {
 func (textBlock *TextBlock) IsCJK(text string) bool {
 	cjk := 0
 	other := 0
-	runes := []rune(text)
-	for _, ch := range runes {
+	for _, ch := range text {
 		if ch >= 0x4E00 && ch <= 0x9FFF || // Unified CJK
 			ch >= 0xAC00 && ch <= 0xD7AF || // Hangul (Korean)
 			ch >= 0x30A0 && ch <= 0x30FF || // Katakana (Japanese)
@@ -219,8 +218,7 @@ func (textBlock *TextBlock) drawText(page *Page) [2]float32 {
 	for _, line := range lines {
 		if textBlock.IsCJK(line) {
 			buf.Reset()
-			runes := []rune(line)
-			for _, ch := range runes {
+			for _, ch := range line {
 				if textBlock.font.StringWidth(textBlock.fallbackFont, buf.String()+string(ch)) < textBlock.w {
 					buf.WriteRune(ch)
 				} else {
