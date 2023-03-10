@@ -51,4 +51,76 @@ public class SVG {
 
         return paths;
     }
+
+    private static boolean isCommand(char ch) {
+        if (ch == 'M' || ch == 'm') {           // moveto
+            return true;
+        } else if (ch == 'L' || ch == 'l') {    // lineto
+            return true;
+        } else if (ch == 'H' || ch == 'h') {    // horizontal lineto
+            return true;
+        } else if (ch == 'V' || ch == 'v') {    // vertical lineto
+            return true;
+        } else if (ch == 'C' || ch == 'c') {    // curveto
+            return true;
+        } else if (ch == 'S' || ch == 's') {    // smooth curveto
+            return true;
+        } else if (ch == 'Q' || ch == 'q') {    // quadratic curve
+            return true;
+        } else if (ch == 'T' || ch == 't') {    // smooth quadratic curveto
+            return true;
+        } else if (ch == 'A' || ch == 'a') {    // elliptical arc
+            return true;
+        }
+        return false;
+    }
+
+    public static List<PathOperation> getPathOperations(List<String> svgPaths) {
+        List<PathOperation> operations = new ArrayList<>();
+        PathOperation operation = null;
+        for (String svgPath : svgPaths) {
+            // Path example:
+            // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
+            StringBuilder argument = new StringBuilder();
+            System.out.println(svgPath);
+            for (int i = 0; i < svgPath.length(); i++) {
+                char ch = svgPath.charAt(i);
+                if (SVG.isCommand(ch)) {                // open path
+                    if (operation != null) {
+                        operation.arguments.add(argument.toString());
+                        argument.setLength(0);
+                        operations.add(operation);                        
+                    }
+                    operation = new PathOperation(ch);
+                } else if (ch == ' ') {
+                    operation.arguments.add(argument.toString());
+                    argument.setLength(0);
+                } else if (ch == '-') {
+                    operation.arguments.add(argument.toString());
+                    argument.setLength(0);
+                    argument.append(ch);
+                } else if (ch == 'Z' || ch == 'z') {    // close path
+                    operation.arguments.add(argument.toString());
+                    argument.setLength(0);
+                    operations.add(operation);
+
+                } else {
+                    argument.append(ch);
+                }
+            }
+        }
+        return operations;
+    }
+
+    public static void main(String[] args) throws IOException {
+        List<String> svgPaths = getSVGPaths(args[0]);
+        List<PathOperation> pathOperations = getPathOperations(svgPaths);
+        for (PathOperation operation : pathOperations) {
+            System.out.println(operation.command);
+            for (String argument : operation.arguments) {
+                System.out.println(argument);
+            }
+            System.out.println();
+        }
+    }
 }

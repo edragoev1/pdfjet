@@ -28,18 +28,18 @@ import java.util.*;
 
 class PathOperation {
     char command;
-    List<String> arguments = null;
+    List<String> arguments;
 
     PathOperation(char command) {
         this.command = command;
         this.arguments = new ArrayList<String>();
     }
-
-    List<PathOperation> getPathOperations() {
+/*
+    public static List<PathOperation> getPathOperations(char command) {
         List<PathOperation> operations = new ArrayList<PathOperation>();
-        int n = getNumberOfArguments();
+        int n = getNumberOfArguments(command);
         PathOperation operation = new PathOperation(command);
-        for (String argument : arguments) {
+        for (String argument : this.arguments) {
             operation.arguments.add(argument);
             if (operation.arguments.size() % n == 0) {
                 operations.add(operation);
@@ -52,7 +52,7 @@ class PathOperation {
         return operations;
     }
 
-    int getNumberOfArguments() {
+    static int getNumberOfArguments(char command) {
         if (command == 'M' || command == 'm') {         // moveto
             return 2;
         }
@@ -85,5 +85,5 @@ class PathOperation {
         }
         return 0;
     }
-
+*/
 }
