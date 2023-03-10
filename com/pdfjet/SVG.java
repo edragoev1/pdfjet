@@ -103,7 +103,6 @@ public class SVG {
                     operation.arguments.add(argument.toString());
                     argument.setLength(0);
                     operations.add(operation);
-
                 } else {
                     argument.append(ch);
                 }
