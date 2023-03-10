@@ -25,27 +25,16 @@ SOFTWARE.
 */
 
 import (
-	"io"
 	"log"
 	"os"
 	"strings"
 )
 
 func GetSVGPaths(filename string) []string {
-	file, err := os.Open(filename)
+	str, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
-	str, err := io.ReadAll(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var paths = make([]string, 0)
 	var inPath = false
 	var buffer = make([]rune, 0)
