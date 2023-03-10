@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -25,7 +24,7 @@ func Example50(fileName string) {
 	defer file.Close()
 	w := bufio.NewWriter(file)
 
-	buf, err := ioutil.ReadFile("data/testPDFs/" + fileName)
+	buf, err := os.ReadFile("data/testPDFs/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}

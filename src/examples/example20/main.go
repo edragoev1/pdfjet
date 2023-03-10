@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -25,7 +24,7 @@ func Example20() {
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	buf, err := ioutil.ReadFile("data/testPDFs/PDFjetLogo.pdf")
+	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}

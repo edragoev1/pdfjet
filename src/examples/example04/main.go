@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -46,7 +45,7 @@ func Example04() {
 	var yPos float32
 	yPos = 100.0
 
-	content, err := ioutil.ReadFile("data/happy-new-year.txt")
+	content, err := os.ReadFile("data/happy-new-year.txt")
 	if err != nil {
 		log.Fatal(err)
 	}

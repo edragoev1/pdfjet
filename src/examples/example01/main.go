@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -82,7 +81,7 @@ func Example01(mode string) {
 
 	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
-	lcgText, err := ioutil.ReadFile("data/LCG.txt")
+	lcgText, err := os.ReadFile("data/LCG.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,7 +136,7 @@ func Example01(mode string) {
 
 	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
-	cjkText, err := ioutil.ReadFile("data/CJK.txt")
+	cjkText, err := os.ReadFile("data/CJK.txt")
 	if err != nil {
 		log.Fatal(err)
 	}

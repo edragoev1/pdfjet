@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -24,14 +23,14 @@ func Example37() {
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	buf, err := ioutil.ReadFile("data/testPDFs/wirth.pdf")
-	// buf, err := ioutil.ReadFile("data/testPDFs/wirth.pdf")
-	// buf, err := ioutil.ReadFile("data/testPDFs/Smalltalk-and-OO.pdf")
-	// buf, err := ioutil.ReadFile("data/testPDFs/InsideSmalltalk1.pdf")
-	// buf, err := ioutil.ReadFile("data/testPDFs/InsideSmalltalk2.pdf")
-	// buf, err := ioutil.ReadFile("data/testPDFs/Greenbook.pdf")
-	// buf, err := ioutil.ReadFile("data/testPDFs/Bluebook.pdf")
-	// buf, err := ioutil.ReadFile("data/testPDFs/Orangebook.pdf")
+	buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/Smalltalk-and-OO.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/InsideSmalltalk1.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/InsideSmalltalk2.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/Greenbook.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/Bluebook.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/Orangebook.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}

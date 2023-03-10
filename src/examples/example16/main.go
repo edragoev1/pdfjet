@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -54,7 +53,7 @@ func Example16() {
 	text.SetLocation(50.0, 300.0)
 	text.DrawOn(page)
 
-	buf, err := ioutil.ReadFile("data/latin.txt")
+	buf, err := os.ReadFile("data/latin.txt")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -30,7 +29,7 @@ func Example12() {
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	var buf strings.Builder
-	content, err := ioutil.ReadFile("examples/Example_12.java")
+	content, err := os.ReadFile("examples/Example_12.java")
 	if err != nil {
 		log.Fatal(err)
 	}
