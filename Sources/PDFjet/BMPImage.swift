@@ -126,11 +126,11 @@ class BMPImage {
             if self.palette != nil {
                 // indexed
                 for j in 0..<self.w {
-                    image![index] = self.palette![Int((row[j] < 0) ? row[j] : row[j])][2]
+                    image![index] = self.palette![Int(row[j])][2]
                     index += 1
-                    image![index] = self.palette![Int((row[j] < 0) ? row[j] : row[j])][1]
+                    image![index] = self.palette![Int(row[j])][1]
                     index += 1
-                    image![index] = self.palette![Int((row[j] < 0) ? row[j] : row[j])][0]
+                    image![index] = self.palette![Int(row[j])][0]
                     index += 1
                 }
             }
