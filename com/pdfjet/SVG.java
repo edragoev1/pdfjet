@@ -48,7 +48,6 @@ public class SVG {
             }
         }
         stream.close();
-
         return paths;
     }
 
@@ -76,27 +75,29 @@ public class SVG {
     }
 
     public static List<PathOperation> getPathOperations(List<String> svgPaths) {
-        List<PathOperation> operations = new ArrayList<>();
+        List<PathOperation> operations = new ArrayList<PathOperation>();
         PathOperation operation = null;
         for (String svgPath : svgPaths) {
             // Path example:
             // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            StringBuilder argument = new StringBuilder();
             System.out.println(svgPath);
+            StringBuilder argument = new StringBuilder();
             for (int i = 0; i < svgPath.length(); i++) {
                 char ch = svgPath.charAt(i);
                 if (SVG.isCommand(ch)) {                // open path
                     if (operation != null) {
                         operation.arguments.add(argument.toString());
-                        argument.setLength(0);
                         operations.add(operation);                        
                     }
                     operation = new PathOperation(ch);
+                    argument.setLength(0);
                 } else if (ch == ' ') {
                     operation.arguments.add(argument.toString());
                     argument.setLength(0);
                 } else if (ch == '-') {
-                    operation.arguments.add(argument.toString());
+                    if (!argument.toString().equals("")) {
+                        operation.arguments.add(argument.toString());
+                    }
                     argument.setLength(0);
                     argument.append(ch);
                 } else if (ch == 'Z' || ch == 'z') {    // close path
