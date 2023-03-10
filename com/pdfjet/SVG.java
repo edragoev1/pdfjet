@@ -116,9 +116,9 @@ public class SVG {
         List<String> svgPaths = getSVGPaths(args[0]);
         List<PathOperation> pathOperations = getPathOperations(svgPaths);
         for (PathOperation operation : pathOperations) {
-            System.out.println(operation.command);
+            System.out.print(operation.command + " ");
             for (String argument : operation.arguments) {
-                System.out.println(argument);
+                System.out.print(argument + " ");
             }
             System.out.println();
         }
