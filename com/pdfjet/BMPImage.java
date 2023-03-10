@@ -123,6 +123,7 @@ class BMPImage {
 
                 index = w*(h-i-1)*3;
                 if (palette != null) {  // indexed
+                    System.out.println("YES!!!!!!!!1");
                     for (int j = 0; j < w; j++) {
                         image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][2];
                         image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][1];
