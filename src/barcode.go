@@ -400,8 +400,7 @@ func (barcode *BarCode) drawCode39(page *Page, x1, y1 float32) []float32 {
 				log.Fatal("The input string '" + barcode.text +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
-			runes := []rune(code)
-			for _, ch := range runes {
+			for _, ch := range code {
 				if ch == 'w' {
 					x += barcode.m1
 				} else if ch == 'W' {

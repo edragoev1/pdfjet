@@ -144,8 +144,7 @@ func (barcode *BarCode2D) textToArrayOfIntegers() []int {
 	list := make([]int, 0)
 
 	currentMode := ALPHA
-	runes := []rune(barcode.str)
-	for _, ch := range runes {
+	for _, ch := range barcode.str {
 		if ch == 0x20 {
 			list = append(list, 26) // The codeword for space
 			continue
