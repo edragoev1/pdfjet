@@ -100,17 +100,18 @@ const (
 //
 // <pre>
 // Examples:
-//     Font font1 = new Font(pdf, CoreFont.HELVETICA)
-//     Font font2 = new Font(pdf, CoreFont.TIMES_ITALIC)
-//     Font font3 = new Font(pdf, CoreFont.ZAPF_DINGBATS)
-//     ...
+//
+//	Font font1 = new Font(pdf, CoreFont.HELVETICA)
+//	Font font2 = new Font(pdf, CoreFont.TIMES_ITALIC)
+//	Font font3 = new Font(pdf, CoreFont.ZAPF_DINGBATS)
+//	...
+//
 // </pre>
 //
 // @param pdf the PDF to add this font to.
 // @param coreFont the core font. Must be one the names defined in the CoreFont class.
 //
 // font := CoreFont(pdf, corefont.Helvetica())
-//
 func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	font := new(Font)
 	font.isCoreFont = true

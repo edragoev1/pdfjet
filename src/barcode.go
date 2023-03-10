@@ -312,8 +312,7 @@ func (barcode *BarCode) drawCode128(page *Page, x1, y1 float32) []float32 {
 	}
 
 	list := make([]rune, 0)
-	runes := []rune(barcode.text)
-	for _, symchar := range runes {
+	for _, symchar := range barcode.text {
 		if symchar < 32 {
 			list = append(list, rune(code128.Shift))
 			list = append(list, symchar+64)
@@ -344,8 +343,7 @@ func (barcode *BarCode) drawCode128(page *Page, x1, y1 float32) []float32 {
 	buf.WriteRune(rune(checkDigit))
 	buf.WriteRune(rune(code128.Stop))
 
-	runes = []rune(buf.String())
-	for _, si := range runes {
+	for _, si := range buf.String() {
 		symbol := strconv.Itoa(code128.TABLE[si])
 		for i := 0; i < len(symbol); i++ {
 			n := float32(symbol[i] - 0x30)
@@ -434,8 +432,7 @@ func (barcode *BarCode) drawCode39(page *Page, x1, y1 float32) []float32 {
 				log.Fatal("The input string '" + barcode.text +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
-			runes := []rune(code)
-			for _, ch := range runes {
+			for _, ch := range code {
 				if ch == 'w' {
 					y += barcode.m1
 				} else if ch == 'W' {
@@ -469,8 +466,7 @@ func (barcode *BarCode) drawCode39(page *Page, x1, y1 float32) []float32 {
 				log.Fatal("The input string '" + barcode.text +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
-			runes := []rune(code)
-			for _, ch := range runes {
+			for _, ch := range code {
 				if ch == 'w' || ch == 'b' {
 					height += barcode.m1
 				} else if ch == 'W' || ch == 'B' {
@@ -483,8 +479,7 @@ func (barcode *BarCode) drawCode39(page *Page, x1, y1 float32) []float32 {
 
 		for i := 0; i < len(barcode.text); i++ {
 			code := barcode.tableB[barcode.text[i]]
-			runes := []rune(code)
-			for _, ch := range runes {
+			for _, ch := range code {
 				if ch == 'w' {
 					y -= barcode.m1
 				} else if ch == 'W' {
