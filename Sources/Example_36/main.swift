@@ -30,7 +30,8 @@ public class Example_36 {
 
             let image3 = try Image(
                     pdf,
-                    InputStream(fileAtPath: "images/mt-map.bmp")!,
+                    // InputStream(fileAtPath: "images/mt-map.bmp")!,
+                    InputStream(fileAtPath: "images/palette.bmp")!,
                     ImageType.BMP)
 
             let text = TextLine(f1,

@@ -41,7 +41,8 @@ func Example36() {
 	reader = bufio.NewReader(file2)
 	image2 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
 
-	file3, err := os.Open("images/mt-map.bmp")
+	// file3, err := os.Open("images/mt-map.bmp")
+	file3, err := os.Open("images/palette.bmp")
 	if err != nil {
 		log.Fatal(err)
 	}
