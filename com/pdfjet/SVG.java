@@ -108,6 +108,7 @@ public class SVG {
                     argument.setLength(0);
                     operations.add(operation);
                     operations.add(new PathOperation(ch));
+                    operation = null;
                 } else {
                     argument.append(ch);
                 }
