@@ -80,7 +80,7 @@ public class SVG {
         return false;
     }
 
-    public static List<PathOp> getPathOperations(List<String> paths) {
+    public static List<PathOp> getSVGPathOps(List<String> paths) {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp op = null;
         for (String path : paths) {
@@ -122,7 +122,7 @@ public class SVG {
         return operations;
     }
 
-    public static List<PathOp> getPDFPathOperations(List<PathOp> operations) {
+    public static List<PathOp> getPDFPathOps(List<PathOp> operations) {
         float x = 0f;
         float y = 0f;
         PathOp prevOp = null;
@@ -220,10 +220,10 @@ public class SVG {
         writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100\" width=\"100\">\n");
         writer.write("  <path d=\"");
         // writer.write("M 20 20 q 0 60 60 60 0 -60 -60 -60 Z");
-        List<String> svgPaths = getSVGPaths(args[0]);
-        List<PathOp> pathOperations = getPathOperations(svgPaths);
-        List<PathOp> pdfPathOperations = getPDFPathOperations(pathOperations);
-        for (PathOp op : pdfPathOperations) {
+        List<String> paths = getSVGPaths(args[0]);
+        List<PathOp> svgPathOps = getSVGPathOps(paths);
+        List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
+        for (PathOp op : pdfPathOps) {
             System.out.print(op.cmd + " ");
             writer.write(op.cmd + " ");
             for (String argument : op.args) {

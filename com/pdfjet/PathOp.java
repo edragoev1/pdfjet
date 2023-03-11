@@ -25,7 +25,6 @@ package com.pdfjet;
 
 import java.util.*;
 
-
 class PathOp {
     char cmd;
     List<String> args;
