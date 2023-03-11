@@ -27,11 +27,11 @@ import java.util.*;
 
 class PathOp {
     char cmd;
-    List<String> args;
     float x1;   // Control point x
     float y1;   // Control point y
     float x;    // Initial point x
     float y;    // Initial point y
+    List<String> args;
 
     PathOp(char cmd) {
         this.cmd = cmd;
@@ -40,6 +40,8 @@ class PathOp {
 
     PathOp(char cmd, float x, float y) {
         this.cmd = cmd;
+        this.x = x;
+        this.y = y;
         this.args = new ArrayList<String>();
         this.args.add(String.valueOf(x));
         this.args.add(String.valueOf(y));
@@ -47,6 +49,10 @@ class PathOp {
 
     PathOp(char cmd, float x1, float y1, float x, float y) {
         this.cmd = cmd;
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x = x;
+        this.y = y;
         this.args = new ArrayList<String>();
         this.args.add(String.valueOf(x1));
         this.args.add(String.valueOf(y1));
