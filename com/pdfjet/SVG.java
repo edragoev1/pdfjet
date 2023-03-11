@@ -145,6 +145,8 @@ public class SVG {
                 op.args.add(String.valueOf(x));
                 op.args.add(String.valueOf(y));
             } else if (op.cmd == 'L') {
+                x = Float.valueOf(op.args.get(0));
+                y = Float.valueOf(op.args.get(1));
             } else if (op.cmd == 'l') {
                 op.cmd = 'L';
                 x += Float.valueOf(op.args.get(0));
@@ -193,6 +195,8 @@ public class SVG {
                 op.args.clear();
                 op.args.addAll(temp);
             } else if (op.cmd == 'T') {
+                x = Float.valueOf(op.args.get(0));
+                y = Float.valueOf(op.args.get(1));
             } else if (op.cmd == 'X') { // 't'
                 op.cmd = 'Q';
                 float cpx = 0f;
@@ -233,6 +237,7 @@ public class SVG {
     public static void main(String[] args) throws IOException {
         FileWriter writer = new FileWriter("test.svg");
         writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
+        // writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100\" width=\"100\">\n");
         writer.write("  <path d=\"");
         // writer.write("M 20 20 q 0 60 60 60 0 -60 -60 -60 Z");
         List<String> paths = getSVGPaths(args[0]);
