@@ -125,6 +125,7 @@ public class SVG {
     public static List<PathOperation> getPDFPathOperations(List<PathOperation> operations) {
         float x = 0f;
         float y = 0f;
+        PathOperation prevOperation = null;
         for (PathOperation operation : operations) {
             if (operation.command == 'M') {
                 x = Float.valueOf(operation.arguments.get(0));
@@ -184,7 +185,30 @@ public class SVG {
                 }
                 operation.arguments.clear();
                 operation.arguments.addAll(temp);
+            } else if (operation.command == 'T') {
+            } else if (operation.command == 'X') { // 't'
+                operation.command = 'Q';
+                if (prevOperation.command == 'Q' || prevOperation.command == 'q') {
+
+                } else {
+
+                }
+                float cpx = Float.valueOf(prevOperation.arguments.get(0));
+                float cpy = Float.valueOf(prevOperation.arguments.get(1));
+
+                List<String> temp = new ArrayList<String>();
+                for (int i = 0; i <= operation.arguments.size() - 2; i += 2) {
+                    x += Float.valueOf(operation.arguments.get(i));
+                    y += Float.valueOf(operation.arguments.get(i + 1));
+                    temp.add(String.valueOf(x));
+                    temp.add(String.valueOf(y));
+                }
+                operation.arguments.clear();
+                operation.arguments.addAll(temp);
+            } else if (operation.command == 'Z' || operation.command == 'z') {
+                // TODO:
             }
+            prevOperation = operation;
         }
         return operations;
     }
@@ -192,8 +216,8 @@ public class SVG {
     public static void main(String[] args) throws IOException {
         FileWriter writer = new FileWriter("test73.svg");
         writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100\" width=\"100\">\n");
-        // writer.write("  <path d=\"M 20 20 q 0 60 60 60 0 -60 -60 -60 Z\"/>\n");
         writer.write("  <path d=\"");
+        // writer.write("M 20 20 q 0 60 60 60 0 -60 -60 -60 Z");
         List<String> svgPaths = getSVGPaths(args[0]);
         List<PathOperation> pathOperations = getPathOperations(svgPaths);
         List<PathOperation> pdfPathOperations = getPDFPathOperations(pathOperations);
@@ -204,8 +228,8 @@ public class SVG {
                 System.out.print(argument + " ");
                 writer.write(argument + " ");
             }
-            // System.out.println();
         }
+        System.out.println();
         writer.write("\"/>\n");
         writer.write("</svg>\n");
         writer.flush();
