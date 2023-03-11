@@ -177,7 +177,7 @@ public class SVG {
             for (String argument : operation.arguments) {
                 System.out.print(argument + " ");
             }
-            System.out.println();
+            // System.out.println();
         }
     }
 }
