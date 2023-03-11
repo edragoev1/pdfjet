@@ -1,5 +1,5 @@
 /**
- *  PathOperation.java
+ *  PathOp.java
  *
 Copyright 2023 Innovatics Inc.
 
