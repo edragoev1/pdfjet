@@ -30,9 +30,36 @@ class PathOp {
     List<String> args;
     float x1;   // Control point x
     float y1;   // Control point y
+    float x;    // Initial point x
+    float y;    // Initial point y
 
     PathOp(char cmd) {
         this.cmd = cmd;
         this.args = new ArrayList<String>();
+    }
+
+    PathOp(char cmd, float x, float y) {
+        this.cmd = cmd;
+        this.args = new ArrayList<String>();
+        this.args.add(String.valueOf(x));
+        this.args.add(String.valueOf(y));
+    }
+
+    PathOp(char cmd, float x1, float y1, float x, float y) {
+        this.cmd = cmd;
+        this.args = new ArrayList<String>();
+        this.args.add(String.valueOf(x1));
+        this.args.add(String.valueOf(y1));
+        this.args.add(String.valueOf(x));
+        this.args.add(String.valueOf(y));
+    }
+
+    void appendArg1(float arg) {
+        this.args.add(String.valueOf(arg));
+    }
+
+    void appendArgs(float x, float y) {
+        this.args.add(String.valueOf(x));
+        this.args.add(String.valueOf(y));
     }
 }
