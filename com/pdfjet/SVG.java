@@ -130,6 +130,8 @@ public class SVG {
     }
 
     public static List<PathOp> getPDFPathOps(List<PathOp> operations) {
+        float x0 = 0f;
+        float y0 = 0f;
         float x = 0f;
         float y = 0f;
         PathOp prevOp = null;
@@ -137,6 +139,8 @@ public class SVG {
             if (op.cmd == 'M') {
                 x = Float.valueOf(op.args.get(0));
                 y = Float.valueOf(op.args.get(1));
+                x0 = x;
+                y0 = y;
             } else if (op.cmd == 'm') {
                 op.cmd = 'M';
                 x += Float.valueOf(op.args.get(0));
@@ -227,7 +231,8 @@ public class SVG {
                 op.args.clear();
                 op.args.addAll(temp);
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
-                // TODO:
+                x = x0;
+                y = y0;
             }
             prevOp = op;
         }
