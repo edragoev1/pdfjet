@@ -169,26 +169,26 @@ public class SVG {
                 operation.arguments.add(String.valueOf(y));
             } else if (operation.command == 'Q') {
             } else if (operation.command == 'q') {
-/*
                 operation.command = 'Q';
                 List<String> temp = new ArrayList<String>();
-                float x2 = 0f;
-                float y2 = 0f;
-                for (int i = 0; i <= operation.arguments.size() - 4; i++) {
+                for (int i = 0; i <= operation.arguments.size() - 4; i += 4) {
+                    System.out.print(operation.arguments.get(i) + " ");
+                    System.out.print(operation.arguments.get(i + 1) + " ");
+                    System.out.print(operation.arguments.get(i + 2) + " ");
+                    System.out.print(operation.arguments.get(i + 3) + " ");
+                    System.out.println();
+
                     float x1 = x + Float.valueOf(operation.arguments.get(i));
                     float y1 = y + Float.valueOf(operation.arguments.get(i + 1));
-                    x2 = x + Float.valueOf(operation.arguments.get(i + 2));
-                    y2 = y + Float.valueOf(operation.arguments.get(i + 3));
                     temp.add(String.valueOf(x1));
                     temp.add(String.valueOf(y1));
-                    temp.add(String.valueOf(x2));
-                    temp.add(String.valueOf(y2));
+                    x += Float.valueOf(operation.arguments.get(i + 2));
+                    y += Float.valueOf(operation.arguments.get(i + 3));
+                    temp.add(String.valueOf(x));
+                    temp.add(String.valueOf(y));
                 }
-                x = x2;
-                y = y2;
                 operation.arguments.clear();
                 operation.arguments.addAll(temp);
-*/
             }
         }
         return operations;
