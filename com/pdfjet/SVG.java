@@ -192,18 +192,22 @@ public class SVG {
     public static void main(String[] args) throws IOException {
         FileWriter writer = new FileWriter("test73.svg");
         writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100\" width=\"100\">\n");
-        writer.write("  <path d=\"M 20 20 q 0 60 60 60 0 -60 -60 -60 Z\"/>\n");
-        writer.write("</svg>\n");
+        // writer.write("  <path d=\"M 20 20 q 0 60 60 60 0 -60 -60 -60 Z\"/>\n");
+        writer.write("  <path d=\"");
         List<String> svgPaths = getSVGPaths(args[0]);
         List<PathOperation> pathOperations = getPathOperations(svgPaths);
         List<PathOperation> pdfPathOperations = getPDFPathOperations(pathOperations);
         for (PathOperation operation : pdfPathOperations) {
             System.out.print(operation.command + " ");
+            writer.write(operation.command + " ");
             for (String argument : operation.arguments) {
                 System.out.print(argument + " ");
+                writer.write(argument + " ");
             }
             // System.out.println();
         }
+        writer.write("\"/>\n");
+        writer.write("</svg>\n");
         writer.flush();
         writer.close();
     }
