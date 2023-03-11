@@ -80,9 +80,9 @@ public class SVG {
         return false;
     }
 
-    public static List<PathOperation> getPathOperations(List<String> paths) {
-        List<PathOperation> operations = new ArrayList<PathOperation>();
-        PathOperation op = null;
+    public static List<PathOp> getPathOperations(List<String> paths) {
+        List<PathOp> operations = new ArrayList<PathOp>();
+        PathOp op = null;
         for (String path : paths) {
             // Path example:
             // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
@@ -98,7 +98,7 @@ public class SVG {
                         buf.setLength(0);
                     }
                     token = false;
-                    op = new PathOperation(ch);
+                    op = new PathOp(ch);
                     operations.add(op);
                 } else if (ch == ' ') {
                     if (token) {
@@ -122,11 +122,11 @@ public class SVG {
         return operations;
     }
 
-    public static List<PathOperation> getPDFPathOperations(List<PathOperation> operations) {
+    public static List<PathOp> getPDFPathOperations(List<PathOp> operations) {
         float x = 0f;
         float y = 0f;
-        PathOperation prevOp = null;
-        for (PathOperation op : operations) {
+        PathOp prevOp = null;
+        for (PathOp op : operations) {
             if (op.cmd == 'M') {
                 x = Float.valueOf(op.args.get(0));
                 y = Float.valueOf(op.args.get(1));
@@ -221,12 +221,12 @@ public class SVG {
         writer.write("  <path d=\"");
         // writer.write("M 20 20 q 0 60 60 60 0 -60 -60 -60 Z");
         List<String> svgPaths = getSVGPaths(args[0]);
-        List<PathOperation> pathOperations = getPathOperations(svgPaths);
-        List<PathOperation> pdfPathOperations = getPDFPathOperations(pathOperations);
-        for (PathOperation operation : pdfPathOperations) {
-            System.out.print(operation.cmd + " ");
-            writer.write(operation.cmd + " ");
-            for (String argument : operation.args) {
+        List<PathOp> pathOperations = getPathOperations(svgPaths);
+        List<PathOp> pdfPathOperations = getPDFPathOperations(pathOperations);
+        for (PathOp op : pdfPathOperations) {
+            System.out.print(op.cmd + " ");
+            writer.write(op.cmd + " ");
+            for (String argument : op.args) {
                 System.out.print(argument + " ");
                 writer.write(argument + " ");
             }

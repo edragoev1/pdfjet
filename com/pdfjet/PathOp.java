@@ -26,13 +26,13 @@ package com.pdfjet;
 import java.util.*;
 
 
-class PathOperation {
+class PathOp {
     char cmd;
     List<String> args;
     float x1;   // Control point x
     float y1;   // Control point y
 
-    PathOperation(char cmd) {
+    PathOp(char cmd) {
         this.cmd = cmd;
         this.args = new ArrayList<String>();
     }
