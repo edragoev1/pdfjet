@@ -100,7 +100,7 @@ public class SVG {
                     token = false;
                     op = new PathOp(ch);
                     operations.add(op);
-                } else if (ch == ' ') {
+                } else if (ch == ' ' || ch == ',') {
                     if (token) {
                         op.args.add(buf.toString());
                         buf.setLength(0);
@@ -108,6 +108,13 @@ public class SVG {
                     token = false;
                 } else if (ch == '-') {
                     if (token) {
+                        op.args.add(buf.toString());
+                        buf.setLength(0);
+                    }
+                    token = true;
+                    buf.append(ch);
+                } else if (ch == '.') {
+                    if (buf.toString().contains(".")) {
                         op.args.add(buf.toString());
                         buf.setLength(0);
                     }
@@ -198,6 +205,14 @@ public class SVG {
                     cpy = y;
                 }
 
+/*
+                https://stackoverflow.com/questions/5287559/calculating-control-points-for-a-shorthand-smooth-svg-path-bezier-curve
+                XR, YR is just the reflection of P2 about P3 so:
+
+                XR = 2*X3 - X2 and 
+                YR = 2*Y3 - Y2
+*/
+
                 List<String> temp = new ArrayList<String>();
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x += Float.valueOf(op.args.get(i));
@@ -216,8 +231,8 @@ public class SVG {
     }
 
     public static void main(String[] args) throws IOException {
-        FileWriter writer = new FileWriter("test73.svg");
-        writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100\" width=\"100\">\n");
+        FileWriter writer = new FileWriter("test.svg");
+        writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
         writer.write("  <path d=\"");
         // writer.write("M 20 20 q 0 60 60 60 0 -60 -60 -60 Z");
         List<String> paths = getSVGPaths(args[0]);
