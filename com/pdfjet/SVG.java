@@ -117,10 +117,62 @@ public class SVG {
         return operations;
     }
 
+    public static List<PathOperation> getPDFPathOperations(List<PathOperation> operations) {
+        float x = 0f;
+        float y = 0f;
+        for (PathOperation operation : operations) {
+            if (operation.command == 'M') {
+                x = Float.valueOf(operation.arguments.get(0));
+                y = Float.valueOf(operation.arguments.get(1));
+            } else if (operation.command == 'm') {
+                operation.command = 'M';
+                x += Float.valueOf(operation.arguments.get(0));
+                y += Float.valueOf(operation.arguments.get(1));
+                operation.arguments.clear();
+                operation.arguments.add(String.valueOf(x));
+                operation.arguments.add(String.valueOf(y));
+            } else if (operation.command == 'L') {
+            } else if (operation.command == 'l') {
+                operation.command = 'L';
+                x += Float.valueOf(operation.arguments.get(0));
+                y += Float.valueOf(operation.arguments.get(1));
+                operation.arguments.clear();
+                operation.arguments.add(String.valueOf(x));
+                operation.arguments.add(String.valueOf(y));
+            } else if (operation.command == 'H') {
+                operation.command = 'L';
+                x = Float.valueOf(operation.arguments.get(0));
+                operation.arguments.clear();
+                operation.arguments.add(String.valueOf(x));
+                operation.arguments.add(String.valueOf(y));
+            } else if (operation.command == 'h') {
+                operation.command = 'L';
+                x += Float.valueOf(operation.arguments.get(0));
+                operation.arguments.clear();
+                operation.arguments.add(String.valueOf(x));
+                operation.arguments.add(String.valueOf(y));
+            } else if (operation.command == 'V') {
+                operation.command = 'L';
+                y = Float.valueOf(operation.arguments.get(0));
+                operation.arguments.clear();
+                operation.arguments.add(String.valueOf(x));
+                operation.arguments.add(String.valueOf(y));
+            } else if (operation.command == 'v') {
+                operation.command = 'L';
+                y += Float.valueOf(operation.arguments.get(0));
+                operation.arguments.clear();
+                operation.arguments.add(String.valueOf(x));
+                operation.arguments.add(String.valueOf(y));
+            }
+        }
+        return operations;
+    }
+
     public static void main(String[] args) throws IOException {
         List<String> svgPaths = getSVGPaths(args[0]);
         List<PathOperation> pathOperations = getPathOperations(svgPaths);
-        for (PathOperation operation : pathOperations) {
+        List<PathOperation> pdfPathOperations = getPDFPathOperations(pathOperations);
+        for (PathOperation operation : pdfPathOperations) {
             System.out.print(operation.command + " ");
             for (String argument : operation.arguments) {
                 System.out.print(argument + " ");
