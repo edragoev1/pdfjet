@@ -172,12 +172,6 @@ public class SVG {
                 operation.command = 'Q';
                 List<String> temp = new ArrayList<String>();
                 for (int i = 0; i <= operation.arguments.size() - 4; i += 4) {
-                    System.out.print(operation.arguments.get(i) + " ");
-                    System.out.print(operation.arguments.get(i + 1) + " ");
-                    System.out.print(operation.arguments.get(i + 2) + " ");
-                    System.out.print(operation.arguments.get(i + 3) + " ");
-                    System.out.println();
-
                     float x1 = x + Float.valueOf(operation.arguments.get(i));
                     float y1 = y + Float.valueOf(operation.arguments.get(i + 1));
                     temp.add(String.valueOf(x1));
