@@ -196,32 +196,18 @@ public class SVG {
                 pathOp = new PathOp('T', x, y);
                 operations.add(pathOp);
             } else if (op.cmd == 't') {
-/*
-                pathOp = new PathOp('Q');
-
-                float cpx = 0f;
-                float cpy = 0f;
                 if (prevOp.cmd == 'Q' || prevOp.cmd == 'q') {
-                    cpx = prevOp.x1;
-                    cpy = prevOp.y1;
+                    pathOp = new PathOp('Q', prevOp.x1, prevOp.y1);
                 } else {
-                    cpx = x;
-                    cpy = y;
+                    pathOp = new PathOp('Q');
                 }
 
+/*
                 https://stackoverflow.com/questions/5287559/calculating-control-points-for-a-shorthand-smooth-svg-path-bezier-curve
                 XR, YR is just the reflection of P2 about P3 so:
 
                 XR = 2*X3 - X2 and 
                 YR = 2*Y3 - Y2
-
-                List<String> temp = new ArrayList<String>();
-                for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    x += Float.valueOf(op.args.get(i));
-                    y += Float.valueOf(op.args.get(i + 1));
-                    temp.add(String.valueOf(x));
-                    temp.add(String.valueOf(y));
-                }
 */
 
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
