@@ -130,8 +130,8 @@ public class SVG {
     }
 
     public static List<PathOp> getPDFPathOps(List<PathOp> operations) {
-        float x0 = 0f;
-        float y0 = 0f;
+        float x0 = 0f;  // Initial point x
+        float y0 = 0f;  // Initial point y
         float x = 0f;
         float y = 0f;
         PathOp prevOp = null;
@@ -145,6 +145,8 @@ public class SVG {
                 op.cmd = 'M';
                 x += Float.valueOf(op.args.get(0));
                 y += Float.valueOf(op.args.get(1));
+                x0 = x;
+                y0 = y;
                 op.args.clear();
                 op.args.add(String.valueOf(x));
                 op.args.add(String.valueOf(y));
@@ -212,7 +214,6 @@ public class SVG {
                     cpx = x;
                     cpy = y;
                 }
-
 /*
                 https://stackoverflow.com/questions/5287559/calculating-control-points-for-a-shorthand-smooth-svg-path-bezier-curve
                 XR, YR is just the reflection of P2 about P3 so:
@@ -220,7 +221,6 @@ public class SVG {
                 XR = 2*X3 - X2 and 
                 YR = 2*Y3 - Y2
 */
-
                 List<String> temp = new ArrayList<String>();
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x += Float.valueOf(op.args.get(i));
