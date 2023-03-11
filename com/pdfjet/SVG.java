@@ -133,10 +133,9 @@ public class SVG {
         List<PathOp> operations = new ArrayList<PathOp>();
         float x0 = 0f;  // Subpath initial point x
         float y0 = 0f;  // Subpath initial point y
-        // float x1 = 0f;  // Control point x
-        // float y1 = 0f;  // Control point y
         float x = 0f;
         float y = 0f;
+        PathOp pathOp = null;
         PathOp prevOp = null;
         for (PathOp op : list) {
             if (op.cmd == 'M') {
@@ -144,36 +143,44 @@ public class SVG {
                 y = Float.valueOf(op.args.get(1));
                 x0 = x;
                 y0 = y;
-                operations.add(new PathOp('M', x, y));
+                pathOp = new PathOp('M', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'm') {
                 x += Float.valueOf(op.args.get(0));
                 y += Float.valueOf(op.args.get(1));
                 x0 = x;
                 y0 = y;
-                operations.add(new PathOp('M', x, y));
+                pathOp = new PathOp('M', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'L') {
                 x = Float.valueOf(op.args.get(0));
                 y = Float.valueOf(op.args.get(1));
-                operations.add(new PathOp('L', x, y));
+                pathOp = new PathOp('L', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'l') {
                 x += Float.valueOf(op.args.get(0));
                 y += Float.valueOf(op.args.get(1));
-                operations.add(new PathOp('L', x, y));
+                pathOp = new PathOp('L', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'H') {
                 x = Float.valueOf(op.args.get(0));
-                operations.add(new PathOp('L', x, y));
+                pathOp = new PathOp('L', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'h') {
                 x += Float.valueOf(op.args.get(0));
-                operations.add(new PathOp('L', x, y));
+                pathOp = new PathOp('L', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'V') {
                 y = Float.valueOf(op.args.get(0));
-                operations.add(new PathOp('L', x, y));
+                pathOp = new PathOp('L', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'v') {
                 y += Float.valueOf(op.args.get(0));
-                operations.add(new PathOp('L', x, y));
+                pathOp = new PathOp('L', x, y);
+                operations.add(pathOp);
             } else if (op.cmd == 'Q') {
             } else if (op.cmd == 'q') {
-                PathOp pathOp = new PathOp('Q');
+                pathOp = new PathOp('Q');
                 for (int i = 0; i <= op.args.size() - 4; i += 4) {
                     float x1 = x + Float.valueOf(op.args.get(i));
                     float y1 = y + Float.valueOf(op.args.get(i + 1));
@@ -186,9 +193,12 @@ public class SVG {
             } else if (op.cmd == 'T') {
                 x = Float.valueOf(op.args.get(0));
                 y = Float.valueOf(op.args.get(1));
-                operations.add(new PathOp('T', x, y));
-            } else if (op.cmd == 'X') { // 't'
-                op.cmd = 'Q';
+                pathOp = new PathOp('T', x, y);
+                operations.add(pathOp);
+            } else if (op.cmd == 't') {
+/*
+                pathOp = new PathOp('Q');
+
                 float cpx = 0f;
                 float cpy = 0f;
                 if (prevOp.cmd == 'Q' || prevOp.cmd == 'q') {
@@ -198,13 +208,13 @@ public class SVG {
                     cpx = x;
                     cpy = y;
                 }
-/*
+
                 https://stackoverflow.com/questions/5287559/calculating-control-points-for-a-shorthand-smooth-svg-path-bezier-curve
                 XR, YR is just the reflection of P2 about P3 so:
 
                 XR = 2*X3 - X2 and 
                 YR = 2*Y3 - Y2
-*/
+
                 List<String> temp = new ArrayList<String>();
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x += Float.valueOf(op.args.get(i));
@@ -212,13 +222,13 @@ public class SVG {
                     temp.add(String.valueOf(x));
                     temp.add(String.valueOf(y));
                 }
-                op.args.clear();
-                op.args.addAll(temp);
+*/
+
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 x = x0;
                 y = y0;
             }
-            prevOp = op;
+            prevOp = pathOp;
         }
         return operations;
     }

@@ -65,6 +65,8 @@ class PathOp {
     }
 
     void appendArgs(float x, float y) {
+        this.x = x;
+        this.y = y;
         this.args.add(String.valueOf(x));
         this.args.add(String.valueOf(y));
     }
