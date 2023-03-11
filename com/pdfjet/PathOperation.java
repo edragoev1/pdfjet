@@ -29,6 +29,8 @@ import java.util.*;
 class PathOperation {
     char cmd;
     List<String> args;
+    float x1;   // Control point x
+    float y1;   // Control point y
 
     PathOperation(char cmd) {
         this.cmd = cmd;

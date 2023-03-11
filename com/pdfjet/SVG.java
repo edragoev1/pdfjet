@@ -125,7 +125,7 @@ public class SVG {
     public static List<PathOperation> getPDFPathOperations(List<PathOperation> operations) {
         float x = 0f;
         float y = 0f;
-        PathOperation prevOperation = null;
+        PathOperation prevOp = null;
         for (PathOperation op : operations) {
             if (op.cmd == 'M') {
                 x = Float.valueOf(op.args.get(0));
@@ -174,10 +174,10 @@ public class SVG {
                 op.cmd = 'Q';
                 List<String> temp = new ArrayList<String>();
                 for (int i = 0; i <= op.args.size() - 4; i += 4) {
-                    float x1 = x + Float.valueOf(op.args.get(i));
-                    float y1 = y + Float.valueOf(op.args.get(i + 1));
-                    temp.add(String.valueOf(x1));
-                    temp.add(String.valueOf(y1));
+                    op.x1 = x + Float.valueOf(op.args.get(i));
+                    op.y1 = y + Float.valueOf(op.args.get(i + 1));
+                    temp.add(String.valueOf(op.x1));
+                    temp.add(String.valueOf(op.y1));
                     x += Float.valueOf(op.args.get(i + 2));
                     y += Float.valueOf(op.args.get(i + 3));
                     temp.add(String.valueOf(x));
@@ -188,13 +188,15 @@ public class SVG {
             } else if (op.cmd == 'T') {
             } else if (op.cmd == 'X') { // 't'
                 op.cmd = 'Q';
-                if (prevOperation.cmd == 'Q' || prevOperation.cmd == 'q') {
-
+                float cpx = 0f;
+                float cpy = 0f;
+                if (prevOp.cmd == 'Q' || prevOp.cmd == 'q') {
+                    cpx = prevOp.x1;
+                    cpy = prevOp.y1;
                 } else {
-
+                    cpx = x;
+                    cpy = y;
                 }
-                float cpx = Float.valueOf(prevOperation.args.get(0));
-                float cpy = Float.valueOf(prevOperation.args.get(1));
 
                 List<String> temp = new ArrayList<String>();
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
@@ -208,7 +210,7 @@ public class SVG {
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 // TODO:
             }
-            prevOperation = op;
+            prevOp = op;
         }
         return operations;
     }
@@ -236,3 +238,4 @@ public class SVG {
         writer.close();
     }
 }
+
