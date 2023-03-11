@@ -24,6 +24,7 @@
 package com.pdfjet;
 
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -189,6 +190,10 @@ public class SVG {
     }
 
     public static void main(String[] args) throws IOException {
+        FileWriter writer = new FileWriter("test73.svg");
+        writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100\" width=\"100\">\n");
+        writer.write("  <path d=\"M 20 20 q 0 60 60 60 0 -60 -60 -60 Z\"/>\n");
+        writer.write("</svg>\n");
         List<String> svgPaths = getSVGPaths(args[0]);
         List<PathOperation> pathOperations = getPathOperations(svgPaths);
         List<PathOperation> pdfPathOperations = getPDFPathOperations(pathOperations);
@@ -199,5 +204,7 @@ public class SVG {
             }
             // System.out.println();
         }
+        writer.flush();
+        writer.close();
     }
 }
