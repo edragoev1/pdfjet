@@ -73,6 +73,8 @@ public class SVG {
             return true;
         } else if (ch == 'A' || ch == 'a') {    // elliptical arc
             return true;
+        } else if (ch == 'Z' || ch == 'z') {    // close path
+            return true;
         }
         return false;
     }
@@ -80,37 +82,39 @@ public class SVG {
     public static List<PathOperation> getPathOperations(List<String> svgPaths) {
         List<PathOperation> operations = new ArrayList<PathOperation>();
         PathOperation operation = null;
-        for (String svgPath : svgPaths) {
+        for (String path : svgPaths) {
             // Path example:
             // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            System.out.println(svgPath);
-            StringBuilder argument = new StringBuilder();
-            for (int i = 0; i < svgPath.length(); i++) {
-                char ch = svgPath.charAt(i);
-                if (SVG.isCommand(ch)) {                // open path
-                    if (operation != null) {
-                        operation.arguments.add(argument.toString());
-                        operations.add(operation);                        
+            System.out.println(path);
+            System.out.println();
+            StringBuilder buf = new StringBuilder();
+            boolean token = false;
+            for (int i = 0; i < path.length(); i++) {
+                char ch = path.charAt(i);
+                if (isCommand(ch)) {                    // open path
+                    if (token) {
+                        operation.arguments.add(buf.toString());
+                        buf.setLength(0);
                     }
+                    token = false;
                     operation = new PathOperation(ch);
-                    argument.setLength(0);
-                } else if (ch == ' ') {
-                    operation.arguments.add(argument.toString());
-                    argument.setLength(0);
-                } else if (ch == '-') {
-                    if (!argument.toString().equals("")) {
-                        operation.arguments.add(argument.toString());
-                    }
-                    argument.setLength(0);
-                    argument.append(ch);
-                } else if (ch == 'Z' || ch == 'z') {    // close path
-                    operation.arguments.add(argument.toString());
-                    argument.setLength(0);
                     operations.add(operation);
-                    operations.add(new PathOperation(ch));
-                    operation = null;
+                } else if (ch == ' ') {
+                    if (token) {
+                        operation.arguments.add(buf.toString());
+                        buf.setLength(0);
+                    }
+                    token = false;
+                } else if (ch == '-') {
+                    if (token) {
+                        operation.arguments.add(buf.toString());
+                        buf.setLength(0);
+                    }
+                    token = true;
+                    buf.append(ch);
                 } else {
-                    argument.append(ch);
+                    token = true;
+                    buf.append(ch);
                 }
             }
         }
@@ -163,6 +167,28 @@ public class SVG {
                 operation.arguments.clear();
                 operation.arguments.add(String.valueOf(x));
                 operation.arguments.add(String.valueOf(y));
+            } else if (operation.command == 'Q') {
+            } else if (operation.command == 'q') {
+/*
+                operation.command = 'Q';
+                List<String> temp = new ArrayList<String>();
+                float x2 = 0f;
+                float y2 = 0f;
+                for (int i = 0; i <= operation.arguments.size() - 4; i++) {
+                    float x1 = x + Float.valueOf(operation.arguments.get(i));
+                    float y1 = y + Float.valueOf(operation.arguments.get(i + 1));
+                    x2 = x + Float.valueOf(operation.arguments.get(i + 2));
+                    y2 = y + Float.valueOf(operation.arguments.get(i + 3));
+                    temp.add(String.valueOf(x1));
+                    temp.add(String.valueOf(y1));
+                    temp.add(String.valueOf(x2));
+                    temp.add(String.valueOf(y2));
+                }
+                x = x2;
+                y = y2;
+                operation.arguments.clear();
+                operation.arguments.addAll(temp);
+*/
             }
         }
         return operations;
