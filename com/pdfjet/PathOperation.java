@@ -27,11 +27,11 @@ import java.util.*;
 
 
 class PathOperation {
-    char command;
-    List<String> arguments;
+    char cmd;
+    List<String> args;
 
-    PathOperation(char command) {
-        this.command = command;
-        this.arguments = new ArrayList<String>();
+    PathOperation(char cmd) {
+        this.cmd = cmd;
+        this.args = new ArrayList<String>();
     }
 }

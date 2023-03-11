@@ -80,10 +80,10 @@ public class SVG {
         return false;
     }
 
-    public static List<PathOperation> getPathOperations(List<String> svgPaths) {
+    public static List<PathOperation> getPathOperations(List<String> paths) {
         List<PathOperation> operations = new ArrayList<PathOperation>();
-        PathOperation operation = null;
-        for (String path : svgPaths) {
+        PathOperation op = null;
+        for (String path : paths) {
             // Path example:
             // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
             System.out.println(path);
@@ -94,21 +94,21 @@ public class SVG {
                 char ch = path.charAt(i);
                 if (isCommand(ch)) {                    // open path
                     if (token) {
-                        operation.arguments.add(buf.toString());
+                        op.args.add(buf.toString());
                         buf.setLength(0);
                     }
                     token = false;
-                    operation = new PathOperation(ch);
-                    operations.add(operation);
+                    op = new PathOperation(ch);
+                    operations.add(op);
                 } else if (ch == ' ') {
                     if (token) {
-                        operation.arguments.add(buf.toString());
+                        op.args.add(buf.toString());
                         buf.setLength(0);
                     }
                     token = false;
                 } else if (ch == '-') {
                     if (token) {
-                        operation.arguments.add(buf.toString());
+                        op.args.add(buf.toString());
                         buf.setLength(0);
                     }
                     token = true;
@@ -126,89 +126,89 @@ public class SVG {
         float x = 0f;
         float y = 0f;
         PathOperation prevOperation = null;
-        for (PathOperation operation : operations) {
-            if (operation.command == 'M') {
-                x = Float.valueOf(operation.arguments.get(0));
-                y = Float.valueOf(operation.arguments.get(1));
-            } else if (operation.command == 'm') {
-                operation.command = 'M';
-                x += Float.valueOf(operation.arguments.get(0));
-                y += Float.valueOf(operation.arguments.get(1));
-                operation.arguments.clear();
-                operation.arguments.add(String.valueOf(x));
-                operation.arguments.add(String.valueOf(y));
-            } else if (operation.command == 'L') {
-            } else if (operation.command == 'l') {
-                operation.command = 'L';
-                x += Float.valueOf(operation.arguments.get(0));
-                y += Float.valueOf(operation.arguments.get(1));
-                operation.arguments.clear();
-                operation.arguments.add(String.valueOf(x));
-                operation.arguments.add(String.valueOf(y));
-            } else if (operation.command == 'H') {
-                operation.command = 'L';
-                x = Float.valueOf(operation.arguments.get(0));
-                operation.arguments.clear();
-                operation.arguments.add(String.valueOf(x));
-                operation.arguments.add(String.valueOf(y));
-            } else if (operation.command == 'h') {
-                operation.command = 'L';
-                x += Float.valueOf(operation.arguments.get(0));
-                operation.arguments.clear();
-                operation.arguments.add(String.valueOf(x));
-                operation.arguments.add(String.valueOf(y));
-            } else if (operation.command == 'V') {
-                operation.command = 'L';
-                y = Float.valueOf(operation.arguments.get(0));
-                operation.arguments.clear();
-                operation.arguments.add(String.valueOf(x));
-                operation.arguments.add(String.valueOf(y));
-            } else if (operation.command == 'v') {
-                operation.command = 'L';
-                y += Float.valueOf(operation.arguments.get(0));
-                operation.arguments.clear();
-                operation.arguments.add(String.valueOf(x));
-                operation.arguments.add(String.valueOf(y));
-            } else if (operation.command == 'Q') {
-            } else if (operation.command == 'q') {
-                operation.command = 'Q';
+        for (PathOperation op : operations) {
+            if (op.cmd == 'M') {
+                x = Float.valueOf(op.args.get(0));
+                y = Float.valueOf(op.args.get(1));
+            } else if (op.cmd == 'm') {
+                op.cmd = 'M';
+                x += Float.valueOf(op.args.get(0));
+                y += Float.valueOf(op.args.get(1));
+                op.args.clear();
+                op.args.add(String.valueOf(x));
+                op.args.add(String.valueOf(y));
+            } else if (op.cmd == 'L') {
+            } else if (op.cmd == 'l') {
+                op.cmd = 'L';
+                x += Float.valueOf(op.args.get(0));
+                y += Float.valueOf(op.args.get(1));
+                op.args.clear();
+                op.args.add(String.valueOf(x));
+                op.args.add(String.valueOf(y));
+            } else if (op.cmd == 'H') {
+                op.cmd = 'L';
+                x = Float.valueOf(op.args.get(0));
+                op.args.clear();
+                op.args.add(String.valueOf(x));
+                op.args.add(String.valueOf(y));
+            } else if (op.cmd == 'h') {
+                op.cmd = 'L';
+                x += Float.valueOf(op.args.get(0));
+                op.args.clear();
+                op.args.add(String.valueOf(x));
+                op.args.add(String.valueOf(y));
+            } else if (op.cmd == 'V') {
+                op.cmd = 'L';
+                y = Float.valueOf(op.args.get(0));
+                op.args.clear();
+                op.args.add(String.valueOf(x));
+                op.args.add(String.valueOf(y));
+            } else if (op.cmd == 'v') {
+                op.cmd = 'L';
+                y += Float.valueOf(op.args.get(0));
+                op.args.clear();
+                op.args.add(String.valueOf(x));
+                op.args.add(String.valueOf(y));
+            } else if (op.cmd == 'Q') {
+            } else if (op.cmd == 'q') {
+                op.cmd = 'Q';
                 List<String> temp = new ArrayList<String>();
-                for (int i = 0; i <= operation.arguments.size() - 4; i += 4) {
-                    float x1 = x + Float.valueOf(operation.arguments.get(i));
-                    float y1 = y + Float.valueOf(operation.arguments.get(i + 1));
+                for (int i = 0; i <= op.args.size() - 4; i += 4) {
+                    float x1 = x + Float.valueOf(op.args.get(i));
+                    float y1 = y + Float.valueOf(op.args.get(i + 1));
                     temp.add(String.valueOf(x1));
                     temp.add(String.valueOf(y1));
-                    x += Float.valueOf(operation.arguments.get(i + 2));
-                    y += Float.valueOf(operation.arguments.get(i + 3));
+                    x += Float.valueOf(op.args.get(i + 2));
+                    y += Float.valueOf(op.args.get(i + 3));
                     temp.add(String.valueOf(x));
                     temp.add(String.valueOf(y));
                 }
-                operation.arguments.clear();
-                operation.arguments.addAll(temp);
-            } else if (operation.command == 'T') {
-            } else if (operation.command == 'X') { // 't'
-                operation.command = 'Q';
-                if (prevOperation.command == 'Q' || prevOperation.command == 'q') {
+                op.args.clear();
+                op.args.addAll(temp);
+            } else if (op.cmd == 'T') {
+            } else if (op.cmd == 'X') { // 't'
+                op.cmd = 'Q';
+                if (prevOperation.cmd == 'Q' || prevOperation.cmd == 'q') {
 
                 } else {
 
                 }
-                float cpx = Float.valueOf(prevOperation.arguments.get(0));
-                float cpy = Float.valueOf(prevOperation.arguments.get(1));
+                float cpx = Float.valueOf(prevOperation.args.get(0));
+                float cpy = Float.valueOf(prevOperation.args.get(1));
 
                 List<String> temp = new ArrayList<String>();
-                for (int i = 0; i <= operation.arguments.size() - 2; i += 2) {
-                    x += Float.valueOf(operation.arguments.get(i));
-                    y += Float.valueOf(operation.arguments.get(i + 1));
+                for (int i = 0; i <= op.args.size() - 2; i += 2) {
+                    x += Float.valueOf(op.args.get(i));
+                    y += Float.valueOf(op.args.get(i + 1));
                     temp.add(String.valueOf(x));
                     temp.add(String.valueOf(y));
                 }
-                operation.arguments.clear();
-                operation.arguments.addAll(temp);
-            } else if (operation.command == 'Z' || operation.command == 'z') {
+                op.args.clear();
+                op.args.addAll(temp);
+            } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 // TODO:
             }
-            prevOperation = operation;
+            prevOperation = op;
         }
         return operations;
     }
@@ -222,9 +222,9 @@ public class SVG {
         List<PathOperation> pathOperations = getPathOperations(svgPaths);
         List<PathOperation> pdfPathOperations = getPDFPathOperations(pathOperations);
         for (PathOperation operation : pdfPathOperations) {
-            System.out.print(operation.command + " ");
-            writer.write(operation.command + " ");
-            for (String argument : operation.arguments) {
+            System.out.print(operation.cmd + " ");
+            writer.write(operation.cmd + " ");
+            for (String argument : operation.args) {
                 System.out.print(argument + " ");
                 writer.write(argument + " ");
             }
