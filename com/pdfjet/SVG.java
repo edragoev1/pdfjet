@@ -227,19 +227,12 @@ public class SVG {
                 prevOp = pathOp;
             } else if (op.cmd == 'q') {
                 pathOp = new PathOp('Q');
-                // pathOp = new PathOp('C');
                 for (int i = 0; i <= op.args.size() - 4; i += 4) {
                     float x1 = x + Float.valueOf(op.args.get(i));
                     float y1 = y + Float.valueOf(op.args.get(i + 1));
                     x += Float.valueOf(op.args.get(i + 2));
                     y += Float.valueOf(op.args.get(i + 3));
                     pathOp.appendArgs(x1, y1, x, y);
-
-                    // float cp1x = prevOp.x + (2f/3f)*(x1 - prevOp.x);
-                    // float cp1y = prevOp.y + (2f/3f)*(y1 - prevOp.y);
-                    // float cp2x = x + (2f/3f)*(x1 - x);
-                    // float cp2y = y + (2f/3f)*(y1 - y);
-                    // pathOp.appendArgs(cp1x, cp1y, cp2x, cp2y, x, y);
                 }
                 operations.add(pathOp);
                 prevOp = pathOp;
