@@ -77,4 +77,17 @@ class PathOp {
         this.args.add(String.valueOf(x));
         this.args.add(String.valueOf(y));
     }
+
+    void appendArgs(float x1, float y1, float x2, float y2, float x, float y) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x = x;
+        this.y = y;
+        this.args.add(String.valueOf(x1));
+        this.args.add(String.valueOf(y1));
+        this.args.add(String.valueOf(x2));
+        this.args.add(String.valueOf(y2));
+        this.args.add(String.valueOf(x));
+        this.args.add(String.valueOf(y));
+    }
 }
