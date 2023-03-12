@@ -151,14 +151,6 @@ public class SVG {
                     }
                     operations.add(pathOp);
                 }
-/*
-                x = Float.valueOf(op.args.get(0));
-                y = Float.valueOf(op.args.get(1));
-                x0 = x;
-                y0 = y;
-                pathOp = new PathOp('M', x, y);
-                operations.add(pathOp);
-*/
             } else if (op.cmd == 'm') {
                 x += Float.valueOf(op.args.get(0));
                 y += Float.valueOf(op.args.get(1));
