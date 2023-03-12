@@ -150,6 +150,7 @@ public class SVG {
                         pathOp = new PathOp('L', x, y);
                     }
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'm') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
@@ -163,6 +164,7 @@ public class SVG {
                         pathOp = new PathOp('L', x, y);
                     }
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'L') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
@@ -170,6 +172,7 @@ public class SVG {
                     y = Float.valueOf(op.args.get(i + 1));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'l') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
@@ -177,30 +180,35 @@ public class SVG {
                     y += Float.valueOf(op.args.get(i + 1));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'H') {
                 for (int i = 0; i < op.args.size(); i++) {
                     x = Float.valueOf(op.args.get(i));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'h') {
                 for (int i = 0; i < op.args.size(); i++) {
                     x += Float.valueOf(op.args.get(i));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'V') {
                 for (int i = 0; i < op.args.size(); i++) {
                     y = Float.valueOf(op.args.get(i));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'v') {
                 for (int i = 0; i < op.args.size(); i++) {
                     y += Float.valueOf(op.args.get(i));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'Q') {
                 pathOp = new PathOp('Q');
@@ -212,6 +220,7 @@ public class SVG {
                     pathOp.appendArgs(x1, y1, x, y);
                 }
                 operations.add(pathOp);
+                prevOp = pathOp;
             } else if (op.cmd == 'q') {
                 pathOp = new PathOp('Q');
                 for (int i = 0; i <= op.args.size() - 4; i += 4) {
@@ -222,6 +231,7 @@ public class SVG {
                     pathOp.appendArgs(x1, y1, x, y);
                 }
                 operations.add(pathOp);
+                prevOp = pathOp;
             } else if (op.cmd == 'T') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x = Float.valueOf(op.args.get(i));
@@ -237,6 +247,7 @@ public class SVG {
                         pathOp = new PathOp('Q', x, y, x, y);
                     }
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 't') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
@@ -253,14 +264,15 @@ public class SVG {
                         pathOp = new PathOp('Q', x, y, x, y);
                     }
                     operations.add(pathOp);
+                    prevOp = pathOp;
                 }
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 x = x0;
                 y = y0;
                 pathOp = new PathOp('Z');
                 operations.add(pathOp);
+                prevOp = pathOp;
             }
-            prevOp = pathOp;
         }
         return operations;
     }
