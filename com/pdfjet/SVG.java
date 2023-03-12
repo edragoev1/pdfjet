@@ -226,12 +226,15 @@ public class SVG {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x = Float.valueOf(op.args.get(i));
                     y = Float.valueOf(op.args.get(i + 1));
-                    if (prevOp.cmd == 'Q') {
+                    if (prevOp.cmd == 'Q' ||
+                            prevOp.cmd == 'q' ||
+                            prevOp.cmd == 'T' ||
+                            prevOp.cmd == 't') {
                         float xr = 2*prevOp.x - prevOp.x1;
                         float yr = 2*prevOp.y - prevOp.y1;
                         pathOp = new PathOp('Q', xr, yr, x, y);
                     } else {
-                        pathOp = new PathOp('T', x, y);
+                        pathOp = new PathOp('Q', x, y, x, y);
                     }
                     operations.add(pathOp);
                 }
@@ -239,23 +242,18 @@ public class SVG {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x += Float.valueOf(op.args.get(i));
                     y += Float.valueOf(op.args.get(i + 1));
-                    if (prevOp.cmd == 'Q') {
+                    if (prevOp.cmd == 'Q' ||
+                            prevOp.cmd == 'q' ||
+                            prevOp.cmd == 'T' ||
+                            prevOp.cmd == 't') {
                         float xr = 2*prevOp.x - prevOp.x1;
                         float yr = 2*prevOp.y - prevOp.y1;
                         pathOp = new PathOp('Q', xr, yr, x, y);
                     } else {
-                        pathOp = new PathOp('T', x, y);
+                        pathOp = new PathOp('Q', x, y, x, y);
                     }
                     operations.add(pathOp);
                 }
-/*
-                https://stackoverflow.com/questions/5287559/calculating-control-points-for-a-shorthand-smooth-svg-path-bezier-curve
-                XR, YR is just the reflection of P2 about P3 so:
-
-                XR = 2*X3 - X2 and 
-                YR = 2*Y3 - Y2
-*/
-
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 x = x0;
                 y = y0;
