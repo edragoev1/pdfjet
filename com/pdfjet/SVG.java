@@ -145,8 +145,6 @@ public class SVG {
                     if (i == 0) {
                         x0 = x;
                         y0 = y;
-                    }
-                    if (i == 0) {
                         pathOp = new PathOp('M', x, y);
                     } else {
                         pathOp = new PathOp('L', x, y);
@@ -160,8 +158,6 @@ public class SVG {
                     if (i == 0) {
                         x0 = x;
                         y0 = y;
-                    }
-                    if (i == 0) {
                         pathOp = new PathOp('M', x, y);
                     } else {
                         pathOp = new PathOp('L', x, y);
