@@ -152,13 +152,6 @@ public class SVG {
                     operations.add(pathOp);
                 }
             } else if (op.cmd == 'm') {
-                // x += Float.valueOf(op.args.get(0));
-                // y += Float.valueOf(op.args.get(1));
-                // x0 = x;
-                // y0 = y;
-                // pathOp = new PathOp('M', x, y);
-                // operations.add(pathOp);
-
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x += Float.valueOf(op.args.get(i));
                     y += Float.valueOf(op.args.get(i + 1));
@@ -232,6 +225,8 @@ public class SVG {
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 x = x0;
                 y = y0;
+                pathOp = new PathOp('Z');
+                operations.add(pathOp);
             }
             prevOp = pathOp;
         }
