@@ -229,11 +229,6 @@ public class SVG {
                     pathOp = new PathOp('T', x, y);
                     operations.add(pathOp);
                 }
-
-                // x = Float.valueOf(op.args.get(0));
-                // y = Float.valueOf(op.args.get(1));
-                // pathOp = new PathOp('T', x, y);
-                // operations.add(pathOp);
             } else if (op.cmd == 't') {
                 if (prevOp.cmd == 'Q' || prevOp.cmd == 'q') {
                     pathOp = new PathOp('Q', prevOp.x1, prevOp.y1);
