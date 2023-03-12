@@ -171,11 +171,6 @@ public class SVG {
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
                 }
-
-                // x = Float.valueOf(op.args.get(0));
-                // y = Float.valueOf(op.args.get(1));
-                // pathOp = new PathOp('L', x, y);
-                // operations.add(pathOp);
             } else if (op.cmd == 'l') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     x += Float.valueOf(op.args.get(i));
