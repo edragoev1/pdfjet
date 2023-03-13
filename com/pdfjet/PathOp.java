@@ -30,6 +30,8 @@ class PathOp {
     
     float qx1;  // Original quadratic control point coordinates
     float qy1;
+    float qx;
+    float qy;
 
     float x1;   // Control point x1
     float y1;   // Control point y1

@@ -221,11 +221,11 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    // float cx1 = lastOp.x + (2f/3f)*(x1 - lastOp.x);
-                    // float cy1 = lastOp.y + (2f/3f)*(y1 - lastOp.y);
-                    float x2 = x + (2f/3f)*(x1 - x);
-                    float y2 = y + (2f/3f)*(y1 - y);
-                    pathOp.appendArgs(x1, y1, x2, y2, x, y);
+                    float cx1 = lastOp.x + (2f/3f)*(x1 - lastOp.x);
+                    float cy1 = lastOp.y + (2f/3f)*(y1 - lastOp.y);
+                    float cx2 = x + (2f/3f)*(x1 - x);
+                    float cy2 = y + (2f/3f)*(y1 - y);
+                    pathOp.appendArgs(cx1, cy1, cx2, cy2, x, y);
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }
