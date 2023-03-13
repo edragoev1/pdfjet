@@ -27,6 +27,8 @@ import java.util.*;
 
 class PathOp {
     char cmd;
+    // float x0;   // Current point x
+    // float y0;   // Current point y
     float x1;   // Control point x1
     float y1;   // Control point y1
     float x2;   // Control point x2
@@ -48,7 +50,7 @@ class PathOp {
         this.args.add(String.format("%.3f", x));
         this.args.add(String.format("%.3f", y));
     }
-/*
+
     PathOp(char cmd, float x1, float y1, float x, float y) {
         this.cmd = cmd;
         this.x1 = x1;
@@ -56,17 +58,17 @@ class PathOp {
         this.x = x;
         this.y = y;
         this.args = new ArrayList<String>();
-        this.args.add(String.valueOf(x1));
-        this.args.add(String.valueOf(y1));
-        this.args.add(String.valueOf(x));
-        this.args.add(String.valueOf(y));
+        this.args.add(String.format("%.3f", x1));
+        this.args.add(String.format("%.3f", y1));
+        this.args.add(String.format("%.3f", x));
+        this.args.add(String.format("%.3f", y));
     }
 
     void appendArgs(float x, float y) {
         this.x = x;
         this.y = y;
-        this.args.add(String.valueOf(x));
-        this.args.add(String.valueOf(y));
+        this.args.add(String.format("%.3f", x));
+        this.args.add(String.format("%.3f", y));
     }
 
     void appendArgs(float x1, float y1, float x, float y) {
@@ -74,12 +76,12 @@ class PathOp {
         this.y1 = y1;
         this.x = x;
         this.y = y;
-        this.args.add(String.valueOf(x1));
-        this.args.add(String.valueOf(y1));
-        this.args.add(String.valueOf(x));
-        this.args.add(String.valueOf(y));
+        this.args.add(String.format("%.3f", x1));
+        this.args.add(String.format("%.3f", y1));
+        this.args.add(String.format("%.3f", x));
+        this.args.add(String.format("%.3f", y));
     }
-*/
+
     void appendArgs(float x1, float y1, float x2, float y2, float x, float y) {
         this.x1 = x1;
         this.y1 = y1;
