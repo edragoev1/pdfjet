@@ -232,27 +232,9 @@ public class SVG {
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }
-            } /* else if (op.cmd == 't') {
-                for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    float x = lastOp.x + Float.valueOf(op.args.get(i));
-                    float y = lastOp.y + Float.valueOf(op.args.get(i + 1));
-                    if (lastOp.cmd == 'Q' ||
-                            lastOp.cmd == 'q' ||
-                            lastOp.cmd == 'T' ||
-                            lastOp.cmd == 't') {
-                        float xr = 2*lastOp.x - lastOp.x1;
-                        float yr = 2*lastOp.y - lastOp.y1;
-                        pathOp = new PathOp('Q', xr, yr, x, y);
-                    } else {
-                        pathOp = new PathOp('Q', x, y, x, y);
-                    }
-                    operations.add(pathOp);
-                    lastOp = pathOp;
-                }
-            } */ else if (op.cmd == 'Z' || op.cmd == 'z') {
+            } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 pathOp = new PathOp('Z');
                 operations.add(pathOp);
-                lastOp = pathOp;
             }
         }
         return operations;
