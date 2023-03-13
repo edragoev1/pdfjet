@@ -143,9 +143,10 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    pathOp = new PathOp('M', x, y);
-                    if (i > 0) {
-                        pathOp.setCommand('L');
+                    if (i == 0) {
+                        pathOp = new PathOp('M', x, y);
+                    } else {
+                        pathOp = new PathOp('L', x, y);
                     }
                     operations.add(pathOp);
                     lastOp = pathOp;
