@@ -134,7 +134,7 @@ public class SVG {
         PathOp lastOp = null;
         PathOp pathOp = null;
         for (PathOp op : list) {
-            System.out.println(op.cmd);
+            System.out.print(op.cmd + " ");
             if (op.cmd == 'M' || op.cmd == 'm') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     float x = Float.valueOf(op.args.get(i));
@@ -190,6 +190,8 @@ public class SVG {
                     float y1 = Float.valueOf(op.args.get(i + 1));
                     float x = Float.valueOf(op.args.get(i + 2));
                     float y = Float.valueOf(op.args.get(i + 3));
+                    pathOp.qx1 = x1;
+                    pathOp.qy1 = y1;
                     if (op.cmd == 'q' && lastOp != null) {
                         x1 += lastOp.x;
                         y1 += lastOp.y;
@@ -219,19 +221,20 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    float cx1 = lastOp.x + (2f/3f)*(x1 - lastOp.x);
-                    float cy1 = lastOp.y + (2f/3f)*(y1 - lastOp.y);
-                    float cx2 = x + (2f/3f)*(x1 - x);
-                    float cy2 = y + (2f/3f)*(y1 - y);
-                    pathOp.appendArgs(cx1, cy1, cx2, cy2, x, y);
+                    // float cx1 = lastOp.x + (2f/3f)*(x1 - lastOp.x);
+                    // float cy1 = lastOp.y + (2f/3f)*(y1 - lastOp.y);
+                    float x2 = x + (2f/3f)*(x1 - x);
+                    float y2 = y + (2f/3f)*(y1 - y);
+                    pathOp.appendArgs(x1, y1, x2, y2, x, y);
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
-                pathOp = new PathOp('Z');
-                operations.add(pathOp);
+                operations.add(new PathOp('Z'));
             }
         }
+        System.out.println();
+        System.out.println();
         return operations;
     }
 
