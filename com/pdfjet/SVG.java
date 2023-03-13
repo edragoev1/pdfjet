@@ -205,8 +205,8 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'T' || op.cmd == 't') {
-                pathOp = new PathOp('C');
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
+                    pathOp = new PathOp('C');
                     float x1;
                     float y1;
                     if (lastOp.cmd == 'C') {
@@ -219,8 +219,6 @@ public class SVG {
                     float x = Float.valueOf(op.args.get(i));
                     float y = Float.valueOf(op.args.get(i + 1));
                     if (op.cmd == 't' && lastOp != null) {
-                        x1 += lastOp.x;
-                        y1 += lastOp.y;
                         x += lastOp.x;
                         y += lastOp.y;
                     }
