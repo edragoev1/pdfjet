@@ -131,20 +131,14 @@ public class SVG {
 
     public static List<PathOp> getPDFPathOps(List<PathOp> list) {
         List<PathOp> operations = new ArrayList<PathOp>();
-        float x0 = 0f;  // Subpath initial point x
-        float y0 = 0f;  // Subpath initial point y
-        float x = 0f;
-        float y = 0f;
         PathOp pathOp = null;
         PathOp prevOp = null;
         for (PathOp op : list) {
             if (op.cmd == 'M') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    x = Float.valueOf(op.args.get(i));
-                    y = Float.valueOf(op.args.get(i + 1));
+                    float x = Float.valueOf(op.args.get(i));
+                    float y = Float.valueOf(op.args.get(i + 1));
                     if (i == 0) {
-                        x0 = x;
-                        y0 = y;
                         pathOp = new PathOp('M', x, y);
                     } else {
                         pathOp = new PathOp('L', x, y);
@@ -154,11 +148,13 @@ public class SVG {
                 }
             } else if (op.cmd == 'm') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    x += Float.valueOf(op.args.get(i));
-                    y += Float.valueOf(op.args.get(i + 1));
+                    float x = Float.valueOf(op.args.get(i));
+                    float y = Float.valueOf(op.args.get(i + 1));
+                    if (prevOp != null) {
+                        x += prevOp.x;
+                        y += prevOp.y;
+                    }
                     if (i == 0) {
-                        x0 = x;
-                        y0 = y;
                         pathOp = new PathOp('M', x, y);
                     } else {
                         pathOp = new PathOp('L', x, y);
@@ -168,114 +164,93 @@ public class SVG {
                 }
             } else if (op.cmd == 'L') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    x = Float.valueOf(op.args.get(i));
-                    y = Float.valueOf(op.args.get(i + 1));
+                    float x = Float.valueOf(op.args.get(i));
+                    float y = Float.valueOf(op.args.get(i + 1));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
             } else if (op.cmd == 'l') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    x += Float.valueOf(op.args.get(i));
-                    y += Float.valueOf(op.args.get(i + 1));
+                    float x = prevOp.x + Float.valueOf(op.args.get(i));
+                    float y = prevOp.y + Float.valueOf(op.args.get(i + 1));
                     pathOp = new PathOp('L', x, y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
             } else if (op.cmd == 'H') {
                 for (int i = 0; i < op.args.size(); i++) {
-                    x = Float.valueOf(op.args.get(i));
-                    pathOp = new PathOp('L', x, y);
+                    float x = Float.valueOf(op.args.get(i));
+                    pathOp = new PathOp('L', x, prevOp.y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
             } else if (op.cmd == 'h') {
                 for (int i = 0; i < op.args.size(); i++) {
-                    x += Float.valueOf(op.args.get(i));
-                    pathOp = new PathOp('L', x, y);
+                    float x = prevOp.x + Float.valueOf(op.args.get(i));
+                    pathOp = new PathOp('L', x, prevOp.y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
             } else if (op.cmd == 'V') {
                 for (int i = 0; i < op.args.size(); i++) {
-                    y = Float.valueOf(op.args.get(i));
-                    pathOp = new PathOp('L', x, y);
+                    float y = Float.valueOf(op.args.get(i));
+                    pathOp = new PathOp('L', prevOp.x, y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
             } else if (op.cmd == 'v') {
                 for (int i = 0; i < op.args.size(); i++) {
-                    y += Float.valueOf(op.args.get(i));
-                    pathOp = new PathOp('L', x, y);
+                    float y = prevOp.y + Float.valueOf(op.args.get(i));
+                    pathOp = new PathOp('L', prevOp.x, y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
-            } else if (op.cmd == 'Q') {
-                pathOp = new PathOp('C');
+            } else if (op.cmd == 'Q' || op.cmd == 'q') {
+                System.out.println(op.cmd);
                 for (int i = 0; i <= op.args.size() - 4; i += 4) {
+                    pathOp = new PathOp('C');
                     float x1 = Float.valueOf(op.args.get(i));
                     float y1 = Float.valueOf(op.args.get(i + 1));
-                    x = Float.valueOf(op.args.get(i + 2));
-                    y = Float.valueOf(op.args.get(i + 3));
-                    float cp1x = prevOp.x + (2f/3f)*(x1 - prevOp.x);
-                    float cp1y = prevOp.y + (2f/3f)*(y1 - prevOp.y);
-                    float cp2x = x + (2f/3f)*(x1 - x);
-                    float cp2y = y + (2f/3f)*(y1 - y);
-                    pathOp.appendArgs(cp1x, cp1y, cp2x, cp2y, x, y);
-                }
-                operations.add(pathOp);
-                prevOp = pathOp;
-            } else if (op.cmd == 'q') {
-                pathOp = new PathOp('Q');
-                for (int i = 0; i <= op.args.size() - 4; i += 4) {
-                    float x1 = x + Float.valueOf(op.args.get(i));
-                    float y1 = y + Float.valueOf(op.args.get(i + 1));
-                    x += Float.valueOf(op.args.get(i + 2));
-                    y += Float.valueOf(op.args.get(i + 3));
-                    pathOp.appendArgs(x1, y1, x, y);
-                }
-                operations.add(pathOp);
-                prevOp = pathOp;
-            } else if (op.cmd == 'T') {
-                for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    x = Float.valueOf(op.args.get(i));
-                    y = Float.valueOf(op.args.get(i + 1));
-                    if (prevOp.cmd == 'Q' ||
-                            prevOp.cmd == 'q' ||
-                            prevOp.cmd == 'T' ||
-                            prevOp.cmd == 't') {
-                        float xr = 2*prevOp.x - prevOp.x1;
-                        float yr = 2*prevOp.y - prevOp.y1;
-                        pathOp = new PathOp('Q', xr, yr, x, y);
-                    } else {
-                        pathOp = new PathOp('Q', x, y, x, y);
+                    float x = Float.valueOf(op.args.get(i + 2));
+                    float y = Float.valueOf(op.args.get(i + 3));
+                    if (op.cmd == 'q') {
+                        x1 += prevOp.x;
+                        y1 += prevOp.y;
+                        x += prevOp.x;
+                        y += prevOp.y;
                     }
+                    float cx1 = prevOp.x + (2f/3f)*(x1 - prevOp.x);
+                    float cy1 = prevOp.y + (2f/3f)*(y1 - prevOp.y);
+                    float cx2 = x + (2f/3f)*(x1 - x);
+                    float cy2 = y + (2f/3f)*(y1 - y);
+                    pathOp.appendArgs(cx1, cy1, cx2, cy2, x, y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
-            } else if (op.cmd == 't') {
+            } else if (op.cmd == 'T' || op.cmd == 't') {
+                System.out.println(op.cmd);
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    x += Float.valueOf(op.args.get(i));
-                    y += Float.valueOf(op.args.get(i + 1));
-                    if (prevOp.cmd == 'Q' ||
-                            prevOp.cmd == 'q' ||
-                            prevOp.cmd == 'T' ||
-                            prevOp.cmd == 't') {
-                        float xr = 2*prevOp.x - prevOp.x1;
-                        float yr = 2*prevOp.y - prevOp.y1;
-                        pathOp = new PathOp('Q', xr, yr, x, y);
-                    } else {
-                        pathOp = new PathOp('Q', x, y, x, y);
+                    pathOp = new PathOp('C');
+                    float x1 = 2f*prevOp.x - prevOp.x2;
+                    float y1 = 2f*prevOp.y - prevOp.y2;
+                    float x = Float.valueOf(op.args.get(i));
+                    float y = Float.valueOf(op.args.get(i + 1));
+                    if (op.cmd == 't') {
+                        x += prevOp.x;
+                        y += prevOp.y;
                     }
+                    float cx1 = prevOp.x + (2f/3f)*(x1 - prevOp.x);
+                    float cy1 = prevOp.y + (2f/3f)*(y1 - prevOp.y);
+                    float cx2 = x + (2f/3f)*(x1 - x);
+                    float cy2 = y + (2f/3f)*(y1 - y);
+                    pathOp.appendArgs(cx1, cy1, cx2, cy2, x, y);
                     operations.add(pathOp);
                     prevOp = pathOp;
                 }
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
-                x = x0;
-                y = y0;
                 pathOp = new PathOp('Z');
                 operations.add(pathOp);
-                prevOp = pathOp;
             }
         }
         return operations;

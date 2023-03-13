@@ -27,8 +27,10 @@ import java.util.*;
 
 class PathOp {
     char cmd;
-    float x1;   // Control point x
-    float y1;   // Control point y
+    float x1;   // Control point x1
+    float y1;   // Control point y1
+    float x2;   // Control point x2
+    float y2;   // Control point y2
     float x;    // Initial point x
     float y;    // Initial point y
     List<String> args;
@@ -81,6 +83,8 @@ class PathOp {
     void appendArgs(float x1, float y1, float x2, float y2, float x, float y) {
         this.x1 = x1;
         this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
         this.x = x;
         this.y = y;
         this.args.add(String.valueOf(x1));
