@@ -67,4 +67,8 @@ class PathOp {
         this.args.add(String.format("%.3f", x));
         this.args.add(String.format("%.3f", y));
     }
+
+    public void setCommand(char cmd) {
+        this.cmd = cmd;
+    }
 }

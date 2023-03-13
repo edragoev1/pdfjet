@@ -143,10 +143,9 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    if (i == 0) {
-                        pathOp = new PathOp('M', x, y);
-                    } else {
-                        pathOp = new PathOp('L', x, y);
+                    pathOp = new PathOp('M', x, y);
+                    if (i > 0) {
+                        pathOp.setCommand('L');
                     }
                     operations.add(pathOp);
                     lastOp = pathOp;
@@ -168,7 +167,7 @@ public class SVG {
                     float x = Float.valueOf(op.args.get(i));
                     if (op.cmd == 'h' && lastOp != null) {
                         x += lastOp.x;
-                     }
+                    }
                     pathOp = new PathOp('L', x, lastOp.y);
                     operations.add(pathOp);
                     lastOp = pathOp;
@@ -178,7 +177,7 @@ public class SVG {
                     float y = Float.valueOf(op.args.get(i));
                     if (op.cmd == 'v' && lastOp != null) {
                         y += lastOp.y;
-                     }
+                    }
                     pathOp = new PathOp('L', lastOp.x, y);
                     operations.add(pathOp);
                     lastOp = pathOp;
