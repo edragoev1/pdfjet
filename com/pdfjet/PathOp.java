@@ -28,7 +28,7 @@ import java.util.*;
 class PathOp {
     char cmd;
     
-    float x1q;  // Original quadratic control point coordinates
+    float x1q;  // Original quadratic point coordinates
     float y1q;
     float xq;
     float yq;
