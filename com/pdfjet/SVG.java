@@ -216,8 +216,8 @@ public class SVG {
                     float x1 = lastOp.x;
                     float y1 = lastOp.y;
                     if (lastOp.cmd == 'C') {
-                        x1 = 2*lastOp.x - lastOp.x1q;
-                        y1 = 2*lastOp.y - lastOp.y1q;
+                        x1 = 2*lastOp.xq - lastOp.x1q;
+                        y1 = 2*lastOp.yq - lastOp.y1q;
                     }
                     float x = Float.valueOf(op.args.get(i));
                     float y = Float.valueOf(op.args.get(i + 1));
