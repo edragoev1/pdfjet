@@ -196,11 +196,10 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-
-                    // Preserve the original control point
+                    // Save the original control point
                     pathOp.x1q = x1;
                     pathOp.y1q = y1;
-
+                    // Calculate the coordinates of the cubic control points
                     float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
                     float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
                     float x2c = x + (2f/3f)*(x1 - x);
@@ -225,6 +224,7 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
+                    // Calculate the coordinates of the cubic control points
                     float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
                     float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
                     float x2c = x + (2f/3f)*(x1 - x);
