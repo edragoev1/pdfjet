@@ -190,7 +190,7 @@ public class SVG {
                     float y1 = Float.valueOf(op.args.get(i + 1));
                     float x = Float.valueOf(op.args.get(i + 2));
                     float y = Float.valueOf(op.args.get(i + 3));
-                    if (op.cmd == 'q' && lastOp != null) {
+                    if (op.cmd == 'q') {
                         x1 += lastOp.x;
                         y1 += lastOp.y;
                         x += lastOp.x;
@@ -221,7 +221,7 @@ public class SVG {
                     }
                     float x = Float.valueOf(op.args.get(i));
                     float y = Float.valueOf(op.args.get(i + 1));
-                    if (op.cmd == 't' && lastOp != null) {
+                    if (op.cmd == 't') {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
