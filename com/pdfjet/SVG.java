@@ -190,19 +190,23 @@ public class SVG {
                     float y1 = Float.valueOf(op.args.get(i + 1));
                     float x = Float.valueOf(op.args.get(i + 2));
                     float y = Float.valueOf(op.args.get(i + 3));
-                    pathOp.qx1 = x1;
-                    pathOp.qy1 = y1;
                     if (op.cmd == 'q' && lastOp != null) {
                         x1 += lastOp.x;
                         y1 += lastOp.y;
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    float cx1 = lastOp.x + (2f/3f)*(x1 - lastOp.x);
-                    float cy1 = lastOp.y + (2f/3f)*(y1 - lastOp.y);
-                    float cx2 = x + (2f/3f)*(x1 - x);
-                    float cy2 = y + (2f/3f)*(y1 - y);
-                    pathOp.addCubicPoint(cx1, cy1, cx2, cy2, x, y);
+                    // Preserve the original quadratic points
+                    pathOp.x1q = x1;
+                    pathOp.y1q = y1;
+                    pathOp.xq = x;
+                    pathOp.yq = y;
+
+                    float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
+                    float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
+                    float x2c = x + (2f/3f)*(x1 - x);
+                    float y2c = y + (2f/3f)*(y1 - y);
+                    pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }
@@ -212,8 +216,8 @@ public class SVG {
                     float x1 = lastOp.x;
                     float y1 = lastOp.y;
                     if (lastOp.cmd == 'C') {
-                        x1 = 2*lastOp.x - lastOp.x2;
-                        y1 = 2*lastOp.y - lastOp.y2;
+                        x1 = 2*lastOp.x - lastOp.x1q;
+                        y1 = 2*lastOp.y - lastOp.y1q;
                     }
                     float x = Float.valueOf(op.args.get(i));
                     float y = Float.valueOf(op.args.get(i + 1));
@@ -221,11 +225,11 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    float cx1 = lastOp.x + (2f/3f)*(x1 - lastOp.x);
-                    float cy1 = lastOp.y + (2f/3f)*(y1 - lastOp.y);
-                    float cx2 = x + (2f/3f)*(x1 - x);
-                    float cy2 = y + (2f/3f)*(y1 - y);
-                    pathOp.addCubicPoint(cx1, cy1, cx2, cy2, x, y);
+                    float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
+                    float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
+                    float x2c = x + (2f/3f)*(x1 - x);
+                    float y2c = y + (2f/3f)*(y1 - y);
+                    pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }

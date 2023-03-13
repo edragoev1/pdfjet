@@ -28,10 +28,10 @@ import java.util.*;
 class PathOp {
     char cmd;
     
-    float qx1;  // Original quadratic control point coordinates
-    float qy1;
-    float qx;
-    float qy;
+    float x1q;  // Original quadratic control point coordinates
+    float y1q;
+    float xq;
+    float yq;
 
     float x1;   // Control point x1
     float y1;   // Control point y1
@@ -68,7 +68,7 @@ class PathOp {
         this.args.add(String.format("%.3f", y));
     }
 
-    void addCubicPoint(float x1, float y1, float x2, float y2, float x, float y) {
+    void addCubicPoints(float x1, float y1, float x2, float y2, float x, float y) {
         this.x1 = x1;
         this.y1 = y1;
         this.x2 = x2;
