@@ -197,11 +197,9 @@ public class SVG {
                         y += lastOp.y;
                     }
 
-                    // Preserve the original quadratic points
+                    // Preserve the original control point
                     pathOp.x1q = x1;
                     pathOp.y1q = y1;
-                    pathOp.xq = x;
-                    pathOp.yq = y;
 
                     float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
                     float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
@@ -217,9 +215,9 @@ public class SVG {
                     float x1 = lastOp.x;
                     float y1 = lastOp.y;
                     if (lastOp.cmd == 'C') {
-                        // Find the control point reflection point
-                        x1 = 2*lastOp.xq - lastOp.x1q;
-                        y1 = 2*lastOp.yq - lastOp.y1q;
+                        // Find the reflection control point
+                        x1 = 2*lastOp.x - lastOp.x1q;
+                        y1 = 2*lastOp.y - lastOp.y1q;
                     }
                     float x = Float.valueOf(op.args.get(i));
                     float y = Float.valueOf(op.args.get(i + 1));
