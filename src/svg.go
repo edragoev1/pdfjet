@@ -27,6 +27,7 @@ SOFTWARE.
 import (
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -130,120 +131,162 @@ func (pathOp *PathOp) getSVGPathOps(paths []string) []PathOp {
 	return operations
 }
 
-/*
-public static List<PathOp> getPDFPathOps(List<PathOp> list) {
-	List<PathOp> operations = new ArrayList<PathOp>();
-	PathOp lastOp = null;
-	PathOp pathOp = null;
-	for (PathOp op : list) {
-		System.out.print(op.cmd + " ");
-		if (op.cmd == 'M' || op.cmd == 'm') {
-			for (int i = 0; i <= op.args.size() - 2; i += 2) {
-				float x = Float.valueOf(op.args.get(i));
-				float y = Float.valueOf(op.args.get(i + 1));
-				if (lastOp != null) {
-					System.out.println("Hello" + lastOp.cmd);
+func getPDFPathOps(list []PathOp) []PathOp {
+	operations := []PathOp{}
+	var lastOp *PathOp
+	var pathOp *PathOp
+	for _, op := range list {
+		// System.out.print(op.cmd + " ");
+		if op.cmd == 'M' || op.cmd == 'm' {
+			for i := 0; i <= len(op.args)-2; i += 2 {
+				x, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+
 				}
-				if (op.cmd == 'm' && lastOp != null) {
-					x += lastOp.x;
-					y += lastOp.y;
+				if op.cmd == 'l' && lastOp != nil {
+					x += float64(lastOp.x)
 				}
-				if (i == 0) {
-					pathOp = new PathOp('M', x, y);
+				y, err := strconv.ParseFloat(op.args[i+1], 32)
+				if err != nil {
+
+				}
+				if op.cmd == 'm' && lastOp != nil {
+					x += float64(lastOp.x)
+					y += float64(lastOp.y)
+				}
+				if i == 0 {
+					pathOp = NewPathOpXY('M', float32(x), float32(y))
 				} else {
-					pathOp = new PathOp('L', x, y);
+					pathOp = NewPathOpXY('L', float32(x), float32(y))
 				}
-				operations.add(pathOp);
-				lastOp = pathOp;
+				operations = append(operations, *pathOp)
+				lastOp = pathOp
 			}
-		} else if (op.cmd == 'L' || op.cmd == 'l') {
-			for (int i = 0; i <= op.args.size() - 2; i += 2) {
-				float x = Float.valueOf(op.args.get(i));
-				float y = Float.valueOf(op.args.get(i + 1));
-				if (op.cmd == 'l' && lastOp != null) {
-					x += lastOp.x;
-					y += lastOp.y;
+		} else if op.cmd == 'L' || op.cmd == 'l' {
+			for i := 0; i <= len(op.args)-2; i += 2 {
+				x, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+
 				}
-				pathOp = new PathOp('L', x, y);
-				operations.add(pathOp);
-				lastOp = pathOp;
-			}
-		} else if (op.cmd == 'H' || op.cmd == 'h') {
-			for (int i = 0; i < op.args.size(); i++) {
-				float x = Float.valueOf(op.args.get(i));
-				if (op.cmd == 'h' && lastOp != null) {
-					x += lastOp.x;
+				if op.cmd == 'l' && lastOp != nil {
+					x += float64(lastOp.x)
 				}
-				pathOp = new PathOp('L', x, lastOp.y);
-				operations.add(pathOp);
-				lastOp = pathOp;
-			}
-		} else if (op.cmd == 'V' || op.cmd == 'v') {
-			for (int i = 0; i < op.args.size(); i++) {
-				float y = Float.valueOf(op.args.get(i));
-				if (op.cmd == 'v' && lastOp != null) {
-					y += lastOp.y;
+				y, err := strconv.ParseFloat(op.args[i+1], 32)
+				if err != nil {
+
 				}
-				pathOp = new PathOp('L', lastOp.x, y);
-				operations.add(pathOp);
-				lastOp = pathOp;
+				if op.cmd == 'l' && lastOp != nil {
+					y += float64(lastOp.y)
+				}
+				if op.cmd == 'l' && lastOp != nil {
+					x += float64(lastOp.x)
+					y += float64(lastOp.y)
+				}
+				pathOp = NewPathOpXY('L', float32(x), float32(y))
+				operations = append(operations, *pathOp)
+				lastOp = pathOp
 			}
-		} else if (op.cmd == 'Q' || op.cmd == 'q') {
-			for (int i = 0; i <= op.args.size() - 4; i += 4) {
-				pathOp = new PathOp('C');
-				float x1 = Float.valueOf(op.args.get(i));
-				float y1 = Float.valueOf(op.args.get(i + 1));
-				float x = Float.valueOf(op.args.get(i + 2));
-				float y = Float.valueOf(op.args.get(i + 3));
-				if (op.cmd == 'q') {
-					x1 += lastOp.x;
-					y1 += lastOp.y;
-					x += lastOp.x;
-					y += lastOp.y;
+		} else if op.cmd == 'H' || op.cmd == 'h' {
+			for i := 0; i < len(op.args); i++ {
+				x, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+
+				}
+				if op.cmd == 'h' && lastOp != nil {
+					x += float64(lastOp.x)
+				}
+				pathOp = NewPathOpXY('L', float32(x), lastOp.y)
+				operations = append(operations, *pathOp)
+				lastOp = pathOp
+			}
+		} else if op.cmd == 'V' || op.cmd == 'v' {
+			for i := 0; i < len(op.args); i++ {
+				y, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+
+				}
+				if op.cmd == 'v' && lastOp != nil {
+					y += float64(lastOp.y)
+				}
+				pathOp = NewPathOpXY('L', lastOp.x, float32(y))
+				operations = append(operations, *pathOp)
+				lastOp = pathOp
+			}
+		} else if op.cmd == 'Q' || op.cmd == 'q' {
+			for i := 0; i <= len(op.args)-4; i += 4 {
+				pathOp := NewPathOp('C')
+				x1, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+
+				}
+				y1, err := strconv.ParseFloat(op.args[i+1], 32)
+				if err != nil {
+
+				}
+				x, err := strconv.ParseFloat(op.args[i+2], 32)
+				if err != nil {
+
+				}
+				y, err := strconv.ParseFloat(op.args[i+3], 32)
+				if err != nil {
+
+				}
+
+				if op.cmd == 'q' {
+					x1 += float64(lastOp.x)
+					y1 += float64(lastOp.y)
+					x += float64(lastOp.x)
+					y += float64(lastOp.y)
 				}
 				// Save the original control point
-				pathOp.x1q = x1;
-				pathOp.y1q = y1;
+				pathOp.x1q = float32(x1)
+				pathOp.y1q = float32(y1)
 				// Calculate the coordinates of the cubic control points
-				float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
-				float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
-				float x2c = x + (2f/3f)*(x1 - x);
-				float y2c = y + (2f/3f)*(y1 - y);
-				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
-				operations.add(pathOp);
-				lastOp = pathOp;
+				x1c := lastOp.x + (2.0/3.0)*(float32(x1)-lastOp.x)
+				y1c := lastOp.y + (2.0/3.0)*(float32(y1)-lastOp.y)
+				x2c := float32(x) + (2.0/3.0)*(float32(x1)-float32(x))
+				y2c := float32(y) + (2.0/3.0)*(float32(y1)-float32(y))
+				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
+				operations = append(operations, *pathOp)
+				lastOp = pathOp
 			}
-		} else if (op.cmd == 'T' || op.cmd == 't') {
-			for (int i = 0; i <= op.args.size() - 2; i += 2) {
-				pathOp = new PathOp('C');
-				float x1 = lastOp.x;
-				float y1 = lastOp.y;
-				if (lastOp.cmd == 'C') {
+		} else if op.cmd == 'T' || op.cmd == 't' {
+			for i := 0; i <= len(op.args)-2; i += 2 {
+				pathOp = NewPathOp('C')
+				x1 := lastOp.x
+				y1 := lastOp.y
+				if lastOp.cmd == 'C' {
 					// Find the reflection control point
-					x1 = 2*lastOp.x - lastOp.x1q;
-					y1 = 2*lastOp.y - lastOp.y1q;
+					x1 = 2*lastOp.x - lastOp.x1q
+					y1 = 2*lastOp.y - lastOp.y1q
 				}
-				float x = Float.valueOf(op.args.get(i));
-				float y = Float.valueOf(op.args.get(i + 1));
-				if (op.cmd == 't') {
-					x += lastOp.x;
-					y += lastOp.y;
+				x, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+
+				}
+				y, err := strconv.ParseFloat(op.args[i+1], 32)
+				if err != nil {
+
+				}
+				if op.cmd == 't' {
+					x = x + float64(lastOp.x)
+					y = y + float64(lastOp.y)
 				}
 				// Calculate the coordinates of the cubic control points
-				float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
-				float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
-				float x2c = x + (2f/3f)*(x1 - x);
-				float y2c = y + (2f/3f)*(y1 - y);
-				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
-				operations.add(pathOp);
-				lastOp = pathOp;
+				x1c := lastOp.x + (2.0/3.0)*(x1-lastOp.x)
+				y1c := lastOp.y + (2.0/3.0)*(y1-lastOp.y)
+				x2c := float32(x) + (2.0/3.0)*(x1-float32(x))
+				y2c := float32(y) + (2.0/3.0)*(y1-float32(y))
+				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
+				operations = append(operations, *pathOp)
+				lastOp = pathOp
 			}
-		} else if (op.cmd == 'Z' || op.cmd == 'z') {
-			operations.add(new PathOp('Z'));
+		} else if op.cmd == 'Z' || op.cmd == 'z' {
+			pathOp = NewPathOp('Z')
+			operations = append(operations, *NewPathOp('Z'))
 		}
 	}
-	System.out.println();
-	System.out.println();
-	return operations;
+	// System.out.println()
+	// System.out.println()
+	return operations
 }
-*/
