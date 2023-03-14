@@ -139,6 +139,9 @@ public class SVG {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     float x = Float.valueOf(op.args.get(i));
                     float y = Float.valueOf(op.args.get(i + 1));
+                    if (lastOp != null) {
+                        System.out.println("Hello" + lastOp.cmd);
+                    }
                     if (op.cmd == 'm' && lastOp != null) {
                         x += lastOp.x;
                         y += lastOp.y;
