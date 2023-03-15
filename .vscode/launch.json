@@ -1,0 +1,921 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/bin/Debug/netcoreapp6.0/PDFjet.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_50",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_50",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_50"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_50",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_50",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_50"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_49",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_49",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_49"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_49",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_49",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_49"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_48",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_48",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_48"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_48",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_48",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_48"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_47",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_47",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_47"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_47",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_47",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_47"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_46",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_46",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_46"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_46",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_46",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_46"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_45",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_45",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_45"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_45",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_45",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_45"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_44",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_44",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_44"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_44",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_44",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_44"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_43",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_43",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_43"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_43",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_43",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_43"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_42",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_42",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_42"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_42",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_42",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_42"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_41",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_41",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_41"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_41",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_41",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_41"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_40",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_40",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_40"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_40",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_40",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_40"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_39",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_39",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_39"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_39",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_39",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_39"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_38",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_38",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_38"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_38",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_38",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_38"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_37",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_37",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_37"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_37",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_37",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_37"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_36",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_36",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_36"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_36",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_36",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_36"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_35",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_35",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_35"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_35",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_35",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_35"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_34",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_34",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_34"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_34",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_34",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_34"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_33",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_33",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_33"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_33",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_33",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_33"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_32",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_32",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_32"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_32",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_32",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_32"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_31",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_31",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_31"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_31",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_31",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_31"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_30",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_30",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_30"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_30",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_30",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_30"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_29",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_29",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_29"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_29",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_29",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_29"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_28",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_28",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_28"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_28",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_28",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_28"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_27",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_27",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_27"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_27",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_27",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_27"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_26",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_26",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_26"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_26",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_26",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_26"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_25",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_25",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_25"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_25",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_25",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_25"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_24",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_24",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_24"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_24",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_24",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_24"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_23",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_23",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_23"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_23",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_23",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_23"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_22",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_22",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_22"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_22",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_22",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_22"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_21",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_21",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_21"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_21",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_21",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_21"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_20",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_20",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_20"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_20",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_20",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_20"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_19",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_19",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_19"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_19",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_19",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_19"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_18",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_18",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_18"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_18",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_18",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_18"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_17",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_17",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_17"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_17",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_17",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_17"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_16",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_16",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_16"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_16",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_16",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_16"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_15",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_15",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_15"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_15",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_15",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_15"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_14",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_14",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_14"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_14",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_14",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_14"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_13",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_13",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_13"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_13",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_13",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_13"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_12",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_12",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_12"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_12",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_12",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_12"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_11",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_11",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_11"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_11",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_11",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_11"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_10",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_10",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_10"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_10",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_10",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_10"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_09",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_09",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_09"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_09",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_09",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_09"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_08",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_08",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_08"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_08",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_08",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_08"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_07",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_07",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_07"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_07",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_07",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_07"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_06",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_06",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_06"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_06",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_06",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_06"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_05",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_05",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_05"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_05",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_05",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_05"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_04",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_04",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_04"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_04",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_04",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_04"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_03",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_03",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_03"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_03",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_03",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_03"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_02",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_02",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_02"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_02",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_02",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_02"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Example_01",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_01",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_01"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Example_01",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_01",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_01"
+        }
+    ]
+}
