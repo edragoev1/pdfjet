@@ -1,5 +1,6 @@
 com/pdfjet/*.class
 build/*
+*.jar
 *.exe
 *.pdf
 examples/*
