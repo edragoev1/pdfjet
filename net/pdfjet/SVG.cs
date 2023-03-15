@@ -234,6 +234,32 @@ public class SVG {
                     operations.Add(pathOp);
                     lastOp = pathOp;
                 }
+            } else if (op.cmd == 'C' || op.cmd == 'c') {
+                for (int i = 0; i <= op.args.Count - 2; i += 6) {
+                    pathOp = new PathOp('C');
+                    float x1 = float.Parse(op.args[i]);
+                    float y1 = float.Parse(op.args[i + 1]);
+                    float x2 = float.Parse(op.args[i + 2]);
+                    float y2 = float.Parse(op.args[i + 3]);
+                    float x = float.Parse(op.args[i + 4]);
+                    float y = float.Parse(op.args[i + 5]);
+                    if (op.cmd == 'c') {
+                        x1 += lastOp.x;
+                        y1 += lastOp.y;
+                        x2 += lastOp.x;
+                        y2 += lastOp.y;
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
+                    pathOp.addCubicPoints(x1, y1, x2, y2, x, y);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+            } else if (op.cmd == 'S' || op.cmd == 's') {
+                // Smooth Cubic Curve
+            } else if (op.cmd == 'A' || op.cmd == 'a') {
+                // Elliptical Arc
+
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 pathOp = new PathOp('Z');
                 pathOp.x = x0;
