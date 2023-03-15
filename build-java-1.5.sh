@@ -1,6 +1,4 @@
-rm -rf out
-mkdir out
-mkdir out/production
+rm out/production/com/pdfjet/*.class
 
 /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint com/pdfjet/*.java -d out/production
 /opt/jdk1.5.0_22/bin/jar cf PDFjet.jar -C out/production .
