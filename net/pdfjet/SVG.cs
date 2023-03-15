@@ -78,7 +78,7 @@ public class SVG {
         return false;
     }
 
-    public static List<PathOp> getSVGPathOps(List<String> paths) {
+    public static List<PathOp> GetSVGPathOps(List<String> paths) {
         List<PathOp> operations = new List<PathOp>();
         PathOp op = null;
         foreach (String path in paths) {
@@ -127,10 +127,12 @@ public class SVG {
         return operations;
     }
 
-    public static List<PathOp> getPDFPathOps(List<PathOp> list) {
+    public static List<PathOp> GetPDFPathOps(List<PathOp> list) {
         List<PathOp> operations = new List<PathOp>();
         PathOp lastOp = null;
         PathOp pathOp = null;
+        float x0 = 0f;  // Start of subpath
+        float y0 = 0f;
         foreach (PathOp op in list) {
             Console.WriteLine(op.cmd + " ");
             if (op.cmd == 'M' || op.cmd == 'm') {
@@ -142,6 +144,8 @@ public class SVG {
                         y += lastOp.y;
                     }
                     if (i == 0) {
+                        x0 = x;
+                        y0 = y;
                         pathOp = new PathOp('M', x, y);
                     } else {
                         pathOp = new PathOp('L', x, y);
@@ -232,7 +236,11 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
-                operations.Add(new PathOp('Z'));
+                pathOp = new PathOp('Z');
+                pathOp.x = x0;
+                pathOp.y = y0;
+                operations.Add(pathOp);
+                lastOp = pathOp;
             }
         }
         Console.WriteLine();
@@ -245,8 +253,8 @@ public class SVG {
         writer.WriteLine("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
         writer.WriteLine("  <path d=\"");
         List<String> paths = GetSVGPaths(args[0]);
-        List<PathOp> svgPathOps = getSVGPathOps(paths);
-        List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
+        List<PathOp> svgPathOps = GetSVGPathOps(paths);
+        List<PathOp> pdfPathOps = GetPDFPathOps(svgPathOps);
         foreach (PathOp op in pdfPathOps) {
             Console.WriteLine(op.cmd + " ");
             writer.WriteLine(op.cmd + " ");
