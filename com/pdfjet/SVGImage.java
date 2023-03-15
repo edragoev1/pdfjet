@@ -24,48 +24,64 @@ SOFTWARE.
 package com.pdfjet;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
- * Used to embed PNG images in the PDF document.
- * <p>
- * <strong>Please note:</strong>
- * <p>
- *     Interlaced images are not supported.
- * <p>
- *     To convert interlaced image to non-interlaced image use OptiPNG:
- * <p>
- *     optipng -i0 -o7 myimage.png
+ * Used to embed SVG images in the PDF document.
  */
 public class SVGImage {
-
     int w = 48;                      // Image width in pixels
     int h = 48;                      // Image height in pixels
+    List<PathOp> pdfPathOps = null;
 
     /**
-     * Used to embed PNG images in the PDF document.
+     * Used to embed SVG images in the PDF document.
      *
-     * @param inputStream the inputStream.
-     * @throws Exception  If an input or output exception occurred.
+     * @param stream the input stream.
+     * @throws Exception  if exception occurred.
      */
-    public SVGImage(InputStream inputStream) throws Exception {
+    public SVGImage(InputStream stream) throws Exception {
+        List<String> paths = new ArrayList<String>();
+        StringBuilder buf = new StringBuilder();
+        boolean inPath = false;
+        int ch;
+        while ((ch = stream.read()) != -1) {
+            if (!inPath && buf.toString().endsWith("<path d=")) {
+                inPath = true;
+                buf.setLength(0);
+            } else if (inPath && ch == '\"') {
+                inPath = false;
+                paths.add(buf.toString());
+                buf.setLength(0);
+            } else {
+                buf.append((char) ch);
+            }
+        }
+        stream.close();
+        List<PathOp> svgPathOps = SVG.getSVGPathOps(paths);
+        pdfPathOps = SVG.getPDFPathOps(svgPathOps);
     }
 
+    public List<PathOp> getPDFPathOps() {
+        return pdfPathOps;
+    }
+
+    public void setWidth(int w) {
+        this.w = w;
+    }
+
+    public void setHeight(int h) {
+        this.h = h;
+    }
 
     public int getWidth() {
         return this.w;
     }
 
-
     public int getHeight() {
         return this.h;
     }
-
-/*
-    public static void main(String[] args) throws Exception {
-        FileInputStream fis = new FileInputStream(args[0]);
-        fis.close();
-    }
-*/
 
 }   // End of SVGImage.java
