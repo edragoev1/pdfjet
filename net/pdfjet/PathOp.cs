@@ -25,26 +25,26 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-class PathOp {
-    char cmd;
+public class PathOp {
+    public char cmd;
     
-    float x1q;  // Original quadratic control
-    float y1q;  // point coordinates
+    public float x1q;   // Original quadratic control
+    public float y1q;   // point coordinates
 
-    float x1;   // Control point x1
-    float y1;   // Control point y1
-    float x2;   // Control point x2
-    float y2;   // Control point y2
-    float x;    // Initial point x
-    float y;    // Initial point y
-    List<String> args;
+    public float x1;    // Control point x1
+    public float y1;    // Control point y1
+    public float x2;    // Control point x2
+    public float y2;    // Control point y2
+    public float x;     // Initial point x
+    public float y;     // Initial point y
+    public List<String> args;
 
-    PathOp(char cmd) {
+    public PathOp(char cmd) {
         this.cmd = cmd;
         this.args = new List<String>();
     }
 
-    PathOp(char cmd, float x, float y) {
+    public PathOp(char cmd, float x, float y) {
         this.cmd = cmd;
         this.x = x;
         this.y = y;
@@ -53,7 +53,7 @@ class PathOp {
         this.args.Add(y.ToString(".###", PDF.culture_en_us));
     }
 
-    void addCubicPoints(
+    public void addCubicPoints(
             float x1, float y1,
             float x2, float y2,
             float x, float y) {

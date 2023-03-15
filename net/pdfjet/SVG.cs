@@ -1,4 +1,3 @@
-
 /**
  *  SVG.cs
  *
@@ -50,6 +49,220 @@ public class SVG {
         }
         return paths;
     }
-  
+
+    private static bool isCommand(char ch) {
+        // Please note:
+        // Capital letter commands use absolute coordinates
+        // Small letter commands use relative coordinates
+        if (ch == 'M' || ch == 'm') {           // moveto
+            return true;
+        } else if (ch == 'L' || ch == 'l') {    // lineto
+            return true;
+        } else if (ch == 'H' || ch == 'h') {    // horizontal lineto
+            return true;
+        } else if (ch == 'V' || ch == 'v') {    // vertical lineto
+            return true;
+        } else if (ch == 'C' || ch == 'c') {    // cubic curveto
+            return true;
+        } else if (ch == 'S' || ch == 's') {    // smooth cubic curveto
+            return true;
+        } else if (ch == 'Q' || ch == 'q') {    // quadratic curveto
+            return true;
+        } else if (ch == 'T' || ch == 't') {    // smooth quadratic curveto
+            return true;
+        } else if (ch == 'A' || ch == 'a') {    // elliptical arc
+            return true;
+        } else if (ch == 'Z' || ch == 'z') {    // close path
+            return true;
+        }
+        return false;
+    }
+
+    public static List<PathOp> getSVGPathOps(List<String> paths) {
+        List<PathOp> operations = new List<PathOp>();
+        PathOp op = null;
+        foreach (String path in paths) {
+            // Path example:
+            // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
+            // System.out.println(path);
+            // System.out.println();
+            StringBuilder buf = new StringBuilder();
+            bool token = false;
+            for (int i = 0; i < path.Length; i++) {
+                char ch = path[i];
+                if (isCommand(ch)) {                    // open path
+                    if (token) {
+                        op.args.Add(buf.ToString());
+                        buf.Length = 0;
+                    }
+                    token = false;
+                    op = new PathOp(ch);
+                    operations.Add(op);
+                } else if (ch == ' ' || ch == ',') {
+                    if (token) {
+                        op.args.Add(buf.ToString());
+                        buf.Length = 0;
+                    }
+                    token = false;
+                } else if (ch == '-') {
+                    if (token) {
+                        op.args.Add(buf.ToString());
+                        buf.Length = 0;
+                    }
+                    token = true;
+                    buf.Append(ch);
+                } else if (ch == '.') {
+                    if (buf.ToString().Contains(".")) {
+                        op.args.Add(buf.ToString());
+                        buf.Length = 0;
+                    }
+                    token = true;
+                    buf.Append(ch);
+                } else {
+                    token = true;
+                    buf.Append(ch);
+                }
+            }
+        }
+        return operations;
+    }
+
+    public static List<PathOp> getPDFPathOps(List<PathOp> list) {
+        List<PathOp> operations = new List<PathOp>();
+        PathOp lastOp = null;
+        PathOp pathOp = null;
+        foreach (PathOp op in list) {
+            // System.out.print(op.cmd + " ");
+            if (op.cmd == 'M' || op.cmd == 'm') {
+                for (int i = 0; i <= op.args.Count - 2; i += 2) {
+                    float x = float.Parse(op.args[i]);
+                    float y = float.Parse(op.args[i + 1]);
+                    if (op.cmd == 'm' && lastOp != null) {
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
+                    if (i == 0) {
+                        pathOp = new PathOp('M', x, y);
+                    } else {
+                        pathOp = new PathOp('L', x, y);
+                    }
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+            } else if (op.cmd == 'L' || op.cmd == 'l') {
+                for (int i = 0; i <= op.args.Count - 2; i += 2) {
+                    float x = float.Parse(op.args[i]);
+                    float y = float.Parse(op.args[ + 1]);
+                    if (op.cmd == 'l' && lastOp != null) {
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
+                    pathOp = new PathOp('L', x, y);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+            } else if (op.cmd == 'H' || op.cmd == 'h') {
+                for (int i = 0; i < op.args.Count; i++) {
+                    float x = float.Parse(op.args[i]);
+                    if (op.cmd == 'h' && lastOp != null) {
+                        x += lastOp.x;
+                    }
+                    pathOp = new PathOp('L', x, lastOp.y);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+            } else if (op.cmd == 'V' || op.cmd == 'v') {
+                for (int i = 0; i < op.args.Count; i++) {
+                    float y = float.Parse(op.args[i]);
+                    if (op.cmd == 'v' && lastOp != null) {
+                        y += lastOp.y;
+                    }
+                    pathOp = new PathOp('L', lastOp.x, y);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+            } else if (op.cmd == 'Q' || op.cmd == 'q') {
+                for (int i = 0; i <= op.args.Count - 4; i += 4) {
+                    pathOp = new PathOp('C');
+                    float x1 = float.Parse(op.args[i]);
+                    float y1 = float.Parse(op.args[i + 1]);
+                    float x = float.Parse(op.args[i + 2]);
+                    float y = float.Parse(op.args[i + 3]);
+                    if (op.cmd == 'q') {
+                        x1 += lastOp.x;
+                        y1 += lastOp.y;
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
+                    // Save the original control point
+                    pathOp.x1q = x1;
+                    pathOp.y1q = y1;
+                    // Calculate the coordinates of the cubic control points
+                    float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
+                    float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
+                    float x2c = x + (2f/3f)*(x1 - x);
+                    float y2c = y + (2f/3f)*(y1 - y);
+                    pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+            } else if (op.cmd == 'T' || op.cmd == 't') {
+                for (int i = 0; i <= op.args.Count - 2; i += 2) {
+                    pathOp = new PathOp('C');
+                    float x1 = lastOp.x;
+                    float y1 = lastOp.y;
+                    if (lastOp.cmd == 'C') {
+                        // Find the reflection control point
+                        x1 = 2*lastOp.x - lastOp.x1q;
+                        y1 = 2*lastOp.y - lastOp.y1q;
+                    }
+                    float x = float.Parse(op.args[i]);
+                    float y = float.Parse(op.args[i + 1]);
+                    if (op.cmd == 't') {
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
+                    // Calculate the coordinates of the cubic control points
+                    float x1c = lastOp.x + (2f/3f)*(x1 - lastOp.x);
+                    float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
+                    float x2c = x + (2f/3f)*(x1 - x);
+                    float y2c = y + (2f/3f)*(y1 - y);
+                    pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+            } else if (op.cmd == 'Z' || op.cmd == 'z') {
+                operations.Add(new PathOp('Z'));
+            }
+        }
+        // System.out.println();
+        // System.out.println();
+        return operations;
+    }
+
+    public static void Main(String[] args) {
+/*
+        FileWriter writer = new FileWriter("test.svg");
+        writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
+        writer.write("  <path d=\"");
+        List<String> paths = getSVGPaths(args[0]);
+        List<PathOp> svgPathOps = getSVGPathOps(paths);
+        List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
+        for (PathOp op : pdfPathOps) {
+            System.out.print(op.cmd + " ");
+            writer.write(op.cmd + " ");
+            for (String argument : op.args) {
+                System.out.print(argument + " ");
+                writer.write(argument + " ");
+            }
+        }
+        System.out.println();
+        writer.write("\"/>\n");
+        writer.write("</svg>\n");
+        writer.flush();
+        writer.close();
+*/
+    }
+
 }
 }   // End of SVG.cs
