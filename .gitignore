@@ -2,6 +2,8 @@ com/pdfjet/*.class
 build/*
 *.jar
 *.exe
+*.dll
+*.dll.mdb
 *.pdf
 examples/*
 out/*
