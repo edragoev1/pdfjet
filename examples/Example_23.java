@@ -118,7 +118,6 @@ public class Example_23 {
         table.setColumnWidth(3, 150f);
         table.wrapAroundCellText();
 
-        int numOfPages = table.getNumberOfPages(page);
         while (true) {
             table.drawOn(page);
             if (!table.hasMoreData()) break;
