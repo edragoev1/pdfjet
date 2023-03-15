@@ -237,7 +237,7 @@ public class SVG {
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }
-            } else if (op.cmd == 'C') {
+            } else if (op.cmd == 'C' || op.cmd == 'c') {
                 for (int i = 0; i <= op.args.size() - 2; i += 6) {
                     pathOp = new PathOp('C');
                     float x1 = Float.valueOf(op.args.get(i));
@@ -246,10 +246,22 @@ public class SVG {
                     float y2 = Float.valueOf(op.args.get(i + 3));
                     float x = Float.valueOf(op.args.get(i + 4));
                     float y = Float.valueOf(op.args.get(i + 5));
+                    if (op.cmd == 'c') {
+                        x1 += lastOp.x;
+                        y1 += lastOp.y;
+                        x2 += lastOp.x;
+                        y2 += lastOp.y;
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
                     pathOp.addCubicPoints(x1, y1, x2, y2, x, y);
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }
+            } else if (op.cmd == 'S' || op.cmd == 's') {
+                // Smooth Cubic Curve
+            } else if (op.cmd == 'A' || op.cmd == 'a') {
+                // Elliptical Arc
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 pathOp = new PathOp('Z');
                 pathOp.x = x0;
