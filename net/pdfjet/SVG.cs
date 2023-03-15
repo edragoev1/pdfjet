@@ -241,27 +241,25 @@ public class SVG {
     }
 
     public static void Main(String[] args) {
-/*
-        FileWriter writer = new FileWriter("test.svg");
-        writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
-        writer.write("  <path d=\"");
-        List<String> paths = getSVGPaths(args[0]);
+        StreamWriter writer = new StreamWriter("test.svg");
+        writer.WriteLine("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
+        writer.WriteLine("  <path d=\"");
+        List<String> paths = GetSVGPaths(args[0]);
         List<PathOp> svgPathOps = getSVGPathOps(paths);
         List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
-        for (PathOp op : pdfPathOps) {
-            System.out.print(op.cmd + " ");
-            writer.write(op.cmd + " ");
-            for (String argument : op.args) {
-                System.out.print(argument + " ");
-                writer.write(argument + " ");
+        foreach (PathOp op in pdfPathOps) {
+            // System.out.print(op.cmd + " ");
+            writer.WriteLine(op.cmd + " ");
+            foreach (String argument in op.args) {
+                // System.out.print(argument + " ");
+                writer.WriteLine(argument + " ");
             }
         }
-        System.out.println();
-        writer.write("\"/>\n");
-        writer.write("</svg>\n");
-        writer.flush();
-        writer.close();
-*/
+        // System.out.println();
+        writer.WriteLine("\"/>\n");
+        writer.WriteLine("</svg>\n");
+        writer.Flush();
+        writer.Close();
     }
 
 }
