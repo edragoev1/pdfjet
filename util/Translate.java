@@ -38,10 +38,10 @@ public class Translate {
         // Load the Java to C# translation dictionary
         List<Pair> dict = new ArrayList<Pair>();
         try {
-            BufferedReader in =
+            BufferedReader reader =
                     new BufferedReader(new FileReader("util/translate-words.txt"));
             String line = null;
-            while ((line = in.readLine()) != null) {
+            while ((line = reader.readLine()) != null) {
                 if (!line.equals("") && !line.startsWith("#")) {
                     Pair pair = new Pair();
                     pair.key = line.substring(0, line.indexOf('='));
@@ -49,6 +49,7 @@ public class Translate {
                     dict.add(pair);
                 }
             }
+            reader.close();
         }
         catch (IOException ioe) {
             System.err.println(ioe);
@@ -57,10 +58,10 @@ public class Translate {
         Map<String, String> map = new TreeMap<String, String>();
         // Load the Java to C# capitalization dictionary
         try {
-            BufferedReader in =
+            BufferedReader reader =
                     new BufferedReader(new FileReader("util/capitalize-words.txt"));
             String line = null;
-            while ((line = in.readLine()) != null) {
+            while ((line = reader.readLine()) != null) {
                 if (!line.equals("") && !line.startsWith("#")) {
                     Pair pair = new Pair();
                     pair.key = line;
@@ -69,6 +70,7 @@ public class Translate {
                     map.put(pair.key, pair.value);
                 }
             }
+            reader.close();
         }
         catch (IOException ioe) {
             System.err.println(ioe);
