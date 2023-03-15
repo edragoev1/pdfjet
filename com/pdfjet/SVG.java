@@ -64,13 +64,13 @@ public class SVG {
             return true;
         } else if (ch == 'V' || ch == 'v') {    // vertical lineto
             return true;
-        } else if (ch == 'C' || ch == 'c') {    // cubic curveto
-            return true;
-        } else if (ch == 'S' || ch == 's') {    // smooth cubic curveto
-            return true;
         } else if (ch == 'Q' || ch == 'q') {    // quadratic curveto
             return true;
         } else if (ch == 'T' || ch == 't') {    // smooth quadratic curveto
+            return true;
+        } else if (ch == 'C' || ch == 'c') {    // cubic curveto
+            return true;
+        } else if (ch == 'S' || ch == 's') {    // smooth cubic curveto
             return true;
         } else if (ch == 'A' || ch == 'a') {    // elliptical arc
             return true;
@@ -86,8 +86,8 @@ public class SVG {
         for (String path : paths) {
             // Path example:
             // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            System.out.println(path);
-            System.out.println();
+            // System.out.println(path);
+            // System.out.println();
             StringBuilder buf = new StringBuilder();
             boolean token = false;
             for (int i = 0; i < path.length(); i++) {
@@ -136,7 +136,6 @@ public class SVG {
         float x0 = 0f;  // Start of subpath
         float y0 = 0f;
         for (PathOp op : list) {
-            System.out.print(op.cmd + " ");
             if (op.cmd == 'M' || op.cmd == 'm') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     float x = Float.valueOf(op.args.get(i));
@@ -270,8 +269,8 @@ public class SVG {
                 lastOp = pathOp;
             }
         }
-        System.out.println();
-        System.out.println();
+        // System.out.println();
+        // System.out.println();
         return operations;
     }
 
@@ -283,14 +282,11 @@ public class SVG {
         List<PathOp> svgPathOps = getSVGPathOps(paths);
         List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
         for (PathOp op : pdfPathOps) {
-            System.out.print(op.cmd + " ");
             writer.write(op.cmd + " ");
             for (String argument : op.args) {
-                System.out.print(argument + " ");
                 writer.write(argument + " ");
             }
         }
-        System.out.println();
         writer.write("\"/>\n");
         writer.write("</svg>\n");
         writer.flush();
