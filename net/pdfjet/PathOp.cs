@@ -1,66 +1,74 @@
+/**
+ *  PathOp.cs
+ *
+Copyright 2023 Innovatics Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
 using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
 class PathOp {
-    Char command;
-    List<String> arguments = null;
+    char cmd;
+    
+    float x1q;  // Original quadratic control
+    float y1q;  // point coordinates
 
-    PathOp(Char command) {
-        this.command = command;
-        this.arguments = new List<String>();
+    float x1;   // Control point x1
+    float y1;   // Control point y1
+    float x2;   // Control point x2
+    float y2;   // Control point y2
+    float x;    // Initial point x
+    float y;    // Initial point y
+    List<String> args;
+
+    PathOp(char cmd) {
+        this.cmd = cmd;
+        this.args = new List<String>();
     }
 
-    List<PathOp> GetPathOperations() {
-        List<PathOp> operations = new List<PathOp>();
-        int n = GetNumberOfArguments();
-        PathOp operation = new PathOp(command);
-        foreach (String argument in arguments) {
-            operation.arguments.Add(argument);
-            if (operation.arguments.Count % n == 0) {
-                operations.Add(operation);
-                operation = new PathOp(command);
-            }
-        }
-        if (operation.arguments.Count == n) {
-            operations.Add(operation);
-        }
-        return operations;
+    PathOp(char cmd, float x, float y) {
+        this.cmd = cmd;
+        this.x = x;
+        this.y = y;
+        this.args = new List<String>();
+        this.args.Add(x.ToString(".###", PDF.culture_en_us));
+        this.args.Add(y.ToString(".###", PDF.culture_en_us));
     }
 
-    int GetNumberOfArguments() {
-        if (command == 'M' || command == 'm') {         // moveto
-            return 2;
-        }
-        else if (command == 'L' || command == 'l') {    // lineto
-            return 2;
-        }
-        else if (command == 'H' || command == 'h') {    // horizontal lineto
-            return 1;
-        }
-        else if (command == 'V' || command == 'v') {    // vertical lineto
-            return 1;
-        }
-        else if (command == 'C' || command == 'c') {    // curveto
-            return 6;
-        }
-        else if (command == 'S' || command == 's') {    // smooth curveto
-            return 4;
-        }
-        else if (command == 'Q' || command == 'q') {    // quadratic curve
-            return 4;
-        }
-        else if (command == 'T' || command == 't') {    // smooth quadratic curveto
-            return 2;
-        }
-        else if (command == 'A' || command == 'a') {    // elliptical arc
-            return 7;
-        }
-        else if (command == 'Z' || command == 'z') {    // closepath
-            return 0;
-        }
-        return 0;
+    void addCubicPoints(
+            float x1, float y1,
+            float x2, float y2,
+            float x, float y) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.x = x;
+        this.y = y;
+        this.args.Add(x1.ToString(".###", PDF.culture_en_us));
+        this.args.Add(y1.ToString(".###", PDF.culture_en_us));
+        this.args.Add(x2.ToString(".###", PDF.culture_en_us));
+        this.args.Add(y2.ToString(".###", PDF.culture_en_us));
+        this.args.Add(x.ToString(".###", PDF.culture_en_us));
+        this.args.Add(y.ToString(".###", PDF.culture_en_us));
     }
-
 }
 }
