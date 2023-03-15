@@ -1,6 +1,6 @@
+.build
 com/pdfjet/*.class
 util/*.class
-.build
 build
 examples
 bin
