@@ -1,4 +1,3 @@
-rm com/pdfjet/*.class
 rm examples/*.class
 rm examples/*.exe.mdb
 rm *.jar
