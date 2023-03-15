@@ -280,7 +280,6 @@ public class SVG {
         List<PathOp> pdfPathOps = GetPDFPathOps(svgPathOps);
         foreach (PathOp op in pdfPathOps) {
             foreach (String argument in op.args) {
-                Console.WriteLine(argument + " ");
                 writer.WriteLine(argument + " ");
             }
         }
