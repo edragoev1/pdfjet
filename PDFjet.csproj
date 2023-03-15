@@ -1,14 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp7.0</TargetFramework>
     <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp7.0</TargetFramework>
     <Optimize>true</Optimize>
-    <DefaultItemExcludes>net/pdfjet/**</DefaultItemExcludes>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Reference Include="PDFjetLib.dll"/>
-  </ItemGroup>
 
 </Project>

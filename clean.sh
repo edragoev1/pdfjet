@@ -1,3 +1,5 @@
+rm out/production/com/pdfjet/*.class
+rm com/pdfjet/*.class
 rm examples/*.class
 rm examples/*.exe.mdb
 rm *.jar
@@ -7,5 +9,4 @@ rm *.dll
 rm -rf bin
 rm -rf obj
 rm -rf .build
-rm -rf out
 rm *.pdf

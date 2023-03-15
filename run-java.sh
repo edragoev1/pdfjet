@@ -1,8 +1,3 @@
-# Clean up the build directory
-rm -rf out
-mkdir out
-mkdir out/production
-
 # Compile and package the library.
 javac -O -encoding utf-8 -Xlint com/pdfjet/*.java -d out/production
 jar cf PDFjet.jar -C out/production .
