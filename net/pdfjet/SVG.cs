@@ -84,8 +84,8 @@ public class SVG {
         foreach (String path in paths) {
             // Path example:
             // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            // System.out.println(path);
-            // System.out.println();
+            Console.WriteLine(path);
+            Console.WriteLine();
             StringBuilder buf = new StringBuilder();
             bool token = false;
             for (int i = 0; i < path.Length; i++) {
@@ -132,7 +132,7 @@ public class SVG {
         PathOp lastOp = null;
         PathOp pathOp = null;
         foreach (PathOp op in list) {
-            // System.out.print(op.cmd + " ");
+            Console.WriteLine(op.cmd + " ");
             if (op.cmd == 'M' || op.cmd == 'm') {
                 for (int i = 0; i <= op.args.Count - 2; i += 2) {
                     float x = float.Parse(op.args[i]);
@@ -235,8 +235,8 @@ public class SVG {
                 operations.Add(new PathOp('Z'));
             }
         }
-        // System.out.println();
-        // System.out.println();
+        Console.WriteLine();
+        Console.WriteLine();
         return operations;
     }
 
@@ -248,14 +248,14 @@ public class SVG {
         List<PathOp> svgPathOps = getSVGPathOps(paths);
         List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
         foreach (PathOp op in pdfPathOps) {
-            // System.out.print(op.cmd + " ");
+            Console.WriteLine(op.cmd + " ");
             writer.WriteLine(op.cmd + " ");
             foreach (String argument in op.args) {
-                // System.out.print(argument + " ");
+                Console.WriteLine(argument + " ");
                 writer.WriteLine(argument + " ");
             }
         }
-        // System.out.println();
+        Console.WriteLine();
         writer.WriteLine("\"/>\n");
         writer.WriteLine("</svg>\n");
         writer.Flush();
