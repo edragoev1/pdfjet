@@ -233,6 +233,19 @@ public class SVG {
                     operations.add(pathOp);
                     lastOp = pathOp;
                 }
+            } else if (op.cmd == 'C') {
+                for (int i = 0; i <= op.args.size() - 2; i += 6) {
+                    pathOp = new PathOp('C');
+                    float x1 = Float.valueOf(op.args.get(i));
+                    float y1 = Float.valueOf(op.args.get(i + 1));
+                    float x2 = Float.valueOf(op.args.get(i + 2));
+                    float y2 = Float.valueOf(op.args.get(i + 3));
+                    float x = Float.valueOf(op.args.get(i + 4));
+                    float y = Float.valueOf(op.args.get(i + 5));
+                    pathOp.addCubicPoints(x1, y1, x2, y2, x, y);
+                    operations.add(pathOp);
+                    lastOp = pathOp;
+                }
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 operations.add(new PathOp('Z'));
             }
