@@ -1,0 +1,7 @@
+com/pdfjet/*.class
+build/*
+*.exe
+*.pdf
+examples/*
+out/*
+util/*.class
