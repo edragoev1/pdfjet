@@ -1,4 +1,4 @@
-rm -rf out
+rm -rf
 mkdir out
 mkdir out/production
 

@@ -4,3 +4,4 @@ echo "Main-Class: examples.Example_$1" > manifest.txt
 /opt/graalvm-ce-java17-22.3.1/bin/native-image -jar Example_$1.jar Example_$1.exe
 rm manifest.txt
 rm *.exe.build_artifacts.txt
+rm com/pdfjet/*.class
