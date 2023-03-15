@@ -133,6 +133,8 @@ public class SVG {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp lastOp = null;
         PathOp pathOp = null;
+        float x0 = 0f;  // Start of subpath
+        float y0 = 0f;
         for (PathOp op : list) {
             System.out.print(op.cmd + " ");
             if (op.cmd == 'M' || op.cmd == 'm') {
@@ -143,6 +145,8 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
+                    x0 = x;
+                    y0 = y;
                     if (i == 0) {
                         pathOp = new PathOp('M', x, y);
                     } else {
@@ -247,7 +251,11 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
-                operations.add(new PathOp('Z'));
+                pathOp = new PathOp('Z');
+                pathOp.x = x0;
+                pathOp.y = y0;
+                operations.add(pathOp);
+                lastOp = pathOp;
             }
         }
         System.out.println();
