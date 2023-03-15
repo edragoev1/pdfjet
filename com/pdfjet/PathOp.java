@@ -53,7 +53,10 @@ class PathOp {
         this.args.add(String.format("%.3f", y));
     }
 
-    void addCubicPoints(float x1, float y1, float x2, float y2, float x, float y) {
+    void addCubicPoints(
+            float x1, float y1,
+            float x2, float y2,
+            float x, float y) {
         this.x1 = x1;
         this.y1 = y1;
         this.x2 = x2;
