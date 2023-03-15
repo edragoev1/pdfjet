@@ -1,4 +1,3 @@
-#!/bin/sh
 mcs -warn:2 -debug -sdk:4 net/pdfjet/*.cs -reference:System.Drawing.dll -target:library -out:PDFjet.dll
 mcs -debug -sdk:4 examples/Example_$1.cs -reference:PDFjet.dll
 mv examples/Example_$1.exe .
