@@ -1,3 +1,7 @@
+rm -rf out
+mkdir out
+mkdir out/production
+
 javac -O -encoding utf-8 -Xlint com/pdfjet/*.java -d out/production
 jar --create --file PDFjet.jar -C out/production .
 
