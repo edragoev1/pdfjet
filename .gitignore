@@ -6,5 +6,7 @@ build/*
 *.dll.mdb
 *.pdf
 examples/*
+bin/*
+obj/*
 out/*
 util/*.class
