@@ -66,7 +66,7 @@ public class SVGImage {
             if !inPath && buf.hasPrefix("<path d=") {
                 inPath = true
                 buf = ""
-            } else if inPath /* TODO && ch == "\"" */ {
+            } else if inPath && String(ch!) == "\"" {
                 inPath = false
                 paths.append(buf)
                 buf = ""
