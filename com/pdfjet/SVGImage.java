@@ -40,7 +40,7 @@ public class SVGImage {
 
     private int color = Color.black;
     private float width = 0.3f;
-    private boolean fillShape = true;
+    private boolean fillPath = true;
 
     protected String uri = null;
     protected String key = null;
@@ -94,6 +94,15 @@ public class SVGImage {
     }
 
     /**
+     *  Sets the fill path flag to true or false.
+     *
+     *  @param fillPath if true fills that SVG path, strokes otherwise.
+     */
+    public void setFillPath(boolean fillPath) {
+        this.fillPath = fillPath;
+    }
+
+    /**
      *  Sets the size of this box.
      *
      *  @param w the width of this box.
@@ -123,7 +132,7 @@ public class SVGImage {
     public float[] drawOn(Page page) {
         page.addBMC(StructElem.P, language, actualText, altDescription);
         page.setPenWidth(width);
-        if (fillShape) {
+        if (fillPath) {
             page.setBrushColor(color);
         }
         else {
@@ -141,13 +150,13 @@ public class SVGImage {
                     op.x2 + x, op.y2 + y,
                     op.x + x, op.y + y);
             } else if (op.cmd == 'Z') {
-                if (fillShape) {
-                    page.fillPath();
-                }
-                else {
+                if (!fillPath) {
                     page.closePath();
                 }
             }
+        }
+        if (fillPath) {
+            page.fillPath();
         }
         page.addEMC();
 

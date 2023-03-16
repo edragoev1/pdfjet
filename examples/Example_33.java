@@ -52,6 +52,7 @@ public class Example_33 {
         stream = new FileInputStream(
             "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
         icon = new SVGImage(stream);
+        icon.setFillPath(false);
         icon.setLocation(420f, 670f);
         icon.drawOn(page);
 

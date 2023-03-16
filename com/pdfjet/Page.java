@@ -847,11 +847,6 @@ public class Page {
     }
 
 
-    public void fillPathEvenOddRule() {
-        append("f*\n");
-    }
-
-
     /**
      *  Draws the outline of the specified rectangle on the page.
      *  The left and right edges of the rectangle are at x and x + w.
