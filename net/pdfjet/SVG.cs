@@ -134,6 +134,7 @@ public class SVG {
         float x0 = 0f;  // Start of subpath
         float y0 = 0f;
         foreach (PathOp op in list) {
+            Console.Write(op.cmd + " ");
             if (op.cmd == 'M' || op.cmd == 'm') {
                 for (int i = 0; i <= op.args.Count - 2; i += 2) {
                     float x = float.Parse(op.args[i]);
@@ -155,7 +156,7 @@ public class SVG {
             } else if (op.cmd == 'L' || op.cmd == 'l') {
                 for (int i = 0; i <= op.args.Count - 2; i += 2) {
                     float x = float.Parse(op.args[i]);
-                    float y = float.Parse(op.args[ + 1]);
+                    float y = float.Parse(op.args[i + 1]);
                     if (op.cmd == 'l' && lastOp != null) {
                         x += lastOp.x;
                         y += lastOp.y;
