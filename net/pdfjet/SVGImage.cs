@@ -128,7 +128,7 @@ public class SVGImage {
         return this.h;
     }
 
-    public float[] drawOn(Page page) {
+    public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
         page.SetPenWidth(penWidth);
         if (fillPath) {

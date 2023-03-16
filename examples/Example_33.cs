@@ -26,6 +26,42 @@ public class Example_33 {
         image.ScaleBy(0.25f);
         image.DrawOn(page);
 
+        FileStream stream = new FileStream(
+            "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg",
+            FileMode.Open, FileAccess.Read);
+        SVGImage icon = new SVGImage(stream);
+        icon.SetLocation(20f, 670f);
+        float[] xy = icon.DrawOn(page);
+
+        stream = new FileStream(
+            "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg",
+            FileMode.Open, FileAccess.Read);
+        icon = new SVGImage(stream);
+        icon.SetLocation(xy[0], 670f);
+        xy = icon.DrawOn(page);
+
+        stream = new FileStream(
+            "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg",
+            FileMode.Open, FileAccess.Read);
+        icon = new SVGImage(stream);
+        icon.SetLocation(xy[0], 670f);
+        xy = icon.DrawOn(page);
+
+        stream = new FileStream(
+            "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg",
+            FileMode.Open, FileAccess.Read);
+        icon = new SVGImage(stream);
+        icon.SetLocation(xy[0], 670f);
+        xy = icon.DrawOn(page);
+
+        stream = new FileStream(
+            "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg",
+            FileMode.Open, FileAccess.Read);
+        icon = new SVGImage(stream);
+        // icon.SetFillPath(false);
+        icon.SetLocation(xy[0], 670);
+        icon.DrawOn(page);
+
         pdf.Complete();
     }
 
