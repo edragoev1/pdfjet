@@ -23,6 +23,37 @@ public class Example_33 {
             image.scaleBy(0.25)
             image.drawOn(page)
 
+            var stream = InputStream(
+                    fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
+            var icon = SVGImage(stream!)
+            icon.setLocation(20.0, 670.0)
+            var xy: [Float] = icon.drawOn(page)
+
+            stream = InputStream(
+                    fileAtPath: "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
+            icon = SVGImage(stream!)
+            icon.setLocation(xy[0], 670.0)
+            xy = icon.drawOn(page)
+
+            stream = InputStream(
+                    fileAtPath: "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
+            icon = SVGImage(stream!)
+            icon.setLocation(xy[0], 670.0)
+            xy = icon.drawOn(page)
+
+            stream = InputStream(
+                    fileAtPath: "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg")
+            icon = SVGImage(stream!)
+            icon.setLocation(xy[0], 670.0)
+            xy = icon.drawOn(page)
+
+            stream = InputStream(
+                    fileAtPath: "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
+            icon = SVGImage(stream!)
+            // icon.setFillPath(false)
+            icon.setLocation(xy[0], 670.0)
+            icon.drawOn(page)
+
             pdf.complete()
         }
     }
