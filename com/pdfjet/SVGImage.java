@@ -132,9 +132,9 @@ public class SVGImage {
         for (int i = 0; i < pdfPathOps.size(); i++) {
             PathOp op = pdfPathOps.get(i);
             if (op.cmd == 'M') {
-                page.moveTo(x, y);
+                page.moveTo(op.x + x, op.y + y);
             } else if (op.cmd == 'L') {
-                page.lineTo(x + w, y);
+                page.lineTo(op.x + x, op.y + y);
             } else if (op.cmd == 'C') {
                 page.curveTo(
                     op.x1 + x, op.y1 + y,
