@@ -8,12 +8,9 @@ using System.Collections.Generic;
 
 /**
  *  Example_33.cs
- *
  */
 public class Example_33 {
-
     public Example_33() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_33.pdf", FileMode.Create)));
 
@@ -26,25 +23,6 @@ public class Example_33 {
         image.SetLocation(10f, 10f);
         image.ScaleBy(0.25f);
         image.DrawOn(page);
-
-
-        StreamWriter writer = new StreamWriter("test.svg");
-        writer.Write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
-        writer.Write("  <path d=\"");
-        List<String> paths = SVG.GetSVGPaths("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
-        List<PathOp> svgPathOps = SVG.GetSVGPathOps(paths);
-        List<PathOp> pdfPathOps = SVG.GetPDFPathOps(svgPathOps);
-        foreach (PathOp op in pdfPathOps) {
-            writer.Write(op.cmd + " ");
-            foreach (String argument in op.args) {
-                writer.Write(argument + " ");
-            }
-        }
-        writer.Write("\"/>\n");
-        writer.Write("</svg>\n");
-        writer.Flush();
-        writer.Close();
-
 
         FileStream stream = new FileStream(
             "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg",
@@ -85,8 +63,25 @@ public class Example_33 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
+/*
+        StreamWriter writer = new StreamWriter("test.svg");
+        writer.Write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
+        writer.Write("  <path d=\"");
+        List<String> paths = SVG.GetSVGPaths("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
+        List<PathOp> svgPathOps = SVG.GetSVGPathOps(paths);
+        List<PathOp> pdfPathOps = SVG.GetPDFPathOps(svgPathOps);
+        foreach (PathOp op in pdfPathOps) {
+            writer.Write(op.cmd + " ");
+            foreach (String argument in op.args) {
+                writer.Write(argument + " ");
+            }
+        }
+        writer.Write("\"/>\n");
+        writer.Write("</svg>\n");
+        writer.Flush();
+        writer.Close();
+*/
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_33();
