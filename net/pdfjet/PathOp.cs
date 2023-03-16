@@ -49,8 +49,8 @@ public class PathOp {
         this.x = x;
         this.y = y;
         this.args = new List<String>();
-        this.args.Add(x.ToString(".###", PDF.culture_en_us));
-        this.args.Add(y.ToString(".###", PDF.culture_en_us));
+        this.args.Add(x.ToString(".000"));
+        this.args.Add(y.ToString(".000"));
     }
 
     public void addCubicPoints(
@@ -63,12 +63,12 @@ public class PathOp {
         this.y2 = y2;
         this.x = x;
         this.y = y;
-        this.args.Add(x1.ToString(".###", PDF.culture_en_us));
-        this.args.Add(y1.ToString(".###", PDF.culture_en_us));
-        this.args.Add(x2.ToString(".###", PDF.culture_en_us));
-        this.args.Add(y2.ToString(".###", PDF.culture_en_us));
-        this.args.Add(x.ToString(".###", PDF.culture_en_us));
-        this.args.Add(y.ToString(".###", PDF.culture_en_us));
+        this.args.Add(x1.ToString(".000"));
+        this.args.Add(y1.ToString(".000"));
+        this.args.Add(x2.ToString(".000"));
+        this.args.Add(y2.ToString(".000"));
+        this.args.Add(x.ToString(".000"));
+        this.args.Add(y.ToString(".000"));
     }
 }
 }
