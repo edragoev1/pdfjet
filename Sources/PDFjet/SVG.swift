@@ -24,6 +24,7 @@
 import Foundation
 
 public class SVG {
+/*
     public static func getSVGPaths(_ fileName: String) throws -> [String] {
         var paths = [String]()
         var inPath = false
@@ -42,7 +43,7 @@ public class SVG {
         }
         return paths
     }
-
+*/
     static func isCommand(_ ch: Character) -> Bool {
         // Please note:
         // Capital letter commands use absolute coordinates

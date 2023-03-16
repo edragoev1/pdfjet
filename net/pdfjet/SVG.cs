@@ -28,6 +28,7 @@ using System.Text;
 
 namespace PDFjet.NET {
 public class SVG {
+/*
     public static List<String> GetSVGPaths(String fileName) {
         List<String> paths = new List<String>();
         StringBuilder buf = new StringBuilder();
@@ -49,7 +50,7 @@ public class SVG {
         stream.Close();
         return paths;
     }
-
+*/
     private static bool isCommand(char ch) {
         // Please note:
         // Capital letter commands use absolute coordinates
@@ -270,7 +271,7 @@ public class SVG {
         }
         return operations;
     }
-
+/*
     public static void Main(String[] args) {
         StreamWriter writer = new StreamWriter("test.svg");
         writer.WriteLine("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
@@ -288,6 +289,6 @@ public class SVG {
         writer.Flush();
         writer.Close();
     }
-
+*/
 }
 }   // End of SVG.cs

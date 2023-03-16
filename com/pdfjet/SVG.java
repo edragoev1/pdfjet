@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SVG {
+/*
     public static List<String> getSVGPaths(String fileName) throws IOException {
         List<String> paths = new ArrayList<String>();
         StringBuilder buf = new StringBuilder();
@@ -51,7 +52,7 @@ public class SVG {
         stream.close();
         return paths;
     }
-
+*/
     private static boolean isCommand(char ch) {
         // Please note:
         // Capital letter commands use absolute coordinates
@@ -271,7 +272,7 @@ public class SVG {
         }
         return operations;
     }
-
+/*
     public static void main(String[] args) throws IOException {
         FileWriter writer = new FileWriter("test.svg");
         writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
@@ -290,4 +291,5 @@ public class SVG {
         writer.flush();
         writer.close();
     }
+*/
 }
