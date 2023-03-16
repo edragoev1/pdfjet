@@ -269,8 +269,6 @@ public class SVG {
                 lastOp = pathOp;
             }
         }
-        // System.out.println();
-        // System.out.println();
         return operations;
     }
 
@@ -282,7 +280,6 @@ public class SVG {
         List<PathOp> svgPathOps = getSVGPathOps(paths);
         List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
         for (PathOp op : pdfPathOps) {
-            writer.write(op.cmd + " ");
             for (String argument : op.args) {
                 writer.write(argument + " ");
             }

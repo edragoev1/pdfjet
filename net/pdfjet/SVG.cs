@@ -62,13 +62,13 @@ public class SVG {
             return true;
         } else if (ch == 'V' || ch == 'v') {    // vertical lineto
             return true;
-        } else if (ch == 'C' || ch == 'c') {    // cubic curveto
-            return true;
-        } else if (ch == 'S' || ch == 's') {    // smooth cubic curveto
-            return true;
         } else if (ch == 'Q' || ch == 'q') {    // quadratic curveto
             return true;
         } else if (ch == 'T' || ch == 't') {    // smooth quadratic curveto
+            return true;
+        } else if (ch == 'C' || ch == 'c') {    // cubic curveto
+            return true;
+        } else if (ch == 'S' || ch == 's') {    // smooth cubic curveto
             return true;
         } else if (ch == 'A' || ch == 'a') {    // elliptical arc
             return true;
