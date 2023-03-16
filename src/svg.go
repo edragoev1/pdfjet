@@ -134,12 +134,12 @@ func (pathOp *PathOp) getSVGPathOps(paths []string) []PathOp {
 func getPDFPathOps(list []PathOp) []PathOp {
 	operations := []PathOp{}
 	var lastOp *PathOp
-	var pathOp *PathOp
 	var x0 float32 = 0.0 // Start of subpath
 	var y0 float32 = 0.0
 	for _, op := range list {
 		if op.cmd == 'M' || op.cmd == 'm' {
 			for i := 0; i <= len(op.args)-2; i += 2 {
+				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					log.Fatal(err)
@@ -167,6 +167,7 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			}
 		} else if op.cmd == 'L' || op.cmd == 'l' {
 			for i := 0; i <= len(op.args)-2; i += 2 {
+				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					log.Fatal(err)
@@ -191,6 +192,7 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			}
 		} else if op.cmd == 'H' || op.cmd == 'h' {
 			for i := 0; i < len(op.args); i++ {
+				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					log.Fatal(err)
@@ -204,6 +206,7 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			}
 		} else if op.cmd == 'V' || op.cmd == 'v' {
 			for i := 0; i < len(op.args); i++ {
+				var pathOp *PathOp
 				y, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					log.Fatal(err)
@@ -254,7 +257,7 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			}
 		} else if op.cmd == 'T' || op.cmd == 't' {
 			for i := 0; i <= len(op.args)-2; i += 2 {
-				pathOp = NewPathOp('C')
+				pathOp := NewPathOp('C')
 				x1 := lastOp.x
 				y1 := lastOp.y
 				if lastOp.cmd == 'C' {
