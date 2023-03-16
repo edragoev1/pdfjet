@@ -1,7 +1,5 @@
 package pdfjet
 
-import "fmt"
-
 /**
  * path.go
  *
@@ -25,6 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+import "fmt"
 
 // Path is used to create path objects.
 // The path objects may consist of lines, splines or both.
@@ -41,13 +40,6 @@ type PathOp struct {
 	y    float32 // Initial point y
 	args []string
 }
-
-// // NewPathOp - the default constructor.
-// func NewPathOp() *PathOp {
-// 	pathOp := new(PathOp)
-// 	pathOp.args = []string{}
-// 	return pathOp
-// }
 
 func NewPathOp(cmd byte) *PathOp {
 	pathOp := new(PathOp)
