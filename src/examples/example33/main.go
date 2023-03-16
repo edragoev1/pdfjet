@@ -38,6 +38,11 @@ func Example33() {
 	image1.ScaleBy(0.25)
 	image1.DrawOn(page)
 
+	svg := pdfjet.NewSVG()
+	paths := svg.GetSVGPaths("images/svg-test/test-CC.svg")
+	svgPathOps := svg.GetSVGPathOps(paths)
+	_ = svg.GetPDFPathOps(svgPathOps)
+
 	pdf.Complete()
 }
 

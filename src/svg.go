@@ -1,8 +1,6 @@
-package pdfjet
+/*
+svg.go
 
-/**
- * svg.go
- *
 Copyright 2023 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+package pdfjet
 
 import (
 	"log"
@@ -31,7 +30,15 @@ import (
 	"strings"
 )
 
-func GetSVGPaths(filename string) []string {
+type SVG struct {
+}
+
+func NewSVG() *SVG {
+	svg := new(SVG)
+	return svg
+}
+
+func (svg *SVG) GetSVGPaths(filename string) []string {
 	var paths = make([]string, 0)
 	contents, err := os.ReadFile(filename)
 	if err != nil {
@@ -54,7 +61,7 @@ func GetSVGPaths(filename string) []string {
 	return paths
 }
 
-func isCommand(ch byte) bool {
+func (svg *SVG) isCommand(ch byte) bool {
 	// Please note:
 	// Capital letter commands use absolute coordinates
 	// Small letter commands use relative coordinates
@@ -66,13 +73,13 @@ func isCommand(ch byte) bool {
 		return true
 	} else if ch == 'V' || ch == 'v' { // vertical lineto
 		return true
-	} else if ch == 'C' || ch == 'c' { // cubic curveto
-		return true
-	} else if ch == 'S' || ch == 's' { // smooth cubic curveto
-		return true
 	} else if ch == 'Q' || ch == 'q' { // quadratic curveto
 		return true
 	} else if ch == 'T' || ch == 't' { // smooth quadratic curveto
+		return true
+	} else if ch == 'C' || ch == 'c' { // cubic curveto
+		return true
+	} else if ch == 'S' || ch == 's' { // smooth cubic curveto
 		return true
 	} else if ch == 'A' || ch == 'a' { // elliptical arc
 		return true
@@ -82,7 +89,7 @@ func isCommand(ch byte) bool {
 	return false
 }
 
-func (pathOp *PathOp) getSVGPathOps(paths []string) []PathOp {
+func (svg *SVG) GetSVGPathOps(paths []string) []PathOp {
 	operations := []PathOp{}
 	var op *PathOp
 	for _, path := range paths {
@@ -92,7 +99,7 @@ func (pathOp *PathOp) getSVGPathOps(paths []string) []PathOp {
 		var token = false
 		for i := 0; i < len(path); i++ {
 			var ch = path[i]
-			if isCommand(ch) { // open path
+			if svg.isCommand(ch) { // open path
 				if token {
 					op.args = append(op.args, string(ch))
 					buf = buf[:0]
@@ -129,7 +136,7 @@ func (pathOp *PathOp) getSVGPathOps(paths []string) []PathOp {
 	return operations
 }
 
-func getPDFPathOps(list []PathOp) []PathOp {
+func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
 	operations := []PathOp{}
 	var lastOp *PathOp
 	var x0 float32 = 0.0 // Start of subpath
