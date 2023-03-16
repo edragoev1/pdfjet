@@ -26,6 +26,13 @@ public class Example_33 {
         image.scaleBy(0.25f);
         image.drawOn(page);
 
+        stream = new FileInputStream(
+            "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg");
+        SVGImage icon = new SVGImage(stream);
+        stream.close();
+        icon.setLocation(20f, 700f);
+        icon.drawOn(page);
+
         pdf.complete();
     }
 
