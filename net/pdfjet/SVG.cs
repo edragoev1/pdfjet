@@ -43,7 +43,7 @@ public class SVG {
                 paths.Add(buf.ToString());
                 buf.Length = 0;
             } else {
-                buf.Append(ch);
+                buf.Append((char) ch);
             }
         }
         stream.Close();
