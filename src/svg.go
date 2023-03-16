@@ -135,26 +135,29 @@ func getPDFPathOps(list []PathOp) []PathOp {
 	operations := []PathOp{}
 	var lastOp *PathOp
 	var pathOp *PathOp
+	var x0 float32 = 0.0 // Start of subpath
+	var y0 float32 = 0.0
 	for _, op := range list {
-		// System.out.print(op.cmd + " ");
 		if op.cmd == 'M' || op.cmd == 'm' {
 			for i := 0; i <= len(op.args)-2; i += 2 {
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				if op.cmd == 'l' && lastOp != nil {
 					x += float64(lastOp.x)
 				}
 				y, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				if op.cmd == 'm' && lastOp != nil {
 					x += float64(lastOp.x)
 					y += float64(lastOp.y)
 				}
 				if i == 0 {
+					x0 = float32(x)
+					y0 = float32(y)
 					pathOp = NewPathOpXY('M', float32(x), float32(y))
 				} else {
 					pathOp = NewPathOpXY('L', float32(x), float32(y))
@@ -166,14 +169,14 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			for i := 0; i <= len(op.args)-2; i += 2 {
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				if op.cmd == 'l' && lastOp != nil {
 					x += float64(lastOp.x)
 				}
 				y, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				if op.cmd == 'l' && lastOp != nil {
 					y += float64(lastOp.y)
@@ -190,7 +193,7 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			for i := 0; i < len(op.args); i++ {
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				if op.cmd == 'h' && lastOp != nil {
 					x += float64(lastOp.x)
@@ -203,7 +206,7 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			for i := 0; i < len(op.args); i++ {
 				y, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				if op.cmd == 'v' && lastOp != nil {
 					y += float64(lastOp.y)
@@ -217,21 +220,20 @@ func getPDFPathOps(list []PathOp) []PathOp {
 				pathOp := NewPathOp('C')
 				x1, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				y1, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				x, err := strconv.ParseFloat(op.args[i+2], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				y, err := strconv.ParseFloat(op.args[i+3], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
-
 				if op.cmd == 'q' {
 					x1 += float64(lastOp.x)
 					y1 += float64(lastOp.y)
@@ -262,11 +264,11 @@ func getPDFPathOps(list []PathOp) []PathOp {
 				}
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				y, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-
+					log.Fatal(err)
 				}
 				if op.cmd == 't' {
 					x = x + float64(lastOp.x)
@@ -282,11 +284,12 @@ func getPDFPathOps(list []PathOp) []PathOp {
 				lastOp = pathOp
 			}
 		} else if op.cmd == 'Z' || op.cmd == 'z' {
-			pathOp = NewPathOp('Z')
+			pathOp := NewPathOp('Z')
+			pathOp.x = x0
+			pathOp.y = y0
 			operations = append(operations, *NewPathOp('Z'))
+			lastOp = pathOp
 		}
 	}
-	// System.out.println()
-	// System.out.println()
 	return operations
 }
