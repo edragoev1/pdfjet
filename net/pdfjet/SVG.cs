@@ -32,10 +32,9 @@ public class SVG {
         List<String> paths = new List<String>();
         StringBuilder buf = new StringBuilder();
         bool inPath = false;
-        byte[] bytes = File.ReadAllBytes(fileName);
-        String str = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-        for (int i = 0; i < str.Length; i++) {
-            char ch = str[i];
+        FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+        int ch;
+        while ((ch = stream.ReadByte()) != -1) {
             if (!inPath && buf.ToString().EndsWith("<path d=")) {
                 inPath = true;
                 buf.Length = 0;
@@ -47,6 +46,7 @@ public class SVG {
                 buf.Append(ch);
             }
         }
+        stream.Close();
         return paths;
     }
 
