@@ -235,7 +235,7 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'C' || op.cmd == 'c') {
-                for (int i = 0; i <= op.args.Count - 2; i += 6) {
+                for (int i = 0; i <= op.args.Count - 6; i += 6) {
                     pathOp = new PathOp('C');
                     float x1 = float.Parse(op.args[i]);
                     float y1 = float.Parse(op.args[i + 1]);
