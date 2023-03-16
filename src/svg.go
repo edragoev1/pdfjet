@@ -290,7 +290,7 @@ func getPDFPathOps(list []PathOp) []PathOp {
 			pathOp := NewPathOp('Z')
 			pathOp.x = x0
 			pathOp.y = y0
-			operations = append(operations, *NewPathOp('Z'))
+			operations = append(operations, *pathOp)
 			lastOp = pathOp
 		}
 	}
