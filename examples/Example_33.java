@@ -1,7 +1,6 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
 
 
