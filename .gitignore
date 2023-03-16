@@ -1,8 +1,8 @@
 .build
 com/pdfjet/*.class
+examples/*.class
 util/*.class
 build
-examples
 bin
 obj
 out
