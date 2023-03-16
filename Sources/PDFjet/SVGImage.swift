@@ -55,23 +55,29 @@ public class SVGImage {
             stream.close()
         }
         var paths = [String]()
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 1)
+        defer {
+            buffer.deallocate()
+        }
+        var scalars = [UnicodeScalar]()
+        while stream.hasBytesAvailable {
+            let read = stream.read(buffer, maxLength: 1)
+            if read > 0 {
+                scalars.append(UnicodeScalar(buffer[0]))
+            }
+        }
         var buf = String()
         var inPath = false
-        var ch: UInt8?
-        var b1 = [UInt8](repeating: 0, count: 1)
-        while stream.hasBytesAvailable {
-            if stream.read(&b1, maxLength: 1) == 1 {
-                ch = b1[0]
-            }
-            if !inPath && buf.hasPrefix("<path d=") {
+        for scalar in scalars {
+            if !inPath && buf.hasSuffix("<path d=") {
                 inPath = true
                 buf = ""
-            } else if inPath && String(ch!) == "\"" {
+            } else if inPath && scalar == UnicodeScalar("\"") {
                 inPath = false
                 paths.append(buf)
                 buf = ""
             } else {
-                buf.append(String(ch!))
+                buf.append(String(scalar))
             }
         }
         let svgPathOps: [PathOp] = SVG.getSVGPathOps(paths)
