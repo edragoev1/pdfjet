@@ -42,4 +42,32 @@ public class SVG {
         }
         return paths
     }
+
+    public func isCommand(_ ch: Character) -> Bool {
+        // Please note:
+        // Capital letter commands use absolute coordinates
+        // Small letter commands use relative coordinates
+        if ch == "M" || ch == "m" {           // moveto
+            return true
+        } else if ch == "L" || ch == "l" {    // lineto
+            return true
+        } else if ch == "H" || ch == "h" {    // horizontal lineto
+            return true
+        } else if ch == "V" || ch == "v" {    // vertical lineto
+            return true
+        } else if ch == "Q" || ch == "q" {    // quadratic curveto
+            return true
+        } else if ch == "T" || ch == "t" {    // smooth quadratic curveto
+            return true
+        } else if ch == "C" || ch == "c" {    // cubic curveto
+            return true
+        } else if ch == "S" || ch == "s" {    // smooth cubic curveto
+            return true
+        } else if ch == "A" || ch == "a" {    // elliptical arc
+            return true
+        } else if ch == "Z" || ch == "z" {    // close path
+            return true
+        }
+        return false
+    }
 }
