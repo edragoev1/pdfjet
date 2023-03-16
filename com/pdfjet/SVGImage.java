@@ -39,7 +39,7 @@ public class SVGImage {
     List<PathOp> pdfPathOps = null;
 
     private int color = Color.black;
-    private float width = 0.3f;
+    private float penWidth = 0.3f;
     private boolean fillPath = true;
 
     protected String uri = null;
@@ -113,7 +113,7 @@ public class SVGImage {
         this.h = h;
     }
 
-    public void setWidth(float w) {
+    public void setPenWidth(float w) {
         this.w = w;
     }
 
@@ -121,7 +121,7 @@ public class SVGImage {
         this.h = h;
     }
 
-    public float getWidth() {
+    public float getPenWidth() {
         return this.w;
     }
 
@@ -131,7 +131,7 @@ public class SVGImage {
 
     public float[] drawOn(Page page) {
         page.addBMC(StructElem.P, language, actualText, altDescription);
-        page.setPenWidth(width);
+        page.setPenWidth(penWidth);
         if (fillPath) {
             page.setBrushColor(color);
         }
@@ -172,6 +172,6 @@ public class SVGImage {
                     actualText,
                     altDescription));
         }
-        return new float[] {x + w, y + h + width};
+        return new float[] {x + w, y + h};
     }
 }   // End of SVGImage.java
