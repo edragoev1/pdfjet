@@ -28,29 +28,6 @@ using System.Text;
 
 namespace PDFjet.NET {
 public class SVG {
-/*
-    public static List<String> GetSVGPaths(String fileName) {
-        List<String> paths = new List<String>();
-        StringBuilder buf = new StringBuilder();
-        bool inPath = false;
-        FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        int ch;
-        while ((ch = stream.ReadByte()) != -1) {
-            if (!inPath && buf.ToString().EndsWith("<path d=")) {
-                inPath = true;
-                buf.Length = 0;
-            } else if (inPath && ch == '\"') {
-                inPath = false;
-                paths.Add(buf.ToString());
-                buf.Length = 0;
-            } else {
-                buf.Append((char) ch);
-            }
-        }
-        stream.Close();
-        return paths;
-    }
-*/
     private static bool isCommand(char ch) {
         // Please note:
         // Capital letter commands use absolute coordinates
@@ -271,24 +248,5 @@ public class SVG {
         }
         return operations;
     }
-/*
-    public static void Main(String[] args) {
-        StreamWriter writer = new StreamWriter("test.svg");
-        writer.WriteLine("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
-        writer.WriteLine("  <path d=\"");
-        List<String> paths = GetSVGPaths(args[0]);
-        List<PathOp> svgPathOps = GetSVGPathOps(paths);
-        List<PathOp> pdfPathOps = GetPDFPathOps(svgPathOps);
-        foreach (PathOp op in pdfPathOps) {
-            foreach (String argument in op.args) {
-                writer.WriteLine(argument + " ");
-            }
-        }
-        writer.WriteLine("\"/>\n");
-        writer.WriteLine("</svg>\n");
-        writer.Flush();
-        writer.Close();
-    }
-*/
 }
 }   // End of SVG.cs

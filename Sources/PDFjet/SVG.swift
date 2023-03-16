@@ -24,26 +24,6 @@
 import Foundation
 
 public class SVG {
-/*
-    public static func getSVGPaths(_ fileName: String) throws -> [String] {
-        var paths = [String]()
-        var inPath = false
-        var buffer = try String(contentsOfFile: fileName, encoding: .utf8)
-        for ch in buffer {
-            if !inPath && buffer.hasSuffix("<path d=") {
-                inPath = true
-                buffer = ""
-            } else if inPath && ch == "\"" {
-                inPath = false
-                paths.append(buffer)
-                buffer = ""
-            } else {
-                buffer.append(ch)
-            }
-        }
-        return paths
-    }
-*/
     static func isCommand(_ ch: Character) -> Bool {
         // Please note:
         // Capital letter commands use absolute coordinates
