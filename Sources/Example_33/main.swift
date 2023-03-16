@@ -52,7 +52,7 @@ public class Example_33 {
             icon = SVGImage(stream!)
             // icon.setFillPath(false)
             icon.setLocation(xy[0], 670.0)
-            icon.drawOn(page)
+            xy = icon.drawOn(page)
 
             pdf.complete()
         }
