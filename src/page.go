@@ -888,6 +888,32 @@ func (page *Page) SetTextDirection(degrees int) {
 }
 
 /**
+ *  Draws a cubic bezier curve starting from the current point to the end point p3
+ *
+ *  @param x1 first control point x
+ *  @param y1 first control point y
+ *  @param x2 second control point x
+ *  @param y2 second control point y
+ *  @param x3 end point x
+ *  @param y3 end point y
+ */
+func (page *Page) CurveTo(x1, y1, x2, y2, x3, y3 float32) {
+	appendFloat32(&page.buf, x1)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, page.height-y1)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, x2)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, page.height-y2)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, x3)
+	appendString(&page.buf, " ")
+	appendFloat32(&page.buf, page.height-y3)
+	appendString(&page.buf, " ")
+	appendString(&page.buf, "c\n")
+}
+
+/**
  *  Draws a bezier curve starting from the current point.
  *  <strong>Please note:</strong> You must call the fillPath, closePath or strokePath method after the last bezierCurveTo call.
  *  <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
@@ -896,7 +922,7 @@ func (page *Page) SetTextDirection(degrees int) {
  *  @param p2 second control point
  *  @param p3 end point
  */
-func (page *Page) bezierCurveTo(p1, p2, p3 *Point) {
+func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 	page.appendPoint(p1)
 	page.appendPoint(p2)
 	page.appendPoint(p3)
