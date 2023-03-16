@@ -32,9 +32,21 @@ import java.util.List;
  * Used to embed SVG images in the PDF document.
  */
 public class SVGImage {
-    int w = 48;                      // Image width in pixels
-    int h = 48;                      // Image height in pixels
+    float x = 0f;
+    float y = 0f;
+    float w = 48f;      // SVG width
+    float h = 48f;      // SVG height
     List<PathOp> pdfPathOps = null;
+
+    private int color = Color.black;
+    private float width = 0.3f;
+    private boolean fillShape = true;
+
+    protected String uri = null;
+    protected String key = null;
+    private String language = null;
+    private String actualText = Single.space;
+    private String altDescription = Single.space;
 
     /**
      * Used to embed SVG images in the PDF document.
@@ -68,20 +80,89 @@ public class SVGImage {
         return pdfPathOps;
     }
 
-    public void setWidth(int w) {
-        this.w = w;
+    /**
+     *  Sets the location of this SVG on the page.
+     *
+     *  @param x the x coordinate of the top left corner of this box when drawn on the page.
+     *  @param y the y coordinate of the top left corner of this box when drawn on the page.
+     *  @return this SVG object.
+     */
+    public SVGImage setLocation(float x, float y) {
+        this.x = x;
+        this.y = y;
+        return this;
     }
 
-    public void setHeight(int h) {
+    /**
+     *  Sets the size of this box.
+     *
+     *  @param w the width of this box.
+     *  @param h the height of this box.
+     */
+    public void setSize(float w, float h) {
+        this.w = w;
         this.h = h;
     }
 
-    public int getWidth() {
+    public void setWidth(float w) {
+        this.w = w;
+    }
+
+    public void setHeight(float h) {
+        this.h = h;
+    }
+
+    public float getWidth() {
         return this.w;
     }
 
-    public int getHeight() {
+    public float getHeight() {
         return this.h;
     }
 
+    public float[] drawOn(Page page) {
+        page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.setPenWidth(width);
+        if (fillShape) {
+            page.setBrushColor(color);
+        }
+        else {
+            page.setPenColor(color);
+        }
+        for (int i = 0; i < pdfPathOps.size(); i++) {
+            PathOp op = pdfPathOps.get(i);
+            if (op.cmd == 'M') {
+                page.moveTo(x, y);
+            } else if (op.cmd == 'L') {
+                page.lineTo(x + w, y);
+            } else if (op.cmd == 'C') {
+                page.curveTo(
+                    op.x1 + x, op.y1 + y,
+                    op.x2 + x, op.y2 + y,
+                    op.x + x, op.y + y);
+            } else if (op.cmd == 'Z') {
+                if (fillShape) {
+                    page.fillPath();
+                }
+                else {
+                    page.closePath();
+                }
+            }
+        }
+        page.addEMC();
+
+        if (uri != null || key != null) {
+            page.addAnnotation(new Annotation(
+                    uri,
+                    key,    // The destination name
+                    x,
+                    y,
+                    x + w,
+                    y + h,
+                    language,
+                    actualText,
+                    altDescription));
+        }
+        return new float[] {x + w, y + h + width};
+    }
 }   // End of SVGImage.java

@@ -1323,8 +1323,37 @@ public class Page {
 
 
     /**
+     *  Draws a cubic bezier curve starting from the current point to the end point p3
+     *
+     *  @param x1 first control point x
+     *  @param y1 first control point y
+     *  @param x2 second control point x
+     *  @param y2 second control point y
+     *  @param x3 end point x
+     *  @param y3 end point y
+     */
+    public void curveTo(
+        float x1, float y1, float x2, float y2, float x3, float y3) {
+        append(x1);
+        append(' ');
+        append(height - y1);
+        append(' ');
+        append(x2);
+        append(' ');
+        append(height - y2);
+        append(' ');
+        append(x3);
+        append(' ');
+        append(height - y3);
+        append(' ');
+        append("c\n");
+    }
+
+
+    /**
      *  Draws a bezier curve starting from the current point.
-     *  <strong>Please note:</strong> You must call the fillPath, closePath or strokePath method after the last bezierCurveTo call.
+     *  <strong>Please note:</strong> You must call the fillPath,
+     *  closePath or strokePath method after the last bezierCurveTo call.
      *  <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
      *
      *  @param p1 first control point
