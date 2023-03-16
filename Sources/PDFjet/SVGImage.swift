@@ -89,10 +89,9 @@ public class SVGImage {
      *  @param y the y coordinate of the top left corner of this box when drawn on the page.
      *  @return this SVG object.
      */
-    public func setLocation(_ x: Float, _ y: Float) -> SVGImage {
+    public func setLocation(_ x: Float, _ y: Float) {
         self.x = x
         self.y = y
-        return self
     }
 
     /**
