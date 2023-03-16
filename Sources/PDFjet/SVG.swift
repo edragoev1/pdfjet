@@ -24,7 +24,7 @@
 import Foundation
 
 public class SVG {
-    public func getSVGPaths(_ fileName: String) throws -> [String] {
+    public static func getSVGPaths(_ fileName: String) throws -> [String] {
         var paths = [String]()
         var inPath = false
         var buffer = try String(contentsOfFile: fileName, encoding: .utf8)
@@ -43,7 +43,7 @@ public class SVG {
         return paths
     }
 
-    public func isCommand(_ ch: Character) -> Bool {
+    static func isCommand(_ ch: Character) -> Bool {
         // Please note:
         // Capital letter commands use absolute coordinates
         // Small letter commands use relative coordinates
@@ -71,18 +71,16 @@ public class SVG {
         return false
     }
 
-    public func getSVGPathOps(_ paths: [String]) -> [PathOp] {
+    public static func getSVGPathOps(_ paths: [String]) -> [PathOp] {
         var operations = [PathOp]()
         var op: PathOp?
         for path in paths {
             // Path example:
             // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            // System.out.println(path)
-            // System.out.println()
             var buf = String()
             var token = false
             for ch in path {
-                if isCommand(ch) {                    // open path
+                if isCommand(ch) {          // open path
                     if token {
                         op!.args.append(buf)
                         buf = ""
@@ -119,7 +117,7 @@ public class SVG {
         return operations
     }
 
-    public func getPDFPathOps(_ list: [PathOp]) -> [PathOp] {
+    public static func getPDFPathOps(_ list: [PathOp]) -> [PathOp] {
         var operations = [PathOp]()
         var lastOp: PathOp?
         var x0: Float = 0.0 // Start of subpath
