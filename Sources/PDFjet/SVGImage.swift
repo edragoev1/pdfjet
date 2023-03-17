@@ -27,10 +27,10 @@ import Foundation
  * Used to embed SVG images in the PDF document.
  */
 public class SVGImage {
-    var x: Float = 0.0
-    var y: Float = 0.0
-    var w: Float = 48.0 // SVG width
-    var h: Float = 48.0 // SVG height
+    var x: Float = 0.0  // location x
+    var y: Float = 0.0  // location y
+    var w: Float = 0.0  // SVG width
+    var h: Float = 0.0  // SVG height
     var pdfPathOps: [PathOp]?
 
     var color: UInt32 = Color.black
@@ -67,14 +67,30 @@ public class SVGImage {
             }
         }
         var buf = String()
-        var inPath = false
+        var token = false
+        var param: String?
         for scalar in scalars {
-            if !inPath && buf.hasSuffix("<path d=") {
-                inPath = true
+            if !token && buf.hasSuffix("width=") {
+                token = true
+                param = "width"
                 buf = ""
-            } else if inPath && scalar == UnicodeScalar("\"") {
-                inPath = false
-                paths.append(buf)
+            } else if !token && buf.hasSuffix("height=") {
+                token = true
+                param = "height"
+                buf = ""
+            } else if !token && buf.hasSuffix("<path d=") {
+                token = true
+                param = "path"
+                buf = ""
+            } else if token && scalar == UnicodeScalar("\"") {
+                token = false
+                if param == "width" {
+                    w = Float(buf)!
+                } else if param == "height" {
+                    h = Float(buf)!
+                } else if param == "path" {
+                    paths.append(buf)
+                }
                 buf = ""
             } else {
                 buf.append(String(scalar))
