@@ -234,7 +234,6 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'S' || op.cmd == 's') {
-                // Smooth Cubic Curve
                 for (int i = 0; i <= op.args.Count - 4; i += 4) {
                     pathOp = new PathOp('C');
                     float x1 = lastOp.x;
@@ -248,9 +247,7 @@ public class SVG {
                     float y2 = float.Parse(op.args[i + 1]);
                     float x = float.Parse(op.args[i + 2]);
                     float y = float.Parse(op.args[i + 3]);
-                    if (op.cmd == 'c') {
-                        x1 += lastOp.x;
-                        y1 += lastOp.y;
+                    if (op.cmd == 's') {
                         x2 += lastOp.x;
                         y2 += lastOp.y;
                         x += lastOp.x;
@@ -261,8 +258,7 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'A' || op.cmd == 'a') {
-                // Elliptical Arc
-
+                // TODO: Elliptical Arc
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
                 pathOp = new PathOp('Z');
                 pathOp.x = x0;
