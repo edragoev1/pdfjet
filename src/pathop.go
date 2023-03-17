@@ -45,14 +45,16 @@ type PathOp struct {
 func NewPathOp(cmd rune) *PathOp {
 	pathOp := new(PathOp)
 	pathOp.cmd = cmd
-	pathOp.args = []string{}
+	pathOp.args = make([]string, 0)
 	return pathOp
 }
 
 func NewPathOpXY(cmd rune, x, y float32) *PathOp {
 	pathOp := new(PathOp)
 	pathOp.cmd = cmd
-	pathOp.args = []string{}
+	pathOp.x = x
+	pathOp.y = y
+	pathOp.args = make([]string, 0)
 	return pathOp
 }
 
