@@ -76,3 +76,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	svgImage.pdfPathOps = svg.GetPDFPathOps(svgPathOps)
 	return svgImage
 }
+
+func (image *SVGImage) SetPenWidth(w float32) {
+	image.w = w
+}
