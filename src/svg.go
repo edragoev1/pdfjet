@@ -133,7 +133,7 @@ func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 			}
 		}
 	}
-	printOperations(operations)
+	// printOperations(operations)
 	return operations
 }
 

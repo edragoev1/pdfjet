@@ -53,10 +53,12 @@ type SVGImage struct {
  * @param stream the input stream.
  */
 func NewSVGImage(reader io.Reader) *SVGImage {
-	svgImage := new(SVGImage)
-	svgImage.fillPath = true
-	svgImage.color = color.Black
-	svgImage.penWidth = 0.3
+	image := new(SVGImage)
+	image.w = 48.0 // TODO:
+	image.h = 48.0
+	image.fillPath = true
+	image.color = color.Black
+	image.penWidth = 0.3
 	var paths = make([]string, 0)
 	buffer, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -79,8 +81,8 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	}
 	svg := NewSVG()
 	svgPathOps := svg.GetSVGPathOps(paths)
-	svgImage.pdfPathOps = svg.GetPDFPathOps(svgPathOps)
-	return svgImage
+	image.pdfPathOps = svg.GetPDFPathOps(svgPathOps)
+	return image
 }
 
 func (image *SVGImage) SetLocation(x, y float32) {
