@@ -30,7 +30,7 @@ import "fmt"
 // The path objects may consist of lines, splines or both.
 // Please see Example_02.
 type PathOp struct {
-	cmd  byte
+	cmd  rune
 	x1q  float32 // Original quadratic control
 	y1q  float32 // point coordinates
 	x1   float32 // Control point x1
@@ -42,14 +42,14 @@ type PathOp struct {
 	args []string
 }
 
-func NewPathOp(cmd byte) *PathOp {
+func NewPathOp(cmd rune) *PathOp {
 	pathOp := new(PathOp)
 	pathOp.cmd = cmd
 	pathOp.args = []string{}
 	return pathOp
 }
 
-func NewPathOpXY(cmd byte, x, y float32) *PathOp {
+func NewPathOpXY(cmd rune, x, y float32) *PathOp {
 	pathOp := new(PathOp)
 	pathOp.cmd = cmd
 	pathOp.args = []string{}

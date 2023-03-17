@@ -62,7 +62,7 @@ func (svg *SVG) GetSVGPaths(filename string) []string {
 	return paths
 }
 
-func (svg *SVG) isCommand(ch byte) bool {
+func (svg *SVG) isCommand(ch rune) bool {
 	// Please note:
 	// Capital letter commands use absolute coordinates
 	// Small letter commands use relative coordinates
@@ -97,41 +97,41 @@ func (svg *SVG) GetSVGPathOps(paths []string) []PathOp {
 		println(path)
 		// Path example:
 		// "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-		buf := []byte{}
+		var buf = strings.Builder{}
 		var token = false
-		for i := 0; i < len(path); i++ {
-			var ch = path[i]
+		for _, ch := range path {
+			print(ch)
 			if svg.isCommand(ch) { // open path
 				if token {
 					op.args = append(op.args, string(ch))
-					buf = buf[:0]
+					buf.Reset()
 				}
 				token = false
 				op = NewPathOp(ch)
 				operations = append(operations, *op)
 			} else if ch == ' ' || ch == ',' {
 				if token {
-					op.args = append(op.args, string(buf))
-					buf = buf[:0]
+					op.args = append(op.args, buf.String())
+					buf.Reset()
 				}
 				token = false
 			} else if ch == '-' {
 				if token {
-					op.args = append(op.args, string(buf))
-					buf = buf[:0]
+					op.args = append(op.args, buf.String())
+					buf.Reset()
 				}
 				token = true
-				buf = append(buf, ch)
+				buf.WriteRune(ch)
 			} else if ch == '.' {
-				if strings.Contains(string(buf), ".") {
-					op.args = append(op.args, string(buf))
-					buf = buf[:0]
+				if strings.Contains(buf.String(), ".") {
+					op.args = append(op.args, buf.String())
+					buf.Reset()
 				}
 				token = true
-				buf = append(buf, ch)
+				buf.WriteRune(ch)
 			} else {
 				token = true
-				buf = append(buf, ch)
+				buf.WriteRune(ch)
 			}
 		}
 	}
