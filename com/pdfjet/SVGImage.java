@@ -77,6 +77,14 @@ public class SVGImage {
                 token = true;
                 param = "fill";
                 buf.setLength(0);
+            } else if (!token && buf.toString().endsWith(" stroke=")) {
+                token = true;
+                param = "stroke";
+                buf.setLength(0);
+            } else if (!token && buf.toString().endsWith(" stroke-width=")) {
+                token = true;
+                param = "stroke-width";
+                buf.setLength(0);
             } else if (token && ch == '\"') {
                 token = false;
                 if (param.equals("width")) {

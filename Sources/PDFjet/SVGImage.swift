@@ -86,6 +86,14 @@ public class SVGImage {
                 token = true
                 param = "fill"
                 buf = ""
+            } else if !token && buf.hasSuffix(" stroke=") {
+                token = true
+                param = "stroke"
+                buf = ""
+            } else if !token && buf.hasSuffix(" stroke-width=") {
+                token = true
+                param = "stroke-width"
+                buf = ""
             } else if token && scalar == UnicodeScalar("\"") {
                 token = false
                 if param == "width" {

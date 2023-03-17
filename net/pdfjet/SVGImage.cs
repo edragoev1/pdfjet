@@ -76,6 +76,14 @@ public class SVGImage {
                 token = true;
                 param = "fill";
                 buf.Length = 0;
+            } else if (!token && buf.ToString().EndsWith(" stroke=")) {
+                token = true;
+                param = "stroke";
+                buf.Length = 0;
+            } else if (!token && buf.ToString().EndsWith(" stroke-width=")) {
+                token = true;
+                param = "stroke-width";
+                buf.Length = 0;
             } else if (token && ch == '\"') {
                 token = false;
                 if (param.Equals("width")) {
