@@ -28,6 +28,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/color"
@@ -54,8 +55,6 @@ type SVGImage struct {
  */
 func NewSVGImage(reader io.Reader) *SVGImage {
 	image := new(SVGImage)
-	image.w = 48.0 // TODO:
-	image.h = 48.0
 	image.fillPath = true
 	image.color = color.Black
 	image.penWidth = 0.3
@@ -65,15 +64,41 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 		log.Fatal(err)
 	}
 	var builder = strings.Builder{}
-	var inPath = false
+	var token = false
+	var param string
 	for i := 0; i < len(buffer); i++ {
 		ch := buffer[i]
-		if !inPath && strings.HasSuffix(builder.String(), "<path d=") {
-			inPath = true
+		if !token && strings.HasSuffix(builder.String(), "width=") {
+			token = true
+			param = "width"
 			builder.Reset()
-		} else if inPath && ch == '"' {
-			inPath = false
-			paths = append(paths, builder.String())
+		} else if !token && strings.HasSuffix(builder.String(), "height=") {
+			token = true
+			param = "height"
+			builder.Reset()
+		} else if !token && strings.HasSuffix(builder.String(), "<path d=") {
+			token = true
+			param = "path"
+			builder.Reset()
+		} else if token && ch == '"' {
+			token = false
+			if param == "width" {
+				width, err := strconv.ParseFloat(builder.String(), 32)
+				if err != nil {
+					log.Fatal(err)
+				} else {
+					image.w = float32(width)
+				}
+			} else if param == "height" {
+				width, err := strconv.ParseFloat(builder.String(), 32)
+				if err != nil {
+					log.Fatal(err)
+				} else {
+					image.w = float32(width)
+				}
+			} else if param == "path" {
+				paths = append(paths, builder.String())
+			}
 			builder.Reset()
 		} else {
 			builder.WriteByte(ch)
