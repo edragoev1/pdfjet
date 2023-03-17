@@ -40,7 +40,7 @@ public class SVGImage {
 
     private int color = Color.black;
     private int penColor = Color.black;
-    private float penWidth = 0.3f;
+    private float penWidth = 2.0f;
     private boolean fillPath = true;
 
     protected String uri = null;
@@ -179,13 +179,17 @@ public class SVGImage {
 
     public float[] drawOn(Page page) {
         page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.setBrushColor(color);
         page.setPenWidth(penWidth);
+        page.setPenColor(penColor);
+/*
         if (fillPath) {
             page.setBrushColor(color);
         }
         else {
-            page.setPenColor(color);
+            page.setPenColor(penColor);
         }
+*/
         for (int i = 0; i < pdfPathOps.size(); i++) {
             PathOp op = pdfPathOps.get(i);
             if (op.cmd == 'M') {
