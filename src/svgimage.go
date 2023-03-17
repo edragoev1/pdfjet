@@ -35,7 +35,7 @@ import (
 
 type SVGImage struct {
 	x, y, w, h     float32
-	pdfPathOps     []PathOp
+	pdfPathOps     []*PathOp
 	color          uint32
 	penWidth       float32
 	fillPath       bool
@@ -57,7 +57,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	svgImage.fillPath = true
 	svgImage.color = color.Black
 	svgImage.penWidth = 0.3
-	var paths = []string{}
+	var paths = make([]string, 0)
 	buffer, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)

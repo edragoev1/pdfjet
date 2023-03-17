@@ -90,8 +90,9 @@ func (svg *SVG) isCommand(ch rune) bool {
 	return false
 }
 
-func (svg *SVG) GetSVGPathOps(paths []string) []PathOp {
-	operations := []PathOp{}
+func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
+	operations := make([]*PathOp, 0)
+	println(len(operations))
 	var op *PathOp
 	for _, path := range paths {
 		println(path)
@@ -108,7 +109,7 @@ func (svg *SVG) GetSVGPathOps(paths []string) []PathOp {
 				}
 				token = false
 				op = NewPathOp(ch)
-				operations = append(operations, *op)
+				operations = append(operations, op)
 			} else if ch == ' ' || ch == ',' {
 				if token {
 					op.args = append(op.args, buf.String())
@@ -135,18 +136,20 @@ func (svg *SVG) GetSVGPathOps(paths []string) []PathOp {
 			}
 		}
 	}
-	print(len(operations))
+	println(len(operations))
 	return operations
 }
 
-func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
-	operations := []PathOp{}
+func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
+	operations := make([]*PathOp, 0)
 	var lastOp *PathOp
 	var x0 float32 = 0.0 // Start of subpath
 	var y0 float32 = 0.0
 	for _, op := range list {
 		if op.cmd == 'M' || op.cmd == 'm' {
+			println("are we here")
 			for i := 0; i <= len(op.args)-2; i += 2 {
+				println("or here??")
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
@@ -170,8 +173,9 @@ func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
 				} else {
 					pathOp = NewPathOpXY('L', float32(x), float32(y))
 				}
-				operations = append(operations, *pathOp)
+				operations = append(operations, pathOp)
 				lastOp = pathOp
+				println(len(operations))
 			}
 		} else if op.cmd == 'L' || op.cmd == 'l' {
 			for i := 0; i <= len(op.args)-2; i += 2 {
@@ -195,8 +199,9 @@ func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
 					y += float64(lastOp.y)
 				}
 				pathOp = NewPathOpXY('L', float32(x), float32(y))
-				operations = append(operations, *pathOp)
+				operations = append(operations, pathOp)
 				lastOp = pathOp
+				println(len(operations))
 			}
 		} else if op.cmd == 'H' || op.cmd == 'h' {
 			for i := 0; i < len(op.args); i++ {
@@ -209,7 +214,7 @@ func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
 					x += float64(lastOp.x)
 				}
 				pathOp = NewPathOpXY('L', float32(x), lastOp.y)
-				operations = append(operations, *pathOp)
+				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
 		} else if op.cmd == 'V' || op.cmd == 'v' {
@@ -223,7 +228,7 @@ func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
 					y += float64(lastOp.y)
 				}
 				pathOp = NewPathOpXY('L', lastOp.x, float32(y))
-				operations = append(operations, *pathOp)
+				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
 		} else if op.cmd == 'Q' || op.cmd == 'q' {
@@ -260,7 +265,7 @@ func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
 				x2c := float32(x) + (2.0/3.0)*(float32(x1)-float32(x))
 				y2c := float32(y) + (2.0/3.0)*(float32(y1)-float32(y))
 				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
-				operations = append(operations, *pathOp)
+				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
 		} else if op.cmd == 'T' || op.cmd == 't' {
@@ -291,14 +296,60 @@ func (svg *SVG) GetPDFPathOps(list []PathOp) []PathOp {
 				x2c := float32(x) + (2.0/3.0)*(x1-float32(x))
 				y2c := float32(y) + (2.0/3.0)*(y1-float32(y))
 				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
-				operations = append(operations, *pathOp)
+				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
+		} else if op.cmd == 'C' || op.cmd == 'c' {
+			for i := 0; i <= len(op.args)-6; i += 6 {
+				pathOp := NewPathOp('C')
+				x1, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				y1, err := strconv.ParseFloat(op.args[i+1], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				x2, err := strconv.ParseFloat(op.args[i+2], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				y2, err := strconv.ParseFloat(op.args[i+3], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				x, err := strconv.ParseFloat(op.args[i+4], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				y, err := strconv.ParseFloat(op.args[i+5], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				if op.cmd == 'c' {
+					x1 += float64(lastOp.x)
+					y1 += float64(lastOp.y)
+					x2 += float64(lastOp.x)
+					y2 += float64(lastOp.y)
+					x += float64(lastOp.x)
+					y += float64(lastOp.y)
+				}
+				pathOp.addCubicPoints(
+					float32(x1), float32(y1),
+					float32(x2), float32(y2),
+					float32(x), float32(y))
+				operations = append(operations, pathOp)
+				lastOp = pathOp
+			}
+		} else if op.cmd == 'S' || op.cmd == 's' {
+			// Smooth Cubic Curve
+		} else if op.cmd == 'A' || op.cmd == 'a' {
+			// Elliptical Arc
 		} else if op.cmd == 'Z' || op.cmd == 'z' {
 			pathOp := NewPathOp('Z')
 			pathOp.x = x0
 			pathOp.y = y0
-			operations = append(operations, *pathOp)
+			operations = append(operations, pathOp)
 			lastOp = pathOp
 		}
 	}
