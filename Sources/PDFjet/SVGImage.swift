@@ -82,6 +82,10 @@ public class SVGImage {
                 token = true
                 param = "path"
                 buf = ""
+            } else if !token && buf.hasSuffix("fill") {
+                token = true
+                param = "fill"
+                buf = ""
             } else if token && scalar == UnicodeScalar("\"") {
                 token = false
                 if param == "width" {
@@ -90,6 +94,8 @@ public class SVGImage {
                     h = Float(buf)!
                 } else if param == "path" {
                     paths.append(buf)
+                } else if param == "fill" {
+                    color = mapColorNameToValue(buf)
                 }
                 buf = ""
             } else {
@@ -98,6 +104,17 @@ public class SVGImage {
         }
         let svgPathOps: [PathOp] = SVG.getSVGPathOps(paths)
         pdfPathOps = SVG.getPDFPathOps(svgPathOps)
+    }
+
+    func mapColorNameToValue(_ colorName: String) -> UInt32 {
+        var color = Color.black;
+        let mirror = Mirror(reflecting: Color.self)
+        mirror.children.forEach { child in
+            if child.label == colorName {
+                color = child.value as! UInt32
+            }
+        }
+        return color;
     }
 
     public func getPDFPathOps() -> [PathOp] {
