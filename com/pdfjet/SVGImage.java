@@ -39,6 +39,7 @@ public class SVGImage {
     List<PathOp> pdfPathOps = null;
 
     private int color = Color.black;
+    private int penColor = Color.black;
     private float penWidth = 0.3f;
     private boolean fillPath = true;
 
@@ -94,7 +95,15 @@ public class SVGImage {
                 } else if (param.equals("path")) {
                     paths.add(buf.toString());
                 } else if (param.equals("fill")) {
-                    color = mapColorNameToValue(buf.toString());
+                    if (buf.toString().equals("none")) {
+                        fillPath = false;
+                    } else {
+                        color = mapColorNameToValue(buf.toString());
+                    }
+                } else if (param.equals("stroke")) {
+                    penColor = mapColorNameToValue(buf.toString());
+                } else if (param.equals("stroke-width")) {
+                    penWidth = Float.valueOf(buf.toString());
                 }
                 buf.setLength(0);
             } else {
