@@ -61,11 +61,11 @@ public class SVGImage {
         String param = null;
         int ch;
         while ((ch = stream.read()) != -1) {
-            if (!token && buf.toString().endsWith("width=")) {
+            if (!token && buf.toString().endsWith(" width=")) {
                 token = true;
                 param = "width";
                 buf.setLength(0);
-            } else if (!token && buf.toString().endsWith("height=")) {
+            } else if (!token && buf.toString().endsWith(" height=")) {
                 token = true;
                 param = "height";
                 buf.setLength(0);
@@ -73,7 +73,7 @@ public class SVGImage {
                 token = true;
                 param = "path";
                 buf.setLength(0);
-            } else if (!token && buf.toString().endsWith("fill=")) {
+            } else if (!token && buf.toString().endsWith(" fill=")) {
                 token = true;
                 param = "fill";
                 buf.setLength(0);

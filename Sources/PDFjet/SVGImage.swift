@@ -70,11 +70,11 @@ public class SVGImage {
         var token = false
         var param: String?
         for scalar in scalars {
-            if !token && buf.hasSuffix("width=") {
+            if !token && buf.hasSuffix(" width=") {
                 token = true
                 param = "width"
                 buf = ""
-            } else if !token && buf.hasSuffix("height=") {
+            } else if !token && buf.hasSuffix(" height=") {
                 token = true
                 param = "height"
                 buf = ""
@@ -82,7 +82,7 @@ public class SVGImage {
                 token = true
                 param = "path"
                 buf = ""
-            } else if !token && buf.hasSuffix("fill=") {
+            } else if !token && buf.hasSuffix(" fill=") {
                 token = true
                 param = "fill"
                 buf = ""

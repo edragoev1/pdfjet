@@ -60,11 +60,11 @@ public class SVGImage {
         String param = null;
         int ch;
         while ((ch = stream.ReadByte()) != -1) {
-            if (!token && buf.ToString().EndsWith("width=")) {
+            if (!token && buf.ToString().EndsWith(" width=")) {
                 token = true;
                 param = "width";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith("height=")) {
+            } else if (!token && buf.ToString().EndsWith(" height=")) {
                 token = true;
                 param = "height";
                 buf.Length = 0;
@@ -72,7 +72,7 @@ public class SVGImage {
                 token = true;
                 param = "path";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith("fill=")) {
+            } else if (!token && buf.ToString().EndsWith(" fill=")) {
                 token = true;
                 param = "fill";
                 buf.Length = 0;
