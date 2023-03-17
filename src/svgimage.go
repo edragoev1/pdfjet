@@ -58,7 +58,8 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	image.fillPath = true
 	image.color = color.Black
 	image.penWidth = 0.3
-	var paths = make([]string, 0)
+	colorMap := NewColorMap()
+	paths := make([]string, 0)
 	buffer, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
@@ -103,7 +104,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			} else if param == "path" {
 				paths = append(paths, builder.String())
 			} else if param == "fill" {
-				image.color = mapColorNameToValue(builder.String())
+				image.color = mapColorNameToValue(colorMap, builder.String())
 			}
 			builder.Reset()
 		} else {
@@ -116,8 +117,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	return image
 }
 
-func mapColorNameToValue(colorName string) uint32 {
-	var colorMap = NewColorMap()
+func mapColorNameToValue(colorMap map[string]uint32, colorName string) uint32 {
 	value, ok := colorMap[colorName]
 	if ok {
 		return value
