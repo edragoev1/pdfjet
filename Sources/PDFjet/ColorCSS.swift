@@ -27,6 +27,7 @@ SOFTWARE.
  * Used to specify the pen and brush colors.
  * @see <a href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</a>
  *
+ * NOTE: We need this class in addition to Color.swift because the Swift reflection does not work with static variables.
  */
 public class ColorCSS {
     public let transparent: UInt32 = 0x80000000
