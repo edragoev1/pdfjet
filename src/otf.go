@@ -45,7 +45,6 @@ type FontTable struct {
 
 // OTF is used to construct TTF and OTF font objects.
 type OTF struct {
-	reader             io.Reader
 	fontName           string
 	fontInfo           string
 	buf                []byte

@@ -44,17 +44,12 @@ type SVGImage struct {
 	altDescription string
 }
 
-func NewSVGImage() *SVG {
-	svg := new(SVG)
-	return svg
-}
-
 /**
  * Used to embed SVG images in the PDF document.
  *
  * @param stream the input stream.
  */
-func SVGImage5(reader io.Reader) {
+func NewSVGImage(reader io.Reader) {
 	var paths = []string{}
 	var builder = strings.Builder{}
 	var inPath = false
