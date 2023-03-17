@@ -77,6 +77,28 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	return svgImage
 }
 
+func (image *SVGImage) SetLocation(x, y float32) {
+	image.x = x
+	image.y = y
+}
+
 func (image *SVGImage) SetPenWidth(w float32) {
 	image.w = w
+}
+
+func (image *SVGImage) SetSize(w, h float32) {
+	image.w = w
+	image.h = h
+}
+
+func (image *SVGImage) SetHeight(h float32) {
+	image.h = h
+}
+
+func (image *SVGImage) GetPenWidth() float32 {
+	return image.w
+}
+
+func (image *SVGImage) GetHeight() float32 {
+	return image.h
 }
