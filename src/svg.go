@@ -336,7 +336,44 @@ func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
 				lastOp = pathOp
 			}
 		} else if op.cmd == 'S' || op.cmd == 's' {
-			// Smooth Cubic Curve
+			for i := 0; i <= len(op.args)-4; i += 4 {
+				pathOp := NewPathOp('C')
+				x1 := lastOp.x
+				y1 := lastOp.y
+				if lastOp.cmd == 'C' {
+					// Find the reflection control point
+					x1 = 2*lastOp.x - lastOp.x2
+					y1 = 2*lastOp.y - lastOp.y2
+				}
+				x2, err := strconv.ParseFloat(op.args[i], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				y2, err := strconv.ParseFloat(op.args[i+1], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				x, err := strconv.ParseFloat(op.args[i+2], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				y, err := strconv.ParseFloat(op.args[i+3], 32)
+				if err != nil {
+					log.Fatal(err)
+				}
+				if op.cmd == 's' {
+					x2 += float64(lastOp.x)
+					y2 += float64(lastOp.y)
+					x += float64(lastOp.x)
+					y += float64(lastOp.y)
+				}
+				pathOp.addCubicPoints(
+					float32(x1), float32(y1),
+					float32(x2), float32(y2),
+					float32(x), float32(y))
+				operations = append(operations, pathOp)
+				lastOp = pathOp
+			}
 		} else if op.cmd == 'A' || op.cmd == 'a' {
 			// Elliptical Arc
 		} else if op.cmd == 'Z' || op.cmd == 'z' {

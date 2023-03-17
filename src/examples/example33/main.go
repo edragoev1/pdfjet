@@ -117,6 +117,16 @@ func Example33() {
 	reader2 = bufio.NewReader(file2)
 	image2 = pdfjet.NewSVGImage(reader2)
 	image2.SetLocation(xy[0], 670.0)
+	xy = image2.DrawOn(page)
+
+	file2, err = os.Open("images/svg-test/test-CS.svg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file2.Close()
+	reader2 = bufio.NewReader(file2)
+	image2 = pdfjet.NewSVGImage(reader2)
+	image2.SetLocation(xy[0], 670.0)
 	image2.DrawOn(page)
 
 	pdf.Complete()
