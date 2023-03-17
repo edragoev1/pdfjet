@@ -86,7 +86,7 @@ public class SVGImage {
                 } else if (param.equals("path")) {
                     paths.add(buf.toString());
                 } else if (param.equals("fill")) {
-                    color = mapStringColorToInt(buf.toString());
+                    color = mapColorNameToValue(buf.toString());
                 }
                 buf.setLength(0);
             } else {
@@ -98,18 +98,11 @@ public class SVGImage {
         pdfPathOps = SVG.getPDFPathOps(svgPathOps);
     }
 
-    private int mapStringColorToInt(String color) {
+    private int mapColorNameToValue(String color) {
         int colorAsInt = Color.black;
         try {
             colorAsInt = (int) Color.class.getDeclaredField(color).get(null);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
         }
         return colorAsInt;
     }
