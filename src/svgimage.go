@@ -80,6 +80,10 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			token = true
 			param = "path"
 			builder.Reset()
+		} else if !token && strings.HasSuffix(builder.String(), "fill=") {
+			token = true
+			param = "fill"
+			builder.Reset()
 		} else if token && ch == '"' {
 			token = false
 			if param == "width" {
@@ -98,6 +102,8 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 				}
 			} else if param == "path" {
 				paths = append(paths, builder.String())
+			} else if param == "fill" {
+				image.color = mapColorNameToValue(builder.String())
 			}
 			builder.Reset()
 		} else {
@@ -110,16 +116,13 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	return image
 }
 
-func mapColorNameToValue(colorName string) int {
-	var color = color.Black
-	/*
-	   for i := 0; i < obj.NumField(); i++ {
-	         fieldName := obj.Type().Field(i).Name
-	         fieldValue := obj.Field(i).Interface()
-	         fmt.Println(fieldName, " -> ", fieldValue)
-	   }
-	*/
-	return color
+func mapColorNameToValue(colorName string) uint32 {
+	var colorMap = NewColorCSS()
+	value, ok := colorMap["colorName"]
+	if ok {
+		return value
+	}
+	return uint32(color.Black)
 }
 
 func (image *SVGImage) SetLocation(x, y float32) {
