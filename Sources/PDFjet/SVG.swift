@@ -241,7 +241,31 @@ public class SVG {
                     i += 6
                 }
             } else if op.cmd == "S" || op.cmd == "s" {
-                // Smooth Cubic Curve
+                var i: Int = 0
+                while i <= (op.args.count - 4) {
+                    let pathOp = PathOp("C")
+                    var x1 = lastOp!.x
+                    var y1 = lastOp!.y
+                    if lastOp!.cmd == "C" {
+                        // Find the reflection control point
+                        x1 = 2*lastOp!.x - lastOp!.x2
+                        y1 = 2*lastOp!.y - lastOp!.y2
+                    }
+                    var x2 = Float(op.args[i])!
+                    var y2 = Float(op.args[i + 1])!
+                    var x = Float(op.args[i + 2])!
+                    var y = Float(op.args[i + 3])!
+                    if op.cmd == "s" {
+                        x2 += lastOp!.x
+                        y2 += lastOp!.y
+                        x += lastOp!.x
+                        y += lastOp!.y
+                    }
+                    pathOp.appendCubicPoints(x1, y1, x2, y2, x, y)
+                    operations.append(pathOp)
+                    lastOp = pathOp
+                    i += 4
+                }
             } else if op.cmd == "A" || op.cmd == "a" {
                 // Elliptical Arc
             } else if op.cmd == "Z" || op.cmd == "z" {

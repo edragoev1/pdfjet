@@ -54,6 +54,12 @@ public class Example_33 {
             icon.setLocation(xy[0], 670.0)
             xy = icon.drawOn(page)
 
+            stream = InputStream(
+                    fileAtPath: "images/svg-test/test-CS.svg")
+            icon = SVGImage(stream!)
+            icon.setLocation(xy[0], 670.0)
+            xy = icon.drawOn(page)
+
             pdf.complete()
         }
     }
