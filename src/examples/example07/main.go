@@ -20,10 +20,8 @@ func Example07(mode string) {
 		log.Fatal(err)
 	}
 	w := bufio.NewWriter(f)
-	/*
-	   	pdf := pdfjet.NewPDF(w, compliance.PDFUA)
-	       pdf.SetTitle("PDF/UA compliant PDF");
-	*/
+	// pdf := pdfjet.NewPDF(w, compliance.PDFUA)
+	// pdf.SetTitle("PDF/UA compliant PDF");
 	pdf := pdfjet.NewPDF(w, compliance.PDF_A_1B)
 	pdf.SetTitle("PDF/A-1B compliant PDF")
 

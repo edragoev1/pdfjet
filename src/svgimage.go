@@ -24,6 +24,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+import (
+	"io"
+	"io/ioutil"
+	"log"
+	"strings"
+)
+
 type SVGImage struct {
 	x, y, w, h     float32
 	pdfPathOps     []*PathOp
@@ -40,4 +47,34 @@ type SVGImage struct {
 func NewSVGImage() *SVG {
 	svg := new(SVG)
 	return svg
+}
+
+/**
+ * Used to embed SVG images in the PDF document.
+ *
+ * @param stream the input stream.
+ */
+func SVGImage5(reader io.Reader) {
+	var paths = []string{}
+	var builder = strings.Builder{}
+	var inPath = false
+	buf, err := ioutil.ReadAll(reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i := 0; i < len(buf); i++ {
+		ch := buf[i]
+		if !inPath && strings.HasSuffix(string(buf), "<path d=") {
+			inPath = true
+			builder.Reset()
+		} else if inPath && ch == '"' {
+			inPath = false
+			paths = append(paths, string(buf))
+			builder.Reset()
+		} else {
+			builder.WriteByte(ch)
+		}
+	}
+	// var svgPathOps = SVG.GetSVGPathOps(paths)
+	// pdfPathOps = SVG.GetPDFPathOps(svgPathOps)
 }
