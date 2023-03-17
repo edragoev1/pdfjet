@@ -86,11 +86,7 @@ public class SVGImage {
                 } else if (param.equals("path")) {
                     paths.add(buf.toString());
                 } else if (param.equals("fill")) {
-                    if (buf.toString().equals("red")) {
-                        color = Color.red;
-                    } else if (buf.toString().equals("blue")) {
-                        color = Color.blue;
-                    }
+                    color = mapStringColorToInt(buf.toString());
                 }
                 buf.setLength(0);
             } else {
@@ -100,6 +96,15 @@ public class SVGImage {
         stream.close();
         List<PathOp> svgPathOps = SVG.getSVGPathOps(paths);
         pdfPathOps = SVG.getPDFPathOps(svgPathOps);
+    }
+
+    private int mapStringColorToInt(String color) {
+        if (color.toString().equals("red")) {
+            return Color.red;
+        } else if (color.equals("blue")) {
+            return Color.blue;
+        }
+        return Color.black;
     }
 
     public List<PathOp> getPDFPathOps() {
