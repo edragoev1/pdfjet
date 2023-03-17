@@ -99,12 +99,19 @@ public class SVGImage {
     }
 
     private int mapStringColorToInt(String color) {
-        if (color.toString().equals("red")) {
-            return Color.red;
-        } else if (color.equals("blue")) {
-            return Color.blue;
+        int colorAsInt = Color.black;
+        try {
+            colorAsInt = (int) Color.class.getDeclaredField(color).get(null);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
-        return Color.black;
+        return colorAsInt;
     }
 
     public List<PathOp> getPDFPathOps() {
