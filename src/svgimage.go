@@ -71,14 +71,16 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			builder.Reset()
 		} else if inPath && ch == '"' {
 			inPath = false
-			paths = append(paths, string(buf))
+			paths = append(paths, builder.String())
 			builder.Reset()
 		} else {
 			builder.WriteByte(ch)
 		}
 	}
+	print(builder.String())
 	svg := NewSVG()
 	svgPathOps := svg.GetSVGPathOps(paths)
+	println(len(svgPathOps))
 	svgImage.pdfPathOps = svg.GetPDFPathOps(svgPathOps)
 	return svgImage
 }
@@ -110,7 +112,6 @@ func (image *SVGImage) GetHeight() float32 {
 }
 
 func (image *SVGImage) DrawOn(page *Page) []float32 {
-	println("Are we here???")
 	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
 	page.SetPenWidth(image.penWidth)
 	if image.fillPath {

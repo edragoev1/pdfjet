@@ -42,7 +42,7 @@ func Example33() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	defer file3.Close()
 	reader3 := bufio.NewReader(file3)
 	image3 := pdfjet.NewSVGImage(reader3)
 	image3.SetLocation(20.0, 670.0)
