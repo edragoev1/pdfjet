@@ -73,6 +73,10 @@ public class SVGImage {
                 token = true;
                 param = "path";
                 buf.setLength(0);
+            } else if (!token && buf.toString().endsWith("fill=")) {
+                token = true;
+                param = "fill";
+                buf.setLength(0);
             } else if (token && ch == '\"') {
                 token = false;
                 if (param.equals("width")) {
@@ -81,6 +85,12 @@ public class SVGImage {
                     h = Float.valueOf(buf.toString());
                 } else if (param.equals("path")) {
                     paths.add(buf.toString());
+                } else if (param.equals("fill")) {
+                    if (buf.toString().equals("red")) {
+                        color = Color.red;
+                    } else if (buf.toString().equals("blue")) {
+                        color = Color.blue;
+                    }
                 }
                 buf.setLength(0);
             } else {
