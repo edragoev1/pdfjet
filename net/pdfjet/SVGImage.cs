@@ -33,8 +33,8 @@ namespace PDFjet.NET {
 public class SVGImage {
     float x = 0f;
     float y = 0f;
-    float w = 48f;      // SVG width
-    float h = 48f;      // SVG height
+    float w = 0f;       // SVG width
+    float h = 0f;       // SVG height
     List<PathOp> pdfPathOps = null;
 
     private int color = Color.black;
@@ -56,15 +56,31 @@ public class SVGImage {
     public SVGImage(Stream stream) {
         List<String> paths = new List<String>();
         StringBuilder buf = new StringBuilder();
-        bool inPath = false;
+        bool token = false;
+        String param = null;
         int ch;
         while ((ch = stream.ReadByte()) != -1) {
-            if (!inPath && buf.ToString().EndsWith("<path d=")) {
-                inPath = true;
+            if (!token && buf.ToString().EndsWith("width=")) {
+                token = true;
+                param = "width";
                 buf.Length = 0;
-            } else if (inPath && ch == '\"') {
-                inPath = false;
-                paths.Add(buf.ToString());
+            } else if (!token && buf.ToString().EndsWith("height=")) {
+                token = true;
+                param = "height";
+                buf.Length = 0;
+            } else if (!token && buf.ToString().EndsWith("<path d=")) {
+                token = true;
+                param = "path";
+                buf.Length = 0;
+            } else if (token && ch == '\"') {
+                token = false;
+                if (param.Equals("width")) {
+                    w = float.Parse(buf.ToString());
+                } else if (param.Equals("height")) {
+                    h = float.Parse(buf.ToString());
+                } else if (param.Equals("path")) {
+                    paths.Add(buf.ToString());
+                }
                 buf.Length = 0;
             } else {
                 buf.Append((char) ch);
