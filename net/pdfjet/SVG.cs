@@ -235,6 +235,31 @@ public class SVG {
                 }
             } else if (op.cmd == 'S' || op.cmd == 's') {
                 // Smooth Cubic Curve
+                for (int i = 0; i <= op.args.Count - 4; i += 4) {
+                    pathOp = new PathOp('C');
+                    float x1 = lastOp.x;
+                    float y1 = lastOp.y;
+                    if (lastOp.cmd == 'C') {
+                        // Find the reflection control point
+                        x1 = 2*lastOp.x - lastOp.x2;
+                        y1 = 2*lastOp.y - lastOp.y2;
+                    }
+                    float x2 = float.Parse(op.args[i]);
+                    float y2 = float.Parse(op.args[i + 1]);
+                    float x = float.Parse(op.args[i + 2]);
+                    float y = float.Parse(op.args[i + 3]);
+                    if (op.cmd == 'c') {
+                        x1 += lastOp.x;
+                        y1 += lastOp.y;
+                        x2 += lastOp.x;
+                        y2 += lastOp.y;
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
+                    pathOp.addCubicPoints(x1, y1, x2, y2, x, y);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
             } else if (op.cmd == 'A' || op.cmd == 'a') {
                 // Elliptical Arc
 
