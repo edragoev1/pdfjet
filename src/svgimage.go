@@ -38,6 +38,7 @@ type SVGImage struct {
 	x, y, w, h     float32
 	pdfPathOps     []*PathOp
 	color          uint32
+	penColor       uint32
 	penWidth       float32
 	fillPath       bool
 	uri            *string
@@ -57,7 +58,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	image := new(SVGImage)
 	image.fillPath = true
 	image.color = color.Black
-	image.penWidth = 0.3
+	image.penWidth = 2.0
 	colorMap := NewColorMap()
 	paths := make([]string, 0)
 	buffer, err := ioutil.ReadAll(reader)
@@ -85,6 +86,10 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			token = true
 			param = "fill"
 			builder.Reset()
+		} else if !token && strings.HasSuffix(builder.String(), "stroke=") {
+			token = true
+			param = "stroke"
+			builder.Reset()
 		} else if token && ch == '"' {
 			token = false
 			if param == "width" {
@@ -104,7 +109,13 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			} else if param == "path" {
 				paths = append(paths, builder.String())
 			} else if param == "fill" {
-				image.color = mapColorNameToValue(colorMap, builder.String())
+				if builder.String() == "none" {
+					image.fillPath = false
+				} else {
+					image.color = mapColorNameToValue(colorMap, builder.String())
+				}
+			} else if param == "stroke" {
+				image.penColor = mapColorNameToValue(colorMap, builder.String())
 			}
 			builder.Reset()
 		} else {
