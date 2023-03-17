@@ -29,6 +29,8 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/src/color"
 )
 
 type SVGImage struct {
@@ -37,11 +39,12 @@ type SVGImage struct {
 	color          uint32
 	penWidth       float32
 	fillPath       bool
-	uri            string
-	key            string
+	uri            *string
+	key            *string
 	language       string
-	actualText     string
 	altDescription string
+	actualText     string
+	structureType  string
 }
 
 /**
@@ -51,6 +54,9 @@ type SVGImage struct {
  */
 func NewSVGImage(reader io.Reader) *SVGImage {
 	svgImage := new(SVGImage)
+	svgImage.fillPath = true
+	svgImage.color = color.Black
+	svgImage.penWidth = 0.3
 	var paths = []string{}
 	var builder = strings.Builder{}
 	var inPath = false
@@ -101,4 +107,48 @@ func (image *SVGImage) GetPenWidth() float32 {
 
 func (image *SVGImage) GetHeight() float32 {
 	return image.h
+}
+
+func (image *SVGImage) drawOn(page Page) []float32 {
+	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
+	page.SetPenWidth(image.penWidth)
+	if image.fillPath {
+		page.SetBrushColor(image.color)
+	} else {
+		page.SetPenColor(image.color)
+	}
+	for i := 0; i < len(image.pdfPathOps); i++ {
+		op := image.pdfPathOps[i]
+		if op.cmd == 'M' {
+			page.MoveTo(op.x+image.x, op.y+image.y)
+		} else if op.cmd == 'L' {
+			page.LineTo(op.x+image.x, op.y+image.y)
+		} else if op.cmd == 'C' {
+			page.CurveTo(
+				op.x1+image.x, op.y1+image.y,
+				op.x2+image.x, op.y2+image.y,
+				op.x+image.x, op.y+image.y)
+		} else if op.cmd == 'Z' {
+			if !image.fillPath {
+				page.ClosePath()
+			}
+		}
+	}
+	if image.fillPath {
+		page.FillPath()
+	}
+	page.AddEMC()
+	if image.uri != nil || image.key != nil {
+		page.AddAnnotation(NewAnnotation(
+			image.uri,
+			image.key, // The destination name
+			image.x,
+			image.y,
+			image.x+image.w,
+			image.y+image.h,
+			image.language,
+			image.actualText,
+			image.altDescription))
+	}
+	return []float32{image.x + image.w, image.y + image.h}
 }
