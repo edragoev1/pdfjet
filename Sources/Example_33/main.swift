@@ -1,10 +1,8 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_33.swift
- *
  */
 public class Example_33 {
 
