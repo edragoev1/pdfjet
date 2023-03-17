@@ -110,6 +110,18 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	return image
 }
 
+func mapColorNameToValue(colorName string) int {
+	var color = color.Black
+	/*
+	   for i := 0; i < obj.NumField(); i++ {
+	         fieldName := obj.Type().Field(i).Name
+	         fieldValue := obj.Field(i).Interface()
+	         fmt.Println(fieldName, " -> ", fieldValue)
+	   }
+	*/
+	return color
+}
+
 func (image *SVGImage) SetLocation(x, y float32) {
 	image.x = x
 	image.y = y
