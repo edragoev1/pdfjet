@@ -90,6 +90,10 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			token = true
 			param = "stroke"
 			builder.Reset()
+		} else if !token && strings.HasSuffix(builder.String(), "stroke-width=") {
+			token = true
+			param = "stroke-width"
+			builder.Reset()
 		} else if token && ch == '"' {
 			token = false
 			if param == "width" {
@@ -116,6 +120,15 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 				}
 			} else if param == "stroke" {
 				image.penColor = mapColorNameToValue(colorMap, builder.String())
+			} else if param == "stroke-width" {
+				println("Or here??")
+				penWidth, err := strconv.ParseFloat(builder.String(), 32)
+				if err != nil {
+					log.Fatal(err)
+				} else {
+					println("Are we here??")
+					image.penWidth = float32(penWidth)
+				}
 			}
 			builder.Reset()
 		} else {
@@ -168,7 +181,7 @@ func (image *SVGImage) DrawOn(page *Page) []float32 {
 	if image.fillPath {
 		page.SetBrushColor(image.color)
 	} else {
-		page.SetPenColor(image.color)
+		page.SetPenColor(image.penColor)
 	}
 	for i := 0; i < len(image.pdfPathOps); i++ {
 		op := image.pdfPathOps[i]
