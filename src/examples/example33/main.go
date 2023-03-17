@@ -38,10 +38,15 @@ func Example33() {
 	image1.ScaleBy(0.25)
 	image1.DrawOn(page)
 
-	svg := pdfjet.NewSVG()
-	paths := svg.GetSVGPaths("images/svg-test/test-CC.svg")
-	svgPathOps := svg.GetSVGPathOps(paths)
-	_ = svg.GetPDFPathOps(svgPathOps)
+	file3, err := os.Open("images/svg-test/test-CC.svg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	reader3 := bufio.NewReader(file3)
+	image3 := pdfjet.NewSVGImage(reader3)
+	image3.SetLocation(20.0, 670.0)
+	image3.DrawOn(page)
 
 	pdf.Complete()
 }

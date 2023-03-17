@@ -109,7 +109,8 @@ func (image *SVGImage) GetHeight() float32 {
 	return image.h
 }
 
-func (image *SVGImage) drawOn(page Page) []float32 {
+func (image *SVGImage) DrawOn(page *Page) []float32 {
+	println("Are we here???")
 	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
 	page.SetPenWidth(image.penWidth)
 	if image.fillPath {
