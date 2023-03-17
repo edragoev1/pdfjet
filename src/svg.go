@@ -101,7 +101,7 @@ func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 		for _, ch := range path {
 			if svg.isCommand(ch) { // open path
 				if token {
-					op.args = append(op.args, string(ch))
+					op.args = append(op.args, buf.String())
 					buf.Reset()
 				}
 				token = false
@@ -132,6 +132,13 @@ func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 				buf.WriteRune(ch)
 			}
 		}
+	}
+	for _, oper := range operations {
+		print(string(oper.cmd) + " ")
+		for _, arg := range oper.args {
+			print(arg + " ")
+		}
+		println()
 	}
 	return operations
 }
