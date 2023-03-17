@@ -70,11 +70,11 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	var param string
 	for i := 0; i < len(buffer); i++ {
 		ch := buffer[i]
-		if !token && strings.HasSuffix(builder.String(), "width=") {
+		if !token && strings.HasSuffix(builder.String(), " width=") {
 			token = true
 			param = "width"
 			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), "height=") {
+		} else if !token && strings.HasSuffix(builder.String(), " height=") {
 			token = true
 			param = "height"
 			builder.Reset()
@@ -82,15 +82,15 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			token = true
 			param = "path"
 			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), "fill=") {
+		} else if !token && strings.HasSuffix(builder.String(), " fill=") {
 			token = true
 			param = "fill"
 			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), "stroke=") {
+		} else if !token && strings.HasSuffix(builder.String(), " stroke=") {
 			token = true
 			param = "stroke"
 			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), "stroke-width=") {
+		} else if !token && strings.HasSuffix(builder.String(), " stroke-width=") {
 			token = true
 			param = "stroke-width"
 			builder.Reset()
@@ -121,12 +121,10 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			} else if param == "stroke" {
 				image.penColor = mapColorNameToValue(colorMap, builder.String())
 			} else if param == "stroke-width" {
-				println("Or here??")
 				penWidth, err := strconv.ParseFloat(builder.String(), 32)
 				if err != nil {
 					log.Fatal(err)
 				} else {
-					println("Are we here??")
 					image.penWidth = float32(penWidth)
 				}
 			}
