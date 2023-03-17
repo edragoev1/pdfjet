@@ -236,7 +236,29 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'S' || op.cmd == 's') {
-                // Smooth Cubic Curve
+                for (int i = 0; i <= op.args.size() - 4; i += 4) {
+                    pathOp = new PathOp('C');
+                    float x1 = lastOp.x;
+                    float y1 = lastOp.y;
+                    if (lastOp.cmd == 'C') {
+                        // Find the reflection control point
+                        x1 = 2*lastOp.x - lastOp.x2;
+                        y1 = 2*lastOp.y - lastOp.y2;
+                    }
+                    float x2 = Float.valueOf(op.args.get(i));
+                    float y2 = Float.valueOf(op.args.get(i + 1));
+                    float x = Float.valueOf(op.args.get(i + 2));
+                    float y = Float.valueOf(op.args.get(i + 3));
+                    if (op.cmd == 's') {
+                        x2 += lastOp.x;
+                        y2 += lastOp.y;
+                        x += lastOp.x;
+                        y += lastOp.y;
+                    }
+                    pathOp.addCubicPoints(x1, y1, x2, y2, x, y);
+                    operations.add(pathOp);
+                    lastOp = pathOp;
+                }
             } else if (op.cmd == 'A' || op.cmd == 'a') {
                 // Elliptical Arc
             } else if (op.cmd == 'Z' || op.cmd == 'z') {
