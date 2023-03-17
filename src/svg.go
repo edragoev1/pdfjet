@@ -185,9 +185,6 @@ func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
 					log.Fatal(err)
 				}
 				if op.cmd == 'l' && lastOp != nil {
-					y += float64(lastOp.y)
-				}
-				if op.cmd == 'l' && lastOp != nil {
 					x += float64(lastOp.x)
 					y += float64(lastOp.y)
 				}
