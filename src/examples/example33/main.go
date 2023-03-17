@@ -59,6 +59,26 @@ func Example33() {
 	image2.SetLocation(120, 670.0)
 	image2.DrawOn(page)
 
+	file2, err = os.Open("images/svg-test/test-Qt.svg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file2.Close()
+	reader2 = bufio.NewReader(file2)
+	image2 = pdfjet.NewSVGImage(reader2)
+	image2.SetLocation(220, 670.0)
+	image2.DrawOn(page)
+
+	file2, err = os.Open("images/svg-test/test-qt.svg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file2.Close()
+	reader2 = bufio.NewReader(file2)
+	image2 = pdfjet.NewSVGImage(reader2)
+	image2.SetLocation(320, 670.0)
+	image2.DrawOn(page)
+
 	// file2, err = os.Open("images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
 	// if err != nil {
 	// 	log.Fatal(err)

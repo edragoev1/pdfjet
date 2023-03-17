@@ -279,8 +279,8 @@ func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
 					log.Fatal(err)
 				}
 				if op.cmd == 't' {
-					x = x + float64(lastOp.x)
-					y = y + float64(lastOp.y)
+					x += float64(lastOp.x)
+					y += float64(lastOp.y)
 				}
 				// Calculate the coordinates of the cubic control points
 				x1c := lastOp.x + (2.0/3.0)*(x1-lastOp.x)
