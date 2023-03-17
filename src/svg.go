@@ -92,16 +92,13 @@ func (svg *SVG) isCommand(ch rune) bool {
 
 func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 	operations := make([]*PathOp, 0)
-	println(len(operations))
 	var op *PathOp
 	for _, path := range paths {
-		println(path)
 		// Path example:
 		// "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
 		var buf = strings.Builder{}
 		var token = false
 		for _, ch := range path {
-			print(ch)
 			if svg.isCommand(ch) { // open path
 				if token {
 					op.args = append(op.args, string(ch))
@@ -136,7 +133,6 @@ func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 			}
 		}
 	}
-	println(len(operations))
 	return operations
 }
 
@@ -147,9 +143,7 @@ func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
 	var y0 float32 = 0.0
 	for _, op := range list {
 		if op.cmd == 'M' || op.cmd == 'm' {
-			println("are we here")
 			for i := 0; i <= len(op.args)-2; i += 2 {
-				println("or here??")
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
@@ -175,7 +169,6 @@ func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
 				}
 				operations = append(operations, pathOp)
 				lastOp = pathOp
-				println(len(operations))
 			}
 		} else if op.cmd == 'L' || op.cmd == 'l' {
 			for i := 0; i <= len(op.args)-2; i += 2 {
@@ -201,7 +194,6 @@ func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
 				pathOp = NewPathOpXY('L', float32(x), float32(y))
 				operations = append(operations, pathOp)
 				lastOp = pathOp
-				println(len(operations))
 			}
 		} else if op.cmd == 'H' || op.cmd == 'h' {
 			for i := 0; i < len(op.args); i++ {

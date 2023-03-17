@@ -38,15 +38,56 @@ func Example33() {
 	image1.ScaleBy(0.25)
 	image1.DrawOn(page)
 
-	file3, err := os.Open("images/svg-test/test-CC.svg")
+	// SVG test
+	file2, err := os.Open("images/svg-test/test-CC.svg")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file3.Close()
-	reader3 := bufio.NewReader(file3)
-	image3 := pdfjet.NewSVGImage(reader3)
-	image3.SetLocation(20.0, 670.0)
-	image3.DrawOn(page)
+	defer file2.Close()
+	reader2 := bufio.NewReader(file2)
+	image2 := pdfjet.NewSVGImage(reader2)
+	image2.SetLocation(20.0, 670.0)
+	image2.DrawOn(page)
+
+	file2, err = os.Open("images/svg-test/test-QQ.svg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file2.Close()
+	reader2 = bufio.NewReader(file2)
+	image2 = pdfjet.NewSVGImage(reader2)
+	image2.SetLocation(120, 670.0)
+	image2.DrawOn(page)
+
+	// file2, err = os.Open("images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer file2.Close()
+	// reader2 = bufio.NewReader(file2)
+	// image2 = pdfjet.NewSVGImage(reader2)
+	// image2.SetLocation(20.0, xy[1])
+	// image2.DrawOn(page)
+
+	// file2, err = os.Open("images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer file2.Close()
+	// reader2 = bufio.NewReader(file2)
+	// image2 = pdfjet.NewSVGImage(reader2)
+	// image2.SetLocation(20.0, xy[1])
+	// xy = image2.DrawOn(page)
+
+	// file2, err = os.Open("images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer file2.Close()
+	// reader2 = bufio.NewReader(file2)
+	// image2 = pdfjet.NewSVGImage(reader2)
+	// image2.SetLocation(20.0, xy[1])
+	// image2.DrawOn(page)
 
 	pdf.Complete()
 }
