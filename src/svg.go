@@ -94,6 +94,7 @@ func (svg *SVG) GetSVGPathOps(paths []string) []PathOp {
 	operations := []PathOp{}
 	var op *PathOp
 	for _, path := range paths {
+		println(path)
 		// Path example:
 		// "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
 		buf := []byte{}
@@ -134,6 +135,7 @@ func (svg *SVG) GetSVGPathOps(paths []string) []PathOp {
 			}
 		}
 	}
+	print(len(operations))
 	return operations
 }
 

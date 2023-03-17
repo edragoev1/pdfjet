@@ -58,15 +58,15 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	svgImage.color = color.Black
 	svgImage.penWidth = 0.3
 	var paths = []string{}
-	var builder = strings.Builder{}
-	var inPath = false
-	buf, err := ioutil.ReadAll(reader)
+	buffer, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for i := 0; i < len(buf); i++ {
-		ch := buf[i]
-		if !inPath && strings.HasSuffix(string(buf), "<path d=") {
+	var builder = strings.Builder{}
+	var inPath = false
+	for i := 0; i < len(buffer); i++ {
+		ch := buffer[i]
+		if !inPath && strings.HasSuffix(builder.String(), "<path d=") {
 			inPath = true
 			builder.Reset()
 		} else if inPath && ch == '"' {
@@ -77,10 +77,8 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			builder.WriteByte(ch)
 		}
 	}
-	print(builder.String())
 	svg := NewSVG()
 	svgPathOps := svg.GetSVGPathOps(paths)
-	println(len(svgPathOps))
 	svgImage.pdfPathOps = svg.GetPDFPathOps(svgPathOps)
 	return svgImage
 }
