@@ -62,7 +62,7 @@ func (svg *SVG) GetSVGPaths(filename string) []string {
 	return paths
 }
 
-func (svg *SVG) isCommand(ch rune) bool {
+func isCommand(ch rune) bool {
 	// Please note:
 	// Capital letter commands use absolute coordinates
 	// Small letter commands use relative coordinates
@@ -99,7 +99,7 @@ func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 		var buf = strings.Builder{}
 		var token = false
 		for _, ch := range path {
-			if svg.isCommand(ch) { // open path
+			if isCommand(ch) { // open path
 				if token {
 					op.args = append(op.args, buf.String())
 					buf.Reset()
@@ -133,6 +133,11 @@ func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 			}
 		}
 	}
+	printOperations(operations)
+	return operations
+}
+
+func printOperations(operations []*PathOp) {
 	for _, oper := range operations {
 		print(string(oper.cmd) + " ")
 		for _, arg := range oper.args {
@@ -140,7 +145,6 @@ func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
 		}
 		println()
 	}
-	return operations
 }
 
 func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
