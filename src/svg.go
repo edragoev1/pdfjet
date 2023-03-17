@@ -174,9 +174,6 @@ func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
 				if err != nil {
 					log.Fatal(err)
 				}
-				if op.cmd == 'l' && lastOp != nil {
-					x += float64(lastOp.x)
-				}
 				y, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
 					log.Fatal(err)
