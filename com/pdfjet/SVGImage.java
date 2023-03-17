@@ -34,8 +34,8 @@ import java.util.List;
 public class SVGImage {
     float x = 0f;
     float y = 0f;
-    float w = 48f;      // SVG width
-    float h = 48f;      // SVG height
+    float w = 0f;       // SVG width
+    float h = 0f;       // SVG height
     List<PathOp> pdfPathOps = null;
 
     private int color = Color.black;
@@ -57,15 +57,31 @@ public class SVGImage {
     public SVGImage(InputStream stream) throws Exception {
         List<String> paths = new ArrayList<String>();
         StringBuilder buf = new StringBuilder();
-        boolean inPath = false;
+        boolean token = false;
+        String param = null;
         int ch;
         while ((ch = stream.read()) != -1) {
-            if (!inPath && buf.toString().endsWith("<path d=")) {
-                inPath = true;
+            if (!token && buf.toString().endsWith("width=")) {
+                token = true;
+                param = "width";
                 buf.setLength(0);
-            } else if (inPath && ch == '\"') {
-                inPath = false;
-                paths.add(buf.toString());
+            } else if (!token && buf.toString().endsWith("height=")) {
+                token = true;
+                param = "height";
+                buf.setLength(0);
+            } else if (!token && buf.toString().endsWith("<path d=")) {
+                token = true;
+                param = "path";
+                buf.setLength(0);
+            } else if (token && ch == '\"') {
+                token = false;
+                if (param.equals("width")) {
+                    w = Float.valueOf(buf.toString());
+                } else if (param.equals("height")) {
+                    h = Float.valueOf(buf.toString());
+                } else if (param.equals("path")) {
+                    paths.add(buf.toString());
+                }
                 buf.setLength(0);
             } else {
                 buf.append((char) ch);
