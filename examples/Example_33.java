@@ -53,6 +53,12 @@ public class Example_33 {
         icon = new SVGImage(stream);
         // icon.setFillPath(false);
         icon.setLocation(xy[0], 670);
+        xy = icon.drawOn(page);
+
+        stream = new FileInputStream(
+            "images/svg-test/test-CS.svg");
+        icon = new SVGImage(stream);
+        icon.setLocation(xy[0], 670);
         icon.drawOn(page);
 
         pdf.complete();
