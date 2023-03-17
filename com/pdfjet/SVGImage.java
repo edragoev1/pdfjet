@@ -98,13 +98,13 @@ public class SVGImage {
         pdfPathOps = SVG.getPDFPathOps(svgPathOps);
     }
 
-    private int mapColorNameToValue(String color) {
-        int colorAsInt = Color.black;
+    private int mapColorNameToValue(String colorName) {
+        int color = Color.black;
         try {
-            colorAsInt = (int) Color.class.getDeclaredField(color).get(null);
+            color = (int) Color.class.getDeclaredField(colorName).get(null);
         } catch (Exception e) {
         }
-        return colorAsInt;
+        return color;
     }
 
     public List<PathOp> getPDFPathOps() {
