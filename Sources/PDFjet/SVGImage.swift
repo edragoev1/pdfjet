@@ -82,7 +82,7 @@ public class SVGImage {
                 token = true
                 param = "path"
                 buf = ""
-            } else if !token && buf.hasSuffix("fill") {
+            } else if !token && buf.hasSuffix("fill=") {
                 token = true
                 param = "fill"
                 buf = ""
@@ -107,14 +107,14 @@ public class SVGImage {
     }
 
     func mapColorNameToValue(_ colorName: String) -> UInt32 {
-        var color = Color.black;
-        let mirror = Mirror(reflecting: Color.self)
+        var color = Color.black
+        let mirror = Mirror(reflecting: ColorCSS())
         mirror.children.forEach { child in
-            if child.label == colorName {
+            if child.label! == colorName {
                 color = child.value as! UInt32
             }
         }
-        return color;
+        return color
     }
 
     public func getPDFPathOps() -> [PathOp] {
