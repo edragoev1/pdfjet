@@ -66,6 +66,14 @@ public class Example_33 {
         icon = new SVGImage(stream);
         // icon.SetFillPath(false);
         icon.SetLocation(xy[0], 670);
+        xy = icon.DrawOn(page);
+
+        stream = new FileStream(
+            "images/svg-test/test-QQ.svg",
+            FileMode.Open, FileAccess.Read);
+        icon = new SVGImage(stream);
+        // icon.SetFillPath(false);
+        icon.SetLocation(xy[0], 670);
         icon.DrawOn(page);
 
         pdf.Complete();

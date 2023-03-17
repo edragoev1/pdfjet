@@ -72,6 +72,10 @@ public class SVGImage {
                 token = true;
                 param = "path";
                 buf.Length = 0;
+            } else if (!token && buf.ToString().EndsWith("fill=")) {
+                token = true;
+                param = "fill";
+                buf.Length = 0;
             } else if (token && ch == '\"') {
                 token = false;
                 if (param.Equals("width")) {
@@ -80,6 +84,8 @@ public class SVGImage {
                     h = float.Parse(buf.ToString());
                 } else if (param.Equals("path")) {
                     paths.Add(buf.ToString());
+                } else if (param.Equals("fill")) {
+                    color = mapColorNameToValue(buf.ToString());
                 }
                 buf.Length = 0;
             } else {
@@ -89,6 +95,16 @@ public class SVGImage {
         stream.Close();
         List<PathOp> svgPathOps = SVG.GetSVGPathOps(paths);
         pdfPathOps = SVG.GetPDFPathOps(svgPathOps);
+    }
+
+    private int mapColorNameToValue(String colorName) {
+        int color = Color.black;
+        try {
+            color = (int) typeof(Color).GetField(colorName).GetValue(null);
+        } catch (Exception) {
+            return color;
+        }
+        return color;
     }
 
     public List<PathOp> GetPDFPathOps() {
