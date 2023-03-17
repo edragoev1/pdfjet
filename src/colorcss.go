@@ -24,7 +24,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-func NewColorCSS() map[string]uint32 {
+// Please see:
+// https://www.w3.org/TR/css-color-3/#svg-color
+func NewColorMap() map[string]uint32 {
 	color := make(map[string]uint32)
 	color["aliceblue"] = 0xf0f8ff
 	color["transparent"] = 0x80000000

@@ -117,7 +117,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 }
 
 func mapColorNameToValue(colorName string) uint32 {
-	var colorMap = NewColorCSS()
+	var colorMap = NewColorMap()
 	value, ok := colorMap[colorName]
 	if ok {
 		return value
