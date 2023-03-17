@@ -33,7 +33,7 @@ import (
 
 type SVGImage struct {
 	x, y, w, h     float32
-	pdfPathOps     []*PathOp
+	pdfPathOps     []PathOp
 	color          uint32
 	penWidth       float32
 	fillPath       bool
@@ -49,7 +49,8 @@ type SVGImage struct {
  *
  * @param stream the input stream.
  */
-func NewSVGImage(reader io.Reader) {
+func NewSVGImage(reader io.Reader) *SVGImage {
+	svgImage := new(SVGImage)
 	var paths = []string{}
 	var builder = strings.Builder{}
 	var inPath = false
@@ -70,6 +71,8 @@ func NewSVGImage(reader io.Reader) {
 			builder.WriteByte(ch)
 		}
 	}
-	// var svgPathOps = SVG.GetSVGPathOps(paths)
-	// pdfPathOps = SVG.GetPDFPathOps(svgPathOps)
+	svg := NewSVG()
+	svgPathOps := svg.GetSVGPathOps(paths)
+	svgImage.pdfPathOps = svg.GetPDFPathOps(svgPathOps)
+	return svgImage
 }
