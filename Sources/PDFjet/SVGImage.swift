@@ -105,7 +105,7 @@ public class SVGImage {
                     path!.data = buf
                 } else if param == "fill" {
                     if buf == "none" {
-                        path!.fill = -1
+                        path!.fill = Color.transparent
                     } else {
                         path!.fill = mapColorNameToValue(buf)
                     }
@@ -173,35 +173,35 @@ public class SVGImage {
         page.setPenColor(path.stroke)
         page.setPenWidth(path.strokeWidth)
 
-        if (path.fill != -1) {
+        if path.fill != Color.transparent {
             for op in path.operations! {
-                if (op.cmd == "M") {
+                if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
-                } else if (op.cmd == "L") {
+                } else if op.cmd == "L" {
                     page.lineTo(op.x + x, op.y + y)
-                } else if (op.cmd == "C") {
+                } else if op.cmd == "C" {
                     page.curveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y)
-                } else if (op.cmd == "Z") {
+                } else if op.cmd == "Z" {
                 }
             }
             page.fillPath()
         }
 
-        if (path.stroke != -1) {
+        if path.stroke != Color.transparent {
             for op in path.operations! {
-                if (op.cmd == "M") {
+                if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
-                } else if (op.cmd == "L") {
+                } else if op.cmd == "L" {
                     page.lineTo(op.x + x, op.y + y)
-                } else if (op.cmd == "C") {
+                } else if op.cmd == "C" {
                     page.curveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y)
-                } else if (op.cmd == "Z") {
+                } else if op.cmd == "Z" {
                     page.closePath()
                 }
             }

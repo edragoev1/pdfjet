@@ -96,7 +96,7 @@ public class SVGImage {
                     path.data = buf.toString();
                 } else if (param.equals("fill")) {
                     if (buf.toString().equals("none")) {
-                        path.fill = -1;
+                        path.fill = Color.transparent;
                     } else {
                         path.fill = mapColorNameToValue(buf.toString());
                     }
@@ -161,7 +161,7 @@ public class SVGImage {
         page.setPenColor(path.stroke);
         page.setPenWidth(path.strokeWidth);
 
-        if (path.fill != -1) {
+        if (path.fill != Color.transparent) {
             for (int i = 0; i < path.operations.size(); i++) {
                 PathOp op = path.operations.get(i);
                 if (op.cmd == 'M') {
@@ -179,7 +179,7 @@ public class SVGImage {
             page.fillPath();
         }
 
-        if (path.stroke != -1) {
+        if (path.stroke != Color.transparent) {
             for (int i = 0; i < path.operations.size(); i++) {
                 PathOp op = path.operations.get(i);
                 if (op.cmd == 'M') {

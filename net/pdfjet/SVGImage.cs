@@ -95,7 +95,7 @@ public class SVGImage {
                     path.data = buf.ToString();
                 } else if (param.Equals("fill")) {
                     if (buf.ToString().Equals("none")) {
-                        path.fill = -1;
+                        path.fill = Color.transparent;
                     } else {
                         path.fill = mapColorNameToValue(buf.ToString());
                     }
@@ -161,7 +161,7 @@ public class SVGImage {
         page.SetPenColor(path.stroke);
         page.SetPenWidth(path.strokeWidth);
 
-        if (path.fill != -1) {
+        if (path.fill != Color.transparent) {
             for (int i = 0; i < path.operations.Count; i++) {
                 PathOp op = path.operations[i];
                 if (op.cmd == 'M') {
@@ -179,7 +179,7 @@ public class SVGImage {
             page.FillPath();
         }
 
-        if (path.stroke != -1) {
+        if (path.stroke != Color.transparent) {
             for (int i = 0; i < path.operations.Count; i++) {
                 PathOp op = path.operations[i];
                 if (op.cmd == 'M') {

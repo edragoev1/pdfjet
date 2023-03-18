@@ -30,15 +30,14 @@ import (
 type SVGPath struct {
 	data        string    // The SVG path data
 	operations  []*PathOp // The PDF path operations
-	fill        uint32    // The fill color or -1 (don't fill)
-	stroke      uint32    // The stroke color or -1 (don't stroke)
+	fill        int32     // The fill color or -1 (don't fill)
+	stroke      int32     // The stroke color or -1 (don't stroke)
 	strokeWidth float32   // The stroke width
 }
 
 func NewSVGPath(reader io.Reader) *SVGPath {
 	path := new(SVGPath)
-    path.fill = color.Black
-    path.stroke = color.Transparent
-    path.strokeWidth = 2.0
+	path.stroke = -1
+	path.strokeWidth = 2.0
 	return path
 }
