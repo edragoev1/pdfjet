@@ -28,13 +28,13 @@ public class Example_19 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         // Columns x coordinates
-        let x1: Float = 75.0
-        let x2: Float = 325.0
-
+        let x1: Float = 50.0
         let y1: Float = 75.0
 
+        let x2: Float = 300.0
+
         // Width of the second column:
-        let w2: Float = 200.0
+        let w2: Float = 300.0
 
         let image1 = try Image(
                 pdf,
@@ -48,9 +48,7 @@ public class Example_19 {
         var textBlock = TextBlock(f1)
         textBlock.setText("Geometry arose independently in a number of early cultures as a practical way for dealing with lengths, areas, and volumes.")
         textBlock.setLocation(x2, y1)
-        // textBlock.setWidth(w2)
-        textBlock.setWidth(40.0)
-        // textBlock.setTextAlignment(Align.LEFT)
+        textBlock.setWidth(w2)
         // textBlock.setTextAlignment(Align.RIGHT)
         // textBlock.setTextAlignment(Align.CENTER)
         textBlock.setDrawBorder(true)
