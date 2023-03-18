@@ -99,6 +99,7 @@ public class SVGImage {
                     if (buf.toString().equals("none")) {
                         fillPath = false;
                     } else {
+                        fillPath = true;
                         color = mapColorNameToValue(buf.toString());
                     }
                 } else if (param.equals("stroke")) {

@@ -95,16 +95,17 @@ public class SVGImage {
                 } else if (param.Equals("path")) {
                     paths.Add(buf.ToString());
                 } else if (param.Equals("fill")) {
-                    if (buf.ToString() == "none") {
+                    if (buf.ToString().Equals("none")) {
                         fillPath = false;
                     } else {
+                        fillPath = true;
                         color = mapColorNameToValue(buf.ToString());
                     }
                 } else if (param.Equals("stroke")) {
                     strokePath = true;
                     penColor = mapColorNameToValue(buf.ToString());
                 } else if (param.Equals("stroke-width")) {
-                    penWidth = mapColorNameToValue(buf.ToString());
+                    penWidth = float.Parse(buf.ToString());
                 }
                 buf.Length = 0;
             } else {
