@@ -37,7 +37,8 @@ type SVGPath struct {
 
 func NewSVGPath(reader io.Reader) *SVGPath {
 	path := new(SVGPath)
-	path.stroke = -1
+	path.fill = 0    // Black color
+	path.stroke = -1 // Transparent
 	path.strokeWidth = 2.0
 	return path
 }

@@ -30,6 +30,6 @@ public class SVGPath {
     public List<PathOp> operations;         // The PDF path operations
     public int fill = Color.black;          // The fill color or -1 (don't fill)
     public int stroke = Color.transparent;  // The stroke color or -1 (don't stroke)
-    public float strokeWidth;         // The stroke width
+    public float strokeWidth = 2f;          // The stroke width
 }
 }
