@@ -38,8 +38,10 @@ public class SVGImage {
     List<PathOp> pdfPathOps = null;
 
     private int color = Color.black;
-    private float penWidth = 0.3f;
+    private int penColor = Color.black;
+    private float penWidth = 2.0f;
     private bool fillPath = true;
+    private bool strokePath = false;
 
     protected String uri = null;
     protected String key = null;
@@ -93,7 +95,16 @@ public class SVGImage {
                 } else if (param.Equals("path")) {
                     paths.Add(buf.ToString());
                 } else if (param.Equals("fill")) {
-                    color = mapColorNameToValue(buf.ToString());
+                    if (buf.ToString() == "none") {
+                        fillPath = false;
+                    } else {
+                        color = mapColorNameToValue(buf.ToString());
+                    }
+                } else if (param.Equals("stroke")) {
+                    strokePath = true;
+                    penColor = mapColorNameToValue(buf.ToString());
+                } else if (param.Equals("stroke-width")) {
+                    penWidth = mapColorNameToValue(buf.ToString());
                 }
                 buf.Length = 0;
             } else {
@@ -168,15 +179,7 @@ public class SVGImage {
         return this.h;
     }
 
-    public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.P, language, actualText, altDescription);
-        page.SetPenWidth(penWidth);
-        if (fillPath) {
-            page.SetBrushColor(color);
-        }
-        else {
-            page.SetPenColor(color);
-        }
+    private void drawPath(Page page, bool fill, bool stroke) {
         for (int i = 0; i < pdfPathOps.Count; i++) {
             PathOp op = pdfPathOps[i];
             if (op.cmd == 'M') {
@@ -189,16 +192,28 @@ public class SVGImage {
                     op.x2 + x, op.y2 + y,
                     op.x + x, op.y + y);
             } else if (op.cmd == 'Z') {
-                if (!fillPath) {
+                if (stroke) {
                     page.ClosePath();
                 }
             }
         }
-        if (fillPath) {
+        if (fill) {
             page.FillPath();
         }
-        page.AddEMC();
+    }
 
+    public float[] DrawOn(Page page) {
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
+        page.SetBrushColor(color);
+        page.SetPenColor(penColor);
+        page.SetPenWidth(penWidth);
+        if (fillPath) {
+            drawPath(page, true, false);
+        }
+        if (strokePath) {
+            drawPath(page, false, true);            
+        }
+        page.AddEMC();
         if (uri != null || key != null) {
             page.AddAnnotation(new Annotation(
                     uri,
