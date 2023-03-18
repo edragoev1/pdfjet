@@ -23,9 +23,6 @@
  */
 package com.pdfjet;
 
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -265,42 +262,4 @@ public class SVG {
         }
         return operations;
     }
-/*
-    public static void main(String[] args) throws IOException {
-        List<String> paths = new ArrayList<String>();
-        StringBuilder buf = new StringBuilder();
-        boolean inPath = false;
-        FileInputStream stream = new FileInputStream(args[0]);
-        int ch;
-        while ((ch = stream.read()) != -1) {
-            if (!inPath && buf.toString().endsWith("<path d=")) {
-                inPath = true;
-                buf.setLength(0);
-            } else if (inPath && ch == '\"') {
-                inPath = false;
-                paths.add(buf.toString());
-                buf.setLength(0);
-            } else {
-                buf.append((char) ch);
-            }
-        }
-        stream.close();
-
-        FileWriter writer = new FileWriter("test.svg");
-        writer.write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
-        writer.write("  <path d=\"");
-        List<PathOp> svgPathOps = getSVGPathOps(paths);
-        List<PathOp> pdfPathOps = getPDFPathOps(svgPathOps);
-        for (PathOp op : pdfPathOps) {
-            writer.write(op.cmd + " ");
-            for (String argument : op.args) {
-                writer.write(argument + " ");
-            }
-        }
-        writer.write("\"/>\n");
-        writer.write("</svg>\n");
-        writer.flush();
-        writer.close();
-    }
-*/
 }   // End of SVG.java
