@@ -78,9 +78,9 @@ public class SVGImage {
                 token = true
                 param = "height"
                 buf = ""
-            } else if !token && buf.hasSuffix("<path d=") {
+            } else if !token && buf.hasSuffix(" d=") {
                 token = true
-                param = "path"
+                param = "data"
                 buf = ""
             } else if !token && buf.hasSuffix(" fill=") {
                 token = true
@@ -100,7 +100,7 @@ public class SVGImage {
                     w = Float(buf)!
                 } else if param == "height" {
                     h = Float(buf)!
-                } else if param == "path" {
+                } else if param == "data" {
                     paths.append(buf)
                 } else if param == "fill" {
                     color = mapColorNameToValue(buf)
@@ -116,7 +116,7 @@ public class SVGImage {
 
     func mapColorNameToValue(_ colorName: String) -> Int32 {
         var color = Color.black
-        let mirror = Mirror(reflecting: ColorCSS())
+        let mirror = Mirror(reflecting: ColorMap())
         mirror.children.forEach { child in
             if child.label! == colorName {
                 color = child.value as! Int32

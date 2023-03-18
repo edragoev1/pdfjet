@@ -1,5 +1,5 @@
 /**
- *  ColorCSS.swift
+ *  ColorMap.swift
  *
 Copyright 2023 Innovatics Inc.
 
@@ -29,7 +29,7 @@ SOFTWARE.
  *
  * NOTE: We need this class in addition to Color.swift because the Swift reflection does not work with static variables.
  */
-public class ColorCSS {
+public class ColorMap {
     public let transparent: Int32 = -1
 
     public let aliceblue: Int32 = 0xf0f8ff
