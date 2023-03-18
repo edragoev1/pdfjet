@@ -29,7 +29,7 @@ public class Example_19 {
 
         // Columns x coordinates
         let x1: Float = 50.0
-        let y1: Float = 75.0
+        let y1: Float = 50.0
 
         let x2: Float = 300.0
 
