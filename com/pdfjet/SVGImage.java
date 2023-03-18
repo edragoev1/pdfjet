@@ -110,10 +110,10 @@ public class SVGImage {
                 buf.append((char) ch);
             }
         }
-        stream.close();
         if (path != null) {
             paths.add(path);
         }
+        stream.close();
 
         for (int i = 0; i < paths.size(); i++) {
             path = paths.get(i);
@@ -144,26 +144,11 @@ public class SVGImage {
         return this;
     }
 
-    /**
-     *  Sets the size of this box.
-     *
-     *  @param w the width of this box.
-     *  @param h the height of this box.
-     */
-    public void setSize(float w, float h) {
-        this.w = w;
-        this.h = h;
+    public void setScale(float factor) {
+        // TODO
     }
 
-    public void setPenWidth(float w) {
-        this.w = w;
-    }
-
-    public void setHeight(float h) {
-        this.h = h;
-    }
-
-    public float getPenWidth() {
+    public float getWidth() {
         return this.w;
     }
 
