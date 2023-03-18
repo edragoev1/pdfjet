@@ -16,11 +16,7 @@ public class Example_19 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_19.pdf", FileMode.Create)));
 
-        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        // f1.SetSize(10f);
-
         Font f1 = new Font(pdf, new FileStream(
-                // "fonts/Droid/DroidSerif-Regular.ttf.stream",
                 "fonts/OpenSans/OpenSans-Regular.ttf.stream",
                 FileMode.Open,
                 FileAccess.Read), Font.STREAM);
@@ -35,13 +31,13 @@ public class Example_19 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Columns x coordinates
-        float x1 = 75f;
-        float y1 = 75f;
+        float x1 = 50f;
+        float y1 = 50f;
 
-        float x2 = 325f;
+        float x2 = 300f;
 
         // Width of the second column:
-        float w2 = 200f;
+        float w2 = 300f;
 
         Image image1 = new Image(
                 pdf,
@@ -60,14 +56,11 @@ public class Example_19 {
         image1.ScaleBy(0.75f);
         image1.DrawOn(page);
 
-
         TextBlock textBlock = new TextBlock(f1);
         textBlock.SetText("Geometry arose independently in a number of early cultures as a practical way for dealing with lengths, areas, and volumes.");
         textBlock.SetLocation(x2, y1);
-        // textBlock.SetWidth(w2);
-        textBlock.SetWidth(40f);
+        textBlock.SetWidth(w2);
         textBlock.SetDrawBorder(true);
-        // textBlock.SetTextAlignment(Align.LEFT);
         // textBlock.SetTextAlignment(Align.RIGHT);
         // textBlock.SetTextAlignment(Align.CENTER);
         float[] xy = textBlock.DrawOn(page);
@@ -83,7 +76,6 @@ public class Example_19 {
         textBlock.SetWidth(w2);
         textBlock.SetDrawBorder(true);
         textBlock.DrawOn(page);
-
 
         textBlock = new TextBlock(f1);
         textBlock.SetFallbackFont(f2);
