@@ -58,56 +58,50 @@ public class SVG {
         return false;
     }
 
-    public static List<PathOp> getSVGPathOps(List<String> paths) {
+    public static List<PathOp> getOperations(String path) {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp op = null;
-        for (String path : paths) {
-            // Path example:
-            // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            // System.out.println(path);
-            // System.out.println();
-            StringBuilder buf = new StringBuilder();
-            boolean token = false;
-            for (int i = 0; i < path.length(); i++) {
-                char ch = path.charAt(i);
-                if (isCommand(ch)) {                    // open path
-                    if (token) {
-                        op.args.add(buf.toString());
-                        buf.setLength(0);
-                    }
-                    token = false;
-                    op = new PathOp(ch);
-                    operations.add(op);
-                } else if (ch == ' ' || ch == ',') {
-                    if (token) {
-                        op.args.add(buf.toString());
-                        buf.setLength(0);
-                    }
-                    token = false;
-                } else if (ch == '-') {
-                    if (token) {
-                        op.args.add(buf.toString());
-                        buf.setLength(0);
-                    }
-                    token = true;
-                    buf.append(ch);
-                } else if (ch == '.') {
-                    if (buf.toString().contains(".")) {
-                        op.args.add(buf.toString());
-                        buf.setLength(0);
-                    }
-                    token = true;
-                    buf.append(ch);
-                } else {
-                    token = true;
-                    buf.append(ch);
+        StringBuilder buf = new StringBuilder();
+        boolean token = false;
+        for (int i = 0; i < path.length(); i++) {
+            char ch = path.charAt(i);
+            if (isCommand(ch)) {    // open path
+                if (token) {
+                    op.args.add(buf.toString());
+                    buf.setLength(0);
                 }
+                token = false;
+                op = new PathOp(ch);
+                operations.add(op);
+            } else if (ch == ' ' || ch == ',') {
+                if (token) {
+                    op.args.add(buf.toString());
+                    buf.setLength(0);
+                }
+                token = false;
+            } else if (ch == '-') {
+                if (token) {
+                    op.args.add(buf.toString());
+                    buf.setLength(0);
+                }
+                token = true;
+                buf.append(ch);
+            } else if (ch == '.') {
+                if (buf.toString().contains(".")) {
+                    op.args.add(buf.toString());
+                    buf.setLength(0);
+                }
+                token = true;
+                buf.append(ch);
+            } else {
+                token = true;
+                buf.append(ch);
             }
         }
         return operations;
     }
 
-    public static List<PathOp> getPDFPathOps(List<PathOp> list) {
+    public static List<PathOp> toPDF(List<PathOp> list) {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp lastOp = null;
         PathOp pathOp = null;
@@ -271,7 +265,7 @@ public class SVG {
         }
         return operations;
     }
-
+/*
     public static void main(String[] args) throws IOException {
         List<String> paths = new ArrayList<String>();
         StringBuilder buf = new StringBuilder();
@@ -308,4 +302,5 @@ public class SVG {
         writer.flush();
         writer.close();
     }
+*/
 }   // End of SVG.java

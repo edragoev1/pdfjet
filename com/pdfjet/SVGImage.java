@@ -36,14 +36,8 @@ public class SVGImage {
     float y = 0f;
     float w = 0f;       // SVG width
     float h = 0f;       // SVG height
-    List<PathOp> pdfPathOps = null;
 
-    private int color = Color.black;
-    private int penColor = Color.black;
-    private float penWidth = 2.0f;
-    private boolean fillPath = true;
-    private boolean strokePath = false;
-
+    List<SVGPath> paths = null;
     protected String uri = null;
     protected String key = null;
     private String language = null;
@@ -57,7 +51,8 @@ public class SVGImage {
      * @throws Exception  if exception occurred.
      */
     public SVGImage(InputStream stream) throws Exception {
-        List<String> paths = new ArrayList<String>();
+        paths = new ArrayList<SVGPath>();
+        SVGPath path = null;
         StringBuilder buf = new StringBuilder();
         boolean token = false;
         String param = null;
@@ -71,9 +66,13 @@ public class SVGImage {
                 token = true;
                 param = "height";
                 buf.setLength(0);
-            } else if (!token && buf.toString().endsWith("<path d=")) {
+            } else if (!token && buf.toString().endsWith(" d=")) {
                 token = true;
-                param = "path";
+                if (path != null) {
+                    paths.add(path);
+                }
+                path = new SVGPath();
+                param = "data";
                 buf.setLength(0);
             } else if (!token && buf.toString().endsWith(" fill=")) {
                 token = true;
@@ -93,20 +92,18 @@ public class SVGImage {
                     w = Float.valueOf(buf.toString());
                 } else if (param.equals("height")) {
                     h = Float.valueOf(buf.toString());
-                } else if (param.equals("path")) {
-                    paths.add(buf.toString());
+                } else if (param.equals("data")) {
+                    path.data = buf.toString();
                 } else if (param.equals("fill")) {
                     if (buf.toString().equals("none")) {
-                        fillPath = false;
+                        path.fill = -1;
                     } else {
-                        fillPath = true;
-                        color = mapColorNameToValue(buf.toString());
+                        path.fill = mapColorNameToValue(buf.toString());
                     }
                 } else if (param.equals("stroke")) {
-                    strokePath = true;
-                    penColor = mapColorNameToValue(buf.toString());
+                    path.stroke = mapColorNameToValue(buf.toString());
                 } else if (param.equals("stroke-width")) {
-                    penWidth = Float.valueOf(buf.toString());
+                    path.strokeWidth = Float.valueOf(buf.toString());
                 }
                 buf.setLength(0);
             } else {
@@ -114,8 +111,15 @@ public class SVGImage {
             }
         }
         stream.close();
-        List<PathOp> svgPathOps = SVG.getSVGPathOps(paths);
-        pdfPathOps = SVG.getPDFPathOps(svgPathOps);
+        if (path != null) {
+            paths.add(path);
+        }
+
+        for (int i = 0; i < paths.size(); i++) {
+            path = paths.get(i);
+            path.operations = SVG.getOperations(path.data);
+            path.operations = SVG.toPDF(path.operations);
+        }
     }
 
     private int mapColorNameToValue(String colorName) {
@@ -125,10 +129,6 @@ public class SVGImage {
         } catch (Exception e) {
         }
         return color;
-    }
-
-    public List<PathOp> getPDFPathOps() {
-        return pdfPathOps;
     }
 
     /**
@@ -142,15 +142,6 @@ public class SVGImage {
         this.x = x;
         this.y = y;
         return this;
-    }
-
-    /**
-     *  Sets the fill path flag to true or false.
-     *
-     *  @param fillPath if true fills that SVG path, strokes otherwise.
-     */
-    public void setFillPath(boolean fillPath) {
-        this.fillPath = fillPath;
     }
 
     /**
@@ -180,39 +171,53 @@ public class SVGImage {
         return this.h;
     }
 
-    private void drawPath(Page page, boolean fill, boolean stroke) {
-        for (int i = 0; i < pdfPathOps.size(); i++) {
-            PathOp op = pdfPathOps.get(i);
-            if (op.cmd == 'M') {
-                page.moveTo(op.x + x, op.y + y);
-            } else if (op.cmd == 'L') {
-                page.lineTo(op.x + x, op.y + y);
-            } else if (op.cmd == 'C') {
-                page.curveTo(
-                    op.x1 + x, op.y1 + y,
-                    op.x2 + x, op.y2 + y,
-                    op.x + x, op.y + y);
-            } else if (op.cmd == 'Z') {
-                if (stroke) {
+    private void drawPath(SVGPath path, Page page) {
+        page.setBrushColor(path.fill);
+        page.setPenColor(path.stroke);
+        page.setPenWidth(path.strokeWidth);
+
+        if (path.fill != -1) {
+            for (int i = 0; i < path.operations.size(); i++) {
+                PathOp op = path.operations.get(i);
+                if (op.cmd == 'M') {
+                    page.moveTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'L') {
+                    page.lineTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'C') {
+                    page.curveTo(
+                        op.x1 + x, op.y1 + y,
+                        op.x2 + x, op.y2 + y,
+                        op.x + x, op.y + y);
+                } else if (op.cmd == 'Z') {
+                }
+            }
+            page.fillPath();
+        }
+
+        if (path.stroke != -1) {
+            for (int i = 0; i < path.operations.size(); i++) {
+                PathOp op = path.operations.get(i);
+                if (op.cmd == 'M') {
+                    page.moveTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'L') {
+                    page.lineTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'C') {
+                    page.curveTo(
+                        op.x1 + x, op.y1 + y,
+                        op.x2 + x, op.y2 + y,
+                        op.x + x, op.y + y);
+                } else if (op.cmd == 'Z') {
                     page.closePath();
                 }
             }
-        }
-        if (fill) {
-            page.fillPath();
         }
     }
 
     public float[] drawOn(Page page) {
         page.addBMC(StructElem.P, language, actualText, altDescription);
-        page.setBrushColor(color);
-        page.setPenColor(penColor);
-        page.setPenWidth(penWidth);
-        if (fillPath) {
-            drawPath(page, true, false);
-        }
-        if (strokePath) {
-            drawPath(page, false, true);
+        for (int i = 0; i < paths.size(); i++) {
+            SVGPath path = paths.get(i);
+            drawPath(path, page);
         }
         page.addEMC();
         if (uri != null || key != null) {
