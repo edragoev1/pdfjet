@@ -40,7 +40,7 @@ type Line struct {
 	y2             float32
 	xBox           float32
 	yBox           float32
-	color          uint32
+	color          int32
 	width          float32
 	pattern        string
 	capStyle       int
@@ -78,19 +78,19 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 // <pre>
 // Examples of line dash patterns:
 //
-//      "[Array] Phase"     Appearance          Description
-//      _______________     _________________   ____________________________________
+//	    "[Array] Phase"     Appearance          Description
+//	    _______________     _________________   ____________________________________
 //
-//      "[] 0"              -----------------   Solid line
-//      "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//      "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//      "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//      "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//      "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//  </pre>
+//	    "[] 0"              -----------------   Solid line
+//	    "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//	    "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//	    "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//	    "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//	    "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//	</pre>
 //
-//  @param pattern the line dash pattern.
-//  @return this Line object.
+//	@param pattern the line dash pattern.
+//	@return this Line object.
 func (line *Line) SetPattern(pattern string) *Line {
 	line.pattern = pattern
 	return line
@@ -165,7 +165,7 @@ func (line *Line) SetWidth(width float32) *Line {
 // SetColor sets the color for this line.
 // @param color the color specified as an integer.
 // @return this Line object.
-func (line *Line) SetColor(color uint32) *Line {
+func (line *Line) SetColor(color int32) *Line {
 	line.color = color
 	return line
 }

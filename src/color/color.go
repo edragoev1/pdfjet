@@ -28,6 +28,7 @@ SOFTWARE.
 // For more information please go to:
 // https://www.w3.org/TR/css-color-3/#svg-color
 const (
+	Transparent          = -1
 	Aliceblue            = 0xf0f8ff
 	Antiquewhite         = 0xfaebd7
 	Aqua                 = 0x00ffff

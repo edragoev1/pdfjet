@@ -210,7 +210,7 @@ public class TextBlock : Drawable {
     /// @return the TextBlock object.
     ///
     @discardableResult
-    public func setBgColor(int color: UInt32) -> TextBlock {
+    public func setBgColor(int color: Int32) -> TextBlock {
         self.background = color
         return self
     }
@@ -221,7 +221,7 @@ public class TextBlock : Drawable {
     ///
     /// @return int the color as 0xRRGGBB integer.
     ///
-    public func getBgColor() -> UInt32 {
+    public func getBgColor() -> Int32 {
         return self.background
     }
 
@@ -233,7 +233,7 @@ public class TextBlock : Drawable {
     /// @return the TextBlock object.
     ///
     @discardableResult
-    public func setBrushColor(_ color: UInt32) -> TextBlock {
+    public func setBrushColor(_ color: Int32) -> TextBlock {
         self.brush = color
         return self
     }
@@ -244,7 +244,7 @@ public class TextBlock : Drawable {
     ///
     /// @return int the brush color specified as 0xRRGGBB integer.
     ///
-    public func getBrushColor() -> UInt32 {
+    public func getBrushColor() -> Int32 {
         return self.brush
     }
 

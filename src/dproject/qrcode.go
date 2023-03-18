@@ -16,7 +16,8 @@ DENSO WAVE INCORPORATED
 
 import (
 	"log"
-	"github.com/edragoev1/pdfjet/src"
+
+	pdfjet "github.com/edragoev1/pdfjet/src"
 )
 
 // QRCode used to create 2D QR Code barcodes. Please see Example_20.
@@ -31,7 +32,7 @@ type QRCode struct {
 	y                 float32
 	qrData            []byte
 	m1                float32 // Module length
-	color             uint32
+	color             int32
 }
 
 // NewQRCode is used to create 2D QR Code barcodes.
@@ -72,7 +73,7 @@ func (qrcode *QRCode) SetModuleLength(moduleLength float32) {
 }
 
 // SetColor sets the color of the barcode.
-func (qrcode *QRCode) SetColor(color uint32) {
+func (qrcode *QRCode) SetColor(color int32) {
 	qrcode.color = color
 }
 

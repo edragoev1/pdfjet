@@ -50,9 +50,9 @@ public class Cell {
 
     var lineWidth: Float = 0.2
 
-    private var background: UInt32?
-    private var pen: UInt32 = Color.black
-    private var brush: UInt32 = Color.black
+    private var background: Int32?
+    private var pen: Int32 = Color.black
+    private var brush: Int32 = Color.black
 
     // Cell properties
     // Colspan:
@@ -421,7 +421,7 @@ public class Cell {
      *
      *  @param color the color specified as 0xRRGGBB integer.
      */
-    public func setBgColor(_ color: UInt32?) {
+    public func setBgColor(_ color: Int32?) {
         self.background = color
     }
 
@@ -430,7 +430,7 @@ public class Cell {
      *  Returns the background color of this cell.
      *
      */
-    public func getBgColor() -> UInt32? {
+    public func getBgColor() -> Int32? {
         return self.background
     }
 
@@ -440,7 +440,7 @@ public class Cell {
      *
      *  @param color the color specified as 0xRRGGBB integer.
      */
-    public func setPenColor(_ color: UInt32) {
+    public func setPenColor(_ color: Int32) {
         self.pen = color
     }
 
@@ -449,7 +449,7 @@ public class Cell {
      *  Returns the pen color.
      *
      */
-    public func getPenColor() -> UInt32 {
+    public func getPenColor() -> Int32 {
         return pen
     }
 
@@ -459,7 +459,7 @@ public class Cell {
      *
      *  @param color the color specified as 0xRRGGBB integer.
      */
-    public func setBrushColor(_ color: UInt32) {
+    public func setBrushColor(_ color: Int32) {
         self.brush = color
     }
 
@@ -469,7 +469,7 @@ public class Cell {
      *
      * @return the brush color.
      */
-    public func getBrushColor() -> UInt32 {
+    public func getBrushColor() -> Int32 {
         return brush
     }
 
@@ -479,7 +479,7 @@ public class Cell {
      *
      *  @param color the color specified as 0xRRGGBB integer.
      */
-    public func setFgColor(_ color: UInt32) {
+    public func setFgColor(_ color: Int32) {
         self.pen = color
         self.brush = color
     }

@@ -60,7 +60,7 @@ public class TextBox : Drawable {
     private var brush = Color.black
     private var valign = Align.LEFT
     private var fallbackFont: Font?
-    private var colors: [String : UInt32]?
+    private var colors: [String : Int32]?
 
     // TextBox properties
     // Future use:
@@ -297,7 +297,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as 0xRRGGBB integer.
     ///
     @discardableResult
-    public func setBgColor(_ color: UInt32) -> TextBox {
+    public func setBgColor(_ color: Int32) -> TextBox {
         self.background = color
         return self
     }
@@ -309,7 +309,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as array of integer values from 0x00 to 0xFF.
     ///
     @discardableResult
-    public func setBgColor(_ color: [UInt32]) -> TextBox {
+    public func setBgColor(_ color: [Int32]) -> TextBox {
         self.background = color[0] << 16 | color[1] << 8 | color[2]
         return self
     }
@@ -320,7 +320,7 @@ public class TextBox : Drawable {
     ///
     /// @return int the color as 0xRRGGBB integer.
     ///
-    public func getBgColor() -> UInt32 {
+    public func getBgColor() -> Int32 {
         return self.background
     }
 
@@ -331,7 +331,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as 0xRRGGBB integer.
     ///
     @discardableResult
-    public func setFgColor(_ color: UInt32) -> TextBox {
+    public func setFgColor(_ color: Int32) -> TextBox {
         self.pen = color
         self.brush = color
         return self
@@ -344,7 +344,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as 0xRRGGBB integer.
     ///
     @discardableResult
-    public func setFgColor(_ color: [UInt32]) -> TextBox {
+    public func setFgColor(_ color: [Int32]) -> TextBox {
         self.pen = color[0] << 16 | color[1] << 8 | color[2]
         self.brush = pen
         return self
@@ -357,7 +357,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as 0xRRGGBB integer.
     ///
     @discardableResult
-    public func setPenColor(_ color: UInt32) -> TextBox {
+    public func setPenColor(_ color: Int32) -> TextBox {
         self.pen = color
         return self
     }
@@ -369,7 +369,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as an array of int values from 0x00 to 0xFF.
     ///
     @discardableResult
-    public func setPenColor(_ color: [UInt32]) -> TextBox {
+    public func setPenColor(_ color: [Int32]) -> TextBox {
         self.pen = color[0] << 16 | color[1] << 8 | color[2]
         return self
     }
@@ -380,7 +380,7 @@ public class TextBox : Drawable {
     ///
     /// @return int the pen color.
     ///
-    public func getPenColor() -> UInt32 {
+    public func getPenColor() -> Int32 {
         return self.pen
     }
 
@@ -391,7 +391,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as 0xRRGGBB integer.
     ///
     @discardableResult
-    public func setBrushColor(_ color: UInt32) -> TextBox {
+    public func setBrushColor(_ color: Int32) -> TextBox {
         self.brush = color
         return self
     }
@@ -403,7 +403,7 @@ public class TextBox : Drawable {
     /// @param color the color specified as an array of int values from 0x00 to 0xFF.
     ///
     @discardableResult
-    public func setBrushColor(_ color: [UInt32]) -> TextBox {
+    public func setBrushColor(_ color: [Int32]) -> TextBox {
         self.brush = color[0] << 16 | color[1] << 8 | color[2]
         return self
     }
@@ -414,7 +414,7 @@ public class TextBox : Drawable {
     ///
     /// @return int the brush color specified as 0xRRGGBB integer.
     ///
-    public func getBrushColor() -> UInt32 {
+    public func getBrushColor() -> Int32 {
         return self.brush
     }
 
@@ -567,13 +567,13 @@ public class TextBox : Drawable {
 
 
     @discardableResult
-    public func setTextColors(_ colors: [String : UInt32]?) -> TextBox {
+    public func setTextColors(_ colors: [String : Int32]?) -> TextBox {
         self.colors = colors
         return self
     }
 
 
-    public func getTextColors() -> [String : UInt32]? {
+    public func getTextColors() -> [String : Int32]? {
         return self.colors
     }
 
@@ -765,7 +765,7 @@ public class TextBox : Drawable {
             _ text: String,
             _ xText: Float,
             _ yText: Float,
-            _ colors: [String : UInt32]?) {
+            _ colors: [String : Int32]?) {
         if fallbackFont == nil {
             if colors == nil {
                 page!.drawString(font, text, xText, yText)

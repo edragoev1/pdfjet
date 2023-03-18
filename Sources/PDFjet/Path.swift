@@ -110,7 +110,7 @@ public class Path : Drawable {
     ///
     /// - Parameter color the color is specified as an integer.
     ///
-    public func setColor(_ color: UInt32) {
+    public func setColor(_ color: Int32) {
         self.color = color
     }
 

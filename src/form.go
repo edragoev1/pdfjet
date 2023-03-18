@@ -38,8 +38,8 @@ type Form struct {
 	numberOfRows  int
 	rowWidth      float32 // = 500f
 	rowHeight     float32 // = 12f
-	labelColor    uint32  // = Color.black
-	valueColor    uint32  // = Color.blue
+	labelColor    int32   // = Color.black
+	valueColor    int32   // = Color.blue
 }
 
 // NewForm constructs new form object.
@@ -93,13 +93,13 @@ func (form *Form) SetValueFontSize(valueFontSize float32) *Form {
 }
 
 // SetLabelColor sets the color for the label.
-func (form *Form) SetLabelColor(labelColor uint32) *Form {
+func (form *Form) SetLabelColor(labelColor int32) *Form {
 	form.labelColor = labelColor
 	return form
 }
 
 // SetValueColor sets the color for the value string.
-func (form *Form) SetValueColor(valueColor uint32) *Form {
+func (form *Form) SetValueColor(valueColor int32) *Form {
 	form.valueColor = valueColor
 	return form
 }
@@ -145,7 +145,7 @@ func (form *Form) DrawOn(page *Page) []float32 {
 
 		var font *Font
 		var fontSize float32
-		var color uint32
+		var color int32
 		var altDescription string
 		var actualText string
 		i := 0

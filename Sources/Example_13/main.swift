@@ -147,7 +147,7 @@ public class Example_13 {
     public func setBgColorForRow(
             _ table: Table,
             _ index: Int,
-            _ color: UInt32) {
+            _ color: Int32) {
         let row = table.getRowAtIndex(index)
         for cell in row {
             cell.setBgColor(color)

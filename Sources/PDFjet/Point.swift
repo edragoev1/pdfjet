@@ -253,7 +253,7 @@ public class Point : Drawable {
     /// - Parameter color the color specified as an integer.
     ///
     @discardableResult
-    public func setColor(_ color: UInt32) -> Point {
+    public func setColor(_ color: Int32) -> Point {
         self.color = color
         return self
     }
@@ -264,7 +264,7 @@ public class Point : Drawable {
     ///
     /// - Returns: the color.
     ///
-    public func getColor() -> UInt32 {
+    public func getColor() -> Int32 {
         return self.color
     }
 
@@ -391,7 +391,7 @@ public class Point : Drawable {
     /// - Parameter textColor the text color.
     ///
     @discardableResult
-    public func setTextColor(_ textColor: UInt32) -> Point {
+    public func setTextColor(_ textColor: Int32) -> Point {
         self.textColor = textColor
         return self
     }
@@ -402,7 +402,7 @@ public class Point : Drawable {
     ///
     /// - Returns: the text color.
     ///
-    public func getTextColor() -> UInt32 {
+    public func getTextColor() -> Int32 {
         return self.textColor
     }
 

@@ -54,11 +54,11 @@ type TextBox struct {
 	spacing            float32
 	margin             float32
 	lineWidth          float32
-	background         uint32
-	pen                uint32
-	brush              uint32
+	background         int32
+	pen                int32
+	brush              int32
 	valign             int
-	colors             map[string]uint32
+	colors             map[string]int32
 
 	// TextBox properties
 	// Future use:
@@ -80,7 +80,8 @@ type TextBox struct {
 }
 
 // NewTextBox creates a text box and sets the font.
-//  @param font the font.
+//
+//	@param font the font.
 func NewTextBox(font *Font) *TextBox {
 	textBox := new(TextBox)
 	textBox.font = font
@@ -125,7 +126,8 @@ func NewTextBox(Font font, String text, float width, float height) {
 */
 
 // SetFont sets the font for textBox text box.
-//  @param font the font.
+//
+//	@param font the font.
 func (textBox *TextBox) SetFont(font *Font) {
 	textBox.font = font
 }
@@ -171,13 +173,15 @@ func (textBox *TextBox) GetX() float32 {
 }
 
 // GetY gets the y coordinate where textBox text box will be drawn on the page.
-//  @return the y coordinate of the top left corner of the text box.
+//
+//	@return the y coordinate of the top left corner of the text box.
 func (textBox *TextBox) GetY() float32 {
 	return textBox.y
 }
 
 // SetWidth sets the width of textBox text box.
-//  @param width the specified width.
+//
+//	@param width the specified width.
 func (textBox *TextBox) SetWidth(width float32) {
 	textBox.width = width
 }
@@ -238,7 +242,7 @@ func (textBox *TextBox) GetSpacing() float32 {
 
 // SetBgColor sets the background to the specified color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBox *TextBox) SetBgColor(color uint32) {
+func (textBox *TextBox) SetBgColor(color int32) {
 	textBox.background = color
 }
 
@@ -252,7 +256,7 @@ func (textBox *TextBox) SetBgColor(color []int) {
 
 // GetBgColor returns the background color.
 // @return int the color as 0xRRGGBB integer.
-func (textBox *TextBox) GetBgColor() uint32 {
+func (textBox *TextBox) GetBgColor() int32 {
 	return textBox.background
 }
 
@@ -267,7 +271,7 @@ func (textBox *TextBox) SetFgColor(color uint32) {
 
 // SetFgColor sets the pen and brush colors to the specified color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBox *TextBox) SetFgColor(color []uint32) {
+func (textBox *TextBox) SetFgColor(color []int32) {
 	textBox.pen = color[0]<<16 | color[1]<<8 | color[2]
 	textBox.brush = textBox.pen
 }
@@ -282,13 +286,13 @@ func (textBox *TextBox) SetPenColor(color uint32) {
 
 // SetPenColor sets the pen color.
 // @param color the color specified as an array of int values from 0x00 to 0xFF.
-func (textBox *TextBox) SetPenColor(color []uint32) {
+func (textBox *TextBox) SetPenColor(color []int32) {
 	textBox.pen = color[0]<<16 | color[1]<<8 | color[2]
 }
 
 // GetPenColor returns the pen color as 0xRRGGBB integer.
 // @return int the pen color.
-func (textBox *TextBox) GetPenColor() uint32 {
+func (textBox *TextBox) GetPenColor() int32 {
 	return textBox.pen
 }
 
@@ -302,13 +306,13 @@ func (textBox *TextBox) SetBrushColor(color uint32) {
 
 // SetBrushColor sets the brush color.
 // @param color the color specified as an array of int values from 0x00 to 0xFF.
-func (textBox *TextBox) SetBrushColor(color []uint32) {
+func (textBox *TextBox) SetBrushColor(color []int32) {
 	textBox.brush = color[0]<<16 | color[1]<<8 | color[2]
 }
 
 // GetBrushColor returns the brush color.
 // @return int the brush color specified as 0xRRGGBB integer.
-func (textBox *TextBox) GetBrushColor() uint32 {
+func (textBox *TextBox) GetBrushColor() int32 {
 	return textBox.brush
 }
 
@@ -401,12 +405,12 @@ func (textBox *TextBox) GetVerticalAlignment() int {
 }
 
 // SetTextColors sets the text colors map.
-func (textBox *TextBox) SetTextColors(colors map[string]uint32) {
+func (textBox *TextBox) SetTextColors(colors map[string]int32) {
 	textBox.colors = colors
 }
 
 // GetTextColors returns the text colors map.
-func (textBox *TextBox) GetTextColors() map[string]uint32 {
+func (textBox *TextBox) GetTextColors() map[string]int32 {
 	return textBox.colors
 }
 
@@ -580,7 +584,7 @@ func (textBox *TextBox) DrawText(
 	text string,
 	xText float32,
 	yText float32,
-	colors map[string]uint32) {
+	colors map[string]int32) {
 	page.DrawStringUsingColorMap(font, fallbackFont, text, xText, yText, colors)
 	lineLength := textBox.font.stringWidth(text)
 	if textBox.GetUnderline() {

@@ -36,7 +36,7 @@ type DonutChart struct {
 	chartData      [][]*Point
 	xc, yc, r1, r2 float32
 	angles         []float32
-	colors         []uint32
+	colors         []int32
 	isDonutChart   bool
 }
 
@@ -157,7 +157,7 @@ func (chart *DonutChart) GetDonutPoints(xc, yc, r1, r2, angle1, angle2 float32) 
 }
 
 // AddSector -- TODO:
-func (chart *DonutChart) AddSector(angle float32, color uint32) {
+func (chart *DonutChart) AddSector(angle float32, color int32) {
 	chart.angles = append(chart.angles, angle)
 	chart.colors = append(chart.colors, color)
 }

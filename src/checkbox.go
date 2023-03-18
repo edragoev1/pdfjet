@@ -34,8 +34,8 @@ import (
 // By default the check box is unchecked.
 type CheckBox struct {
 	x, y, w, h     float32
-	boxColor       uint32
-	checkColor     uint32
+	boxColor       int32
+	checkColor     int32
 	penWidth       float32
 	checkWidth     float32
 	mark           int
@@ -70,7 +70,7 @@ func (checkBox *CheckBox) SetFontSize(fontSize float32) *CheckBox {
 // SetBoxColor sets the color of the check box.
 // @param boxColor the check box color specified as an 0xRRGGBB integer.
 // @return checkBox CheckBox.
-func (checkBox *CheckBox) SetBoxColor(boxColor uint32) *CheckBox {
+func (checkBox *CheckBox) SetBoxColor(boxColor int32) *CheckBox {
 	checkBox.boxColor = boxColor
 	return checkBox
 }
@@ -78,7 +78,7 @@ func (checkBox *CheckBox) SetBoxColor(boxColor uint32) *CheckBox {
 // SetCheckmark sets the color of the check mark.
 // @param checkColor the check mark color specified as an 0xRRGGBB integer.
 // @return checkBox CheckBox.
-func (checkBox *CheckBox) SetCheckmark(checkColor uint32) *CheckBox {
+func (checkBox *CheckBox) SetCheckmark(checkColor int32) *CheckBox {
 	checkBox.checkColor = checkColor
 	return checkBox
 }

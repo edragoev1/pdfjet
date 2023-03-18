@@ -29,6 +29,8 @@ SOFTWARE.
  */
 namespace PDFjet.NET {
 public class Color {
+    public const int transparent = -1;
+
     public const int aliceblue = 0xf0f8ff;
     public const int antiquewhite = 0xfaebd7;
     public const int aqua = 0x00ffff;
@@ -179,7 +181,5 @@ public class Color {
 
     public const int oldgloryred = 0xb22234;
     public const int oldgloryblue = 0x3c3b6e;
-
-    public const int transparent = -1;
 }
 }    // End of namespace PDFjet.NET

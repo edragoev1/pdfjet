@@ -88,19 +88,19 @@ public class PlainText : Drawable {
     }
 
 
-    public func setBackgroundColor(_ backgroundColor: UInt32) -> PlainText {
+    public func setBackgroundColor(_ backgroundColor: Int32) -> PlainText {
         self.backgroundColor = backgroundColor
         return self
     }
 
 
-    public func setBorderColor(_ borderColor: UInt32) -> PlainText {
+    public func setBorderColor(_ borderColor: Int32) -> PlainText {
         self.borderColor = borderColor
         return self
     }
 
 
-    public func setTextColor(_ textColor: UInt32) -> PlainText {
+    public func setTextColor(_ textColor: Int32) -> PlainText {
         self.textColor = textColor
         return self
     }

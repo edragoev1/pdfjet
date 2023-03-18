@@ -208,7 +208,7 @@ public class TextLine : Drawable {
     /// - Returns: selt.TextLine.
     ///
     @discardableResult
-    public func setColor(_ color: UInt32) -> TextLine {
+    public func setColor(_ color: Int32) -> TextLine {
         self.color = color
         return self
     }
@@ -222,7 +222,7 @@ public class TextLine : Drawable {
     /// - Returns: selt.TextLine.
     ///
     @discardableResult
-    public func setColor(_ color: [UInt32]) -> TextLine {
+    public func setColor(_ color: [Int32]) -> TextLine {
         self.color = color[0] << 16 | color[1] << 8 | color[2]
         return self
     }
@@ -233,7 +233,7 @@ public class TextLine : Drawable {
     ///
     /// - Returns: the text line color.
     ///
-    public func getColor() -> UInt32 {
+    public func getColor() -> Int32 {
         return self.color
     }
 

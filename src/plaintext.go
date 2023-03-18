@@ -39,9 +39,9 @@ type PlainText struct {
 	x, y            float32
 	w               float32
 	leading         float32
-	backgroundColor uint32
-	borderColor     uint32
-	textColor       uint32
+	backgroundColor int32
+	borderColor     int32
+	textColor       int32
 	language        string
 	altDescription  string
 	actualText      string
@@ -93,19 +93,19 @@ func (text *PlainText) SetLeading(leading float32) *PlainText {
 }
 
 // SetBackgroundColor sets the background color.
-func (text *PlainText) SetBackgroundColor(backgroundColor uint32) *PlainText {
+func (text *PlainText) SetBackgroundColor(backgroundColor int32) *PlainText {
 	text.backgroundColor = backgroundColor
 	return text
 }
 
 // SetBorderColor sets the corder color.
-func (text *PlainText) SetBorderColor(borderColor uint32) *PlainText {
+func (text *PlainText) SetBorderColor(borderColor int32) *PlainText {
 	text.borderColor = borderColor
 	return text
 }
 
 // SetTextColor sets the text color.
-func (text *PlainText) SetTextColor(textColor uint32) *PlainText {
+func (text *PlainText) SetTextColor(textColor int32) *PlainText {
 	text.textColor = textColor
 	return text
 }

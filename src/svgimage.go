@@ -37,8 +37,8 @@ import (
 type SVGImage struct {
 	x, y, w, h     float32
 	pdfPathOps     []*PathOp
-	color          uint32
-	penColor       uint32
+	color          int32
+	penColor       int32
 	penWidth       float32
 	fillPath       bool
 	uri            *string
@@ -139,12 +139,12 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	return image
 }
 
-func mapColorNameToValue(colorMap map[string]uint32, colorName string) uint32 {
+func mapColorNameToValue(colorMap map[string]int32, colorName string) int32 {
 	value, ok := colorMap[colorName]
 	if ok {
 		return value
 	}
-	return uint32(color.Black)
+	return int32(color.Black)
 }
 
 func (image *SVGImage) SetLocation(x, y float32) {

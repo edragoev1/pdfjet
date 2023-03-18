@@ -39,8 +39,8 @@ public class Form : Drawable {
     private var numberOfRows = 0
     private var rowLength: Float = 500.0
     private var rowHeight: Float = 12.0
-    private var labelColor: UInt32 = Color.black
-    private var valueColor: UInt32 = Color.blue
+    private var labelColor: Int32 = Color.black
+    private var valueColor: Int32 = Color.blue
 
 
     public init(_ fields: [Field]) {
@@ -104,14 +104,14 @@ public class Form : Drawable {
 
 
     @discardableResult
-    public func setLabelColor(_ labelColor: UInt32) -> Form {
+    public func setLabelColor(_ labelColor: Int32) -> Form {
         self.labelColor = labelColor
         return self
     }
 
 
     @discardableResult
-    public func setValueColor(_ valueColor: UInt32) -> Form {
+    public func setValueColor(_ valueColor: Int32) -> Form {
         self.valueColor = valueColor
         return self
     }

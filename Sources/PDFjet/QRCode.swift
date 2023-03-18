@@ -37,7 +37,7 @@ public class QRCode : Drawable {
     private var qrData: [UInt8]?
     private var m1: Float = 2.0             // Module length
 
-    private var color: UInt32 = Color.black
+    private var color: Int32 = Color.black
 
 
     ///
@@ -88,7 +88,7 @@ public class QRCode : Drawable {
     }
 
 
-    public func setColor(_ color: UInt32) {
+    public func setColor(_ color: Int32) {
         self.color = color
     }
 

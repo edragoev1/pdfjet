@@ -208,7 +208,7 @@ public class Line : Drawable {
     /// @return this Line object.
     ///
     @discardableResult
-    public func setColor(_ color: UInt32) -> Line {
+    public func setColor(_ color: Int32) -> Line {
         self.color = color
         return self
     }

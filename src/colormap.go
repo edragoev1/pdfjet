@@ -26,10 +26,9 @@ SOFTWARE.
 
 // Please see:
 // https://www.w3.org/TR/css-color-3/#svg-color
-func NewColorMap() map[string]uint32 {
-	color := make(map[string]uint32)
-	color["aliceblue"] = 0xf0f8ff
-	color["transparent"] = 0x80000000
+func NewColorMap() map[string]int32 {
+	color := make(map[string]int32)
+	color["transparent"] = -1
 	color["aliceblue"] = 0xf0f8ff
 	color["antiquewhite"] = 0xfaebd7
 	color["aqua"] = 0x00ffff

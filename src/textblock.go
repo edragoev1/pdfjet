@@ -42,8 +42,8 @@ type TextBlock struct {
 	y                  float32
 	w                  float32
 	h                  float32
-	background         uint32
-	brush              uint32
+	background         int32
+	brush              int32
 	drawBorder         bool
 	uri                *string
 	key                *string
@@ -148,28 +148,28 @@ func (textBlock *TextBlock) GetTextAlignment() int {
 // SetBgColor Sets the background to the specified color.
 // @param color the color specified as 0xRRGGBB integer.
 // @return the TextBlock object.
-func (textBlock *TextBlock) SetBgColor(color uint32) *TextBlock {
+func (textBlock *TextBlock) SetBgColor(color int32) *TextBlock {
 	textBlock.background = color
 	return textBlock
 }
 
 // GetBgColor Returns the background color.
 // @return int the color as 0xRRGGBB integer.
-func (textBlock *TextBlock) GetBgColor() uint32 {
+func (textBlock *TextBlock) GetBgColor() int32 {
 	return textBlock.background
 }
 
 // SetBrushColor Sets the brush color.
 // @param color the color specified as 0xRRGGBB integer.
 // @return the TextBlock object.
-func (textBlock *TextBlock) SetBrushColor(color uint32) *TextBlock {
+func (textBlock *TextBlock) SetBrushColor(color int32) *TextBlock {
 	textBlock.brush = color
 	return textBlock
 }
 
 // GetBrushColor Returns the brush color.
 // @return int the brush color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) GetBrushColor() uint32 {
+func (textBlock *TextBlock) GetBrushColor() int32 {
 	return textBlock.brush
 }
 

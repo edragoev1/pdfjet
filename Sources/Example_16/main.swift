@@ -18,7 +18,7 @@ public class Example_16 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        var colors = [String : UInt32]()
+        var colors = [String : Int32]()
         colors["Lorem"] = Color.blue
         colors["ipsum"] = Color.red
         colors["dolor"] = Color.green

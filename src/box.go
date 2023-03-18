@@ -34,7 +34,7 @@ import (
 // Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
 type Box struct {
 	x, y, w, h     float32
-	color          uint32
+	color          int32
 	width          float32
 	pattern        string
 	fillShape      bool
@@ -91,7 +91,7 @@ func (box *Box) SetSize(w, h float32) {
 
 // SetColor sets the color for this box.
 // @param color the color specified as an integer.
-func (box *Box) SetColor(color uint32) {
+func (box *Box) SetColor(color int32) {
 	box.color = color
 }
 
@@ -144,15 +144,16 @@ func (box *Box) SetStructureType(structureType string) *Box {
 // <pre>
 // Examples of line dash patterns:
 //
-//     "[Array] Phase"     Appearance          Description
-//     _______________     _________________   ____________________________________
+//	"[Array] Phase"     Appearance          Description
+//	_______________     _________________   ____________________________________
 //
-//     "[] 0"              -----------------   Solid line
-//     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//	"[] 0"              -----------------   Solid line
+//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//
 // </pre>
 //
 // @param pattern the line dash pattern.

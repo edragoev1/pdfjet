@@ -39,7 +39,7 @@ type Point struct {
 	x, y           float32
 	r              float32
 	shape          int
-	color          uint32
+	color          int32
 	align          int
 	lineWidth      float32
 	linePattern    string
@@ -47,7 +47,7 @@ type Point struct {
 	isControlPoint bool
 	drawPath       bool
 	text           string
-	textColor      uint32
+	textColor      int32
 	textDirection  int
 	uri, key       *string
 	xBox           float32
@@ -129,20 +129,22 @@ func (point *Point) GetRadius() float32 {
 //
 // @param shape the shape of this point. Supported values:
 // <pre>
-//   shape.Invisible
-//   shape.Circle
-//   shape.Diamond
-//   shape.Box
-//   shape.Plus
-//   shape.HDash
-//   shape.VDash
-//   shape.Multiply
-//   shape.Star
-//   shape.XMark
-//   shape.UpArrow
-//   shape.DownArrow
-//   shape.LeftArrow
-//   shape.RightArrow
+//
+//	shape.Invisible
+//	shape.Circle
+//	shape.Diamond
+//	shape.Box
+//	shape.Plus
+//	shape.HDash
+//	shape.VDash
+//	shape.Multiply
+//	shape.Star
+//	shape.XMark
+//	shape.UpArrow
+//	shape.DownArrow
+//	shape.LeftArrow
+//	shape.RightArrow
+//
 // </pre>
 func (point *Point) SetShape(shape int) *Point {
 	point.shape = shape
@@ -169,14 +171,14 @@ func (point *Point) GetFillShape() bool {
 
 // SetColor sets the pen color for this point.
 // @param color the color specified as an integer.
-func (point *Point) SetColor(color uint32) *Point {
+func (point *Point) SetColor(color int32) *Point {
 	point.color = color
 	return point
 }
 
 // GetColor returns the point color as an integer.
 // @return the color.
-func (point *Point) GetColor() uint32 {
+func (point *Point) GetColor() int32 {
 	return point.color
 }
 
@@ -202,15 +204,16 @@ func (point *Point) GetLineWidth() float32 {
 // <pre>
 // Examples of line dash patterns:
 //
-//     "[Array] Phase"     Appearance          Description
-//     _______________     _________________   ____________________________________
+//	"[Array] Phase"     Appearance          Description
+//	_______________     _________________   ____________________________________
 //
-//     "[] 0"              -----------------   Solid line
-//     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//	"[] 0"              -----------------   Solid line
+//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//
 // </pre>
 //
 // @param linePattern the line dash pattern.
@@ -256,13 +259,13 @@ func (point *Point) GetText() string {
 
 // SetTextColor sets the point's text color.
 // @param textColor the text color.
-func (point *Point) SetTextColor(textColor uint32) {
+func (point *Point) SetTextColor(textColor int32) {
 	point.textColor = textColor
 }
 
 // GetTextColor returns the point's text color.
 // @return the text color.
-func (point *Point) GetTextColor() uint32 {
+func (point *Point) GetTextColor() int32 {
 	return point.textColor
 }
 

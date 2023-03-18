@@ -220,7 +220,7 @@ func (page *Page) DrawString(font1 *Font, font2 *Font, text string, x, y float32
 // If the main font is missing some glyphs - the fallback font is used.
 // The baseline of the leftmost character is at position (x, y) on the page.
 func (page *Page) DrawStringUsingColorMap(
-	font, fallbackFont *Font, text string, x, y float32, colors map[string]uint32) {
+	font, fallbackFont *Font, text string, x, y float32, colors map[string]int32) {
 	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
 		page.drawString(font, text, x, y, colors)
 	} else {
@@ -252,7 +252,7 @@ func (page *Page) DrawStringUsingColorMap(
 // @param str the string to be drawn.
 // @param x the x coordinate.
 // @param y the y coordinate.
-func (page *Page) drawString(font *Font, str string, x, y float32, colors map[string]uint32) {
+func (page *Page) drawString(font *Font, str string, x, y float32, colors map[string]int32) {
 	if str == "" {
 		return
 	}
@@ -482,7 +482,7 @@ func (page *Page) SetColorCMYK(c, m, y, k float32) {
 
 // SetPenColor sets the pen color.
 // See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
-func (page *Page) SetPenColor(color uint32) {
+func (page *Page) SetPenColor(color int32) {
 	r := float32(((color >> 16) & 0xff)) / 255.0
 	g := float32(((color >> 8) & 0xff)) / 255.0
 	b := float32(((color) & 0xff)) / 255.0
@@ -491,7 +491,7 @@ func (page *Page) SetPenColor(color uint32) {
 
 // SetBrushColor sets the brush color.
 // See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
-func (page *Page) SetBrushColor(color uint32) {
+func (page *Page) SetBrushColor(color int32) {
 	r := float32(((color >> 16) & 0xff)) / 255.0
 	g := float32(((color >> 8) & 0xff)) / 255.0
 	b := float32(((color) & 0xff)) / 255.0
@@ -1162,7 +1162,7 @@ func (page *Page) appendPoint(point *Point) {
 	appendString(&page.buf, " ")
 }
 
-func (page *Page) drawWord(font *Font, buf *strings.Builder, colors map[string]uint32) {
+func (page *Page) drawWord(font *Font, buf *strings.Builder, colors map[string]int32) {
 	if brushColor, ok := colors[buf.String()]; ok {
 		page.SetBrushColor(brushColor)
 	} else {
@@ -1178,7 +1178,7 @@ func (page *Page) drawWord(font *Font, buf *strings.Builder, colors map[string]u
 	buf.Reset()
 }
 
-func (page *Page) drawColoredString(font *Font, str string, colors map[string]uint32) {
+func (page *Page) drawColoredString(font *Font, str string, colors map[string]int32) {
 	var buf1 strings.Builder
 	var buf2 strings.Builder
 	for _, ch := range str {

@@ -29,6 +29,9 @@ package com.pdfjet;
  *
  */
  public class Color {
+    /** The color named "transparent" */
+    public static final int transparent = -1;
+
     /** The color named "aliceblue" */
     public static final int aliceblue = 0xf0f8ff;
     /** The color named "antiquewhite" */
@@ -328,7 +331,4 @@ package com.pdfjet;
     public static final int oldgloryred = 0xb22234;
     /** The color named "oldgloryblue" */
     public static final int oldgloryblue = 0x3c3b6e;
-
-    /** The color named "transparent" */
-    public static final int transparent = -1;
 }

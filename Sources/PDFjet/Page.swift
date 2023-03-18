@@ -239,7 +239,7 @@ public class Page {
             _ str: String?,
             _ xOrig: Float,
             _ yOrig: Float,
-            _ colors: [String : UInt32]?) {
+            _ colors: [String : Int32]?) {
         var x = xOrig
         let y = yOrig
         if (font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK) {
@@ -292,7 +292,7 @@ public class Page {
             _ text: String?,
             _ x: Float,
             _ y: Float,
-            _ colors: [String : UInt32]?) {
+            _ colors: [String : Int32]?) {
 
         if text == nil || text! == "" {
             return
@@ -574,7 +574,7 @@ public class Page {
     /// See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
     /// @throws IOException
     ///
-    public func setPenColor(_ color: UInt32) {
+    public func setPenColor(_ color: Int32) {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
@@ -589,7 +589,7 @@ public class Page {
     /// See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
     /// @throws IOException
     ///
-    public func setBrushColor(_ color: UInt32) {
+    public func setBrushColor(_ color: Int32) {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
@@ -1513,7 +1513,7 @@ public class Page {
     private func drawWord(
             _ font: Font,
             _ str: inout String,
-            _ colors: [String : UInt32]) {
+            _ colors: [String : Int32]) {
         if str != "" {
             if colors[str] != nil {
                 setBrushColor(colors[str]!)
@@ -1532,7 +1532,7 @@ public class Page {
     func drawColoredString(
             _ font: Font,
             _ text: String,
-            _ colors: [String : UInt32]) {
+            _ colors: [String : Int32]) {
         var buf1 = String()
         var buf2 = String()
         for scalar in text.unicodeScalars {

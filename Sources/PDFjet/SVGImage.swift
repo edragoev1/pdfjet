@@ -33,7 +33,7 @@ public class SVGImage {
     var h: Float = 0.0  // SVG height
     var pdfPathOps: [PathOp]?
 
-    var color: UInt32 = Color.black
+    var color: Int32 = Color.black
     var penWidth: Float = 0.3
     var fillPath: Bool = true
 
@@ -114,12 +114,12 @@ public class SVGImage {
         pdfPathOps = SVG.getPDFPathOps(svgPathOps)
     }
 
-    func mapColorNameToValue(_ colorName: String) -> UInt32 {
+    func mapColorNameToValue(_ colorName: String) -> Int32 {
         var color = Color.black
         let mirror = Mirror(reflecting: ColorCSS())
         mirror.children.forEach { child in
             if child.label! == colorName {
-                color = child.value as! UInt32
+                color = child.value as! Int32
             }
         }
         return color

@@ -117,7 +117,7 @@ public class Box : Drawable {
      *  @param color the color specified as an integer.
      */
     @discardableResult
-    public func setColor(_ color: UInt32) -> Box {
+    public func setColor(_ color: Int32) -> Box {
         self.color = color
         return self
     }

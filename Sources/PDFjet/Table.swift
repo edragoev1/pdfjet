@@ -245,7 +245,7 @@ public class Table {
     /// @param index the index of the specified column.
     /// @param color the color specified as an integer.
     ///
-    public func setTextColorInColumn(_ index: Int, _ color: UInt32) {
+    public func setTextColorInColumn(_ index: Int, _ color: Int32) {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -283,7 +283,7 @@ public class Table {
     /// @param index the index of the specified row.
     /// @param color the color specified as an integer.
     ///
-    public func setTextColorInRow(_ index: Int, _ color: UInt32) {
+    public func setTextColorInRow(_ index: Int, _ color: Int32) {
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
@@ -728,7 +728,7 @@ public class Table {
     ///
     /// @param color the color of the cell border lines.
     ///
-    public func setCellBordersColor(_ color: UInt32) {
+    public func setCellBordersColor(_ color: Int32) {
         for row in tableData {
             for cell in row {
                 cell.setPenColor(color)

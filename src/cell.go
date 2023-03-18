@@ -53,9 +53,9 @@ type Cell struct {
 	leftPadding       float32
 	rightPadding      float32
 	lineWidth         float32
-	background        uint32
-	pen               uint32
-	brush             uint32
+	background        int32
+	pen               int32
+	brush             int32
 
 	// Cell properties
 	// Colspan:
@@ -303,41 +303,41 @@ func (cell *Cell) GetLineWidth() float32 {
 
 // SetBgColor sets the background to the specified color.
 // @param color the color specified as 0xRRGGBB integer.
-func (cell *Cell) SetBgColor(color uint32) {
+func (cell *Cell) SetBgColor(color int32) {
 	cell.background = color
 }
 
 // GetBgColor returns the background color of this cell.
-func (cell *Cell) GetBgColor() uint32 {
+func (cell *Cell) GetBgColor() int32 {
 	return cell.background
 }
 
 // SetPenColor sets the pen color.
 // @param color the color specified as 0xRRGGBB integer.
-func (cell *Cell) SetPenColor(color uint32) {
+func (cell *Cell) SetPenColor(color int32) {
 	cell.pen = color
 }
 
 // GetPenColor returns the pen color.
-func (cell *Cell) GetPenColor() uint32 {
+func (cell *Cell) GetPenColor() int32 {
 	return cell.pen
 }
 
 // SetBrushColor sets the brush color.
 // @param color the color specified as 0xRRGGBB integer.
-func (cell *Cell) SetBrushColor(color uint32) {
+func (cell *Cell) SetBrushColor(color int32) {
 	cell.brush = color
 }
 
 // GetBrushColor returns the brush color.
 // @return the brush color.
-func (cell *Cell) GetBrushColor() uint32 {
+func (cell *Cell) GetBrushColor() int32 {
 	return cell.brush
 }
 
 // SetFgColor sets the pen and brush colors to the specified color.
 // @param color the color specified as 0xRRGGBB integer.
-func (cell *Cell) SetFgColor(color uint32) {
+func (cell *Cell) SetFgColor(color int32) {
 	cell.pen = color
 	cell.brush = color
 }

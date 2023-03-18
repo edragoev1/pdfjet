@@ -122,9 +122,9 @@ func GetData() [][]*pdfjet.Point {
 func AddVerticalBar(
 	chartData *[][]*pdfjet.Point,
 	x, w, h float32,
-	color uint32,
+	color int32,
 	text string,
-	textColor uint32) {
+	textColor int32) {
 	path1 := make([]*pdfjet.Point, 0)
 
 	point := pdfjet.NewPoint(x, 0.0)

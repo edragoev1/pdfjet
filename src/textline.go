@@ -44,7 +44,7 @@ type TextLine struct {
 	underlineTTS       string
 	strikeoutTTS       string
 	degrees            int
-	color              uint32
+	color              int32
 	textEffect         int
 	verticalOffset     float32
 	language           string
@@ -147,7 +147,7 @@ func (textLine *TextLine) GetFallbackFont() *Font {
 // SetColor sets the color for this text line.
 // @param color the color is specified as an integer.
 // @return this TextLine.
-func (textLine *TextLine) SetColor(color uint32) *TextLine {
+func (textLine *TextLine) SetColor(color int32) *TextLine {
 	textLine.color = color
 	return textLine
 }
@@ -155,14 +155,14 @@ func (textLine *TextLine) SetColor(color uint32) *TextLine {
 // SetColorRGB sets the pen color.
 // @param color the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
 // @return this TextLine.
-func (textLine *TextLine) SetColorRGB(color []uint32) *TextLine {
+func (textLine *TextLine) SetColorRGB(color []int32) *TextLine {
 	textLine.color = color[0]<<16 | color[1]<<8 | color[2]
 	return textLine
 }
 
 // GetColor returns the text line color.
 // @return the text line color.
-func (textLine *TextLine) GetColor() uint32 {
+func (textLine *TextLine) GetColor() int32 {
 	return textLine.color
 }
 

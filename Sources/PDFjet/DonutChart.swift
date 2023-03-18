@@ -21,7 +21,7 @@ public class DonutChart : Drawable {
     var r1: Float = 0.0
     var r2: Float = 0.0
 	var angles: [Float]?
-	var colors: [UInt32]?
+	var colors: [Int32]?
     var isDonutChart: Bool = true
 
 
@@ -35,7 +35,7 @@ public class DonutChart : Drawable {
         self.f1 = f1
         self.f2 = f2
         self.angles = [Float]()
-        self.colors = [UInt32]()
+        self.colors = [Int32]()
     }
 
 
@@ -183,7 +183,7 @@ public class DonutChart : Drawable {
 
 
     // AddSector -- TODO:
-    public func addSector(_ angle: Float, _ color: UInt32) {
+    public func addSector(_ angle: Float, _ color: Int32) {
         angles!.append(angle)
         colors!.append(color)
     }
