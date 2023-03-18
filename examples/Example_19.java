@@ -17,12 +17,14 @@ public class Example_19 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_19.pdf")));
 
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        FileInputStream stream = new FileInputStream(
+            "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f1 = new Font(pdf, stream, Font.STREAM);
         stream.close();
         f1.setSize(10f);
 
-        stream = new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream");
+        stream = new FileInputStream(
+            "fonts/Droid/DroidSansFallback.ttf.stream");
         Font f2 = new Font(pdf, stream, Font.STREAM);
         stream.close();
         f2.setSize(10f);
