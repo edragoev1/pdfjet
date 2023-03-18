@@ -42,6 +42,7 @@ public class SVGImage {
     private int penColor = Color.black;
     private float penWidth = 2.0f;
     private boolean fillPath = true;
+    private boolean strokePath = false;
 
     protected String uri = null;
     protected String key = null;
@@ -101,6 +102,7 @@ public class SVGImage {
                         color = mapColorNameToValue(buf.toString());
                     }
                 } else if (param.equals("stroke")) {
+                    strokePath = true;
                     penColor = mapColorNameToValue(buf.toString());
                 } else if (param.equals("stroke-width")) {
                     penWidth = Float.valueOf(buf.toString());
@@ -177,19 +179,7 @@ public class SVGImage {
         return this.h;
     }
 
-    public float[] drawOn(Page page) {
-        page.addBMC(StructElem.P, language, actualText, altDescription);
-        page.setBrushColor(color);
-        page.setPenWidth(penWidth);
-        page.setPenColor(penColor);
-/*
-        if (fillPath) {
-            page.setBrushColor(color);
-        }
-        else {
-            page.setPenColor(penColor);
-        }
-*/
+    private void drawPath(Page page, boolean fill, boolean stroke) {
         for (int i = 0; i < pdfPathOps.size(); i++) {
             PathOp op = pdfPathOps.get(i);
             if (op.cmd == 'M') {
@@ -202,16 +192,28 @@ public class SVGImage {
                     op.x2 + x, op.y2 + y,
                     op.x + x, op.y + y);
             } else if (op.cmd == 'Z') {
-                if (!fillPath) {
+                if (stroke) {
                     page.closePath();
                 }
             }
         }
-        if (fillPath) {
+        if (fill) {
             page.fillPath();
         }
-        page.addEMC();
+    }
 
+    public float[] drawOn(Page page) {
+        page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.setBrushColor(color);
+        page.setPenColor(penColor);
+        page.setPenWidth(penWidth);
+        if (fillPath) {
+            drawPath(page, true, false);
+        }
+        if (strokePath) {
+            drawPath(page, false, true);
+        }
+        page.addEMC();
         if (uri != null || key != null) {
             page.addAnnotation(new Annotation(
                     uri,
