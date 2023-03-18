@@ -52,53 +52,49 @@ public class SVG {
         return false
     }
 
-    public static func getSVGPathOps(_ paths: [String]) -> [PathOp] {
+    public static func getOperations(_ path: String) -> [PathOp] {
         var operations = [PathOp]()
         var op: PathOp?
-        for path in paths {
-            // Path example:
-            // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            var buf = String()
-            var token = false
-            for ch in path {
-                if isCommand(ch) {          // open path
-                    if token {
-                        op!.args.append(buf)
-                        buf = ""
-                    }
-                    token = false
-                    op = PathOp(ch)
-                    operations.append(op!)
-                } else if ch == " " || ch == "," {
-                    if token {
-                        op!.args.append(buf)
-                        buf = ""
-                    }
-                    token = false
-                } else if ch == "-" {
-                    if token {
-                        op!.args.append(buf)
-                        buf = ""
-                    }
-                    token = true
-                    buf.append(ch)
-                } else if ch == "." {
-                    if buf.contains(".") {
-                        op!.args.append(buf)
-                        buf = ""
-                    }
-                    token = true
-                    buf.append(ch)
-                } else {
-                    token = true
-                    buf.append(ch)
+        var buf = String()
+        var token = false
+        for ch in path {
+            if isCommand(ch) {          // open path
+                if token {
+                    op!.args.append(buf)
+                    buf = ""
                 }
+                token = false
+                op = PathOp(ch)
+                operations.append(op!)
+            } else if ch == " " || ch == "," {
+                if token {
+                    op!.args.append(buf)
+                    buf = ""
+                }
+                token = false
+            } else if ch == "-" {
+                if token {
+                    op!.args.append(buf)
+                    buf = ""
+                }
+                token = true
+                buf.append(ch)
+            } else if ch == "." {
+                if buf.contains(".") {
+                    op!.args.append(buf)
+                    buf = ""
+                }
+                token = true
+                buf.append(ch)
+            } else {
+                token = true
+                buf.append(ch)
             }
         }
         return operations
     }
 
-    public static func getPDFPathOps(_ list: [PathOp]) -> [PathOp] {
+    public static func toPDF(_ list: [PathOp]) -> [PathOp] {
         var operations = [PathOp]()
         var lastOp: PathOp?
         var x0: Float = 0.0 // Start of subpath

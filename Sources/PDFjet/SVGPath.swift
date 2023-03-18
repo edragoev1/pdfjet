@@ -26,7 +26,7 @@ import Foundation
 public class SVGPath {
     var data: String?               // The SVG path data
     var operations: [PathOp]?       // The PDF path operations
-    var fill: Int32 = Color.black  // The fill color or nil (don't fill)
-    var stroke: Int32?             // The stroke color or nil (don't stroke)
+    var fill: Int32 = Color.black   // The fill color or nil (don't fill)
+    var stroke: Int32 = -1          // The stroke color or nil (don't stroke)
     var strokeWidth: Float = 2.0    // The stroke width
 }

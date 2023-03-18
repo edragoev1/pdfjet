@@ -31,12 +31,8 @@ public class SVGImage {
     var y: Float = 0.0  // location y
     var w: Float = 0.0  // SVG width
     var h: Float = 0.0  // SVG height
-    var pdfPathOps: [PathOp]?
 
-    var color: Int32 = Color.black
-    var penWidth: Float = 0.3
-    var fillPath: Bool = true
-
+    var paths: [SVGPath]?
     var uri: String?
     var key: String?
     var language: String?
@@ -50,11 +46,12 @@ public class SVGImage {
      * @throws Exception  if exception occurred.
      */
     public init(_ stream: InputStream) {
+        paths = [SVGPath]()
+        var path: SVGPath?
         stream.open()
         defer {
             stream.close()
         }
-        var paths = [String]()
         let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 1)
         defer {
             buffer.deallocate()
@@ -80,6 +77,10 @@ public class SVGImage {
                 buf = ""
             } else if !token && buf.hasSuffix(" d=") {
                 token = true
+                if path != nil {
+                    paths!.append(path!)
+                }
+                path = SVGPath()
                 param = "data"
                 buf = ""
             } else if !token && buf.hasSuffix(" fill=") {
@@ -101,17 +102,35 @@ public class SVGImage {
                 } else if param == "height" {
                     h = Float(buf)!
                 } else if param == "data" {
-                    paths.append(buf)
+                    path!.data = buf
                 } else if param == "fill" {
-                    color = mapColorNameToValue(buf)
+                    if buf == "none" {
+                        path!.fill = -1
+                    } else {
+                        path!.fill = mapColorNameToValue(buf)
+                    }
+                } else if param == "stroke" {
+                    path!.stroke = mapColorNameToValue(buf)
+                } else if param == "stroke-width" {
+                    path!.strokeWidth = Float(buf)!
                 }
                 buf = ""
             } else {
                 buf.append(String(scalar))
             }
         }
-        let svgPathOps: [PathOp] = SVG.getSVGPathOps(paths)
-        pdfPathOps = SVG.getPDFPathOps(svgPathOps)
+        if path != nil {
+            paths!.append(path!)
+        }
+
+
+        var i = 0
+        while i < paths!.count {
+            path = paths![i]
+            path!.operations = SVG.getOperations(path!.data!)
+            path!.operations = SVG.toPDF(path!.operations!)
+            i += 1
+        }
     }
 
     func mapColorNameToValue(_ colorName: String) -> Int32 {
@@ -123,10 +142,6 @@ public class SVGImage {
             }
         }
         return color
-    }
-
-    public func getPDFPathOps() -> [PathOp] {
-        return self.pdfPathOps!
     }
 
     /**
@@ -141,32 +156,8 @@ public class SVGImage {
         self.y = y
     }
 
-    /**
-     *  Sets the fill path flag to true or false.
-     *
-     *  @param fillPath if true fills that SVG path, strokes otherwise.
-     */
-    public func setFillPath(_ fillPath: Bool) {
-        self.fillPath = fillPath
-    }
-
-    /**
-     *  Sets the size of this box.
-     *
-     *  @param w the width of this box.
-     *  @param h the height of this box.
-     */
-    public func setSize(_ w: Float, _ h: Float) {
-        self.w = w
-        self.h = h
-    }
-
-    public func setPenWidth(_ w: Float) {
-        self.w = w
-    }
-
-    public func setHeight(_ h: Float) {
-        self.h = h
+    public func setScale(_ factor: Float) {
+        // TODO:
     }
 
     public func getPenWidth() -> Float {
@@ -177,36 +168,52 @@ public class SVGImage {
         return self.h
     }
 
-    public func drawOn(_ page: Page) -> [Float] {
-        page.addBMC(StructElem.P, language, actualText, altDescription)
-        page.setPenWidth(penWidth)
-        if fillPath {
-            page.setBrushColor(color)
+    private func drawPath(_ path: SVGPath, _ page: Page) {
+        page.setBrushColor(path.fill)
+        page.setPenColor(path.stroke)
+        page.setPenWidth(path.strokeWidth)
+
+        if (path.fill != -1) {
+            for op in path.operations! {
+                if (op.cmd == "M") {
+                    page.moveTo(op.x + x, op.y + y)
+                } else if (op.cmd == "L") {
+                    page.lineTo(op.x + x, op.y + y)
+                } else if (op.cmd == "C") {
+                    page.curveTo(
+                        op.x1 + x, op.y1 + y,
+                        op.x2 + x, op.y2 + y,
+                        op.x + x, op.y + y)
+                } else if (op.cmd == "Z") {
+                }
+            }
+            page.fillPath()
         }
-        else {
-            page.setPenColor(color)
-        }
-        for op in pdfPathOps! {
-            if op.cmd == "M" {
-                page.moveTo(op.x + x, op.y + y)
-            } else if op.cmd == "L" {
-                page.lineTo(op.x + x, op.y + y)
-            } else if op.cmd == "C" {
-                page.curveTo(
-                    op.x1 + x, op.y1 + y,
-                    op.x2 + x, op.y2 + y,
-                    op.x + x, op.y + y)
-            } else if op.cmd == "Z" {
-                if !fillPath {
+
+        if (path.stroke != -1) {
+            for op in path.operations! {
+                if (op.cmd == "M") {
+                    page.moveTo(op.x + x, op.y + y)
+                } else if (op.cmd == "L") {
+                    page.lineTo(op.x + x, op.y + y)
+                } else if (op.cmd == "C") {
+                    page.curveTo(
+                        op.x1 + x, op.y1 + y,
+                        op.x2 + x, op.y2 + y,
+                        op.x + x, op.y + y)
+                } else if (op.cmd == "Z") {
                     page.closePath()
                 }
             }
         }
-        if fillPath {
-            page.fillPath()
+    }
+
+    public func drawOn(_ page: Page) -> [Float] {
+        page.addBMC(StructElem.P, language, actualText, altDescription)
+        for path in paths! {
+            drawPath(path, page)
         }
         page.addEMC()
-
         if (uri != nil || key != nil) {
             page.addAnnotation(Annotation(
                     uri,
