@@ -23,7 +23,6 @@ SOFTWARE.
 */
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 
 namespace PDFjet.NET {
@@ -56,56 +55,50 @@ public class SVG {
         return false;
     }
 
-    public static List<PathOp> GetSVGPathOps(List<String> paths) {
+    public static List<PathOp> GetOperations(String path) {
         List<PathOp> operations = new List<PathOp>();
         PathOp op = null;
-        foreach (String path in paths) {
-            // Path example:
-            // "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-            // Console.WriteLine(path);
-            // Console.WriteLine();
-            StringBuilder buf = new StringBuilder();
-            bool token = false;
-            for (int i = 0; i < path.Length; i++) {
-                char ch = path[i];
-                if (isCommand(ch)) {                    // open path
-                    if (token) {
-                        op.args.Add(buf.ToString());
-                        buf.Length = 0;
-                    }
-                    token = false;
-                    op = new PathOp(ch);
-                    operations.Add(op);
-                } else if (ch == ' ' || ch == ',') {
-                    if (token) {
-                        op.args.Add(buf.ToString());
-                        buf.Length = 0;
-                    }
-                    token = false;
-                } else if (ch == '-') {
-                    if (token) {
-                        op.args.Add(buf.ToString());
-                        buf.Length = 0;
-                    }
-                    token = true;
-                    buf.Append(ch);
-                } else if (ch == '.') {
-                    if (buf.ToString().Contains(".")) {
-                        op.args.Add(buf.ToString());
-                        buf.Length = 0;
-                    }
-                    token = true;
-                    buf.Append(ch);
-                } else {
-                    token = true;
-                    buf.Append(ch);
+        StringBuilder buf = new StringBuilder();
+        bool token = false;
+        for (int i = 0; i < path.Length; i++) {
+            char ch = path[i];
+            if (isCommand(ch)) {                    // open path
+                if (token) {
+                    op.args.Add(buf.ToString());
+                    buf.Length = 0;
                 }
+                token = false;
+                op = new PathOp(ch);
+                operations.Add(op);
+            } else if (ch == ' ' || ch == ',') {
+                if (token) {
+                    op.args.Add(buf.ToString());
+                    buf.Length = 0;
+                }
+                token = false;
+            } else if (ch == '-') {
+                if (token) {
+                    op.args.Add(buf.ToString());
+                    buf.Length = 0;
+                }
+                token = true;
+                buf.Append(ch);
+            } else if (ch == '.') {
+                if (buf.ToString().Contains(".")) {
+                    op.args.Add(buf.ToString());
+                    buf.Length = 0;
+                }
+                token = true;
+                buf.Append(ch);
+            } else {
+                token = true;
+                buf.Append(ch);
             }
         }
         return operations;
     }
 
-    public static List<PathOp> GetPDFPathOps(List<PathOp> list) {
+    public static List<PathOp> ToPDF(List<PathOp> list) {
         List<PathOp> operations = new List<PathOp>();
         PathOp lastOp = null;
         PathOp pathOp = null;

@@ -145,7 +145,7 @@ public class SVGImage {
     }
 
     public void setScale(float factor) {
-        // TODO
+        // TODO:
     }
 
     public float getWidth() {

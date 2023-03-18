@@ -35,14 +35,8 @@ public class SVGImage {
     float y = 0f;
     float w = 0f;       // SVG width
     float h = 0f;       // SVG height
-    List<PathOp> pdfPathOps = null;
 
-    private int color = Color.black;
-    private int penColor = Color.black;
-    private float penWidth = 2.0f;
-    private bool fillPath = true;
-    private bool strokePath = false;
-
+    List<SVGPath> paths = null;
     protected String uri = null;
     protected String key = null;
     private String language = null;
@@ -56,7 +50,8 @@ public class SVGImage {
      * @throws Exception  if exception occurred.
      */
     public SVGImage(Stream stream) {
-        List<String> paths = new List<String>();
+        paths = new List<SVGPath>();
+        SVGPath path = null;
         StringBuilder buf = new StringBuilder();
         bool token = false;
         String param = null;
@@ -70,9 +65,13 @@ public class SVGImage {
                 token = true;
                 param = "height";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith("<path d=")) {
+            } else if (!token && buf.ToString().EndsWith(" d=")) {
                 token = true;
-                param = "path";
+                if (path != null) {
+                    paths.Add(path);
+                }
+                path = new SVGPath();
+                param = "data";
                 buf.Length = 0;
             } else if (!token && buf.ToString().EndsWith(" fill=")) {
                 token = true;
@@ -92,29 +91,34 @@ public class SVGImage {
                     w = float.Parse(buf.ToString());
                 } else if (param.Equals("height")) {
                     h = float.Parse(buf.ToString());
-                } else if (param.Equals("path")) {
-                    paths.Add(buf.ToString());
+                } else if (param.Equals("data")) {
+                    path.data = buf.ToString();
                 } else if (param.Equals("fill")) {
                     if (buf.ToString().Equals("none")) {
-                        fillPath = false;
+                        path.fill = -1;
                     } else {
-                        fillPath = true;
-                        color = mapColorNameToValue(buf.ToString());
+                        path.fill = mapColorNameToValue(buf.ToString());
                     }
                 } else if (param.Equals("stroke")) {
-                    strokePath = true;
-                    penColor = mapColorNameToValue(buf.ToString());
+                    path.stroke = mapColorNameToValue(buf.ToString());
                 } else if (param.Equals("stroke-width")) {
-                    penWidth = float.Parse(buf.ToString());
+                    path.strokeWidth = float.Parse(buf.ToString());
                 }
                 buf.Length = 0;
             } else {
                 buf.Append((char) ch);
             }
         }
+        if (path != null) {
+            paths.Add(path);
+        }
         stream.Close();
-        List<PathOp> svgPathOps = SVG.GetSVGPathOps(paths);
-        pdfPathOps = SVG.GetPDFPathOps(svgPathOps);
+
+        for (int i = 0; i < paths.Count; i++) {
+            path = paths[i];
+            path.operations = SVG.GetOperations(path.data);
+            path.operations = SVG.ToPDF(path.operations);
+        }
     }
 
     private int mapColorNameToValue(String colorName) {
@@ -125,10 +129,6 @@ public class SVGImage {
             return color;
         }
         return color;
-    }
-
-    public List<PathOp> GetPDFPathOps() {
-        return pdfPathOps;
     }
 
     /**
@@ -144,35 +144,11 @@ public class SVGImage {
         return this;
     }
 
-    /**
-     *  Sets the fill path flag to true or false.
-     *
-     *  @param fillPath if true fills that SVG path, strokes otherwise.
-     */
-    public void SetFillPath(bool fillPath) {
-        this.fillPath = fillPath;
+    public void setScale(float w) {
+        // TODO:
     }
 
-    /**
-     *  Sets the size of this box.
-     *
-     *  @param w the width of this box.
-     *  @param h the height of this box.
-     */
-    public void setSize(float w, float h) {
-        this.w = w;
-        this.h = h;
-    }
-
-    public void setPenWidth(float w) {
-        this.w = w;
-    }
-
-    public void setHeight(float h) {
-        this.h = h;
-    }
-
-    public float getPenWidth() {
+    public float getWidth() {
         return this.w;
     }
 
@@ -180,39 +156,53 @@ public class SVGImage {
         return this.h;
     }
 
-    private void drawPath(Page page, bool fill, bool stroke) {
-        for (int i = 0; i < pdfPathOps.Count; i++) {
-            PathOp op = pdfPathOps[i];
-            if (op.cmd == 'M') {
-                page.MoveTo(op.x + x, op.y + y);
-            } else if (op.cmd == 'L') {
-                page.LineTo(op.x + x, op.y + y);
-            } else if (op.cmd == 'C') {
-                page.CurveTo(
-                    op.x1 + x, op.y1 + y,
-                    op.x2 + x, op.y2 + y,
-                    op.x + x, op.y + y);
-            } else if (op.cmd == 'Z') {
-                if (stroke) {
+    private void drawPath(SVGPath path, Page page) {
+        page.SetBrushColor(path.fill);
+        page.SetPenColor(path.stroke);
+        page.SetPenWidth(path.strokeWidth);
+
+        if (path.fill != -1) {
+            for (int i = 0; i < path.operations.Count; i++) {
+                PathOp op = path.operations[i];
+                if (op.cmd == 'M') {
+                    page.MoveTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'L') {
+                    page.LineTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'C') {
+                    page.CurveTo(
+                        op.x1 + x, op.y1 + y,
+                        op.x2 + x, op.y2 + y,
+                        op.x + x, op.y + y);
+                } else if (op.cmd == 'Z') {
+                }
+            }
+            page.FillPath();
+        }
+
+        if (path.stroke != -1) {
+            for (int i = 0; i < path.operations.Count; i++) {
+                PathOp op = path.operations[i];
+                if (op.cmd == 'M') {
+                    page.MoveTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'L') {
+                    page.LineTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'C') {
+                    page.CurveTo(
+                        op.x1 + x, op.y1 + y,
+                        op.x2 + x, op.y2 + y,
+                        op.x + x, op.y + y);
+                } else if (op.cmd == 'Z') {
                     page.ClosePath();
                 }
             }
-        }
-        if (fill) {
-            page.FillPath();
         }
     }
 
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
-        page.SetBrushColor(color);
-        page.SetPenColor(penColor);
-        page.SetPenWidth(penWidth);
-        if (fillPath) {
-            drawPath(page, true, false);
-        }
-        if (strokePath) {
-            drawPath(page, false, true);            
+        for (int i = 0; i < paths.Count; i++) {
+            SVGPath path = paths[i];
+            drawPath(path, page);
         }
         page.AddEMC();
         if (uri != null || key != null) {
