@@ -5,3 +5,6 @@ echo "Main-Class: examples.Example_$1" > manifest.txt
 rm manifest.txt
 rm *.exe.build_artifacts.txt
 rm com/pdfjet/*.class
+
+./Example_$1.exe
+evince Example_$1.pdf

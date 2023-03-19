@@ -25,7 +25,9 @@ package com.pdfjet;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -44,6 +46,8 @@ public class SVGImage {
     private String actualText = Single.space;
     private String altDescription = Single.space;
 
+    private ColorMap colorMap = null;
+
     /**
      * Used to embed SVG images in the PDF document.
      *
@@ -51,6 +55,7 @@ public class SVGImage {
      * @throws Exception  if exception occurred.
      */
     public SVGImage(InputStream stream) throws Exception {
+        colorMap = new ColorMap();
         paths = new ArrayList<SVGPath>();
         SVGPath path = null;
         StringBuilder buf = new StringBuilder();
@@ -98,10 +103,10 @@ public class SVGImage {
                     if (buf.toString().equals("none")) {
                         path.fill = Color.transparent;
                     } else {
-                        path.fill = mapColorNameToValue(buf.toString());
+                        path.fill = colorMap.getColor(buf.toString());
                     }
                 } else if (param.equals("stroke")) {
-                    path.stroke = mapColorNameToValue(buf.toString());
+                    path.stroke = colorMap.getColor(buf.toString());
                 } else if (param.equals("stroke-width")) {
                     try {
                         path.strokeWidth = Float.valueOf(buf.toString());
@@ -124,16 +129,6 @@ public class SVGImage {
             path.operations = SVG.getOperations(path.data);
             path.operations = SVG.toPDF(path.operations);
         }
-    }
-
-    private int mapColorNameToValue(String colorName) {
-        // int color = Color.black;
-        // try {
-        //     color = (int) Color.class.getDeclaredField(colorName).get(Integer.class);
-        // } catch (Exception e) {
-        // }
-        // return color;
-        return (new ColorMap()).getColor(colorName);
     }
 
     /**
