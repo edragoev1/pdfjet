@@ -767,7 +767,6 @@ public class PDF {
 
 
     private void addPageContent(Page page) throws Exception {
-        //>> REMOVE FROM THE OPEN SOURCE EDITION!
         if (eval && fonts.size() > 0) {
             Font f1 = fonts.get(0);
             float fontSize = f1.getSize();
@@ -797,7 +796,6 @@ public class PDF {
             page.tm = tm;
             page.setBrushColor(brushColor);
         }
-        //<<
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater());

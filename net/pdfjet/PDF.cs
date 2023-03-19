@@ -749,7 +749,6 @@ public class PDF {
 
 
     private void AddPageContent(Page page) {
-        //>> REMOVE FROM THE OPEN SOURCE EDITION!
         if (eval && fonts.Count > 0) {
             Font f1 = fonts[0];
             float fontSize = f1.GetSize();
@@ -779,7 +778,6 @@ public class PDF {
             page.tm = tm;
             page.SetBrushColor(brushColor);
         }
-        //<<
 
         MemoryStream baos = new MemoryStream();
         DeflaterOutputStream dos = new DeflaterOutputStream(baos);
