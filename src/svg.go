@@ -37,30 +37,6 @@ func NewSVG() *SVG {
 	return new(SVG)
 }
 
-/*
-	func (svg *SVG) GetSVGPaths(filename string) []string {
-		var paths = make([]string, 0)
-		contents, err := os.ReadFile(filename)
-		if err != nil {
-			log.Fatal(err)
-		}
-		var inPath = false
-		var buffer = make([]rune, 0)
-		for _, ch := range contents {
-			if !inPath && strings.HasSuffix(string(buffer), "<path d=") {
-				inPath = true
-				buffer = nil
-			} else if inPath && ch == '"' {
-				inPath = false
-				paths = append(paths, string(buffer))
-				buffer = nil
-			} else {
-				paths = append(paths, string(buffer))
-			}
-		}
-		return paths
-	}
-*/
 func isCommand(ch rune) bool {
 	// Please note:
 	// Capital letter commands use absolute coordinates
