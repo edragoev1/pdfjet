@@ -127,12 +127,13 @@ public class SVGImage {
     }
 
     private int mapColorNameToValue(String colorName) {
-        int color = Color.black;
-        try {
-            color = (int) Color.class.getDeclaredField(colorName).get(null);
-        } catch (Exception e) {
-        }
-        return color;
+        // int color = Color.black;
+        // try {
+        //     color = (int) Color.class.getDeclaredField(colorName).get(Integer.class);
+        // } catch (Exception e) {
+        // }
+        // return color;
+        return (new ColorMap()).getColor(colorName);
     }
 
     /**
