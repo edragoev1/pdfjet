@@ -122,7 +122,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			} else if param == "stroke-width" {
 				strokeWidth, err := strconv.ParseFloat(builder.String(), 32)
 				if err != nil {
-					log.Fatal(err)
+					path.strokeWidth = 2.0
 				} else {
 					path.strokeWidth = float32(strokeWidth)
 				}

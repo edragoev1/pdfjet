@@ -103,7 +103,11 @@ public class SVGImage {
                 } else if (param.equals("stroke")) {
                     path.stroke = mapColorNameToValue(buf.toString());
                 } else if (param.equals("stroke-width")) {
-                    path.strokeWidth = Float.valueOf(buf.toString());
+                    try {
+                        path.strokeWidth = Float.valueOf(buf.toString());
+                    } catch (Exception e) {
+                        path.strokeWidth = 2f;
+                    }
                 }
                 buf.setLength(0);
             } else {

@@ -102,7 +102,11 @@ public class SVGImage {
                 } else if (param.Equals("stroke")) {
                     path.stroke = mapColorNameToValue(buf.ToString());
                 } else if (param.Equals("stroke-width")) {
-                    path.strokeWidth = float.Parse(buf.ToString());
+                    try {
+                        path.strokeWidth = float.Parse(buf.ToString());
+                    } catch (Exception) {
+                        path.strokeWidth = 2f;
+                    }
                 }
                 buf.Length = 0;
             } else {
