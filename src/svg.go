@@ -26,7 +26,6 @@ SOFTWARE.
 
 import (
 	"log"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -35,33 +34,33 @@ type SVG struct {
 }
 
 func NewSVG() *SVG {
-	svg := new(SVG)
-	return svg
+	return new(SVG)
 }
 
-func (svg *SVG) GetSVGPaths(filename string) []string {
-	var paths = make([]string, 0)
-	contents, err := os.ReadFile(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var inPath = false
-	var buffer = make([]rune, 0)
-	for _, ch := range contents {
-		if !inPath && strings.HasSuffix(string(buffer), "<path d=") {
-			inPath = true
-			buffer = nil
-		} else if inPath && ch == '"' {
-			inPath = false
-			paths = append(paths, string(buffer))
-			buffer = nil
-		} else {
-			paths = append(paths, string(buffer))
+/*
+	func (svg *SVG) GetSVGPaths(filename string) []string {
+		var paths = make([]string, 0)
+		contents, err := os.ReadFile(filename)
+		if err != nil {
+			log.Fatal(err)
 		}
+		var inPath = false
+		var buffer = make([]rune, 0)
+		for _, ch := range contents {
+			if !inPath && strings.HasSuffix(string(buffer), "<path d=") {
+				inPath = true
+				buffer = nil
+			} else if inPath && ch == '"' {
+				inPath = false
+				paths = append(paths, string(buffer))
+				buffer = nil
+			} else {
+				paths = append(paths, string(buffer))
+			}
+		}
+		return paths
 	}
-	return paths
-}
-
+*/
 func isCommand(ch rune) bool {
 	// Please note:
 	// Capital letter commands use absolute coordinates
@@ -90,64 +89,49 @@ func isCommand(ch rune) bool {
 	return false
 }
 
-func (svg *SVG) GetSVGPathOps(paths []string) []*PathOp {
+func (svg *SVG) GetOperations(path string) []*PathOp {
 	operations := make([]*PathOp, 0)
 	var op *PathOp
-	for _, path := range paths {
-		// Path example:
-		// "M22.65 34h3v-8.3H34v-3h-8.35V14h-3v8.7H14v3h8.65ZM24 44z"
-		var buf = strings.Builder{}
-		var token = false
-		for _, ch := range path {
-			if isCommand(ch) { // open path
-				if token {
-					op.args = append(op.args, buf.String())
-					buf.Reset()
-				}
-				token = false
-				op = NewPathOp(ch)
-				operations = append(operations, op)
-			} else if ch == ' ' || ch == ',' {
-				if token {
-					op.args = append(op.args, buf.String())
-					buf.Reset()
-				}
-				token = false
-			} else if ch == '-' {
-				if token {
-					op.args = append(op.args, buf.String())
-					buf.Reset()
-				}
-				token = true
-				buf.WriteRune(ch)
-			} else if ch == '.' {
-				if strings.Contains(buf.String(), ".") {
-					op.args = append(op.args, buf.String())
-					buf.Reset()
-				}
-				token = true
-				buf.WriteRune(ch)
-			} else {
-				token = true
-				buf.WriteRune(ch)
+	var buf = strings.Builder{}
+	var token = false
+	for _, ch := range path {
+		if isCommand(ch) { // open path
+			if token {
+				op.args = append(op.args, buf.String())
+				buf.Reset()
 			}
+			token = false
+			op = NewPathOp(ch)
+			operations = append(operations, op)
+		} else if ch == ' ' || ch == ',' {
+			if token {
+				op.args = append(op.args, buf.String())
+				buf.Reset()
+			}
+			token = false
+		} else if ch == '-' {
+			if token {
+				op.args = append(op.args, buf.String())
+				buf.Reset()
+			}
+			token = true
+			buf.WriteRune(ch)
+		} else if ch == '.' {
+			if strings.Contains(buf.String(), ".") {
+				op.args = append(op.args, buf.String())
+				buf.Reset()
+			}
+			token = true
+			buf.WriteRune(ch)
+		} else {
+			token = true
+			buf.WriteRune(ch)
 		}
 	}
-	// printOperations(operations)
 	return operations
 }
 
-func printOperations(operations []*PathOp) {
-	for _, oper := range operations {
-		print(string(oper.cmd) + " ")
-		for _, arg := range oper.args {
-			print(arg + " ")
-		}
-		println()
-	}
-}
-
-func (svg *SVG) GetPDFPathOps(list []*PathOp) []*PathOp {
+func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 	operations := make([]*PathOp, 0)
 	var lastOp *PathOp
 	var x0 float32 = 0.0 // Start of subpath

@@ -23,9 +23,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-import (
-	"io"
-)
 
 type SVGPath struct {
 	data        string    // The SVG path data
@@ -35,7 +32,7 @@ type SVGPath struct {
 	strokeWidth float32   // The stroke width
 }
 
-func NewSVGPath(reader io.Reader) *SVGPath {
+func NewSVGPath() *SVGPath {
 	path := new(SVGPath)
 	path.fill = 0    // Black color
 	path.stroke = -1 // Transparent

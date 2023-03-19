@@ -36,11 +36,7 @@ import (
 
 type SVGImage struct {
 	x, y, w, h     float32
-	pdfPathOps     []*PathOp
-	color          int32
-	penColor       int32
-	penWidth       float32
-	fillPath       bool
+	paths          []*SVGPath
 	uri            *string
 	key            *string
 	language       string
@@ -56,11 +52,9 @@ type SVGImage struct {
  */
 func NewSVGImage(reader io.Reader) *SVGImage {
 	image := new(SVGImage)
-	image.fillPath = true
-	image.color = color.Black
-	image.penWidth = 2.0
 	colorMap := NewColorMap()
-	paths := make([]string, 0)
+	image.paths = make([]*SVGPath, 0)
+	var path *SVGPath
 	buffer, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
@@ -78,9 +72,14 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			token = true
 			param = "height"
 			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), "<path d=") {
+		} else if !token && strings.HasSuffix(builder.String(), " d=") {
 			token = true
-			param = "path"
+			if path != nil {
+				image.paths = append(image.paths, path)
+			}
+			path = NewSVGPath()
+			token = true
+			param = "data"
 			builder.Reset()
 		} else if !token && strings.HasSuffix(builder.String(), " fill=") {
 			token = true
@@ -104,28 +103,28 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 					image.w = float32(width)
 				}
 			} else if param == "height" {
-				width, err := strconv.ParseFloat(builder.String(), 32)
+				height, err := strconv.ParseFloat(builder.String(), 32)
 				if err != nil {
 					log.Fatal(err)
 				} else {
-					image.w = float32(width)
+					image.h = float32(height)
 				}
-			} else if param == "path" {
-				paths = append(paths, builder.String())
+			} else if param == "data" {
+				path.data = builder.String()
 			} else if param == "fill" {
 				if builder.String() == "none" {
-					image.fillPath = false
+					path.fill = color.Transparent
 				} else {
-					image.color = mapColorNameToValue(colorMap, builder.String())
+					path.fill = mapColorNameToValue(colorMap, builder.String())
 				}
 			} else if param == "stroke" {
-				image.penColor = mapColorNameToValue(colorMap, builder.String())
+				path.stroke = mapColorNameToValue(colorMap, builder.String())
 			} else if param == "stroke-width" {
-				penWidth, err := strconv.ParseFloat(builder.String(), 32)
+				strokeWidth, err := strconv.ParseFloat(builder.String(), 32)
 				if err != nil {
 					log.Fatal(err)
 				} else {
-					image.penWidth = float32(penWidth)
+					path.strokeWidth = float32(strokeWidth)
 				}
 			}
 			builder.Reset()
@@ -133,9 +132,17 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			builder.WriteByte(ch)
 		}
 	}
-	svg := NewSVG()
-	svgPathOps := svg.GetSVGPathOps(paths)
-	image.pdfPathOps = svg.GetPDFPathOps(svgPathOps)
+	if path != nil {
+		image.paths = append(image.paths, path)
+	}
+
+	for i := 0; i < len(image.paths); i++ {
+		svg := NewSVG()
+		path := image.paths[i]
+		path.operations = svg.GetOperations(path.data)
+		path.operations = svg.ToPDF(path.operations)
+	}
+
 	return image
 }
 
@@ -152,20 +159,7 @@ func (image *SVGImage) SetLocation(x, y float32) {
 	image.y = y
 }
 
-func (image *SVGImage) SetPenWidth(w float32) {
-	image.w = w
-}
-
-func (image *SVGImage) SetSize(w, h float32) {
-	image.w = w
-	image.h = h
-}
-
-func (image *SVGImage) SetHeight(h float32) {
-	image.h = h
-}
-
-func (image *SVGImage) GetPenWidth() float32 {
+func (image *SVGImage) GetWidth() float32 {
 	return image.w
 }
 
@@ -173,33 +167,52 @@ func (image *SVGImage) GetHeight() float32 {
 	return image.h
 }
 
-func (image *SVGImage) DrawOn(page *Page) []float32 {
-	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
-	page.SetPenWidth(image.penWidth)
-	if image.fillPath {
-		page.SetBrushColor(image.color)
-	} else {
-		page.SetPenColor(image.penColor)
+func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
+	page.SetBrushColor(path.fill)
+	page.SetPenColor(path.stroke)
+	page.SetPenWidth(path.strokeWidth)
+
+	if path.fill != color.Transparent {
+		for i := 0; i < len(path.operations); i++ {
+			op := path.operations[i]
+			if op.cmd == 'M' {
+				page.MoveTo(op.x+image.x, op.y+image.y)
+			} else if op.cmd == 'L' {
+				page.LineTo(op.x+image.x, op.y+image.y)
+			} else if op.cmd == 'C' {
+				page.CurveTo(
+					op.x1+image.x, op.y1+image.y,
+					op.x2+image.x, op.y2+image.y,
+					op.x+image.x, op.y+image.y)
+			}
+		}
+		page.FillPath()
 	}
-	for i := 0; i < len(image.pdfPathOps); i++ {
-		op := image.pdfPathOps[i]
-		if op.cmd == 'M' {
-			page.MoveTo(op.x+image.x, op.y+image.y)
-		} else if op.cmd == 'L' {
-			page.LineTo(op.x+image.x, op.y+image.y)
-		} else if op.cmd == 'C' {
-			page.CurveTo(
-				op.x1+image.x, op.y1+image.y,
-				op.x2+image.x, op.y2+image.y,
-				op.x+image.x, op.y+image.y)
-		} else if op.cmd == 'Z' {
-			if !image.fillPath {
+
+	if path.stroke != color.Transparent {
+		for i := 0; i < len(path.operations); i++ {
+			op := path.operations[i]
+			if op.cmd == 'M' {
+				page.MoveTo(op.x+image.x, op.y+image.y)
+			} else if op.cmd == 'L' {
+				page.LineTo(op.x+image.x, op.y+image.y)
+			} else if op.cmd == 'C' {
+				page.CurveTo(
+					op.x1+image.x, op.y1+image.y,
+					op.x2+image.x, op.y2+image.y,
+					op.x+image.x, op.y+image.y)
+			} else if op.cmd == 'Z' {
 				page.ClosePath()
 			}
 		}
 	}
-	if image.fillPath {
-		page.FillPath()
+}
+
+func (image *SVGImage) DrawOn(page *Page) []float32 {
+	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
+	for i := 0; i < len(image.paths); i++ {
+		path := image.paths[i]
+		image.drawPath(path, page)
 	}
 	page.AddEMC()
 	if image.uri != nil || image.key != nil {
