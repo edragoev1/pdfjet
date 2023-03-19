@@ -113,7 +113,7 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
 	pdf.compliance = pdfCompliance
-	pdf.producer = "PDFjet v7.05.1"
+	pdf.producer = "PDFjet v7.06.0"
 	pdf.creator = pdf.producer
 	pdf.language = "en-US"
 
