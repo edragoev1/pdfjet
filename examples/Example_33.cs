@@ -73,6 +73,13 @@ public class Example_33 {
         icon.SetLocation(xy[0], 670);
         icon.DrawOn(page);
 
+        stream = new FileStream(
+            "images/svg-test/europe.svg",
+            FileMode.Open, FileAccess.Read);
+        icon = new SVGImage(stream);
+        icon.SetLocation(0f, 0f);
+        icon.DrawOn(page);
+
         pdf.Complete();
     }
 
