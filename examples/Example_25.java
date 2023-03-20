@@ -1,6 +1,7 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 
 import com.pdfjet.*;
 
@@ -81,6 +82,13 @@ public class Example_25 {
         Line line2 = new Line(50f, yy[1], 200f, yy[1]);
         line1.drawOn(page);
         line2.drawOn(page);
+
+        DonutChart chart = new DonutChart(f1, f2, true);
+        chart.setR1AndR2(100f, 50f);
+        chart.setLocation(0f, 0f);
+        chart.addSector(30f, Color.azure);
+        chart.addSector(60f, Color.peachpuff);
+        chart.drawOn(page);
 
         pdf.complete();
     }
