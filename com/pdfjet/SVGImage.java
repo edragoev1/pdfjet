@@ -179,15 +179,17 @@ public class SVGImage {
         if (fillColor == Color.transparent) {
             fillColor = this.fill;
         }
-        if (fillColor == Color.transparent) {
-            fillColor = Color.black;
-        }
-        page.setBrushColor(fillColor);
-
         int strokeColor = path.stroke;
         if (strokeColor == Color.transparent) {
             strokeColor = this.stroke;
         }
+
+        if (fillColor == Color.transparent &&
+                strokeColor == Color.transparent) {
+            fillColor = Color.black;
+        }
+
+        page.setBrushColor(fillColor);
         page.setPenColor(strokeColor);
         page.setPenWidth(path.strokeWidth);
 
