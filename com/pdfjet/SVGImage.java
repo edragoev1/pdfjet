@@ -25,9 +25,7 @@ package com.pdfjet;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -38,6 +36,8 @@ public class SVGImage {
     float y = 0f;
     float w = 0f;       // SVG width
     float h = 0f;       // SVG height
+    int fill = Color.transparent;
+    int stroke = Color.transparent;
 
     List<SVGPath> paths = null;
     protected String uri = null;
@@ -61,9 +61,16 @@ public class SVGImage {
         StringBuilder buf = new StringBuilder();
         boolean token = false;
         String param = null;
+        boolean header = false;
         int ch;
         while ((ch = stream.read()) != -1) {
-            if (!token && buf.toString().endsWith(" width=")) {
+            if (buf.toString().endsWith("<svg")) {
+                header = true;
+                buf.setLength(0);
+            } else if (header && ch == '>') {
+                header = false;
+                buf.setLength(0);
+            } else if (!token && buf.toString().endsWith(" width=")) {
                 token = true;
                 param = "width";
                 buf.setLength(0);
@@ -94,16 +101,19 @@ public class SVGImage {
             } else if (token && ch == '\"') {
                 token = false;
                 if (param.equals("width")) {
-                    w = Float.valueOf(buf.toString());
+                    this.w = Float.valueOf(buf.toString());
                 } else if (param.equals("height")) {
-                    h = Float.valueOf(buf.toString());
+                    this.h = Float.valueOf(buf.toString());
                 } else if (param.equals("data")) {
                     path.data = buf.toString();
                 } else if (param.equals("fill")) {
-                    if (buf.toString().equals("none")) {
-                        path.fill = Color.transparent;
-                    } else {
-                        path.fill = colorMap.getColor(buf.toString());
+                    if (!buf.toString().equals("none")) {
+                        int color = colorMap.getColor(buf.toString());
+                        if (header) {
+                            this.fill = color;
+                        } else {
+                            path.fill = color;
+                        }
                     }
                 } else if (param.equals("stroke")) {
                     path.stroke = colorMap.getColor(buf.toString());
@@ -157,11 +167,19 @@ public class SVGImage {
     }
 
     private void drawPath(SVGPath path, Page page) {
-        page.setBrushColor(path.fill);
+        int fillColor = Color.transparent;
+        if (path.fill != Color.transparent) {
+            fillColor = path.fill;
+        } else if (this.fill != Color.transparent) {
+            fillColor = this.fill;
+        } else {
+            fillColor = Color.black;
+        }
+        page.setBrushColor(fillColor);
         page.setPenColor(path.stroke);
         page.setPenWidth(path.strokeWidth);
 
-        if (path.fill != Color.transparent) {
+        if (fillColor != Color.transparent) {
             for (int i = 0; i < path.operations.size(); i++) {
                 PathOp op = path.operations.get(i);
                 if (op.cmd == 'M') {

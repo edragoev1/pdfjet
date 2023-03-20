@@ -51,7 +51,6 @@ public class Example_33 {
         stream = new FileInputStream(
             "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
         icon = new SVGImage(stream);
-        // icon.setFillPath(false);
         icon.setLocation(xy[0], 670);
         xy = icon.drawOn(page);
 
@@ -65,8 +64,13 @@ public class Example_33 {
             "images/svg-test/test-QQ.svg");
         icon = new SVGImage(stream);
         icon.setLocation(xy[0], 670);
+        xy = icon.drawOn(page);
+/*
+        stream = new FileInputStream("europe.svg");
+        icon = new SVGImage(stream);
+        icon.setLocation(0f, 0f);
         icon.drawOn(page);
-
+*/
         pdf.complete();
     }
 
