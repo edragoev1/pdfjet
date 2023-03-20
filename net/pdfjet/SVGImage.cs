@@ -104,17 +104,27 @@ public class SVGImage {
                 } else if (param.Equals("data")) {
                     path.data = buf.ToString();
                 } else if (param.Equals("fill")) {
-                        int fillColor = mapColorNameToValue(buf.ToString());
-                        if (header) {
-                            this.fill = fillColor;
-                        } else {
-                            path.fill = fillColor;
-                        }
+                    int fillColor = mapColorNameToValue(buf.ToString());
+                    if (header) {
+                        this.fill = fillColor;
+                    } else {
+                        path.fill = fillColor;
+                    }
                 } else if (param.Equals("stroke")) {
-                    path.stroke = mapColorNameToValue(buf.ToString());
+                    int strokeColor = mapColorNameToValue(buf.ToString());
+                    if (header) {
+                        this.stroke = strokeColor;
+                    } else {
+                        path.stroke = strokeColor;
+                    }
                 } else if (param.Equals("stroke-width")) {
                     try {
-                        path.strokeWidth = float.Parse(buf.ToString());
+                        float strokeWidth = float.Parse(buf.ToString());
+                        if (header) {
+                            this.strokeWidth = strokeWidth;
+                        } else {
+                            path.strokeWidth = strokeWidth;
+                        }
                     } catch (Exception) {
                         path.strokeWidth = 2f;
                     }
