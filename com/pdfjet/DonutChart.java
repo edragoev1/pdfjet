@@ -93,6 +93,24 @@ public class DonutChart {
         return list;
     }
 
+    private Float[] getControlPoints(Float x0, Float y0, Float x3, Float y3) {
+        Float ax = x0 - xc;
+        Float ay = y0 - yc;
+        Float bx = x3 - xc;
+        Float by = y3 - yc;
+        Float q1 = ax*ax + ay*ay;
+        Float q2 = q1 + ax*bx + ay*by;
+        Float k2 = 4f/3f * (((float) Math.sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
+
+        // Control points coordinates
+        Float x1 = xc + ax - k2*ay;
+        Float y1 = yc + ay + k2*ax;
+        Float x2 = xc + bx + k2*by;
+        Float y2 = yc + by - k2*bx;
+
+        return new Float[] {x1, y1, x2, y2};
+    }
+
     public void drawSlice(
             Page page,
             int fillColor,
@@ -104,51 +122,53 @@ public class DonutChart {
         Float angle2 = a2 - 90f;
 
         // Start point coordinates
-        Float x1 = xc + r1*((float) Math.cos(angle1*Math.PI/180.0));
-        Float y1 = yc + r1*((float) Math.sin(angle1*Math.PI/180.0));
+        Float x0 = xc + r1*((float) Math.cos(angle1*Math.PI/180.0));
+        Float y0 = yc + r1*((float) Math.sin(angle1*Math.PI/180.0));
         // End point coordinates
-        Float x4 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
-        Float y4 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
+        Float x3 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
+        Float y3 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
+
+        // Float[] control = getControlPoints(x1, y1, x4, y4);
     
-        Float ax = x1 - xc;
-        Float ay = y1 - yc;
-        Float bx = x4 - xc;
-        Float by = y4 - yc;
+        Float ax = x0 - xc;
+        Float ay = y0 - yc;
+        Float bx = x3 - xc;
+        Float by = y3 - yc;
         Float q1 = ax*ax + ay*ay;
         Float q2 = q1 + ax*bx + ay*by;
         Float k2 = 4f/3f * (((float) Math.sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
     
         // Control points coordinates
-        Float x2 = xc + ax - k2*ay;
-        Float y2 = yc + ay + k2*ax;
-        Float x3 = xc + bx + k2*by;
-        Float y3 = yc + by - k2*bx;
+        Float x1 = xc + ax - k2*ay;
+        Float y1 = yc + ay + k2*ax;
+        Float x2 = xc + bx + k2*by;
+        Float y2 = yc + by - k2*bx;
 
         // Start point coordinates
-        Float x5 = xc + r2*((float) Math.cos(angle1*Math.PI/180.0));
-        Float y5 = yc + r2*((float) Math.sin(angle1*Math.PI/180.0));
+        Float x4 = xc + r2*((float) Math.cos(angle1*Math.PI/180.0));
+        Float y4 = yc + r2*((float) Math.sin(angle1*Math.PI/180.0));
         // End point coordinates
-        Float x8 = xc + r2*((float) Math.cos(angle2*Math.PI/180.0));
-        Float y8 = yc + r2*((float) Math.sin(angle2*Math.PI/180.0));
+        Float x7 = xc + r2*((float) Math.cos(angle2*Math.PI/180.0));
+        Float y7 = yc + r2*((float) Math.sin(angle2*Math.PI/180.0));
     
-        ax = x5 - xc;
-        ay = y5 - yc;
-        bx = x8 - xc;
-        by = y8 - yc;
+        ax = x4 - xc;
+        ay = y4 - yc;
+        bx = x7 - xc;
+        by = y7 - yc;
         q1 = ax*ax + ay*ay;
         q2 = q1 + ax*bx + ay*by;
         k2 = 4f/3f * (((float) Math.sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
     
         // Control points coordinates
-        Float x6 = xc + ax - k2*ay;
-        Float y6 = yc + ay + k2*ax;
-        Float x7 = xc + bx + k2*by;
-        Float y7 = yc + by - k2*bx;
+        Float x5 = xc + ax - k2*ay;
+        Float y5 = yc + ay + k2*ax;
+        Float x6 = xc + bx + k2*by;
+        Float y6 = yc + by - k2*bx;
 
-        page.moveTo(x1, y1);
-        page.curveTo(x2, y2, x3, y3, x4, y4);
-        page.lineTo(x8, y8);
-        page.curveTo(x7, y7, x6, y6, x5, y5);
+        page.moveTo(x0, y0);
+        page.curveTo(x1, y1, x2, y2, x3, y3);
+        page.lineTo(x7, y7);
+        page.curveTo(x6, y6, x5, y5, x4, y4);
         page.fillPath();
     }
 
@@ -217,6 +237,6 @@ public class DonutChart {
 
     // Draws donut chart on the specified page.
     public void drawOn(Page page) throws Exception {
-        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, 0f, 30f);
+        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, 0f, 90f);
     }
 }
