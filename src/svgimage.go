@@ -25,7 +25,6 @@ SOFTWARE.
 */
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -124,9 +123,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 				path.data = builder.String()
 			} else if param == "fill" {
 				var fillColor = mapColorNameToValue(colorMap, builder.String())
-
 				if header {
-					fmt.Println(fillColor)
 					image.fill = fillColor
 				} else {
 					path.fill = fillColor
