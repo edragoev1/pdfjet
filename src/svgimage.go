@@ -143,7 +143,6 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 					} else {
 						path.strokeWidth = float32(strokeWidth)
 					}
-
 				} else {
 					if header {
 						image.strokeWidth = 0.0
@@ -172,6 +171,28 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 }
 
 func getColor(colorMap map[string]int32, colorName string) int32 {
+	if strings.HasPrefix(colorName, "#") {
+		if len(colorName) == 7 {
+			color, err := strconv.ParseInt(colorName[1:], 16, 32)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return int32(color)
+		} else if len(colorName) == 4 {
+			str := string([]byte{
+				colorName[1], colorName[1],
+				colorName[2], colorName[2],
+				colorName[3], colorName[3],
+			})
+			color, err := strconv.ParseInt(str, 16, 32)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return int32(color)
+		} else {
+			// TODO:
+		}
+	}
 	value, ok := colorMap[colorName]
 	if ok {
 		return value
