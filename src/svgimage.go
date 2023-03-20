@@ -107,17 +107,18 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			token = false
 			if param == "width" {
 				width, err := strconv.ParseFloat(builder.String(), 32)
-				if err != nil {
-					log.Fatal(err)
-				} else {
+				if err == nil {
 					image.w = float32(width)
+				} else {
+					log.Fatal(err)
 				}
 			} else if param == "height" {
 				height, err := strconv.ParseFloat(builder.String(), 32)
-				if err != nil {
-					log.Fatal(err)
-				} else {
+				if err == nil {
 					image.h = float32(height)
+
+				} else {
+					log.Fatal(err)
 				}
 			} else if param == "data" {
 				path.data = builder.String()
@@ -137,17 +138,18 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 				}
 			} else if param == "stroke-width" {
 				strokeWidth, err := strconv.ParseFloat(builder.String(), 32)
-				if err != nil {
-					if header {
-						image.strokeWidth = 0.0
-					} else {
-						path.strokeWidth = 0.0
-					}
-				} else {
+				if err == nil {
 					if header {
 						image.strokeWidth = float32(strokeWidth)
 					} else {
 						path.strokeWidth = float32(strokeWidth)
+					}
+
+				} else {
+					if header {
+						image.strokeWidth = 0.0
+					} else {
+						path.strokeWidth = 0.0
 					}
 				}
 			}
