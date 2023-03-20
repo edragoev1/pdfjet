@@ -56,7 +56,6 @@ public class Example_33 {
             "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg",
             FileMode.Open, FileAccess.Read);
         icon = new SVGImage(stream);
-        // icon.SetFillPath(false);
         icon.SetLocation(xy[0], 670);
         xy = icon.DrawOn(page);
 
@@ -64,7 +63,6 @@ public class Example_33 {
             "images/svg-test/test-CS.svg",
             FileMode.Open, FileAccess.Read);
         icon = new SVGImage(stream);
-        // icon.SetFillPath(false);
         icon.SetLocation(xy[0], 670);
         xy = icon.DrawOn(page);
 
@@ -72,7 +70,6 @@ public class Example_33 {
             "images/svg-test/test-QQ.svg",
             FileMode.Open, FileAccess.Read);
         icon = new SVGImage(stream);
-        // icon.SetFillPath(false);
         icon.SetLocation(xy[0], 670);
         icon.DrawOn(page);
 
@@ -80,24 +77,6 @@ public class Example_33 {
     }
 
     public static void Main(String[] args) {
-/*
-        StreamWriter writer = new StreamWriter("test.svg");
-        writer.Write("<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\">\n");
-        writer.Write("  <path d=\"");
-        List<String> paths = SVG.GetSVGPaths("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
-        List<PathOp> svgPathOps = SVG.GetSVGPathOps(paths);
-        List<PathOp> pdfPathOps = SVG.GetPDFPathOps(svgPathOps);
-        foreach (PathOp op in pdfPathOps) {
-            writer.Write(op.cmd + " ");
-            foreach (String argument in op.args) {
-                writer.Write(argument + " ");
-            }
-        }
-        writer.Write("\"/>\n");
-        writer.Write("</svg>\n");
-        writer.Flush();
-        writer.Close();
-*/
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_33();

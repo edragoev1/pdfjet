@@ -58,9 +58,16 @@ public class SVGImage {
         StringBuilder buf = new StringBuilder();
         bool token = false;
         String param = null;
+        bool header = false;
         int ch;
         while ((ch = stream.ReadByte()) != -1) {
-            if (!token && buf.ToString().EndsWith(" width=")) {
+            if (buf.ToString().EndsWith("<svg")) {
+                header = true;
+                buf.Length = 0;
+            } else if (header && ch == '>') {
+                header = false;
+                buf.Length = 0;
+            } else if (!token && buf.ToString().EndsWith(" width=")) {
                 token = true;
                 param = "width";
                 buf.Length = 0;
