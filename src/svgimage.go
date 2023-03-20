@@ -116,7 +116,6 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 				height, err := strconv.ParseFloat(builder.String(), 32)
 				if err == nil {
 					image.h = float32(height)
-
 				} else {
 					log.Fatal(err)
 				}
@@ -132,9 +131,9 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			} else if param == "stroke" {
 				var strokeColor = getColor(colorMap, builder.String())
 				if header {
-					image.fill = strokeColor
+					image.stroke = strokeColor
 				} else {
-					path.fill = strokeColor
+					path.stroke = strokeColor
 				}
 			} else if param == "stroke-width" {
 				strokeWidth, err := strconv.ParseFloat(builder.String(), 32)
