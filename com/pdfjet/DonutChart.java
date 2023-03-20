@@ -131,11 +131,11 @@ public class DonutChart {
         Float x3 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
         Float y3 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
 
-        Float[] control = getControlPoints(xc, yc, x0, y0, x3, y3);
-        Float x1 = control[0];
-        Float y1 = control[1];
-        Float x2 = control[2];
-        Float y2 = control[3];
+        Float[] control1 = getControlPoints(xc, yc, x0, y0, x3, y3);
+        // Float x1 = control[0];
+        // Float y1 = control[1];
+        // Float x2 = control[2];
+        // Float y2 = control[3];
 
         // Start point coordinates
         Float x4 = xc + r2*((float) Math.cos(angle1*Math.PI/180.0));
@@ -144,16 +144,18 @@ public class DonutChart {
         Float x7 = xc + r2*((float) Math.cos(angle2*Math.PI/180.0));
         Float y7 = yc + r2*((float) Math.sin(angle2*Math.PI/180.0));
 
-        control = getControlPoints(xc, yc, x4, y4, x7, y7);
-        Float x5 = control[0];
-        Float y5 = control[1];
-        Float x6 = control[2];
-        Float y6 = control[3];
+        Float[] control2 = getControlPoints(xc, yc, x4, y4, x7, y7);
+        // Float x5 = control[0];
+        // Float y5 = control[1];
+        // Float x6 = control[2];
+        // Float y6 = control[3];
 
         page.moveTo(x0, y0);
-        page.curveTo(x1, y1, x2, y2, x3, y3);
+        // page.curveTo(x1, y1, x2, y2, x3, y3);
+        page.curveTo(control1[0], control1[1], control1[2], control1[3], x3, y3);
         page.lineTo(x7, y7);
-        page.curveTo(x6, y6, x5, y5, x4, y4);
+        // page.curveTo(x6, y6, x5, y5, x4, y4);
+        page.curveTo(control2[2], control2[3], control2[0], control2[1], x4, y4);
         page.fillPath();
     }
 
