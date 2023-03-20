@@ -129,7 +129,8 @@ public class DonutChart {
             Float a1, Float a2) {
         page.setBrushColor(fillColor);
 
-        List<Float[]> points = new ArrayList<Float[]>();
+        List<Float[]> points1 = new ArrayList<Float[]>();
+        List<Float[]> points2 = new ArrayList<Float[]>();
 
         Float angle1 = a1 - 90f;
         Float angle2 = a2 - 90f;
@@ -141,8 +142,8 @@ public class DonutChart {
         Float x3 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
         Float y3 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
 
-        List<Float[]> control = getControlPoints(xc, yc, x0, y0, x3, y3);
-        points.addAll(control);
+        List<Float[]> control1 = getControlPoints(xc, yc, x0, y0, x3, y3);
+        points1.addAll(control1);
 
         // Start point coordinates
         Float x4 = xc + r2*((float) Math.cos(angle1*Math.PI/180.0));
@@ -153,14 +154,14 @@ public class DonutChart {
 
         List<Float[]> control2 = getControlPoints(xc, yc, x4, y4, x7, y7);
         Collections.reverse(control2);  // Very important!!
-        points.addAll(control2);
+        points2.addAll(control2);
 
         page.moveTo(x0, y0);
         page.curveTo(
-                control.get(1)[0], control.get(1)[1],
-                control.get(2)[0], control.get(2)[1],
-                control.get(3)[0], control.get(3)[1]);
-        page.lineTo(x7, y7);
+                control1.get(1)[0], control1.get(1)[1],
+                control1.get(2)[0], control1.get(2)[1],
+                control1.get(3)[0], control1.get(3)[1]);
+        page.lineTo(points2.get(0)[0], points2.get(0)[1]);
         page.curveTo(
                 control2.get(1)[0], control2.get(1)[1],
                 control2.get(2)[0], control2.get(2)[1],
