@@ -108,22 +108,18 @@ public class SVGImage {
                 } else if (param.equals("data")) {
                     path.data = buf.toString();
                 } else if (param.equals("fill")) {
-                    if (!buf.toString().equals("none")) {
-                        int fillColor = colorMap.getColor(buf.toString());
-                        if (header) {
-                            this.fill = fillColor;
-                        } else {
-                            path.fill = fillColor;
-                        }
+                    int fillColor = colorMap.getColor(buf.toString());
+                    if (header) {
+                        this.fill = fillColor;
+                    } else {
+                        path.fill = fillColor;
                     }
                 } else if (param.equals("stroke")) {
-                    if (!buf.toString().equals("none")) {
-                        int strokeColor = colorMap.getColor(buf.toString());
-                        if (header) {
-                            this.stroke = strokeColor;
-                        } else {
-                            path.stroke = strokeColor;
-                        }
+                    int strokeColor = colorMap.getColor(buf.toString());
+                    if (header) {
+                        this.stroke = strokeColor;
+                    } else {
+                        path.stroke = strokeColor;
                     }
                 } else if (param.equals("stroke-width")) {
                     try {
