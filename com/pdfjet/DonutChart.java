@@ -93,10 +93,12 @@ public class DonutChart {
         return list;
     }
 
-    private Float[] getControlPoints(
+    private List<Float[]> getControlPoints(
             Float xc, Float yc,
             Float x0, Float y0,
             Float x3, Float y3) {
+        List<Float[]> points = new ArrayList<Float[]>();
+
         Float ax = x0 - xc;
         Float ay = y0 - yc;
         Float bx = x3 - xc;
@@ -111,7 +113,10 @@ public class DonutChart {
         Float x2 = xc + bx + k2*by;
         Float y2 = yc + by - k2*bx;
 
-        return new Float[] {x1, y1, x2, y2};
+        points.add(new Float[] {x1, y1});
+        points.add(new Float[] {x2, y2});
+
+        return points;
     }
 
     public void drawSlice(
@@ -121,6 +126,9 @@ public class DonutChart {
             Float r1, Float r2,     // r1 > r2
             Float a1, Float a2) {
         page.setBrushColor(fillColor);
+
+        List<Float[]> points = new ArrayList<Float[]>();
+
         Float angle1 = a1 - 90f;
         Float angle2 = a2 - 90f;
 
@@ -131,7 +139,8 @@ public class DonutChart {
         Float x3 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
         Float y3 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
 
-        Float[] control1 = getControlPoints(xc, yc, x0, y0, x3, y3);
+        List<Float[]> control = getControlPoints(xc, yc, x0, y0, x3, y3);
+        points.addAll(control);
         // Float x1 = control[0];
         // Float y1 = control[1];
         // Float x2 = control[2];
@@ -144,7 +153,8 @@ public class DonutChart {
         Float x7 = xc + r2*((float) Math.cos(angle2*Math.PI/180.0));
         Float y7 = yc + r2*((float) Math.sin(angle2*Math.PI/180.0));
 
-        Float[] control2 = getControlPoints(xc, yc, x4, y4, x7, y7);
+        List<Float[]> control2 = getControlPoints(xc, yc, x4, y4, x7, y7);
+        points.addAll(control2);
         // Float x5 = control[0];
         // Float y5 = control[1];
         // Float x6 = control[2];
@@ -152,10 +162,11 @@ public class DonutChart {
 
         page.moveTo(x0, y0);
         // page.curveTo(x1, y1, x2, y2, x3, y3);
-        page.curveTo(control1[0], control1[1], control1[2], control1[3], x3, y3);
+        page.curveTo(control.get(0)[0], control.get(0)[1], control.get(1)[0], control.get(1)[1], x3, y3);
         page.lineTo(x7, y7);
         // page.curveTo(x6, y6, x5, y5, x4, y4);
-        page.curveTo(control2[2], control2[3], control2[0], control2[1], x4, y4);
+        // page.curveTo(control2[2], control2[3], control2[0], control2[1], x4, y4);
+        page.curveTo(control2.get(1)[0], control2.get(1)[1], control2.get(0)[0], control2.get(0)[1], x4, y4);
         page.fillPath();
     }
 
