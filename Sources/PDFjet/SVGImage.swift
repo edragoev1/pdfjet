@@ -69,8 +69,15 @@ public class SVGImage {
         var buf = String()
         var token = false
         var param: String?
+        var header: Bool = false;
         for scalar in scalars {
-            if !token && buf.hasSuffix(" width=") {
+        if buf.hasSuffix("<svg") {
+                header = true
+                buf = ""
+            } else if header && scalar == ">" {
+                header = false
+                buf = ""
+            } else if !token && buf.hasSuffix(" width=") {
                 token = true
                 param = "width"
                 buf = ""
