@@ -69,7 +69,7 @@ public class SVGImage {
         var buf = String()
         var token = false
         var param: String?
-        var header: Bool = false;
+        var header: Bool = false
         for scalar in scalars {
         if buf.hasSuffix("<svg") {
                 header = true
@@ -121,7 +121,7 @@ public class SVGImage {
                         path!.fill = fillColor
                     }
                 } else if param == "stroke" {
-                    let strokeColor = mapColorNameToValue(buf);
+                    let strokeColor = mapColorNameToValue(buf)
                     if header {
                         self.stroke = strokeColor
                     } else {
@@ -155,7 +155,7 @@ public class SVGImage {
     }
 
     func mapColorNameToValue(_ colorName: String) -> Int32 {
-        var color = Color.black
+        var color = Color.transparent
         let mirror = Mirror(reflecting: ColorMap())
         mirror.children.forEach { child in
             if child.label! == colorName {
