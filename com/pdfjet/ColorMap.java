@@ -192,9 +192,16 @@ import java.util.Map;
     public int getColor(String colorName) {
         if (colorName.startsWith("#")) {
             if (colorName.length() == 7) {
-                return Integer.valueOf(Integer.valueOf(colorName.substring(1), 16));
+                return Integer.valueOf(colorName.substring(1), 16);
+            } else if (colorName.length() == 4) {
+                String str = new String(new char[] {
+                        colorName.charAt(1), colorName.charAt(1),
+                        colorName.charAt(2), colorName.charAt(2),
+                        colorName.charAt(3), colorName.charAt(3)
+                });
+                return Integer.valueOf(str, 16);
             } else {
-                // TODO: We have to deal with 3 digit colors too!
+                // TODO:
             }
         }
         Integer color = map.get(colorName);
