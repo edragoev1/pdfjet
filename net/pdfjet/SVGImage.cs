@@ -23,6 +23,7 @@ SOFTWARE.
 */
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -147,6 +148,20 @@ public class SVGImage {
     }
 
     private int mapColorNameToValue(String colorName) {
+        if (colorName.StartsWith("#")) {
+            if (colorName.Length == 7) {
+                return Int32.Parse(colorName.Substring(1), NumberStyles.HexNumber);
+            } else if (colorName.Length == 4) {
+                String str = new String(new char[] {
+                        colorName[1], colorName[1],
+                        colorName[2], colorName[2],
+                        colorName[3], colorName[3]
+                });
+                return Int32.Parse(str, NumberStyles.HexNumber);
+            } else {
+                // TODO:
+            }
+        }
         int color = Color.transparent;
         try {
             color = (int) typeof(Color).GetField(colorName).GetValue(null);
