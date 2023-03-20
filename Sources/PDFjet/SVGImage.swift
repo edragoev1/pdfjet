@@ -31,6 +31,9 @@ public class SVGImage {
     var y: Float = 0.0  // location y
     var w: Float = 0.0  // SVG width
     var h: Float = 0.0  // SVG height
+    var fill: Int32 = Color.transparent
+    var stroke: Int32 = Color.transparent
+    var strokeWidth: Float = 0.0
 
     var paths: [SVGPath]?
     var uri: String?
@@ -169,11 +172,29 @@ public class SVGImage {
     }
 
     private func drawPath(_ path: SVGPath, _ page: Page) {
-        page.setBrushColor(path.fill)
-        page.setPenColor(path.stroke)
-        page.setPenWidth(path.strokeWidth)
+        var fillColor = path.fill
+        if fillColor == Color.transparent {
+            fillColor = self.fill
+        }
+        var strokeColor = path.stroke
+        if strokeColor == Color.transparent {
+            strokeColor = self.stroke
+        }
+        var strokeWidth = self.strokeWidth
+        if path.strokeWidth > strokeWidth {
+            strokeWidth = path.strokeWidth
+        }
 
-        if path.fill != Color.transparent {
+        if fillColor == Color.transparent &&
+                strokeColor == Color.transparent {
+            fillColor = Color.black
+        }
+
+        page.setBrushColor(fillColor)
+        page.setPenColor(strokeColor)
+        page.setPenWidth(strokeWidth)
+
+        if fillColor != Color.transparent {
             for op in path.operations! {
                 if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
@@ -190,7 +211,7 @@ public class SVGImage {
             page.fillPath()
         }
 
-        if path.stroke != Color.transparent {
+        if strokeColor != Color.transparent {
             for op in path.operations! {
                 if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
