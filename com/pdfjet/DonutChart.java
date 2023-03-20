@@ -64,11 +64,11 @@ public class DonutChart {
         angle2 *= -1f;
 
         // Start point coordinates
-        Float x1 = xc + r*((float) (Math.cos(angle1)*(Math.PI/180.0)));
-        Float y1 = yc + r*((float) (Math.sin(angle1)*(Math.PI/180.0)));
+        Float x1 = xc + r*((float) Math.cos(angle1*Math.PI/180.0));
+        Float y1 = yc + r*((float) Math.sin(angle1*Math.PI/180.0));
         // End point coordinates
-        Float x4 = xc + r*((float) (Math.cos(angle2)*(Math.PI/180.0)));
-        Float y4 = yc + r*((float) (Math.sin(angle2)*(Math.PI/180.0)));
+        Float x4 = xc + r*((float) Math.cos(angle2*Math.PI/180.0));
+        Float y4 = yc + r*((float) Math.sin(angle2*Math.PI/180.0));
     
         Float ax = x1 - xc;
         Float ay = y1 - yc;
@@ -98,16 +98,17 @@ public class DonutChart {
             int fillColor,
             Float xc, Float yc,
             Float r1, Float r2,     // r1 > r2
-            Float angle1,           // angle2 > angle1
-            Float angle2) {
+            Float a1, Float a2) {
         page.setBrushColor(fillColor);
+        Float angle1 = a1 - 90f;
+        Float angle2 = a2 - 90f;
 
         // Start point coordinates
-        Float x1 = xc + r1*((float) Math.cos(angle1*(Math.PI/180.0)));
-        Float y1 = yc + r1*((float) Math.sin(angle1*(Math.PI/180.0)));
+        Float x1 = xc + r1*((float) Math.cos(angle1*Math.PI/180.0));
+        Float y1 = yc + r1*((float) Math.sin(angle1*Math.PI/180.0));
         // End point coordinates
-        Float x4 = xc + r1*((float) Math.cos(angle2*(Math.PI/180.0)));
-        Float y4 = yc + r1*((float) Math.sin(angle2*(Math.PI/180.0)));
+        Float x4 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
+        Float y4 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
     
         Float ax = x1 - xc;
         Float ay = y1 - yc;
@@ -124,11 +125,11 @@ public class DonutChart {
         Float y3 = yc + by - k2*bx;
 
         // Start point coordinates
-        Float x5 = xc + r2*((float) Math.cos(angle1*(Math.PI/180.0)));
-        Float y5 = yc + r2*((float) Math.sin(angle1*(Math.PI/180.0)));
+        Float x5 = xc + r2*((float) Math.cos(angle1*Math.PI/180.0));
+        Float y5 = yc + r2*((float) Math.sin(angle1*Math.PI/180.0));
         // End point coordinates
-        Float x8 = xc + r2*((float) Math.cos(angle2*(Math.PI/180.0)));
-        Float y8 = yc + r2*((float) Math.sin(angle2*(Math.PI/180.0)));
+        Float x8 = xc + r2*((float) Math.cos(angle2*Math.PI/180.0));
+        Float y8 = yc + r2*((float) Math.sin(angle2*Math.PI/180.0));
     
         ax = x5 - xc;
         ay = y5 - yc;
@@ -216,47 +217,6 @@ public class DonutChart {
 
     // Draws donut chart on the specified page.
     public void drawOn(Page page) throws Exception {
-        page.setBrushColor(Color.blueviolet);
-        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, -90f, 0f);
-/*
-        Float startAngle = 0f;
-        Float endAngle = 0f;
-        int lastColorIndex = 0;
-        for (int i = 0; i < angles.size(); i++) {
-            endAngle = startAngle + angles.get(i);
-            List<Point> list = new ArrayList<Point>();
-            if (isDonutChart) {
-                list.addAll(getDonutPoints(xc, yc, r1, r2, startAngle, endAngle));
-            }
-            else {
-                list.addAll(getArcPoints(xc, yc, r2, startAngle, endAngle, true));
-            }
-            // for (Point point : list) {
-            // 	point.drawOn(page);
-            // }
-            page.setBrushColor(colors.get(i));
-            page.drawPath(list, Operation.FILL);
-            startAngle = endAngle;
-            lastColorIndex = i;
-        }
-
-        if (endAngle < 360f) {
-            endAngle = 360f;
-            List<Point> list = new ArrayList<Point>();
-            if (isDonutChart) {
-                list.addAll(getDonutPoints(xc, yc, r1, r2, startAngle, endAngle));
-            }
-            else {
-                list.addAll(getArcPoints(xc, yc, r2, startAngle, endAngle, true));
-            }
-            // for (Point point : list) {
-            // 	point.drawOn(page);
-            // }
-            // page.setBrushColor(colors.get(lastColorIndex));
-            page.setBrushColor(Color.blue);
-            page.drawPath(list, Operation.FILL);
-        }
-*/
+        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, 0f, 30f);
     }
-
 }
