@@ -201,7 +201,7 @@ import java.util.Map;
                 });
                 return Integer.valueOf(str, 16);
             } else {
-                // TODO:
+                return Color.transparent;
             }
         }
         Integer color = map.get(colorName);

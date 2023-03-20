@@ -154,6 +154,23 @@ public class SVGImage {
     }
 
     func getColor(_ colorName: String) -> Int32 {
+        if colorName.hasPrefix("#") {
+            if colorName.count == 7 {
+                let index = colorName.index(colorName.startIndex, offsetBy: 1)
+                return Int32(colorName[index...], radix: 16)!
+            } else if colorName.count == 4 {
+                let index1 = colorName.index(colorName.startIndex, offsetBy: 1)
+                let index2 = colorName.index(colorName.startIndex, offsetBy: 2)
+                let index3 = colorName.index(colorName.startIndex, offsetBy: 3)
+                let str1 = colorName[index1..<index2]
+                let str2 = colorName[index2..<index3]
+                let str3 = colorName[index3...]
+                let str = String(str1 + str1 + str2 + str2 + str3 + str3)
+                return Int32(str, radix: 16)!
+            } else {
+                return Color.transparent
+            }
+        }
         var color = Color.transparent
         let mirror = Mirror(reflecting: ColorMap())
         mirror.children.forEach { child in

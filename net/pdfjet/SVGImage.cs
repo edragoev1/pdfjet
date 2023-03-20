@@ -105,14 +105,14 @@ public class SVGImage {
                 } else if (param.Equals("data")) {
                     path.data = buf.ToString();
                 } else if (param.Equals("fill")) {
-                    int fillColor = mapColorNameToValue(buf.ToString());
+                    int fillColor = getColor(buf.ToString());
                     if (header) {
                         this.fill = fillColor;
                     } else {
                         path.fill = fillColor;
                     }
                 } else if (param.Equals("stroke")) {
-                    int strokeColor = mapColorNameToValue(buf.ToString());
+                    int strokeColor = getColor(buf.ToString());
                     if (header) {
                         this.stroke = strokeColor;
                     } else {
@@ -147,7 +147,7 @@ public class SVGImage {
         }
     }
 
-    private int mapColorNameToValue(String colorName) {
+    private int getColor(String colorName) {
         if (colorName.StartsWith("#")) {
             if (colorName.Length == 7) {
                 return Int32.Parse(colorName.Substring(1), NumberStyles.HexNumber);
@@ -159,7 +159,7 @@ public class SVGImage {
                 });
                 return Int32.Parse(str, NumberStyles.HexNumber);
             } else {
-                // TODO:
+                return Color.transparent;
             }
         }
         int color = Color.transparent;

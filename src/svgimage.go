@@ -190,7 +190,7 @@ func getColor(colorMap map[string]int32, colorName string) int32 {
 			}
 			return int32(color)
 		} else {
-			// TODO:
+			return color.Transparent
 		}
 	}
 	value, ok := colorMap[colorName]
