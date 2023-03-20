@@ -97,13 +97,14 @@ public class DonutChart {
             Page page,
             Float xc, Float yc,
             Float r1, Float r2,     // r1 must be bigger that r2
-            Float angle1, Float angle2) {
+            Float angle1,
+            Float angle2) {
         // Start point coordinates
-        Float x1 = xc + r1*((float) Math.cos(angle1));
-        Float y1 = yc + r1*((float) Math.sin(angle1));
+        Float x1 = xc + r1*((float) Math.cos(angle1*(Math.PI/180.0)));
+        Float y1 = yc + r1*((float) Math.sin(angle1*(Math.PI/180.0)));
         // End point coordinates
-        Float x4 = xc + r1*((float) Math.cos(angle2));
-        Float y4 = yc + r1*((float) Math.sin(angle2));
+        Float x4 = xc + r1*((float) Math.cos(angle2*(Math.PI/180.0)));
+        Float y4 = yc + r1*((float) Math.sin(angle2*(Math.PI/180.0)));
     
         Float ax = x1 - xc;
         Float ay = y1 - yc;
@@ -125,11 +126,11 @@ public class DonutChart {
         System.out.println(x4 + " " + y4);
 
         // Start point coordinates
-        Float x5 = xc + r2*((float) Math.cos(angle1));
-        Float y5 = yc + r2*((float) Math.sin(angle1));
+        Float x5 = xc + r2*((float) Math.cos(angle1*(Math.PI/180.0)));
+        Float y5 = yc + r2*((float) Math.sin(angle1*(Math.PI/180.0)));
         // End point coordinates
-        Float x8 = xc + r2*((float) Math.cos(angle2));
-        Float y8 = yc + r2*((float) Math.sin(angle2));
+        Float x8 = xc + r2*((float) Math.cos(angle2*(Math.PI/180.0)));
+        Float y8 = yc + r2*((float) Math.sin(angle2*(Math.PI/180.0)));
     
         ax = x5 - xc;
         ay = y5 - yc;
