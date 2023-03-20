@@ -43,6 +43,8 @@ public class DonutChart {
 	    this.f1 = f1;
 	    this.f2 = f2;
 	    this.isDonutChart = true;
+        this.angles = new ArrayList<Float>();
+        this.colors = new ArrayList<Integer>();
     }
 
     public void setLocation(Float xc, Float yc) {
@@ -154,8 +156,8 @@ public class DonutChart {
         this.colors.add(color);
     }
 
-    // DrawOn draws donut chart on the specified page.
-    public void DrawOn(Page page) throws Exception {
+    // Draws donut chart on the specified page.
+    public void drawOn(Page page) throws Exception {
         Float startAngle = 0f;
         Float endAngle = 0f;
         int lastColorIndex = 0;
@@ -189,7 +191,7 @@ public class DonutChart {
             // for (Point point : list) {
             // 	point.drawOn(page);
             // }
-            page.setBrushColor(colors.get(lastColorIndex + 1));
+            page.setBrushColor(colors.get(lastColorIndex));
             page.drawPath(list, Operation.FILL);
         }
     }
