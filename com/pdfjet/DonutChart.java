@@ -93,7 +93,10 @@ public class DonutChart {
         return list;
     }
 
-    private Float[] getControlPoints(Float x0, Float y0, Float x3, Float y3) {
+    private Float[] getControlPoints(
+            Float xc, Float yc,
+            Float x0, Float y0,
+            Float x3, Float y3) {
         Float ax = x0 - xc;
         Float ay = y0 - yc;
         Float bx = x3 - xc;
@@ -128,21 +131,11 @@ public class DonutChart {
         Float x3 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
         Float y3 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
 
-        // Float[] control = getControlPoints(x1, y1, x4, y4);
-    
-        Float ax = x0 - xc;
-        Float ay = y0 - yc;
-        Float bx = x3 - xc;
-        Float by = y3 - yc;
-        Float q1 = ax*ax + ay*ay;
-        Float q2 = q1 + ax*bx + ay*by;
-        Float k2 = 4f/3f * (((float) Math.sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
-    
-        // Control points coordinates
-        Float x1 = xc + ax - k2*ay;
-        Float y1 = yc + ay + k2*ax;
-        Float x2 = xc + bx + k2*by;
-        Float y2 = yc + by - k2*bx;
+        Float[] control = getControlPoints(xc, yc, x0, y0, x3, y3);
+        Float x1 = control[0];
+        Float y1 = control[1];
+        Float x2 = control[2];
+        Float y2 = control[3];
 
         // Start point coordinates
         Float x4 = xc + r2*((float) Math.cos(angle1*Math.PI/180.0));
@@ -150,20 +143,12 @@ public class DonutChart {
         // End point coordinates
         Float x7 = xc + r2*((float) Math.cos(angle2*Math.PI/180.0));
         Float y7 = yc + r2*((float) Math.sin(angle2*Math.PI/180.0));
-    
-        ax = x4 - xc;
-        ay = y4 - yc;
-        bx = x7 - xc;
-        by = y7 - yc;
-        q1 = ax*ax + ay*ay;
-        q2 = q1 + ax*bx + ay*by;
-        k2 = 4f/3f * (((float) Math.sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
-    
-        // Control points coordinates
-        Float x5 = xc + ax - k2*ay;
-        Float y5 = yc + ay + k2*ax;
-        Float x6 = xc + bx + k2*by;
-        Float y6 = yc + by - k2*bx;
+
+        control = getControlPoints(xc, yc, x4, y4, x7, y7);
+        Float x5 = control[0];
+        Float y5 = control[1];
+        Float x6 = control[2];
+        Float y6 = control[3];
 
         page.moveTo(x0, y0);
         page.curveTo(x1, y1, x2, y2, x3, y3);
