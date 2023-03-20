@@ -67,7 +67,7 @@ public class Example_33 {
             stream = InputStream(
                     fileAtPath: "images/svg-test/europe.svg")
             icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
+            icon.setLocation(0.0, 0.0)
             xy = icon.drawOn(page)
 
             pdf.complete()
