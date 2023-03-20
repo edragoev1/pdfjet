@@ -38,6 +38,7 @@ public class SVGImage {
     float h = 0f;       // SVG height
     int fill = Color.transparent;
     int stroke = Color.transparent;
+    float strokeWidth = 0f;
 
     List<SVGPath> paths = null;
     protected String uri = null;
@@ -116,7 +117,14 @@ public class SVGImage {
                         }
                     }
                 } else if (param.equals("stroke")) {
-                    path.stroke = colorMap.getColor(buf.toString());
+                    if (!buf.toString().equals("none")) {
+                        int color = colorMap.getColor(buf.toString());
+                        if (header) {
+                            this.stroke = color;
+                        } else {
+                            path.stroke = color;
+                        }
+                    }
                 } else if (param.equals("stroke-width")) {
                     try {
                         path.strokeWidth = Float.valueOf(buf.toString());
@@ -167,16 +175,20 @@ public class SVGImage {
     }
 
     private void drawPath(SVGPath path, Page page) {
-        int fillColor = Color.transparent;
-        if (path.fill != Color.transparent) {
-            fillColor = path.fill;
-        } else if (this.fill != Color.transparent) {
+        int fillColor = path.fill;
+        if (fillColor == Color.transparent) {
             fillColor = this.fill;
-        } else {
+        }
+        if (fillColor == Color.transparent) {
             fillColor = Color.black;
         }
         page.setBrushColor(fillColor);
-        page.setPenColor(path.stroke);
+
+        int strokeColor = path.stroke;
+        if (strokeColor == Color.transparent) {
+            strokeColor = this.stroke;
+        }
+        page.setPenColor(strokeColor);
         page.setPenWidth(path.strokeWidth);
 
         if (fillColor != Color.transparent) {
@@ -197,7 +209,7 @@ public class SVGImage {
             page.fillPath();
         }
 
-        if (path.stroke != Color.transparent) {
+        if (strokeColor != Color.transparent) {
             for (int i = 0; i < path.operations.size(); i++) {
                 PathOp op = path.operations.get(i);
                 if (op.cmd == 'M') {
