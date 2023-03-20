@@ -115,6 +115,7 @@ public class DonutChart {
 
         points.add(new Float[] {x1, y1});
         points.add(new Float[] {x2, y2});
+        points.add(new Float[] {x3, y3});
 
         return points;
     }
@@ -162,11 +163,17 @@ public class DonutChart {
 
         page.moveTo(x0, y0);
         // page.curveTo(x1, y1, x2, y2, x3, y3);
-        page.curveTo(control.get(0)[0], control.get(0)[1], control.get(1)[0], control.get(1)[1], x3, y3);
+        page.curveTo(
+                control.get(0)[0], control.get(0)[1],
+                control.get(1)[0], control.get(1)[1],
+                control.get(2)[0], control.get(2)[1]);
         page.lineTo(x7, y7);
         // page.curveTo(x6, y6, x5, y5, x4, y4);
         // page.curveTo(control2[2], control2[3], control2[0], control2[1], x4, y4);
-        page.curveTo(control2.get(1)[0], control2.get(1)[1], control2.get(0)[0], control2.get(0)[1], x4, y4);
+        page.curveTo(
+                control2.get(1)[0], control2.get(1)[1],
+                control2.get(0)[0], control2.get(0)[1],
+                x4, y4);
         page.fillPath();
     }
 
