@@ -122,14 +122,14 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			} else if param == "data" {
 				path.data = builder.String()
 			} else if param == "fill" {
-				var fillColor = mapColorNameToValue(colorMap, builder.String())
+				var fillColor = getColor(colorMap, builder.String())
 				if header {
 					image.fill = fillColor
 				} else {
 					path.fill = fillColor
 				}
 			} else if param == "stroke" {
-				var strokeColor = mapColorNameToValue(colorMap, builder.String())
+				var strokeColor = getColor(colorMap, builder.String())
 				if header {
 					image.fill = strokeColor
 				} else {
@@ -170,7 +170,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	return image
 }
 
-func mapColorNameToValue(colorMap map[string]int32, colorName string) int32 {
+func getColor(colorMap map[string]int32, colorName string) int32 {
 	value, ok := colorMap[colorName]
 	if ok {
 		return value

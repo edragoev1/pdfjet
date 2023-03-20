@@ -114,14 +114,14 @@ public class SVGImage {
                 } else if param == "data" {
                     path!.data = buf
                 } else if param == "fill" {
-                    let fillColor = mapColorNameToValue(buf)
+                    let fillColor = getColor(buf)
                     if header {
                         self.fill = fillColor
                     } else {
                         path!.fill = fillColor
                     }
                 } else if param == "stroke" {
-                    let strokeColor = mapColorNameToValue(buf)
+                    let strokeColor = getColor(buf)
                     if header {
                         self.stroke = strokeColor
                     } else {
@@ -153,7 +153,7 @@ public class SVGImage {
         }
     }
 
-    func mapColorNameToValue(_ colorName: String) -> Int32 {
+    func getColor(_ colorName: String) -> Int32 {
         var color = Color.transparent
         let mirror = Mirror(reflecting: ColorMap())
         mirror.children.forEach { child in
