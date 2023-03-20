@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -36,6 +37,9 @@ import (
 
 type SVGImage struct {
 	x, y, w, h     float32
+	fill           int32
+	stroke         int32
+	strokeWidth    float32
 	paths          []*SVGPath
 	uri            *string
 	key            *string
@@ -61,10 +65,17 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	}
 	var builder = strings.Builder{}
 	var token = false
+	var header = false
 	var param string
 	for i := 0; i < len(buffer); i++ {
 		ch := buffer[i]
-		if !token && strings.HasSuffix(builder.String(), " width=") {
+		if strings.HasSuffix(builder.String(), "<svg") {
+			header = true
+			builder.Reset()
+		} else if ch == '>' {
+			header = false
+			builder.Reset()
+		} else if !token && strings.HasSuffix(builder.String(), " width=") {
 			token = true
 			param = "width"
 			builder.Reset()
@@ -112,19 +123,35 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			} else if param == "data" {
 				path.data = builder.String()
 			} else if param == "fill" {
-				if builder.String() == "none" {
-					path.fill = color.Transparent
+				var fillColor = mapColorNameToValue(colorMap, builder.String())
+
+				if header {
+					fmt.Println(fillColor)
+					image.fill = fillColor
 				} else {
-					path.fill = mapColorNameToValue(colorMap, builder.String())
+					path.fill = fillColor
 				}
 			} else if param == "stroke" {
-				path.stroke = mapColorNameToValue(colorMap, builder.String())
+				var strokeColor = mapColorNameToValue(colorMap, builder.String())
+				if header {
+					image.fill = strokeColor
+				} else {
+					path.fill = strokeColor
+				}
 			} else if param == "stroke-width" {
 				strokeWidth, err := strconv.ParseFloat(builder.String(), 32)
 				if err != nil {
-					path.strokeWidth = 2.0
+					if header {
+						image.strokeWidth = 0.0
+					} else {
+						path.strokeWidth = 0.0
+					}
 				} else {
-					path.strokeWidth = float32(strokeWidth)
+					if header {
+						image.strokeWidth = float32(strokeWidth)
+					} else {
+						path.strokeWidth = float32(strokeWidth)
+					}
 				}
 			}
 			builder.Reset()
@@ -151,7 +178,7 @@ func mapColorNameToValue(colorMap map[string]int32, colorName string) int32 {
 	if ok {
 		return value
 	}
-	return int32(color.Black)
+	return int32(color.Transparent)
 }
 
 func (image *SVGImage) SetLocation(x, y float32) {
@@ -168,11 +195,29 @@ func (image *SVGImage) GetHeight() float32 {
 }
 
 func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
-	page.SetBrushColor(path.fill)
-	page.SetPenColor(path.stroke)
-	page.SetPenWidth(path.strokeWidth)
+	var fillColor = path.fill
+	if fillColor == color.Transparent {
+		fillColor = image.fill
+	}
+	var strokeColor = path.stroke
+	if strokeColor == color.Transparent {
+		strokeColor = image.stroke
+	}
+	var strokeWidth = image.strokeWidth
+	if path.strokeWidth > strokeWidth {
+		strokeWidth = path.strokeWidth
+	}
 
-	if path.fill != color.Transparent {
+	if fillColor == color.Transparent &&
+		strokeColor == color.Transparent {
+		fillColor = color.Black
+	}
+
+	page.SetBrushColor(fillColor)
+	page.SetPenColor(strokeColor)
+	page.SetPenWidth(strokeWidth)
+
+	if fillColor != color.Transparent {
 		for i := 0; i < len(path.operations); i++ {
 			op := path.operations[i]
 			if op.cmd == 'M' {
@@ -189,7 +234,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 		page.FillPath()
 	}
 
-	if path.stroke != color.Transparent {
+	if strokeColor != color.Transparent {
 		for i := 0; i < len(path.operations); i++ {
 			op := path.operations[i]
 			if op.cmd == 'M' {

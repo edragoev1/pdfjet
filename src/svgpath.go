@@ -1,5 +1,7 @@
 package pdfjet
 
+import "github.com/edragoev1/pdfjet/src/color"
+
 /**
  * svgpath.go
  *
@@ -27,15 +29,15 @@ SOFTWARE.
 type SVGPath struct {
 	data        string    // The SVG path data
 	operations  []*PathOp // The PDF path operations
-	fill        int32     // The fill color or -1 (don't fill)
-	stroke      int32     // The stroke color or -1 (don't stroke)
+	fill        int32     // The fill color
+	stroke      int32     // The stroke color
 	strokeWidth float32   // The stroke width
 }
 
 func NewSVGPath() *SVGPath {
 	path := new(SVGPath)
-	path.fill = 0    // Black color
-	path.stroke = -1 // Transparent
-	path.strokeWidth = 2.0
+	path.fill = color.Transparent
+	path.stroke = color.Transparent
+	path.strokeWidth = 0.0
 	return path
 }
