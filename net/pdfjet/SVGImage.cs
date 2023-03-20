@@ -35,6 +35,9 @@ public class SVGImage {
     float y = 0f;
     float w = 0f;       // SVG width
     float h = 0f;       // SVG height
+    int fill = Color.transparent;
+    int stroke = Color.transparent;
+    float strokeWidth = 0f;
 
     List<SVGPath> paths = null;
     protected String uri = null;
@@ -161,11 +164,29 @@ public class SVGImage {
     }
 
     private void drawPath(SVGPath path, Page page) {
-        page.SetBrushColor(path.fill);
-        page.SetPenColor(path.stroke);
-        page.SetPenWidth(path.strokeWidth);
+        int fillColor = path.fill;
+        if (fillColor == Color.transparent) {
+            fillColor = this.fill;
+        }
+        int strokeColor = path.stroke;
+        if (strokeColor == Color.transparent) {
+            strokeColor = this.stroke;
+        }
+        float strokeWidth = this.strokeWidth;
+        if (path.strokeWidth > strokeWidth) {
+            strokeWidth = path.strokeWidth;
+        }
 
-        if (path.fill != Color.transparent) {
+        if (fillColor == Color.transparent &&
+                strokeColor == Color.transparent) {
+            fillColor = Color.black;
+        }
+
+        page.SetBrushColor(fillColor);
+        page.SetPenColor(strokeColor);
+        page.SetPenWidth(strokeWidth);
+
+        if (fillColor != Color.transparent) {
             for (int i = 0; i < path.operations.Count; i++) {
                 PathOp op = path.operations[i];
                 if (op.cmd == 'M') {
@@ -183,7 +204,7 @@ public class SVGImage {
             page.FillPath();
         }
 
-        if (path.stroke != Color.transparent) {
+        if (strokeColor != Color.transparent) {
             for (int i = 0; i < path.operations.Count; i++) {
                 PathOp op = path.operations[i];
                 if (op.cmd == 'M') {
