@@ -108,7 +108,7 @@ func (checkBox *CheckBox) GetWidth() float32 {
  *
  *  @return checkBox CheckBox.
  */
-func (checkBox *CheckBox) check(mark int) *CheckBox {
+func (checkBox *CheckBox) Check(mark int) *CheckBox {
 	checkBox.mark = mark
 	return checkBox
 }

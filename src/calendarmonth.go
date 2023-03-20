@@ -65,24 +65,24 @@ func (calendarMonth *CalendarMonth) NewCalendarMonth(f1, f2 *Font, year, month i
 	calendarMonth.dayOfWeek = int(now.Weekday())
 }
 
-func (calendarMonth *CalendarMonth) setHeadFont(font *Font) {
+func (calendarMonth *CalendarMonth) SetHeadFont(font *Font) {
 	calendarMonth.f1 = font
 }
 
-func (calendarMonth *CalendarMonth) setBodyFont(font *Font) {
+func (calendarMonth *CalendarMonth) SetBodyFont(font *Font) {
 	calendarMonth.f2 = font
 }
 
-func (calendarMonth *CalendarMonth) setLocation(x, y float32) {
+func (calendarMonth *CalendarMonth) SetLocation(x, y float32) {
 	calendarMonth.x1 = x
 	calendarMonth.y1 = y
 }
 
-func (calendarMonth *CalendarMonth) setCellWidth(width float32) {
+func (calendarMonth *CalendarMonth) SetCellWidth(width float32) {
 	calendarMonth.dx = width
 }
 
-func (calendarMonth *CalendarMonth) setCellHeight(height float32) {
+func (calendarMonth *CalendarMonth) SetCellHeight(height float32) {
 	calendarMonth.dy = height
 }
 
