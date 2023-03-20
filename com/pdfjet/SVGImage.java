@@ -109,27 +109,32 @@ public class SVGImage {
                     path.data = buf.toString();
                 } else if (param.equals("fill")) {
                     if (!buf.toString().equals("none")) {
-                        int color = colorMap.getColor(buf.toString());
+                        int fillColor = colorMap.getColor(buf.toString());
                         if (header) {
-                            this.fill = color;
+                            this.fill = fillColor;
                         } else {
-                            path.fill = color;
+                            path.fill = fillColor;
                         }
                     }
                 } else if (param.equals("stroke")) {
                     if (!buf.toString().equals("none")) {
-                        int color = colorMap.getColor(buf.toString());
+                        int strokeColor = colorMap.getColor(buf.toString());
                         if (header) {
-                            this.stroke = color;
+                            this.stroke = strokeColor;
                         } else {
-                            path.stroke = color;
+                            path.stroke = strokeColor;
                         }
                     }
                 } else if (param.equals("stroke-width")) {
                     try {
-                        path.strokeWidth = Float.valueOf(buf.toString());
+                        float strokeWidth = Float.valueOf(buf.toString());
+                        if (header) {
+                            this.strokeWidth = strokeWidth;
+                        } else {
+                            path.strokeWidth = strokeWidth;
+                        }
                     } catch (Exception e) {
-                        path.strokeWidth = 2f;
+                        path.strokeWidth = 0f;
                     }
                 }
                 buf.setLength(0);
@@ -183,6 +188,10 @@ public class SVGImage {
         if (strokeColor == Color.transparent) {
             strokeColor = this.stroke;
         }
+        float strokeWidth = this.strokeWidth;
+        if (path.strokeWidth > strokeWidth) {
+            strokeWidth = path.strokeWidth;
+        }
 
         if (fillColor == Color.transparent &&
                 strokeColor == Color.transparent) {
@@ -191,7 +200,7 @@ public class SVGImage {
 
         page.setBrushColor(fillColor);
         page.setPenColor(strokeColor);
-        page.setPenWidth(path.strokeWidth);
+        page.setPenWidth(strokeWidth);
 
         if (fillColor != Color.transparent) {
             for (int i = 0; i < path.operations.size(); i++) {
