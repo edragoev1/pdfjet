@@ -144,7 +144,6 @@ public class SVGImage {
             paths!.append(path!)
         }
 
-
         var i = 0
         while i < paths!.count {
             path = paths![i]
