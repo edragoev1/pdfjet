@@ -30,7 +30,6 @@ public class DonutChart {
 
 	Font f1;
     Font f2;
-	List<List<Point>> chartData;
 	Float xc;
     Float yc;
     Float r1;
@@ -42,7 +41,7 @@ public class DonutChart {
     public DonutChart(Font f1, Font f2, boolean isDonutChart) {
 	    this.f1 = f1;
 	    this.f2 = f2;
-	    this.isDonutChart = true;
+	    this.isDonutChart = isDonutChart;
         this.angles = new ArrayList<Float>();
         this.colors = new ArrayList<Integer>();
     }
@@ -60,9 +59,9 @@ public class DonutChart {
         }
     }
     
-    private List<Point> getBezierCurvePoints(Float xc, Float yc, Float r, Float angle1, Float angle2) {
-        angle1 *= -1.0f;
-        angle2 *= -1.0f;
+    private List<Point> getCurvePoints(Float xc, Float yc, Float r, Float angle1, Float angle2) {
+        angle1 *= -1f;
+        angle2 *= -1f;
 
         // Start point coordinates
         Float x1 = xc + r*((float) (Math.cos(angle1)*(Math.PI/180.0)));
@@ -94,6 +93,65 @@ public class DonutChart {
         return list;
     }
 
+    public void drawSlice(
+            Page page,
+            Float xc, Float yc,
+            Float r1, Float r2,     // r1 must be bigger that r2
+            Float angle1, Float angle2) {
+        // Start point coordinates
+        Float x1 = xc + r1*((float) Math.cos(angle1));
+        Float y1 = yc + r1*((float) Math.sin(angle1));
+        // End point coordinates
+        Float x4 = xc + r1*((float) Math.cos(angle2));
+        Float y4 = yc + r1*((float) Math.sin(angle2));
+    
+        Float ax = x1 - xc;
+        Float ay = y1 - yc;
+        Float bx = x4 - xc;
+        Float by = y4 - yc;
+        Float q1 = ax*ax + ay*ay;
+        Float q2 = q1 + ax*bx + ay*by;
+        Float k2 = 4f/3f * (((float) Math.sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
+    
+        // Control points coordinates
+        Float x2 = xc + ax - k2*ay;
+        Float y2 = yc + ay + k2*ax;
+        Float x3 = xc + bx + k2*by;
+        Float y3 = yc + by - k2*bx;
+
+        System.out.println(x1 + " " + y1);
+        System.out.println(x2 + " " + y2);
+        System.out.println(x3 + " " + y3);
+        System.out.println(x4 + " " + y4);
+
+        // Start point coordinates
+        Float x5 = xc + r2*((float) Math.cos(angle1));
+        Float y5 = yc + r2*((float) Math.sin(angle1));
+        // End point coordinates
+        Float x8 = xc + r2*((float) Math.cos(angle2));
+        Float y8 = yc + r2*((float) Math.sin(angle2));
+    
+        ax = x5 - xc;
+        ay = y5 - yc;
+        bx = x8 - xc;
+        by = y8 - yc;
+        q1 = ax*ax + ay*ay;
+        q2 = q1 + ax*bx + ay*by;
+        k2 = 4f/3f * (((float) Math.sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
+    
+        // Control points coordinates
+        Float x6 = xc + ax - k2*ay;
+        Float y6 = yc + ay + k2*ax;
+        Float x7 = xc + bx + k2*by;
+        Float y7 = yc + by - k2*bx;
+
+        page.moveTo(x1, y1);
+        page.curveTo(x2, y2, x3, y3, x4, y4);
+        page.lineTo(x8, y8);
+        page.curveTo(x7, y7, x6, y6, x5, y5);
+        page.fillPath();
+    }
+
     // GetArcPoints calculates a list of points for a given arc of a circle
     // @param xc the x-coordinate of the circle's centre.
     // @param yc the y-coordinate of the circle's centre
@@ -101,7 +159,8 @@ public class DonutChart {
     // @param angle1 the start angle of the arc in degrees.
     // @param angle2 the end angle of the arc in degrees.
     // @param includeOrigin whether the origin should be included in the list (thus creating a pie shape).
-    private List<Point> getArcPoints(Float xc, Float yc, Float r, Float angle1, Float angle2, boolean includeOrigin) {
+    private List<Point> getArcPoints(
+            Float xc, Float yc, Float r, Float angle1, Float angle2, boolean includeOrigin) {
         List<Point> list = new ArrayList<Point>();
 
         if (includeOrigin) {
@@ -114,23 +173,23 @@ public class DonutChart {
             startAngle = angle1;
             endAngle = angle1 + 90;
             while (endAngle < angle2) {
-                list.addAll(getBezierCurvePoints(xc, yc, r, startAngle, endAngle));
+                list.addAll(getCurvePoints(xc, yc, r, startAngle, endAngle));
                 startAngle += 90;
                 endAngle += 90;
             }
             endAngle -= 90;
-            list.addAll(getBezierCurvePoints(xc, yc, r, endAngle, angle2));
+            list.addAll(getCurvePoints(xc, yc, r, endAngle, angle2));
         }
         else {
             startAngle = angle1;
             endAngle = angle1 - 90;
             while (endAngle > angle2) {
-                list.addAll(getBezierCurvePoints(xc, yc, r, startAngle, endAngle));
+                list.addAll(getCurvePoints(xc, yc, r, startAngle, endAngle));
                 startAngle -= 90;
                 endAngle -= 90;
             }
             endAngle += 90;
-            list.addAll(getBezierCurvePoints(xc, yc, r, endAngle, angle2));
+            list.addAll(getCurvePoints(xc, yc, r, endAngle, angle2));
         }
 
         return list;
@@ -158,6 +217,9 @@ public class DonutChart {
 
     // Draws donut chart on the specified page.
     public void drawOn(Page page) throws Exception {
+        page.setBrushColor(Color.blueviolet);
+        drawSlice(page, 300f, 300f, 200f, 100f, 0f, 90f);
+/*
         Float startAngle = 0f;
         Float endAngle = 0f;
         int lastColorIndex = 0;
@@ -191,9 +253,11 @@ public class DonutChart {
             // for (Point point : list) {
             // 	point.drawOn(page);
             // }
-            page.setBrushColor(colors.get(lastColorIndex));
+            // page.setBrushColor(colors.get(lastColorIndex));
+            page.setBrushColor(Color.blue);
             page.drawPath(list, Operation.FILL);
         }
+*/
     }
 
 }
