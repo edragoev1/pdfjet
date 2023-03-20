@@ -95,10 +95,13 @@ public class DonutChart {
 
     public void drawSlice(
             Page page,
+            int color,
             Float xc, Float yc,
             Float r1, Float r2,     // r1 must be bigger that r2
             Float angle1,
             Float angle2) {
+        page.setBrushColor(color);
+
         // Start point coordinates
         Float x1 = xc + r1*((float) Math.cos(angle1*(Math.PI/180.0)));
         Float y1 = yc + r1*((float) Math.sin(angle1*(Math.PI/180.0)));
@@ -119,11 +122,6 @@ public class DonutChart {
         Float y2 = yc + ay + k2*ax;
         Float x3 = xc + bx + k2*by;
         Float y3 = yc + by - k2*bx;
-
-        System.out.println(x1 + " " + y1);
-        System.out.println(x2 + " " + y2);
-        System.out.println(x3 + " " + y3);
-        System.out.println(x4 + " " + y4);
 
         // Start point coordinates
         Float x5 = xc + r2*((float) Math.cos(angle1*(Math.PI/180.0)));
@@ -219,7 +217,7 @@ public class DonutChart {
     // Draws donut chart on the specified page.
     public void drawOn(Page page) throws Exception {
         page.setBrushColor(Color.blueviolet);
-        drawSlice(page, 300f, 300f, 200f, 100f, 0f, 90f);
+        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, 160f, 230f);
 /*
         Float startAngle = 0f;
         Float endAngle = 0f;
