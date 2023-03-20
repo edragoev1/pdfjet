@@ -37,6 +37,7 @@ import java.util.Map;
     public ColorMap() {
         map = new HashMap<String, Integer>();
         map.put("transparent", -1);
+        map.put("none", -1);
         map.put("aliceblue", 0xf0f8ff);
         map.put("antiquewhite", 0xfaebd7);
         map.put("aqua", 0x00ffff);
@@ -198,7 +199,7 @@ import java.util.Map;
         }
         Integer color = map.get(colorName);
         if (color == null) {
-            return Color.black;
+            return Color.transparent;
         }
         return color;
     }

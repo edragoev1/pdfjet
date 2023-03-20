@@ -98,17 +98,18 @@ public class SVGImage {
             } else if (token && ch == '\"') {
                 token = false;
                 if (param.Equals("width")) {
-                    w = float.Parse(buf.ToString());
+                    this.w = float.Parse(buf.ToString());
                 } else if (param.Equals("height")) {
-                    h = float.Parse(buf.ToString());
+                    this.h = float.Parse(buf.ToString());
                 } else if (param.Equals("data")) {
                     path.data = buf.ToString();
                 } else if (param.Equals("fill")) {
-                    if (buf.ToString().Equals("none")) {
-                        path.fill = Color.transparent;
-                    } else {
-                        path.fill = mapColorNameToValue(buf.ToString());
-                    }
+                        int fillColor = mapColorNameToValue(buf.ToString());
+                        if (header) {
+                            this.fill = fillColor;
+                        } else {
+                            path.fill = fillColor;
+                        }
                 } else if (param.Equals("stroke")) {
                     path.stroke = mapColorNameToValue(buf.ToString());
                 } else if (param.Equals("stroke-width")) {
@@ -136,7 +137,7 @@ public class SVGImage {
     }
 
     private int mapColorNameToValue(String colorName) {
-        int color = Color.black;
+        int color = Color.transparent;
         try {
             color = (int) typeof(Color).GetField(colorName).GetValue(null);
         } catch (Exception) {

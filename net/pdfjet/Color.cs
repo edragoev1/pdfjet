@@ -30,6 +30,7 @@ SOFTWARE.
 namespace PDFjet.NET {
 public class Color {
     public const int transparent = -1;
+    public const int none = -1;
 
     public const int aliceblue = 0xf0f8ff;
     public const int antiquewhite = 0xfaebd7;
