@@ -31,6 +31,7 @@ package com.pdfjet;
  public class Color {
     /** The color named "transparent" */
     public static final int transparent = -1;
+    public static final int none = -1;
 
     /** The color named "aliceblue" */
     public static final int aliceblue = 0xf0f8ff;

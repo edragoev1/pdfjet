@@ -126,7 +126,7 @@ public class SVGImage {
                             path.strokeWidth = strokeWidth;
                         }
                     } catch (Exception) {
-                        path.strokeWidth = 2f;
+                        path.strokeWidth = 0f;
                     }
                 }
                 buf.Length = 0;
