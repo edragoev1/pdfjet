@@ -114,15 +114,26 @@ public class SVGImage {
                 } else if param == "data" {
                     path!.data = buf
                 } else if param == "fill" {
-                    if buf == "none" {
-                        path!.fill = Color.transparent
+                    let fillColor = mapColorNameToValue(buf)
+                    if header {
+                        self.fill = fillColor
                     } else {
-                        path!.fill = mapColorNameToValue(buf)
+                        path!.fill = fillColor
                     }
                 } else if param == "stroke" {
-                    path!.stroke = mapColorNameToValue(buf)
+                    let strokeColor = mapColorNameToValue(buf);
+                    if header {
+                        self.stroke = strokeColor
+                    } else {
+                        path!.stroke = strokeColor
+                    }
                 } else if param == "stroke-width" {
-                    path!.strokeWidth = Float(buf)!
+                    let strokeWidth = Float(buf)!
+                    if (header) {
+                        self.strokeWidth = strokeWidth
+                    } else {
+                        path!.strokeWidth = strokeWidth
+                    }
                 }
                 buf = ""
             } else {
