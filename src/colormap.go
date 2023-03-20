@@ -29,6 +29,7 @@ SOFTWARE.
 func NewColorMap() map[string]int32 {
 	color := make(map[string]int32)
 	color["transparent"] = -1
+	color["none"] = -1
 	color["aliceblue"] = 0xf0f8ff
 	color["antiquewhite"] = 0xfaebd7
 	color["aqua"] = 0x00ffff

@@ -30,6 +30,7 @@ SOFTWARE.
  */
 public class Color {
     public static let transparent: Int32 = -1
+    public static let none: Int32 = -1
 
     public static let aliceblue: Int32 = 0xf0f8ff
     public static let antiquewhite: Int32 = 0xfaebd7
