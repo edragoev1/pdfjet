@@ -165,10 +165,12 @@ public class DonutChart {
         }
 
         page.lineTo(points2.get(0)[0], points2.get(0)[1]);
-        page.curveTo(
-                control2.get(1)[0], control2.get(1)[1],
-                control2.get(2)[0], control2.get(2)[1],
-                control2.get(3)[0], control2.get(3)[1]);
+        for (int i = 0; i <= (points1.size() - 4); i += 4) {
+            page.curveTo(
+                    control2.get(i + 1)[0], control2.get(i + 1)[1],
+                    control2.get(i + 2)[0], control2.get(i + 2)[1],
+                    control2.get(i + 3)[0], control2.get(i + 3)[1]);
+        }
         page.fillPath();
     }
 
