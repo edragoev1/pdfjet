@@ -152,12 +152,12 @@ public class DonutChart {
             p3 = getPoint(xc, yc, r2, angle2);          // End point
             List<Float[]> control2 =
                     getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
-            Collections.reverse(control2);
             points2.addAll(control2);
 
             angle1 += 30f;
             angle2 += 30f;
         }
+        Collections.reverse(points2);
         System.out.println(points1.size());
         System.out.println(points2.size());
 
@@ -168,7 +168,6 @@ public class DonutChart {
                     points1.get(i + 2)[0], points1.get(i + 2)[1],
                     points1.get(i + 3)[0], points1.get(i + 3)[1]);
         }
-
         page.lineTo(points2.get(0)[0], points2.get(0)[1]);
         for (int i = 0; i <= (points2.size() - 4); i += 4) {
             page.curveTo(
