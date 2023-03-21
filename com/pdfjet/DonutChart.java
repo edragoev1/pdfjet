@@ -132,7 +132,7 @@ public class DonutChart {
             int fillColor,
             Float xc, Float yc,
             Float r1, Float r2,     // r1 > r2
-            Float a1, Float a2) {
+            Float a1, Float a2) {   // a1 > a2
         page.setBrushColor(fillColor);
 
         List<Float[]> points1 = new ArrayList<Float[]>();
@@ -141,32 +141,40 @@ public class DonutChart {
         Float angle1 = a1 - 90f;
         Float angle2 = a2 - 90f;
 
-        Float[] pc = new Float[] {xc, yc};
-        Float[] p0 = getPoint(xc, yc, r1, angle1);  // Start point
-        Float[] p3 = getPoint(xc, yc, r1, angle2);  // End point
-        List<Float[]> control1 = getControlPoints(pc[0], pc[1], p0[0], p0[1], p3[0], p3[1]);
-        points1.addAll(control1);
+        for (int i = 0; i < 3; i++) {
+            Float[] p0 = getPoint(xc, yc, r1, angle1);  // Start point
+            Float[] p3 = getPoint(xc, yc, r1, angle2);  // End point
+            List<Float[]> control1 =
+                    getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
+            points1.addAll(control1);
 
-        Float[] p4 = getPoint(xc, yc, r2, angle1);  // Start point
-        Float[] p7 = getPoint(xc, yc, r2, angle2);  // End point
-        List<Float[]> control2 = getControlPoints(pc[0], pc[1], p4[0], p4[1], p7[0], p7[1]);
-        Collections.reverse(control2);
-        points2.addAll(control2);
+            p0 = getPoint(xc, yc, r2, angle1);          // Start point
+            p3 = getPoint(xc, yc, r2, angle2);          // End point
+            List<Float[]> control2 =
+                    getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
+            Collections.reverse(control2);
+            points2.addAll(control2);
 
-        page.moveTo(p0[0], p0[1]);
+            angle1 += 30f;
+            angle2 += 30f;
+        }
+        System.out.println(points1.size());
+        System.out.println(points2.size());
+
+        page.moveTo(points1.get(0)[0], points1.get(0)[1]);
         for (int i = 0; i <= (points1.size() - 4); i += 4) {
             page.curveTo(
-                    control1.get(i + 1)[0], control1.get(i + 1)[1],
-                    control1.get(i + 2)[0], control1.get(i + 2)[1],
-                    control1.get(i + 3)[0], control1.get(i + 3)[1]);
+                    points1.get(i + 1)[0], points1.get(i + 1)[1],
+                    points1.get(i + 2)[0], points1.get(i + 2)[1],
+                    points1.get(i + 3)[0], points1.get(i + 3)[1]);
         }
 
         page.lineTo(points2.get(0)[0], points2.get(0)[1]);
         for (int i = 0; i <= (points2.size() - 4); i += 4) {
             page.curveTo(
-                    control2.get(i + 1)[0], control2.get(i + 1)[1],
-                    control2.get(i + 2)[0], control2.get(i + 2)[1],
-                    control2.get(i + 3)[0], control2.get(i + 3)[1]);
+                    points2.get(i + 1)[0], points2.get(i + 1)[1],
+                    points2.get(i + 2)[0], points2.get(i + 2)[1],
+                    points2.get(i + 3)[0], points2.get(i + 3)[1]);
         }
         page.fillPath();
     }
@@ -236,6 +244,6 @@ public class DonutChart {
 
     // Draws donut chart on the specified page.
     public void drawOn(Page page) throws Exception {
-        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, 0f, 90f);
+        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, 0f, 30f);
     }
 }
