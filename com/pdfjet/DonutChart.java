@@ -97,23 +97,29 @@ public class DonutChart {
             Float a1, Float a2) {   // a1 > a2
         page.setBrushColor(fillColor);
 
-        List<Float[]> points1 = new ArrayList<Float[]>();
-        List<Float[]> points2 = new ArrayList<Float[]>();
-
         Float angle1 = a1 - 90f;
         Float angle2 = a2 - 90f;
 
-        for (int i = 0; i < 10; i++) {
-            Float[] p0 = getPoint(xc, yc, r1, angle1);  // Start point
-            Float[] p3 = getPoint(xc, yc, r1, angle2);  // End point
-            points1.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
-
-            p0 = getPoint(xc, yc, r2, angle1);          // Start point
-            p3 = getPoint(xc, yc, r2, angle2);          // End point
-            points2.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
-
-            angle1 += 30f;
-            angle2 += 30f;
+        List<Float[]> points1 = new ArrayList<Float[]>();
+        List<Float[]> points2 = new ArrayList<Float[]>();
+        while (true) {
+            if ((angle2 - angle1) <= 90f) {
+                Float[] p0 = getPoint(xc, yc, r1, angle1);          // Start point
+                Float[] p3 = getPoint(xc, yc, r1, angle2);          // End point
+                points1.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                p0 = getPoint(xc, yc, r2, angle1);                  // Start point
+                p3 = getPoint(xc, yc, r2, angle2);                  // End point
+                points2.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                break;
+            } else {
+                Float[] p0 = getPoint(xc, yc, r1, angle1);
+                Float[] p3 = getPoint(xc, yc, r1, angle1 + 90f);
+                points1.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                p0 = getPoint(xc, yc, r2, angle1);
+                p3 = getPoint(xc, yc, r2, angle1 + 90f);
+                points2.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                angle1 += 90f;
+            }
         }
         Collections.reverse(points2);
 
@@ -140,6 +146,6 @@ public class DonutChart {
     }
 
     public void drawOn(Page page) throws Exception {
-        drawSlice(page, Color.blue, xc, yc, r1, r2, 0f, 30f);
+        drawSlice(page, Color.blue, xc, yc, r1, r2, 0f, 360f);
     }
 }
