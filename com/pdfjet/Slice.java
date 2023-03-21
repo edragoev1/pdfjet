@@ -1,5 +1,5 @@
 /**
- *  Single.java
+ *  Slice.java
  *
 Copyright 2023 Innovatics Inc.
 
@@ -23,10 +23,12 @@ SOFTWARE.
 */
 package com.pdfjet;
 
+public class Slice {
+    Float angle;
+    int color;
 
-/**
- *  Please see Example_45
- */
-public class Single {
-    public static final String space = " ";
+    public Slice(Float angle, int color) {
+        this.angle = angle;
+        this.color = color;
+    }
 }

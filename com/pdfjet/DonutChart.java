@@ -33,16 +33,14 @@ public class DonutChart {
     Float yc;
     Float r1;
     Float r2;
-	List<Float> angles;
-	List<Integer> colors;
+	List<Slice> slices;
     boolean isDonutChart = true;
     
     public DonutChart(Font f1, Font f2, boolean isDonutChart) {
 	    this.f1 = f1;
 	    this.f2 = f2;
 	    this.isDonutChart = isDonutChart;
-        this.angles = new ArrayList<Float>();
-        this.colors = new ArrayList<Integer>();
+        this.slices = new ArrayList<Slice>();
     }
 
     public void setLocation(Float xc, Float yc) {
@@ -89,7 +87,7 @@ public class DonutChart {
         return new Float[] {x, y};
     }
 
-    public void drawSlice(
+    public float drawSlice(
             Page page,
             int fillColor,
             Float xc, Float yc,
@@ -138,14 +136,18 @@ public class DonutChart {
                     points2.get(i + 3)[0], points2.get(i + 3)[1]);
         }
         page.fillPath();
+
+        return angle2;
     }
 
-    public void addSector(Float angle, int color) {
-        this.angles.add(angle);
-        this.colors.add(color);
+    public void addSlice(Slice slice) {
+        this.slices.add(slice);
     }
 
     public void drawOn(Page page) throws Exception {
-        drawSlice(page, Color.blue, xc, yc, r1, r2, 0f, 360f);
+        float angle = 0f;
+        for (Slice slice : slices) {
+            angle = drawSlice(page, slice.color, xc, yc, r1, r2, angle, angle + slice.angle);
+        }
     }
 }
