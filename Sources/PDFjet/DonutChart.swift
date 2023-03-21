@@ -1,241 +1,160 @@
 /**
- *  Chart.swift
+ *  DonutChart.swift
  *
 Copyright 2023 Innovatics Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 import Foundation
 
-
-/**
- *  Used to create XY chart objects and draw them on a page.
- *
- *  Please see Example_09.
- */
-public class DonutChart : Drawable {
-
+///
+/// Used to create Donut chart objects and draw them on a page
+///
+/// Please see Example_25.swift
+///
+public class DonutChart {
     var f1: Font?
     var f2: Font?
-    var chartData: [[Point]]?
-	var xc: Float = 0.0
+    var xc: Float = 0.0
     var yc: Float = 0.0
     var r1: Float = 0.0
     var r2: Float = 0.0
-	var angles: [Float]?
-	var colors: [Int32]?
-    var isDonutChart: Bool = true
-
-
-    /**
-     *  Create a Donut chart object.
-     *
-     *  @param f1 the font used for the chart title.
-     *  @param f2 the font used for the X and Y axis titles.
-     */
-    public init(_ f1: Font, _ f2: Font) {
+    var slices: [Slice]?
+    var isDonutChart = true
+    
+    public init(_ f1: Font, _ f2: Font, _ isDonutChart: Bool) {
         self.f1 = f1
         self.f2 = f2
-        self.angles = [Float]()
-        self.colors = [Int32]()
+        self.isDonutChart = isDonutChart
+        self.slices = [Slice]()
     }
 
-
-    /**
-     *  Sets the data that will be used to draw this chart.
-     *
-     *  @param chartData the data.
-     */
-    public func setData(_ chartData: [[Point]]?) {
-        self.chartData = chartData
+    public func setLocation(_ xc: Float, _ yc: Float) {
+        self.xc = xc
+        self.yc = yc
     }
 
-
-    /**
-     *  Returns the chart data.
-     *
-     *  @return the chart data.
-     */
-    public func getData() -> [[Point]]? {
-        return self.chartData
+    public func setR1AndR2(_ r1: Float, _ r2: Float) {
+        self.r1 = r1
+        self.r2 = r2
     }
 
-
-    /**
-     *  Sets the location of this chart on the page.
-     *
-     *  @param x the x coordinate of the top left corner of this chart when drawn on the page.
-     *  @param y the y coordinate of the top left corner of this chart when drawn on the page.
-     */
-    public func setLocation(_ x: Float, _ y: Float) {
-        self.xc = x
-        self.yc = y
+    public func addSlice(_ slice: Slice) {
+        self.slices!.append(slice)
     }
 
+    private func getControlPoints(
+            _ xc: Float, _ yc: Float,
+            _ x0: Float, _ y0: Float,
+            _ x3: Float, _ y3: Float) -> [[Float]] {
+        var points = [[Float]]()
 
-    public func setPosition(_ x: Float, _ y: Float) {
-        setLocation(x, y)
-    }
-
-
-    private func getBezierCurvePoints(
-            _ xc: Float, _ yc: Float, _ r: Float, _ a1: Float, _ a2: Float) -> [Point] {
-        let angle1 = -1.0*a1
-        let angle2 = -1.0*a2
-
-        // Start point coordinates
-        let x1 = xc + r*((cos(angle1)*(Float.pi/180.0)))
-        let y1 = yc + r*((sin(angle1)*(Float.pi/180.0)))
-        // End point coordinates
-        let x4 = xc + r*((cos(angle2)*(Float.pi/180.0)))
-        let y4 = yc + r*((sin(angle2)*(Float.pi/180.0)))
-    
-        let ax = x1 - xc
-        let ay = y1 - yc
-        let bx = x4 - xc
-        let by = y4 - yc
+        let ax = x0 - xc
+        let ay = y0 - yc
+        let bx = x3 - xc
+        let by = y3 - yc
         let q1 = ax*ax + ay*ay
         let q2 = q1 + ax*bx + ay*by
-    
-        let k2 = 4.0/3.0 * ((sqrt(2.0*q1*q2)) - q2) / (ax*by - ay*bx)
-    
-        let x2 = xc + ax - k2*ay
-        let y2 = yc + ay + k2*ax
-        let x3 = xc + bx + k2*by
-        let y3 = yc + by - k2*bx
-    
-        var list = [Point]()
-        list.append(Point(x1, y1))
-        list.append(Point(x2, y2, Point.CONTROL_POINT))
-        list.append(Point(x3, y3, Point.CONTROL_POINT))
-        list.append(Point(x4, y4))
-    
-        return list
+        let k2 = 4.0/3.0 * (sqrt(2.0*q1*q2) - q2) / (ax*by - ay*bx)
+
+        // Control points coordinates
+        let x1 = xc + ax - k2*ay
+        let y1 = yc + ay + k2*ax
+        let x2 = xc + bx + k2*by
+        let y2 = yc + by - k2*bx
+
+        points.append([x0, y0])
+        points.append([x1, y1])
+        points.append([x2, y2])
+        points.append([x3, y3])
+
+        return points
     }
 
+    private func getPoint(
+            _ xc: Float, _ yc: Float, _ radius: Float, _ angle: Float) -> [Float] {
+        let x = xc + radius*(cos(angle*Float.pi/180.0))
+        let y = yc + radius*(sin(angle*Float.pi/180.0))
+        return [x, y]
+    }
 
-    // GetArcPoints calculates a list of points for a given arc of a circle
-    // @param xc the x-coordinate of the circle's centre.
-    // @param yc the y-coordinate of the circle's centre
-    // @param r the radius of the circle.
-    // @param angle1 the start angle of the arc in degrees.
-    // @param angle2 the end angle of the arc in degrees.
-    // @param includeOrigin whether the origin should be included in the list (thus creating a pie shape).
-    private func getArcPoints(
-            _ xc: Float,
-            _ yc: Float,
-            _ r1: Float,
-            _ angle1: Float,
-            _ angle2: Float,
-            _ includeOrigin: Bool) -> [Point] {
-        var list = [Point]()
+    private func drawSlice(
+            _ page: Page,
+            _ fillColor: Int32,
+            _ xc: Float, _ yc: Float,
+            _ r1: Float, _ r2: Float,               // r1 > r2
+            _ a1: Float, _ a2: Float) -> Float {    // a1 > a2
+        page.setBrushColor(fillColor)
 
-        if includeOrigin {
-            list.append(Point(xc, yc))
-        }
+        var angle1 = a1 - 90.0
+        let angle2 = a2 - 90.0
 
-        var startAngle: Float = 0.0
-        var endAngle: Float = 0.0
-        if angle1 <= angle2 {
-            startAngle = angle1
-            endAngle = angle1 + 90
-            while endAngle < angle2 {
-                list.append(contentsOf: getBezierCurvePoints(xc, yc, r1, startAngle, endAngle))
-                startAngle += 90
-                endAngle += 90
+        var points1 = [[Float]]()
+        var points2 = [[Float]]()
+        while true {
+            if (angle2 - angle1) <= 90.0 {
+                var p0 = getPoint(xc, yc, r1, angle1)           // Start point
+                var p3 = getPoint(xc, yc, r1, angle2)           // End point
+                points1.append(contentsOf: getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]))
+                p0 = getPoint(xc, yc, r2, angle1)               // Start point
+                p3 = getPoint(xc, yc, r2, angle2)               // End point
+                points2.append(contentsOf: getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]))
+                break
+            } else {
+                var p0 = getPoint(xc, yc, r1, angle1)
+                var p3 = getPoint(xc, yc, r1, angle1 + 90.0)
+                points1.append(contentsOf: getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]))
+                p0 = getPoint(xc, yc, r2, angle1)
+                p3 = getPoint(xc, yc, r2, angle1 + 90.0)
+                points2.append(contentsOf: getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]))
+                angle1 += 90.0
             }
-            endAngle -= 90
-            list.append(contentsOf: getBezierCurvePoints(xc, yc, r1, endAngle, angle2))
         }
-        else {
-            startAngle = angle1
-            endAngle = angle1 - 90
-            while endAngle > angle2 {
-                list.append(contentsOf: getBezierCurvePoints(xc, yc, r1, startAngle, endAngle))
-                startAngle -= 90
-                endAngle -= 90
-            }
-            endAngle += 90
-            list.append(contentsOf: getBezierCurvePoints(xc, yc, r1, endAngle, angle2))
-        }
+        points2.reverse()
 
-        return list
-    }
-
-
-    // GetDonutPoints calculates a list of points for a given donut sector of a circle.
-    // @param xc the x-coordinate of the circle's centre.
-    // @param yc the y-coordinate of the circle's centre.
-    // @param r1 the inner radius of the donut.
-    // @param r2 the outer radius of the donut.
-    // @param angle1 the start angle of the donut sector in degrees.
-    // @param angle2 the end angle of the donut sector in degrees.
-    private func getDonutPoints(
-            _ xc: Float,
-            _ yc: Float,
-            _ r1: Float,
-            _ r2: Float,
-            _ angle1: Float,
-            _ angle2: Float) -> [Point] {
-        var list = [Point]()
-        list.append(contentsOf: getArcPoints(xc, yc, r1, angle1, angle2, false))
-        list.append(contentsOf: getArcPoints(xc, yc, r2, angle2, angle1, false))
-        return list
-    }
-
-
-    // AddSector -- TODO:
-    public func addSector(_ angle: Float, _ color: Int32) {
-        angles!.append(angle)
-        colors!.append(color)
-    }
-
-
-    /**
-     *  Draws this chart on the specified page.
-     *
-     *  @param page the page to draw this chart on.
-     */
-    @discardableResult
-    public func drawOn(_ page: Page?) -> [Float] {
-        var startAngle: Float = 0.0
-        var endAngle: Float = 0.0
-        var lastColorIndex = 0
+        page.moveTo(points1[0][0], points1[0][1])
         var i = 0
-        while i < angles!.count {
-            endAngle = startAngle + angles![i]
-            var list = [Point]()
-            if isDonutChart {
-                list.append(contentsOf: getDonutPoints(xc, yc, r1, r2, startAngle, endAngle))
-            }
-            else {
-                list.append(contentsOf: getArcPoints(xc, yc, r2, startAngle, endAngle, true))
-            }
-            // for (Point point : list) {
-            // 	point.drawOn(page)
-            // }
-            page!.setBrushColor(colors![i])
-            page!.drawPath(list, Operation.FILL)
-            startAngle = endAngle
-            lastColorIndex = i
-            i += 1
+        while i <= (points1.count - 4) {
+            page.curveTo(
+                    points1[i + 1][0], points1[i + 1][1],
+                    points1[i + 2][0], points1[i + 2][1],
+                    points1[i + 3][0], points1[i + 3][1])
+            i += 4
         }
-
-        if endAngle < 360.0 {
-            endAngle = 360.0
-            var list = [Point]()
-            if isDonutChart {
-                list.append(contentsOf: getDonutPoints(xc, yc, r1, r2, startAngle, endAngle))
-            }
-            else {
-                list.append(contentsOf: getArcPoints(xc, yc, r2, startAngle, endAngle, true))
-            }
-            // for (Point point : list) {
-            // 	point.drawOn(page)
-            // }
-            page!.setBrushColor(colors![lastColorIndex + 1])
-            page!.drawPath(list, Operation.FILL)
+        page.lineTo(points2[0][0], points2[0][1])
+        i = 0
+        while i <= (points2.count - 4) {
+            page.curveTo(
+                    points2[i + 1][0], points2[i + 1][1],
+                    points2[i + 2][0], points2[i + 2][1],
+                    points2[i + 3][0], points2[i + 3][1])
+            i += 4
         }
+        page.fillPath()
 
-        return [0.0, 0.0]
+        return a2
     }
 
+    public func drawOn(_ page: Page) {
+        var angle: Float = 0.0
+        for slice in slices! {
+            angle = drawSlice(page, slice.color, xc, yc, r1, r2, angle, angle + slice.angle)
+        }
+    }
 }   // End of DonutChart.swift
