@@ -26,7 +26,6 @@ package com.pdfjet;
 import java.util.*;
 
 public class DonutChart {
-
     Font f1;
     Font f2;
     Float xc;
