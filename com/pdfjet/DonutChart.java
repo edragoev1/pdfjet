@@ -27,19 +27,19 @@ import java.util.*;
 
 public class DonutChart {
 
-	Font f1;
+    Font f1;
     Font f2;
-	Float xc;
+    Float xc;
     Float yc;
     Float r1;
     Float r2;
-	List<Slice> slices;
+    List<Slice> slices;
     boolean isDonutChart = true;
     
     public DonutChart(Font f1, Font f2, boolean isDonutChart) {
-	    this.f1 = f1;
-	    this.f2 = f2;
-	    this.isDonutChart = isDonutChart;
+        this.f1 = f1;
+        this.f2 = f2;
+        this.isDonutChart = isDonutChart;
         this.slices = new ArrayList<Slice>();
     }
 
