@@ -53,9 +53,6 @@ public class DonutChart {
     public void setR1AndR2(Float r1, Float r2) {
         this.r1 = r1;
         this.r2 = r2;
-        if (this.r1 < 1.0) {
-            this.isDonutChart = false;
-        }
     }
 
     private List<Float[]> getControlPoints(
@@ -143,6 +140,6 @@ public class DonutChart {
     }
 
     public void drawOn(Page page) throws Exception {
-        drawSlice(page, Color.blue, 300f, 300f, 200f, 100f, 0f, 30f);
+        drawSlice(page, Color.blue, xc, yc, r1, r2, 0f, 30f);
     }
 }

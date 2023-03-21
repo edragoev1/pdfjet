@@ -82,8 +82,8 @@ public class Example_25 {
         line2.drawOn(page);
 
         DonutChart chart = new DonutChart(f1, f2, false);
-        chart.setR1AndR2(100f, 50f);
-        chart.setLocation(0f, 0f);
+        chart.setLocation(300f, 300f);
+        chart.setR1AndR2(200f, 100f);
         chart.addSector(30f, Color.azure);
         chart.addSector(60f, Color.peachpuff);
         chart.addSector(90f, Color.red);
