@@ -121,6 +121,12 @@ public class DonutChart {
         return points;
     }
 
+    private Float[] getPoint(Float xc, Float yc, Float radius, Float angle) {
+        Float x = xc + radius*((float) Math.cos(angle*Math.PI/180.0));
+        Float y = yc + radius*((float) Math.sin(angle*Math.PI/180.0));
+        return new Float[] {x, y};
+    }
+
     public void drawSlice(
             Page page,
             int fillColor,
@@ -135,24 +141,24 @@ public class DonutChart {
         Float angle1 = a1 - 90f;
         Float angle2 = a2 - 90f;
 
+        Float[] pc = new Float[] {xc, yc};
+
         // Start point coordinates
+        Float[] p0 = getPoint(xc, yc, r1, angle1);
         Float x0 = xc + r1*((float) Math.cos(angle1*Math.PI/180.0));
         Float y0 = yc + r1*((float) Math.sin(angle1*Math.PI/180.0));
         // End point coordinates
-        Float x3 = xc + r1*((float) Math.cos(angle2*Math.PI/180.0));
-        Float y3 = yc + r1*((float) Math.sin(angle2*Math.PI/180.0));
+        Float[] p3 = getPoint(xc, yc, r1, angle2);
 
-        List<Float[]> control1 = getControlPoints(xc, yc, x0, y0, x3, y3);
+        List<Float[]> control1 = getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
         points1.addAll(control1);
 
         // Start point coordinates
-        Float x4 = xc + r2*((float) Math.cos(angle1*Math.PI/180.0));
-        Float y4 = yc + r2*((float) Math.sin(angle1*Math.PI/180.0));
+        Float[] p4 = getPoint(xc, yc, r2, angle1);
         // End point coordinates
-        Float x7 = xc + r2*((float) Math.cos(angle2*Math.PI/180.0));
-        Float y7 = yc + r2*((float) Math.sin(angle2*Math.PI/180.0));
+        Float[] p7 = getPoint(xc, yc, r2, angle2);
 
-        List<Float[]> control2 = getControlPoints(xc, yc, x4, y4, x7, y7);
+        List<Float[]> control2 = getControlPoints(xc, yc, p4[0], p4[1], p7[0], p7[1]);
         Collections.reverse(control2);  // Very important!!
         points2.addAll(control2);
 
