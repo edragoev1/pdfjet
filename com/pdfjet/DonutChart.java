@@ -142,18 +142,15 @@ public class DonutChart {
         Float angle2 = a2 - 90f;
 
         Float[] pc = new Float[] {xc, yc};
-
         Float[] p0 = getPoint(xc, yc, r1, angle1);  // Start point
         Float[] p3 = getPoint(xc, yc, r1, angle2);  // End point
-
-        List<Float[]> control1 = getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
+        List<Float[]> control1 = getControlPoints(pc[0], pc[1], p0[0], p0[1], p3[0], p3[1]);
         points1.addAll(control1);
 
         Float[] p4 = getPoint(xc, yc, r2, angle1);  // Start point
         Float[] p7 = getPoint(xc, yc, r2, angle2);  // End point
-
-        List<Float[]> control2 = getControlPoints(xc, yc, p4[0], p4[1], p7[0], p7[1]);
-        Collections.reverse(control2);  // Very important!!
+        List<Float[]> control2 = getControlPoints(pc[0], pc[1], p4[0], p4[1], p7[0], p7[1]);
+        Collections.reverse(control2);
         points2.addAll(control2);
 
         page.moveTo(p0[0], p0[1]);
