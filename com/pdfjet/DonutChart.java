@@ -53,6 +53,10 @@ public class DonutChart {
         this.r2 = r2;
     }
 
+    public void addSlice(Slice slice) {
+        this.slices.add(slice);
+    }
+
     private List<Float[]> getControlPoints(
             Float xc, Float yc,
             Float x0, Float y0,
@@ -87,7 +91,7 @@ public class DonutChart {
         return new Float[] {x, y};
     }
 
-    public float drawSlice(
+    private float drawSlice(
             Page page,
             int fillColor,
             Float xc, Float yc,
@@ -137,11 +141,7 @@ public class DonutChart {
         }
         page.fillPath();
 
-        return angle2;
-    }
-
-    public void addSlice(Slice slice) {
-        this.slices.add(slice);
+        return a2;
     }
 
     public void drawOn(Page page) throws Exception {
