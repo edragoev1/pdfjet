@@ -144,15 +144,11 @@ public class DonutChart {
         for (int i = 0; i < 3; i++) {
             Float[] p0 = getPoint(xc, yc, r1, angle1);  // Start point
             Float[] p3 = getPoint(xc, yc, r1, angle2);  // End point
-            List<Float[]> control1 =
-                    getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
-            points1.addAll(control1);
+            points1.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
 
             p0 = getPoint(xc, yc, r2, angle1);          // Start point
             p3 = getPoint(xc, yc, r2, angle2);          // End point
-            List<Float[]> control2 =
-                    getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
-            points2.addAll(control2);
+            points2.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
 
             angle1 += 30f;
             angle2 += 30f;
