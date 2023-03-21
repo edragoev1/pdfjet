@@ -79,6 +79,15 @@ public class Example_25 {
             line1.drawOn(page)
             line2.drawOn(page)
 
+            let chart = DonutChart(f1, f2, false)
+            chart.setLocation(300.0, 300.0)
+            chart.setR1AndR2(200.0, 100.0)
+            chart.addSlice(Slice(30.0, Color.red))
+            chart.addSlice(Slice(60.0, Color.green))
+            chart.addSlice(Slice(90.0, Color.blue))
+            chart.addSlice(Slice(180.0, Color.peachpuff))
+            chart.drawOn(page)
+
             pdf.complete()
         }
     }
