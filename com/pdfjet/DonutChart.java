@@ -106,7 +106,7 @@ public class DonutChart {
         Float angle1 = a1 - 90f;
         Float angle2 = a2 - 90f;
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 10; i++) {
             Float[] p0 = getPoint(xc, yc, r1, angle1);  // Start point
             Float[] p3 = getPoint(xc, yc, r1, angle2);  // End point
             points1.addAll(getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
