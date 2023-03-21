@@ -143,26 +143,20 @@ public class DonutChart {
 
         Float[] pc = new Float[] {xc, yc};
 
-        // Start point coordinates
-        Float[] p0 = getPoint(xc, yc, r1, angle1);
-        Float x0 = xc + r1*((float) Math.cos(angle1*Math.PI/180.0));
-        Float y0 = yc + r1*((float) Math.sin(angle1*Math.PI/180.0));
-        // End point coordinates
-        Float[] p3 = getPoint(xc, yc, r1, angle2);
+        Float[] p0 = getPoint(xc, yc, r1, angle1);  // Start point
+        Float[] p3 = getPoint(xc, yc, r1, angle2);  // End point
 
         List<Float[]> control1 = getControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]);
         points1.addAll(control1);
 
-        // Start point coordinates
-        Float[] p4 = getPoint(xc, yc, r2, angle1);
-        // End point coordinates
-        Float[] p7 = getPoint(xc, yc, r2, angle2);
+        Float[] p4 = getPoint(xc, yc, r2, angle1);  // Start point
+        Float[] p7 = getPoint(xc, yc, r2, angle2);  // End point
 
         List<Float[]> control2 = getControlPoints(xc, yc, p4[0], p4[1], p7[0], p7[1]);
         Collections.reverse(control2);  // Very important!!
         points2.addAll(control2);
 
-        page.moveTo(x0, y0);
+        page.moveTo(p0[0], p0[1]);
         for (int i = 0; i <= (points1.size() - 4); i += 4) {
             page.curveTo(
                     control1.get(i + 1)[0], control1.get(i + 1)[1],
