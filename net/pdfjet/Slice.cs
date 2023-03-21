@@ -25,8 +25,8 @@ using System;
 
 namespace PDFjet.NET {
 public class Slice {
-    float angle;
-    int color;
+    public float angle;
+    public int color;
 
     public Slice(float angle, int color) {
         this.angle = angle;

@@ -26,23 +26,20 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 public class DonutChart {
-
-	Font f1;
+    Font f1;
     Font f2;
-	// List<List<Point>> chartData;
-	float xc;
+    float xc;
     float yc;
     float r1;
     float r2;
-	List<float> angles = null;
-	List<Int32> colors = null;
+    List<Slice> slices;
     bool isDonutChart = true;
     
-
     public DonutChart(Font f1, Font f2, bool isDonutChart) {
-	    this.f1 = f1;
-	    this.f2 = f2;
-	    this.isDonutChart = true;
+        this.f1 = f1;
+        this.f2 = f2;
+        this.isDonutChart = isDonutChart;
+        this.slices = new List<Slice>();
     }
 
     public void SetLocation(float xc, float yc) {
@@ -53,146 +50,104 @@ public class DonutChart {
     public void SetR1AndR2(float r1, float r2) {
         this.r1 = r1;
         this.r2 = r2;
-        if (this.r1 < 1.0) {
-            this.isDonutChart = false;
-        }
     }
-    
-    private List<Point> GetBezierCurvePoints(float xc, float yc, float r, float angle1, float angle2) {
-        angle1 *= -1.0f;
-        angle2 *= -1.0f;
 
-        // Start point coordinates
-        float x1 = xc + r*((float) (Math.Cos(angle1)*(Math.PI/180.0)));
-        float y1 = yc + r*((float) (Math.Sin(angle1)*(Math.PI/180.0)));
-        // End point coordinates
-        float x4 = xc + r*((float) (Math.Cos(angle2)*(Math.PI/180.0)));
-        float y4 = yc + r*((float) (Math.Sin(angle2)*(Math.PI/180.0)));
-    
-        float ax = x1 - xc;
-        float ay = y1 - yc;
-        float bx = x4 - xc;
-        float by = y4 - yc;
+    public void AddSlice(Slice slice) {
+        this.slices.Add(slice);
+    }
+
+    private List<float[]> GetControlPoints(
+            float xc, float yc,
+            float x0, float y0,
+            float x3, float y3) {
+        List<float[]> points = new List<float[]>();
+
+        float ax = x0 - xc;
+        float ay = y0 - yc;
+        float bx = x3 - xc;
+        float by = y3 - yc;
         float q1 = ax*ax + ay*ay;
         float q2 = q1 + ax*bx + ay*by;
-    
         float k2 = 4f/3f * (((float) Math.Sqrt(2f*q1*q2)) - q2) / (ax*by - ay*bx);
-    
-        float x2 = xc + ax - k2*ay;
-        float y2 = yc + ay + k2*ax;
-        float x3 = xc + bx + k2*by;
-        float y3 = yc + by - k2*bx;
-    
-        List<Point> list = new List<Point>();
-        list.Add(new Point(x1, y1));
-        list.Add(new Point(x2, y2, Point.CONTROL_POINT));
-        list.Add(new Point(x3, y3, Point.CONTROL_POINT));
-        list.Add(new Point(x4, y4));
-    
-        return list;
+
+        // Control points coordinates
+        float x1 = xc + ax - k2*ay;
+        float y1 = yc + ay + k2*ax;
+        float x2 = xc + bx + k2*by;
+        float y2 = yc + by - k2*bx;
+
+        points.Add(new float[] {x0, y0});
+        points.Add(new float[] {x1, y1});
+        points.Add(new float[] {x2, y2});
+        points.Add(new float[] {x3, y3});
+
+        return points;
     }
 
-    // GetArcPoints calculates a list of points for a given arc of a circle
-    // @param xc the x-coordinate of the circle's centre.
-    // @param yc the y-coordinate of the circle's centre
-    // @param r the radius of the circle.
-    // @param angle1 the start angle of the arc in degrees.
-    // @param angle2 the end angle of the arc in degrees.
-    // @param includeOrigin whether the origin should be included in the list (thus creating a pie shape).
-    public List<Point> GetArcPoints(float xc, float yc, float r, float angle1, float angle2, bool includeOrigin) {
-        List<Point> list = new List<Point>();
+    private float[] GetPoint(float xc, float yc, float radius, float angle) {
+        float x = xc + radius*((float) Math.Cos(angle*Math.PI/180.0));
+        float y = yc + radius*((float) Math.Sin(angle*Math.PI/180.0));
+        return new float[] {x, y};
+    }
 
-        if (includeOrigin) {
-            list.Add(new Point(xc, yc));
-        }
+    private float DrawSlice(
+            Page page,
+            int fillColor,
+            float xc, float yc,
+            float r1, float r2,     // r1 > r2
+            float a1, float a2) {   // a1 > a2
+        page.SetBrushColor(fillColor);
 
-        float startAngle;
-        float endAngle;
-        if (angle1 <= angle2) {
-            startAngle = angle1;
-            endAngle = angle1 + 90;
-            while (endAngle < angle2) {
-                list.AddRange(GetBezierCurvePoints(xc, yc, r, startAngle, endAngle));
-                startAngle += 90;
-                endAngle += 90;
+        float angle1 = a1 - 90f;
+        float angle2 = a2 - 90f;
+
+        List<float[]> points1 = new List<float[]>();
+        List<float[]> points2 = new List<float[]>();
+        while (true) {
+            if ((angle2 - angle1) <= 90f) {
+                float[] p0 = GetPoint(xc, yc, r1, angle1);          // Start point
+                float[] p3 = GetPoint(xc, yc, r1, angle2);          // End point
+                points1.AddRange(GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                p0 = GetPoint(xc, yc, r2, angle1);                  // Start point
+                p3 = GetPoint(xc, yc, r2, angle2);                  // End point
+                points2.AddRange(GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                break;
+            } else {
+                float[] p0 = GetPoint(xc, yc, r1, angle1);
+                float[] p3 = GetPoint(xc, yc, r1, angle1 + 90f);
+                points1.AddRange(GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                p0 = GetPoint(xc, yc, r2, angle1);
+                p3 = GetPoint(xc, yc, r2, angle1 + 90f);
+                points2.AddRange(GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1]));
+                angle1 += 90f;
             }
-            endAngle -= 90;
-            list.AddRange(GetBezierCurvePoints(xc, yc, r, endAngle, angle2));
         }
-        else {
-            startAngle = angle1;
-            endAngle = angle1 - 90;
-            while (endAngle > angle2) {
-                list.AddRange(GetBezierCurvePoints(xc, yc, r, startAngle, endAngle));
-                startAngle -= 90;
-                endAngle -= 90;
-            }
-            endAngle += 90;
-            list.AddRange(GetBezierCurvePoints(xc, yc, r, endAngle, angle2));
+        points2.Reverse();
+
+        page.MoveTo(points1[0][0], points1[0][1]);
+        for (int i = 0; i <= (points1.Count - 4); i += 4) {
+            page.CurveTo(
+                    points1[i + 1][0], points1[i + 1][1],
+                    points1[i + 2][0], points1[i + 2][1],
+                    points1[i + 3][0], points1[i + 3][1]);
         }
+        page.LineTo(points2[0][0], points2[0][1]);
+        for (int i = 0; i <= (points2.Count - 4); i += 4) {
+            page.CurveTo(
+                    points2[i + 1][0], points2[i + 1][1],
+                    points2[i + 2][0], points2[i + 2][1],
+                    points2[i + 3][0], points2[i + 3][1]);
+        }
+        page.FillPath();
 
-        return list;
+        return a2;
     }
 
-    // GetDonutPoints calculates a list of points for a given donut sector of a circle.
-    // @param xc the x-coordinate of the circle's centre.
-    // @param yc the y-coordinate of the circle's centre.
-    // @param r1 the inner radius of the donut.
-    // @param r2 the outer radius of the donut.
-    // @param angle1 the start angle of the donut sector in degrees.
-    // @param angle2 the end angle of the donut sector in degrees.
-    private List<Point> GetDonutPoints(float xc, float yc, float r1, float r2, float angle1, float angle2) {
-        List<Point> list = new List<Point>();
-        list.AddRange(GetArcPoints(xc, yc, r1, angle1, angle2, false));
-        list.AddRange(GetArcPoints(xc, yc, r2, angle2, angle1, false));
-        return list;
-    }
-
-    // AddSector -- TODO:
-    public void AddSector(float angle, int color) {
-        this.angles.Add(angle);
-        this.colors.Add(color);
-    }
-
-    // DrawOn draws donut chart on the specified page.
     public void DrawOn(Page page) {
-        float startAngle = 0f;
-        float endAngle = 0f;
-        int lastColorIndex = 0;
-        for (int i = 0; i < angles.Count; i++) {
-            endAngle = startAngle + angles[i];
-            List<Point> list = new List<Point>();
-            if (isDonutChart) {
-                list.AddRange(GetDonutPoints(xc, yc, r1, r2, startAngle, endAngle));
-            }
-            else {
-                list.AddRange(GetArcPoints(xc, yc, r2, startAngle, endAngle, true));
-            }
-            // foreach (Point point in list) {
-            // 	point.drawOn(page);
-            // }
-            page.SetBrushColor(colors[i]);
-            page.DrawPath(list, Operation.FILL);
-            startAngle = endAngle;
-            lastColorIndex = i;
-        }
-
-        if (endAngle < 360f) {
-            endAngle = 360f;
-            List<Point> list = new List<Point>();
-            if (isDonutChart) {
-                list.AddRange(GetDonutPoints(xc, yc, r1, r2, startAngle, endAngle));
-            }
-            else {
-                list.AddRange(GetArcPoints(xc, yc, r2, startAngle, endAngle, true));
-            }
-            // foreach (Point point in list) {
-            // 	point.drawOn(page);
-            // }
-            page.SetBrushColor(colors[lastColorIndex + 1]);
-            page.DrawPath(list, Operation.FILL);
+        float angle = 0f;
+        foreach (Slice slice in slices) {
+            angle = DrawSlice(page, slice.color, xc, yc, r1, r2, angle, angle + slice.angle);
         }
     }
-
-}   // End of class DonutChart.cs
-}   // End of namespace PDFjet.NET
+}
+}
