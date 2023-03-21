@@ -31,6 +31,7 @@ SOFTWARE.
  */
 public class ColorMap {
     public let transparent: Int32 = -1
+    public let none: Int32 = -1
 
     public let aliceblue: Int32 = 0xf0f8ff
     public let antiquewhite: Int32 = 0xfaebd7
