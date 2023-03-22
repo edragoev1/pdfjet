@@ -1228,6 +1228,7 @@ public class PDF {
         while ((ch = inputStream.read()) != -1) {
             baos.write(ch);
         }
+        inputStream.close();
         byte[] buf = baos.toByteArray();
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
