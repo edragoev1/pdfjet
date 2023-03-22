@@ -63,7 +63,8 @@ class Example_51 {
             String footer = "Page " + (i + 1) + " of " + pages.size();
             Page page = new Page(pdf, pages.get(i));
             page.addResource(font, objects);
-            page.setBrushColor(Color.darkslategrey);
+            page.setBrushColor(Color.transparent);  // Required!
+            page.setBrushColor(Color.black);
             page.drawString(
                     font,
                     footer,
