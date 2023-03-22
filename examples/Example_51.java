@@ -6,6 +6,9 @@ import com.pdfjet.*;
 
 /**
  *  Example_51.java
+ * 
+ *  This example shows how to add "Page X of N" footer to every page
+ *  of PDF file. In this case we create new PDF and store in a buffer.
  */
 public class Example_51 {
     public Example_51(String fileNumber) throws Exception {
@@ -53,7 +56,6 @@ public class Example_51 {
         FileInputStream stream =
                 new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
         Font font = new Font(objects, stream, Font.STREAM);
-
         stream.close();
         font.setSize(12f);
 
