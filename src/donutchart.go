@@ -159,6 +159,6 @@ func (chart *DonutChart) DrawOn(page *Page) {
 			page, slice.color,
 			chart.xc, chart.yc,
 			chart.r1, chart.r2,
-			slice.angle, angle+slice.angle)
+			angle, angle+slice.angle)
 	}
 }

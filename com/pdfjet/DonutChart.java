@@ -146,7 +146,11 @@ public class DonutChart {
     public void drawOn(Page page) throws Exception {
         float angle = 0f;
         for (Slice slice : slices) {
-            angle = drawSlice(page, slice.color, xc, yc, r1, r2, angle, angle + slice.angle);
+            angle = drawSlice(
+                    page, slice.color,
+                    xc, yc,
+                    r1, r2,
+                    angle, angle + slice.angle);
         }
     }
 }
