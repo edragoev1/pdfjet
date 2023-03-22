@@ -87,7 +87,8 @@ public class Example_25 {
         chart.addSlice(new Slice(30f, Color.red));
         chart.addSlice(new Slice(60f, Color.green));
         chart.addSlice(new Slice(90f, Color.blue));
-        chart.addSlice(new Slice(180f, Color.peachpuff));
+        // chart.addSlice(new Slice(180f, Color.peachpuff));
+        chart.addSlice(new Slice("25%", Color.peachpuff));
         chart.drawOn(page);
 
         pdf.complete();

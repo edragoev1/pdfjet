@@ -31,4 +31,11 @@ public class Slice {
         this.angle = angle;
         this.color = color;
     }
+
+    public Slice(String percent, int color) {
+        Float value = Float.valueOf(
+                percent.substring(0, percent.length() - 1));
+        this.angle = 360f*value/100f;
+        this.color = color;
+    }
 }
