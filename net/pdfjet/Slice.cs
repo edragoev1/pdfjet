@@ -28,8 +28,15 @@ public class Slice {
     public float angle;
     public int color;
 
-    public Slice(float angle, int color) {
-        this.angle = angle;
+    public Slice(float percent, int color) {
+        this.angle = 360f*percent/100f;;
+        this.color = color;
+    }
+
+    public Slice(String percent, int color) {
+        float value = float.Parse(
+                percent.Substring(0, percent.Length - 1));
+        this.angle = 360f*value/100f;
         this.color = color;
     }
 }

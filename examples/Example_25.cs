@@ -84,10 +84,10 @@ public class Example_25 {
         DonutChart chart = new DonutChart(f1, f2, false);
         chart.SetLocation(300f, 300f);
         chart.SetR1AndR2(200f, 100f);
-        chart.AddSlice(new Slice(30f, Color.red));
-        chart.AddSlice(new Slice(60f, Color.green));
-        chart.AddSlice(new Slice(90f, Color.blue));
-        chart.AddSlice(new Slice(180f, Color.peachpuff));
+        chart.AddSlice(new Slice(10f, Color.red));
+        chart.AddSlice(new Slice(20f, Color.green));
+        chart.AddSlice(new Slice(30f, Color.blue));
+        chart.AddSlice(new Slice(40f, Color.peachpuff));
         chart.DrawOn(page);
 
         pdf.Complete();
