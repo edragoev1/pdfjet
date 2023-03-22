@@ -28,14 +28,14 @@ public class Slice {
     int color;
 
     public Slice(Float percent, int color) {
-        this.angle = 360f*percent/100f;;
+        this.angle = percent*3.6f;
         this.color = color;
     }
 
     public Slice(String percent, int color) {
         Float value = Float.valueOf(
                 percent.substring(0, percent.length() - 1));
-        this.angle = 360f*value/100f;
+        this.angle = value*3.6f;
         this.color = color;
     }
 }

@@ -29,9 +29,9 @@ type Slice struct {
 	color int32
 }
 
-func NewSlice(angle float32, color int32) *Slice {
+func NewSlice(percent float32, color int32) *Slice {
 	slice := new(Slice)
-	slice.angle = angle
+	slice.angle = percent*3.6
 	slice.color = color
 	return slice
 }

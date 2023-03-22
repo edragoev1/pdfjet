@@ -28,14 +28,7 @@ public class Slice {
     var color: Int32
 
     public init(_ percent: Float32, _ color: Int32) {
-        self.angle = 360.0*percent/100.0
+        self.angle = percent*3.6
         self.color = color
     }
-/*
-    public init(_ percent: String, _ color: Int32) {
-        let value = Float(percent.substring(0, percent.length() - 1))
-        self.angle = 360.0*value/100.0
-        self.color = color
-    }
-*/
 }
