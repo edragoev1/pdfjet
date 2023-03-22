@@ -53,6 +53,7 @@ public class Example_51 {
         FileInputStream stream =
                 new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
         Font font = new Font(objects, stream, Font.STREAM);
+
         stream.close();
         font.setSize(12f);
 
