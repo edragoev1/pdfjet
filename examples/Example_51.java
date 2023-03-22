@@ -9,7 +9,7 @@ import com.pdfjet.*;
  */
 class Example_51 {
 
-    public Example_51(String fileNumber, String fileName) throws Exception {
+    public Example_51(String fileNumber) throws Exception {
 
         ByteArrayOutputStream buf1 = new ByteArrayOutputStream();
         PDF pdf = new PDF(buf1);
@@ -78,7 +78,7 @@ class Example_51 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        new Example_51("51", "rc65-16e.pdf");
+        new Example_51("51");
         long time1 = System.currentTimeMillis();
         System.out.println("Example_51 => " + (time1 - time0));
     }
