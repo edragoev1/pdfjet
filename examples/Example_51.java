@@ -21,6 +21,7 @@ class Example_51 {
         box.setColor(Color.red);
         box.setFillShape(true);
         box.drawOn(page);
+        page.setBrushColor(Color.black);
 
         page = new Page(pdf, Letter.PORTRAIT);
         box = new Box();
@@ -29,6 +30,7 @@ class Example_51 {
         box.setColor(Color.green);
         box.setFillShape(true);
         box.drawOn(page);
+        page.setBrushColor(Color.black);
 
         page = new Page(pdf, Letter.PORTRAIT);
         box = new Box();
@@ -37,6 +39,7 @@ class Example_51 {
         box.setColor(Color.blue);
         box.setFillShape(true);
         box.drawOn(page);
+        page.setBrushColor(Color.black);
 
         pdf.complete();
 
@@ -62,7 +65,6 @@ class Example_51 {
         for (int i = 0; i < pages.size(); i++) {
             String footer = "Page " + (i + 1) + " of " + pages.size();
             Page page = new Page(pdf, pages.get(i));
-            page.setBrushColor(Color.black);
             page.addResource(font, objects);
             page.drawString(
                     font,
