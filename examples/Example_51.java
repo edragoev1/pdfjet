@@ -7,10 +7,8 @@ import com.pdfjet.*;
 /**
  *  Example_51.java
  */
-class Example_51 {
-
+public class Example_51 {
     public Example_51(String fileNumber) throws Exception {
-
         ByteArrayOutputStream buf1 = new ByteArrayOutputStream();
         PDF pdf = new PDF(buf1);
         Page page = new Page(pdf, Letter.PORTRAIT);

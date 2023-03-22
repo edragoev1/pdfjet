@@ -1,13 +1,10 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_48.java
- *
  */
 public class Example_48 {
 
