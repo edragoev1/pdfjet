@@ -11,23 +11,58 @@ class Example_51 {
 
     public Example_51(String fileNumber, String fileName) throws Exception {
 
-        PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("Example_" + fileNumber + ".pdf")));
+        ByteArrayOutputStream buf1 = new ByteArrayOutputStream();
+        PDF pdf = new PDF(buf1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        BufferedInputStream bis = new BufferedInputStream(
-                new FileInputStream("data/testPDFs/" + fileName));
+        Box box = new Box();
+        box.setLocation(50f, 50f);
+        box.setSize(100.0f, 100.0f);
+        box.setColor(Color.red);
+        box.setFillShape(true);
+        box.drawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        box = new Box();
+        box.setLocation(50f, 50f);
+        box.setSize(100.0f, 100.0f);
+        box.setColor(Color.green);
+        box.setFillShape(true);
+        box.drawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        box = new Box();
+        box.setLocation(50f, 50f);
+        box.setSize(100.0f, 100.0f);
+        box.setColor(Color.blue);
+        box.setFillShape(true);
+        box.drawOn(page);
+
+        pdf.complete();
+
+        BufferedOutputStream buf2 = new BufferedOutputStream(
+                new FileOutputStream("Example_" + fileNumber + ".pdf"));
+        addFooterToPDF(buf1, buf2);
+    }
+
+    public void addFooterToPDF(
+            ByteArrayOutputStream buf, OutputStream outputStream) throws Exception {
+        PDF pdf = new PDF(outputStream);
+        ByteArrayInputStream bis = new ByteArrayInputStream(buf.toByteArray());
         List<PDFobj> objects = pdf.read(bis);
         bis.close();
 
-        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
+        FileInputStream stream =
+                new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
         Font font = new Font(objects, stream, Font.STREAM);
         stream.close();
-        font.setSize(14f);
+        font.setSize(12f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);
         for (int i = 0; i < pages.size(); i++) {
             String footer = "Page " + (i + 1) + " of " + pages.size();
             Page page = new Page(pdf, pages.get(i));
+            page.setBrushColor(Color.black);
             page.addResource(font, objects);
             page.drawString(
                     font,
@@ -37,7 +72,6 @@ class Example_51 {
             page.complete(objects);
         }
         pdf.addObjects(objects);
-
         pdf.complete();
     }
 
@@ -47,5 +81,4 @@ class Example_51 {
         long time1 = System.currentTimeMillis();
         System.out.println("Example_51 => " + (time1 - time0));
     }
-
 }   // End of Example_51.java
