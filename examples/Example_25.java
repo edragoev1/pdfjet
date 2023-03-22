@@ -84,11 +84,10 @@ public class Example_25 {
         DonutChart chart = new DonutChart(f1, f2, false);
         chart.setLocation(300f, 300f);
         chart.setR1AndR2(200f, 100f);
-        chart.addSlice(new Slice(30f, Color.red));
-        chart.addSlice(new Slice(60f, Color.green));
-        chart.addSlice(new Slice(90f, Color.blue));
-        // chart.addSlice(new Slice(180f, Color.peachpuff));
-        chart.addSlice(new Slice("25%", Color.peachpuff));
+        chart.addSlice(new Slice(10f, Color.red));
+        chart.addSlice(new Slice(20f, Color.green));
+        chart.addSlice(new Slice(30f, Color.blue));
+        chart.addSlice(new Slice(40f, Color.peachpuff));
         chart.drawOn(page);
 
         pdf.complete();

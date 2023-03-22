@@ -27,8 +27,8 @@ public class Slice {
     Float angle;
     int color;
 
-    public Slice(Float angle, int color) {
-        this.angle = angle;
+    public Slice(Float percent, int color) {
+        this.angle = 360f*percent/100f;;
         this.color = color;
     }
 
