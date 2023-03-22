@@ -205,8 +205,7 @@ func xMarkCheckBox(page *pdfjet.Page, x, y, diagonal float32) {
 
 func stripSpacesAndDashes(str string) string {
 	var buf strings.Builder
-	runes := []rune(str)
-	for _, ch := range runes {
+	for _, ch := range str {
 		if ch != ' ' && ch != '-' {
 			buf.WriteRune(ch)
 		}
