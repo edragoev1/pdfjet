@@ -1,0 +1,51 @@
+package examples;
+
+import java.io.*;
+import java.util.*;
+import com.pdfjet.*;
+
+/**
+ *  Example_51.java
+ */
+class Example_51 {
+
+    public Example_51(String fileNumber, String fileName) throws Exception {
+
+        PDF pdf = new PDF(new BufferedOutputStream(
+                new FileOutputStream("Example_" + fileNumber + ".pdf")));
+
+        BufferedInputStream bis = new BufferedInputStream(
+                new FileInputStream("data/testPDFs/" + fileName));
+        List<PDFobj> objects = pdf.read(bis);
+        bis.close();
+
+        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
+        Font font = new Font(objects, stream, Font.STREAM);
+        stream.close();
+        font.setSize(14f);
+
+        List<PDFobj> pages = pdf.getPageObjects(objects);
+        for (int i = 0; i < pages.size(); i++) {
+            String footer = "Page " + (i + 1) + " of " + pages.size();
+            Page page = new Page(pdf, pages.get(i));
+            page.addResource(font, objects);
+            page.drawString(
+                    font,
+                    footer,
+                    (page.getWidth() - font.stringWidth(footer))/2f,
+                    page.getHeight() - 5f);
+            page.complete(objects);
+        }
+        pdf.addObjects(objects);
+
+        pdf.complete();
+    }
+
+    public static void main(String[] args) throws Exception {
+        long time0 = System.currentTimeMillis();
+        new Example_51("51", "rc65-16e.pdf");
+        long time1 = System.currentTimeMillis();
+        System.out.println("Example_51 => " + (time1 - time0));
+    }
+
+}   // End of Example_51.java
