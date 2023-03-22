@@ -10,7 +10,6 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -26,21 +25,19 @@ func Example18() {
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	// f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 	page.SetPenWidth(5.0)
 	page.SetBrushColor(0x353638)
 
-	donutChart := pdfjet.NewDonutChart(f1, f2)
-	donutChart.SetLocation(200.0, 200.0)
-	donutChart.SetR1AndR2(50.0, 100.0)
-	donutChart.AddSector(30.0, color.Darkblue)
-	donutChart.AddSector(90.0, color.Green)
-	donutChart.AddSector(60.0, color.Indigo)
-	donutChart.AddSector(120.0, color.Red)
-	donutChart.AddSector(60.0, color.Goldenrod)
+	donutChart := pdfjet.NewDonutChart()
+	donutChart.SetLocation(300.0, 300.0)
+	donutChart.SetR1AndR2(200.0, 100.0)
+	donutChart.AddSlice(pdfjet.NewSlice(30.0, color.Darkblue))
+	donutChart.AddSlice(pdfjet.NewSlice(90.0, color.Green))
+	donutChart.AddSlice(pdfjet.NewSlice(60.0, color.Indigo))
 	donutChart.DrawOn(page)
 
 	pdf.Complete()

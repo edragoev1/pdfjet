@@ -1,7 +1,7 @@
 package pdfjet
 
 /**
- * docutchart.go
+ * donutchart.go
  *
 Copyright 2023 Innovatics Inc.
 
@@ -26,26 +26,21 @@ SOFTWARE.
 
 import (
 	"math"
-
-	"github.com/edragoev1/pdfjet/src/operation"
 )
 
 // DonutChart is used for donut chart objects.
 type DonutChart struct {
-	f1, f2         *Font
-	chartData      [][]*Point
+	// f1, f2         *Font
 	xc, yc, r1, r2 float32
-	angles         []float32
-	colors         []int32
-	isDonutChart   bool
+	slices         []*Slice
 }
 
 // NewDonutChart creates donut chart object.
-func NewDonutChart(f1, f2 *Font) *DonutChart {
+func NewDonutChart( /* f1, f2 *Font */ ) *DonutChart {
 	chart := new(DonutChart)
-	chart.f1 = f1
-	chart.f2 = f2
-	chart.isDonutChart = true
+	chart.slices = make([]*Slice, 0)
+	// chart.f1 = f1
+	// chart.f2 = f2
 	return chart
 }
 
@@ -60,141 +55,110 @@ func (chart *DonutChart) SetLocation(xc, yc float32) *DonutChart {
 func (chart *DonutChart) SetR1AndR2(r1, r2 float32) *DonutChart {
 	chart.r1 = r1
 	chart.r2 = r2
-	if chart.r1 < 1.0 {
-		chart.isDonutChart = false
-	}
 	return chart
 }
 
-// GetBezierCurvePoints calculates the bezier curve points for a given arc of a circle.
-// @param xc the x-coordinate of the circle's centre.
-// @param yc the y-coordinate of the circle's centre.
-// @param angle1 the start angle of the arc in degrees.
-// @param angle2 the end angle of the arc in degrees.
-func (chart *DonutChart) GetBezierCurvePoints(xc, yc, r, angle1, angle2 float32) []*Point {
-	angle1 *= -1.0
-	angle2 *= -1.0
-	// Start point coordinates
-	x1 := xc + r*float32(math.Cos(float64(angle1)*(math.Pi/180)))
-	y1 := yc + r*float32(math.Sin(float64(angle1)*(math.Pi/180)))
-	// End point coordinates
-	x4 := xc + r*float32(math.Cos(float64(angle2)*(math.Pi/180)))
-	y4 := yc + r*float32(math.Sin(float64(angle2)*(math.Pi/180)))
+func (chart *DonutChart) AddSlice(slice *Slice) {
+	chart.slices = append(chart.slices, slice)
+}
 
-	ax := x1 - xc
-	ay := y1 - yc
-	bx := x4 - xc
-	by := y4 - yc
+func GetControlPoints(xc, yc, x0, y0, x3, y3 float32) [][2]float32 {
+	points := make([][2]float32, 0)
+
+	ax := x0 - xc
+	ay := y0 - yc
+	bx := x3 - xc
+	by := y3 - yc
 	q1 := ax*ax + ay*ay
 	q2 := q1 + ax*bx + ay*by
-
 	k2 := float32(4.0/3.0) * (float32(math.Sqrt(float64(2*q1*q2))) - q2) / (ax*by - ay*bx)
 
-	x2 := xc + ax - k2*ay
-	y2 := yc + ay + k2*ax
-	x3 := xc + bx + k2*by
-	y3 := yc + by - k2*bx
+	// Control points coordinates
+	x1 := xc + ax - k2*ay
+	y1 := yc + ay + k2*ax
+	x2 := xc + bx + k2*by
+	y2 := yc + by - k2*bx
 
-	list := make([]*Point, 0)
-	list = append(list, NewPoint(x1, y1))
-	list = append(list, NewControlPoint(x2, y2))
-	list = append(list, NewControlPoint(x3, y3))
-	list = append(list, NewPoint(x4, y4))
+	points = append(points, [2]float32{x0, y0})
+	points = append(points, [2]float32{x1, y1})
+	points = append(points, [2]float32{x2, y2})
+	points = append(points, [2]float32{x3, y3})
 
-	return list
+	return points
 }
 
-// GetArcPoints calculates a list of points for a given arc of a circle
-// @param xc the x-coordinate of the circle's centre.
-// @param yc the y-coordinate of the circle's centre
-// @param r the radius of the circle.
-// @param angle1 the start angle of the arc in degrees.
-// @param angle2 the end angle of the arc in degrees.
-// @param includeOrigin whether the origin should be included in the list (thus creating a pie shape).
-func (chart *DonutChart) GetArcPoints(xc, yc, r, angle1, angle2 float32, includeOrigin bool) []*Point {
-	list := make([]*Point, 0)
+func GetPoint(xc, yc, radius, angle float32) [2]float32 {
+	x := xc + radius*float32(math.Cos(float64(angle)*math.Pi/180.0))
+	y := yc + radius*float32(math.Sin(float64(angle)*math.Pi/180.0))
+	return [2]float32{x, y}
+}
 
-	if includeOrigin {
-		list = append(list, NewPoint(xc, yc))
-	}
-	if angle1 <= angle2 {
-		startAngle := angle1
-		endAngle := angle1 + 90
-		for endAngle < angle2 {
-			list = append(list, chart.GetBezierCurvePoints(xc, yc, r, startAngle, endAngle)...)
-			startAngle += 90
-			endAngle += 90
+func DrawSlice(
+	page *Page,
+	fillColor int32,
+	xc, yc, r1, r2, a1, a2 float32) float32 { // a1 > a2
+	page.SetBrushColor(fillColor)
+
+	angle1 := a1 - 90.0
+	angle2 := a2 - 90.0
+
+	points1 := make([][2]float32, 0)
+	points2 := make([][2]float32, 0)
+	for {
+		if (angle2 - angle1) <= 90.0 {
+			p0 := GetPoint(xc, yc, r1, angle1) // Start point
+			p3 := GetPoint(xc, yc, r1, angle2) // End point
+			s1 := GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1])
+			points1 = append(points1, s1...)
+			p0 = GetPoint(xc, yc, r2, angle1) // Start point
+			p3 = GetPoint(xc, yc, r2, angle2) // End point
+			s1 = GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1])
+			points2 = append(points2, s1...)
+			break
+		} else {
+			p0 := GetPoint(xc, yc, r1, angle1)
+			p3 := GetPoint(xc, yc, r1, angle1+90.0)
+			s1 := GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1])
+			points1 = append(points1, s1...)
+			p0 = GetPoint(xc, yc, r2, angle1)
+			p3 = GetPoint(xc, yc, r2, angle1+90.0)
+			s1 = GetControlPoints(xc, yc, p0[0], p0[1], p3[0], p3[1])
+			points2 = append(points2, s1...)
+			angle1 += 90.0
 		}
-		endAngle -= 90
-		list = append(list, chart.GetBezierCurvePoints(xc, yc, r, endAngle, angle2)...)
-	} else {
-		startAngle := angle1
-		endAngle := angle1 - 90
-		for endAngle > angle2 {
-			list = append(list, chart.GetBezierCurvePoints(xc, yc, r, startAngle, endAngle)...)
-			startAngle -= 90
-			endAngle -= 90
-		}
-		endAngle += 90
-		list = append(list, chart.GetBezierCurvePoints(xc, yc, r, endAngle, angle2)...)
+	}
+	// Reverse the points2 slice
+	for i, j := 0, len(points2)-1; i < j; i, j = i+1, j-1 {
+		points2[i], points2[j] = points2[j], points2[i]
 	}
 
-	return list
-}
+	page.MoveTo(points1[0][0], points1[0][1])
+	for i := 0; i <= (len(points1) - 4); i += 4 {
+		page.CurveTo(
+			points1[i+1][0], points1[i+1][1],
+			points1[i+2][0], points1[i+2][1],
+			points1[i+3][0], points1[i+3][1])
+	}
+	page.LineTo(points2[0][0], points2[0][1])
+	for i := 0; i <= (len(points2) - 4); i += 4 {
+		page.CurveTo(
+			points2[i+1][0], points2[i+1][1],
+			points2[i+2][0], points2[i+2][1],
+			points2[i+3][0], points2[i+3][1])
+	}
+	page.FillPath()
 
-// GetDonutPoints calculates a list of points for a given donut sector of a circle.
-// @param xc the x-coordinate of the circle's centre.
-// @param yc the y-coordinate of the circle's centre.
-// @param r1 the inner radius of the donut.
-// @param r2 the outer radius of the donut.
-// @param angle1 the start angle of the donut sector in degrees.
-// @param angle2 the end angle of the donut sector in degrees.
-func (chart *DonutChart) GetDonutPoints(xc, yc, r1, r2, angle1, angle2 float32) []*Point {
-	list := make([]*Point, 0)
-	list = append(list, chart.GetArcPoints(xc, yc, r1, angle1, angle2, false)...)
-	list = append(list, chart.GetArcPoints(xc, yc, r2, angle2, angle1, false)...)
-	return list
-}
-
-// AddSector -- TODO:
-func (chart *DonutChart) AddSector(angle float32, color int32) {
-	chart.angles = append(chart.angles, angle)
-	chart.colors = append(chart.colors, color)
+	return a2
 }
 
 // DrawOn draws donut chart on the specified page.
 func (chart *DonutChart) DrawOn(page *Page) {
-	startAngle := float32(0.0)
-	endAngle := float32(0.0)
-	lastColorIndex := 0
-	for i, angle := range chart.angles {
-		endAngle = startAngle + float32(angle)
-		list := make([]*Point, 0)
-		if chart.isDonutChart {
-			list = append(list, chart.GetDonutPoints(chart.xc, chart.yc, chart.r1, chart.r2, startAngle, endAngle)...)
-		} else {
-			list = append(list, chart.GetArcPoints(chart.xc, chart.yc, chart.r2, startAngle, endAngle, true)...)
-		}
-		// for _, point := range list {
-		// 	point.DrawOn(page)
-		// }
-		page.SetBrushColor(chart.colors[i])
-		page.DrawPath(list, operation.Fill)
-		startAngle = endAngle
-		lastColorIndex = i
-	}
-	if endAngle < 360 {
-		endAngle = 360
-		list := make([]*Point, 0)
-		if chart.isDonutChart {
-			list = append(list, chart.GetDonutPoints(chart.xc, chart.yc, chart.r1, chart.r2, startAngle, endAngle)...)
-		} else {
-			list = append(list, chart.GetArcPoints(chart.xc, chart.yc, chart.r2, startAngle, endAngle, true)...)
-		}
-		// for _, point := range list {
-		// 	point.DrawOn(page)
-		// }
-		page.SetBrushColor(chart.colors[lastColorIndex+1])
-		page.DrawPath(list, operation.Fill)
+	var angle float32 = 0.0
+	for _, slice := range chart.slices {
+		angle = DrawSlice(
+			page, slice.color,
+			chart.xc, chart.yc,
+			chart.r1, chart.r2,
+			slice.angle, angle+slice.angle)
 	}
 }

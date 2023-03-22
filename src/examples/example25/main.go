@@ -93,6 +93,15 @@ func Example25() {
 	line2 := pdfjet.NewLine(50.0, yy[1], 200.0, yy[1])
 	line2.DrawOn(page)
 
+	chart := pdfjet.NewDonutChart()
+	chart.SetLocation(300.0, 300.0)
+	chart.SetR1AndR2(200.0, 100.0)
+	chart.AddSlice(pdfjet.NewSlice(30.0, color.Red))
+	chart.AddSlice(pdfjet.NewSlice(60.0, color.Green))
+	chart.AddSlice(pdfjet.NewSlice(90.0, color.Blue))
+	chart.AddSlice(pdfjet.NewSlice(180.0, color.Peachpuff))
+	chart.DrawOn(page)
+
 	pdf.Complete()
 
 	f.Close()
