@@ -17,25 +17,20 @@ class Example_50 {
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_" + fileNumber + ".pdf")));
 
-        BufferedInputStream bis = new BufferedInputStream(
-                new FileInputStream("data/testPDFs/" + fileName));
-        List<PDFobj> objects = pdf.read(bis);
-        bis.close();
+        List<PDFobj> objects = pdf.read(
+                new BufferedInputStream(new FileInputStream("data/testPDFs/" + fileName)));
 
         FileInputStream stream = new FileInputStream("images/qrcode.png");
         Image image = new Image(objects, stream, ImageType.PNG);
-        stream.close();
         image.setLocation(495f, 65f);
         image.scaleBy(0.40f);
 
         stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
         Font f1 = new Font(objects, stream, Font.STREAM);
-        stream.close();
         f1.setSize(12f);
 
         stream = new FileInputStream("fonts/Droid/DroidSans-Bold.ttf.stream");
         Font f2 = new Font(objects, stream, Font.STREAM);
-        stream.close();
         f2.setSize(12f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);

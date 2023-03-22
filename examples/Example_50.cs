@@ -18,10 +18,8 @@ class Example_50 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_" + fileNumber + ".pdf", FileMode.Create)));
 
-        BufferedStream bis = new BufferedStream(
-                new FileStream("data/testPDFs/" + fileName, FileMode.Open));
-        List<PDFobj> objects = pdf.Read(bis);
-        bis.Close();
+        List<PDFobj> objects = pdf.Read(new BufferedStream(
+                new FileStream("data/testPDFs/" + fileName, FileMode.Open)));
 
         Image image = new Image(
                 objects,
@@ -31,15 +29,13 @@ class Example_50 {
         image.SetLocation(495f, 65f);
         image.ScaleBy(0.40f);
 
-        Font f1 = new Font(
-                objects,
+        Font f1 = new Font(objects,
                 new FileStream("fonts/Droid/DroidSans.ttf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);
         f1.SetSize(12f);
 
-        Font f2 = new Font(
-                objects,
+        Font f2 = new Font(objects,
                 new FileStream("fonts/Droid/DroidSans-Bold.ttf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);

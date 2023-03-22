@@ -1171,6 +1171,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         while ((ch = inputStream.ReadByte()) != -1) {
             baos.WriteByte((byte) ch);
         }
+        inputStream.Close();
         byte[] buf = baos.ToArray();
 
         List<PDFobj> objects1 = new List<PDFobj>();
