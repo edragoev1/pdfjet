@@ -21,8 +21,7 @@ class Example_50 {
         List<PDFobj> objects = pdf.Read(new BufferedStream(
                 new FileStream("data/testPDFs/" + fileName, FileMode.Open)));
 
-        Image image = new Image(
-                objects,
+        Image image = new Image(objects,
                 new BufferedStream(new FileStream(
                         "images/qrcode.png", FileMode.Open, FileAccess.Read)),
                 ImageType.PNG);
