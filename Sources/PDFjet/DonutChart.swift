@@ -154,7 +154,11 @@ public class DonutChart {
     public func drawOn(_ page: Page) {
         var angle: Float = 0.0
         for slice in slices! {
-            angle = drawSlice(page, slice.color, xc, yc, r1, r2, angle, angle + slice.angle)
+            angle = drawSlice(
+                    page, slice.color,
+                    xc, yc,
+                    r1, r2,
+                    angle, angle + slice.angle)
         }
     }
 }   // End of DonutChart.swift

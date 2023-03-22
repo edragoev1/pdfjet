@@ -146,7 +146,11 @@ public class DonutChart {
     public void DrawOn(Page page) {
         float angle = 0f;
         foreach (Slice slice in slices) {
-            angle = DrawSlice(page, slice.color, xc, yc, r1, r2, angle, angle + slice.angle);
+            angle = DrawSlice(
+                    page, slice.color,
+                    xc, yc,
+                    r1, r2,
+                    angle, angle + slice.angle);
         }
     }
 }
