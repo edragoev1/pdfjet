@@ -49,14 +49,13 @@ public class Example_51 {
     public void addFooterToPDF(
             ByteArrayOutputStream buf, OutputStream outputStream) throws Exception {
         PDF pdf = new PDF(outputStream);
-        ByteArrayInputStream bis = new ByteArrayInputStream(buf.toByteArray());
-        List<PDFobj> objects = pdf.read(bis);
-        bis.close();
+        ByteArrayInputStream bais = new ByteArrayInputStream(buf.toByteArray());
+        List<PDFobj> objects = pdf.read(bais);
+        bais.close();
 
         FileInputStream stream =
                 new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
         Font font = new Font(objects, stream, Font.STREAM);
-        stream.close();
         font.setSize(12f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);
