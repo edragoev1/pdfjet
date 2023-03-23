@@ -25,14 +25,14 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace PDFjet.NET {
 /**
  * This program optimizes .otf and .ttf fonts by converting them to
  * .otf.stream and .ttf.stream fonts that can be embedded much faster in PDF
  * that the original fonts.
  */
+namespace PDFjet.NET {
 public class OptimizeOTF {
-    private static void optimize(String fileName) {
+    private static void ConvertFontFile(String fileName) {
         FileStream fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
         OTF otf = new OTF(fis);
         fis.Close();
@@ -124,30 +124,28 @@ public class OptimizeOTF {
         stream.WriteByte((byte) (i >>  8));
         stream.WriteByte((byte) i);
     }
-
-    public static void Main(String[] args) {
 /*
-Use this code to streamline fonts in bulk.
+    public static void Main(String[] args) {
+        // FileAttributes attr = File.GetAttributes(args[0]);
+        // if (attr.HasFlag(FileAttributes.Directory)) {
+        //     String[] list = Directory.GetFiles(args[0]);
+        //     foreach (String fileName in list) {
+        //         if (fileName.EndsWith(".ttf") || fileName.EndsWith(".otf")) {
+        //             Console.WriteLine("Reading: " + fileName);
+        //             ConvertFontFile(args[0] + "/" + fileName);
+        //             Console.WriteLine("Writing: " + fileName + ".stream");
+        //         }
+        //     }
+        // } else {
+        //     Console.WriteLine("Reading: " + args[0]);
+        //     ConvertFontFile(args[0]);
+        //     Console.WriteLine("Writing: " + args[0] + ".stream");
+        // }
 
-        File file = new File(args[0]);
-        if (file.isDirectory()) {
-            String path = file.getPath();
-            String[] list = file.list();
-            for (String fileName : list) {
-                if (fileName.EndsWith(".ttf") || fileName.EndsWith(".otf")) {
-                    Console.WriteLine(fileName);
-                    ConvertFontFile(path + File.separator + fileName);
-                }
-            }
-        }
-        else {
-            ConvertFontFile(args[0]);
-        }
-*/
-        optimize(args[0]);
-        // TODO: Add code that will allow optimization of both OTF and PNG
-        // based on argument --file-type=png or --file-type=otf
-        // OptimizePNG.optimize(args[0]);
+        Console.WriteLine("Reading: " + args[0]);
+        ConvertFontFile(args[0]);
+        Console.WriteLine("Writing: " + args[0] + ".stream");
     }
-}   // End of StreamlineOTF.cs
-}   // End of namespace util
+*/
+}   // End of OptimizeOTF.cs
+}   // End of namespace PDFjet.NET
