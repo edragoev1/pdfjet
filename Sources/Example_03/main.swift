@@ -25,12 +25,6 @@ public class Example_03 {
         box.drawOn(page)
         try page.addFooter(TextLine(f1, "And this is a footer."))
 
-/*
-        let image1 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/ee-map.png")!,
-                ImageType.PNG)
-*/
         let image1 = try Image(
                 pdf,
                 InputStream(fileAtPath: "images/ee-map.png.stream")!,
