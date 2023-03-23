@@ -43,7 +43,7 @@ public class Example_51 {
         pdf.Complete();
 
         BufferedStream buf2 = new BufferedStream(new FileStream(
-                "Example_" + fileNumber + ".pdf", FileMode.Open, FileAccess.Write));
+                "Example_" + fileNumber + ".pdf", FileMode.Create, FileAccess.Write));
         AddFooterToPDF(buf1, buf2);
     }
 
