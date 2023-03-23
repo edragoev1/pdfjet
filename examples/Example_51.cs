@@ -8,6 +8,8 @@ using PDFjet.NET;
 /**
  *  Example_51.cs
  *
+ *  This example shows how to add "Page X of N" footer to every page of
+ *  the PDF file. In this case we create new PDF and store it in a buffer.
  */
 public class Example_51 {
     public Example_51(String fileNumber) {
