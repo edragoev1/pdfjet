@@ -126,25 +126,21 @@ public class OptimizeOTF {
     }
 
     public static void Main(String[] args) {
-        // FileAttributes attr = File.GetAttributes(args[0]);
-        // if (attr.HasFlag(FileAttributes.Directory)) {
-        //     String[] list = Directory.GetFiles(args[0]);
-        //     foreach (String fileName in list) {
-        //         if (fileName.EndsWith(".ttf") || fileName.EndsWith(".otf")) {
-        //             Console.WriteLine("Reading: " + fileName);
-        //             ConvertFontFile(args[0] + "/" + fileName);
-        //             Console.WriteLine("Writing: " + fileName + ".stream");
-        //         }
-        //     }
-        // } else {
-        //     Console.WriteLine("Reading: " + args[0]);
-        //     ConvertFontFile(args[0]);
-        //     Console.WriteLine("Writing: " + args[0] + ".stream");
-        // }
-
-        Console.WriteLine("Reading: " + args[0]);
-        ConvertFontFile(args[0]);
-        Console.WriteLine("Writing: " + args[0] + ".stream");
+        FileAttributes attr = File.GetAttributes(args[0]);
+        if (attr.HasFlag(FileAttributes.Directory)) {
+            String[] list = Directory.GetFiles(args[0]);
+            foreach (String fileName in list) {
+                if (fileName.EndsWith(".ttf") || fileName.EndsWith(".otf")) {
+                    Console.WriteLine("Reading: " + fileName);
+                    ConvertFontFile(args[0] + "/" + fileName);
+                    Console.WriteLine("Writing: " + fileName + ".stream");
+                }
+            }
+        } else {
+            Console.WriteLine("Reading: " + args[0]);
+            ConvertFontFile(args[0]);
+            Console.WriteLine("Writing: " + args[0] + ".stream");
+        }
     }
 }   // End of OptimizeOTF.cs
 }   // End of namespace PDFjet.NET
