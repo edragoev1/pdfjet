@@ -124,7 +124,7 @@ public class OptimizeOTF {
         stream.WriteByte((byte) (i >>  8));
         stream.WriteByte((byte) i);
     }
-/*
+
     public static void Main(String[] args) {
         // FileAttributes attr = File.GetAttributes(args[0]);
         // if (attr.HasFlag(FileAttributes.Directory)) {
@@ -146,6 +146,5 @@ public class OptimizeOTF {
         ConvertFontFile(args[0]);
         Console.WriteLine("Writing: " + args[0] + ".stream");
     }
-*/
 }   // End of OptimizeOTF.cs
 }   // End of namespace PDFjet.NET
