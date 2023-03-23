@@ -39,7 +39,7 @@ public class Example_51 {
     }
 
     public func AddFooterToPDF(_ fileNumber: String) throws {
-        let stream = OutputStream(toFileAtPath: "Example_1\(fileNumber).pdf", append: false)!
+        let stream = OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false)!
         var pdf = PDF(stream)
         var objects = try pdf.read(
                 from: InputStream(fileAtPath: "temp.pdf")!)
