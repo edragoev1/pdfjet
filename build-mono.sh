@@ -50,6 +50,7 @@ mcs -warn:2 -debug examples/Example_47.cs -reference:PDFjet.dll
 mcs -warn:2 -debug examples/Example_48.cs -reference:PDFjet.dll
 mcs -warn:2 -debug examples/Example_49.cs -reference:PDFjet.dll
 mcs -warn:2 -debug examples/Example_50.cs -reference:PDFjet.dll
+mcs -warn:2 -debug examples/Example_51.cs -reference:PDFjet.dll
 
 chmod 777 examples/Example_??.exe
 mv examples/Example_??.exe .
@@ -104,3 +105,4 @@ mono --debug Example_47.exe
 mono --debug Example_48.exe
 mono --debug Example_49.exe
 mono --debug Example_50.exe
+mono --debug Example_51.exe

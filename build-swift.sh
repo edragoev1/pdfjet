@@ -48,3 +48,4 @@ swift run --configuration release Example_47
 swift run --configuration release Example_48
 swift run --configuration release Example_49
 swift run --configuration release Example_50
+swift run --configuration release Example_51

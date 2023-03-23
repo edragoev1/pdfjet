@@ -198,3 +198,7 @@ dotnet run
 rm -rf obj
 dotnet build PDFjet.csproj /p:StartupObject=Example_50
 dotnet run
+
+rm -rf obj
+dotnet build PDFjet.csproj /p:StartupObject=Example_51
+dotnet run

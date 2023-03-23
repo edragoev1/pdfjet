@@ -51,6 +51,7 @@
 /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_48.java
 /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_49.java
 /opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_50.java
+/opt/jdk1.5.0_22/bin/javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_51.java
 
 /opt/jdk1.5.0_22/bin/java -cp .:PDFjet.jar examples.Example_01
 /opt/jdk1.5.0_22/bin/java -cp .:PDFjet.jar examples.Example_02
@@ -102,3 +103,4 @@
 /opt/jdk1.5.0_22/bin/java -cp .:PDFjet.jar examples.Example_48
 /opt/jdk1.5.0_22/bin/java -cp .:PDFjet.jar examples.Example_49
 /opt/jdk1.5.0_22/bin/java -cp .:PDFjet.jar examples.Example_50
+/opt/jdk1.5.0_22/bin/java -cp .:PDFjet.jar examples.Example_51

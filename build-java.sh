@@ -51,6 +51,7 @@ javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_47.java
 javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_48.java
 javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_49.java
 javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_50.java
+javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_51.java
 
 java -cp .:PDFjet.jar examples.Example_01
 java -cp .:PDFjet.jar examples.Example_02
@@ -102,3 +103,4 @@ java -cp .:PDFjet.jar examples.Example_47
 java -cp .:PDFjet.jar examples.Example_48
 java -cp .:PDFjet.jar examples.Example_49
 java -cp .:PDFjet.jar examples.Example_50
+java -cp .:PDFjet.jar examples.Example_51
