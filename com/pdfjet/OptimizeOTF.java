@@ -143,24 +143,22 @@ public class OptimizeOTF {
      * @throws Exception if there is a problem
      */
     public static void main(String[] args) throws Exception {
-/*
-Use this code to streamline fonts in bulk.
-
         File file = new File(args[0]);
         if (file.isDirectory()) {
             String path = file.getPath();
             String[] list = file.list();
             for (String fileName : list) {
                 if (fileName.endsWith(".ttf") || fileName.endsWith(".otf")) {
-                    System.out.println(fileName);
+                    System.out.println("Reading: " + fileName);
                     convertFontFile(path + File.separator + fileName);
+                    System.out.println("Writing: " + fileName + ".stream");
                 }
             }
         }
         else {
+            System.out.println("Reading: " + args[0]);
             convertFontFile(args[0]);
+            System.out.println("Writing: " + args[0] + ".stream");
         }
-*/
-        convertFontFile(args[0]);
     }
 }

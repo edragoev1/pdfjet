@@ -356,8 +356,10 @@ public class OTF {
      * @throws Exception if there is a problem
      */
     public static void main(String[] args) throws Exception {
+System.out.println("we should be here!");
         File file = new File(args[0]);
         if (file.isDirectory()) {
+            System.out.println("and here!");
             String path = file.getPath();
             String[] list = file.list();
             for (String fileName : list) {

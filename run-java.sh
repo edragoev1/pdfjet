@@ -6,4 +6,5 @@ jar cf PDFjet.jar -C out/production .
 javac -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_$1.java
 java -cp .:PDFjet.jar examples.Example_$1
 
-mupdf Example_$1.pdf
+# mupdf Example_$1.pdf
+evince Example_$1.pdf
