@@ -609,7 +609,6 @@ public class Image : Drawable {
             pdf.append("/Type /XObject\n")
             pdf.append("/Subtype /Image\n")
             pdf.append("/Filter /FlateDecode\n")
-            // pdf.append("/Filter /LZWDecode\n")
             pdf.append("/Width ")
             pdf.append(Int(w!))
             pdf.append("\n")
@@ -637,7 +636,6 @@ public class Image : Drawable {
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
         pdf.append("/Filter /FlateDecode\n")
-        // pdf.append("/Filter /LZWDecode\n")
         if alpha != 0 {
             pdf.append("/SMask ")
             pdf.append(objNumber!)
