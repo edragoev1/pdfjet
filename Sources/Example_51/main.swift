@@ -2,7 +2,10 @@ import Foundation
 import PDFjet
 
 ///
-/// Example_51.swift
+/// Example_51.java
+///  
+/// This example shows how to add "Page X of N" footer to every page of
+/// the PDF file. In this case we create new PDF and store it in a buffer.
 ///
 public class Example_51 {
     public init(_ fileNumber: String) throws {

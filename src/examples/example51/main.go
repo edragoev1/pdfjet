@@ -13,7 +13,12 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example51 shows how to fill in an existing PDF form.
+//
+// Example_51.java
+//  
+// This example shows how to add "Page X of N" footer to every page of
+// the PDF file. In this case we create new PDF and store it in a buffer.
+//
 func Example51() {
 	file, err := os.Create("temp.pdf")
 	if err != nil {
@@ -21,11 +26,9 @@ func Example51() {
 	}
 	defer file.Close()
 	w := bufio.NewWriter(file)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
-
 	box := pdfjet.NewBox()
 	box.SetLocation(50.0, 50.0)
 	box.SetSize(100.0, 100.0)
