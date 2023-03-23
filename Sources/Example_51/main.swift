@@ -38,10 +38,10 @@ public class Example_51 {
 
         pdf.complete()
 
-        try AddFooterToPDF(fileNumber)
+        try addFooterToPDF(fileNumber)
     }
 
-    public func AddFooterToPDF(_ fileNumber: String) throws {
+    public func addFooterToPDF(_ fileNumber: String) throws {
         let stream = OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false)!
         var pdf = PDF(stream)
         var objects = try pdf.read(
