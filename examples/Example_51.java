@@ -54,7 +54,7 @@ public class Example_51 {
 
         Font font = new Font(
                 objects,
-                new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
+                new FileInputStream("fonts/RedHatText/RedHatText-Regular.ttf.stream"),
                 Font.STREAM);
         font.setSize(12f);
 
