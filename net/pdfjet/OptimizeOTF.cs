@@ -132,7 +132,7 @@ public class OptimizeOTF {
             foreach (String fileName in list) {
                 if (fileName.EndsWith(".ttf") || fileName.EndsWith(".otf")) {
                     Console.WriteLine("Reading: " + fileName);
-                    ConvertFontFile(args[0] + "/" + fileName);
+                    ConvertFontFile(fileName);
                     Console.WriteLine("Writing: " + fileName + ".stream");
                 }
             }
