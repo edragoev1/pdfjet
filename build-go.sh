@@ -50,6 +50,7 @@ go build -o ../Example_47.exe examples/example47/main.go
 go build -o ../Example_48.exe examples/example48/main.go
 go build -o ../Example_49.exe examples/example49/main.go
 go build -o ../Example_50.exe examples/example50/main.go
+go build -o ../Example_51.exe examples/example51/main.go
 
 cd ..
 
@@ -103,3 +104,4 @@ cd ..
 ./Example_48.exe
 ./Example_49.exe
 ./Example_50.exe
+./Example_51.exe
