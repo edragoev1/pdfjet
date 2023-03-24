@@ -12,7 +12,6 @@ import (
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -29,25 +28,17 @@ func Example08() {
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBoldOblique())
+	// f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	// f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBoldOblique())
+
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream")
 
 	f1.SetSize(7.0)
 	f2.SetSize(7.0)
 	f3.SetSize(7.0)
-
-	/*
-		f1 := new Font(pdf,
-				getClass().getResourceAsStream("fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-				Font.STREAM)
-		f2 := new Font(pdf,
-				getClass().getResourceAsStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-				Font.STREAM)
-		f3 := new Font(pdf,
-				getClass().getResourceAsStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
-				Font.STREAM)
-	*/
 
 	f, err := os.Open("images/fruit.jpg")
 	if err != nil {
