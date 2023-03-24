@@ -27,21 +27,8 @@ func Example45() {
 	pdf.SetLanguage("en-US")
 	pdf.SetTitle("Hello, World!")
 
-	f, err := os.Open("fonts/Droid/DroidSerif-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader := bufio.NewReader(f)
-	f1 := pdfjet.NewFontStream1(pdf, reader)
-
-	f, err = os.Open("fonts/Droid/DroidSerif-Italic.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f2 := pdfjet.NewFontStream1(pdf, reader)
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream")
 
 	f1.SetSize(14.0)
 	f2.SetSize(14.0)
@@ -142,7 +129,7 @@ func Example45() {
 		log.Fatal(err)
 	}
 	defer file1.Close()
-	reader = bufio.NewReader(file1)
+	reader := bufio.NewReader(file1)
 	image := pdfjet.NewImage(pdf, reader, imagetype.JPG)
 
 	image.SetLocation(70.0, 310.0)
