@@ -73,12 +73,16 @@ public class Example_34 {
         table.rightAlignNumbers();
 
         List<Page> pages = new ArrayList<Page>();
-        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        float[] lastPageXY = table.drawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
             page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
             pdf.addPage(page);
         }
+
+        TextLine textLine = new TextLine(f1, "Hello, World!");
+        textLine.setLocation(lastPageXY[0], lastPageXY[1] + f1.getBodyHeight());
+        textLine.drawOn(pages.get(pages.size() - 1));
 
         pdf.complete();
     }
