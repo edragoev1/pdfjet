@@ -227,15 +227,8 @@ private static char[] forms = new char[] {
         return buf3.ToString();
     }
 
-/*
+	
     public static String Reverse(String str) {
-        char[] buf = str.ToCharArray();
-        Array.Reverse(buf);
-        return new String(buf);
-    }
-*/
-
-	public static String Reverse(String str) {
         List<String> list = new List<String>();
         TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator(str);
         while (enumerator.MoveNext()) {
