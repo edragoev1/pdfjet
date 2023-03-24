@@ -4,5 +4,5 @@ mv examples/Example_$1.exe .
 chmod 777 Example_$1.exe
 mono --debug Example_$1.exe
 
-# evince Example_$1.pdf
-mupdf Example_$1.pdf
+# mupdf Example_$1.pdf
+evince Example_$1.pdf

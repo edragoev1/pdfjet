@@ -5,53 +5,68 @@ using System.Diagnostics;
 
 using PDFjet.NET;
 
-
 /**
  *  Example_18.cs
- *
+ *  This example shows how to write "Page X of N" footer on every page.
  */
 public class Example_18 {
-
     public Example_18() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_18.pdf", FileMode.Create)));
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font font = new Font(pdf,
+                new FileStream("fonts/RedHatText/RedHatText-Regular.ttf.stream",
+                        FileMode.Open,
+                        FileAccess.Read), Font.STREAM);
+        font.SetSize(12f);
 
-        page.SetPenWidth(5f);
-        page.SetBrushColor(0x353638);
+        List<Page> pages = new List<Page>();
+        Page page = new Page(pdf, A4.PORTRAIT, false);
 
-        float x1 = 300f;
-        float y1 = 300f;
-        float r1 = 50f;
-        float r2 = 50f;
+        Box box = new Box();
+        box.SetLocation(50f, 50f);
+        box.SetSize(100.0f, 100.0f);
+        box.SetColor(Color.red);
+        box.SetFillShape(true);
+        box.DrawOn(page);
+        pages.Add(page);
 
-        List<Point> path = new List<Point>();
+        page = new Page(pdf, Letter.PORTRAIT, false);
+        box = new Box();
+        box.SetLocation(50f, 50f);
+        box.SetSize(100.0f, 100.0f);
+        box.SetColor(Color.green);
+        box.SetFillShape(true);
+        box.DrawOn(page);
+        pages.Add(page);
 
-        List<Point> segment1 = PDFjet.NET.Path.GetCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_00_03);
-        List<Point> segment2 = PDFjet.NET.Path.GetCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_03_06);
-        List<Point> segment3 = PDFjet.NET.Path.GetCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_06_09);
+        page = new Page(pdf, Letter.PORTRAIT, false);
+        box = new Box();
+        box.SetLocation(50f, 50f);
+        box.SetSize(100.0f, 100.0f);
+        box.SetColor(Color.blue);
+        box.SetFillShape(true);
+        box.DrawOn(page);
+        pages.Add(page);
 
-        path.AddRange(segment1);
+        int numOfPages = pages.Count;
+        for (int i = 0; i < numOfPages; i++) {
+            page = pages[i];
+            String footer = "Page " + (i + 1) + " of " + numOfPages;
+            page.SetBrushColor(Color.black);
+            page.DrawString(
+                    font,
+                    footer,
+                    (page.GetWidth() - font.StringWidth(footer))/2f,
+                    (page.GetHeight() - 5f));
+        }
 
-        segment2.RemoveAt(0);
-        path.AddRange(segment2);
-
-        segment3.RemoveAt(0);
-        path.AddRange(segment3);
-
-        // page.DrawPath(path, Operation.FILL);
-        page.DrawPath(path, Operation.STROKE);
-
-        List<Point> segment4 = PDFjet.NET.Path.GetCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_09_12);
-        page.SetPenWidth(15f);
-        page.SetPenColor(Color.red);
-        page.DrawPath(segment4, Operation.STROKE);
+        for (int i = 0; i < numOfPages; i++) {
+            pdf.AddPage(pages[i]);
+        }
 
         pdf.Complete();
     }
-
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
