@@ -17,7 +17,7 @@ public class Example_18 {
         font.setSize(12.0)
 
         var pages = [Page]()
-        var page = Page(pdf, A4.PORTRAIT)
+        var page = Page(pdf, A4.PORTRAIT, false)
 
         var box = Box()
         box.setLocation(50.0, 50.0)
@@ -27,7 +27,7 @@ public class Example_18 {
         box.drawOn(page)
         pages.append(page)
 
-        page = Page(pdf, A4.PORTRAIT)
+        page = Page(pdf, A4.PORTRAIT, false)
         box = Box()
         box.setLocation(50.0, 50.0)
         box.setSize(100.0, 100.0)
@@ -36,7 +36,7 @@ public class Example_18 {
         box.drawOn(page)
         pages.append(page)
 
-        page = Page(pdf, A4.PORTRAIT)
+        page = Page(pdf, A4.PORTRAIT, false)
         box = Box()
         box.setLocation(50.0, 50.0)
         box.setSize(100.0, 100.0)
@@ -56,6 +56,10 @@ public class Example_18 {
                     (page.getWidth() - font.stringWidth(footer))/2.0,
                     (page.getHeight() - 5.0))
             i += 1
+        }
+
+        for page in pages {
+            pdf.addPage(page)
         }
 
         pdf.complete()
