@@ -19,35 +19,29 @@ public class Example_08 {
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_08.pdf")), Compliance.PDF_UA);
         pdf.setTitle("PDF/UA compliant PDF");
-/*
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+
+        Font f1 = new Font(
+                pdf,
+                new FileInputStream("fonts/RedHatText/RedHatText-Bold.ttf.stream"),
+                Font.STREAM);
         f1.setSize(7f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f2 = new Font(
+                pdf,
+                new FileInputStream("fonts/RedHatText/RedHatText-Regular.ttf.stream"),
+                Font.STREAM);
         f2.setSize(7f);
 
-        Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
-        f3.setSize(7f);
-*/
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-        f1.setSize(7f);
-
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-        f2.setSize(7f);
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
-        Font f3 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        Font f3 = new Font(
+                pdf,
+                new FileInputStream("fonts/RedHatText/RedHatText-BoldItalic.ttf.stream"),
+                Font.STREAM);
         f3.setSize(7f);
 
-        stream = new FileInputStream("images/fruit.jpg");
-        image1 = new Image(pdf, stream, ImageType.JPG);
-        stream.close();
+        image1 = new Image(
+                pdf,
+                new FileInputStream("images/fruit.jpg"),
+                ImageType.JPG);
         image1.scaleBy(0.20f);
 
         barCode = new BarCode(BarCode.CODE128, "Hello, World!");
