@@ -13,10 +13,8 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-//
 // Example_28.go
 // Example that shows how to use fallback font and the NotoSans symbols font.
-//
 func Example28() {
 	f, err := os.Create("Example_28.pdf")
 	if err != nil {
@@ -25,29 +23,9 @@ func Example28() {
 	w := bufio.NewWriter(f)
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	f, err = os.Open("fonts/Droid/DroidSans.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader := bufio.NewReader(f)
-	f1 := pdfjet.NewFontStream1(pdf, reader)
-
-	f, err = os.Open("fonts/Droid/DroidSansFallback.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f2 := pdfjet.NewFontStream1(pdf, reader)
-
-	f, err = os.Open("fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f3 := pdfjet.NewFontStream1(pdf, reader)
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream")
 
 	f1.SetSize(11.0)
 	f2.SetSize(11.0)
