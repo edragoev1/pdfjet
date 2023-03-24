@@ -20,7 +20,6 @@ class Example_20 {
         BufferedInputStream bis = new BufferedInputStream(
                 new FileInputStream("data/testPDFs/PDFjetLogo.pdf"));
         List<PDFobj> objects = pdf.read(bis);
-        bis.close();
 
         pdf.addResourceObjects(objects);
 

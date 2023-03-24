@@ -21,7 +21,6 @@ class Example_20 {
         BufferedStream bis = new BufferedStream(
                 new FileStream("data/testPDFs/PDFjetLogo.pdf", FileMode.Open));
         List<PDFobj> objects = pdf.Read(bis);
-        bis.Close();
 
         pdf.AddResourceObjects(objects);
 
