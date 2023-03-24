@@ -23,15 +23,13 @@ public class Example_07 {
                 Compliance.PDF_A_3B);
         pdf.setTitle("PDF/A-3B compliant PDF");
 
-/*
-        This code is slower and consumes a bit more memory:
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf");
-        Font f1 = new Font(pdf, stream);
-        stream.close();
-*/
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        // This code is slower and consumes a bit more memory:
+        // FileInputStream stream =
+        //         new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf");
+        // Font f1 = new Font(pdf, stream);
+        FileInputStream stream =
+                new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
 
         Page page = new Page(pdf, A4.LANDSCAPE);
 
