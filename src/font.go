@@ -25,8 +25,10 @@ SOFTWARE.
 */
 
 import (
+	"bufio"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/corefont"
@@ -287,6 +289,22 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 	font := new(Font)
 	registerOpenTypeFont(pdf, font, reader)
 	font.SetSize(defaultFontSize)
+	return font
+}
+
+func NewFontFromFile(pdf *PDF, filePath string) *Font {
+	var font *Font
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	reader := bufio.NewReader(f)
+	if strings.HasSuffix(filePath, ".stream") {
+		font = NewFontStream1(pdf, reader)
+	} else {
+		return NewFont(pdf, reader)
+	}
 	return font
 }
 

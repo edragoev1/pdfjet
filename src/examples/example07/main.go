@@ -25,15 +25,8 @@ func Example07(mode string) {
 	pdf := pdfjet.NewPDF(w, compliance.PDF_A_1B)
 	pdf.SetTitle("PDF/A-1B compliant PDF")
 
-	var f1 *pdfjet.Font
-	// Use .ttf.stream fonts
-	f, err = os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader := bufio.NewReader(f)
-	f1 = pdfjet.NewFontStream1(pdf, reader)
+	var f1 = pdfjet.NewFontFromFile(
+		pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Landscape)
 
