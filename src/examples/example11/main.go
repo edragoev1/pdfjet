@@ -24,13 +24,7 @@ func Example11() {
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	file, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	reader := bufio.NewReader(file)
-	f1 := pdfjet.NewFontStream1(pdf, reader)
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
