@@ -45,6 +45,10 @@ func Example28() {
 	reader = bufio.NewReader(f)
 	f3 := pdfjet.NewFontStream1(pdf, reader)
 
+	f1.SetSize(11.0)
+	f2.SetSize(11.0)
+	f3.SetSize(11.0)
+
 	page := pdfjet.NewPageAddTo(pdf, letter.Landscape)
 
 	f, err = os.Open("data/report.csv")
