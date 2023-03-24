@@ -6,9 +6,11 @@ do
         rm -rf obj
         dotnet build PDFjet.csproj /p:StartupObject=Example_0$i
         dotnet run
+        echo ""
     else
         rm -rf obj
         dotnet build PDFjet.csproj /p:StartupObject=Example_$i
         dotnet run
+        echo ""
     fi
 done
