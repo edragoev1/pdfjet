@@ -5,54 +5,69 @@ import java.util.*;
 
 import com.pdfjet.*;
 
-
 /**
  *  Example_18.java
  *
  */
-class Example_18 {
-
+public class Example_18 {
     public Example_18() throws Exception {
-
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_18.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_18.pdf")));
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font font = new Font(
+                pdf,
+                new FileInputStream("fonts/RedHatText/RedHatText-Regular.ttf.stream"),
+                Font.STREAM);
+        font.setSize(12f);
 
-        page.setPenWidth(5.0f);
-        page.setBrushColor(0x353638);
+        List<Page> pages = new ArrayList<Page>();
+        Page page = new Page(pdf, A4.PORTRAIT, false);
 
-        float x1 = 300f;
-        float y1 = 300f;
-        float r1 = 50f;
-        float r2 = 50f;
+        Box box = new Box();
+        box.setLocation(50f, 50f);
+        box.setSize(100.0f, 100.0f);
+        box.setColor(Color.red);
+        box.setFillShape(true);
+        box.drawOn(page);
+        pages.add(page);
 
-        List<Point> path = new ArrayList<Point>();
+        page = new Page(pdf, Letter.PORTRAIT, false);
+        box = new Box();
+        box.setLocation(50f, 50f);
+        box.setSize(100.0f, 100.0f);
+        box.setColor(Color.green);
+        box.setFillShape(true);
+        box.drawOn(page);
+        pages.add(page);
 
-        List<Point> segment1 = Path.getCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_00_03);
-        List<Point> segment2 = Path.getCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_03_06);
-        List<Point> segment3 = Path.getCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_06_09);
+        page = new Page(pdf, Letter.PORTRAIT, false);
+        box = new Box();
+        box.setLocation(50f, 50f);
+        box.setSize(100.0f, 100.0f);
+        box.setColor(Color.blue);
+        box.setFillShape(true);
+        box.drawOn(page);
+        pages.add(page);
 
-        path.addAll(segment1);
+        int numOfPage = pages.size();
 
-        segment2.remove(0);
-        path.addAll(segment2);
+        for (int i = 0; i < numOfPage; i++) {
+            page = pages.get(i);
+            String footer = "Page " + (i + 1) + " of " + pages.size();
+            page.setBrushColor(Color.black);
+            page.drawString(
+                    font,
+                    footer,
+                    (page.getWidth() - font.stringWidth(footer))/2f,
+                    (page.getHeight() - 5f));
+        }
 
-        segment3.remove(0);
-        path.addAll(segment3);
-
-        // page.drawPath(path, Operation.FILL);
-        page.drawPath(path, Operation.STROKE);
-
-        List<Point> segment4 = Path.getCurvePoints(x1, y1, r1, r2, Segment.CLOCKWISE_09_12);
-        page.setPenWidth(15f);
-        page.setPenColor(Color.red);
-        page.drawPath(segment4, Operation.STROKE);
+        for (Page page2 : pages) {
+            pdf.addPage(page2);
+        }
 
         pdf.complete();
     }
-
 
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
@@ -60,5 +75,4 @@ class Example_18 {
         long t1 = System.currentTimeMillis();
         System.out.println("Example_18 => " + (t1 - t0));
     }
-
 }   // End of Example_18.java
