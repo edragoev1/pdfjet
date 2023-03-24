@@ -25,43 +25,17 @@ func Example27() {
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	// Thai font
-	f, err := os.Open("fonts/Noto/NotoSansThai-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader := bufio.NewReader(f)
-	f1 := pdfjet.NewFontStream1(pdf, reader)
-	f1.SetSize(14.0)
-
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream")
 	// Latin font
-	f, err = os.Open("fonts/Droid/DroidSans.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f2 := pdfjet.NewFontStream1(pdf, reader)
-	f2.SetSize(12.0)
-
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
 	// Hebrew font
-	f, err = os.Open("fonts/Noto/NotoSansHebrew-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f3 := pdfjet.NewFontStream1(pdf, reader)
-	f3.SetSize(12.0)
-
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream")
 	// Arabic font
-	f, err = os.Open("fonts/Noto/NotoNaskhArabic-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f4 := pdfjet.NewFontStream1(pdf, reader)
+	f4 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream")
+
+	f1.SetSize(14.0)
+	f2.SetSize(12.0)
+	f3.SetSize(12.0)
 	f4.SetSize(12.0)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)

@@ -37,7 +37,9 @@ import (
 
 // Image describes an image object.
 // The image type can be one of the following:
-// 	   imagetype.JPG, imagetype.PNG, imagetype.BMP or imagetype.PNG_STREAM
+//
+//	imagetype.JPG, imagetype.PNG, imagetype.BMP or imagetype.PNG_STREAM
+//
 // Please see Example_03 and Example_24.
 type Image struct {
 	objNumber      int

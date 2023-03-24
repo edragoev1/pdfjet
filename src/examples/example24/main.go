@@ -27,17 +27,14 @@ func Example24() {
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-
-	f, err = os.Open("fonts/Droid/DroidSerif-Regular.ttf.stream")
-	reader := bufio.NewReader(f)
-	font2 := pdfjet.NewFontStream1(pdf, reader)
-
-	f, err = os.Open("fonts/Droid/DroidSansMono.ttf.stream")
-	reader = bufio.NewReader(f)
-	font3 := pdfjet.NewFontStream1(pdf, reader)
+	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
+	font3 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansMono.ttf.stream")
 
 	f, err = os.Open("images/ee-map.png")
-	reader = bufio.NewReader(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	reader := bufio.NewReader(f)
 	image := pdfjet.NewImage(pdf, reader, imagetype.PNG)
 	f.Close()
 
