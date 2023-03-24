@@ -52,17 +52,19 @@ public class Example_34 {
             tableData[6][3].setPoint(p1)
 
             table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
-            table.setLocation(0.0, 0.0);
-            table.setFirstPageTopMargin(50.0);
-            // table.setRightMargin(175.0);
-            table.setBottomMargin(0.0);
-            table.setCellBordersWidth(0.2);
-            table.setTextColorInRow(6, Color.blue);
-            table.setTextColorInRow(39, Color.red);
-            table.setFontInRow(26, f3);
-            table.removeLineBetweenRows(0, 1);
+            table.setBottomMargin(15.0)
+            // table.setCellBordersWidth(1.2)
+            table.setCellBordersWidth(0.2)
+            table.setLocation(70.0, 30.0);
+            table.setTextColorInRow(6, Color.blue)
+            table.setTextColorInRow(39, Color.red)
+            table.setFontInRow(26, f3)
+            table.removeLineBetweenRows(0, 1)
+            table.autoAdjustColumnWidths()
+            // table.setColumnWidth(0, 120f)
+            table.setColumnWidth(0, 50.0);
+            table.wrapAroundCellText();
             table.rightAlignNumbers();
-            table.fitToPage(Letter.PORTRAIT);
 
             var pages = [Page]()
             table.drawOn(pdf, &pages, Letter.PORTRAIT)
