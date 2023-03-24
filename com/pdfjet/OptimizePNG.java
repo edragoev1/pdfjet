@@ -47,9 +47,8 @@ public class OptimizePNG {
         int c = png.getColorType();
         fis.close();
 
-        String fileName = args[0].substring(0, args[0].lastIndexOf("."));
         BufferedOutputStream bos =
-                new BufferedOutputStream(new FileOutputStream(fileName + ".png.stream"));
+                new BufferedOutputStream(new FileOutputStream(args[0] + ".stream"));
         writeInt(w, bos);   // Width
         writeInt(h, bos);   // Height
         bos.write(c);       // Color Space

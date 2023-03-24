@@ -27,7 +27,8 @@ using System.IO;
 namespace PDFjet.NET {
 public class OptimizePNG {
 
-    public static void optimize(String fileName) {
+    public static void Main(String[] args) {
+        String fileName = args[0];
         FileStream fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
         PNGImage png = new PNGImage(fis);
         byte[] image = png.GetData();
@@ -37,9 +38,8 @@ public class OptimizePNG {
         int c = png.GetColorType();
         fis.Dispose();
 
-        String outputFileName = fileName.Substring(0, fileName.LastIndexOf("."));
         BufferedStream bos = new BufferedStream(
-                new FileStream(fileName + ".png.stream", FileMode.Create));
+                new FileStream(fileName + ".stream", FileMode.Create));
         WriteInt(w, bos);           // Width
         WriteInt(h, bos);           // Height
         bos.WriteByte((byte) c);    // Color Space
@@ -47,8 +47,7 @@ public class OptimizePNG {
             bos.WriteByte((byte) 1);
             WriteInt(alpha.Length, bos);
             bos.Write(alpha, 0, alpha.Length);
-        }
-        else {
+        } else {
             bos.WriteByte((byte) 0);
         }
         WriteInt(image.Length, bos);
@@ -66,4 +65,4 @@ public class OptimizePNG {
     }
 
 }   // End of OptimizePNG.cs
-}   // End of namespace net.PDFjet
+}   // End of namespace PDFjet.NET
