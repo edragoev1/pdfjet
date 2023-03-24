@@ -25,9 +25,11 @@ SOFTWARE.
 */
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"math"
+	"os"
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/src/device"
@@ -56,6 +58,15 @@ type Image struct {
 	language       string
 	altDescription string
 	actualText     string
+}
+
+func NewImageFromFile(pdf *PDF, filePath string, imageType int) *Image {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	return NewImage(pdf, bufio.NewReader(file), imageType)
 }
 
 // NewImage the main constructor for the Image class.

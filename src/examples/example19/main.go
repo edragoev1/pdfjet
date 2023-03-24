@@ -28,23 +28,8 @@ func Example19() {
 	f1.SetSize(10.0)
 	f2.SetSize(10.0)
 
-	f, err := os.Open("images/fruit.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	reader := bufio.NewReader(f)
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
-
-	f, err = os.Open("images/ee-map.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	reader = bufio.NewReader(f)
-	image2 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg", imagetype.JPG)
+	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
