@@ -1,5 +1,5 @@
-rm docs/java/com/pdfjet/*.html
-rm docs/java/*.html
+rm -f docs/java/com/pdfjet/*.html
+rm -f docs/java/*.html
 
 javadoc -public com/pdfjet/*.java -d docs/java
 rm -rf docs/_net

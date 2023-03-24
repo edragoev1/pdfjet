@@ -1,5 +1,5 @@
-rm out/production/com/pdfjet/*.class
-rm out/production/examples/*.class
+rm -f out/production/com/pdfjet/*.class
+rm -f out/production/examples/*.class
 
 # Compile and package the library.
 javac -O -encoding utf-8 -Xlint com/pdfjet/*.java -d out/production
