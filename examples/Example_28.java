@@ -5,7 +5,7 @@ import com.pdfjet.*;
 
 /**
  *  Example_28.java
- *
+ *  Example that shows how to use fallback font and the NotoSans symbols font.
  */
 public class Example_28 {
     public Example_28() throws Exception {

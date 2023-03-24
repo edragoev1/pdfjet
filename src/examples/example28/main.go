@@ -13,6 +13,10 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
+//
+// Example_28.go
+// Example that shows how to use fallback font and the NotoSans symbols font.
+//
 func Example28() {
 	f, err := os.Create("Example_28.pdf")
 	if err != nil {

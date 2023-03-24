@@ -8,7 +8,7 @@ using PDFjet.NET;
 
 /**
  *  Example_28.cs
- *
+ *  Example that shows how to use fallback font and the NotoSans symbols font.
  */
 public class Example_28 {
 
