@@ -7,7 +7,7 @@ import com.pdfjet.*;
 
 /**
  *  Example_18.java
- *
+ *  This example shows how to write "Page X of N" footer to every page.
  */
 public class Example_18 {
     public Example_18() throws Exception {
@@ -49,11 +49,10 @@ public class Example_18 {
         box.drawOn(page);
         pages.add(page);
 
-        int numOfPage = pages.size();
-
-        for (int i = 0; i < numOfPage; i++) {
+        int numOfPages = pages.size();
+        for (int i = 0; i < numOfPages; i++) {
             page = pages.get(i);
-            String footer = "Page " + (i + 1) + " of " + pages.size();
+            String footer = "Page " + (i + 1) + " of " + numOfPages;
             page.setBrushColor(Color.black);
             page.drawString(
                     font,
@@ -62,8 +61,8 @@ public class Example_18 {
                     (page.getHeight() - 5f));
         }
 
-        for (Page page2 : pages) {
-            pdf.addPage(page2);
+        for (int i = 0; i < numOfPages; i++) {
+            pdf.addPage(pages.get(i));
         }
 
         pdf.complete();
