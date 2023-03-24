@@ -26,13 +26,7 @@ func Example18() {
 	w := bufio.NewWriter(file)
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	file, err = os.Open("fonts/RedHatText/RedHatText-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	reader := bufio.NewReader(file)
-	font := pdfjet.NewFontStream1(pdf, reader)
+	font := pdfjet.NewFontFromFile(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
 	font.SetSize(12.0)
 
 	pages := make([]*pdfjet.Page, 0)
