@@ -13,32 +13,42 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example18 draws donut chart or pie chart depending on R1.
+/**
+ *  Example_18.go
+ *  This example shows how to write "Page X of N" footer on every page.
+ */
 func Example18() {
-	f, err := os.Create("Example_18.pdf")
+	file, err := os.Create("Example_18.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-
+	defer file.Close()
+	w := bufio.NewWriter(file)
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	// f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
-	page.SetPenWidth(5.0)
-	page.SetBrushColor(0x353638)
+	box := pdfjet.NewBox()
+	box.SetLocation(50.0, 50.0)
+	box.SetSize(100.0, 100.0)
+	box.SetColor(color.Red)
+	box.SetFillShape(true)
+	box.DrawOn(page)
 
-	donutChart := pdfjet.NewDonutChart()
-	donutChart.SetLocation(300.0, 300.0)
-	donutChart.SetR1AndR2(200.0, 100.0)
-	donutChart.AddSlice(pdfjet.NewSlice(30.0, color.Darkblue))
-	donutChart.AddSlice(pdfjet.NewSlice(90.0, color.Green))
-	donutChart.AddSlice(pdfjet.NewSlice(60.0, color.Indigo))
-	donutChart.DrawOn(page)
+	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	box = pdfjet.NewBox()
+	box.SetLocation(50.0, 50.0)
+	box.SetSize(100.0, 100.0)
+	box.SetColor(color.Green)
+	box.SetFillShape(true)
+	box.DrawOn(page)
+
+	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	box = pdfjet.NewBox()
+	box.SetLocation(50.0, 50.0)
+	box.SetSize(100.0, 100.0)
+	box.SetColor(color.Blue)
+	box.SetFillShape(true)
+	box.DrawOn(page)
 
 	pdf.Complete()
 }
