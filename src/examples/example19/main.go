@@ -20,36 +20,21 @@ func Example19() {
 		log.Fatal(err)
 	}
 	w := bufio.NewWriter(file)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	f, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
+
+	f1.SetSize(10.0)
+	f2.SetSize(10.0)
+
+	f, err := os.Open("images/fruit.jpg")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 
 	reader := bufio.NewReader(f)
-	f1 := pdfjet.NewFontStream1(pdf, reader)
-	f1.SetSize(10.0)
-
-	f, err = os.Open("fonts/Droid/DroidSansFallback.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	reader = bufio.NewReader(f)
-	f2 := pdfjet.NewFontStream1(pdf, reader)
-	f2.SetSize(10.0)
-
-	f, err = os.Open("images/fruit.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	reader = bufio.NewReader(f)
 	image1 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
 
 	f, err = os.Open("images/ee-map.png")
