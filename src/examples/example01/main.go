@@ -21,28 +21,13 @@ func Example01(mode string) {
 		log.Fatal(err)
 	}
 	defer file.Close()
-
 	w := bufio.NewWriter(file)
 	pdf := pdfjet.NewPDF(w, 0)
 
-	file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
+	font1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
 
-	reader := bufio.NewReader(file1)
-	font1 := pdfjet.NewFontStream1(pdf, reader)
 	font1.SetSize(12.0)
-
-	file2, err := os.Open("fonts/Droid/DroidSansFallback.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-
-	reader = bufio.NewReader(file2)
-	font2 := pdfjet.NewFontStream1(pdf, reader)
 	font2.SetSize(12.0)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
