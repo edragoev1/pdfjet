@@ -31,7 +31,6 @@ public class Example_08 {
         // Uncomment the line below if you want to print the text underneath the barcode.
         // barCode.setFont(f1)
 
-
         let table = Table();
         let tableData = try getData(
         		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2, image1, barCode)

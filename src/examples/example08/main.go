@@ -30,12 +30,11 @@ func Example08() {
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f1.SetSize(7.0)
-
 	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	f2.SetSize(7.0)
-
 	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBoldOblique())
+
+	f1.SetSize(7.0)
+	f2.SetSize(7.0)
 	f3.SetSize(7.0)
 
 	/*
@@ -48,10 +47,6 @@ func Example08() {
 		f3 := new Font(pdf,
 				getClass().getResourceAsStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
 				Font.STREAM)
-
-		f1.setSize(7.0)
-		f2.setSize(7.0)
-		f3.setSize(7.0)
 	*/
 
 	f, err := os.Open("images/fruit.jpg")

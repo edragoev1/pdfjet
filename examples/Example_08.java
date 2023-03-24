@@ -2,9 +2,7 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_08.java
@@ -22,19 +20,19 @@ public class Example_08 {
 
         Font f1 = new Font(
                 pdf,
-                new FileInputStream("fonts/RedHatText/RedHatText-Bold.ttf.stream"),
+                new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream"),
                 Font.STREAM);
         f1.setSize(7f);
 
         Font f2 = new Font(
                 pdf,
-                new FileInputStream("fonts/RedHatText/RedHatText-Regular.ttf.stream"),
+                new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
                 Font.STREAM);
         f2.setSize(7f);
 
         Font f3 = new Font(
                 pdf,
-                new FileInputStream("fonts/RedHatText/RedHatText-BoldItalic.ttf.stream"),
+                new FileInputStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
                 Font.STREAM);
         f3.setSize(7f);
 
