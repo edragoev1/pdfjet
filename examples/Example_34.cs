@@ -72,12 +72,16 @@ public class Example_34 {
         table.FitToPage(Letter.PORTRAIT);
 
         List<Page> pages = new List<Page>();
-        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        float[] lastPageXY = table.DrawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
-            // page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
+            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
             pdf.AddPage(page);
         }
+
+        TextLine textLine = new TextLine(f1, "Hello, World!");
+        textLine.SetLocation(lastPageXY[0], lastPageXY[1] + f1.GetBodyHeight());
+        textLine.DrawOn(pages[pages.Count - 1]);
 
         pdf.Complete();
     }
