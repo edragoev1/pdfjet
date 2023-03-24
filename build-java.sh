@@ -16,8 +16,8 @@ done
 for i in $(seq 1 51);
 do
     if [ $i -lt 10 ]; then
-        java -cp .:PDFjet.jar examples.Example_0$i
+        java -cp .:PDFjet.jar:out/production examples.Example_0$i
     else
-        java -cp .:PDFjet.jar examples.Example_$i
+        java -cp .:PDFjet.jar:out/production examples.Example_$i
     fi
 done
