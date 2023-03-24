@@ -18,14 +18,12 @@ public class Example_34 {
                 new FileStream("Example_34.pdf", FileMode.Create)), Compliance.PDF_A_1B);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.SetSize(7f);
-
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        f2.SetSize(7f);
-
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
-        f3.SetSize(7f);
 
+        f1.SetSize(7f);
+        f2.SetSize(7f);
+        f3.SetSize(7f);
 
         Table table = new Table();
         List<List<Cell>> tableData = GetData(
@@ -59,17 +57,19 @@ public class Example_34 {
         tableData[6][3].SetPoint(p1);
 
         table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
-        table.RemoveLineBetweenRows(0, 1);
-        table.SetLocation(0f, 0f);
-        table.SetFirstPageTopMargin(50f);
-        // table.SetRightMargin(175f);
-        table.SetBottomMargin(0f);
+        table.SetBottomMargin(15f);
+        // table.SetCellBordersWidth(1.2f);
         table.SetCellBordersWidth(0.2f);
+        table.SetLocation(70f, 30f);
         table.SetTextColorInRow(6, Color.blue);
         table.SetTextColorInRow(39, Color.red);
         table.SetFontInRow(26, f3);
+        table.RemoveLineBetweenRows(0, 1);
+        table.AutoAdjustColumnWidths();
+        // table.setColumnWidth(0, 120f);
+        table.SetColumnWidth(0, 50f);
+        table.WrapAroundCellText();
         table.RightAlignNumbers();
-        table.FitToPage(Letter.PORTRAIT);
 
         List<Page> pages = new List<Page>();
         float[] lastPageXY = table.DrawOn(pdf, pages, Letter.PORTRAIT);

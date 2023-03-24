@@ -20,13 +20,8 @@ public class Example_08 {
                 new FileStream("Example_08.pdf", FileMode.Create)), Compliance.PDF_A_1B);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.SetSize(7f);
-
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        f2.SetSize(7f);
-
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
-        f3.SetSize(7f);
 /* TODO:
         Font f1 = new Font(pdf,
                 getClass().getResourceAsStream("fonts/OpenSans/OpenSans-Bold.ttf.stream"),
@@ -43,6 +38,11 @@ public class Example_08 {
                 Font.STREAM);
         f3.setSize(7f);
 */
+        f1.SetSize(7f);
+        f2.SetSize(7f);
+        f3.SetSize(7f);
+
+
         image1 = new Image(
                 pdf,
                 new BufferedStream(new FileStream(

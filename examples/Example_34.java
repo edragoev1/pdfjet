@@ -19,12 +19,11 @@ public class Example_34 {
                         new FileOutputStream("Example_34.pdf")), Compliance.PDF_A_1B);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.setSize(7f);
-
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        f2.setSize(7f);
-
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
+
+        f1.setSize(7f);
+        f2.setSize(7f);
         f3.setSize(7f);
 
         Table table = new Table();
@@ -59,6 +58,7 @@ public class Example_34 {
         tableData.get(6).get(3).setPoint(p1);
 
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.setBottomMargin(15f);
         // table.setCellBordersWidth(1.2f);
         table.setCellBordersWidth(0.2f);
         table.setLocation(70f, 30f);
