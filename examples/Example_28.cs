@@ -21,14 +21,22 @@ public class Example_28 {
                 new FileStream(
                         "fonts/Droid/DroidSans.ttf.stream", FileMode.Open, FileAccess.Read)),
                 Font.STREAM);
-        f1.SetSize(11f);
 
         Font f2 = new Font(pdf,
                 new FileStream(
                         "fonts/Droid/DroidSansFallback.ttf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);
+
+        Font f3 = new Font(pdf,
+                new FileStream(
+                        "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream",
+                        FileMode.Open,
+                        FileAccess.Read), Font.STREAM);
+
+        f1.SetSize(11f);
         f2.SetSize(11f);
+        f3.SetSize(11f);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
@@ -49,7 +57,7 @@ public class Example_28 {
         y = 210f;
         float dy = 22f;
 
-        TextLine text = new TextLine(f1);
+        TextLine text = new TextLine(f3);
         StringBuilder buf = new StringBuilder();
         int count = 0;
         for (int i = 0x2200; i <= 0x22FF; i++) {

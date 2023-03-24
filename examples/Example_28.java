@@ -1,31 +1,29 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_28.java
  *
  */
 public class Example_28 {
-
     public Example_28() throws Exception {
-
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_28.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_28.pdf")));
 
         FileInputStream stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
         Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-        f1.setSize(11f);
 
         stream = new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream");
         Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+
+        stream = new FileInputStream("fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream");
+        Font f3 = new Font(pdf, stream, Font.STREAM);
+
+        f1.setSize(11f);
         f2.setSize(11f);
+        f3.setSize(11f);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
@@ -47,7 +45,7 @@ public class Example_28 {
         y = 210f;
         float dy = 22f;
 
-        TextLine text = new TextLine(f1);
+        TextLine text = new TextLine(f3);
         StringBuilder buf = new StringBuilder();
         int count = 0;
         for (int i = 0x2200; i <= 0x22FF; i++) {
@@ -119,12 +117,10 @@ public class Example_28 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_28();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_28 => " + (t1 - t0));
     }
-
 }   // End of Example_28.java
