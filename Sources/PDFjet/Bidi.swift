@@ -155,17 +155,12 @@ private static let forms: [Character] = [
         }
 
         var buf3 = String()
-        // for (int i = (buf1.length() - 1); i >= 0; i--)
         var i: Int = buf1.count - 1
         while i >= 0 {
-            // let ch = buf1[i]
             let ch = buf1[buf1.index(buf1.startIndex, offsetBy: i)]
             if isArabicLetter(ch) {
-                //let prevCh = (i > 0) ? buf1[i - 1] : "\u{0000}"
                 let prevCh = (i > 0) ? buf1[buf1.index(buf1.startIndex, offsetBy: i - 1)] : "\u{0000}"
-                //let nextCh = (i < (buf1.count - 1)) ? buf1[i + 1] : "\u{0000}"
                 let nextCh = (i < (buf1.count - 1)) ? buf1[buf1.index(buf1.startIndex, offsetBy: i + 1)] : "\u{0000}"
-                // for j in 0..<forms.length; j += 5)
                 for j in stride(from: 0, to: forms.count, by: 5) {
                     if ch == forms[j] {
                         if (!isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
@@ -221,7 +216,6 @@ private static let forms: [Character] = [
         var buf2 = String()
         var buf3 = String()
         for i in 0..<buf1.count {
-            //let ch = buf1[i]
             let ch = buf1[buf1.index(buf1.startIndex, offsetBy: i)]
             if (ch == " " || ch == "," || ch == "." || ch == "-") {
                 buf2.append(ch)
