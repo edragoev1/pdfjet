@@ -23,31 +23,13 @@ func Example46() {
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	f, err := os.Open("fonts/OpenSans/OpenSans-Bold.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader := bufio.NewReader(f)
-	f1 := pdfjet.NewFontStream1(pdf, reader)
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream")
+
 	f1.SetSize(14.0)
-
-	f, err = os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f2 := pdfjet.NewFontStream1(pdf, reader)
 	f2.SetSize(14.0)
-
-	f, err = os.Open("fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader = bufio.NewReader(f)
-	f3 := pdfjet.NewFontStream1(pdf, reader)
+	f2.SetSize(12.0)
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
