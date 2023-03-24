@@ -31,7 +31,7 @@ public class Example_18 {
         box.DrawOn(page);
         pages.Add(page);
 
-        page = new Page(pdf, Letter.PORTRAIT, false);
+        page = new Page(pdf, A4.PORTRAIT, false);
         box = new Box();
         box.SetLocation(50f, 50f);
         box.SetSize(100.0f, 100.0f);
@@ -40,7 +40,7 @@ public class Example_18 {
         box.DrawOn(page);
         pages.Add(page);
 
-        page = new Page(pdf, Letter.PORTRAIT, false);
+        page = new Page(pdf, A4.PORTRAIT, false);
         box = new Box();
         box.SetLocation(50f, 50f);
         box.SetSize(100.0f, 100.0f);

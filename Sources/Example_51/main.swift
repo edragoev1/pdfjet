@@ -50,7 +50,7 @@ public class Example_51 {
         let font = try Font(
                 &objects,
                 InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf.stream")!,
-                Font.STREAM).setSize(12.0)
+                Font.STREAM)
         font.setSize(12.0)
 
         var pages = pdf.getPageObjects(from: &objects)
