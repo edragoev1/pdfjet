@@ -30,12 +30,11 @@ func Example34() {
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f1.SetSize(7.0)
-
 	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	f2.SetSize(7.0)
-
 	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBoldOblique())
+
+	f1.SetSize(7.0)
+	f2.SetSize(7.0)
 	f3.SetSize(7.0)
 
 	table := pdfjet.NewTable()

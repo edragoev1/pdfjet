@@ -13,12 +13,11 @@ public class Example_34 {
             let pdf = PDF(stream)
 
             let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            f1.setSize(7.0)
-
             let f2 = Font(pdf, CoreFont.HELVETICA)
-            f2.setSize(7.0)
-
             let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
+
+            f1.setSize(7.0)
+            f2.setSize(7.0)
             f3.setSize(7.0)
 
             let table = Table()
