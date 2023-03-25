@@ -25,6 +25,7 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.IO;
 
 
 ///
@@ -240,6 +241,26 @@ public class Text : IDrawable {
             list.Add(buf.ToString());
         }
         return list.ToArray();
+    }
+
+
+    public static List<String> Read(String filePath) {
+        List<String> lines = new List<String>();
+        FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        StringBuilder buffer = new StringBuilder();
+        int ch;
+        while ((ch = stream.ReadByte()) != -1) {
+            if (ch == '\r') {
+                continue;
+            } else if (ch == '\n') {
+                lines.Add(buffer.ToString());
+                buffer.Length = 0;
+            } else {
+                buffer.Append((char) ch);
+            }
+        }
+        stream.Close();
+        return lines;
     }
 
 }   // End of Text.cs
