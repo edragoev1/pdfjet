@@ -18,15 +18,7 @@ import (
 
 // Example08 draws a table.
 func Example08() {
-	file, err := os.Create("Example_08.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_08.pdf", compliance.PDF15)
 
 	// f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
@@ -89,6 +81,7 @@ func Example08() {
 		// page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + len(pages)))
 		pdf.AddPage(page)
 	}
+
 	pdf.Complete()
 }
 
