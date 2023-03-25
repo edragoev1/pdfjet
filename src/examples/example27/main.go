@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -15,14 +12,7 @@ import (
 
 // Example27 -- TODO:
 func Example27() {
-	file, err := os.Create("Example_27.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_27.pdf", compliance.PDF15)
 
 	// Thai font
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream")

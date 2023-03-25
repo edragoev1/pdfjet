@@ -16,12 +16,7 @@ import (
 // Example_28.go
 // Example that shows how to use fallback font and the NotoSans symbols font.
 func Example28() {
-	f, err := os.Create("Example_28.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := bufio.NewWriter(f)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_28.pdf", compliance.PDF15)
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
@@ -33,7 +28,7 @@ func Example28() {
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Landscape)
 
-	f, err = os.Open("data/report.csv")
+	f, err := os.Open("data/report.csv")
 	if err != nil {
 		log.Fatal(err)
 	}

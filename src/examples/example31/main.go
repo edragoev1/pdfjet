@@ -16,14 +16,7 @@ import (
 
 // Example31 -- TODO:
 func Example31() {
-	file, err := os.Create("Example_31.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_31.pdf", compliance.PDF15)
 	pdf.SetTitle("Hello")
 	pdf.SetAuthor("Eugene")
 	pdf.SetSubject("Example")

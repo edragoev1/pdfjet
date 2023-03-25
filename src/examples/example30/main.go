@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -18,14 +15,7 @@ import (
 // Example30 draws the Canadian flag using a Path object that contains both lines
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example30() {
-	file, err := os.Create("Example_30.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_30.pdf", compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -15,14 +14,7 @@ import (
 
 // Example20 -- TODO:
 func Example20() {
-	file, err := os.Create("Example_20.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_20.pdf", compliance.PDF15)
 
 	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
 	if err != nil {
@@ -32,14 +24,7 @@ func Example20() {
 
 	pdf.AddResourceObjects(objects)
 
-	file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-
-	reader := bufio.NewReader(file1)
-	font1 := pdfjet.NewFontStream1(pdf, reader)
+	font1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	font1.SetSize(18.0)
 
 	pages := pdf.GetPageObjects(objects)
@@ -118,8 +103,6 @@ func Example20() {
 		qr.DrawOn(page)
 	*/
 	pdf.Complete()
-
-	file.Close()
 }
 
 func main() {
