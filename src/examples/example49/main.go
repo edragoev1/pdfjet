@@ -21,16 +21,9 @@ func Example49() {
 	}
 	defer file.Close()
 	w := bufio.NewWriter(file)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	file1, err := os.Open("images/photoshop.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	reader := bufio.NewReader(file1)
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg", imagetype.JPG)
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
