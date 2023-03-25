@@ -15,14 +15,15 @@ public class Example_01 {
 
         let f1 = try Font(
                 pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
+                InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf.stream")!,
                 Font.STREAM)
-        f1.setSize(12.0)
 
         let f2 = try Font(
                 pdf,
                 InputStream(fileAtPath: "fonts/Droid/DroidSansFallback.ttf.stream")!,
                 Font.STREAM)
+
+        f1.setSize(12.0)
         f2.setSize(12.0)
 
         var page = Page(pdf, Letter.PORTRAIT)

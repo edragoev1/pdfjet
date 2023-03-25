@@ -17,7 +17,7 @@ import (
 func Example01(mode string) {
 	pdf := pdfjet.NewPDFFile("Example_01.pdf", 0)
 
-	font1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	font1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
 
 	font1.SetSize(12.0)
