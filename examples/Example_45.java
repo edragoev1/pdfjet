@@ -98,40 +98,6 @@ public class Example_45 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        textLine = new TextLine(f1);
-        textLine.setLocation(70f, 120f);
-        textLine.setText("416-877-1395");
-        textLine.drawOn(page);
-
-        Line line = new Line(70f, 150f, 300f, 150f);
-        line.setWidth(1f);
-        line.setColor(Color.oldgloryred);
-        line.setAltDescription("This is a red line.");
-        line.setActualText("This is a red line.");
-        line.drawOn(page);
-
-        box = new Box();
-        box.setLineWidth(1f);
-        box.setLocation(70f, 200f);
-        box.setSize(100f, 100f);
-        box.setColor(Color.oldgloryblue);
-        box.setAltDescription("This is a blue box.");
-        box.setActualText("This is a blue box.");
-        box.drawOn(page);
-
-        page.addBMC("Span", "This is a test", "This is a test");
-        page.drawString(f1, "This is a test", 75f, 230f);
-        page.addEMC();
-
-        stream = new FileInputStream("images/fruit.jpg");
-        Image image = new Image(pdf, stream, ImageType.JPG);
-        stream.close();
-        image.setLocation(70f, 310f);
-        image.scaleBy(0.5f);
-        image.setAltDescription("This is an image of a strawberry.");
-        image.setActualText("This is an image of a strawberry.");
-        image.drawOn(page);
-
         float w = 530f;
         float h = 13f;
 
@@ -158,10 +124,16 @@ public class Example_45 {
                 .setLabelFontSize(7f)
                 .setValueFont(f2)
                 .setValueFontSize(9f)
-                .setLocation(70f, 490f)
+                .setLocation(50f, 50f)
                 .setRowLength(w)
                 .setRowHeight(h)
                 .drawOn(page);
+
+        Image image = new Image(
+                pdf, new FileInputStream("images/FormCode.png"), ImageType.PNG);
+        image.setLocation(50f, 200f);
+        image.scaleBy(0.40f);
+        image.drawOn(page);
 
         pdf.complete();
     }
