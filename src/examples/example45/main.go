@@ -124,13 +124,7 @@ func Example45() {
 	page.DrawString(f1, f2, "This is a test", 75.0, 230.0)
 	page.AddEMC()
 
-	file1, err := os.Open("images/fruit.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	reader := bufio.NewReader(file1)
-	image := pdfjet.NewImage(pdf, reader, imagetype.JPG)
+	image := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg", imagetype.JPG)
 
 	image.SetLocation(70.0, 310.0)
 	image.ScaleBy(0.5)
