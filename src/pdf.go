@@ -28,6 +28,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -140,6 +141,14 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf.appendString("\n")
 
 	return pdf
+}
+
+func NewPDFFile(filePath string, pdfCompliance int) *PDF {
+	file, err := os.Create(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return NewPDF(bufio.NewWriter(file), pdfCompliance)
 }
 
 func (pdf *PDF) newobj() {

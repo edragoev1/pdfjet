@@ -25,7 +25,6 @@ func Example38() {
 	}
 	defer f.Close()
 	w := bufio.NewWriter(f)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
