@@ -26,48 +26,17 @@ func Example17() {
 
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	file1, err := os.Open("PngSuite/BASN3P08.PNG")
-	reader := bufio.NewReader(file1)
-	defer file1.Close()
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file2, err := os.Open("PngSuite/BASN3P04.PNG") // Indexed Image with Bit Depth == 4
-	reader = bufio.NewReader(file2)
-	defer file2.Close()
-	image2 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file3, err := os.Open("PngSuite/BASN3P02.PNG")
-	reader = bufio.NewReader(file3)
-	defer file3.Close()
-	image3 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file4, err := os.Open("PngSuite/BASN3P01.PNG")
-	reader = bufio.NewReader(file4)
-	defer file4.Close()
-	image4 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file5, err := os.Open("PngSuite/S01N3P01.PNG")
-	reader = bufio.NewReader(file5)
-	defer file5.Close()
-	image5 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file6, err := os.Open("PngSuite/S02N3P01.PNG")
-	reader = bufio.NewReader(file6)
-	defer file6.Close()
-	image6 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file7, err := os.Open("PngSuite/S03N3P01.PNG")
-	reader = bufio.NewReader(file7)
-	defer file7.Close()
-	image7 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file8, err := os.Open("PngSuite/S04N3P01.PNG")
-	reader = bufio.NewReader(file8)
-	defer file8.Close()
-	image8 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image1 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P08.PNG", imagetype.PNG)
+	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG", imagetype.PNG) // Indexed Image with Bit Depth == 4
+	image3 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P02.PNG", imagetype.PNG)
+	image4 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P01.PNG", imagetype.PNG)
+	image5 := pdfjet.NewImageFromFile(pdf, "PngSuite/S01N3P01.PNG", imagetype.PNG)
+	image6 := pdfjet.NewImageFromFile(pdf, "PngSuite/S02N3P01.PNG", imagetype.PNG)
+	image7 := pdfjet.NewImageFromFile(pdf, "PngSuite/S03N3P01.PNG", imagetype.PNG)
+	image8 := pdfjet.NewImageFromFile(pdf, "PngSuite/S04N3P01.PNG", imagetype.PNG)
 
 	file9, err := os.Open("PngSuite/S05N3P02.PNG")
-	reader = bufio.NewReader(file9)
+	reader := bufio.NewReader(file9)
 	defer file9.Close()
 	image9 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
 
