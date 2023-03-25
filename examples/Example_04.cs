@@ -47,13 +47,13 @@ public class Example_04 {
         TextLine text = new TextLine(f1);
         String line = null;
         while ((line = reader.ReadLine()) != null) {
-            if (line.IndexOf("Simplified") != -1) {
+            if (line.Contains("Simplified")) {
                 text.SetFont(f2);
             }
-            else if (line.IndexOf("Japanese") != -1) {
+            else if (line.Contains("Japanese")) {
                 text.SetFont(f3);
             }
-            else if (line.IndexOf("Korean") != -1) {
+            else if (line.Contains("Korean")) {
                 text.SetFont(f4);
             }
             text.SetText(line);

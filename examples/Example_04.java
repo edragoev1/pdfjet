@@ -47,13 +47,13 @@ public class Example_04 {
         TextLine text = new TextLine(f1);
         String line = null;
         while ((line = reader.readLine()) != null) {
-            if (line.indexOf("Simplified") != -1) {
+            if (line.contains("Simplified")) {
                 text.setFont(f2);
             }
-            else if (line.indexOf("Japanese") != -1) {
+            else if (line.contains("Japanese")) {
                 text.setFont(f3);
             }
-            else if (line.indexOf("Korean") != -1) {
+            else if (line.contains("Korean")) {
                 text.setFont(f4);
             }
             text.setText(line);
