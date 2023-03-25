@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -18,13 +15,7 @@ import (
  *  This example shows how to write "Page X of N" footer on every page.
  */
 func Example18() {
-	file, err := os.Create("Example_18.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_18.pdf", compliance.PDF15)
 
 	font := pdfjet.NewFontFromFile(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
 	font.SetSize(12.0)

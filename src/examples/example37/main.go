@@ -14,14 +14,7 @@ import (
 
 // Example37 -- TODO:
 func Example37() {
-	file, err := os.Create("Example_37.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_37.pdf", compliance.PDF15)
 
 	buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
 	// buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
