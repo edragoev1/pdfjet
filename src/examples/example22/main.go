@@ -95,13 +95,7 @@ func Example22() {
 	path.PlaceAtZeroZeroIn(box)
 	path.DrawOn(page)
 
-	file1, err := os.Open("images/up-arrow.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	reader = bufio.NewReader(file1)
-	image := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image := pdfjet.NewImageFromFile(pdf, "images/up-arrow.png", imagetype.PNG)
 	image.SetLocation(40.0, 40.0)
 	image.SetGoToAction(&dest0)
 	image.DrawOn(page)

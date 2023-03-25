@@ -40,14 +40,7 @@ func Example08() {
 	f2.SetSize(7.0)
 	f3.SetSize(7.0)
 
-	f, err := os.Open("images/fruit.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	reader := bufio.NewReader(f)
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg", imagetype.JPG)
 	image1.ScaleBy(0.20)
 
 	barCode := pdfjet.NewBarCode(pdfjet.CODE128, "Hello, World!")
