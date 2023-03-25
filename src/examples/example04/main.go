@@ -34,8 +34,7 @@ func Example04() {
 	f3.SetSize(14.0)
 	f4.SetSize(14.0)
 
-	var xPos float32
-	xPos = 100.0
+	var xPos float32 = 100.0
 	var yPos float32
 	yPos = 100.0
 
@@ -47,11 +46,11 @@ func Example04() {
 	lines := strings.Split(strContent, "\n")
 	text := pdfjet.NewTextLine(f1, "")
 	for _, line := range lines {
-		if strings.Index(line, "Simplified") != -1 {
+		if strings.Contains(line, "Simplified") {
 			text.SetFont(f2)
-		} else if strings.Index(line, "Japanese") != -1 {
+		} else if strings.Contains(line, "Japanese") {
 			text.SetFont(f3)
-		} else if strings.Index(line, "Korean") != -1 {
+		} else if strings.Contains(line, "Korean") {
 			text.SetFont(f4)
 		}
 		text.SetText(line)
