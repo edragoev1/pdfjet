@@ -240,4 +240,22 @@ public class Text : Drawable {
         return list
     }
 
+
+    public static func readLines(_ filePath: String) throws -> [String] {
+        var lines = [String]()
+        let contents = try String(contentsOf: URL(fileURLWithPath: filePath))
+        var buffer = String()
+        for scalar in contents.unicodeScalars {
+            if scalar == "\r" {
+                continue
+            } else if scalar == "\n" {
+                lines.append(buffer)
+                buffer = ""
+            } else {
+                buffer.append(String(scalar))
+            }
+        }
+        return lines
+    }
+
 }   // End of Text.swift

@@ -7,94 +7,91 @@ import PDFjet
  *
  */
 public class Example_25 {
+    public init() throws {
+        let stream = OutputStream(toFileAtPath: "Example_25.pdf", append: false)
 
-    public init() {
+        let pdf = PDF(stream!)
 
-        if let stream = OutputStream(toFileAtPath: "Example_25.pdf", append: false) {
+        let f1 = Font(pdf, CoreFont.HELVETICA)
+        let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f3 = Font(pdf, CoreFont.HELVETICA)
+        let f4 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f5 = Font(pdf, CoreFont.HELVETICA)
+        let f6 = Font(pdf, CoreFont.HELVETICA_BOLD)
 
-            let pdf = PDF(stream)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-            let f1 = Font(pdf, CoreFont.HELVETICA)
-            let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            let f3 = Font(pdf, CoreFont.HELVETICA)
-            let f4 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            let f5 = Font(pdf, CoreFont.HELVETICA)
-            let f6 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let composite = CompositeTextLine(50.0, 50.0)
+        composite.setFontSize(14.0)
 
-            let page = Page(pdf, Letter.PORTRAIT)
+        var text1 = TextLine(f1, "C")
+        var text2 = TextLine(f2, "6")
+        var text3 = TextLine(f3, "H")
+        let text4 = TextLine(f4, "12")
+        let text5 = TextLine(f5, "O")
+        let text6 = TextLine(f6, "6")
 
-            let composite = CompositeTextLine(50.0, 50.0)
-            composite.setFontSize(14.0)
+        text1.setColor(Color.dodgerblue)
+        text3.setColor(Color.dodgerblue)
+        text5.setColor(Color.dodgerblue)
 
-            var text1 = TextLine(f1, "C")
-            var text2 = TextLine(f2, "6")
-            var text3 = TextLine(f3, "H")
-            let text4 = TextLine(f4, "12")
-            let text5 = TextLine(f5, "O")
-            let text6 = TextLine(f6, "6")
+        text2.setTextEffect(Effect.SUBSCRIPT)
+        text4.setTextEffect(Effect.SUBSCRIPT)
+        text6.setTextEffect(Effect.SUBSCRIPT)
 
-            text1.setColor(Color.dodgerblue)
-            text3.setColor(Color.dodgerblue)
-            text5.setColor(Color.dodgerblue)
+        composite.addComponent(text1)
+        composite.addComponent(text2)
+        composite.addComponent(text3)
+        composite.addComponent(text4)
+        composite.addComponent(text5)
+        composite.addComponent(text6)
 
-            text2.setTextEffect(Effect.SUBSCRIPT)
-            text4.setTextEffect(Effect.SUBSCRIPT)
-            text6.setTextEffect(Effect.SUBSCRIPT)
+        let xy = composite.drawOn(page)
 
-            composite.addComponent(text1)
-            composite.addComponent(text2)
-            composite.addComponent(text3)
-            composite.addComponent(text4)
-            composite.addComponent(text5)
-            composite.addComponent(text6)
+        let box = Box()
+        box.setLocation(xy[0], xy[1])
+        box.setSize(20.0, 20.0)
+        box.drawOn(page)
 
-            let xy = composite.drawOn(page)
+        let composite2 = CompositeTextLine(50.0, 100.0)
+        composite2.setFontSize(14.0)
 
-            let box = Box()
-            box.setLocation(xy[0], xy[1])
-            box.setSize(20.0, 20.0)
-            box.drawOn(page)
+        text1 = TextLine(f1, "SO")
+        text2 = TextLine(f2, "4")
+        text3 = TextLine(f4, "2-")  // Use bold font here
 
-            let composite2 = CompositeTextLine(50.0, 100.0)
-            composite2.setFontSize(14.0)
+        text2.setTextEffect(Effect.SUBSCRIPT)
+        text3.setTextEffect(Effect.SUPERSCRIPT)
 
-            text1 = TextLine(f1, "SO")
-            text2 = TextLine(f2, "4")
-            text3 = TextLine(f4, "2-")  // Use bold font here
+        composite2.addComponent(text1)
+        composite2.addComponent(text2)
+        composite2.addComponent(text3)
 
-            text2.setTextEffect(Effect.SUBSCRIPT)
-            text3.setTextEffect(Effect.SUPERSCRIPT)
+        composite2.drawOn(page)
+        composite2.setLocation(100.0, 150.0)
+        composite2.drawOn(page)
 
-            composite2.addComponent(text1)
-            composite2.addComponent(text2)
-            composite2.addComponent(text3)
+        let yy = composite2.getMinMax()
+        let line1 = Line(50.0, yy[0], 200.0, yy[0])
+        let line2 = Line(50.0, yy[1], 200.0, yy[1])
+        line1.drawOn(page)
+        line2.drawOn(page)
 
-            composite2.drawOn(page)
-            composite2.setLocation(100.0, 150.0)
-            composite2.drawOn(page)
+        let chart = DonutChart(f1, f2, false)
+        chart.setLocation(300.0, 300.0)
+        chart.setR1AndR2(200.0, 100.0)
+        chart.addSlice(Slice(10.0, Color.red))
+        chart.addSlice(Slice(20.0, Color.green))
+        chart.addSlice(Slice(30.0, Color.blue))
+        chart.addSlice(Slice(40.0, Color.peachpuff))
+        chart.drawOn(page)
 
-            let yy = composite2.getMinMax()
-            let line1 = Line(50.0, yy[0], 200.0, yy[0])
-            let line2 = Line(50.0, yy[1], 200.0, yy[1])
-            line1.drawOn(page)
-            line2.drawOn(page)
-
-            let chart = DonutChart(f1, f2, false)
-            chart.setLocation(300.0, 300.0)
-            chart.setR1AndR2(200.0, 100.0)
-            chart.addSlice(Slice(10.0, Color.red))
-            chart.addSlice(Slice(20.0, Color.green))
-            chart.addSlice(Slice(30.0, Color.blue))
-            chart.addSlice(Slice(40.0, Color.peachpuff))
-            chart.drawOn(page)
-
-            pdf.complete()
-        }
+        pdf.complete()
     }
 
 }   // End of Example_25.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = Example_25()
+_ = try Example_25()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Example_25 => \(time1 - time0)")
