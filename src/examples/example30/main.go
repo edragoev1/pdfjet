@@ -29,22 +29,10 @@ func Example30() {
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	file1, err := os.Open("images/map407.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	reader := bufio.NewReader(file1)
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/map407.png", imagetype.PNG)
 	image1.SetLocation(10.0, 100.0)
 
-	file2, err := os.Open("images/qrcode.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader = bufio.NewReader(file2)
-	image2 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image2 := pdfjet.NewImageFromFile(pdf, "images/qrcode.png", imagetype.PNG)
 	image2.SetLocation(10.0, 100.0)
 
 	// Create the first page after all the resources have been added to the PDF.
