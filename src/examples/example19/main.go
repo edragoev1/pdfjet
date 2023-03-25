@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -15,12 +12,7 @@ import (
 
 // Example19 draws two images and three text blocks.
 func Example19() {
-	file, err := os.Create("Example_19.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := bufio.NewWriter(file)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_19.pdf", compliance.PDF15)
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
@@ -74,8 +66,6 @@ func Example19() {
 	textBlock.DrawOn(page)
 
 	pdf.Complete()
-
-	file.Close()
 }
 
 func main() {

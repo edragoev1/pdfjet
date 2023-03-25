@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -15,13 +12,7 @@ import (
 
 // Example47 -- TODO:
 func Example47() {
-	file, err := os.Create("Example_47.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_47.pdf", compliance.PDF15)
 
 	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg", imagetype.JPG)
 

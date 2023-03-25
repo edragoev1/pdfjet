@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 	"time"
 
@@ -17,14 +14,7 @@ import (
 
 // Example41 -- TODO:
 func Example41() {
-	file, err := os.Create("Example_41.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_41.pdf", compliance.PDF15)
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f2 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())

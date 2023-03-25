@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -16,14 +13,7 @@ import (
 
 // Example45 -- TODO:
 func Example45() {
-	file, err := os.Create("Example_45.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF_UA)
+	pdf := pdfjet.NewPDFFile("Example_45.pdf", compliance.PDF_UA)
 	pdf.SetLanguage("en-US")
 	pdf.SetTitle("Hello, World!")
 

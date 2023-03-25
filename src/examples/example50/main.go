@@ -17,19 +17,12 @@ import (
 
 // Example50 shows how to fill in an existing PDF form.
 func Example50(fileName string) {
-	file, err := os.Create("Example_50.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
 	buf, err := os.ReadFile("data/testPDFs/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_50.pdf", compliance.PDF15)
 
 	objects := pdf.Read(buf)
 
