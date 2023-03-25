@@ -23,13 +23,7 @@ public class Example_03 {
                 new BufferedStream(new FileStream(
                         "images/ee-map.png", FileMode.Open, FileAccess.Read)),
                 ImageType.PNG);
-/*
-        Image image1 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/ee-map.png.stream", FileMode.Open, FileAccess.Read)),
-                ImageType.PNG_STREAM);
-*/
+
         Image image2 = new Image(
                 pdf,
                 new BufferedStream(new FileStream(
