@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -15,12 +14,7 @@ import (
 
 // Example04 shows how to use CJK fonts.
 func Example04() {
-	f, err := os.Create("Example_04.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := bufio.NewWriter(f)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_04.pdf", compliance.PDF15)
 
 	f1 := pdfjet.NewCJKFont(pdf, "AdobeMingStd-Light")
 
@@ -67,8 +61,6 @@ func Example04() {
 	}
 
 	pdf.Complete()
-
-	f.Close()
 }
 
 func main() {
