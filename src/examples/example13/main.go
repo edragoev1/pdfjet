@@ -30,10 +30,7 @@ func Example13() {
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
 	font3 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansMono.ttf.stream")
 
-	f, err = os.Open("images/ee-map.png")
-	reader := bufio.NewReader(f)
-	image := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-	f.Close() //TODO
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
