@@ -21,17 +21,9 @@ func Example22() {
 		log.Fatal(err)
 	}
 	w := bufio.NewWriter(f)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	var f1 *pdfjet.Font
-	f, err = os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	reader := bufio.NewReader(f)
-	f1 = pdfjet.NewFontStream1(pdf, reader)
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
 	dest0 := "dest#0"
 	dest1 := "dest#1"
