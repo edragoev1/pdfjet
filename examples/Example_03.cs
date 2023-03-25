@@ -20,20 +20,17 @@ public class Example_03 {
 
         Image image1 = new Image(
                 pdf,
-                new BufferedStream(new FileStream(
-                        "images/ee-map.png", FileMode.Open, FileAccess.Read)),
+                new FileStream("images/ee-map.png", FileMode.Open, FileAccess.Read),
                 ImageType.PNG);
 
         Image image2 = new Image(
                 pdf,
-                new BufferedStream(new FileStream(
-                        "images/fruit.jpg", FileMode.Open, FileAccess.Read)),
+                new FileStream("images/fruit.jpg", FileMode.Open, FileAccess.Read),
                 ImageType.JPG);
 
         Image image3 = new Image(
                 pdf,
-                new BufferedStream(new FileStream(
-                        "images/mt-map.bmp", FileMode.Open, FileAccess.Read)),
+                new FileStream("images/mt-map.bmp", FileMode.Open, FileAccess.Read),
                 ImageType.BMP);
 
         Page page = new Page(pdf, A4.PORTRAIT);
