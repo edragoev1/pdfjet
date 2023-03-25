@@ -92,7 +92,6 @@ private static let forms: [Character] = [
         var buf2 = String()
         var rightToLeft: Bool = true
         for i in 0..<str.count {
-            // let ch = str[i]
             let ch = str[str.index(str.startIndex, offsetBy: i)]
             if ch == "\u{200E}" {
                 // LRM  U+200E  LEFT-TO-RIGHT MARK  Left-to-right zero-width character
