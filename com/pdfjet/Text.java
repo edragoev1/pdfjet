@@ -23,6 +23,8 @@ SOFTWARE.
 */
 package com.pdfjet;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.*;
 
 
@@ -235,6 +237,26 @@ public class Text implements Drawable {
             list.add(buf.toString());
         }
         return list.toArray(new String[] {});
+    }
+
+
+    public static List<String> read(String filePath) throws IOException {
+        List<String> lines = new ArrayList<String>();
+        FileInputStream stream = new FileInputStream(filePath);
+        StringBuilder buffer = new StringBuilder();
+        int ch;
+        while ((ch = stream.read()) != -1) {
+            if (ch == '\r') {
+                continue;
+            } else if (ch == '\n') {
+                lines.add(buffer.toString());
+                buffer.setLength(0);
+            } else {
+                buffer.append((char) ch);
+            }
+        }
+        stream.close();
+        return lines;
     }
 
 }   // End of Text.java

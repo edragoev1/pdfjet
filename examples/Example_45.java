@@ -65,10 +65,12 @@ public class Example_45 {
                 .drawOn(page);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
-        colors.put("new", Color.darkred);
+        colors.put("new", Color.red);
+        colors.put("ArrayList", Color.blue);
+        colors.put("List", Color.blue);
+        colors.put("String", Color.blue);
         colors.put("Field", Color.blue);
-        colors.put("ArrayList", Color.red);
-        colors.put("List", Color.red);
+        colors.put("Form", Color.blue);
         colors.put("Smart", Color.green);
         colors.put("Widget", Color.green);
         colors.put("Designs", Color.green);
@@ -76,35 +78,14 @@ public class Example_45 {
         float x = 50;
         float y = 280;
         float dy = f3.getBodyHeight();
-        List<String> lines = readTextLines("data/form-code.txt");
+        List<String> lines = Text.read("data/form-code.txt");
         for (String line : lines) {
-            page.drawString(f3, null, line, x, y, colors);
+            page.drawString(f3, line, x, y, colors);
             y += dy;
         }
 
         pdf.complete();
     }
-
-
-    private List<String> readTextLines(String filePath) throws IOException {
-        List<String> lines = new ArrayList<String>();
-        FileInputStream stream = new FileInputStream(filePath);
-        StringBuilder buffer = new StringBuilder();
-        int ch;
-        while ((ch = stream.read()) != -1) {
-            if (ch == '\r') {
-                continue;
-            } else if (ch == '\n') {
-                lines.add(buffer.toString());
-                buffer.setLength(0);
-            } else {
-                buffer.append((char) ch);
-            }
-        }
-        stream.close();
-        return lines;
-    }
-
 
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
