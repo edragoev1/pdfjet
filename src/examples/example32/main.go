@@ -19,14 +19,7 @@ func Example32() {
 	y := float32(50.0)
 	leading := float32(14.0)
 
-	file, err := os.Create("Example_32.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_32.pdf", compliance.PDF15)
 
 	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 

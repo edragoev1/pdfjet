@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -15,14 +12,9 @@ import (
 
 // Example07 -- TODO:
 func Example07(mode string) {
-	f, err := os.Create("Example_07.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := bufio.NewWriter(f)
 	// pdf := pdfjet.NewPDF(w, compliance.PDFUA)
 	// pdf.SetTitle("PDF/UA compliant PDF");
-	pdf := pdfjet.NewPDF(w, compliance.PDF_A_1B)
+	pdf := pdfjet.NewPDFFile("Example_07.pdf", compliance.PDF_A_1B)
 	pdf.SetTitle("PDF/A-1B compliant PDF")
 
 	var f1 = pdfjet.NewFontFromFile(
@@ -79,8 +71,6 @@ func Example07(mode string) {
 	textLine.DrawOn(page)
 
 	pdf.Complete()
-
-	f.Close()
 }
 
 func main() {

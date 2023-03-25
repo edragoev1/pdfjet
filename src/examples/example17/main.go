@@ -16,13 +16,7 @@ import (
 // Example17 draws the Canadian flag using a Path object that contains both lines
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example17() {
-	file, err := os.Create("Example_17.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_17.pdf", compliance.PDF15)
 
 	image1 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P08.PNG", imagetype.PNG)
 	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG", imagetype.PNG) // Indexed Image with Bit Depth == 4
@@ -41,6 +35,9 @@ func Example17() {
 	image15 := pdfjet.NewImageFromFile(pdf, "PngSuite/S33N3P04.PNG", imagetype.PNG)
 
 	file16, err := os.Open("PngSuite/S34N3P04.PNG")
+	if err != nil {
+		log.Fatal(err)
+	}
 	reader := bufio.NewReader(file16)
 	defer file16.Close()
 	image16 := pdfjet.NewImage(pdf, reader, imagetype.PNG)

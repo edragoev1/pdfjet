@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -16,13 +15,7 @@ import (
 
 // Example12 constructs and draws PDF417 barcode.
 func Example12() {
-	f, err := os.Create("Example_12.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := bufio.NewWriter(f)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_12.pdf", compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
@@ -58,8 +51,6 @@ func Example12() {
 	textLine.DrawOn(page)
 
 	pdf.Complete()
-
-	f.Close()
 }
 
 func main() {

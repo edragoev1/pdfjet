@@ -18,13 +18,7 @@ import (
 // This example shows how to add "Page X of N" footer to every page of
 // the PDF file. In this case we create new PDF and store it in a buffer.
 func Example51() {
-	file, err := os.Create("temp.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("temp.pdf", compliance.PDF15)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 	box := pdfjet.NewBox()
@@ -89,6 +83,7 @@ func AddFooterToPDF() {
 		page.Complete(&objects)
 	}
 	pdf.AddObjects(&objects)
+
 	pdf.Complete()
 }
 

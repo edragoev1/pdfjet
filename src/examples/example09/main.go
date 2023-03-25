@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -16,13 +13,7 @@ import (
 
 // Example09 draws the a chart that consists of three paths.
 func Example09() {
-	f, err := os.Create("Example_09.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	w := bufio.NewWriter(f)
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_09.pdf", compliance.PDF15)
 
 	font1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")

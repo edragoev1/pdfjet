@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -18,28 +15,13 @@ import (
 // Example10 draws the Canadian flag using a Path object that contains both lines
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example10() {
-	f, err := os.Create("Example_10.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := bufio.NewWriter(f)
+	pdf := pdfjet.NewPDFFile("Example_10.pdf", compliance.PDF15)
 
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
+	font3 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansMono.ttf.stream")
 
-	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-
-	f, err = os.Open("fonts/Droid/DroidSerif-Regular.ttf.stream")
-	reader := bufio.NewReader(f)
-	font2 := pdfjet.NewFontStream1(pdf, reader)
-
-	f, err = os.Open("fonts/Droid/DroidSansMono.ttf.stream")
-	reader = bufio.NewReader(f)
-	font3 := pdfjet.NewFontStream1(pdf, reader)
-
-	f, err = os.Open("images/ee-map.png")
-	reader = bufio.NewReader(f)
-	image := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-	f.Close()
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
@@ -103,8 +85,8 @@ func Example10() {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-	font.SetSize(24.0)
-	textField := pdfjet.NewTextLine(font, "Hello, World!")
+	font1.SetSize(24.0)
+	textField := pdfjet.NewTextLine(font1, "Hello, World!")
 	textField.SetLocation(300.0, 300.0)
 	textField.SetColor(color.Blanchedalmond)
 	textField.DrawOn(page)
@@ -134,8 +116,6 @@ func Example10() {
 	image.DrawOn(page)
 
 	pdf.Complete()
-
-	f.Close()
 }
 
 func main() {

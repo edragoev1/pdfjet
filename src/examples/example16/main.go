@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -17,13 +16,7 @@ import (
 // Example16 draws the Canadian flag using a Path object that contains both lines
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example16() {
-	file, err := os.Create("Example_16.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := bufio.NewWriter(file)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_16.pdf", compliance.PDF15)
 	/*
 		// file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
 		file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf")
@@ -80,8 +73,6 @@ func Example16() {
 	box.DrawOn(page)
 
 	pdf.Complete()
-
-	file.Close()
 }
 
 func main() {

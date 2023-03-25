@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -14,15 +11,7 @@ import (
 
 // Example11 tests the one dimenstional barcodes.
 func Example11() {
-	f, err := os.Create("Example_11.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-
-	pdf := pdfjet.NewPDF(w, compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_11.pdf", compliance.PDF15)
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
