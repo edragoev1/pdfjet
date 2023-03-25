@@ -23,20 +23,13 @@ func Example24() {
 		log.Fatal(err)
 	}
 	w := bufio.NewWriter(f)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
 	font3 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansMono.ttf.stream")
 
-	f, err = os.Open("images/ee-map.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	reader := bufio.NewReader(f)
-	image := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-	f.Close()
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 

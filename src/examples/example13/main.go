@@ -23,7 +23,6 @@ func Example13() {
 		log.Fatal(err)
 	}
 	w := bufio.NewWriter(f)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
