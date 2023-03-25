@@ -25,9 +25,11 @@ SOFTWARE.
 */
 
 import (
+	"bufio"
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -46,6 +48,16 @@ type SVGImage struct {
 	altDescription string
 	actualText     string
 	structureType  string
+}
+
+func NewSVGImageFromFile(filePath string) *SVGImage {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	reader := bufio.NewReader(file)
+	return NewSVGImage(reader)
 }
 
 /**

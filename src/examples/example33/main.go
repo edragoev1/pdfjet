@@ -21,16 +21,9 @@ func Example33() {
 	}
 	defer file.Close()
 	w := bufio.NewWriter(file)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
-	file1, err := os.Open("images/photoshop.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	reader := bufio.NewReader(file1)
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg", imagetype.JPG)
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 
@@ -39,113 +32,48 @@ func Example33() {
 	image1.DrawOn(page)
 
 	// SVG test
-	file2, err := os.Open("images/svg-test/test-CC.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 := bufio.NewReader(file2)
-	image2 := pdfjet.NewSVGImage(reader2)
+	image2 := pdfjet.NewSVGImageFromFile("images/svg-test/test-CC.svg")
 	image2.SetLocation(20.0, 670.0)
 	xy := image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/test-QQ.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-QQ.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/test-qt.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-qt.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/test-qT.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-qT.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/test-QT.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-QT.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/test-qq.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-qq.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile(
+		"images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/test-CS.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-CS.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/test-QQ.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-QQ.svg")
 	image2.SetLocation(xy[0], 670.0)
 	image2.DrawOn(page)
 
-	file2, err = os.Open("images/svg-test/europe.svg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader2 = bufio.NewReader(file2)
-	image2 = pdfjet.NewSVGImage(reader2)
+	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/europe.svg")
 	image2.SetLocation(0.0, 0.0)
 	image2.DrawOn(page)
 
