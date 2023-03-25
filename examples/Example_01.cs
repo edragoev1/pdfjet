@@ -17,17 +17,18 @@ class Example_01 {
                 new FileStream("Example_01.pdf", FileMode.Create)));
 
         Font font1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf.stream",
+                "fonts/Droid/DroidSans.ttf.stream",
                 FileMode.Open,
                 FileAccess.Read),
                 Font.STREAM);
-        font1.SetSize(12f);
 
         Font font2 = new Font(pdf, new FileStream(
                 "fonts/Droid/DroidSansFallback.ttf.stream",
                 FileMode.Open,
                 FileAccess.Read),
                 Font.STREAM);
+
+        font1.SetSize(12f);
         font2.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
