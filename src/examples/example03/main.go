@@ -22,38 +22,16 @@ func Example03() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-
 	w := bufio.NewWriter(file)
-
 	pdf := pdfjet.NewPDF(w, compliance.PDF15)
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	file1, err := os.Open("images/ee-map.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	reader := bufio.NewReader(file1)
-	image1 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
+	image2 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg", imagetype.JPG)
+	image3 := pdfjet.NewImageFromFile(pdf, "images/mt-map.bmp", imagetype.BMP)
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
-
-	file2, err := os.Open("images/fruit.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader = bufio.NewReader(file2)
-	image2 := pdfjet.NewImage(pdf, reader, imagetype.JPG)
-
-	file3, err := os.Open("images/mt-map.bmp")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file3.Close()
-	reader = bufio.NewReader(file3)
-	image3 := pdfjet.NewImage(pdf, reader, imagetype.BMP)
 
 	text := pdfjet.NewTextLine(f1, "The map below is an embedded PNG image")
 	text.SetLocation(20.0, 20.0)
