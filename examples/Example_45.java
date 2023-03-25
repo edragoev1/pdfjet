@@ -129,10 +129,19 @@ public class Example_45 {
                 .setRowHeight(h)
                 .drawOn(page);
 
+        Map<String, Integer> colors = new HashMap<String, Integer>();
+        colors.put("Field", Color.blue);
+        colors.put("ArrayList", Color.red);
+        colors.put("List", Color.red);
+        colors.put("Smart", Color.green);
+        colors.put("Widget", Color.green);
+        colors.put("Designs", Color.green);
+        page.drawString(f1, f2, "        List<Field> colors = new ArrayList<Field>(\"Smart Widget Designs\");", 50f, 280f, colors);
+
         Image image = new Image(
                 pdf, new FileInputStream("images/FormCode.png"), ImageType.PNG);
-        image.setLocation(50f, 200f);
-        image.scaleBy(0.40f);
+        image.setLocation(50f, 300f);
+        image.scaleBy(0.50f);
         image.drawOn(page);
 
         pdf.complete();
