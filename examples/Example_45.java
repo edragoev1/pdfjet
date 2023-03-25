@@ -78,7 +78,7 @@ public class Example_45 {
         float x = 50;
         float y = 280;
         float dy = f3.getBodyHeight();
-        List<String> lines = Text.read("data/form-code.txt");
+        List<String> lines = Text.readLines("data/form-code.txt");
         for (String line : lines) {
             page.drawString(f3, line, x, y, colors);
             y += dy;

@@ -244,7 +244,7 @@ public class Text : IDrawable {
     }
 
 
-    public static List<String> Read(String filePath) {
+    public static List<String> ReadLines(String filePath) {
         List<String> lines = new List<String>();
         FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         StringBuilder buffer = new StringBuilder();

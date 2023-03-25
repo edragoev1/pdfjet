@@ -240,7 +240,7 @@ public class Text implements Drawable {
     }
 
 
-    public static List<String> read(String filePath) throws IOException {
+    public static List<String> readLines(String filePath) throws IOException {
         List<String> lines = new ArrayList<String>();
         FileInputStream stream = new FileInputStream(filePath);
         StringBuilder buffer = new StringBuilder();
