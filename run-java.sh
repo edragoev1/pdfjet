@@ -1,3 +1,9 @@
+if [ $# -eq 0 ]; then
+    echo "Please provide an example number:"
+    echo "./run-java.sh 33"
+    exit
+fi
+
 rm -f out/production/com/pdfjet/*.class
 rm -f out/production/examples/*.class
 
