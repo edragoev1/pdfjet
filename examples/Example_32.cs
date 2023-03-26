@@ -1,64 +1,47 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
+using System.Collections.Generic;
 
 /**
  *  Example_32.cs
  */
 public class Example_32 {
-
-    private Font f1;
-    private float x = 50f;
-    private float y = 50f;
-    private float leading = 10f;
-
     public Example_32() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_32.pdf", FileMode.Create)));
 
-        f1 = new Font(pdf, CoreFont.COURIER);
-        f1.SetSize(8f);
+        Font font = new Font(pdf, CoreFont.COURIER);
+        font.SetSize(8f);
 
-        StreamReader reader = new StreamReader(
-                new FileStream("examples/Example_02.cs", FileMode.Open, FileAccess.Read));
+        Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
+        colors["new"] = Color.red;
+        colors["ArrayList"] =  Color.blue;
+        colors["List"] = Color.blue;
+        colors["String"] = Color.blue;
+        colors["Field"] = Color.blue;
+        colors["Form"] = Color.blue;
+        colors["Smart"] = Color.green;
+        colors["Widget"] = Color.green;
+        colors["Designs"] = Color.green;
 
-        String line = reader.ReadLine();
-        Page page = null;
-        while (line != null) {
-            if (page == null) {
+        float x = 50f;
+        float y = 50f;
+        float dy = font.GetBodyHeight();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<String> lines = Text.ReadLines("examples/Example_02.cs");
+        foreach (String line in lines) {
+            page.DrawString(font, line, x, y, colors);
+            y += dy;
+            if (y > (page.GetHeight() - 20f)) {
+                page = new Page(pdf, Letter.PORTRAIT);
                 y = 50f;
-                page = NewPage(pdf);
             }
-            page.Println(line);
-            y += leading;
-            if (y > (Letter.PORTRAIT[1] - 20f)) {
-                page.SetTextEnd();
-                page = null;
-            }
-            line = reader.ReadLine();
         }
-        if (page != null) {
-            page.SetTextEnd();
-        }
-        reader.Close();
 
         pdf.Complete();
     }
-
-
-    private Page NewPage(PDF pdf) {
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        page.SetTextStart();
-        page.SetTextFont(f1);
-        page.SetTextLocation(x, y);
-        page.SetTextLeading(leading);
-        return page;
-    }
-
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
@@ -68,5 +51,4 @@ public class Example_32 {
         sw.Stop();
         Console.WriteLine("Example_32 => " + (time1 - time0));
     }
-
 }   // End of Example_32.cs

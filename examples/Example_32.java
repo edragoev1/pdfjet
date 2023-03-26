@@ -13,10 +13,10 @@ public class Example_32 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_32.pdf")));
 
-        // Font f1 = new Font(pdf, CoreFont.COURIER);
-        Font f1 = new Font(pdf, new FileInputStream(
+        // Font font = new Font(pdf, CoreFont.COURIER);
+        Font font = new Font(pdf, new FileInputStream(
                 "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream"), Font.STREAM);
-        f1.setSize(8f);
+        font.setSize(8f);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
         colors.put("new", Color.red);
@@ -31,11 +31,12 @@ public class Example_32 {
 
         float x = 50f;
         float y = 50f;            
-        List<String> lines = Text.readLines("examples/Example_02.java");
+        float dy = font.getBodyHeight();
         Page page = new Page(pdf, Letter.PORTRAIT);
+        List<String> lines = Text.readLines("examples/Example_02.java");
         for (String line : lines) {
-            page.drawString(f1, line, x, y, colors);
-            y += 10f;
+            page.drawString(font, line, x, y, colors);
+            y += dy;
             if (y > (page.getHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);
                 y = 50f;
