@@ -1,3 +1,6 @@
+let w: Float = 530.0    // The form width
+let h: Float = 13.0     // The form row height
+
 var fields = [Field]()
 fields.append(Field(  0.0, ["Company", "Smart Widget Designs"]))
 fields.append(Field(  0.0, ["Street Number", "120"]))
