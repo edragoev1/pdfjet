@@ -13,15 +13,15 @@ public class Example_32 {
     private Font f1;
     private float x = 50f;
     private float y = 50f;
-    private float leading = 14f;
+    private float leading = 10f;
 
     public Example_32() {
 
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_32.pdf", FileMode.Create)));
 
-        f1 = new Font(pdf, CoreFont.HELVETICA);
-        f1.SetSize(10f);
+        f1 = new Font(pdf, CoreFont.COURIER);
+        f1.SetSize(8f);
 
         StreamReader reader = new StreamReader(
                 new FileStream("examples/Example_02.cs", FileMode.Open, FileAccess.Read));

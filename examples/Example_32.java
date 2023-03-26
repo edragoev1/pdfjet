@@ -22,7 +22,9 @@ public class Example_32 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_32.pdf")));
 
-        f1 = new Font(pdf, CoreFont.COURIER);
+        // f1 = new Font(pdf, CoreFont.COURIER);
+        f1 = new Font(pdf, new FileInputStream(
+            "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream"), Font.STREAM);
         f1.setSize(8f);
 
         BufferedReader reader = new BufferedReader(
