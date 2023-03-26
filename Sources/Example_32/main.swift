@@ -22,9 +22,7 @@ public class Example_32 {
                 Font.STREAM)
         font.setSize(8.0)
 
-        let text = try String(contentsOfFile: "Sources/Example_02/main.swift", encoding: .utf8)
-        let lines = text.split(separator: "\n")
-
+        let lines = try Text.readLines("Sources/Example_02/main.swift")
         var page: Page?
         for line in lines {
             if page == nil {
