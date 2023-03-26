@@ -929,63 +929,6 @@ func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 	appendString(&page.buf, "c\n")
 }
 
-// SetTextStart sets the start of text block.
-// Please see Example_32. This method must have matching call to SetTextEnd().
-func (page *Page) SetTextStart() {
-	appendString(&page.buf, "BT\n")
-}
-
-// SetTextLocation sets the text location.
-// Please see Example_32.
-// @param x the x coordinate of new text location.
-// @param y the y coordinate of new text location.
-func (page *Page) SetTextLocation(x, y float32) {
-	appendFloat32(&page.buf, x)
-	appendString(&page.buf, " ")
-	appendFloat32(&page.buf, page.height-y)
-	appendString(&page.buf, " Td\n")
-}
-
-// SetTextBegin writes the text begin operator.
-func (page *Page) SetTextBegin(x, y float32) {
-	appendString(&page.buf, "BT\n")
-	appendFloat32(&page.buf, x)
-	appendString(&page.buf, " ")
-	appendFloat32(&page.buf, page.height-y)
-	appendString(&page.buf, " Td\n")
-}
-
-// SetTextLeading sets the text leading.
-// Please see Example_32.
-func (page *Page) SetTextLeading(leading float32) {
-	appendFloat32(&page.buf, leading)
-	appendString(&page.buf, " TL\n")
-}
-
-// SetCharSpacing sets the spacing between the characters.
-func (page *Page) SetCharSpacing(spacing float32) {
-	appendFloat32(&page.buf, spacing)
-	appendString(&page.buf, " Tc\n")
-}
-
-// SetWordSpacing sets the word spacing.
-func (page *Page) SetWordSpacing(spacing float32) {
-	appendFloat32(&page.buf, spacing)
-	appendString(&page.buf, " Tw\n")
-}
-
-// SetTextScaling sets the text scaling.
-func (page *Page) SetTextScaling(scaling float32) {
-	appendFloat32(&page.buf, scaling)
-	appendString(&page.buf, " Tz\n")
-}
-
-// SetTextRise sets the text rise.
-func (page *Page) SetTextRise(rise float32) {
-	appendFloat32(&page.buf, rise)
-	appendString(&page.buf, " Ts\n")
-}
-
 // SetTextFont sets the text fonts.
 func (page *Page) SetTextFont(font *Font) {
 	page.font = font
@@ -996,39 +939,96 @@ func (page *Page) SetTextFont(font *Font) {
 	appendString(&page.buf, " Tf\n")
 }
 
-// Println prints a line of text and moves to the next line.
-// Please see Example_32.
-func (page *Page) Println(text string) {
-	page.Print(text)
-	page.println()
-}
+// // SetTextStart sets the start of text block.
+// // Please see Example_32. This method must have matching call to SetTextEnd().
+// func (page *Page) SetTextStart() {
+// 	appendString(&page.buf, "BT\n")
+// }
 
-// Print prints a line of text.
-// Please see Example_32.
-func (page *Page) Print(text string) {
-	if page.font == nil {
-		return
-	}
-	appendString(&page.buf, "[<")
-	if page.font.isCoreFont {
-		page.drawASCIIString(page.font, text)
-	} else {
-		page.drawUnicodeString(page.font, text)
-	}
-	appendString(&page.buf, ">] TJ\n")
-}
+// // SetTextLocation sets the text location.
+// // Please see Example_32.
+// // @param x the x coordinate of new text location.
+// // @param y the y coordinate of new text location.
+// func (page *Page) SetTextLocation(x, y float32) {
+// 	appendFloat32(&page.buf, x)
+// 	appendString(&page.buf, " ")
+// 	appendFloat32(&page.buf, page.height-y)
+// 	appendString(&page.buf, " Td\n")
+// }
 
-// println moves to the next line.
-// Please see Example_32.
-func (page *Page) println() {
-	appendString(&page.buf, "T*\n")
-}
+// // SetTextBegin writes the text begin operator.
+// func (page *Page) SetTextBegin(x, y float32) {
+// 	appendString(&page.buf, "BT\n")
+// 	appendFloat32(&page.buf, x)
+// 	appendString(&page.buf, " ")
+// 	appendFloat32(&page.buf, page.height-y)
+// 	appendString(&page.buf, " Td\n")
+// }
 
-// SetTextEnd sets the end of text block.
-// Please see Example_32.
-func (page *Page) SetTextEnd() {
-	appendString(&page.buf, "ET\n")
-}
+// // SetTextLeading sets the text leading.
+// // Please see Example_32.
+// func (page *Page) SetTextLeading(leading float32) {
+// 	appendFloat32(&page.buf, leading)
+// 	appendString(&page.buf, " TL\n")
+// }
+
+// // SetCharSpacing sets the spacing between the characters.
+// func (page *Page) SetCharSpacing(spacing float32) {
+// 	appendFloat32(&page.buf, spacing)
+// 	appendString(&page.buf, " Tc\n")
+// }
+
+// // SetWordSpacing sets the word spacing.
+// func (page *Page) SetWordSpacing(spacing float32) {
+// 	appendFloat32(&page.buf, spacing)
+// 	appendString(&page.buf, " Tw\n")
+// }
+
+// // SetTextScaling sets the text scaling.
+// func (page *Page) SetTextScaling(scaling float32) {
+// 	appendFloat32(&page.buf, scaling)
+// 	appendString(&page.buf, " Tz\n")
+// }
+
+// // SetTextRise sets the text rise.
+// func (page *Page) SetTextRise(rise float32) {
+// 	appendFloat32(&page.buf, rise)
+// 	appendString(&page.buf, " Ts\n")
+// }
+
+// // Println prints a line of text and moves to the next line.
+// // Please see Example_32.
+// func (page *Page) Println(text string) {
+// 	page.Print(text)
+// 	page.println()
+// }
+
+// // Print prints a line of text.
+// // Please see Example_32.
+// func (page *Page) Print(text string) {
+// 	if page.font == nil {
+// 		return
+// 	}
+// 	appendString(&page.buf, "[<")
+// 	if page.font.isCoreFont {
+// 		page.drawASCIIString(page.font, text)
+// 	} else {
+// 		page.drawUnicodeString(page.font, text)
+// 	}
+// 	appendString(&page.buf, ">] TJ\n")
+// }
+
+// // println moves to the next line.
+// // Please see Example_32.
+// func (page *Page) println() {
+// 	appendString(&page.buf, "T*\n")
+// }
+
+// // SetTextEnd sets the end of text block.
+// // Please see Example_32.
+// func (page *Page) SetTextEnd() {
+// 	appendString(&page.buf, "ET\n")
+// }
 
 // DrawRectRoundCorners draws rectangle with rounded corners.
 // Code provided by:
