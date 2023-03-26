@@ -1,66 +1,48 @@
 package examples;
 
 import java.io.*;
-
+import java.util.*;
 import com.pdfjet.*;
-
 
 /**
  *  Example_32.java
- *
  */
 public class Example_32 {
-
-    private Font f1;
-    private float x = 50f;
-    private float y = 50f;
-    private float leading = 10f;
-
     public Example_32() throws Exception {
 
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_32.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_32.pdf")));
 
-        // f1 = new Font(pdf, CoreFont.COURIER);
-        f1 = new Font(pdf, new FileInputStream(
-            "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream"), Font.STREAM);
+        // Font f1 = new Font(pdf, CoreFont.COURIER);
+        Font f1 = new Font(pdf, new FileInputStream(
+                "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream"), Font.STREAM);
         f1.setSize(8f);
 
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(
-                        new FileInputStream("examples/Example_02.java"), "UTF-8"));
+        Map<String, Integer> colors = new HashMap<String, Integer>();
+        colors.put("new", Color.red);
+        colors.put("ArrayList", Color.blue);
+        colors.put("List", Color.blue);
+        colors.put("String", Color.blue);
+        colors.put("Field", Color.blue);
+        colors.put("Form", Color.blue);
+        colors.put("Smart", Color.green);
+        colors.put("Widget", Color.green);
+        colors.put("Designs", Color.green);
 
-        String line = reader.readLine();
-        Page page = null;
-        while (line != null) {
-            if (page == null) {
+        float x = 50f;
+        float y = 50f;            
+        List<String> lines = Text.readLines("examples/Example_02.java");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        for (String line : lines) {
+            page.drawString(f1, line, x, y, colors);
+            y += 10f;
+            if (y > (page.getHeight() - 20f)) {
+                page = new Page(pdf, Letter.PORTRAIT);
                 y = 50f;
-                page = newPage(pdf);
             }
-            page.println(line);
-            y += leading;
-            if (y > (Letter.PORTRAIT[1] - 20f)) {
-                page.setTextEnd();
-                page = null;
-            }
-            line = reader.readLine();
         }
-        if (page != null) {
-            page.setTextEnd();
-        }
-        reader.close();
 
         pdf.complete();
-    }
-
-    private Page newPage(PDF pdf) throws Exception {
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        page.setTextStart();
-        page.setTextFont(f1);
-        page.setTextLocation(x, y);
-        page.setTextLeading(leading);
-        return page;
     }
 
     public static void main(String[] args) throws Exception {
