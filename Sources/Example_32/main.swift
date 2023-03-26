@@ -11,48 +11,41 @@ public class Example_32 {
     private var leading: Float = 10.0
 
     public init() throws {
-        let stream = OutputStream(toFileAtPath: "Example_32.pdf", append: false)!
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_32.pdf", append: false)!)
 
-        let pdf = PDF(stream)
-
-        // let font = Font(pdf, CoreFont.COURIER)
         let font = try Font(
                 pdf,
                 InputStream(fileAtPath: "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")!,
                 Font.STREAM)
         font.setSize(8.0)
 
+        var colors = [String:Int32]()
+        colors["new"] = Color.red
+        colors["ArrayList"] = Color.blue
+        colors["List"] = Color.blue
+        colors["String"] = Color.blue
+        colors["Field"] = Color.blue
+        colors["Form"] = Color.blue
+        colors["Smart"] = Color.green
+        colors["Widget"] = Color.green
+        colors["Point"] = Color.green
+
+        var page = Page(pdf, Letter.PORTRAIT)
+        let x: Float = 50.0
+        var y: Float = 50.0
+        let dy = font.getBodyHeight()
         let lines = try Text.readLines("Sources/Example_02/main.swift")
-        var page: Page?
         for line in lines {
-            if page == nil {
+            page.drawString(font, line, x, y, colors)
+            y += dy
+            if y > (page.getHeight() - 20.0) {
+                page = Page(pdf, Letter.PORTRAIT)
                 y = 50.0
-                page = try newPage(pdf, font)
             }
-            page!.printString(line)
-            page!.newLine()
-            y += leading
-            if y > (Letter.PORTRAIT[1] - 20.0) {
-                page!.setTextEnd()
-                page = nil
-            }
-        }
-        if page != nil {
-            page!.setTextEnd()
         }
 
         pdf.complete()
     }
-
-    private func newPage(_ pdf: PDF, _ font: Font) throws -> Page {
-        let page = Page(pdf, Letter.PORTRAIT)
-        page.setTextStart()
-        page.setTextFont(font)
-        page.setTextLocation(x, y)
-        page.setTextLeading(leading)
-        return page
-    }
-
 }   // End of Example_32.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
