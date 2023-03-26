@@ -29,7 +29,7 @@ public class Example_32 {
                 y = 50.0
                 page = try newPage(pdf, font)
             }
-            page!.printString(String(line))
+            page!.printString(line)
             page!.newLine()
             y += leading
             if y > (Letter.PORTRAIT[1] - 20.0) {
