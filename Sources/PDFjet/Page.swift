@@ -1180,75 +1180,6 @@ public class Page {
     }
 
 
-    ///
-    /// Sets the start of text block.
-    /// Please see Example_32. This method must have matching call to setTextEnd().
-    ///
-    public func setTextStart() {
-        append("BT\n")
-    }
-
-
-    ///
-    /// Sets the text location.
-    /// Please see Example_32.
-    ///
-    /// - Parameter x the x coordinate of new text location.
-    /// - Parameter y the y coordinate of new text location.
-    ///
-    public func setTextLocation(_ x: Float, _ y: Float) {
-        append(x)
-        append(" ")
-        append(height - y)
-        append(" Td\n")
-    }
-
-
-    public func setTextBegin(_ x: Float, _ y: Float) {
-        append("BT\n")
-        append(x)
-        append(" ")
-        append(height - y)
-        append(" Td\n")
-    }
-
-
-    ///
-    /// Sets the text leading.
-    /// Please see Example_32.
-    ///
-    /// - Parameter leading the leading.
-    ///
-    public func setTextLeading(_ leading: Float) {
-        append(leading)
-        append(" TL\n")
-    }
-
-
-    public func setCharSpacing(_ spacing: Float) {
-        append(spacing)
-        append(" Tc\n")
-    }
-
-
-    public func setWordSpacing(_ spacing: Float) {
-        append(spacing)
-        append(" Tw\n")
-    }
-
-
-    public func setTextScaling(_ scaling: Float) {
-        append(scaling)
-        append(" Tz\n")
-    }
-
-
-    public func setTextRise(_ rise: Float) {
-        append(rise)
-        append(" Ts\n")
-    }
-
-
     public func setTextFont(_ font: Font) {
         self.font = font
         append("/F")
@@ -1259,45 +1190,104 @@ public class Page {
     }
 
 
-    ///
-    /// Prints a line of text and moves to the next line.
-    /// Please see Example_32.
-    ///
-    // public func println(_ str: String) {
-    //     printString(str)
-    //     newLine()
+    // ///
+    // /// Sets the start of text block.
+    // /// Please see Example_32. This method must have matching call to setTextEnd().
+    // ///
+    // public func setTextStart() {
+    //     append("BT\n")
     // }
 
 
-    ///
-    /// Prints a line of text.
-    /// Please see Example_32.
-    ///
-    public func printString(_ str: String) {
-        if self.font != nil {
-            append("[<")
-            drawString(self.font!, str)
-            append(">] TJ\n")
-        }
-    }
+    // ///
+    // /// Sets the text location.
+    // /// Please see Example_32.
+    // ///
+    // /// - Parameter x the x coordinate of new text location.
+    // /// - Parameter y the y coordinate of new text location.
+    // ///
+    // public func setTextLocation(_ x: Float, _ y: Float) {
+    //     append(x)
+    //     append(" ")
+    //     append(height - y)
+    //     append(" Td\n")
+    // }
 
 
-    ///
-    /// Move to the next line.
-    /// Please see Example_32.
-    ///
-    public func newLine() {
-        append("T*\n")
-    }
+    // public func setTextBegin(_ x: Float, _ y: Float) {
+    //     append("BT\n")
+    //     append(x)
+    //     append(" ")
+    //     append(height - y)
+    //     append(" Td\n")
+    // }
 
 
-    ///
-    /// Sets the end of text block.
-    /// Please see Example_32.
-    ///
-    public func setTextEnd() {
-        append("ET\n")
-    }
+    // ///
+    // /// Sets the text leading.
+    // /// Please see Example_32.
+    // ///
+    // /// - Parameter leading the leading.
+    // ///
+    // public func setTextLeading(_ leading: Float) {
+    //     append(leading)
+    //     append(" TL\n")
+    // }
+
+
+    // public func setCharSpacing(_ spacing: Float) {
+    //     append(spacing)
+    //     append(" Tc\n")
+    // }
+
+
+    // public func setWordSpacing(_ spacing: Float) {
+    //     append(spacing)
+    //     append(" Tw\n")
+    // }
+
+
+    // public func setTextScaling(_ scaling: Float) {
+    //     append(scaling)
+    //     append(" Tz\n")
+    // }
+
+
+    // public func setTextRise(_ rise: Float) {
+    //     append(rise)
+    //     append(" Ts\n")
+    // }
+
+
+    // ///
+    // /// Prints a line of text.
+    // /// Please see Example_32.
+    // ///
+    // public func printString(_ str: String) {
+    //     if self.font != nil {
+    //         append("[<")
+    //         drawString(self.font!, str)
+    //         append(">] TJ\n")
+    //     }
+    // }
+
+
+    // ///
+    // /// Move to the next line.
+    // /// Please see Example_32.
+    // ///
+    // public func newLine() {
+    //     append("T*\n")
+    // }
+
+
+    // ///
+    // /// Sets the end of text block.
+    // /// Please see Example_32.
+    // ///
+    // public func setTextEnd() {
+    //     append("ET\n")
+    // }
 
 
     // Original code provided by:
