@@ -9,6 +9,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
@@ -31,6 +32,15 @@ func Example32() {
 	defer file2.Close()
 
 	colors := make(map[string]int32)
+	colors["new"] = color.Red
+	colors["ArrayList"] = color.Blue
+	colors["List"] = color.Blue
+	colors["String"] = color.Blue
+	colors["Field"] = color.Blue
+	colors["Form"] = color.Blue
+	colors["Smart"] = color.Green
+	colors["Widget"] = color.Green
+	colors["Designs"] = color.Green
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 	scanner := bufio.NewScanner(file2)
