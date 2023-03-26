@@ -8,40 +8,42 @@ public class Example_32 {
 
     private var x: Float = 50.0
     private var y: Float = 50.0
-    private var leading: Float = 14.0
+    private var leading: Float = 10.0
 
     public init() throws {
+        let stream = OutputStream(toFileAtPath: "Example_32.pdf", append: false)!
 
-        if let stream = OutputStream(toFileAtPath: "Example_32.pdf", append: false) {
+        let pdf = PDF(stream)
 
-            let pdf = PDF(stream)
+        // let font = Font(pdf, CoreFont.COURIER)
+        let font = try Font(
+                pdf,
+                InputStream(fileAtPath: "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")!,
+                Font.STREAM)
+        font.setSize(8.0)
 
-            let font = Font(pdf, CoreFont.HELVETICA)
-            font.setSize(10.0)
+        let text = try String(contentsOfFile: "Sources/Example_02/main.swift", encoding: .utf8)
+        let lines = text.split(separator: "\n")
 
-            let text = try String(contentsOfFile: "Sources/Example_02/main.swift", encoding: .utf8)
-            let lines = text.split(separator: "\n")
-
-            var page: Page?
-            for line in lines {
-                if page == nil {
-                    y = 50.0
-                    page = try newPage(pdf, font)
-                }
-                page!.printString(String(line))
-                page!.newLine()
-                y += leading
-                if y > (Letter.PORTRAIT[1] - 20.0) {
-                    page!.setTextEnd()
-                    page = nil
-                }
+        var page: Page?
+        for line in lines {
+            if page == nil {
+                y = 50.0
+                page = try newPage(pdf, font)
             }
-            if page != nil {
+            page!.printString(String(line))
+            page!.newLine()
+            y += leading
+            if y > (Letter.PORTRAIT[1] - 20.0) {
                 page!.setTextEnd()
+                page = nil
             }
-
-            pdf.complete()
         }
+        if page != nil {
+            page!.setTextEnd()
+        }
+
+        pdf.complete()
     }
 
     private func newPage(_ pdf: PDF, _ font: Font) throws -> Page {
