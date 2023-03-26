@@ -39,13 +39,13 @@ func NewField(x float32, values []string, format bool) *Field {
 	field := new(Field)
 	field.x = x
 	field.values = values
+	field.altDescription = make([]string, 0)
+	field.actualText = make([]string, 0)
 	field.format = format
 	if values != nil {
-		field.altDescription = values
-		field.actualText = values
 		for i := 0; i < len(values); i++ {
-			field.altDescription[i] = values[i]
-			field.actualText[i] = values[i]
+			field.altDescription = append(field.altDescription, values[i])
+			field.actualText = append(field.actualText, values[i])
 		}
 	}
 	return field

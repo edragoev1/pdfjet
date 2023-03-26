@@ -1,3 +1,6 @@
+float w = 530f; // The form width
+float h = 13f;  // The form row height
+
 List<Field> fields = new List<Field>();
 fields.Add(new Field(   0f, new String[] {"Company", "Smart Widget Designs"}));
 fields.Add(new Field(   0f, new String[] {"Street Number", "120"}));

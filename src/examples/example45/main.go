@@ -73,12 +73,14 @@ func Example45() {
 	form.DrawOn(page)
 
 	colors := make(map[string]int32)
-	colors["new"] = color.Red
+	colors["float32"] = color.Red
+	colors["false"] = color.Red
 	colors["ArrayList"] = color.Blue
 	colors["List"] = color.Blue
 	colors["String"] = color.Blue
 	colors["Field"] = color.Blue
-	colors["Form"] = color.Blue
+	colors["NewField"] = color.Blue
+	colors["NewForm"] = color.Blue
 	colors["Smart"] = color.Green
 	colors["Widget"] = color.Green
 	colors["Designs"] = color.Green

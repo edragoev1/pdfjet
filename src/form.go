@@ -24,7 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/edragoev1/pdfjet/src/color"
+)
 
 // Form describes form object.
 // Please see Example_45
@@ -46,6 +50,8 @@ type Form struct {
 func NewForm(fields []*Field) *Form {
 	form := new(Form)
 	form.fields = fields
+	form.labelColor = color.Black
+	form.valueColor = color.Blue
 	return form
 }
 
