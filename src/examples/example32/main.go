@@ -8,20 +8,21 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example32 -- TODO:
 func Example32() {
 	x := float32(50.0)
 	y := float32(50.0)
-	leading := float32(14.0)
 
 	pdf := pdfjet.NewPDFFile("Example_32.pdf", compliance.PDF15)
 
-	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
+	font.SetSize(8.0)
+	leading := font.GetBodyHeight()
 
 	file2, err := os.Open("examples/Example_02.java")
 	if err != nil {
@@ -29,19 +30,17 @@ func Example32() {
 	}
 	defer file2.Close()
 
-	var page *pdfjet.Page
+	colors := make(map[string]int32)
+
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 	scanner := bufio.NewScanner(file2)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if page == nil {
-			y = 50.0
-			page = newPage(pdf, font1, x, y, leading)
-		}
-		page.Println(line)
+		page.DrawStringUsingColorMap(font, nil, line, x, y, colors)
 		y += leading
-		if y > (letter.Portrait[1] - 20.0) {
-			page.SetTextEnd()
-			page = nil
+		if y > (page.GetHeight() - 20.0) {
+			page = pdfjet.NewPageAddTo(pdf, a4.Portrait)
+			y = 50.0
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -49,15 +48,6 @@ func Example32() {
 	}
 
 	pdf.Complete()
-}
-
-func newPage(pdf *pdfjet.PDF, font *pdfjet.Font, x, y, leading float32) *pdfjet.Page {
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
-	page.SetTextStart()
-	page.SetTextFont(font)
-	page.SetTextLocation(x, y)
-	page.SetTextLeading(leading)
-	return page
 }
 
 func main() {
