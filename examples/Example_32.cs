@@ -26,14 +26,14 @@ public class Example_32 {
         colors["Widget"] = Color.green;
         colors["Designs"] = Color.green;
 
+        Page page = new Page(pdf, Letter.PORTRAIT);
         float x = 50f;
         float y = 50f;
-        float dy = font.GetBodyHeight();
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        float leading = font.GetBodyHeight();
         List<String> lines = Text.ReadLines("examples/Example_02.cs");
         foreach (String line in lines) {
-            page.DrawString(font, line, x, y, colors);
-            y += dy;
+            page.DrawString(font, null, line, x, y, colors);
+            y += leading;
             if (y > (page.GetHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);
                 y = 50f;

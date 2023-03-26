@@ -16,20 +16,10 @@ import (
 
 // Example32 -- TODO:
 func Example32() {
-	x := float32(50.0)
-	y := float32(50.0)
-
 	pdf := pdfjet.NewPDFFile("Example_32.pdf", compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 	font.SetSize(8.0)
-	leading := font.GetBodyHeight()
-
-	file2, err := os.Open("examples/Example_02.java")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
 
 	colors := make(map[string]int32)
 	colors["new"] = color.Red
@@ -42,10 +32,12 @@ func Example32() {
 	colors["Widget"] = color.Green
 	colors["Designs"] = color.Green
 
+	x := float32(50.0)
+	y := float32(50.0)
+	leading := font.GetBodyHeight()
+	lines := ReadLines("examples/Example_02.java")
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
-	scanner := bufio.NewScanner(file2)
-	for scanner.Scan() {
-		line := scanner.Text()
+	for _, line := range lines {
 		page.DrawStringUsingColorMap(font, nil, line, x, y, colors)
 		y += leading
 		if y > (page.GetHeight() - 20.0) {
@@ -53,11 +45,22 @@ func Example32() {
 			y = 50.0
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
 
 	pdf.Complete()
+}
+
+func ReadLines(filePath string) []string {
+	lines := make([]string, 0)
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		lines = append(lines, line)
+	}
+	return lines
 }
 
 func main() {

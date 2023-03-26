@@ -13,7 +13,6 @@ public class Example_32 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_32.pdf")));
 
-        // Font font = new Font(pdf, CoreFont.COURIER);
         Font font = new Font(pdf, new FileInputStream(
                 "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream"), Font.STREAM);
         font.setSize(8f);
@@ -29,14 +28,14 @@ public class Example_32 {
         colors.put("Widget", Color.green);
         colors.put("Designs", Color.green);
 
+        Page page = new Page(pdf, Letter.PORTRAIT);
         float x = 50f;
         float y = 50f;            
-        float dy = font.getBodyHeight();
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        float leading = font.getBodyHeight();
         List<String> lines = Text.readLines("examples/Example_02.java");
         for (String line : lines) {
-            page.drawString(font, line, x, y, colors);
-            y += dy;
+            page.drawString(font, null, line, x, y, colors);
+            y += leading;
             if (y > (page.getHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);
                 y = 50f;

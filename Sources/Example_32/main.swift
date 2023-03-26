@@ -33,11 +33,11 @@ public class Example_32 {
         var page = Page(pdf, Letter.PORTRAIT)
         let x: Float = 50.0
         var y: Float = 50.0
-        let dy = font.getBodyHeight()
+        let leading = font.getBodyHeight()
         let lines = try Text.readLines("Sources/Example_02/main.swift")
         for line in lines {
-            page.drawString(font, line, x, y, colors)
-            y += dy
+            page.drawString(font, nil, line, x, y, colors)
+            y += leading
             if y > (page.getHeight() - 20.0) {
                 page = Page(pdf, Letter.PORTRAIT)
                 y = 50.0
