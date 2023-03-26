@@ -1329,69 +1329,6 @@ public class Page {
     }
 
 
-    public void SetTextStart() {
-        Append("BT\n");
-    }
-
-
-    /**
-     *  Sets the text location.
-     *
-     *  @param x the x coordinate of new text location.
-     *  @param y the y coordinate of new text location.
-     */
-    public void SetTextLocation(float x, float y) {
-        Append(x);
-        Append(' ');
-        Append(height - y);
-        Append(" Td\n");
-    }
-
-
-    public void SetTextBegin(float x, float y) {
-        Append("BT\n");
-        Append(x);
-        Append(' ');
-        Append(height - y);
-        Append(" Td\n");
-    }
-
-
-    /**
-     *  Sets the text leading.
-     *
-     *  @param leading the leading.
-     */
-    public void SetTextLeading(float leading) {
-        Append(leading);
-        Append(" TL\n");
-    }
-
-
-    public void SetCharSpacing(float spacing) {
-        Append(spacing);
-        Append(" Tc\n");
-    }
-
-
-    public void SetWordSpacing(float spacing) {
-        Append(spacing);
-        Append(" Tw\n");
-    }
-
-
-    public void SetTextScaling(float scaling) {
-        Append(scaling);
-        Append(" Tz\n");
-    }
-
-
-    public void SetTextRise(float rise) {
-        Append(rise);
-        Append(" Ts\n");
-    }
-
-
     public void SetTextFont(Font font) {
         this.font = font;
         Append("/F");
@@ -1402,30 +1339,93 @@ public class Page {
     }
 
 
-    public void Println(String str) {
-        Print(str);
-        Println();
-    }
+    // public void SetTextBegin(float x, float y) {
+    //     Append("BT\n");
+    //     Append(x);
+    //     Append(' ');
+    //     Append(height - y);
+    //     Append(" Td\n");
+    // }
 
 
-    public void Print(String str) {
-        if (font == null) {
-            return;
-        }
-        Append("[<");
-        DrawString(font, str);
-        Append(">] TJ\n");
-    }
+    // public void SetTextStart() {
+    //     Append("BT\n");
+    // }
 
 
-    public void Println() {
-        Append("T*\n");
-    }
+    // /**
+    //  *  Sets the text location.
+    //  *
+    //  *  @param x the x coordinate of new text location.
+    //  *  @param y the y coordinate of new text location.
+    //  */
+    // public void SetTextLocation(float x, float y) {
+    //     Append(x);
+    //     Append(' ');
+    //     Append(height - y);
+    //     Append(" Td\n");
+    // }
 
 
-    public void SetTextEnd() {
-        Append("ET\n");
-    }
+    // /**
+    //  *  Sets the text leading.
+    //  *
+    //  *  @param leading the leading.
+    //  */
+    // public void SetTextLeading(float leading) {
+    //     Append(leading);
+    //     Append(" TL\n");
+    // }
+
+
+    // public void SetCharSpacing(float spacing) {
+    //     Append(spacing);
+    //     Append(" Tc\n");
+    // }
+
+
+    // public void SetWordSpacing(float spacing) {
+    //     Append(spacing);
+    //     Append(" Tw\n");
+    // }
+
+
+    // public void SetTextScaling(float scaling) {
+    //     Append(scaling);
+    //     Append(" Tz\n");
+    // }
+
+
+    // public void SetTextRise(float rise) {
+    //     Append(rise);
+    //     Append(" Ts\n");
+    // }
+
+
+    // public void Println(String str) {
+    //     Print(str);
+    //     Println();
+    // }
+
+
+    // public void Print(String str) {
+    //     if (font == null) {
+    //         return;
+    //     }
+    //     Append("[<");
+    //     DrawString(font, str);
+    //     Append(">] TJ\n");
+    // }
+
+
+    // public void Println() {
+    //     Append("T*\n");
+    // }
+
+
+    // public void SetTextEnd() {
+    //     Append("ET\n");
+    // }
 
 
     // Code provided by:

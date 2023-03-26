@@ -1367,75 +1367,6 @@ public class Page {
     }
 
 
-    /**
-     *  Sets the start of text block.
-     *  Please see Example_32. This method must have matching call to setTextEnd().
-     */
-    public void setTextStart() {
-        append("BT\n");
-    }
-
-
-    /**
-     *  Sets the text location.
-     *  Please see Example_32.
-     *
-     *  @param x the x coordinate of new text location.
-     *  @param y the y coordinate of new text location.
-     */
-    public void setTextLocation(float x, float y) {
-        append(x);
-        append(' ');
-        append(height - y);
-        append(" Td\n");
-    }
-
-
-    public void setTextBegin(float x, float y) {
-        append("BT\n");
-        append(x);
-        append(' ');
-        append(height - y);
-        append(" Td\n");
-    }
-
-
-    /**
-     *  Sets the text leading.
-     *  Please see Example_32.
-     *
-     *  @param leading the leading.
-     */
-    public void setTextLeading(float leading) {
-        append(leading);
-        append(" TL\n");
-    }
-
-
-    public void setCharSpacing(float spacing) {
-        append(spacing);
-        append(" Tc\n");
-    }
-
-
-    public void setWordSpacing(float spacing) {
-        append(spacing);
-        append(" Tw\n");
-    }
-
-
-    public void setTextScaling(float scaling) {
-        append(scaling);
-        append(" Tz\n");
-    }
-
-
-    public void setTextRise(float rise) {
-        append(rise);
-        append(" Ts\n");
-    }
-
-
     public void setTextFont(Font font) {
         this.font = font;
         append("/F");
@@ -1446,45 +1377,114 @@ public class Page {
     }
 
 
-    /**
-     *  Prints a line of text and moves to the next line.
-     *  Please see Example_32.
-     *  @param str the line of text that is printed
-     */
-    public void println(String str) {
-        print(str);
-        println();
-    }
+    // /**
+    //  *  Sets the start of text block.
+    //  *  Please see Example_32. This method must have matching call to setTextEnd().
+    //  */
+    // public void setTextStart() {
+    //     append("BT\n");
+    // }
 
 
-    /**
-     *  Prints a line of text.
-     *  Please see Example_32.
-     *  @param str the line of text that is printed
-     */
-    public void print(String str) {
-        append("[<");
-        drawString(font, str);
-        append(">] TJ\n");
-    }
+    // /**
+    //  *  Sets the text location.
+    //  *  Please see Example_32.
+    //  *
+    //  *  @param x the x coordinate of new text location.
+    //  *  @param y the y coordinate of new text location.
+    //  */
+    // public void setTextLocation(float x, float y) {
+    //     append(x);
+    //     append(' ');
+    //     append(height - y);
+    //     append(" Td\n");
+    // }
 
 
-    /**
-     *  Move to the next line.
-     *  Please see Example_32.
-     */
-    public void println() {
-        append("T*\n");
-    }
+    // public void setTextBegin(float x, float y) {
+    //     append("BT\n");
+    //     append(x);
+    //     append(' ');
+    //     append(height - y);
+    //     append(" Td\n");
+    // }
 
 
-    /**
-     *  Sets the end of text block.
-     *  Please see Example_32.
-     */
-    public void setTextEnd() {
-        append("ET\n");
-    }
+    // /**
+    //  *  Sets the text leading.
+    //  *  Please see Example_32.
+    //  *
+    //  *  @param leading the leading.
+    //  */
+    // public void setTextLeading(float leading) {
+    //     append(leading);
+    //     append(" TL\n");
+    // }
+
+
+    // public void setCharSpacing(float spacing) {
+    //     append(spacing);
+    //     append(" Tc\n");
+    // }
+
+
+    // public void setWordSpacing(float spacing) {
+    //     append(spacing);
+    //     append(" Tw\n");
+    // }
+
+
+    // public void setTextScaling(float scaling) {
+    //     append(scaling);
+    //     append(" Tz\n");
+    // }
+
+
+    // public void setTextRise(float rise) {
+    //     append(rise);
+    //     append(" Ts\n");
+    // }
+
+
+    // /**
+    //  *  Prints a line of text and moves to the next line.
+    //  *  Please see Example_32.
+    //  *  @param str the line of text that is printed
+    //  */
+    // public void println(String str) {
+    //     print(str);
+    //     println();
+    // }
+
+
+    // /**
+    //  *  Prints a line of text.
+    //  *  Please see Example_32.
+    //  *  @param str the line of text that is printed
+    //  */
+    // public void print(String str) {
+    //     append("[<");
+    //     drawString(font, str);
+    //     append(">] TJ\n");
+    // }
+
+
+    // /**
+    //  *  Move to the next line.
+    //  *  Please see Example_32.
+    //  */
+    // public void println() {
+    //     append("T*\n");
+    // }
+
+
+    // /**
+    //  *  Sets the end of text block.
+    //  *  Please see Example_32.
+    //  */
+    // public void setTextEnd() {
+    //     append("ET\n");
+    // }
 
 
     // Code provided by:
