@@ -14,7 +14,7 @@ public class Example_32 {
     private Font f1;
     private float x = 50f;
     private float y = 50f;
-    private float leading = 14f;
+    private float leading = 10f;
 
     public Example_32() throws Exception {
 
@@ -22,8 +22,8 @@ public class Example_32 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_32.pdf")));
 
-        f1 = new Font(pdf, CoreFont.HELVETICA);
-        f1.setSize(10f);
+        f1 = new Font(pdf, CoreFont.COURIER);
+        f1.setSize(8f);
 
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(
