@@ -16,8 +16,7 @@ public class Example_12 {
         StringBuilder buf = new StringBuilder();
         foreach (String line in lines) {
             buf.Append(line);
-            // CR and LF both required!
-            buf.Append("\r\n");
+            buf.Append("\r\n"); // CR and LF both required!
         }
 
         BarCode2D code2D = new BarCode2D(buf.ToString());

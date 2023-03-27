@@ -255,7 +255,7 @@ public class Text : Drawable {
                 buffer.append(String(scalar))
             }
         }
-        if buffer != "" {
+        if buffer.count > 0 {
             lines.append(buffer)
         }
         return lines
