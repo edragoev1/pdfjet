@@ -1,7 +1,7 @@
 if [ $# -eq 0 ]; then
     echo "Please provide an example number:"
     echo "./run-java.sh 33"
-    exit
+    exit 1
 fi
 
 rm -f out/production/com/pdfjet/*.class

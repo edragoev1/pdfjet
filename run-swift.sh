@@ -1,3 +1,8 @@
+if [ $# -eq 0 ]; then
+    echo "Please provide an example number:"
+    echo "./run-swift.sh 33"
+    exit 1
+fi
 # swift run --configuration release Example_$1
 swift run --configuration debug Example_$1
 

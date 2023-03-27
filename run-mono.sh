@@ -1,7 +1,7 @@
 if [ $# -eq 0 ]; then
     echo "Please provide an example number:"
     echo "./run-mono.sh 33"
-    exit
+    exit 1
 fi
 
 mcs -warn:2 -debug -sdk:4 net/pdfjet/*.cs -reference:System.Drawing.dll -target:library -out:PDFjet.dll

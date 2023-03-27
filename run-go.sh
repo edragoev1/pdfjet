@@ -1,3 +1,9 @@
+if [ $# -eq 0 ]; then
+    echo "Please provide an example number:"
+    echo "./run-go.sh 33"
+    exit 1
+fi
+
 cd src
 go build -o ../Example_$1.exe examples/example$1/main.go
 cd ..
