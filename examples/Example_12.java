@@ -1,36 +1,27 @@
 package examples;
 
 import java.io.*;
-
+import java.util.*;
 import com.pdfjet.*;
-
 
 /**
  *  Example_12.java
- *
  */
 public class Example_12 {
-
     public Example_12() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_12.pdf")));
-
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-
+        Font font = new Font(pdf, CoreFont.HELVETICA);
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        List<String> lines = Text.readLines("examples/Example_12.java");
         StringBuilder buf = new StringBuilder();
-        BufferedReader reader =
-                new BufferedReader(new FileReader("examples/Example_12.java"));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
+        for (String line : lines) {
             buf.append(line);
             // Both CR and LF are required by the scanner!
             buf.append("\r\n");
         }
-        reader.close();
 
         BarCode2D code2D = new BarCode2D(buf.toString());
         code2D.setModuleWidth(0.5f);
@@ -42,7 +33,7 @@ public class Example_12 {
         box.setSize(20f, 20f);
         box.drawOn(page);
 */
-        TextLine text = new TextLine(f1,
+        TextLine text = new TextLine(font,
                 "PDF417 barcode containing the program that created it.");
         text.setLocation(100f, 40f);
         text.drawOn(page);
