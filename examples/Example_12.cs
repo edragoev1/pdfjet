@@ -5,20 +5,18 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using PDFjet.NET;
 
-/**
- *  Example_12.cs
- */
+// Example_12.cs
 public class Example_12 {
     public Example_12() {
         PDF pdf = new PDF(new FileStream("Example_12.pdf", FileMode.Create));
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        Page page = new Page(pdf, A4.PORTRAIT);
 
-        List<String> lines = Text.ReadLines("examples/Example_12.cs");
+        List<String> lines = Text.ReadLines("examples/Example_12.java");
         StringBuilder buf = new StringBuilder();
         foreach (String line in lines) {
             buf.Append(line);
-            // Both CR and LF are required!
+            // CR and LF both required!
             buf.Append("\r\n");
         }
 
@@ -27,8 +25,7 @@ public class Example_12 {
         code2D.SetLocation(100f, 60f);
         code2D.DrawOn(page);
 
-        TextLine text = new TextLine(f1,
-                "PDF417 barcode containing the program that created it.");
+        TextLine text = new TextLine(f1, "PDF417 barcode containing the program that created it.");
         text.SetLocation(100f, 40f);
         text.DrawOn(page);
 

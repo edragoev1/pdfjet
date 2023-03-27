@@ -1,53 +1,32 @@
 import Foundation
 import PDFjet
 
-
-/**
- *  Example_12.swift
- *  We will draw the American flag using Box, Line and Point objects.
- */
+// Example_12.swift
 public class Example_12 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_12.pdf", append: false)!)
+        let font = Font(pdf, CoreFont.HELVETICA)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        if let stream = OutputStream(toFileAtPath: "Example_12.pdf", append: false) {
-
-            let pdf = PDF(stream)
-            let font = Font(pdf, CoreFont.HELVETICA)
-
-            let page = Page(pdf, Letter.PORTRAIT)
-
-            var buf = String()
-            let text = try String(contentsOfFile: "Sources/Example_12/main.swift", encoding: .utf8)
-            let lines = text.components(separatedBy: "\n")
-            for line in lines {
-                if line == "\r" {
-                    continue
-                }
-                buf.append(line)
-                // Both CR and LF are required by the scanner!
-                buf.append("\r\n")
-            }
-
-            let code2D = BarCode2D(buf)
-            code2D.setModuleWidth(0.5)
-            code2D.setLocation(100.0, 60.0)
-            code2D.drawOn(page)
-/*
-            let box = Box()
-            box.setLocation(xy[0], xy[1])
-            box.setSize(20.0, 20.0)
-            box.drawOn(page)
-*/
-            let textLine = TextLine(font, "PDF417 barcode containing the program that created it.")
-            textLine.setLocation(100.0, 40.0)
-            textLine.drawOn(page)
-    
-            pdf.complete()
+        let lines = try Text.readLines("Sources/Example_12/main.swift")
+        var buf = String()
+        for line in lines {
+            buf.append(line)
+            buf.append("\r\n")  // CR and LF both required!
         }
-    }
 
-}   // End of Example_12.swift
+        let code2D = BarCode2D(buf)
+        code2D.setModuleWidth(0.5)
+        code2D.setLocation(100.0, 60.0)
+        code2D.drawOn(page)
+
+        let textLine = TextLine(font, "PDF417 barcode containing the program that created it.")
+        textLine.setLocation(100.0, 40.0)
+        textLine.drawOn(page)
+
+        pdf.complete()
+    }
+}
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_12()

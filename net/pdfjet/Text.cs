@@ -259,6 +259,9 @@ public class Text : IDrawable {
                 buffer.Append((char) ch);
             }
         }
+        if (!buffer.Equals("")) {
+            lines.Add(buffer.ToString());
+        }
         stream.Close();
         return lines;
     }

@@ -255,6 +255,9 @@ public class Text implements Drawable {
                 buffer.append((char) ch);
             }
         }
+        if (!buffer.equals("")) {
+            lines.add(buffer.toString());
+        }
         stream.close();
         return lines;
     }
