@@ -696,18 +696,6 @@ public class TextBox implements Drawable {
     }
 
 
-    /**
-     *  Draws this text box on the specified page.
-     *
-     *  @param page the Page where the TextBox is to be drawn.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception ???
-     */
-    public float[] drawOn(Page page) throws Exception {
-        return drawTextAndBorders(page);
-    }
-
-
     private void drawBackground(Page page) {
         page.setBrushColor(background);
         page.fillRect(x, y, width, height);
@@ -774,7 +762,14 @@ public class TextBox implements Drawable {
     }
 
 
-    private float[] drawTextAndBorders(Page page) throws Exception {
+    /**
+     *  Draws this text box on the specified page.
+     *
+     *  @param page the Page where the TextBox is to be drawn.
+     *  @return x and y coordinates of the bottom right corner of this component.
+     *  @throws Exception ???
+     */
+    public float[] drawOn(Page page) throws Exception {
         float textAreaWidth = width - (font.stringWidth(fallbackFont, "w") + 2*margin);
         List<String> textLines = new ArrayList<String>();
         String[] lines = text.split("\\r?\\n", -1);
@@ -785,6 +780,10 @@ public class TextBox implements Drawable {
             else {
                 reformat(line, textAreaWidth, textLines);
             }
+        }
+        int lastLineIndex = textLines.size() - 1;
+        if (textLines.get(lastLineIndex).isBlank()) {
+            textLines.remove(lastLineIndex);
         }
         lines = textLines.toArray(new String[] {});
 
