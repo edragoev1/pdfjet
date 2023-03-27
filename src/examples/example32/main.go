@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -32,11 +29,11 @@ func Example32() {
 	colors["Widget"] = color.Green
 	colors["Designs"] = color.Green
 
+	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 	x := float32(50.0)
 	y := float32(50.0)
 	leading := font.GetBodyHeight()
-	lines := ReadLines("examples/Example_02.java")
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	lines := pdfjet.ReadTextLines("examples/Example_02.java")
 	for _, line := range lines {
 		page.DrawStringUsingColorMap(font, nil, line, x, y, colors)
 		y += leading
@@ -47,20 +44,6 @@ func Example32() {
 	}
 
 	pdf.Complete()
-}
-
-func ReadLines(filePath string) []string {
-	lines := make([]string, 0)
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		lines = append(lines, line)
-	}
-	return lines
 }
 
 func main() {
