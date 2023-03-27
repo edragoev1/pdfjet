@@ -25,6 +25,9 @@ SOFTWARE.
 */
 
 import (
+	"bufio"
+	"log"
+	"os"
 	"strings"
 )
 
@@ -55,4 +58,18 @@ func SplitTextIntoTokens(text string, font, fallbackFont *Font, width float32) [
 	}
 
 	return tokens2
+}
+
+func ReadTextLines(filePath string) []string {
+	lines := make([]string, 0)
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		lines = append(lines, line)
+	}
+	return lines
 }

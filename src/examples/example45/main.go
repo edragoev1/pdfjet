@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -87,28 +84,14 @@ func Example45() {
 
 	var x float32 = 50.0
 	var y float32 = 280.0
-	dy := f3.GetBodyHeight()
-	lines := ReadLines("data/form-code-go.txt")
-	for i := 0; i < len(lines); i++ {
-		page.DrawStringUsingColorMap(f3, nil, lines[i], x, y, colors)
-		y += dy
+	leading := f3.GetBodyHeight()
+	lines := pdfjet.ReadTextLines("data/form-code-go.txt")
+	for _, line := range lines {
+		page.DrawStringUsingColorMap(f3, nil, line, x, y, colors)
+		y += leading
 	}
 
 	pdf.Complete()
-}
-
-func ReadLines(filePath string) []string {
-	lines := make([]string, 0)
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		lines = append(lines, line)
-	}
-	return lines
 }
 
 func main() {
