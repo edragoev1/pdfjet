@@ -661,19 +661,6 @@ public class TextBox : IDrawable {
     }
 
 
-    /**
-     *  Draws this text box on the specified page.
-     *
-     *  @param page the Page where the TextBox is to be drawn.
-     *  @param draw flag specifying if this component should actually be drawn on the page.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception
-     */
-    public float[] DrawOn(Page page) {
-        return DrawTextAndBorders(page);
-    }
-
-
     private void DrawBackground(Page page) {
         page.SetBrushColor(background);
         page.FillRect(x, y, width, height);
@@ -743,7 +730,15 @@ public class TextBox : IDrawable {
     }
 
 
-    private float[] DrawTextAndBorders(Page page) {
+    /**
+     *  Draws this text box on the specified page.
+     *
+     *  @param page the Page where the TextBox is to be drawn.
+     *  @param draw flag specifying if this component should actually be drawn on the page.
+     *  @return x and y coordinates of the bottom right corner of this component.
+     *  @throws Exception
+     */
+    public float[] DrawOn(Page page) {
         float textAreaWidth = width - (font.StringWidth("w") + 2*margin);
         List<String> textLines = new List<String>();
         String[] lines = text.Split(new string[] {"\r\n", "\n"}, StringSplitOptions.None);
@@ -754,6 +749,10 @@ public class TextBox : IDrawable {
             else {
                 reformat(line, textAreaWidth, textLines);
             }
+        }
+        int lastLineIndex = textLines.Count - 1;
+        if (textLines[lastLineIndex].Trim().Length == 0) {
+            textLines.RemoveAt(lastLineIndex);
         }
         lines = textLines.ToArray();
 
