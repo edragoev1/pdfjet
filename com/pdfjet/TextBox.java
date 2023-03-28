@@ -782,7 +782,7 @@ public class TextBox implements Drawable {
             }
         }
         int lastLineIndex = textLines.size() - 1;
-        if (textLines.get(lastLineIndex).isBlank()) {
+        if (textLines.get(lastLineIndex).trim().length() == 0) {
             textLines.remove(lastLineIndex);
         }
         lines = textLines.toArray(new String[] {});

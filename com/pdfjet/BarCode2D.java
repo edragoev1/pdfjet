@@ -64,10 +64,17 @@ public class BarCode2D implements Drawable {
      *
      *  @param str the specified string.
      */
-    public BarCode2D(String str) {
+    public BarCode2D(String str) throws Exception {
         this.str = str;
         this.h1 = 3 * w1;
         this.codewords = new int[rows * (cols + 2)];
+
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            if (ch > 126) {
+                throw new Exception("The string contains unencodable characters.");
+            }
+        }
 
         int[] lfBuffer = new int[rows];
         int[] lrBuffer = new int[rows];

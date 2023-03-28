@@ -69,6 +69,13 @@ public class BarCode2D : IDrawable {
         this.h1 = 3 * w1;
         this.codewords = new int[rows * (cols + 2)];
 
+        for (int i = 0; i < str.Length; i++) {
+            char ch = str[i];
+            if (ch > 126) {
+                throw new Exception("The string contains unencodable characters.");
+            }
+        }
+
         int[] lfBuffer = new int[rows];
         int[] lrBuffer = new int[rows];
         int[] buffer = new int[rows * cols];

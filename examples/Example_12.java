@@ -12,7 +12,7 @@ public class Example_12 {
         PDF pdf = new PDF(new FileOutputStream("Example_12.pdf"));
         Font font = new Font(pdf, CoreFont.HELVETICA);
         Page page = new Page(pdf, Letter.PORTRAIT);
-
+ 
         List<String> lines = Text.readLines("examples/Example_12.java");
         StringBuilder buf = new StringBuilder();
         for (String line : lines) {
