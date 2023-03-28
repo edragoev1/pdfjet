@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/src/ecclevel5"
@@ -67,6 +68,12 @@ func NewBarCode2D(str string) *BarCode2D {
 	barcode.rows = 50
 	barcode.cols = 18
 	barcode.codewords = make([]int, barcode.rows*(barcode.cols+2))
+
+	for _, ch := range str {
+		if ch > 126 {
+			log.Fatal("The string contains unencodable characters.")
+		}
+	}
 
 	lfBuffer := make([]int, barcode.rows)
 	lrBuffer := make([]int, barcode.rows)

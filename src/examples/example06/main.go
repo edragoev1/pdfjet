@@ -109,11 +109,11 @@ func Example06() {
 	attachment.DrawOn(page)
 	/*
 		attachment = NewFileAttachment(pdf, file2)
-		attachment.setLocation(200.0, 300.0)
-		attachment.setIconPaperclip()
-		attachment.setIconSize(24.0)
-		attachment.setTitle("Attached File: " + file2.getFileName())
-		attachment.setDescription(
+		attachment.SetLocation(200.0, 300.0)
+		attachment.SetIconPaperclip()
+		attachment.SetIconSize(24.0)
+		attachment.SetTitle("Attached File: " + file2.getFileName())
+		attachment.SetDescription(
 			"Right mouse click or double click on the icon to save the attached file.")
 		attachment.DrawOn(page)
 	*/
