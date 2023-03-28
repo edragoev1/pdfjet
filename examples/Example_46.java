@@ -17,21 +17,25 @@ public class Example_46 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_46.pdf")),
-                        Compliance.PDF_UA);
+                Compliance.PDF_UA);
 
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        Font f1 = new Font(
+                pdf,
+                new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream"),
+                Font.STREAM);
+
+        Font f2 = new Font(
+                pdf,
+                new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                Font.STREAM);
+
+        Font f3 = new Font(
+                pdf,
+                new FileInputStream("fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream"),
+                Font.STREAM);
+
         f1.setSize(14f);
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
         f2.setSize(14f);
-
-        stream = new FileInputStream("fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream");
-        Font f3 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
         f3.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
