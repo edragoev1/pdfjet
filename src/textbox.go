@@ -414,14 +414,6 @@ func (textBox *TextBox) GetTextColors() map[string]int32 {
 	return textBox.colors
 }
 
-// DrawOn draws textBox text box on the specified page.
-// @param page the Page where the TextBox is to be drawn.
-// @param draw flag specifying if textBox component should actually be drawn on the page.
-// @return x and y coordinates of the bottom right corner of textBox component.
-func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
-	return textBox.drawTextAndBorders(page)
-}
-
 func (textBox *TextBox) drawBackground(page *Page) {
 	page.SetBrushColor(textBox.background)
 	page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
@@ -489,7 +481,11 @@ func (textBox *TextBox) reformat(line string, textAreaWidth float32) []string {
 	return lines
 }
 
-func (textBox *TextBox) drawTextAndBorders(page *Page) [2]float32 {
+// DrawOn draws textBox text box on the specified page.
+// @param page the Page where the TextBox is to be drawn.
+// @param draw flag specifying if textBox component should actually be drawn on the page.
+// @return x and y coordinates of the bottom right corner of textBox component.
+func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	textAreaWidth := textBox.width - (textBox.font.stringWidth("w") + 2*textBox.margin)
 	textLines := make([]string, 0)
 	lines := strings.Split(strings.Replace(textBox.text, "\r\n", "\n", -1), "\n")
@@ -499,6 +495,9 @@ func (textBox *TextBox) drawTextAndBorders(page *Page) [2]float32 {
 		} else {
 			textLines = append(textLines, textBox.reformat(line, textAreaWidth)...)
 		}
+	}
+	if strings.Trim(textLines[len(textLines)-1], " ") == "" {
+		textLines = textLines[:len(textLines)-1]
 	}
 	lines = textLines
 

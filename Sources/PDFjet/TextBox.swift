@@ -578,20 +578,6 @@ public class TextBox : Drawable {
     }
 
 
-    ///
-    /// Draws this text box on the specified page.
-    ///
-    /// @param page the Page where the TextBox is to be drawn.
-    /// @param draw flag specifying if this component should actually be drawn on the page.
-    /// @return x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
-    ///
-    @discardableResult
-    public func drawOn(_ page: Page?) -> [Float] {
-        return drawTextAndBorders(page)
-    }
-
-
     private func drawBackground(_ page: Page) {
         page.setBrushColor(background)
         page.fillRect(x, y, width, height)
@@ -660,7 +646,16 @@ public class TextBox : Drawable {
     }
 
 
-    private func drawTextAndBorders(_ page: Page?) -> [Float] {
+    ///
+    /// Draws this text box on the specified page.
+    ///
+    /// @param page the Page where the TextBox is to be drawn.
+    /// @param draw flag specifying if this component should actually be drawn on the page.
+    /// @return x and y coordinates of the bottom right corner of this component.
+    /// @throws Exception
+    ///
+    @discardableResult
+    public func drawOn(_ page: Page?) -> [Float] {
         let textAreaWidth = self.width - (font!.stringWidth("w") + 2*margin)
         let original = text!.components(separatedBy: "\n")
         var lines = [String]()
@@ -674,6 +669,9 @@ public class TextBox : Drawable {
                 reformat(line, toFit: textAreaWidth, addTo: &lines)
             }
             i += 1
+        }
+        if lines.last!.isEmpty {
+            lines.removeLast()
         }
 
         let lineHeight = font!.getBodyHeight() + spacing
