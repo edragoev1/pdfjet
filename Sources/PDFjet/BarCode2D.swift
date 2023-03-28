@@ -24,6 +24,11 @@ SOFTWARE.
 import Foundation
 
 
+enum EncodingError: Error {
+    case unencodable
+}
+
+
 /**
  *  Used to create PDF417 2D barcodes.
  *
@@ -62,11 +67,18 @@ public class BarCode2D : Drawable {
      *
      *  @param str the specified string.
      */
-    public init(_ str: String) {
+    public init(_ str: String) throws {
 
         self.str = str
         self.h1 = 3 * w1
         self.codewords = [Int](repeating: 0, count: rows * (cols + 2))
+
+        let scalars = str.unicodeScalars
+        for scalar in scalars {
+            if scalar.value > 126 {
+                throw EncodingError.unencodable
+            }
+        }
 
         var lfBuffer = [Int](repeating: 0, count: rows)
         var lrBuffer = [Int](repeating: 0, count: rows)

@@ -15,7 +15,7 @@ public class Example_12 {
             buf.append("\r\n")  // CR and LF both required!
         }
 
-        let code2D = BarCode2D(buf)
+        let code2D = try BarCode2D(buf)
         code2D.setModuleWidth(0.5)
         code2D.setLocation(100.0, 60.0)
         code2D.drawOn(page)
