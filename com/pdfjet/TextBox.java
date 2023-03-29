@@ -810,8 +810,7 @@ public class TextBox implements Drawable {
                     xText = (x + width) - (font.stringWidth(fallbackFont, lines[i]) + margin);
                 } else if (getTextAlignment() == Align.CENTER) {
                     xText = x + (width - font.stringWidth(fallbackFont, lines[i]))/2;
-                } else {
-                    // Align.LEFT
+                } else {    // Align.LEFT
                     xText = x + margin;
                 }
                 if (yText + font.getBodyHeight() + spacing + font.descent >= y + height
@@ -837,8 +836,7 @@ public class TextBox implements Drawable {
                     xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
                 } else if (getTextAlignment() == Align.CENTER) {
                     xText = x + (width - font.stringWidth(fallbackFont, line))/2;
-                } else {
-                    // Align.LEFT
+                } else {    // Align.LEFT
                     xText = x + margin;
                 }
                 if (page != null) {
