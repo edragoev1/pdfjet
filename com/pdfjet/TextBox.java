@@ -696,23 +696,15 @@ public class TextBox implements Drawable {
     }
 
 
-    private void drawBackground(Page page) {
-        page.setBrushColor(background);
-        page.fillRect(x, y, width, height);
-    }
-
-
     private void drawBorders(Page page) {
         page.setPenColor(pen);
         page.setPenWidth(lineWidth);
-
         if (getBorder(Border.TOP) &&
                 getBorder(Border.BOTTOM) &&
                 getBorder(Border.LEFT) &&
                 getBorder(Border.RIGHT)) {
             page.drawRect(x, y, width, height);
-        }
-        else {
+        } else {
             if (getBorder(Border.TOP)) {
                 page.moveTo(x, y);
                 page.lineTo(x + width, y);
@@ -756,7 +748,7 @@ public class TextBox implements Drawable {
 
     private String[] getTextLines() {
         List<String> list = new ArrayList<String>();
-        float textAreaWidth = width + 2*margin;
+        float textAreaWidth = width - 2*margin;
         String[] lines = text.split("\\r?\\n", -1);
         for (String line : lines) {
             if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
@@ -765,7 +757,7 @@ public class TextBox implements Drawable {
                 StringBuilder buf = getStringBuilder(line);     // Preserves the indentation
                 String[] tokens = line.trim().split("\\s+");    // Do not remove the trim()!
                 for (String token : tokens) {
-                    if (font.stringWidth(fallbackFont, buf.toString() + token) > textAreaWidth) {
+                    if (font.stringWidth(fallbackFont, buf.toString() + token) >= textAreaWidth) {
                         list.add(buf.toString());
                         buf.setLength(0);
                     }
@@ -794,53 +786,44 @@ public class TextBox implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         String[] lines = getTextLines();
         float lineHeight = font.getBodyHeight() + spacing;
-        float xText;
+        float xText = margin;
         float yText = y + font.ascent + margin;
-        if ((lines.length * lineHeight) > this.height) {
-            this.height = lines.length * lineHeight;
-        }
 
         if (page != null) {
             if (getBgColor() != Color.transparent) {
-                drawBackground(page);
+                page.setBrushColor(background);
+                page.fillRect(x, y, width, height);
             }
             page.setPenColor(this.pen);
             page.setBrushColor(this.brush);
             page.setPenWidth(this.font.underlineThickness);
         }
 
-        if (height > 0f) {
+        if (height > 0f) {  // TextBox with fixed height
             if (valign == Align.BOTTOM) {
                 yText += height - lines.length*lineHeight;
-            }
-            else if (valign == Align.CENTER) {
+            } else if (valign == Align.CENTER) {
                 yText += (height - lines.length*lineHeight)/2;
             }
-
             for (int i = 0; i < lines.length; i++) {
                 if (getTextAlignment() == Align.RIGHT) {
                     xText = (x + width) - (font.stringWidth(fallbackFont, lines[i]) + margin);
-                }
-                else if (getTextAlignment() == Align.CENTER) {
+                } else if (getTextAlignment() == Align.CENTER) {
                     xText = x + (width - font.stringWidth(fallbackFont, lines[i]))/2;
-                }
-                else {
+                } else {
                     // Align.LEFT
                     xText = x + margin;
                 }
-
                 if (yText + font.getBodyHeight() + spacing + font.descent >= y + height
                         && i < (lines.length - 1)) {
                     String str = lines[i];
                     int index = str.lastIndexOf(' ');
                     if (index != -1) {
                         lines[i] = str.substring(0, index) + " ...";
-                    }
-                    else {
+                    } else {
                         lines[i] = str + " ...";
                     }
                 }
-
                 if (yText + font.descent < y + height) {
                     if (page != null) {
                         drawText(page, font, fallbackFont, lines[i], xText, yText, colors);
@@ -848,26 +831,22 @@ public class TextBox implements Drawable {
                     yText += font.getBodyHeight() + spacing;
                 }
             }
-        }
-        else {
-            for (int i = 0; i < lines.length; i++) {
+        } else {            // TextBox that expands to fit the contect
+            for (String line : lines) {
                 if (getTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.stringWidth(fallbackFont, lines[i]) + margin);
-                }
-                else if (getTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.stringWidth(fallbackFont, lines[i]))/2;
-                }
-                else {
+                    xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
+                } else if (getTextAlignment() == Align.CENTER) {
+                    xText = x + (width - font.stringWidth(fallbackFont, line))/2;
+                } else {
                     // Align.LEFT
                     xText = x + margin;
                 }
-
                 if (page != null) {
-                    drawText(page, font, fallbackFont, lines[i], xText, yText, colors);
+                    drawText(page, font, fallbackFont, line, xText, yText, colors);
                 }
                 yText += font.getBodyHeight() + spacing;
             }
-            height = yText - (y + font.ascent + margin);
+            height = ((yText - font.getBodyHeight()) - y) + margin;
         }
 
         if (page != null) {
