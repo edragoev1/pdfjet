@@ -497,7 +497,23 @@ func (textBox *TextBox) getTextLines() []string {
 				}
 			}
 			if buf1.Len() > 0 {
-				list = append(list, buf1.String())
+				str := strings.Trim(buf1.String(), " ")
+				if textBox.font.StringWidth(textBox.fallbackFont, str) <= textAreaWidth {
+					list = append(list, str)
+				} else {
+					// We have very long token, so we have to split it
+					var buf2 strings.Builder
+					for _, ch := range str {
+						if textBox.font.StringWidth(textBox.fallbackFont, buf2.String()+string(ch)) > textAreaWidth {
+							list = append(list, buf2.String())
+							buf2.Reset()
+						}
+						buf2.WriteRune(ch)
+					}
+					if buf2.Len() > 0 {
+						list = append(list, buf2.String())
+					}
+				}
 			}
 		}
 	}
