@@ -414,11 +414,6 @@ func (textBox *TextBox) GetTextColors() map[string]int32 {
 	return textBox.colors
 }
 
-func (textBox *TextBox) drawBackground(page *Page) {
-	page.SetBrushColor(textBox.background)
-	page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
-}
-
 func (textBox *TextBox) drawBorders(page *Page) {
 	page.SetPenColor(textBox.pen)
 	page.SetPenWidth(textBox.lineWidth)
@@ -481,37 +476,82 @@ func (textBox *TextBox) reformat(line string, textAreaWidth float32) []string {
 	return lines
 }
 
+// Preserves the leading spaces and tabs
+func getStringBuilder(line string) *strings.Builder {
+	var buf strings.Builder
+	for _, ch := range line {
+		if ch == ' ' {
+			buf.WriteRune(ch)
+		} else if ch == '\t' {
+			buf.WriteString("    ")
+		} else {
+			break
+		}
+	}
+	return &buf
+}
+
+func (textBox *TextBox) getTextLines() []string {
+	list := make([]string, 0)
+	textAreaWidth := textBox.width - 2*textBox.margin
+	lines := strings.Split(strings.Replace(textBox.text, "\r\n", "\n", -1), "\n")
+	for _, line := range lines {
+		if textBox.font.StringWidth(textBox.fallbackFont, line) <= textAreaWidth {
+			list = append(list, line)
+		} else {
+			buf1 := getStringBuilder(line)                              // Preserves the indentation
+			var tokens = strings.Split(strings.Trim(line, " "), "\\s+") // Do not remove the trim()!
+			for _, token := range tokens {
+				if textBox.font.StringWidth(textBox.fallbackFont, token) > textAreaWidth {
+					// We have very long token, so we have to split it
+					var buf2 strings.Builder
+					for _, ch := range token {
+						if textBox.font.StringWidth(
+							textBox.fallbackFont, buf2.String()+string(ch)) > textAreaWidth {
+							list = append(list, buf2.String())
+							buf2.Reset()
+						}
+						buf2.WriteRune(ch)
+					}
+					if buf2.Len() > 0 {
+						buf1.WriteString(buf2.String() + " ")
+					}
+				} else {
+					if textBox.font.StringWidth(
+						textBox.fallbackFont, buf1.String()+token) > textAreaWidth {
+						list = append(list, buf1.String())
+						buf1.Reset()
+					}
+					buf1.WriteString(token + " ")
+				}
+			}
+			if buf1.Len() > 0 {
+				list = append(list, strings.Trim(buf1.String(), " "))
+			}
+		}
+	}
+	index := len(list) - 1
+	if len(list) > 0 && len(strings.Trim(list[index], " ")) == 0 {
+		// Remove the last line if it is blank
+		list = list[:len(list)-1]
+	}
+	return list
+}
+
 // DrawOn draws textBox text box on the specified page.
 // @param page the Page where the TextBox is to be drawn.
 // @param draw flag specifying if textBox component should actually be drawn on the page.
 // @return x and y coordinates of the bottom right corner of textBox component.
 func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
-	textAreaWidth := textBox.width - (textBox.font.stringWidth("w") + 2*textBox.margin)
-	textLines := make([]string, 0)
-	lines := strings.Split(strings.Replace(textBox.text, "\r\n", "\n", -1), "\n")
-	for _, line := range lines {
-		if textBox.font.stringWidth(line) < textAreaWidth {
-			textLines = append(textLines, line)
-		} else {
-			textLines = append(textLines, textBox.reformat(line, textAreaWidth)...)
-		}
-	}
-	if strings.Trim(textLines[len(textLines)-1], " ") == "" {
-		textLines = textLines[:len(textLines)-1]
-	}
-	lines = textLines
-
+	lines := textBox.getTextLines()
 	lineHeight := textBox.font.bodyHeight + textBox.spacing
-	var xText float32 = 0.0
+	xText := textBox.margin
 	yText := textBox.y + textBox.font.ascent + textBox.margin
 
-	if float32(len(lines))*lineHeight > textBox.height {
-		textBox.height = float32(len(lines)) * lineHeight
-	}
-
 	if page != nil {
-		if textBox.background != color.White {
-			textBox.drawBackground(page)
+		if textBox.background != color.Transparent {
+			page.SetBrushColor(textBox.background)
+			page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
 		}
 		page.SetPenColor(textBox.pen)
 		page.SetBrushColor(textBox.brush)
@@ -524,7 +564,6 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		} else if textBox.valign == align.Center {
 			yText += (textBox.height - float32(len(lines))*lineHeight) / 2
 		}
-
 		for i := 0; i < len(lines); i++ {
 			if textBox.GetTextAlignment() == align.Right {
 				xText = (textBox.x + textBox.width) - (textBox.font.stringWidth(lines[i]) + textBox.margin)
@@ -533,7 +572,6 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 			} else { // align.Left
 				xText = textBox.x + textBox.margin
 			}
-
 			if (yText+textBox.font.GetBodyHeight()+textBox.spacing+textBox.font.GetDescent() >= textBox.y+textBox.height) && (i < (len(lines) - 1)) {
 				str := lines[i]
 				index := strings.LastIndex(str, " ")
@@ -543,7 +581,6 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 					lines[i] = str + " ..."
 				}
 			}
-
 			if yText+textBox.font.GetDescent() < textBox.y+textBox.height {
 				if page != nil {
 					textBox.DrawText(page, textBox.font, textBox.fallbackFont, lines[i], xText, yText, textBox.colors)
@@ -552,21 +589,21 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 			}
 		}
 	} else {
-		for i := 0; i < len(lines); i++ {
+		for _, line := range lines {
 			if textBox.GetTextAlignment() == align.Right {
-				xText = (textBox.x + textBox.width) - (textBox.font.stringWidth(lines[i]) + textBox.margin)
+				xText = (textBox.x + textBox.width) - (textBox.font.stringWidth(line) + textBox.margin)
 			} else if textBox.GetTextAlignment() == align.Center {
-				xText = textBox.x + (textBox.width-textBox.font.stringWidth(lines[i]))/2
+				xText = textBox.x + (textBox.width-textBox.font.stringWidth(line))/2
 			} else { // align.Left
 				xText = textBox.x + textBox.margin
 			}
-
 			if page != nil {
-				textBox.DrawText(page, textBox.font, textBox.fallbackFont, lines[i], xText, yText, textBox.colors)
+				textBox.DrawText(page,
+					textBox.font, textBox.fallbackFont, line, xText, yText, textBox.colors)
 			}
 			yText += textBox.font.bodyHeight + textBox.spacing
 		}
-		textBox.height = yText - (textBox.y + textBox.font.ascent + textBox.margin)
+		textBox.height = ((yText - textBox.font.GetBodyHeight()) - textBox.y) + textBox.margin
 	}
 
 	if page != nil {
