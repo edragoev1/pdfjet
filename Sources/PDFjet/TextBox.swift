@@ -619,30 +619,48 @@ public class TextBox : Drawable {
     }
 
 
-    private func reformat(_ line: String, toFit textAreaWidth: Float, addTo lines: inout Array<String>) {
-        let scalars = Array(line.unicodeScalars)
-        var buffer: String = ""
-        var i = 0
-        while i < scalars.count {
-            buffer.append(String(scalars[i]))
-            if font!.stringWidth(buffer) > textAreaWidth {
-                if scalars[scalars.count - 1] == Unicode.Scalar(" ") ||
-                        buffer.components(separatedBy: .whitespaces).count <= 1 {
-                    lines.append(buffer)
-                }
-                else {
-                    lines.append(String(buffer.prefix(upTo: buffer.lastIndexOf(" ")!)))
-                    while scalars[i] != Unicode.Scalar(" ") {
-                        i -= 1
-                    }
-                }
-                buffer = ""
+    // Preserves the leading spaces and tabs
+    private func getStringBuilder(_ line: String) -> String {
+        var buf = String()
+        for scalar in line.unicodeScalars {
+            if scalar == " " {
+                buf.append(" ")
+            } else if scalar == "\t" {
+                buf.append("    ")
+            } else {
+                break
             }
-            i += 1
         }
-        if !buffer.isEmpty {
-            lines.append(buffer)
+        return buf
+    }
+
+
+    private func getTextLines() -> [String] {
+        var list = [String]()
+        let textAreaWidth = width + 2*margin
+        let lines = text!.components(separatedBy: "\n")
+        for line in lines {
+            if font!.stringWidth(fallbackFont, line) <= textAreaWidth {
+                list.append(line)
+            } else {
+                var buf = getStringBuilder(line)                                // Preserves the indentation
+                let tokens = line.trim().components(separatedBy: .whitespaces)  // Do not remove the trim()!
+                for token in tokens {
+                    if font!.stringWidth(fallbackFont, buf + token) > textAreaWidth {
+                        list.append(buf)
+                        buf = ""
+                    }
+                    buf.append(token + " ")
+                }
+                if buf.count > 0 {
+                    list.append(buf.trim())
+                }
+            }
         }
+        if list.last!.trim().count == 0 {
+            list.removeLast()   // Remove the last line if it is blank
+        }
+        return Array(list)
     }
 
 
@@ -656,23 +674,7 @@ public class TextBox : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        let textAreaWidth = self.width - (font!.stringWidth("w") + 2*margin)
-        let original = text!.components(separatedBy: "\n")
-        var lines = [String]()
-        var i = 0
-        while i < original.count {
-            let line = original[i]
-            if (font!.stringWidth(line) < textAreaWidth) {
-                lines.append(line)
-            }
-            else {
-                reformat(line, toFit: textAreaWidth, addTo: &lines)
-            }
-            i += 1
-        }
-        if lines.last!.isEmpty {
-            lines.removeLast()
-        }
+        var lines = getTextLines()
 
         let lineHeight = font!.getBodyHeight() + spacing
         var xText: Float = 0.0
