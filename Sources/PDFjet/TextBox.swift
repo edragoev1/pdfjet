@@ -737,8 +737,7 @@ public class TextBox : Drawable {
                 } else if getTextAlignment() == Align.CENTER {
                     xText = x + (width - font!.stringWidth(line))/2
                 } else {
-                    // Align.LEFT
-                    xText = x + margin
+                    xText = x + margin      // Align.LEFT
                 }
                 if page != nil {
                     drawText(page!, font!, fallbackFont, line, xText, yText, colors)
