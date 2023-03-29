@@ -31,7 +31,7 @@ public class Example_73 {
         textBox.setMargin(0f);
         textBox.setLocation(50f, 50f);
         textBox.setWidth(line1.getWidth() + 2*textBox.getMargin());
-        textBox.setBgColor(Color.whitesmoke);
+        textBox.setBgColor(Color.aliceblue);
         // The drawOn method returns the x and y of the bottom right corner of the TextBox
         float[] xy = textBox.drawOn(page);
 

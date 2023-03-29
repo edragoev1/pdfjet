@@ -17,12 +17,12 @@ public class Example_16 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_16.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-/*
-        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSerif-Italic.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-*/
+        /// Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(
+                pdf,
+                new FileInputStream("fonts/RedHatText/RedHatText-Regular.ttf.stream"),
+                Font.STREAM);
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
