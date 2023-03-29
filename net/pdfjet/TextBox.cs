@@ -661,12 +661,6 @@ public class TextBox : IDrawable {
     }
 
 
-    private void DrawBackground(Page page) {
-        page.SetBrushColor(background);
-        page.FillRect(x, y, width, height);
-    }
-
-
     private void DrawBorders(Page page) {
         page.SetPenColor(pen);
         page.SetPenWidth(lineWidth);
@@ -727,17 +721,33 @@ public class TextBox : IDrawable {
             if (font.StringWidth(fallbackFont, line) <= textAreaWidth) {
                 list.Add(line);
             } else {
-                StringBuilder buf = GetStringBuilder(line);         // Preserves the indentation
+                StringBuilder buf1 = GetStringBuilder(line);        // Preserves the indentation
                 String[] tokens = Regex.Split(line.Trim(), @"\s+"); // Do not remove the Trim()!
                 foreach (String token in tokens) {
-                    if (font.StringWidth(fallbackFont, buf.ToString() + token) > textAreaWidth) {
-                        list.Add(buf.ToString());
-                        buf.Length = 0;
+                    if (font.StringWidth(fallbackFont, token) > textAreaWidth) {
+                        // We have very long token, so we have to split it
+                        StringBuilder buf2 = new StringBuilder();
+                        for (int i = 0; i < token.Length; i++) {
+                            char ch = token[i];
+                            if (font.StringWidth(fallbackFont, buf2.ToString() + ch) > textAreaWidth) {
+                                list.Add(buf2.ToString());
+                                buf2.Length = 0;
+                            }
+                            buf2.Append(ch);
+                        }
+                        if (buf2.Length > 0) {
+                            buf1.Append(buf2.ToString() + " ");
+                        }
+                    } else {
+                        if (font.StringWidth(fallbackFont, buf1.ToString() + token) > textAreaWidth) {
+                            list.Add(buf1.ToString());
+                            buf1.Length = 0;
+                        }
+                        buf1.Append(token + " ");
                     }
-                    buf.Append(token + " ");
                 }
-                if (buf.Length > 0) {
-                    list.Add(buf.ToString().Trim());
+                if (buf1.Length > 0) {
+                    list.Add(buf1.ToString().Trim());
                 }
             }
         }
@@ -762,20 +772,18 @@ public class TextBox : IDrawable {
         float lineHeight = font.GetBodyHeight() + spacing;
         float xText;
         float yText = y + font.ascent + margin;
-        if ((lines.Length * lineHeight) > this.height) {
-            this.height = lines.Length * lineHeight;
-        }
 
         if (page != null) {
             if (GetBgColor() != Color.transparent) {
-                DrawBackground(page);
+                page.SetBrushColor(background);
+                page.FillRect(x, y, width, height);
             }
             page.SetPenColor(this.pen);
             page.SetBrushColor(this.brush);
             page.SetPenWidth(this.font.underlineThickness);
         }
 
-        if (height > 0f) {
+        if (height > 0f) {  // TextBox with fixed height
             if (valign == Align.BOTTOM) {
                 yText += height - lines.Length*lineHeight;
             }
@@ -786,12 +794,9 @@ public class TextBox : IDrawable {
             for (int i = 0; i < lines.Length; i++) {
                 if (GetTextAlignment() == Align.RIGHT) {
                     xText = (x + width) - (font.StringWidth(lines[i]) + margin);
-                }
-                else if (GetTextAlignment() == Align.CENTER) {
+                } else if (GetTextAlignment() == Align.CENTER) {
                     xText = x + (width - font.StringWidth(lines[i]))/2;
-                }
-                else {
-                    // Align.LEFT
+                } else {    // Align.LEFT
                     xText = x + margin;
                 }
 
@@ -801,12 +806,10 @@ public class TextBox : IDrawable {
                     int index = str.LastIndexOf(' ');
                     if (index != -1) {
                         lines[i] = str.Substring(0, index) + " ...";
-                    }
-                    else {
+                    } else {
                         lines[i] = str + " ...";
                     }
                 }
-
                 if (yText + font.descent < y + height) {
                     if (page != null) {
                         DrawText(page, font, fallbackFont, lines[i], xText, yText, colors);
@@ -814,26 +817,21 @@ public class TextBox : IDrawable {
                     yText += font.GetBodyHeight() + spacing;
                 }
             }
-        }
-        else {
-            for (int i = 0; i < lines.Length; i++) {
+        } else {            // TextBox that expands to fit the contect
+            foreach (String line in lines) {
                 if (GetTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.StringWidth(lines[i]) + margin);
-                }
-                else if (GetTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.StringWidth(lines[i]))/2;
-                }
-                else {
-                    // Align.LEFT
+                    xText = (x + width) - (font.StringWidth(line) + margin);
+                } else if (GetTextAlignment() == Align.CENTER) {
+                    xText = x + (width - font.StringWidth(line))/2;
+                } else {    // Align.LEFT
                     xText = x + margin;
                 }
-
                 if (page != null) {
-                    DrawText(page, font, fallbackFont, lines[i], xText, yText, colors);
+                    DrawText(page, font, fallbackFont, line, xText, yText, colors);
                 }
                 yText += font.GetBodyHeight() + spacing;
             }
-            height = yText - (y + font.ascent + margin);
+            height = ((yText - font.GetBodyHeight()) - y) + margin;
         }
 
         if (page != null) {
