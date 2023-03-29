@@ -692,7 +692,7 @@ public class TextBox : Drawable {
         if page != nil {
             if getBgColor() != Color.transparent {
                 page!.setBrushColor(background)
-                page!.fillRect(x, y, width, height)
+                page!.fillRect(x, y, width, Float(lines.count)*lineHeight-spacing);
             }
             page!.setPenColor(self.pen)
             page!.setBrushColor(self.brush)
