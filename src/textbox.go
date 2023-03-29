@@ -447,35 +447,6 @@ func (textBox *TextBox) drawBorders(page *Page) {
 	}
 }
 
-// Splits the text line and adds the line segments to the lines.
-func (textBox *TextBox) reformat(line string, textAreaWidth float32) []string {
-	lines := make([]string, 0)
-
-	var buf strings.Builder
-	runes := []rune(line)
-	for i := 0; i < len(runes); i++ {
-		ch := runes[i]
-		buf.WriteRune(ch)
-		str := buf.String()
-		if textBox.font.stringWidth(str) > textAreaWidth {
-			if (ch == ' ') || len(strings.Fields(str)) == 1 {
-				lines = append(lines, str)
-			} else {
-				lines = append(lines, str[0:strings.LastIndex(str, " ")])
-				for runes[i] != ' ' {
-					i--
-				}
-			}
-			buf.Reset()
-		}
-	}
-	if len(buf.String()) > 0 {
-		lines = append(lines, buf.String())
-	}
-
-	return lines
-}
-
 // Preserves the leading spaces and tabs
 func getStringBuilder(line string) *strings.Builder {
 	var buf strings.Builder
@@ -526,7 +497,7 @@ func (textBox *TextBox) getTextLines() []string {
 				}
 			}
 			if buf1.Len() > 0 {
-				list = append(list, strings.Trim(buf1.String(), " "))
+				list = append(list, buf1.String())
 			}
 		}
 	}
