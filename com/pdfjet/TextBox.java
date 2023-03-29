@@ -780,7 +780,24 @@ public class TextBox implements Drawable {
                     }
                 }
                 if (buf1.length() > 0) {
-                    list.add(buf1.toString().trim());
+                    String str = buf1.toString().trim();
+                    if (font.stringWidth(fallbackFont, str) <= textAreaWidth) {
+                        list.add(str);
+                    } else {
+                        // We have very long token, so we have to split it
+                        StringBuilder buf2 = new StringBuilder();
+                        for (int i = 0; i < str.length(); i++) {
+                            char ch = str.charAt(i);
+                            if (font.stringWidth(fallbackFont, buf2.toString() + ch) > textAreaWidth) {
+                                list.add(buf2.toString());
+                                buf2.setLength(0);
+                            }
+                            buf2.append(ch);
+                        }
+                        if (buf2.length() > 0) {
+                            list.add(buf2.toString());
+                        }
+                    }
                 }
             }
         }
