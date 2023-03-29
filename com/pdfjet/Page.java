@@ -903,7 +903,7 @@ public class Page {
      *  Fills the specified rectangle on the page.
      *  The left and right edges of the rectangle are at x and x + w.
      *  The top and bottom edges are at y and y + h.
-     *  The rectangle is drawn using the current pen color.
+     *  The rectangle is drawn using the current brush color.
      *
      *  @param x the x coordinate of the rectangle to be drawn.
      *  @param y the y coordinate of the rectangle to be drawn.
