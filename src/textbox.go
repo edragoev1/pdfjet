@@ -465,13 +465,13 @@ func getStringBuilder(line string) *strings.Builder {
 func (textBox *TextBox) getTextLines() []string {
 	list := make([]string, 0)
 	textAreaWidth := textBox.width - 2*textBox.margin
-	lines := strings.Split(strings.Replace(textBox.text, "\r\n", "\n", -1), "\n")
+	lines := strings.Split(strings.ReplaceAll(textBox.text, "\r\n", "\n"), "\n")
 	for _, line := range lines {
 		if textBox.font.StringWidth(textBox.fallbackFont, line) <= textAreaWidth {
 			list = append(list, line)
 		} else {
-			buf1 := getStringBuilder(line)    // Preserves the indentation
-			var tokens = strings.Fields(line) // Do not remove the trim()!
+			buf1 := getStringBuilder(line) // Preserves the indentation
+			var tokens = strings.Fields(line)
 			for _, token := range tokens {
 				if textBox.font.StringWidth(textBox.fallbackFont, token) > textAreaWidth {
 					// We have very long token, so we have to split it
