@@ -530,8 +530,7 @@ func (textBox *TextBox) getTextLines() []string {
 			}
 		}
 	}
-	index := len(list) - 1
-	if len(list) > 0 && len(strings.Trim(list[index], " ")) == 0 {
+	if len(list) > 0 && strings.Trim(list[len(list)-1], " ") == "" {
 		// Remove the last line if it is blank
 		list = list[:len(list)-1]
 	}
