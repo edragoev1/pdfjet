@@ -747,7 +747,24 @@ public class TextBox : IDrawable {
                     }
                 }
                 if (buf1.Length > 0) {
-                    list.Add(buf1.ToString().Trim());
+                    String str = buf1.ToString().Trim();
+                    if (font.StringWidth(fallbackFont, str) <= textAreaWidth) {
+                        list.Add(str);
+                    } else {
+                        // We have very long token, so we have to split it
+                        StringBuilder buf2 = new StringBuilder();
+                        for (int i = 0; i < str.Length; i++) {
+                            char ch = str[i];
+                            if (font.StringWidth(fallbackFont, buf2.ToString() + ch) > textAreaWidth) {
+                                list.Add(buf2.ToString());
+                                buf2.Length = 0;
+                            }
+                            buf2.Append(ch);
+                        }
+                        if (buf2.Length > 0) {
+                            list.Add(buf2.ToString());
+                        }
+                    }
                 }
             }
         }
