@@ -737,28 +737,50 @@ public class TextBox implements Drawable {
     }
 
 
-    // Splits the text line and adds the line segments to the list.
-    private void reformat(String line, float textAreaWidth, List<String> lines) {
+    // Preserves the leading spaces and tabs
+    private StringBuilder getStringBuilder(String line) {
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < line.length(); i++) {
-            buf.append(line.charAt(i));
-            String str = buf.toString();
-            if (font.stringWidth(fallbackFont, str) > textAreaWidth) {
-                if ((str.charAt(str.length() - 1) == ' ') || str.split("\\s+").length <= 1) {
-                    lines.add(str);
-                }
-                else {
-                    lines.add(str.substring(0, str.lastIndexOf(' ')));
-                    while (line.charAt(i) != ' ') {
-                        i -= 1;
-                    }
-                }
-                buf.setLength(0);
+            char ch = line.charAt(i);
+            if (ch == ' ') {
+                buf.append(ch);
+            } else if (ch == '\t') {
+                buf.append("    ");
+            } else {
+                break;
             }
         }
-        if (buf.length() > 0) {
-            lines.add(buf.toString());
+        return buf;
+    }
+
+
+    private String[] getTextLines() {
+        List<String> list = new ArrayList<String>();
+        float textAreaWidth = width + 2*margin;
+        String[] lines = text.split("\\r?\\n", -1);
+        for (String line : lines) {
+            if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
+                list.add(line);
+            } else {
+                StringBuilder buf = getStringBuilder(line);     // Preserves the indentation
+                String[] tokens = line.trim().split("\\s+");    // Do not remove the trim()!
+                for (String token : tokens) {
+                    if (font.stringWidth(fallbackFont, buf.toString() + token) > textAreaWidth) {
+                        list.add(buf.toString());
+                        buf.setLength(0);
+                    }
+                    buf.append(token + " ");
+                }
+                if (buf.length() > 0) {
+                    list.add(buf.toString().trim());
+                }
+            }
         }
+        int index = list.size() - 1;
+        if (list.get(index).trim().length() == 0) {
+            list.remove(index); // Remove the last line if it is blank
+        }
+        return list.toArray(new String[] {});
     }
 
 
@@ -770,22 +792,7 @@ public class TextBox implements Drawable {
      *  @throws Exception ???
      */
     public float[] drawOn(Page page) throws Exception {
-        float textAreaWidth = width - (font.stringWidth(fallbackFont, "w") + 2*margin);
-        List<String> textLines = new ArrayList<String>();
-        String[] lines = text.split("\\r?\\n", -1);
-        for (String line : lines) {
-            if (font.stringWidth(fallbackFont, line) < textAreaWidth) {
-                textLines.add(line);
-            }
-            else {
-                reformat(line, textAreaWidth, textLines);
-            }
-        }
-        int lastLineIndex = textLines.size() - 1;
-        if (textLines.get(lastLineIndex).trim().length() == 0) {
-            textLines.remove(lastLineIndex);
-        }
-        lines = textLines.toArray(new String[] {});
+        String[] lines = getTextLines();
 
         float lineHeight = font.getBodyHeight() + spacing;
         float xText;
