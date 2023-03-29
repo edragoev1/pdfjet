@@ -214,7 +214,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 func (textBlock *TextBlock) drawText(page *Page) [2]float32 {
 	list := make([]string, 0)
 	var buf strings.Builder
-	lines := strings.Split(strings.Replace(textBlock.text, "\r\n", "\n", -1), "\n")
+	lines := strings.Split(strings.ReplaceAll(textBlock.text, "\r\n", "\n"), "\n")
 	for _, line := range lines {
 		if textBlock.IsCJK(line) {
 			buf.Reset()
