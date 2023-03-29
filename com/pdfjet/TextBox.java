@@ -757,11 +757,26 @@ public class TextBox implements Drawable {
                 StringBuilder buf = getStringBuilder(line);     // Preserves the indentation
                 String[] tokens = line.trim().split("\\s+");    // Do not remove the trim()!
                 for (String token : tokens) {
-                    if (font.stringWidth(fallbackFont, buf.toString() + token) >= textAreaWidth) {
-                        list.add(buf.toString());
-                        buf.setLength(0);
+                    if (font.stringWidth(fallbackFont, token) > textAreaWidth) {
+                        StringBuilder buf2 = new StringBuilder();
+                        for (int i = 0; i < token.length(); i++) {
+                            char ch = token.charAt(i);
+                            if (font.stringWidth(fallbackFont, buf2.toString() + ch) > textAreaWidth) {
+                                list.add(buf2.toString());
+                                buf2.setLength(0);
+                            }
+                            buf2.append(ch);
+                        }
+                        if (buf2.length() > 0) {
+                            list.add(buf2.toString());
+                        }
+                    } else {
+                        if (font.stringWidth(fallbackFont, buf.toString() + token) > textAreaWidth) {
+                            list.add(buf.toString());
+                            buf.setLength(0);
+                        }
+                        buf.append(token + " ");
                     }
-                    buf.append(token + " ");
                 }
                 if (buf.length() > 0) {
                     list.add(buf.toString().trim());
