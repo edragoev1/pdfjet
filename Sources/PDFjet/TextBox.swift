@@ -667,7 +667,8 @@ public class TextBox : Drawable {
             }
         }
         if list.count > 0 && list.last!.trim().count == 0 {
-            list.removeLast()   // Remove the last line if it is blank
+            // Remove the last line if it is blank
+            list.removeLast()
         }
         return list
     }
@@ -698,7 +699,7 @@ public class TextBox : Drawable {
             page!.setPenWidth(self.font!.underlineThickness)
         }
 
-        if height > 0.0 {
+        if height > 0.0 {   // TextBox with fixed height
             if valign == Align.BOTTOM {
                 yText += height - Float(lines.count) * lineHeight
             } else if valign == Align.CENTER {
@@ -730,7 +731,7 @@ public class TextBox : Drawable {
                     yText += font!.getBodyHeight() + spacing
                 }
             }
-        } else {
+        } else {                // TextBox that expands to fit the contect
             for line in lines {
                 if getTextAlignment() == Align.RIGHT {
                     xText = (x + width) - (font!.stringWidth(line) + margin)
