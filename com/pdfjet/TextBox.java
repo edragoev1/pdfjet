@@ -777,7 +777,7 @@ public class TextBox implements Drawable {
             }
         }
         int index = list.size() - 1;
-        if (list.get(index).trim().length() == 0) {
+        if (list.size() > 0 && list.get(index).trim().length() == 0) {
             list.remove(index); // Remove the last line if it is blank
         }
         return list.toArray(new String[] {});
