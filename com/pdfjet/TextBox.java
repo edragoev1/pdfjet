@@ -758,6 +758,7 @@ public class TextBox implements Drawable {
                 String[] tokens = line.trim().split("\\s+");    // Do not remove the trim()!
                 for (String token : tokens) {
                     if (font.stringWidth(fallbackFont, token) > textAreaWidth) {
+                        // We have very long token, so we have to split it
                         StringBuilder buf2 = new StringBuilder();
                         for (int i = 0; i < token.length(); i++) {
                             char ch = token.charAt(i);
@@ -785,7 +786,8 @@ public class TextBox implements Drawable {
         }
         int index = list.size() - 1;
         if (list.size() > 0 && list.get(index).trim().length() == 0) {
-            list.remove(index); // Remove the last line if it is blank
+            // Remove the last line if it is blank
+            list.remove(index);
         }
         return list.toArray(new String[] {});
     }
