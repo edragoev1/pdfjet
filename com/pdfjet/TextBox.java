@@ -793,7 +793,6 @@ public class TextBox implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         String[] lines = getTextLines();
-
         float lineHeight = font.getBodyHeight() + spacing;
         float xText;
         float yText = y + font.ascent + margin;

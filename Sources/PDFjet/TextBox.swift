@@ -675,7 +675,6 @@ public class TextBox : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         var lines = getTextLines()
-
         let lineHeight = font!.getBodyHeight() + spacing
         var xText: Float = 0.0
         var yText = y + font!.ascent + margin

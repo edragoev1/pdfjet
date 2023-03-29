@@ -702,31 +702,50 @@ public class TextBox : IDrawable {
     }
 
 
-    // Splits the text line and adds the line segments to the list.
-    private void reformat(String line, float textAreaWidth, List<String> lines) {
+    // Preserves the leading spaces and tabs
+    private StringBuilder GetStringBuilder(String line) {
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < line.Length; i++) {
-            buf.Append(line[i]);
-            String str = buf.ToString();
-            if (font.StringWidth(str) > textAreaWidth) {
-                if ((str[str.Length - 1] == ' ') ||
-                        Regex.Split(str, @"\s+").Length <= 1) {
-                    // TODO:
-                    // lines.Add(str.TrimEnd());
-                    lines.Add(str);
-                }
-                else {
-                    lines.Add(str.Substring(0, str.LastIndexOf(' ')));
-                    while (line[i] != ' ') {
-                        i -= 1;
-                    }
-                }
-                buf.Length = 0;
+            char ch = line[i];
+            if (ch == ' ') {
+                buf.Append(ch);
+            } else if (ch == '\t') {
+                buf.Append("    ");
+            } else {
+                break;
             }
         }
-        if (buf.Length > 0) {
-            lines.Add(buf.ToString());
+        return buf;
+    }
+
+
+    private String[] getTextLines() {
+        List<String> list = new List<String>();
+        float textAreaWidth = width + 2*margin;
+        String[] lines = text.Split(new String[] {"\r\n", "\n"}, StringSplitOptions.None);
+        foreach (String line in lines) {
+            if (font.StringWidth(fallbackFont, line) <= textAreaWidth) {
+                list.Add(line);
+            } else {
+                StringBuilder buf = GetStringBuilder(line);         // Preserves the indentation
+                String[] tokens = Regex.Split(line.Trim(), @"\s+"); // Do not remove the Trim()!
+                foreach (String token in tokens) {
+                    if (font.StringWidth(fallbackFont, buf.ToString() + token) > textAreaWidth) {
+                        list.Add(buf.ToString());
+                        buf.Length = 0;
+                    }
+                    buf.Append(token + " ");
+                }
+                if (buf.Length > 0) {
+                    list.Add(buf.ToString().Trim());
+                }
+            }
         }
+        int index = list.Count - 1;
+        if (list.Count > 0 && list[index].Trim().Length == 0) {
+            list.RemoveAt(index); // Remove the last line if it is blank
+        }
+        return list.ToArray();
     }
 
 
@@ -739,23 +758,7 @@ public class TextBox : IDrawable {
      *  @throws Exception
      */
     public float[] DrawOn(Page page) {
-        float textAreaWidth = width - (font.StringWidth("w") + 2*margin);
-        List<String> textLines = new List<String>();
-        String[] lines = text.Split(new string[] {"\r\n", "\n"}, StringSplitOptions.None);
-        foreach (String line in lines) {
-            if (font.StringWidth(line) < textAreaWidth) {
-                textLines.Add(line);
-            }
-            else {
-                reformat(line, textAreaWidth, textLines);
-            }
-        }
-        int lastLineIndex = textLines.Count - 1;
-        if (textLines[lastLineIndex].Trim().Length == 0) {
-            textLines.RemoveAt(lastLineIndex);
-        }
-        lines = textLines.ToArray();
-
+        String[] lines = getTextLines();
         float lineHeight = font.GetBodyHeight() + spacing;
         float xText;
         float yText = y + font.ascent + margin;
