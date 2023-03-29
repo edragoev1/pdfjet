@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/align"
@@ -473,6 +474,7 @@ func (textBox *TextBox) getTextLines() []string {
 			buf1 := getStringBuilder(line)                              // Preserves the indentation
 			var tokens = strings.Split(strings.Trim(line, " "), "\\s+") // Do not remove the trim()!
 			for _, token := range tokens {
+				fmt.Println(token)
 				if textBox.font.StringWidth(textBox.fallbackFont, token) > textAreaWidth {
 					// We have very long token, so we have to split it
 					var buf2 strings.Builder
@@ -521,7 +523,8 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	if page != nil {
 		if textBox.background != color.Transparent {
 			page.SetBrushColor(textBox.background)
-			page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
+			page.FillRect(textBox.x, textBox.y,
+				textBox.width, float32(len(lines))*lineHeight-textBox.spacing)
 		}
 		page.SetPenColor(textBox.pen)
 		page.SetBrushColor(textBox.brush)
