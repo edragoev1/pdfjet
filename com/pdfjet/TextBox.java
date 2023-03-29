@@ -754,7 +754,7 @@ public class TextBox implements Drawable {
             if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
                 list.add(line);
             } else {
-                StringBuilder buf = getStringBuilder(line);     // Preserves the indentation
+                StringBuilder buf1 = getStringBuilder(line);    // Preserves the indentation
                 String[] tokens = line.trim().split("\\s+");    // Do not remove the trim()!
                 for (String token : tokens) {
                     if (font.stringWidth(fallbackFont, token) > textAreaWidth) {
@@ -768,18 +768,18 @@ public class TextBox implements Drawable {
                             buf2.append(ch);
                         }
                         if (buf2.length() > 0) {
-                            list.add(buf2.toString());
+                            buf1.append(buf2.toString() + " ");
                         }
                     } else {
-                        if (font.stringWidth(fallbackFont, buf.toString() + token) > textAreaWidth) {
-                            list.add(buf.toString());
-                            buf.setLength(0);
+                        if (font.stringWidth(fallbackFont, buf1.toString() + token) > textAreaWidth) {
+                            list.add(buf1.toString());
+                            buf1.setLength(0);
                         }
-                        buf.append(token + " ");
+                        buf1.append(token + " ");
                     }
                 }
-                if (buf.length() > 0) {
-                    list.add(buf.toString().trim());
+                if (buf1.length() > 0) {
+                    list.add(buf1.toString().trim());
                 }
             }
         }
