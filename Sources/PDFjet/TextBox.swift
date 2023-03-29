@@ -578,12 +578,6 @@ public class TextBox : Drawable {
     }
 
 
-    private func drawBackground(_ page: Page) {
-        page.setBrushColor(background)
-        page.fillRect(x, y, width, height)
-    }
-
-
     private func drawBorders(_ page: Page) {
         page.setPenColor(pen)
         page.setPenWidth(lineWidth)
@@ -643,17 +637,32 @@ public class TextBox : Drawable {
             if font!.stringWidth(fallbackFont, line) <= textAreaWidth {
                 list.append(line)
             } else {
-                var buf = getStringBuilder(line)                                // Preserves the indentation
+                var buf1 = getStringBuilder(line)                               // Preserves the indentation
                 let tokens = line.trim().components(separatedBy: .whitespaces)  // Do not remove the trim()!
                 for token in tokens {
-                    if font!.stringWidth(fallbackFont, buf + token) > textAreaWidth {
-                        list.append(buf)
-                        buf = ""
+                    if (font!.stringWidth(fallbackFont, token) > textAreaWidth) {
+                        // We have very long token, so we have to split it
+                        var buf2 = String()
+                        for scalar in token.unicodeScalars {
+                            if (font!.stringWidth(fallbackFont, buf2 + String(scalar)) > textAreaWidth) {
+                                list.append(buf2)
+                                buf2 = ""
+                            }
+                            buf2.append(String(scalar))
+                        }
+                        if buf2.count > 0 {
+                            buf1.append(buf2 + " ")
+                        }
+                    } else {
+                        if font!.stringWidth(fallbackFont, buf1 + token) > textAreaWidth {
+                            list.append(buf1)
+                            buf1 = ""
+                        }
+                        buf1.append(token + " ")
                     }
-                    buf.append(token + " ")
                 }
-                if buf.count > 0 {
-                    list.append(buf.trim())
+                if buf1.count > 0 {
+                    list.append(buf1.trim())
                 }
             }
         }
@@ -678,13 +687,11 @@ public class TextBox : Drawable {
         let lineHeight = font!.getBodyHeight() + spacing
         var xText: Float = 0.0
         var yText = y + font!.ascent + margin
-        if (Float(lines.count) * lineHeight) > self.height {
-            self.height = Float(lines.count) * lineHeight
-        }
 
         if page != nil {
             if getBgColor() != Color.transparent {
-                drawBackground(page!)
+                page!.setBrushColor(background)
+                page!.fillRect(x, y, width, height)
             }
             page!.setPenColor(self.pen)
             page!.setBrushColor(self.brush)
@@ -694,20 +701,16 @@ public class TextBox : Drawable {
         if height > 0.0 {
             if valign == Align.BOTTOM {
                 yText += height - Float(lines.count) * lineHeight
-            }
-            else if valign == Align.CENTER {
+            } else if valign == Align.CENTER {
                 yText += (height - Float(lines.count) * lineHeight)/2
             }
 
             for i in 0..<lines.count {
                 if getTextAlignment() == Align.RIGHT {
                     xText = (x + width) - (font!.stringWidth(lines[i]) + margin)
-                }
-                else if getTextAlignment() == Align.CENTER {
+                } else if getTextAlignment() == Align.CENTER {
                     xText = x + (width - font!.stringWidth(lines[i]))/2
-                }
-                else {
-                    // Align.LEFT
+                } else {        // Align.LEFT
                     xText = x + margin
                 }
                 if yText + font!.getBodyHeight() + spacing + font!.descent >= y + height
@@ -716,8 +719,7 @@ public class TextBox : Drawable {
                     let index = line.range(of: ".", options: .backwards)?.lowerBound ?? line.endIndex
                     if index != line.endIndex {
                         lines[i] = line.prefix(upTo: index) + " ..."
-                    }
-                    else {
+                    } else {
                         lines[i] = line + " ..."
                     }
                 }
@@ -728,16 +730,13 @@ public class TextBox : Drawable {
                     yText += font!.getBodyHeight() + spacing
                 }
             }
-        }
-        else {
+        } else {
             for line in lines {
                 if getTextAlignment() == Align.RIGHT {
                     xText = (x + width) - (font!.stringWidth(line) + margin)
-                }
-                else if getTextAlignment() == Align.CENTER {
+                } else if getTextAlignment() == Align.CENTER {
                     xText = x + (width - font!.stringWidth(line))/2
-                }
-                else {
+                } else {
                     // Align.LEFT
                     xText = x + margin
                 }
@@ -746,7 +745,7 @@ public class TextBox : Drawable {
                 }
                 yText += font!.getBodyHeight() + spacing
             }
-            height = yText - (y + font!.ascent + margin)
+            height = ((yText - font!.getBodyHeight()) - y) + margin
         }
 
         if page != nil {
