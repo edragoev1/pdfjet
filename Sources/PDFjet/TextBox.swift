@@ -660,7 +660,7 @@ public class TextBox : Drawable {
         if list.last!.trim().count == 0 {
             list.removeLast()   // Remove the last line if it is blank
         }
-        return Array(list)
+        return list
     }
 
 
