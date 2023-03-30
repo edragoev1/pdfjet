@@ -826,7 +826,11 @@ public class TextBox implements Drawable {
         if (page != null) {
             if (getBgColor() != Color.transparent) {
                 page.setBrushColor(background);
-                page.fillRect(x, y, width, (lines.length*lineHeight-spacing) + 2*margin);
+                if (height > 0f) {  // TextBox with fixed height
+                    page.fillRect(x, y, width, height);
+                } else {
+                    page.fillRect(x, y, width, (lines.length*lineHeight-spacing) + 2*margin);
+                }
             }
             page.setPenColor(this.pen);
             page.setBrushColor(this.brush);
