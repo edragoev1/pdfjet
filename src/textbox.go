@@ -537,7 +537,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	if page != nil {
 		if textBox.background != color.Transparent {
 			page.SetBrushColor(textBox.background)
-			page.FillRect(textBox.x, textBox.y, textBox.width, float32(len(lines))*lineHeight-textBox.spacing)
+			page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*lineHeight-textBox.spacing) + 2*textBox.margin)
 		}
 		page.SetPenColor(textBox.pen)
 		page.SetBrushColor(textBox.brush)
