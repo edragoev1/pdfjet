@@ -687,12 +687,16 @@ public class TextBox : Drawable {
         var lines = getTextLines()
         let lineHeight = font!.getBodyHeight() + spacing
         var xText: Float = 0.0
-        var yText = y + font!.ascent + margin
+        var yText = y + margin + font!.ascent
 
         if page != nil {
             if getBgColor() != Color.transparent {
                 page!.setBrushColor(background)
-                page!.fillRect(x, y, width, (Float(lines.count)*lineHeight-spacing) + 2*margin);
+                if height > 0.0 {
+                    page!.fillRect(x, y, width, height);
+                } else {
+                    page!.fillRect(x, y, width, (Float(lines.count)*lineHeight-spacing) + 2*margin);
+                }
             }
             page!.setPenColor(self.pen)
             page!.setBrushColor(self.brush)
@@ -701,11 +705,14 @@ public class TextBox : Drawable {
 
         if height > 0.0 {   // TextBox with fixed height
             if valign == Align.BOTTOM {
-                yText += height - Float(lines.count) * lineHeight
-            } else if valign == Align.CENTER {
-                yText += (height - Float(lines.count) * lineHeight)/2
+                yText = y + height
+                yText -= margin + Float(lines.count)*lineHeight
+                yText -= spacing
+                yText += font!.ascent + 2.0*font!.descent
+            } else if (valign == Align.CENTER) {
+                yText = y + (height - Float(lines.count)*lineHeight)/2.0
+                yText += font!.ascent + font!.descent/2.0
             }
-
             for i in 0..<lines.count {
                 if getTextAlignment() == Align.RIGHT {
                     xText = (x + width) - (font!.stringWidth(lines[i]) + margin)

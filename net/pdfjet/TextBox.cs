@@ -822,7 +822,6 @@ public class TextBox : IDrawable {
                 } else {    // Align.LEFT
                     xText = x + margin;
                 }
-
                 if (yText + font.GetBodyHeight() + spacing + font.descent >= y + height
                         && i < (lines.Length - 1)) {
                     String str = lines[i];
