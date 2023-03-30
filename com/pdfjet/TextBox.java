@@ -821,7 +821,7 @@ public class TextBox implements Drawable {
         String[] lines = getTextLines();
         float lineHeight = font.getBodyHeight() + spacing;
         float xText = margin;
-        float yText = y + font.ascent + margin;
+        float yText = y + margin + font.ascent;
 
         if (page != null) {
             if (getBgColor() != Color.transparent) {
@@ -839,9 +839,13 @@ public class TextBox implements Drawable {
 
         if (height > 0f) {  // TextBox with fixed height
             if (valign == Align.BOTTOM) {
-                yText += height - lines.length*lineHeight;
+                yText = y + height;
+                yText -= margin + Float.valueOf(lines.length)*lineHeight;
+                yText -= spacing;
+                yText += font.ascent + 2f*font.descent;
             } else if (valign == Align.CENTER) {
-                yText += (height - lines.length*lineHeight)/2;
+                yText = y + (height - Float.valueOf(lines.length)*lineHeight)/2f;
+                yText += font.ascent + font.descent/2f;
             }
             for (int i = 0; i < lines.length; i++) {
                 if (getTextAlignment() == Align.RIGHT) {
