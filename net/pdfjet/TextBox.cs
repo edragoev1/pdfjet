@@ -793,7 +793,7 @@ public class TextBox : IDrawable {
         if (page != null) {
             if (GetBgColor() != Color.transparent) {
                 page.SetBrushColor(background);
-                page.FillRect(x, y, width, lines.Length*lineHeight-spacing);
+                page.FillRect(x, y, width, (lines.Length*lineHeight-spacing) + 2*margin);
             }
             page.SetPenColor(this.pen);
             page.SetBrushColor(this.brush);
