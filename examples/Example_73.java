@@ -111,9 +111,10 @@ public class Example_73 {
         textBox = new TextBox(f1);
         textBox.setFallbackFont(f2);
         textBox.setText(text);
+        textBox.setMargin(10f);
         textBox.setBgColor(Color.lightblue);
         textBox.setVerticalAlignment(Align.TOP);
-        textBox.setHeight(151f);
+        textBox.setHeight(210f);
         textBox.setWidth(300f);
         textBox.setLocation(250f, 50f);
         textBox.drawOn(page);
@@ -121,21 +122,23 @@ public class Example_73 {
         textBox = new TextBox(f1);
         textBox.setFallbackFont(f2);
         textBox.setText(text);
+        textBox.setMargin(10f);
         textBox.setBgColor(Color.lightblue);
         textBox.setVerticalAlignment(Align.CENTER);
-        textBox.setHeight(151f);
+        textBox.setHeight(210f);
         textBox.setWidth(300f);
-        textBox.setLocation(250f, 250f);
+        textBox.setLocation(250f, 300f);
         textBox.drawOn(page);
 
         textBox = new TextBox(f1);
         textBox.setFallbackFont(f2);
         textBox.setText(text);
+        textBox.setMargin(10f);
         textBox.setBgColor(Color.lightblue);
         textBox.setVerticalAlignment(Align.BOTTOM);
-        textBox.setHeight(151f);
+        textBox.setHeight(210f);
         textBox.setWidth(300f);
-        textBox.setLocation(250f, 450f);
+        textBox.setLocation(250f, 550f);
         textBox.drawOn(page);
 
         pdf.complete();
