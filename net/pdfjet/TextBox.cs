@@ -788,12 +788,16 @@ public class TextBox : IDrawable {
         String[] lines = getTextLines();
         float lineHeight = font.GetBodyHeight() + spacing;
         float xText;
-        float yText = y + font.ascent + margin;
+        float yText = y + margin + font.ascent;
 
         if (page != null) {
             if (GetBgColor() != Color.transparent) {
                 page.SetBrushColor(background);
-                page.FillRect(x, y, width, (lines.Length*lineHeight-spacing) + 2*margin);
+                if (height > 0f) {  // TextBox with fixed height
+                    page.FillRect(x, y, width, height);
+                } else {
+                    page.FillRect(x, y, width, (lines.Length*lineHeight-spacing) + 2*margin);
+                }
             }
             page.SetPenColor(this.pen);
             page.SetBrushColor(this.brush);
@@ -802,12 +806,14 @@ public class TextBox : IDrawable {
 
         if (height > 0f) {  // TextBox with fixed height
             if (valign == Align.BOTTOM) {
-                yText += height - lines.Length*lineHeight;
+                yText = y + height;
+                yText -= margin + ((float) lines.Length)*lineHeight;
+                yText -= spacing;
+                yText += font.ascent + 2f*font.descent;
+            } else if (valign == Align.CENTER) {
+                yText = y + (height - ((float) lines.Length)*lineHeight)/2f;
+                yText += font.ascent + font.descent/2f;
             }
-            else if (valign == Align.CENTER) {
-                yText += (height - lines.Length*lineHeight)/2;
-            }
-
             for (int i = 0; i < lines.Length; i++) {
                 if (GetTextAlignment() == Align.RIGHT) {
                     xText = (x + width) - (font.StringWidth(lines[i]) + margin);
