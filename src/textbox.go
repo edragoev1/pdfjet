@@ -532,23 +532,31 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	lines := textBox.getTextLines()
 	lineHeight := textBox.font.bodyHeight + textBox.spacing
 	xText := textBox.margin
-	yText := textBox.y + textBox.font.ascent + textBox.margin
+	yText := textBox.y + textBox.margin + textBox.font.ascent
 
 	if page != nil {
 		if textBox.background != color.Transparent {
 			page.SetBrushColor(textBox.background)
-			page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*lineHeight-textBox.spacing) + 2*textBox.margin)
+			if textBox.height > 0.0 {
+				page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
+			} else {
+				page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*lineHeight-textBox.spacing)+2*textBox.margin)
+			}
 		}
 		page.SetPenColor(textBox.pen)
 		page.SetBrushColor(textBox.brush)
 		page.SetPenWidth(textBox.font.underlineThickness)
 	}
 
-	if textBox.height > 0.0 {
+	if textBox.height > 0.0 { // TextBox with fixed height
 		if textBox.valign == align.Bottom {
-			yText += textBox.height - float32(len(lines))*lineHeight
+			yText = textBox.y + textBox.height
+			yText -= textBox.margin + float32(len(lines))*lineHeight
+			yText -= textBox.spacing
+			yText += textBox.font.ascent + 2.0*textBox.font.descent
 		} else if textBox.valign == align.Center {
-			yText += (textBox.height - float32(len(lines))*lineHeight) / 2
+			yText = textBox.y + (textBox.height-float32(len(lines))*lineHeight)/2.0
+			yText += textBox.font.ascent + textBox.font.descent/2.0
 		}
 		for i := 0; i < len(lines); i++ {
 			if textBox.GetTextAlignment() == align.Right {
