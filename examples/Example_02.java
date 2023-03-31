@@ -1,9 +1,7 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_02.java
@@ -12,18 +10,14 @@ import com.pdfjet.*;
  *  and curve segments. Every curve segment must have exactly 2 control points.
  */
 public class Example_02 {
-
     public Example_02() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_02.pdf")));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
-        Box flag = new Box(85.0f, 85.0f, 64.0f, 32.0f);
-
         Path path = new Path();
+        path.setLocation(100f, 50f);
 
         path.add(new Point(13.0f,  0.0f));
         path.add(new Point(15.5f,  4.5f));
@@ -59,29 +53,19 @@ public class Example_02 {
         path.setClosePath(true);
         path.setColor(Color.red);
         path.setFillShape(true);
-        path.placeIn(flag, 19.0f, 3.0f);
 
+        path.scaleBy(4f);
         path.drawOn(page);
 
-        Box box = new Box();
-        box.setSize(16.0f, 32.0f);
-        box.setColor(Color.red);
-        box.setFillShape(true);
-        box.placeIn(flag, 0.0f, 0.0f);
-        box.drawOn(page);
-        box.placeIn(flag, 48.0f, 0.0f);
-        box.drawOn(page);
-
-        path.scaleBy(15f);
+        path.scaleBy(4f);
         path.setFillShape(false);
         float[] xy = path.drawOn(page);
 
-        box = new Box();
+        Box box = new Box();
         box.setLocation(xy[0], xy[1]);
         box.setSize(20f, 20f);
         box.drawOn(page);
 
-        // TODO:
         page.setPenColorCMYK(1.0f, 0.0f, 0.0f, 0.0f);
         page.setPenWidth(5.0f);
         page.drawLine(50f, 500f, 300f, 500f);
