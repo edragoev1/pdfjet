@@ -60,7 +60,6 @@ public class Example_73 {
         box.setSize(20f, 20f);
         box.drawOn(page);
 
-
         textBox = new TextBox(f1, line2.getText() + "!");
         textBox.setWidth(line2.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 300f);
