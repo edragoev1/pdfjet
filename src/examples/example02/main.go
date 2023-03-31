@@ -10,16 +10,14 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example02 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example02 draws the Canadian Maple Leaf using a Path object that contains both
+// lines and curve segments. Every curve segment must have exactly 2 control points.
 func Example02() {
 	pdf := pdfjet.NewPDFFile("Example_02.pdf", compliance.PDF15)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
-
-	flag := pdfjet.NewBoxAt(85.0, 85.0, 64.0, 32.0)
-
 	path := pdfjet.NewPath()
+	path.SetLocation(100.0, 50.0)
 
 	path.Add(pdfjet.NewPoint(13.0, 0.0))
 	path.Add(pdfjet.NewPoint(15.5, 4.5))
@@ -55,24 +53,14 @@ func Example02() {
 	path.SetClosePath(true)
 	path.SetColor(color.Red)
 	path.SetFillShape(true)
-	path.PlaceIn(flag, 19.0, 3.0)
-
+	path.ScaleBy(4.0)
 	path.DrawOn(page)
 
-	box := pdfjet.NewBox()
-	box.SetSize(16.0, 32.0)
-	box.SetColor(color.Red)
-	box.SetFillShape(true)
-	box.PlaceIn(flag, 0.0, 0.0)
-	box.DrawOn(page)
-	box.PlaceIn(flag, 48.0, 0.0)
-	box.DrawOn(page)
-
-	path.ScaleBy(15.0)
+	path.ScaleBy(4.0)
 	path.SetFillShape(false)
 	xy := path.DrawOn(page)
 
-	box = pdfjet.NewBox()
+	box := pdfjet.NewBox()
 	box.SetLocation(xy[0], xy[1])
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
