@@ -1,24 +1,21 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_02.swift
  *
- *  Draw the Canadian flag using a Path object that contains both lines
+ *  Draw the Canadian Maple Leaf using a Path object that contains both lines
  *  and curve segments. Every curve segment must have exactly 2 control points.
  */
 public class Example_02 {
-
     public init() {
-
         let stream = OutputStream(toFileAtPath: "Example_02.pdf", append: false)!
 
         let pdf = PDF(stream)
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let flag = Box(85.0, 85.0, 64.0, 32.0)
         let path = Path()
+        path.setLocation(100.0, 50.0)
 
         path.add(Point(13.0,  0.0))
         path.add(Point(15.5,  4.5))
@@ -54,29 +51,19 @@ public class Example_02 {
         path.setClosePath(true)
         path.setColor(Color.red)
         path.setFillShape(true)
-        path.placeIn(flag, 19.0, 3.0)
 
+        path.scaleBy(4.0)
         path.drawOn(page)
 
-        var box = Box()
-        box.setSize(16.0, 32.0)
-        box.setColor(Color.red)
-        box.setFillShape(true)
-        box.placeIn(flag, 0.0, 0.0)
-        box.drawOn(page)
-        box.placeIn(flag, 48.0, 0.0)
-        box.drawOn(page)
-
-        path.scaleBy(15)
+        path.scaleBy(4.0)
         path.setFillShape(false)
         let xy: [Float] = path.drawOn(page)
 
-        box = Box()
+        let box = Box()
         box.setLocation(xy[0], xy[1])
         box.setSize(20.0, 20.0)
         box.drawOn(page)
 
-        // TODO:
         page.setPenColorCMYK(1.0, 0.0, 0.0, 0.0);
         page.setPenWidth(5.0);
         page.drawLine(50.0, 500.0, 300.0, 500.0);
