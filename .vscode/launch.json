@@ -934,6 +934,30 @@
             "args": [],
             "cwd": "${workspaceFolder:pdfjet}",
             "preLaunchTask": "swift: Build Release Example_51"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Debug Example_73",
+            "program": "${workspaceFolder:pdfjet}/.build/debug/Example_73",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Debug Example_73"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Release Example_73",
+            "program": "${workspaceFolder:pdfjet}/.build/release/Example_73",
+            "args": [],
+            "cwd": "${workspaceFolder:pdfjet}",
+            "preLaunchTask": "swift: Build Release Example_73"
         }
     ]
 }
