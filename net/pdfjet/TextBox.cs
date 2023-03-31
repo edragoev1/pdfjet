@@ -715,14 +715,14 @@ public class TextBox : IDrawable {
 
     private String[] getTextLines() {
         List<String> list = new List<String>();
-        float textAreaWidth = width + 2*margin;
+        float textAreaWidth = width - 2*margin;
         String[] lines = text.Split(new String[] {"\r\n", "\n"}, StringSplitOptions.None);
         foreach (String line in lines) {
             if (font.StringWidth(fallbackFont, line) <= textAreaWidth) {
                 list.Add(line);
             } else {
-                StringBuilder buf1 = GetStringBuilder(line);        // Preserves the indentation
-                String[] tokens = Regex.Split(line.Trim(), @"\s+"); // Do not remove the Trim()!
+                StringBuilder buf1 = GetStringBuilder(line);    // Preserves the indentation
+                String[] tokens = line.Trim().Split(' ');       // Do not remove the Trim()!
                 foreach (String token in tokens) {
                     if (font.StringWidth(fallbackFont, token) > textAreaWidth) {
                         // We have very long token, so we have to split it
