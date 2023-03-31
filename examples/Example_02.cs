@@ -4,25 +4,23 @@ using System.Diagnostics;
 
 using PDFjet.NET;
 
-
 /**
  *  Example_02.cs
  *
- *  Draw the Canadian flag using a Path object that contains both lines
+ *  Draw the Canadian Maple Leaf using a Path object that contains both lines
  *  and curve segments. Every curve segment must have exactly 2 control points.
  */
 public class Example_02 {
-
     public Example_02() {
-
-        PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_02.pdf", FileMode.Create)));
+        PDF pdf = new PDF(
+                new BufferedStream(
+                        new FileStream("Example_02.pdf", FileMode.Create)));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Box flag = new Box(85.0f, 85.0f, 64.0f, 32.0f);
-
         PDFjet.NET.Path path = new PDFjet.NET.Path();
+        path.SetLocation(100f, 50f);
+
         path.Add(new Point(13.0f,  0.0f));
         path.Add(new Point(15.5f,  4.5f));
 
@@ -57,28 +55,18 @@ public class Example_02 {
         path.SetClosePath(true);
         path.SetColor(Color.red);
         path.SetFillShape(true);
-        path.PlaceIn(flag, 19.0f, 3.0f);
+        path.ScaleBy(4f);
         path.DrawOn(page);
 
-        Box box = new Box();
-        box.SetSize(16, 32);
-        box.SetColor(Color.red);
-        box.SetFillShape(true);
-        box.PlaceIn(flag, 0.0, 0.0);
-        box.DrawOn(page);
-        box.PlaceIn(flag, 48.0, 0.0);
-        box.DrawOn(page);
-
-        path.ScaleBy(15.0);
+        path.ScaleBy(4f);
         path.SetFillShape(false);
         float[] xy = path.DrawOn(page);
 
-        box = new Box();
+        Box box = new Box();
         box.SetLocation(xy[0], xy[1]);
         box.SetSize(20f, 20f);
         box.DrawOn(page);
 
-        // TODO:
         page.SetPenColorCMYK(1.0f, 0.0f, 0.0f, 0.0f);
         page.SetPenWidth(5.0f);
         page.DrawLine(50f, 500f, 300f, 500f);
@@ -97,7 +85,6 @@ public class Example_02 {
 
         pdf.Complete();
     }
-
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();

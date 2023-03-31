@@ -6,7 +6,7 @@ import com.pdfjet.*;
 /**
  *  Example_02.java
  *
- *  Draw the Canadian flag using a Path object that contains both lines
+ *  Draw the Canadian Maple Leaf using a Path object that contains both lines
  *  and curve segments. Every curve segment must have exactly 2 control points.
  */
 public class Example_02 {
@@ -53,7 +53,6 @@ public class Example_02 {
         path.setClosePath(true);
         path.setColor(Color.red);
         path.setFillShape(true);
-
         path.scaleBy(4f);
         path.drawOn(page);
 
@@ -84,7 +83,6 @@ public class Example_02 {
 
         pdf.complete();
     }
-
 
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
