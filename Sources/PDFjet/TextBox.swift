@@ -631,7 +631,7 @@ public class TextBox : Drawable {
 
     private func getTextLines() -> [String] {
         var list = [String]()
-        let textAreaWidth = width + 2*margin
+        let textAreaWidth = width - 2*margin
         let lines = text!.components(separatedBy: "\n")
         for line in lines {
             if font!.stringWidth(fallbackFont, line) <= textAreaWidth {
