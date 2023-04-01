@@ -161,11 +161,11 @@ public class SVGImage {
             box[2] = Float.valueOf(view[2]);
             box[3] = Float.valueOf(view[3]);
         }
-        for (SVGPath svgPath : paths) {
-            svgPath.operations = SVG.getOperations(svgPath.data);
-            svgPath.operations = SVG.toPDF(svgPath.operations);
+        for (SVGPath path : paths) {
+            path.operations = SVG.getOperations(path.data);
+            path.operations = SVG.toPDF(path.operations);
             if (viewBox != null) {
-                for (PathOp op : svgPath.operations) {
+                for (PathOp op : path.operations) {
                     float xFit = w / (box[2] - box[0]);
                     float yFit = h / (box[3] + box[1]);
                     op.x *= xFit;
