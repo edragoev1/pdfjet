@@ -150,10 +150,28 @@ public class SVGImage {
         }
         stream.close();
 
+        float[] box = new float[4];
+        if (viewBox != null) {
+            String[] view = viewBox.trim().split("\\s+");
+            box[0] = Float.valueOf(view[0]);
+            box[1] = Float.valueOf(view[1]);
+            box[2] = Float.valueOf(view[2]);
+            box[3] = Float.valueOf(view[3]);
+        }
         for (int i = 0; i < paths.size(); i++) {
             path = paths.get(i);
             path.operations = SVG.getOperations(path.data);
             path.operations = SVG.toPDF(path.operations);
+            if (viewBox != null) {
+                for (PathOp op : path.operations) {
+                    op.x /= 20;
+                    op.y /= 20;
+                    op.x1 /= 20;
+                    op.y1 /= 20;
+                    op.x2 /= 20;
+                    op.y2 /= 20;
+                }
+            }
         }
     }
 
