@@ -66,6 +66,18 @@ public class Example_33 {
         icon.setLocation(xy[0], 670);
         xy = icon.drawOn(page);
 
+        stream = new FileInputStream(
+            "images/svg-test/menu-icon.svg");
+        icon = new SVGImage(stream);
+        icon.setLocation(xy[0], 670);
+        xy = icon.drawOn(page);
+
+        stream = new FileInputStream(
+            "images/svg-test/menu-icon-close.svg");
+        icon = new SVGImage(stream);
+        icon.setLocation(xy[0], 670);
+        xy = icon.drawOn(page);
+
         stream = new FileInputStream("images/svg-test/europe.svg");
         icon = new SVGImage(stream);
         icon.setLocation(0f, 0f);
