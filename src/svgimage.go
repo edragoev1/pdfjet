@@ -185,27 +185,14 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 func (image *SVGImage) processPaths(paths []*SVGPath) {
 	box := make([]float32, 4)
 	if image.viewBox != "" {
-		view := strings.Fields(strings.TrimSpace(image.viewBox))
-		val0, err := strconv.ParseFloat(view[0], 32)
-		if err != nil {
-			log.Fatal(err)
+		list := strings.Fields(strings.TrimSpace(image.viewBox))
+		for i := 0; i < len(box); i++ {
+			val, err := strconv.ParseFloat(list[i], 32)
+			if err != nil {
+				log.Fatal(err)
+			}
+			box[i] = float32(val)
 		}
-		val1, err := strconv.ParseFloat(view[1], 32)
-		if err != nil {
-			log.Fatal(err)
-		}
-		val2, err := strconv.ParseFloat(view[2], 32)
-		if err != nil {
-			log.Fatal(err)
-		}
-		val3, err := strconv.ParseFloat(view[3], 32)
-		if err != nil {
-			log.Fatal(err)
-		}
-		box[0] = float32(val0)
-		box[1] = float32(val1)
-		box[2] = float32(val2)
-		box[3] = float32(val3)
 	}
 	svg := NewSVG()
 	for _, path := range paths {
