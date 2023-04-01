@@ -25,57 +25,81 @@ public class Example_33 {
         image.DrawOn(page);
 
         FileStream stream = new FileStream(
-            "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg",
+                FileMode.Open,
+                FileAccess.Read);
         SVGImage icon = new SVGImage(stream);
         icon.SetLocation(20f, 670f);
         float[] xy = icon.DrawOn(page);
 
         stream = new FileStream(
-            "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg",
+                FileMode.Open,
+                FileAccess.Read);
         icon = new SVGImage(stream);
         icon.SetLocation(xy[0], 670f);
         xy = icon.DrawOn(page);
 
         stream = new FileStream(
-            "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg",
+                FileMode.Open,
+                FileAccess.Read);
         icon = new SVGImage(stream);
         icon.SetLocation(xy[0], 670f);
         xy = icon.DrawOn(page);
 
         stream = new FileStream(
-            "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg",
+                FileMode.Open,
+                FileAccess.Read);
         icon = new SVGImage(stream);
         icon.SetLocation(xy[0], 670f);
         xy = icon.DrawOn(page);
 
         stream = new FileStream(
-            "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg",
+                FileMode.Open,
+                FileAccess.Read);
         icon = new SVGImage(stream);
         icon.SetLocation(xy[0], 670);
         xy = icon.DrawOn(page);
 
         stream = new FileStream(
-            "images/svg-test/test-CS.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg-test/test-CS.svg",
+                FileMode.Open,
+                FileAccess.Read);
         icon = new SVGImage(stream);
         icon.SetLocation(xy[0], 670);
         xy = icon.DrawOn(page);
 
         stream = new FileStream(
-            "images/svg-test/test-QQ.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg-test/test-QQ.svg",
+                FileMode.Open,
+                FileAccess.Read);
         icon = new SVGImage(stream);
         icon.SetLocation(xy[0], 670);
-        icon.DrawOn(page);
+        xy = icon.DrawOn(page);
 
         stream = new FileStream(
-            "images/svg-test/europe.svg",
-            FileMode.Open, FileAccess.Read);
+                "images/svg-test/menu-icon.svg",
+                FileMode.Open,
+                FileAccess.Read);
+        icon = new SVGImage(stream);
+        icon.SetLocation(xy[0], 670);
+        xy = icon.DrawOn(page);
+
+        stream = new FileStream(
+                "images/svg-test/menu-icon-close.svg",
+                FileMode.Open,
+                FileAccess.Read);
+        icon = new SVGImage(stream);
+        icon.SetLocation(xy[0], 670);
+        xy = icon.DrawOn(page);
+
+        stream = new FileStream(
+                "images/svg-test/europe.svg",
+                FileMode.Open,
+                FileAccess.Read);
         icon = new SVGImage(stream);
         icon.SetLocation(0f, 0f);
         icon.DrawOn(page);

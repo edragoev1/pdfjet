@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 /**
  * Used to embed SVG images in the PDF document.
@@ -36,6 +37,7 @@ public class SVGImage {
     float y = 0f;
     float w = 0f;       // SVG width
     float h = 0f;       // SVG height
+    String viewBox = null;
     int fill = Color.transparent;
     int stroke = Color.transparent;
     float strokeWidth = 0f;
@@ -76,6 +78,10 @@ public class SVGImage {
                 token = true;
                 param = "height";
                 buf.Length = 0;
+            } else if (!token && buf.ToString().EndsWith(" viewBox=")) {
+                token = true;
+                param = "viewBox";
+                buf.Length = 0;
             } else if (!token && buf.ToString().EndsWith(" d=")) {
                 token = true;
                 if (path != null) {
@@ -102,6 +108,8 @@ public class SVGImage {
                     this.w = float.Parse(buf.ToString());
                 } else if (param.Equals("height")) {
                     this.h = float.Parse(buf.ToString());
+                } else if (param.Equals("viewBox")) {
+                    this.viewBox = buf.ToString();
                 } else if (param.Equals("data")) {
                     path.data = buf.ToString();
                 } else if (param.Equals("fill")) {
@@ -139,11 +147,31 @@ public class SVGImage {
             paths.Add(path);
         }
         stream.Close();
+        ProcessPaths(paths);
+    }
 
-        for (int i = 0; i < paths.Count; i++) {
-            path = paths[i];
+    private void ProcessPaths(List<SVGPath> paths) {
+        float[] box = new float[4];
+        if (viewBox != null) {
+            String[] view = Regex.Split(viewBox.Trim(), "\\s+");
+            box[0] = float.Parse(view[0]);
+            box[1] = float.Parse(view[1]);
+            box[2] = float.Parse(view[2]);
+            box[3] = float.Parse(view[3]);
+        }
+        foreach (SVGPath path in paths) {
             path.operations = SVG.GetOperations(path.data);
             path.operations = SVG.ToPDF(path.operations);
+            if (viewBox != null) {
+                foreach (PathOp op in path.operations) {
+                    op.x = (op.x - box[0]) * w / box[2];
+                    op.y = (op.y - box[1]) * h / box[3];
+                    op.x1 = (op.x1 - box[0]) * w / box[2];
+                    op.y1 = (op.y1 - box[1]) * h / box[3];
+                    op.x2 = (op.x2 - box[0]) * w / box[2];
+                    op.y2 = (op.y2 - box[1]) * h / box[3];
+                }
+            }
         }
     }
 
