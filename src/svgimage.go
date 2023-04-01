@@ -38,6 +38,7 @@ import (
 
 type SVGImage struct {
 	x, y, w, h     float32
+	viewBox        *string
 	fill           int32
 	stroke         int32
 	strokeWidth    float32
@@ -94,6 +95,10 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 			token = true
 			param = "height"
 			builder.Reset()
+		} else if !token && strings.HasSuffix(builder.String(), " viewBox=") {
+			token = true
+			param = "viewBox"
+			builder.Reset()
 		} else if !token && strings.HasSuffix(builder.String(), " d=") {
 			token = true
 			if path != nil {
@@ -131,6 +136,8 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 				} else {
 					log.Fatal(err)
 				}
+			} else if param == "viewBox" {
+				*image.viewBox = builder.String()
 			} else if param == "data" {
 				path.data = builder.String()
 			} else if param == "fill" {
@@ -172,14 +179,57 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 		image.paths = append(image.paths, path)
 	}
 
-	for i := 0; i < len(image.paths); i++ {
-		svg := NewSVG()
-		path := image.paths[i]
+	// for i := 0; i < len(image.paths); i++ {
+	// 	svg := NewSVG()
+	// 	path := image.paths[i]
+	// 	path.operations = svg.GetOperations(path.data)
+	// 	path.operations = svg.ToPDF(path.operations)
+	// }
+
+	image.processPaths(image.paths)
+	return image
+}
+
+func (image *SVGImage) processPaths(paths []*SVGPath) {
+	box := make([]float32, 4)
+	if image.viewBox != nil {
+		view := strings.Fields(strings.TrimSpace(*image.viewBox))
+		val0, err := strconv.ParseFloat(view[0], 32)
+		if err != nil {
+			log.Fatal(err)
+		}
+		val1, err := strconv.ParseFloat(view[1], 32)
+		if err != nil {
+			log.Fatal(err)
+		}
+		val2, err := strconv.ParseFloat(view[2], 32)
+		if err != nil {
+			log.Fatal(err)
+		}
+		val3, err := strconv.ParseFloat(view[3], 32)
+		if err != nil {
+			log.Fatal(err)
+		}
+		box[0] = float32(val0)
+		box[1] = float32(val1)
+		box[2] = float32(val2)
+		box[3] = float32(val3)
+	}
+	svg := NewSVG()
+	for _, path := range paths {
 		path.operations = svg.GetOperations(path.data)
 		path.operations = svg.ToPDF(path.operations)
+		if image.viewBox != nil {
+			for _, op := range path.operations {
+				op.x = (op.x - box[0]) * image.w / box[2]
+				op.y = (op.y - box[1]) * image.h / box[3]
+				op.x1 = (op.x1 - box[0]) * image.w / box[2]
+				op.y1 = (op.y1 - box[1]) * image.h / box[3]
+				op.x2 = (op.x2 - box[0]) * image.w / box[2]
+				op.y2 = (op.y2 - box[1]) * image.h / box[3]
+			}
+		}
 	}
-
-	return image
 }
 
 func getColor(colorMap map[string]int32, colorName string) int32 {
