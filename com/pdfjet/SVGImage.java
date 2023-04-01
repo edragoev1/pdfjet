@@ -166,12 +166,12 @@ public class SVGImage {
             path.operations = SVG.toPDF(path.operations);
             if (viewBox != null) {
                 for (PathOp op : path.operations) {
-                    op.x = op.x * w / box[2];
-                    op.y = op.y * h / box[3];
-                    op.x1 = op.x1 * w / box[2];
-                    op.y1 = op.y1 * h / box[3];
-                    op.x2 = op.x2 * w / box[2];
-                    op.y2 = op.y2 * h / box[3];
+                    op.x = (op.x - box[0]) * w / box[2];
+                    op.y = (op.y - box[1]) * h / box[3];
+                    op.x1 = (op.x1 - box[0]) * w / box[2];
+                    op.y1 = (op.y1 - box[1]) * h / box[3];
+                    op.x2 = (op.x2 - box[0]) * w / box[2];
+                    op.y2 = (op.y2 - box[1]) * h / box[3];
                 }
             }
         }
