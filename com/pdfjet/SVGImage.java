@@ -36,6 +36,7 @@ public class SVGImage {
     float y = 0f;
     float w = 0f;       // SVG width
     float h = 0f;       // SVG height
+    String viewBox = null;
     int fill = Color.transparent;
     int stroke = Color.transparent;
     float strokeWidth = 0f;
@@ -79,6 +80,10 @@ public class SVGImage {
                 token = true;
                 param = "height";
                 buf.setLength(0);
+            } else if (!token && buf.toString().endsWith(" viewBox=")) {
+                token = true;
+                param = "viewBox";
+                buf.setLength(0);
             } else if (!token && buf.toString().endsWith(" d=")) {
                 token = true;
                 if (path != null) {
@@ -105,6 +110,8 @@ public class SVGImage {
                     this.w = Float.valueOf(buf.toString());
                 } else if (param.equals("height")) {
                     this.h = Float.valueOf(buf.toString());
+                } else if (param.equals("viewBox")) {
+                    this.viewBox = buf.toString();
                 } else if (param.equals("data")) {
                     path.data = buf.toString();
                 } else if (param.equals("fill")) {
