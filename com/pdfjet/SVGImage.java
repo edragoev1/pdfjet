@@ -158,18 +158,19 @@ public class SVGImage {
             box[2] = Float.valueOf(view[2]);
             box[3] = Float.valueOf(view[3]);
         }
-        for (int i = 0; i < paths.size(); i++) {
-            path = paths.get(i);
-            path.operations = SVG.getOperations(path.data);
-            path.operations = SVG.toPDF(path.operations);
+        for (SVGPath svgPath : paths) {
+            svgPath.operations = SVG.getOperations(svgPath.data);
+            svgPath.operations = SVG.toPDF(svgPath.operations);
             if (viewBox != null) {
-                for (PathOp op : path.operations) {
-                    op.x /= 20;
-                    op.y /= 20;
-                    op.x1 /= 20;
-                    op.y1 /= 20;
-                    op.x2 /= 20;
-                    op.y2 /= 20;
+                for (PathOp op : svgPath.operations) {
+                    float xFit = w / (box[2] - box[0]);
+                    float yFit = h / (box[3] + box[1]);
+                    op.x *= xFit;
+                    op.y *= yFit;
+                    op.x1 *= xFit;
+                    op.y1 *= yFit;
+                    op.x2 *= xFit;
+                    op.y2 *= yFit;
                 }
             }
         }
