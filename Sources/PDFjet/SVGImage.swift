@@ -31,6 +31,7 @@ public class SVGImage {
     var y: Float = 0.0  // location y
     var w: Float = 0.0  // SVG width
     var h: Float = 0.0  // SVG height
+    var viewBox: String?
     var fill: Int32 = Color.transparent
     var stroke: Int32 = Color.transparent
     var strokeWidth: Float = 0.0
@@ -85,6 +86,10 @@ public class SVGImage {
                 token = true
                 param = "height"
                 buf = ""
+            } else if !token && buf.hasSuffix(" viewBox=") {
+                token = true
+                param = "viewBox"
+                buf = ""
             } else if !token && buf.hasSuffix(" d=") {
                 token = true
                 if path != nil {
@@ -111,6 +116,8 @@ public class SVGImage {
                     w = Float(buf)!
                 } else if param == "height" {
                     h = Float(buf)!
+                } else if param == "viewBox" {
+                    viewBox = buf
                 } else if param == "data" {
                     path!.data = buf
                 } else if param == "fill" {
@@ -143,13 +150,31 @@ public class SVGImage {
         if path != nil {
             paths!.append(path!)
         }
-
-        var i = 0
-        while i < paths!.count {
-            path = paths![i]
-            path!.operations = SVG.getOperations(path!.data!)
-            path!.operations = SVG.toPDF(path!.operations!)
-            i += 1
+        processPaths(paths!)
+    }
+    
+    func processPaths(_ paths: [SVGPath]) {
+        var box: [Float] = Array(repeating: 0.0, count: 4)
+        if viewBox != nil {
+            let view = viewBox!.trim().components(separatedBy: .whitespaces)
+            box[0] = Float(view[0])!
+            box[1] = Float(view[1])!
+            box[2] = Float(view[2])!
+            box[3] = Float(view[3])!
+        }
+        for path in paths {
+            path.operations = SVG.getOperations(path.data!)
+            path.operations = SVG.toPDF(path.operations!)
+            if viewBox != nil {
+                for op in path.operations! {
+                    op.x = (op.x - box[0]) * w / box[2]
+                    op.y = (op.y - box[1]) * h / box[3]
+                    op.x1 = (op.x1 - box[0]) * w / box[2]
+                    op.y1 = (op.y1 - box[1]) * h / box[3]
+                    op.x2 = (op.x2 - box[0]) * w / box[2]
+                    op.y2 = (op.y2 - box[1]) * h / box[3]
+                }
+            }
         }
     }
 
