@@ -38,7 +38,7 @@ import (
 
 type SVGImage struct {
 	x, y, w, h     float32
-	viewBox        *string
+	viewBox        string
 	fill           int32
 	stroke         int32
 	strokeWidth    float32
@@ -137,7 +137,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 					log.Fatal(err)
 				}
 			} else if param == "viewBox" {
-				*image.viewBox = builder.String()
+				image.viewBox = builder.String()
 			} else if param == "data" {
 				path.data = builder.String()
 			} else if param == "fill" {
@@ -192,8 +192,8 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 
 func (image *SVGImage) processPaths(paths []*SVGPath) {
 	box := make([]float32, 4)
-	if image.viewBox != nil {
-		view := strings.Fields(strings.TrimSpace(*image.viewBox))
+	if image.viewBox != "" {
+		view := strings.Fields(strings.TrimSpace(image.viewBox))
 		val0, err := strconv.ParseFloat(view[0], 32)
 		if err != nil {
 			log.Fatal(err)
@@ -219,7 +219,7 @@ func (image *SVGImage) processPaths(paths []*SVGPath) {
 	for _, path := range paths {
 		path.operations = svg.GetOperations(path.data)
 		path.operations = svg.ToPDF(path.operations)
-		if image.viewBox != nil {
+		if image.viewBox != "" {
 			for _, op := range path.operations {
 				op.x = (op.x - box[0]) * image.w / box[2]
 				op.y = (op.y - box[1]) * image.h / box[3]
