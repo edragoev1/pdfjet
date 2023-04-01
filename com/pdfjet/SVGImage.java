@@ -155,11 +155,11 @@ public class SVGImage {
     private void processPaths(List<SVGPath> paths) {
         float[] box = new float[4];
         if (viewBox != null) {
-            String[] view = viewBox.trim().split("\\s+");
-            box[0] = Float.valueOf(view[0]);
-            box[1] = Float.valueOf(view[1]);
-            box[2] = Float.valueOf(view[2]);
-            box[3] = Float.valueOf(view[3]);
+            String[] list = viewBox.trim().split("\\s+");
+            box[0] = Float.valueOf(list[0]);
+            box[1] = Float.valueOf(list[1]);
+            box[2] = Float.valueOf(list[2]);
+            box[3] = Float.valueOf(list[3]);
         }
         for (SVGPath path : paths) {
             path.operations = SVG.getOperations(path.data);

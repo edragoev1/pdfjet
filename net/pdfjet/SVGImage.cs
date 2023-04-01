@@ -153,11 +153,11 @@ public class SVGImage {
     private void ProcessPaths(List<SVGPath> paths) {
         float[] box = new float[4];
         if (viewBox != null) {
-            String[] view = Regex.Split(viewBox.Trim(), "\\s+");
-            box[0] = float.Parse(view[0]);
-            box[1] = float.Parse(view[1]);
-            box[2] = float.Parse(view[2]);
-            box[3] = float.Parse(view[3]);
+            String[] list = Regex.Split(viewBox.Trim(), "\\s+");
+            box[0] = float.Parse(list[0]);
+            box[1] = float.Parse(list[1]);
+            box[2] = float.Parse(list[2]);
+            box[3] = float.Parse(list[3]);
         }
         foreach (SVGPath path in paths) {
             path.operations = SVG.GetOperations(path.data);

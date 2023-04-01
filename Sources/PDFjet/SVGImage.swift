@@ -156,11 +156,11 @@ public class SVGImage {
     func processPaths(_ paths: [SVGPath]) {
         var box: [Float] = Array(repeating: 0.0, count: 4)
         if viewBox != nil {
-            let view = viewBox!.trim().components(separatedBy: .whitespaces)
-            box[0] = Float(view[0])!
-            box[1] = Float(view[1])!
-            box[2] = Float(view[2])!
-            box[3] = Float(view[3])!
+            let list = viewBox!.trim().components(separatedBy: .whitespaces)
+            box[0] = Float(list[0])!
+            box[1] = Float(list[1])!
+            box[2] = Float(list[2])!
+            box[3] = Float(list[3])!
         }
         for path in paths {
             path.operations = SVG.getOperations(path.data!)
