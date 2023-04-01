@@ -149,7 +149,10 @@ public class SVGImage {
             paths.add(path);
         }
         stream.close();
+        processPaths(paths);
+    }
 
+    private void processPaths(List<SVGPath> paths) {
         float[] box = new float[4];
         if (viewBox != null) {
             String[] view = viewBox.trim().split("\\s+");
