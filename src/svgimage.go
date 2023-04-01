@@ -178,14 +178,6 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	if path != nil {
 		image.paths = append(image.paths, path)
 	}
-
-	// for i := 0; i < len(image.paths); i++ {
-	// 	svg := NewSVG()
-	// 	path := image.paths[i]
-	// 	path.operations = svg.GetOperations(path.data)
-	// 	path.operations = svg.ToPDF(path.operations)
-	// }
-
 	image.processPaths(image.paths)
 	return image
 }
