@@ -667,10 +667,10 @@ public class TextBox : Drawable {
             if valign == Align.TOP {
                 yText = y + margin + font!.ascent
             } else if valign == Align.BOTTOM {
-                yText = ((y + height) - (Float(lines.count) * leading) + margin)
+                yText = (y + height) - ((Float(lines.count)*leading) + margin)
                 yText += font!.ascent
             } else if valign == Align.CENTER {
-                yText = y + (height - Float(lines.count) * leading)/2
+                yText = y + (height - Float(lines.count)*leading)/2
                 yText += font!.ascent
             }
             for line in lines {

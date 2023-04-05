@@ -534,10 +534,10 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		if textBox.valign == align.Top {
 			yText = textBox.y + textBox.margin + textBox.font.ascent
 		} else if textBox.valign == align.Bottom {
-			yText = ((textBox.y + textBox.height) - float32(len(lines))*leading) + textBox.margin // TODO!!!!!
+			yText = (textBox.y + textBox.height) - (float32(len(lines))*leading + textBox.margin)
 			yText += textBox.font.ascent
 		} else if textBox.valign == align.Center {
-			yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2.0
+			yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2
 			yText += textBox.font.ascent
 		}
 		for _, line := range lines {

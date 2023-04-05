@@ -815,10 +815,10 @@ public class TextBox : IDrawable {
             if (valign == Align.TOP) {
                 yText = y + margin + font.ascent;
             } else if (valign == Align.BOTTOM) {
-                yText = ((y + height) - (((float) lines.Length) * leading) + margin);
+                yText = (y + height) - (((float) lines.Length)*leading + margin);
                 yText += font.ascent;
             } else if (valign == Align.CENTER) {
-                yText = y + (height - ((float) lines.Length) * leading)/2;
+                yText = y + (height - ((float) lines.Length)*leading)/2;
                 yText += font.ascent;
             }
             foreach (String line in lines) {

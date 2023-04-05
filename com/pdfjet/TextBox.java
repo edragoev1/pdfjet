@@ -790,10 +790,10 @@ public class TextBox implements Drawable {
             if (valign == Align.TOP) {
                 yText = y + margin + font.ascent;
             } else if (valign == Align.BOTTOM) {
-                yText = ((y + height) - (Float.valueOf(lines.length) * leading) + margin);
+                yText = (y + height) - (Float.valueOf(lines.length)*leading + margin);
                 yText += font.ascent;
             } else if (valign == Align.CENTER) {
-                yText = y + (height - Float.valueOf(lines.length) * leading)/2;
+                yText = y + (height - Float.valueOf(lines.length)*leading)/2;
                 yText += font.ascent;
             }
             for (String line : lines) {
