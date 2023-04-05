@@ -33,7 +33,7 @@ public class Example_73 {
         textBox.SetMargin(0f);
         textBox.SetLocation(50f, 50f);
         textBox.SetWidth(line1.GetWidth() + 2*textBox.GetMargin());
-        textBox.SetBgColor(Color.aliceblue);
+        textBox.SetBgColor(Color.lightgreen);
         // The DrawOn method returns the x and y of the bottom right corner of the TextBox
         float[] xy = textBox.DrawOn(page);
 
