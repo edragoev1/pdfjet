@@ -756,15 +756,14 @@ public class TextBox implements Drawable {
      *
      * @param page the Page where the TextBox is to be drawn.
      * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception ???
      */
-    public float[] drawOn(Page page) throws Exception {
+    public float[] drawOn(Page page) {
         String[] lines = getTextLines();
         float leading = font.ascent + font.descent + spacing;
 
         if (height > 0f) { // TextBox with fixed height
-            List<String> list = new ArrayList<String>();
             if (lines.length * leading > (height - 2*margin)) {
+                List<String> list = new ArrayList<String>();
                 for (String line : lines) {
                     if ((list.size() + 1) * leading <= (height - 2*margin)) {
                         list.add(line);
