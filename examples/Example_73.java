@@ -24,8 +24,8 @@ public class Example_73 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine line1 = new TextLine(f1, "Hello, gBeautiful World");
-        TextLine line2 = new TextLine(f1, "Hello, BeautifulWorld");
+        TextLine line1 = new TextLine(f1, "Hello, Beautiful World");
+        TextLine line2 = new TextLine(f1, "Hello,BeautifulWorld");
 
         TextBox textBox = new TextBox(f1, line1.getText());
         textBox.setMargin(0f);
@@ -71,7 +71,9 @@ public class Example_73 {
         box.drawOn(page);
 
         textBox = new TextBox(f1, line2.getText() + "! Left Align");
-        textBox.setMargin(10f);
+        textBox.setMargin(30f);
+        textBox.setVerticalAlignment(Align.TOP);
+        textBox.setBgColor(Color.lightgreen);
         textBox.setWidth(line2.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 400f);
         xy = textBox.drawOn(page);

@@ -9,9 +9,10 @@ import com.pdfjet.*;
 public class Example_79 {
     public Example_79() throws Exception {
         PDF pdf = new PDF(new FileOutputStream("Example_79.pdf"));
-        Font f1 = new Font(pdf,
-                    new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
-                    Font.STREAM);
+        Font f1 = new Font(
+                pdf,
+                new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
+                Font.STREAM);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
         f1.setSize(72f);
@@ -37,6 +38,7 @@ public class Example_79 {
         TextBox textBox = new TextBox(f1, buf.toString());
         textBox.setLocation(x1, y1);
         textBox.setWidth(500f);
+        textBox.setHeight(230f);
         textBox.setMargin(0f);
         textBox.setSpacing(0f);
         textBox.setBgColor(Color.lightgreen);
