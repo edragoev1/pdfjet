@@ -42,7 +42,6 @@ import Foundation
 /// It was completely rewritten in 2013 by Eugene Dragoev.
 ///
 public class TextBox : Drawable {
-
     var font: Font?
     var text: String?
 
@@ -58,7 +57,7 @@ public class TextBox : Drawable {
     private var background = Color.transparent
     private var pen = Color.black
     private var brush = Color.black
-    private var valign = Align.LEFT
+    private var valign = Align.TOP
     private var fallbackFont: Font?
     private var colors: [String : Int32]?
 
@@ -80,7 +79,6 @@ public class TextBox : Drawable {
     // bits 24 to 31
     private var properties: UInt32 = 0x000F0001
 
-
     ///
     /// Creates a text box and sets the font.
     ///
@@ -89,7 +87,6 @@ public class TextBox : Drawable {
     public init(_ font: Font) {
         self.font = font
     }
-
 
     ///
     /// Creates a text box and sets the font.
@@ -101,7 +98,6 @@ public class TextBox : Drawable {
         self.font = font
         self.text = text
     }
-
 
     ///
     /// Creates a text box and sets the font and the text.
@@ -118,7 +114,6 @@ public class TextBox : Drawable {
         self.height = height
     }
 
-
     ///
     /// Sets the font for this text box.
     ///
@@ -129,7 +124,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the font used by this text box.
     ///
@@ -138,7 +132,6 @@ public class TextBox : Drawable {
     public func getFont() -> Font? {
         return self.font
     }
-
 
     ///
     /// Sets the text box text.
@@ -151,7 +144,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text box text.
     ///
@@ -161,11 +153,9 @@ public class TextBox : Drawable {
         return self.text
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Sets the location where this text box will be drawn on the page.
@@ -180,7 +170,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Sets the width of this text box.
     ///
@@ -192,7 +181,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text box width.
     ///
@@ -201,7 +189,6 @@ public class TextBox : Drawable {
     public func getWidth() -> Float {
         return width
     }
-
 
     ///
     /// Sets the height of this text box.
@@ -214,7 +201,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text box height.
     ///
@@ -223,7 +209,6 @@ public class TextBox : Drawable {
     public func getHeight() -> Float {
         return height
     }
-
 
     ///
     /// Sets the margin of this text box.
@@ -236,7 +221,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text box margin.
     ///
@@ -245,7 +229,6 @@ public class TextBox : Drawable {
     public func getMargin() -> Float {
         return margin
     }
-
 
     ///
     /// Sets the border line width.
@@ -258,7 +241,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the border line width.
     ///
@@ -267,7 +249,6 @@ public class TextBox : Drawable {
     public func getLineWidth() -> Float {
         return lineWidth
     }
-
 
     ///
     /// Sets the spacing between lines of text.
@@ -280,7 +261,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the spacing between lines of text.
     ///
@@ -289,7 +269,6 @@ public class TextBox : Drawable {
     public func getSpacing() -> Float {
         return spacing
     }
-
 
     ///
     /// Sets the background to the specified color.
@@ -302,7 +281,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Sets the background to the specified color.
     ///
@@ -314,7 +292,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the background color.
     ///
@@ -323,7 +300,6 @@ public class TextBox : Drawable {
     public func getBgColor() -> Int32 {
         return self.background
     }
-
 
     ///
     /// Sets the pen and brush colors to the specified color.
@@ -337,7 +313,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Sets the pen and brush colors to the specified color.
     ///
@@ -350,7 +325,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Sets the pen color.
     ///
@@ -361,7 +335,6 @@ public class TextBox : Drawable {
         self.pen = color
         return self
     }
-
 
     ///
     /// Sets the pen color.
@@ -374,7 +347,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the pen color as 0xRRGGBB integer.
     ///
@@ -383,7 +355,6 @@ public class TextBox : Drawable {
     public func getPenColor() -> Int32 {
         return self.pen
     }
-
 
     ///
     /// Sets the brush color.
@@ -396,7 +367,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Sets the brush color.
     ///
@@ -408,7 +378,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the brush color.
     ///
@@ -417,7 +386,6 @@ public class TextBox : Drawable {
     public func getBrushColor() -> Int32 {
         return self.brush
     }
-
 
     ///
     /// Sets the TextBox border object.
@@ -435,7 +403,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text box border.
     ///
@@ -444,7 +411,6 @@ public class TextBox : Drawable {
     public func getBorder(_ border: UInt32) -> Bool {
         return (self.properties & border) != 0
     }
-
 
     ///
     /// Sets all borders to be invisible.
@@ -455,7 +421,6 @@ public class TextBox : Drawable {
         self.properties &= 0x00F0FFFF
         return self
     }
-
 
     ///
     /// Sets the cell text alignment.
@@ -470,7 +435,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text alignment.
     ///
@@ -479,7 +443,6 @@ public class TextBox : Drawable {
     public func getTextAlignment() -> UInt32 {
         return (self.properties & 0x00300000)
     }
-
 
     ///
     /// Sets the underline variable.
@@ -498,7 +461,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Whether the text will be underlined.
     ///
@@ -507,7 +469,6 @@ public class TextBox : Drawable {
     public func getUnderline() -> Bool {
         return (properties & 0x00400000) != 0
     }
-
 
     ///
     /// Sets the srikeout flag.
@@ -526,7 +487,6 @@ public class TextBox : Drawable {
         return self
     }
 
-
     ///
     /// Returns the strikeout flag.
     ///
@@ -536,18 +496,15 @@ public class TextBox : Drawable {
         return (properties & 0x00800000) != 0
     }
 
-
     @discardableResult
     public func setFallbackFont(_ font: Font?) -> TextBox {
         self.fallbackFont = font
         return self
     }
 
-
     public func getFallbackFont() -> Font? {
         return self.fallbackFont
     }
-
 
     ///
     /// Sets the vertical alignment of the text in this TextBox.
@@ -560,11 +517,9 @@ public class TextBox : Drawable {
         return self
     }
 
-
     public func getVerticalAlignment() -> UInt32 {
         return self.valign
     }
-
 
     @discardableResult
     public func setTextColors(_ colors: [String : Int32]?) -> TextBox {
@@ -572,11 +527,9 @@ public class TextBox : Drawable {
         return self
     }
 
-
     public func getTextColors() -> [String : Int32]? {
         return self.colors
     }
-
 
     private func drawBorders(_ page: Page) {
         page.setPenColor(pen)
@@ -612,7 +565,6 @@ public class TextBox : Drawable {
         }
     }
 
-
     // Preserves the leading spaces and tabs
     private func getStringBuilder(_ line: String) -> String {
         var buf = String()
@@ -627,7 +579,6 @@ public class TextBox : Drawable {
         }
         return buf
     }
-
 
     private func getTextLines() -> [String] {
         var list = [String]()
@@ -673,7 +624,6 @@ public class TextBox : Drawable {
         return list
     }
 
-
     ///
     /// Draws this text box on the specified page.
     ///
@@ -697,8 +647,8 @@ public class TextBox : Drawable {
                         break
                     }
                 }
-                let lastLine = list[list.count - 1]
-                // lastLine = lastLine.substring(0, lastLine.trim().LastIndexOf(" "))
+                var lastLine = list[list.count - 1]
+                // lastLine = lastLine.substring(lastLine.startIndex, lastLine.trim().lastIndex(of: " ");
                 list[list.count - 1] = lastLine + " ..."
                 lines = list
             }
@@ -764,14 +714,12 @@ public class TextBox : Drawable {
             }
             height = ((yText - y) - (font!.ascent + spacing)) + margin
         }
-
         if page != nil {
             drawBorders(page!)
         }
 
         return [x + width, y + height]
     }
-
 
     private func drawText(
             _ page: Page?,
