@@ -633,7 +633,7 @@ public class TextBox : Drawable {
     /// @throws Exception
     ///
     @discardableResult
-    public func drawOn(_ page: Page?) -> [Float] {
+    public func drawOn(_ page: Page?) -> [Float32] {
         var lines = getTextLines()
         let leading = font!.ascent + font!.descent + spacing
 
@@ -648,7 +648,9 @@ public class TextBox : Drawable {
                     }
                 }
                 var lastLine = list[list.count - 1]
-                // lastLine = lastLine.substring(lastLine.startIndex, lastLine.trim().lastIndex(of: " ");
+                var tokens = lastLine.components(separatedBy: .whitespaces)
+                tokens.removeLast()
+                lastLine = tokens.joined(separator: " ")
                 list[list.count - 1] = lastLine + " ..."
                 lines = list
             }
