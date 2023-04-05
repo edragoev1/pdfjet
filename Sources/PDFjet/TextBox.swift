@@ -630,7 +630,6 @@ public class TextBox : Drawable {
     /// @param page the Page where the TextBox is to be drawn.
     /// @param draw flag specifying if this component should actually be drawn on the page.
     /// @return x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float32] {
