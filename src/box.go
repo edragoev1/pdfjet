@@ -50,7 +50,7 @@ type Box struct {
 func NewBox() *Box {
 	box := new(Box)
 	box.color = color.Black
-	box.width = 0.3
+	box.width = 0.0
 	box.pattern = "[] 0"
 	box.altDescription = single.Space
 	box.actualText = single.Space

@@ -41,7 +41,7 @@ public class Box : Drawable {
 
     private var color = Color.black
 
-    private var width: Float = 0.3
+    private var width: Float = 0.0
     private var pattern: String = "[] 0"
     private var fillShape: Bool = false
 
