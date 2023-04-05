@@ -26,11 +26,6 @@ public class Example_79 {
         float x1 = 90f;
         float y1 = 50f;
 
-        Point p1 = new Point(x1, y1);
-        p1.setRadius(5f);
-        p1.setFillShape(true);
-        p1.drawOn(page);
-
         TextLine textline = new TextLine(f2, "(x1, y1)");
         textline.setLocation(x1, y1 - 15f);
         textline.drawOn(page);
@@ -38,7 +33,7 @@ public class Example_79 {
         TextBox textBox = new TextBox(f1, buf.toString());
         textBox.setLocation(x1, y1);
         textBox.setWidth(500f);
-        textBox.setHeight(230f);
+        // textBox.setHeight(230f); // Test the appending of "..."
         textBox.setMargin(0f);
         textBox.setSpacing(0f);
         textBox.setBgColor(Color.lightgreen);
@@ -51,7 +46,7 @@ public class Example_79 {
 
         // Text on the left
         TextLine ascent_text = new TextLine(f2, "Ascent");
-        ascent_text.setLocation(x1 - 85f, y1 + 40f); //(y1 + f1.getAscent()) / 2);
+        ascent_text.setLocation(x1 - 85f, y1 + 40f);
         ascent_text.drawOn(page);
 
         TextLine descent_text = new TextLine(f2, "Descent");
@@ -64,32 +59,51 @@ public class Example_79 {
         arrow_line1.setWidth(3f);
         arrow_line1.drawOn(page);
 
-        Line arrow_line2 = new Line(x1 - 10f, y1 + f1.getAscent(),
-                            x1 - 10f, y1 + f1.getAscent() + f1.getDescent());
+        Line arrow_line2 = new Line(
+                x1 - 10f,
+                y1 + f1.getAscent(),
+                x1 - 10f,
+                y1 + f1.getAscent() + f1.getDescent());
         arrow_line2.setColor(Color.red);
         arrow_line2.setWidth(3f);
         arrow_line2.drawOn(page);
 
-
         // Lines for first line of text
-        Line text_line1 = new Line(x1, y1 + f1.getAscent(), x2, y1 + f1.getAscent());
+        Line text_line1 = new Line(
+                x1,
+                y1 + f1.getAscent(),
+                x2,
+                y1 + f1.getAscent());
         text_line1.drawOn(page);
 
-        Line descent_line1 = new Line(x1, y1 + (f1.getAscent() + f1.getDescent()),
-                                x2, y1 + (f1.getAscent() + f1.getDescent()));
+        Line descent_line1 = new Line(
+                x1,
+                y1 + (f1.getAscent() + f1.getDescent()),
+                x2,
+                y1 + (f1.getAscent() + f1.getDescent()));
         descent_line1.drawOn(page);
-
 
         // Lines for second line of text
         float curr_y = y1 + f1.getBodyHeight();
 
-        Line text_line2 = new Line(x1, curr_y + f1.getAscent(), x2, curr_y + f1.getAscent());
+        Line text_line2 = new Line(
+                x1,
+                curr_y + f1.getAscent(),
+                x2,
+                curr_y + f1.getAscent());
         text_line2.drawOn(page);
 
-        Line descent_line2 = new Line(x1, curr_y + f1.getAscent() + f1.getDescent(),
-                                x2, curr_y + f1.getAscent() + f1.getDescent());
+        Line descent_line2 = new Line(
+                x1,
+                curr_y + f1.getAscent() + f1.getDescent(),
+                x2,
+                curr_y + f1.getAscent() + f1.getDescent());
         descent_line2.drawOn(page);
 
+        Point p1 = new Point(x1, y1);
+        p1.setRadius(5f);
+        p1.setFillShape(true);
+        p1.drawOn(page);
 
         Point p2 = new Point(x2, y2);
         p2.setRadius(5f);
@@ -109,7 +123,6 @@ public class Example_79 {
         pdf.complete();
     }
 
-
     public void drawTextAndLines(
             String text, Page page, Font font, float x, float y) throws Exception {
         TextLine textline = new TextLine(font, text);
@@ -128,7 +141,6 @@ public class Example_79 {
         descenderLine.setWidth(2f);
         descenderLine.drawOn(page);
     }
-
 
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
