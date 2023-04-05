@@ -29,7 +29,7 @@ public class Example_73 {
         textBox.setMargin(0.0)
         textBox.setLocation(50.0, 50.0)
         textBox.setWidth(line1.getWidth() + 2*textBox.getMargin())
-        textBox.setBgColor(Color.aliceblue)
+        textBox.setBgColor(Color.lightgreen)
         // The drawOn method returns the x and y of the bottom right corner of the TextBox
         var xy = textBox.drawOn(page)
 

@@ -28,14 +28,14 @@ import Foundation
 /// A box containing line-wrapped text.
 ///
 /// <p>Defaults:<br />
-/// x = 0f<br />
-/// y = 0f<br />
+/// x = 0.0<br />
+/// y = 0.0<br />
 /// width = 300f<br />
-/// height = 0f<br />
+/// height = 0.0<br />
 /// alignment = Align.LEFT<br />
 /// valign = Align.TOP<br />
-/// spacing = 3f<br />
-/// margin = 1f<br />
+/// spacing = 0.0<br />
+/// margin = 0.0<br />
 /// </p>
 ///
 /// This class was originally developed by Ronald Bourret.
@@ -51,8 +51,8 @@ public class TextBox : Drawable {
 
     var width: Float = 300.0
     var height: Float = 0.0
-    var spacing: Float = 3.0
-    var margin: Float = 1.0
+    var spacing: Float = 0.0
+    var margin: Float = 0.0
 
     private var lineWidth: Float = 0.0
     private var background = Color.transparent
@@ -685,74 +685,84 @@ public class TextBox : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         var lines = getTextLines()
-        let lineHeight = font!.getBodyHeight() + spacing
-        var xText: Float = 0.0
-        var yText = y + margin + font!.ascent
-
-        if page != nil {
-            if getBgColor() != Color.transparent {
-                page!.setBrushColor(background)
-                if height > 0.0 {
-                    page!.fillRect(x, y, width, height);
-                } else {
-                    page!.fillRect(x, y, width, (Float(lines.count)*lineHeight-spacing) + 2*margin);
-                }
-            }
-            page!.setPenColor(self.pen)
-            page!.setBrushColor(self.brush)
-            page!.setPenWidth(self.font!.underlineThickness)
-        }
+        let leading = font!.ascent + font!.descent + spacing
 
         if height > 0.0 {   // TextBox with fixed height
-            if valign == Align.BOTTOM {
-                yText = y + height
-                yText -= margin + Float(lines.count)*lineHeight
-                yText -= spacing
-                yText += font!.ascent + 2.0*font!.descent
-            } else if (valign == Align.CENTER) {
-                yText = y + (height - Float(lines.count)*lineHeight)/2.0
-                yText += font!.ascent + font!.descent/2.0
-            }
-            for i in 0..<lines.count {
-                if getTextAlignment() == Align.RIGHT {
-                    xText = (x + width) - (font!.stringWidth(lines[i]) + margin)
-                } else if getTextAlignment() == Align.CENTER {
-                    xText = x + (width - font!.stringWidth(lines[i]))/2
-                } else {        // Align.LEFT
-                    xText = x + margin
-                }
-                if yText + font!.getBodyHeight() + spacing + font!.descent >= y + height
-                        && i < (lines.count - 1) {
-                    let line = lines[i]
-                    let index = line.range(of: ".", options: .backwards)?.lowerBound ?? line.endIndex
-                    if index != line.endIndex {
-                        lines[i] = line.prefix(upTo: index) + " ..."
+            if Float32(lines.count)*leading > (height - 2*margin) {
+                var list = [String]()
+                for line in lines {
+                    if (Float32(list.count + 1)*leading <= (height - 2*margin)) {
+                        list.append(line)
                     } else {
-                        lines[i] = line + " ..."
+                        break
                     }
                 }
-                if yText + font!.descent < y + height {
+                let lastLine = list[list.count - 1]
+                // lastLine = lastLine.substring(0, lastLine.trim().LastIndexOf(" "))
+                list[list.count - 1] = lastLine + " ..."
+                lines = list
+            }
+            if page != nil {
+                if getBgColor() != Color.transparent {
+                    page!.setBrushColor(background)
+                    page!.fillRect(x, y, width, height)
+                }
+                page!.setPenColor(self.pen)
+                page!.setBrushColor(self.brush)
+                page!.setPenWidth(self.font!.underlineThickness)
+            }
+            var xText = x + margin
+            var yText = y + margin + font!.ascent
+            if valign == Align.TOP {
+                yText = y + margin + font!.ascent
+            } else if valign == Align.BOTTOM {
+                yText = ((y + height) - (Float(lines.count) * leading) + margin)
+                yText += font!.ascent
+            } else if valign == Align.CENTER {
+                yText = y + (height - Float(lines.count) * leading)/2
+                yText += font!.ascent
+            }
+            for line in lines {
+                if getTextAlignment() == Align.LEFT {
+                    xText = x + margin
+                } else if getTextAlignment() == Align.RIGHT {
+                    xText = (x + width) - (font!.stringWidth(fallbackFont, line) + margin)
+                } else if getTextAlignment() == Align.CENTER {
+                    xText = x + (width - font!.stringWidth(fallbackFont, line))/2
+                }
+                if (yText + font!.descent <= y + height) {
                     if page != nil {
-                        drawText(page!, font!, fallbackFont, lines[i], xText, yText, colors)
+                        drawText(page, font!, fallbackFont, line, xText, yText, colors)
                     }
-                    yText += font!.getBodyHeight() + spacing
+                    yText += leading
                 }
             }
-        } else {                // TextBox that expands to fit the contect
+        } else {    // TextBox that expands to fit the content
+            if page != nil {
+                if getBgColor() != Color.transparent {
+                    page!.setBrushColor(background)
+                    page!.fillRect(x, y, width, (Float32(lines.count) * leading - spacing) + 2*margin)
+                }
+                page!.setPenColor(self.pen)
+                page!.setBrushColor(self.brush)
+                page!.setPenWidth(self.font!.underlineThickness)
+            }
+            var xText = x + margin
+            var yText = y + margin + font!.ascent
             for line in lines {
-                if getTextAlignment() == Align.RIGHT {
-                    xText = (x + width) - (font!.stringWidth(line) + margin)
-                } else if getTextAlignment() == Align.CENTER {
-                    xText = x + (width - font!.stringWidth(line))/2
-                } else {
-                    xText = x + margin      // Align.LEFT
+                if (getTextAlignment() == Align.LEFT) {
+                    xText = x + margin
+                } else if (getTextAlignment() == Align.RIGHT) {
+                    xText = (x + width) - (font!.stringWidth(fallbackFont, line) + margin)
+                } else if (getTextAlignment() == Align.CENTER) {
+                    xText = x + (width - font!.stringWidth(fallbackFont, line))/2
                 }
                 if page != nil {
-                    drawText(page!, font!, fallbackFont, line, xText, yText, colors)
+                    drawText(page, font!, fallbackFont, line, xText, yText, colors)
                 }
-                yText += font!.getBodyHeight() + spacing
+                yText += leading
             }
-            height = ((yText - font!.getBodyHeight()) - y) + margin
+            height = ((yText - y) - (font!.ascent + spacing)) + margin
         }
 
         if page != nil {
