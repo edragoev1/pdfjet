@@ -23,9 +23,7 @@ SOFTWARE.
 */
 using System;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
-
 
 namespace PDFjet.NET {
 /**
@@ -38,8 +36,8 @@ namespace PDFjet.NET {
  *  height = 0f<br />
  *  alignment = Align.LEFT<br />
  *  valign = Align.TOP<br />
- *  spacing = 3f<br />
- *  margin = 1f<br />
+ *  spacing = 0f<br />
+ *  margin = 0f<br />
  *  </p>
  *
  *  This class was originally developed by Ronald Bourret.
@@ -56,14 +54,14 @@ public class TextBox : IDrawable {
 
     private float width = 300f;
     private float height = 0f;
-    private float spacing = 3f;
-    private float margin = 1f;
+    private float spacing = 0f;
+    private float margin = 0f;
     private float lineWidth;
 
     private int background = Color.transparent;
     private int pen = Color.black;
     private int brush = Color.black;
-    private int valign = 0;
+    private int valign = Align.TOP;
     private Dictionary<String, Int32> colors = null;
 
     // TextBox properties
@@ -786,74 +784,84 @@ public class TextBox : IDrawable {
      */
     public float[] DrawOn(Page page) {
         String[] lines = getTextLines();
-        float lineHeight = font.GetBodyHeight() + spacing;
-        float xText;
-        float yText = y + margin + font.ascent;
+        float leading = font.ascent + font.descent + spacing;
 
-        if (page != null) {
-            if (GetBgColor() != Color.transparent) {
-                page.SetBrushColor(background);
-                if (height > 0f) {  // TextBox with fixed height
-                    page.FillRect(x, y, width, height);
-                } else {
-                    page.FillRect(x, y, width, (lines.Length*lineHeight-spacing) + 2*margin);
-                }
-            }
-            page.SetPenColor(this.pen);
-            page.SetBrushColor(this.brush);
-            page.SetPenWidth(this.font.underlineThickness);
-        }
-
-        if (height > 0f) {  // TextBox with fixed height
-            if (valign == Align.BOTTOM) {
-                yText = y + height;
-                yText -= margin + ((float) lines.Length)*lineHeight;
-                yText -= spacing;
-                yText += font.ascent + 2f*font.descent;
-            } else if (valign == Align.CENTER) {
-                yText = y + (height - ((float) lines.Length)*lineHeight)/2f;
-                yText += font.ascent + font.descent/2f;
-            }
-            for (int i = 0; i < lines.Length; i++) {
-                if (GetTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.StringWidth(lines[i]) + margin);
-                } else if (GetTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.StringWidth(lines[i]))/2;
-                } else {    // Align.LEFT
-                    xText = x + margin;
-                }
-                if (yText + font.GetBodyHeight() + spacing + font.descent >= y + height
-                        && i < (lines.Length - 1)) {
-                    String str = lines[i];
-                    int index = str.LastIndexOf(' ');
-                    if (index != -1) {
-                        lines[i] = str.Substring(0, index) + " ...";
+        if (height > 0f) { // TextBox with fixed height
+            if (lines.Length * leading > (height - 2*margin)) {
+                List<String> list = new List<String>();
+                foreach (String line in lines) {
+                    if ((list.Count + 1) * leading <= (height - 2*margin)) {
+                        list.Add(line);
                     } else {
-                        lines[i] = str + " ...";
+                        break;
                     }
                 }
-                if (yText + font.descent < y + height) {
+                String lastLine = list[list.Count - 1];
+                lastLine = lastLine.Substring(0, lastLine.Trim().LastIndexOf(" "));
+                list[list.Count - 1] = lastLine + " ...";
+                lines = list.ToArray();
+            }
+            if (page != null) {
+                if (GetBgColor() != Color.transparent) {
+                    page.SetBrushColor(background);
+                    page.FillRect(x, y, width, height);
+                }
+                page.SetPenColor(this.pen);
+                page.SetBrushColor(this.brush);
+                page.SetPenWidth(this.font.underlineThickness);
+            }
+            float xText = x + margin;
+            float yText = y + margin + font.ascent;
+            if (valign == Align.TOP) {
+                yText = y + margin + font.ascent;
+            } else if (valign == Align.BOTTOM) {
+                yText = ((y + height) - (((float) lines.Length) * leading) + margin);
+                yText += font.ascent;
+            } else if (valign == Align.CENTER) {
+                yText = y + (height - ((float) lines.Length) * leading)/2;
+                yText += font.ascent;
+            }
+            foreach (String line in lines) {
+                if (GetTextAlignment() == Align.LEFT) {
+                    xText = x + margin;
+                } else if (GetTextAlignment() == Align.RIGHT) {
+                    xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
+                } else if (GetTextAlignment() == Align.CENTER) {
+                    xText = x + (width - font.StringWidth(fallbackFont, line))/2;
+                }
+                if (yText + font.descent <= y + height) {
                     if (page != null) {
-                        DrawText(page, font, fallbackFont, lines[i], xText, yText, colors);
+                        DrawText(page, font, fallbackFont, line, xText, yText, colors);
                     }
-                    yText += font.GetBodyHeight() + spacing;
+                    yText += leading;
                 }
             }
-        } else {            // TextBox that expands to fit the contect
+        } else { // TextBox that expands to fit the content
+            if (page != null) {
+                if (GetBgColor() != Color.transparent) {
+                    page.SetBrushColor(background);
+                    page.FillRect(x, y, width, (lines.Length * leading - spacing) + 2*margin);
+                }
+                page.SetPenColor(this.pen);
+                page.SetBrushColor(this.brush);
+                page.SetPenWidth(this.font.underlineThickness);
+            }
+            float xText = x + margin;
+            float yText = y + margin + font.ascent;
             foreach (String line in lines) {
-                if (GetTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.StringWidth(line) + margin);
-                } else if (GetTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.StringWidth(line))/2;
-                } else {    // Align.LEFT
+                if (GetTextAlignment() == Align.LEFT) {
                     xText = x + margin;
+                } else if (GetTextAlignment() == Align.RIGHT) {
+                    xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
+                } else if (GetTextAlignment() == Align.CENTER) {
+                    xText = x + (width - font.StringWidth(fallbackFont, line))/2;
                 }
                 if (page != null) {
                     DrawText(page, font, fallbackFont, line, xText, yText, colors);
                 }
-                yText += font.GetBodyHeight() + spacing;
+                yText += leading;
             }
-            height = ((yText - font.GetBodyHeight()) - y) + margin;
+            height = ((yText - y) - (font.ascent + spacing)) + margin;
         }
 
         if (page != null) {
