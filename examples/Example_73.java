@@ -24,14 +24,14 @@ public class Example_73 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine line1 = new TextLine(f1, "Hello, Beautiful World");
-        TextLine line2 = new TextLine(f1, "Hello,BeautifulWorld");
+        TextLine line1 = new TextLine(f1, "Hello, gBeautiful World");
+        TextLine line2 = new TextLine(f1, "Hello, BeautifulWorld");
 
         TextBox textBox = new TextBox(f1, line1.getText());
         textBox.setMargin(0f);
         textBox.setLocation(50f, 50f);
         textBox.setWidth(line1.getWidth() + 2*textBox.getMargin());
-        textBox.setBgColor(Color.aliceblue);
+        textBox.setBgColor(Color.lightgreen);
         // The drawOn method returns the x and y of the bottom right corner of the TextBox
         float[] xy = textBox.drawOn(page);
 

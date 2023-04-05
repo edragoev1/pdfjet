@@ -1,7 +1,6 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 
 /**
@@ -10,11 +9,10 @@ import com.pdfjet.*;
 public class Example_79 {
     public Example_79() throws Exception {
         PDF pdf = new PDF(new FileOutputStream("Example_79.pdf"));
-
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf,
+        Font f1 = new Font(pdf,
                     new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
                     Font.STREAM);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
         f1.setSize(72f);
         f2.setSize(24f);
@@ -36,17 +34,15 @@ public class Example_79 {
         textline.setLocation(x1, y1 - 15f);
         textline.drawOn(page);
 
-        float width = 500f;
-        // float height = 450f;
         TextBox textBox = new TextBox(f1, buf.toString());
         textBox.setLocation(x1, y1);
-        textBox.setWidth(width);
-        // textBox.setHeight(height);
+        textBox.setWidth(500f);
         textBox.setMargin(0f);
         textBox.setSpacing(0f);
+        textBox.setBgColor(Color.lightgreen);
         float[] xy = textBox.drawOn(page);
 
-        float x2 = x1 + width;
+        float x2 = x1 + textBox.getWidth();
         float y2 = y1 + textBox.getHeight();
 
         f2.setSize(18f);
