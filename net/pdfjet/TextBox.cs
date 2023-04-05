@@ -786,7 +786,7 @@ public class TextBox : IDrawable {
         String[] lines = getTextLines();
         float leading = font.ascent + font.descent + spacing;
 
-        if (height > 0f) { // TextBox with fixed height
+        if (height > 0f) {  // TextBox with fixed height
             if (lines.Length * leading > (height - 2*margin)) {
                 List<String> list = new List<String>();
                 foreach (String line in lines) {
@@ -836,7 +836,7 @@ public class TextBox : IDrawable {
                     yText += leading;
                 }
             }
-        } else { // TextBox that expands to fit the content
+        } else {            // TextBox that expands to fit the content
             if (page != null) {
                 if (GetBgColor() != Color.transparent) {
                     page.SetBrushColor(background);
@@ -863,7 +863,6 @@ public class TextBox : IDrawable {
             }
             height = ((yText - y) - (font.ascent + spacing)) + margin;
         }
-
         if (page != null) {
             DrawBorders(page);
         }

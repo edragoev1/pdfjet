@@ -838,7 +838,6 @@ public class TextBox implements Drawable {
             }
             height = ((yText - y) - (font.ascent + spacing)) + margin;
         }
-
         if (page != null) {
             drawBorders(page);
         }
