@@ -772,11 +772,9 @@ public class TextBox implements Drawable {
                         break;
                     }
                 }
-
                 String lastLine = list.get(list.size() - 1);
-                list.set(list.size() - 1, lastLine + "...");
-                // System.out.println(lastLine);
-                // lastLine = lastLine.substring(0, lastLine.length() - 3) + "...";
+                lastLine = lastLine.substring(0, lastLine.trim().lastIndexOf(" "));
+                list.set(list.size() - 1, lastLine + " ...");
                 lines = list.toArray(new String[] {});
             }
             if (page != null) {
