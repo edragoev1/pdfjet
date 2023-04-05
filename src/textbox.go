@@ -34,14 +34,14 @@ import (
 
 // TextBox creates box containing line-wrapped text.
 // <p>Defaults:<br />
-// x = 0f<br />
-// y = 0f<br />
-// width = 300f<br />
-// height = 0f<br />
+// x = 0.0<br />
+// y = 0.0<br />
+// width = 300.0<br />
+// height = 0.0<br />
 // alignment = align.Left<br />
 // valign = align.Top<br />
-// spacing = 3f<br />
-// margin = 1f<br />
+// spacing = 0.0<br />
+// margin = 0.0<br />
 // </p>
 // This class was originally developed by Ronald Bourret.
 // It was completely rewritten in 2013 by Eugene Dragoev.
@@ -86,44 +86,16 @@ func NewTextBox(font *Font) *TextBox {
 	textBox := new(TextBox)
 	textBox.font = font
 	textBox.width = 300.0
-	textBox.spacing = 3.0
-	textBox.margin = 1.0
+	textBox.spacing = 0.0
+	textBox.margin = 0.0
 	textBox.background = color.White
 	textBox.pen = color.Black
 	textBox.brush = color.Black
 	textBox.properties = 0x000F0001
+	textBox.SetTextAlignment(align.Left)
+	textBox.valign = align.Top
 	return textBox
 }
-
-/**
-//  Creates a text box and sets the font.
- *
-//  @param text the text.
-//  @param font the font.
-*/
-/*
-func TextBox(Font font, String text) {
-    textBox.font = font
-    textBox.text = text
-}
-*/
-
-/**
-//  Creates a text box and sets the font and the text.
- *
-//  @param font the font.
-//  @param text the text.
-//  @param width the width.
-//  @param height the height.
-*/
-/*
-func NewTextBox(Font font, String text, float width, float height) {
-    textBox.font = font
-    textBox.text = text
-    textBox.width = width
-    textBox.height = height
-}
-*/
 
 // SetFont sets the font for textBox text box.
 //
@@ -417,7 +389,6 @@ func (textBox *TextBox) GetTextColors() map[string]int32 {
 func (textBox *TextBox) drawBorders(page *Page) {
 	page.SetPenColor(textBox.pen)
 	page.SetPenWidth(textBox.lineWidth)
-
 	if textBox.GetBorder(border.Top) &&
 		textBox.GetBorder(border.Bottom) &&
 		textBox.GetBorder(border.Left) &&
@@ -530,75 +501,155 @@ func (textBox *TextBox) getTextLines() []string {
 // @return x and y coordinates of the bottom right corner of textBox component.
 func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	lines := textBox.getTextLines()
-	lineHeight := textBox.font.bodyHeight + textBox.spacing
-	xText := textBox.margin
-	yText := textBox.y + textBox.margin + textBox.font.ascent
-
-	if page != nil {
-		if textBox.background != color.Transparent {
-			page.SetBrushColor(textBox.background)
-			if textBox.height > 0.0 {
-				page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
-			} else {
-				page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*lineHeight-textBox.spacing)+2*textBox.margin)
-			}
-		}
-		page.SetPenColor(textBox.pen)
-		page.SetBrushColor(textBox.brush)
-		page.SetPenWidth(textBox.font.underlineThickness)
-	}
+	leading := textBox.font.bodyHeight + textBox.spacing
 
 	if textBox.height > 0.0 { // TextBox with fixed height
-		if textBox.valign == align.Bottom {
-			yText = textBox.y + textBox.height
-			yText -= textBox.margin + float32(len(lines))*lineHeight
-			yText -= textBox.spacing
-			yText += textBox.font.ascent + 2.0*textBox.font.descent
-		} else if textBox.valign == align.Center {
-			yText = textBox.y + (textBox.height-float32(len(lines))*lineHeight)/2.0
-			yText += textBox.font.ascent + textBox.font.descent/2.0
-		}
-		for i := 0; i < len(lines); i++ {
-			if textBox.GetTextAlignment() == align.Right {
-				xText = (textBox.x + textBox.width) - (textBox.font.stringWidth(lines[i]) + textBox.margin)
-			} else if textBox.GetTextAlignment() == align.Center {
-				xText = textBox.x + (textBox.width - textBox.font.stringWidth(lines[i])/2.0)
-			} else { // align.Left
-				xText = textBox.x + textBox.margin
-			}
-			if (yText+textBox.font.GetBodyHeight()+textBox.spacing+textBox.font.GetDescent() >= textBox.y+textBox.height) && (i < (len(lines) - 1)) {
-				str := lines[i]
-				index := strings.LastIndex(str, " ")
-				if index != -1 {
-					lines[i] = str[0:index] + " ..."
+		if float32(len(lines))*leading > (textBox.height - 2*textBox.margin) {
+			list := make([]string, 0)
+			for _, line := range lines {
+				if float32(len(list)+1)*leading <= (textBox.height - 2*textBox.margin) {
+					list = append(list, line)
 				} else {
-					lines[i] = str + " ..."
+					break
 				}
 			}
-			if yText+textBox.font.GetDescent() < textBox.y+textBox.height {
+			lastLine := list[len(list)-1]
+			tokens := strings.Fields(lastLine)
+			tokens = tokens[:len(tokens)-1]
+			lastLine = strings.Join(tokens, " ")
+			list[len(list)-1] = lastLine + " ..."
+			lines = list
+		}
+		if page != nil {
+			if textBox.GetBgColor() != color.Transparent {
+				page.SetBrushColor(textBox.background)
+				page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
+			}
+			page.SetPenColor(textBox.pen)
+			page.SetBrushColor(textBox.brush)
+			page.SetPenWidth(textBox.font.underlineThickness)
+		}
+		xText := textBox.x + textBox.margin
+		yText := textBox.y + textBox.margin + textBox.font.ascent
+		if textBox.valign == align.Top {
+			yText = textBox.y + textBox.margin + textBox.font.ascent
+		} else if textBox.valign == align.Bottom {
+			yText = ((textBox.y + textBox.height) - float32(len(lines))*leading) + textBox.margin // TODO!!!!!
+			yText += textBox.font.ascent
+		} else if textBox.valign == align.Center {
+			yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2.0
+			yText += textBox.font.ascent
+		}
+		for _, line := range lines {
+			if textBox.GetTextAlignment() == align.Left {
+				xText = textBox.x + textBox.margin
+			} else if textBox.GetTextAlignment() == align.Right {
+				xText = (textBox.x + textBox.width) - (textBox.font.StringWidth(textBox.fallbackFont, line) + textBox.margin)
+			} else if textBox.GetTextAlignment() == align.Right {
+				xText = textBox.x + (textBox.width-textBox.font.StringWidth(textBox.fallbackFont, line))/2
+			}
+			if yText+textBox.font.descent <= textBox.y+textBox.height {
 				if page != nil {
-					textBox.DrawText(page, textBox.font, textBox.fallbackFont, lines[i], xText, yText, textBox.colors)
+					textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.colors)
 				}
-				yText += textBox.font.GetBodyHeight() + textBox.spacing
+				yText += leading
 			}
 		}
-	} else {
+	} else { // TextBox that expands to fit the content
+		if page != nil {
+			if textBox.GetBgColor() != color.Transparent {
+				page.SetBrushColor(textBox.background)
+				page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*leading-textBox.spacing)+2*textBox.margin)
+			}
+			page.SetPenColor(textBox.pen)
+			page.SetBrushColor(textBox.brush)
+			page.SetPenWidth(textBox.font.underlineThickness)
+		}
+		xText := textBox.x + textBox.margin
+		yText := textBox.y + textBox.margin + textBox.font.ascent
 		for _, line := range lines {
-			if textBox.GetTextAlignment() == align.Right {
-				xText = (textBox.x + textBox.width) - (textBox.font.stringWidth(line) + textBox.margin)
-			} else if textBox.GetTextAlignment() == align.Center {
-				xText = textBox.x + (textBox.width-textBox.font.stringWidth(line))/2
-			} else { // align.Left
+			if textBox.GetTextAlignment() == align.Left {
 				xText = textBox.x + textBox.margin
+			} else if textBox.GetTextAlignment() == align.Right {
+				xText = (textBox.x + textBox.width) - (textBox.font.StringWidth(textBox.fallbackFont, line) + textBox.margin)
+			} else if textBox.GetTextAlignment() == align.Center {
+				xText = textBox.x + (textBox.width-textBox.font.StringWidth(textBox.fallbackFont, line))/2
 			}
 			if page != nil {
-				textBox.DrawText(page,
-					textBox.font, textBox.fallbackFont, line, xText, yText, textBox.colors)
+				textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.colors)
 			}
-			yText += textBox.font.bodyHeight + textBox.spacing
+			yText += leading
 		}
-		textBox.height = ((yText - textBox.font.GetBodyHeight()) - textBox.y) + textBox.margin
+		textBox.height = ((yText - textBox.y) - (textBox.font.ascent + textBox.spacing)) + textBox.margin
 	}
+
+	// xText := textBox.margin
+	// yText := textBox.y + textBox.margin + textBox.font.ascent
+	// if page != nil {
+	// 	if textBox.background != color.Transparent {
+	// 		page.SetBrushColor(textBox.background)
+	// 		if textBox.height > 0.0 {
+	// 			page.FillRect(textBox.x, textBox.y, textBox.width, textBox.height)
+	// 		} else {
+	// 			page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*leading-textBox.spacing)+2*textBox.margin)
+	// 		}
+	// 	}
+	// 	page.SetPenColor(textBox.pen)
+	// 	page.SetBrushColor(textBox.brush)
+	// 	page.SetPenWidth(textBox.font.underlineThickness)
+	// }
+
+	// if textBox.height > 0.0 { // TextBox with fixed height
+	// 	if textBox.valign == align.Bottom {
+	// 		yText = textBox.y + textBox.height
+	// 		yText -= textBox.margin + float32(len(lines))*leading
+	// 		yText -= textBox.spacing
+	// 		yText += textBox.font.ascent + 2.0*textBox.font.descent
+	// 	} else if textBox.valign == align.Center {
+	// 		yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2.0
+	// 		yText += textBox.font.ascent + textBox.font.descent/2.0
+	// 	}
+	// 	for i := 0; i < len(lines); i++ {
+	// 		if textBox.GetTextAlignment() == align.Right {
+	// 			xText = (textBox.x + textBox.width) - (textBox.font.stringWidth(lines[i]) + textBox.margin)
+	// 		} else if textBox.GetTextAlignment() == align.Center {
+	// 			xText = textBox.x + (textBox.width - textBox.font.stringWidth(lines[i])/2.0)
+	// 		} else { // align.Left
+	// 			xText = textBox.x + textBox.margin
+	// 		}
+	// 		if (yText+textBox.font.GetBodyHeight()+textBox.spacing+textBox.font.GetDescent() >= textBox.y+textBox.height) && (i < (len(lines) - 1)) {
+	// 			str := lines[i]
+	// 			index := strings.LastIndex(str, " ")
+	// 			if index != -1 {
+	// 				lines[i] = str[0:index] + " ..."
+	// 			} else {
+	// 				lines[i] = str + " ..."
+	// 			}
+	// 		}
+	// 		if yText+textBox.font.GetDescent() < textBox.y+textBox.height {
+	// 			if page != nil {
+	// 				textBox.DrawText(page, textBox.font, textBox.fallbackFont, lines[i], xText, yText, textBox.colors)
+	// 			}
+	// 			yText += textBox.font.GetBodyHeight() + textBox.spacing
+	// 		}
+	// 	}
+	// } else {
+	// 	for _, line := range lines {
+	// 		if textBox.GetTextAlignment() == align.Right {
+	// 			xText = (textBox.x + textBox.width) - (textBox.font.stringWidth(line) + textBox.margin)
+	// 		} else if textBox.GetTextAlignment() == align.Center {
+	// 			xText = textBox.x + (textBox.width-textBox.font.stringWidth(line))/2
+	// 		} else { // align.Left
+	// 			xText = textBox.x + textBox.margin
+	// 		}
+	// 		if page != nil {
+	// 			textBox.DrawText(page,
+	// 				textBox.font, textBox.fallbackFont, line, xText, yText, textBox.colors)
+	// 		}
+	// 		yText += textBox.font.bodyHeight + textBox.spacing
+	// 	}
+	// 	textBox.height = ((yText - textBox.font.GetBodyHeight()) - textBox.y) + textBox.margin
+	// }
 
 	if page != nil {
 		textBox.drawBorders(page)

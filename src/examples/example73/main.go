@@ -30,7 +30,7 @@ func Example73() {
 	textBox.SetMargin(0.0)
 	textBox.SetLocation(50.0, 50.0)
 	textBox.SetWidth(line1.GetWidth() + 2*textBox.GetMargin())
-	textBox.SetBgColor(color.Aliceblue)
+	textBox.SetBgColor(color.Lightgreen)
 	// The drawOn method returns the x and y of the bottom right corner of the TextBox
 	xy := textBox.DrawOn(page)
 
