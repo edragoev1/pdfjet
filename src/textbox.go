@@ -501,7 +501,7 @@ func (textBox *TextBox) getTextLines() []string {
 // @return x and y coordinates of the bottom right corner of textBox component.
 func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	lines := textBox.getTextLines()
-	leading := textBox.font.bodyHeight + textBox.spacing
+	leading := textBox.font.ascent + textBox.font.descent + textBox.spacing
 
 	if textBox.height > 0.0 { // TextBox with fixed height
 		if float32(len(lines))*leading > (textBox.height - 2*textBox.margin) {
