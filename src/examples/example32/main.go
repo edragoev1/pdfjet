@@ -29,7 +29,7 @@ func Example32() {
 	colors["Widget"] = color.Green
 	colors["Designs"] = color.Green
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 	x := float32(50.0)
 	y := float32(50.0)
 	leading := font.GetBodyHeight()
@@ -38,7 +38,7 @@ func Example32() {
 		page.DrawStringUsingColorMap(font, nil, line, x, y, colors)
 		y += leading
 		if y > (page.GetHeight() - 20.0) {
-			page = pdfjet.NewPageAddTo(pdf, a4.Portrait)
+			page = pdfjet.NewPage(pdf, a4.Portrait)
 			y = 50.0
 		}
 	}

@@ -26,7 +26,7 @@ func Example28() {
 	f2.SetSize(11.0)
 	f3.SetSize(11.0)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Landscape)
+	page := pdfjet.NewPage(pdf, letter.Landscape)
 
 	f, err := os.Open("data/report.csv")
 	if err != nil {

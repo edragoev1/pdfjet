@@ -24,7 +24,7 @@ func Example45() {
 	f2.SetSize(14.0)
 	f3.SetSize(10.0)
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	var width float32 = 530.0
 	var height float32 = 13.0

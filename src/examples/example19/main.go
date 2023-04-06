@@ -22,7 +22,7 @@ func Example19() {
 	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
 	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	// Columns x coordinates
 	x1 := float32(75.0)

@@ -16,10 +16,9 @@ func Example07(mode string) {
 	// pdf.SetTitle("PDF/UA compliant PDF");
 	pdf := pdfjet.NewPDFFile("Example_07.pdf", compliance.PDF_A_1B)
 	pdf.SetTitle("PDF/A-1B compliant PDF")
-
 	var f1 = pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Landscape)
+	page := pdfjet.NewPage(pdf, a4.Landscape)
 
 	f1.SetSize(72.0)
 	page.AddWatermark(f1, "This is a Draft")
@@ -63,7 +62,7 @@ func Example07(mode string) {
 	textLine.SetLocation(xPos, yPos)
 	textLine.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, a4.Landscape)
+	page = pdfjet.NewPage(pdf, a4.Landscape)
 	textLine.SetText("Hello, World!")
 	textLine.SetUnderline(true)
 	textLine.SetLocation(xPos, 34.0)

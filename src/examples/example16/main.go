@@ -17,18 +17,9 @@ import (
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example16() {
 	pdf := pdfjet.NewPDFFile("Example_16.pdf", compliance.PDF15)
-	/*
-		// file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
-		file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer file1.Close()
-		reader := bufio.NewReader(file1)
-	*/
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	colors := make(map[string]int32)
 	colors["Lorem"] = color.Blue

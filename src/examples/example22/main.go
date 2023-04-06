@@ -22,7 +22,7 @@ func Example22() {
 	dest3 := "dest#3"
 	dest4 := "dest#4"
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 	text := pdfjet.NewTextLine(f1, "Page #1 -> Go to Destination #3.")
 	text.SetGoToAction(&dest3)
 	text.SetLocation(90.0, 50.0)
@@ -30,21 +30,21 @@ func Example22() {
 	page.AddDestination(&dest1, text.GetDestinationY())
 	text.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 	text = pdfjet.NewTextLine(f1, "Page #2 -> Go to Destination #3.")
 	text.SetGoToAction(&dest3)
 	text.SetLocation(90.0, 550.0)
 	page.AddDestination(&dest2, text.GetDestinationY())
 	text.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 	text = pdfjet.NewTextLine(f1, "Page #3 -> Go to Destination #4.")
 	text.SetGoToAction(&dest4)
 	text.SetLocation(90.0, 700.0)
 	page.AddDestination(&dest3, text.GetDestinationY())
 	text.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 	text = pdfjet.NewTextLine(f1, "Page #4 -> Go to Destination #0.")
 	text.SetGoToAction(&dest0)
 	text.SetLocation(90.0, 100.0)

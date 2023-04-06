@@ -23,7 +23,7 @@ func Example01(mode string) {
 	font1.SetSize(12.0)
 	font2.SetSize(12.0)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(font1, "Happy New Year!")
 	textLine.SetLocation(70.0, 70.0)
@@ -57,7 +57,7 @@ func Example01(mode string) {
 	textLine.SetLocation(300.0, 160.0)
 	textLine.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 
 	lcgText, err := os.ReadFile("data/LCG.txt")
 	if err != nil {
@@ -112,7 +112,7 @@ func Example01(mode string) {
 		textLine.DrawOn(page)
 	}
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 
 	cjkText, err := os.ReadFile("data/CJK.txt")
 	if err != nil {

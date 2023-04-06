@@ -43,7 +43,7 @@ func Example06() {
 			f,
 			true) // Compress text files.
 	*/
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	flag := pdfjet.NewBox()
 	flag.SetLocation(100.0, 100.0)

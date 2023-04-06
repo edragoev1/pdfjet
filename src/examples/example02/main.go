@@ -15,7 +15,7 @@ import (
 func Example02() {
 	pdf := pdfjet.NewPDFFile("Example_02.pdf", compliance.PDF15)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 	path := pdfjet.NewPath()
 	path.SetLocation(100.0, 50.0)
 

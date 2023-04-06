@@ -25,7 +25,7 @@ func Example30() {
 	image2.SetLocation(10.0, 100.0)
 
 	// Create the first page after all the resources have been added to the PDF.
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(font, "© OpenStreetMap contributors")
 	textLine.SetLocation(430.0, 655.0)

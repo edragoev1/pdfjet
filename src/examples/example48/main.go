@@ -12,10 +12,9 @@ import (
 // Example48 -- TODO:
 func Example48() {
 	pdf := pdfjet.NewPDFFile("Example_48.pdf", compliance.PDF15)
-
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	var toc = pdfjet.NewBookmark(pdf)
 	x := float32(70.0)
@@ -47,7 +46,7 @@ func Example48() {
 	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
 	title.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 
 	y = 50.0
 	title = pdfjet.NewTitle(f1, "File Trailer", x, y).SetOffset(offset)

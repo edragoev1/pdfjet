@@ -25,7 +25,7 @@ func Example39() {
 	f1.SetSize(10.0)
 	f2.SetSize(8.0)
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	chart := pdfjet.NewChart(f1, f2)
 	chart.SetLocation(70.0, 50.0)

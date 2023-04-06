@@ -30,7 +30,7 @@ func Example20() {
 	pages := pdf.GetPageObjects(objects)
 	contents := pages[0].GetContentsObject(objects)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	height := float32(105.0) // The logo height in points.
 	x := float32(50.0)
@@ -91,7 +91,7 @@ func Example20() {
 
 	path.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 
 	line := pdfjet.NewTextLine(font1, "Hello, World!")
 	line.SetLocation(50.0, 50.0)

@@ -29,7 +29,7 @@ func Example31() {
 	font1.SetSize(15.0)
 	font2.SetSize(15.0)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	file3, err := os.Open("data/marathi.txt")
 	if err != nil {

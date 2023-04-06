@@ -21,7 +21,7 @@ func Example03() {
 	image2 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
 	image3 := pdfjet.NewImageFromFile(pdf, "images/mt-map.bmp")
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	text := pdfjet.NewTextLine(f1, "The map below is an embedded PNG image")
 	text.SetLocation(20.0, 20.0)

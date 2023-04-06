@@ -20,7 +20,7 @@ func Example44() {
 	f2 := pdfjet.NewCJKFont(pdf, "STHeitiSC-Light")
 	f2.SetSize(12.0)
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	rotate := 0
 	column := pdfjet.NewTextColumn(rotate)

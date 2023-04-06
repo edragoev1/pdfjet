@@ -14,10 +14,9 @@ import (
 // Example21 -- TODO:
 func Example21() {
 	pdf := pdfjet.NewPDFFile("Example_21.pdf", compliance.PDF15)
-
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(font,
 		"QR codes encoded with Low, Medium, High and Very High error correction level - Go")

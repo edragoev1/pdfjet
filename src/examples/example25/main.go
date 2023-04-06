@@ -24,7 +24,7 @@ func Example25() {
 	f5 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f6 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	composite := pdfjet.NewCompositeTextLine(50.0, 50.0)
 	composite.SetFontSize(14.0)

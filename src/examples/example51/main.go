@@ -20,7 +20,7 @@ import (
 func Example51() {
 	pdf := pdfjet.NewPDFFile("temp.pdf", compliance.PDF15)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 	box := pdfjet.NewBox()
 	box.SetLocation(50.0, 50.0)
 	box.SetSize(100.0, 100.0)
@@ -28,7 +28,7 @@ func Example51() {
 	box.SetFillShape(true)
 	box.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 	box = pdfjet.NewBox()
 	box.SetLocation(50.0, 50.0)
 	box.SetSize(100.0, 100.0)
@@ -36,7 +36,7 @@ func Example51() {
 	box.SetFillShape(true)
 	box.DrawOn(page)
 
-	page = pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 	box = pdfjet.NewBox()
 	box.SetLocation(50.0, 50.0)
 	box.SetSize(100.0, 100.0)

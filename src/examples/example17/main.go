@@ -237,7 +237,7 @@ func Example17() {
 	defer file55.Close()
 	image55 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	image1.SetLocation(100.0, 80.0)
 	image1.DrawOn(page)

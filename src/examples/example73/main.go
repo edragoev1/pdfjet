@@ -20,7 +20,7 @@ func Example73() {
 	f1.SetSize(12.0)
 	f2.SetSize(12.0)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	line1 := pdfjet.NewTextLine(f1, "Hello, Beautiful World")
 	line2 := pdfjet.NewTextLine(f1, "Hello,BeautifulWorld")

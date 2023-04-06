@@ -19,10 +19,9 @@ func Example24() {
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
 	font3 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansMono.ttf.stream")
-
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	flag := pdfjet.NewBoxAt(85.0, 85.0, 64.0, 32.0)
 

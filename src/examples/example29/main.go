@@ -17,7 +17,7 @@ func Example29() {
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	// font := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	font.SetSize(16.0)
 	paragraph := pdfjet.NewParagraph()

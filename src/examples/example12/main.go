@@ -15,7 +15,7 @@ import (
 func Example12() {
 	pdf := pdfjet.NewPDFFile("Example_12.pdf", compliance.PDF15)
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	// lines := pdfjet.ReadTextLines("src/examples/example12/main.go")
 	lines := pdfjet.ReadTextLines("examples/Example_12.java")

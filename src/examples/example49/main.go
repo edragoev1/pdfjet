@@ -12,10 +12,9 @@ import (
 // Example49 -- TODO:
 func Example49() {
 	pdf := pdfjet.NewPDFFile("Example_49.pdf", compliance.PDF15)
-
 	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg")
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	image1.SetLocation(10.0, 10.0)
 	image1.ScaleBy(0.25)

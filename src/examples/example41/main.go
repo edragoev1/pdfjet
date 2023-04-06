@@ -24,7 +24,7 @@ func Example41() {
 	f2.SetSize(10.0)
 	f3.SetSize(10.0)
 
-	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	paragraphs := make([]*pdfjet.Paragraph, 0)
 

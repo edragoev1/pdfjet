@@ -28,7 +28,7 @@ func Example27() {
 	f3.SetSize(12.0)
 	f4.SetSize(12.0)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	x := float32(50.0)
 	y := float32(50.0)

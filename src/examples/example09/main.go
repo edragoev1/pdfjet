@@ -21,7 +21,7 @@ func Example09() {
 	font1.SetSize(8.0)
 	font2.SetSize(8.0)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	chartData := make([][]*pdfjet.Point, 0)
 

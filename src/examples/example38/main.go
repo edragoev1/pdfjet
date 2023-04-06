@@ -17,10 +17,9 @@ import (
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example38() {
 	pdf := pdfjet.NewPDFFile("Example_38.pdf", compliance.PDF15)
-
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Landscape)
+	page := pdfjet.NewPage(pdf, letter.Landscape)
 
 	table := pdfjet.NewTable()
 	table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)

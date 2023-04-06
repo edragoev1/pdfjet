@@ -20,7 +20,7 @@ func Example05() {
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f1.SetItalic(true)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	text := pdfjet.NewTextLine(f1, "")
 	text.SetLocation(300.0, 300.0)

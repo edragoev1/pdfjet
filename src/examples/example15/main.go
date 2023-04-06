@@ -19,7 +19,7 @@ func Example15() {
 	f1.SetSize(12.0)
 	f2.SetSize(12.0)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	colors := make(map[string]int32)
 	colors["Lorem"] = color.Blue

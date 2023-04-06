@@ -102,7 +102,7 @@ const (
  *  @param pdf the pdf object.
  *  @param pageSize the page size of this page.
  */
-func NewPageAddTo(pdf *PDF, pageSize [2]float32) *Page {
+func NewPage(pdf *PDF, pageSize [2]float32) *Page {
 	return newPage(pdf, pageSize, true)
 }
 

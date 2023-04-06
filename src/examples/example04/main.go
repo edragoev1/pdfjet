@@ -27,7 +27,7 @@ func Example04() {
 	// Korean font
 	f4 := pdfjet.NewCJKFont(pdf, pdfjet.AdobeMyungjoStdMedium)
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	f1.SetSize(14.0)
 	f2.SetSize(14.0)

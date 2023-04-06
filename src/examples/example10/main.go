@@ -22,7 +22,7 @@ func Example10() {
 
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
-	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	flag := pdfjet.NewBoxAt(85.0, 85.0, 64.0, 32.0)
 
