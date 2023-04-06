@@ -17,15 +17,18 @@ class Example_01 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_01.pdf")));
 
-        Font font1 = new Font(
-                pdf,
-                new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
-                Font.STREAM);
+        // Font font1 = new Font(
+        //         pdf,
+        //         new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
+        //         Font.STREAM);
 
-        Font font2 = new Font(
-                pdf,
-                new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream"),
-                Font.STREAM);
+        // Font font2 = new Font(
+        //         pdf,
+        //         new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream"),
+        //         Font.STREAM);
+
+        Font font1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
 
         font1.setSize(12f);
         font2.setSize(12f);

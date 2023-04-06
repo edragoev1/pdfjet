@@ -23,6 +23,7 @@ SOFTWARE.
 */
 package com.pdfjet;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 
@@ -291,6 +292,24 @@ public class Font {
      */
     public Font(PDF pdf, InputStream inputStream) throws Exception {
         OpenTypeFont.register(pdf, this, inputStream);
+        setSize(size);
+    }
+
+
+    /**
+     * Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
+     * 
+     * @param pdf the pdf object.
+     * @param fontPath the font path.
+     * @throws Exception thrown of the font file is not found.
+     */
+    public Font(PDF pdf, String fontPath) throws Exception {
+        FileInputStream inputStream = new FileInputStream(fontPath);
+        if (fontPath.endsWith(".stream")) {
+            FontStream1.register(pdf, this, inputStream);
+        } else {
+            OpenTypeFont.register(pdf, this, inputStream);
+        }
         setSize(size);
     }
 
