@@ -18,21 +18,21 @@ import (
 func Example17() {
 	pdf := pdfjet.NewPDFFile("Example_17.pdf", compliance.PDF15)
 
-	image1 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P08.PNG", imagetype.PNG)
-	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG", imagetype.PNG) // Indexed Image with Bit Depth == 4
-	image3 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P02.PNG", imagetype.PNG)
-	image4 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P01.PNG", imagetype.PNG)
-	image5 := pdfjet.NewImageFromFile(pdf, "PngSuite/S01N3P01.PNG", imagetype.PNG)
-	image6 := pdfjet.NewImageFromFile(pdf, "PngSuite/S02N3P01.PNG", imagetype.PNG)
-	image7 := pdfjet.NewImageFromFile(pdf, "PngSuite/S03N3P01.PNG", imagetype.PNG)
-	image8 := pdfjet.NewImageFromFile(pdf, "PngSuite/S04N3P01.PNG", imagetype.PNG)
-	image9 := pdfjet.NewImageFromFile(pdf, "PngSuite/S05N3P02.PNG", imagetype.PNG)
-	image10 := pdfjet.NewImageFromFile(pdf, "PngSuite/S06N3P02.PNG", imagetype.PNG)
-	image11 := pdfjet.NewImageFromFile(pdf, "PngSuite/S07N3P02.PNG", imagetype.PNG)
-	image12 := pdfjet.NewImageFromFile(pdf, "PngSuite/S08N3P02.PNG", imagetype.PNG)
-	image13 := pdfjet.NewImageFromFile(pdf, "PngSuite/S09N3P02.PNG", imagetype.PNG)
-	image14 := pdfjet.NewImageFromFile(pdf, "PngSuite/S32N3P04.PNG", imagetype.PNG)
-	image15 := pdfjet.NewImageFromFile(pdf, "PngSuite/S33N3P04.PNG", imagetype.PNG)
+	image1 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P08.PNG")
+	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG") // Indexed Image with Bit Depth == 4
+	image3 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P02.PNG")
+	image4 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P01.PNG")
+	image5 := pdfjet.NewImageFromFile(pdf, "PngSuite/S01N3P01.PNG")
+	image6 := pdfjet.NewImageFromFile(pdf, "PngSuite/S02N3P01.PNG")
+	image7 := pdfjet.NewImageFromFile(pdf, "PngSuite/S03N3P01.PNG")
+	image8 := pdfjet.NewImageFromFile(pdf, "PngSuite/S04N3P01.PNG")
+	image9 := pdfjet.NewImageFromFile(pdf, "PngSuite/S05N3P02.PNG")
+	image10 := pdfjet.NewImageFromFile(pdf, "PngSuite/S06N3P02.PNG")
+	image11 := pdfjet.NewImageFromFile(pdf, "PngSuite/S07N3P02.PNG")
+	image12 := pdfjet.NewImageFromFile(pdf, "PngSuite/S08N3P02.PNG")
+	image13 := pdfjet.NewImageFromFile(pdf, "PngSuite/S09N3P02.PNG")
+	image14 := pdfjet.NewImageFromFile(pdf, "PngSuite/S32N3P04.PNG")
+	image15 := pdfjet.NewImageFromFile(pdf, "PngSuite/S33N3P04.PNG")
 
 	file16, err := os.Open("PngSuite/S34N3P04.PNG")
 	if err != nil {

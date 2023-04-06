@@ -7,7 +7,6 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -79,7 +78,7 @@ func Example22() {
 	path.PlaceAtZeroZeroIn(box)
 	path.DrawOn(page)
 
-	image := pdfjet.NewImageFromFile(pdf, "images/up-arrow.png", imagetype.PNG)
+	image := pdfjet.NewImageFromFile(pdf, "images/up-arrow.png")
 	image.SetLocation(40.0, 40.0)
 	image.SetGoToAction(&dest0)
 	image.DrawOn(page)

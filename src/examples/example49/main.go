@@ -7,14 +7,13 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/imagetype"
 )
 
 // Example49 -- TODO:
 func Example49() {
 	pdf := pdfjet.NewPDFFile("Example_49.pdf", compliance.PDF15)
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg", imagetype.JPG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg")
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 

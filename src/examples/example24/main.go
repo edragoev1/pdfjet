@@ -8,7 +8,6 @@ import (
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -21,7 +20,7 @@ func Example24() {
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
 	font3 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansMono.ttf.stream")
 
-	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 

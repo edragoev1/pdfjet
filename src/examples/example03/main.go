@@ -8,7 +8,6 @@ import (
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/imagetype"
 )
 
 // Example03 draws the Canadian flag using a Path object that contains both lines
@@ -18,9 +17,9 @@ func Example03() {
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
-	image2 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg", imagetype.JPG)
-	image3 := pdfjet.NewImageFromFile(pdf, "images/mt-map.bmp", imagetype.BMP)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	image2 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
+	image3 := pdfjet.NewImageFromFile(pdf, "images/mt-map.bmp")
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Portrait)
 

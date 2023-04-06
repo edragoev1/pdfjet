@@ -31,6 +31,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/edragoev1/pdfjet/src/device"
 	"github.com/edragoev1/pdfjet/src/imagetype"
@@ -60,7 +61,20 @@ type Image struct {
 	actualText     string
 }
 
-func NewImageFromFile(pdf *PDF, filePath string, imageType int) *Image {
+func NewImageFromFile(pdf *PDF, filePath string) *Image {
+	var imageType int
+	if strings.HasSuffix(strings.ToLower(filePath), ".png.stream") {
+		imageType = imagetype.PNGStream
+	} else if strings.HasSuffix(strings.ToLower(filePath), ".png") {
+		imageType = imagetype.PNG
+	} else if strings.HasSuffix(strings.ToLower(filePath), ".bmp") {
+		imageType = imagetype.BMP
+	} else if strings.HasSuffix(strings.ToLower(filePath), ".jpg") ||
+		strings.HasSuffix(strings.ToLower(filePath), ".jpeg") {
+		imageType = imagetype.JPG
+	} else {
+		log.Fatal("Invalid image file extension.")
+	}
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatal(err)

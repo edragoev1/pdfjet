@@ -6,7 +6,6 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -20,8 +19,8 @@ func Example19() {
 	f1.SetSize(10.0)
 	f2.SetSize(10.0)
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg", imagetype.JPG)
-	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png", imagetype.PNG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
+	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 

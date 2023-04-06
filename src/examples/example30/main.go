@@ -8,7 +8,6 @@ import (
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -19,10 +18,10 @@ func Example30() {
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/map407.png", imagetype.PNG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/map407.png")
 	image1.SetLocation(10.0, 100.0)
 
-	image2 := pdfjet.NewImageFromFile(pdf, "images/qrcode.png", imagetype.PNG)
+	image2 := pdfjet.NewImageFromFile(pdf, "images/qrcode.png")
 	image2.SetLocation(10.0, 100.0)
 
 	// Create the first page after all the resources have been added to the PDF.

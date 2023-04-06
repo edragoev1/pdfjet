@@ -12,7 +12,6 @@ import (
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -32,7 +31,7 @@ func Example08() {
 	f2.SetSize(7.0)
 	f3.SetSize(7.0)
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg", imagetype.JPG)
+	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
 	image1.ScaleBy(0.20)
 
 	barCode := pdfjet.NewBarCode(pdfjet.CODE128, "Hello, World!")
