@@ -1,5 +1,5 @@
 /**
- *  CoreFont.cs
+ *  CJKFont.cs
  *
 Copyright 2023 Innovatics Inc.
 
@@ -24,10 +24,9 @@ SOFTWARE.
 
 namespace PDFjet.NET {
 /**
- *  Used to select one of the 14 core fonts.
- *  See the Font class for more details.
+ *  Used to select Chinese, Japanese or Korean fonts.
  */
-public enum CoreFont {
+public enum CJKFont {
         COURIER,
         COURIER_BOLD,
         COURIER_OBLIQUE,
@@ -42,5 +41,5 @@ public enum CoreFont {
         TIMES_BOLD_ITALIC,
         SYMBOL,
         ZAPF_DINGBATS,
-}   // End of CoreFont.cs
+}   // End of CJKFont.cs
 }   // End of namespace PDFjet.NET
