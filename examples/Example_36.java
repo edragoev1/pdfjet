@@ -17,7 +17,7 @@ public class Example_36 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_36.pdf")));
 
-        Page page1 = new Page(pdf, A4.PORTRAIT, false);
+        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
@@ -65,7 +65,7 @@ public class Example_36 {
         image3.scaleBy(0.5f);
         image3.drawOn(page1);
 
-        Page page2 = new Page(pdf, A4.PORTRAIT, false);
+        Page page2 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
         text.setText("This page was created after the second one but it was drawn first!");
         text.setLocation(90f, 30f);

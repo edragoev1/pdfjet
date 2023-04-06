@@ -21,7 +21,7 @@ public class Example_18 {
         font.setSize(12f);
 
         List<Page> pages = new ArrayList<Page>();
-        Page page = new Page(pdf, A4.PORTRAIT, false);
+        Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
         Box box = new Box();
         box.setLocation(50f, 50f);
@@ -31,7 +31,7 @@ public class Example_18 {
         box.drawOn(page);
         pages.add(page);
 
-        page = new Page(pdf, A4.PORTRAIT, false);
+        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
         box = new Box();
         box.setLocation(50f, 50f);
         box.setSize(100.0f, 100.0f);
@@ -40,7 +40,7 @@ public class Example_18 {
         box.drawOn(page);
         pages.add(page);
 
-        page = new Page(pdf, A4.PORTRAIT, false);
+        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
         box = new Box();
         box.setLocation(50f, 50f);
         box.setSize(100.0f, 100.0f);

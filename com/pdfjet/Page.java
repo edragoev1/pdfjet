@@ -80,6 +80,7 @@ public class Page {
     public static final int MSCALE_Y = 4;
     public static final int MTRANS_Y = 5;
 
+    public static final boolean DETACHED = false;
 
     /**
      *  Creates page object and add it to the PDF document.
