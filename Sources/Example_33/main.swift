@@ -18,55 +18,43 @@ public class Example_33 {
         image.scaleBy(0.25)
         image.drawOn(page)
 
-        var stream = InputStream(
-                fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
-        var icon = SVGImage(stream!)
+        var icon = SVGImage(fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
         icon.setLocation(20.0, 670.0)
         var xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(fileAtPath: "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(fileAtPath: "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(fileAtPath: "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
-        icon = SVGImage(stream!)
-        // icon.setFillPath(false)
+        icon = SVGImage(fileAtPath: "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg-test/test-CS.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(fileAtPath: "images/svg-test/test-CS.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg-test/test-QQ.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(fileAtPath: "images/svg-test/test-QQ.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg-test/menu-icon.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(fileAtPath: "images/svg-test/menu-icon.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg-test/menu-icon-close.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(fileAtPath: "images/svg-test/menu-icon-close.svg")
         icon.setLocation(xy[0], 670.0)
         xy = icon.drawOn(page)
 
-        stream = InputStream(fileAtPath: "images/svg-test/europe.svg")
-        icon = SVGImage(stream!)
+        icon = SVGImage(stream: InputStream(fileAtPath: "images/svg-test/europe.svg")!)
         icon.setLocation(0.0, 0.0)
         xy = icon.drawOn(page)
 

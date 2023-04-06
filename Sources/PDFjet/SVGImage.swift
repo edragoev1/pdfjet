@@ -43,13 +43,24 @@ public class SVGImage {
     var actualText: String = Single.space
     var altDescription: String = Single.space
 
+
     /**
      * Used to embed SVG images in the PDF document.
      *
      * @param stream the input stream.
      * @throws Exception  if exception occurred.
      */
-    public init(_ stream: InputStream) {
+    public convenience init(fileAtPath: String) {
+        self.init(stream: InputStream(fileAtPath: fileAtPath)!)
+    }
+
+    /**
+     * Used to embed SVG images in the PDF document.
+     *
+     * @param stream the input stream.
+     * @throws Exception  if exception occurred.
+     */
+    public init(stream: InputStream) {
         paths = [SVGPath]()
         var path: SVGPath?
         stream.open()
