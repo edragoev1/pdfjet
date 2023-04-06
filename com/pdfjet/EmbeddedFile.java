@@ -24,6 +24,7 @@ SOFTWARE.
 package com.pdfjet;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -35,10 +36,12 @@ import java.util.zip.DeflaterOutputStream;
  *
  */
 public class EmbeddedFile {
-
     protected int objNumber = -1;
     protected String fileName;
 
+    public EmbeddedFile(PDF pdf, String filePath, boolean compress) throws Exception {
+        this(pdf, filePath, new FileInputStream(filePath), compress); 
+    }
 
     public EmbeddedFile(PDF pdf, String fileName, InputStream stream, boolean compress) throws Exception {
         this.fileName = fileName;
@@ -89,9 +92,7 @@ public class EmbeddedFile {
         this.objNumber = pdf.getObjNumber();
     }
 
-
     public String getFileName() {
         return fileName;
     }
-
 }   // End of EmbeddedFile.java

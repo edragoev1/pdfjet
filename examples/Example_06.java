@@ -18,15 +18,8 @@ public class Example_06 {
         pdf.setKeywords("Hello World This is a test");
         pdf.setCreator("Application Name");
 
-        String fileName = "images/linux-logo.png";
-        FileInputStream stream = new FileInputStream(fileName);
-        EmbeddedFile file1 = new EmbeddedFile(pdf, fileName, stream, false);    // Don't compress the image.
-        stream.close();
-
-        fileName = "examples/Example_02.java";
-        stream = new FileInputStream(fileName);
-        EmbeddedFile file2 = new EmbeddedFile(pdf, fileName, stream, true);     // Compress text files.
-        stream.close();
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);     // Don't compress the image.
+        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02.java", true);   // Compress text files.
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
