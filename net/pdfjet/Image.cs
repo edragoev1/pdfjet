@@ -57,6 +57,20 @@ public class Image : IDrawable {
 
 
     /**
+     *  Convenience constructor for the Image class.
+     *
+     *  @param pdf the PDF to which we add this image.
+     *  @param filePath the file path to the image file.
+     *  @throws Exception  If an input or output exception occurred
+     *
+     */
+    public Image(PDF pdf, String filePath) : this(pdf, new FileStream(filePath, FileMode.Open, FileAccess.Read),
+            filePath.ToLower().EndsWith(".png") ? ImageType.PNG :
+            filePath.ToLower().EndsWith(".bmp") ? ImageType.BMP : ImageType.JPG) {
+    }
+
+
+    /**
      *  The main constructor for the Image class.
      *
      *  @param pdf the page to draw this image on.
