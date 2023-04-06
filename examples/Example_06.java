@@ -1,18 +1,14 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_06.java
  *  We will draw the American flag using Box, Line and Point objects.
  */
 public class Example_06 {
-
     public Example_06() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_06.pdf")));
@@ -100,12 +96,10 @@ public class Example_06 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_06();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_06 => " + (t1 - t0));
     }
-
 }   // End of Example_06.java
