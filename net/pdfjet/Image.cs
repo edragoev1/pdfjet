@@ -61,10 +61,10 @@ public class Image : IDrawable {
      *
      *  @param pdf the PDF to which we add this image.
      *  @param filePath the file path to the image file.
-     *  @throws Exception  If an input or output exception occurred
      *
      */
     public Image(PDF pdf, String filePath) : this(pdf, new FileStream(filePath, FileMode.Open, FileAccess.Read),
+            filePath.ToLower().EndsWith(".png.stream") ? ImageType.PNG_STREAM :
             filePath.ToLower().EndsWith(".png") ? ImageType.PNG :
             filePath.ToLower().EndsWith(".bmp") ? ImageType.BMP : ImageType.JPG) {
     }
