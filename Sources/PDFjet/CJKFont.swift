@@ -1,5 +1,5 @@
 /**
- *  CoreFont.swift
+ *  CJKFont.swift
  *
 Copyright 2023 Innovatics Inc.
 
@@ -23,22 +23,11 @@ SOFTWARE.
 */
 
 /**
- *  Used to select one of the 14 core fonts.
- *  See the Font class for more details.
+ *  Used to select Chinese, Japanese and Korean fonts.
  */
-public enum CoreFont {
-        case COURIER
-        case COURIER_BOLD
-        case COURIER_OBLIQUE
-        case COURIER_BOLD_OBLIQUE
-        case HELVETICA
-        case HELVETICA_BOLD
-        case HELVETICA_OBLIQUE
-        case HELVETICA_BOLD_OBLIQUE
-        case TIMES_ROMAN
-        case TIMES_BOLD
-        case TIMES_ITALIC
-        case TIMES_BOLD_ITALIC
-        case SYMBOL
-        case ZAPF_DINGBATS
+public enum CJKFont {
+    case ADOBE_MING_STD_LIGHT       // Chinese (Traditional) font
+    case ST_HEITI_SC_LIGHT          // Chinese (Simplified) font
+    case KOZ_MIN_PRO_VI_REGULAR     // Japanese font
+    case ADOBE_MYUNGJO_STD_MEDIUM   // Korean font
 }
