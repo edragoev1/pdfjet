@@ -5,87 +5,72 @@ import PDFjet
  *  Example_33.swift
  */
 public class Example_33 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_33.pdf", append: false)!)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        if let stream = OutputStream(toFileAtPath: "Example_33.pdf", append: false) {
+        let image = try Image(
+                pdf,
+                InputStream(fileAtPath: "images/photoshop.jpg")!,
+                ImageType.JPG)
+        image.setLocation(10.0, 10.0)
+        image.scaleBy(0.25)
+        image.drawOn(page)
 
-            let pdf = PDF(stream)
-            let page = Page(pdf, Letter.PORTRAIT)
+        var stream = InputStream(
+                fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
+        var icon = SVGImage(stream!)
+        icon.setLocation(20.0, 670.0)
+        var xy = icon.drawOn(page)
 
-            let image = try Image(
-                    pdf,
-                    InputStream(fileAtPath: "images/photoshop.jpg")!,
-                    ImageType.JPG)
-            image.setLocation(10.0, 10.0)
-            image.scaleBy(0.25)
-            image.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            var stream = InputStream(
-                    fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
-            var icon = SVGImage(stream!)
-            icon.setLocation(20.0, 670.0)
-            var xy: [Float] = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
+        icon = SVGImage(stream!)
+        // icon.setFillPath(false)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg-test/test-CS.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
-            icon = SVGImage(stream!)
-            // icon.setFillPath(false)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg-test/test-QQ.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg-test/test-CS.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg-test/menu-icon.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg-test/test-QQ.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg-test/menu-icon-close.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(xy[0], 670.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg-test/menu-icon.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
+        stream = InputStream(fileAtPath: "images/svg-test/europe.svg")
+        icon = SVGImage(stream!)
+        icon.setLocation(0.0, 0.0)
+        xy = icon.drawOn(page)
 
-            stream = InputStream(
-                    fileAtPath: "images/svg-test/menu-icon-close.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(xy[0], 670.0)
-            xy = icon.drawOn(page)
-
-            stream = InputStream(
-                    fileAtPath: "images/svg-test/europe.svg")
-            icon = SVGImage(stream!)
-            icon.setLocation(0.0, 0.0)
-            xy = icon.drawOn(page)
-
-            pdf.complete()
-        }
+        pdf.complete()
     }
-
 }   // End of Example_33.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
