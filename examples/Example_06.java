@@ -18,8 +18,8 @@ public class Example_06 {
         pdf.setKeywords("Hello World This is a test");
         pdf.setCreator("Application Name");
 
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);     // Don't compress the image.
-        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02.java", true);   // Compress text files.
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO);
+        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02.java", Compress.YES);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

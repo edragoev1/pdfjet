@@ -29,11 +29,9 @@ import java.io.InputStream;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
-
 /**
  *  Used to embed file objects.
  *  The file objects must added to the PDF before drawing on the first page.
- *
  */
 public class EmbeddedFile {
     protected int objNumber = -1;
