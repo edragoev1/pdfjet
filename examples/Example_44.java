@@ -22,7 +22,7 @@ public class Example_44 {
         f1.setSize(12f);
 
         // Chinese (Simplified) font
-        Font f2 = new Font(pdf, "STHeitiSC-Light");
+        Font f2 = new Font(pdf, CJKFont.ST_HEITI_SC_LIGHT);
         f2.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
