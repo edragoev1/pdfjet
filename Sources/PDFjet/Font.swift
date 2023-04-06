@@ -270,7 +270,7 @@ public class Font {
     /// @param stream the input stream to read this font from.
     ///
     public init(_ pdf: PDF, _ stream: InputStream) throws {
-        OpenTypeFont.register(pdf, self, stream)
+        try OpenTypeFont.register(pdf, self, stream)
         setSize(size)
     }
 
@@ -287,7 +287,7 @@ public class Font {
         if (fontPath.hasSuffix(".stream")) {
             try FontStream1.register(pdf, self, inputStream);
         } else {
-            OpenTypeFont.register(pdf, self, inputStream);
+            try OpenTypeFont.register(pdf, self, inputStream);
         }
         setSize(size);
     }
