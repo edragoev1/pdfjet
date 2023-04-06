@@ -276,7 +276,7 @@ public class Font {
      * @throws Exception thrown of the font file is not found.
      */
     public Font(PDF pdf, String fontPath) {
-        FileStream inputStream = new FileStream(fontPath, FileMode.Open);
+        FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read);
         if (fontPath.EndsWith(".stream")) {
             FontStream1.Register(pdf, this, inputStream);
         } else {
