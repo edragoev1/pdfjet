@@ -53,8 +53,18 @@ public class SVGImage {
     /**
      * Used to embed SVG images in the PDF document.
      *
+     * @param filePath the file path.
+     * @throws Exception if exception occurred.
+     */
+    public SVGImage(String fontPath) throws Exception {
+        this(new BufferedInputStream(new FileInputStream(fontPath)));
+    }
+
+    /**
+     * Used to embed SVG images in the PDF document.
+     *
      * @param stream the input stream.
-     * @throws Exception  if exception occurred.
+     * @throws Exception if exception occurred.
      */
     public SVGImage(InputStream stream) throws Exception {
         colorMap = new ColorMap();
