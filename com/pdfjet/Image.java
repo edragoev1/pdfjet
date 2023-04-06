@@ -67,7 +67,8 @@ public class Image implements Drawable {
      */
     public Image(PDF pdf, String filePath) throws Exception {
         this(pdf, new FileInputStream(filePath),
-                filePath.toLowerCase().endsWith(".png") ? ImageType.PNG : ImageType.JPG);
+                filePath.toLowerCase().endsWith(".png") ? ImageType.PNG :
+                filePath.toLowerCase().endsWith(".bmp") ? ImageType.BMP : ImageType.JPG);
     }
 
 

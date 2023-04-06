@@ -20,8 +20,7 @@ public class Example_03 {
 
         Image image1 = new Image(pdf, "images/ee-map.png");
         Image image2 = new Image(pdf, "images/fruit.jpg");
-        Image image3 = new Image(pdf,
-                new FileInputStream("images/mt-map.bmp"), ImageType.BMP);
+        Image image3 = new Image(pdf, "images/mt-map.bmp");
 
         TextLine text = new TextLine(f1,
                 "React The map below is an embedded PNG image");
