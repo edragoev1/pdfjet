@@ -1,18 +1,13 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_03.swift
  *
  */
 public class Example_03 {
-
     public init() throws {
-
-        let stream = OutputStream(toFileAtPath: "Example_03.pdf", append: false)
-
-        let pdf = PDF(stream!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_03.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA)
 
@@ -89,7 +84,6 @@ public class Example_03 {
 
         pdf.complete()
     }
-
 }   // End of Example_03.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
