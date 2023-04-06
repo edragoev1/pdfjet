@@ -5,9 +5,7 @@ import PDFjet
 /// Example_34.swift
 ///
 public class Example_34 {
-
     public init() throws {
-
         if let stream = OutputStream(toFileAtPath: "Example_34.pdf", append: false) {
 
             let pdf = PDF(stream)

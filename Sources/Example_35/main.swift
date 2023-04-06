@@ -17,7 +17,7 @@ public class Example_35 {
 
             let text = try String(contentsOfFile: "data/chinese-english.txt", encoding: .utf8)
 
-            let mainFont = Font(pdf, "AdobeMingStd")
+            let mainFont = Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT)
             let fallbackFont = try Font(
                     pdf,
                     InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf")!)
