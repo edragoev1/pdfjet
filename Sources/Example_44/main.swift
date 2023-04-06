@@ -1,19 +1,12 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_44.swift
- *
  */
 public class Example_44 {
-
     public init() throws {
-        
-        let rotate = ClockWise._0_degrees
-
-        let stream = OutputStream(toFileAtPath: "Example_44.pdf", append: false)
-        let pdf = PDF(stream!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_44.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA)
         f1.setSize(12.0)
@@ -24,6 +17,7 @@ public class Example_44 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
+        let rotate = ClockWise._0_degrees
         let column = TextColumn(rotate)
         column.setLocation(70.0, 70.0)
         column.setWidth(500.0)
@@ -42,7 +36,6 @@ public class Example_44 {
 
         pdf.complete()
     }
-
 }   // End of Example_44.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

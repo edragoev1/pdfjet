@@ -6,76 +6,72 @@ import PDFjet
 ///
 public class Example_34 {
     public init() throws {
-        if let stream = OutputStream(toFileAtPath: "Example_34.pdf", append: false) {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_34.pdf", append: false)!)
 
-            let pdf = PDF(stream)
+        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
 
-            let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            let f2 = Font(pdf, CoreFont.HELVETICA)
-            let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
+        f1.setSize(7.0)
+        f2.setSize(7.0)
+        f3.setSize(7.0)
 
-            f1.setSize(7.0)
-            f2.setSize(7.0)
-            f3.setSize(7.0)
+        let table = Table()
+        let tableData = try getData(
+                "data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2)
 
-            let table = Table()
-            let tableData = try getData(
-            		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2)
+        var p1 = Point()
+        p1.setShape(Point.CIRCLE)
+        p1.setRadius(2.0)
+        p1.setColor(Color.darkolivegreen)
+        p1.setFillShape(true)
+        p1.setAlignment(Align.RIGHT)
+        p1.setURIAction("https://en.wikipedia.org/wiki/India")
+        tableData[4][3].setPoint(p1)
 
-            var p1 = Point()
-            p1.setShape(Point.CIRCLE)
-            p1.setRadius(2.0)
-            p1.setColor(Color.darkolivegreen)
-            p1.setFillShape(true)
-            p1.setAlignment(Align.RIGHT)
-            p1.setURIAction("https://en.wikipedia.org/wiki/India")
-            tableData[4][3].setPoint(p1)
+        p1 = Point()
+        p1.setShape(Point.DIAMOND)
+        p1.setRadius(2.5)
+        p1.setColor(Color.blue)
+        p1.setFillShape(true)
+        p1.setAlignment(Align.RIGHT)
+        p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
+        tableData[5][3].setPoint(p1)
 
-            p1 = Point()
-            p1.setShape(Point.DIAMOND)
-            p1.setRadius(2.5)
-            p1.setColor(Color.blue)
-            p1.setFillShape(true)
-            p1.setAlignment(Align.RIGHT)
-            p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
-            tableData[5][3].setPoint(p1)
+        p1 = Point()
+        p1.setShape(Point.STAR)
+        p1.setRadius(3.0)
+        p1.setColor(Color.red)
+        p1.setFillShape(true)
+        p1.setAlignment(Align.RIGHT)
+        p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
+        tableData[6][3].setPoint(p1)
 
-            p1 = Point()
-            p1.setShape(Point.STAR)
-            p1.setRadius(3.0)
-            p1.setColor(Color.red)
-            p1.setFillShape(true)
-            p1.setAlignment(Align.RIGHT)
-            p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
-            tableData[6][3].setPoint(p1)
+        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.setBottomMargin(15.0)
+        // table.setCellBordersWidth(1.2)
+        table.setCellBordersWidth(0.2)
+        table.setLocation(70.0, 30.0);
+        table.setTextColorInRow(6, Color.blue)
+        table.setTextColorInRow(39, Color.red)
+        table.setFontInRow(26, f3)
+        table.removeLineBetweenRows(0, 1)
+        table.autoAdjustColumnWidths()
+        // table.setColumnWidth(0, 120f)
+        table.setColumnWidth(0, 50.0);
+        table.wrapAroundCellText();
+        table.rightAlignNumbers();
 
-            table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
-            table.setBottomMargin(15.0)
-            // table.setCellBordersWidth(1.2)
-            table.setCellBordersWidth(0.2)
-            table.setLocation(70.0, 30.0);
-            table.setTextColorInRow(6, Color.blue)
-            table.setTextColorInRow(39, Color.red)
-            table.setFontInRow(26, f3)
-            table.removeLineBetweenRows(0, 1)
-            table.autoAdjustColumnWidths()
-            // table.setColumnWidth(0, 120f)
-            table.setColumnWidth(0, 50.0);
-            table.wrapAroundCellText();
-            table.rightAlignNumbers();
-
-            var pages = [Page]()
-            table.drawOn(pdf, &pages, Letter.PORTRAIT)
-            for i in 0..<pages.count {
-                let page = pages[i]
-                // try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
-                pdf.addPage(page)
-            }
-
-            pdf.complete()
+        var pages = [Page]()
+        table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        for i in 0..<pages.count {
+            let page = pages[i]
+            // try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
+            pdf.addPage(page)
         }
-    }
 
+        pdf.complete()
+    }
 
     private func appendMissingCells(_ tableData: [[Cell]], _ f2: Font) {
         let firstRow = tableData[0]
@@ -91,7 +87,6 @@ public class Example_34 {
             }
         }
     }
-
 
     public func getData(
             _ fileName: String,
@@ -147,13 +142,10 @@ public class Example_34 {
 
             currentRow += 1
         }
-
         appendMissingCells(tableData, f2)
 
         return tableData
     }
-
-
 }   // End of Example_34.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
