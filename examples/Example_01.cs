@@ -10,24 +10,10 @@ using PDFjet.NET;
  *
  */
 class Example_01 {
-
     public Example_01() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_01.pdf", FileMode.Create)));
-/*
-        Font font1 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSans.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read),
-                Font.STREAM);
 
-        Font font2 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSansFallback.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read),
-                Font.STREAM);
-*/
         Font font1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
         Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
 
