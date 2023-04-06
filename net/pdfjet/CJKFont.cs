@@ -27,19 +27,9 @@ namespace PDFjet.NET {
  *  Used to select Chinese, Japanese or Korean fonts.
  */
 public enum CJKFont {
-        COURIER,
-        COURIER_BOLD,
-        COURIER_OBLIQUE,
-        COURIER_BOLD_OBLIQUE,
-        HELVETICA,
-        HELVETICA_BOLD,
-        HELVETICA_OBLIQUE,
-        HELVETICA_BOLD_OBLIQUE,
-        TIMES_ROMAN,
-        TIMES_BOLD,
-        TIMES_ITALIC,
-        TIMES_BOLD_ITALIC,
-        SYMBOL,
-        ZAPF_DINGBATS,
+    ADOBE_MING_STD_LIGHT,       // Chinese (Traditional) font
+    ST_HEITI_SC_LIGHT,          // Chinese (Simplified) font
+    KOZ_MIN_PRO_VI_REGULAR,     // Japanese font
+    ADOBE_MYUNGJO_STD_MEDIUM,   // Korean font
 }   // End of CJKFont.cs
 }   // End of namespace PDFjet.NET

@@ -15,23 +15,20 @@ using PDFjet.NET;
 public class Example_04 {
 
     public Example_04() {
-
-        String fileName = "data/happy-new-year.txt";
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_04.pdf", FileMode.Create)));
 
         // Chinese (Traditional) font
-        Font f1 = new Font(pdf, Font.AdobeMingStd_Light);
+        Font f1 = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);
 
         // Chinese (Simplified) font
-        Font f2 = new Font(pdf, Font.STHeitiSC_Light);
+        Font f2 = new Font(pdf, CJKFont.ST_HEITI_SC_LIGHT);
 
         // Japanese font
-        Font f3 = new Font(pdf, Font.KozMinProVI_Regular);
+        Font f3 = new Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR);
 
         // Korean font
-        Font f4 = new Font(pdf, Font.AdobeMyungjoStd_Medium);
+        Font f4 = new Font(pdf, CJKFont.ADOBE_MYUNGJO_STD_MEDIUM);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -40,6 +37,7 @@ public class Example_04 {
         f3.SetSize(14f);
         f4.SetSize(14f);
 
+        String fileName = "data/happy-new-year.txt";
         float x_pos = 100f;
         float y_pos = 100f;
         StreamReader reader = new StreamReader(

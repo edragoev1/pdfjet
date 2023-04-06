@@ -29,19 +29,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 public class Font {
-
-    // Chinese (Traditional) font
-    public const String AdobeMingStd_Light = "AdobeMingStd-Light";
-
-    // Chinese (Simplified) font
-    public const String STHeitiSC_Light = "STHeitiSC-Light";
-
-    // Japanese font
-    public const String KozMinProVI_Regular = "KozMinProVI-Regular";
-
-    // Korean font
-    public const String AdobeMyungjoStd_Medium = "AdobeMyungjoStd-Medium";
-
+    /** Is this a stream font? */
     public const bool STREAM = true;
 
     internal String name;
@@ -157,7 +145,17 @@ public class Font {
 
 
     // Constructor for CJK fonts
-    public Font(PDF pdf, String fontName) {
+    public Font(PDF pdf, CJKFont font) {
+        String fontName = null;
+        if (font == CJKFont.ADOBE_MING_STD_LIGHT) {             // Chinese (Traditional) font
+            fontName = "AdobeMingStd-Light";
+        } else if (font == CJKFont.ST_HEITI_SC_LIGHT) {         // Chinese (Simplified) font
+            fontName = "STHeitiSC-Light";
+        } else if (font == CJKFont.KOZ_MIN_PRO_VI_REGULAR) {    // Japanese font
+            fontName = "KozMinProVI-Regular";
+        } else if (font == CJKFont.ADOBE_MYUNGJO_STD_MEDIUM) {  // Korean font
+            fontName = "AdobeMyungjoStd-Medium";
+        }
         this.name = fontName;
         this.isCJK = true;
         this.firstChar = 0x0020;
@@ -270,6 +268,30 @@ public class Font {
     }
 
 
+    /**
+     * Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
+     * 
+     * @param pdf the pdf object.
+     * @param fontPath the font path.
+     * @throws Exception thrown of the font file is not found.
+     */
+    public Font(PDF pdf, String fontPath) {
+        FileStream inputStream = new FileStream(fontPath, FileMode.Open);
+        if (fontPath.EndsWith(".stream")) {
+            FontStream1.Register(pdf, this, inputStream);
+        } else {
+            OpenTypeFont.Register(pdf, this, inputStream);
+        }
+        SetSize(size);
+    }
+
+
+    /**
+     *  Sets the size of this font.
+     *
+     *  @param fontSize specifies the size of this font.
+     *  @return the font.
+     */
     public Font SetSize(float fontSize) {
         this.size = fontSize;
         if (isCJK) {
