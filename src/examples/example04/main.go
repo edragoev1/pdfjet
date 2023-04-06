@@ -16,16 +16,16 @@ import (
 func Example04() {
 	pdf := pdfjet.NewPDFFile("Example_04.pdf", compliance.PDF15)
 
-	f1 := pdfjet.NewCJKFont(pdf, "AdobeMingStd-Light")
+	f1 := pdfjet.NewCJKFont(pdf, pdfjet.AdobeMingStdLight)
 
 	// Chinese (Simplified) font
-	f2 := pdfjet.NewCJKFont(pdf, "STHeitiSC-Light")
+	f2 := pdfjet.NewCJKFont(pdf, pdfjet.STHeitiSCLight)
 
 	// Japanese font
-	f3 := pdfjet.NewCJKFont(pdf, "KozMinProVI-Regular")
+	f3 := pdfjet.NewCJKFont(pdf, pdfjet.KozMinProVIRegular)
 
 	// Korean font
-	f4 := pdfjet.NewCJKFont(pdf, "AdobeMyungjoStd-Medium")
+	f4 := pdfjet.NewCJKFont(pdf, pdfjet.AdobeMyungjoStdMedium)
 
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
