@@ -15,7 +15,7 @@ class Example_01 {
 
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_01.pdf", FileMode.Create)));
-
+/*
         Font font1 = new Font(pdf, new FileStream(
                 "fonts/Droid/DroidSans.ttf.stream",
                 FileMode.Open,
@@ -27,6 +27,9 @@ class Example_01 {
                 FileMode.Open,
                 FileAccess.Read),
                 Font.STREAM);
+*/
+        Font font1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
 
         font1.SetSize(12f);
         font2.SetSize(12f);
