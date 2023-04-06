@@ -7,17 +7,13 @@ import PDFjet
  */
 public class Example_18 {
     public init() throws {
-        let stream = OutputStream(toFileAtPath: "Example_18.pdf", append: false)!
-        let pdf = PDF(stream)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_18.pdf", append: false)!)
 
-        let font = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/RedHatText/RedHatText-Regular.ttf.stream")!,
-                Font.STREAM)
+        let font = try Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
         font.setSize(12.0)
 
         var pages = [Page]()
-        var page = Page(pdf, A4.PORTRAIT, false)
+        var page = Page(pdf, A4.PORTRAIT, Page.DETACHED)
 
         var box = Box()
         box.setLocation(50.0, 50.0)
@@ -27,7 +23,7 @@ public class Example_18 {
         box.drawOn(page)
         pages.append(page)
 
-        page = Page(pdf, A4.PORTRAIT, false)
+        page = Page(pdf, A4.PORTRAIT, Page.DETACHED)
         box = Box()
         box.setLocation(50.0, 50.0)
         box.setSize(100.0, 100.0)
@@ -36,7 +32,7 @@ public class Example_18 {
         box.drawOn(page)
         pages.append(page)
 
-        page = Page(pdf, A4.PORTRAIT, false)
+        page = Page(pdf, A4.PORTRAIT, Page.DETACHED)
         box = Box()
         box.setLocation(50.0, 50.0)
         box.setSize(100.0, 100.0)

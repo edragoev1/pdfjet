@@ -67,6 +67,8 @@ public class Page {
     private var savedStates = [State]()
     private var mcid = 0
 
+    public static let DETACHED = false
+
 
     ///
     /// Creates page object and add it to the PDF document.
