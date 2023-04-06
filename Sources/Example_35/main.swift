@@ -7,36 +7,28 @@ import PDFjet
  *
  */
 public class Example_35 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_35.pdf", append: false)!)
+        let page = Page(pdf, A4.PORTRAIT)
 
-        if let stream = OutputStream(toFileAtPath: "Example_35.pdf", append: false) {
+        let text = try String(contentsOfFile: "data/chinese-english.txt", encoding: .utf8)
 
-            let pdf = PDF(stream)
-            let page = Page(pdf, A4.PORTRAIT)
+        let mainFont = Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT)
+        let fallbackFont = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf")
 
-            let text = try String(contentsOfFile: "data/chinese-english.txt", encoding: .utf8)
+        var textLine = TextLine(mainFont)
+        textLine.setText(text)
+        textLine.setLocation(50.0, 50.0)
+        textLine.drawOn(page)
 
-            let mainFont = Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT)
-            let fallbackFont = try Font(
-                    pdf,
-                    InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf")!)
+        textLine = TextLine(mainFont)
+        textLine.setFallbackFont(fallbackFont)
+        textLine.setText(text)
+        textLine.setLocation(50.0, 80.0)
+        textLine.drawOn(page)
 
-            var textLine = TextLine(mainFont)
-            textLine.setText(text)
-            textLine.setLocation(50.0, 50.0)
-            textLine.drawOn(page)
-
-            textLine = TextLine(mainFont)
-            textLine.setFallbackFont(fallbackFont)
-            textLine.setText(text)
-            textLine.setLocation(50.0, 80.0)
-            textLine.drawOn(page)
-
-            pdf.complete()
-        }
+        pdf.complete()
     }
-
 }   // End of Example_35.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
