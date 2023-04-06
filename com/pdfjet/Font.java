@@ -32,18 +32,6 @@ import java.util.List;
  *  The font objects must added to the PDF before they can be used to draw text.
  */
 public class Font {
-    // /** Chinese (Traditional) font */
-    // public static final String AdobeMingStd_Light = "AdobeMingStd-Light";
-
-    // /** Chinese (Simplified) font */
-    // public static final String STHeitiSC_Light = "STHeitiSC-Light";
-
-    // /** Japanese font */
-    // public static final String KozMinProVI_Regular = "KozMinProVI-Regular";
-
-    // /** Korean font */
-    // public static final String AdobeMyungjoStd_Medium = "AdobeMyungjoStd-Medium";
-
     /** Is this a stream font? */
     public static final boolean STREAM = true;
 
