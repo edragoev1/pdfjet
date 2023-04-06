@@ -18,16 +18,8 @@ public class Example_24 {
                 InputStream(fileAtPath: "images/gr-map.jpg")!,
                 ImageType.JPG)
 
-        let image_01 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/linux-logo.png.stream")!,
-                ImageType.PNG_STREAM)
-/*
-        let image_01 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/linux-logo.png")!,
-                ImageType.PNG)
-*/
+        let image_01 = try Image(pdf, "images/linux-logo.png")
+
         let image_02 = try Image(
                 pdf,
                 InputStream(fileAtPath: "images/ee-map.png")!,

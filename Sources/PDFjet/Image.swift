@@ -64,6 +64,17 @@ public class Image : Drawable {
     /// The main constructor for the Image class.
     ///
     /// @param pdf the PDF to which we add this image.
+    /// @param filePath the path to the image file.
+    ///
+    public convenience init(_ pdf: PDF, _ filePath: String) throws {
+        try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.PNG);
+    }
+
+
+    ///
+    /// The main constructor for the Image class.
+    ///
+    /// @param pdf the PDF to which we add this image.
     /// @param stream the input stream to read the image from.
     /// @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
     ///
