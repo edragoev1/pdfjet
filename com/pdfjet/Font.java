@@ -32,17 +32,17 @@ import java.util.List;
  *  The font objects must added to the PDF before they can be used to draw text.
  */
 public class Font {
-    /** Chinese (Traditional) font */
-    public static final String AdobeMingStd_Light = "AdobeMingStd-Light";
+    // /** Chinese (Traditional) font */
+    // public static final String AdobeMingStd_Light = "AdobeMingStd-Light";
 
-    /** Chinese (Simplified) font */
-    public static final String STHeitiSC_Light = "STHeitiSC-Light";
+    // /** Chinese (Simplified) font */
+    // public static final String STHeitiSC_Light = "STHeitiSC-Light";
 
-    /** Japanese font */
-    public static final String KozMinProVI_Regular = "KozMinProVI-Regular";
+    // /** Japanese font */
+    // public static final String KozMinProVI_Regular = "KozMinProVI-Regular";
 
-    /** Korean font */
-    public static final String AdobeMyungjoStd_Medium = "AdobeMyungjoStd-Medium";
+    // /** Korean font */
+    // public static final String AdobeMyungjoStd_Medium = "AdobeMyungjoStd-Medium";
 
     /** Is this a stream font? */
     public static final boolean STREAM = true;
@@ -169,7 +169,17 @@ public class Font {
      *  @param fontName the font name. Please see Example_04.
      *  @throws Exception  If an input or output exception occurred
      */
-    public Font(PDF pdf, String fontName) throws Exception {
+    public Font(PDF pdf, CJKFont font) throws Exception {
+        String fontName = null;
+        if (font == CJKFont.ADOBE_MING_STD_LIGHT) {             // Chinese (Traditional) font
+            fontName = "AdobeMingStd-Light";
+        } else if (font == CJKFont.ST_HEITI_SC_LIGHT) {         // Chinese (Simplified) font
+            fontName = "STHeitiSC-Light";
+        } else if (font == CJKFont.KOZ_MIN_PRO_VI_REGULAR) {    // Japanese font
+            fontName = "KozMinProVI-Regular";
+        } else if (font == CJKFont.ADOBE_MYUNGJO_STD_MEDIUM) {  // Korean font
+            fontName = "AdobeMyungjoStd-Medium";
+        }
         this.name = fontName;
         this.isCJK = true;
         this.firstChar = 0x0020;
