@@ -1,18 +1,13 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_03.java
- *
  */
 public class Example_03 {
-
     public Example_03() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_03.pdf")));
@@ -23,10 +18,8 @@ public class Example_03 {
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image1 = new Image(pdf,
-                new FileInputStream("images/ee-map.png"), ImageType.PNG);
-        Image image2 = new Image(pdf,
-                new FileInputStream("images/fruit.jpg"), ImageType.JPG);
+        Image image1 = new Image(pdf, "images/ee-map.png");
+        Image image2 = new Image(pdf, "images/fruit.jpg");
         Image image3 = new Image(pdf,
                 new FileInputStream("images/mt-map.bmp"), ImageType.BMP);
 

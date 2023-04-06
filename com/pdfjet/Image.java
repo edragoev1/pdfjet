@@ -58,6 +58,20 @@ public class Image implements Drawable {
 
 
     /**
+     *  Convenience constructor for the Image class.
+     *
+     *  @param pdf the PDF to which we add this image.
+     *  @param filePath the file path to the image file.
+     *  @throws Exception  If an input or output exception occurred
+     *
+     */
+    public Image(PDF pdf, String filePath) throws Exception {
+        this(pdf, new FileInputStream(filePath),
+                filePath.toLowerCase().endsWith(".png") ? ImageType.PNG : ImageType.JPG);
+    }
+
+
+    /**
      *  The main constructor for the Image class.
      *
      *  @param pdf the PDF to which we add this image.
@@ -66,8 +80,7 @@ public class Image implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      *
      */
-    public Image(PDF pdf, InputStream inputStream, int imageType)
-            throws Exception {
+    public Image(PDF pdf, InputStream inputStream, int imageType) throws Exception {
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
