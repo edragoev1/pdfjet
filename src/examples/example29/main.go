@@ -11,26 +11,12 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example29 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
 func Example29() {
 	pdf := pdfjet.NewPDFFile("Example_29.pdf", compliance.PDF15)
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	/*
-		f, err = os.Open("fonts/Droid/DroidSerif-Regular.ttf.stream")
-		reader := bufio.NewReader(f)
-		font2 := pdfjet.NewFontStream1(pdf, reader)
+	// font := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
 
-		f, err = os.Open("fonts/Droid/DroidSansMono.ttf.stream")
-		reader = bufio.NewReader(f)
-		font3 := pdfjet.NewFontStream1(pdf, reader)
-
-		f, err = os.Open("images/ee-map.png")
-		reader = bufio.NewReader(f)
-		image := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-		f.Close()
-	*/
 	page := pdfjet.NewPageAddTo(pdf, letter.Portrait)
 
 	font.SetSize(16.0)
