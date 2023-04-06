@@ -7,12 +7,13 @@ import PDFjet
 public class Example_33 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_33.pdf", append: false)!)
-        let page = Page(pdf, Letter.PORTRAIT)
-
         let image = try Image(
                 pdf,
                 InputStream(fileAtPath: "images/photoshop.jpg")!,
                 ImageType.JPG)
+
+        let page = Page(pdf, Letter.PORTRAIT)
+
         image.setLocation(10.0, 10.0)
         image.scaleBy(0.25)
         image.drawOn(page)
