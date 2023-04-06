@@ -106,7 +106,7 @@ func NewPageAddTo(pdf *PDF, pageSize [2]float32) *Page {
 	return newPage(pdf, pageSize, true)
 }
 
-func NewPage(pdf *PDF, pageSize [2]float32) *Page {
+func NewPageDetached(pdf *PDF, pageSize [2]float32) *Page {
 	return newPage(pdf, pageSize, false)
 }
 

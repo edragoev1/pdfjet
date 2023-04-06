@@ -309,7 +309,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [2]float32 {
 	var xy [2]float32
 	for table.HasMoreData() {
-		page := NewPage(pdf, pageSize)
+		page := NewPageDetached(pdf, pageSize)
 		*pages = append(*pages, page)
 		xy = table.drawTableRows(page, table.drawHeaderRows(page))
 	}

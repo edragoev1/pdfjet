@@ -22,7 +22,7 @@ func Example18() {
 
 	pages := make([]*pdfjet.Page, 0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPageDetached(pdf, a4.Portrait)
 	box := pdfjet.NewBox()
 	box.SetLocation(50.0, 50.0)
 	box.SetSize(100.0, 100.0)
@@ -31,7 +31,7 @@ func Example18() {
 	box.DrawOn(page)
 	pages = append(pages, page)
 
-	page = pdfjet.NewPage(pdf, a4.Portrait)
+	page = pdfjet.NewPageDetached(pdf, a4.Portrait)
 	box = pdfjet.NewBox()
 	box.SetLocation(50.0, 50.0)
 	box.SetSize(100.0, 100.0)
@@ -40,7 +40,7 @@ func Example18() {
 	box.DrawOn(page)
 	pages = append(pages, page)
 
-	page = pdfjet.NewPage(pdf, a4.Portrait)
+	page = pdfjet.NewPageDetached(pdf, a4.Portrait)
 	box = pdfjet.NewBox()
 	box.SetLocation(50.0, 50.0)
 	box.SetSize(100.0, 100.0)
