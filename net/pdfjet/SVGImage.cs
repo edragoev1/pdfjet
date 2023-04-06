@@ -52,6 +52,15 @@ public class SVGImage {
     /**
      * Used to embed SVG images in the PDF document.
      *
+     * @param fontPath the path to the font file.
+     */
+    public SVGImage(String fontPath) : this(
+        new BufferedStream(new FileStream(fontPath, FileMode.Open, FileAccess.Read))) {
+    }
+
+    /**
+     * Used to embed SVG images in the PDF document.
+     *
      * @param stream the input stream.
      * @throws Exception  if exception occurred.
      */
