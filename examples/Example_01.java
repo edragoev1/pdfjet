@@ -2,22 +2,22 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_01.java
- *
  */
 class Example_01 {
-
     public Example_01() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_01.pdf")));
 
         Font font1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        // With regular TTF font this example produces the PDF in 180 ms
+        // Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf");
+
+        // With the .ttf.stream font this example produces the PDF in 120 ms
+        // The resulting PDF is also slightly smaller.
         Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
 
         font1.setSize(12f);
@@ -135,12 +135,10 @@ class Example_01 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_01();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_01 => " + (t1 - t0));
     }
-
 }   // End of Example_01.java
