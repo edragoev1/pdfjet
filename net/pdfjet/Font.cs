@@ -292,6 +292,17 @@ public class Font {
      *  @param fontSize specifies the size of this font.
      *  @return the font.
      */
+    public Font SetSize(double fontSize) {
+        return SetSize((float) fontSize);
+    }
+
+
+    /**
+     *  Sets the size of this font.
+     *
+     *  @param fontSize specifies the size of this font.
+     *  @return the font.
+     */
     public Font SetSize(float fontSize) {
         this.size = fontSize;
         if (isCJK) {
