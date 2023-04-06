@@ -1,34 +1,19 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_24.swift
- *
  */
 public class Example_24 {
-
     public init() throws {
         let stream = OutputStream(toFileAtPath: "Example_24.pdf", append: false)
         let pdf = PDF(stream!)
         let font = Font(pdf, CoreFont.HELVETICA)
 
-        let image_00 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/gr-map.jpg")!,
-                ImageType.JPG)
-
-        let image_01 = try Image(pdf, "images/linux-logo.png")
-
-        let image_02 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/ee-map.png")!,
-                ImageType.PNG)
-
-        let image_03 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/rgb24pal.bmp")!,
-                ImageType.BMP)
+        let image_00 = try Image(pdf, "images/gr-map.jpg")
+        let image_01 = try Image(pdf, "images/linux-logo.png.stream")
+        let image_02 = try Image(pdf, "images/ee-map.png")
+        let image_03 = try Image(pdf, "images/rgb24pal.bmp")
 
         var page = Page(pdf, Letter.PORTRAIT)
         let textline_00 = TextLine(font, "This is a JPEG image.")
@@ -59,7 +44,6 @@ public class Example_24 {
 
         pdf.complete()
     }
-
 }   // End of Example_24.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

@@ -67,7 +67,9 @@ public class Image : Drawable {
     /// @param filePath the path to the image file.
     ///
     public convenience init(_ pdf: PDF, _ filePath: String) throws {
-        if (filePath.lowercased().hasSuffix(".png")) {
+        if (filePath.lowercased().hasSuffix(".png.stream")) {
+            try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.PNG_STREAM);
+        } else if (filePath.lowercased().hasSuffix(".png")) {
             try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.PNG);
         } else if (filePath.lowercased().hasSuffix(".bmp")) {
             try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.BMP);
