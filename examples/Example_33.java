@@ -3,15 +3,11 @@ package examples;
 import java.io.*;
 import com.pdfjet.*;
 
-
 /**
  *  Example_33.java
- *
  */
 public class Example_33 {
-
     public Example_33() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_33.pdf")));
