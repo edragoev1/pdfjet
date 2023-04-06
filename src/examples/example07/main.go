@@ -17,8 +17,7 @@ func Example07(mode string) {
 	pdf := pdfjet.NewPDFFile("Example_07.pdf", compliance.PDF_A_1B)
 	pdf.SetTitle("PDF/A-1B compliant PDF")
 
-	var f1 = pdfjet.NewFontFromFile(
-		pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	var f1 = pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
 	page := pdfjet.NewPageAddTo(pdf, a4.Landscape)
 

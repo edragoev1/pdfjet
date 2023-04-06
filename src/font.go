@@ -303,7 +303,7 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	if strings.HasSuffix(filePath, ".stream") {
 		font = NewFontStream1(pdf, reader)
 	} else {
-		return NewFont(pdf, reader)
+		font = NewFont(pdf, reader)
 	}
 	return font
 }
