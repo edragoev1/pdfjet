@@ -29,19 +29,6 @@ import Foundation
 /// The font objects must added to the PDF before they can be used to draw text.
 ///
 public class Font {
-
-    // Chinese (Traditional) font
-    public static let AdobeMingStd_Light = "AdobeMingStd-Light"
-
-    // Chinese (Simplified) font
-    public static let STHeitiSC_Light = "STHeitiSC-Light"
-
-    // Japanese font
-    public static let KozMinProVI_Regular = "KozMinProVI-Regular"
-
-    // Korean font
-    public static let AdobeMyungjoStd_Medium = "AdobeMyungjoStd-Medium"
-
     public static var STREAM: Bool = true
 
     var name: String = ""
@@ -163,8 +150,18 @@ public class Font {
     /// @param pdf the PDF to add this font to.
     /// @param fontName the font name. Please see Example_04.
     ///
-    public init(_ pdf: PDF, _ fontName: String) {
-        self.name = fontName
+    public init(_ pdf: PDF, _ font: CJKFont) {
+        var fontName: String?
+        if (font == CJKFont.ADOBE_MING_STD_LIGHT) {             // Chinese (Traditional) font
+            fontName = "AdobeMingStd-Light"
+        } else if (font == CJKFont.ST_HEITI_SC_LIGHT) {         // Chinese (Simplified) font
+            fontName = "STHeitiSC-Light"
+        } else if (font == CJKFont.KOZ_MIN_PRO_VI_REGULAR) {    // Japanese font
+            fontName = "KozMinProVI-Regular"
+        } else if (font == CJKFont.ADOBE_MYUNGJO_STD_MEDIUM) {  // Korean font
+            fontName = "AdobeMyungjoStd-Medium"
+        }
+        self.name = fontName!
         self.isCJK = true
         self.firstChar = 0x0020
         self.lastChar = 0xFFEE
@@ -177,7 +174,7 @@ public class Font {
         pdf.append("<<\n")
         pdf.append("/Type /FontDescriptor\n")
         pdf.append("/FontName /")
-        pdf.append(fontName)
+        pdf.append(fontName!)
         pdf.append("\n")
         pdf.append("/Flags 4\n")
         pdf.append("/FontBBox [0 0 0 0]\n")
@@ -190,29 +187,29 @@ public class Font {
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /CIDFontType0\n")
         pdf.append("/BaseFont /")
-        pdf.append(fontName)
+        pdf.append(fontName!)
         pdf.append("\n")
         pdf.append("/FontDescriptor ")
         pdf.append(pdf.getObjNumber() - 1)
         pdf.append(" 0 R\n")
         pdf.append("/CIDSystemInfo <<\n")
         pdf.append("/Registry (Adobe)\n")
-        if fontName.hasPrefix("AdobeMingStd") {
+        if fontName!.hasPrefix("AdobeMingStd") {
             pdf.append("/Ordering (CNS1)\n")
             pdf.append("/Supplement 4\n")
-        } else if fontName.hasPrefix("AdobeSongStd")
-                || fontName.hasPrefix("STHeitiSC") {
+        } else if fontName!.hasPrefix("AdobeSongStd")
+                || fontName!.hasPrefix("STHeitiSC") {
             pdf.append("/Ordering (GB1)\n")
             pdf.append("/Supplement 4\n")
-        } else if fontName.hasPrefix("KozMinPro") {
+        } else if fontName!.hasPrefix("KozMinPro") {
             pdf.append("/Ordering (Japan1)\n")
             pdf.append("/Supplement 4\n")
-        } else if fontName.hasPrefix("AdobeMyungjoStd") {
+        } else if fontName!.hasPrefix("AdobeMyungjoStd") {
             pdf.append("/Ordering (Korea1)\n")
             pdf.append("/Supplement 1\n")
         } else {
             // TODO:
-            print("Unsupported font: " + fontName)
+            print("Unsupported font: " + fontName!)
         }
         pdf.append(">>\n")
         pdf.append(">>\n")
@@ -224,22 +221,22 @@ public class Font {
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /Type0\n")
         pdf.append("/BaseFont /")
-        if fontName.hasPrefix("AdobeMingStd") {
-            pdf.append(fontName + "-UniCNS-UTF16-H\n")
+        if fontName!.hasPrefix("AdobeMingStd") {
+            pdf.append(fontName! + "-UniCNS-UTF16-H\n")
             pdf.append("/Encoding /UniCNS-UTF16-H\n")
-        } else if fontName.hasPrefix("AdobeSongStd")
-                || fontName.hasPrefix("STHeitiSC") {
-            pdf.append(fontName + "-UniGB-UTF16-H\n")
+        } else if fontName!.hasPrefix("AdobeSongStd")
+                || fontName!.hasPrefix("STHeitiSC") {
+            pdf.append(fontName! + "-UniGB-UTF16-H\n")
             pdf.append("/Encoding /UniGB-UTF16-H\n")
-        } else if fontName.hasPrefix("KozMinPro") {
-            pdf.append(fontName + "-UniJIS-UCS2-H\n")
+        } else if fontName!.hasPrefix("KozMinPro") {
+            pdf.append(fontName! + "-UniJIS-UCS2-H\n")
             pdf.append("/Encoding /UniJIS-UCS2-H\n")
-        } else if fontName.hasPrefix("AdobeMyungjoStd") {
-            pdf.append(fontName + "-UniKS-UCS2-H\n")
+        } else if fontName!.hasPrefix("AdobeMyungjoStd") {
+            pdf.append(fontName! + "-UniKS-UCS2-H\n")
             pdf.append("/Encoding /UniKS-UCS2-H\n")
         } else {
             // TODO:
-            print("Unsupported font: " + fontName)
+            print("Unsupported font: " + fontName!)
         }
         pdf.append("/DescendantFonts [")
         pdf.append(pdf.getObjNumber() - 1)
@@ -275,6 +272,24 @@ public class Font {
     public init(_ pdf: PDF, _ stream: InputStream) throws {
         OpenTypeFont.register(pdf, self, stream)
         setSize(size)
+    }
+
+
+    ///
+    /// Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
+    ///
+    /// @param pdf the pdf object.
+    /// @param fontPath the font path.
+    /// @throws Exception thrown of the font file is not found.
+    ///
+    public init(_ pdf: PDF, _ fontPath: String) throws {
+        let inputStream = InputStream(fileAtPath: fontPath)!
+        if (fontPath.hasSuffix(".stream")) {
+            try FontStream1.register(pdf, self, inputStream);
+        } else {
+            OpenTypeFont.register(pdf, self, inputStream);
+        }
+        setSize(size);
     }
 
 

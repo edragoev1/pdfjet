@@ -1,27 +1,16 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_01.swift
- *
  */
 public class Example_01 {
-
     public init() throws {
-
         let stream = OutputStream(toFileAtPath: "Example_01.pdf", append: false)
         let pdf = PDF(stream!)
 
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf.stream")!,
-                Font.STREAM)
-
-        let f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSansFallback.ttf.stream")!,
-                Font.STREAM)
+        let f1 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
+        let f2 = try Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
 
         f1.setSize(12.0)
         f2.setSize(12.0)
