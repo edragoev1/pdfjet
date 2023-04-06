@@ -1,22 +1,18 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_36.cs
- *
  */
 public class Example_36 {
-
     public Example_36() {
 
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_36.pdf", FileMode.Create)));
 
-        Page page1 = new Page(pdf, A4.PORTRAIT, false);
+        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
@@ -71,7 +67,7 @@ public class Example_36 {
         image3.ScaleBy(0.5f);
         image3.DrawOn(page1);
 
-        Page page2 = new Page(pdf, A4.PORTRAIT, false);
+        Page page2 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
         image1.DrawOn(page2);
 
         text.SetText("Hello, World!!");
@@ -92,7 +88,6 @@ public class Example_36 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -101,5 +96,4 @@ public class Example_36 {
         sw.Stop();
         Console.WriteLine("Example_36 => " + (time1 - time0));
     }
-
 }   // End of Example_36.cs

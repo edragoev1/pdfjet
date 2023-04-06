@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
 
 /**
@@ -14,14 +13,11 @@ public class Example_18 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_18.pdf", FileMode.Create)));
 
-        Font font = new Font(pdf,
-                new FileStream("fonts/RedHatText/RedHatText-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read), Font.STREAM);
+        Font font = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream");
         font.SetSize(12f);
 
         List<Page> pages = new List<Page>();
-        Page page = new Page(pdf, A4.PORTRAIT, false);
+        Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
         Box box = new Box();
         box.SetLocation(50f, 50f);
@@ -31,7 +27,7 @@ public class Example_18 {
         box.DrawOn(page);
         pages.Add(page);
 
-        page = new Page(pdf, A4.PORTRAIT, false);
+        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
         box = new Box();
         box.SetLocation(50f, 50f);
         box.SetSize(100.0f, 100.0f);
@@ -40,7 +36,7 @@ public class Example_18 {
         box.DrawOn(page);
         pages.Add(page);
 
-        page = new Page(pdf, A4.PORTRAIT, false);
+        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
         box = new Box();
         box.SetLocation(50f, 50f);
         box.SetSize(100.0f, 100.0f);
