@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example06 draws the flag of the USA.
+// Example06
 func Example06() {
 	pdf := pdfjet.NewPDFFile("Example_06.pdf", compliance.PDF15)
 	pdf.SetTitle("Hello")
@@ -18,8 +18,8 @@ func Example06() {
 	pdf.SetKeywords("Hello World This is a test")
 	pdf.SetCreator("Application Name")
 
-	embeddedFile1 := pdfjet.NewEmbeddedFile2(pdf, "images/linux-logo.png", false)
-	embeddedFile2 := pdfjet.NewEmbeddedFile2(pdf, "examples/Example_06.java", true)
+	embeddedFile1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
+	embeddedFile2 := pdfjet.NewEmbeddedFileAtPath(pdf, "examples/Example_06.java", true)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 

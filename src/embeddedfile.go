@@ -32,6 +32,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
 // EmbeddedFile is used to embed file objects in the PDF.
@@ -42,13 +43,14 @@ type EmbeddedFile struct {
 	content   []byte
 }
 
-func NewEmbeddedFile2(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
+func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
+	fileName := filePath[strings.LastIndex(filePath, "/")+1:]
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	return NewEmbeddedFile(pdf, filePath, bufio.NewReader(file), compress)
+	return NewEmbeddedFile(pdf, fileName, bufio.NewReader(file), compress)
 }
 
 // NewEmbeddedFile is the constructor.
