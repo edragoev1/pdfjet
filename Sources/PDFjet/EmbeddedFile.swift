@@ -23,17 +23,20 @@ SOFTWARE.
 */
 import Foundation
 
-
 /**
  *  Used to embed file objects.
  *  The file objects must added to the PDF before drawing on the first page.
- *
  */
 public class EmbeddedFile {
-
     var objNumber: Int = -1
     var fileName: String?
 
+    public convenience init(
+            _ pdf: PDF,
+            _ fileName: String,
+            _ compress: Bool) throws {
+        try self.init(pdf, fileName, InputStream(fileAtPath: fileName)!, compress)
+    }
 
     public init(
             _ pdf: PDF,
