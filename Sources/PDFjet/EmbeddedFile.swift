@@ -33,10 +33,17 @@ public class EmbeddedFile {
 
     public convenience init(
             _ pdf: PDF,
-            _ fileName: String,
+            _ filePath: String,
             _ compress: Bool) throws {
-        let index = fileName.lastIndex(of: "/")!
-        try self.init(pdf, String(fileName.suffix(from: index)), InputStream(fileAtPath: fileName)!, compress)
+        var fileName = ""
+        for scalar in filePath.unicodeScalars {
+            if scalar == "/" {
+                fileName = ""
+            } else {
+                fileName += String(scalar)
+            }
+        }
+        try self.init(pdf, fileName, InputStream(fileAtPath: filePath)!, compress)
     }
 
     public init(
@@ -94,9 +101,7 @@ public class EmbeddedFile {
         self.objNumber = pdf.getObjNumber()
     }
 
-
     public func getFileName() -> String {
         return self.fileName!
     }
-
 }   // End of EmbeddedFile.swift
