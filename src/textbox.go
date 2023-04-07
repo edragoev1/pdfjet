@@ -507,18 +507,19 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		if float32(len(lines))*leading > (textBox.height - 2*textBox.margin) {
 			list := make([]string, 0)
 			for _, line := range lines {
-				if float32(len(list)+1)*leading <= (textBox.height - 2*textBox.margin) {
-					list = append(list, line)
-				} else {
+				if float32(len(list)+1)*leading > (textBox.height - 2*textBox.margin) {
 					break
 				}
+				list = append(list, line)
 			}
-			lastLine := list[len(list)-1]
-			tokens := strings.Fields(lastLine)
-			tokens = tokens[:len(tokens)-1]
-			lastLine = strings.Join(tokens, " ")
-			list[len(list)-1] = lastLine + " ..."
-			lines = list
+            if len(list) > 0 {
+			    lastLine := list[len(list)-1]
+			    tokens := strings.Fields(lastLine)
+			    tokens = tokens[:len(tokens)-1]
+			    lastLine = strings.Join(tokens, " ")
+			    list[len(list)-1] = lastLine + " ..."
+			    lines = list
+            }
 		}
 		if page != nil {
 			if textBox.GetBgColor() != color.Transparent {
