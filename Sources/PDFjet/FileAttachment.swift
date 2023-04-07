@@ -23,13 +23,10 @@ SOFTWARE.
 */
 import Foundation
 
-
 /**
  *  Used to attach file objects.
- *
  */
 public class FileAttachment : Drawable {
-
     var objNumber = -1
     var pdf: PDF?
     var embeddedFile: EmbeddedFile?
@@ -83,6 +80,7 @@ public class FileAttachment : Drawable {
     }
 
 
+    @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let annotation = Annotation(
                 nil,
@@ -98,5 +96,4 @@ public class FileAttachment : Drawable {
         page!.addAnnotation(annotation)
         return [self.x + self.h, self.y + self.h]
     }
-
 }   // End of FileAttachment.swift

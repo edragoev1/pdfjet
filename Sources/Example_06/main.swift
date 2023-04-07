@@ -6,9 +6,11 @@ import PDFjet
  *  We will draw the American flag using Box, Line and Point objects.
  */
 public class Example_06 {
-    public init() {
+    public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_06.pdf", append: false)!)
         let font = Font(pdf, CoreFont.HELVETICA);
+        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
+        let file2 = try EmbeddedFile(pdf, "examples/Example_02.cs", true)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
@@ -68,11 +70,29 @@ public class Example_06 {
         text.setLocation(Float(100), Float(270))
         text.drawOn(page)
 
+        var attachment = FileAttachment(pdf, file1)
+        attachment.setLocation(100.0, 300.0)
+        attachment.setIconPushPin()
+        attachment.setIconSize(24.0)
+        attachment.setTitle("Attached File: " + file1.getFileName())
+        attachment.setDescription(
+                "Right mouse click or double click on the icon to save the attached file.")
+        attachment.drawOn(page)
+
+        attachment = FileAttachment(pdf, file2)
+        attachment.setLocation(200.0, 300.0)
+        attachment.setIconPaperclip()
+        attachment.setIconSize(24.0)
+        attachment.setTitle("Attached File: " + file2.getFileName())
+        attachment.setDescription(
+                "Right mouse click or double click on the icon to save the attached file.")
+        attachment.drawOn(page)
+
         pdf.complete()
     }
 }   // End of Example_06.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = Example_06()
+_ = try Example_06()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Example_06 => \(time1 - time0)")
