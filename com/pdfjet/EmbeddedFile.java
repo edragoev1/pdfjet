@@ -23,6 +23,7 @@ SOFTWARE.
 */
 package com.pdfjet;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -37,8 +38,8 @@ public class EmbeddedFile {
     protected int objNumber = -1;
     protected String fileName;
 
-    public EmbeddedFile(PDF pdf, String filePath, boolean compress) throws Exception {
-        this(pdf, filePath, new FileInputStream(filePath), compress); 
+    public EmbeddedFile(PDF pdf, String fileName, boolean compress) throws Exception {
+        this(pdf, fileName, new BufferedInputStream(new FileInputStream(fileName)), compress); 
     }
 
     public EmbeddedFile(PDF pdf, String fileName, InputStream stream, boolean compress) throws Exception {
