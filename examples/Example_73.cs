@@ -13,13 +13,8 @@ public class Example_73 {
                 new BufferedStream(
                         new FileStream("Example_73.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSans.ttf.stream", FileMode.Open, FileAccess.Read),
-                Font.STREAM);
-
-        Font f2 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSansFallback.ttf.stream", FileMode.Open, FileAccess.Read),
-                Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
 
         f1.SetSize(12f);
         f2.SetSize(12f);
@@ -157,5 +152,4 @@ public class Example_73 {
         sw.Stop();
         Console.WriteLine("Example_73 => " + (time1 - time0));
     }
-
 }   // End of Example_73.cs
