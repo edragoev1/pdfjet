@@ -32,7 +32,7 @@ public class FileAttachment : Drawable {
     var embeddedFile: EmbeddedFile?
     var icon: String = "PushPin"
     var title: String = ""
-    var contents: String = "Right mouse click or double click on the icon to save the attached file."
+    var contents: String = "Right mouse click on the icon to save the attached file."
     var x: Float = 0.0
     var y: Float = 0.0
     var h: Float = 24.0
