@@ -1,3 +1,5 @@
+package letter
+
 /**
  * letter.go
  *
@@ -21,7 +23,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package letter
 
 // Portrait letter page dimensions.
 var Portrait = [2]float32{612.0, 792.0}

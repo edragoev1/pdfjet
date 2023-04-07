@@ -1,6 +1,6 @@
 package clockwise
 
-/*
+/**
  * clockwise.go
  *
 Copyright 2023 Innovatics Inc.

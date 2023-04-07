@@ -1,7 +1,5 @@
 package pdfjet
 
-import "github.com/edragoev1/pdfjet/src/color"
-
 /**
  * svgpath.go
  *
@@ -25,6 +23,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
+import "github.com/edragoev1/pdfjet/src/color"
 
 type SVGPath struct {
 	data        string    // The SVG path data

@@ -1,6 +1,6 @@
 package embed
 
-/*
+/**
  * embed.go
  *
 Copyright 2023 Innovatics Inc.

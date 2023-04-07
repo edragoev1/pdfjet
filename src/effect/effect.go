@@ -1,6 +1,6 @@
 package effect
 
-/*
+/**
  * effect.go
  *
 Copyright 2023 Innovatics Inc.

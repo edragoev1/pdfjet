@@ -1,3 +1,5 @@
+package pagelayout
+
 /**
  *  pagelayout.go
  *
@@ -21,12 +23,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package pagelayout
 
-/**
- *  Used to specify the PDF page layout.
- *
- */
+// Used to specify the PDF page layout.
 const (
 	SinglePage     = "SinglePage"     // Display one page at a time
 	OneColumn      = "OneColumn"      // Display the pages in one column

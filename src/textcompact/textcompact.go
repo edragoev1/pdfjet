@@ -1,9 +1,10 @@
+package textcompact
+
 /**
  * textcompact.go
  *
 Copyright 2023 Innovatics Inc.
 */
-package textcompact
 
 // TABLE contains ASCII Value, Base 30 Value and Code specifying in what subtable is the character located.
 var TABLE = [][]int{
