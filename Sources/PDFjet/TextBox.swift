@@ -637,20 +637,26 @@ public class TextBox : Drawable {
         let leading = font!.ascent + font!.descent + spacing
 
         if height > 0.0 {   // TextBox with fixed height
-            if Float32(lines.count)*leading > (height - 2*margin) {
+            if Float32(lines.count)*leading - spacing > (height - 2*margin) {
                 var list = [String]()
                 for line in lines {
-                    if (Float32(list.count + 1)*leading > (height - 2*margin)) {
+                    if (Float32(list.count + 1)*leading - spacing > (height - 2*margin)) {
                         break
                     }
                     list.append(line)
                 }
                 if (list.count > 0) {
                     var lastLine = list[list.count - 1]
-                    var tokens = lastLine.components(separatedBy: .whitespaces)
-                    tokens.removeLast()
-                    lastLine = tokens.joined(separator: " ")
-                    list[list.count - 1] = lastLine + " ..."
+                    var scalars = [Unicode.Scalar]()
+                    for scalar in lastLine.unicodeScalars {
+                        scalars.append(scalar)
+                    }
+                    scalars.removeLast(3)
+                    lastLine = ""
+                    for scalar in scalars {
+                        lastLine += String(scalar)
+                    }
+                    list[list.count - 1] = lastLine + "..."
                     lines = list
                 }
             }

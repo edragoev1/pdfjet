@@ -116,7 +116,8 @@ public class Example_73 {
         textBox.SetBgColor(Color.lightblue);
         textBox.SetVerticalAlignment(Align.TOP);
         // textBox.SetHeight(210f);
-        textBox.SetHeight(151f);
+        // textBox.SetHeight(151f);
+        textBox.SetHeight(14f);
         textBox.SetWidth(300f);
         textBox.SetLocation(250f, 50f);
         textBox.DrawOn(page);
