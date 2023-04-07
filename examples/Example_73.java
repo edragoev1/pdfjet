@@ -9,18 +9,8 @@ import com.pdfjet.*;
 public class Example_73 {
     public Example_73() throws Exception {
         PDF pdf = new PDF(new FileOutputStream("Example_73.pdf"));
-
-        Font f1 = new Font(
-                pdf,
-                new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
-                Font.STREAM);
-        Font f2 = new Font(
-                pdf,
-                new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream"),
-                Font.STREAM);
-
-        // Font f3 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
-        // Font f4 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
 
         f1.setSize(12f);
         f2.setSize(12f);
