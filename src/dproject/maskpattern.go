@@ -1,6 +1,6 @@
 package dproject
 
-/*
+/**
  *
 Copyright (c) 2009 Kazuhiko Arase
 

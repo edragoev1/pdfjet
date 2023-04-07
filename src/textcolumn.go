@@ -1,7 +1,7 @@
 package pdfjet
 
 /**
- *  textcolumn.go
+ * textcolumn.go
  *
 Copyright 2023 Innovatics Inc.
 

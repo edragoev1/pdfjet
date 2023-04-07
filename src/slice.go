@@ -1,7 +1,7 @@
 package pdfjet
 
 /**
- *  slice.go
+ * slice.go
  *
 Copyright 2023 Innovatics Inc.
 
@@ -31,7 +31,7 @@ type Slice struct {
 
 func NewSlice(percent float32, color int32) *Slice {
 	slice := new(Slice)
-	slice.angle = percent*3.6
+	slice.angle = percent * 3.6
 	slice.color = color
 	return slice
 }

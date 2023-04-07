@@ -1,7 +1,7 @@
 package pdfjet
 
 /**
- *  textframe.go
+ * textframe.go
  *
 Copyright 2023 Innovatics Inc.
 

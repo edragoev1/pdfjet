@@ -1,7 +1,7 @@
 package pdfjet
 
 /**
- *  barcode.go
+ * barcode.go
  *
 Copyright 2023 Innovatics Inc.
 

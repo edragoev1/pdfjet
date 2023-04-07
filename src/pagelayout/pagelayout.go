@@ -1,7 +1,7 @@
 package pagelayout
 
 /**
- *  pagelayout.go
+ * pagelayout.go
  *
 Copyright 2023 Innovatics Inc.
 

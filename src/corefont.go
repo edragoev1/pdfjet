@@ -1,7 +1,7 @@
 package pdfjet
 
 /**
- *  corefont.go
+ * corefont.go
  *
 Copyright 2023 Innovatics Inc.
 
