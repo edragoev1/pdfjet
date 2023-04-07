@@ -764,17 +764,19 @@ public class TextBox implements Drawable {
         if (height > 0f) { // TextBox with fixed height
             if (lines.length * leading > (height - 2*margin)) {
                 List<String> list = new ArrayList<String>();
-                for (String line : lines) {
-                    if ((list.size() + 1) * leading <= (height - 2*margin)) {
-                        list.add(line);
-                    } else {
+                for (int i = 0; i < lines.length; i++) {
+                    String line = lines[i];
+                    if ((i + 1) * leading > (height - 2*margin)) {
                         break;
                     }
+                    list.add(line);
                 }
-                String lastLine = list.get(list.size() - 1);
-                lastLine = lastLine.substring(0, lastLine.trim().lastIndexOf(" "));
-                list.set(list.size() - 1, lastLine + " ...");
-                lines = list.toArray(new String[] {});
+                if (list.size() > 0) {  // At least one line must fit in the text box
+                    String lastLine = list.get(list.size() - 1);
+                    lastLine = lastLine.substring(0, lastLine.trim().lastIndexOf(" "));
+                    list.set(list.size() - 1, lastLine + " ...");
+                    lines = list.toArray(new String[] {});
+                }
             }
             if (page != null) {
                 if (getBgColor() != Color.transparent) {
