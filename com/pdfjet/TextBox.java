@@ -762,18 +762,23 @@ public class TextBox implements Drawable {
         float leading = font.ascent + font.descent + spacing;
 
         if (height > 0f) { // TextBox with fixed height
-            if (lines.length * leading > (height - 2*margin)) {
+            if ((lines.length*leading - spacing) > (height - 2*margin)) {
                 List<String> list = new ArrayList<String>();
                 for (int i = 0; i < lines.length; i++) {
                     String line = lines[i];
-                    if ((i + 1) * leading > (height - 2*margin)) {
+                    if (((i + 1)*leading - spacing) > (height - 2*margin)) {
                         break;
                     }
                     list.add(line);
                 }
                 if (list.size() > 0) {  // At least one line must fit in the text box
                     String lastLine = list.get(list.size() - 1);
-                    lastLine = lastLine.substring(0, lastLine.trim().lastIndexOf(" "));
+                    int index = lastLine.trim().lastIndexOf(" ");
+                    if (index != -1) {
+                        lastLine = lastLine.substring(0, index);
+                    } else {
+                        lastLine = lastLine.substring(0, lastLine.length() - 4);
+                    }
                     list.set(list.size() - 1, lastLine + " ...");
                     lines = list.toArray(new String[] {});
                 }
