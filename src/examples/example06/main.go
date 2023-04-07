@@ -38,7 +38,7 @@ func Example06() {
 	attachment.SetIconSize(24.0)
 	attachment.SetTitle("Attached File: " + embeddedFile2.GetFileName())
 	attachment.SetDescription(
-		"Right mouse click or double click on the icon to save the attached file.")
+		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
 
 	pdf.Complete()
