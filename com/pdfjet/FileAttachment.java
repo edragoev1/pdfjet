@@ -34,7 +34,7 @@ public class FileAttachment implements Drawable {
     protected EmbeddedFile embeddedFile;
     protected String icon = "PushPin";
     protected String title = "";
-    protected String contents = "Right mouse click or double click on the icon to save the attached file.";
+    protected String contents = "Right mouse click on the icon to save the attached file.";
     protected float x = 0f;
     protected float y = 0f;
     protected float h = 24f;

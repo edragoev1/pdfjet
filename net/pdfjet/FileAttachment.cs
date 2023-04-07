@@ -36,7 +36,7 @@ public class FileAttachment : IDrawable {
     internal EmbeddedFile embeddedFile = null;
     internal String icon = "PushPin";
     internal String title = "";
-    internal String contents = "Right mouse click or double click on the icon to save the attached file.";
+    internal String contents = "Right mouse click on the icon to save the attached file.";
     internal float x = 0f;
     internal float y = 0f;
     internal float h = 24f;
