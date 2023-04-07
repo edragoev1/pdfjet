@@ -1,9 +1,7 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_06.cs
@@ -12,9 +10,7 @@ using PDFjet.NET;
 // namespace examples {
 
 public class Example_06 {
-
     public Example_06() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_06.pdf", FileMode.Create)));
         pdf.SetTitle("Hello");
@@ -23,19 +19,8 @@ public class Example_06 {
         pdf.SetKeywords("Hello World This is a test");
         pdf.SetCreator("Application Name");
 
-        String fileName = "linux-logo.png";
-        EmbeddedFile file1 = new EmbeddedFile(
-                pdf,
-                fileName,
-                new FileStream("images/" + fileName, FileMode.Open, FileAccess.Read),
-                false);     // Don't compress images.
-
-        fileName = "examples/Example_02.cs";
-        EmbeddedFile file2 = new EmbeddedFile(
-                pdf,
-                fileName,
-                new FileStream(fileName, FileMode.Open, FileAccess.Read),
-                true);      // Compress text files.
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO);
+        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02.cs", Compress.YES);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

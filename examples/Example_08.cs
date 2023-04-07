@@ -2,9 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_08.cs
@@ -15,7 +13,6 @@ public class Example_08 {
     private BarCode barCode;
 
     public Example_08() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_08.pdf", FileMode.Create)), Compliance.PDF_A_1B);
 
@@ -23,31 +20,15 @@ public class Example_08 {
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
 /* TODO:
-        Font f1 = new Font(pdf,
-                getClass().getResourceAsStream("fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
-        f1.setSize(7f);
-
-        Font f2 = new Font(pdf,
-                getClass().getResourceAsStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
-        f2.setSize(7f);
-
-        Font f3 = new Font(pdf,
-                getClass().getResourceAsStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
-                Font.STREAM);
-        f3.setSize(7f);
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
 */
         f1.SetSize(7f);
         f2.SetSize(7f);
         f3.SetSize(7f);
 
-
-        image1 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/fruit.jpg", FileMode.Open, FileAccess.Read)),
-                ImageType.JPG);
+        image1 = new Image(pdf, "images/fruit.jpg");
         image1.ScaleBy(0.20f);
 
         barCode = new BarCode(BarCode.CODE128, "Hello, World!");
@@ -140,8 +121,7 @@ public class Example_08 {
                 Cell cell;
                 if (currentRow < numOfHeaderRows) {
                     cell = new Cell(f1, text);
-                }
-                else {
+                } else {
                     cell = new Cell(f2);
                     if (i == 0 && currentRow == 5) {
                         cell.SetImage(image1);
@@ -150,13 +130,11 @@ public class Example_08 {
                         cell.SetBarcode(barCode);
                         cell.SetTextAlignment(Align.CENTER);
                         cell.SetColSpan(8);
-                    }
-                    else {
+                    } else {
                         TextBlock textBlock = new TextBlock(f2, text);
                         if (i == 0) {
                             textBlock.SetTextAlignment(Align.LEFT);
-                        }
-                        else {
+                        } else {
                             textBlock.SetTextAlignment(Align.RIGHT);
                         }
                         cell.SetTextBlock(textBlock);
@@ -171,7 +149,6 @@ public class Example_08 {
         return tableData;
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -180,5 +157,4 @@ public class Example_08 {
         sw.Stop();
         Console.WriteLine("Example_08 => " + (time1 - time0));
     }
-
 }   // End of Example_08.cs

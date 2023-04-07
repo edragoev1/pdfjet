@@ -24,18 +24,18 @@ SOFTWARE.
 using System;
 using System.IO;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to embed file objects.
  *  The file objects must added to the PDF before drawing on the first page.
- *
  */
 public class EmbeddedFile {
-
     internal int objNumber = -1;
     internal String fileName = null;
 
+    public EmbeddedFile(PDF pdf, String fileName, bool compress) :
+        this(pdf, fileName, new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
+    }
 
     public EmbeddedFile(PDF pdf, String fileName, Stream stream, bool compress) {
         this.fileName = fileName;
@@ -85,10 +85,8 @@ public class EmbeddedFile {
         this.objNumber = pdf.GetObjNumber();
     }
 
-
     public String GetFileName() {
         return fileName;
     }
-
 }   // End of EmbeddedFile.cs
 }   // End of namespace PDFjet.NET
