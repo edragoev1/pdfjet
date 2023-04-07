@@ -9,8 +9,8 @@ public class Example_06 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_06.pdf", append: false)!)
         let font = Font(pdf, CoreFont.HELVETICA);
-        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
-        let file2 = try EmbeddedFile(pdf, "examples/Example_02.cs", true)
+        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO)
+        let file2 = try EmbeddedFile(pdf, "examples/Example_02.cs", Compress.YES)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
