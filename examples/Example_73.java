@@ -31,7 +31,6 @@ public class Example_73 {
         TextLine line2 = new TextLine(f1, "Hello,BeautifulWorld");
 
         TextBox textBox = new TextBox(f1, line1.getText());
-        textBox.setMargin(0f);
         textBox.setLocation(50f, 50f);
         textBox.setWidth(line1.getWidth() + 2*textBox.getMargin());
         textBox.setBgColor(Color.lightgreen);
@@ -119,7 +118,8 @@ public class Example_73 {
         textBox.setBgColor(Color.lightblue);
         textBox.setVerticalAlignment(Align.TOP);
         // textBox.setHeight(210f);
-        textBox.setHeight(151f);
+        // textBox.setHeight(151f);
+        textBox.setHeight(14f);
         textBox.setWidth(300f);
         textBox.setLocation(250f, 50f);
         textBox.drawOn(page);
