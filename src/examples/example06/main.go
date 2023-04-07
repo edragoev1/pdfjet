@@ -6,6 +6,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/compress"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -18,8 +19,8 @@ func Example06() {
 	pdf.SetKeywords("Hello World This is a test")
 	pdf.SetCreator("Application Name")
 
-	embeddedFile1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
-	embeddedFile2 := pdfjet.NewEmbeddedFileAtPath(pdf, "examples/Example_06.java", true)
+	embeddedFile1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
+	embeddedFile2 := pdfjet.NewEmbeddedFileAtPath(pdf, "examples/Example_06.java", compress.Yes)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
