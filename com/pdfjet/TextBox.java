@@ -773,13 +773,8 @@ public class TextBox implements Drawable {
                 }
                 if (list.size() > 0) {  // At least one line must fit in the text box
                     String lastLine = list.get(list.size() - 1);
-                    int index = lastLine.trim().lastIndexOf(" ");
-                    if (index != -1) {
-                        lastLine = lastLine.substring(0, index);
-                    } else {
-                        lastLine = lastLine.substring(0, lastLine.length() - 4);
-                    }
-                    list.set(list.size() - 1, lastLine + " ...");
+                    lastLine = lastLine.substring(0, lastLine.length() - 3);
+                    list.set(list.size() - 1, lastLine + "...");
                     lines = list.toArray(new String[] {});
                 }
             }

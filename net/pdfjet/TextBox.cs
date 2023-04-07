@@ -798,13 +798,8 @@ public class TextBox : IDrawable {
                 }
                 if (list.Count > 0) {
                     String lastLine = list[list.Count - 1];
-                    int index = lastLine.Trim().LastIndexOf(" ");
-                    if (index != -1) {
-                        lastLine = lastLine.Substring(0, index);
-                    } else {
-                        lastLine = lastLine.Substring(0, lastLine.Length - 4);
-                    }
-                    list[list.Count - 1] = lastLine + " ...";
+                    lastLine = lastLine.Substring(0, lastLine.Length - 3);
+                    list[list.Count - 1] = lastLine + "...";
                     lines = list.ToArray();
                 }
             }
