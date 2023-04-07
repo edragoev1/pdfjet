@@ -34,7 +34,8 @@ public class EmbeddedFile {
     internal String fileName = null;
 
     public EmbeddedFile(PDF pdf, String fileName, bool compress) :
-        this(pdf, fileName, new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
+        this(pdf, fileName.Substring(fileName.LastIndexOf("/") + 1),
+                new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
     }
 
     public EmbeddedFile(PDF pdf, String fileName, Stream stream, bool compress) {
