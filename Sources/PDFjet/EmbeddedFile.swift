@@ -35,7 +35,8 @@ public class EmbeddedFile {
             _ pdf: PDF,
             _ fileName: String,
             _ compress: Bool) throws {
-        try self.init(pdf, fileName, InputStream(fileAtPath: fileName)!, compress)
+        let index = fileName.lastIndex(of: "/")!
+        try self.init(pdf, String(fileName.suffix(from: index)), InputStream(fileAtPath: fileName)!, compress)
     }
 
     public init(
