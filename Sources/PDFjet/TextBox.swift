@@ -640,18 +640,19 @@ public class TextBox : Drawable {
             if Float32(lines.count)*leading > (height - 2*margin) {
                 var list = [String]()
                 for line in lines {
-                    if (Float32(list.count + 1)*leading <= (height - 2*margin)) {
-                        list.append(line)
-                    } else {
+                    if (Float32(list.count + 1)*leading > (height - 2*margin)) {
                         break
                     }
+                    list.append(line)
                 }
-                var lastLine = list[list.count - 1]
-                var tokens = lastLine.components(separatedBy: .whitespaces)
-                tokens.removeLast()
-                lastLine = tokens.joined(separator: " ")
-                list[list.count - 1] = lastLine + " ..."
-                lines = list
+                if (list.count > 0) {
+                    var lastLine = list[list.count - 1]
+                    var tokens = lastLine.components(separatedBy: .whitespaces)
+                    tokens.removeLast()
+                    lastLine = tokens.joined(separator: " ")
+                    list[list.count - 1] = lastLine + " ..."
+                    lines = list
+                }
             }
             if page != nil {
                 if getBgColor() != Color.transparent {
