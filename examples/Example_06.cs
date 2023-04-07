@@ -75,7 +75,7 @@ public class Example_06 {
         attachment.SetIconSize(24f);
         attachment.SetTitle("Attached File: " + file1.GetFileName());
         attachment.SetDescription(
-                "Right mouse click or double click on the icon to save the attached file.");
+                "Right mouse click on the icon to save the attached file.");
         attachment.DrawOn(page);
 
         attachment = new FileAttachment(pdf, file2);
@@ -84,7 +84,7 @@ public class Example_06 {
         attachment.SetIconSize(24f);
         attachment.SetTitle("Attached File: " + file2.GetFileName());
         attachment.SetDescription(
-                "Right mouse click or double click on the icon to save the attached file.");
+                "Right mouse click on the icon to save the attached file.");
         attachment.DrawOn(page);
 
         pdf.Complete();

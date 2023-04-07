@@ -74,7 +74,7 @@ public class Example_06 {
         attachment.setIconSize(24f);
         attachment.setTitle("Attached File: " + file1.getFileName());
         attachment.setDescription(
-                "Right mouse click or double click on the icon to save the attached file.");
+                "Right mouse click on the icon to save the attached file.");
         attachment.drawOn(page);
 
         attachment = new FileAttachment(pdf, file2);
@@ -83,7 +83,7 @@ public class Example_06 {
         attachment.setIconSize(24f);
         attachment.setTitle("Attached File: " + file2.getFileName());
         attachment.setDescription(
-                "Right mouse click or double click on the icon to save the attached file.");
+                "Right mouse click on the icon to save the attached file.");
         attachment.drawOn(page);
 
         pdf.complete();
