@@ -25,11 +25,13 @@ SOFTWARE.
 */
 
 import (
+	"bufio"
 	"bytes"
 	"compress/zlib"
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 )
 
 // EmbeddedFile is used to embed file objects in the PDF.
@@ -38,6 +40,15 @@ type EmbeddedFile struct {
 	objNumber int
 	fileName  string
 	content   []byte
+}
+
+func NewEmbeddedFile2(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	return NewEmbeddedFile(pdf, filePath, bufio.NewReader(file), compress)
 }
 
 // NewEmbeddedFile is the constructor.

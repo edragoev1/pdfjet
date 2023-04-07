@@ -2,102 +2,26 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
-	"github.com/edragoev1/pdfjet/src/shape"
 )
 
 // Example06 draws the flag of the USA.
 func Example06() {
 	pdf := pdfjet.NewPDFFile("Example_06.pdf", compliance.PDF15)
 	pdf.SetTitle("Hello")
-	pdf.SetAuthor("Eugene")
-	pdf.SetSubject("Example")
+	pdf.SetAuthor("World")
+	pdf.SetSubject("This is a test")
 	pdf.SetKeywords("Hello World This is a test")
 	pdf.SetCreator("Application Name")
 
-	fileName := "images/linux-logo.png"
-	file1, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	embeddedFile1 := pdfjet.NewEmbeddedFile(
-		pdf,
-		fileName,
-		file1,
-		false) // Don't compress images.
+	embeddedFile1 := pdfjet.NewEmbeddedFile2(pdf, "images/linux-logo.png", false)
+	embeddedFile2 := pdfjet.NewEmbeddedFile2(pdf, "examples/Example_06.java", true)
 
-	/*
-		fileName = "Example_06.java"
-		f, err = os.Open(fileName)
-		file2 := NewEmbeddedFile(
-			pdf,
-			fileName,
-			f,
-			true) // Compress text files.
-	*/
 	page := pdfjet.NewPage(pdf, letter.Portrait)
-
-	flag := pdfjet.NewBox()
-	flag.SetLocation(100.0, 100.0)
-	flag.SetSize(190.0, 100.0)
-	flag.SetColor(color.White)
-	flag.DrawOn(page)
-	/*
-		var xy []float32
-		xy[0] = 0.0
-		xy[1] = 0.0
-	*/
-	// var xy [2]float32
-	//_ = xy
-	var sw float32
-	sw = 7.69 // stripe width
-	stripe := pdfjet.NewLine(0.0, sw/2, 190.0, sw/2)
-	stripe.SetWidth(sw)
-	stripe.SetColor(color.Oldgloryred)
-	for row := 0; row < 7; row++ {
-		stripe.PlaceIn(flag, 0.0, float32(row)*2*sw)
-		stripe.DrawOn(page)
-	}
-
-	union := pdfjet.NewBox()
-	union.SetSize(76.0, 53.85)
-	union.SetColor(color.Oldgloryblue)
-	union.SetFillShape(true)
-	union.PlaceIn(flag, 0.0, 0.0)
-	union.DrawOn(page)
-
-	var hSi float32
-	hSi = 12.6 // horizontal star interval
-	var vSi float32
-	vSi = 10.8 // vertical star interval
-	star := pdfjet.NewPoint(hSi/float32(2), vSi/float32(2))
-	star.SetShape(shape.Star)
-	star.SetRadius(3.0)
-	star.SetColor(color.White)
-	star.SetFillShape(true)
-
-	for row := 0; row < 6; row++ {
-		for col := 0; col < 5; col++ {
-			star.PlaceIn(union, float32(row)*hSi, float32(col)*vSi)
-			star.DrawOn(page)
-		}
-	}
-
-	star.SetLocation(hSi, vSi)
-	for row := 0; row < 5; row++ {
-		for col := 0; col < 4; col++ {
-			star.PlaceIn(union, float32(row)*hSi, float32(col)*vSi)
-			star.DrawOn(page)
-		}
-	}
 
 	attachment := pdfjet.NewFileAttachment(pdf, embeddedFile1)
 	attachment.SetLocation(100.0, 300.0)
@@ -105,18 +29,17 @@ func Example06() {
 	attachment.SetIconSize(24.0)
 	attachment.SetTitle("Attached File: " + embeddedFile1.GetFileName())
 	attachment.SetDescription(
+		"Right mouse click on the icon to save the attached file.")
+	attachment.DrawOn(page)
+
+	attachment = pdfjet.NewFileAttachment(pdf, embeddedFile2)
+	attachment.SetLocation(200.0, 300.0)
+	attachment.SetIconPaperclip()
+	attachment.SetIconSize(24.0)
+	attachment.SetTitle("Attached File: " + embeddedFile2.GetFileName())
+	attachment.SetDescription(
 		"Right mouse click or double click on the icon to save the attached file.")
 	attachment.DrawOn(page)
-	/*
-		attachment = NewFileAttachment(pdf, file2)
-		attachment.SetLocation(200.0, 300.0)
-		attachment.SetIconPaperclip()
-		attachment.SetIconSize(24.0)
-		attachment.SetTitle("Attached File: " + file2.getFileName())
-		attachment.SetDescription(
-			"Right mouse click or double click on the icon to save the attached file.")
-		attachment.DrawOn(page)
-	*/
 
 	pdf.Complete()
 }
