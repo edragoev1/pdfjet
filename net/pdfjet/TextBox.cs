@@ -789,17 +789,19 @@ public class TextBox : IDrawable {
         if (height > 0f) {  // TextBox with fixed height
             if (lines.Length * leading > (height - 2*margin)) {
                 List<String> list = new List<String>();
-                foreach (String line in lines) {
-                    if ((list.Count + 1) * leading <= (height - 2*margin)) {
-                        list.Add(line);
-                    } else {
+                for (int i = 0; i < lines.Length; i++) {
+                    String line = lines[i];
+                    if (((i + 1) * leading) > (height - 2*margin)) {
                         break;
                     }
+                    list.Add(line);
                 }
-                String lastLine = list[list.Count - 1];
-                lastLine = lastLine.Substring(0, lastLine.Trim().LastIndexOf(" "));
-                list[list.Count - 1] = lastLine + " ...";
-                lines = list.ToArray();
+                if (list.Count > 0) {
+                    String lastLine = list[list.Count - 1];
+                    lastLine = lastLine.Substring(0, lastLine.Trim().LastIndexOf(" "));
+                    list[list.Count - 1] = lastLine + " ...";
+                    lines = list.ToArray();
+                }
             }
             if (page != null) {
                 if (GetBgColor() != Color.transparent) {
