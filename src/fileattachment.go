@@ -43,7 +43,7 @@ func NewFileAttachment(pdf *PDF, embeddedFile *EmbeddedFile) *FileAttachment {
 	attachment.pdf = pdf
 	attachment.embeddedFile = embeddedFile
 	attachment.icon = "PushPin"
-	attachment.contents = "Right mouse click or double click on the icon to save the attached attachment."
+	attachment.contents = "Right mouse click on the icon to save the attached attachment."
 	attachment.h = 24.0
 	return attachment
 }
@@ -80,15 +80,18 @@ func (attachment *FileAttachment) SetDescription(description string) {
 }
 
 // DrawOn draws this component on the page.
-func (attachment *FileAttachment) DrawOn(page *Page) {
-	page.AddAnnotation(NewAnnotation(
+func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
+	annotation := NewAnnotation(
 		nil,
 		nil,
 		attachment.x,
-		page.height-attachment.y,
+		attachment.y,
 		attachment.x+attachment.h,
-		page.height-(attachment.y+attachment.h),
+		attachment.y+attachment.h,
 		"",
 		"",
-		""))
+		"")
+	annotation.fileAttachment = attachment
+	page.AddAnnotation(annotation)
+	return [2]float32{attachment.x + attachment.h, attachment.y + attachment.h}
 }
