@@ -13,33 +13,20 @@ public class Example_08 {
     private BarCode barCode;
 
     public Example_08() throws Exception {
-
-        PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("Example_08.pdf")), Compliance.PDF_UA);
+        PDF pdf = new PDF(
+                new BufferedOutputStream(
+                        new FileOutputStream("Example_08.pdf")), Compliance.PDF_UA);
         pdf.setTitle("PDF/UA compliant PDF");
 
-        Font f1 = new Font(
-                pdf,
-                new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream"),
-                Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
+
         f1.setSize(7f);
-
-        Font f2 = new Font(
-                pdf,
-                new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
-                Font.STREAM);
         f2.setSize(7f);
-
-        Font f3 = new Font(
-                pdf,
-                new FileInputStream("fonts/OpenSans/OpenSans-BoldItalic.ttf.stream"),
-                Font.STREAM);
         f3.setSize(7f);
 
-        image1 = new Image(
-                pdf,
-                new FileInputStream("images/fruit.jpg"),
-                ImageType.JPG);
+        image1 = new Image(pdf, "images/fruit.jpg");
         image1.scaleBy(0.20f);
 
         barCode = new BarCode(BarCode.CODE128, "Hello, World!");
