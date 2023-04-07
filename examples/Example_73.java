@@ -19,6 +19,9 @@ public class Example_73 {
                 new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream"),
                 Font.STREAM);
 
+        // Font f3 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        // Font f4 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
+
         f1.setSize(12f);
         f2.setSize(12f);
 
@@ -149,6 +152,9 @@ public class Example_73 {
     }
 
     public static void main(String[] args) throws Exception {
+        long t0 = System.currentTimeMillis();
         new Example_73();
+        long t1 = System.currentTimeMillis();
+        System.out.println("Example_73 => " + (t1 - t0));
     }
 }

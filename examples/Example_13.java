@@ -2,7 +2,6 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
 
 /**
@@ -10,15 +9,14 @@ import com.pdfjet.*;
  *
  */
 public class Example_13 {
-
     public Example_13() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_13.pdf")));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
+
         f1.setSize(7f);
         f2.setSize(7f);
 
@@ -125,7 +123,6 @@ public class Example_13 {
         table.setColumnWidth(8, 10f);
         blankOutColumn(table, 8);
 
-
         Page page = new Page(pdf, Letter.PORTRAIT);
         int numOfPages = table.getNumberOfPages(page);
         int pageNumber = 1;
@@ -148,7 +145,6 @@ public class Example_13 {
         pdf.complete();
     }
 
-
     public void blankOutColumn(Table table, int index) throws Exception {
         List<Cell> column = table.getColumnAtIndex(index);
         for (int i = 0; i < column.size(); i++) {
@@ -159,7 +155,6 @@ public class Example_13 {
         }
     }
 
-
     public void setBgColorForRow(
             Table table, int index, int color) throws Exception {
         List<Cell> row = table.getRowAtIndex(index);
@@ -169,7 +164,6 @@ public class Example_13 {
         }
     }
 
-
     public void setFontForRow(
             Table table, int index, Font font) throws Exception {
         List<Cell> row = table.getRowAtIndex(index);
@@ -178,12 +172,10 @@ public class Example_13 {
         }
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_13();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_13 => " + (t1 - t0));
     }
-
 }   // End of Example_13.java
