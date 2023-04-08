@@ -121,8 +121,8 @@ public class OptimizeOTF {
             final InputStream input = process.getInputStream();
             final byte[] buf = new byte[4096];
             ByteArrayOutputStream buf5 = new ByteArrayOutputStream(0xFFFF);
-            buf5.write(0x58);   // These are the correct values for
-            buf5.write(0x85);   // CMF and FLG according to Microsoft
+            buf5.write(0x58);               // These are the correct values for
+            buf5.write(0x85);               // CMF and FLG according to Microsoft
             int len;
             while ((len = input.read(buf)) != -1) {
                 buf5.write(buf, 0, len);
