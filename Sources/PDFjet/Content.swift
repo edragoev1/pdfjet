@@ -32,20 +32,7 @@ public class Content {
     }
 
     public static func ofTextFile( _ fileName: String) throws -> [UInt8] {
-        var content = [UInt8]()
-        let stream = InputStream(fileAtPath: fileName)!
-        stream.open()
-        let bufferSize = 4096
-        var buffer = [UInt8](repeating: 0, count: bufferSize)
-        while stream.hasBytesAvailable {
-            let read = stream.read(&buffer, maxLength: bufferSize)
-            if (read == 0) {
-                break
-            }
-            content.append(contentsOf: buffer[0..<read])
-        }
-        stream.close()
-        return content
+        return try ofInputStream(InputStream(fileAtPath: fileName)!)
     }
 
     public static func ofInputStream( _ stream: InputStream) throws -> [UInt8] {
