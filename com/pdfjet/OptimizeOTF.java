@@ -104,7 +104,6 @@ public class OptimizeOTF {
             fos.write('N');
         }
 
-
         BufferedOutputStream fos5 =
                 new BufferedOutputStream(new FileOutputStream(fileName + ".tmp"));
         fos5.write(buf3, 0, buf3.length);
@@ -131,7 +130,7 @@ public class OptimizeOTF {
         new File(fileName + ".tmp").delete();
 
 
-
+        // Original code that does not depend on zopfli
         // ByteArrayOutputStream buf4 = new ByteArrayOutputStream(0xFFFF);
         // DeflaterOutputStream dos2 =
         //         new DeflaterOutputStream(buf4,
