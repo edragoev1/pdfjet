@@ -35,10 +35,14 @@ public class Content {
         var content = [UInt8]()
         let stream = InputStream(fileAtPath: fileName)!
         stream.open()
-        var buffer = [UInt8](repeating: 0, count: 4096)
+        let bufferSize = 4096
+        var buffer = [UInt8](repeating: 0, count: bufferSize)
         while stream.hasBytesAvailable {
-            let count = stream.read(&buffer, maxLength: buffer.count)
-            content.append(contentsOf: buffer[0..<count])
+            let read = stream.read(&buffer, maxLength: bufferSize)
+            if (read == 0) {
+                break
+            }
+            content.append(contentsOf: buffer[0..<read])
         }
         stream.close()
         return content

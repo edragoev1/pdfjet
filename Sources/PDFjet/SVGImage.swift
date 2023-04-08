@@ -64,20 +64,17 @@ public class SVGImage {
         paths = [SVGPath]()
         var path: SVGPath?
         stream.open()
-        defer {
-            stream.close()
-        }
-        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 1)
-        defer {
-            buffer.deallocate()
-        }
         var scalars = [UnicodeScalar]()
+        var buffer = [UInt8](repeating: 0, count: 1)
         while stream.hasBytesAvailable {
-            let read = stream.read(buffer, maxLength: 1)
-            if read > 0 {
-                scalars.append(UnicodeScalar(buffer[0]))
+            let read = stream.read(&buffer, maxLength: 1)
+            if (read == 0) {
+                break
             }
+            scalars.append(UnicodeScalar(buffer[0]))
         }
+        stream.close()
+
         var buf = String()
         var token = false
         var param: String?
