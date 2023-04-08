@@ -1,4 +1,4 @@
-package pdfjet
+package content
 
 /**
  * content.go
@@ -30,7 +30,7 @@ import (
 	"os"
 )
 
-func ContentOfTextFile(fileName string) string {
+func OfTextFile(fileName string) string {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
