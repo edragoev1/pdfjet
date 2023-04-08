@@ -30,16 +30,7 @@ import (
 	"os"
 )
 
-type Content struct {
-	text string
-}
-
-func NewContent() *Content {
-	content := new(Content)
-	return content
-}
-
-func OfTextFile(fileName string) string {
+func ContentOfTextFile(fileName string) string {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -49,6 +40,6 @@ func OfTextFile(fileName string) string {
 			log.Fatal(err)
 		}
 	}()
-	text, err := io.ReadAll(file)
-	return string(text)
+	content, err := io.ReadAll(file)
+	return string(content)
 }
