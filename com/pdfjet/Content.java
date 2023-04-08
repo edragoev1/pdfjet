@@ -50,13 +50,24 @@ public class Content {
         try {
             stream = new BufferedInputStream(new FileInputStream(fileName));
             byte[] buffer = new byte[4096];
-            int count = 0;
-            while ((count = stream.read(buffer, 0, buffer.length)) > 0) {
-                baos.write(buffer, 0, count);
+            int read = 0;
+            while ((read = stream.read(buffer, 0, buffer.length)) > 0) {
+                baos.write(buffer, 0, read);
             }
         } finally {
             stream.close();
         }
+        return baos.toByteArray();
+    }
+
+    public static byte[] ofInputStream(InputStream stream) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int read = 0;
+        while ((read = stream.read(buffer, 0, buffer.length)) > 0) {
+            baos.write(buffer, 0, read);
+        }
+        stream.close();
         return baos.toByteArray();
     }
 }
