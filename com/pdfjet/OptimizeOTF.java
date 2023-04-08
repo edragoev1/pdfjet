@@ -24,6 +24,8 @@ SOFTWARE.
 package com.pdfjet;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.*;
 
 /**
@@ -39,10 +41,10 @@ public class OptimizeOTF {
      * @throws Exception if the font file is not found
      */
     private static void convertFontFile(String fileName) throws Exception {
+        BufferedOutputStream fos =
+                new BufferedOutputStream(new FileOutputStream(fileName + ".stream"));
+
         OTF otf = new OTF(new FileInputStream(fileName));
-
-        FileOutputStream fos = new FileOutputStream(fileName + ".stream");
-
         byte[] name = otf.fontName.getBytes("UTF8");
         fos.write(name.length);
         fos.write(name);
@@ -52,7 +54,6 @@ public class OptimizeOTF {
         fos.write(info);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream(32768);
-
         writeInt32(otf.unitsPerEm, baos);
         writeInt32(otf.bBoxLLx, baos);
         writeInt32(otf.bBoxLLy, baos);
@@ -103,15 +104,44 @@ public class OptimizeOTF {
             fos.write('N');
         }
 
-        ByteArrayOutputStream buf4 = new ByteArrayOutputStream(0xFFFF);
-        DeflaterOutputStream dos2 =
-                new DeflaterOutputStream(buf4,
-                        new Deflater(Deflater.BEST_COMPRESSION));
-        dos2.write(buf3, 0, buf3.length);
-        dos2.finish();
+
+
+        BufferedOutputStream fos5 =
+                new BufferedOutputStream(new FileOutputStream(fileName + ".tmp"));
+        fos5.write(buf3, 0, buf3.length);
+        fos5.close();
+        final List<String> command = new ArrayList<String>();
+        command.add("util/zopfli");
+        command.add("-c");
+        command.add("--deflate");
+        command.add("--i100");
+        command.add(fileName + ".tmp");
+        final var process = new ProcessBuilder(command).start();
+        final var input = process.getInputStream();
+        final var buf = new byte[4096];
+        ByteArrayOutputStream buf5 = new ByteArrayOutputStream(0xFFFF);
+        buf5.write(0x58);   // These are the correct values for
+        buf5.write(0x85);   // CMF and FLG according to Microsoft
+        int len;
+        while ((len = input.read(buf)) != -1) {
+            buf5.write(buf, 0, len);
+        }
+        System.out.println(buf5.size());
         writeInt32(buf3.length, fos);   // Uncompressed font size
-        writeInt32(buf4.size(), fos);   // Compressed font size
-        buf4.writeTo(fos);
+        writeInt32(buf5.size(), fos);   // Compressed font size
+        buf5.writeTo(fos);
+
+
+
+        // ByteArrayOutputStream buf4 = new ByteArrayOutputStream(0xFFFF);
+        // DeflaterOutputStream dos2 =
+        //         new DeflaterOutputStream(buf4,
+        //                 new Deflater(Deflater.BEST_COMPRESSION));
+        // dos2.write(buf3, 0, buf3.length);
+        // dos2.finish();
+        // writeInt32(buf3.length, fos);   // Uncompressed font size
+        // writeInt32(buf4.size(), fos);   // Compressed font size
+        // buf4.writeTo(fos);
 
         fos.close();
     }
