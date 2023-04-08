@@ -2,22 +2,16 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_39.java
  *
  */
 public class Example_39 {
-
     public Example_39() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_39.pdf")));
-
-        Page page = new Page(pdf, Letter.PORTRAIT);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f1.setItalic(true);
@@ -26,6 +20,8 @@ public class Example_39 {
         Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f2.setItalic(true);
         f2.setSize(8f);
+        
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
         Chart chart = new Chart(f1, f2);
         chart.setLocation(70f, 50f);
@@ -35,7 +31,6 @@ public class Example_39 {
         chart.setYAxisTitle("");
         chart.setData(getData());
         chart.setDrawYAxisLabels(false);
-
         chart.drawOn(page);
 
         pdf.complete();
@@ -44,9 +39,7 @@ public class Example_39 {
 
     public List<List<Point>> getData() throws Exception {
         List<List<Point>> chartData = new ArrayList<List<Point>>();
-
         List<Point> path1 = new ArrayList<Point>();
-
         Point point = new Point();
         point.setDrawPath();
         point.setX(0f);
@@ -64,9 +57,7 @@ public class Example_39 {
         point.setShape(Point.INVISIBLE);
         path1.add(point);
 
-
         List<Point> path2 = new ArrayList<Point>();
-
         point = new Point();
         point.setDrawPath();
         point.setX(0f);
@@ -84,9 +75,7 @@ public class Example_39 {
         point.setShape(Point.INVISIBLE);
         path2.add(point);
 
-
         List<Point> path3 = new ArrayList<Point>();
-
         point = new Point();
         point.setDrawPath();
         point.setX(0f);
@@ -104,9 +93,7 @@ public class Example_39 {
         point.setShape(Point.INVISIBLE);
         path3.add(point);
 
-
         List<Point> path4 = new ArrayList<Point>();
-
         point = new Point();
         point.setDrawPath();
         point.setX(0f);
@@ -132,12 +119,10 @@ public class Example_39 {
         return chartData;
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_39();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_39 => " + (t1 - t0));
     }
-
 }   // End of Example_39.java

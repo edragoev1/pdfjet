@@ -2,30 +2,23 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_45.java
  *
  */
 public class Example_45 {
-
     public Example_45() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_45.pdf")),
                         Compliance.PDF_UA);
         pdf.setLanguage("en-US");
 
-        Font f1 = new Font(pdf, new FileInputStream(
-            "fonts/Droid/DroidSerif-Regular.ttf.stream"), Font.STREAM);
-        Font f2 = new Font(pdf, new FileInputStream(
-            "fonts/Droid/DroidSerif-Italic.ttf.stream"), Font.STREAM);
-        Font f3 = new Font(pdf, new FileInputStream(
-            "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream"), Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream");
 
         f1.setSize(14f);
         f2.setSize(14f);
@@ -93,5 +86,4 @@ public class Example_45 {
         long t1 = System.currentTimeMillis();
         System.out.println("Example_45 => " + (t1 - t0));
     }
-
 }   // End of Example_45.java

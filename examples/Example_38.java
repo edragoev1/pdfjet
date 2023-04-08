@@ -4,12 +4,9 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.util.LinkedList;
 import java.util.List;
-
 import com.pdfjet.*;
 
-
 public class Example_38 {
-
     private Font font;
 
     public Example_38() throws Exception {
@@ -29,7 +26,6 @@ public class Example_38 {
 
         pdf.complete();
     }
-
 
     /**
      * This will return a 10x10 matrix. The HTML-Like table will be like:
@@ -102,9 +98,7 @@ public class Example_38 {
      * @throws Exception
      */
     private List<List<Cell>> createTableData() throws Exception {
-
         List<List<Cell>> rows = new LinkedList<List<Cell>>();
-
         for (int i = 0; i < 10; i++) {
             List<Cell> row = new LinkedList<Cell>();
             switch (i) {
@@ -235,7 +229,6 @@ public class Example_38 {
         return rows;
     }
 
-
     private Cell getCell(
             Font font,
             int colSpan,
@@ -254,12 +247,10 @@ public class Example_38 {
         return cell;
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_38();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_38 => " + (t1 - t0));
     }
-
 }   // End of Example_38.java
