@@ -58,5 +58,19 @@ public class Content {
         }
         return ms.ToArray();
     }
+
+    public static byte[] OfInputStream(BufferedStream stream) {
+        MemoryStream ms = new MemoryStream();
+        try {
+            byte[] buffer = new byte[4096];
+            int count = 0;
+            while ((count = stream.Read(buffer, 0, buffer.Length)) > 0) {
+                ms.Write(buffer, 0, count);
+            }
+        } finally {
+            stream.Close();
+        }
+        return ms.ToArray();
+    }
 }   // End of Content.cs
 }   // End of namespace PDFjet.NET
