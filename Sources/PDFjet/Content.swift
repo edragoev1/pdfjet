@@ -30,4 +30,8 @@ public class Content {
     public static func ofTextFile( _ fileName: String) throws -> String {
         return try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
     }
+
+    public static func ofTextFile( _ fileName: String) throws -> [UInt8] {
+        return [UInt8]()
+    }
 }   // End of Content.swift
