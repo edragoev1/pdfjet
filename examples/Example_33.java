@@ -54,6 +54,7 @@ public class Example_33 {
 
         icon = new SVGImage("images/svg-test/menu-icon-close.svg");
         icon.setLocation(xy[0], 670);
+        icon.setScale(2.0f);
         xy = icon.drawOn(page);
 
         icon = new SVGImage("images/svg-test/europe.svg");

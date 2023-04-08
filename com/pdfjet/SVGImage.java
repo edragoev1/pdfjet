@@ -201,7 +201,16 @@ public class SVGImage {
     }
 
     public void setScale(float factor) {
-        // TODO:
+        for (SVGPath path : paths) {
+            for (PathOp op : path.operations) {
+                op.x1 *= factor;
+                op.y1 *= factor;
+                op.x2 *= factor;
+                op.y2 *= factor;
+                op.x *= factor;
+                op.y *= factor;
+            }
+        }
     }
 
     public float getWidth() {
