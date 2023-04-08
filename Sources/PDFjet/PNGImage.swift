@@ -55,7 +55,7 @@ public class PNGImage {
      *
      */
     public init(_ stream: InputStream) throws {
-        var buffer = readPNG(stream)
+        var buffer = try readPNG(stream)
         let chunks = try processPNG(&buffer)
         for chunk in chunks {
             let chunkType = String(bytes: chunk.type!, encoding: .utf8)!
@@ -212,17 +212,8 @@ public class PNGImage {
     }
 
 
-    private func readPNG(_ stream: InputStream) -> [UInt8] {
-        var contents = [UInt8]()
-        stream.open()
-        var buffer = [UInt8](repeating: 0, count: 4096)
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buffer, maxLength: buffer.count)
-            if count > 0 {
-                contents.append(contentsOf: buffer[0..<count])
-            }
-        }
-        stream.close()
+    private func readPNG(_ stream: InputStream) throws -> [UInt8] {
+        let contents = try Content.ofInputStream(stream)
         if contents[0] == 0x89 &&
                 contents[1] == 0x50 &&
                 contents[2] == 0x4E &&

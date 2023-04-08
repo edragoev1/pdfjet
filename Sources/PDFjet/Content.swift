@@ -47,4 +47,20 @@ public class Content {
         stream.close()
         return content
     }
+
+    public static func ofInputStream( _ stream: InputStream) throws -> [UInt8] {
+        var content = [UInt8]()
+        stream.open()
+        let bufferSize = 4096
+        var buffer = [UInt8](repeating: 0, count: bufferSize)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: bufferSize)
+            if (read == 0) {
+                break
+            }
+            content.append(contentsOf: buffer[0..<read])
+        }
+        stream.close()
+        return content
+    }
 }   // End of Content.swift
