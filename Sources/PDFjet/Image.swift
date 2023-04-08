@@ -92,7 +92,7 @@ public class Image : Drawable {
             _ imageType: ImageType) throws {
         stream.open()
         if imageType == ImageType.JPG {
-            let jpg = JPGImage(stream)
+            let jpg = try JPGImage(stream)
             w = Float(jpg.getWidth())
             h = Float(jpg.getHeight())
             if jpg.getColorComponents() == 1 {
@@ -149,7 +149,7 @@ public class Image : Drawable {
         var data: [UInt8]
         var alpha = [UInt8]()
         if imageType == ImageType.JPG {
-            let jpg = JPGImage(stream)
+            let jpg = try JPGImage(stream)
             data = jpg.getData()
             w = Float(jpg.getWidth())
             h = Float(jpg.getHeight())

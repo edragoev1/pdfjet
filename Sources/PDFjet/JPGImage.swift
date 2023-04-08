@@ -64,17 +64,8 @@ class JPGImage {
     var index = 0
 
 
-    public init(_ stream: InputStream) {
-        self.data = [UInt8]()
-        var buffer = [UInt8](repeating: 0, count: 4096)
-        stream.open()
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buffer, maxLength: buffer.count)
-            if count > 0 {
-                data.append(contentsOf: buffer[0..<count])
-            }
-        }
-        stream.close()
+    public init(_ stream: InputStream) throws {
+        self.data = try Content.ofInputStream(stream)
         processImage(&data)
     }
 
