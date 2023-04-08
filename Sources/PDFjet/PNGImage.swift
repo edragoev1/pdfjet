@@ -815,46 +815,4 @@ public class PNGImage {
             }
         }
     }
-
-
-/*
-    public static func main(String[] args) throws Exception {
-        var fis = FileInputStream(args[0])
-        var png = PNGImage(fis)
-        var image = png.getData()
-        var alpha = png.getAlpha()
-        var w = png.getWidth()
-        var h = png.getHeight()
-        var c = png.getColorType()
-        fis.close()
-
-        var fileName = args[0].substring(0, args[0].lastIndexOf("."))
-        var fos = FileOutputStream(fileName + ".jet")
-        var bos = BufferedOutputStream(fos)
-        writeInt(w, bos)    // Width
-        writeInt(h, bos)    // Height
-        bos.write(c)        // Color Space
-        if alpha != nil {
-            bos.write(1)
-            writeInt(alpha.length, bos)
-            bos.write(alpha)
-        }
-        else {
-            bos.write(0)
-        }
-        writeInt(image.length, bos)
-        bos.write(image)
-        bos.flush()
-        bos.close()
-    }
-
-
-    private static func writeInt(int i, OutputStream os) throws IOException {
-        os.write((i >> 24) & 0xff)
-        os.write((i >> 16) & 0xff)
-        os.write((i >>  8) & 0xff)
-        os.write((i >>  0) & 0xff)
-    }
-*/
-
 }   // End of PNGImage.swift
