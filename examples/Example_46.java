@@ -14,17 +14,9 @@ public class Example_46 {
                         new FileOutputStream("Example_46.pdf")),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf");
-        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf");
-/*
         Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
         Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream");
-*/
-        // Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Bold.otf");
-        // Font f2 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf");
-        // Font f3 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf");
 
         f1.setSize(14f);
         f2.setSize(14f);
