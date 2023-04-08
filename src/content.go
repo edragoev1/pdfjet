@@ -24,6 +24,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-func OfTextFile(fileName string) string {
-	return ""
+import (
+	"io/ioutil"
+	"log"
+	"os"
+)
+
+func ContentOfTextFile(fileName string) string {
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	content, err := ioutil.ReadAll(file)
+	return string(content)
 }
