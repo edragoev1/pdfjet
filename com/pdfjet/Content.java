@@ -28,10 +28,10 @@ import java.io.*;
 public class Content {
     public static String ofTextFile(String fileName) throws IOException {
         StringBuilder sb = new StringBuilder(2048);
-        FileInputStream stream = null;
+        InputStream stream = null;
         Reader reader = null;
         try {
-            stream = new FileInputStream(fileName);
+            stream = new BufferedInputStream(new FileInputStream(fileName));
             reader = new InputStreamReader(stream, "UTF-8");
             int ch = 0;
             while ((ch = reader.read()) != -1) {
@@ -45,8 +45,18 @@ public class Content {
     }
 
     public static byte[] ofBinaryFile(String fileName) throws Exception {
-        FileInputStream stream = new FileInputStream(fileName);
-        stream.close();
-        return new byte[] {};
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        InputStream stream = null;
+        try {
+            stream = new BufferedInputStream(new FileInputStream(fileName));
+            byte[] buffer = new byte[2048];
+            int bytesRead = 0;
+            while ((bytesRead = stream.read(buffer, 0, buffer.length)) > 0) {
+                baos.write(buffer, 0, bytesRead);
+            }
+        } finally {
+            stream.close();
+        }
+        return baos.toByteArray();
     }
 }
