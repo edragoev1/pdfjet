@@ -114,9 +114,9 @@ public class OptimizeOTF {
         command.add("--deflate");
         command.add("--i100");
         command.add(fileName + ".tmp");
-        final var process = new ProcessBuilder(command).start();
-        final var input = process.getInputStream();
-        final var buf = new byte[4096];
+        final Process process = new ProcessBuilder(command).start();
+        final InputStream input = process.getInputStream();
+        final byte[] buf = new byte[4096];
         ByteArrayOutputStream buf5 = new ByteArrayOutputStream(0xFFFF);
         buf5.write(0x58);   // These are the correct values for
         buf5.write(0x85);   // CMF and FLG according to Microsoft
