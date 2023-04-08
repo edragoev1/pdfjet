@@ -39,9 +39,7 @@ public class OptimizeOTF {
      * @throws Exception if the font file is not found
      */
     private static void convertFontFile(String fileName) throws Exception {
-        FileInputStream fis = new FileInputStream(fileName);
-        com.pdfjet.OTF otf = new com.pdfjet.OTF(fis);
-        fis.close();
+        OTF otf = new OTF(new FileInputStream(fileName));
 
         FileOutputStream fos = new FileOutputStream(fileName + ".stream");
 
