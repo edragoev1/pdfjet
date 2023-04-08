@@ -8,7 +8,7 @@ import Foundation
 class OpenTypeFont {
     internal static func register(
             _ pdf: PDF, _ font: Font, _ stream: InputStream) throws {
-        let otf = OTF(stream)
+        let otf = try OTF(stream)
 
         font.name = otf.fontName!
         font.firstChar = otf.firstChar!
