@@ -2,21 +2,19 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
 
 /**
  * Example_47.java
  */
 public class Example_47 {
-
     public Example_47() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_47.pdf")));
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream");
+        Font f2 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-It.otf.stream");
 
         f1.setSize(12f);
         f2.setSize(12f);
