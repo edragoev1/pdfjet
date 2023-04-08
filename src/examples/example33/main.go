@@ -58,16 +58,13 @@ func Example33() {
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
-	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/test-QQ.svg")
-	image2.SetLocation(xy[0], 670.0)
-	xy = image2.DrawOn(page)
-
 	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/menu-icon.svg")
 	image2.SetLocation(xy[0], 670.0)
 	xy = image2.DrawOn(page)
 
 	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/menu-icon-close.svg")
 	image2.SetLocation(xy[0], 670.0)
+	image2.ScaleBy(2.0)
 	image2.DrawOn(page)
 
 	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/europe.svg")

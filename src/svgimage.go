@@ -240,6 +240,19 @@ func getColor(colorMap map[string]int32, colorName string) int32 {
 	return int32(color.Transparent)
 }
 
+func (image *SVGImage) ScaleBy(factor float32) {
+	for _, path := range image.paths {
+		for _, op := range path.operations {
+			op.x1 *= factor
+			op.y1 *= factor
+			op.x2 *= factor
+			op.y2 *= factor
+			op.x *= factor
+			op.y *= factor
+		}
+	}
+}
+
 func (image *SVGImage) SetLocation(x, y float32) {
 	image.x = x
 	image.y = y
