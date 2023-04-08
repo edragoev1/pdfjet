@@ -54,6 +54,7 @@ public class Example_33 {
 
         icon = new SVGImage("images/svg-test/menu-icon-close.svg");
         icon.SetLocation(xy[0], 670);
+        icon.SetScale(2.0f);
         xy = icon.DrawOn(page);
 
         icon = new SVGImage("images/svg-test/europe.svg");

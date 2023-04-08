@@ -221,8 +221,17 @@ public class SVGImage {
         return this;
     }
 
-    public void setScale(float w) {
-        // TODO:
+    public void SetScale(float factor) {
+        foreach (SVGPath path in paths) {
+            foreach (PathOp op in path.operations) {
+                op.x1 *= factor;
+                op.y1 *= factor;
+                op.x2 *= factor;
+                op.y2 *= factor;
+                op.x *= factor;
+                op.y *= factor;
+            }
+        }
     }
 
     public float getWidth() {
