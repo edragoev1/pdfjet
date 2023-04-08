@@ -24,7 +24,7 @@ SOFTWARE.
 import Foundation
 
 ///
-///
+/// Some really useful helper methods.
 ///
 public class Content {
     public static func ofTextFile( _ fileName: String) throws -> String {
@@ -32,18 +32,15 @@ public class Content {
     }
 
     public static func ofTextFile( _ fileName: String) throws -> [UInt8] {
+        var content = [UInt8]()
         let stream = InputStream(fileAtPath: fileName)!
         stream.open()
-        var buffer = [UInt8]()
-        var buf = [UInt8](repeating: 0, count: 4096)
-        stream.open()
+        var buffer = [UInt8](repeating: 0, count: 4096)
         while stream.hasBytesAvailable {
-            let count = stream.read(&buf, maxLength: buf.count)
-            if count > 0 {
-                buffer.append(contentsOf: buf[0..<count])
-            }
+            let count = stream.read(&buffer, maxLength: buffer.count)
+            content.append(contentsOf: buffer[0..<count])
         }
         stream.close()
-        return buffer
+        return content
     }
 }   // End of Content.swift
