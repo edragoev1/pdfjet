@@ -200,7 +200,7 @@ public class SVGImage {
         return this;
     }
 
-    public void setScale(float factor) {
+    public void scaleBy(float factor) {
         for (SVGPath path : paths) {
             for (PathOp op : path.operations) {
                 op.x1 *= factor;
