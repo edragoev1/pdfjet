@@ -27,17 +27,16 @@ import java.io.*;
 
 public class Content {
     public static String ofTextFile(String fileName) throws IOException {
-        FileInputStream stream = new FileInputStream(fileName);
         StringBuilder sb = new StringBuilder(2048);
+        FileInputStream stream = null;
         Reader reader = null;
         try {
+            stream = new FileInputStream(fileName);
             reader = new InputStreamReader(stream, "UTF-8");
-            int c = 0;
-            while ((c = reader.read()) != -1) {
-                sb.append((char) c);
+            int ch = 0;
+            while ((ch = reader.read()) != -1) {
+                sb.append((char) ch);
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         } finally {
             reader.close();
             stream.close();
@@ -45,7 +44,9 @@ public class Content {
         return sb.toString();
     }
 
-    public static byte[] ofBinaryFile(String fileName) {
+    public static byte[] ofBinaryFile(String fileName) throws Exception {
+        FileInputStream stream = new FileInputStream(fileName);
+        stream.close();
         return new byte[] {};
     }
 }
