@@ -1,5 +1,5 @@
 /**
- *  Content.java
+ *  Content.cs
  *
 Copyright 2023 Innovatics Inc.
 
@@ -21,42 +21,40 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package com.pdfjet;
+using System;
+using System.IO;
+using System.Text;
 
-import java.io.*;
-
+namespace PDFjet.NET {
 public class Content {
-    public static String ofTextFile(String fileName) throws IOException {
-        StringBuilder sb = new StringBuilder(4096);
-        InputStream stream = null;
-        Reader reader = null;
-        try {
-            stream = new BufferedInputStream(new FileInputStream(fileName));
-            reader = new InputStreamReader(stream, "UTF-8");
-            int ch = 0;
-            while ((ch = reader.read()) != -1) {
-                sb.append((char) ch);
-            }
-        } finally {
-            reader.close();
-            stream.close();
+    public static String OfTextFile(String fileName) {
+        StringBuilder sb = new StringBuilder(2048);
+        BufferedStream stream = new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read));
+        StreamReader reader = new StreamReader(stream);
+        char[] buffer = new char[4096];
+        int count = 0;
+        while ((count = reader.Read(buffer, 0, buffer.Length)) > 0) {
+            sb.Append(buffer, 0, count);
         }
-        return sb.toString();
+        reader.Close();
+        stream.Close();
+        return sb.ToString();
     }
 
-    public static byte[] ofBinaryFile(String fileName) throws Exception {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream stream = null;
+    public static byte[] OfBinaryFile(String fileName) {
+        MemoryStream ms = new MemoryStream();
+        BufferedStream stream = null;
         try {
-            stream = new BufferedInputStream(new FileInputStream(fileName));
+            stream = new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read));
             byte[] buffer = new byte[4096];
             int count = 0;
-            while ((count = stream.read(buffer, 0, buffer.length)) > 0) {
-                baos.write(buffer, 0, count);
+            while ((count = stream.Read(buffer, 0, buffer.Length)) > 0) {
+                ms.Write(buffer, 0, count);
             }
         } finally {
-            stream.close();
+            stream.Close();
         }
-        return baos.toByteArray();
+        return ms.ToArray();
     }
-}
+}   // End of Content.cs
+}   // End of namespace PDFjet.NET
