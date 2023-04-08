@@ -52,22 +52,11 @@ public class EmbeddedFile {
             _ stream: InputStream,
             _ compress: Bool) throws {
         self.fileName = fileName
-
-        var baos = [UInt8]()
-        var buf = [UInt8](repeating: 0, count: 4096)
-        stream.open()
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buf, maxLength: buf.count)
-            if count > 0 {
-                baos.append(contentsOf: buf[0..<count])
-            }
-        }
-        stream.close()
-
+        var baos = try Content.ofInputStream(stream)
         if compress {
-            buf = baos
-            baos = [UInt8]()
-            _ = LZWEncode(&baos, &buf)
+            var buf = [UInt8]()
+            _ = LZWEncode(&buf, &baos)
+            baos = buf
         }
 
         pdf.newobj()

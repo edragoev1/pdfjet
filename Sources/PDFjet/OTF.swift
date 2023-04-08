@@ -60,18 +60,7 @@ class OTF {
 
     var unicodeToGID = [Int](repeating: 0, count: 0x10000)
 
-
     init(_ stream: InputStream) throws {
-        // stream.open()
-        // var buffer = [UInt8](repeating: 0, count: 4096)
-        // while stream.hasBytesAvailable {
-        //     let count = stream.read(&buffer, maxLength: buffer.count)
-        //     if count > 0 {
-        //         buf.append(contentsOf: buffer[0..<count])
-        //     }
-        // }
-        // stream.close()
-
         buf = try Content.ofInputStream(stream)
 
         // Extract OTF metadata
