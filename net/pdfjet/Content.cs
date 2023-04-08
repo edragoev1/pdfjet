@@ -29,11 +29,9 @@ namespace PDFjet.NET {
 public class Content {
     public static String OfTextFile(String fileName) {
         StringBuilder sb = new StringBuilder(2048);
-        BufferedStream stream = null;
         StreamReader reader = null;
         try {
-            stream = new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read));
-            reader = new StreamReader(stream);
+            reader = new StreamReader(fileName);
             char[] buffer = new char[4096];
             int count = 0;
             while ((count = reader.Read(buffer, 0, buffer.Length)) > 0) {
@@ -41,7 +39,6 @@ public class Content {
             }
         } finally {
             reader.Close();
-            stream.Close();
         }
         return sb.ToString();
     }
