@@ -110,7 +110,7 @@ public class OptimizeOTF {
         fos5.write(buf3, 0, buf3.length);
         fos5.close();
         final List<String> command = new ArrayList<String>();
-        command.add("util/zopfli");
+        command.add("util/zopfli/zopfli");
         command.add("-c");
         command.add("--deflate");
         command.add("--i100");
