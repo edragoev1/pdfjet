@@ -105,7 +105,6 @@ public class OptimizeOTF {
         }
 
 
-
         BufferedOutputStream fos5 =
                 new BufferedOutputStream(new FileOutputStream(fileName + ".tmp"));
         fos5.write(buf3, 0, buf3.length);
@@ -126,10 +125,10 @@ public class OptimizeOTF {
         while ((len = input.read(buf)) != -1) {
             buf5.write(buf, 0, len);
         }
-        System.out.println(buf5.size());
         writeInt32(buf3.length, fos);   // Uncompressed font size
         writeInt32(buf5.size(), fos);   // Compressed font size
         buf5.writeTo(fos);
+        new File(fileName + ".tmp").delete();
 
 
 
