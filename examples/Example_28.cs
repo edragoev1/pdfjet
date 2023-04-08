@@ -41,7 +41,7 @@ public class Example_28 {
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         StreamReader reader = new StreamReader(
-                new FileStream("data/report.csv", FileMode.Open));
+                new FileStream("data/report.csv", FileMode.Open, FileAccess.Read));
 
         float y = 40f;
         String str = null;

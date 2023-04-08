@@ -41,7 +41,7 @@ public class Example_04 {
         float x_pos = 100f;
         float y_pos = 100f;
         StreamReader reader = new StreamReader(
-                new FileStream(fileName, FileMode.Open));
+                new FileStream(fileName, FileMode.Open, FileAccess.Read));
         TextLine text = new TextLine(f1);
         String line = null;
         while ((line = reader.ReadLine()) != null) {

@@ -60,7 +60,7 @@ class Example_01 {
         Paragraph paragraph = null;
 
         StreamReader reader = new StreamReader(
-                new FileStream("data/LCG.txt", FileMode.Open));
+                new FileStream("data/LCG.txt", FileMode.Open, FileAccess.Read));
         int i = 0;
         String line;
         while ((line = reader.ReadLine()) != null) {
@@ -111,7 +111,7 @@ class Example_01 {
         paragraphs = new List<Paragraph>();
 
         reader = new StreamReader(
-                new FileStream("data/CJK.txt", FileMode.Open));
+                new FileStream("data/CJK.txt", FileMode.Open, FileAccess.Read));
 
         while ((line = reader.ReadLine()) != null) {
             if (line.Equals("")) {

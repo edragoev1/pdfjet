@@ -24,7 +24,7 @@ public class Example_13 {
 
         List<List<Cell>> tableData = new List<List<Cell>>();
         StreamReader reader = new StreamReader(
-                new FileStream("data/winter-2009.txt", FileMode.Open));
+                new FileStream("data/winter-2009.txt", FileMode.Open, FileAccess.Read));
         String line;
         while ((line = reader.ReadLine()) != null) {
             List<Cell> row = new List<Cell>();
