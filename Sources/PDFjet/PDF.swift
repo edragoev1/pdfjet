@@ -1166,17 +1166,7 @@ public class PDF {
     /// - Returns: [PDFobj] the list of PDF objects.
     ///
     public func read(from stream: InputStream) throws -> [PDFobj] {
-
-        var buffer1 = [UInt8]()
-        var buffer2 = [UInt8](repeating: 0, count: 4096)
-        stream.open()
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buffer2, maxLength: buffer2.count)
-            if count > 0 {
-                buffer1.append(contentsOf:  buffer2[0..<count])
-            }
-        }
-        stream.close()
+        var buffer1 = try Content.ofInputStream(stream)
 
         var objects1 = [PDFobj]()
         let xref = getStartXRef(&buffer1)
