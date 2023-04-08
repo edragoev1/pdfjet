@@ -29,7 +29,6 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"strings"
 	"unicode/utf16"
@@ -78,7 +77,7 @@ type OTF struct {
 // NewOTF is the constructor for TTF and OTF fonts.
 func NewOTF(reader io.Reader) *OTF {
 	otf := new(OTF)
-	buf, err := ioutil.ReadAll(reader)
+	buf, err := io.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
 	}

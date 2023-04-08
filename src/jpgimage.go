@@ -41,7 +41,6 @@ package pdfjet
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 )
 
@@ -74,7 +73,7 @@ const (
 // NewJPGImage is the constructor.
 func NewJPGImage(reader io.Reader) *JPGImage {
 	image := new(JPGImage)
-	buf, err := ioutil.ReadAll(reader)
+	buf, err := io.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
 	}

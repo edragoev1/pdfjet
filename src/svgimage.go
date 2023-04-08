@@ -27,7 +27,6 @@ SOFTWARE.
 import (
 	"bufio"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -71,7 +70,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	colorMap := NewColorMap()
 	image.paths = make([]*SVGPath, 0)
 	var path *SVGPath
-	buffer, err := ioutil.ReadAll(reader)
+	buffer, err := io.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
 	}

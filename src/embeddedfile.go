@@ -29,7 +29,6 @@ import (
 	"bytes"
 	"compress/zlib"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -58,7 +57,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	file := new(EmbeddedFile)
 	file.fileName = fileName
 
-	buf, err := ioutil.ReadAll(reader)
+	buf, err := io.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -25,12 +25,21 @@ SOFTWARE.
 */
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 )
 
-func ContentOfTextFile(fileName string) string {
+type Content struct {
+	text string
+}
+
+func NewContent() *Content {
+	content := new(Content)
+	return content
+}
+
+func (content *Content) OfTextFile(fileName string) string {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -40,6 +49,6 @@ func ContentOfTextFile(fileName string) string {
 			log.Fatal(err)
 		}
 	}()
-	content, err := ioutil.ReadAll(file)
-	return string(content)
+	text, err := io.ReadAll(file)
+	return string(text)
 }
