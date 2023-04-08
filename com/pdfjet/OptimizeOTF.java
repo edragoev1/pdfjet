@@ -129,7 +129,6 @@ public class OptimizeOTF {
         buf5.writeTo(fos);
         new File(fileName + ".tmp").delete();
 
-
         // Original code that does not depend on zopfli
         // ByteArrayOutputStream buf4 = new ByteArrayOutputStream(0xFFFF);
         // DeflaterOutputStream dos2 =
