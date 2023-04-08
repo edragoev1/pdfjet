@@ -56,8 +56,8 @@ public class SVGImage {
      * @param filePath the file path.
      * @throws Exception if exception occurred.
      */
-    public SVGImage(String fontPath) throws Exception {
-        this(new BufferedInputStream(new FileInputStream(fontPath)));
+    public SVGImage(String filePath) throws Exception {
+        this(new BufferedInputStream(new FileInputStream(filePath)));
     }
 
     /**

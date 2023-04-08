@@ -155,7 +155,7 @@ public class Font {
      *  Please see Example_04.
      *
      *  @param pdf the PDF to add this font to.
-     *  @param fontName the font name. Please see Example_04.
+     *  @param font the CJK font. Please see Example_04.
      *  @throws Exception  If an input or output exception occurred
      */
     public Font(PDF pdf, CJKFont font) throws Exception {
