@@ -33,9 +33,7 @@ using System.Text;
 namespace PDFjet.NET {
 public class OptimizeOTF {
     private static void ConvertFontFile(String fileName) {
-        FileStream fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        OTF otf = new OTF(fis);
-        fis.Close();
+        OTF otf = new OTF(new FileStream(fileName, FileMode.Open, FileAccess.Read));
 
         FileStream fos = new FileStream(fileName + ".stream", FileMode.Create);
 
