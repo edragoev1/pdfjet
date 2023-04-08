@@ -39,7 +39,7 @@ func NewContent() *Content {
 	return content
 }
 
-func (content *Content) OfTextFile(fileName string) string {
+func OfTextFile(fileName string) string {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
