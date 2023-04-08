@@ -3,7 +3,6 @@ import PDFjet
 
 /**
  *  Example_07.swift
- *
  */
 public class Example_07 {
     public init() throws {
@@ -13,12 +12,9 @@ public class Example_07 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_UA)
         pdf.setTitle("PDF/UA compliant PDF")
 
-        var page = Page(pdf, A4.LANDSCAPE)
+        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")!
 
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
-                Font.STREAM)
+        var page = Page(pdf, A4.LANDSCAPE)
 
         f1.setSize(72.0)
         try page.addWatermark(f1, "This is a Draft")

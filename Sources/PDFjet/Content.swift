@@ -32,6 +32,7 @@ public class Content {
     }
 
     public static func ofTextFile( _ fileName: String) throws -> [UInt8] {
+//        let file = Open()
         return [UInt8]()
     }
 }   // End of Content.swift
