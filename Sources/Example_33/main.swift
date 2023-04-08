@@ -52,6 +52,7 @@ public class Example_33 {
 
         icon = SVGImage(fileAtPath: "images/svg-test/menu-icon-close.svg")
         icon.setLocation(xy[0], 670.0)
+        icon.scaleBy(2.0)
         xy = icon.drawOn(page)
 
         icon = SVGImage(stream: InputStream(fileAtPath: "images/svg-test/europe.svg")!)

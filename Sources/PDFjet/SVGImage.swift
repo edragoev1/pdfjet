@@ -226,8 +226,17 @@ public class SVGImage {
         self.y = y
     }
 
-    public func setScale(_ factor: Float) {
-        // TODO:
+    public func scaleBy(_ factor: Float) {
+        for path in paths! {
+            for op in path.operations! {
+                op.x1 *= factor
+                op.y1 *= factor
+                op.x2 *= factor
+                op.y2 *= factor
+                op.x *= factor
+                op.y *= factor
+            }
+        }
     }
 
     public func getPenWidth() -> Float {
