@@ -103,7 +103,7 @@ public class Example_73 {
         box.setSize(20.0, 20.0)
         box.drawOn(page)
 
-        let text = "保健所によると、女性は１３日に旅行先のタイから札幌に戻り、１６日午後５～８時ごろ同店を訪れ、帰宅後に発熱などの症状 が出て、２３日に医療機関ではしかと診断された。はしかのウイルスは発症日の１日前から感染者の呼吸などから放出され、本人がいなくなっても、２時間>程度空気中に漂い、空気感染する。保健所は１６日午後５～１１時に同店を訪れた人に、発熱などの異常が出た場合、早期にマスクをして医療機関を受診す>るよう呼びかけている。（本郷由美子）"
+        let text = try Content.ofTextFile("data/chinese-text.txt")
 
         textBox = TextBox(f1)
         textBox.setFallbackFont(f2)
@@ -144,7 +144,6 @@ public class Example_73 {
 
         pdf.complete()
     }
-
 }   // End of Example_73.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

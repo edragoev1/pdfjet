@@ -27,19 +27,7 @@ import Foundation
 ///
 ///
 public class Content {
-    public static func ofTextFile( _ fileName: String) -> String {
-        var buffer = ""
-        var buf = [UInt8](repeating: 0, count: 4096)
-        let stream = InputStream(fileAtPath: fileName)!
-        stream.read(&buf, maxLength: buf.count)
-        stream.close()
-        return buffer
+    public static func ofTextFile( _ fileName: String) throws -> String {
+        return try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
     }
-
-
-        //     var buf = [UInt8](repeating: 0, count: length)
-        // if stream.read(&buf, maxLength: buf.count) == buf.count {
-        //     return buf
-        // }
-
 }   // End of Content.swift
