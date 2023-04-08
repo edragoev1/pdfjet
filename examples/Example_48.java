@@ -7,17 +7,13 @@ import com.pdfjet.*;
  *  Example_48.java
  */
 public class Example_48 {
-
     public Example_48() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_48.pdf")),
                         Compliance.PDF_UA);
 
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream");
         f1.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -105,12 +101,10 @@ public class Example_48 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_48();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_48 => " + (t1 - t0));
     }
-
 }   // End of Example_48.java
