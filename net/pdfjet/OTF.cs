@@ -55,14 +55,7 @@ public class OTF {
     private int index = 0;
 
     public OTF(Stream stream) {
-        this.baos = new MemoryStream();
-        byte[] buffer = new byte[0x10000];
-        int count;
-        while ((count = stream.Read(buffer, 0, buffer.Length)) > 0) {
-            baos.Write(buffer, 0, count);
-        }
-        stream.Dispose();
-        buf = baos.ToArray();
+        buf = Contents.OfInputStream(stream);
 
         // Extract OTF metadata
         long version = ReadUInt32();
@@ -70,8 +63,7 @@ public class OTF {
             version == 0x74727565L ||   // Mac TTF
             version == 0x4F54544FL) {   // CFF OTF
             // We should be able to read this font
-        }
-        else {
+        } else {
             throw new Exception(
                     "OTF version == " + version + " is not supported.");
         }
@@ -172,15 +164,13 @@ public class OTF {
                     macFontInfo.Append(str);
                     macFontInfo.Append('\n');
                 }
-            }
-            else if (platformID == 3 && encodingID == 1 && languageID == 0x409) {
+            } else if (platformID == 3 && encodingID == 1 && languageID == 0x409) {
                 // Windows
                 String str = Encoding.BigEndianUnicode.GetString(
                         buf, table.offset + stringOffset + offset, length);
                 if (nameID == 6) {
                     fontName = str;
-                }
-                else {
+                } else {
                     winFontInfo.Append(str);
                     winFontInfo.Append('\n');
                 }
@@ -257,8 +247,7 @@ public class OTF {
                 int offset = idRangeOffset[seg];
                 if (offset == 0) {
                     gid = (idDelta[seg] + ch) % 65536;
-                }
-                else {
+                } else {
                     offset /= 2;
                     offset -= segCount - seg;
                     gid = glyphIdArray[offset + (ch - startCount[seg])];
@@ -266,11 +255,9 @@ public class OTF {
                         gid += idDelta[seg] % 65536;
                     }
                 }
-
                 if (gid < advanceWidth.Length) {
                     glyphWidth[ch] = advanceWidth[gid];
                 }
-
                 unicodeToGID[ch] = gid;
             }
         }
@@ -332,7 +319,6 @@ public class OTF {
 
 }   // End of OTF.cs
 }   // End of namespace PDFjet.NET
-
 
 class FontTable {
     internal String name;

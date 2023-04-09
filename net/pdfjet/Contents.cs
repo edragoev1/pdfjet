@@ -59,7 +59,7 @@ public class Contents {
         return ms.ToArray();
     }
 
-    public static byte[] OfInputStream(BufferedStream stream) {
+    public static byte[] OfInputStream(Stream stream) {
         MemoryStream ms = new MemoryStream();
         try {
             byte[] buffer = new byte[4096];
