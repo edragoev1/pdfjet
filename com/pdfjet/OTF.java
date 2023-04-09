@@ -29,10 +29,8 @@ import java.util.zip.*;
 
 /**
  * This class parses and extracts the data from TTF and OTF font files.
- * 
  */
 public class OTF {
-
     String fontName;
     String fontInfo;
     ByteArrayOutputStream baos;
@@ -66,15 +64,7 @@ public class OTF {
      * @throws Exception if there is a problem
      */
     public OTF(InputStream stream) throws Exception {
-        this.baos = new ByteArrayOutputStream();
-
-        byte[] buffer = new byte[0x10000];
-        int count;
-        while ((count = stream.read(buffer, 0, buffer.length)) > 0) {
-            baos.write(buffer, 0, count);
-        }
-        stream.close();
-        buf = baos.toByteArray();
+        buf = Contents.ofInputStream(stream);
 
         // Extract OTF metadata
         long version = readUInt32();
@@ -82,8 +72,7 @@ public class OTF {
             version == 0x74727565L ||   // Mac TTF
             version == 0x4F54544FL) {   // CFF OTF
             // We should be able to read this font
-        }
-        else {
+        } else {
             throw new Exception(
                     "OTF version == " + version + " is not supported.");
         }
@@ -269,8 +258,7 @@ public class OTF {
                 int offset = idRangeOffset[seg];
                 if (offset == 0) {
                     gid = (idDelta[seg] + ch) % 65536;
-                }
-                else {
+                } else {
                     offset /= 2;
                     offset -= segCount - seg;
                     gid = glyphIdArray[offset + (ch - startCount[seg])];
@@ -278,11 +266,9 @@ public class OTF {
                         gid += idDelta[seg] % 65536;
                     }
                 }
-
                 if (gid < advanceWidth.length) {
                     glyphWidth[ch] = advanceWidth[gid];
                 }
-
                 unicodeToGID[ch] = gid;
             }
         }
@@ -348,7 +334,6 @@ public class OTF {
         val |= (buf[index++])       & 0x000000FFL;
         return val;
     }
-
 }   // End of OTF.java
 
 

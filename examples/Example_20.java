@@ -2,20 +2,15 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_20.java
- *
  */
 class Example_20 {
-
     public Example_20() throws Exception {
-
-        PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("Example_20.pdf")));
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_20.pdf")));
 
         BufferedInputStream bis = new BufferedInputStream(
                 new FileInputStream("data/testPDFs/PDFjetLogo.pdf"));
@@ -108,12 +103,10 @@ class Example_20 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_20();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_20 => " + (t1 - t0));
     }
-
 }   // End of Example_20.java
