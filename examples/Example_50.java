@@ -13,7 +13,7 @@ class Example_50 {
                 new FileOutputStream("Example_" + fileNumber + ".pdf")));
 
         List<PDFobj> objects = pdf.read(
-                new BufferedInputStream(new FileInputStream("data/testPDFs/" + fileName)));
+                new BufferedInputStream(new FileInputStream(fileName)));
 
         FileInputStream stream = new FileInputStream("images/qrcode.png");
         Image image = new Image(objects, stream, ImageType.PNG);
@@ -176,9 +176,10 @@ class Example_50 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        // new Example_50("50", "rc65-16e.pdf");
-        new Example_50("50", "UniversityPhysicsVol1-WEB.pdf");
-        // new Example_50("50", "NoPredictor.pdf");
+        new Example_50("50", "data/testPDFs/rc65-16e.pdf");
+        // new Example_50("50", "data/testPDFs/NoPredictor.pdf");
+        // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
+        // new Example_50("50", "../../eBooks/PDF32000_2008.pdf");
         long time1 = System.currentTimeMillis();
         System.out.println("Example_50 => " + (time1 - time0));
     }

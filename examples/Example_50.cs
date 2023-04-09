@@ -3,23 +3,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_50.cs
- *
  */
-class Example_50 {
-
+public class Example_50 {
     public Example_50(String fileNumber, String fileName) {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_" + fileNumber + ".pdf", FileMode.Create)));
 
-        List<PDFobj> objects = pdf.Read(new BufferedStream(
-                new FileStream("data/testPDFs/" + fileName, FileMode.Open)));
+        List<PDFobj> objects = pdf.Read(
+                new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)));
 
         Image image = new Image(objects,
                 new BufferedStream(new FileStream(
@@ -157,14 +152,11 @@ class Example_50 {
 
         // Male Checkbox 2
         // XMarkCheckBox(page, 535.5f, 536.5f, 7f);
-
         page.Complete(objects);
-
         pdf.AddObjects(objects);
 
         pdf.Complete();
     }
-
 
     private void XMarkCheckBox(Page page, float x, float y, float diagonal) {
         page.SetPenColor(Color.blue);
@@ -175,7 +167,6 @@ class Example_50 {
         page.LineTo(x + diagonal, y);
         page.StrokePath();
     }
-
 
     private String StripSpacesAndDashes(String str) {
         StringBuilder buf = new StringBuilder();
@@ -188,15 +179,14 @@ class Example_50 {
         return buf.ToString();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_50("50", "rc65-16e.pdf");
-        // new Example_50("50", "PDF32000_2008.pdf");
-        // new Example_50("50", "NoPredictor.pdf");
+        new Example_50("50", "data/testPDFs/rc65-16e.pdf");
+        // new Example_50("50", "data/testPDFs/NoPredictor.pdf");
+        // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
+        // new Example_50("50", "../../eBooks/PDF32000_2008.pdf");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine("Example_50 => " + (time1 - time0));
     }
-
 }   // End of Example_50.cs

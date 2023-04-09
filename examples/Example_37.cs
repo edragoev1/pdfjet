@@ -12,10 +12,11 @@ class Example_37 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_37.pdf", FileMode.Create)));
 
-        FileStream fis = new FileStream("data/testPDFs/wirth.pdf", FileMode.Open);
-        // FileStream fis = new FileStream("data/testPDFs/Smalltalk-and-OO.pdf", FileMode.Open);
-        // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk1.pdf", FileMode.Open);
-        // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk2.pdf", FileMode.Open);
+        // FileStream fis = new FileStream("data/testPDFs/wirth.pdf", FileMode.Open, FileAccess.Read);
+        FileStream fis = new FileStream("../../eBooks/UniversityPhysicsVolume1.pdf", FileMode.Open, FileAccess.Read);
+        // FileStream fis = new FileStream("data/testPDFs/Smalltalk-and-OO.pdf", FileMode.Open, FileAccess.Read);
+        // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk1.pdf", FileMode.Open, FileAccess.Read);
+        // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk2.pdf", FileMode.Open, FileAccess.Read);
         // FileStream fis = new FileStream("data/testPDFs/Greenbook.pdf", FileMode.Open);
         // FileStream fis = new FileStream("data/testPDFs/Bluebook.pdf", FileMode.Open);
         // FileStream fis = new FileStream("data/testPDFs/Orangebook.pdf", FileMode.Open);
@@ -23,8 +24,7 @@ class Example_37 {
         List<PDFobj> objects = pdf.Read(fis);
         fis.Close();
 
-        Font f1 = new Font(
-                objects,
+        Font f1 = new Font(objects,
                 new FileStream("fonts/OpenSans/OpenSans-Regular.ttf.stream",
                 FileMode.Open,
                 FileAccess.Read), Font.STREAM);

@@ -11,7 +11,8 @@ class Example_37 {
     public Example_37() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_37.pdf")));
 
-        BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/wirth.pdf"));
+        // BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/wirth.pdf"));
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream("../../eBooks/UniversityPhysicsVolume1.pdf"));
         // BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/Smalltalk-and-OO.pdf"));
         // BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/InsideSmalltalk1.pdf"));
         // BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/InsideSmalltalk2.pdf"));
