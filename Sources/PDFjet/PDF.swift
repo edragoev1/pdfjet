@@ -1854,7 +1854,7 @@ public class PDF {
                         append(Token.newline)
                     }
                 }
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
+// let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                 if obj.stream != nil {
                     append(obj.stream!)
                     // append("\nendstream\n")
@@ -1864,8 +1864,8 @@ let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                     // append("endobj\n")
                     append(Token.endobj)
                 }
-let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-Swift.print("addObjectsToPDF() => \(time1 - time0)")
+// let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+// Swift.print("addObjectsToPDF() => \(time1 - time0)")
             }
         }
     }
