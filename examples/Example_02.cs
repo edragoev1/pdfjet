@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
 
 /**
@@ -94,5 +93,4 @@ public class Example_02 {
         sw.Stop();
         Console.WriteLine("Example_02 => " + (time1 - time0));
     }
-
 }   // End of Example_02.cs

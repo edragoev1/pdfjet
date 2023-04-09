@@ -2,57 +2,30 @@ using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_27.cs
- *
  */
 public class Example_27 {
-
     public Example_27() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_27.pdf", FileMode.Create)));
 
+        // Thai font
+        Font f1 = new Font(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream");
+        // Latin font
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        // Hebrew font
+        Font f3 = new Font(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream");
+        // Arabic font
+        Font f4 = new Font(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream");
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // Thai font
-        Font f1 = new Font(pdf,
-                new FileStream(
-                        "fonts/Noto/NotoSansThai-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
         f1.SetSize(14f);
-
-        // Latin font
-        Font f2 = new Font(pdf,
-                new FileStream(
-                        "fonts/Droid/DroidSans.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
-        f2.SetSize(12f);
-
-        // Hebrew font
-        Font f3 = new Font(pdf,
-                new FileStream(
-                        "fonts/Noto/NotoSansHebrew-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
-        f3.SetSize(12f);
-
-        // Arabic font
-        Font f4 = new Font(pdf,
-                new FileStream(
-                        "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
+        f2.SetSize(14f);
+        f3.SetSize(14f);
         f4.SetSize(12f);
 
         float x = 50f;
@@ -167,7 +140,6 @@ public class Example_27 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         // Console.WriteLine(Bidi.Reverse("Les Mise\u0301rables"));
         Stopwatch sw = Stopwatch.StartNew();
@@ -177,5 +149,4 @@ public class Example_27 {
         sw.Stop();
         Console.WriteLine("Example_27 => " + (time1 - time0));
     }
-
 }   // End of Example_27.cs

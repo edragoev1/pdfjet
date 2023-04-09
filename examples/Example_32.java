@@ -9,12 +9,10 @@ import com.pdfjet.*;
  */
 public class Example_32 {
     public Example_32() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_32.pdf")));
 
-        Font font = new Font(pdf, new FileInputStream(
-                "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream"), Font.STREAM);
+        Font font = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream");
         font.setSize(8f);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
@@ -51,5 +49,4 @@ public class Example_32 {
         long t1 = System.currentTimeMillis();
         System.out.println("Example_32 => " + (t1 - t0));
     }
-
 }   // End of Example_32.java

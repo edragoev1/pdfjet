@@ -2,18 +2,13 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_14.cs
- *
  */
 public class Example_14 {
-
     public Example_14() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_14.pdf", FileMode.Create)));
 
@@ -40,7 +35,6 @@ public class Example_14 {
                 else {
                     cell = new Cell(f2);
                 }
-
                 // WITH:
                 cell.SetTopPadding(10f);
                 cell.SetBottomPadding(10f);
@@ -63,7 +57,6 @@ public class Example_14 {
                 if (j == 4) {
                     cell.SetBorder(Border.RIGHT, true);
                 }
-
                 if (i == 2 && j == 2) {
                     cell.SetBorder(Border.TOP, true);
                     cell.SetBorder(Border.BOTTOM, true);
@@ -80,7 +73,6 @@ public class Example_14 {
             }
             tableData.Add(row);
         }
-
         table.SetData(tableData);
         table.SetCellBordersWidth(0.2f);
         table.SetLocation(70f, 30f);
@@ -94,7 +86,6 @@ public class Example_14 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -103,5 +94,4 @@ public class Example_14 {
         sw.Stop();
         Console.WriteLine("Example_14 => " + (time1 - time0));
     }
-
 }   // End of Example_14.cs

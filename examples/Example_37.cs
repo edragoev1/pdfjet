@@ -2,18 +2,13 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_37.cs
- *
  */
 class Example_37 {
-
     public Example_37() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_37.pdf", FileMode.Create)));
 
@@ -56,7 +51,6 @@ class Example_37 {
             page.Complete(objects); // The graphics stack is unwinded automatically
         }
         pdf.AddObjects(objects);
-
 /*
         List<Image> images = new List<Image>();
         foreach (PDFobj obj in objects.Values) {
@@ -102,7 +96,6 @@ class Example_37 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -110,5 +103,4 @@ class Example_37 {
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine("Example_37 => " + (time1 - time0));
     }
-
 }   // End of Example_37.cs

@@ -1,32 +1,23 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_31.java
- *
  */
 public class Example_31 {
-
     public Example_31() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_31.pdf")));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        FileInputStream stream = new FileInputStream("fonts/Noto/NotoSansDevanagari-Regular.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-        f1.setSize(15f);
+        Font f1 = new Font(pdf, "fonts/Noto/NotoSansDevanagari-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
 
-        stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        f1.setSize(15f);
         f2.setSize(15f);
 
         StringBuilder buf = new StringBuilder();
@@ -81,12 +72,10 @@ public class Example_31 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_31();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_31 => " + (t1 - t0));
     }
-
 }   // End of Example_31.java

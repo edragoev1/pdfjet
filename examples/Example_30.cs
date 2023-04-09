@@ -1,36 +1,23 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_30.cs
  */
 public class Example_30 {
-
     public Example_30() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_30.pdf", FileMode.Create)));
 
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image1 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/map407.png", FileMode.Open, FileAccess.Read)),
-                ImageType.PNG);
+        Image image1 = new Image(pdf, "images/map407.png");
         image1.SetLocation(10f, 100f);
 
-        Image image2 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/qrcode.png", FileMode.Open, FileAccess.Read)),
-                ImageType.PNG);
+        Image image2 = new Image(pdf, "images/qrcode.png");
         image2.SetLocation(10f, 100f);
-
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -83,7 +70,6 @@ public class Example_30 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -92,5 +78,4 @@ public class Example_30 {
         sw.Stop();
         Console.WriteLine("Example_30 => " + (time1 - time0));
     }
-
 }   // End of Example_30.cs

@@ -2,37 +2,20 @@ using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_28.cs
  *  Example that shows how to use fallback font and the NotoSans symbols font.
  */
 public class Example_28 {
-
     public Example_28() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_28.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, new BufferedStream(
-                new FileStream(
-                        "fonts/Droid/DroidSans.ttf.stream", FileMode.Open, FileAccess.Read)),
-                Font.STREAM);
-
-        Font f2 = new Font(pdf,
-                new FileStream(
-                        "fonts/Droid/DroidSansFallback.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read), Font.STREAM);
-
-        Font f3 = new Font(pdf,
-                new FileStream(
-                        "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read), Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream");
 
         f1.SetSize(11f);
         f2.SetSize(11f);
@@ -129,7 +112,6 @@ public class Example_28 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -138,5 +120,4 @@ public class Example_28 {
         sw.Stop();
         Console.WriteLine("Example_28 => " + (time1 - time0));
     }
-
 }   // End of Example_28.cs

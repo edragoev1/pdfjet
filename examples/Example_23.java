@@ -2,18 +2,13 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_23.java
- *
  */
 public class Example_23 {
-
     public Example_23() throws Exception {
-
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_23.pdf")), Compliance.PDF_UA);
 
@@ -23,22 +18,13 @@ public class Example_23 {
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
 */
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
 
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f3 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
         f3.setSize(7f * 0.583f);
 
-        stream = new FileInputStream("images/mt-map.png");
-        Image image1 = new Image(pdf, stream, ImageType.PNG);
-        stream.close();
+        Image image1 = new Image(pdf, "images/mt-map.png");
         image1.scaleBy(0.75f);
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
@@ -125,9 +111,7 @@ public class Example_23 {
             table.setLocation(50f, 50f);
         }
 
-
         tableData = new ArrayList<List<Cell>>();
-
         row = new ArrayList<Cell>();
         row.add(new Cell(f1));
         row.add(new Cell(f2));
@@ -155,12 +139,10 @@ public class Example_23 {
         textBox.setNoBorders();
 
         tableData.get(0).get(1).setDrawable(textBox);
-
         table.drawOn(page);
 
         pdf.complete();
     }
-
 
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
@@ -168,5 +150,4 @@ public class Example_23 {
         long t1 = System.currentTimeMillis();
         System.out.println("Example_23 => " + (t1 - t0));
     }
-
 }   // End of Example_23.java

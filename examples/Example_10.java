@@ -1,22 +1,13 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_10.java
- *
  */
 public class Example_10 {
-
     public Example_10() throws Exception {
-
-        int rotate = 0;
-        // int rotate = 90;
-        // int rotate = 270;
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_10.pdf")));
@@ -48,6 +39,9 @@ public class Example_10 {
         image1.scaleBy(0.75f);
         image1.drawOn(page);
 
+        int rotate = 0;
+        // int rotate = 90;
+        // int rotate = 270;
         TextColumn column = new TextColumn(rotate);
         column.setSpaceBetweenLines(5.0f);
         column.setSpaceBetweenParagraphs(10.0f);
@@ -158,12 +152,10 @@ public class Example_10 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_10();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_10 => " + (t1 - t0));
     }
-
 }   // End of Example_10.java

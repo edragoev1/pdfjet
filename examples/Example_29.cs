@@ -1,17 +1,13 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_29.cs
  */
 public class Example_29 {
-
     public Example_29() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_29.pdf", FileMode.Create)));
 
@@ -67,7 +63,6 @@ public class Example_29 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -76,5 +71,4 @@ public class Example_29 {
         sw.Stop();
         Console.WriteLine("Example_29 => " + (time1 - time0));
     }
-
 }   // End of Example_29.cs

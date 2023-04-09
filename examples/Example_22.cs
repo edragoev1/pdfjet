@@ -1,29 +1,20 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_22.cs
- *
  */
 public class Example_22 {
-
     public Example_22() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_22.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read), Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
 /*
         PDF pdf = new PDF(new FileStream("Example_22.pdf", FileMode.Create));
-
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 */
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -92,7 +83,6 @@ public class Example_22 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -101,5 +91,4 @@ public class Example_22 {
         sw.Stop();
         Console.WriteLine("Example_22 => " + (time1 - time0));
     }
-
 }   // End of Example_22.cs

@@ -2,48 +2,23 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
 
 /**
  *  Example_15.java
- *
  */
 public class Example_15 {
-
     public Example_15() throws Exception {
-
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_15.pdf")), Compliance.PDF_UA);
         pdf.setTitle("PDF/UA compliant PDF");
 
-/*
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f3 = new Font(pdf, CoreFont.HELVETICA);
-        Font f4 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f5 = new Font(pdf, CoreFont.HELVETICA);
-*/
-
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f3 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f4 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f5 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        // We are trying to prove here that PDFjet will not embed the same font twice
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f4 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f5 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
 
         Page page = new Page(pdf, A4.PORTRAIT);
 
@@ -115,12 +90,10 @@ public class Example_15 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_15();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_15 => " + (t1 - t0));
     }
-
 }   // End of Example_15.java

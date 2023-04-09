@@ -1,33 +1,19 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_22.java
- *
  */
 public class Example_22 {
-
     public Example_22() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_22.pdf")),
                         Compliance.PDF_UA);
 
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-/*
-        PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_22.pdf")));
-
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-*/
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine text = new TextLine(f1, "Page #1 -> Go to Destination #3.");
@@ -85,9 +71,7 @@ public class Example_22 {
         path.placeIn(box);
         path.drawOn(page);
 
-        stream = new FileInputStream("images/up-arrow.png");
-        Image image = new Image(pdf, stream, ImageType.PNG);
-        stream.close();
+        Image image = new Image(pdf, "images/up-arrow.png");
         image.setLocation(40f, 40f);
         image.setGoToAction("dest#0");
         image.drawOn(page);
@@ -95,12 +79,10 @@ public class Example_22 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_22();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_22 => " + (t1 - t0));
     }
-
 }   // End of Example_22.java

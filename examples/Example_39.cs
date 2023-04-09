@@ -2,19 +2,14 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_39.cs
  *  We will draw the American flag using Box, Line and Point objects.
  */
 public class Example_39 {
-
-
     public Example_39() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_39.pdf", FileMode.Create)));
 
@@ -36,18 +31,15 @@ public class Example_39 {
         chart.SetYAxisTitle("");
         chart.SetData(GetData());
         chart.SetDrawYAxisLabels(false);
-
         chart.DrawOn(page);
 
         pdf.Complete();
     }
 
-
     public List<List<Point>> GetData() {
         List<List<Point>> chartData = new List<List<Point>>();
 
         List<Point> path1 = new List<Point>();
-
         Point point = new Point();
         point.SetDrawPath();
         point.SetX(0f);
@@ -65,9 +57,7 @@ public class Example_39 {
         point.SetShape(Point.INVISIBLE);
         path1.Add(point);
 
-
         List<Point> path2 = new List<Point>();
-
         point = new Point();
         point.SetDrawPath();
         point.SetX(0f);
@@ -85,9 +75,7 @@ public class Example_39 {
         point.SetShape(Point.INVISIBLE);
         path2.Add(point);
 
-
         List<Point> path3 = new List<Point>();
-
         point = new Point();
         point.SetDrawPath();
         point.SetX(0f);
@@ -105,9 +93,7 @@ public class Example_39 {
         point.SetShape(Point.INVISIBLE);
         path3.Add(point);
 
-
         List<Point> path4 = new List<Point>();
-
         point = new Point();
         point.SetDrawPath();
         point.SetX(0f);
@@ -133,7 +119,6 @@ public class Example_39 {
         return chartData;
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -142,5 +127,4 @@ public class Example_39 {
         sw.Stop();
         Console.WriteLine("Example_39 => " + (time1 - time0));
     }
-
 }   // End of Example_39.cs

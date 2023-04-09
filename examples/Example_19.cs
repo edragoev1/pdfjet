@@ -1,31 +1,20 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_19.cs
- *
  */
 public class Example_19 {
-
     public Example_19() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_19.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read), Font.STREAM);
-        f1.SetSize(10f);
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
 
-        Font f2 = new Font(pdf, new FileStream(
-                "fonts/Droid/DroidSansFallback.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read), Font.STREAM);
+        f1.SetSize(10f);
         f2.SetSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -39,17 +28,8 @@ public class Example_19 {
         // Width of the second column:
         float w2 = 300f;
 
-        Image image1 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/fruit.jpg", FileMode.Open, FileAccess.Read)),
-                ImageType.JPG);
-        Image image2 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/ee-map.png", FileMode.Open, FileAccess.Read)),
-                ImageType.PNG);
-
+        Image image1 = new Image(pdf, "images/fruit.jpg");
+        Image image2 = new Image(pdf, "images/ee-map.png");
 
         // Draw the first image and text:
         image1.SetLocation(x1, y1);
@@ -88,7 +68,6 @@ public class Example_19 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -97,5 +76,4 @@ public class Example_19 {
         sw.Stop();
         Console.WriteLine("Example_19 => " + (time1 - time0));
     }
-
 }   // End of Example_19.cs

@@ -1,25 +1,18 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_11.java
- *
  */
 public class Example_11 {
-
     public Example_11() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_11.pdf")));
 
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -66,12 +59,10 @@ public class Example_11 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_11();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_11 => " + (t1 - t0));
     }
-
 }   // End of Example_11.java

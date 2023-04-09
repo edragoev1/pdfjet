@@ -1,31 +1,23 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_30.java
  */
 public class Example_30 {
-
     public Example_30() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_30.pdf")));
 
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
-        FileInputStream stream = new FileInputStream("images/map407.png");
-        Image image1 = new Image(pdf, stream, ImageType.PNG);
-        stream.close();
+        Image image1 = new Image(pdf, "images/map407.png");
         image1.setLocation(10f, 100f);
 
-        stream = new FileInputStream("images/qrcode.png");
-        Image image2 = new Image(pdf, stream, ImageType.PNG);
-        stream.close();
+        Image image2 = new Image(pdf, "images/qrcode.png");
         image2.setLocation(10f, 100f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -79,12 +71,10 @@ public class Example_30 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_30();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_30 => " + (t1 - t0));
     }
-
 }   // End of Example_30.java

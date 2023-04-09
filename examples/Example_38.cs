@@ -2,18 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_38.cs
- *
  */
 public class Example_38 {
-
     private Font font;
-
     public Example_38() {
         BufferedStream bos = new BufferedStream(
                 new FileStream("Example_38.pdf", FileMode.Create));
@@ -31,8 +26,6 @@ public class Example_38 {
 
         pdf.Complete();
     }
-
-
     /**
      * This will return a 10x10 matrix. The HTML-Like table will be like:
      * <table border="solid">
@@ -103,9 +96,7 @@ public class Example_38 {
      * @return
      */
     private List<List<Cell>> CreateTableData() {
-
         List<List<Cell>> rows = new List<List<Cell>>();
-
         for (int i = 0; i < 10; i++) {
             List<Cell> row = new List<Cell>();
             switch (i) {
@@ -232,10 +223,8 @@ public class Example_38 {
             }
             rows.Add(row);
         }
-
         return rows;
     }
-
 
     private Cell GetCell(
             Font font,
@@ -255,7 +244,6 @@ public class Example_38 {
         return cell;
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -264,5 +252,4 @@ public class Example_38 {
         sw.Stop();
         Console.WriteLine("Example_38 => " + (time1 - time0));
     }
-
 }   // End of Example_38.cs

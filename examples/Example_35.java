@@ -2,31 +2,23 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_35.java
- *
  */
 public class Example_35 {
-
     public Example_35() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_35.pdf")));
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-        f1.setSize(8f);
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
 
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+
+        f1.setSize(8f);
         f2.setSize(8f);
 
         Page page = new Page(pdf, A4.PORTRAIT);
@@ -85,5 +77,4 @@ public class Example_35 {
         long t1 = System.currentTimeMillis();
         System.out.println("Example_35 => " + (t1 - t0));
     }
-
 }   // End of Example_35.java

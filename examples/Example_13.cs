@@ -2,18 +2,13 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_13.cs
- *
  */
 public class Example_13 {
-
     public Example_13() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_13.pdf", FileMode.Create)));
 
@@ -122,7 +117,6 @@ public class Example_13 {
         pdf.Complete();
     }
 
-
     public void blankOutColumn(Table table, int index) {
         List<Cell> column = table.GetColumn(index);
         for ( int i = 0; i < column.Count; i++ ) {
@@ -133,7 +127,6 @@ public class Example_13 {
         }
     }
 
-
     public void SetBgColorForRow(Table table, int index, int color) {
         List<Cell> row = table.GetRow(index);
         for (int i = 0; i < row.Count; i++) {
@@ -142,14 +135,12 @@ public class Example_13 {
         }
     }
 
-
     public void SetFontForRow(Table table, int index, Font font) {
         List<Cell> row = table.GetRow(index);
         for (int i = 0; i < row.Count; i++) {
             row[i].SetFont(font);
         }
     }
-
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
@@ -159,5 +150,4 @@ public class Example_13 {
         sw.Stop();
         Console.WriteLine("Example_13 => " + (time1 - time0));
     }
-
 }   // End of Example_13.cs
