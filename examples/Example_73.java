@@ -102,7 +102,7 @@ public class Example_73 {
         box.setSize(20f, 20f);
         box.drawOn(page);
 
-        String text = Content.ofTextFile("data/chinese-text.txt");
+        String text = Contents.ofTextFile("data/chinese-text.txt");
 
         textBox = new TextBox(f1);
         textBox.setFallbackFont(f2);
