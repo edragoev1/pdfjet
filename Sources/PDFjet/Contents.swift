@@ -1,5 +1,5 @@
 /**
- *  Content.swift
+ *  Contents.swift
  *
 Copyright 2023 Innovatics Inc.
 
@@ -26,7 +26,7 @@ import Foundation
 ///
 /// Some really useful helper methods.
 ///
-public class Content {
+public class Contents {
     public static func ofTextFile( _ fileName: String) throws -> String {
         return try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
     }
@@ -50,4 +50,4 @@ public class Content {
         stream.close()
         return content
     }
-}   // End of Content.swift
+}   // End of Contents.swift

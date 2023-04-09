@@ -52,7 +52,7 @@ public class EmbeddedFile {
             _ stream: InputStream,
             _ compress: Bool) throws {
         self.fileName = fileName
-        var baos = try Content.ofInputStream(stream)
+        var baos = try Contents.ofInputStream(stream)
         if compress {
             var buf = [UInt8]()
             _ = LZWEncode(&buf, &baos)

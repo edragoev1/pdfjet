@@ -61,7 +61,7 @@ class OTF {
     var unicodeToGID = [Int](repeating: 0, count: 0x10000)
 
     init(_ stream: InputStream) throws {
-        buf = try Content.ofInputStream(stream)
+        buf = try Contents.ofInputStream(stream)
 
         // Extract OTF metadata
         let version = readUInt32()
