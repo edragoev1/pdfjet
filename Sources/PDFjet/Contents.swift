@@ -36,7 +36,7 @@ public class Contents {
     }
 
     public static func ofInputStream( _ stream: InputStream) throws -> [UInt8] {
-        var content = [UInt8]()
+        var contents = [UInt8]()
         stream.open()
         let bufferSize = 4096
         var buffer = [UInt8](repeating: 0, count: bufferSize)
@@ -45,9 +45,9 @@ public class Contents {
             if (read == 0) {
                 break
             }
-            content.append(contentsOf: buffer[0..<read])
+            contents.append(contentsOf: buffer[0..<read])
         }
         stream.close()
-        return content
+        return contents
     }
 }   // End of Contents.swift
