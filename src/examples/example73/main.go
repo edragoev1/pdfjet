@@ -7,6 +7,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/contents"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
