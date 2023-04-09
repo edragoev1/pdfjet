@@ -1805,7 +1805,7 @@ public class PDF {
 
 
     private func addObjectsToPDF(_ objects: inout [PDFobj]) {
-        // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
+let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         for obj in objects {
             if obj.offset == 0 {
                 objOffset.append(byteCount)
@@ -1865,8 +1865,8 @@ public class PDF {
                 }
             }
         }
-        // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-        // Swift.print("Puff() => \(time1 - time0)")
+let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+Swift.print("addObjectsToPDF() => \(time1 - time0)")
     }
 
 
