@@ -605,7 +605,9 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 			break
 		}
 	}
-
+	if obj == nil {
+		return
+	}
 	gsNumber := getMaxGSNumber(obj)
 	if gsNumber == 0 { // No existing ExtGState dictionary
 		obj.dict = insertStringAt(obj.dict, "/ExtGState", index) // Add ExtGState dictionary

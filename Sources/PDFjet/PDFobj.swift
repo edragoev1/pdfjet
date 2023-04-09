@@ -610,7 +610,9 @@ public final class PDFobj {
             }
             i += 1
         }
-
+        if obj == nil {
+            return
+        }
         gsNumber = getMaxGSNumber(obj!)
         if gsNumber == 0 {                              // No existing ExtGState dictionary
             obj!.dict.insert("/ExtGState", at: index)   // Add ExtGState dictionary

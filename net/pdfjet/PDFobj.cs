@@ -574,7 +574,9 @@ public class PDFobj {
                 break;
             }
         }
-
+        if (obj == null) {
+            return;
+        }
         gsNumber = GetMaxGSNumber(obj);
         if (gsNumber == 0) {                        // No existing ExtGState dictionary
             obj.dict.Insert(index, "/ExtGState");   // Add ExtGState dictionary

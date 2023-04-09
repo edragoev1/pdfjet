@@ -544,8 +544,7 @@ public class PDFobj {
                 if (token.equals("<<")) {
                     obj = this;
                     index = i + 2;
-                }
-                else {
+                } else {
                     obj = objects.get(Integer.parseInt(token) - 1);
                     for (int j = 0; j < obj.dict.size(); j++) {
                         if (obj.dict.get(j).equals("<<")) {
@@ -557,7 +556,9 @@ public class PDFobj {
                 break;
             }
         }
-
+        if (obj == null) {
+            return;
+        }
         gsNumber = getMaxGSNumber(obj);
         if (gsNumber == 0) {                    // No existing ExtGState dictionary
             obj.dict.add(index, "/ExtGState");  // Add ExtGState dictionary
