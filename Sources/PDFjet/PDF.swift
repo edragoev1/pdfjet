@@ -1174,13 +1174,11 @@ public class PDF {
         if obj1.dict[0] == "xref" {
             // Get the objects using xref table
             getObjects1(&buffer1, obj1, &objects1)
-        }
-        else {
+        } else {
             // Get the objects using XRef stream
             try getObjects2(&buffer1, obj1, &objects1)
         }
 
-// let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         var objects2 = [PDFobj]()
         for obj in objects1 {
             if obj.dict.contains("stream") {
@@ -1204,16 +1202,12 @@ public class PDF {
                     objects2.append(o3)
                     i += 2
                 }
-            }
-            else if obj.getValue("/Type") == "/XRef" {
+            } else if obj.getValue("/Type") == "/XRef" {
                 // Skip the stream XRef object.
-            }
-            else {
+            } else {
                 objects2.append(obj)
             }
         }
-// let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-// Swift.print("Puff() => \(time1 - time0)")
 
         return getSortedObjects(objects2)
     }
@@ -1811,6 +1805,7 @@ public class PDF {
 
 
     private func addObjectsToPDF(_ objects: inout [PDFobj]) {
+        // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         for obj in objects {
             if obj.offset == 0 {
                 objOffset.append(byteCount)
@@ -1870,6 +1865,8 @@ public class PDF {
                 }
             }
         }
+        // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+        // Swift.print("Puff() => \(time1 - time0)")
     }
 
 
