@@ -60,17 +60,21 @@ public class Contents {
         return baos.toByteArray();
     }
 
-    public static byte[] ofInputStream(InputStream stream) throws Exception {
+    public static byte[] ofInputStream(InputStream stream, int bufferSize) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[bufferSize];
             int read = 0;
-            while ((read = stream.read(buffer, 0, buffer.length)) > 0) {
+            while ((read = stream.read(buffer, 0, bufferSize)) > 0) {
                 baos.write(buffer, 0, read);
             }
         } finally {
             stream.close();
         }
         return baos.toByteArray();
+    }
+
+    public static byte[] ofInputStream(InputStream stream) throws Exception {
+        return ofInputStream(stream, 4096);
     }
 }

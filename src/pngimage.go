@@ -220,7 +220,6 @@ func (image *PNGImage) validatePNG(reader io.Reader) {
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		log.Fatal("File is too short!")
 	}
-
 	if ((buf[0] & 0xFF) == 0x89) &&
 		buf[1] == 0x50 &&
 		buf[2] == 0x4E &&

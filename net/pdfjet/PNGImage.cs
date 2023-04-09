@@ -233,7 +233,6 @@ public class PNGImage {
         if (inputStream.Read(buf, 0, buf.Length) == -1) {
             throw new Exception("File is too short!");
         }
-
         if ((buf[0] & 0xFF) == 0x89 &&
                 buf[1] == 0x50 &&
                 buf[2] == 0x4E &&
@@ -243,8 +242,7 @@ public class PNGImage {
                 buf[6] == 0x1A &&
                 buf[7] == 0x0A) {
             // The PNG signature is correct.
-        }
-        else {
+        } else {
             throw new Exception("Wrong PNG signature.");
         }
     }

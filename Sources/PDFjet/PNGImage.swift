@@ -223,8 +223,7 @@ public class PNGImage {
                 contents[6] == 0x1A &&
                 contents[7] == 0x0A {
             // The PNG signature is correct.
-        }
-        else {
+        } else {
             Swift.print("Wrong PNG signature.")
         }
         return contents

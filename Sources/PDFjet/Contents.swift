@@ -35,10 +35,9 @@ public class Contents {
         return try ofInputStream(InputStream(fileAtPath: fileName)!)
     }
 
-    public static func ofInputStream( _ stream: InputStream) throws -> [UInt8] {
+    public static func ofInputStream( _ stream: InputStream, _ bufferSize: Int) throws -> [UInt8] {
         var contents = [UInt8]()
         stream.open()
-        let bufferSize = 4096
         var buffer = [UInt8](repeating: 0, count: bufferSize)
         while stream.hasBytesAvailable {
             let read = stream.read(&buffer, maxLength: bufferSize)
@@ -49,5 +48,9 @@ public class Contents {
         }
         stream.close()
         return contents
+    }
+
+    public static func ofInputStream( _ stream: InputStream) throws -> [UInt8] {
+        try ofInputStream(stream, 4096)
     }
 }   // End of Contents.swift
