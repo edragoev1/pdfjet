@@ -102,7 +102,7 @@ public class Example_73 {
         box.SetSize(20f, 20f);
         box.DrawOn(page);
 
-        String text = Content.OfTextFile("data/chinese-text.txt");
+        String text = Contents.OfTextFile("data/chinese-text.txt");
 
         textBox = new TextBox(f1);
         textBox.SetFallbackFont(f2);
