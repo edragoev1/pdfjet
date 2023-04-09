@@ -21,7 +21,7 @@ public class Example_20 {
                 InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
                 Font.STREAM).setSize(18.0)
 
-        let pages = pdf.getPageObjects(from: &objects)
+        let pages = pdf.getPageObjects(from: objects)
 
         let contents = pages[0].getContentsObject(&objects)!
 
