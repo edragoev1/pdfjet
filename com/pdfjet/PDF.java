@@ -1223,13 +1223,7 @@ public class PDF {
      *  @throws Exception  If an input or output exception occurred
      */
     public List<PDFobj> read(InputStream inputStream) throws Exception {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int ch;
-        while ((ch = inputStream.read()) != -1) {
-            baos.write(ch);
-        }
-        inputStream.close();
-        byte[] buf = baos.toByteArray();
+        byte[] buf = Contents.ofInputStream(inputStream);
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
         int xref = getStartXRef(buf);

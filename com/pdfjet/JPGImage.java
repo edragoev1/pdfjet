@@ -68,14 +68,7 @@ class JPGImage {
 
 
     public JPGImage(InputStream inputStream) throws Exception {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int count;
-        while ((count = inputStream.read(buf, 0, buf.length)) > 0) {
-            baos.write(buf, 0, count);
-        }
-        inputStream.close();
-        data = baos.toByteArray();
+        data = Contents.ofInputStream(inputStream);
         readJPGImage(new ByteArrayInputStream(data));
     }
 
