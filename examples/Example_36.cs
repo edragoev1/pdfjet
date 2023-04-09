@@ -8,32 +8,16 @@ using PDFjet.NET;
  */
 public class Example_36 {
     public Example_36() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_36.pdf", FileMode.Create)));
 
-        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image1 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/ee-map.png", FileMode.Open, FileAccess.Read)),
-                ImageType.PNG);
+        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        Image image2 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/fruit.jpg", FileMode.Open, FileAccess.Read)),
-                ImageType.JPG);
-
-        Image image3 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        // "images/mt-map.bmp", FileMode.Open, FileAccess.Read)),
-                        "images/palette.bmp", FileMode.Open, FileAccess.Read)),
-                ImageType.BMP);
+        Image image1 = new Image(pdf, "images/ee-map.png");
+        Image image2 = new Image(pdf, "images/fruit.jpg");
+        Image image3 = new Image(pdf, "images/palette.bmp");
 
         TextLine text = new TextLine(f1,
                 "The map below is an embedded PNG image");
