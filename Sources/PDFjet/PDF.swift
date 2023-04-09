@@ -1805,7 +1805,6 @@ public class PDF {
 
 
     private func addObjectsToPDF(_ objects: inout [PDFobj]) {
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         for obj in objects {
             if obj.offset == 0 {
                 objOffset.append(byteCount)
@@ -1827,9 +1826,11 @@ let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                     for obj in obj.stream! {
                         append(obj)
                     }
-                    append("\nendstream\n")
+                    // append("\nendstream\n")
+                    append(Token.endstream)
                 }
-                append("endobj\n")
+                // append("endobj\n")
+                append(Token.endobj)
             } else {
                 objOffset.append(byteCount)
                 var link = false
@@ -1845,25 +1846,28 @@ let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                     }
                     if i < (n - 1) {
                         if !link {
-                            append(" ")
+                            // append(" ")
+                            append(Token.space)
                         }
                     } else {
-                        append("\n")
+                        // append("\n")
+                        append(Token.newline)
                     }
                 }
+let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                 if obj.stream != nil {
-                    for obj in obj.stream! {
-                        append(obj)
-                    }
-                    append("\nendstream\n")
+                    append(obj.stream!)
+                    // append("\nendstream\n")
+                    append(Token.endstream)
                 }
                 if token! != "endobj" {
-                    append("endobj\n")
+                    // append("endobj\n")
+                    append(Token.endobj)
                 }
-            }
-        }
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 Swift.print("addObjectsToPDF() => \(time1 - time0)")
+            }
+        }
     }
 
 

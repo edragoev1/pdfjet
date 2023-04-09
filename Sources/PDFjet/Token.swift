@@ -1,5 +1,5 @@
 /**
- *  Single.swift
+ *  Token.swift
  *
 Copyright 2023 Innovatics Inc.
 
@@ -23,8 +23,11 @@ SOFTWARE.
 */
 
 ///
-/// Please see Example_45
+/// Please see PDF.swift
 ///
-public class Single {
-    public static let space: String = " "
+public class Token {
+    public static let endstream = Array("\nendstream\n".utf8)
+    public static let space = Array(" ".utf8)
+    public static let newline = Array("\n".utf8)
+    public static let endobj = Array("endobj\n".utf8)
 }
