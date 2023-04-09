@@ -1,4 +1,4 @@
-package content
+package contents
 
 /**
  * contents.go
@@ -40,6 +40,6 @@ func OfTextFile(fileName string) string {
 			log.Fatal(err)
 		}
 	}()
-	content, err := io.ReadAll(file)
-	return string(content)
+	contents, err := io.ReadAll(file)
+	return string(contents)
 }
