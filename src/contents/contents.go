@@ -1,7 +1,7 @@
 package content
 
 /**
- * content.go
+ * contents.go
  *
 Copyright 2023 Innovatics Inc.
 

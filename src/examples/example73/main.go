@@ -7,7 +7,6 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -111,7 +110,7 @@ func Example73() {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-	text := content.OfTextFile("data/chinese-text.txt")
+	text := contents.OfTextFile("data/chinese-text.txt")
 
 	textBox = pdfjet.NewTextBox(f1)
 	textBox.SetFallbackFont(f2)
