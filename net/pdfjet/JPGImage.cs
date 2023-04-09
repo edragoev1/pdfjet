@@ -68,14 +68,7 @@ class JPGImage {
 
 
     public JPGImage(Stream stream) {
-        MemoryStream baos = new MemoryStream();
-        byte[] buf = new byte[4096];
-        int count;
-        while ((count = stream.Read(buf, 0, buf.Length)) > 0) {
-            baos.Write(buf, 0, count);
-        }
-        stream.Dispose();
-        data = baos.ToArray();
+        data = Contents.OfInputStream(stream);
         ReadJPGImage(new MemoryStream(data));
     }
 
