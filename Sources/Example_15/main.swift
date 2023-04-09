@@ -77,6 +77,6 @@ public class Example_15 {
 }   // End of Example_15.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-try Example_15()
+_ = try Example_15()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Example_15 => \(time1 - time0)")

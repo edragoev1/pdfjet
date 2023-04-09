@@ -1,56 +1,29 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_46.swift
- *
  */
 public class Example_46 {
-
     public init() throws {
-
         let stream = OutputStream(toFileAtPath: "Example_46.pdf", append: false)
         let pdf = PDF(stream!)
 
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Bold.ttf")!)
-
-        let f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf")!)
-
-        let f3 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/SourceSansPro/SourceSansPro-Semibold.otf")!)
+        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf")
+        let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf")
+        let f3 = try Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf")
 /*
 Used for performance testing:
-        f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans-Bold.ttf")!)
-
-        f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf")!)
-
-        f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans-Bold.ttf.stream"),
-                Font.STREAM)
-
-        f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf.stream"),
-                Font.STREAM)
+        f1 = try Font(pdf, "fonts/Droid/DroidSans-Bold.ttf")
+        f2 = try Font(pdf, "fonts/Droid/DroidSans.ttf")
+        f1 = try Font(pdf, "fonts/Droid/DroidSans-Bold.ttf.stream")
+        f2 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
 */
         f1.setSize(14.0)
         f2.setSize(14.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
-
         var paragraphs = [Paragraph]()
-
         var paragraph = Paragraph()
                 .add(TextLine(f1,
 "Όταν ο Βαρουφάκης δήλωνε κατηγορηματικά πως δεν θα ασχοληθεί ποτέ με την πολιτική (Video)"))
@@ -83,7 +56,6 @@ Used for performance testing:
 
         pdf.complete()
     }
-
 }   // End of Example_46.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
