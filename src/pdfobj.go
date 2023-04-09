@@ -605,7 +605,7 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 			break
 		}
 	}
-	if obj == nil {
+	if obj == nil || index == -1 {
 		return
 	}
 	gsNumber := getMaxGSNumber(obj)
@@ -623,7 +623,6 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 			index++
 		}
 	}
-
 	index++
 	obj.dict = insertStringAt(obj.dict, "/GS"+strconv.Itoa(gsNumber+1), index)
 	index++

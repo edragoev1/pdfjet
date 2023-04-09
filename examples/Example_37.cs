@@ -12,8 +12,8 @@ class Example_37 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_37.pdf", FileMode.Create)));
 
-        // FileStream fis = new FileStream("data/testPDFs/wirth.pdf", FileMode.Open, FileAccess.Read);
-        FileStream fis = new FileStream("../../eBooks/UniversityPhysicsVolume1.pdf", FileMode.Open, FileAccess.Read);
+        FileStream fis = new FileStream("data/testPDFs/wirth.pdf", FileMode.Open, FileAccess.Read);
+        // FileStream fis = new FileStream("../../eBooks/UniversityPhysicsVolume1.pdf", FileMode.Open, FileAccess.Read);
         // FileStream fis = new FileStream("data/testPDFs/Smalltalk-and-OO.pdf", FileMode.Open, FileAccess.Read);
         // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk1.pdf", FileMode.Open, FileAccess.Read);
         // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk2.pdf", FileMode.Open, FileAccess.Read);

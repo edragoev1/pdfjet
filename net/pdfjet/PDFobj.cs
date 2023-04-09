@@ -574,7 +574,7 @@ public class PDFobj {
                 break;
             }
         }
-        if (obj == null) {
+        if (obj == null || index == -1) {
             return;
         }
         gsNumber = GetMaxGSNumber(obj);

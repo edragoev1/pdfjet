@@ -42,7 +42,7 @@ public class Example_51 {
 
     public func addFooterToPDF(_ fileNumber: String) throws {
         let stream = OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false)!
-        var pdf = PDF(stream)
+        let pdf = PDF(stream)
         var objects = try pdf.read(
                 from: InputStream(fileAtPath: "temp.pdf")!)
 
@@ -52,11 +52,11 @@ public class Example_51 {
                 Font.STREAM)
         font.setSize(12.0)
 
-        var pages = pdf.getPageObjects(from: &objects)
+        let pages = pdf.getPageObjects(from: objects)
         var i = 0
         while i < pages.count {
             let footer = "Page " + String(i + 1) + " of " + String(pages.count)
-            let page = Page(&pdf, &pages[i])
+            let page = Page(pdf, pages[i])
             page.addResource(font, &objects)
             page.setBrushColor(Color.transparent)   // Required!
             page.setBrushColor(Color.black)

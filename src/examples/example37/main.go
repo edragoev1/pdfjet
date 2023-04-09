@@ -14,19 +14,9 @@ import (
 )
 
 // Example37 -- TODO:
-func Example37() {
+func Example37(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_37.pdf", compliance.PDF15)
-
-	// buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
-	// buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
-	// buf, err := os.ReadFile("data/testPDFs/Smalltalk-and-OO.pdf")
-	// buf, err := os.ReadFile("data/testPDFs/InsideSmalltalk1.pdf")
-	// buf, err := os.ReadFile("data/testPDFs/InsideSmalltalk2.pdf")
-	// buf, err := os.ReadFile("data/testPDFs/Greenbook.pdf")
-	// buf, err := os.ReadFile("data/testPDFs/Bluebook.pdf")
-	// buf, err := os.ReadFile("data/testPDFs/Orangebook.pdf")
-	objects := pdf.Read(contents.OfBinaryFile("data/testPDFs/wirth.pdf"))
-
+	objects := pdf.Read(contents.OfBinaryFile(fileName))
 	file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
@@ -47,11 +37,9 @@ func Example37() {
 		pageObj.SetGraphicsState(gs, &objects)
 
 		page := pdfjet.NewPageFromObject(pdf, pageObj)
-
 		page.AddFontResource(font1, &objects)
 		page.SetBrushColor(color.Blue)
 		page.DrawString(font1, nil, "Hello, World!", 50.0, 200.0)
-
 		text.DrawOn(page)
 
 		page.Complete(&objects) // The graphics stack is unwinded automatically
@@ -63,7 +51,14 @@ func Example37() {
 
 func main() {
 	start := time.Now()
-	Example37()
+	Example37("data/testPDFs/wirth.pdf")
+	// Example37("../../eBooks/UniversityPhysicsVolume1.pdf")
+	// Example37("../../eBooks/Smalltalk-and-OO.pdf")
+	// Example37("../../eBooks/InsideSmalltalk1.pdf")
+	// Example37("../../eBooks/InsideSmalltalk2.pdf")
+	// Example37("../../eBooks/Greenbook.pdf")
+	// Example37("../../eBooks/Bluebook.pdf")
+	// Example37("../../eBooks/Orangebook.pdf")
 	elapsed := time.Since(start)
 	fmt.Printf("Example_37 => %dµs\n", elapsed.Microseconds())
 }
