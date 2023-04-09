@@ -31,7 +31,7 @@ public class Contents {
         return try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
     }
 
-    public static func ofTextFile( _ fileName: String) throws -> [UInt8] {
+    public static func ofBinaryFile( _ fileName: String) throws -> [UInt8] {
         return try ofInputStream(InputStream(fileAtPath: fileName)!)
     }
 

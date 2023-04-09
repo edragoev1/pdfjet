@@ -41,16 +41,13 @@ public class Example_19 {
         let xy = textBlock.drawOn(page)
 
         // Draw the second row image and text:
-        let image2 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/ee-map.png")!,
-                ImageType.PNG)
+        let image2 = try Image(pdf, "images/ee-map.png")
         image2.setLocation(x1, xy[1] + 10.0)
         image2.scaleBy(1.0/3.0)
         image2.drawOn(page)
 
         textBlock = TextBlock(f1)
-        textBlock.setText(try Content.ofTextFile("data/latin.txt"))
+        textBlock.setText(try Contents.ofTextFile("data/latin.txt"))
         // textBlock.setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla elementum interdum elit, quis vehicula urna interdum quis. Phasellus gravida ligula quam, nec blandit nulla. Sed posuere, lorem eget feugiat placerat, ipsum nulla euismod nisi, in semper mi nibh sed elit. Mauris libero est, sodales dignissim congue sed, pulvinar non ipsum. Sed risus nisi, ultrices nec eleifend at, viverra sed neque. Integer vehicula massa non arcu viverra ullamcorper. Ut id tellus id ante mattis commodo. Donec dignissim aliquam tortor, eu pharetra ipsum ullamcorper in. Vivamus ultrices imperdiet iaculis.\n\n")
         textBlock.setWidth(w2)
         textBlock.setLocation(x2, xy[1] + 10.0)
@@ -59,7 +56,7 @@ public class Example_19 {
 
         textBlock = TextBlock(f1)
         textBlock.setFallbackFont(f2)
-        textBlock.setText(try Content.ofTextFile("data/chinese-text.txt"))
+        textBlock.setText(try Contents.ofTextFile("data/chinese-text.txt"))
         textBlock.setLocation(x1, 600.0)
         textBlock.setWidth(350.0)
         textBlock.setDrawBorder(true)
