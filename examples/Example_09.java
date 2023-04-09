@@ -2,32 +2,24 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_09.java
  */
 public class Example_09 {
-
     public Example_09() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_09.pdf")));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
-        f1.setSize(8f);
-
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-        stream.close();
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+
+        f1.setSize(8f);
         f2.setSize(8f);
 
         Chart chart = new Chart(f1, f2);
@@ -46,7 +38,6 @@ public class Example_09 {
 
         pdf.complete();
     }
-
 
     public void addTrendLine(Chart chart) {
         List<Point> points = chart.getData().get(0);
@@ -72,7 +63,6 @@ public class Example_09 {
 
         chart.getData().add(trendline);
     }
-
 
     public void addTableToChart(
             Page page, Chart chart, Font f1, Font f2) throws Exception {
@@ -112,7 +102,6 @@ public class Example_09 {
         table.setColumnWidth(0, 9f);
         table.drawOn(page);
     }
-
 
     public List<List<Point>> getData(
             String fileName,
@@ -183,12 +172,10 @@ public class Example_09 {
         return chartData;
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_09();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_09 => " + (t1 - t0));
     }
-
 }   // End of Example_09.java
