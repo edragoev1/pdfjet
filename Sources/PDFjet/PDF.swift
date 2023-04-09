@@ -1830,8 +1830,7 @@ let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                     append("\nendstream\n")
                 }
                 append("endobj\n")
-            }
-            else {
+            } else {
                 objOffset.append(byteCount)
                 var link = false
                 let n = obj.dict.count
@@ -1841,16 +1840,14 @@ let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                     append(token!)
                     if token!.hasPrefix("(http:") {
                         link = true
-                    }
-                    else if token!.hasSuffix(")") {
+                    } else if token!.hasSuffix(")") {
                         link = false
                     }
                     if i < (n - 1) {
                         if !link {
                             append(" ")
                         }
-                    }
-                    else {
+                    } else {
                         append("\n")
                     }
                 }
