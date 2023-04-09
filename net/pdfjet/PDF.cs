@@ -1824,9 +1824,10 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     }
                 }
                 if (obj.stream != null) {
-                    for (int i = 0; i < obj.stream.Length; i++) {
-                        Append(obj.stream[i]);
-                    }
+                    // for (int i = 0; i < obj.stream.Length; i++) {
+                    //     Append(obj.stream[i]);
+                    // }
+                    Append(obj.stream, 0, obj.stream.Length);
                     Append("\nendstream\n");
                 }
                 if (!token.Equals("endobj")) {

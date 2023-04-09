@@ -1887,9 +1887,7 @@ public class PDF {
                     }
                 }
                 if (obj.stream != null) {
-                    for (int i = 0; i < obj.stream.length; i++) {
-                        append(obj.stream[i]);
-                    }
+                    append(obj.stream, 0, obj.stream.length);
                     append("\nendstream\n");
                 }
                 if (!token.equals("endobj")) {
