@@ -6,7 +6,7 @@ import PDFjet
 ///
 public class Example_50 {
     public init(_ fileNumber: String, _ fileName: String) throws {
-        var pdf = PDF(OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false))
+        var pdf = PDF(OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false)!)
         var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/\(fileName)")!)
 
         let f1 = try Font(
