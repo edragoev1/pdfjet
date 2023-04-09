@@ -3,47 +3,27 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-
 using PDFjet.NET;
 
 /**
  * Example_47.cs
  */
 public class Example_47 {
-
     public Example_47() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_47.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf,
-                new FileStream(
-                        "fonts/OpenSans/OpenSans-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
-        f1.SetSize(12f);
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream");
 
-        Font f2 = new Font(pdf,
-                new FileStream(
-                        "fonts/OpenSans/OpenSans-Italic.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
+        f1.SetSize(12f);
         f2.SetSize(12f);
 
-        Image image1 = new Image(
-                pdf,
-                new FileStream("images/AU-map.png", FileMode.Open, FileAccess.Read),
-                ImageType.PNG);
+        Image image1 = new Image(pdf, "images/AU-map.png");
         image1.ScaleBy(0.50f);
 
-        Image image2 = new Image(
-                pdf,
-                new FileStream("images/HU-map.png", FileMode.Open, FileAccess.Read),
-                ImageType.PNG);
+        Image image2 = new Image(pdf, "images/HU-map.png");
         image2.ScaleBy(0.50f);
-
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -115,5 +95,4 @@ public class Example_47 {
         sw.Stop();
         Console.WriteLine("Example_47 => " + (time1 - time0));
     }
-
 } // End of Example_47.cs

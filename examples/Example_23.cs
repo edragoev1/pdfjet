@@ -1,36 +1,27 @@
 using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_23.cs
- *
  */
 public class Example_23 {
-
     public Example_23() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_23.pdf", FileMode.Create)));
-
-        Page page = new Page(pdf, Letter.PORTRAIT);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+
+        Page page = new Page(pdf, Letter.PORTRAIT);
+
         f3.SetSize(7f * 0.583f);
 
-        Image image1 = new Image(
-                pdf,
-                new BufferedStream(new FileStream(
-                        "images/mt-map.png", FileMode.Open, FileAccess.Read)),
-                ImageType.PNG);
+        Image image1 = new Image(pdf, "images/mt-map.png");
         image1.ScaleBy(0.75f);
 
         List<List<Cell>> tableData = new List<List<Cell>>();
@@ -120,7 +111,6 @@ public class Example_23 {
             table.SetLocation(50f, 50f);
         }
 
-
         tableData = new List<List<Cell>>();
 
         row = new List<Cell>();
@@ -148,14 +138,11 @@ public class Example_23 {
         TextBox textBox = new TextBox(f1, buf.ToString());
         textBox.SetWidth(400f);
         textBox.SetNoBorders();
-
         tableData[0][1].SetDrawable(textBox);
-
         table.DrawOn(page);
 
         pdf.Complete();
     }
-
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
@@ -165,5 +152,4 @@ public class Example_23 {
         sw.Stop();
         Console.WriteLine("Example_23 => " + (time1 - time0));
     }
-
 }   // End of Example_23.cs

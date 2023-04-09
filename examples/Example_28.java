@@ -12,14 +12,9 @@ public class Example_28 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_28.pdf")));
 
-        FileInputStream stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
-        Font f1 = new Font(pdf, stream, Font.STREAM);
-
-        stream = new FileInputStream("fonts/Droid/DroidSansFallback.ttf.stream");
-        Font f2 = new Font(pdf, stream, Font.STREAM);
-
-        stream = new FileInputStream("fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream");
-        Font f3 = new Font(pdf, stream, Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream");
 
         f1.setSize(11f);
         f2.setSize(11f);

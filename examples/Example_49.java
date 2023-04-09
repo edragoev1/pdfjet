@@ -8,22 +8,14 @@ import com.pdfjet.*;
  *  Example_49.java
  */
 public class Example_49 {
-
     public Example_49() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_49.pdf")),
                         Compliance.PDF_UA);
 
-        Font f1 = new Font(
-                pdf,
-                new FileInputStream("fonts/Droid/DroidSerif-Regular.ttf.stream"),
-                Font.STREAM);
-        Font f2 = new Font(
-                pdf,
-                new FileInputStream("fonts/Droid/DroidSerif-Italic.ttf.stream"),
-                Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
 
         f1.setSize(14f);
         f2.setSize(16f);
@@ -56,7 +48,6 @@ public class Example_49 {
         column.setWidth(500f);
         column.drawOn(page);
 
-
         List<Paragraph> paragraphs = new ArrayList<Paragraph>();
         paragraphs.add(paragraph1);
         paragraphs.add(paragraph2);
@@ -69,12 +60,10 @@ public class Example_49 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_49();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_49 => " + (t1 - t0));
     }
-
 }   // End of Example_49.java

@@ -2,42 +2,20 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_45.cs
- *
  */
 public class Example_45 {
-
     public Example_45() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_45.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf,
-                new FileStream(
-                        "fonts/Droid/DroidSerif-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
-
-        Font f2 = new Font(pdf,
-                new FileStream(
-                        "fonts/Droid/DroidSerif-Italic.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
-
-        Font f3 = new Font(pdf,
-                new FileStream(
-                        "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream");
 
         f1.SetSize(14f);
         f2.SetSize(14f);
@@ -98,7 +76,6 @@ public class Example_45 {
 
         pdf.Complete();
     }
-
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();

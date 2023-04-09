@@ -2,34 +2,22 @@ using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_31.cs
  */
 public class Example_31 {
-
     public Example_31() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_31.pdf", FileMode.Create)));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Font f1 = new Font(pdf,
-                new FileStream("fonts/Noto/NotoSansDevanagari-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
-        f1.SetSize(15f);
+        Font f1 = new Font(pdf, "fonts/Noto/NotoSansDevanagari-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
 
-        Font f2 = new Font(pdf,
-                new FileStream("fonts/Droid/DroidSans.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
+        f1.SetSize(15f);
         f2.SetSize(15f);
 
         StringBuilder buf = new StringBuilder();
@@ -52,7 +40,6 @@ public class Example_31 {
         textLine.SetFallbackFont(f2);
         textLine.SetLocation(50f, 175f);
         textLine.DrawOn(page);
-
 
         page.SetPenColor(Color.blue);
         page.SetBrushColor(Color.blue);
@@ -84,7 +71,6 @@ public class Example_31 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -93,5 +79,4 @@ public class Example_31 {
         sw.Stop();
         Console.WriteLine("Example_31 => " + (time1 - time0));
     }
-
 }   // End of Example_31.cs

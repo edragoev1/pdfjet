@@ -1,18 +1,13 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_27.java
- *
  */
 public class Example_27 {
-
     public Example_27() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_27.pdf")));
@@ -155,12 +150,10 @@ public class Example_27 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_27();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_27 => " + (t1 - t0));
     }
-
 }   // End of Example_27.java

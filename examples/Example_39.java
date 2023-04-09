@@ -6,7 +6,6 @@ import com.pdfjet.*;
 
 /**
  *  Example_39.java
- *
  */
 public class Example_39 {
     public Example_39() throws Exception {
@@ -35,7 +34,6 @@ public class Example_39 {
 
         pdf.complete();
     }
-
 
     public List<List<Point>> getData() throws Exception {
         List<List<Point>> chartData = new ArrayList<List<Point>>();

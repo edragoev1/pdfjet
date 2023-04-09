@@ -1,34 +1,22 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_24.cs
- *
  */
 public class Example_24 {
-
     public Example_24() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_24.pdf", FileMode.Create)));
 
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image_00 = new Image(pdf, new FileStream(
-                "images/gr-map.jpg", FileMode.Open, FileAccess.Read), ImageType.JPG);
-
-        Image image_01 = new Image(pdf, new FileStream(
-                "images/linux-logo.png.stream", FileMode.Open, FileAccess.Read), ImageType.PNG_STREAM);
-
-        Image image_02 = new Image(pdf, new FileStream(
-                "images/ee-map.png", FileMode.Open, FileAccess.Read), ImageType.PNG);
-
-        Image image_03 = new Image(pdf, new FileStream(
-                "images/rgb24pal.bmp", FileMode.Open, FileAccess.Read), ImageType.BMP);
+        Image image_00 = new Image(pdf, "images/gr-map.jpg");
+        Image image_01 = new Image(pdf, "images/linux-logo.png.stream");
+        Image image_02 = new Image(pdf, "images/ee-map.png");
+        Image image_03 = new Image(pdf, "images/rgb24pal.bmp");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine textline_00 = new TextLine(font, "This is a JPEG image.");
@@ -57,16 +45,11 @@ public class Example_24 {
         point = textline_03.DrawOn(page);
         image_03.SetLocation(50f, point[1]).ScaleBy(0.75f).DrawOn(page);
 
-        Image image1 = new Image(pdf,
-                new FileStream("images/fruit.jpg", FileMode.Open, FileAccess.Read),
-                ImageType.JPG);
-
-        Image image2 = new Image(pdf, new FileStream(
-                "images/linux-logo.png.stream", FileMode.Open, FileAccess.Read), ImageType.PNG_STREAM);
+        Image image1 = new Image(pdf, "images/fruit.jpg");
+        Image image2 = new Image(pdf, "images/linux-logo.png.stream");
 
         pdf.Complete();
     }
-
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
@@ -76,5 +59,4 @@ public class Example_24 {
         sw.Stop();
         Console.WriteLine("Example_24 => " + (time1 - time0));
     }
-
 }   // End of Example_24.cs

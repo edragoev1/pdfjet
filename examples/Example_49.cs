@@ -2,36 +2,21 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_49.cs
- *
  */
 public class Example_49 {
-
     public Example_49() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_49.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf,
-                new FileStream(
-                        "fonts/Droid/DroidSerif-Regular.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
-        f1.SetSize(14f);
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
 
-        Font f2 = new Font(pdf,
-                new FileStream(
-                        "fonts/Droid/DroidSerif-Italic.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read),
-                Font.STREAM);
+        f1.SetSize(14f);
         f2.SetSize(16f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -75,7 +60,6 @@ public class Example_49 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -84,5 +68,4 @@ public class Example_49 {
         sw.Stop();
         Console.WriteLine("Example_49 => " + (time1 - time0));
     }
-
 }   // End of Example_49.cs

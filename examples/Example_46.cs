@@ -1,35 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_46.cs
- *
  */
 public class Example_46 {
-
     public Example_46() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_46.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Bold.ttf.stream", FileMode.Open, FileAccess.Read),
-                Font.STREAM);
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream");
+
         f1.SetSize(14f);
-
-        Font f2 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf.stream", FileMode.Open, FileAccess.Read),
-                Font.STREAM);
         f2.SetSize(14f);
-
-        Font f3 = new Font(pdf, new FileStream(
-                "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream", FileMode.Open, FileAccess.Read),
-                Font.STREAM);
         f3.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -70,7 +58,6 @@ public class Example_46 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         System.Diagnostics.Stopwatch sw =
                 System.Diagnostics.Stopwatch.StartNew();
@@ -80,5 +67,4 @@ public class Example_46 {
         sw.Stop();
         Console.WriteLine("Example_46 => " + (time1 - time0));
     }
-
 }   // End of Example_46.cs

@@ -1,38 +1,23 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_36.java
- *
  */
 public class Example_36 {
-
     public Example_36() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_36.pdf")));
 
-        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Image image1 = new Image(pdf, "images/ee-map.png");
+        Image image2 = new Image(pdf, "images/fruit.jpg");
+        Image image3 = new Image(pdf, "images/palette.bmp");
 
-        FileInputStream stream = new FileInputStream("images/ee-map.png");
-        Image image1 = new Image(pdf, stream, ImageType.PNG);
-        stream.close();
-
-        stream = new FileInputStream("images/fruit.jpg");
-        Image image2 = new Image(pdf, stream, ImageType.JPG);
-        stream.close();
-
-        // stream = new FileInputStream("images/mt-map.bmp");
-        stream = new FileInputStream("images/palette.bmp");
-        Image image3 = new Image(pdf, stream, ImageType.BMP);
-        stream.close();
+        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
         TextLine text = new TextLine(f1,
                 "The map below is an embedded PNG image");
@@ -80,12 +65,10 @@ public class Example_36 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_36();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_36 => " + (t1 - t0));
     }
-
 }   // End of Example_36.java

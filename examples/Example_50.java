@@ -2,18 +2,13 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_50.java
- *
  */
 class Example_50 {
-
     public Example_50(String fileNumber, String fileName) throws Exception {
-
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_" + fileNumber + ".pdf")));
 
@@ -158,7 +153,6 @@ class Example_50 {
         pdf.complete();
     }
 
-
     private void xMarkCheckBox(Page page, float x, float y, float diagonal) throws Exception {
         page.setPenColor(Color.blue);
         page.setPenWidth(diagonal / 5);
@@ -168,7 +162,6 @@ class Example_50 {
         page.lineTo(x + diagonal, y);
         page.strokePath();
     }
-
 
     private String stripSpacesAndDashes(String str) {
         StringBuilder buf = new StringBuilder();
@@ -181,7 +174,6 @@ class Example_50 {
         return buf.toString();
     }
 
-
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
         new Example_50("50", "rc65-16e.pdf");
@@ -190,5 +182,4 @@ class Example_50 {
         long time1 = System.currentTimeMillis();
         System.out.println("Example_50 => " + (time1 - time0));
     }
-
 }   // End of Example_50.java
