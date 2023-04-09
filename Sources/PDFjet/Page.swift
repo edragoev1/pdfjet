@@ -99,7 +99,7 @@ public class Page {
     }
 
 
-    public init(_ pdf: PDF, _ pageObj: PDFobj) {
+    public init(_ pdf: inout PDF, _ pageObj: PDFobj) {
         self.pdf = pdf
         self.pageObj = pageObj
         self.width = pageObj.getPageSize()[0]
