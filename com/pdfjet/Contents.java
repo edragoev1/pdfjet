@@ -1,5 +1,5 @@
 /**
- *  Content.java
+ *  Contents.java
  *
 Copyright 2023 Innovatics Inc.
 
@@ -25,7 +25,7 @@ package com.pdfjet;
 
 import java.io.*;
 
-public class Content {
+public class Contents {
     public static String ofTextFile(String fileName) throws IOException {
         StringBuilder sb = new StringBuilder(4096);
         InputStream stream = null;
