@@ -1,17 +1,12 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_23.swift
- *
  */
 public class Example_23 {
-
     public init() throws {
-
-        let stream = OutputStream(toFileAtPath: "Example_23.pdf", append: false)
-        let pdf = PDF(stream!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_23.pdf", append: false)!)
 
         var page = Page(pdf, Letter.PORTRAIT)
 
@@ -20,10 +15,7 @@ public class Example_23 {
         let f3 = Font(pdf, CoreFont.HELVETICA_BOLD)
         f3.setSize(7.0 * 0.583)
 
-        let image1 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/mt-map.png")!,
-                ImageType.PNG)
+        let image1 = try Image(pdf, "images/mt-map.png")
         image1.scaleBy(0.75)
 
         var tableData = [[Cell]]()
@@ -148,7 +140,6 @@ public class Example_23 {
 
         pdf.complete()
     }
-
 }   // End of Example_23.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
