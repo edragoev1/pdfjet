@@ -1,25 +1,21 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_29.java
  */
 public class Example_29 {
-
     public Example_29() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_29.pdf")));
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-
         Font font = new Font(pdf, CoreFont.HELVETICA);
         font.setSize(16f);
+
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
         Paragraph paragraph = new Paragraph();
         paragraph.add(new TextLine(font,
@@ -69,12 +65,10 @@ public class Example_29 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_29();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_29 => " + (t1 - t0));
     }
-
 }   // End of Example_29.java

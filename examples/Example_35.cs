@@ -2,37 +2,25 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_35.cs
- *
  */
 public class Example_35 {
-
     public Example_35() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_35.pdf", FileMode.Create)));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Bold.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read),
-                Font.STREAM);
-        f1.SetSize(8f);
-
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read),
-                Font.STREAM);
+
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+
+        f1.SetSize(8f);
         f2.SetSize(8f);
 
         List<List<Point>> chartData = new List<List<Point>>();
@@ -83,7 +71,6 @@ public class Example_35 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -92,5 +79,4 @@ public class Example_35 {
         sw.Stop();
         Console.WriteLine("Example_35 => " + (time1 - time0));
     }
-
 }   // End of Example_35.cs
