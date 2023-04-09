@@ -1624,13 +1624,13 @@ public class PDF {
 
 
     public func addObjects(_ objects: inout [PDFobj]) {
-        self.pagesObjNumber = Int(getPagesObject(&objects)!.dict[0])!
+        self.pagesObjNumber = Int(getPagesObject(objects)!.dict[0])!
         addObjectsToPDF(&objects)
     }
 
 
     public func getPagesObject(
-            _ objects: inout [PDFobj]) -> PDFobj? {
+            _ objects: [PDFobj]) -> PDFobj? {
         for object in objects {
             if object.getValue("/Type") == "/Pages" &&
                     object.getValue("/Parent").isEmpty {
@@ -1641,10 +1641,10 @@ public class PDF {
     }
 
 
-    public func getPageObjects(from objects: inout [PDFobj]) -> [PDFobj] {
+    public func getPageObjects(from objects: [PDFobj]) -> [PDFobj] {
         var pageObjects = [PDFobj]()
-        let pagesObject = getPagesObject(&objects)!
-        getPageObjects(pagesObject, &pageObjects, &objects)
+        let pagesObject = getPagesObject(objects)!
+        getPageObjects(pagesObject, &pageObjects, objects)
         return pageObjects
     }
 
@@ -1652,7 +1652,7 @@ public class PDF {
     private func getPageObjects(
             _ pdfObj: PDFobj,
             _ pages: inout [PDFobj],
-            _ objects: inout [PDFobj]) {
+            _ objects: [PDFobj]) {
         let kids = pdfObj.getObjectNumbers("/Kids")
         for number in kids {
             let object = objects[number - 1]
@@ -1660,7 +1660,7 @@ public class PDF {
                 pages.append(object)
             }
             else {
-                getPageObjects(object, &pages, &objects)
+                getPageObjects(object, &pages, objects)
             }
         }
     }
@@ -1783,7 +1783,7 @@ public class PDF {
 
     public func addResourceObjects(_ objects: inout [PDFobj]) {
         var resources = [PDFobj]()
-        let pages = getPageObjects(from: &objects)
+        let pages = getPageObjects(from: objects)
         for page in pages {
             let resObj = page.getResourcesObject(&objects)!
             let fonts = getFontObjects(resObj, &objects)
