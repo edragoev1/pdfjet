@@ -6,7 +6,7 @@ import PDFjet
 ///
 public class Example_50 {
     public init(_ fileNumber: String, _ fileName: String) throws {
-        var pdf = PDF(OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false)!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false)!)
         var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/\(fileName)")!)
 
         let f1 = try Font(
@@ -24,8 +24,8 @@ public class Example_50 {
                 InputStream(fileAtPath: "images/qrcode.png")!,
                 ImageType.PNG)
 
-        var pages = pdf.getPageObjects(from: &objects)
-        let page = Page(&pdf, &pages[0])
+        let pages = pdf.getPageObjects(from: objects)
+        let page = Page(pdf, pages[0])
         page.addResource(f1, &objects)
         page.addResource(f2, &objects)
         page.addResource(image, &objects)
