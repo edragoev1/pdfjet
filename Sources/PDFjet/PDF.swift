@@ -1823,9 +1823,10 @@ public class PDF {
                         append(" >>")
                     }
                     append("\nstream\n")
-                    for obj in obj.stream! {
-                        append(obj)
-                    }
+                    // for obj in obj.stream! {
+                    //     append(obj)
+                    // }
+                    append(obj.stream!, 0, obj.stream!.count)
                     // append("\nendstream\n")
                     append(Token.endstream)
                 }

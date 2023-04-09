@@ -1792,15 +1792,11 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                         Append(" >>");
                     }
                     Append("\nstream\n");
-                    for (int i = 0; i < obj.stream.Length; i++) {
-                        Append(obj.stream[i]);
-                    }
+                    Append(obj.stream, 0, obj.stream.Length);
                     Append("\nendstream\n");
                 }
-
                 Append("endobj\n");
-            }
-            else {
+            } else {
                 objOffset.Add(byteCount);
                 bool link = false;
                 int n = obj.dict.Count;

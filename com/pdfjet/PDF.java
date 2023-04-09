@@ -1852,15 +1852,12 @@ public class PDF {
                         append(" >>");
                     }
                     append("\nstream\n");
-                    for (int i = 0; i < obj.stream.length; i++) {
-                        append(obj.stream[i]);
-                    }
+                    append(obj.stream, 0, obj.stream.length);
                     append("\nendstream\n");
                 }
 
                 append("endobj\n");
-            }
-            else {
+            } else {
                 objOffset.add(byteCount);
 
                 // Uncomment to see the format of the objects.
