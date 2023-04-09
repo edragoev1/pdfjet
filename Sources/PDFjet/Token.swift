@@ -26,6 +26,7 @@ SOFTWARE.
 /// Please see PDF.swift
 ///
 public class Token {
+    public static let stream = Array("\nstream\n".utf8)
     public static let endstream = Array("\nendstream\n".utf8)
     public static let space = Array(" ".utf8)
     public static let newline = Array("\n".utf8)

@@ -1813,7 +1813,8 @@ public class PDF {
                 if !obj.dict.isEmpty {
                     for obj in obj.dict {
                         append(obj)
-                        append(" ")
+                        // append(" ")
+                        append(Token.space)
                     }
                 }
                 if obj.stream != nil {
@@ -1822,7 +1823,8 @@ public class PDF {
                         append(obj.stream!.count)
                         append(" >>")
                     }
-                    append("\nstream\n")
+                    // append("\nstream\n")
+                    append(Token.stream)
                     append(obj.stream!, 0, obj.stream!.count)
                     // append("\nendstream\n")
                     append(Token.endstream)
