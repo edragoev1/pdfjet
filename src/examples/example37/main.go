@@ -10,13 +10,14 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/contents"
 )
 
 // Example37 -- TODO:
 func Example37() {
 	pdf := pdfjet.NewPDFFile("Example_37.pdf", compliance.PDF15)
 
-	buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
+	// buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
 	// buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
 	// buf, err := os.ReadFile("data/testPDFs/Smalltalk-and-OO.pdf")
 	// buf, err := os.ReadFile("data/testPDFs/InsideSmalltalk1.pdf")
@@ -24,10 +25,7 @@ func Example37() {
 	// buf, err := os.ReadFile("data/testPDFs/Greenbook.pdf")
 	// buf, err := os.ReadFile("data/testPDFs/Bluebook.pdf")
 	// buf, err := os.ReadFile("data/testPDFs/Orangebook.pdf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	objects := pdf.Read(buf)
+	objects := pdf.Read(contents.OfBinaryFile("data/testPDFs/wirth.pdf"))
 
 	file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	if err != nil {

@@ -43,3 +43,11 @@ func OfTextFile(fileName string) string {
 	contents, err := io.ReadAll(file)
 	return string(contents)
 }
+
+func OfBinaryFile(fileName string) []uint8 {
+	contents, err := os.ReadFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return contents
+}
