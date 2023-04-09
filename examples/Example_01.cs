@@ -131,7 +131,6 @@ class Example_01 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -140,5 +139,4 @@ class Example_01 {
         sw.Stop();
         Console.WriteLine("Example_01 => " + (time1 - time0));
     }
-
 }   // End of Example_01.cs
