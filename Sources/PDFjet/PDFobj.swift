@@ -610,7 +610,7 @@ public final class PDFobj {
             }
             i += 1
         }
-        if obj == nil {
+        if obj == nil || index == -1 {
             return
         }
         gsNumber = getMaxGSNumber(obj!)

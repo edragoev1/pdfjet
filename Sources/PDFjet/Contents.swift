@@ -37,8 +37,8 @@ public class Contents {
 
     public static func ofInputStream( _ stream: InputStream, _ bufferSize: Int) throws -> [UInt8] {
         var contents = [UInt8]()
-        stream.open()
         var buffer = [UInt8](repeating: 0, count: bufferSize)
+        stream.open()
         while stream.hasBytesAvailable {
             let read = stream.read(&buffer, maxLength: bufferSize)
             if (read == 0) {
@@ -51,6 +51,6 @@ public class Contents {
     }
 
     public static func ofInputStream( _ stream: InputStream) throws -> [UInt8] {
-        try ofInputStream(stream, 4096)
+        try self.ofInputStream(stream, 4096)
     }
 }   // End of Contents.swift
