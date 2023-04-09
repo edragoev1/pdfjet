@@ -1166,13 +1166,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
 
 
     public List<PDFobj> Read(Stream inputStream) {
-        MemoryStream baos = new MemoryStream();
-        int ch;
-        while ((ch = inputStream.ReadByte()) != -1) {
-            baos.WriteByte((byte) ch);
-        }
-        inputStream.Close();
-        byte[] buf = baos.ToArray();
+        byte[] buf = Contents.OfInputStream(inputStream);
 
         List<PDFobj> objects1 = new List<PDFobj>();
         int xref = GetStartXRef(buf);
