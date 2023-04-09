@@ -9,8 +9,7 @@ import PDFjet
 ///
 public class Example_51 {
     public init(_ fileNumber: String) throws {
-        let stream = OutputStream(toFileAtPath: "temp.pdf", append: false)!
-        let pdf = PDF(stream)
+        let pdf = PDF(OutputStream(toFileAtPath: "temp.pdf", append: false)!)
         var page = Page(pdf, Letter.PORTRAIT)
 
         var box = Box()

@@ -5,7 +5,6 @@ import PDFjet
  *  Example_15.swift
  */
 public class Example_15 {
-    @discardableResult
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_15.pdf", append: false)!)
 
@@ -23,17 +22,14 @@ public class Example_15 {
             for j in 0..<5 {
                 if i == 0 {
                     cell = Cell(f1)
-                }
-                else {
+                } else {
                     cell = Cell(f2)
                 }
                 // cell.setNoBorders()
-
                 cell.setTopPadding(10.0)
                 cell.setBottomPadding(10.0)
                 cell.setLeftPadding(10.0)
                 cell.setRightPadding(10.0)
-
                 cell.setText("Hello \(i) \(j)")
 
                 let composite = CompositeTextLine(0.0, 0.0)
@@ -45,12 +41,10 @@ public class Example_15 {
                 composite.addComponent(line1)
                 composite.addComponent(line2)
                 composite.addComponent(line3)
-
                 if i == 0 || j == 0 {
                     cell.setCompositeTextLine(composite)
                     cell.setBgColor(Color.deepskyblue)
-                }
-                else {
+                } else {
                     cell.setBgColor(Color.dodgerblue)
                 }
                 cell.setPenColor(Color.lightgray)
@@ -65,7 +59,6 @@ public class Example_15 {
         table.setCellBordersWidth(0.2)
         table.setLocation(70.0, 30.0)
         table.autoAdjustColumnWidths()
-
         var pages = [Page]()
         let xy = table.drawOn(pdf, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {

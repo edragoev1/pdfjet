@@ -5,35 +5,17 @@ import PDFjet
  *  Example_47.swift
  */
 public class Example_47 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_47.pdf", append: false)!)
 
-        let stream = OutputStream(toFileAtPath: "Example_47.pdf", append: false)
-        let pdf = PDF(stream!)
-
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
-                Font.STREAM)
+        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")!
+        let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream")!
 
         f1.setSize(12.0)
-
-        let f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Italic.ttf.stream")!,
-                Font.STREAM)
-
         f2.setSize(12.0)
 
-        let image1 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/AU-map.png")!,
-                ImageType.PNG)
-
-        let image2 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/HU-map.png")!,
-                ImageType.PNG)
+        let image1 = try Image(pdf, "images/AU-map.png")
+        let image2 = try Image(pdf, "images/HU-map.png")
 
         let page = Page(pdf, Letter.PORTRAIT)
 
@@ -87,7 +69,6 @@ public class Example_47 {
 
         pdf.complete();
     }
-
 }   // End of Example_47.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

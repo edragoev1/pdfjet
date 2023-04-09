@@ -1,32 +1,23 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_38.swift
- *
  */
 public class Example_38 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_38.pdf", append: false)!)
+        let font = Font(pdf, CoreFont.COURIER)
+        let page = Page(pdf, Letter.LANDSCAPE)
 
-        if let stream = OutputStream(toFileAtPath: "Example_38.pdf", append: false) {
+        let table = Table()
+        table.setData(createTableData(font))
+        table.setBottomMargin(10.0)
+        table.setLocation(50.0, 50.0)
+        table.mergeOverlaidBorders()
+        table.drawOn(page)
 
-            let pdf = PDF(stream)
-
-            let font = Font(pdf, CoreFont.COURIER)
-
-            let page = Page(pdf, Letter.LANDSCAPE)
-
-            let table = Table()
-            table.setData(createTableData(font))
-            table.setBottomMargin(10.0)
-            table.setLocation(50.0, 50.0)
-            table.mergeOverlaidBorders()
-            table.drawOn(page)
-
-            pdf.complete()
-        }
+        pdf.complete()
     }
 
     /**
@@ -100,9 +91,7 @@ public class Example_38 {
      * @throws Exception
      */
     private func createTableData(_ font: Font) -> [[Cell]] {
-
         var rows = [[Cell]]()
-
         for i in 0..<10 {
             var row = [Cell]()
             if i == 0 {
@@ -227,10 +216,8 @@ public class Example_38 {
             }
             rows.append(row)
         }       
-
         return rows
     }
-
 
     private func getCell(
             _ font: Font,
@@ -249,7 +236,6 @@ public class Example_38 {
         cell.setLineWidth(0.5)
         return cell
     }
-
 }   // End of Example_38.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

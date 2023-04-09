@@ -5,18 +5,13 @@ import PDFjet
 /// Example_32.java
 ///
 public class Example_32 {
-
     private var x: Float = 50.0
     private var y: Float = 50.0
     private var leading: Float = 10.0
 
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_32.pdf", append: false)!)
-
-        let font = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")!,
-                Font.STREAM)
+        let font = try Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")
         font.setSize(8.0)
 
         var colors = [String:Int32]()

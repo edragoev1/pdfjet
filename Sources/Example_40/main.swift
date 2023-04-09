@@ -1,48 +1,39 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_40.swift
- *
  */
 public class Example_40 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_40.pdf", append: false)!)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        if let stream = OutputStream(toFileAtPath: "Example_40.pdf", append: false) {
+        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        f1.setItalic(true)
+        f1.setSize(10.0)
 
-            let pdf = PDF(stream)
-            let page = Page(pdf, Letter.PORTRAIT)
+        let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        f2.setItalic(true)
+        f2.setSize(8.0)
 
-            let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            f1.setItalic(true)
-            f1.setSize(10.0)
+        let chart = Chart(f1, f2)
+        chart.setLocation(70.0, 50.0)
+        chart.setSize(500.0, 300.0)
+        chart.setTitle("Vertical Bar Chart Example")
+        chart.setXAxisTitle("Bar Chart")
+        chart.setYAxisTitle("Vertical")
+        chart.setData(try getData())
+        chart.setDrawXAxisLabels(false)
+        chart.drawOn(page)
 
-            let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            f2.setItalic(true)
-            f2.setSize(8.0)
-
-            let chart = Chart(f1, f2)
-            chart.setLocation(70.0, 50.0)
-            chart.setSize(500.0, 300.0)
-            chart.setTitle("Vertical Bar Chart Example")
-            chart.setXAxisTitle("Bar Chart")
-            chart.setYAxisTitle("Vertical")
-            chart.setData(try getData())
-            chart.setDrawXAxisLabels(false)
-
-            chart.drawOn(page)
-
-            pdf.complete()
-        }
+        pdf.complete()
     }
 
     public func getData() throws -> [[Point]] {
         var chartData = [[Point]]()
-
+        
         var path1 = [Point]()
-
         var point = Point()
         point.setDrawPath()
         point.setX(15.0)
@@ -61,9 +52,7 @@ public class Example_40 {
         point.setShape(Point.INVISIBLE)
         path1.append(point)
 
-
         var path2 = [Point]()
-
         point = Point()
         point.setDrawPath()
         point.setX(25.0)
@@ -82,9 +71,7 @@ public class Example_40 {
         point.setShape(Point.INVISIBLE)
         path2.append(point)
 
-
         var path3 = [Point]()
-
         point = Point()
         point.setDrawPath()
         point.setX(35.0)
@@ -103,9 +90,7 @@ public class Example_40 {
         point.setShape(Point.INVISIBLE)
         path3.append(point)
 
-
         var path4 = [Point]()
-
         point = Point()
         point.setDrawPath()
         point.setX(45.0)
@@ -131,7 +116,6 @@ public class Example_40 {
 
         return chartData
     }
-
 }   // End of Example_40.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

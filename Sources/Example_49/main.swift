@@ -1,25 +1,15 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_49.swift
- *
  */
 public class Example_49 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_49.pdf", append: false)!)
 
-        let stream = OutputStream(toFileAtPath: "Example_49.pdf", append: false)
-        let pdf = PDF(stream!)
-
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSerif-Regular.ttf")!)
-
-        let f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSerif-Italic.ttf")!)
+        let f1 = try Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf")
+        let f2 = try Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf")
 
         f1.setSize(14.0)
         f2.setSize(16.0)
@@ -52,7 +42,6 @@ public class Example_49 {
         column.setWidth(500.0)
         column.drawOn(page)
 
-
         var paragraphs = [Paragraph]()
         paragraphs.append(paragraph1)
         paragraphs.append(paragraph2)
@@ -64,7 +53,6 @@ public class Example_49 {
 
         pdf.complete()
     }
-
 }   // End of Example_49.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

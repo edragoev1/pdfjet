@@ -97,7 +97,6 @@ public class Example_73 {
         box.drawOn(page)
 
         let text = try Contents.ofTextFile("data/chinese-text.txt")
-
         textBox = TextBox(f1)
         textBox.setFallbackFont(f2)
         textBox.setText(text)

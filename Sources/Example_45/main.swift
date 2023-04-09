@@ -1,32 +1,19 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_45.swift
- *
  */
 public class Example_45 {
-
     public init() throws {
-
         let stream = OutputStream(toFileAtPath: "Example_45.pdf", append: false)
         let pdf = PDF(stream!)
         pdf.setLanguage("en-US")
         pdf.setTitle("Hello, World!")
 
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSerif-Regular.ttf.stream")!,
-                Font.STREAM)
-        let f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSerif-Italic.ttf.stream")!,
-                Font.STREAM)
-        let f3 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")!,
-                Font.STREAM)
+        let f1 = try Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
+        let f2 = try Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream")
+        let f3 = try Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")
 
         f1.setSize(14.0)
         f2.setSize(14.0)
@@ -87,7 +74,6 @@ public class Example_45 {
 
         pdf.complete()
     }
-
 }   // End of Example_45.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

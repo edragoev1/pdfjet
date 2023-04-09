@@ -1,86 +1,71 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_30.swift
- *
  */
 public class Example_30 {
-
     public init() throws {
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_30.pdf", append: false)!)
+        let font = Font(pdf, CoreFont.HELVETICA)
 
-        if let stream = OutputStream(toFileAtPath: "Example_30.pdf", append: false) {
+        let image1 = try Image(pdf, "images/map407.png")
+        image1.setLocation(10.0, 100.0)
 
-            let pdf = PDF(stream)
+        let image2 = try Image(pdf, "images/qrcode.png")
+        image2.setLocation(10.0, 100.0)
 
-            let font = Font(pdf, CoreFont.HELVETICA)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-            let image1 = try Image(
-                    pdf,
-                    InputStream(fileAtPath: "images/map407.png")!,
-                    ImageType.PNG)
-            image1.setLocation(10.0, 100.0)
+        var textLine = TextLine(font)
+        textLine.setText("© OpenStreetMap contributors")
+        textLine.setLocation(430.0, 655.0)
+        let xy = textLine.drawOn(page)
 
-            let image2 = try Image(
-                    pdf,
-                    InputStream(fileAtPath: "images/qrcode.png")!,
-                    ImageType.PNG)
-            image2.setLocation(10.0, 100.0)
+        textLine = TextLine(font)
+        textLine.setText("http://www.openstreetmap.org/copyright")
+        textLine.setURIAction("http://www.openstreetmap.org/copyright")
+        textLine.setLocation(380.0, xy[1] + font.getHeight())
+        textLine.drawOn(page)
 
-            let page = Page(pdf, Letter.PORTRAIT)
+        var group = OptionalContentGroup("Map")
+        group.add(image1)
+        group.setVisible(true)
+        // group.setPrintable(true)
+        group.drawOn(page)
 
-            var textLine = TextLine(font)
-            textLine.setText("© OpenStreetMap contributors")
-            textLine.setLocation(430.0, 655.0)
-            let xy = textLine.drawOn(page)
+        let textBox = TextBox(font)
+        textBox.setText("Hello Blue Layer Text")
+        textBox.setLocation(300.0, 200.0)
 
-            textLine = TextLine(font)
-            textLine.setText("http://www.openstreetmap.org/copyright")
-            textLine.setURIAction("http://www.openstreetmap.org/copyright")
-            textLine.setLocation(380.0, xy[1] + font.getHeight())
-            textLine.drawOn(page)
+        var line = Line()
+        line.setPointA(300.0, 250.0)
+        line.setPointB(500.0, 250.0)
+        line.setWidth(2.0)
+        line.setColor(Color.blue)
 
-            var group = OptionalContentGroup("Map")
-            group.add(image1)
-            group.setVisible(true)
-            // group.setPrintable(true)
-            group.drawOn(page)
+        group = OptionalContentGroup("Blue")
+        group.add(textBox)
+        group.add(line)
+        // group.setVisible(true)
+        group.drawOn(page)
 
-            let textBox = TextBox(font)
-            textBox.setText("Hello Blue Layer Text")
-            textBox.setLocation(300.0, 200.0)
+        line = Line()
+        line.setPointA(300.0, 260.0)
+        line.setPointB(500.0, 260.0)
+        line.setWidth(2.0)
+        line.setColor(Color.red)
+        line.drawOn(page)
 
-            var line = Line()
-            line.setPointA(300.0, 250.0)
-            line.setPointB(500.0, 250.0)
-            line.setWidth(2.0)
-            line.setColor(Color.blue)
+        group = OptionalContentGroup("Barcode")
+        group.add(image2)
+        group.add(line)
+        group.setVisible(true)
+        group.setPrintable(true)
+        group.drawOn(page)
 
-            group = OptionalContentGroup("Blue")
-            group.add(textBox)
-            group.add(line)
-            // group.setVisible(true)
-            group.drawOn(page)
-
-            line = Line()
-            line.setPointA(300.0, 260.0)
-            line.setPointB(500.0, 260.0)
-            line.setWidth(2.0)
-            line.setColor(Color.red)
-            line.drawOn(page)
-
-            group = OptionalContentGroup("Barcode")
-            group.add(image2)
-            group.add(line)
-            group.setVisible(true)
-            group.setPrintable(true)
-            group.drawOn(page)
-
-            pdf.complete()
-        }
+        pdf.complete()
     }
-
 }   // End of Example_30.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
