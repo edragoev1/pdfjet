@@ -822,14 +822,14 @@ public class PDF {
     // Use this method on systems that don't have Deflater stream or when troubleshooting.
     private void addPageContent(Page page) throws Exception {
         newobj();
-        append("<<\n");
-        append("/Length ");
+        append(Token.beginDictionary);
+        append(Token.length);
         append(page.buf.size());
-        append("\n");
-        append(">>\n");
-        append("stream\n");
+        append(Token.newline);
+        append(Token.endDictionary);
+        append(Token.stream);
         append(page.buf);
-        append("\nendstream\n");
+        append(Token.endstream);
         endobj();
         page.buf = null;    // Release the page content memory!
         page.contents.add(getObjNumber());
@@ -842,15 +842,15 @@ public class PDF {
         page.buf = null;    // Release the page content memory!
 
         newobj();
-        append("<<\n");
+        append(Token.beginDictionary);
         append("/Filter /LZWDecode\n");
-        append("/Length ");
+        append(Token.length);
         append(baos.size());
-        append("\n");
-        append(">>\n");
-        append("stream\n");
+        append(Token.newline);
+        append(Token.endDictionary);
+        append(Token.stream);
         append(baos);
-        append("\nendstream\n");
+        append(Token.endstream);
         endobj();
         page.contents.add(getObjNumber());
     }
