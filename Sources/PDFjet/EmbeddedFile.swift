@@ -52,26 +52,26 @@ public class EmbeddedFile {
             _ stream: InputStream,
             _ compress: Bool) throws {
         self.fileName = fileName
-        var baos = try Contents.ofInputStream(stream)
+        var buf = try Contents.ofInputStream(stream)
         if compress {
-            var buf = [UInt8]()
-            _ = LZWEncode(&buf, &baos)
-            baos = buf
+            var buf2 = [UInt8]()
+            _ = LZWEncode(&buf2, &buf)
+            buf = buf2
         }
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /EmbeddedFile\n")
         if compress {
             // pdf.append("/Filter /FlateDecode\n")
             pdf.append("/Filter /LZWDecode\n")
         }
         pdf.append("/Length ")
-        pdf.append(baos.count)
+        pdf.append(buf.count)
         pdf.append("\n")
         pdf.append(">>\n")
         pdf.append("stream\n")
-        pdf.append(baos)
+        pdf.append(buf)
         pdf.append("\nendstream\n")
         pdf.endobj()
 
@@ -84,7 +84,7 @@ public class EmbeddedFile {
         pdf.append("/EF <</F ")
         pdf.append(pdf.getObjNumber() - 1)
         pdf.append(" 0 R>>\n")
-        pdf.append(">>\n")
+        pdf.append(Token.endDictionary)
         pdf.endobj()
 
         self.objNumber = pdf.getObjNumber()
