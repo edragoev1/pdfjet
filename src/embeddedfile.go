@@ -75,7 +75,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	}
 
 	pdf.newobj()
-	pdf.appendString("<<\n")
+	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /EmbeddedFile\n")
 	if compress {
 		pdf.appendString("/Filter /FlateDecode\n")
@@ -98,7 +98,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	pdf.appendString("/EF <</F ")
 	pdf.appendInteger(pdf.getObjNumber() - 1)
 	pdf.appendString(" 0 R>>\n")
-	pdf.appendString(">>\n")
+	pdf.appendByteArray(token.EndDictionary)
 	pdf.endobj()
 
 	file.objNumber = pdf.getObjNumber()
