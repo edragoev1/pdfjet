@@ -32,10 +32,10 @@ public class Contents {
     }
 
     public static func ofBinaryFile( _ fileName: String) throws -> [UInt8] {
-        return try ofInputStream(InputStream(fileAtPath: fileName)!)
+        return try getFromStream(InputStream(fileAtPath: fileName)!)
     }
 
-    public static func ofInputStream( _ stream: InputStream, _ bufferSize: Int) throws -> [UInt8] {
+    public static func getFromStream( _ stream: InputStream, _ bufferSize: Int) throws -> [UInt8] {
         var contents = [UInt8]()
         var buffer = [UInt8](repeating: 0, count: bufferSize)
         stream.open()
@@ -50,7 +50,7 @@ public class Contents {
         return contents
     }
 
-    public static func ofInputStream( _ stream: InputStream) throws -> [UInt8] {
-        try self.ofInputStream(stream, 4096)
+    public static func getFromStream( _ stream: InputStream) throws -> [UInt8] {
+        try self.getFromStream(stream, 4096)
     }
 }   // End of Contents.swift

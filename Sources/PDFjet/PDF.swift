@@ -1166,7 +1166,7 @@ public class PDF {
     /// - Returns: [PDFobj] the list of PDF objects.
     ///
     public func read(from stream: InputStream) throws -> [PDFobj] {
-        var buffer1 = try Contents.ofInputStream(stream)
+        var buffer1 = try Contents.getFromStream(stream)
         var objects1 = [PDFobj]()
         let xref = getStartXRef(&buffer1)
         let obj1 = getObject(&buffer1, xref, buffer1.count)

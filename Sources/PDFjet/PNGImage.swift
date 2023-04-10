@@ -213,7 +213,7 @@ public class PNGImage {
 
 
     private func readPNG(_ stream: InputStream) throws -> [UInt8] {
-        let contents = try Contents.ofInputStream(stream)
+        let contents = try Contents.getFromStream(stream)
         if contents[0] == 0x89 &&
                 contents[1] == 0x50 &&
                 contents[2] == 0x4E &&

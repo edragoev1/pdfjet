@@ -65,7 +65,7 @@ class JPGImage {
 
 
     public init(_ stream: InputStream) throws {
-        self.data = try Contents.ofInputStream(stream)
+        self.data = try Contents.getFromStream(stream)
         processImage(&data)
     }
 
