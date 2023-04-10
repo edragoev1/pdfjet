@@ -47,9 +47,8 @@ public class EmbeddedFile {
         this.fileName = fileName;
         byte[] buf = Contents.ofInputStream(stream);
 
-        ByteArrayOutputStream baos = null;
         if (compress) {
-            baos = new ByteArrayOutputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater());
             dos.write(buf, 0, buf.length);
             dos.finish();
@@ -57,7 +56,7 @@ public class EmbeddedFile {
         }
 
         pdf.newobj();
-        pdf.append("<<\n");
+        pdf.append(Token.beginDictionary);
         pdf.append("/Type /EmbeddedFile\n");
         if (compress) {
             pdf.append("/Filter /FlateDecode\n");
@@ -80,7 +79,7 @@ public class EmbeddedFile {
         pdf.append("/EF <</F ");
         pdf.append(pdf.getObjNumber() - 1);
         pdf.append(" 0 R>>\n");
-        pdf.append(">>\n");
+        pdf.append(Token.endDictionary);
         pdf.endobj();
 
         this.objNumber = pdf.getObjNumber();

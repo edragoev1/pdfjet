@@ -1129,6 +1129,12 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
     }
 
 
+    internal void Append(byte[] buf) {
+        os.Write(buf, 0, buf.Length);
+        byteCount += buf.Length;
+    }
+
+
     internal void Append(byte[] buf, int off, int len) {
         os.Write(buf, off, len);
         byteCount += len;

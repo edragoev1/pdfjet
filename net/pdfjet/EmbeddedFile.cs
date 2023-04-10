@@ -40,34 +40,27 @@ public class EmbeddedFile {
 
     public EmbeddedFile(PDF pdf, String fileName, Stream stream, bool compress) {
         this.fileName = fileName;
-
-        MemoryStream baos = new MemoryStream();
-        byte[] buf = new byte[4096];
-        int number;
-        while ((number = stream.Read(buf, 0, buf.Length)) > 0) {
-            baos.Write(buf, 0, number);
-        }
-        stream.Dispose();
+        byte[] buf = Contents.OfInputStream(stream);
 
         if (compress) {
-            buf = baos.ToArray();
-            baos = new MemoryStream();
+            MemoryStream baos = new MemoryStream();
             DeflaterOutputStream dos = new DeflaterOutputStream(baos);
             dos.Write(buf, 0, buf.Length);
+            buf = baos.ToArray();
         }
 
         pdf.Newobj();
-        pdf.Append("<<\n");
+        pdf.Append(Token.beginDictionary);
         pdf.Append("/Type /EmbeddedFile\n");
         if (compress) {
             pdf.Append("/Filter /FlateDecode\n");
         }
         pdf.Append("/Length ");
-        pdf.Append(baos.Length);
+        pdf.Append(buf.Length);
         pdf.Append("\n");
         pdf.Append(">>\n");
         pdf.Append("stream\n");
-        pdf.Append(baos);
+        pdf.Append(buf);
         pdf.Append("\nendstream\n");
         pdf.Endobj();
 
@@ -80,7 +73,7 @@ public class EmbeddedFile {
         pdf.Append("/EF <</F ");
         pdf.Append(pdf.GetObjNumber() - 1);
         pdf.Append(" 0 R>>\n");
-        pdf.Append(">>\n");
+        pdf.Append(Token.endDictionary);
         pdf.Endobj();
 
         this.objNumber = pdf.GetObjNumber();
