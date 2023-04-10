@@ -873,8 +873,7 @@ public class PDF {
             append("/Name /");
             append(annot.fileAttachment.icon);
             append("\n");
-        }
-        else {
+        } else {
             append("/Subtype /Link\n");
         }
         append("/Rect [");
