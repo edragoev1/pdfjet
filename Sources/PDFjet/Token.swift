@@ -33,4 +33,9 @@ public class Token {
     public static let endobj = Array("endobj\n".utf8)
     public static let beginDictionary = Array("<<\n".utf8);
     public static let endDictionary = Array(">>\n".utf8);
+    public static let length = Array("/Length ".utf8);
+    public static let first = Array("/First ".utf8);
+    public static let last = Array("/Last ".utf8);
+    public static let count = Array("/Count ".utf8);
+
 }
