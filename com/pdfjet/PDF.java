@@ -1225,7 +1225,7 @@ public class PDF {
      *  @throws Exception  If an input or output exception occurred
      */
     public List<PDFobj> read(InputStream inputStream) throws Exception {
-        byte[] buf = Contents.ofInputStream(inputStream);
+        byte[] buf = Contents.getFromStream(inputStream);
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
         int xref = getStartXRef(buf);

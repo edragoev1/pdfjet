@@ -64,7 +64,7 @@ public class OTF {
      * @throws Exception if there is a problem
      */
     public OTF(InputStream stream) throws Exception {
-        buf = Contents.ofInputStream(stream);
+        buf = Contents.getFromStream(stream);
 
         // Extract OTF metadata
         long version = readUInt32();

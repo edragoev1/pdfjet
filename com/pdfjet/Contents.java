@@ -60,7 +60,7 @@ public class Contents {
         return baos.toByteArray();
     }
 
-    public static byte[] ofInputStream(InputStream stream, int bufferSize) throws Exception {
+    public static byte[] getFromStream(InputStream stream, int bufferSize) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             byte[] buffer = new byte[bufferSize];
@@ -74,7 +74,7 @@ public class Contents {
         return baos.toByteArray();
     }
 
-    public static byte[] ofInputStream(InputStream stream) throws Exception {
-        return ofInputStream(stream, 4096);
+    public static byte[] getFromStream(InputStream stream) throws Exception {
+        return getFromStream(stream, 4096);
     }
 }
