@@ -32,6 +32,8 @@ import (
 	"log"
 	"strings"
 	"unicode/utf16"
+
+	"github.com/edragoev1/pdfjet/src/contents"
 )
 
 // FontTable is used to construct font table objects.
@@ -77,12 +79,7 @@ type OTF struct {
 // NewOTF is the constructor for TTF and OTF fonts.
 func NewOTF(reader io.Reader) *OTF {
 	otf := new(OTF)
-	buf, err := io.ReadAll(reader)
-	if err != nil {
-		log.Fatal(err)
-	}
-	otf.buf = buf
-
+	otf.buf = contents.GetFromReader(reader)
 	otf.unicodeToGID = make([]int, 0x10000)
 
 	// Extract the OTF metadata
@@ -134,12 +131,12 @@ func NewOTF(reader io.Reader) *OTF {
 
 	writer := zlib.NewWriter(&otf.compressed)
 	if otf.cff {
-		_, err = writer.Write(otf.buf[otf.cffOff : otf.cffOff+otf.cffLen])
+		_, err := writer.Write(otf.buf[otf.cffOff : otf.cffOff+otf.cffLen])
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		_, err = writer.Write(otf.buf)
+		_, err := writer.Write(otf.buf)
 		if err != nil {
 			log.Fatal(err)
 		}

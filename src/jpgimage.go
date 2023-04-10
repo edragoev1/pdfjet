@@ -75,7 +75,7 @@ const (
 // NewJPGImage is the constructor.
 func NewJPGImage(reader io.Reader) *JPGImage {
 	image := new(JPGImage)
-	image.data = contents.ReadFrom(reader)
+	image.data = contents.GetFromReader(reader)
 	return image.readJPGImage(image.data)
 }
 

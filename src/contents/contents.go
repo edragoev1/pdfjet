@@ -52,7 +52,7 @@ func OfBinaryFile(fileName string) []uint8 {
 	return contents
 }
 
-func ReadFrom(reader io.Reader) []uint8 {
+func GetFromReader(reader io.Reader) []uint8 {
 	contents, err := io.ReadAll(reader)
 	if err != nil {
 		log.Fatal(err)
