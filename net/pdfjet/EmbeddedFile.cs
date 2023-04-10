@@ -40,7 +40,7 @@ public class EmbeddedFile {
 
     public EmbeddedFile(PDF pdf, String fileName, Stream stream, bool compress) {
         this.fileName = fileName;
-        byte[] buf = Contents.OfInputStream(stream);
+        byte[] buf = Contents.GetFromStream(stream);
 
         if (compress) {
             MemoryStream baos = new MemoryStream();

@@ -55,7 +55,7 @@ public class OTF {
     private int index = 0;
 
     public OTF(Stream stream) {
-        buf = Contents.OfInputStream(stream);
+        buf = Contents.GetFromStream(stream);
 
         // Extract OTF metadata
         long version = ReadUInt32();

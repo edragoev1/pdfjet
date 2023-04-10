@@ -1172,7 +1172,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
 
 
     public List<PDFobj> Read(Stream inputStream) {
-        byte[] buf = Contents.OfInputStream(inputStream);
+        byte[] buf = Contents.GetFromStream(inputStream);
 
         List<PDFobj> objects1 = new List<PDFobj>();
         int xref = GetStartXRef(buf);
