@@ -528,8 +528,7 @@ public class PDF {
                     append(element.annotation.objNumber);
                     append(" 0 R\n");
                     append(">>\n");
-                }
-                else {
+                } else {
                     append("/K ");
                     append(element.mcid);
                     append("\n");
@@ -697,7 +696,6 @@ public class PDF {
 
 
     private void addAllPages(int resObjNumber) throws Exception {
-
         setDestinationObjNumbers();
         addAnnotDictionaries();
 
