@@ -805,15 +805,15 @@ public class PDF {
         page.buf = null;    // Release the page content memory!
 
         newobj();
-        append("<<\n");
+        append(Token.beginDictionary);
         append("/Filter /FlateDecode\n");
-        append("/Length ");
+        append(Token.length);
         append(baos.size());
-        append("\n");
-        append(">>\n");
-        append("stream\n");
+        append(Token.newline);
+        append(Token.endDictionary);
+        append(Token.stream);
         append(baos);
-        append("\nendstream\n");
+        append(Token.endstream);
         endobj();
         page.contents.add(getObjNumber());
     }
@@ -1175,6 +1175,12 @@ public class PDF {
     protected void append(byte b) throws IOException {
         os.write(b);
         byteCount += 1;
+    }
+
+
+    protected void append(byte[] buf) throws IOException {
+        os.write(buf, 0, buf.length);
+        byteCount += buf.length;
     }
 
 
