@@ -107,22 +107,20 @@ public class OptimizeOTF {
         }
 
         if (OptimizeOTF.useZopfli) {
-            BufferedOutputStream fos5 =
+            BufferedOutputStream fos4 =
                     new BufferedOutputStream(new FileOutputStream(fileName + ".tmp"));
-            fos5.write(buf3, 0, buf3.length);
-            fos5.close();
+            fos4.write(buf3, 0, buf3.length);
+            fos4.close();
             final List<String> command = new ArrayList<String>();
             command.add("util/zopfli/zopfli");
             command.add("-c");
-            command.add("--deflate");
+            command.add("--zlib");
             command.add("--i100");
             command.add(fileName + ".tmp");
             final Process process = new ProcessBuilder(command).start();
             final InputStream input = process.getInputStream();
             final byte[] buf = new byte[4096];
             ByteArrayOutputStream buf5 = new ByteArrayOutputStream(0xFFFF);
-            buf5.write(0x58);               // These are the correct values for
-            buf5.write(0x85);               // CMF and FLG according to Microsoft
             int len;
             while ((len = input.read(buf)) != -1) {
                 buf5.write(buf, 0, len);
@@ -133,11 +131,11 @@ public class OptimizeOTF {
             new File(fileName + ".tmp").delete();
         } else {
             ByteArrayOutputStream buf4 = new ByteArrayOutputStream(0xFFFF);
-            DeflaterOutputStream dos2 =
+            DeflaterOutputStream dos =
                     new DeflaterOutputStream(buf4,
                             new Deflater(Deflater.BEST_COMPRESSION));
-            dos2.write(buf3, 0, buf3.length);
-            dos2.finish();
+            dos.write(buf3, 0, buf3.length);
+            dos.finish();
             writeInt32(buf3.length, fos);   // Uncompressed font size
             writeInt32(buf4.size(), fos);   // Compressed font size
             buf4.writeTo(fos);
