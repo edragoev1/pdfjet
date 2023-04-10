@@ -32,6 +32,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/src/token"
 )
 
 // EmbeddedFile is used to embed file objects in the PDF.
@@ -82,9 +84,9 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	pdf.appendInteger(len(file.content))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
+	pdf.appendByteArray(token.Stream)
 	pdf.appendByteArray(file.content)
-	pdf.appendString("\nendstream\n")
+	pdf.appendByteArray(token.Endstream)
 	pdf.endobj()
 
 	pdf.newobj()
