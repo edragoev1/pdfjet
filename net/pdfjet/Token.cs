@@ -1,0 +1,11 @@
+using System.Text;
+
+namespace PDFjet.NET {
+public class Token {
+    public static byte[] stream = Encoding.ASCII.GetBytes("\nstream\n");
+    public static byte[] endstream = Encoding.ASCII.GetBytes("\nendstream\n");
+    public static byte[] space = Encoding.ASCII.GetBytes(" ");
+    public static byte[] newline = Encoding.ASCII.GetBytes("\n");
+    public static byte[] endobj = Encoding.ASCII.GetBytes("endobj\n");
+}
+}
