@@ -42,6 +42,8 @@ package pdfjet
 import (
 	"io"
 	"log"
+
+	"github.com/edragoev1/pdfjet/src/contents"
 )
 
 // JPGImage describes JPG image object.
@@ -73,11 +75,7 @@ const (
 // NewJPGImage is the constructor.
 func NewJPGImage(reader io.Reader) *JPGImage {
 	image := new(JPGImage)
-	buf, err := io.ReadAll(reader)
-	if err != nil {
-		log.Fatal(err)
-	}
-	image.data = buf
+	image.data = contents.ReadFrom(reader)
 	return image.readJPGImage(image.data)
 }
 
