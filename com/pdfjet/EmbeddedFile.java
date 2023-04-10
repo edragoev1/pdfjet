@@ -45,21 +45,15 @@ public class EmbeddedFile {
 
     public EmbeddedFile(PDF pdf, String fileName, InputStream stream, boolean compress) throws Exception {
         this.fileName = fileName;
+        byte[] buf = Contents.ofInputStream(stream);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int number;
-        while ((number = stream.read(buf, 0, buf.length)) > 0) {
-            baos.write(buf, 0, number);
-        }
-        stream.close();
-
+        ByteArrayOutputStream baos = null;
         if (compress) {
-            buf = baos.toByteArray();
             baos = new ByteArrayOutputStream();
             DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater());
             dos.write(buf, 0, buf.length);
             dos.finish();
+            buf = baos.toByteArray();
         }
 
         pdf.newobj();
@@ -69,11 +63,11 @@ public class EmbeddedFile {
             pdf.append("/Filter /FlateDecode\n");
         }
         pdf.append("/Length ");
-        pdf.append(baos.size());
+        pdf.append(buf.length);
         pdf.append("\n");
         pdf.append(">>\n");
         pdf.append("stream\n");
-        pdf.append(baos);
+        pdf.append(buf);
         pdf.append("\nendstream\n");
         pdf.endobj();
 
