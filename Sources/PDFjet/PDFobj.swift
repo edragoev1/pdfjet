@@ -84,9 +84,11 @@ public final class PDFobj {
             stream = [UInt8]()
             stream!.append(contentsOf: buffer[streamOffset..<streamOffset + length])
             if getValue("/Filter") == "/FlateDecode" {
+                // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                 _ = try Puff(output: &data, input: &stream!)
-            }
-            else {
+                // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+                // Swift.print("in pdf.read() => \(time1 - time0)")
+            } else {
                 // Assume no compression for now ...
                 self.data = stream!
             }

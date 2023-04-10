@@ -1778,7 +1778,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                 objOffset.Add(byteCount);
                 Append(obj.number);
                 Append(" 0 obj\n");
-
                 if (obj.dict != null) {
                     for (int i = 0; i < obj.dict.Count; i++) {
                         Append(obj.dict[i]);

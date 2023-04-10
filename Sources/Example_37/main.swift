@@ -57,7 +57,6 @@ public class Example_37 {
 
         let f1 = Font(pdf, CoreFont.HELVETICA)
         f1.setSize(72.0)
-
         var page: Page?
         for image in images {
             page = Page(pdf, A4.PORTRAIT)

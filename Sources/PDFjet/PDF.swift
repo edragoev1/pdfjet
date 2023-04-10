@@ -1167,7 +1167,6 @@ public class PDF {
     ///
     public func read(from stream: InputStream) throws -> [PDFobj] {
         var buffer1 = try Contents.ofInputStream(stream)
-
         var objects1 = [PDFobj]()
         let xref = getStartXRef(&buffer1)
         let obj1 = getObject(&buffer1, xref, buffer1.count)
@@ -1178,13 +1177,11 @@ public class PDF {
             // Get the objects using XRef stream
             try getObjects2(&buffer1, obj1, &objects1)
         }
-
         var objects2 = [PDFobj]()
         for obj in objects1 {
             if obj.dict.contains("stream") {
                 try obj.setStreamAndData(&buffer1, obj.getLength(&objects1)!)
             }
-
             if obj.getValue("/Type") == "/ObjStm" {
                 let first = Int(obj.getValue("/First"))!
                 let o2 = getObject(&obj.data, 0, first)
@@ -1208,7 +1205,6 @@ public class PDF {
                 objects2.append(obj)
             }
         }
-
         return getSortedObjects(objects2)
     }
 
@@ -1854,7 +1850,6 @@ public class PDF {
                         append(Token.newline)
                     }
                 }
-// let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                 if obj.stream != nil {
                     append(obj.stream!)
                     // append("\nendstream\n")
@@ -1864,8 +1859,6 @@ public class PDF {
                     // append("endobj\n")
                     append(Token.endobj)
                 }
-// let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-// Swift.print("addObjectsToPDF() => \(time1 - time0)")
             }
         }
     }

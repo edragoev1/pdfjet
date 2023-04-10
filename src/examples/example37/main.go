@@ -51,8 +51,8 @@ func Example37(fileName string) {
 
 func main() {
 	start := time.Now()
-	Example37("data/testPDFs/wirth.pdf")
-	// Example37("../../eBooks/UniversityPhysicsVolume1.pdf")
+	// Example37("data/testPDFs/wirth.pdf")
+	Example37("../../eBooks/UniversityPhysicsVolume1.pdf")
 	// Example37("../../eBooks/Smalltalk-and-OO.pdf")
 	// Example37("../../eBooks/InsideSmalltalk1.pdf")
 	// Example37("../../eBooks/InsideSmalltalk2.pdf")
