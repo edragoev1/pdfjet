@@ -857,7 +857,7 @@ public class PDF {
     private int addAnnotationObject(Annotation annot, int index) throws Exception {
         newobj();
         annot.objNumber = getObjNumber();
-        append("<<\n");
+        append(Token.beginDictionary);
         append("/Type /Annot\n");
         if (annot.fileAttachment != null) {
             append("/Subtype /FileAttachment\n");
@@ -894,8 +894,7 @@ public class PDF {
             append(annot.uri);
             append(")\n");
             append(">>\n");
-        }
-        else if (annot.key != null) {
+        } else if (annot.key != null) {
             Destination destination = destinations.get(annot.key);
             if (destination != null) {
                 append("/F 4\n");   // No Zoom
@@ -911,7 +910,7 @@ public class PDF {
             append(index++);
             append("\n");
         }
-        append(">>\n");
+        append(Token.endDictionary);
         endobj();
 
         return index;
