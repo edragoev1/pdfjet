@@ -6,4 +6,6 @@ public class Token {
     public static byte[] space = " ".getBytes();
     public static byte[] newline = "\n".getBytes();
     public static byte[] endobj = "endobj\n".getBytes();
+    public static byte[] beginDictionary = "<<\n".getBytes();
+    public static byte[] endDictionary = ">>\n".getBytes();
 }

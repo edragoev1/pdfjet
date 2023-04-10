@@ -7,5 +7,7 @@ public class Token {
     public static byte[] space = Encoding.ASCII.GetBytes(" ");
     public static byte[] newline = Encoding.ASCII.GetBytes("\n");
     public static byte[] endobj = Encoding.ASCII.GetBytes("endobj\n");
+    public static byte[] beginDictionary = Encoding.ASCII.GetBytes("<<\n");
+    public static byte[] endDictionary = Encoding.ASCII.GetBytes(">>\n");
 }
 }

@@ -31,4 +31,6 @@ public class Token {
     public static let space = Array(" ".utf8)
     public static let newline = Array("\n".utf8)
     public static let endobj = Array("endobj\n".utf8)
+    public static let beginDictionary = Array("<<\n".utf8);
+    public static let endDictionary = Array(">>\n".utf8);
 }
