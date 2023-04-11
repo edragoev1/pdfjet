@@ -119,12 +119,9 @@ class LZ77Context {
 //     struct LZ77InternalContext *ictx
     var ictx: LZ77InternalContext?
 //     void *userdata
-    var userdata: Any
+    var userdata: Any?
 //     void (*literal) (struct LZ77Context *ctx, unsigned char c)
 //     void (*match) (struct LZ77Context *ctx, int distance, int len)
-    init() {
-        userdata = String()
-    }
 }
 
 func lz77_hash(_ data: [UInt8]) -> Int {
@@ -515,7 +512,6 @@ let distcodes: [coderecord] = [
 ]
 
 func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
-    // struct Outbuf *out = (struct Outbuf *) ectx->userdata
     var out = Outbuf()
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
