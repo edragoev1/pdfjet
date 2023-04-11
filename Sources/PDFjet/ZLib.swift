@@ -84,15 +84,16 @@ let HASHCHARS = 3                    /* how many chars make a hash */
  * byte), we can carefully remove the hash chain entry.
  */
 
-// #define INVALID -1                     /* invalid hash _and_ invalid offset */
-// struct WindowEntry {
-//     short next, prev;                  /* array indices within the window */
-//     short hashval;
-// };
+let INVALID = -1                        /* invalid hash _and_ invalid offset */
+struct WindowEntry {
+    var next: Int16                     /* array indices within the window */
+    var prev: Int16
+    var hashval: Int16
+}
 
-// struct HashEntry {
-//     short first;                       /* window index of first in chain */
-// };
+struct HashEntry {
+    var first: Int16                    /* window index of first in chain */
+}
 
 // struct Match {
 //     int distance, len;
