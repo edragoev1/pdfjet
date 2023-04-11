@@ -74,20 +74,17 @@ import Foundation
  */
 
 class LZ77InternalContext {
-//     struct WindowEntry win[WINSIZE]
-    var win: [WindowEntry]?
-//     unsigned char data[WINSIZE]
-    var data: [UInt8]?
-    var winpos: Int?
-    var hashtab: [HashEntry]?
-    var pending: [UInt8]    // TODO: Initialize to size HASHCHARS somewhere!!
-    var npending: Int
+    var win = [WindowEntry]()
+    var data = [UInt8](repeating: 0, count: WINSIZE)
+    var winpos = 0
+    var hashtab = [HashEntry]()
+    var pending = [UInt8](repeating: 0, count: HASHCHARS)
+    var npending = 0
 
     init() {
         win = [WindowEntry](repeating: WindowEntry(next: 0, prev: 0, hashval: 0), count: WINSIZE) // TODO!!!
         data = [UInt8](repeating: 0, count: WINSIZE)
         winpos = 0
-        // hashtab = HashEntry(first: 0, count: HASHMAX)
         pending = [UInt8](repeating: 0, count: HASHCHARS)
         npending = 0
     }
@@ -156,14 +153,12 @@ func lz77_init(_ ctx: LZ77Context) -> Int {
     ctx.ictx = st
     var i = 0
     while i < WINSIZE {
-        st.win![i].next = INVALID
-        st.win![i].prev = INVALID
-        st.win![i].hashval = INVALID
+        st.win.append(WindowEntry(next: INVALID, prev: INVALID, hashval: INVALID))
         i += 1
     }
     i = 0
     while i < HASHMAX {
-        st.hashtab![i].first = INVALID
+        st.hashtab.append(HashEntry(first: INVALID))
         i += 1
     }
     st.winpos = 0
@@ -179,30 +174,30 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
      * Remove the hash entry at winpos from the tail of its chain,
      * or empty the chain if it's the only thing on the chain.
      */
-    if (st.win![st.winpos!].prev != INVALID) {
-        st.win![st.win![st.winpos!].prev!].next = INVALID
-    } else if (st.win![st.winpos!].hashval != INVALID) {
-        st.hashtab![st.win![st.winpos!].hashval!].first = INVALID
+    if (st.win[st.winpos].prev != INVALID) {
+        st.win[st.win[st.winpos].prev!].next = INVALID
+    } else if (st.win[st.winpos].hashval != INVALID) {
+        st.hashtab[st.win[st.winpos].hashval!].first = INVALID
     }
 
     /*
      * Create a new entry at winpos and add it to the head of its
      * hash chain.
      */
-    st.win![st.winpos!].hashval = hash
-    st.win![st.winpos!].prev = INVALID
-    off = st.hashtab![hash].first!
-    st.win![st.winpos!].next = off
-    st.hashtab![hash].first = st.winpos!
+    st.win[st.winpos].hashval = hash
+    st.win[st.winpos].prev = INVALID
+    off = st.hashtab[hash].first!
+    st.win[st.winpos].next = off
+    st.hashtab[hash].first = st.winpos
     if (off != INVALID) {
-        st.win![off].prev = st.winpos!
+        st.win[off].prev = st.winpos
     }
-    st.data![st.winpos!] = c
+    st.data[st.winpos] = c
 
     /*
      * Advance the window pointer.
      */
-    st.winpos = (st.winpos! + 1) & (WINSIZE - 1)
+    st.winpos = (st.winpos + 1) & (WINSIZE - 1)
 }
 
 // #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
@@ -671,7 +666,7 @@ func zlib_compress_block(
     var out = Outbuf()
     var in_block = false // TODO bool in_block;
 
-    // assert(!out.outbuf!)
+    assert(out.outbuf != nil)
     // out.outbuf = strbuf_new_nm()
 
     /*
@@ -700,7 +695,7 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
-//     lz77_compress(&comp.ectx, block, len)
+    // lz77_compress(&comp.ectx, block, len)
 
     /*
      * End the block (by transmitting code 256, which is
