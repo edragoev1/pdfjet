@@ -52,21 +52,6 @@ import Foundation
 //     void (*match) (struct LZ77Context *ctx, int distance, int len);
 // };
 
-// /*
-//  * Initialise the private fields of an LZ77Context. It's up to the
-//  * user to initialise the public fields.
-//  */
-// static func lz77_init(struct LZ77Context *ctx) -> Int
-
-// /*
-//  * Supply data to be compressed. Will update the private fields of
-//  * the LZ77Context, and will call literal() and match() to output.
-//  * If `compress' is false, it will never emit a match, but will
-//  * instead call literal() for everything.
-//  */
-// static void lz77_compress(struct LZ77Context *ctx,
-//                           const unsigned char *data, int len);
-
 /*
  * Modifiable parameters.
  */
@@ -95,9 +80,10 @@ struct HashEntry {
     var first: Int16                    /* window index of first in chain */
 }
 
-// struct Match {
-//     int distance, len;
-// };
+struct Match {
+    var distance: Int
+    var len: Int
+}
 
 // struct LZ77InternalContext {
 //     struct WindowEntry win[WINSIZE];
@@ -115,7 +101,11 @@ func lz77_hash(_ data: [UInt8]) -> Int {
     return hash % HASHMAX
 }
 
-// func lz77_init(struct LZ77Context *ctx) -> Int32 {
+/*
+ * Initialise the private fields of an LZ77Context. It's up to the
+ * user to initialise the public fields.
+ */
+// func lz77_init(struct LZ77Context *ctx) -> Int {
 //     struct LZ77InternalContext *st
 //     int i
 
@@ -174,6 +164,12 @@ func lz77_hash(_ data: [UInt8]) -> Int {
 
 // #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
 
+// /*
+//  * Supply data to be compressed. Will update the private fields of
+//  * the LZ77Context, and will call literal() and match() to output.
+//  * If `compress' is false, it will never emit a match, but will
+//  * instead call literal() for everything.
+//  */
 // static void lz77_compress(struct LZ77Context *ctx,
 //                           const unsigned char *data, int len)
 // {
