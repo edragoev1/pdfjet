@@ -44,7 +44,15 @@ import Foundation
  * and good luck :-)
  */
 
-// struct LZ77InternalContext;
+// struct LZ77InternalContext {
+//     struct WindowEntry win[WINSIZE];
+//     unsigned char data[WINSIZE];
+//     int winpos;
+//     struct HashEntry hashtab[HASHMAX];
+//     unsigned char pending[HASHCHARS];
+//     int npending;
+// };
+
 // struct LZ77Context {
 //     struct LZ77InternalContext *ictx;
 //     void *userdata;
@@ -84,15 +92,6 @@ struct Match {
     var distance: Int
     var len: Int
 }
-
-// struct LZ77InternalContext {
-//     struct WindowEntry win[WINSIZE];
-//     unsigned char data[WINSIZE];
-//     int winpos;
-//     struct HashEntry hashtab[HASHMAX];
-//     unsigned char pending[HASHCHARS];
-//     int npending;
-// };
 
 func lz77_hash(_ data: [UInt8]) -> Int {
     var hash = 257 * Int(data[0])
