@@ -387,20 +387,20 @@ func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) 
 //  */
 
 struct Outbuf {
-    var outbuf = [UInt8]()
-    var outbits: Int?
-    var noutbits: Int?
-    var firstblock: Bool?
+    var outbuf: [UInt8]
+    var outbits: Int
+    var noutbits: Int
+    var firstblock: Bool
 }
 
 func outbits(_ out: inout Outbuf, _ bits: Int, _ nbits: Int) {
-    assert(out.noutbits! + nbits <= 32)
-    out.outbits! |= bits << out.noutbits!
-    out.noutbits! += nbits
-    while out.noutbits! >= 8 {
-        out.outbuf.append(UInt8(out.outbits!) & 0xFF)
-        out.outbits! >>= 8
-        out.noutbits! -= 8
+    assert(out.noutbits + nbits <= 32)
+    out.outbits |= bits << out.noutbits
+    out.noutbits += nbits
+    while out.noutbits >= 8 {
+        out.outbuf.append(UInt8(out.outbits) & 0xFF)
+        out.outbits >>= 8
+        out.noutbits -= 8
     }
 }
 
@@ -512,7 +512,7 @@ let distcodes: [coderecord] = [
 ]
 
 func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
-    var out = Outbuf()
+    var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         outbits(&out, Int(mirrorbytes[0x30 + Int(c)]), 8)
@@ -525,7 +525,7 @@ func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
 func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
     var d: coderecord?
     var l: coderecord?
-    var out = Outbuf()
+    var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
 
     while len > 0 {
         /*
@@ -650,7 +650,7 @@ func zlib_compress_block(
     // struct ssh_zlib_compressor *comp =
     //     container_of(sc, struct ssh_zlib_compressor, sc);
     // struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
-    var out = Outbuf()
+    var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
     var in_block = false // TODO bool in_block;
 
     /*
@@ -658,7 +658,7 @@ func zlib_compress_block(
      * bytes 78 9C. (Deflate compression, 32K window size, default
      * algorithm.)
      */
-    if out.firstblock! {
+    if out.firstblock {
         outbits(&out, 0x9C78, 16)
         out.firstblock = false
         in_block = false
