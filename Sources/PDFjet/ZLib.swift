@@ -391,7 +391,7 @@ struct Outbuf {
 }
 
 func outbits(_ out: inout Outbuf, _ bits: Int, _ nbits: Int) {
-    // assert(out->noutbits + nbits <= 32)
+    assert(out.noutbits! + nbits <= 32)
     out.outbits! |= bits << out.noutbits!
     out.noutbits! += nbits
     while out.noutbits! >= 8 {
@@ -444,7 +444,7 @@ struct coderecord {
     let max: Int
 }
 
-let lencode: [coderecord] = [
+let lencodes: [coderecord] = [
     coderecord(code: 257, extrabits: 0, min: 3, max: 3),
     coderecord(code: 258, extrabits: 0, min: 4, max: 4),
     coderecord(code: 259, extrabits: 0, min: 5, max: 5),
@@ -511,208 +511,219 @@ let distcodes: [coderecord] = [
 
 func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
     // struct Outbuf *out = (struct Outbuf *) ectx->userdata
-
+    var out = Outbuf()
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
-        // outbits(out, mirrorbytes[0x30 + c], 8)
+        outbits(&out, Int(mirrorbytes[0x30 + Int(c)]), 8)
     } else {
         /* 144 through 255 are 9 bits long starting at 110010000. */
-        // outbits(out, 1 + 2 * mirrorbytes[0x90 - 144 + c], 9)
+        outbits(&out, 1 + 2 * Int(mirrorbytes[0x90 - 144 + Int(c)]), 9)
     }
 }
 
-// static void zlib_match(struct LZ77Context *ectx, int distance, int len)
-// {
-//     const coderecord *d, *l;
-//     int i, j, k;
-//     struct Outbuf *out = (struct Outbuf *) ectx->userdata;
+func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
+    var d: coderecord?
+    var l: coderecord?
 
-//     while (len > 0) {
-//         int thislen;
+    // var k: Int
+    // struct Outbuf *out = (struct Outbuf *) ectx->userdata;
+    var out = Outbuf()
 
-//         /*
-//          * We can transmit matches of lengths 3 through 258
-//          * inclusive. So if len exceeds 258, we must transmit in
-//          * several steps, with 258 or less in each step.
-//          *
-//          * Specifically: if len >= 261, we can transmit 258 and be
-//          * sure of having at least 3 left for the next step. And if
-//          * len <= 258, we can just transmit len. But if len == 259
-//          * or 260, we must transmit len-3.
-//          */
-//         thislen = (len > 260 ? 258 : len <= 258 ? len : len - 3);
-//         len -= thislen;
+    while len > 0 {
+        /*
+         * We can transmit matches of lengths 3 through 258
+         * inclusive. So if len exceeds 258, we must transmit in
+         * several steps, with 258 or less in each step.
+         *
+         * Specifically: if len >= 261, we can transmit 258 and be
+         * sure of having at least 3 left for the next step. And if
+         * len <= 258, we can just transmit len. But if len == 259
+         * or 260, we must transmit len-3.
+         */
+        let thislen = (len > 260 ? 258 : len <= 258 ? len : len - 3)
+        len -= thislen
 
-//         /*
-//          * Binary-search to find which length code we're
-//          * transmitting.
-//          */
-//         i = -1;
-//         j = lenof(lencodes);
-//         while (1) {
-//             assert(j - i >= 2);
-//             k = (j + i) / 2;
-//             if (thislen < lencodes[k].min)
-//                 j = k;
-//             else if (thislen > lencodes[k].max)
-//                 i = k;
-//             else {
-//                 l = &lencodes[k];
-//                 break;                 /* found it! */
-//             }
-//         }
+        /*
+         * Binary-search to find which length code we're
+         * transmitting.
+         */
+        var i = -1
+        var j = lencodes.count
+        while true {
+            assert(j - i >= 2)
+            let k = (j + i) / 2
+            if thislen < lencodes[k].min {
+                j = k
+            } else if thislen > lencodes[k].max {
+                i = k
+            } else {
+                l = lencodes[k]
+                break                   /* found it! */
+            }
+        }
 
-//         /*
-//          * Transmit the length code. 256-279 are seven bits
-//          * starting at 0000000; 280-287 are eight bits starting at
-//          * 11000000.
-//          */
-//         if (l->code <= 279) {
-//             outbits(out, mirrorbytes[(l->code - 256) * 2], 7);
-//         } else {
-//             outbits(out, mirrorbytes[0xc0 - 280 + l->code], 8);
-//         }
+        /*
+         * Transmit the length code. 256-279 are seven bits
+         * starting at 0000000; 280-287 are eight bits starting at
+         * 11000000.
+         */
+        if l!.code <= 279 {
+            outbits(&out, Int(mirrorbytes[(Int(l!.code) - 256) * 2]), 7)
+        } else {
+            outbits(&out, Int(mirrorbytes[0xc0 - 280 + Int(l!.code)]), 8)
+        }
 
-//         /*
-//          * Transmit the extra bits.
-//          */
-//         if (l->extrabits)
-//             outbits(out, thislen - l->min, l->extrabits);
+        /*
+         * Transmit the extra bits.
+         */
+        if l!.extrabits > 0 {
+            outbits(&out, thislen - l!.min, Int(l!.extrabits))
+        }
 
-//         /*
-//          * Binary-search to find which distance code we're
-//          * transmitting.
-//          */
-//         i = -1;
-//         j = lenof(distcodes);
-//         while (1) {
-//             assert(j - i >= 2);
-//             k = (j + i) / 2;
-//             if (distance < distcodes[k].min)
-//                 j = k;
-//             else if (distance > distcodes[k].max)
-//                 i = k;
-//             else {
-//                 d = &distcodes[k];
-//                 break;                 /* found it! */
-//             }
-//         }
+        /*
+         * Binary-search to find which distance code we're
+         * transmitting.
+         */
+        i = -1
+        j = distcodes.count
+        while true {
+            assert(j - i >= 2)
+            let k = (j + i) / 2
+            if distance < distcodes[k].min {
+                j = k;
+            } else if distance > distcodes[k].max {
+                i = k;
+            } else {
+                d = distcodes[k];
+                break;                  /* found it! */
+            }
+        }
 
-//         /*
-//          * Transmit the distance code. Five bits starting at 00000.
-//          */
-//         outbits(out, mirrorbytes[d->code * 8], 5);
+        /*
+         * Transmit the distance code. Five bits starting at 00000.
+         */
+        outbits(&out, Int(mirrorbytes[Int(d!.code) * 8]), 5)
 
-//         /*
-//          * Transmit the extra bits.
-//          */
-//         if (d->extrabits)
-//             outbits(out, distance - d->min, d->extrabits);
-//     }
+        /*
+         * Transmit the extra bits.
+         */
+        if d!.extrabits > 0 {
+            outbits(&out, distance - d!.min, Int(d!.extrabits))
+        }
+    }
+}
+
+struct ssh_zlib_compressor {
+    var ectx: LZ77Context?
+    // var sc: ssh_compressor?
+}
+
+// func zlib_compress_init() -> ssh_compressor {
+//     var out = Outbuf()
+//     // struct ssh_zlib_compressor *comp = snew(struct ssh_zlib_compressor);
+//     var comp = ssh_zlib_compressor()
+
+//     lz77_init(&comp.ectx)
+//     // comp.sc.vt = &ssh_zlib
+//     comp.ectx.literal = zlib_literal
+//     // comp.ectx.match = zlib_match
+
+//     out = Outbuf()
+//     out.outbuf = nil
+//     out.outbits = out.noutbits = 0
+//     out.firstblock = true
+//     comp.ectx.userdata = out
+
+//     return &comp.sc
 // }
 
-// struct ssh_zlib_compressor {
-//     struct LZ77Context ectx;
-//     ssh_compressor sc;
-// };
+struct ssh_compressor {
 
-// static ssh_compressor *zlib_compress_init(void)
-// {
-//     struct Outbuf *out;
-//     struct ssh_zlib_compressor *comp = snew(struct ssh_zlib_compressor);
+}
 
-//     lz77_init(&comp->ectx);
-//     comp->sc.vt = &ssh_zlib;
-//     comp->ectx.literal = zlib_literal;
-//     comp->ectx.match = zlib_match;
+func zlib_compress_block(
+        _ sc: ssh_compressor,
+        _ block: [UInt8],
+        _ len: Int,
+        _ outblock: [UInt8],
+        _ outlen: Int,
+        _ minlen: Int) {
 
-//     out = snew(struct Outbuf);
-//     out->outbuf = NULL;
-//     out->outbits = out->noutbits = 0;
-//     out->firstblock = true;
-//     comp->ectx.userdata = out;
+    // struct ssh_zlib_compressor *comp =
+    //     container_of(sc, struct ssh_zlib_compressor, sc);
+    // struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
+    var out = Outbuf()
+    var in_block = false // TODO bool in_block;
 
-//     return &comp->sc;
-// }
+    // assert(!out.outbuf!)
+    // out.outbuf = strbuf_new_nm()
 
-// static void zlib_compress_block(
-//     ssh_compressor *sc, const unsigned char *block, int len,
-//     unsigned char **outblock, int *outlen, int minlen)
-// {
-//     struct ssh_zlib_compressor *comp =
-//         container_of(sc, struct ssh_zlib_compressor, sc);
-//     struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
-//     bool in_block;
+    /*
+     * If this is the first block, output the Zlib (RFC1950) header
+     * bytes 78 9C. (Deflate compression, 32K window size, default
+     * algorithm.)
+     */
+    if out.firstblock! {
+        outbits(&out, 0x9C78, 16)
+        out.firstblock = false
+        in_block = false
+    } else {
+        in_block = true
+    }
 
-//     assert(!out->outbuf);
-//     out->outbuf = strbuf_new_nm();
+    if !in_block {
+        /*
+         * Start a Deflate (RFC1951) fixed-trees block. We
+         * transmit a zero bit (BFINAL=0), followed by a zero
+         * bit and a one bit (BTYPE=01). Of course these are in
+         * the wrong order (01 0).
+         */
+        outbits(&out, 2, 3)
+    }
 
-//     /*
-//      * If this is the first block, output the Zlib (RFC1950) header
-//      * bytes 78 9C. (Deflate compression, 32K window size, default
-//      * algorithm.)
-//      */
-//     if (out->firstblock) {
-//         outbits(out, 0x9C78, 16);
-//         out->firstblock = false;
+    /*
+     * Do the compression.
+     */
+//     lz77_compress(&comp.ectx, block, len)
 
-//         in_block = false;
-//     } else
-//         in_block = true;
+    /*
+     * End the block (by transmitting code 256, which is
+     * 0000000 in fixed-tree mode), and transmit some empty
+     * blocks to ensure we have emitted the byte containing the
+     * last piece of genuine data. There are three ways we can
+     * do this:
+     *
+     *  - Minimal flush. Output end-of-block and then open a
+     *    new static block. This takes 9 bits, which is
+     *    guaranteed to flush out the last genuine code in the
+     *    closed block; but allegedly zlib can't handle it.
+     *
+     *  - Zlib partial flush. Output EOB, open and close an
+     *    empty static block, and _then_ open the new block.
+     *    This is the best zlib can handle.
+     *
+     *  - Zlib sync flush. Output EOB, then an empty
+     *    _uncompressed_ block (000, then sync to byte
+     *    boundary, then send bytes 00 00 FF FF). Then open the
+     *    new block.
+     *
+     * For the moment, we will use Zlib partial flush.
+     */
+    outbits(&out, 0, 7)         /* close block */
+    outbits(&out, 2, 3 + 7)     /* empty static block */
+    outbits(&out, 2, 3)         /* open new block */
 
-//     if (!in_block) {
-//         /*
-//          * Start a Deflate (RFC1951) fixed-trees block. We
-//          * transmit a zero bit (BFINAL=0), followed by a zero
-//          * bit and a one bit (BTYPE=01). Of course these are in
-//          * the wrong order (01 0).
-//          */
-//         outbits(out, 2, 3);
-//     }
+    /*
+     * If we've been asked to pad out the compressed data until it's
+     * at least a given length, do so by emitting further empty static
+     * blocks.
+     */
+    while out.outbuf!.count < minlen {
+        outbits(&out, 0, 7)     /* close block */
+        outbits(&out, 2, 3)     /* open new static block */
+    }
 
-//     /*
-//      * Do the compression.
-//      */
-//     lz77_compress(&comp->ectx, block, len);
-
-//     /*
-//      * End the block (by transmitting code 256, which is
-//      * 0000000 in fixed-tree mode), and transmit some empty
-//      * blocks to ensure we have emitted the byte containing the
-//      * last piece of genuine data. There are three ways we can
-//      * do this:
-//      *
-//      *  - Minimal flush. Output end-of-block and then open a
-//      *    new static block. This takes 9 bits, which is
-//      *    guaranteed to flush out the last genuine code in the
-//      *    closed block; but allegedly zlib can't handle it.
-//      *
-//      *  - Zlib partial flush. Output EOB, open and close an
-//      *    empty static block, and _then_ open the new block.
-//      *    This is the best zlib can handle.
-//      *
-//      *  - Zlib sync flush. Output EOB, then an empty
-//      *    _uncompressed_ block (000, then sync to byte
-//      *    boundary, then send bytes 00 00 FF FF). Then open the
-//      *    new block.
-//      *
-//      * For the moment, we will use Zlib partial flush.
-//      */
-//     outbits(out, 0, 7);        /* close block */
-//     outbits(out, 2, 3 + 7);    /* empty static block */
-//     outbits(out, 2, 3);        /* open new block */
-
-//     /*
-//      * If we've been asked to pad out the compressed data until it's
-//      * at least a given length, do so by emitting further empty static
-//      * blocks.
-//      */
-//     while (out->outbuf->len < minlen) {
-//         outbits(out, 0, 7);            /* close block */
-//         outbits(out, 2, 3);            /* open new static block */
-//     }
-
-//     *outlen = out->outbuf->len;
-//     *outblock = (unsigned char *)strbuf_to_str(out->outbuf);
-//     out->outbuf = NULL;
-// }
+    // *outlen = out.outbuf.len
+    // *outblock = (unsigned char *)strbuf_to_str(out->outbuf)
+    out.outbuf = nil
+}
