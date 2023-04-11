@@ -79,7 +79,6 @@ class LZ77InternalContext {
 //     unsigned char data[WINSIZE];
     var data: [UInt8]?
     var winpos: Int?
-    // struct HashEntry hashtab[HASHMAX];
     var hashtab: [HashEntry]?
     var pending: [UInt8]    // TODO: Initialize to size HASHCHARS somewhere!!
     var npending: Int
@@ -109,10 +108,11 @@ class LZ77Context {
 /*
  * Modifiable parameters.
  */
-let WINSIZE = 32768                  /* window size. Must be power of 2! */
-let HASHMAX = 2039                   /* one more than max hash value */
-let MAXMATCH = 32                    /* how many matches we track */
-let HASHCHARS = 3                    /* how many chars make a hash */
+let WINSIZE = 32768                 /* window size. Must be power of 2! */
+let HASHMAX = 2039                  /* one more than max hash value */
+let MAXMATCH = 32                   /* how many matches we track */
+let HASHCHARS = 3                   /* how many chars make a hash */
+let INVALID = -1                    /* invalid hash _and_ invalid offset */
 
 /*
  * This compressor takes a less slapdash approach than the
@@ -122,19 +122,14 @@ let HASHCHARS = 3                    /* how many chars make a hash */
  * window (thus rolling round by one and removing the previous
  * byte), we can carefully remove the hash chain entry.
  */
-
-let INVALID = -1                        /* invalid hash _and_ invalid offset */
 struct WindowEntry {
-    var next: Int16                     /* array indices within the window */
-    var prev: Int16
-    var hashval: Int16
+    var next: Int?                  /* array indices within the window */
+    var prev: Int?
+    var hashval: Int?
 }
 
-class HashEntry {
-    var first: Int16                    /* window index of first in chain */
-    init(first: Int, count: Int) {
-        self.first = Int16(first)
-    }
+struct HashEntry {
+    var first: Int?                 /* window index of first in chain */
 }
 
 struct Match {
@@ -158,61 +153,57 @@ func lz77_init(_ ctx: LZ77Context) -> Int {
     // if st == nil {
     //     return 0
     // }
-
     ctx.ictx = st
-
     var i = 0
     while i < WINSIZE {
-        st.win![i].next = Int16(INVALID)
-        st.win![i].prev = Int16(INVALID)
-        st.win![i].hashval = Int16(INVALID)
+        st.win![i].next = INVALID
+        st.win![i].prev = INVALID
+        st.win![i].hashval = INVALID
         i += 1
     }
     i = 0
-    while i < HASHMAX { // TODO: Possible simpler code in Swift
-        st.hashtab![i].first = Int16(INVALID)
+    while i < HASHMAX {
+        st.hashtab![i].first = INVALID
         i += 1
     }
-    // st.hashtab!.first = [Int16](repeating: Int16(INVALID), count: HASHMAX)
     st.winpos = 0
-
     st.npending = 0
 
     return 1
 }
 
-// static void lz77_advance(struct LZ77InternalContext *st,
-//                          unsigned char c, int hash)
-// {
-//     int off;
+func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
+    var off: Int = 0
 
-//     /*
-//      * Remove the hash entry at winpos from the tail of its chain,
-//      * or empty the chain if it's the only thing on the chain.
-//      */
-//     if (st->win[st->winpos].prev != INVALID) {
-//         st->win[st->win[st->winpos].prev].next = INVALID;
-//     } else if (st->win[st->winpos].hashval != INVALID) {
-//         st->hashtab[st->win[st->winpos].hashval].first = INVALID;
-//     }
+    /*
+     * Remove the hash entry at winpos from the tail of its chain,
+     * or empty the chain if it's the only thing on the chain.
+     */
+    if (st.win![st.winpos!].prev != INVALID) {
+        st.win![st.win![st.winpos!].prev!].next = INVALID
+    } else if (st.win![st.winpos!].hashval != INVALID) {
+        st.hashtab![st.win![st.winpos!].hashval!].first = INVALID
+    }
 
-//     /*
-//      * Create a new entry at winpos and add it to the head of its
-//      * hash chain.
-//      */
-//     st->win[st->winpos].hashval = hash;
-//     st->win[st->winpos].prev = INVALID;
-//     off = st->win[st->winpos].next = st->hashtab[hash].first;
-//     st->hashtab[hash].first = st->winpos;
-//     if (off != INVALID)
-//         st->win[off].prev = st->winpos;
-//     st->data[st->winpos] = c;
+    /*
+     * Create a new entry at winpos and add it to the head of its
+     * hash chain.
+     */
+    st.win![st.winpos!].hashval = hash
+    st.win![st.winpos!].prev = INVALID
+    off = st.hashtab![hash].first!
+    st.win![st.winpos!].next = off
+    st.hashtab![hash].first = st.winpos!
+    if (off != INVALID) {
+        st.win![off].prev = st.winpos!
+    }
+    st.data![st.winpos!] = c
 
-//     /*
-//      * Advance the window pointer.
-//      */
-//     st->winpos = (st->winpos + 1) & (WINSIZE - 1);
-// }
+    /*
+     * Advance the window pointer.
+     */
+    st.winpos = (st.winpos! + 1) & (WINSIZE - 1)
+}
 
 // #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
 
