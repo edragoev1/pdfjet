@@ -133,8 +133,8 @@ struct HashEntry {
 }
 
 struct Match {
-    var distance: Int
-    var len: Int
+    var distance: Int?
+    var len: Int?
 }
 
 func lz77_hash(_ data: [UInt8]) -> Int {
@@ -379,24 +379,28 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
 //  * having to transmit the trees.
 //  */
 
-// struct Outbuf {
-//     strbuf *outbuf;
-//     unsigned long outbits;
-//     int noutbits;
+struct Outbuf {
+//     strbuf *outbuf
+    var outbuf: [UInt8]?
+//     unsigned long outbits
+    var outbits: Int?
+//     int noutbits
+    var noutbits: Int?
 //     bool firstblock;
-// };
+    var firstblock: Bool?
+}
 
-// static void outbits(struct Outbuf *out, unsigned long bits, int nbits)
-// {
-//     assert(out->noutbits + nbits <= 32);
-//     out->outbits |= bits << out->noutbits;
-//     out->noutbits += nbits;
-//     while (out->noutbits >= 8) {
-//         put_byte(out->outbuf, out->outbits & 0xFF);
-//         out->outbits >>= 8;
-//         out->noutbits -= 8;
-//     }
-// }
+func outbits(_ out: inout Outbuf, _ bits: Int, _ nbits: Int) {
+    // assert(out->noutbits + nbits <= 32)
+    out.outbits! |= bits << out.noutbits!
+    out.noutbits! += nbits
+    while out.noutbits! >= 8 {
+        // TODO:
+        // put_byte(out->outbuf, out->outbits & 0xFF);
+        out.outbits! >>= 8
+        out.noutbits! -= 8
+    }
+}
 
 let mirrorbytes: [UInt8] = [
     0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
@@ -505,18 +509,17 @@ let distcodes: [coderecord] = [
     coderecord(code: 29, extrabits: 13, min: 24577, max: 32768),
 ]
 
-// static void zlib_literal(struct LZ77Context *ectx, unsigned char c)
-// {
-//     struct Outbuf *out = (struct Outbuf *) ectx->userdata;
+func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
+    // struct Outbuf *out = (struct Outbuf *) ectx->userdata
 
-//     if (c <= 143) {
-//         /* 0 through 143 are 8 bits long starting at 00110000. */
-//         outbits(out, mirrorbytes[0x30 + c], 8);
-//     } else {
-//         /* 144 through 255 are 9 bits long starting at 110010000. */
-//         outbits(out, 1 + 2 * mirrorbytes[0x90 - 144 + c], 9);
-//     }
-// }
+    if c <= 143 {
+        /* 0 through 143 are 8 bits long starting at 00110000. */
+        // outbits(out, mirrorbytes[0x30 + c], 8)
+    } else {
+        /* 144 through 255 are 9 bits long starting at 110010000. */
+        // outbits(out, 1 + 2 * mirrorbytes[0x90 - 144 + c], 9)
+    }
+}
 
 // static void zlib_match(struct LZ77Context *ectx, int distance, int len)
 // {
@@ -630,18 +633,6 @@ let distcodes: [coderecord] = [
 //     comp->ectx.userdata = out;
 
 //     return &comp->sc;
-// }
-
-// static void zlib_compress_cleanup(ssh_compressor *sc)
-// {
-//     struct ssh_zlib_compressor *comp =
-//         container_of(sc, struct ssh_zlib_compressor, sc);
-//     struct Outbuf *out = (struct Outbuf *)comp->ectx.userdata;
-//     if (out->outbuf)
-//         strbuf_free(out->outbuf);
-//     sfree(out);
-//     sfree(comp->ectx.ictx);
-//     sfree(comp);
 // }
 
 // static void zlib_compress_block(
