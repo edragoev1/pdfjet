@@ -220,13 +220,13 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
  * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
-func lz77_compress(_ ctx: LZ77Context, _ data: [UInt8], _ len: Int) {
+func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) {
     let st: LZ77InternalContext = ctx.ictx!
     // let distance: Int
     // let off: Int
     // let nmatch: Int
     // let matchlen: Int
-    // let advance: Int
+    var advance: Int?
 //     struct Match defermatch, matches[MAXMATCH]
 //     int deferchr
 
@@ -270,8 +270,8 @@ func lz77_compress(_ ctx: LZ77Context, _ data: [UInt8], _ len: Int) {
 
 //     defermatch.distance = 0; /* appease compiler */
 //     defermatch.len = 0;
-//     deferchr = '\0';
-//     while (len > 0) {
+//     var deferchr: Int = 0 // TODO '\0'
+     while len > 0 {
 
 //         if (len >= HASHCHARS) {
 //             /*
@@ -369,22 +369,24 @@ func lz77_compress(_ ctx: LZ77Context, _ data: [UInt8], _ len: Int) {
 //             }
 //         }
 
-//         /*
-//          * Now advance the position by `advance' characters,
-//          * keeping the window and hash chains consistent.
-//          */
-//         while (advance > 0) {
-//             if (len >= HASHCHARS) {
-//                 lz77_advance(st, *data, lz77_hash(data));
-//             } else {
-//                 assert(st->npending < HASHCHARS);
-//                 st->pending[st->npending++] = *data;
-//             }
-//             data++;
-//             len--;
-//             advance--;
-//         }
-//     }
+        /*
+         * Now advance the position by `advance' characters,
+         * keeping the window and hash chains consistent.
+         */
+        i = 0
+        while advance! > 0 {
+            if len >= HASHCHARS {
+                lz77_advance(st, data[i], lz77_hash(data))
+            } else {
+                assert(st.npending < HASHCHARS)
+                st.pending[st.npending] = data[i]
+                st.npending += 1
+            }
+            i += 1
+            len -= 1
+            advance! -= 1
+        }
+    }
 }
 
 // /* ----------------------------------------------------------------------
