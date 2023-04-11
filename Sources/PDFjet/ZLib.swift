@@ -44,7 +44,7 @@ import Foundation
  * and good luck :-)
  */
 
-struct LZ77InternalContext { // Maybe we can make this class so we can initialize the variables?
+class LZ77InternalContext {
 //     struct WindowEntry win[WINSIZE];
 //     unsigned char data[WINSIZE];
     var winpos: Int
@@ -53,14 +53,20 @@ struct LZ77InternalContext { // Maybe we can make this class so we can initializ
 //     unsigned char pending[HASHCHARS];
     var pending: [UInt8]    // TODO: Initialize to size HASHCHARS somewhere!!
     var npending: Int
+
+    init() {
+        winpos = 0
+        pending = [UInt8](repeating: 0, count: HASHCHARS)
+        npending = 0
+    }
 }
 
-// struct LZ77Context {
+class LZ77Context {
 //     struct LZ77InternalContext *ictx;
 //     void *userdata;
 //     void (*literal) (struct LZ77Context *ctx, unsigned char c);
 //     void (*match) (struct LZ77Context *ctx, int distance, int len);
-// };
+}
 
 /*
  * Modifiable parameters.
