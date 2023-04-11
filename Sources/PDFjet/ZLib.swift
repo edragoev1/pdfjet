@@ -73,6 +73,39 @@ import Foundation
  * and good luck :-)
  */
 
+/*
+ * This compressor takes a less slapdash approach than the
+ * gzip/zlib one. Rather than allowing our hash chains to fall into
+ * disuse near the far end, we keep them doubly linked so we can
+ * _find_ the far end, and then every time we add a new byte to the
+ * window (thus rolling round by one and removing the previous
+ * byte), we can carefully remove the hash chain entry.
+ */
+
+/*
+ * Modifiable parameters.
+ */
+let WINSIZE = 32768                 /* window size. Must be power of 2! */
+let HASHMAX = 2039                  /* one more than max hash value */
+let MAXMATCH = 32                   /* how many matches we track */
+let HASHCHARS = 3                   /* how many chars make a hash */
+let INVALID = -1                    /* invalid hash _and_ invalid offset */
+
+struct WindowEntry {
+    var next: Int?                  /* array indices within the window */
+    var prev: Int?
+    var hashval: Int?
+}
+
+struct HashEntry {
+    var first: Int?                 /* window index of first in chain */
+}
+
+struct Match {
+    var distance: Int?
+    var len: Int?
+}
+
 class LZ77InternalContext {
     var win = [WindowEntry]()
     var data = [UInt8](repeating: 0, count: WINSIZE)
@@ -94,38 +127,6 @@ class LZ77Context {
     }
 }
 
-/*
- * Modifiable parameters.
- */
-let WINSIZE = 32768                 /* window size. Must be power of 2! */
-let HASHMAX = 2039                  /* one more than max hash value */
-let MAXMATCH = 32                   /* how many matches we track */
-let HASHCHARS = 3                   /* how many chars make a hash */
-let INVALID = -1                    /* invalid hash _and_ invalid offset */
-
-/*
- * This compressor takes a less slapdash approach than the
- * gzip/zlib one. Rather than allowing our hash chains to fall into
- * disuse near the far end, we keep them doubly linked so we can
- * _find_ the far end, and then every time we add a new byte to the
- * window (thus rolling round by one and removing the previous
- * byte), we can carefully remove the hash chain entry.
- */
-struct WindowEntry {
-    var next: Int?                  /* array indices within the window */
-    var prev: Int?
-    var hashval: Int?
-}
-
-struct HashEntry {
-    var first: Int?                 /* window index of first in chain */
-}
-
-struct Match {
-    var distance: Int?
-    var len: Int?
-}
-
 func lz77_hash(_ data: [UInt8]) -> Int {
     var hash = 257 * Int(data[0])
     hash += 263 * Int(data[1])
@@ -139,9 +140,7 @@ func lz77_hash(_ data: [UInt8]) -> Int {
  */
 func lz77_init(_ ctx: LZ77Context) -> Int {
     let st = LZ77InternalContext()
-    // if st == nil {
-    //     return 0
-    // }
+
     ctx.ictx = st
     var i = 0
     while i < WINSIZE {
