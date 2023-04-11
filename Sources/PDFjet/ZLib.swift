@@ -80,14 +80,6 @@ class LZ77InternalContext {
     var hashtab = [HashEntry]()
     var pending = [UInt8](repeating: 0, count: HASHCHARS)
     var npending = 0
-
-    init() {
-        win = [WindowEntry](repeating: WindowEntry(next: 0, prev: 0, hashval: 0), count: WINSIZE) // TODO!!!
-        data = [UInt8](repeating: 0, count: WINSIZE)
-        winpos = 0
-        pending = [UInt8](repeating: 0, count: HASHCHARS)
-        npending = 0
-    }
 }
 
 class LZ77Context {
@@ -665,9 +657,6 @@ func zlib_compress_block(
     // struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
     var out = Outbuf()
     var in_block = false // TODO bool in_block;
-
-    assert(out.outbuf != nil)
-    // out.outbuf = strbuf_new_nm()
 
     /*
      * If this is the first block, output the Zlib (RFC1950) header
