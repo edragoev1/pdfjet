@@ -44,14 +44,16 @@ import Foundation
  * and good luck :-)
  */
 
-// struct LZ77InternalContext {
+struct LZ77InternalContext { // Maybe we can make this class so we can initialize the variables?
 //     struct WindowEntry win[WINSIZE];
 //     unsigned char data[WINSIZE];
-//     int winpos;
+    var winpos: Int
 //     struct HashEntry hashtab[HASHMAX];
+
 //     unsigned char pending[HASHCHARS];
-//     int npending;
-// };
+    var pending: [UInt8]    // TODO: Initialize to size HASHCHARS somewhere!!
+    var npending: Int
+}
 
 // struct LZ77Context {
 //     struct LZ77InternalContext *ictx;
