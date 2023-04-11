@@ -75,16 +75,20 @@ import Foundation
 
 class LZ77InternalContext {
 //     struct WindowEntry win[WINSIZE];
+    var win: [WindowEntry]?
 //     unsigned char data[WINSIZE];
-    var winpos: Int
-//     struct HashEntry hashtab[HASHMAX];
-
-//     unsigned char pending[HASHCHARS];
+    var data: [UInt8]?
+    var winpos: Int?
+    // struct HashEntry hashtab[HASHMAX];
+    var hashtab: [HashEntry]?
     var pending: [UInt8]    // TODO: Initialize to size HASHCHARS somewhere!!
     var npending: Int
 
     init() {
+        win = [WindowEntry](repeating: WindowEntry(next: 0, prev: 0, hashval: 0), count: WINSIZE) // TODO!!!
+        data = [UInt8](repeating: 0, count: WINSIZE)
         winpos = 0
+        // hashtab = HashEntry(first: 0, count: HASHMAX)
         pending = [UInt8](repeating: 0, count: HASHCHARS)
         npending = 0
     }
@@ -92,9 +96,14 @@ class LZ77InternalContext {
 
 class LZ77Context {
 //     struct LZ77InternalContext *ictx;
+    var ictx: LZ77InternalContext?
 //     void *userdata;
+    var userdata: Any
 //     void (*literal) (struct LZ77Context *ctx, unsigned char c);
 //     void (*match) (struct LZ77Context *ctx, int distance, int len);
+    init() {
+        userdata = String()
+    }
 }
 
 /*
@@ -121,8 +130,11 @@ struct WindowEntry {
     var hashval: Int16
 }
 
-struct HashEntry {
+class HashEntry {
     var first: Int16                    /* window index of first in chain */
+    init(first: Int, count: Int) {
+        self.first = Int16(first)
+    }
 }
 
 struct Match {
@@ -141,29 +153,33 @@ func lz77_hash(_ data: [UInt8]) -> Int {
  * Initialise the private fields of an LZ77Context. It's up to the
  * user to initialise the public fields.
  */
-// func lz77_init(struct LZ77Context *ctx) -> Int {
-//     struct LZ77InternalContext *st
-//     int i
+func lz77_init(_ ctx: LZ77Context) -> Int {
+    let st = LZ77InternalContext()
+    // if st == nil {
+    //     return 0
+    // }
 
-//     st = snew(struct LZ77InternalContext)
-//     if !st {
-//         return 0
-//     }
+    ctx.ictx = st
 
-//     ctx->ictx = st;
+    var i = 0
+    while i < WINSIZE {
+        st.win![i].next = Int16(INVALID)
+        st.win![i].prev = Int16(INVALID)
+        st.win![i].hashval = Int16(INVALID)
+        i += 1
+    }
+    i = 0
+    while i < HASHMAX { // TODO: Possible simpler code in Swift
+        st.hashtab![i].first = Int16(INVALID)
+        i += 1
+    }
+    // st.hashtab!.first = [Int16](repeating: Int16(INVALID), count: HASHMAX)
+    st.winpos = 0
 
-//     for (i = 0; i < WINSIZE; i++) {
-//         st->win[i].next = st->win[i].prev = st->win[i].hashval = INVALID;
-//     }
-//     for (i = 0; i < HASHMAX; i++) {
-//         st->hashtab[i].first = INVALID;
-//     }
-//     st->winpos = 0
+    st.npending = 0
 
-//     st->npending = 0
-
-//     return 1
-// }
+    return 1
+}
 
 // static void lz77_advance(struct LZ77InternalContext *st,
 //                          unsigned char c, int hash)
