@@ -74,9 +74,9 @@ import Foundation
  */
 
 class LZ77InternalContext {
-//     struct WindowEntry win[WINSIZE];
+//     struct WindowEntry win[WINSIZE]
     var win: [WindowEntry]?
-//     unsigned char data[WINSIZE];
+//     unsigned char data[WINSIZE]
     var data: [UInt8]?
     var winpos: Int?
     var hashtab: [HashEntry]?
@@ -94,12 +94,12 @@ class LZ77InternalContext {
 }
 
 class LZ77Context {
-//     struct LZ77InternalContext *ictx;
+//     struct LZ77InternalContext *ictx
     var ictx: LZ77InternalContext?
-//     void *userdata;
+//     void *userdata
     var userdata: Any
-//     void (*literal) (struct LZ77Context *ctx, unsigned char c);
-//     void (*match) (struct LZ77Context *ctx, int distance, int len);
+//     void (*literal) (struct LZ77Context *ctx, unsigned char c)
+//     void (*match) (struct LZ77Context *ctx, int distance, int len)
     init() {
         userdata = String()
     }
@@ -221,37 +221,52 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
  * instead call literal() for everything.
  */
 func lz77_compress(_ ctx: LZ77Context, _ data: [UInt8], _ len: Int) {
-//     struct LZ77InternalContext *st = ctx->ictx;
-//     int i, distance, off, nmatch, matchlen, advance;
-//     struct Match defermatch, matches[MAXMATCH];
-//     int deferchr;
+    let st: LZ77InternalContext = ctx.ictx!
+    // let distance: Int
+    // let off: Int
+    // let nmatch: Int
+    // let matchlen: Int
+    // let advance: Int
+//     struct Match defermatch, matches[MAXMATCH]
+//     int deferchr
 
-//     assert(st->npending <= HASHCHARS);
+    assert(st.npending <= HASHCHARS)
 
-//     /*
-//      * Add any pending characters from last time to the window. (We
-//      * might not be able to.)
-//      *
-//      * This leaves st->pending empty in the usual case (when len >=
-//      * HASHCHARS); otherwise it leaves st->pending empty enough that
-//      * adding all the remaining 'len' characters will not push it past
-//      * HASHCHARS in size.
-//      */
-//     for (i = 0; i < st->npending; i++) {
-//         unsigned char foo[HASHCHARS];
-//         int j;
-//         if (len + st->npending - i < HASHCHARS) {
-//             /* Update the pending array. */
-//             for (j = i; j < st->npending; j++)
-//                 st->pending[j - i] = st->pending[j];
-//             break;
-//         }
-//         for (j = 0; j < HASHCHARS; j++)
-//             foo[j] = (i + j < st->npending ? st->pending[i + j] :
-//                       data[i + j - st->npending]);
-//         lz77_advance(st, foo[0], lz77_hash(foo));
-//     }
-//     st->npending -= i;
+    /*
+     * Add any pending characters from last time to the window. (We
+     * might not be able to.)
+     *
+     * This leaves st->pending empty in the usual case (when len >=
+     * HASHCHARS); otherwise it leaves st->pending empty enough that
+     * adding all the remaining 'len' characters will not push it past
+     * HASHCHARS in size.
+     */
+    var i = 0
+    while i < st.npending {
+        var foo = [UInt8](repeating: 0, count: HASHCHARS)
+        var j: Int?
+        if len + st.npending - i < HASHCHARS {
+            /* Update the pending array. */
+            j = i
+            while j! < st.npending {
+                st.pending[j! - i] = st.pending[j!]
+                j! += 1
+            }
+            break
+        }
+        j = 0
+        while j! < HASHCHARS {
+            if (i + j!) < st.npending {
+                foo[j!] = st.pending[i + j!]
+            } else {
+                foo[j!] = data[i + j! - st.npending]
+            }
+            j! += 1
+        }
+        lz77_advance(st, foo[0], lz77_hash(foo))
+        i += 1
+    }
+    st.npending -= i
 
 //     defermatch.distance = 0; /* appease compiler */
 //     defermatch.len = 0;
