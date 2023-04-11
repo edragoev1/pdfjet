@@ -207,15 +207,20 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
 
 // #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
 
-// /*
-//  * Supply data to be compressed. Will update the private fields of
-//  * the LZ77Context, and will call literal() and match() to output.
-//  * If `compress' is false, it will never emit a match, but will
-//  * instead call literal() for everything.
-//  */
-// static void lz77_compress(struct LZ77Context *ctx,
-//                           const unsigned char *data, int len)
-// {
+// func CHARAT(_ k: Int) -> Int {
+//     if k < 0 {
+//         return st.data[(st.winpos+k)&(WINSIZE-1)]
+//     }
+//     return data[k]
+// }
+
+/*
+ * Supply data to be compressed. Will update the private fields of
+ * the LZ77Context, and will call literal() and match() to output.
+ * If `compress' is false, it will never emit a match, but will
+ * instead call literal() for everything.
+ */
+func lz77_compress(_ ctx: LZ77Context, _ data: [UInt8], _ len: Int) {
 //     struct LZ77InternalContext *st = ctx->ictx;
 //     int i, distance, off, nmatch, matchlen, advance;
 //     struct Match defermatch, matches[MAXMATCH];
@@ -275,13 +280,15 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
 //                         break;
 //                 if (i == HASHCHARS) {
 //                     matches[nmatch].distance = distance;
-//                     matches[nmatch].len = 3;
-//                     if (++nmatch >= MAXMATCH)
-//                         break;
+//                     matches[nmatch].len = 3
+//                        nmatch += 1
+//                      if nmatch >= MAXMATCH {
+//                         break
+//                      }
 //                 }
 //             }
 //         } else {
-//             nmatch = 0;
+//             nmatch = 0
 //         }
 
 //         if (nmatch > 0) {
@@ -363,7 +370,7 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
 //             advance--;
 //         }
 //     }
-// }
+}
 
 // /* ----------------------------------------------------------------------
 //  * Zlib compression. We always use the static Huffman tree option.
@@ -380,13 +387,9 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
 //  */
 
 struct Outbuf {
-//     strbuf *outbuf
-    var outbuf: [UInt8]?
-//     unsigned long outbits
+    var outbuf = [UInt8]()
     var outbits: Int?
-//     int noutbits
     var noutbits: Int?
-//     bool firstblock;
     var firstblock: Bool?
 }
 
@@ -395,8 +398,7 @@ func outbits(_ out: inout Outbuf, _ bits: Int, _ nbits: Int) {
     out.outbits! |= bits << out.noutbits!
     out.noutbits! += nbits
     while out.noutbits! >= 8 {
-        // TODO:
-        // put_byte(out->outbuf, out->outbits & 0xFF);
+        out.outbuf.append(UInt8(out.outbits!) & 0xFF)
         out.outbits! >>= 8
         out.noutbits! -= 8
     }
@@ -524,9 +526,6 @@ func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
 func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
     var d: coderecord?
     var l: coderecord?
-
-    // var k: Int
-    // struct Outbuf *out = (struct Outbuf *) ectx->userdata;
     var out = Outbuf()
 
     while len > 0 {
@@ -646,7 +645,7 @@ func zlib_compress_block(
         _ block: [UInt8],
         _ len: Int,
         _ outblock: [UInt8],
-        _ outlen: Int,
+        _ outlen: inout Int,
         _ minlen: Int) {
 
     // struct ssh_zlib_compressor *comp =
@@ -718,12 +717,12 @@ func zlib_compress_block(
      * at least a given length, do so by emitting further empty static
      * blocks.
      */
-    while out.outbuf!.count < minlen {
+    while out.outbuf.count < minlen {
         outbits(&out, 0, 7)     /* close block */
         outbits(&out, 2, 3)     /* open new static block */
     }
 
-    // *outlen = out.outbuf.len
+    outlen = out.outbuf.count
     // *outblock = (unsigned char *)strbuf_to_str(out->outbuf)
-    out.outbuf = nil
+    out.outbuf.removeAll()
 }
