@@ -159,9 +159,9 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
      * Remove the hash entry at winpos from the tail of its chain,
      * or empty the chain if it's the only thing on the chain.
      */
-    if (st.win[st.winpos].prev != INVALID) {
+    if st.win[st.winpos].prev != INVALID {
         st.win[st.win[st.winpos].prev!].next = INVALID
-    } else if (st.win[st.winpos].hashval != INVALID) {
+    } else if st.win[st.winpos].hashval != INVALID {
         st.hashtab[st.win[st.winpos].hashval!].first = INVALID
     }
 
@@ -174,7 +174,7 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
     off = st.hashtab[hash].first!
     st.win[st.winpos].next = off
     st.hashtab[hash].first = st.winpos
-    if (off != INVALID) {
+    if off != INVALID {
         st.win[off].prev = st.winpos
     }
     st.data[st.winpos] = c
@@ -248,7 +248,7 @@ func lz77_compress(_ ectx: LZ77Context, _ data: inout [UInt8], _ len: inout Int)
     st.npending -= i
 
     defermatch.len = 0
-    deferchr = 0    // TODO: Is this correct? Originally we had '\0'
+    deferchr = Int("\0")!
     while len > 0 {
         if len >= HASHCHARS {
             /*
@@ -274,7 +274,7 @@ func lz77_compress(_ ectx: LZ77Context, _ data: inout [UInt8], _ len: inout Int)
                     }
                     i += 1
                 }
-                if (i == HASHCHARS) {
+                if i == HASHCHARS {
                     matches[nmatch].distance = distance
                     matches[nmatch].len = 3
                        nmatch += 1
@@ -288,7 +288,7 @@ func lz77_compress(_ ectx: LZ77Context, _ data: inout [UInt8], _ len: inout Int)
             nmatch = 0
         }
 
-        if (nmatch > 0) {
+        if nmatch > 0 {
             /*
              * We've now filled up matches[] with nmatch potential
              * matches. Follow them down to find the longest. (We
@@ -300,8 +300,8 @@ func lz77_compress(_ ectx: LZ77Context, _ data: inout [UInt8], _ len: inout Int)
                 var i = 0
                 var j = 0
                 while i < nmatch {
-                    if (CHARAT(st, matchlen) ==
-                        CHARAT(st, matchlen - matches[i].distance!)) {
+                    if CHARAT(st, matchlen) ==
+                        CHARAT(st, matchlen - matches[i].distance!) {
                         matches[j] = matches[i]
                         j += 1
                     }
