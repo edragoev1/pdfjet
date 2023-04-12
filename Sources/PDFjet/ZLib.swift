@@ -199,7 +199,7 @@ func CHARAT(_ st: LZ77InternalContext, _ k: Int) -> UInt8 {
  * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
-func lz77_compress(_ ectx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) {
+func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ len: inout Int) {
     let st: LZ77InternalContext = ectx.ictx!
     var distance: Int
     var off: Int
@@ -651,7 +651,7 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
-    lz77_compress(ectx, &block, &len)
+    lz77_compress(ectx, block, &len)
 
     /*
      * End the block (by transmitting code 256, which is
@@ -715,13 +715,12 @@ func getAdler32(_ buf1: [UInt8]) -> [UInt8] {
     return buf2
 }
 
-func zLibCompress(_ buf1: inout [UInt8]) -> [UInt8] {
+func zLibCompress(_ buf1: [UInt8]) -> [UInt8] {
     var buf2 = [UInt8]()
-    let adler32 = getAdler32(buf1)
     let context = LZ77Context(buf1)
     var len = buf1.count
     lz77_init(context)
-    lz77_compress(context, &buf1, &len)
-    buf2.append(contentsOf: adler32)
+    lz77_compress(context, buf1, &len)
+    buf2.append(contentsOf: getAdler32(buf1))
     return buf2
 }
