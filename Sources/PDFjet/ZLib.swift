@@ -403,10 +403,10 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ len: inout Int) {
 
 func outbits(_ out: inout Outbuf, _ bits: Int, _ nbits: Int) {
     assert(out.noutbits + nbits <= 32)
-    out.outbits |= bits << out.noutbits
+    out.outbits |= (bits << out.noutbits)
     out.noutbits += nbits
     while out.noutbits >= 8 {
-        out.outbuf.append(UInt8(out.outbits) & 0xFF)
+        out.outbuf.append(UInt8(out.outbits & 0xFF))
         out.outbits >>= 8
         out.noutbits -= 8
     }
@@ -655,8 +655,9 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
+Swift.print("Are here?")
     lz77_compress(ectx, block, &len)
-
+Swift.print("Or here?")
     /*
      * End the block (by transmitting code 256, which is
      * 0000000 in fixed-tree mode), and transmit some empty
