@@ -622,7 +622,7 @@ func zlib_compress_block(
         _ outlen: inout Int,
         _ minlen: Int) {
     var out = Outbuf(outbuf: ctx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
-    var in_block = false // TODO bool in_block
+    var in_block: Bool
 
     /*
      * If this is the first block, output the Zlib (RFC1950) header
