@@ -106,11 +106,17 @@ class Match {
     var len: Int?
 }
 
-struct Outbuf {
+class Outbuf {
     var outbuf: [UInt8]
     var outbits: UInt
     var noutbits: UInt
     var firstblock: Bool
+    init() {
+        self.outbuf = [UInt8]()
+        self.outbits = 0
+        self.noutbits = 0
+        self.firstblock = true
+    }
 }
 
 class LZ77InternalContext {
@@ -128,7 +134,7 @@ class LZ77InternalContext {
  */
 class LZ77Context {
     var ictx: LZ77InternalContext
-    var userdata: Outbuf
+    // var outbuf: Outbuf
 
     init(_ userdata: [UInt8], _ output: inout [UInt8]) {
         let ictx = LZ77InternalContext()
@@ -143,7 +149,7 @@ class LZ77Context {
             i += 1
         }
         self.ictx = ictx
-        self.userdata = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
+        // self.outbuf = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
     }
 }
 
@@ -200,7 +206,8 @@ static func CHARAT(_ st: LZ77InternalContext, _ k: Int, _ index: Int) -> UInt8 {
  * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
-static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
+// static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ output: inout [UInt8]) {
+static func lz77_compress(_ out: inout Outbuf, _ data: [UInt8]) {
     var hashtable = [Int](repeating: -1, count: WINSIZE)
     var i = 0
     while i <= (data.count - 3) {
@@ -209,14 +216,14 @@ static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
             // lz77_literal
             hashtable[hash] = i
             print("lit")
-            zlib_literal(ectx, data[i])
+            zlib_literal(&out, data[i])
             i += 1
         } else {
             // lz77_match
             var length = 0
             let j = hashtable[hash]
             if i - j >= WINSIZE {
-                zlib_match(ectx, (i - j), length)
+                zlib_match(&out, (i - j), length)
                 // TODO
                 i += 1
             } else {
@@ -234,7 +241,7 @@ static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
                 }
                 print("\(i - j) = \(length)")
                 hashtable[hash] = i
-                zlib_match(ectx, (i - j), length)
+                zlib_match(&out, (i - j), length)
                 i += length
             }
         }
@@ -242,7 +249,7 @@ static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
     // Process the remaining data
     while i < data.count {
         print("lit")
-        zlib_literal(ectx, data[i])
+        zlib_literal(&out, data[i])
         i += 1
     }
 
@@ -560,8 +567,9 @@ static let distcodes: [coderecord] = [
     coderecord(code: 29, extrabits: 13, min: 24577, max: 32768),
 ]
 
-static func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
-    var out = ectx.userdata
+// static func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
+static func zlib_literal(_ out: inout Outbuf, _ c: UInt8) {
+    // var out = ectx.outbuf
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         outbits(&out, UInt(mirrorbytes[0x30 + Int(c)]), 8)
@@ -571,8 +579,9 @@ static func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
     }
 }
 
-static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ length: Int) {
-    var out = ectx.userdata
+// static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ length: Int) {
+static func zlib_match(_ out: inout Outbuf, _ distance: Int, _ length: Int) {
+    // var out = ectx.outbuf
     var d: coderecord?
     var l: coderecord?
     // var len = origlen
@@ -661,10 +670,11 @@ static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ length: Int) {
     // }
 }
 
-static func zlib_compress_block(_ ectx: LZ77Context, _ inblock: [UInt8], _ minlen: Int) {
+// static func zlib_compress_block(_ ectx: LZ77Context, _ inblock: [UInt8], _ output: inout [UInt8]) {
+static func zlib_compress_block(_ out: inout Outbuf, _ inblock: [UInt8]) {
     // var out = ectx.userdata
-    var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
-    ectx.userdata = out
+    // var out = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
+    // var out = ectx.outbuf
     var in_block: Bool
 
     /*
@@ -693,7 +703,7 @@ static func zlib_compress_block(_ ectx: LZ77Context, _ inblock: [UInt8], _ minle
     /*
      * Do the compression.
      */
-    lz77_compress(ectx, inblock)
+    lz77_compress(&out, inblock)
 
     /*
      * End the block (by transmitting code 256, which is
@@ -736,8 +746,7 @@ static func zlib_compress_block(_ ectx: LZ77Context, _ inblock: [UInt8], _ minle
 }
 
 /// Calculate and return the Adler-32 checksum
-static func addAdler32(_ buf1: [UInt8], _ buf2: inout [UInt8]) {
-    // var buf2 = [UInt8]()
+static func addAdler32(_ buf2: inout Outbuf, _ buf1: [UInt8]) {
     let prime: UInt32 = 65521
     var s1: UInt32 = 1
     var s2: UInt32 = 0
@@ -754,19 +763,17 @@ static func addAdler32(_ buf1: [UInt8], _ buf2: inout [UInt8]) {
     let byte3 = UInt8((adler >> 8) & 0xff)
     let byte4 = UInt8((adler >> 8) & 0xff)
 
-    buf2.append(byte4)
-    buf2.append(byte3)
-    buf2.append(byte2)
-    buf2.append(byte1)
-    //return buf2
+    buf2.outbuf.append(byte4)
+    buf2.outbuf.append(byte3)
+    buf2.outbuf.append(byte2)
+    buf2.outbuf.append(byte1)
 }
 
 public static func compress(_ buf1: [UInt8]) -> [UInt8] {
-    var buf2 = [UInt8]()
-    let context = LZ77Context(buf1, &buf2)
-    zlib_compress_block(context, buf1, 0)
-    addAdler32(buf1, &buf2)
-    return buf2
+    var buf2 = Outbuf()
+    zlib_compress_block(&buf2, buf1)
+    addAdler32(&buf2, buf1)
+    return buf2.outbuf
 }
 
 }   // End of ZLib.swift
