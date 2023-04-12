@@ -117,7 +117,7 @@ class LZ77InternalContext {
 
 class LZ77Context {
     var ictx: LZ77InternalContext?
-    var userdata: Any?
+    var userdata: [UInt8]?
 }
 
 func lz77_hash(_ data: [UInt8]) -> Int {
@@ -145,8 +145,9 @@ func lz77_init(_ ctx: LZ77Context) -> Int {
         st.hashtab.append(HashEntry(first: INVALID))
         i += 1
     }
-    st.winpos = 0
-    st.npending = 0
+    // TODO: These are not needed. Remove after everything is working!
+    // st.winpos = 0
+    // st.npending = 0
 
     return 1
 }
@@ -247,7 +248,7 @@ func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) 
     st.npending -= i
 
     defermatch.len = 0
-    deferchr = 0    // TODO: Is this correct? '\0'
+    deferchr = 0    // TODO: Is this correct? Originally we had '\0'
     while len > 0 {
         if len >= HASHCHARS {
             /*
@@ -513,8 +514,9 @@ let distcodes: [coderecord] = [
     coderecord(code: 29, extrabits: 13, min: 24577, max: 32768),
 ]
 
-func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
+func zlib_literal(_ ctx: LZ77Context, _ c: UInt8) {
     var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
+    // var out = ctx.userdata
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         outbits(&out, Int(mirrorbytes[0x30 + Int(c)]), 8)
@@ -612,30 +614,6 @@ func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
         }
     }
 }
-
-struct ssh_zlib_compressor {
-    var ectx: LZ77Context?
-    // var sc: ssh_compressor?
-}
-
-// func zlib_compress_init() -> ssh_compressor {
-//     var out = Outbuf()
-//     // struct ssh_zlib_compressor *comp = snew(struct ssh_zlib_compressor);
-//     var comp = ssh_zlib_compressor()
-
-//     lz77_init(&comp.ectx)
-//     // comp.sc.vt = &ssh_zlib
-//     comp.ectx.literal = zlib_literal
-//     // comp.ectx.match = zlib_match
-
-//     out = Outbuf()
-//     out.outbuf = nil
-//     out.outbits = out.noutbits = 0
-//     out.firstblock = true
-//     comp.ectx.userdata = out
-
-//     return &comp.sc
-// }
 
 func zlib_compress_block(
         _ ctx: LZ77Context,
