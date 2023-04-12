@@ -721,7 +721,7 @@ func zLibCompress(_ buf1: [UInt8]) -> [UInt8] {
     var len1 = buf1.count
     var len2 = buf2.count
     lz77_init(context)
-    zlib_compress_block(context, buf1, &len1, &buf2, &len2, 2048 /* TODO: ??? */)
+    zlib_compress_block(context, buf1, &len1, &buf2, &len2, 0 /* Do not pad the data */)
     buf2.append(contentsOf: getAdler32(buf1))
     return buf2
 }
