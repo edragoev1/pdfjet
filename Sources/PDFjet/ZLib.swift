@@ -198,8 +198,8 @@ func CHARAT(_ st: LZ77InternalContext, _ k: Int) -> UInt8 {
  * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
-func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) {
-    let st: LZ77InternalContext = ctx.ictx!
+func lz77_compress(_ ectx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) {
+    let st: LZ77InternalContext = ectx.ictx!
     var distance: Int
     var off: Int
     var nmatch: Int
@@ -324,13 +324,13 @@ func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) 
                 if matches[0].len! > defermatch.len! + 1 {
                     /* We have a better match. Emit the deferred char,
                      * and defer this match. */
-                    zlib_literal(ctx, UInt8(deferchr))
+                    zlib_literal(ectx, UInt8(deferchr))
                     defermatch = matches[0]
                     deferchr = Int(data[0])
                     advance = 1
                 } else {
                     /* We don't have a better match. Do the deferred one. */
-                    zlib_match(ctx, &defermatch.distance!, &defermatch.len!)
+                    zlib_match(ectx, &defermatch.distance!, &defermatch.len!)
                     advance = defermatch.len! - 1
                     defermatch.len = 0
                 }
@@ -346,11 +346,11 @@ func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) 
              * any; otherwise emit a literal.
              */
             if defermatch.len! > 0 {
-                zlib_match(ctx, &defermatch.distance!, &defermatch.len!)
+                zlib_match(ectx, &defermatch.distance!, &defermatch.len!)
                 advance = defermatch.len! - 1
                 defermatch.len = 0
             } else {
-                zlib_literal(ctx, data[0])
+                zlib_literal(ectx, data[0])
                 advance = 1
             }
         }
@@ -514,8 +514,8 @@ let distcodes: [coderecord] = [
     coderecord(code: 29, extrabits: 13, min: 24577, max: 32768),
 ]
 
-func zlib_literal(_ ctx: LZ77Context, _ c: UInt8) {
-    var out = Outbuf(outbuf: ctx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
+func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
+    var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         outbits(&out, Int(mirrorbytes[0x30 + Int(c)]), 8)
@@ -525,8 +525,8 @@ func zlib_literal(_ ctx: LZ77Context, _ c: UInt8) {
     }
 }
 
-func zlib_match(_ ctx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
-    var out = Outbuf(outbuf: ctx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
+func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
+    var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     var d: coderecord?
     var l: coderecord?
 
@@ -615,13 +615,13 @@ func zlib_match(_ ctx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
 }
 
 func zlib_compress_block(
-        _ ctx: LZ77Context,
+        _ ectx: LZ77Context,
         _ block: inout [UInt8],
         _ len: inout Int,
         _ outblock: inout [UInt8],
         _ outlen: inout Int,
         _ minlen: Int) {
-    var out = Outbuf(outbuf: ctx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
+    var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     var in_block: Bool
 
     /*
@@ -650,7 +650,7 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
-    lz77_compress(ctx, &block, &len)
+    lz77_compress(ectx, &block, &len)
 
     /*
      * End the block (by transmitting code 256, which is
