@@ -124,7 +124,7 @@ class LZ77InternalContext {
 
 class LZ77Context {
     var ictx: LZ77InternalContext?
-    var userdata: [UInt8]?
+    var userdata: [UInt8]
     init(_ userdata: [UInt8]) {
         self.userdata = userdata
     }
@@ -522,7 +522,7 @@ let distcodes: [coderecord] = [
 ]
 
 func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
-    var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
+    var out = Outbuf(outbuf: ectx.userdata, outbits: 0, noutbits: 0, firstblock: true)
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         outbits(&out, Int(mirrorbytes[0x30 + Int(c)]), 8)
@@ -533,7 +533,7 @@ func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
 }
 
 func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ len: inout Int) {
-    var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
+    var out = Outbuf(outbuf: ectx.userdata, outbits: 0, noutbits: 0, firstblock: true)
     var d: coderecord?
     var l: coderecord?
 
@@ -625,7 +625,7 @@ func zlib_compress_block(
         _ ectx: LZ77Context,
         _ outblock: inout [UInt8],
         _ minlen: Int) {
-    var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
+    var out = Outbuf(outbuf: ectx.userdata, outbits: 0, noutbits: 0, firstblock: true)
     var in_block: Bool
 
     /*
@@ -654,7 +654,7 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
-    lz77_compress(ectx, ectx.userdata!)
+    lz77_compress(ectx, ectx.userdata)
 
     /*
      * End the block (by transmitting code 256, which is
