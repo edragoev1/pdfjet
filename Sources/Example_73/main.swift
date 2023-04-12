@@ -17,9 +17,9 @@ public class Example_73 {
 
         let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.".utf8)
         // let hello = [UInt8]("Hello".utf8)
-        // Swift.print("uncompressed.count = \(hello.count)")
-        let compressed = ZLib().compress(hello)
-        // Swift.print("compressed.count = \(compressed.count)")
+        Swift.print("uncompressed.count = \(hello.count)")
+        let compressed = ZLib.compress(hello)
+        Swift.print("compressed.count = \(compressed.count)")
 
         let line1 = TextLine(f1, "Hello, Beautiful World")
         let line2 = TextLine(f1, "Hello,BeautifulWorld")
