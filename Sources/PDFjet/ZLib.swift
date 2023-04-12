@@ -617,7 +617,7 @@ func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
 
 func zlib_compress_block(
         _ ectx: LZ77Context,
-        _ block: inout [UInt8],
+        _ block: [UInt8],
         _ len: inout Int,
         _ outblock: inout [UInt8],
         _ outlen: inout Int,
@@ -718,9 +718,10 @@ func getAdler32(_ buf1: [UInt8]) -> [UInt8] {
 func zLibCompress(_ buf1: [UInt8]) -> [UInt8] {
     var buf2 = [UInt8]()
     let context = LZ77Context(buf1)
-    var len = buf1.count
+    var len1 = buf1.count
+    var len2 = buf2.count
     lz77_init(context)
-    lz77_compress(context, buf1, &len)
+    zlib_compress_block(context, buf1, &len1, &buf2, &len2, 2048 /* TODO: ??? */)
     buf2.append(contentsOf: getAdler32(buf1))
     return buf2
 }
