@@ -222,7 +222,7 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ len: inout Int) {
     var deferchr: Int
 
     assert(st.npending <= HASHCHARS)
-
+print("Hello")
     /*
      * Add any pending characters from last time to the window. (We
      * might not be able to.)
@@ -258,7 +258,7 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ len: inout Int) {
         i += 1
     }
     st.npending -= i
-
+print("World")
     defermatch.len = 0
     deferchr = Int("\0")!
     while len > 0 {
@@ -655,9 +655,8 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
-Swift.print("Are here?")
     lz77_compress(ectx, block, &len)
-Swift.print("Or here?")
+
     /*
      * End the block (by transmitting code 256, which is
      * 0000000 in fixed-tree mode), and transmit some empty
