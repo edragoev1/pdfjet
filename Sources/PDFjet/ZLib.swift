@@ -238,9 +238,10 @@ static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
     }
     while i < data.count {
         print("lit")
+        zlib_literal(ectx, data[i])
         i += 1
     }
-print()
+
 
 //     i = 0
 
