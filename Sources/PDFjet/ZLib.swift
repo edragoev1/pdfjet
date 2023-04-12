@@ -723,10 +723,10 @@ func getAdler32(_ buf1: [UInt8]) -> [UInt8] {
     }
     let adler = ((s2 &<< 16) + s1)
 
-    let byte1 = UInt8(adler & 0xff)
-    let byte2 = UInt8((adler &>> 8)  & 0xff)
-    let byte3 = UInt8((adler &>> 8) & 0xff)
-    let byte4 = UInt8((adler &>> 8) & 0xff)
+    let byte1 = UInt8((adler & 0xff))
+    let byte2 = UInt8((adler >> 8) & 0xff)
+    let byte3 = UInt8((adler >> 8) & 0xff)
+    let byte4 = UInt8((adler >> 8) & 0xff)
 
     buf2.append(byte4)
     buf2.append(byte3)
