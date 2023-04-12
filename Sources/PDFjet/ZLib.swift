@@ -219,10 +219,8 @@ static func lz77_compress(_ out: inout Outbuf, _ data: [UInt8]) {
                 data[j + 2] == data[i + 2] {
             if i - j >= WINSIZE {
                 zlib_literal(&out, data[i])
-                zlib_literal(&out, data[i + 1])
-                zlib_literal(&out, data[i + 2])
                 hashtable[hash] = i
-                i += 3
+                i += 1
             } else {
                 var length = 0
                 while (i + length) < data.count {

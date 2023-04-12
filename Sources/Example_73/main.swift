@@ -20,12 +20,19 @@ public class Example_73 {
         // print("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jj")
         // let hello = [UInt8]("Hello".utf8)
 
+
         let hello = try Contents.ofBinaryFile("images/svg-test/europe.svg")
         // let hello = try Contents.ofBinaryFile("images/svg-test/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
         // let hello = try Contents.ofBinaryFile("data/latin.txt")
+let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         Swift.print("uncompressed.count = \(hello.count)")
         let compressed = ZLib.compress(hello)
         Swift.print("compressed.count = \(compressed.count)")
+
+let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+print("ZLib.compress => \(time1 - time0)")
+
+
 
         let line1 = TextLine(f1, "Hello, Beautiful World")
         let line2 = TextLine(f1, "Hello,BeautifulWorld")
