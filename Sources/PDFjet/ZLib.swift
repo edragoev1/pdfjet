@@ -234,7 +234,7 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
     var off: Int
     var nmatch: Int
     var matchlen: Int
-    var advance: Int?
+    var advance: Int
     var defermatch = Match()
     var matches = [Match](repeating: Match(), count: MAXMATCH)
     var deferchr: Int
@@ -389,8 +389,8 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
          * Now advance the position by `advance' characters,
          * keeping the window and hash chains consistent.
          */
-        while advance! > 0 {
-print("advance == \(advance!)")
+        while advance > 0 {
+print("advance == \(advance)")
             if len >= HASHCHARS {
                 lz77_advance(st, data[index], lz77_hash(data, index))
             } else {
@@ -401,7 +401,7 @@ print("advance == \(advance!)")
             index += 1
 print("index == \(index)")
             len -= 1
-            advance! -= 1
+            advance -= 1
         }
     }
 }
