@@ -15,7 +15,9 @@ public class Example_73 {
         f1.setSize(12.0)
         f2.setSize(12.0)
 
-        let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.".utf8)
+        // let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jjjjjj".utf8)
+        let hello = [UInt8]("hello world world".utf8)
+        // print("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jj")
         // let hello = [UInt8]("Hello".utf8)
         Swift.print("uncompressed.count = \(hello.count)")
         let compressed = ZLib.compress(hello)

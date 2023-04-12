@@ -204,183 +204,222 @@ static func CHARAT(_ st: LZ77InternalContext, _ k: Int, _ index: Int) -> UInt8 {
  * instead call literal() for everything.
  */
 static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
-    let st = ectx.ictx
-    var len = data.count
-    var distance: Int
-    // var off: Int
-    var nmatch: Int
-    var matchlen: Int
-    var advance: Int
-    var defermatch = Match()
-    var matches = [Match](repeating: Match(), count: MAXMATCH)
-    var index = 0   // The current position in the data buffer
-
-    assert(st.npending <= HASHCHARS)
-
-    /*
-     * Add any pending characters from last time to the window. (We
-     * might not be able to.)
-     *
-     * This leaves st->pending empty in the usual case (when len >=
-     * HASHCHARS); otherwise it leaves st->pending empty enough that
-     * adding all the remaining 'len' characters will not push it past
-     * HASHCHARS in size.
-     */
+    var hashtable = [Int](repeating: -1, count: WINSIZE)
     var i = 0
-    while i < st.npending {
-        var foo = [UInt8](repeating: 0, count: HASHCHARS)
-        var j: Int
-        if len + st.npending - i < HASHCHARS {
-            /* Update the pending array. */
-            j = i
-            while j < st.npending {
-                st.pending[j - i] = st.pending[j]
-                j += 1
-            }
-            break
-        }
-        j = 0
-        while j < HASHCHARS {
-            if (i + j) < st.npending {
-                foo[j] = st.pending[i + j]
-            } else {
-                foo[j] = data[index + i + j - st.npending]
-            }
-            j += 1
-        }
-        lz77_advance(st, foo[0], lz77_hash(foo, index))
-        i += 1
-    }
-    st.npending -= i
-    defermatch.len = 0
-    var deferchr = 0
-    while len > 0 {
-        if len >= HASHCHARS {
-            /*
-             * Hash the next few characters.
-             */
-            let hash = lz77_hash(data, index)
-
-            /*
-             * Look the hash up in the corresponding hash chain and see
-             * what we can find.
-             */
-            nmatch = 0
-            var off = st.hashtab[hash].first!
-            while off != INVALID {
-                /* distance = 1       if off == st->winpos-1 */
-                /* distance = WINSIZE if off == st->winpos   */
-                distance =
-                    WINSIZE - (off + WINSIZE - st.winpos) % WINSIZE
-                var i = 0
-                while i < HASHCHARS {
-                    if CHARAT(st, i, index) != CHARAT(st, i - distance, index) {
-                        break
-                    }
-                    i += 1
-                }
-                if i == HASHCHARS {
-                    matches[nmatch].distance = distance
-                    matches[nmatch].len = 3
-                    nmatch += 1
-                    if nmatch >= MAXMATCH {
-                        break
-                    }
-                }
-                off = st.win[off].next!
-            }
+    while i <= (data.count - 3) {
+        let hash = lz77_hash(data, i)
+        if hashtable[hash] == -1 {
+            // lz77_literal
+            hashtable[hash] = i
+            print("lit")
+            zlib_literal(ectx, data[i])
+            i += 1
         } else {
-            nmatch = 0
-        }
-print("nmatch = \(nmatch)")
-        if nmatch > 0 {
-            /*
-             * We've now filled up matches[] with nmatch potential
-             * matches. Follow them down to find the longest. (We
-             * assume here that it's always worth favouring a
-             * longer match over a shorter one.)
-             */
-            matchlen = HASHCHARS
-            while matchlen < len {
-                var i = 0
-                var j = 0
-                while i < nmatch {
-                    if CHARAT(st, matchlen, index) ==
-                        CHARAT(st, matchlen - matches[i].distance!, index) {
-                        matches[j] = matches[i]
-                        j += 1
-                    }
-                    i += 1
-                }
-                if j == 0 {
+            // lz77_match
+            var length = 0
+            let j = hashtable[hash]
+            var k = 0
+            while (i + k) < data.count {
+                if data[j + k] == data[i + k] {
+                    length += 1
+                } else {
                     break
                 }
-                matchlen += 1
-                nmatch = j
-            }
-
-            /*
-             * We've now got all the longest matches. We favour the
-             * shorter distances, which means we go with matches[0].
-             * So see if we want to defer it or throw it away.
-             */
-            matches[0].len = matchlen
-            if defermatch.len! > 0 {
-                if matches[0].len! > defermatch.len! + 1 {
-                    /* We have a better match. Emit the deferred char,
-                     * and defer this match. */
-print("zlib_literal")
-                    zlib_literal(ectx, UInt8(deferchr))
-                    defermatch = matches[0]
-                    deferchr = Int(data[index])
-                    advance = 1
-                } else {
-print("zlib_match")
-                    /* We don't have a better match. Do the deferred one. */
-                    zlib_match(ectx, defermatch.distance!, defermatch.len!)
-                    advance = defermatch.len! - 1
-                    defermatch.len = 0
+                if k == (MAXMATCH - 1) {
+                    break
                 }
-            } else {
-                /* There was no deferred match. Defer this one. */
-                defermatch = matches[0]
-                deferchr = Int(data[index])
-                advance = 1
+                k += 1
             }
-        } else {
-            /*
-             * We found no matches. Emit the deferred match, if
-             * any; otherwise emit a literal.
-             */
-            if defermatch.len! > 0 {
-print("zlib_match")
-                zlib_match(ectx, defermatch.distance!, defermatch.len!)
-                advance = defermatch.len! - 1
-                defermatch.len = 0
-            } else {
-print("zlib_literal")
-                zlib_literal(ectx, data[index])
-                advance = 1
-            }
-        }
-
-        /*
-         * Now advance the position by `advance' characters,
-         * keeping the window and hash chains consistent.
-         */
-        while advance > 0 {
-            if len >= HASHCHARS {
-                lz77_advance(st, data[index], lz77_hash(data, index))
-            } else {
-                assert(st.npending < HASHCHARS)
-                st.pending[st.npending] = data[index]
-                st.npending += 1
-            }
-            index += 1
-            len -= 1
-            advance -= 1
+            print("\(i - j) = \(length)")
+            hashtable[hash] = i
+            zlib_match(ectx, (i - j), length)
+            i += length
         }
     }
+    while i < data.count {
+        print("lit")
+        i += 1
+    }
+print()
+
+//     i = 0
+
+//     let st = ectx.ictx
+//     var len = data.count
+//     var distance: Int
+//     // var off: Int
+//     var nmatch: Int
+//     var matchlen: Int
+//     var advance: Int
+//     var defermatch = Match()
+//     var matches = [Match](repeating: Match(), count: MAXMATCH)
+//     var index = 0   // The current position in the data buffer
+
+//     assert(st.npending <= HASHCHARS)
+
+//     /*
+//      * Add any pending characters from last time to the window. (We
+//      * might not be able to.)
+//      *
+//      * This leaves st->pending empty in the usual case (when len >=
+//      * HASHCHARS); otherwise it leaves st->pending empty enough that
+//      * adding all the remaining 'len' characters will not push it past
+//      * HASHCHARS in size.
+//      */
+//     while i < st.npending {
+//         var foo = [UInt8](repeating: 0, count: HASHCHARS)
+//         var j: Int
+//         if len + st.npending - i < HASHCHARS {
+//             /* Update the pending array. */
+//             j = i
+//             while j < st.npending {
+//                 st.pending[j - i] = st.pending[j]
+//                 j += 1
+//             }
+//             break
+//         }
+//         j = 0
+//         while j < HASHCHARS {
+//             if (i + j) < st.npending {
+//                 foo[j] = st.pending[i + j]
+//             } else {
+//                 foo[j] = data[index + i + j - st.npending]
+//             }
+//             j += 1
+//         }
+//         lz77_advance(st, foo[0], lz77_hash(foo, index))
+//         i += 1
+//     }
+//     st.npending -= i
+//     defermatch.len = 0
+//     var deferchr = 0
+//     while len > 0 {
+//         if len >= HASHCHARS {
+//             /*
+//              * Hash the next few characters.
+//              */
+//             let hash = lz77_hash(data, index)
+
+//             /*
+//              * Look the hash up in the corresponding hash chain and see
+//              * what we can find.
+//              */
+//             nmatch = 0
+//             var off = st.hashtab[hash].first!
+//             while off != INVALID {
+//                 /* distance = 1       if off == st->winpos-1 */
+//                 /* distance = WINSIZE if off == st->winpos   */
+//                 distance =
+//                     WINSIZE - (off + WINSIZE - st.winpos) % WINSIZE
+//                 var i = 0
+//                 while i < HASHCHARS {
+//                     if CHARAT(st, i, index) != CHARAT(st, i - distance, index) {
+//                         break
+//                     }
+//                     i += 1
+//                 }
+//                 if i == HASHCHARS {
+//                     matches[nmatch].distance = distance
+//                     matches[nmatch].len = 3
+//                     nmatch += 1
+//                     if nmatch >= MAXMATCH {
+//                         break
+//                     }
+//                 }
+//                 off = st.win[off].next!
+//             }
+//         } else {
+//             nmatch = 0
+//         }
+// // print("nmatch = \(nmatch)")
+//         if nmatch > 0 {
+//             /*
+//              * We've now filled up matches[] with nmatch potential
+//              * matches. Follow them down to find the longest. (We
+//              * assume here that it's always worth favouring a
+//              * longer match over a shorter one.)
+//              */
+//             matchlen = HASHCHARS
+//             while matchlen < len {
+//                 var i = 0
+//                 var j = 0
+//                 while i < nmatch {
+//                     if CHARAT(st, matchlen, index) ==
+//                         CHARAT(st, matchlen - matches[i].distance!, index) {
+//                         matches[j] = matches[i]
+//                         j += 1
+//                     }
+//                     i += 1
+//                 }
+//                 if j == 0 {
+//                     break
+//                 }
+//                 matchlen += 1
+//                 nmatch = j
+//             }
+
+//             /*
+//              * We've now got all the longest matches. We favour the
+//              * shorter distances, which means we go with matches[0].
+//              * So see if we want to defer it or throw it away.
+//              */
+//             matches[0].len = matchlen
+//             if defermatch.len! > 0 {
+//                 if matches[0].len! > defermatch.len! + 1 {
+//                     /* We have a better match. Emit the deferred char,
+//                      * and defer this match. */
+// // print("zlib_literal")
+//                     zlib_literal(ectx, UInt8(deferchr))
+//                     defermatch = matches[0]
+//                     deferchr = Int(data[index])
+//                     advance = 1
+//                 } else {
+// // print("zlib_match")
+//                     /* We don't have a better match. Do the deferred one. */
+//                     zlib_match(ectx, defermatch.distance!, defermatch.len!)
+//                     advance = defermatch.len! - 1
+//                     defermatch.len = 0
+//                 }
+//             } else {
+//                 /* There was no deferred match. Defer this one. */
+//                 defermatch = matches[0]
+//                 deferchr = Int(data[index])
+//                 advance = 1
+//             }
+//         } else {
+//             /*
+//              * We found no matches. Emit the deferred match, if
+//              * any; otherwise emit a literal.
+//              */
+//             if defermatch.len! > 0 {
+// // print("zlib_match")
+//                 zlib_match(ectx, defermatch.distance!, defermatch.len!)
+//                 advance = defermatch.len! - 1
+//                 defermatch.len = 0
+//             } else {
+// // print("zlib_literal")
+//                 zlib_literal(ectx, data[index])
+//                 advance = 1
+//             }
+//         }
+
+//         /*
+//          * Now advance the position by `advance' characters,
+//          * keeping the window and hash chains consistent.
+//          */
+//         while advance > 0 {
+//             if len >= HASHCHARS {
+//                 lz77_advance(st, data[index], lz77_hash(data, index))
+//             } else {
+//                 assert(st.npending < HASHCHARS)
+//                 st.pending[st.npending] = data[index]
+//                 st.npending += 1
+//             }
+//             index += 1
+//             len -= 1
+//             advance -= 1
+//         }
+//     }
 }
 
 // /* ----------------------------------------------------------------------
