@@ -106,6 +106,13 @@ class Match {
     var len: Int?
 }
 
+struct Outbuf {
+    var outbuf: [UInt8]
+    var outbits: Int
+    var noutbits: Int
+    var firstblock: Bool
+}
+
 class LZ77InternalContext {
     var win = [WindowEntry]()
     var data = [UInt8](repeating: 0, count: WINSIZE)
@@ -122,6 +129,10 @@ class LZ77Context {
         self.userdata = userdata
     }
 }
+
+public class ZLib {
+    public init() {
+    }
 
 func lz77_hash(_ data: [UInt8]) -> Int {
     var hash = 257 * Int(data[0])
@@ -389,13 +400,6 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ len: inout Int) {
 //  * heuristic, but I'm not confident that the gain would balance out
 //  * having to transmit the trees.
 //  */
-
-struct Outbuf {
-    var outbuf: [UInt8]
-    var outbits: Int
-    var noutbits: Int
-    var firstblock: Bool
-}
 
 func outbits(_ out: inout Outbuf, _ bits: Int, _ nbits: Int) {
     assert(out.noutbits + nbits <= 32)
@@ -695,33 +699,38 @@ func zlib_compress_block(
     out.outbuf.removeAll()
 }
 
-/// Calculate and return the Adler-32 checksum
-func getAdler32(_ buf1: [UInt8]) -> [UInt8] {
-    var buf2 = [UInt8]()
-    let prime: UInt = 65521
-    var s1: UInt = 1
-    var s2: UInt = 0
-    var i = 0
-    while i < buf1.count {
-        s1 = (s1 + UInt(buf1[i])) % prime
-        s2 = (s2 + s1) % prime
-        i += 1
-    }
-    let adler = ((s2 << 16) + s1)
-    buf2.append(UInt8(adler >> 24))
-    buf2.append(UInt8(adler >> 16))
-    buf2.append(UInt8(adler >>  8))
-    buf2.append(UInt8(adler))
-    return buf2
-}
+// public class ZLib {
+//     public init() {
+//     }
 
-func zLibCompress(_ buf1: [UInt8]) -> [UInt8] {
-    var buf2 = [UInt8]()
-    let context = LZ77Context(buf1)
-    var len1 = buf1.count
-    var len2 = buf2.count
-    lz77_init(context)
-    zlib_compress_block(context, buf1, &len1, &buf2, &len2, 0 /* Do not pad the data */)
-    buf2.append(contentsOf: getAdler32(buf1))
-    return buf2
+    /// Calculate and return the Adler-32 checksum
+    func getAdler32(_ buf1: [UInt8]) -> [UInt8] {
+        var buf2 = [UInt8]()
+        let prime: UInt = 65521
+        var s1: UInt = 1
+        var s2: UInt = 0
+        var i = 0
+        while i < buf1.count {
+            s1 = (s1 + UInt(buf1[i])) % prime
+            s2 = (s2 + s1) % prime
+            i += 1
+        }
+        let adler = ((s2 << 16) + s1)
+        buf2.append(UInt8(adler >> 24))
+        buf2.append(UInt8(adler >> 16))
+        buf2.append(UInt8(adler >>  8))
+        buf2.append(UInt8(adler))
+        return buf2
+    }
+
+    public func compress(_ buf1: [UInt8]) -> [UInt8] {
+        var buf2 = [UInt8]()
+        let context = LZ77Context(buf1)
+        var len1 = buf1.count
+        var len2 = buf2.count
+        lz77_init(context)
+        zlib_compress_block(context, buf1, &len1, &buf2, &len2, 0 /* Do not pad the data */)
+        buf2.append(contentsOf: getAdler32(buf1))
+        return buf2
+    }
 }

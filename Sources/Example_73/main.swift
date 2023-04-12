@@ -15,17 +15,10 @@ public class Example_73 {
         f1.setSize(12.0)
         f2.setSize(12.0)
 
-
-        // var string = "NSData and its mutable subclass NSMutableData provide data objects, or object-oriented wrappers for byte buffers. Data objects let simple allocated buffers (that is, data with no embedded pointers) take on the behavior of Foundation objects."
-        // let data = Data(string.utf8) as NSData
-        // print ("original data size: \(data.count) bytes")
-        // do {
-        //     let compressedData = try data.compressed(using: .zlib)
-        //     print("zlib compressed size: \(compressedData.count) bytes")
-        // } catch {
-        //     print ("Compression error: \(error)")
-        // }
-
+        let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.".utf8)
+        Swift.print(hello.count)
+        let compressed = ZLib().compress(hello)
+        Swift.print(compressed.count)
 
         let line1 = TextLine(f1, "Hello, Beautiful World")
         let line2 = TextLine(f1, "Hello,BeautifulWorld")
