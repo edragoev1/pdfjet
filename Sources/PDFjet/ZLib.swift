@@ -101,7 +101,7 @@ struct HashEntry {
     var first: Int?                 /* window index of first in chain */
 }
 
-struct Match {
+class Match {
     var distance: Int?
     var len: Int?
 }
@@ -116,12 +116,8 @@ class LZ77InternalContext {
 }
 
 class LZ77Context {
-//     struct LZ77InternalContext *ictx
     var ictx: LZ77InternalContext?
-//     void *userdata
     var userdata: Any?
-//     void (*literal) (struct LZ77Context *ctx, unsigned char c)
-//     void (*match) (struct LZ77Context *ctx, int distance, int len)
 }
 
 func lz77_hash(_ data: [UInt8]) -> Int {
@@ -188,14 +184,12 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
     st.winpos = (st.winpos + 1) & (WINSIZE - 1)
 }
 
-// #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
-
-// func CHARAT(_ k: Int) -> Int {
-//     if k < 0 {
-//         return st.data[(st.winpos+k)&(WINSIZE-1)]
-//     }
-//     return data[k]
-// }
+func CHARAT(_ st: LZ77InternalContext, _ k: Int) -> UInt8 {
+    if k < 0 {
+        return st.data[(st.winpos+k)&(WINSIZE-1)]
+    }
+    return st.data[k]
+}
 
 /*
  * Supply data to be compressed. Will update the private fields of
@@ -205,13 +199,14 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
  */
 func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) {
     let st: LZ77InternalContext = ctx.ictx!
-    // let distance: Int
-    // let off: Int
-    // let nmatch: Int
-    // let matchlen: Int
+    var distance: Int
+    var off: Int
+    var nmatch: Int
+    var matchlen: Int
     var advance: Int?
-//     struct Match defermatch, matches[MAXMATCH]
-//     int deferchr
+    var defermatch = Match()
+    var matches = [Match](repeating: Match(), count: MAXMATCH)
+    var deferchr: Int
 
     assert(st.npending <= HASHCHARS)
 
@@ -251,106 +246,113 @@ func lz77_compress(_ ctx: LZ77Context, _ data: inout [UInt8], _ len: inout Int) 
     }
     st.npending -= i
 
-//     defermatch.distance = 0; /* appease compiler */
-//     defermatch.len = 0;
-//     var deferchr: Int = 0 // TODO '\0'
-     while len > 0 {
+    defermatch.len = 0
+    deferchr = 0    // TODO: Is this correct? '\0'
+    while len > 0 {
+        if len >= HASHCHARS {
+            /*
+             * Hash the next few characters.
+             */
+            let hash = lz77_hash(data)
 
-//         if (len >= HASHCHARS) {
-//             /*
-//              * Hash the next few characters.
-//              */
-//             int hash = lz77_hash(data);
+            /*
+             * Look the hash up in the corresponding hash chain and see
+             * what we can find.
+             */
+            nmatch = 0
+            off = st.hashtab[hash].first!
+            while off != INVALID {
+                /* distance = 1       if off == st->winpos-1 */
+                /* distance = WINSIZE if off == st->winpos   */
+                distance =
+                    WINSIZE - (off + WINSIZE - st.winpos) % WINSIZE
+                i = 0
+                while i < HASHCHARS {
+                    if CHARAT(st, i) != CHARAT(st, i - distance) {
+                        break
+                    }
+                    i += 1
+                }
+                if (i == HASHCHARS) {
+                    matches[nmatch].distance = distance
+                    matches[nmatch].len = 3
+                       nmatch += 1
+                    if nmatch >= MAXMATCH {
+                        break
+                    }
+                }
+                off = st.win[off].next!
+            }
+        } else {
+            nmatch = 0
+        }
 
-//             /*
-//              * Look the hash up in the corresponding hash chain and see
-//              * what we can find.
-//              */
-//             nmatch = 0;
-//             for (off = st->hashtab[hash].first;
-//                  off != INVALID; off = st->win[off].next) {
-//                 /* distance = 1       if off == st->winpos-1 */
-//                 /* distance = WINSIZE if off == st->winpos   */
-//                 distance =
-//                     WINSIZE - (off + WINSIZE - st->winpos) % WINSIZE;
-//                 for (i = 0; i < HASHCHARS; i++)
-//                     if (CHARAT(i) != CHARAT(i - distance))
-//                         break;
-//                 if (i == HASHCHARS) {
-//                     matches[nmatch].distance = distance;
-//                     matches[nmatch].len = 3
-//                        nmatch += 1
-//                      if nmatch >= MAXMATCH {
-//                         break
-//                      }
-//                 }
-//             }
-//         } else {
-//             nmatch = 0
-//         }
+        if (nmatch > 0) {
+            /*
+             * We've now filled up matches[] with nmatch potential
+             * matches. Follow them down to find the longest. (We
+             * assume here that it's always worth favouring a
+             * longer match over a shorter one.)
+             */
+            matchlen = HASHCHARS
+            while matchlen < len {
+                var i = 0
+                var j = 0
+                while i < nmatch {
+                    if (CHARAT(st, matchlen) ==
+                        CHARAT(st, matchlen - matches[i].distance!)) {
+                        matches[j] = matches[i]
+                        j += 1
+                    }
+                    i += 1
+                }
+                if j == 0 {
+                    break
+                }
+                matchlen += 1
+                nmatch = j
+            }
 
-//         if (nmatch > 0) {
-//             /*
-//              * We've now filled up matches[] with nmatch potential
-//              * matches. Follow them down to find the longest. (We
-//              * assume here that it's always worth favouring a
-//              * longer match over a shorter one.)
-//              */
-//             matchlen = HASHCHARS;
-//             while (matchlen < len) {
-//                 int j;
-//                 for (i = j = 0; i < nmatch; i++) {
-//                     if (CHARAT(matchlen) ==
-//                         CHARAT(matchlen - matches[i].distance)) {
-//                         matches[j++] = matches[i];
-//                     }
-//                 }
-//                 if (j == 0)
-//                     break;
-//                 matchlen++;
-//                 nmatch = j;
-//             }
-
-//             /*
-//              * We've now got all the longest matches. We favour the
-//              * shorter distances, which means we go with matches[0].
-//              * So see if we want to defer it or throw it away.
-//              */
-//             matches[0].len = matchlen;
-//             if (defermatch.len > 0) {
-//                 if (matches[0].len > defermatch.len + 1) {
-//                     /* We have a better match. Emit the deferred char,
-//                      * and defer this match. */
-//                     ctx->literal(ctx, (unsigned char) deferchr);
-//                     defermatch = matches[0];
-//                     deferchr = data[0];
-//                     advance = 1;
-//                 } else {
-//                     /* We don't have a better match. Do the deferred one. */
-//                     ctx->match(ctx, defermatch.distance, defermatch.len);
-//                     advance = defermatch.len - 1;
-//                     defermatch.len = 0;
-//                 }
-//             } else {
-//                 /* There was no deferred match. Defer this one. */
-//                 defermatch = matches[0];
-//                 deferchr = data[0];
-//                 advance = 1;
-//             }
-//         } else {
-//             /*
-//              * We found no matches. Emit the deferred match, if
-//              * any; otherwise emit a literal.
-//              */
-//             if (defermatch.len > 0) {
-//                 ctx->match(ctx, defermatch.distance, defermatch.len);
-//                 advance = defermatch.len - 1;
-//                 defermatch.len = 0;
-//             } else {
-//                 ctx->literal(ctx, data[0]);
-//                 advance = 1;
-//             }
-//         }
+            /*
+             * We've now got all the longest matches. We favour the
+             * shorter distances, which means we go with matches[0].
+             * So see if we want to defer it or throw it away.
+             */
+            matches[0].len = matchlen
+            if defermatch.len! > 0 {
+                if matches[0].len! > defermatch.len! + 1 {
+                    /* We have a better match. Emit the deferred char,
+                     * and defer this match. */
+                    zlib_literal(ctx, UInt8(deferchr))
+                    defermatch = matches[0]
+                    deferchr = Int(data[0])
+                    advance = 1
+                } else {
+                    /* We don't have a better match. Do the deferred one. */
+                    zlib_match(ctx, &defermatch.distance!, &defermatch.len!)
+                    advance = defermatch.len! - 1
+                    defermatch.len = 0
+                }
+            } else {
+                /* There was no deferred match. Defer this one. */
+                defermatch = matches[0]
+                deferchr = Int(data[0])
+                advance = 1
+            }
+        } else {
+            /*
+             * We found no matches. Emit the deferred match, if
+             * any; otherwise emit a literal.
+             */
+            if defermatch.len! > 0 {
+                zlib_match(ctx, &defermatch.distance!, &defermatch.len!)
+                advance = defermatch.len! - 1
+                defermatch.len = 0
+            } else {
+                zlib_literal(ctx, data[0])
+                advance = 1
+            }
+        }
 
         /*
          * Now advance the position by `advance' characters,
@@ -437,7 +439,7 @@ let mirrorbytes: [UInt8] = [
     0x17, 0x97, 0x57, 0xd7, 0x37, 0xb7, 0x77, 0xf7,
     0x0f, 0x8f, 0x4f, 0xcf, 0x2f, 0xaf, 0x6f, 0xef,
     0x1f, 0x9f, 0x5f, 0xdf, 0x3f, 0xbf, 0x7f, 0xff,
-];
+]
 
 struct coderecord {
     let code: Int16
@@ -588,12 +590,12 @@ func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
             assert(j - i >= 2)
             let k = (j + i) / 2
             if distance < distcodes[k].min {
-                j = k;
+                j = k
             } else if distance > distcodes[k].max {
-                i = k;
+                i = k
             } else {
-                d = distcodes[k];
-                break;                  /* found it! */
+                d = distcodes[k]
+                break                   /* found it! */
             }
         }
 
@@ -635,23 +637,20 @@ struct ssh_zlib_compressor {
 //     return &comp.sc
 // }
 
-struct ssh_compressor {
-
-}
-
 func zlib_compress_block(
-        _ sc: ssh_compressor,
-        _ block: [UInt8],
-        _ len: Int,
+        _ ctx: LZ77Context,
+        _ block: inout [UInt8],
+        _ len: inout Int,
         _ outblock: [UInt8],
         _ outlen: inout Int,
         _ minlen: Int) {
 
     // struct ssh_zlib_compressor *comp =
     //     container_of(sc, struct ssh_zlib_compressor, sc);
+
     // struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
     var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
-    var in_block = false // TODO bool in_block;
+    var in_block = false // TODO bool in_block
 
     /*
      * If this is the first block, output the Zlib (RFC1950) header
@@ -679,7 +678,7 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
-    // lz77_compress(&comp.ectx, block, len)
+    lz77_compress(ctx, &block, &len)
 
     /*
      * End the block (by transmitting code 256, which is
