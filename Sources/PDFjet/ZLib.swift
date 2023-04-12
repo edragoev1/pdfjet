@@ -210,8 +210,9 @@ func CHARAT(_ st: LZ77InternalContext, _ k: Int) -> UInt8 {
  * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
-func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ len: inout Int) {
-    let st: LZ77InternalContext = ectx.ictx!
+func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
+    let st = ectx.ictx!
+    var len = data.count
     var distance: Int
     var off: Int
     var nmatch: Int
@@ -622,10 +623,7 @@ func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ len: inout Int) {
 
 func zlib_compress_block(
         _ ectx: LZ77Context,
-        _ block: [UInt8],
-        _ len: inout Int,
         _ outblock: inout [UInt8],
-        _ outlen: inout Int,
         _ minlen: Int) {
     var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     var in_block: Bool
@@ -656,7 +654,7 @@ func zlib_compress_block(
     /*
      * Do the compression.
      */
-    lz77_compress(ectx, block, &len)
+    lz77_compress(ectx, ectx.userdata!)
 
     /*
      * End the block (by transmitting code 256, which is
@@ -695,9 +693,9 @@ func zlib_compress_block(
         outbits(&out, 2, 3)     /* open new static block */
     }
 
-    outlen = out.outbuf.count
     outblock = out.outbuf
-    out.outbuf.removeAll()
+    // TODO:
+    // out.outbuf.removeAll()
 }
 
 // public class ZLib {
@@ -727,10 +725,8 @@ func zlib_compress_block(
     public func compress(_ buf1: [UInt8]) -> [UInt8] {
         var buf2 = [UInt8]()
         let context = LZ77Context(buf1)
-        var len1 = buf1.count
-        var len2 = buf2.count
         lz77_init(context)
-        zlib_compress_block(context, buf1, &len1, &buf2, &len2, 0 /* Do not pad the data */)
+        zlib_compress_block(context, &buf2, 0 /* Do not pad the data */)
         buf2.append(contentsOf: getAdler32(buf1))
         return buf2
     }
