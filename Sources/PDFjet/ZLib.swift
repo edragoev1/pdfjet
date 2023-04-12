@@ -639,10 +639,7 @@ func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ origlen: Int) {
     }
 }
 
-func zlib_compress_block(
-        _ ectx: LZ77Context,
-        _ outblock: inout [UInt8],
-        _ minlen: Int) {
+func zlib_compress_block(_ ectx: LZ77Context, _ outblock: inout [UInt8], _ minlen: Int) {
     var out = ectx.userdata
     var in_block: Bool
 
