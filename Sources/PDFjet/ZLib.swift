@@ -254,24 +254,24 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
     var i = 0
     while i < st.npending {
         var foo = [UInt8](repeating: 0, count: HASHCHARS)
-        var j: Int?
+        var j: Int
         if len + st.npending - i < HASHCHARS {
             /* Update the pending array. */
             j = i
-            while j! < st.npending {
-                st.pending[j! - i] = st.pending[j!]
-                j! += 1
+            while j < st.npending {
+                st.pending[j - i] = st.pending[j]
+                j += 1
             }
             break
         }
         j = 0
-        while j! < HASHCHARS {
-            if (i + j!) < st.npending {
-                foo[j!] = st.pending[i + j!]
+        while j < HASHCHARS {
+            if (i + j) < st.npending {
+                foo[j] = st.pending[i + j]
             } else {
-                foo[j!] = data[index + i + j! - st.npending]
+                foo[j] = data[index + i + j - st.npending]
             }
-            j! += 1
+            j += 1
         }
         lz77_advance(st, foo[0], lz77_hash(foo, index))
         i += 1
