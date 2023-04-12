@@ -204,6 +204,7 @@ static func CHARAT(_ st: LZ77InternalContext, _ k: Int, _ index: Int) -> UInt8 {
  * instead call literal() for everything.
  */
 static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
+    ectx.userdata.outbuf = data
     var hashtable = [Int](repeating: -1, count: WINSIZE)
     var i = 0
     while i <= (data.count - 3) {
@@ -225,7 +226,7 @@ static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
                 } else {
                     break
                 }
-                if k == (MAXMATCH - 1) {
+                if length == 258 {
                     break
                 }
                 k += 1
@@ -236,6 +237,7 @@ static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
             i += length
         }
     }
+    // Process the remaining data
     while i < data.count {
         print("lit")
         zlib_literal(ectx, data[i])
@@ -566,13 +568,13 @@ static func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
     }
 }
 
-static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ origlen: Int) {
+static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ length: Int) {
     var out = ectx.userdata
     var d: coderecord?
     var l: coderecord?
-    var len = origlen
+    // var len = origlen
 
-    while len > 0 {
+//    while len > 0 {
         /*
          * We can transmit matches of lengths 3 through 258
          * inclusive. So if len exceeds 258, we must transmit in
@@ -583,8 +585,8 @@ static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ origlen: Int) {
          * len <= 258, we can just transmit len. But if len == 259
          * or 260, we must transmit len-3.
          */
-        let thislen = (len > 260 ? 258 : len <= 258 ? len : len - 3)
-        len -= thislen
+        // let thislen = (len > 260 ? 258 : len <= 258 ? len : len - 3)
+        // len -= thislen
 
         /*
          * Binary-search to find which length code we're
@@ -595,9 +597,9 @@ static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ origlen: Int) {
         while true {
             assert(j - i >= 2)
             let k = (j + i) / 2
-            if thislen < lencodes[k].min {
+            if length < lencodes[k].min {
                 j = k
-            } else if thislen > lencodes[k].max {
+            } else if length > lencodes[k].max {
                 i = k
             } else {
                 l = lencodes[k]
@@ -610,17 +612,17 @@ static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ origlen: Int) {
          * starting at 0000000; 280-287 are eight bits starting at
          * 11000000.
          */
-        if l!.code <= 279 {
+        // f l!.code <= 279 {
             outbits(&out, UInt(mirrorbytes[Int(l!.code - 256) * 2]), 7)
-        } else {
-            outbits(&out, UInt(mirrorbytes[0xc0 - 280 + Int(l!.code)]), 8)
-        }
+        // } else {
+        //    outbits(&out, UInt(mirrorbytes[0xc0 - 280 + Int(l!.code)]), 8)
+        // }
 
         /*
          * Transmit the extra bits.
          */
         if l!.extrabits > 0 {
-            outbits(&out, UInt(thislen) - UInt(l!.min), UInt(l!.extrabits))
+            outbits(&out, UInt(length) - UInt(l!.min), UInt(l!.extrabits))
         }
 
         /*
@@ -653,7 +655,7 @@ static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ origlen: Int) {
         if d!.extrabits > 0 {
             outbits(&out, UInt(distance) - UInt(d!.min), UInt(d!.extrabits))
         }
-    }
+    // }
 }
 
 static func zlib_compress_block(_ ectx: LZ77Context, _ inblock: [UInt8], _ minlen: Int) -> [UInt8] {
