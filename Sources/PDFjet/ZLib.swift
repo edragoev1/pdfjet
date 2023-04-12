@@ -118,6 +118,9 @@ class LZ77InternalContext {
 class LZ77Context {
     var ictx: LZ77InternalContext?
     var userdata: [UInt8]?
+    init(_ userdata: [UInt8]) {
+        self.userdata = userdata
+    }
 }
 
 func lz77_hash(_ data: [UInt8]) -> Int {
@@ -131,10 +134,10 @@ func lz77_hash(_ data: [UInt8]) -> Int {
  * Initialise the private fields of an LZ77Context. It's up to the
  * user to initialise the public fields.
  */
-func lz77_init(_ ctx: LZ77Context) -> Int {
+func lz77_init(_ ectx: LZ77Context) {
     let st = LZ77InternalContext()
 
-    ctx.ictx = st
+    ectx.ictx = st
     var i = 0
     while i < WINSIZE {
         st.win.append(WindowEntry(next: INVALID, prev: INVALID, hashval: INVALID))
@@ -148,8 +151,6 @@ func lz77_init(_ ctx: LZ77Context) -> Int {
     // TODO: These are not needed. Remove after everything is working!
     // st.winpos = 0
     // st.npending = 0
-
-    return 1
 }
 
 func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
@@ -714,8 +715,13 @@ func getAdler32(_ buf1: [UInt8]) -> [UInt8] {
     return buf2
 }
 
-func zLibCompress(_ buf1: [UInt8]) -> [UInt8] {
+func zLibCompress(_ buf1: inout [UInt8]) -> [UInt8] {
     var buf2 = [UInt8]()
-    buf2.append(contentsOf: getAdler32(buf1))
+    let adler32 = getAdler32(buf1)
+    let context = LZ77Context(buf1)
+    var len = buf1.count
+    lz77_init(context)
+    lz77_compress(context, &buf1, &len)
+    buf2.append(contentsOf: adler32)
     return buf2
 }
