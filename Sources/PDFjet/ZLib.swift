@@ -694,23 +694,28 @@ func zlib_compress_block(
     out.outbuf.removeAll()
 }
 
-func addAdler32(_ buffer: [UInt8]) -> UInt {
+/// Calculate and return the Adler-32 checksum
+func getAdler32(_ buf1: [UInt8]) -> [UInt8] {
+    var buf2 = [UInt8]()
     let prime: UInt = 65521
-    // Calculate the Adler-32 checksum
     var s1: UInt = 1
     var s2: UInt = 0
     var i = 0
-    while i < buffer.count {
-        s1 = (s1 + UInt(buffer[i])) % prime
+    while i < buf1.count {
+        s1 = (s1 + UInt(buf1[i])) % prime
         s2 = (s2 + s1) % prime
         i += 1
     }
     let adler = ((s2 << 16) + s1)
+    buf2.append(UInt8(adler >> 24))
+    buf2.append(UInt8(adler >> 16))
+    buf2.append(UInt8(adler >>  8))
+    buf2.append(UInt8(adler))
+    return buf2
+}
 
-    // buf1.WriteByte((byte) (adler >> 24))
-    // buf1.WriteByte((byte) (adler >> 16))
-    // buf1.WriteByte((byte) (adler >>  8))
-    // buf1.WriteByte((byte) (adler))
-
-    return adler
+func zLibCompress(_ buf1: [UInt8]) -> [UInt8] {
+    var buf2 = [UInt8]()
+    buf2.append(contentsOf: getAdler32(buf1))
+    return buf2
 }
