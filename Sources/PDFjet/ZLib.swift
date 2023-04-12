@@ -148,14 +148,11 @@ class LZ77Context {
 }
 
 public class ZLib {
-public init() {
-}
 
 static func lz77_hash(_ data: [UInt8], _ index: Int) -> Int {
     var hash = 257 * Int(data[index])
     hash += 263 * Int(data[index + 1])
     hash += 269 * Int(data[index + 2])
-// print(hash % HASHMAX)
     return hash % HASHMAX
 }
 
@@ -204,7 +201,6 @@ static func CHARAT(_ st: LZ77InternalContext, _ k: Int, _ index: Int) -> UInt8 {
  * instead call literal() for everything.
  */
 static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
-    ectx.userdata.outbuf = data
     var hashtable = [Int](repeating: -1, count: WINSIZE)
     var i = 0
     while i <= (data.count - 3) {
@@ -219,6 +215,9 @@ static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
             // lz77_match
             var length = 0
             let j = hashtable[hash]
+            if i - j >= WINSIZE {
+                // TODO
+            }
             var k = 0
             while (i + k) < data.count {
                 if data[j + k] == data[i + k] {
@@ -763,5 +762,4 @@ public static func compress(_ buf1: [UInt8]) -> [UInt8] {
     return buf2
 }
 
-}   // End of ZLib.swift initializer
-
+}   // End of ZLib.swift
