@@ -127,7 +127,7 @@ class LZ77InternalContext {
  * user to initialise the public fields.
  */
 class LZ77Context {
-    var ictx: LZ77InternalContext?
+    var ictx: LZ77InternalContext
     var userdata: Outbuf
 
     init(userdata: [UInt8]) {
@@ -182,8 +182,6 @@ func lz77_init(_ ectx: LZ77Context) {
 }
 
 func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
-    var off: Int = 0
-
     /*
      * Remove the hash entry at winpos from the tail of its chain,
      * or empty the chain if it's the only thing on the chain.
@@ -201,7 +199,7 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
     st.win[st.winpos].hashval = hash
     st.win[st.winpos].prev = INVALID
     st.win[st.winpos].next = st.hashtab[hash].first
-    off = st.win[st.winpos].next!
+    let off = st.win[st.winpos].next!
     st.hashtab[hash].first = st.winpos
     if off != INVALID {
         st.win[off].prev = st.winpos
@@ -228,7 +226,7 @@ func CHARAT(_ st: LZ77InternalContext, _ k: Int) -> UInt8 {
  * instead call literal() for everything.
  */
 func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
-    let st = ectx.ictx!
+    let st = ectx.ictx
     var len = data.count
     var distance: Int
     var off: Int
@@ -297,7 +295,7 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8]) {
                 /* distance = WINSIZE if off == st->winpos   */
                 distance =
                     WINSIZE - (off + WINSIZE - st.winpos) % WINSIZE
-                i = 0
+                var i = 0
                 while i < HASHCHARS {
                     if CHARAT(st, i) != CHARAT(st, i - distance) {
                         break
