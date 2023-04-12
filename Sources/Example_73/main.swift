@@ -15,11 +15,11 @@ public class Example_73 {
         f1.setSize(12.0)
         f2.setSize(12.0)
 
-        // let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.".utf8)
-        let hello = [UInt8]("Hello".utf8)
-        Swift.print(hello.count)
+        let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.".utf8)
+        // let hello = [UInt8]("Hello".utf8)
+        // Swift.print("uncompressed.count = \(hello.count)")
         let compressed = ZLib().compress(hello)
-        Swift.print(compressed.count)
+        // Swift.print("compressed.count = \(compressed.count)")
 
         let line1 = TextLine(f1, "Hello, Beautiful World")
         let line2 = TextLine(f1, "Hello,BeautifulWorld")
