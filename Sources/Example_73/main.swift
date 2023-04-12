@@ -15,10 +15,14 @@ public class Example_73 {
         f1.setSize(12.0)
         f2.setSize(12.0)
 
-        let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jjjjjj".utf8)
+        // let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jjjjjj".utf8)
         // let hello = [UInt8]("hello world world".utf8)
         // print("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jj")
         // let hello = [UInt8]("Hello".utf8)
+
+        // let hello = try Contents.ofBinaryFile("images/svg-test/europe.svg")
+        // let hello = try Contents.ofBinaryFile("images/svg-test/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
+        let hello = try Contents.ofBinaryFile("data/latin.txt")
         Swift.print("uncompressed.count = \(hello.count)")
         let compressed = ZLib.compress(hello)
         Swift.print("compressed.count = \(compressed.count)")

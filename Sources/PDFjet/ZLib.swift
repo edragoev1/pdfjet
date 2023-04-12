@@ -210,40 +210,67 @@ static func CHARAT(_ st: LZ77InternalContext, _ k: Int, _ index: Int) -> UInt8 {
 static func lz77_compress(_ out: inout Outbuf, _ data: [UInt8]) {
     var hashtable = [Int](repeating: -1, count: WINSIZE)
     var i = 0
-    while i <= (data.count - 3) {
+    while i < (data.count - 3) {
         let hash = lz77_hash(data, i)
-        if hashtable[hash] == -1 {
-            // lz77_literal
-            hashtable[hash] = i
-            print("lit")
-            zlib_literal(&out, data[i])
-            i += 1
-        } else {
-            // lz77_match
+        let j = hashtable[hash]
+        if j != INVALID &&
+                data[j] == data[i] &&
+                data[j + 1] == data[i + 1] &&
+                data[j + 2] == data[i + 2] {
             var length = 0
-            let j = hashtable[hash]
-            if i - j >= WINSIZE {
-                zlib_match(&out, (i - j), length)
-                // TODO
-                i += 1
-            } else {
-                var k = 0
-                while (i + k) < data.count {
-                    if data[j + k] == data[i + k] {
-                        length += 1
-                    } else {
-                        break
-                    }
+            while (i + length) < data.count {
+                if data[j + length] == data[i + length] {
+                    length += 1
                     if length == 258 {
                         break
                     }
-                    k += 1
+                } else {
+                    break
                 }
-                print("\(i - j) = \(length)")
-                hashtable[hash] = i
-                zlib_match(&out, (i - j), length)
-                i += length
             }
+            print("\(i - j) = \(length)")
+            zlib_match(&out, (i - j), length)
+            hashtable[hash] = i
+            i += length
+        } else {
+            print("lit")
+            zlib_literal(&out, data[i])
+            hashtable[hash] = i
+            i += 1
+
+            // // lz77_match
+            // let j = hashtable[hash]
+            // if i - j >= WINSIZE {
+            //     print("we should not be here!")
+            //     // zlib_match(&out, (i - j), length)
+            //     // TODO
+            //     i += 1
+            // } else {
+            //     if data[j] == data[i] &&
+            //             data[j + 1] == data[i + 1] &&
+            //             data[j + 2] == data[i + 2] {
+            //         var length = 0
+            //         while (i + length) < data.count {
+            //             if data[j + length] == data[i + length] {
+            //                 length += 1
+            //                 if length == 258 {
+            //                     break
+            //                 }
+            //             } else {
+            //                 break
+            //             }
+            //         }
+            //         print("\(i - j) = \(length)")
+            //         hashtable[hash] = i
+            //         zlib_match(&out, (i - j), length)
+            //         i += length
+            //     } else {
+            //         // Collision
+            //         // hashtable[hash] = i
+            //         zlib_literal(&out, data[i])
+            //         i += 1
+            //     }
+            // }
         }
     }
     // Process the remaining data
