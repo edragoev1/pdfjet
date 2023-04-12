@@ -515,8 +515,7 @@ let distcodes: [coderecord] = [
 ]
 
 func zlib_literal(_ ctx: LZ77Context, _ c: UInt8) {
-    var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
-    // var out = ctx.userdata
+    var out = Outbuf(outbuf: ctx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         outbits(&out, Int(mirrorbytes[0x30 + Int(c)]), 8)
@@ -526,10 +525,10 @@ func zlib_literal(_ ctx: LZ77Context, _ c: UInt8) {
     }
 }
 
-func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
+func zlib_match(_ ctx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
+    var out = Outbuf(outbuf: ctx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     var d: coderecord?
     var l: coderecord?
-    var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
 
     while len > 0 {
         /*
@@ -622,8 +621,7 @@ func zlib_compress_block(
         _ outblock: inout [UInt8],
         _ outlen: inout Int,
         _ minlen: Int) {
-    // struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
-    var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
+    var out = Outbuf(outbuf: ctx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     var in_block = false // TODO bool in_block
 
     /*
