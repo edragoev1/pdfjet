@@ -134,10 +134,10 @@ public class ZLib {
     public init() {
     }
 
-func lz77_hash(_ data: [UInt8]) -> Int {
-    var hash = 257 * Int(data[0])
-    hash += 263 * Int(data[1])
-    hash += 269 * Int(data[2])
+func lz77_hash(_ data: [UInt8], _ index: Int) -> Int {
+    var hash = 257 * Int(data[index])
+    hash += 263 * Int(data[index + 1])
+    hash += 269 * Int(data[index + 2])
     return hash % HASHMAX
 }
 
@@ -183,8 +183,8 @@ func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
      */
     st.win[st.winpos].hashval = hash
     st.win[st.winpos].prev = INVALID
-    off = st.hashtab[hash].first!
-    st.win[st.winpos].next = off
+    st.win[st.winpos].next = st.hashtab[hash].first
+    off = st.win[st.winpos].next!
     st.hashtab[hash].first = st.winpos
     if off != INVALID {
         st.win[off].prev = st.winpos
@@ -220,9 +220,10 @@ func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ len: inout Int) {
     var defermatch = Match()
     var matches = [Match](repeating: Match(), count: MAXMATCH)
     var deferchr: Int
+    var index = 0   // The current position in the data buffer
 
     assert(st.npending <= HASHCHARS)
-print("Hello")
+
     /*
      * Add any pending characters from last time to the window. (We
      * might not be able to.)
@@ -250,23 +251,22 @@ print("Hello")
             if (i + j!) < st.npending {
                 foo[j!] = st.pending[i + j!]
             } else {
-                foo[j!] = data[i + j! - st.npending]
+                foo[j!] = data[index + i + j! - st.npending]
             }
             j! += 1
         }
-        lz77_advance(st, foo[0], lz77_hash(foo))
+        lz77_advance(st, foo[0], lz77_hash(foo, index))
         i += 1
     }
     st.npending -= i
-print("World")
     defermatch.len = 0
-    deferchr = Int("\0")!
+    deferchr = 0
     while len > 0 {
         if len >= HASHCHARS {
             /*
              * Hash the next few characters.
              */
-            let hash = lz77_hash(data)
+            let hash = lz77_hash(data, index)
 
             /*
              * Look the hash up in the corresponding hash chain and see
@@ -289,7 +289,7 @@ print("World")
                 if i == HASHCHARS {
                     matches[nmatch].distance = distance
                     matches[nmatch].len = 3
-                       nmatch += 1
+                    nmatch += 1
                     if nmatch >= MAXMATCH {
                         break
                     }
@@ -338,18 +338,18 @@ print("World")
                      * and defer this match. */
                     zlib_literal(ectx, UInt8(deferchr))
                     defermatch = matches[0]
-                    deferchr = Int(data[0])
+                    deferchr = Int(data[index])
                     advance = 1
                 } else {
                     /* We don't have a better match. Do the deferred one. */
-                    zlib_match(ectx, &defermatch.distance!, &defermatch.len!)
+                    zlib_match(ectx, defermatch.distance!, &defermatch.len!)
                     advance = defermatch.len! - 1
                     defermatch.len = 0
                 }
             } else {
                 /* There was no deferred match. Defer this one. */
                 defermatch = matches[0]
-                deferchr = Int(data[0])
+                deferchr = Int(data[index])
                 advance = 1
             }
         } else {
@@ -358,11 +358,11 @@ print("World")
              * any; otherwise emit a literal.
              */
             if defermatch.len! > 0 {
-                zlib_match(ectx, &defermatch.distance!, &defermatch.len!)
+                zlib_match(ectx, defermatch.distance!, &defermatch.len!)
                 advance = defermatch.len! - 1
                 defermatch.len = 0
             } else {
-                zlib_literal(ectx, data[0])
+                zlib_literal(ectx, data[index])
                 advance = 1
             }
         }
@@ -371,16 +371,17 @@ print("World")
          * Now advance the position by `advance' characters,
          * keeping the window and hash chains consistent.
          */
-        i = 0
         while advance! > 0 {
+print("advance == \(advance!)")
             if len >= HASHCHARS {
-                lz77_advance(st, data[i], lz77_hash(data))
+                lz77_advance(st, data[index], lz77_hash(data, index))
             } else {
                 assert(st.npending < HASHCHARS)
-                st.pending[st.npending] = data[i]
+                st.pending[st.npending] = data[index]
                 st.npending += 1
             }
-            i += 1
+            index += 1
+print("index == \(index)")
             len -= 1
             advance! -= 1
         }
@@ -530,7 +531,7 @@ func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
     }
 }
 
-func zlib_match(_ ectx: LZ77Context, _ distance: inout Int, _ len: inout Int) {
+func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ len: inout Int) {
     var out = Outbuf(outbuf: ectx.userdata!, outbits: 0, noutbits: 0, firstblock: true)
     var d: coderecord?
     var l: coderecord?
