@@ -619,13 +619,9 @@ func zlib_compress_block(
         _ ctx: LZ77Context,
         _ block: inout [UInt8],
         _ len: inout Int,
-        _ outblock: [UInt8],
+        _ outblock: inout [UInt8],
         _ outlen: inout Int,
         _ minlen: Int) {
-
-    // struct ssh_zlib_compressor *comp =
-    //     container_of(sc, struct ssh_zlib_compressor, sc);
-
     // struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
     var out = Outbuf(outbuf: [UInt8](), outbits: 0, noutbits: 0, firstblock: true)
     var in_block = false // TODO bool in_block
@@ -696,6 +692,6 @@ func zlib_compress_block(
     }
 
     outlen = out.outbuf.count
-    // *outblock = (unsigned char *)strbuf_to_str(out->outbuf)
+    outblock = out.outbuf
     out.outbuf.removeAll()
 }
