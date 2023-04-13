@@ -151,7 +151,7 @@ class BMPImage {
 
         deflated = [UInt8]()
         LZWEncode(&deflated!, image!)
-        // FlateEncode(&deflated!, image!, RLE: true)
+        // ZLibEncode(&deflated!, image!)
     }
 
     // 5 + 6 + 5 in B G R format 2 bytes to 3 bytes
