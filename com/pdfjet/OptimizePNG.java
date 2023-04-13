@@ -24,6 +24,8 @@ SOFTWARE.
 package com.pdfjet;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.InflaterInputStream;
 
 /**
@@ -50,7 +52,8 @@ public class OptimizePNG {
 
         ByteArrayOutputStream inflatedImage = new ByteArrayOutputStream();
         ByteArrayOutputStream inflatedAlpha = new ByteArrayOutputStream();
-        InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(image));
+        InflaterInputStream iis =
+                new InflaterInputStream(new ByteArrayInputStream(image));
         int ch = 0;
         while ((ch = iis.read()) != -1) {
             inflatedImage.write(ch);
@@ -63,31 +66,63 @@ public class OptimizePNG {
         }
         iis.close();
 
+        byte[] deflatedImage =
+                compressWithZopfli(inflatedImage.toByteArray(), args[0]);
+        byte[] deflatedAlpha =
+                compressWithZopfli(inflatedAlpha.toByteArray(), args[0]);
 
         BufferedOutputStream bos =
-                new BufferedOutputStream(new FileOutputStream(args[0] + ".stream"));
-        writeInt(w, bos);   // Width
-        writeInt(h, bos);   // Height
+                new BufferedOutputStream(
+                        new FileOutputStream(args[0] + ".stream"));
+        writeInt32(w, bos); // Width
+        writeInt32(h, bos); // Height
         bos.write(c);       // Color Space
         if (alpha != null) {
             bos.write(1);
-            writeInt(alpha.length, bos);
-            bos.write(alpha);
+            writeInt32(deflatedAlpha.length, bos);
+            bos.write(deflatedAlpha);
         }
         else {
             bos.write(0);
         }
-        writeInt(image.length, bos);
-        bos.write(image);
+        writeInt32(deflatedImage.length, bos);
+        bos.write(deflatedImage);
         bos.flush();
         bos.close();
     }
 
-    private static void writeInt(int i, OutputStream os) throws IOException {
+    private static byte[] compressWithZopfli(
+            byte[] buffer, String fileName) throws IOException {
+        BufferedOutputStream bos =
+                new BufferedOutputStream(
+                        new FileOutputStream(fileName + ".tmp"));
+        bos.write(buffer, 0, buffer.length);
+        bos.close();
+
+        final List<String> command = new ArrayList<String>();
+        command.add("util/zopfli/zopfli");
+        command.add("-c");
+        command.add("--zlib");
+        command.add("--i100");
+        command.add(fileName + ".tmp");
+        final Process process = new ProcessBuilder(command).start();
+        final InputStream input = process.getInputStream();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(0xFFFF);
+        final byte[] buf = new byte[4096];
+        int len;
+        while ((len = input.read(buf)) != -1) {
+            baos.write(buf, 0, len);
+        }
+        input.close();
+        new File(fileName + ".tmp").delete();
+        return baos.toByteArray();
+    }
+
+    private static void writeInt32(int i, OutputStream os) throws IOException {
         os.write((i >> 24) & 0xff);
         os.write((i >> 16) & 0xff);
         os.write((i >>  8) & 0xff);
         os.write((i >>  0) & 0xff);
     }
-
 }   // End of OptimizePNG.java
