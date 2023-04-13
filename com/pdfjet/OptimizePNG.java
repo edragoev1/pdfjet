@@ -51,7 +51,6 @@ public class OptimizePNG {
         fis.close();
 
         ByteArrayOutputStream inflatedImage = new ByteArrayOutputStream();
-        ByteArrayOutputStream inflatedAlpha = new ByteArrayOutputStream();
         InflaterInputStream iis =
                 new InflaterInputStream(new ByteArrayInputStream(image));
         int ch = 0;
@@ -60,6 +59,7 @@ public class OptimizePNG {
         }
         iis.close();
 
+        ByteArrayOutputStream inflatedAlpha = new ByteArrayOutputStream();
         if (alpha != null) {
             iis = new InflaterInputStream(new ByteArrayInputStream(alpha));
             ch = 0;
@@ -86,8 +86,7 @@ public class OptimizePNG {
             bos.write(1);
             writeInt32(deflatedAlpha.length, bos);
             bos.write(deflatedAlpha);
-        }
-        else {
+        } else {
             bos.write(0);
         }
         writeInt32(deflatedImage.length, bos);
