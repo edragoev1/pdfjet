@@ -109,30 +109,21 @@ public class ZLibEncode {
 
         var hash: UInt32 = 2166136261
         let prime: UInt32 = 16777619
-
         hash ^= UInt32(input[i])
         hash = hash &* prime
-
         hash ^= UInt32(input[i + 1])
         hash = hash &* prime
-
         hash ^= UInt32(input[i + 2])
         hash = hash &* prime
-
         // Perform xor-folding operation
-        var index = Int((hash >> 19) ^ hash) & mask
-
-        while hashtable[index] != nil &&
+        let index = Int((hash >> 19) ^ hash) & mask
+        if hashtable[index] != nil &&
                 i - hashtable[index]! <= 4096 {
             let j = hashtable[index]!
             if input[j] == input[i] &&
                     input[j + 1] == input[i + 1] &&
                     input[j + 2] == input[i + 2] {
                 return j
-            }
-            index += 1
-            if index > mask {
-                index = 0
             }
         }
         hashtable[index] = i
