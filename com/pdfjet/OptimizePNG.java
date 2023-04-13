@@ -59,17 +59,22 @@ public class OptimizePNG {
             inflatedImage.write(ch);
         }
         iis.close();
-        iis = new InflaterInputStream(new ByteArrayInputStream(alpha));
-        ch = 0;
-        while ((ch = iis.read()) != -1) {
-            inflatedAlpha.write(ch);
+
+        if (alpha != null) {
+            iis = new InflaterInputStream(new ByteArrayInputStream(alpha));
+            ch = 0;
+            while ((ch = iis.read()) != -1) {
+                inflatedAlpha.write(ch);
+            }
+            iis.close();
         }
-        iis.close();
 
         byte[] deflatedImage =
                 compressWithZopfli(inflatedImage.toByteArray(), args[0]);
-        byte[] deflatedAlpha =
-                compressWithZopfli(inflatedAlpha.toByteArray(), args[0]);
+        byte[] deflatedAlpha = null;
+        if (alpha != null) {
+            deflatedAlpha = compressWithZopfli(inflatedAlpha.toByteArray(), args[0]);
+        }
 
         BufferedOutputStream bos =
                 new BufferedOutputStream(
@@ -77,7 +82,7 @@ public class OptimizePNG {
         writeInt32(w, bos); // Width
         writeInt32(h, bos); // Height
         bos.write(c);       // Color Space
-        if (alpha != null) {
+        if (deflatedAlpha != null) {
             bos.write(1);
             writeInt32(deflatedAlpha.length, bos);
             bos.write(deflatedAlpha);
