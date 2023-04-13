@@ -7,13 +7,25 @@ import PDFjet
 public class Example_73 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_73.pdf", append: false)!)
-        let page = Page(pdf, Letter.PORTRAIT)
 
         let f1 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
         let f2 = try Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
 
+        let page = Page(pdf, Letter.PORTRAIT)
+
         f1.setSize(12.0)
         f2.setSize(12.0)
+
+
+        let hello = "Hello, World. Hello, World."
+        print(hello)
+        let buf1 = Array(hello.utf8)
+        var buf2 = [UInt8]()
+        ZLibEncode(&buf2, buf1)
+        print()
+        print(buf1.count)
+        print(buf2.count)
+
 
         let line1 = TextLine(f1, "Hello, Beautiful World")
         let line2 = TextLine(f1, "Hello,BeautifulWorld")

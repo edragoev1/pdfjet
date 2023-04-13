@@ -26,87 +26,99 @@ import Foundation
 public class ZLibEncode {
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
-    private let BUFSIZE = 32768
-    private let HASHMAX = 2039
-    private let FREE = -1
+
+    private let mask = 0x1FFF
+    private var hashtable: [Int?]
 
     @discardableResult
-    public init(_ buf2: inout [UInt8], _ buf1: [UInt8]) {
-        // buf2.reserveCapacity(buf1.count / 2)
+    public init(_ output: inout [UInt8], _ input: [UInt8]) {
+        output.reserveCapacity(input.count / 2)
 
-        var hashtable = [Int](repeating: FREE, count: BUFSIZE)
-        writeCode(&buf2, UInt16(0x9C78), 16)        // FLG | CMF
-        writeCode(&buf2, UInt16(0x03), 3)           // BTYPE | BFINAL
-print("hello!")
+        hashtable = [Int?](repeating: nil, count: mask + 1)
+        writeCode(&output, UInt16(0x9C78), 16)          // FLG | CMF
+        writeCode(&output, UInt16(0x03), 3)             // BTYPE | BFINAL
+
         var i = 0
-        while i < (buf1.count - 3) {
-            let hash = lz77_hash(buf1, i)
-print(hash)
-            let index = hashtable[hash]
-print(index)
-            if index != FREE &&
-                    buf1[index] == buf1[i] &&
-                    buf1[index + 1] == buf1[i + 1] &&
-                    buf1[index + 2] == buf1[i + 2] {
-                if i - index >= BUFSIZE {
-                    writeCode(
-                            &buf2,
-                            FlateLiteral.instance.codes[Int(buf1[i])],
-                            FlateLiteral.instance.nBits[Int(buf1[i])])
-                    hashtable[hash] = i
-                    i += 1
-                } else {
-                    var length = 0
-                    while (i + length) < buf1.count {
-                        if buf1[index + length] == buf1[i + length] {
-                            length += 1
-                            if length == 258 {
-                                break
-                            }
-                        } else {
-                            break
-                        }
+        while i < (input.count - 3) {
+            if var index = getMatchIndex(input, i, &hashtable) {
+                let distance = i - index
+                var length = 3
+                index += 3
+                i += 3
+                while i < input.count {
+                    if input[index] != input[i] || length == 258 {
+                        break
                     }
-                    let distance = i - index
-                    print(length)
-                    print(distance)
-                    writeCode(
-                            &buf2,
-                            FlateLength.instance.codes[length],
-                            FlateLength.instance.nBits[length])
-                    writeCode(
-                            &buf2,
-                            FlateDistance.instance.codes[distance],
-                            FlateDistance.instance.nBits[distance])
-                    hashtable[hash] = i
-                    i += length
+                    length += 1
+                    index += 1
+                    i += 1
                 }
+                writeCode(&output,
+                        FlateLength.instance.codes[length - 3],
+                        FlateLength.instance.nBits[length - 3])
+                writeCode(&output,
+                        FlateDistance.instance.codes[distance - 1],
+                        FlateDistance.instance.nBits[distance - 1])
             } else {
-                print("lit")
-                writeCode(
-                        &buf2,
-                        FlateLiteral.instance.codes[Int(buf1[i])],
-                        FlateLiteral.instance.nBits[Int(buf1[i])])
-                hashtable[hash] = i
+                writeCode(&output,
+                        FlateLiteral.instance.codes[Int(input[i])],
+                        FlateLiteral.instance.nBits[Int(input[i])])
                 i += 1
             }
         }
-        writeCode(&buf2, UInt16(0), 7)              // END-OF-BLOCK
+        while i < input.count {
+            writeCode(&output,
+                    FlateLiteral.instance.codes[Int(input[i])],
+                    FlateLiteral.instance.nBits[Int(input[i])])
+            i += 1
+        }
+        writeCode(&output, UInt16(0), 7)                // END-OF-BLOCK
         if bitsInBuffer > 0 {
-            buf2.append(UInt8(bitBuffer))
+            output.append(UInt8(bitBuffer))
         }
 
-        addAdler32(&buf2, buf1)
+        addAdler32(&output, input)
     }
 
-    func lz77_hash(_ data: [UInt8], _ index: Int) -> Int {
-        var hash = 257 * Int(data[index])
-        hash += 263 * Int(data[index + 1])
-        hash += 269 * Int(data[index + 2])
-        return hash % HASHMAX
+    private func getMatchIndex(
+            _ input: [UInt8],
+            _ index: Int,
+            _ hashtable: inout [Int?]) -> Int? {
+        // FNV-1a inline hash routine
+        var hash: UInt32 = 2166136261
+        let prime: UInt32 = 16777619
+
+        hash ^= UInt32(input[index])
+        hash = hash &* prime
+
+        hash ^= UInt32(input[index + 1])
+        hash = hash &* prime
+
+        hash ^= UInt32(input[index + 2])
+        hash = hash &* prime
+
+        // Perform xor-folding operation
+        var i = Int((hash >> 19) ^ hash) & mask
+
+        while hashtable[i] != nil &&
+                index - hashtable[i]! <= 4096 {
+            let j = hashtable[i]!
+            if input[j] == input[index] &&
+                    input[j + 1] == input[index + 1] &&
+                    input[j + 2] == input[index + 2] {
+                return j
+            }
+            i += 1
+            if i > mask {
+                i = 0
+            }
+        }
+        hashtable[i] = index
+
+        return nil
     }
 
-    func writeCode(
+    private func writeCode(
             _ output: inout [UInt8],
             _ code: UInt16,
             _ nBits: UInt8) {
@@ -119,7 +131,7 @@ print(index)
         }
     }
 
-    func addAdler32(
+    private func addAdler32(
             _ output: inout [UInt8], _ input: [UInt8]) {
         // Calculate the Adler-32 checksum
         let prime: UInt32 = 65521
