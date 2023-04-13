@@ -18,8 +18,8 @@ public class Example_73 {
 
 
         let hello = "Hello, World. Hello, World."
-        print(0x10000)
-        print(0x7FFF)
+        print(32768)
+        print(0x7FFF + 1)
         let buf1 = Array(hello.utf8)
         var buf2 = [UInt8]()
         ZLibEncode(&buf2, buf1)

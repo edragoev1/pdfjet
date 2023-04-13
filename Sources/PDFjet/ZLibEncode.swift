@@ -26,21 +26,20 @@ import Foundation
 public class ZLibEncode {
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
-    private let BUFSIZE = 32768
-    private let mask = 0x7FFF
-    private var hashtable: [Int?]
+    private let MASK = 0x7FFF   // 32767
+    private var hashtable: [Int]
 
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
         output.reserveCapacity(input.count / 2)
-
-        hashtable = [Int?](repeating: nil, count: mask + 1)
+        let BUFSIZE = MASK + 1  // 32768 bytes
+        hashtable = [Int](repeating: -1, count: BUFSIZE)
         writeCode(&output, UInt16(0x9C78), 16)          // FLG | CMF
         writeCode(&output, UInt16(0x03), 3)             // BTYPE | BFINAL
-
         var i = 0
         while i < (input.count - 3) {
-            if var index = getMatchIndex(input, i, &hashtable) {
+            var index = getMatchIndex(input, i, &hashtable)
+            if index != -1 {
                 let distance = i - index
                 var length = 3
                 index += 3
@@ -76,14 +75,13 @@ public class ZLibEncode {
         if bitsInBuffer > 0 {
             output.append(UInt8(bitBuffer))
         }
-
         addAdler32(&output, input)
     }
 
     private func getMatchIndex(
             _ input: [UInt8],
             _ i: Int,
-            _ hashtable: inout [Int?]) -> Int? {
+            _ hashtable: inout [Int]) -> Int {
         // FNV-1a inline hash routine
         var hash: UInt32 = 2166136261
         let prime: UInt32 = 16777619
@@ -94,18 +92,18 @@ public class ZLibEncode {
         hash ^= UInt32(input[i + 2])
         hash = hash &* prime
         // Perform xor-folding operation
-        let index = Int((hash >> 19) ^ hash) & mask
-        if hashtable[index] != nil &&
-                i - hashtable[index]! < BUFSIZE {
-            let j = hashtable[index]!
-            if input[j] == input[i] &&
-                    input[j + 1] == input[i + 1] &&
-                    input[j + 2] == input[i + 2] {
+        let index = Int((hash >> 19) ^ hash) & MASK
+        let j = hashtable[index]
+        if j != -1 {
+            if i - j <= 4096 && // Why the hardcoded value?
+                input[j] == input[i] &&
+                input[j + 1] == input[i + 1] &&
+                input[j + 2] == input[i + 2] {
                 return j
             }
         }
         hashtable[index] = i
-        return nil
+        return -1
     }
 
     private func writeCode(
