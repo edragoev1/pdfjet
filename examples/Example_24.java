@@ -15,8 +15,8 @@ public class Example_24 {
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
         Image image_00 = new Image(pdf, "images/gr-map.jpg");
-        // Image image_01 = new Image(pdf, "images/linux-logo.png.stream");
-        Image image_01 = new Image(pdf, "images/linux-logo.png");
+        Image image_01 = new Image(pdf, "images/linux-logo.png.stream");
+        // Image image_01 = new Image(pdf, "images/linux-logo.png");
         Image image_02 = new Image(pdf, "images/ee-map.png");
         Image image_03 = new Image(pdf, "images/rgb24pal.bmp");
 
