@@ -42,7 +42,7 @@ public class OptimizeOTF {
      * @param fileName the file name
      * @throws Exception if the font file is not found
      */
-    private static void convertFontFile(String fileName) throws Exception {
+    public static void convertFontFile(String fileName) throws Exception {
         BufferedOutputStream fos =
                 new BufferedOutputStream(new FileOutputStream(fileName + ".stream"));
 
