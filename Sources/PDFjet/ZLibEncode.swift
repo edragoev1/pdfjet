@@ -32,17 +32,19 @@ public class ZLibEncode {
 
     @discardableResult
     public init(_ buf2: inout [UInt8], _ buf1: [UInt8]) {
-        buf2.reserveCapacity(buf1.count / 2)
+        // buf2.reserveCapacity(buf1.count / 2)
 
         var hashtable = [Int](repeating: FREE, count: BUFSIZE)
         writeCode(&buf2, UInt16(0x9C78), 16)        // FLG | CMF
         writeCode(&buf2, UInt16(0x03), 3)           // BTYPE | BFINAL
-
+print("hello!")
         var i = 0
         while i < (buf1.count - 3) {
             let hash = lz77_hash(buf1, i)
+print(hash)
             let index = hashtable[hash]
-            if index == FREE &&
+print(index)
+            if index != FREE &&
                     buf1[index] == buf1[i] &&
                     buf1[index + 1] == buf1[i + 1] &&
                     buf1[index + 2] == buf1[i + 2] {
@@ -66,6 +68,8 @@ public class ZLibEncode {
                         }
                     }
                     let distance = i - index
+                    print(length)
+                    print(distance)
                     writeCode(
                             &buf2,
                             FlateLength.instance.codes[length],
@@ -78,19 +82,12 @@ public class ZLibEncode {
                     i += length
                 }
             } else {
-                // print("lit")
+                print("lit")
                 writeCode(
                         &buf2,
                         FlateLiteral.instance.codes[Int(buf1[i])],
                         FlateLiteral.instance.nBits[Int(buf1[i])])
                 hashtable[hash] = i
-                i += 1
-            }
-            while i < buf1.count {
-                writeCode(
-                        &buf2,
-                        FlateLiteral.instance.codes[Int(buf1[i])],
-                        FlateLiteral.instance.nBits[Int(buf1[i])])
                 i += 1
             }
         }
