@@ -123,39 +123,39 @@ class Outbuf {
     }
 }
 
-class LZ77InternalContext {
-    var win = [WindowEntry]()
-    var data = [UInt8](repeating: 0, count: WINSIZE)
-    var winpos = 0
-    var hashtab = [HashEntry]()
-    var pending = [UInt8](repeating: 0, count: HASHCHARS)
-    var npending = 0
-}
+// class LZ77InternalContext {
+//     var win = [WindowEntry]()
+//     var data = [UInt8](repeating: 0, count: WINSIZE)
+//     var winpos = 0
+//     var hashtab = [HashEntry]()
+//     var pending = [UInt8](repeating: 0, count: HASHCHARS)
+//     var npending = 0
+// }
 
-/*
- * Initialise the private fields of an LZ77Context. It's up to the
- * user to initialise the public fields.
- */
-class LZ77Context {
-    var ictx: LZ77InternalContext
-    // var outbuf: Outbuf
+// /*
+//  * Initialise the private fields of an LZ77Context. It's up to the
+//  * user to initialise the public fields.
+//  */
+// class LZ77Context {
+//     var ictx: LZ77InternalContext
+//     // var outbuf: Outbuf
 
-    init(_ userdata: [UInt8], _ output: inout [UInt8]) {
-        let ictx = LZ77InternalContext()
-        var i = 0
-        while i < WINSIZE {
-            ictx.win.append(WindowEntry(next: INVALID, prev: INVALID, hashval: INVALID))
-            i += 1
-        }
-        i = 0
-        while i < HASHMAX {
-            ictx.hashtab.append(HashEntry(first: INVALID))
-            i += 1
-        }
-        self.ictx = ictx
-        // self.outbuf = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
-    }
-}
+//     init(_ userdata: [UInt8], _ output: inout [UInt8]) {
+//         let ictx = LZ77InternalContext()
+//         var i = 0
+//         while i < WINSIZE {
+//             ictx.win.append(WindowEntry(next: INVALID, prev: INVALID, hashval: INVALID))
+//             i += 1
+//         }
+//         i = 0
+//         while i < HASHMAX {
+//             ictx.hashtab.append(HashEntry(first: INVALID))
+//             i += 1
+//         }
+//         self.ictx = ictx
+//         // self.outbuf = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
+//     }
+// }
 
 public class ZLib {
 
@@ -166,51 +166,12 @@ static func lz77_hash(_ data: [UInt8], _ index: Int) -> Int {
     return hash % HASHMAX
 }
 
-static func lz77_advance(_ st: LZ77InternalContext, _ c: UInt8, _ hash: Int) {
-    /*
-     * Remove the hash entry at winpos from the tail of its chain,
-     * or empty the chain if it's the only thing on the chain.
-     */
-    if st.win[st.winpos].prev != INVALID {
-        st.win[st.win[st.winpos].prev!].next = INVALID
-    } else if st.win[st.winpos].hashval != INVALID {
-        st.hashtab[st.win[st.winpos].hashval!].first = INVALID
-    }
-
-    /*
-     * Create a new entry at winpos and add it to the head of its
-     * hash chain.
-     */
-    st.win[st.winpos].hashval = hash
-    st.win[st.winpos].prev = INVALID
-    st.win[st.winpos].next = st.hashtab[hash].first
-    let off = st.win[st.winpos].next!
-    st.hashtab[hash].first = st.winpos
-    if off != INVALID {
-        st.win[off].prev = st.winpos
-    }
-    st.data[st.winpos] = c
-
-    /*
-     * Advance the window pointer.
-     */
-    st.winpos = (st.winpos + 1) & (WINSIZE - 1)
-}
-
-static func CHARAT(_ st: LZ77InternalContext, _ k: Int, _ index: Int) -> UInt8 {
-    if k < 0 {
-        return st.data[(st.winpos+index+k)&(WINSIZE-1)]
-    }
-    return st.data[index + k]
-}
-
 /*
  * Supply data to be compressed. Will update the private fields of
  * the LZ77Context, and will call literal() and match() to output.
  * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
-// static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ output: inout [UInt8]) {
 static func lz77_compress(_ out: inout [UInt8], _ data: [UInt8]) {
     var hashtable = [Int](repeating: -1, count: WINSIZE)
     var i = 0
@@ -255,187 +216,6 @@ static func lz77_compress(_ out: inout [UInt8], _ data: [UInt8]) {
         zlib_literal(&out, data[i])
         i += 1
     }
-
-
-//     i = 0
-
-//     let st = ectx.ictx
-//     var len = data.count
-//     var distance: Int
-//     // var off: Int
-//     var nmatch: Int
-//     var matchlen: Int
-//     var advance: Int
-//     var defermatch = Match()
-//     var matches = [Match](repeating: Match(), count: MAXMATCH)
-//     var index = 0   // The current position in the data buffer
-
-//     assert(st.npending <= HASHCHARS)
-
-//     /*
-//      * Add any pending characters from last time to the window. (We
-//      * might not be able to.)
-//      *
-//      * This leaves st->pending empty in the usual case (when len >=
-//      * HASHCHARS); otherwise it leaves st->pending empty enough that
-//      * adding all the remaining 'len' characters will not push it past
-//      * HASHCHARS in size.
-//      */
-//     while i < st.npending {
-//         var foo = [UInt8](repeating: 0, count: HASHCHARS)
-//         var j: Int
-//         if len + st.npending - i < HASHCHARS {
-//             /* Update the pending array. */        let ictx = LZ77InternalContext()
-
-//             j = i
-//             while j < st.npending {
-//                 st.pending[j - i] = st.pending[j]
-//                 j += 1
-//             }
-//             break
-//         }
-//         j = 0
-//         while j < HASHCHARS {
-//             if (i + j) < st.npending {
-//                 foo[j] = st.pending[i + j]
-//             } else {
-//                 foo[j] = data[index + i + j - st.npending]
-//             }
-//             j += 1
-//         }
-//         lz77_advance(st, foo[0], lz77_hash(foo, index))
-//         i += 1
-//     }
-//     st.npending -= i
-//     defermatch.len = 0
-//     var deferchr = 0
-//     while len > 0 {
-//         if len >= HASHCHARS {
-//             /*
-//              * Hash the next few characters.
-//              */
-//             let hash = lz77_hash(data, index)
-
-//             /*
-//              * Look the hash up in the corresponding hash chain and see
-//              * what we can find.
-//              */
-//             nmatch = 0
-//             var off = st.hashtab[hash].first!
-//             while off != INVALID {
-//                 /* distance = 1       if off == st->winpos-1 */
-//                 /* distance = WINSIZE if off == st->winpos   */
-//                 distance =
-//                     WINSIZE - (off + WINSIZE - st.winpos) % WINSIZE
-//                 var i = 0
-//                 while i < HASHCHARS {
-//                     if CHARAT(st, i, index) != CHARAT(st, i - distance, index) {
-//                         break
-//                     }
-//                     i += 1
-//                 }
-//                 if i == HASHCHARS {
-//                     matches[nmatch].distance = distance
-//                     matches[nmatch].len = 3
-//                     nmatch += 1
-//                     if nmatch >= MAXMATCH {
-//                         break
-//                     }
-//                 }
-//                 off = st.win[off].next!
-//             }
-//         } else {
-//             nmatch = 0
-//         }
-// // print("nmatch = \(nmatch)")
-//         if nmatch > 0 {
-//             /*
-//              * We've now filled up matches[] with nmatch potential
-//              * matches. Follow them down to find the longest. (We
-//              * assume here that it's always worth favouring a
-//              * longer match over a shorter one.)
-//              */
-//             matchlen = HASHCHARS
-//             while matchlen < len {
-//                 var i = 0
-//                 var j = 0
-//                 while i < nmatch {
-//                     if CHARAT(st, matchlen, index) ==
-//                         CHARAT(st, matchlen - matches[i].distance!, index) {
-//                         matches[j] = matches[i]
-//                         j += 1
-//                     }
-//                     i += 1
-//                 }
-//                 if j == 0 {
-//                     break
-//                 }
-//                 matchlen += 1
-//                 nmatch = j
-//             }
-
-//             /*
-//              * We've now got all the longest matches. We favour the
-//              * shorter distances, which means we go with matches[0].
-//              * So see if we want to defer it or throw it away.
-//              */
-//             matches[0].len = matchlen
-//             if defermatch.len! > 0 {
-//                 if matches[0].len! > defermatch.len! + 1 {
-//                     /* We have a better match. Emit the deferred char,
-//                      * and defer this match. */
-// // print("zlib_literal")
-//                     zlib_literal(ectx, UInt8(deferchr))
-//                     defermatch = matches[0]
-//                     deferchr = Int(data[index])
-//                     advance = 1
-//                 } else {
-// // print("zlib_match")
-//                     /* We don't have a better match. Do the deferred one. */
-//                     zlib_match(ectx, defermatch.distance!, defermatch.len!)
-//                     advance = defermatch.len! - 1
-//                     defermatch.len = 0
-//                 }
-//             } else {
-//                 /* There was no deferred match. Defer this one. */
-//                 defermatch = matches[0]
-//                 deferchr = Int(data[index])
-//                 advance = 1
-//             }
-//         } else {
-//             /*
-//              * We found no matches. Emit the deferred match, if
-//              * any; otherwise emit a literal.
-//              */
-//             if defermatch.len! > 0 {
-// // print("zlib_match")
-//                 zlib_match(ectx, defermatch.distance!, defermatch.len!)
-//                 advance = defermatch.len! - 1
-//                 defermatch.len = 0
-//             } else {
-// // print("zlib_literal")
-//                 zlib_literal(ectx, data[index])
-//                 advance = 1
-//             }
-//         }
-
-//         /*
-//          * Now advance the position by `advance' characters,
-//          * keeping the window and hash chains consistent.
-//          */
-//         while advance > 0 {
-//             if len >= HASHCHARS {
-//                 lz77_advance(st, data[index], lz77_hash(data, index))
-//             } else {
-//                 assert(st.npending < HASHCHARS)
-//                 st.pending[st.npending] = data[index]
-//                 st.npending += 1
-//             }
-//             index += 1
-//             len -= 1
-//             advance -= 1
-//         }
-//     }
 }
 
 // /* ----------------------------------------------------------------------
@@ -452,17 +232,6 @@ static func lz77_compress(_ out: inout [UInt8], _ data: [UInt8]) {
 //  * having to transmit the trees.
 //  */
 
-// static func outbits(_ out: inout Outbuf, _ bits: UInt, _ nbits: UInt) {
-//     assert(out.noutbits + nbits <= 32)
-//     out.outbits |= ((bits &<< out.noutbits) & 0xFF)
-//     out.noutbits += nbits
-//     while out.noutbits >= 8 {
-//         out.outbuf.append(UInt8(out.outbits) & 0xFF)
-//         out.outbits >>= 8
-//         out.noutbits -= 8
-//     }
-// }
-
 static private func outbits(
         _ output: inout [UInt8],
         _ code: UInt16,
@@ -475,7 +244,6 @@ static private func outbits(
         bitsInBuffer -= 8
     }
 }
-
 
 static let mirrorbytes: [UInt8] = [
     0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
@@ -584,9 +352,7 @@ static let distcodes: [coderecord] = [
     coderecord(code: 29, extrabits: 13, min: 24577, max: 32768),
 ]
 
-// static func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
 static func zlib_literal(_ out: inout [UInt8], _ c: UInt8) {
-    // var out = ectx.outbuf
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         outbits(&out, UInt16(mirrorbytes[0x30 + Int(c)]), 8)
@@ -596,126 +362,101 @@ static func zlib_literal(_ out: inout [UInt8], _ c: UInt8) {
     }
 }
 
-// static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ length: Int) {
 static func zlib_match(_ out: inout [UInt8], _ distance: Int, _ length: Int) {
-    // var out = ectx.outbuf
     var d: coderecord?
     var l: coderecord?
-    // var len = origlen
 
-//    while len > 0 {
-        /*
-         * We can transmit matches of lengths 3 through 258
-         * inclusive. So if len exceeds 258, we must transmit in
-         * several steps, with 258 or less in each step.
-         *
-         * Specifically: if len >= 261, we can transmit 258 and be
-         * sure of having at least 3 left for the next step. And if
-         * len <= 258, we can just transmit len. But if len == 259
-         * or 260, we must transmit len-3.
-         */
-        // let thislen = (len > 260 ? 258 : len <= 258 ? len : len - 3)
-        // len -= thislen
+    /*
+     * We can transmit matches of lengths 3 through 258
+     * inclusive. So if len exceeds 258, we must transmit in
+     * several steps, with 258 or less in each step.
+     *
+     * Specifically: if len >= 261, we can transmit 258 and be
+     * sure of having at least 3 left for the next step. And if
+     * len <= 258, we can just transmit len. But if len == 259
+     * or 260, we must transmit len-3.
+     */
 
-        /*
-         * Binary-search to find which length code we're
-         * transmitting.
-         */
-        var i = -1
-        var j = lencodes.count
-        while true {
-            assert(j - i >= 2)
-            let k = (j + i) / 2
-            if length < lencodes[k].min {
-                j = k
-            } else if length > lencodes[k].max {
-                i = k
-            } else {
-                l = lencodes[k]
-                break                   /* found it! */
-            }
+    /*
+     * Binary-search to find which length code we're
+     * transmitting.
+     */
+    var i = -1
+    var j = lencodes.count
+    while true {
+        assert(j - i >= 2)
+        let k = (j + i) / 2
+        if length < lencodes[k].min {
+            j = k
+        } else if length > lencodes[k].max {
+            i = k
+        } else {
+            l = lencodes[k]
+            break                   /* found it! */
         }
+    }
 
-        /*
-         * Transmit the length code. 256-279 are seven bits
-         * starting at 0000000; 280-287 are eight bits starting at
-         * 11000000.
-         */
-        // f l!.code <= 279 {
-            outbits(&out, UInt16(mirrorbytes[Int(l!.code - 256) * 2]), 7)
-        // } else {
-        //    outbits(&out, UInt(mirrorbytes[0xc0 - 280 + Int(l!.code)]), 8)
-        // }
+    /*
+     * Transmit the length code. 256-279 are seven bits
+     * starting at 0000000; 280-287 are eight bits starting at
+     * 11000000.
+     */
+    outbits(&out, UInt16(mirrorbytes[Int(l!.code - 256) * 2]), 7)
 
-        /*
-         * Transmit the extra bits.
-         */
-        if l!.extrabits > 0 {
-            outbits(&out, UInt16(length) - UInt16(l!.min), UInt8(l!.extrabits))
+    /*
+     * Transmit the extra bits.
+     */
+    if l!.extrabits > 0 {
+        outbits(&out, UInt16(length) - UInt16(l!.min), UInt8(l!.extrabits))
+    }
+
+    /*
+     * Binary-search to find which distance code we're
+     * transmitting.
+     */
+    i = -1
+    j = distcodes.count
+    while true {
+        assert(j - i >= 2)
+        let k = (j + i) / 2
+        if distance < distcodes[k].min {
+            j = k
+        } else if distance > distcodes[k].max {
+            i = k
+        } else {
+            d = distcodes[k]
+            break                   /* found it! */
         }
+    }
 
-        /*
-         * Binary-search to find which distance code we're
-         * transmitting.
-         */
-        i = -1
-        j = distcodes.count
-        while true {
-            assert(j - i >= 2)
-            let k = (j + i) / 2
-            if distance < distcodes[k].min {
-                j = k
-            } else if distance > distcodes[k].max {
-                i = k
-            } else {
-                d = distcodes[k]
-                break                   /* found it! */
-            }
-        }
+    /*
+     * Transmit the distance code. Five bits starting at 00000.
+     */
+    outbits(&out, UInt16(mirrorbytes[Int(d!.code) * 8]), 5)
 
-        /*
-         * Transmit the distance code. Five bits starting at 00000.
-         */
-        outbits(&out, UInt16(mirrorbytes[Int(d!.code) * 8]), 5)
-
-        /*
-         * Transmit the extra bits.
-         */
-        if d!.extrabits > 0 {
-            outbits(&out, UInt16(distance) - UInt16(d!.min), UInt8(d!.extrabits))
-        }
-    // }
+    /*
+     * Transmit the extra bits.
+     */
+    if d!.extrabits > 0 {
+        outbits(&out, UInt16(distance) - UInt16(d!.min), UInt8(d!.extrabits))
+    }
 }
 
-// static func zlib_compress_block(_ ectx: LZ77Context, _ inblock: [UInt8], _ output: inout [UInt8]) {
 static func zlib_compress_block(_ out: inout [UInt8], _ inblock: [UInt8]) {
-    // var out = ectx.userdata
-    // var out = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
-    // var out = ectx.outbuf
-    // var in_block: Bool
-
     /*
      * If this is the first block, output the Zlib (RFC1950) header
      * bytes 78 9C. (Deflate compression, 32K window size, default
      * algorithm.)
      */
-    // if out.firstblock {
-        outbits(&out, 0x9C78, 16)
-    //     out.firstblock = false
-    //     in_block = false
-    // } else {
-    //     in_block = true
-    // }
+    outbits(&out, 0x9C78, 16)
 
-//    if !in_block {
-        /*
-         * Start a Deflate (RFC1951) fixed-trees block. We
-         * transmit a zero bit (BFINAL=0), followed by a zero
-         * bit and a one bit (BTYPE=01). Of course these are in
-         * the wrong order (01 0).
-         */
-        outbits(&out, 2, 3)
-//    }
+    /*
+     * Start a Deflate (RFC1951) fixed-trees block. We
+     * transmit a zero bit (BFINAL=0), followed by a zero
+     * bit and a one bit (BTYPE=01). Of course these are in
+     * the wrong order (01 0).
+     */
+    outbits(&out, 2, 3)
 
     /*
      * Do the compression.
@@ -748,18 +489,6 @@ static func zlib_compress_block(_ out: inout [UInt8], _ inblock: [UInt8]) {
     outbits(&out, 0, 7)         /* close block */
     // outbits(&out, 2, 3 + 7)     /* empty static block */
     // outbits(&out, 2, 3)         /* open new block */
-
-    /*
-     * If we've been asked to pad out the compressed data until it's
-     * at least a given length, do so by emitting further empty static
-     * blocks.
-     */
-    // while out.outbuf.count < minlen {
-    //     outbits(&out, 0, 7)     /* close block */
-    //     outbits(&out, 2, 3)     /* open new static block */
-    // }
-
-    // return out.outbuf
 }
 
 static private func addAdler32(
