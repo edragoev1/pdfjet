@@ -15,38 +15,6 @@ public class Example_73 {
         f1.setSize(12.0)
         f2.setSize(12.0)
 
-        // let hello = [UInt8]("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jjjjjj".utf8)
-        // let hello = [UInt8]("hello world world".utf8)
-        // print("Hello, World. Hello, World. Hello, World. Hello, World. Hello, World.jj")
-        // let hello = [UInt8]("Hello".utf8)
-
-
-        let hello = try Contents.ofBinaryFile("images/svg-test/europe.svg")
-        // let hello = try Contents.ofBinaryFile("images/svg-test/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
-        // let hello = try Contents.ofBinaryFile("data/latin.txt")
-var time0 = Int64(Date().timeIntervalSince1970 * 1000)
-        Swift.print("uncompressed.count = \(hello.count)")
-        var buf5 = [UInt8]()
-
-        ZLib.compress(&buf5, hello)
-        Swift.print("buf5.count = \(buf5.count)")
-
-var time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("ZLib.compress => \(time1 - time0)")
-
-
-time0 = Int64(Date().timeIntervalSince1970 * 1000)
-        Swift.print("uncompressed.count = \(hello.count)")
-        var buf2 = [UInt8]()
-
-        _ = FlateEncode(&buf2, hello, RLE: false)
-        Swift.print("buf2.count = \(buf2.count)")
-time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("ZLib.compress => \(time1 - time0)")
-
-
-
-
         let line1 = TextLine(f1, "Hello, Beautiful World")
         let line2 = TextLine(f1, "Hello,BeautifulWorld")
 
