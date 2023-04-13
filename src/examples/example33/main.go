@@ -12,14 +12,14 @@ import (
 // Example33 -- TODO:
 func Example33() {
 	pdf := pdfjet.NewPDFFile("Example_33.pdf", compliance.PDF15)
-	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg")
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
-
+/*
+	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg")
 	image1.SetLocation(10.0, 10.0)
 	image1.ScaleBy(0.25)
 	image1.DrawOn(page)
-
+*/
 	// SVG test
 	image2 := pdfjet.NewSVGImageFromFile("images/svg-test/test-CC.svg")
 	image2.SetLocation(20.0, 670.0)
@@ -68,7 +68,7 @@ func Example33() {
 	image2.DrawOn(page)
 
 	image2 = pdfjet.NewSVGImageFromFile("images/svg-test/europe.svg")
-	image2.SetLocation(0.0, 0.0)
+	image2.SetLocation(-150.0, 0.0)
 	image2.DrawOn(page)
 
 	pdf.Complete()

@@ -13,12 +13,12 @@ public class Example_33 {
                         new FileOutputStream("Example_33.pdf")));
 
         Page page = new Page(pdf, A4.PORTRAIT);
-
+/*
         Image image = new Image(pdf, "images/photoshop.jpg");
         image.setLocation(10f, 10f);
         image.scaleBy(0.25f);
         image.drawOn(page);
-
+*/
         SVGImage icon = new SVGImage(
             "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg");
         icon.setLocation(20f, 670f);
@@ -58,7 +58,7 @@ public class Example_33 {
         xy = icon.drawOn(page);
 
         icon = new SVGImage("images/svg-test/europe.svg");
-        icon.setLocation(0f, 0f);
+        icon.setLocation(-150f, 0f);
         icon.drawOn(page);
 
         pdf.complete();

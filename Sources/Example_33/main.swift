@@ -7,16 +7,16 @@ import PDFjet
 public class Example_33 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_33.pdf", append: false)!)
+/*
         let image = try Image(
                 pdf,
                 InputStream(fileAtPath: "images/photoshop.jpg")!,
                 ImageType.JPG)
-
-        let page = Page(pdf, Letter.PORTRAIT)
-
         image.setLocation(10.0, 10.0)
         image.scaleBy(0.25)
         image.drawOn(page)
+*/
+        let page = Page(pdf, Letter.PORTRAIT)
 
         var icon = SVGImage(fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
         icon.setLocation(20.0, 670.0)
@@ -56,7 +56,7 @@ public class Example_33 {
         xy = icon.drawOn(page)
 
         icon = SVGImage(stream: InputStream(fileAtPath: "images/svg-test/europe.svg")!)
-        icon.setLocation(0.0, 0.0)
+        icon.setLocation(-150.0, 0.0)
         xy = icon.drawOn(page)
 
         pdf.complete()

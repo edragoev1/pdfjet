@@ -96,9 +96,8 @@ public class ZLibEncode {
 
         let j = hashtable[index]
         if j != -1 &&
-                i - j <= 2048 &&
-                // 8192 is the max distance supported!!
-                // 2048 seems to give the best results.
+                i - j <= 8192 &&
+                // 8192 is the max distance supported!
                 input[j] == input[i] &&
                 input[j + 1] == input[i + 1] &&
                 input[j + 2] == input[i + 2] {
