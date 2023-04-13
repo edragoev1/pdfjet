@@ -16,18 +16,6 @@ public class Example_73 {
         f1.setSize(12.0)
         f2.setSize(12.0)
 
-
-        let hello = "Hello, World. Hello, World."
-        print(32768)
-        print(0x7FFF + 1)
-        let buf1 = Array(hello.utf8)
-        var buf2 = [UInt8]()
-        ZLibEncode(&buf2, buf1)
-        print()
-        print(buf1.count)
-        print(buf2.count)
-
-
         let line1 = TextLine(f1, "Hello, Beautiful World")
         let line2 = TextLine(f1, "Hello,BeautifulWorld")
 
