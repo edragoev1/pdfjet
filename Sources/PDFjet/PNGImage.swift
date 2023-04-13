@@ -375,7 +375,7 @@ public class PNGImage {
             k += 1
         }
         LZWEncode(&deflatedAlphaData, alpha)
-        // _ = FlateEncode(&deflatedAlphaData, &alpha, RLE: true)
+        // ZLibEncode(&deflatedAlphaData, alpha)
         return idata
     }
 
@@ -416,7 +416,7 @@ public class PNGImage {
 
         if tRNS != nil {
             LZWEncode(&deflatedAlphaData, alpha!)
-            // _ = FlateEncode(&deflatedAlphaData, &alpha!, RLE: true)
+            // ZLibEncode(&deflatedAlphaData, alpha!)
         }
 
         return image
