@@ -85,14 +85,18 @@ public class OptimizeOTF {
         }
 
         byte[] buf1 = baos.toByteArray();
-        ByteArrayOutputStream buf2 = new ByteArrayOutputStream(0xFFFF);
-        DeflaterOutputStream dos1 =
-                new DeflaterOutputStream(
-                        buf2, new Deflater(Deflater.BEST_COMPRESSION));
-        dos1.write(buf1, 0, buf1.length);
-        dos1.finish();
-        writeInt32(buf2.size(), fos);
-        buf2.writeTo(fos);
+        if (OptimizeOTF.useZopfli) {
+            compressWithZopfli(fileName, fos, buf1, false);
+        } else {
+            ByteArrayOutputStream buf2 = new ByteArrayOutputStream(0xFFFF);
+            DeflaterOutputStream dos1 =
+                    new DeflaterOutputStream(
+                            buf2, new Deflater(Deflater.BEST_COMPRESSION));
+            dos1.write(buf1, 0, buf1.length);
+            dos1.finish();
+            writeInt32(buf2.size(), fos);
+            buf2.writeTo(fos);
+        }
 
         byte[] buf3 = otf.buf;
         if (otf.cff == true) {
@@ -107,7 +111,7 @@ public class OptimizeOTF {
         }
 
         if (OptimizeOTF.useZopfli) {
-            compressWithZopfli(fileName, fos, buf3);
+            compressWithZopfli(fileName, fos, buf3, true);
         } else {
             ByteArrayOutputStream buf4 = new ByteArrayOutputStream(0xFFFF);
             DeflaterOutputStream dos =
@@ -123,7 +127,10 @@ public class OptimizeOTF {
     }
 
     private static void compressWithZopfli(
-            String fileName, BufferedOutputStream fos, byte[] buf3) throws IOException {
+            String fileName,
+            BufferedOutputStream fos,
+            byte[] buf3,
+            boolean uncompressed) throws IOException {
         BufferedOutputStream fos4 =
                 new BufferedOutputStream(new FileOutputStream(fileName + ".tmp"));
         fos4.write(buf3, 0, buf3.length);
@@ -142,8 +149,10 @@ public class OptimizeOTF {
         while ((len = input.read(buf)) != -1) {
             buf5.write(buf, 0, len);
         }
-        writeInt32(buf3.length, fos);   // Uncompressed font size
-        writeInt32(buf5.size(), fos);   // Compressed font size
+        if (uncompressed) {
+            writeInt32(buf3.length, fos);   // Uncompressed font size
+        }
+        writeInt32(buf5.size(), fos);       // Compressed font size
         buf5.writeTo(fos);
         new File(fileName + ".tmp").delete();
     }
