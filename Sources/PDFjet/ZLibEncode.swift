@@ -95,6 +95,7 @@ public class ZLibEncode {
         let index = Int((hash >> 19) ^ hash) & MASK
 
         let j = hashtable[index]
+        hashtable[index] = i
         if j != -1 &&
                 i - j <= 8192 &&
                 // 8192 is the max distance supported!
@@ -103,7 +104,6 @@ public class ZLibEncode {
                 input[j + 2] == input[i + 2] {
             return j
         }
-        hashtable[index] = i
         return -1
     }
 
