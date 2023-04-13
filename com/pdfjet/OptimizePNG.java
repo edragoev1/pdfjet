@@ -24,6 +24,7 @@ SOFTWARE.
 package com.pdfjet;
 
 import java.io.*;
+import java.util.zip.InflaterInputStream;
 
 /**
  * This program optimizes .png images by converting them to
@@ -46,6 +47,22 @@ public class OptimizePNG {
         int h = png.getHeight();
         int c = png.getColorType();
         fis.close();
+
+        ByteArrayOutputStream inflatedImage = new ByteArrayOutputStream();
+        ByteArrayOutputStream inflatedAlpha = new ByteArrayOutputStream();
+        InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(image));
+        int ch = 0;
+        while ((ch = iis.read()) != -1) {
+            inflatedImage.write(ch);
+        }
+        iis.close();
+        iis = new InflaterInputStream(new ByteArrayInputStream(alpha));
+        ch = 0;
+        while ((ch = iis.read()) != -1) {
+            inflatedAlpha.write(ch);
+        }
+        iis.close();
+
 
         BufferedOutputStream bos =
                 new BufferedOutputStream(new FileOutputStream(args[0] + ".stream"));
