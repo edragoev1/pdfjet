@@ -24,28 +24,24 @@
  */
 
 /*
-  Puff.swift is a conversion from the original puff.c by Mark Adler.
-  All credit goes to the original author.
-
-  Eugene Dragoev
-  edragoev@protonmail.com
+ * Puff.swift is a conversion from the original puff.c by Mark Adler.
+ * All credit goes to the original author.
+ *
+ * Eugene Dragoev
+ * edragoev@protonmail.com
  */
 import Foundation
-
 
 struct Huffman {
     var count: [Int]    // number of symbols of each length
     var symbol: [Int]   // canonically ordered symbols
 }
 
-
 enum PuffError: Error {
     case read(error: Int)
 }
 
-
 public final class Puff {
-
     // Maximums for allocations and loops.
     // It is not useful to change these -- they are fixed by the deflate format.
     let MAXBITS: Int = 15       // maximum bits in a code
@@ -161,7 +157,6 @@ public final class Puff {
         } while last != 1
     }
 
-
     /*
      * Process a fixed codes block.
      *
@@ -218,7 +213,6 @@ public final class Puff {
         // decode data until end-of-block code
         return try codes(&output, &input, &lencode!, &distcode!)
     }
-
 
     /*
      * Given the list of code lengths length[0..n-1] representing a canonical
@@ -315,7 +309,6 @@ public final class Puff {
         return left
     }
 
-
     private final func bits(_ need: Int, _ input: inout [UInt8]) throws -> Int {
         // bit accumulator (can use up to 20 bits)
         var buffer = self.bitbuf
@@ -338,7 +331,6 @@ public final class Puff {
         // return need bits, zeroing the bits above that
         return Int(buffer & ((1 << need) - 1))
     }
-
 
     private final func stored(_ output: inout [UInt8], _ input: inout [UInt8]) -> Int {
 
@@ -378,7 +370,6 @@ public final class Puff {
         // done with a valid stored block
         return 0
     }
-
 
     /*
      * Decode literal/length and distance codes until an end-of-block code.
@@ -486,7 +477,6 @@ public final class Puff {
         return 0
     }
 
-
     private final func decode(_ huffman: inout Huffman, _ input: inout [UInt8]) throws -> Int {
         var code = 0                        // len bits being decoded
         var first = 0                       // first code of length len
@@ -522,51 +512,6 @@ public final class Puff {
         }
         return -10                          // ran out of codes
     }
-
-/*
-    private final func decode(_ huffman: inout Huffman, _ input: inout [UInt8]) throws -> Int {
-        var code = 0                            // len bits being decoded
-        var first = 0                           // first code of length len
-        var index = 0                           // index of first code of length len in symbol table
-        var len = 1                             // current number of bits in code
-        var left = self.bitcnt                  // bits left in to process
-
-        while true {
-            while left > 0 {
-                left -= 1
-                code |= Int(self.bitbuf) & 1    // get next bit
-                self.bitbuf >>= 1
-                let count = huffman.count[len]  // number of codes of length len
-                if (code - count) < first {     // if len, return symbol
-                    self.bitcnt = (self.bitcnt - len) & 7
-                    return huffman.symbol[index + (code - first)]
-                }
-                index += count                  // else update for next length
-                first += count
-                first <<= 1
-                code <<= 1
-                len += 1
-            }
-
-            left = (MAXBITS + 1) - len
-            if left == 0 {
-                break
-            }
-
-            // if self.incnt == input.count {
-            //     continue                        // out of input
-            // }
-
-            bitbuf = UInt32(input[self.incnt])
-            self.incnt += 1
-            if left > 8 {
-                left = 8
-            }
-        }
-
-        return -10                              // ran out of codes
-    }
-*/
 
     /*
      * Process a dynamic codes block.
@@ -761,5 +706,4 @@ public final class Puff {
         // decode data until end-of-block code
         return try codes(&output, &input, &lencode, &distcode)
     }
-
 }

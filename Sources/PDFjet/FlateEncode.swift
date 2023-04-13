@@ -32,11 +32,9 @@ public class FlateEncode {
 
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8], RLE: Bool) {
-
         output.reserveCapacity(input.count / 2)
 
         indexes = [Int?](repeating: nil, count: mask + 1)
-
         writeCode(&output, UInt16(0x9C78), 16)          // FLG | CMF
         writeCode(&output, UInt16(0x03), 3)             // BTYPE | BFINAL
 
@@ -61,8 +59,7 @@ public class FlateEncode {
                 writeCode(&output,
                         FlateDistance.instance.codes[distance - 1],
                         FlateDistance.instance.nBits[distance - 1])
-            }
-            else {
+            } else {
                 writeCode(&output,
                         FlateLiteral.instance.codes[Int(input[i])],
                         FlateLiteral.instance.nBits[Int(input[i])])
