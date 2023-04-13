@@ -26,7 +26,8 @@ import Foundation
 public class ZLibEncode {
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
-
+    private let BUFSIZE = 32768
+    //private let mask = 0x7FFF
     private let mask = 0x1FFF
     private var hashtable: [Int?]
 
@@ -82,38 +83,59 @@ public class ZLibEncode {
 
     private func getMatchIndex(
             _ input: [UInt8],
-            _ index: Int,
+            _ i: Int,
             _ hashtable: inout [Int?]) -> Int? {
-        // FNV-1a inline hash routine
+        // // FNV-1a inline hash routine
+        // var hash: UInt32 = 2166136261
+        // let prime: UInt32 = 16777619
+        // hash ^= UInt32(input[i])
+        // hash = hash &* prime
+        // hash ^= UInt32(input[i + 1])
+        // hash = hash &* prime
+        // hash ^= UInt32(input[i + 2])
+        // hash = hash &* prime
+        // // Perform xor-folding operation
+        // let index = Int((hash >> 19) ^ hash) & mask
+        // if hashtable[index] != nil &&
+        //         i - hashtable[index]! <= 4096 &&
+        //         input[index] == input[i] &&
+        //         input[index + 1] == input[i + 1] &&
+        //         input[index + 2] == input[i + 2] {
+        //     return hashtable[index]
+        // }
+        // hashtable[index] = i
+
+
+
         var hash: UInt32 = 2166136261
         let prime: UInt32 = 16777619
 
-        hash ^= UInt32(input[index])
+        hash ^= UInt32(input[i])
         hash = hash &* prime
 
-        hash ^= UInt32(input[index + 1])
+        hash ^= UInt32(input[i + 1])
         hash = hash &* prime
 
-        hash ^= UInt32(input[index + 2])
+        hash ^= UInt32(input[i + 2])
         hash = hash &* prime
 
         // Perform xor-folding operation
-        var i = Int((hash >> 19) ^ hash) & mask
+        var index = Int((hash >> 19) ^ hash) & mask
 
-        while hashtable[i] != nil &&
-                index - hashtable[i]! <= 4096 {
-            let j = hashtable[i]!
-            if input[j] == input[index] &&
-                    input[j + 1] == input[index + 1] &&
-                    input[j + 2] == input[index + 2] {
+        while hashtable[index] != nil &&
+                i - hashtable[index]! <= 4096 {
+            let j = hashtable[index]!
+            if input[j] == input[i] &&
+                    input[j + 1] == input[i + 1] &&
+                    input[j + 2] == input[i + 2] {
                 return j
             }
-            i += 1
-            if i > mask {
-                i = 0
+            index += 1
+            if index > mask {
+                index = 0
             }
         }
-        hashtable[i] = index
+        hashtable[index] = i
 
         return nil
     }
