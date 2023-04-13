@@ -44,7 +44,7 @@ class LZWHashTable {
     }
 
     func get(
-            _ source: inout [UInt8],
+            _ source: [UInt8],
             _ index1: Int,
             _ index2: Int,
             _ code: UInt32) -> UInt32? {

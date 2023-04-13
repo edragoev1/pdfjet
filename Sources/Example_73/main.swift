@@ -24,13 +24,26 @@ public class Example_73 {
         let hello = try Contents.ofBinaryFile("images/svg-test/europe.svg")
         // let hello = try Contents.ofBinaryFile("images/svg-test/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
         // let hello = try Contents.ofBinaryFile("data/latin.txt")
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
+var time0 = Int64(Date().timeIntervalSince1970 * 1000)
         Swift.print("uncompressed.count = \(hello.count)")
-        let compressed = ZLib.compress(hello)
-        Swift.print("compressed.count = \(compressed.count)")
+        var buf5 = [UInt8]()
 
-let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+        ZLib.compress(&buf5, hello)
+        Swift.print("buf5.count = \(buf5.count)")
+
+var time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("ZLib.compress => \(time1 - time0)")
+
+
+time0 = Int64(Date().timeIntervalSince1970 * 1000)
+        Swift.print("uncompressed.count = \(hello.count)")
+        var buf2 = [UInt8]()
+
+        _ = FlateEncode(&buf2, hello, RLE: false)
+        Swift.print("buf2.count = \(buf2.count)")
+time1 = Int64(Date().timeIntervalSince1970 * 1000)
+print("ZLib.compress => \(time1 - time0)")
+
 
 
 

@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 public class LZWEncode {
-
     private var table = LZWHashTable()
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer = 0
@@ -34,7 +32,7 @@ public class LZWEncode {
     @discardableResult
     public init(
             _ output: inout [UInt8],
-            _ source: inout [UInt8]) {
+            _ source: [UInt8]) {
 
         var code1: UInt32 = 0
         var code2: UInt32 = 258
@@ -44,15 +42,14 @@ public class LZWEncode {
         var i1 = 0
         var i2 = 0
         while i2 < source.count {
-            if let code = table.get(&source, i1, i2, /* put: */ code2) {
+            if let code = table.get(source, i1, i2, /* put: */ code2) {
                 code1 = code
                 i2 += 1
                 if i2 < source.count {
                     continue
                 }
                 writeCode(code1, length, &output)
-            }
-            else {
+            } else {
                 writeCode(code1, length, &output)
                 code2 += 1
                 if code2 == 512 {
@@ -91,5 +88,4 @@ public class LZWEncode {
             bitsInBuffer -= 8
         }
     }
-
 }

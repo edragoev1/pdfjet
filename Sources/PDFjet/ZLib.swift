@@ -82,6 +82,10 @@ import Foundation
  * byte), we can carefully remove the hash chain entry.
  */
 
+    private var bitBuffer: UInt32 = 0
+    private var bitsInBuffer: UInt8 = 0
+
+
 /*
  * Modifiable parameters.
  */
@@ -111,8 +115,8 @@ class Outbuf {
     var outbits: UInt
     var noutbits: UInt
     var firstblock: Bool
-    init() {
-        self.outbuf = [UInt8]()
+    init(_ outbuf: inout [UInt8]) {
+        self.outbuf = outbuf
         self.outbits = 0
         self.noutbits = 0
         self.firstblock = true
@@ -207,7 +211,7 @@ static func CHARAT(_ st: LZ77InternalContext, _ k: Int, _ index: Int) -> UInt8 {
  * instead call literal() for everything.
  */
 // static func lz77_compress(_ ectx: LZ77Context, _ data: [UInt8], _ output: inout [UInt8]) {
-static func lz77_compress(_ out: inout Outbuf, _ data: [UInt8]) {
+static func lz77_compress(_ out: inout [UInt8], _ data: [UInt8]) {
     var hashtable = [Int](repeating: -1, count: WINSIZE)
     var i = 0
     while i < (data.count - 3) {
@@ -448,16 +452,30 @@ static func lz77_compress(_ out: inout Outbuf, _ data: [UInt8]) {
 //  * having to transmit the trees.
 //  */
 
-static func outbits(_ out: inout Outbuf, _ bits: UInt, _ nbits: UInt) {
-    assert(out.noutbits + nbits <= 32)
-    out.outbits |= ((bits &<< out.noutbits) & 0xFF)
-    out.noutbits += nbits
-    while out.noutbits >= 8 {
-        out.outbuf.append(UInt8(out.outbits) & 0xFF)
-        out.outbits >>= 8
-        out.noutbits -= 8
+// static func outbits(_ out: inout Outbuf, _ bits: UInt, _ nbits: UInt) {
+//     assert(out.noutbits + nbits <= 32)
+//     out.outbits |= ((bits &<< out.noutbits) & 0xFF)
+//     out.noutbits += nbits
+//     while out.noutbits >= 8 {
+//         out.outbuf.append(UInt8(out.outbits) & 0xFF)
+//         out.outbits >>= 8
+//         out.noutbits -= 8
+//     }
+// }
+
+static private func outbits(
+        _ output: inout [UInt8],
+        _ code: UInt16,
+        _ nBits: UInt8) {
+    bitBuffer |= UInt32(code) << bitsInBuffer
+    bitsInBuffer += nBits
+    while bitsInBuffer >= 8 {
+        output.append(UInt8(bitBuffer & 0xFF))
+        bitBuffer >>= 8
+        bitsInBuffer -= 8
     }
 }
+
 
 static let mirrorbytes: [UInt8] = [
     0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
@@ -567,19 +585,19 @@ static let distcodes: [coderecord] = [
 ]
 
 // static func zlib_literal(_ ectx: LZ77Context, _ c: UInt8) {
-static func zlib_literal(_ out: inout Outbuf, _ c: UInt8) {
+static func zlib_literal(_ out: inout [UInt8], _ c: UInt8) {
     // var out = ectx.outbuf
     if c <= 143 {
         /* 0 through 143 are 8 bits long starting at 00110000. */
-        outbits(&out, UInt(mirrorbytes[0x30 + Int(c)]), 8)
+        outbits(&out, UInt16(mirrorbytes[0x30 + Int(c)]), 8)
     } else {
         /* 144 through 255 are 9 bits long starting at 110010000. */
-        outbits(&out, 1 + 2 * UInt(mirrorbytes[0x90 - 144 + Int(c)]), 9)
+        outbits(&out, 1 + 2 * UInt16(mirrorbytes[0x90 - 144 + Int(c)]), 9)
     }
 }
 
 // static func zlib_match(_ ectx: LZ77Context, _ distance: Int, _ length: Int) {
-static func zlib_match(_ out: inout Outbuf, _ distance: Int, _ length: Int) {
+static func zlib_match(_ out: inout [UInt8], _ distance: Int, _ length: Int) {
     // var out = ectx.outbuf
     var d: coderecord?
     var l: coderecord?
@@ -624,7 +642,7 @@ static func zlib_match(_ out: inout Outbuf, _ distance: Int, _ length: Int) {
          * 11000000.
          */
         // f l!.code <= 279 {
-            outbits(&out, UInt(mirrorbytes[Int(l!.code - 256) * 2]), 7)
+            outbits(&out, UInt16(mirrorbytes[Int(l!.code - 256) * 2]), 7)
         // } else {
         //    outbits(&out, UInt(mirrorbytes[0xc0 - 280 + Int(l!.code)]), 8)
         // }
@@ -633,7 +651,7 @@ static func zlib_match(_ out: inout Outbuf, _ distance: Int, _ length: Int) {
          * Transmit the extra bits.
          */
         if l!.extrabits > 0 {
-            outbits(&out, UInt(length) - UInt(l!.min), UInt(l!.extrabits))
+            outbits(&out, UInt16(length) - UInt16(l!.min), UInt8(l!.extrabits))
         }
 
         /*
@@ -658,38 +676,38 @@ static func zlib_match(_ out: inout Outbuf, _ distance: Int, _ length: Int) {
         /*
          * Transmit the distance code. Five bits starting at 00000.
          */
-        outbits(&out, UInt(mirrorbytes[Int(d!.code) * 8]), 5)
+        outbits(&out, UInt16(mirrorbytes[Int(d!.code) * 8]), 5)
 
         /*
          * Transmit the extra bits.
          */
         if d!.extrabits > 0 {
-            outbits(&out, UInt(distance) - UInt(d!.min), UInt(d!.extrabits))
+            outbits(&out, UInt16(distance) - UInt16(d!.min), UInt8(d!.extrabits))
         }
     // }
 }
 
 // static func zlib_compress_block(_ ectx: LZ77Context, _ inblock: [UInt8], _ output: inout [UInt8]) {
-static func zlib_compress_block(_ out: inout Outbuf, _ inblock: [UInt8]) {
+static func zlib_compress_block(_ out: inout [UInt8], _ inblock: [UInt8]) {
     // var out = ectx.userdata
     // var out = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
     // var out = ectx.outbuf
-    var in_block: Bool
+    // var in_block: Bool
 
     /*
      * If this is the first block, output the Zlib (RFC1950) header
      * bytes 78 9C. (Deflate compression, 32K window size, default
      * algorithm.)
      */
-    if out.firstblock {
+    // if out.firstblock {
         outbits(&out, 0x9C78, 16)
-        out.firstblock = false
-        in_block = false
-    } else {
-        in_block = true
-    }
+    //     out.firstblock = false
+    //     in_block = false
+    // } else {
+    //     in_block = true
+    // }
 
-    if !in_block {
+//    if !in_block {
         /*
          * Start a Deflate (RFC1951) fixed-trees block. We
          * transmit a zero bit (BFINAL=0), followed by a zero
@@ -697,7 +715,7 @@ static func zlib_compress_block(_ out: inout Outbuf, _ inblock: [UInt8]) {
          * the wrong order (01 0).
          */
         outbits(&out, 2, 3)
-    }
+//    }
 
     /*
      * Do the compression.
@@ -744,35 +762,28 @@ static func zlib_compress_block(_ out: inout Outbuf, _ inblock: [UInt8]) {
     // return out.outbuf
 }
 
-/// Calculate and return the Adler-32 checksum
-static func addAdler32(_ buf2: inout Outbuf, _ buf1: [UInt8]) {
+static private func addAdler32(
+        _ output: inout [UInt8], _ input: [UInt8]) {
+    // Calculate the Adler-32 checksum
     let prime: UInt32 = 65521
     var s1: UInt32 = 1
     var s2: UInt32 = 0
-    var i = 0
-    while i < buf1.count {
-        s1 = (s1 + UInt32(buf1[i])) % prime
-        s2 = (s2 + s1) % prime
-        i += 1
+    for i in 0..<input.count {
+        s1 = (s1 &+ UInt32(input[i])) % prime
+        s2 = (s2 &+ s1) % prime
     }
-    let adler = ((s2 &<< 16) + s1)
+    let adler = (s2 &<< 16) &+ s1
 
-    let byte1 = UInt8((adler & 0xff))
-    let byte2 = UInt8((adler >> 8) & 0xff)
-    let byte3 = UInt8((adler >> 8) & 0xff)
-    let byte4 = UInt8((adler >> 8) & 0xff)
-
-    buf2.outbuf.append(byte4)
-    buf2.outbuf.append(byte3)
-    buf2.outbuf.append(byte2)
-    buf2.outbuf.append(byte1)
+    output.append(UInt8((adler >> 24) & 0xFF))
+    output.append(UInt8((adler >> 16) & 0xFF))
+    output.append(UInt8((adler >>  8) & 0xFF))
+    output.append(UInt8((adler >>  0) & 0xFF))
 }
 
-public static func compress(_ buf1: [UInt8]) -> [UInt8] {
-    var buf2 = Outbuf()
+public static func compress(_ buf2: inout [UInt8], _ buf1: [UInt8]) {
     zlib_compress_block(&buf2, buf1)
+    print(buf2.count)
     addAdler32(&buf2, buf1)
-    return buf2.outbuf
 }
 
 }   // End of ZLib.swift

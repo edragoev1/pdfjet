@@ -771,8 +771,8 @@ public class PDF {
     private func addPageContent(_ page: inout Page) {
         var buffer = [UInt8]()
         // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-        // _ = LZWEncode(&buffer, &page.buf)
-        _ = FlateEncode(&buffer, &page.buf, RLE: false)
+        // LZWEncode(&buffer, page.buf)
+        FlateEncode(&buffer, page.buf, RLE: false)
         // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
         // Swift.print(time1 - time0)
         page.buf.removeAll()   // Release the page content memory!

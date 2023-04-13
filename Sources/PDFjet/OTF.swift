@@ -108,13 +108,13 @@ class OTF {
         cmap(cmapTable!)
 
         if cff {
-            var bufSlice = Array(buf[cffOff!..<(cffOff! + cffLen!)])
-            _ = FlateEncode(&dos, &bufSlice, RLE: false)
-            // _ = LZWEncode(&dos, &bufSlice)
+            let bufSlice = Array(buf[cffOff!..<(cffOff! + cffLen!)])
+            FlateEncode(&dos, bufSlice, RLE: false)
+            // LZWEncode(&dos, bufSlice)
         }
         else {
-            _ = FlateEncode(&dos, &buf, RLE: false)
-            // _ = LZWEncode(&dos, &buf)
+            FlateEncode(&dos, buf, RLE: false)
+            // LZWEncode(&dos, buf)
         }
     }
 

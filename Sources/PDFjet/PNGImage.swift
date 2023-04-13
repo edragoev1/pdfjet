@@ -169,7 +169,7 @@ public class PNGImage {
             }
         }
 
-        LZWEncode(&deflatedImageData, &image!)
+        LZWEncode(&deflatedImageData, image!)
 /*
         Swift.print("image.count -> " + String(image!.count))
         let time0 = Int64(Date().timeIntervalSince1970 * 1000)
@@ -374,7 +374,7 @@ public class PNGImage {
             j += 3
             k += 1
         }
-        LZWEncode(&deflatedAlphaData, &alpha)
+        LZWEncode(&deflatedAlphaData, alpha)
         // _ = FlateEncode(&deflatedAlphaData, &alpha, RLE: true)
         return idata
     }
@@ -415,7 +415,7 @@ public class PNGImage {
         applyFilters(&filters, &image, self.w!, self.h!, 3)
 
         if tRNS != nil {
-            LZWEncode(&deflatedAlphaData, &alpha!)
+            LZWEncode(&deflatedAlphaData, alpha!)
             // _ = FlateEncode(&deflatedAlphaData, &alpha!, RLE: true)
         }
 

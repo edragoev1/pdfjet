@@ -32,7 +32,8 @@ public class FlateEncode {
     private let mask = 0x1FFF
     private var indexes: [Int?]
 
-    init(_ output: inout [UInt8], _ input: inout [UInt8], RLE: Bool) {
+    @discardableResult
+    public init(_ output: inout [UInt8], _ input: [UInt8], RLE: Bool) {
 
         output.reserveCapacity(input.count / 2)
 
@@ -43,7 +44,7 @@ public class FlateEncode {
 
         var i = 0
         while i < (input.count - 3) {
-            if var index = getMatchIndex(&input, i, &indexes, RLE: RLE) {
+            if var index = getMatchIndex(input, i, &indexes, RLE: RLE) {
                 let distance = i - index
                 var length = 3
                 index += 3
@@ -81,11 +82,11 @@ public class FlateEncode {
             output.append(UInt8(bitBuffer))
         }
 
-        addAdler32(&output, &input)
+        addAdler32(&output, input)
     }
 
     private func getMatchIndex(
-            _ input: inout [UInt8],
+            _ input: [UInt8],
             _ index: Int,
             _ indexes: inout [Int?],
             RLE: Bool) -> Int? {
@@ -154,7 +155,7 @@ public class FlateEncode {
     }
 
     private func addAdler32(
-            _ output: inout [UInt8], _ input: inout [UInt8]) {
+            _ output: inout [UInt8], _ input: [UInt8]) {
         // Calculate the Adler-32 checksum
         let prime: UInt32 = 65521
         var s1: UInt32 = 1
