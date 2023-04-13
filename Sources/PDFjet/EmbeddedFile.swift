@@ -55,7 +55,8 @@ public class EmbeddedFile {
         var buf = try Contents.getFromStream(stream)
         if compress {
             var buf2 = [UInt8]()
-            LZWEncode(&buf2, buf)
+            ZLibEncode(&buf2, buf)
+            // LZWEncode(&buf2, buf)
             buf = buf2
         }
 
@@ -63,8 +64,8 @@ public class EmbeddedFile {
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /EmbeddedFile\n")
         if compress {
-            // pdf.append("/Filter /FlateDecode\n")
-            pdf.append("/Filter /LZWDecode\n")
+            pdf.append("/Filter /FlateDecode\n")
+            // pdf.append("/Filter /LZWDecode\n")
         }
         pdf.append("/Length ")
         pdf.append(buf.count)
