@@ -123,40 +123,6 @@ class Outbuf {
     }
 }
 
-// class LZ77InternalContext {
-//     var win = [WindowEntry]()
-//     var data = [UInt8](repeating: 0, count: WINSIZE)
-//     var winpos = 0
-//     var hashtab = [HashEntry]()
-//     var pending = [UInt8](repeating: 0, count: HASHCHARS)
-//     var npending = 0
-// }
-
-// /*
-//  * Initialise the private fields of an LZ77Context. It's up to the
-//  * user to initialise the public fields.
-//  */
-// class LZ77Context {
-//     var ictx: LZ77InternalContext
-//     // var outbuf: Outbuf
-
-//     init(_ userdata: [UInt8], _ output: inout [UInt8]) {
-//         let ictx = LZ77InternalContext()
-//         var i = 0
-//         while i < WINSIZE {
-//             ictx.win.append(WindowEntry(next: INVALID, prev: INVALID, hashval: INVALID))
-//             i += 1
-//         }
-//         i = 0
-//         while i < HASHMAX {
-//             ictx.hashtab.append(HashEntry(first: INVALID))
-//             i += 1
-//         }
-//         self.ictx = ictx
-//         // self.outbuf = Outbuf(outbuf: output, outbits: 0, noutbits: 0, firstblock: true)
-//     }
-// }
-
 public class ZLib {
 
 static func lz77_hash(_ data: [UInt8], _ index: Int) -> Int {
