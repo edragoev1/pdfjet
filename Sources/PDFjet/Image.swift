@@ -531,7 +531,8 @@ public class Image : Drawable {
         pdf.append("<<\n")
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
-        pdf.append("/Filter /LZWDecode\n")
+        // pdf.append("/Filter /LZWDecode\n")
+        pdf.append("/Filter /FlateDecode\n")
         pdf.append("/Width ")
         pdf.append(Int(w!))
         pdf.append("\n")
@@ -576,7 +577,8 @@ public class Image : Drawable {
             pdf.append("/Filter /DCTDecode\n")
         }
         else {
-            pdf.append("/Filter /LZWDecode\n")
+            // pdf.append("/Filter /LZWDecode\n")
+            pdf.append("/Filter /FlateDecode\n")
             if alpha.count > 0 {
                 pdf.append("/SMask ")
                 pdf.append(objNumber!)
@@ -727,7 +729,8 @@ public class Image : Drawable {
         obj.dict.append("/Subtype")
         obj.dict.append("/Image")
         obj.dict.append("/Filter")
-        obj.dict.append("/LZWDecode")
+        // obj.dict.append("/LZWDecode")
+        obj.dict.append("/FlateDecode")
         obj.dict.append("/Width")
         obj.dict.append(String(Int(w!)))
         obj.dict.append("/Height")
@@ -772,7 +775,8 @@ public class Image : Drawable {
         else if imageType == ImageType.PNG ||
                 imageType == ImageType.BMP {
             obj.dict.append("/Filter")
-            obj.dict.append("/LZWDecode")
+            // obj.dict.append("/LZWDecode")
+            obj.dict.append("/FlateDecode")
             if !alpha.isEmpty {
                 obj.dict.append("/SMask")
                 obj.dict.append(String(objNumber!))

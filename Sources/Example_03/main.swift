@@ -20,20 +20,10 @@ public class Example_03 {
         box.drawOn(page)
         try page.addFooter(TextLine(f1, "And this is a footer."))
 
-        let image1 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/ee-map.png.stream")!,
-                ImageType.PNG_STREAM)
-
-        let image2 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/fruit.jpg")!,
-                ImageType.JPG)
-
-        let image3 = try Image(
-                pdf,
-                InputStream(fileAtPath: "images/mt-map.bmp")!,
-                ImageType.BMP)
+        let image1 = try Image(pdf, "images/ee-map.png.stream")
+        // let image1 = try Image(pdf, "images/ee-map.png")
+        let image2 = try Image(pdf, "images/fruit.jpg")
+        let image3 = try Image(pdf, "images/mt-map.bmp")
 
         let textline1 = TextLine(f1, "The map below is an embedded PNG image")
         textline1.setLocation(90.0, 30.0)

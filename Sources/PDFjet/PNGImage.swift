@@ -169,7 +169,8 @@ public class PNGImage {
             }
         }
 
-        LZWEncode(&deflatedImageData, image!)
+        // LZWEncode(&deflatedImageData, image!)
+        ZLibEncode(&deflatedImageData, image!)
 /*
         Swift.print("image.count -> " + String(image!.count))
         let time0 = Int64(Date().timeIntervalSince1970 * 1000)
@@ -374,8 +375,8 @@ public class PNGImage {
             j += 3
             k += 1
         }
-        LZWEncode(&deflatedAlphaData, alpha)
-        // ZLibEncode(&deflatedAlphaData, alpha)
+        // LZWEncode(&deflatedAlphaData, alpha)
+        ZLibEncode(&deflatedAlphaData, alpha)
         return idata
     }
 
@@ -415,8 +416,8 @@ public class PNGImage {
         applyFilters(&filters, &image, self.w!, self.h!, 3)
 
         if tRNS != nil {
-            LZWEncode(&deflatedAlphaData, alpha!)
-            // ZLibEncode(&deflatedAlphaData, alpha!)
+            // LZWEncode(&deflatedAlphaData, alpha!)
+            ZLibEncode(&deflatedAlphaData, alpha!)
         }
 
         return image
