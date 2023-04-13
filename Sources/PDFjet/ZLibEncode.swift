@@ -93,14 +93,13 @@ public class ZLibEncode {
         hash = hash &* prime
         // Perform xor-folding operation
         let index = Int((hash >> 19) ^ hash) & MASK
+
         let j = hashtable[index]
-        if j != -1 {
-            if i - j <= 4096 && // Why the hardcoded value?
-                input[j] == input[i] &&
-                input[j + 1] == input[i + 1] &&
-                input[j + 2] == input[i + 2] {
-                return j
-            }
+        if j != -1 && i - j <= 4096 && // Why the hardcoded value?
+            input[j] == input[i] &&
+            input[j + 1] == input[i + 1] &&
+            input[j + 2] == input[i + 2] {
+            return j
         }
         hashtable[index] = i
         return -1
