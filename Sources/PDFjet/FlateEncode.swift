@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 public class FlateEncode {
-
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
 
@@ -171,5 +169,4 @@ public class FlateEncode {
         output.append(UInt8((adler >>  8) & 0xFF))
         output.append(UInt8((adler >>  0) & 0xFF))
     }
-
 }
