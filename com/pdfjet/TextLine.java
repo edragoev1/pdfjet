@@ -23,13 +23,11 @@ SOFTWARE.
 */
 package com.pdfjet;
 
-
 /**
  *  Used to create text line objects.
  *
  */
 public class TextLine implements Drawable {
-
     protected float x;
     protected float y;
 
@@ -62,7 +60,6 @@ public class TextLine implements Drawable {
 
     private String structureType = StructElem.P;
 
-
     /**
      *  Constructor for creating text line objects.
      *
@@ -71,7 +68,6 @@ public class TextLine implements Drawable {
     public TextLine(Font font) {
         this.font = font;
     }
-
 
     /**
      *  Constructor for creating text line objects.
@@ -85,7 +81,6 @@ public class TextLine implements Drawable {
         this.altDescription = text;
     }
 
-
     /**
      *  Sets the text.
      *
@@ -97,7 +92,6 @@ public class TextLine implements Drawable {
         this.altDescription = text;
         return this;
     }
-
 
     /**
      *  Returns the text.
@@ -145,12 +139,10 @@ public class TextLine implements Drawable {
         return setLocation((float) x, (float) y);
     }
 
-
     public float advance(float leading) {
         this.y += leading;
         return this.y;
     }
-
 
     /**
      *  Sets the font to use for this text line.
@@ -163,7 +155,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Gets the font to use for this text line.
      *
@@ -172,7 +163,6 @@ public class TextLine implements Drawable {
     public Font getFont() {
         return font;
     }
-
 
     /**
      *  Sets the font size to use for this text line.
@@ -185,7 +175,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Sets the fallback font.
      *
@@ -196,7 +185,6 @@ public class TextLine implements Drawable {
         this.fallbackFont = fallbackFont;
         return this;
     }
-
 
     /**
      *  Sets the fallback font size to use for this text line.
@@ -209,7 +197,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the fallback font.
      *
@@ -218,7 +205,6 @@ public class TextLine implements Drawable {
     public Font getFallbackFont() {
         return this.fallbackFont;
     }
-
 
     /**
      *  Sets the color for this text line.
@@ -230,7 +216,6 @@ public class TextLine implements Drawable {
         this.color = color;
         return this;
     }
-
 
     /**
      *  Sets the pen color.
@@ -244,7 +229,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the text line color.
      *
@@ -253,7 +237,6 @@ public class TextLine implements Drawable {
     public int getColor() {
         return this.color;
     }
-
 
     /**
      * Returns the y coordinate of the destination.
@@ -264,7 +247,6 @@ public class TextLine implements Drawable {
         return y - font.getSize();
     }
 
-
     /**
      *  Returns the width of this TextLine.
      *
@@ -274,11 +256,9 @@ public class TextLine implements Drawable {
         return font.stringWidth(fallbackFont, text);
     }
 
-
     public float getStringWidth(String text) {
         return font.stringWidth(fallbackFont, text);
     }
-
 
     /**
      *  Returns the height of this TextLine.
@@ -288,7 +268,6 @@ public class TextLine implements Drawable {
     public float getHeight() {
         return font.getHeight();
     }
-
 
     /**
      *  Sets the URI for the "click text line" action.
@@ -301,7 +280,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the action URI.
      *
@@ -310,7 +288,6 @@ public class TextLine implements Drawable {
     public String getURIAction() {
         return this.uri;
     }
-
 
     /**
      *  Sets the destination key for the action.
@@ -323,7 +300,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      * Returns the GoTo action string.
      *
@@ -332,7 +308,6 @@ public class TextLine implements Drawable {
     public String getGoToAction() {
         return this.key;
     }
-
 
     /**
      *  Sets the underline variable.
@@ -346,7 +321,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      * Returns the underline flag.
      *
@@ -355,7 +329,6 @@ public class TextLine implements Drawable {
     public boolean getUnderline() {
         return this.underline;
     }
-
 
     /**
      *  Sets the strike variable.
@@ -369,7 +342,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the strikeout flag.
      *
@@ -378,7 +350,6 @@ public class TextLine implements Drawable {
     public boolean getStrikeout() {
         return this.strikeout;
     }
-
 
     /**
      *  Sets the direction in which to draw the text.
@@ -391,7 +362,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      * Returns the text direction.
      *
@@ -400,7 +370,6 @@ public class TextLine implements Drawable {
     public int getTextDirection() {
         return degrees;
     }
-
 
     /**
      *  Sets the text effect.
@@ -413,7 +382,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the text effect.
      *
@@ -422,7 +390,6 @@ public class TextLine implements Drawable {
     public int getTextEffect() {
         return textEffect;
     }
-
 
     /**
      *  Sets the vertical offset of the text.
@@ -435,7 +402,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the vertical text offset.
      *
@@ -444,7 +410,6 @@ public class TextLine implements Drawable {
     public float getVerticalOffset() {
         return verticalOffset;
     }
-
 
     /**
      *  Sets the trailing space after this text line when used in paragraph.
@@ -457,7 +422,6 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the trailing space.
      *
@@ -467,17 +431,14 @@ public class TextLine implements Drawable {
         return trailingSpace;
     }
 
-
     public TextLine setLanguage(String language) {
         this.language = language;
         return this;
     }
 
-
     public String getLanguage() {
         return this.language;
     }
-
 
     /**
      *  Sets the alternate description of this text line.
@@ -490,35 +451,29 @@ public class TextLine implements Drawable {
         return this;
     }
 
-
     public String getAltDescription() {
         return altDescription;
     }
-
 
     public TextLine setURILanguage(String uriLanguage) {
         this.uriLanguage = uriLanguage;
         return this;
     }
 
-
     public TextLine setURIAltDescription(String uriAltDescription) {
         this.uriAltDescription = uriAltDescription;
         return this;
     }
-
 
     public TextLine setURIActualText(String uriActualText) {
         this.uriActualText = uriActualText;
         return this;
     }
 
-
     public TextLine setStructureType(String structureType) {
         this.structureType = structureType;
         return this;
     }
-
 
     /**
      *  Places this text line in the specified box.
@@ -530,7 +485,6 @@ public class TextLine implements Drawable {
         placeIn(box, 0f, 0f);
         return this;
     }
-
 
     /**
      *  Places this text line in the box at the specified offset.
@@ -546,7 +500,6 @@ public class TextLine implements Drawable {
             double yOffset) {
         return placeIn(box, (float) xOffset, (float) yOffset);
     }
-
 
     /**
      *  Places this text line in the box at the specified offset.
@@ -564,7 +517,6 @@ public class TextLine implements Drawable {
         yBox = box.y + yOffset;
         return this;
     }
-
 
     /**
      *  Draws this text line on the specified page.
@@ -639,5 +591,4 @@ public class TextLine implements Drawable {
 
         return new float[] {(float) xMax, (float) yMax};
     }
-
 }   // End of TextLine.java
