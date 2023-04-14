@@ -36,7 +36,7 @@ public class Paragraph {
     public float y1;
     public float x2;
     public float y2;
-    internal List<TextLine> list = null;
+    internal List<TextLine> lines = null;
     internal int alignment = Align.LEFT;
 
     /**
@@ -44,12 +44,12 @@ public class Paragraph {
      *
      */
     public Paragraph() {
-        this.list = new List<TextLine>();
+        this.lines = new List<TextLine>();
     }
 
     public Paragraph(TextLine text) {
-        this.list = new List<TextLine>();
-        this.list.Add(text);
+        this.lines = new List<TextLine>();
+        this.lines.Add(text);
     }
 
     /**
@@ -59,7 +59,7 @@ public class Paragraph {
      *  @return this paragraph.
      */
     public Paragraph Add(TextLine text) {
-        list.Add(text);
+        lines.Add(text);
         return this;
     }
 
@@ -77,21 +77,21 @@ public class Paragraph {
     }
 
     public List<TextLine> GetTextLines() {
-        return list;
+        return lines;
     }
 
     public bool StartsWith(string token) {
-        return list[0].GetText().StartsWith(token);
+        return lines[0].GetText().StartsWith(token);
     }
 
     public void SetColor(int color) {
-        foreach (TextLine line in list) {
+        foreach (TextLine line in lines) {
             line.SetColor(color);
         }
     }
 
     public void SetColorMap(Dictionary<string, int> colorMap) {
-        foreach (TextLine line in list) {
+        foreach (TextLine line in lines) {
             line.SetColorMap(colorMap);
         }
     }

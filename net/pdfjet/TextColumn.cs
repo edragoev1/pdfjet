@@ -265,8 +265,8 @@ public class TextColumn : IDrawable {
 
         List<TextLine> list = new List<TextLine>();
         float runLength = 0f;
-        for (int i = 0; i < paragraph.list.Count; i++) {
-            TextLine line = paragraph.list[i];
+        for (int i = 0; i < paragraph.lines.Count; i++) {
+            TextLine line = paragraph.lines[i];
             if (i == 0) {
                 lineHeight = line.font.bodyHeight + spaceBetweenLines;
                 if (rotate == 0) {

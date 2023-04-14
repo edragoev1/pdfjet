@@ -48,8 +48,8 @@ public class Text : IDrawable {
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
-        this.font = paragraphs[0].list[0].GetFont();
-        this.fallbackFont = paragraphs[0].list[0].GetFallbackFont();
+        this.font = paragraphs[0].lines[0].GetFont();
+        this.fallbackFont = paragraphs[0].lines[0].GetFallbackFont();
         this.leading = font.GetBodyHeight();
         this.paragraphLeading = 2*leading;
         this.spaceBetweenTextLines = font.StringWidth(fallbackFont, Single.space);
@@ -101,14 +101,14 @@ public class Text : IDrawable {
         this.xText = x1;
         this.yText = y1 + font.GetAscent();
         foreach (Paragraph paragraph in paragraphs) {
-            int numberOfTextLines = paragraph.list.Count;
+            int numberOfTextLines = paragraph.lines.Count;
             StringBuilder buf = new StringBuilder();
             for (int i = 0; i < numberOfTextLines; i++) {
-                TextLine textLine = paragraph.list[i];
+                TextLine textLine = paragraph.lines[i];
                 buf.Append(textLine.text);
             }
             for (int i = 0; i < numberOfTextLines; i++) {
-                TextLine textLine = paragraph.list[i];
+                TextLine textLine = paragraph.lines[i];
                 if (i == 0) {
                     paragraph.x1 = x1;
                     paragraph.y1 = yText - font.ascent;
