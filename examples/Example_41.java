@@ -49,9 +49,8 @@ public class Example_41 {
             if (p.startsWith("**")) {
                 paragraphNumber = 1;
             } else {
-                float[] point = p.beginParagraphPoint;
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(point[0] - 15f, point[1])
+                        .setLocation(p.xy[0] - 15f, p.xy[1])
                         .drawOn(page);
                 paragraphNumber++;
             }
@@ -68,9 +67,8 @@ public class Example_41 {
             if (p.startsWith("**")) {
                 paragraphNumber = 1;
             } else {
-                float[] point = p.beginParagraphPoint;
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(point[0] - 15f, point[1])
+                        .setLocation(p.xy[0] - 15f, p.xy[1])
                         .drawOn(page);
                 paragraphNumber++;
             }

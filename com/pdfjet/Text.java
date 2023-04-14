@@ -108,7 +108,7 @@ public class Text implements Drawable {
             for (int i = 0; i < numberOfTextLines; i++) {
                 TextLine textLine = paragraph.list.get(i);
                 if (i == 0) {
-                    paragraph.beginParagraphPoint = new float[] {xText, yText};
+                    paragraph.xy = new float[] {xText, yText};
                 }
                 float[] xy = drawTextLine(page, xText, yText, textLine);
                 xText = xy[0];
