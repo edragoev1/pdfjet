@@ -237,7 +237,6 @@ func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
 			paragraph = NewParagraph()
 			textLine = NewEmptyTextLine(f1)
 			sb = nil
-			// sb = sb[:0]
 			i += 1
 		} else {
 			sb = append(sb, ch)
