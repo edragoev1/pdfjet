@@ -5,7 +5,7 @@ Physics is the science concerned with describing the interactions of energy, mat
 No, neither of these two theories is more valid than the other. Experimentation is the ultimate decider. If experimental evidence does not suggest one theory over the other, then both are equally valid. A given physicist might prefer one theory over another on the grounds that one seems more simple, more natural, or more beautiful than the other, but that physicist would quickly acknowledge that he or she cannot say the other theory is invalid. Rather, he or she would be honest about the fact that more experimental evidence is
 needed to determine which theory is a better description of nature.
 
-Probably not. As the saying goes, 'Extraordinary claims require extraordinary evidence.'
+Probably not. As the saying goes, "Extraordinary claims require extraordinary evidence."
 
 Conversions between units require factors of 10 only, which simplifies calculations. Also, the same basic units can be scaled up or down using metric prefixes to sizes appropriate for the problem at hand.
 
