@@ -57,6 +57,16 @@ public class Example_41 {
         }
 
         paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        float f2size = f2.getSize();
+        for (Paragraph p : paragraphs) {
+            if (p.startsWith("**")) {
+                f2.setSize(24.0);
+                p.getTextLines().get(0).setFont(f2);
+                p.getTextLines().get(0).setColor(Color.navy);
+            }
+        }
+        f2.setSize(f2size);
+
         text = new Text(paragraphs);
         text.setLocation(70f, 150f);
         text.setWidth(500f);
