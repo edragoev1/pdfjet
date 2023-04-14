@@ -33,6 +33,8 @@ import java.util.*;
 public class Paragraph {
     public float x;
     public float y;
+    public float x2;
+    public float y2;
     protected List<TextLine> list = null;
     protected int alignment = Align.LEFT;
 
