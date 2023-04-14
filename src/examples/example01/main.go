@@ -126,7 +126,6 @@ func Example01(mode string) {
 
 	paragraphs = make([]*pdfjet.Paragraph, 0)
 	lines = strings.Split(string(cjkText), "\n")
-	textline = pdfjet.NewTextLine(font1, "")
 	for _, line := range lines {
 		if line == "" {
 			continue
