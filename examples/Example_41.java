@@ -80,6 +80,9 @@ public class Example_41 {
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
                         .setLocation(p.x - 15f, p.y)
                         .drawOn(page);
+                new Line(p.x - 3f, p.y - f2.getAscent(), p.x - 3f, p.y2 + f2.getDescent())
+                        .setColor(Color.navy)
+                        .setWidth(1f).drawOn(page);
                 paragraphNumber++;
             }
         }
