@@ -528,7 +528,7 @@ public class TextLine : IDrawable {
 
         page.SetBrushColor(color);
         page.AddBMC(structureType, language, text, altDescription);
-        page.DrawString(font, fallbackFont, text, x, y);
+        page.DrawString(font, fallbackFont, text, x, y, color, colorMap);
         page.AddEMC();
 
         double radians = Math.PI * degrees / 180.0;

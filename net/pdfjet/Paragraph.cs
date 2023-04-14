@@ -84,13 +84,13 @@ public class Paragraph {
         return list[0].GetText().StartsWith(token);
     }
 
-    public void setColor(int color) {
+    public void SetColor(int color) {
         foreach (TextLine line in list) {
             line.SetColor(color);
         }
     }
 
-    public void setColorMap(Dictionary<string, int> colorMap) {
+    public void SetColorMap(Dictionary<string, int> colorMap) {
         foreach (TextLine line in list) {
             line.SetColorMap(colorMap);
         }

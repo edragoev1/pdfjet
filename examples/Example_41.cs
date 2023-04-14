@@ -43,6 +43,8 @@ public class Example_41 {
         text.SetBorder(true);
         text.DrawOn(page);
 
+
+        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         int paragraphNumber = 1;
         Dictionary<String, int> colorMap = new Dictionary<String, int>();
         colorMap["Physics"] = Color.red;
@@ -56,13 +58,12 @@ public class Example_41 {
                 p.GetTextLines()[0].SetFont(f2);
                 p.GetTextLines()[0].SetColor(Color.navy);
             } else {
-                p.setColor(Color.gray);
-                p.setColorMap(colorMap);
+                p.SetColor(Color.gray);
+                p.SetColorMap(colorMap);
             }
         }
         f2.SetSize(f2size);
 
-        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         text = new Text(paragraphs);
         text.SetLocation(70f, 150f);
         text.SetWidth(500f);
