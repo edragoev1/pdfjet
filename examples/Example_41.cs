@@ -48,15 +48,13 @@ public class Example_41 {
         // text.SetBorder(true);
         text.DrawOn(page);
 
-        List<float[]> beginParagraphPoints = text.GetBeginParagraphPoints();
         int paragraphNumber = 1;
-        for (int i = 0; i < beginParagraphPoints.Count; i++) {
-            if (paragraphs[i].StartsWith("**")) {
+        foreach (Paragraph p in paragraphs) {
+            if (p.StartsWith("**")) {
                 paragraphNumber = 1;
             } else {
-                float[] point = beginParagraphPoints[i];
                 new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(point[0] - 15f, point[1])
+                        .SetLocation(p.xy[0] - 15f, p.xy[1])
                         .DrawOn(page);
                 paragraphNumber++;
             }

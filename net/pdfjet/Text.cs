@@ -43,7 +43,6 @@ public class Text : IDrawable {
     private float yText;
     private float leading;
     private float paragraphLeading;
-    private List<float[]> beginParagraphPoints;
     private float spaceBetweenTextLines;
     private bool border = false;
 
@@ -53,7 +52,6 @@ public class Text : IDrawable {
         this.fallbackFont = paragraphs[0].list[0].GetFallbackFont();
         this.leading = font.GetBodyHeight();
         this.paragraphLeading = 2*leading;
-        this.beginParagraphPoints = new List<float[]>();
         this.spaceBetweenTextLines = font.StringWidth(fallbackFont, Single.space);
     }
 
@@ -90,10 +88,6 @@ public class Text : IDrawable {
         return this;
     }
 
-    public List<float[]> GetBeginParagraphPoints() {
-        return this.beginParagraphPoints;
-    }
-
     public Text SetSpaceBetweenTextLines(float spaceBetweenTextLines) {
         this.spaceBetweenTextLines = spaceBetweenTextLines;
         return this;
@@ -116,7 +110,7 @@ public class Text : IDrawable {
             for (int i = 0; i < numberOfTextLines; i++) {
                 TextLine textLine = paragraph.list[i];
                 if (i == 0) {
-                    beginParagraphPoints.Add(new float[] { xText, yText });
+                    paragraph.xy = new float[] { xText, yText };
                 }
                 float[] point = DrawTextLine(page, xText, yText, textLine);
                 xText = point[0];

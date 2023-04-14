@@ -23,13 +23,11 @@ SOFTWARE.
 */
 using System;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to create text line objects.
  */
 public class TextLine : IDrawable {
-
     internal float x;
     internal float y;
 
@@ -62,7 +60,6 @@ public class TextLine : IDrawable {
 
     private String structureType = StructElem.P;
 
-
     /**
      *  Constructor for creating text line objects.
      *
@@ -71,7 +68,6 @@ public class TextLine : IDrawable {
     public TextLine(Font font) {
         this.font = font;
     }
-
 
     /**
      *  Constructor for creating text line objects.
@@ -85,7 +81,6 @@ public class TextLine : IDrawable {
         this.altDescription = text;
     }
 
-
     /**
      *  Sets the text.
      *
@@ -98,7 +93,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the text.
      *
@@ -107,7 +101,6 @@ public class TextLine : IDrawable {
     public String GetText() {
         return text;
     }
-
 
     /**
      *  Sets the position where this text line will be drawn on the page.
@@ -120,7 +113,6 @@ public class TextLine : IDrawable {
         SetLocation((float) x, (float) y);
     }
 
-
     /**
      *  Sets the position where this text line will be drawn on the page.
      *
@@ -132,11 +124,9 @@ public class TextLine : IDrawable {
         SetLocation(x, y);
     }
 
-
     public TextLine SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     /**
      *  Sets the location where this text line will be drawn on the page.
@@ -151,7 +141,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the font to use for this text line.
      *
@@ -163,7 +152,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Gets the font to use for this text line.
      *
@@ -172,7 +160,6 @@ public class TextLine : IDrawable {
     public Font GetFont() {
         return font;
     }
-
 
     /**
      *  Sets the font size to use for this text line.
@@ -185,7 +172,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the fallback font.
      *
@@ -197,7 +183,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the fallback font.
      *
@@ -206,7 +191,6 @@ public class TextLine : IDrawable {
     public Font GetFallbackFont() {
         return this.fallbackFont;
     }
-
 
     /**
      *  Sets the color for this text line.
@@ -219,7 +203,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the text line color.
      *
@@ -228,7 +211,6 @@ public class TextLine : IDrawable {
     public int GetColor() {
         return color;
     }
-
 
     /**
      * Returns the y coordinate of the destination.
@@ -239,7 +221,6 @@ public class TextLine : IDrawable {
         return y - font.GetSize();
     }
 
-
     /**
      *  Returns the width of this TextLine.
      *
@@ -249,11 +230,9 @@ public class TextLine : IDrawable {
         return font.StringWidth(fallbackFont, text);
     }
 
-
     public float GetStringWidth(String text) {
         return font.StringWidth(fallbackFont, text);
     }
-
 
     /**
      *  Returns the height of this TextLine.
@@ -263,7 +242,6 @@ public class TextLine : IDrawable {
     public double GetHeight() {
         return font.GetHeight();
     }
-
 
     /**
      *  Sets the URI for the "click text line" action.
@@ -276,7 +254,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the action URI.
      *
@@ -285,7 +262,6 @@ public class TextLine : IDrawable {
     public String GetURIAction() {
         return this.uri;
     }
-
 
     /**
      *  Sets the destination key for the action.
@@ -298,7 +274,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      * Returns the GoTo action string.
      *
@@ -307,7 +282,6 @@ public class TextLine : IDrawable {
     public String GetGoToAction() {
         return this.key;
     }
-
 
     /**
      *  Sets the underline variable.
@@ -321,7 +295,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the underline flag.
      *
@@ -330,7 +303,6 @@ public class TextLine : IDrawable {
     public bool GetUnderline() {
         return this.underline;
     }
-
 
     /**
      *  Sets the strike variable.
@@ -344,7 +316,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the strikeout flag.
      *
@@ -353,7 +324,6 @@ public class TextLine : IDrawable {
     public bool GetStrikeout() {
         return this.strikeout;
     }
-
 
     /**
      *  Sets the direction in which to draw the text.
@@ -366,7 +336,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      * Returns the text direction.
      *
@@ -375,7 +344,6 @@ public class TextLine : IDrawable {
     public int GetTextDirection() {
         return degrees;
     }
-
 
     /**
      *  Sets the text effect.
@@ -388,7 +356,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the text effect.
      *
@@ -397,7 +364,6 @@ public class TextLine : IDrawable {
     public int GetTextEffect() {
         return textEffect;
     }
-
 
     /**
      *  Sets the vertical offset of the text.
@@ -410,7 +376,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the vertical text offset.
      *
@@ -419,7 +384,6 @@ public class TextLine : IDrawable {
     public float GetVerticalOffset() {
         return verticalOffset;
     }
-
 
     /**
      *  Sets the trailing space after this text line when used in paragraph.
@@ -432,7 +396,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the trailing space.
      *
@@ -442,17 +405,14 @@ public class TextLine : IDrawable {
         return trailingSpace;
     }
 
-
     public TextLine SetLanguage(String language) {
         this.language = language;
         return this;
     }
 
-
     public String GetLanguage() {
         return this.language;
     }
-
 
     /**
      *  Sets the alternate description of this text line.
@@ -465,35 +425,29 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     public String GetAltDescription() {
         return altDescription;
     }
-
 
     public TextLine SetURILanguage(String uriLanguage) {
         this.uriLanguage = uriLanguage;
         return this;
     }
 
-
     public TextLine SetURIAltDescription(String uriAltDescription) {
         this.uriAltDescription = uriAltDescription;
         return this;
     }
-
 
     public TextLine SetURIActualText(String uriActualText) {
         this.uriActualText = uriActualText;
         return this;
     }
 
-
     public TextLine SetStructureType(String structureType) {
         this.structureType = structureType;
         return this;
     }
-
 
     /**
      *  Places this text line in the specified box at position (0.0, 0.0).
@@ -505,7 +459,6 @@ public class TextLine : IDrawable {
         PlaceIn(box, 0.0, 0.0);
         return this;
     }
-
 
     /**
      *  Places this text line in the box at the specified offset.
@@ -521,7 +474,6 @@ public class TextLine : IDrawable {
             double yOffset) {
         return PlaceIn(box, (float) xOffset, (float) yOffset);
     }
-
 
     /**
      *  Places this text line in the box at the specified offset.
@@ -540,12 +492,10 @@ public class TextLine : IDrawable {
         return this;
     }
 
-
     public float Advance(float leading) {
         this.y += leading;
         return this.y;
     }
-
 
     /**
      *  Draws this text line on the specified page if is not null.
@@ -621,6 +571,5 @@ public class TextLine : IDrawable {
 
         return new float[] {(float) xMax, (float) yMax};
     }
-
 }   // End of TextLine.cs
 }   // End of namespace PDFjet.NET
