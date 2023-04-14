@@ -817,7 +817,7 @@ public class TextBox implements Drawable {
                 }
                 if (yText + font.descent <= y + height) {
                     if (page != null) {
-                        drawText(page, font, fallbackFont, line, xText, yText, colors);
+                        drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
                     }
                     yText += leading;
                 }
@@ -843,7 +843,7 @@ public class TextBox implements Drawable {
                     xText = x + (width - font.stringWidth(fallbackFont, line))/2;
                 }
                 if (page != null) {
-                    drawText(page, font, fallbackFont, line, xText, yText, colors);
+                    drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
                 }
                 yText += leading;
             }
@@ -863,9 +863,10 @@ public class TextBox implements Drawable {
             String text,
             float xText,
             float yText,
+            int color,
             Map<String, Integer> colors) {
         page.addBMC(StructElem.P, language, text, altDescription);
-        page.drawString(font, fallbackFont, text, xText, yText, colors);
+        page.drawString(font, fallbackFont, text, xText, yText, color, colors);
         page.addEMC();
         float lineLength = font.stringWidth(fallbackFont, text);
         if (getUnderline()) {

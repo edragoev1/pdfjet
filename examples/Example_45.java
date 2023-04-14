@@ -73,7 +73,7 @@ public class Example_45 {
         float dy = f3.getBodyHeight();
         List<String> lines = Text.readLines("data/form-code-java.txt");
         for (String line : lines) {
-            page.drawString(f3, line, x, y, colors);
+            page.drawString(f3, line, x, y, Color.gray, colors);
             y += dy;
         }
 

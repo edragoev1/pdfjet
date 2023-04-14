@@ -32,7 +32,7 @@ public class Example_32 {
         float leading = font.getBodyHeight();
         List<String> lines = Text.readLines("examples/Example_02.java");
         for (String line : lines) {
-            page.drawString(font, null, line, x, y, colors);
+            page.drawString(font, null, line, x, y, Color.gray, colors);
             y += leading;
             if (y > (page.getHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);

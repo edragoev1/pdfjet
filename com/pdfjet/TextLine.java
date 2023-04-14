@@ -549,7 +549,7 @@ public class TextLine implements Drawable {
 
         page.setBrushColor(color);
         page.addBMC(structureType, language, text, altDescription);
-        page.drawString(font, fallbackFont, text, x, y, colorMap);
+        page.drawString(font, fallbackFont, text, x, y, color, colorMap);
         page.addEMC();
 
         double radians = Math.PI * degrees / 180.0;

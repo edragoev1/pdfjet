@@ -249,7 +249,7 @@ public class Page {
             String str,
             float x,
             float y) {
-        drawString(font1, font2, str, x, y, null);
+        drawString(font1, font2, str, x, y, Color.black, null);
     }
 
     /**
@@ -271,9 +271,10 @@ public class Page {
             String str,
             float x,
             float y,
+            int color,
             Map<String, Integer> colors) {
         if (font.isCoreFont || font.isCJK || fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
-            drawString(font, str, x, y, colors);
+            drawString(font, str, x, y, color, colors);
         }
         else {
             Font activeFont = font;
@@ -281,7 +282,7 @@ public class Page {
             for (int i = 0; i < str.length(); i++) {
                 int ch = str.charAt(i);
                 if (activeFont.unicodeToGID[ch] == 0) {
-                    drawString(activeFont, buf.toString(), x, y, colors);
+                    drawString(activeFont, buf.toString(), x, y, color, colors);
                     x += activeFont.stringWidth(buf.toString());
                     buf.setLength(0);
                     // Switch the active font
@@ -294,7 +295,7 @@ public class Page {
                 }
                 buf.append((char) ch);
             }
-            drawString(activeFont, buf.toString(), x, y, colors);
+            drawString(activeFont, buf.toString(), x, y, color, colors);
         }
     }
 
@@ -323,7 +324,7 @@ public class Page {
             String str,
             float x,
             float y) {
-        drawString(font, str, x, y, null);
+        drawString(font, str, x, y, Color.black, null);
     }
 
     /**
@@ -342,6 +343,7 @@ public class Page {
             String str,
             float x,
             float y,
+            int color,
             Map<String, Integer> colors) {
         if (str == null || str.equals("")) {
             return;
@@ -393,7 +395,7 @@ public class Page {
             append(">] TJ\n");
         }
         else {
-            drawColoredString(font, str, colors);
+            drawColoredString(font, str, color, colors);
         }
 
         append("ET\n");
@@ -1686,40 +1688,41 @@ public class Page {
 
 
     private void drawWord(
-            Font font, StringBuilder buf, Map<String, Integer> colors) {
+            Font font, StringBuilder buf, int color, Map<String, Integer> colors) {
         String str = buf.toString();
         if (str.length() > 0) {
             if (colors.containsKey(str)) {
                 setBrushColor(colors.get(str));
             } else {
-                setBrushColor(Color.black);
+                setBrushColor(color);
             }
+            append("[<");
+            drawString(font, str);
+            append(">] TJ\n");
+            buf.setLength(0);
         }
-        append("[<");
-        drawString(font, str);
-        append(">] TJ\n");
-        buf.setLength(0);
     }
 
 
     protected void drawColoredString(
             Font font,
             String str,
+            int color,
             Map<String, Integer> colors) {
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             char ch = str.charAt(i);
             if (Character.isLetterOrDigit(ch)) {
-                drawWord(font, buf2, colors);
+                drawWord(font, buf2, color, colors);
                 buf1.append(ch);
             } else {
-                drawWord(font, buf1, colors);
+                drawWord(font, buf1, color, colors);
                 buf2.append(ch);
             }
         }
-        drawWord(font, buf1, colors);
-        drawWord(font, buf2, colors);
+        drawWord(font, buf1, color, colors);
+        drawWord(font, buf2, color, colors);
     }
 
 

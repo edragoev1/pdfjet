@@ -104,7 +104,7 @@ class Example_01 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(font1, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(p.x - 15f, p.y)
+                        .setLocation(p.xText - 15f, p.yText)
                         .drawOn(page);
                 paragraphNumber++;
             }
