@@ -72,4 +72,8 @@ public class Paragraph {
     public func getTextLines() -> [TextLine] {
         return list!
     }
+
+    public func startsWith(_ token: String) -> Bool {
+        return list![0].getText()!.hasPrefix(token)
+    }
 }   // End of Paragraph.swift
