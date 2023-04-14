@@ -44,15 +44,13 @@ public class Example_41 {
             // text.setSpaceBetweenTextLines(0.0)
             text.drawOn(page)
 
-            let beginParagraphPoints = text.getBeginParagraphPoints()
             var paragraphNumber: Int = 1
-            for i in 0..<beginParagraphPoints.count {
-                let point = beginParagraphPoints[i]
-                if paragraphs[i].startsWith("**") {
+            for p in paragraphs {
+                if p.startsWith("**") {
                     paragraphNumber = 1
                 } else {
                     TextLine(f2, String(paragraphNumber) + ".")
-                            .setLocation(point[0] - 15.0, point[1])
+                            .setLocation(p.xy![0] - 15.0, p.xy![1])
                             .drawOn(page)
                     paragraphNumber += 1
                 }

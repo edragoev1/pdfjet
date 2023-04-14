@@ -37,7 +37,6 @@ public class Text : Drawable {
     private var yText: Float = 0.0
     private var leading: Float = 0.0
     private var paragraphLeading: Float = 0.0
-    private var beginParagraphPoints: [[Float]]?
     private var spaceBetweenTextLines: Float = 0.0
     private var border = false
 
@@ -47,7 +46,6 @@ public class Text : Drawable {
         self.fallbackFont = paragraphs[0].list![0].getFallbackFont()
         self.leading = font!.getBodyHeight()
         self.paragraphLeading = 2*leading
-        self.beginParagraphPoints = [[Float]]()
         self.spaceBetweenTextLines = font!.stringWidth(fallbackFont, Single.space)
     }
 
@@ -81,10 +79,6 @@ public class Text : Drawable {
         return self
     }
 
-    public func getBeginParagraphPoints() -> [[Float]] {
-        return self.beginParagraphPoints!
-    }
-
     @discardableResult
     public func setSpaceBetweenTextLines(
             _ spaceBetweenTextLines: Float) -> Text {
@@ -113,7 +107,7 @@ public class Text : Drawable {
             for i in 0..<numberOfTextLines {
                 textLine = paragraph.list![i]
                 if i == 0 {
-                    beginParagraphPoints!.append([xText, yText])
+                    paragraph.xy = [xText, yText]
                 }
                 let xy = drawTextLine(page, self.xText, self.yText, textLine!)
                 self.xText = xy[0]
