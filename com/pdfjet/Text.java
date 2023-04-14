@@ -119,10 +119,6 @@ public class Text implements Drawable {
                     xText += spaceBetweenTextLines;
                 }
                 yText = xy[1];
-                // if (i == (numberOfTextLines - 1)) {
-                //     paragraph.x2 = xy[0];
-                //     paragraph.y2 = xy[1] + font.descent;
-                // }
             }
             paragraph.x2 = xText;
             paragraph.y2 = yText + font.descent;
