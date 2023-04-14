@@ -157,8 +157,7 @@ public class Text implements Drawable {
         String[] tokens = null;
         if (stringIsCJK(textLine.text)) {
             tokens = tokenizeCJK(textLine, this.width);
-        }
-        else {
+        } else {
             tokens = textLine.text.split("\\s+");
         }
 
@@ -229,8 +228,7 @@ public class Text implements Drawable {
             char ch = textLine.text.charAt(i);
             if (textLine.font.stringWidth(textLine.fallbackFont, buf.toString() + ch) < textWidth) {
                 buf.append(ch);
-            }
-            else {
+            } else {
                 list.add(buf.toString());
                 buf.setLength(0);
                 buf.append(ch);
