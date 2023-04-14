@@ -243,7 +243,7 @@ public class Text implements Drawable {
                 sb.append(ch);
             }
         }
-        if (!sb.isEmpty()) {
+        if (!sb.toString().equals("")) {
             textLine.setText(sb.toString());
             paragraph.add(textLine);
             paragraphs.add(paragraph);
