@@ -130,6 +130,11 @@ func (textBox *TextBox) SetLocation(x, y float32) {
 	textBox.y = y
 }
 
+// GetLocation gets the location where textBox text box will be drawn on the page.
+func (textBox *TextBox) GetLocation() [2]float32 {
+	return [2]float32{textBox.x, textBox.y}
+}
+
 // SetPosition sets the location where textBox text box will be drawn on the page.
 // @param x the x coordinate of the top left corner of the text box.
 // @param y the y coordinate of the top left corner of the text box.
