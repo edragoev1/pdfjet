@@ -75,6 +75,8 @@ func NewTextLine(font *Font, text string) *TextLine {
 	return textLine
 }
 
+// NewTextLine is constructor for creating empty text line objects.
+// @param font the font to use.
 func NewEmptyTextLine(font *Font) *TextLine {
 	return NewTextLine(font, "")
 }
