@@ -105,11 +105,16 @@ func Example01(mode string) {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-	points := text.GetBeginParagraphPoints()
-	for i, xy := range points {
-		textLine := pdfjet.NewTextLine(font1, strconv.Itoa(i+1)+".")
-		textLine.SetLocation(xy[0]-20, xy[1])
-		textLine.DrawOn(page)
+	paragraphNumber := 1
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			paragraphNumber = 1
+		} else {
+			textLine := pdfjet.NewTextLine(font1, strconv.Itoa(paragraphNumber)+".")
+			textLine.SetLocation(p.GetX()-15.0, p.GetY())
+			textLine.DrawOn(page)
+			paragraphNumber++
+		}
 	}
 
 	page = pdfjet.NewPage(pdf, letter.Portrait)
