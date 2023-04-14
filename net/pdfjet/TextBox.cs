@@ -82,7 +82,6 @@ public class TextBox : IDrawable {
     // bits 24 to 31
     private int properties = 0x000F0001;
 
-
     /**
      *  Creates a text box and sets the font.
      *
@@ -91,7 +90,6 @@ public class TextBox : IDrawable {
     public TextBox(Font font) {
         this.font = font;
     }
-
 
     /**
      *  Creates a text box and sets the font.
@@ -104,7 +102,6 @@ public class TextBox : IDrawable {
         this.text = text;
     }
 
-
     /**
      *  Creates a text box and sets the font and the text.
      *
@@ -116,7 +113,6 @@ public class TextBox : IDrawable {
     public TextBox(Font font, String text, double width, double height) :
         this(font, text, (float) width, (float) height) {
     }
-
 
     /**
      *  Creates a text box and sets the font and the text.
@@ -133,7 +129,6 @@ public class TextBox : IDrawable {
         this.height = height;
     }
 
-
     /**
      *  Sets the font for this text box.
      *
@@ -142,7 +137,6 @@ public class TextBox : IDrawable {
     public void SetFont(Font font) {
         this.font = font;
     }
-
 
     /**
      *  Returns the font used by this text box.
@@ -153,7 +147,6 @@ public class TextBox : IDrawable {
         return font;
     }
 
-
     /**
      *  Sets the text box text.
      *
@@ -163,7 +156,6 @@ public class TextBox : IDrawable {
         this.text = text;
     }
 
-
     /**
      *  Returns the text box text.
      *
@@ -172,7 +164,6 @@ public class TextBox : IDrawable {
     public String GetText() {
         return text;
     }
-
 
     /**
      *  Sets the position where this text box will be drawn on the page.
@@ -184,7 +175,6 @@ public class TextBox : IDrawable {
         SetPosition((float) x, (float) y);
     }
 
-
     /**
      *  Sets the position where this text box will be drawn on the page.
      *
@@ -195,11 +185,9 @@ public class TextBox : IDrawable {
         SetLocation(x, y);
     }
 
-
     public void SetXY(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location where this text box will be drawn on the page.
@@ -212,6 +200,14 @@ public class TextBox : IDrawable {
         this.y = y;
     }
 
+    /**
+     * Gets the location where this text box will be drawn on the page.
+     *
+     * @return the float array of of x and y.
+     */
+    public float[] GetLocation() {
+        return new float[] {this.x, this.y };
+    }
 
     /**
      *  Sets the width of this text box.
@@ -222,7 +218,6 @@ public class TextBox : IDrawable {
         this.width = (float) width;
     }
 
-
     /**
      *  Sets the width of this text box.
      *
@@ -231,7 +226,6 @@ public class TextBox : IDrawable {
     public void SetWidth(float width) {
         this.width = width;
     }
-
 
     /**
      *  Returns the text box width.
@@ -242,7 +236,6 @@ public class TextBox : IDrawable {
         return width;
     }
 
-
     /**
      *  Sets the height of this text box.
      *
@@ -251,7 +244,6 @@ public class TextBox : IDrawable {
     public void SetHeight(double height) {
         this.height = (float) height;
     }
-
 
     /**
      *  Sets the height of this text box.
@@ -262,7 +254,6 @@ public class TextBox : IDrawable {
         this.height = height;
     }
 
-
     /**
      *  Returns the text box height.
      *
@@ -271,7 +262,6 @@ public class TextBox : IDrawable {
     public float GetHeight() {
         return height;
     }
-
 
     /**
      *  Sets the margin of this text box.
@@ -282,7 +272,6 @@ public class TextBox : IDrawable {
         this.margin = (float) margin;
     }
 
-
     /**
      *  Sets the margin of this text box.
      *
@@ -291,7 +280,6 @@ public class TextBox : IDrawable {
     public void SetMargin(float margin) {
         this.margin = margin;
     }
-
 
     /**
      *  Returns the text box margin.
@@ -302,7 +290,6 @@ public class TextBox : IDrawable {
         return margin;
     }
 
-
     /**
      *  Sets the border line width.
      *
@@ -311,7 +298,6 @@ public class TextBox : IDrawable {
     public void SetLineWidth(double lineWidth) {
         this.lineWidth = (float) lineWidth;
     }
-
 
     /**
      *  Sets the border line width.
@@ -322,7 +308,6 @@ public class TextBox : IDrawable {
         this.lineWidth = lineWidth;
     }
 
-
     /**
      *  Returns the border line width.
      *
@@ -331,7 +316,6 @@ public class TextBox : IDrawable {
     public float GetLineWidth() {
         return lineWidth;
     }
-
 
     /**
      *  Sets the spacing between lines of text.
@@ -342,7 +326,6 @@ public class TextBox : IDrawable {
         this.spacing = (float) spacing;
     }
 
-
     /**
      *  Sets the spacing between lines of text.
      *
@@ -351,7 +334,6 @@ public class TextBox : IDrawable {
     public void SetSpacing(float spacing) {
         this.spacing = spacing;
     }
-
 
     /**
      *  Returns the spacing between lines of text.
@@ -362,7 +344,6 @@ public class TextBox : IDrawable {
         return spacing;
     }
 
-
     /**
      *  Sets the background to the specified color.
      *
@@ -371,7 +352,6 @@ public class TextBox : IDrawable {
     public void SetBgColor(int color) {
         this.background = color;
     }
-
 
     /**
      *  Sets the background to the specified color.
@@ -382,7 +362,6 @@ public class TextBox : IDrawable {
         this.background = color[0] << 16 | color[1] << 8 | color[2];
     }
 
-
     /**
      *  Sets the background to the specified color.
      *
@@ -392,7 +371,6 @@ public class TextBox : IDrawable {
         SetBgColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
     }
 
-
     /**
      *  Returns the background color.
      *
@@ -401,7 +379,6 @@ public class TextBox : IDrawable {
     public int GetBgColor() {
         return this.background;
     }
-
 
     /**
      *  Sets the pen and brush colors to the specified color.
@@ -413,7 +390,6 @@ public class TextBox : IDrawable {
         this.brush = color;
     }
 
-
     /**
      *  Sets the pen and brush colors to the specified color.
      *
@@ -423,7 +399,6 @@ public class TextBox : IDrawable {
         this.pen = color[0] << 16 | color[1] << 8 | color[2];
         this.brush = pen;
     }
-
 
     /**
      *  Sets the foreground pen and brush colors to the specified color.
@@ -435,7 +410,6 @@ public class TextBox : IDrawable {
         SetBrushColor(pen);
     }
 
-
     /**
      *  Sets the pen color.
      *
@@ -444,7 +418,6 @@ public class TextBox : IDrawable {
     public void SetPenColor(int color) {
         this.pen = color;
     }
-
 
     /**
      *  Sets the pen color.
@@ -455,7 +428,6 @@ public class TextBox : IDrawable {
         this.pen = color[0] << 16 | color[1] << 8 | color[2];
     }
 
-
     /**
      *  Sets the pen color.
      *
@@ -464,7 +436,6 @@ public class TextBox : IDrawable {
     public void SetPenColor(double[] color) {
         SetPenColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
     }
-
 
     /**
      *  Returns the pen color as 0xRRGGBB integer.
@@ -475,7 +446,6 @@ public class TextBox : IDrawable {
         return this.pen;
     }
 
-
     /**
      *  Sets the brush color.
      *
@@ -484,7 +454,6 @@ public class TextBox : IDrawable {
     public void SetBrushColor(int color) {
         this.brush = color;
     }
-
 
     /**
      *  Sets the brush color.
@@ -495,7 +464,6 @@ public class TextBox : IDrawable {
         this.brush = color[0] << 16 | color[1] << 8 | color[2];
     }
 
-
     /**
      *  Sets the brush color.
      *
@@ -505,7 +473,6 @@ public class TextBox : IDrawable {
         SetBrushColor(new int [] { (int) color[0], (int) color[1], (int) color[2] });
     }
 
-
     /**
      * Returns the brush color.
      *
@@ -514,7 +481,6 @@ public class TextBox : IDrawable {
     public int GetBrushColor() {
         return this.brush;
     }
-
 
     /**
      *  Sets the TextBox border object.
@@ -530,7 +496,6 @@ public class TextBox : IDrawable {
         }
     }
 
-
     /**
      *  Returns the text box border.
      *
@@ -540,7 +505,6 @@ public class TextBox : IDrawable {
         return (this.properties & border) != 0;
     }
 
-
     /**
      *  Sets all borders to be invisible.
      *  This cell will have no borders when drawn on the page.
@@ -548,7 +512,6 @@ public class TextBox : IDrawable {
     public void SetNoBorders() {
         this.properties &= 0x00F0FFFF;
     }
-
 
     /**
      *  Sets the cell text alignment.
@@ -561,7 +524,6 @@ public class TextBox : IDrawable {
         this.properties |= (alignment & 0x00300000);
     }
 
-
     /**
      *  Returns the text alignment.
      *
@@ -570,7 +532,6 @@ public class TextBox : IDrawable {
     public int GetTextAlignment() {
         return (this.properties & 0x00300000);
     }
-
 
     /**
      *  Sets the underline variable.
@@ -587,7 +548,6 @@ public class TextBox : IDrawable {
         }
     }
 
-
     /**
      *  Whether the text will be underlined.
      *
@@ -596,7 +556,6 @@ public class TextBox : IDrawable {
     public bool GetUnderline() {
         return (properties & 0x00400000) != 0;
     }
-
 
     /**
      *  Sets the srikeout flag.
@@ -613,7 +572,6 @@ public class TextBox : IDrawable {
         }
     }
 
-
     /**
      *  Returns the strikeout flag.
      *
@@ -623,16 +581,13 @@ public class TextBox : IDrawable {
         return (properties & 0x00800000) != 0;
     }
 
-
     public void SetFallbackFont(Font font) {
         this.fallbackFont = font;
     }
 
-
     public Font GetFallbackFont() {
         return this.fallbackFont;
     }
-
 
     /**
      *  Sets the vertical alignment of the text in this TextBox.
@@ -643,21 +598,17 @@ public class TextBox : IDrawable {
         this.valign = alignment;
     }
 
-
     public int GetVerticalAlignment() {
         return this.valign;
     }
-
 
     public void SetTextColors(Dictionary<String, Int32> colors) {
         this.colors = colors;
     }
 
-
     public Dictionary<String, Int32> GetTextColors() {
         return this.colors;
     }
-
 
     private void DrawBorders(Page page) {
         page.SetPenColor(pen);
@@ -693,7 +644,6 @@ public class TextBox : IDrawable {
         }
     }
 
-
     // Preserves the leading spaces and tabs
     private StringBuilder GetStringBuilder(String line) {
         StringBuilder buf = new StringBuilder();
@@ -709,7 +659,6 @@ public class TextBox : IDrawable {
         }
         return buf;
     }
-
 
     private String[] getTextLines() {
         List<String> list = new List<String>();
@@ -772,7 +721,6 @@ public class TextBox : IDrawable {
         }
         return list.ToArray();
     }
-
 
     /**
      *  Draws this text box on the specified page.
@@ -872,7 +820,6 @@ public class TextBox : IDrawable {
         return new float[] {x + width, y + height};
     }
 
-
     private void DrawText(
             Page page,
             Font font,
@@ -896,6 +843,5 @@ public class TextBox : IDrawable {
             page.StrokePath();
         }
     }
-
 }   // End of TextBox.cs
 }   // End of namespace PDFjet.NET
