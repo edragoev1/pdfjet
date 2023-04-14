@@ -239,6 +239,36 @@ public class Text implements Drawable {
         return list.toArray(new String[] {});
     }
 
+    public static List<Paragraph> paragraphsFromFile(Font f1, String filePath) throws IOException {
+        List<Paragraph> paragraphs = new ArrayList<Paragraph>();
+
+        String contents = Contents.ofTextFile(filePath).replaceAll("\r", "");
+        Paragraph paragraph = new Paragraph();
+        TextLine textLine = new TextLine(f1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < contents.length(); i++) {
+            char ch = contents.charAt(i);
+            if (i < (contents.length() - 2) &&  // We need at least 2 characters!
+                    ch == '\n' && contents.charAt(i + 1) == '\n') {
+                textLine.setText(sb.toString());
+                paragraph.add(textLine);
+                paragraphs.add(paragraph);
+
+                paragraph = new Paragraph();
+                textLine = new TextLine(f1);
+                sb.setLength(0);
+            } else {
+                sb.append(ch);
+            }
+        }
+        if (!sb.isEmpty()) {
+            textLine.setText(sb.toString());
+            paragraph.add(textLine);
+            paragraphs.add(paragraph);
+        }
+
+        return paragraphs;
+    }
 
     public static List<String> readLines(String filePath) throws IOException {
         List<String> lines = new ArrayList<String>();
