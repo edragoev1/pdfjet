@@ -50,7 +50,7 @@ func Example41() {
 
 	paragraphNumber := 1
 	for i := 0; i < len(beginParagraphPoints); i++ {
-		if paragraphs[0].StartsWith("**") {
+		if paragraphs[i].StartsWith("**") {
 			paragraphNumber = 1
 		} else {
 			point := beginParagraphPoints[i]
