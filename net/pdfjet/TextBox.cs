@@ -828,7 +828,7 @@ public class TextBox : IDrawable {
             float xText,
             float yText,
             Dictionary<String, Int32> colors) {
-        page.DrawString(font, fallbackFont, text, xText, yText, colors);
+        page.DrawString(font, fallbackFont, text, xText, yText, brush, colors);
         float lineLength = font.StringWidth(text);
         if (GetUnderline()) {
             float yAdjust = font.underlinePosition;

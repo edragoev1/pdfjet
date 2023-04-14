@@ -228,7 +228,7 @@ public class Page {
             String str,
             float x,
             float y) {
-        DrawString(font, fallbackFont, str, x, y, null);
+        DrawString(font, fallbackFont, str, x, y, Color.black, null);
     }
 
     /**
@@ -249,9 +249,10 @@ public class Page {
             String str,
             float x,
             float y,
+            int brush,
             Dictionary<String, Int32> colors) {
         if (font.isCoreFont || font.isCJK || fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
-            DrawString(font, str, x, y, colors);
+            DrawString(font, str, x, y, brush, colors);
         }
         else {
             Font activeFont = font;
@@ -259,7 +260,7 @@ public class Page {
             for (int i = 0; i < str.Length; i++) {
                 int ch = str[i];
                 if (activeFont.unicodeToGID[ch] == 0) {
-                    DrawString(activeFont, buf.ToString(), x, y, colors);
+                    DrawString(activeFont, buf.ToString(), x, y, brush, colors);
                     x += activeFont.StringWidth(buf.ToString());
                     buf.Length = 0;
                     // Switch the font
@@ -272,10 +273,9 @@ public class Page {
                 }
                 buf.Append((char) ch);
             }
-            DrawString(activeFont, buf.ToString(), x, y, colors);
+            DrawString(activeFont, buf.ToString(), x, y, brush, colors);
         }
     }
-
 
     /**
      *  Draws the text given by the specified string,
@@ -295,13 +295,12 @@ public class Page {
         DrawString(font, str, (float) x, (float) y);
     }
 
-
     public void DrawString(
             Font font,
             String str,
             float x,
             float y) {
-        DrawString(font, str, x, y, null);
+        DrawString(font, str, x, y, Color.black, null);
     }
 
     /**
@@ -319,6 +318,7 @@ public class Page {
             String str,
             float x,
             float y,
+            int brush,
             Dictionary<String, Int32> colors) {
         if (str == null || str.Equals("")) {
             return;
@@ -368,24 +368,20 @@ public class Page {
             Append("[<");
             DrawString(font, str);
             Append(">] TJ\n");
-        }
-        else {
-            DrawColoredString(font, str, colors);
+        } else {
+            DrawColoredString(font, str, brush, colors);
         }
 
         Append("ET\n");
     }
 
-
     private void DrawString(Font font, String str) {
         if (font.isCoreFont) {
             DrawAsciiString(font, str);
-        }
-        else {
+        } else {
             DrawUnicodeString(font, str);
         }
     }
-
 
     private void DrawAsciiString(Font font, String str) {
         int len = str.Length;
@@ -440,7 +436,6 @@ public class Page {
         }
     }
 
-
     /**
      *  Sets the graphics state. Please see Example_31.
      *
@@ -467,7 +462,6 @@ public class Page {
         Append(" gs\n");
     }
 
-
     /**
      * Sets the color for stroking operations.
      * The pen color is used when drawing lines and splines.
@@ -480,7 +474,6 @@ public class Page {
             double r, double g, double b) {
         SetPenColor((float) r, (float) g, (float) b);
     }
-
 
     /**
      * Sets the color for stroking operations.
@@ -500,7 +493,6 @@ public class Page {
             pen[2] = b;
         }
     }
-
 
     /**
      * Sets the color for stroking operations using CMYK.
@@ -522,7 +514,6 @@ public class Page {
         }
     }
 
-
     /**
      * Sets the color for brush operations.
      * This is the color used when drawing regular text and filling shapes.
@@ -534,7 +525,6 @@ public class Page {
     public void SetBrushColor(double r, double g, double b) {
         SetBrushColor((float) r, (float) g, (float) b);
     }
-
 
     /**
      * Sets the color for brush operations.
@@ -554,7 +544,6 @@ public class Page {
             brush[2] = b;
         }
     }
-
 
     /**
      * Sets the color for brush operations using CMYK.
@@ -576,7 +565,6 @@ public class Page {
         }
     }
 
-
     /**
      * Sets the color for brush operations.
      *
@@ -587,7 +575,6 @@ public class Page {
         SetBrushColor(color[0], color[1], color[2]);
     }
 
-
     /**
      * Returns the brush color.
      *
@@ -597,7 +584,6 @@ public class Page {
         return brush;
     }
 
-
     private void SetColor(float r, float g, float b) {
         Append(r);
         Append(' ');
@@ -605,7 +591,6 @@ public class Page {
         Append(' ');
         Append(b);
     }
-
 
     private void SetColorCMYK(float c, float m, float y, float k) {
         Append(c);
@@ -616,7 +601,6 @@ public class Page {
         Append(' ');
         Append(k);
     }
-
 
     /**
      * Sets the pen color.
@@ -631,7 +615,6 @@ public class Page {
         SetPenColor(r, g, b);
     }
 
-
     /**
      * Sets the brush color.
      *
@@ -645,7 +628,6 @@ public class Page {
         SetBrushColor(r, g, b);
     }
 
-
     /**
      *  Sets the line width to the default.
      *  The default is the finest line width.
@@ -657,7 +639,6 @@ public class Page {
             Append(" w\n");
         }
     }
-
 
     /**
      *  The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -690,7 +671,6 @@ public class Page {
         }
     }
 
-
     /**
      *  Sets the default line dash pattern - solid line.
      */
@@ -698,7 +678,6 @@ public class Page {
         Append("[] 0");
         Append(" d\n");
     }
-
 
     /**
      *  Sets the pen width that will be used to draw lines and splines on this page.
@@ -708,7 +687,6 @@ public class Page {
     public void SetPenWidth(double width) {
         SetPenWidth((float) width);
     }
-
 
     /**
      *  Sets the pen width that will be used to draw lines and splines on this page.
@@ -722,7 +700,6 @@ public class Page {
             Append(" w\n");
         }
     }
-
 
     /**
      *  Sets the current line cap style.
@@ -738,7 +715,6 @@ public class Page {
         }
     }
 
-
     /**
      *  Sets the line join style.
      *
@@ -753,7 +729,6 @@ public class Page {
         }
     }
 
-
     /**
      *  Moves the pen to the point with coordinates (x, y) on the page.
      *
@@ -763,7 +738,6 @@ public class Page {
     public void MoveTo(double x, double y) {
         MoveTo((float) x, (float) y);
     }
-
 
     /**
      *  Moves the pen to the point with coordinates (x, y) on the page.
@@ -778,7 +752,6 @@ public class Page {
         Append(" m\n");
     }
 
-
     /**
      *  Draws a line from the current pen position to the point with coordinates (x, y),
      *  using the current pen width and stroke color.
@@ -786,7 +759,6 @@ public class Page {
     public void LineTo(double x, double y) {
         LineTo((float) x, (float) y);
     }
-
 
     /**
      *  Draws a line from the current pen position to the point with coordinates (x, y),
@@ -799,14 +771,12 @@ public class Page {
         Append(" l\n");
     }
 
-
     /**
      *  Draws the path using the current pen color.
      */
     public void StrokePath() {
         Append("S\n");
     }
-
 
     /**
      *  Closes the path and draws it using the current pen color.
@@ -815,14 +785,12 @@ public class Page {
         Append("s\n");
     }
 
-
     /**
      *  Closes and fills the path with the current brush color.
      */
     public void FillPath() {
         Append("f\n");
     }
-
 
     /**
      *  Draws the outline of the specified rectangle on the page.
@@ -843,7 +811,6 @@ public class Page {
         ClosePath();
     }
 
-
     /**
      *  Fills the specified rectangle on the page.
      *  The left and right edges of the rectangle are at x and x + w.
@@ -862,7 +829,6 @@ public class Page {
         LineTo(x, y+h);
         FillPath();
     }
-
 
     /**
      *  Draws or fills the specified path using the current pen or brush.
@@ -901,7 +867,6 @@ public class Page {
         Append('\n');
     }
 
-
     /**
      * Strokes a bezier curve and draws it using the current pen.
      * @deprecated  As of v4.00 replaced by {@link #drawPath(List, char)}
@@ -911,7 +876,6 @@ public class Page {
     public void DrawBezierCurve(List<Point> list) {
         DrawBezierCurve(list, Operation.STROKE);
     }
-
 
     /**
      * Draws a bezier curve and fills it using the current brush.
@@ -936,7 +900,6 @@ public class Page {
         Append('\n');
     }
 
-
     /**
      *  Draws a circle on the page.
      *
@@ -952,7 +915,6 @@ public class Page {
             double r) {
         DrawEllipse((float) x, (float) y, (float) r, (float) r, Operation.STROKE);
     }
-
 
     /**
      *  Draws the specified circle on the page and fills it with the current brush color.
@@ -970,7 +932,6 @@ public class Page {
         DrawEllipse((float) x, (float) y, (float) r, (float) r, operation);
     }
 
-
     /**
      *  Draws the specified circle on the page and fills it with the current brush color.
      *
@@ -986,7 +947,6 @@ public class Page {
             char operation) {
         DrawEllipse(x, y, r, r, operation);
     }
-
 
     /**
      *  Draws an ellipse on the page and fills it using the current brush color.
@@ -1005,7 +965,6 @@ public class Page {
         DrawEllipse((float) x, (float) y, (float) r1, (float) r2, Operation.STROKE);
     }
 
-
     /**
      *  Draws an ellipse on the page and fills it using the current brush color.
      *
@@ -1022,7 +981,6 @@ public class Page {
             float r2) {
         DrawEllipse((float) x, (float) y, (float) r1, (float) r2, Operation.STROKE);
     }
-
 
     /**
      *  Draws an ellipse on the page and fills it using the current brush color.
@@ -1040,7 +998,6 @@ public class Page {
         DrawEllipse((float) x, (float) y, (float) r1, (float) r2, Operation.FILL);
     }
 
-
     /**
      *  Draws an ellipse on the page and fills it using the current brush color.
      *
@@ -1056,7 +1013,6 @@ public class Page {
             float r2) {
         DrawEllipse(x, y, r1, r2, Operation.FILL);
     }
-
 
     /**
      *  Draws an ellipse on the page and fills it using the current brush color.
@@ -1102,7 +1058,6 @@ public class Page {
         Append(operation);
         Append('\n');
     }
-
 
     /**
      *  Draws a point on the page using the current pen color.
@@ -1239,7 +1194,6 @@ public class Page {
         }
     }
 
-
     /**
      *  Sets the text rendering mode.
      *
@@ -1253,7 +1207,6 @@ public class Page {
             throw new Exception("Invalid text rendering mode: " + mode);
         }
     }
-
 
     /**
      *  Sets the text direction.
@@ -1284,7 +1237,6 @@ public class Page {
         }
     }
 
-
     /**
      *  Draws a cubic bezier curve starting from the current point to the end point p3
      *
@@ -1312,7 +1264,6 @@ public class Page {
         Append("c\n");
     }
 
-
     /**
      *  Draws a bezier curve starting from the current point.
      *  <strong>Please note:</strong> You must call the StrokePath, ClosePath or FillPath methods after the last BezierCurveTo call.
@@ -1329,7 +1280,6 @@ public class Page {
         Append("c\n");
     }
 
-
     public void SetTextFont(Font font) {
         this.font = font;
         Append("/F");
@@ -1339,7 +1289,6 @@ public class Page {
         Append(" Tf\n");
     }
 
-
     // public void SetTextBegin(float x, float y) {
     //     Append("BT\n");
     //     Append(x);
@@ -1348,11 +1297,9 @@ public class Page {
     //     Append(" Td\n");
     // }
 
-
     // public void SetTextStart() {
     //     Append("BT\n");
     // }
-
 
     // /**
     //  *  Sets the text location.
@@ -1367,7 +1314,6 @@ public class Page {
     //     Append(" Td\n");
     // }
 
-
     // /**
     //  *  Sets the text leading.
     //  *
@@ -1378,36 +1324,30 @@ public class Page {
     //     Append(" TL\n");
     // }
 
-
     // public void SetCharSpacing(float spacing) {
     //     Append(spacing);
     //     Append(" Tc\n");
     // }
-
 
     // public void SetWordSpacing(float spacing) {
     //     Append(spacing);
     //     Append(" Tw\n");
     // }
 
-
     // public void SetTextScaling(float scaling) {
     //     Append(scaling);
     //     Append(" Tz\n");
     // }
-
 
     // public void SetTextRise(float rise) {
     //     Append(rise);
     //     Append(" Ts\n");
     // }
 
-
     // public void Println(String str) {
     //     Print(str);
     //     Println();
     // }
-
 
     // public void Print(String str) {
     //     if (font == null) {
@@ -1418,16 +1358,13 @@ public class Page {
     //     Append(">] TJ\n");
     // }
 
-
     // public void Println() {
     //     Append("T*\n");
     // }
 
-
     // public void SetTextEnd() {
     //     Append("ET\n");
     // }
-
 
     // Code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
@@ -1465,7 +1402,6 @@ public class Page {
         DrawPath(list, operation);
     }
 
-
     /**
      *  Clips the path.
      */
@@ -1473,7 +1409,6 @@ public class Page {
         Append("W\n");
         Append("n\n");  // Close the path without painting it.
     }
-
 
     public void ClipRect(float x, float y, float w, float h) {
         MoveTo(x, y);
@@ -1483,13 +1418,11 @@ public class Page {
         ClipPath();
     }
 
-
     public void Save() {
         Append("q\n");
         savedStates.Add(new State(
                 pen, brush, penWidth, lineCapStyle, lineJoinStyle, linePattern));
     }
-
 
     public void Restore() {
         Append("Q\n");
@@ -1506,7 +1439,6 @@ public class Page {
     }
     // <<
 
-
     /**
      * Sets the page CropBox.
      * See page 77 of the PDF32000_2008.pdf specification.
@@ -1520,7 +1452,6 @@ public class Page {
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.cropBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
     }
-
 
     /**
      * Sets the page BleedBox.
@@ -1536,7 +1467,6 @@ public class Page {
         this.bleedBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
     }
 
-
     /**
      * Sets the page TrimBox.
      * See page 77 of the PDF32000_2008.pdf specification.
@@ -1550,7 +1480,6 @@ public class Page {
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.trimBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
     }
-
 
     /**
      * Sets the page ArtBox.
@@ -1566,14 +1495,12 @@ public class Page {
         this.artBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
     }
 
-
     private void AppendPointXY(float x, float y) {
         Append(x);
         Append(' ');
         Append(height - y);
         Append(' ');
     }
-
 
     private void Append(Point point) {
         Append(point.x);
@@ -1582,33 +1509,27 @@ public class Page {
         Append(' ');
     }
 
-
     internal void Append(String str) {
         for (int i = 0; i < str.Length; i++) {
             buf.WriteByte((byte) str[i]);
         }
     }
 
-
     internal void Append(int num) {
         Append(num.ToString());
     }
-
 
     internal void Append(float val) {
         Append(val.ToString("0.###", PDF.culture_en_us));
     }
 
-
     internal void Append(char ch) {
         buf.WriteByte((byte) ch);
     }
 
-
     internal void Append(byte b) {
         buf.WriteByte(b);
     }
-
 
     /**
      *  Appends the specified array of bytes to the page.
@@ -1617,10 +1538,10 @@ public class Page {
         buf.Write(buffer, 0, buffer.Length);
     }
 
-
     private void DrawWord(
             Font font,
             StringBuilder buf,
+            int brush,
             Dictionary<String, Int32> colors) {
         String str = buf.ToString();
         if (str.Length > 0) {
@@ -1628,37 +1549,36 @@ public class Page {
                 SetBrushColor(colors[str]);
             }
             else {
-                SetBrushColor(Color.black);
+                SetBrushColor(brush);
             }
+            Append("[<");
+            DrawString(font, str);
+            Append(">] TJ\n");
+            buf.Length = 0;
         }
-        Append("[<");
-        DrawString(font, str);
-        Append(">] TJ\n");
-        buf.Length = 0;
     }
-
 
     internal void DrawColoredString(
             Font font,
             String str,
+            int brush,
             Dictionary<String, Int32> colors) {
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
         for (int i = 0; i < str.Length; i++) {
             char ch = str[i];
             if (Char.IsLetterOrDigit(ch)) {
-                DrawWord(font, buf2, colors);
+                DrawWord(font, buf2, brush, colors);
                 buf1.Append(ch);
             }
             else {
-                DrawWord(font, buf1, colors);
+                DrawWord(font, buf1, brush, colors);
                 buf2.Append(ch);
             }
         }
-        DrawWord(font, buf1, colors);
-        DrawWord(font, buf2, colors);
+        DrawWord(font, buf1, brush, colors);
+        DrawWord(font, buf2, brush, colors);
     }
-
 
     internal void SetStructElementsPageObjNumber(int pageObjNumber) {
         foreach (StructElem element in structures) {
@@ -1666,14 +1586,12 @@ public class Page {
         }
     }
 
-
     public void AddBMC(
             String structure,
             String actualText,
             String altDescription) {
         AddBMC(structure, null, actualText, altDescription);
     }
-
 
     public void AddBMC(
             String structure,
@@ -1698,13 +1616,11 @@ public class Page {
         }
     }
 
-
     public void AddEMC() {
         if (pdf.compliance == Compliance.PDF_UA) {
             Append("EMC\n");
         }
     }
-
 
     internal void AddAnnotation(Annotation annotation) {
         annotation.y1 = this.height - annotation.y1;
@@ -1720,7 +1636,6 @@ public class Page {
             structures.Add(element);
         }
     }
-
 
     internal void BeginTransform(
             float x, float y, float xScale, float yScale) {
@@ -1745,11 +1660,9 @@ public class Page {
         Append(" Tm\n");
     }
 
-
     internal void EndTransform() {
         Append("Q\n");
     }
-
 
     public void DrawContents(
             byte[] content,
@@ -1763,7 +1676,6 @@ public class Page {
         EndTransform();
     }
 
-
     public void DrawString(Font font, String str, float x, float y, float dx) {
         float x1 = x;
         for (int i = 0; i < str.Length; i++) {
@@ -1771,7 +1683,6 @@ public class Page {
             x1 += dx;
         }
     }
-
 
     public void AddWatermark(Font font, String text) {
         float hypotenuse = (float)
@@ -1789,13 +1700,11 @@ public class Page {
         watermark.DrawOn(this);
     }
 
-
     public void InvertYAxis() {
         Append("1 0 0 -1 0 ");
         Append(this.height);
         Append(" cm\n");
     }
-
 
     /**
      * Transformation matrix.
@@ -1829,11 +1738,9 @@ public class Page {
         height = height / scaley;
     }
 
-
     public float[] AddHeader(TextLine textLine) {
         return AddHeader(textLine, 1.5f*textLine.font.ascent);
     }
-
 
     public float[] AddHeader(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, offset);
@@ -1842,16 +1749,13 @@ public class Page {
         return xy;
     }
 
-
     public float[] AddFooter(TextLine textLine) {
         return AddFooter(textLine, textLine.font.ascent);
     }
-
 
     public float[] AddFooter(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, GetHeight() - offset);
         return textLine.DrawOn(this);
     }
-
 }   // End of Page.cs
 }   // End of namespace PDFjet.NET
