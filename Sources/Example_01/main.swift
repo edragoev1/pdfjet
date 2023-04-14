@@ -79,14 +79,17 @@ public class Example_01 {
         text.setWidth(500.0)
         let xy = text.drawOn(page)
 
-        let points = text.getBeginParagraphPoints()
-        var n = 0
-	    for point in points {
-		    let textLine = TextLine(f1, String(n+1)+".")
-		    textLine.setLocation(point[0]-20.0, point[1])
-		    textLine.drawOn(page)
-            n += 1
-	    }
+        var paragraphNumber: Int = 1
+        for p in paragraphs {
+            if p.startsWith("**") {
+                paragraphNumber = 1
+            } else {
+                TextLine(f1, String(paragraphNumber) + ".")
+                        .setLocation(p.x! - 15.0, p.y!)
+                        .drawOn(page)
+                paragraphNumber += 1
+            }
+        }
 
         let box = Box()
         box.setLocation(xy[0], xy[1])
