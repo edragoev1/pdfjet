@@ -35,7 +35,24 @@ public class Example_41 {
             //         .setColor(Color.green))
             // paragraphs.append(paragraph)
 
-            let paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
+            var paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
+            var colorMap = [String: Int32]()
+            colorMap["Physics"] = Color.red
+            colorMap["physics"] = Color.red
+            colorMap["Experimentation"] =  Color.orange
+            paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
+            let f2size = f2.getSize()
+            for p in paragraphs {
+                if (p.startsWith("**")) {
+                    f2.setSize(24.0)
+                    p.getTextLines()[0].setFont(f2)
+                    p.getTextLines()[0].setColor(Color.navy);
+                } else {
+                    p.setColor(Color.gray)
+                    p.setColorMap(colorMap)
+                }
+            }
+            f2.setSize(f2size);
 
             let text = Text(paragraphs)
             text.setLocation(70.0, 90.0)
