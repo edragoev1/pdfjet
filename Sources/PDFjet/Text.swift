@@ -139,7 +139,7 @@ public class Text : Drawable {
             box.drawOn(page)
         }
 
-        return [self.x1 + self.width, self.y1 + height];
+        return [self.x1 + self.width, self.y1 + height]
     }
 
 
@@ -240,6 +240,38 @@ public class Text : Drawable {
         return list
     }
 
+    public static func paragraphsFromFile(_ f1: Font, _ filePath: String) throws -> [Paragraph] {
+        var paragraphs = [Paragraph]()
+        let contents = try Contents.ofTextFile(filePath)
+        var paragraph = Paragraph()
+        var textLine = TextLine(f1)
+        var sb = String()
+        let scalars = Array(contents.unicodeScalars)
+        var i = 0
+        while i < scalars.count {
+            let ch = scalars[i]
+            // We need at least one character after the \n\n to begin new paragraph!
+            if i < (scalars.count - 2) &&
+                    ch == "\n" && scalars[i + 1] == "\n" {
+                textLine.setText(sb)
+                paragraph.add(textLine)
+                paragraphs.append(paragraph)
+                paragraph = Paragraph()
+                textLine = TextLine(f1)
+                sb = ""
+                i += 1
+            } else {
+                sb.append(String(ch))
+            }
+            i += 1
+        }
+        if (sb != "") {
+            textLine.setText(sb)
+            paragraph.add(textLine)
+            paragraphs.append(paragraph)
+        }
+        return paragraphs
+    }
 
     public static func readLines(_ filePath: String) throws -> [String] {
         var lines = [String]()
