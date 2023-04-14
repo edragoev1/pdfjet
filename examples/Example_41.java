@@ -48,11 +48,13 @@ public class Example_41 {
         List<float[]> beginParagraphPoints = text.getBeginParagraphPoints();
         int paragraphNumber = 1;
         for (int i = 0; i < beginParagraphPoints.size(); i++) {
-            float[] point = beginParagraphPoints.get(i);
-            new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                    .setLocation(point[0] - 15f, point[1])
-                    .drawOn(page);
-            paragraphNumber++;
+            if (!paragraphs.get(i).getTextLines().get(0).getText().startsWith("**")) {
+                float[] point = beginParagraphPoints.get(i);
+                new TextLine(f2, String.valueOf(paragraphNumber) + ".")
+                        .setLocation(point[0] - 15f, point[1])
+                        .drawOn(page);
+                paragraphNumber++;
+            }
         }
 
         pdf.complete();
