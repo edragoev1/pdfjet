@@ -44,8 +44,8 @@ func OfTextFile(fileName string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	runes := []rune(string(contents))
-	for _, ch := range runes {
+	runes := make([]rune, 0)
+	for _, ch := range string(contents) {
 		if ch != '\r' {
 			runes = append(runes, ch)
 		}
