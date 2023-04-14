@@ -24,23 +24,25 @@ public class Example_41 {
             let f3 = Font(pdf, CoreFont.HELVETICA_OBLIQUE)
             f3.setSize(10.0)
 
-            var paragraphs = [Paragraph]()
+            // var paragraphs = [Paragraph]()
 
-            var paragraph = Paragraph()
-                    .add(TextLine(f1, "The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-                    .setUnderline(true))
-                    .add(TextLine(f2, "This text is bold!")
-                    .setColor(Color.blue))
+            // var paragraph = Paragraph()
+            //         .add(TextLine(f1, "The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+            //         .setUnderline(true))
+            //         .add(TextLine(f2, "This text is bold!")
+            //         .setColor(Color.blue))
 
-            paragraphs.append(paragraph)
+            // paragraphs.append(paragraph)
 
-            paragraph = Paragraph()
-                    .add(TextLine(f1, "The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-                    .setUnderline(true))
-                    .add(TextLine(f3, "This text is using italic font.")
-                    .setColor(Color.green))
+            // paragraph = Paragraph()
+            //         .add(TextLine(f1, "The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+            //         .setUnderline(true))
+            //         .add(TextLine(f3, "This text is using italic font.")
+            //         .setColor(Color.green))
 
-            paragraphs.append(paragraph)
+            // paragraphs.append(paragraph)
+
+            let paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
 
             let text = Text(paragraphs)
             text.setLocation(70.0, 90.0)
