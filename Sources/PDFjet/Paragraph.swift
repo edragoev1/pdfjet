@@ -28,7 +28,8 @@ import Foundation
 /// See the TextColumn class for more information.
 ///
 public class Paragraph {
-    public var xy: [Float32]?
+    public var x: Float32?
+    public var y: Float32?
     var list: [TextLine]?
     var alignment: UInt32 = Align.LEFT
 

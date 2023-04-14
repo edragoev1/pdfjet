@@ -107,7 +107,8 @@ public class Text : Drawable {
             for i in 0..<numberOfTextLines {
                 textLine = paragraph.list![i]
                 if i == 0 {
-                    paragraph.xy = [xText, yText]
+                    paragraph.x = xText
+                    paragraph.y = yText
                 }
                 let xy = drawTextLine(page, self.xText, self.yText, textLine!)
                 self.xText = xy[0]

@@ -50,7 +50,7 @@ public class Example_41 {
                     paragraphNumber = 1
                 } else {
                     TextLine(f2, String(paragraphNumber) + ".")
-                            .setLocation(p.xy![0] - 15.0, p.xy![1])
+                            .setLocation(p.x! - 15.0, p.y!)
                             .drawOn(page)
                     paragraphNumber += 1
                 }
