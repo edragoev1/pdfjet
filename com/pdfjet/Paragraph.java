@@ -37,7 +37,7 @@ public class Paragraph {
     public float y1;
     public float x2;
     public float y2;
-    protected List<TextLine> list = null;
+    protected List<TextLine> lines = null;
     protected int alignment = Align.LEFT;
 
     /**
@@ -45,12 +45,12 @@ public class Paragraph {
      *
      */
     public Paragraph() {
-        list = new ArrayList<TextLine>();
+        lines = new ArrayList<TextLine>();
     }
 
     public Paragraph(TextLine text) {
-        list = new ArrayList<TextLine>();
-        list.add(text);
+        lines = new ArrayList<TextLine>();
+        lines.add(text);
     }
 
     /**
@@ -60,7 +60,7 @@ public class Paragraph {
      *  @return this paragraph.
      */
     public Paragraph add(TextLine text) {
-        list.add(text);
+        lines.add(text);
         return this;
     }
 
@@ -78,21 +78,21 @@ public class Paragraph {
     }
 
     public List<TextLine> getTextLines() {
-        return list;
+        return lines;
     }
 
     public boolean startsWith(String token) {
-        return list.get(0).getText().startsWith(token);
+        return lines.get(0).getText().startsWith(token);
     }
 
     public void setColor(int color) {
-        for (TextLine line : list) {
+        for (TextLine line : lines) {
             line.setColor(color);
         }
     }
 
     public void setColorMap(Map<String, Integer> colorMap) {
-        for (TextLine line : list) {
+        for (TextLine line : lines) {
             line.setColorMap(colorMap);
         }
     }

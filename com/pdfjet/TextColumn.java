@@ -263,8 +263,8 @@ public class TextColumn implements Drawable {
 
         List<TextLine> list = new ArrayList<TextLine>();
         float runLength = 0f;
-        for (int i = 0; i < paragraph.list.size(); i++) {
-            TextLine line = paragraph.list.get(i);
+        for (int i = 0; i < paragraph.lines.size(); i++) {
+            TextLine line = paragraph.lines.get(i);
             if (i == 0) {
                 lineHeight = line.font.bodyHeight + spaceBetweenLines;
                 if (rotate == 0) {

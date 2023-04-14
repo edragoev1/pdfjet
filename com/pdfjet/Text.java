@@ -46,8 +46,8 @@ public class Text implements Drawable {
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
-        this.font = paragraphs.get(0).list.get(0).getFont();
-        this.fallbackFont = paragraphs.get(0).list.get(0).getFallbackFont();
+        this.font = paragraphs.get(0).lines.get(0).getFont();
+        this.fallbackFont = paragraphs.get(0).lines.get(0).getFallbackFont();
         this.leading = font.getBodyHeight();
         this.paragraphLeading = 2*leading;
         this.spaceBetweenTextLines = font.stringWidth(fallbackFont, Single.space);
@@ -99,14 +99,14 @@ public class Text implements Drawable {
         this.xText = x1;
         this.yText = y1 + font.ascent;
         for (Paragraph paragraph : paragraphs) {
-            int numberOfTextLines = paragraph.list.size();
+            int numberOfTextLines = paragraph.lines.size();
             StringBuilder buf = new StringBuilder();
             for (int i = 0; i < numberOfTextLines; i++) {
-                TextLine textLine = paragraph.list.get(i);
+                TextLine textLine = paragraph.lines.get(i);
                 buf.append(textLine.getText());
             }
             for (int i = 0; i < numberOfTextLines; i++) {
-                TextLine textLine = paragraph.list.get(i);
+                TextLine textLine = paragraph.lines.get(i);
                 if (i == 0) {
                     paragraph.x1 = x1;
                     paragraph.y1 = yText - font.ascent;
