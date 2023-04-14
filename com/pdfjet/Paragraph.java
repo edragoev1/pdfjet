@@ -77,4 +77,8 @@ public class Paragraph {
         return this;
     }
 
+    public List<TextLine> getTextLines() {
+        return list;
+    }
+
 }   // End of Paragraph.java
