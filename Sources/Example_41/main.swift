@@ -50,7 +50,7 @@ public class Example_41 {
                 if paragraphs[i].startsWith("**") {
                     paragraphNumber = 1
                 } else {
-                    TextLine(f1, String(paragraphNumber) + ".")
+                    TextLine(f2, String(paragraphNumber) + ".")
                             .setLocation(point[0] - 15.0, point[1])
                             .drawOn(page)
                     paragraphNumber += 1
