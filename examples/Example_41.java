@@ -80,7 +80,12 @@ public class Example_41 {
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
                         .setLocation(p.x - 15f, p.y)
                         .drawOn(page);
-                new Line(p.x - 3f, p.y - f2.getAscent(), p.x - 3f, p.y2 + f2.getDescent())
+                Font font = p.getTextLines().get(0).getFont();
+                new Line(
+                        p.x - 3f,
+                        p.y - font.getAscent(),
+                        p.x - 3f,
+                        p.y2 + font.getDescent())
                         .setColor(Color.navy)
                         .setWidth(1f).drawOn(page);
                 paragraphNumber++;
