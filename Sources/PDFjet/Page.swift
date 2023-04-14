@@ -220,7 +220,7 @@ public class Page {
             _ str: String?,
             _ xOrig: Float,
             _ yOrig: Float) {
-        drawString(font1, font2, str, xOrig, yOrig, nil)
+        drawString(font1, font2, str, xOrig, yOrig, Color.black, nil)
     }
 
     ///
@@ -241,18 +241,19 @@ public class Page {
             _ str: String?,
             _ xOrig: Float,
             _ yOrig: Float,
+            _ brush: Int32,
             _ colors: [String : Int32]?) {
         var x = xOrig
         let y = yOrig
         if (font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK) {
-            drawString(font, str, x, y, colors)
+            drawString(font, str, x, y, brush, colors)
         }
         else {
             var activeFont = font
             var buf = String()
             for scalar in str!.unicodeScalars {
                 if activeFont.unicodeToGID![Int(scalar.value)] == 0 {
-                    drawString(activeFont, buf, x, y, colors)
+                    drawString(activeFont, buf, x, y, brush, colors)
                     x += activeFont.stringWidth(buf)
                     buf = ""
                     // Switch the font
@@ -265,7 +266,7 @@ public class Page {
                 }
                 buf.append(String(scalar))
             }
-            drawString(activeFont, buf, x, y, colors)
+            drawString(activeFont, buf, x, y, brush, colors)
         }
     }
 
@@ -275,7 +276,7 @@ public class Page {
             _ text: String?,
             _ x: Float,
             _ y: Float) {
-        drawString(font, text, x, y, nil)                
+        drawString(font, text, x, y, Color.black, nil)                
     }
 
 
@@ -294,6 +295,7 @@ public class Page {
             _ text: String?,
             _ x: Float,
             _ y: Float,
+            _ brush: Int32,
             _ colors: [String : Int32]?) {
 
         if text == nil || text! == "" {
@@ -346,7 +348,7 @@ public class Page {
             append(">] TJ\n")
         }
         else {
-            drawColoredString(font, text!, colors!);
+            drawColoredString(font, text!, brush, colors!);
         }
 
         append("ET\n")
@@ -1505,13 +1507,14 @@ public class Page {
     private func drawWord(
             _ font: Font,
             _ str: inout String,
+            _ brush: Int32,
             _ colors: [String : Int32]) {
         if str != "" {
             if colors[str] != nil {
                 setBrushColor(colors[str]!)
             }
             else {
-                setBrushColor(Color.black)
+                setBrushColor(brush)
             }
             append("[<");
             drawString(font, str);
@@ -1524,21 +1527,21 @@ public class Page {
     func drawColoredString(
             _ font: Font,
             _ text: String,
+            _ brush: Int32,
             _ colors: [String : Int32]) {
         var buf1 = String()
         var buf2 = String()
         for scalar in text.unicodeScalars {
             if isLetterOrDigit(scalar) {
-                drawWord(font, &buf2, colors)
+                drawWord(font, &buf2, brush, colors)
                 buf1.append(String(scalar))
-            }
-            else {
-                drawWord(font, &buf1, colors)
+            } else {
+                drawWord(font, &buf1, brush, colors)
                 buf2.append(String(scalar))
             }
         }
-        drawWord(font, &buf1, colors)
-        drawWord(font, &buf2, colors)
+        drawWord(font, &buf1, brush, colors)
+        drawWord(font, &buf2, brush, colors)
     }
 
 

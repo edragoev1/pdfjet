@@ -70,6 +70,7 @@ public class TextLine : Drawable {
     ///
     public init(_ font: Font) {
         self.font = font
+        self.colorMap = [String: Int32]()
     }
 
 
@@ -83,6 +84,7 @@ public class TextLine : Drawable {
         self.font = font
         self.text = text
         self.altDescription = text
+        self.colorMap = [String: Int32]()
     }
 
 

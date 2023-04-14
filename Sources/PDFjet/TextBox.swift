@@ -750,7 +750,7 @@ public class TextBox : Drawable {
                 page!.drawString(font, text, xText, yText)
             }
             else {
-                page!.drawString(font, text, xText, yText, colors!)
+                page!.drawString(font, text, xText, yText, brush, colors!)
             }
         }
         else {
