@@ -27,12 +27,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
-
 /**
  *  Please see Example_45
  */
 public class Text implements Drawable {
-
     private final List<Paragraph> paragraphs;
     private final Font font;
     private final Font fallbackFont;
@@ -43,10 +41,8 @@ public class Text implements Drawable {
     private float width;
     private float leading;
     private float paragraphLeading;
-    private final List<float[]> beginParagraphPoints;
     private float spaceBetweenTextLines;
     private boolean border = false;
-
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -54,10 +50,8 @@ public class Text implements Drawable {
         this.fallbackFont = paragraphs.get(0).list.get(0).getFallbackFont();
         this.leading = font.getBodyHeight();
         this.paragraphLeading = 2*leading;
-        this.beginParagraphPoints = new ArrayList<float[]>();
         this.spaceBetweenTextLines = font.stringWidth(fallbackFont, Single.space);
     }
-
 
     public void setPosition(float x, float y) {
         setLocation(x, y);
@@ -66,7 +60,6 @@ public class Text implements Drawable {
     public void setPosition(double x, double y) {
         setLocation(x, y);
     }
-
 
     public Text setLocation(float x, float y) {
         this.x1 = x;
@@ -78,29 +71,20 @@ public class Text implements Drawable {
         return setLocation((float) x, (float) y);
     }
 
-
     public Text setWidth(float width) {
         this.width = width;
         return this;
     }
-
 
     public Text setLeading(float leading) {
         this.leading = leading;
         return this;
     }
 
-
     public Text setParagraphLeading(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }
-
-
-    public List<float[]> getBeginParagraphPoints() {
-        return this.beginParagraphPoints;
-    }
-
 
     public Text setSpaceBetweenTextLines(float spaceBetweenTextLines) {
         this.spaceBetweenTextLines = spaceBetweenTextLines;
@@ -110,7 +94,6 @@ public class Text implements Drawable {
     public void setBorder(boolean border) {
         this.border = border;
     }
-
 
     public float[] drawOn(Page page) throws Exception {
         this.xText = x1;
@@ -125,7 +108,7 @@ public class Text implements Drawable {
             for (int i = 0; i < numberOfTextLines; i++) {
                 TextLine textLine = paragraph.list.get(i);
                 if (i == 0) {
-                    beginParagraphPoints.add(new float[] {xText, yText});
+                    paragraph.beginParagraphPoint = new float[] {xText, yText};
                 }
                 float[] xy = drawTextLine(page, xText, yText, textLine);
                 xText = xy[0];
@@ -148,7 +131,6 @@ public class Text implements Drawable {
 
         return new float[] {x1 + width, y1 + height};
     }
-
 
     public float[] drawTextLine(Page page, float x, float y, TextLine textLine) throws Exception {
         this.xText = x;
@@ -201,7 +183,6 @@ public class Text implements Drawable {
                 yText};
     }
 
-
     private boolean stringIsCJK(String str) {
         // CJK Unified Ideographs Range: 4E00–9FD5
         // Hiragana Range: 3040–309F
@@ -219,7 +200,6 @@ public class Text implements Drawable {
         }
         return (numOfCJK > (str.length() / 2));
     }
-
 
     private String[] tokenizeCJK(TextLine textLine, float textWidth) {
         List<String> list = new ArrayList<String>();
@@ -291,5 +271,4 @@ public class Text implements Drawable {
         stream.close();
         return lines;
     }
-
 }   // End of Text.java

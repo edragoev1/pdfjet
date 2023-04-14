@@ -31,8 +31,10 @@ import java.util.*;
  *
  */
 public class Paragraph {
+    public float[] beginParagraphPoint = null;
     protected List<TextLine> list = null;
     protected int alignment = Align.LEFT;
+
 
     /**
      *  Constructor for creating paragraph objects.
