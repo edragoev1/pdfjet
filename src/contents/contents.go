@@ -41,7 +41,16 @@ func OfTextFile(fileName string) string {
 		}
 	}()
 	contents, err := io.ReadAll(file)
-	return string(contents)
+	if err != nil {
+		log.Fatal(err)
+	}
+	runes := []rune(string(contents))
+	for _, ch := range runes {
+		if ch != '\r' {
+			runes = append(runes, ch)
+		}
+	}
+	return string(runes)
 }
 
 func OfBinaryFile(fileName string) []uint8 {
