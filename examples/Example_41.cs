@@ -23,32 +23,46 @@ public class Example_41 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         List<Paragraph> paragraphs = new List<Paragraph>();
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .SetUnderline(true))
+                .Add(new TextLine(f2, "This text is bold!").SetColor(Color.blue));
+        paragraphs.Add(paragraph);
 
-//         Paragraph paragraph = new Paragraph()
-//                 .Add(new TextLine(f1,
-// "The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-//                         .SetUnderline(true))
-//                 .Add(new TextLine(f2, "This text is bold!").SetColor(Color.blue));
-
-//         paragraphs.Add(paragraph);
-
-//         paragraph = new Paragraph()
-//                 .Add(new TextLine(f1,
-// "The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-//                         .SetUnderline(true))
-//                 .Add(new TextLine(f3, "This text is using italic font.").SetColor(Color.green));
-
-//         paragraphs.Add(paragraph);
-
-        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        paragraph = new Paragraph()
+                .Add(new TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .SetUnderline(true))
+                .Add(new TextLine(f3, "This text is using italic font.").SetColor(Color.green));
+        paragraphs.Add(paragraph);
 
         Text text = new Text(paragraphs);
-        text.SetLocation(70f, 90f);
+        text.SetLocation(70f, 50f);
+        text.SetWidth(500f);
+        text.SetBorder(true);
+        text.DrawOn(page);
+
+        int paragraphNumber = 1;
+        foreach (Paragraph p in paragraphs) {
+            if (p.StartsWith("**")) {
+                paragraphNumber = 1;
+            } else {
+                new TextLine(f2, paragraphNumber.ToString() + ".")
+                        .SetLocation(p.xy[0] - 15f, p.xy[1])
+                        .DrawOn(page);
+                paragraphNumber++;
+            }
+        }
+
+        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        text = new Text(paragraphs);
+        text.SetLocation(70f, 150f);
         text.SetWidth(500f);
         // text.SetBorder(true);
         text.DrawOn(page);
 
-        int paragraphNumber = 1;
+        paragraphNumber = 1;
         foreach (Paragraph p in paragraphs) {
             if (p.StartsWith("**")) {
                 paragraphNumber = 1;
