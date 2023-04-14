@@ -25,17 +25,14 @@ package com.pdfjet;
 
 import java.util.*;
 
-
 /**
  *  Used to create paragraph objects.
  *  See the TextColumn class for more information.
  *
  */
 public class Paragraph {
-
     protected List<TextLine> list = null;
     protected int alignment = Align.LEFT;
-
 
     /**
      *  Constructor for creating paragraph objects.
@@ -45,12 +42,10 @@ public class Paragraph {
         list = new ArrayList<TextLine>();
     }
 
-
     public Paragraph(TextLine text) {
         list = new ArrayList<TextLine>();
         list.add(text);
     }
-
 
     /**
      *  Adds a text line to this paragraph.
@@ -62,7 +57,6 @@ public class Paragraph {
         list.add(text);
         return this;
     }
-
 
     /**
      *  Sets the alignment of the text in this paragraph.
