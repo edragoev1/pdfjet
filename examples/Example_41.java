@@ -68,7 +68,7 @@ public class Example_41 {
                 p.getTextLines().get(0).setFont(f2);
                 p.getTextLines().get(0).setColor(Color.navy);
             } else {
-                p.setColor(Color.olive);
+                p.setColor(Color.gray);
                 p.setColorMap(colorMap);
             }
         }
