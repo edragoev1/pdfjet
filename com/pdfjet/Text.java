@@ -165,8 +165,7 @@ public class Text implements Drawable {
             float tokenWidth = textLine.font.stringWidth(textLine.fallbackFont, token);
             if ((lineWidth + tokenWidth) < ((this.x1 + this.width) - this.xText)) {
                 buf.append(token);
-            }
-            else {
+            } else {
                 if (page != null) {
                     new TextLine(textLine.font, buf.toString())
                             .setFallbackFont(textLine.fallbackFont)

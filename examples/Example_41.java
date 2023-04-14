@@ -23,23 +23,23 @@ public class Example_41 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-//         List<Paragraph> paragraphs = new ArrayList<Paragraph>();
+        List<Paragraph> paragraphs = new ArrayList<Paragraph>();
 
-//         Paragraph paragraph = new Paragraph()
-//                 .add(new TextLine(f1,
-// "The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-//                         .setUnderline(true))
-//                 .add(new TextLine(f2, "This text is bold!").setColor(Color.blue));
-//         paragraphs.add(paragraph);
+        Paragraph paragraph = new Paragraph()
+                .add(new TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .setUnderline(true))
+                .add(new TextLine(f2, "This text is bold!").setColor(Color.blue));
+        paragraphs.add(paragraph);
 
-//         paragraph = new Paragraph()
-//                 .add(new TextLine(f1,
-// "The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-//                         .setUnderline(true))
-//                 .add(new TextLine(f3, "This text is using italic font.").setColor(Color.green));
-//         paragraphs.add(paragraph);
+        paragraph = new Paragraph()
+                .add(new TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .setUnderline(true))
+                .add(new TextLine(f3, "This text is using italic font.").setColor(Color.green));
+        paragraphs.add(paragraph);
 
-        List<Paragraph> paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+//        List<Paragraph> paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         Text text = new Text(paragraphs);
         text.setLocation(70f, 90f);
         text.setWidth(500f);
