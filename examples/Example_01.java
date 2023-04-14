@@ -96,14 +96,17 @@ class Example_01 {
         text.setWidth(500f);
         float[] xy = text.drawOn(page);
 
-        List<float[]> points = text.getBeginParagraphPoints();
-        int n = 0;
-	    for (float[] point : points) {
-		    textLine = new TextLine(font1, String.valueOf(n+1)+".");
-		    textLine.setLocation(point[0]-20, point[1]);
-		    textLine.drawOn(page);
-            n++;
-	    }
+        int paragraphNumber = 1;
+        for (Paragraph p : paragraphs) {
+            if (p.startsWith("**")) {
+                paragraphNumber = 1;
+            } else {
+                new TextLine(font2, String.valueOf(paragraphNumber) + ".")
+                        .setLocation(p.x - 15f, p.y)
+                        .drawOn(page);
+                paragraphNumber++;
+            }
+        }
 
         Box box = new Box();
         box.setLocation(xy[0], xy[1]);
