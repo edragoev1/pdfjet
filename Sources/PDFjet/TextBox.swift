@@ -171,6 +171,14 @@ public class TextBox : Drawable {
     }
 
     ///
+    /// Gets the location where this text box will be drawn on the page.
+    ///
+    @discardableResult
+    public func getLocation() -> [Float] {
+        return [self.x , self.y]
+    }
+
+    ///
     /// Sets the width of this text box.
     ///
     /// @param width the specified width.
