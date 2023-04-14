@@ -31,10 +31,9 @@ public class Contents {
         let contents = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
         var buffer = String()
         for scalar in contents.unicodeScalars {
-            if scalar == "\r" {
-                continue
+            if scalar != "\r" {
+                buffer.append(String(scalar))
             }
-            buffer.append(String(scalar))
         }
         return buffer
     }
