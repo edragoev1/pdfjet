@@ -31,7 +31,8 @@ import java.util.*;
  *
  */
 public class Paragraph {
-    public float[] xy = null;
+    public float x;
+    public float y;
     protected List<TextLine> list = null;
     protected int alignment = Align.LEFT;
 

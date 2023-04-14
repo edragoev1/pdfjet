@@ -50,7 +50,7 @@ public class Example_41 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(p.xy[0] - 15f, p.xy[1])
+                        .setLocation(p.x - 15f, p.y)
                         .drawOn(page);
                 paragraphNumber++;
             }
@@ -68,7 +68,7 @@ public class Example_41 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(p.xy[0] - 15f, p.xy[1])
+                        .setLocation(p.x - 15f, p.y)
                         .drawOn(page);
                 paragraphNumber++;
             }
