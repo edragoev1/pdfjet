@@ -256,6 +256,7 @@ public class Text implements Drawable {
                 paragraph = new Paragraph();
                 textLine = new TextLine(f1);
                 sb.setLength(0);
+                i += 1;
             } else {
                 sb.append(ch);
             }
