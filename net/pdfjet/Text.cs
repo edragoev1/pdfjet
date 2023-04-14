@@ -243,6 +243,35 @@ public class Text : IDrawable {
         return list.ToArray();
     }
 
+    public static List<Paragraph> paragraphsFromFile(Font f1, String filePath) {
+        List<Paragraph> paragraphs = new List<Paragraph>();
+        String contents = Contents.OfTextFile(filePath);
+        Paragraph paragraph = new Paragraph();
+        TextLine textLine = new TextLine(f1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < contents.Length; i++) {
+            char ch = contents[i];
+            // We need at least one character after the \n\n to begin new paragraph!
+            if (i < (contents.Length - 2) &&
+                    ch == '\n' && contents[i + 1] == '\n') {
+                textLine.SetText(sb.ToString());
+                paragraph.Add(textLine);
+                paragraphs.Add(paragraph);
+                paragraph = new Paragraph();
+                textLine = new TextLine(f1);
+                sb.Length = 0;
+                i += 1;
+            } else {
+                sb.Append(ch);
+            }
+        }
+        if (!sb.ToString().Equals("")) {
+            textLine.SetText(sb.ToString());
+            paragraph.Add(textLine);
+            paragraphs.Add(paragraph);
+        }
+        return paragraphs;
+    }
 
     public static List<String> ReadLines(String filePath) {
         List<String> lines = new List<String>();
