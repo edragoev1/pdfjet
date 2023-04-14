@@ -30,7 +30,8 @@ namespace PDFjet.NET {
  *
  */
 public class Paragraph {
-    public float[] xy = null;
+    public float x;
+    public float y;
     internal List<TextLine> list = null;
     internal int alignment = Align.LEFT;
 

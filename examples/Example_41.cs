@@ -49,7 +49,7 @@ public class Example_41 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.xy[0] - 15f, p.xy[1])
+                        .SetLocation(p.x - 15f, p.y)
                         .DrawOn(page);
                 paragraphNumber++;
             }
@@ -68,7 +68,7 @@ public class Example_41 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.xy[0] - 15f, p.xy[1])
+                        .SetLocation(p.x - 15f, p.y)
                         .DrawOn(page);
                 paragraphNumber++;
             }
