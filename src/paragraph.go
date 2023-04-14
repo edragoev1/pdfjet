@@ -33,6 +33,7 @@ import (
 // Paragraph describes paragraph objects.
 // See the TextColumn class for more information.
 type Paragraph struct {
+	x, y      float32
 	lines     []*TextLine
 	alignment int // = align.Left
 }
@@ -43,6 +44,14 @@ func NewParagraph() *Paragraph {
 	paragraph.lines = make([]*TextLine, 0)
 	paragraph.alignment = align.Left
 	return paragraph
+}
+
+func (paragraph *Paragraph) GetX() float32 {
+	return paragraph.x
+}
+
+func (paragraph *Paragraph) GetY() float32 {
+	return paragraph.y
 }
 
 // Add is used to add new text lines to the paragraph.

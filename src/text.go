@@ -38,7 +38,6 @@ type Text struct {
 	font, fallbackFont                               *Font
 	x1, y1, xText, yText, width                      float32
 	leading, paragraphLeading, spaceBetweenTextLines float32
-	beginParagraphPoints                             [][2]float32
 	border                                           bool
 }
 
@@ -50,7 +49,6 @@ func NewText(paragraphs []*Paragraph) *Text {
 	text.fallbackFont = paragraphs[0].lines[0].GetFallbackFont()
 	text.leading = text.font.GetBodyHeight()
 	text.paragraphLeading = 2 * text.leading
-	text.beginParagraphPoints = make([][2]float32, 0)
 	text.spaceBetweenTextLines = text.font.StringWidth(text.fallbackFont, single.Space)
 	text.border = false
 	return text
@@ -81,11 +79,6 @@ func (text *Text) SetParagraphLeading(paragraphLeading float32) *Text {
 	return text
 }
 
-// GetBeginParagraphPoints returns the begin paragraph points.
-func (text *Text) GetBeginParagraphPoints() [][2]float32 {
-	return text.beginParagraphPoints
-}
-
 // SetSpaceBetweenTextLines sets the space between text lines.
 func (text *Text) SetSpaceBetweenTextLines(spaceBetweenTextLines float32) *Text {
 	text.spaceBetweenTextLines = spaceBetweenTextLines
@@ -112,7 +105,8 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 		}
 		for i, textLine := range paragraph.lines {
 			if i == 0 {
-				text.beginParagraphPoints = append(text.beginParagraphPoints, [2]float32{text.xText, text.yText})
+				paragraph.x = text.xText
+				paragraph.y = text.yText
 			}
 			xy := text.drawTextLine(page, text.xText, text.yText, textLine)
 			text.xText = xy[0]

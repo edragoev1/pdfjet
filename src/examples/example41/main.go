@@ -47,16 +47,13 @@ func Example41() {
 	// text.SetBorder(true)
 	text.DrawOn(page)
 
-	beginParagraphPoints := text.GetBeginParagraphPoints()
-
 	paragraphNumber := 1
-	for i := 0; i < len(beginParagraphPoints); i++ {
-		if paragraphs[i].StartsWith("**") {
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
 			paragraphNumber = 1
 		} else {
-			point := beginParagraphPoints[i]
 			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
-			textLine.SetLocation(point[0]-15.0, point[1])
+			textLine.SetLocation(p.GetX()-15.0, p.GetY())
 			textLine.DrawOn(page)
 			paragraphNumber++
 		}
