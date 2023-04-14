@@ -206,7 +206,7 @@ public class TextBox implements Drawable {
      * @return the float array of of x and y.
      */
     public float[] getLocation() {
-        return new float[] {this.x, this.y };
+        return new float[] {this.x, this.y};
     }
 
     /**

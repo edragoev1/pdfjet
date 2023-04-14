@@ -206,7 +206,7 @@ public class TextBox : IDrawable {
      * @return the float array of of x and y.
      */
     public float[] GetLocation() {
-        return new float[] {this.x, this.y };
+        return new float[] {this.x, this.y};
     }
 
     /**
