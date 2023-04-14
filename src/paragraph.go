@@ -25,6 +25,8 @@ SOFTWARE.
 */
 
 import (
+	"strings"
+
 	"github.com/edragoev1/pdfjet/src/align"
 )
 
@@ -59,4 +61,8 @@ func (paragraph *Paragraph) Add(textLine *TextLine) *Paragraph {
 func (paragraph *Paragraph) SetAlignment(alignment int) *Paragraph {
 	paragraph.alignment = alignment
 	return paragraph
+}
+
+func (paragraph *Paragraph) StartsWith(token string) bool {
+	return strings.HasPrefix(paragraph.lines[0].GetText(), token)
 }
