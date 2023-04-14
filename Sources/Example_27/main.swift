@@ -13,16 +13,14 @@ public class Example_27 {
         let f1 = try Font(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream")
         // Latin font
         let f2 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
-        f2.setSize(12.0)
         // Hebrew font
         let f3 = try Font(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream")
-        f3.setSize(12.0)
         // Arabic font
         let f4 = try Font(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream")
 
-        f1.setSize(14.0)
         f1.setSize(12.0)
-        f1.setSize(12.0)
+        f2.setSize(12.0)
+        f3.setSize(12.0)
         f4.setSize(12.0)
 
         let x: Float = 50.0

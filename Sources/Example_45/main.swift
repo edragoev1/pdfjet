@@ -68,7 +68,7 @@ public class Example_45 {
         let dy = f3.getBodyHeight()
         let lines = try Text.readLines("data/form-code-swift.txt")
         for line in lines {
-            page.drawString(f3, line, x, y, colors)
+            page.drawString(f3, line, x, y, Color.black, colors)
             y += dy
         }
 

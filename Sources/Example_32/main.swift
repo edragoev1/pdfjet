@@ -31,7 +31,7 @@ public class Example_32 {
         let leading = font.getBodyHeight()
         let lines = try Text.readLines("Sources/Example_02/main.swift")
         for line in lines {
-            page.drawString(font, nil, line, x, y, colors)
+            page.drawString(font, nil, line, x, y, Color.black, colors)
             y += leading
             if y > (page.getHeight() - 20.0) {
                 page = Page(pdf, Letter.PORTRAIT)
