@@ -351,7 +351,6 @@ public class Page {
         }
 
         append("BT\n");
-
         if (font.fontID == null) {
             setTextFont(font);
         }
