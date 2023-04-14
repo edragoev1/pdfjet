@@ -92,14 +92,17 @@ class Example_01 {
         text.SetWidth(500f);
         float[] xy = text.DrawOn(page);
 
-        List<float[]> points = text.GetBeginParagraphPoints();
-        int n = 0;
-	    foreach (float[] point in points) {
-		    textLine = new TextLine(font1, (n+1).ToString()+".");
-		    textLine.SetLocation(point[0]-20.0, point[1]);
-		    textLine.DrawOn(page);
-            n++;
-	    }
+        int paragraphNumber = 1;
+        foreach (Paragraph p in paragraphs) {
+            if (p.StartsWith("**")) {
+                paragraphNumber = 1;
+            } else {
+                new TextLine(font1, paragraphNumber.ToString() + ".")
+                        .SetLocation(p.x - 15f, p.y)
+                        .DrawOn(page);
+                paragraphNumber++;
+            }
+        }
 
         Box box = new Box();
         box.SetLocation(xy[0], xy[1]);
