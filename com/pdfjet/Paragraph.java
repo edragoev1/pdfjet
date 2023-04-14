@@ -84,4 +84,16 @@ public class Paragraph {
     public boolean startsWith(String token) {
         return list.get(0).getText().startsWith(token);
     }
+
+    public void setColor(int color) {
+        for (TextLine line : list) {
+            line.setColor(color);
+        }
+    }
+
+    public void setColorMap(Map<String, Integer> colorMap) {
+        for (TextLine line : list) {
+            line.setColorMap(colorMap);
+        }
+    }
 }   // End of Paragraph.java

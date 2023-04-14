@@ -56,6 +56,10 @@ public class Example_41 {
             }
         }
 
+        Map<String, Integer> colorMap = new HashMap<String, Integer>();
+        colorMap.put("Physics", Color.red);
+        colorMap.put("physics", Color.red);
+        colorMap.put("Experimentation", Color.orange);
         paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         float f2size = f2.getSize();
         for (Paragraph p : paragraphs) {
@@ -63,6 +67,9 @@ public class Example_41 {
                 f2.setSize(24.0);
                 p.getTextLines().get(0).setFont(f2);
                 p.getTextLines().get(0).setColor(Color.navy);
+            } else {
+                // p.setColor(Color.olive);
+                p.setColorMap(colorMap);
             }
         }
         f2.setSize(f2size);

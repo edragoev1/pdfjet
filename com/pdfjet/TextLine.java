@@ -23,6 +23,8 @@ SOFTWARE.
 */
 package com.pdfjet;
 
+import java.util.Map;
+
 /**
  *  Used to create text line objects.
  *
@@ -59,6 +61,7 @@ public class TextLine implements Drawable {
     private String uriAltDescription = null;
 
     private String structureType = StructElem.P;
+    private Map<String, Integer> colorMap = null;
 
     /**
      *  Constructor for creating text line objects.
@@ -518,6 +521,15 @@ public class TextLine implements Drawable {
         return this;
     }
 
+    public TextLine setColorMap(Map<String, Integer> colorMap) {
+        this.colorMap = colorMap;
+        return this;
+    }
+
+    public Map<String, Integer> getColorMap() {
+        return this.colorMap;
+    }
+
     /**
      *  Draws this text line on the specified page.
      *
@@ -537,7 +549,7 @@ public class TextLine implements Drawable {
 
         page.setBrushColor(color);
         page.addBMC(structureType, language, text, altDescription);
-        page.drawString(font, fallbackFont, text, x, y);
+        page.drawString(font, fallbackFont, text, x, y, colorMap);
         page.addEMC();
 
         double radians = Math.PI * degrees / 180.0;
