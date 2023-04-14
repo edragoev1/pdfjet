@@ -28,21 +28,25 @@ import Foundation
 /// See the TextColumn class for more information.
 ///
 public class Paragraph {
-    public var x: Float32?
-    public var y: Float32?
-    var list: [TextLine]?
+    public var xText: Float32?
+    public var yText: Float32?
+    public var x1: Float32?
+    public var y1: Float32?
+    public var x2: Float32?
+    public var y2: Float32?
+    var lines: [TextLine]?
     var alignment: UInt32 = Align.LEFT
 
     ///
     /// Constructor for creating paragraph objects.
     ///
     public init() {
-        list = [TextLine]()
+        lines = [TextLine]()
     }
 
     public init(_ text: TextLine) {
-        list = [TextLine]()
-        list!.append(text)
+        lines = [TextLine]()
+        lines!.append(text)
     }
 
     ///
@@ -53,7 +57,7 @@ public class Paragraph {
     ///
     @discardableResult
     public func add(_ text: TextLine) -> Paragraph {
-        list!.append(text)
+        lines!.append(text)
         return self
     }
 
@@ -72,10 +76,22 @@ public class Paragraph {
     }
 
     public func getTextLines() -> [TextLine] {
-        return list!
+        return lines!
     }
 
     public func startsWith(_ token: String) -> Bool {
-        return list![0].getText()!.hasPrefix(token)
+        return lines![0].getText()!.hasPrefix(token)
+    }
+
+    public func setColor(_ color: Int32) {
+        for line in lines! {
+            line.setColor(color)
+        }
+    }
+
+    public func setColorMap(_ colorMap: [String: Int32]) {
+        for line in lines! {
+            line.setColorMap(colorMap)
+        }
     }
 }   // End of Paragraph.swift

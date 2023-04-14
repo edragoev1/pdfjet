@@ -42,8 +42,8 @@ public class Text : Drawable {
 
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
-        self.font = paragraphs[0].list![0].getFont()
-        self.fallbackFont = paragraphs[0].list![0].getFallbackFont()
+        self.font = paragraphs[0].lines![0].getFont()
+        self.fallbackFont = paragraphs[0].lines![0].getFallbackFont()
         self.leading = font!.getBodyHeight()
         self.paragraphLeading = 2*leading
         self.spaceBetweenTextLines = font!.stringWidth(fallbackFont, Single.space)
@@ -98,17 +98,19 @@ public class Text : Drawable {
         self.yText = y1 + font!.ascent
         var textLine: TextLine?
         for paragraph in paragraphs! {
-            let numberOfTextLines = paragraph.list!.count
+            let numberOfTextLines = paragraph.lines!.count
             var buf = String()
             for i in 0..<numberOfTextLines {
-                textLine = paragraph.list![i]
+                textLine = paragraph.lines![i]
                 buf.append(textLine!.text!)
             }
             for i in 0..<numberOfTextLines {
-                textLine = paragraph.list![i]
+                textLine = paragraph.lines![i]
                 if i == 0 {
-                    paragraph.x = xText
-                    paragraph.y = yText
+                    paragraph.x1 = x1
+                    paragraph.y1 = yText - font!.ascent
+                    paragraph.xText = xText
+                    paragraph.yText = yText
                 }
                 let xy = drawTextLine(page, self.xText, self.yText, textLine!)
                 self.xText = xy[0]
@@ -117,6 +119,8 @@ public class Text : Drawable {
                 }
                 self.yText = xy[1]
             }
+            paragraph.x2 = xText;
+            paragraph.y2 = yText + font!.descent;
             self.xText = x1
             self.yText += paragraphLeading
         }

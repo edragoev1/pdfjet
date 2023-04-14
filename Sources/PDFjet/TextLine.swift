@@ -60,6 +60,7 @@ public class TextLine : Drawable {
     private var uriAltDescription: String?
 
     private var structureType = StructElem.P
+    private var colorMap: [String: Int32]?
 
 
     ///
@@ -516,7 +517,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Places selt.text line in the specified box.
     ///
@@ -528,7 +528,6 @@ public class TextLine : Drawable {
         placeIn(box, 0.0, 0.0)
         return self
     }
-
 
     ///
     /// Places selt.text line in the box at the specified offset.
@@ -548,17 +547,24 @@ public class TextLine : Drawable {
         return self
     }
 
-
     public func advance(_ leading: Float) -> Float {
         self.y += leading
         return self.y
     }
 
-
     public func getTextY() -> Float {
         return self.y
     }
 
+    @discardableResult
+    public func setColorMap(_ colorMap: [String: Int32]) -> TextLine {
+        self.colorMap = colorMap
+        return self
+    }
+
+    public func getColorMap() -> [String: Int32] {
+        return self.colorMap!
+    }
 
     ///
     /// Draws selt.text line on the specified page if the draw parameter is true.
@@ -633,5 +639,4 @@ public class TextLine : Drawable {
 
         return [xMax, yMax]
     }
-
 }   // End of TextLine.swift

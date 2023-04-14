@@ -199,20 +199,20 @@ public class TextColumn : Drawable {
             _ page: Page?,
             _ paragraph: Paragraph) -> [Float] {
 
-        self.lineHeight = paragraph.list![0].font!.bodyHeight + spaceBetweenLines
+        self.lineHeight = paragraph.lines![0].font!.bodyHeight + spaceBetweenLines
         if rotate == ClockWise._0_degrees {
-            self.y1 += paragraph.list![0].font!.ascent
+            self.y1 += paragraph.lines![0].font!.ascent
         }
         else if rotate == ClockWise._90_degrees {
-            self.x1 += paragraph.list![0].font!.ascent
+            self.x1 += paragraph.lines![0].font!.ascent
         }
         else if rotate == ClockWise._270_degrees {
-            self.x1 -= paragraph.list![0].font!.ascent
+            self.x1 -= paragraph.lines![0].font!.ascent
         }
 
         var list = [TextLine]()
         var runLength: Float = 0.0
-        for line in paragraph.list! {
+        for line in paragraph.lines! {
             let tokens = line.text!.components(separatedBy: .whitespaces)
             var text: TextLine?
             for token in tokens {
