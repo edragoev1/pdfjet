@@ -50,7 +50,7 @@ public class Example_41 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(p.x - 15f, p.y)
+                        .setLocation(p.xText - 15f, p.yText)
                         .drawOn(page);
                 paragraphNumber++;
             }
@@ -78,14 +78,9 @@ public class Example_41 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(p.x - 15f, p.y)
+                        .setLocation(p.xText - 15f, p.yText)
                         .drawOn(page);
-                Font font = p.getTextLines().get(0).getFont();
-                new Line(
-                        p.x - 3f,
-                        p.y - font.getAscent(),
-                        p.x - 3f,
-                        p.y2 + font.getDescent())
+                new Line(p.x1 - 3f, p.y1, p.x1 - 3f, p.y2)
                         .setColor(Color.navy)
                         .setWidth(1f).drawOn(page);
                 paragraphNumber++;

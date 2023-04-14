@@ -31,8 +31,10 @@ import java.util.*;
  *
  */
 public class Paragraph {
-    public float x;
-    public float y;
+    public float x1;
+    public float y1;
+    public float xText;
+    public float yText;
     public float x2;
     public float y2;
     protected List<TextLine> list = null;
