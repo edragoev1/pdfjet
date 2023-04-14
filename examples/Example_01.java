@@ -101,7 +101,7 @@ class Example_01 {
             if (p.startsWith("**")) {
                 paragraphNumber = 1;
             } else {
-                new TextLine(font2, String.valueOf(paragraphNumber) + ".")
+                new TextLine(font1, String.valueOf(paragraphNumber) + ".")
                         .setLocation(p.x - 15f, p.y)
                         .drawOn(page);
                 paragraphNumber++;
