@@ -40,8 +40,9 @@ public class Example_41 {
         paragraphs.add(paragraph);
 
         Text text = new Text(paragraphs);
-        text.setLocation(70f, 90f);
+        text.setLocation(70f, 50f);
         text.setWidth(500f);
+        text.setBorder(true);
         float[] xy = text.drawOn(page);
 
         List<float[]> beginParagraphPoints = text.getBeginParagraphPoints();
@@ -58,7 +59,7 @@ public class Example_41 {
 
         paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         text = new Text(paragraphs);
-        text.setLocation(70f, 190f);
+        text.setLocation(70f, 150f);
         text.setWidth(500f);
         xy = text.drawOn(page);
 

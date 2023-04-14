@@ -45,7 +45,7 @@ public class Text implements Drawable {
     private float paragraphLeading;
     private final List<float[]> beginParagraphPoints;
     private float spaceBetweenTextLines;
-    private boolean drawBorder = true;
+    private boolean border = false;
 
 
     public Text(List<Paragraph> paragraphs) {
@@ -107,6 +107,10 @@ public class Text implements Drawable {
         return this;
     }
 
+    public void setBorder(boolean border) {
+        this.border = border;
+    }
+
 
     public float[] drawOn(Page page) throws Exception {
         this.xText = x1;
@@ -135,7 +139,7 @@ public class Text implements Drawable {
         }
 
         float height = ((yText - paragraphLeading) - y1) + font.descent;
-        if (page != null && drawBorder) {
+        if (page != null && border) {
             Box box = new Box();
             box.setLocation(x1, y1);
             box.setSize(width, height);
@@ -240,19 +244,18 @@ public class Text implements Drawable {
 
     public static List<Paragraph> paragraphsFromFile(Font f1, String filePath) throws IOException {
         List<Paragraph> paragraphs = new ArrayList<Paragraph>();
-
         String contents = Contents.ofTextFile(filePath).replaceAll("\r", "");
         Paragraph paragraph = new Paragraph();
         TextLine textLine = new TextLine(f1);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < contents.length(); i++) {
             char ch = contents.charAt(i);
-            if (i < (contents.length() - 2) &&  // We need at least 2 characters!
+            // We need at least one character after the \n\n to begin new paragraph!
+            if (i < (contents.length() - 2) &&
                     ch == '\n' && contents.charAt(i + 1) == '\n') {
                 textLine.setText(sb.toString());
                 paragraph.add(textLine);
                 paragraphs.add(paragraph);
-
                 paragraph = new Paragraph();
                 textLine = new TextLine(f1);
                 sb.setLength(0);
@@ -266,7 +269,6 @@ public class Text implements Drawable {
             paragraph.add(textLine);
             paragraphs.add(paragraph);
         }
-
         return paragraphs;
     }
 
