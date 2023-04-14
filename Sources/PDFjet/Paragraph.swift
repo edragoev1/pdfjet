@@ -23,16 +23,13 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create paragraph objects.
 /// See the TextColumn class for more information.
 ///
 public class Paragraph {
-
     var list: [TextLine]?
     var alignment: UInt32 = Align.LEFT
-
 
     ///
     /// Constructor for creating paragraph objects.
@@ -41,12 +38,10 @@ public class Paragraph {
         list = [TextLine]()
     }
 
-
     public init(_ text: TextLine) {
         list = [TextLine]()
         list!.append(text)
     }
-
 
     ///
     /// Adds a text line to this paragraph.
@@ -59,7 +54,6 @@ public class Paragraph {
         list!.append(text)
         return self
     }
-
 
     ///
     /// Sets the alignment of the text in this paragraph.
@@ -75,4 +69,7 @@ public class Paragraph {
         return self
     }
 
+    public func getTextLines() -> [TextLine] {
+        return list!
+    }
 }   // End of Paragraph.swift

@@ -47,10 +47,12 @@ public class Example_41 {
             var paragraphNumber: Int = 1
             for i in 0..<beginParagraphPoints.count {
                 let point = beginParagraphPoints[i]
-                TextLine(f1, String(paragraphNumber) + ".")
-                        .setLocation(point[0] - 15.0, point[1])
-                        .drawOn(page)
-                paragraphNumber += 1
+                if (!paragraphs[i].getTextLines()[0].getText()!.hasPrefix("**")) {
+                    TextLine(f1, String(paragraphNumber) + ".")
+                            .setLocation(point[0] - 15.0, point[1])
+                            .drawOn(page)
+                    paragraphNumber += 1
+                }
             }
 
             pdf.complete()
