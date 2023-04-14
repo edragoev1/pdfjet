@@ -75,6 +75,12 @@ func NewTextLine(font *Font, text string) *TextLine {
 	return textLine
 }
 
+func NewEmptyTextLine(font *Font) *TextLine {
+	textLine := new(TextLine)
+	textLine.SetText("")
+	return textLine
+}
+
 // SetText sets the text.
 // @param text the text.
 // @return this TextLine.

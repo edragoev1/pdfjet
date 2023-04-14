@@ -27,6 +27,7 @@ SOFTWARE.
 import (
 	"strings"
 
+	"github.com/edragoev1/pdfjet/src/contents"
 	"github.com/edragoev1/pdfjet/src/single"
 )
 
@@ -216,4 +217,36 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 		tokens = append(tokens, sb.String())
 	}
 	return tokens
+}
+
+func (text *Text) ParagraphsFromFile(f1 *Font, filePath string) []Paragraph {
+	paragraphs := make([]Paragraph, 0)
+	contents := contents.OfTextFile(filePath)
+	paragraph := NewParagraph()
+	textLine := NewEmptyTextLine(f1)
+	sb := make([]rune, 0)
+	runes := []rune(contents)
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+		// We need at least one character after the \n\n to begin new paragraph!
+		if i < (len(runes)-2) &&
+			ch == '\n' && runes[i+1] == '\n' {
+			textLine.SetText(string(sb))
+			paragraph.Add(textLine)
+			paragraphs = append(paragraphs, *paragraph)
+			paragraph = NewParagraph()
+			textLine = NewEmptyTextLine(f1)
+			sb = sb[:0]
+			// sb = nil
+			i += 1
+		} else {
+			sb = append(sb, ch)
+		}
+	}
+	if len(sb) != 0 {
+		textLine.SetText(string(sb))
+		paragraph.Add(textLine)
+		paragraphs = append(paragraphs, *paragraph)
+	}
+	return paragraphs
 }
