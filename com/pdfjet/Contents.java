@@ -35,7 +35,13 @@ public class Contents {
             reader = new InputStreamReader(stream, "UTF-8");
             int ch = 0;
             while ((ch = reader.read()) != -1) {
-                sb.append((char) ch);
+                if (ch == '\r') {
+                    // Skip it
+                } else if (ch == '"') {
+                    sb.append("\"");
+                } else {
+                    sb.append((char) ch);
+                }
             }
         } finally {
             reader.close();
