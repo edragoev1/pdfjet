@@ -32,7 +32,7 @@ public class Example_32 {
         float leading = font.GetBodyHeight();
         List<String> lines = Text.ReadLines("examples/Example_02.cs");
         foreach (String line in lines) {
-            page.DrawString(font, null, line, x, y, colors);
+            page.DrawString(font, null, line, x, y, Color.black, colors);
             y += leading;
             if (y > (page.GetHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);

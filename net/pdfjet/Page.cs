@@ -1547,8 +1547,7 @@ public class Page {
         if (str.Length > 0) {
             if (colors.ContainsKey(str)) {
                 SetBrushColor(colors[str]);
-            }
-            else {
+            } else {
                 SetBrushColor(brush);
             }
             Append("[<");

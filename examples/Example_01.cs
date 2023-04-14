@@ -98,7 +98,7 @@ class Example_01 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(font1, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.x - 15f, p.y)
+                        .SetLocation(p.xText - 15f, p.yText)
                         .DrawOn(page);
                 paragraphNumber++;
             }
