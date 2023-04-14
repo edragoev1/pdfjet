@@ -28,14 +28,19 @@ using System.Text;
 namespace PDFjet.NET {
 public class Contents {
     public static String OfTextFile(String fileName) {
-        StringBuilder sb = new StringBuilder(2048);
+        StringBuilder sb = new StringBuilder(4096);
         StreamReader reader = null;
         try {
             reader = new StreamReader(fileName);
-            char[] buffer = new char[4096];
-            int count = 0;
-            while ((count = reader.Read(buffer, 0, buffer.Length)) > 0) {
-                sb.Append(buffer, 0, count);
+            int ch;
+            while ((ch = reader.Read()) != -1) {
+                if (ch == '\r') {
+                    // Skip it
+                } else if (ch == '"') {
+                    sb.Append("\"");
+                } else {
+                    sb.Append((char) ch);
+                }
             }
         } finally {
             reader.Close();
