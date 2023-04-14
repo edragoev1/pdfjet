@@ -30,8 +30,12 @@ namespace PDFjet.NET {
  *
  */
 public class Paragraph {
-    public float x;
-    public float y;
+    public float xText;
+    public float yText;
+    public float x1;
+    public float y1;
+    public float x2;
+    public float y2;
     internal List<TextLine> list = null;
     internal int alignment = Align.LEFT;
 
@@ -78,6 +82,18 @@ public class Paragraph {
 
     public bool StartsWith(string token) {
         return list[0].GetText().StartsWith(token);
+    }
+
+    public void setColor(int color) {
+        foreach (TextLine line in list) {
+            line.SetColor(color);
+        }
+    }
+
+    public void setColorMap(Dictionary<string, int> colorMap) {
+        foreach (TextLine line in list) {
+            line.SetColorMap(colorMap);
+        }
     }
 }   // End of Paragraph.cs
 }   // End of namespace PDFjet.NET

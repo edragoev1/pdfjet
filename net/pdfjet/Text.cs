@@ -110,8 +110,10 @@ public class Text : IDrawable {
             for (int i = 0; i < numberOfTextLines; i++) {
                 TextLine textLine = paragraph.list[i];
                 if (i == 0) {
-                    paragraph.x = xText;
-                    paragraph.y = yText;
+                    paragraph.x1 = x1;
+                    paragraph.y1 = yText - font.ascent;
+                    paragraph.xText = xText;
+                    paragraph.yText = yText;
                 }
                 float[] point = DrawTextLine(page, xText, yText, textLine);
                 xText = point[0];
@@ -120,6 +122,8 @@ public class Text : IDrawable {
                 }
                 yText = point[1];
             }
+            paragraph.x2 = xText;
+            paragraph.y2 = yText + font.descent;
             xText = x1;
             yText += paragraphLeading;
         }

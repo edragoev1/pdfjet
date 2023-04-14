@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 using System;
+using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /**
@@ -59,6 +60,7 @@ public class TextLine : IDrawable {
     private String uriAltDescription = null;
 
     private String structureType = StructElem.P;
+    private Dictionary<String, int> colorMap = null;
 
     /**
      *  Constructor for creating text line objects.
@@ -495,6 +497,15 @@ public class TextLine : IDrawable {
     public float Advance(float leading) {
         this.y += leading;
         return this.y;
+    }
+
+    public TextLine SetColorMap(Dictionary<String, int> colorMap) {
+        this.colorMap = colorMap;
+        return this;
+    }
+
+    public Dictionary<String, int> GetColorMap() {
+        return this.colorMap;
     }
 
     /**
