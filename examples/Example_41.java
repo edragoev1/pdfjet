@@ -66,12 +66,14 @@ public class Example_41 {
         beginParagraphPoints = text.getBeginParagraphPoints();
         paragraphNumber = 1;
         for (int i = 0; i < beginParagraphPoints.size(); i++) {
-            if (!paragraphs.get(i).getTextLines().get(0).getText().startsWith("**")) {
+            if (!paragraphs.get(i).startsWith("**")) {
                 float[] point = beginParagraphPoints.get(i);
                 new TextLine(f2, String.valueOf(paragraphNumber) + ".")
                         .setLocation(point[0] - 15f, point[1])
                         .drawOn(page);
                 paragraphNumber++;
+            } else {
+                paragraphNumber = 1;
             }
         }
 

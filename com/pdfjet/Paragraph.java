@@ -81,4 +81,7 @@ public class Paragraph {
         return list;
     }
 
+    public boolean startsWith(String token) {
+        return list.get(0).getText().startsWith(token);
+    }
 }   // End of Paragraph.java
