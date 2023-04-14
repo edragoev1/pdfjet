@@ -44,16 +44,23 @@ public class Example_41 {
         text.DrawOn(page);
 
         int paragraphNumber = 1;
+        Dictionary<String, int> colorMap = new Dictionary<String, int>();
+        colorMap["Physics"] = Color.red;
+        colorMap["physics"] = Color.red;
+        colorMap["Experimentation"] = Color.orange;
+        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        float f2size = f2.GetSize();
         foreach (Paragraph p in paragraphs) {
             if (p.StartsWith("**")) {
-                paragraphNumber = 1;
+                f2.SetSize(24.0);
+                p.GetTextLines()[0].SetFont(f2);
+                p.GetTextLines()[0].SetColor(Color.navy);
             } else {
-                new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.xText - 15f, p.yText)
-                        .DrawOn(page);
-                paragraphNumber++;
+                p.setColor(Color.gray);
+                p.setColorMap(colorMap);
             }
         }
+        f2.SetSize(f2size);
 
         paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         text = new Text(paragraphs);
