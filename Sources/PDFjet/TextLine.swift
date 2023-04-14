@@ -60,7 +60,7 @@ public class TextLine : Drawable {
     private var uriAltDescription: String?
 
     private var structureType = StructElem.P
-    private var colorMap: [String: Int32]?
+    private var colorMap: [String: Int32]
 
 
     ///
@@ -565,7 +565,7 @@ public class TextLine : Drawable {
     }
 
     public func getColorMap() -> [String: Int32] {
-        return self.colorMap!
+        return self.colorMap
     }
 
     ///
@@ -587,7 +587,7 @@ public class TextLine : Drawable {
 
         page!.setBrushColor(color)
         page!.addBMC(structureType, language, text!, altDescription!)
-        page!.drawString(font!, fallbackFont, text, self.x, self.y)
+        page!.drawString(font!, fallbackFont, text, self.x, self.y, color, colorMap)
         page!.addEMC()
 
         let radians = Float.pi * Float(degrees) / 180.0
