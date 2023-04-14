@@ -1691,8 +1691,7 @@ public class Page {
         if (str.length() > 0) {
             if (colors.containsKey(str)) {
                 setBrushColor(colors.get(str));
-            }
-            else {
+            } else {
                 setBrushColor(Color.black);
             }
         }
@@ -1714,8 +1713,7 @@ public class Page {
             if (Character.isLetterOrDigit(ch)) {
                 drawWord(font, buf2, colors);
                 buf1.append(ch);
-            }
-            else {
+            } else {
                 drawWord(font, buf1, colors);
                 buf2.append(ch);
             }
