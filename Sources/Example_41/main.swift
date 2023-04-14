@@ -47,13 +47,13 @@ public class Example_41 {
             var paragraphNumber: Int = 1
             for i in 0..<beginParagraphPoints.count {
                 let point = beginParagraphPoints[i]
-                if !paragraphs[i].startsWith("**") {
+                if paragraphs[i].startsWith("**") {
+                    paragraphNumber = 1
+                } else {
                     TextLine(f1, String(paragraphNumber) + ".")
                             .setLocation(point[0] - 15.0, point[1])
                             .drawOn(page)
                     paragraphNumber += 1
-                } else {
-                    paragraphNumber = 1
                 }
             }
 

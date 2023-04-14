@@ -25,35 +25,41 @@ public class Example_41 {
 
         List<Paragraph> paragraphs = new List<Paragraph>();
 
-        Paragraph paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f2, "This text is bold!").SetColor(Color.blue));
+//         Paragraph paragraph = new Paragraph()
+//                 .Add(new TextLine(f1,
+// "The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+//                         .SetUnderline(true))
+//                 .Add(new TextLine(f2, "This text is bold!").SetColor(Color.blue));
 
-        paragraphs.Add(paragraph);
+//         paragraphs.Add(paragraph);
 
-        paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f3, "This text is using italic font.").SetColor(Color.green));
+//         paragraph = new Paragraph()
+//                 .Add(new TextLine(f1,
+// "The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+//                         .SetUnderline(true))
+//                 .Add(new TextLine(f3, "This text is using italic font.").SetColor(Color.green));
 
-        paragraphs.Add(paragraph);
+//         paragraphs.Add(paragraph);
+
+        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
 
         Text text = new Text(paragraphs);
         text.SetLocation(70f, 90f);
         text.SetWidth(500f);
-        float[] xy = text.DrawOn(page);
+        text.DrawOn(page);
 
         List<float[]> beginParagraphPoints = text.GetBeginParagraphPoints();
         int paragraphNumber = 1;
         for (int i = 0; i < beginParagraphPoints.Count; i++) {
-            float[] point = beginParagraphPoints[i];
-            new TextLine(f1, paragraphNumber.ToString() + ".")
-                    .SetLocation(point[0] - 30f, point[1])
-                    .DrawOn(page);
-            paragraphNumber++;
+            if (paragraphs[i].StartsWith("**")) {
+                paragraphNumber = 1;
+            } else {
+                float[] point = beginParagraphPoints[i];
+                new TextLine(f1, paragraphNumber.ToString() + ".")
+                        .SetLocation(point[0] - 30f, point[1])
+                        .DrawOn(page);
+                paragraphNumber++;
+            }
         }
 
         pdf.Complete();

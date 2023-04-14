@@ -23,7 +23,6 @@ SOFTWARE.
 */
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to create paragraph objects.
@@ -31,10 +30,8 @@ namespace PDFjet.NET {
  *
  */
 public class Paragraph {
-
     internal List<TextLine> list = null;
     internal int alignment = Align.LEFT;
-
 
     /**
      *  Constructor for creating paragraph objects.
@@ -44,12 +41,10 @@ public class Paragraph {
         this.list = new List<TextLine>();
     }
 
-
     public Paragraph(TextLine text) {
         this.list = new List<TextLine>();
         this.list.Add(text);
     }
-
 
     /**
      *  Adds a text line to this paragraph.
@@ -61,7 +56,6 @@ public class Paragraph {
         list.Add(text);
         return this;
     }
-
 
     /**
      *  Sets the alignment of the text in this paragraph.
@@ -76,5 +70,12 @@ public class Paragraph {
         return this;
     }
 
+    public List<TextLine> GetTextLines() {
+        return list;
+    }
+
+    public bool StartsWith(string token) {
+        return list[0].GetText().StartsWith(token);
+    }
 }   // End of Paragraph.cs
 }   // End of namespace PDFjet.NET
