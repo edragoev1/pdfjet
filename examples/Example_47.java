@@ -13,9 +13,9 @@ public class Example_47 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_47.pdf")));
 
-        Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream");
-        Font f2 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-It.otf.stream");
-
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream");
+                
         f1.setSize(12f);
         f2.setSize(12f);
 
@@ -35,18 +35,9 @@ public class Example_47 {
                 page.getHeight() - (image2.getHeight() + 20f));
         image2.drawOn(page);
 
-        BufferedReader reader =
-                new BufferedReader(new FileReader("data/austria_hungary.txt"));
-        StringBuffer buffer = new StringBuffer();
-        String text = null;
-        while ((text = reader.readLine()) != null) {
-            buffer.append(text);
-            buffer.append("\n");
-        }
-        reader.close();
-
         List<TextLine> paragraphs = new ArrayList<TextLine>();
-        String[] textLines = buffer.toString().split("\\n\\n");
+        String contents = Contents.ofTextFile("data/austria_hungary.txt");
+        String[] textLines = contents.split("\\n\\n");
         for (String textLine : textLines) {
             paragraphs.add(new TextLine(f1, textLine));
         }
