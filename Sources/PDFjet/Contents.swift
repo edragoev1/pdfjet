@@ -28,7 +28,15 @@ import Foundation
 ///
 public class Contents {
     public static func ofTextFile( _ fileName: String) throws -> String {
-        return try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
+        let contents = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
+        var buffer = String()
+        for scalar in contents.unicodeScalars {
+            if scalar == "\r" {
+                continue
+            }
+            buffer.append(String(scalar))
+        }
+        return buffer
     }
 
     public static func ofBinaryFile( _ fileName: String) throws -> [UInt8] {
