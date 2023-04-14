@@ -12,13 +12,15 @@ class Example_01 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_01.pdf")));
 
-        Font font1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
-        // With regular TTF font this example produces the PDF in 180 ms
+        // Font font1 = new Font(pdf, "fonts/Droid/DroidSans.ttf");
         // Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf");
-
-        // With the .ttf.stream font this example produces the PDF in 120 ms
-        // The resulting PDF is also slightly smaller.
+        // With regular TTF fonts this example produces the PDF in around 180 ms
+        // The PDF file size is: 2608861 bytes
+        
+        Font font1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
         Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
+        // With the .ttf.stream font this example produces the PDF in around 130 ms
+        // The PDF file size is: 2326851 bytes
 
         font1.setSize(12f);
         font2.setSize(12f);
