@@ -23,12 +23,10 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Please see Example_45
 ///
 public class Text : Drawable {
-
     private var paragraphs: [Paragraph]?
     private var font: Font?
     private var fallbackFont: Font?
@@ -41,8 +39,7 @@ public class Text : Drawable {
     private var paragraphLeading: Float = 0.0
     private var beginParagraphPoints: [[Float]]?
     private var spaceBetweenTextLines: Float = 0.0
-    private var drawBorder = true
-
+    private var border = false
 
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
@@ -54,11 +51,9 @@ public class Text : Drawable {
         self.spaceBetweenTextLines = font!.stringWidth(fallbackFont, Single.space)
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Text {
@@ -67,20 +62,17 @@ public class Text : Drawable {
         return self
     }
 
-
     @discardableResult
     public func setWidth(_ width: Float) -> Text {
         self.width = width
         return self
     }
 
-
     @discardableResult
     public func setLeading(_ leading: Float) -> Text {
         self.leading = leading
         return self
     }
-
 
     @discardableResult
     public func setParagraphLeading(
@@ -89,11 +81,9 @@ public class Text : Drawable {
         return self
     }
 
-
     public func getBeginParagraphPoints() -> [[Float]] {
         return self.beginParagraphPoints!
     }
-
 
     @discardableResult
     public func setSpaceBetweenTextLines(
@@ -102,6 +92,11 @@ public class Text : Drawable {
         return self
     }
 
+    @discardableResult
+    public func setBorder(_ border: Bool) -> Text {
+        self.border = border
+        return self
+    }
 
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -132,7 +127,7 @@ public class Text : Drawable {
         }
 
         let height = ((self.yText - paragraphLeading) - self.y1) + font!.descent
-        if page != nil && drawBorder {
+        if page != nil && border {
             let box = Box()
             box.setLocation(x1, y1)
             box.setSize(self.width, height)
@@ -141,7 +136,6 @@ public class Text : Drawable {
 
         return [self.x1 + self.width, self.y1 + height]
     }
-
 
     private func drawTextLine(
             _ page: Page?,
@@ -154,8 +148,7 @@ public class Text : Drawable {
         var tokens: [String]
         if stringIsCJK(textLine.text!) {
             tokens = tokenizeCJK(textLine, self.width)
-        }
-        else {
+        } else {
             tokens = textLine.text!.components(separatedBy: .whitespaces)
         }
 
@@ -166,8 +159,7 @@ public class Text : Drawable {
             let tokenWidth = textLine.font!.stringWidth(textLine.fallbackFont, token)
             if (lineWidth + tokenWidth) < (self.x1 + self.width) - self.xText {
                 buf.append(token)
-            }
-            else {
+            } else {
                 if page != nil {
                     TextLine(textLine.font!, buf)
                             .setFallbackFont(textLine.fallbackFont)
@@ -198,7 +190,6 @@ public class Text : Drawable {
         return [xText + textLine.font!.stringWidth(textLine.fallbackFont, buf), yText]
     }
 
-
     private func stringIsCJK(_ str: String) -> Bool {
         // CJK Unified Ideographs Range: 4E00–9FD5
         // Hiragana Range: 3040–309F
@@ -216,7 +207,6 @@ public class Text : Drawable {
         }
         return (numOfCJK > (scalars.count / 2))
     }
-
 
     private func tokenizeCJK(
             _ textLine: TextLine,
@@ -292,5 +282,4 @@ public class Text : Drawable {
         }
         return lines
     }
-
 }   // End of Text.swift

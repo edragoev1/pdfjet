@@ -44,6 +44,7 @@ func Example41() {
 	text := pdfjet.NewText(paragraphs)
 	text.SetLocation(70.0, 90.0)
 	text.SetWidth(500.0)
+	// text.SetBorder(true)
 	text.DrawOn(page)
 
 	beginParagraphPoints := text.GetBeginParagraphPoints()
@@ -54,7 +55,7 @@ func Example41() {
 			paragraphNumber = 1
 		} else {
 			point := beginParagraphPoints[i]
-			textLine := pdfjet.NewTextLine(f1, strconv.Itoa(paragraphNumber)+".")
+			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
 			textLine.SetLocation(point[0]-15.0, point[1])
 			textLine.DrawOn(page)
 			paragraphNumber++

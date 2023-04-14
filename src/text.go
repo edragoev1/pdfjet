@@ -39,7 +39,7 @@ type Text struct {
 	x1, y1, xText, yText, width                      float32
 	leading, paragraphLeading, spaceBetweenTextLines float32
 	beginParagraphPoints                             [][2]float32
-	drawBorder                                       bool
+	border                                           bool
 }
 
 // NewText is the constructor.
@@ -52,7 +52,7 @@ func NewText(paragraphs []*Paragraph) *Text {
 	text.paragraphLeading = 2 * text.leading
 	text.beginParagraphPoints = make([][2]float32, 0)
 	text.spaceBetweenTextLines = text.font.StringWidth(text.fallbackFont, single.Space)
-	text.drawBorder = true
+	text.border = false
 	return text
 }
 
@@ -97,6 +97,10 @@ func (text *Text) GetSize() [2]float32 {
 	return [2]float32{text.width, (text.yText + text.font.descent) - (text.y1 + text.paragraphLeading)}
 }
 
+func (text *Text) SetBorder(border bool) {
+	text.border = border
+}
+
 // DrawOn draws the text on the page.
 func (text *Text) DrawOn(page *Page) [2]float32 {
 	text.xText = text.x1
@@ -122,7 +126,7 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 	}
 
 	height := ((text.yText - text.paragraphLeading) - text.y1) + text.font.descent
-	if page != nil && text.drawBorder {
+	if page != nil && text.border {
 		box := NewBox()
 		box.SetLocation(text.x1, text.y1)
 		box.SetSize(text.width, height)

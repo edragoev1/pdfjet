@@ -40,6 +40,7 @@ public class Example_41 {
             let text = Text(paragraphs)
             text.setLocation(70.0, 90.0)
             text.setWidth(500.0)
+            // text.setBorder(true)
             // text.setSpaceBetweenTextLines(0.0)
             text.drawOn(page)
 

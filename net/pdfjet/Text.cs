@@ -27,7 +27,6 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.IO;
 
-
 ///
 /// Please see Example_45
 ///
@@ -46,8 +45,7 @@ public class Text : IDrawable {
     private float paragraphLeading;
     private List<float[]> beginParagraphPoints;
     private float spaceBetweenTextLines;
-    private bool drawBorder = true;
-
+    private bool border = false;
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -59,21 +57,17 @@ public class Text : IDrawable {
         this.spaceBetweenTextLines = font.StringWidth(fallbackFont, Single.space);
     }
 
-
     public void SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
     }
-
 
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
 
-
     public Text SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     public Text SetLocation(float x, float y) {
         this.x1 = x;
@@ -81,35 +75,33 @@ public class Text : IDrawable {
         return this;
     }
 
-
     public Text SetWidth(float width) {
         this.width = width;
         return this;
     }
-
 
     public Text SetLeading(float leading) {
         this.leading = leading;
         return this;
     }
 
-
     public Text SetParagraphLeading(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }
 
-
     public List<float[]> GetBeginParagraphPoints() {
         return this.beginParagraphPoints;
     }
-
 
     public Text SetSpaceBetweenTextLines(float spaceBetweenTextLines) {
         this.spaceBetweenTextLines = spaceBetweenTextLines;
         return this;
     }
 
+    public void SetBorder(Boolean border) {
+        this.border = border;
+    }
 
     public float[] DrawOn(Page page) {
         this.xText = x1;
@@ -138,7 +130,7 @@ public class Text : IDrawable {
         }
 
         float height = ((yText - paragraphLeading) - y1) + font.descent;
-        if (page != null && drawBorder) {
+        if (page != null && border) {
             Box box = new Box();
             box.SetLocation(x1, y1);
             box.SetSize(width, height);
@@ -147,7 +139,6 @@ public class Text : IDrawable {
 
         return new float[] {x1 + width, y1 + height};
     }
-
 
     public float[] DrawTextLine(
             Page page, float x, float y, TextLine textLine) {
@@ -169,8 +160,7 @@ public class Text : IDrawable {
             float tokenWidth = textLine.font.StringWidth(textLine.fallbackFont, token);
             if ((lineWidth + tokenWidth) < (this.x1 + this.width) - this.xText) {
                 buf.Append(token);
-            }
-            else {
+            } else {
                 if (page != null) {
                     new TextLine(textLine.font, buf.ToString())
                             .SetFallbackFont(textLine.fallbackFont)
@@ -203,7 +193,6 @@ public class Text : IDrawable {
                 yText};
     }
 
-
     private bool StringIsCJK(String str) {
         // CJK Unified Ideographs Range: 4E00–9FD5
         // Hiragana Range: 3040–309F
@@ -221,7 +210,6 @@ public class Text : IDrawable {
         }
         return (numOfCJK > (str.Length / 2));
     }
-
 
     private String[] TokenizeCJK(TextLine textLine, float textWidth) {
         List<String> list = new List<String>();
@@ -294,6 +282,5 @@ public class Text : IDrawable {
         stream.Close();
         return lines;
     }
-
 }   // End of Text.cs
 }   // End of namespace PDFjet.NET

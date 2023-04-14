@@ -45,6 +45,7 @@ public class Example_41 {
         Text text = new Text(paragraphs);
         text.SetLocation(70f, 90f);
         text.SetWidth(500f);
+        // text.SetBorder(true);
         text.DrawOn(page);
 
         List<float[]> beginParagraphPoints = text.GetBeginParagraphPoints();
