@@ -219,8 +219,8 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 	return tokens
 }
 
-func (text *Text) ParagraphsFromFile(f1 *Font, filePath string) []Paragraph {
-	paragraphs := make([]Paragraph, 0)
+func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
+	paragraphs := make([]*Paragraph, 0)
 	contents := contents.OfTextFile(filePath)
 	paragraph := NewParagraph()
 	textLine := NewEmptyTextLine(f1)
@@ -233,11 +233,11 @@ func (text *Text) ParagraphsFromFile(f1 *Font, filePath string) []Paragraph {
 			ch == '\n' && runes[i+1] == '\n' {
 			textLine.SetText(string(sb))
 			paragraph.Add(textLine)
-			paragraphs = append(paragraphs, *paragraph)
+			paragraphs = append(paragraphs, paragraph)
 			paragraph = NewParagraph()
 			textLine = NewEmptyTextLine(f1)
-			sb = sb[:0]
-			// sb = nil
+			sb = nil
+			// sb = sb[:0]
 			i += 1
 		} else {
 			sb = append(sb, ch)
@@ -246,7 +246,7 @@ func (text *Text) ParagraphsFromFile(f1 *Font, filePath string) []Paragraph {
 	if len(sb) != 0 {
 		textLine.SetText(string(sb))
 		paragraph.Add(textLine)
-		paragraphs = append(paragraphs, *paragraph)
+		paragraphs = append(paragraphs, paragraph)
 	}
 	return paragraphs
 }

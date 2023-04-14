@@ -7,7 +7,6 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
@@ -26,19 +25,21 @@ func Example41() {
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 
-	paragraphs := make([]*pdfjet.Paragraph, 0)
+	// paragraphs := make([]*pdfjet.Paragraph, 0)
 
-	paragraph := pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetColor(color.Blue))
-	paragraphs = append(paragraphs, paragraph)
+	// paragraph := pdfjet.NewParagraph()
+	// paragraph.Add(pdfjet.NewTextLine(f1,
+	// 	"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
+	// paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetColor(color.Blue))
+	// paragraphs = append(paragraphs, paragraph)
 
-	paragraph = pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetColor(color.Green))
-	paragraphs = append(paragraphs, paragraph)
+	// paragraph = pdfjet.NewParagraph()
+	// paragraph.Add(pdfjet.NewTextLine(f1,
+	// 	"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
+	// paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetColor(color.Green))
+	// paragraphs = append(paragraphs, paragraph)
+
+	paragraphs := pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 
 	text := pdfjet.NewText(paragraphs)
 	text.SetLocation(70.0, 90.0)
