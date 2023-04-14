@@ -1,28 +1,23 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_41.swift
- *
  */
 public class Example_41 {
-
     public init() throws {
-
         if let stream = OutputStream(toFileAtPath: "Example_41.pdf", append: false) {
-
             let pdf = PDF(stream)
-            let page = Page(pdf, Letter.PORTRAIT)
 
             let f1 = Font(pdf, CoreFont.HELVETICA)
-            f1.setSize(10.0)
-
             let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            f2.setSize(10.0)
-
             let f3 = Font(pdf, CoreFont.HELVETICA_OBLIQUE)
+
+            f1.setSize(10.0)
+            f2.setSize(10.0)
             f3.setSize(10.0)
+
+            let page = Page(pdf, Letter.PORTRAIT)
 
             // var paragraphs = [Paragraph]()
 
@@ -31,7 +26,6 @@ public class Example_41 {
             //         .setUnderline(true))
             //         .add(TextLine(f2, "This text is bold!")
             //         .setColor(Color.blue))
-
             // paragraphs.append(paragraph)
 
             // paragraph = Paragraph()
@@ -39,7 +33,6 @@ public class Example_41 {
             //         .setUnderline(true))
             //         .add(TextLine(f3, "This text is using italic font.")
             //         .setColor(Color.green))
-
             // paragraphs.append(paragraph)
 
             let paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
@@ -55,7 +48,7 @@ public class Example_41 {
             for i in 0..<beginParagraphPoints.count {
                 let point = beginParagraphPoints[i]
                 TextLine(f1, String(paragraphNumber) + ".")
-                        .setLocation(point[0] - 30.0, point[1])
+                        .setLocation(point[0] - 15.0, point[1])
                         .drawOn(page)
                 paragraphNumber += 1
             }
@@ -63,7 +56,6 @@ public class Example_41 {
             pdf.complete()
         }
     }
-
 }   // End of Example_41.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
