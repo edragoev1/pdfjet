@@ -63,11 +63,11 @@ func (paragraph *Paragraph) GetY1() float32 {
 }
 
 func (paragraph *Paragraph) GetX2() float32 {
-	return paragraph.x1
+	return paragraph.x2
 }
 
 func (paragraph *Paragraph) GetY2() float32 {
-	return paragraph.y1
+	return paragraph.y2
 }
 
 // Add is used to add new text lines to the paragraph.
