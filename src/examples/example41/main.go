@@ -45,7 +45,6 @@ func Example41() {
 	colorMap["Physics"] = color.Red
 	colorMap["physics"] = color.Red
 	colorMap["Experimentation"] = color.Orange
-	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	f2size := f2.GetSize()
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {
