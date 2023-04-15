@@ -33,9 +33,9 @@ import (
 // Paragraph describes paragraph objects.
 // See the TextColumn class for more information.
 type Paragraph struct {
-	x, y      float32
-	lines     []*TextLine
-	alignment int // = align.Left
+	xText, yText, x1, y1, x2, y2 float32
+	lines                        []*TextLine
+	alignment                    int // = align.Left
 }
 
 // NewParagraph constructor paragraph objects.
@@ -46,12 +46,20 @@ func NewParagraph() *Paragraph {
 	return paragraph
 }
 
-func (paragraph *Paragraph) GetX() float32 {
-	return paragraph.x
+func (paragraph *Paragraph) GetX1() float32 {
+	return paragraph.x1
 }
 
-func (paragraph *Paragraph) GetY() float32 {
-	return paragraph.y
+func (paragraph *Paragraph) GetY1() float32 {
+	return paragraph.y1
+}
+
+func (paragraph *Paragraph) GetX2() float32 {
+	return paragraph.x1
+}
+
+func (paragraph *Paragraph) GetY2() float32 {
+	return paragraph.y1
 }
 
 // Add is used to add new text lines to the paragraph.
@@ -72,6 +80,22 @@ func (paragraph *Paragraph) SetAlignment(alignment int) *Paragraph {
 	return paragraph
 }
 
+func (paragraph *Paragraph) GetTextLines() []*TextLine {
+	return paragraph.lines
+}
+
 func (paragraph *Paragraph) StartsWith(token string) bool {
 	return strings.HasPrefix(paragraph.lines[0].GetText(), token)
+}
+
+func (paragraph *Paragraph) SetColor(color int32) {
+	for _, line := range paragraph.lines {
+		line.SetColor(color)
+	}
+}
+
+func (paragraph *Paragraph) SetColorMap(colorMap map[string]int32) {
+	for _, line := range paragraph.lines {
+		line.SetColorMap(colorMap)
+	}
 }

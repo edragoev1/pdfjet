@@ -45,6 +45,7 @@ type TextLine struct {
 	strikeoutTTS       string
 	degrees            int
 	color              int32
+	colorMap           map[string]int32
 	textEffect         int
 	verticalOffset     float32
 	language           string
@@ -67,6 +68,7 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.underlineTTS = "underline"
 	textLine.strikeoutTTS = "strikeout"
 	textLine.color = color.Black
+	textLine.colorMap = make(map[string]int32)
 	textLine.textEffect = effect.Normal
 	textLine.verticalOffset = 0.0
 	textLine.altDescription = text
@@ -380,6 +382,14 @@ func (textLine *TextLine) PlaceIn(box *Box, xOffset, yOffset float32) *TextLine 
 	textLine.xBox = box.x + xOffset
 	textLine.yBox = box.y + yOffset
 	return textLine
+}
+
+func (textLine *TextLine) SetColorMap(colorMap map[string]int32) {
+	textLine.colorMap = colorMap
+}
+
+func (textLine *TextLine) GetColorMap() map[string]int32 {
+	return textLine.colorMap
 }
 
 // DrawOn draws this text line on the specified page if the draw parameter is true.

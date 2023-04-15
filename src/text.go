@@ -105,8 +105,10 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 		}
 		for i, textLine := range paragraph.lines {
 			if i == 0 {
-				paragraph.x = text.xText
-				paragraph.y = text.yText
+				paragraph.x1 = text.x1
+				paragraph.y1 = text.yText - text.font.ascent
+				paragraph.xText = text.xText
+				paragraph.yText = text.yText
 			}
 			xy := text.drawTextLine(page, text.xText, text.yText, textLine)
 			text.xText = xy[0]
@@ -115,6 +117,8 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 			}
 			text.yText = xy[1]
 		}
+		paragraph.x2 = text.xText
+		paragraph.y2 = text.yText + text.font.descent
 		text.xText = text.x1
 		text.yText += text.paragraphLeading
 	}
@@ -156,6 +160,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 				textLine2.SetFallbackFont(textLine.fallbackFont)
 				textLine2.SetLocation(text.xText, text.yText+textLine.GetVerticalOffset())
 				textLine2.SetColor(textLine.GetColor())
+				textLine2.SetColorMap(textLine.GetColorMap())
 				textLine2.SetUnderline(textLine.GetUnderline())
 				textLine2.SetStrikeout(textLine.GetStrikeout())
 				textLine2.SetLanguage(textLine.GetLanguage())
@@ -172,6 +177,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 		textLine2.SetFallbackFont(textLine.fallbackFont)
 		textLine2.SetLocation(text.xText, text.yText+textLine.GetVerticalOffset())
 		textLine2.SetColor(textLine.GetColor())
+		textLine2.SetColorMap(textLine.GetColorMap())
 		textLine2.SetUnderline(textLine.GetUnderline())
 		textLine2.SetStrikeout(textLine.GetStrikeout())
 		textLine2.SetLanguage(textLine.GetLanguage())
