@@ -46,6 +46,14 @@ func NewParagraph() *Paragraph {
 	return paragraph
 }
 
+func (paragraph *Paragraph) GetTextX() float32 {
+	return paragraph.xText
+}
+
+func (paragraph *Paragraph) GetTextY() float32 {
+	return paragraph.yText
+}
+
 func (paragraph *Paragraph) GetX1() float32 {
 	return paragraph.x1
 }

@@ -70,7 +70,7 @@ func Example41() {
 			paragraphNumber = 1
 		} else {
 			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
-			textLine.SetLocation(p.GetX1()-15.0, p.GetY1())
+			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
 			textLine.DrawOn(page)
 			paragraphNumber++
 		}
