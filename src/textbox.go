@@ -603,7 +603,7 @@ func (textBox *TextBox) DrawText(
 	xText float32,
 	yText float32,
 	colors map[string]int32) {
-	page.DrawStringUsingColorMap(font, fallbackFont, text, xText, yText, colors)
+	page.DrawStringUsingColorMap(font, fallbackFont, text, xText, yText, color.Black, colors)
 	lineLength := textBox.font.stringWidth(text)
 	if textBox.GetUnderline() {
 		yAdjust := font.underlinePosition

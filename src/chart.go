@@ -203,6 +203,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		chart.title,
 		chart.x1+((chart.w-chart.f1.stringWidth(chart.title))/2),
 		chart.y1+1.5*chart.f1.bodyHeight,
+		color.Black,
 		nil)
 
 	topMargin := 2.5 * chart.f1.bodyHeight
@@ -275,6 +276,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		chart.yAxisTitle,
 		chart.x1+chart.f1.bodyHeight,
 		chart.y8-((chart.y8-chart.y5)-chart.f1.stringWidth(chart.yAxisTitle))/2,
+		color.Black,
 		nil)
 
 	// Draw the X axis title
@@ -284,6 +286,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		chart.xAxisTitle,
 		chart.x5+((chart.x6-chart.x5)-chart.f1.stringWidth(chart.xAxisTitle))/2,
 		chart.y4-chart.f1.bodyHeight/2,
+		color.Black,
 		nil)
 
 	page.SetDefaultLineWidth()
@@ -408,7 +411,7 @@ func (chart *Chart) DrawXAxisLabels(page *Page) {
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
 		label := fmt.Sprintf("%.2f", chart.xMin+((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
-		page.drawString(chart.f2, label, x-(chart.f2.stringWidth(label)/2), y, nil)
+		page.drawString(chart.f2, label, x-(chart.f2.stringWidth(label)/2), y, color.Black, nil)
 		x += step
 	}
 }
@@ -421,7 +424,7 @@ func (chart *Chart) DrawYAxisLabels(page *Page) {
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.yAxisGridLines + 1); i++ {
 		label := fmt.Sprintf("%.2f", chart.yMin+((chart.yMax-chart.yMin)/float32(chart.yAxisGridLines))*float32(i))
-		page.drawString(chart.f2, label, x, y, nil)
+		page.drawString(chart.f2, label, x, y, color.Black, nil)
 		y -= step
 	}
 }
@@ -438,7 +441,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			if point.GetText() != "" {
 				page.SetBrushColor(point.GetTextColor())
 				page.SetTextDirection(point.GetTextDirection())
-				page.drawString(chart.f2, point.text, point.x, point.y, nil)
+				page.drawString(chart.f2, point.text, point.x, point.y, color.Black, nil)
 			}
 		}
 		for j := 0; j < len(points); j++ {

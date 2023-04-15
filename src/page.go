@@ -212,7 +212,7 @@ func (page *Page) DrawLine(x1, y1, x2, y2 float32) {
 
 // DrawString draws a string using the specified font1 and font2 at the x, y location.
 func (page *Page) DrawString(font1 *Font, font2 *Font, text string, x, y float32) {
-	page.DrawStringUsingColorMap(font1, font2, text, x, y, nil)
+	page.DrawStringUsingColorMap(font1, font2, text, x, y, color.Black, nil)
 }
 
 // DrawStringUsingColorMap draws the text given by the specified string,
@@ -220,15 +220,15 @@ func (page *Page) DrawString(font1 *Font, font2 *Font, text string, x, y float32
 // If the main font is missing some glyphs - the fallback font is used.
 // The baseline of the leftmost character is at position (x, y) on the page.
 func (page *Page) DrawStringUsingColorMap(
-	font, fallbackFont *Font, text string, x, y float32, colors map[string]int32) {
+	font, fallbackFont *Font, text string, x, y float32, brush int32, colors map[string]int32) {
 	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
-		page.drawString(font, text, x, y, colors)
+		page.drawString(font, text, x, y, brush, colors)
 	} else {
 		activeFont := font
 		var buf strings.Builder
 		for _, ch := range text {
 			if activeFont.unicodeToGID[ch] == 0 {
-				page.drawString(activeFont, buf.String(), x, y, colors)
+				page.drawString(activeFont, buf.String(), x, y, brush, colors)
 				x += activeFont.stringWidth(buf.String())
 				buf.Reset()
 				// Switch the active font
@@ -240,7 +240,7 @@ func (page *Page) DrawStringUsingColorMap(
 			}
 			buf.WriteRune(ch)
 		}
-		page.drawString(activeFont, buf.String(), x, y, colors)
+		page.drawString(activeFont, buf.String(), x, y, brush, colors)
 	}
 }
 
@@ -252,7 +252,7 @@ func (page *Page) DrawStringUsingColorMap(
 // @param str the string to be drawn.
 // @param x the x coordinate.
 // @param y the y coordinate.
-func (page *Page) drawString(font *Font, str string, x, y float32, colors map[string]int32) {
+func (page *Page) drawString(font *Font, str string, x, y float32, brush int32, colors map[string]int32) {
 	if str == "" {
 		return
 	}
@@ -306,7 +306,7 @@ func (page *Page) drawString(font *Font, str string, x, y float32, colors map[st
 		}
 		appendString(&page.buf, ">] TJ\n")
 	} else {
-		page.drawColoredString(font, str, colors)
+		page.drawColoredString(font, str, brush, colors)
 	}
 
 	appendString(&page.buf, "ET\n")
@@ -1162,36 +1162,38 @@ func (page *Page) appendPoint(point *Point) {
 	appendString(&page.buf, " ")
 }
 
-func (page *Page) drawWord(font *Font, buf *strings.Builder, colors map[string]int32) {
-	if brushColor, ok := colors[buf.String()]; ok {
-		page.SetBrushColor(brushColor)
-	} else {
-		page.SetBrushColor(color.Black)
+func (page *Page) drawWord(font *Font, buf *strings.Builder, brush int32, colors map[string]int32) {
+	if buf.Len() > 0 {
+		if brushColor, ok := colors[buf.String()]; ok {
+			page.SetBrushColor(brushColor)
+		} else {
+			page.SetBrushColor(brush)
+		}
+		appendString(&page.buf, "[<")
+		if font.isCoreFont {
+			page.drawASCIIString(font, buf.String())
+		} else {
+			page.drawUnicodeString(font, buf.String())
+		}
+		appendString(&page.buf, ">] TJ\n")
+		buf.Reset()
 	}
-	appendString(&page.buf, "[<")
-	if font.isCoreFont {
-		page.drawASCIIString(font, buf.String())
-	} else {
-		page.drawUnicodeString(font, buf.String())
-	}
-	appendString(&page.buf, ">] TJ\n")
-	buf.Reset()
 }
 
-func (page *Page) drawColoredString(font *Font, str string, colors map[string]int32) {
+func (page *Page) drawColoredString(font *Font, str string, brush int32, colors map[string]int32) {
 	var buf1 strings.Builder
 	var buf2 strings.Builder
 	for _, ch := range str {
 		if unicode.IsLetter(ch) || unicode.IsDigit(ch) {
-			page.drawWord(font, &buf2, colors)
+			page.drawWord(font, &buf2, brush, colors)
 			buf1.WriteRune(ch)
 		} else {
-			page.drawWord(font, &buf1, colors)
+			page.drawWord(font, &buf1, brush, colors)
 			buf2.WriteRune(ch)
 		}
 	}
-	page.drawWord(font, &buf1, colors)
-	page.drawWord(font, &buf2, colors)
+	page.drawWord(font, &buf1, brush, colors)
+	page.drawWord(font, &buf2, brush, colors)
 }
 
 func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
@@ -1287,7 +1289,7 @@ func (page *Page) DrawContents(
 func (page *Page) DrawArrayOfCharacters(font *Font, text string, x, y, dx float32) {
 	x1 := x
 	for i := 0; i < len(text); i++ {
-		page.DrawStringUsingColorMap(font, nil, text[i:i+1], x1, y, nil)
+		page.DrawStringUsingColorMap(font, nil, text[i:i+1], x1, y, color.Black, nil)
 		x1 += dx
 	}
 }
