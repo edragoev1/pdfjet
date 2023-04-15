@@ -7,6 +7,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
@@ -40,12 +41,29 @@ func Example41() {
 	// paragraphs = append(paragraphs, paragraph)
 
 	paragraphs := pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
-
 	text := pdfjet.NewText(paragraphs)
 	text.SetLocation(70.0, 90.0)
 	text.SetWidth(500.0)
 	// text.SetBorder(true)
 	text.DrawOn(page)
+
+	colorMap := make(map[string]int32)
+	colorMap["Physics"] = color.Red
+	colorMap["physics"] = color.Red
+	colorMap["Experimentation"] = color.Orange
+	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
+	f2size := f2.GetSize()
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			f2.SetSize(24.0)
+			p.GetTextLines()[0].SetFont(f2)
+			p.GetTextLines()[0].SetColor(color.Navy)
+		} else {
+			p.SetColor(color.Gray)
+			p.SetColorMap(colorMap)
+		}
+	}
+	f2.SetSize(f2size)
 
 	paragraphNumber := 1
 	for _, p := range paragraphs {
