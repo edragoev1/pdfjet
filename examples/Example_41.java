@@ -60,6 +60,7 @@ public class Example_41 {
         colorMap.put("Physics", Color.red);
         colorMap.put("physics", Color.red);
         colorMap.put("Experimentation", Color.orange);
+        colorMap.put("that", Color.blue);
         paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         float f2size = f2.getSize();
         for (Paragraph p : paragraphs) {
