@@ -41,12 +41,6 @@ func Example41() {
 	// paragraphs = append(paragraphs, paragraph)
 
 	paragraphs := pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
-	text := pdfjet.NewText(paragraphs)
-	text.SetLocation(70.0, 90.0)
-	text.SetWidth(500.0)
-	// text.SetBorder(true)
-	text.DrawOn(page)
-
 	colorMap := make(map[string]int32)
 	colorMap["Physics"] = color.Red
 	colorMap["physics"] = color.Red
@@ -64,6 +58,12 @@ func Example41() {
 		}
 	}
 	f2.SetSize(f2size)
+
+	text := pdfjet.NewText(paragraphs)
+	text.SetLocation(70.0, 90.0)
+	text.SetWidth(500.0)
+	// text.SetBorder(true)
+	text.DrawOn(page)
 
 	paragraphNumber := 1
 	for _, p := range paragraphs {
