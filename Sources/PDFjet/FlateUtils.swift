@@ -38,7 +38,7 @@ public class FlateUtils {
     }
 
     static func twoPowerOf(_ exponent: Int) -> UInt32 {
-        return [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8128][exponent]
+        return [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8128, 16384, 32768][exponent]
     }
 
 }

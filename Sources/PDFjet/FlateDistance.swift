@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 public class FlateDistance {
-
     //     Extra            Extra                Extra
     // Code Bits  Dist  Code Bits    Dist    Code Bits  Distance
     // ---- ----  ----  ---- ----  ------    ---- ----  --------
@@ -49,16 +47,17 @@ public class FlateDistance {
     var eBits = [
             0,  0,
             0,  0,  1,  1,  2,  2,  3,  3,  4,  4,  5,  5,
-            6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11]
-    var codes = [UInt16]()
+            6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11,
+            12, 12, 13, 13]
+    var codes = [UInt32]()
     var nBits = [UInt8]()
 
     private init() {
         var code: UInt32 = 0
         for extra in eBits {
-            let reversed = UInt16(FlateUtils.reverse(code, length: 5))
+            let reversed = UInt32(FlateUtils.reverse(code, length: 5))
             let n = FlateUtils.twoPowerOf(extra)
-            var i: UInt16 = 0
+            var i: UInt32 = 0
             while i < n {
                 codes.append((i << 5) | reversed)
                 nBits.append(UInt8(extra + 5))
@@ -66,7 +65,6 @@ public class FlateDistance {
             }
             code += 1
         }
+        print(">>>>>>>>>>>>> \(codes.count)")
     }
-
 }
-

@@ -26,16 +26,16 @@ import Foundation
 public class ZLibEncode {
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
-    private let MASK = 0x7FFF   // 32767
+    private let MASK: UInt32 = 0x7FFF   // 32767
     private var hashtable: [Int]
 
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
         output.reserveCapacity(input.count / 2)
         let BUFSIZE = MASK + 1  // 32768 bytes
-        hashtable = [Int](repeating: -1, count: BUFSIZE)
-        writeCode(&output, UInt16(0x9C78), 16)          // FLG | CMF
-        writeCode(&output, UInt16(0x03), 3)             // BTYPE | BFINAL
+        hashtable = [Int](repeating: -1, count: Int(BUFSIZE))
+        writeCode(&output, UInt32(0x9C78), 16)      // FLG | CMF
+        writeCode(&output, UInt32(0x03), 3)         // BTYPE | BFINAL
         var i = 0
         while i < (input.count - 3) {
             var index = getMatchIndex(input, i, &hashtable)
@@ -71,7 +71,7 @@ public class ZLibEncode {
                     FlateLiteral.instance.nBits[Int(input[i])])
             i += 1
         }
-        writeCode(&output, UInt16(0), 7)                // END-OF-BLOCK
+        writeCode(&output, UInt32(0), 7)            // END-OF-BLOCK
         if bitsInBuffer > 0 {
             output.append(UInt8(bitBuffer))
         }
@@ -92,7 +92,7 @@ public class ZLibEncode {
         hash ^= UInt32(input[i + 2])
         hash = hash &* prime
         // Perform xor-folding operation
-        let index = Int((hash >> 19) ^ hash) & MASK
+        let index = Int(((hash >> 19) ^ hash) & MASK)
 
         let j = hashtable[index]
         hashtable[index] = i
@@ -109,7 +109,7 @@ public class ZLibEncode {
 
     private func writeCode(
             _ output: inout [UInt8],
-            _ code: UInt16,
+            _ code: UInt32,
             _ nBits: UInt8) {
         bitBuffer |= UInt32(code) << bitsInBuffer
         bitsInBuffer += nBits

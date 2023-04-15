@@ -23,23 +23,20 @@ SOFTWARE.
 */
 import Foundation
 
-
 public class FlateLength {
-/*
-         Extra               Extra               Extra
-    Code Bits Length(s) Code Bits Lengths   Code Bits Length(s)
-    ---- ---- ------     ---- ---- -------   ---- ---- -------
-     257   0     3       267   1   15,16     277   4   67-82
-     258   0     4       268   1   17,18     278   4   83-98
-     259   0     5       269   2   19-22     279   4   99-114
-     260   0     6       270   2   23-26     280   4  115-130
-     261   0     7       271   2   27-30     281   5  131-162
-     262   0     8       272   2   31-34     282   5  163-194
-     263   0     9       273   3   35-42     283   5  195-226
-     264   0    10       274   3   43-50     284   5  227-257
-     265   1  11,12      275   3   51-58     285   0    258
-     266   1  13,14      276   3   59-66
-*/
+    //      Extra               Extra               Extra
+    // Code Bits Length(s) Code Bits Lengths   Code Bits Length(s)
+    // ---- ---- ------     ---- ---- -------   ---- ---- -------
+    //  257   0     3       267   1   15,16     277   4   67-82
+    //  258   0     4       268   1   17,18     278   4   83-98
+    //  259   0     5       269   2   19-22     279   4   99-114
+    //  260   0     6       270   2   23-26     280   4  115-130
+    //  261   0     7       271   2   27-30     281   5  131-162
+    //  262   0     8       272   2   31-34     282   5  163-194
+    //  263   0     9       273   3   35-42     283   5  195-226
+    //  264   0    10       274   3   43-50     284   5  227-257
+    //  265   1  11,12      275   3   51-58     285   0    258
+    //  266   1  13,14      276   3   59-66
 
     //  Huffman codes for the length alphabet:
     //  ==========================================
@@ -58,15 +55,15 @@ public class FlateLength {
             3, 3, 3, 3, 4, 4, 4]
     var ebits2 = [4, 5, 5, 5, 5]
 
-    var codes = [UInt16]()
+    var codes = [UInt32]()
     var nBits = [UInt8]()
 
     private init() {
         var code: UInt32 = 0b0000001
         for extra in ebits1 {
-            let reversed = UInt16(FlateUtils.reverse(code, length: 7))
+            let reversed = UInt32(FlateUtils.reverse(code, length: 7))
             let n = FlateUtils.twoPowerOf(extra)
-            var i: UInt16 = 0
+            var i: UInt32 = 0
             while i < n {
                 codes.append((i << 7) | reversed)
                 nBits.append(UInt8(extra + 7))
@@ -76,9 +73,9 @@ public class FlateLength {
         }
         code = 0b11000000
         for extra in ebits2 {
-            let reversed = UInt16(FlateUtils.reverse(code, length: 8))
+            let reversed = UInt32(FlateUtils.reverse(code, length: 8))
             let n = FlateUtils.twoPowerOf(extra)
-            var i: UInt16 = 0
+            var i: UInt32 = 0
             while i < n {
                 codes.append((i << 8) | reversed)
                 nBits.append(UInt8(extra + 8))
@@ -88,9 +85,7 @@ public class FlateLength {
         }
         codes.removeLast()
         nBits.removeLast()
-        codes.append(UInt16(FlateUtils.reverse(0b11000101, length: 8)))
+        codes.append(UInt32(FlateUtils.reverse(0b11000101, length: 8)))
         nBits.append(8)
     }
-
 }
-
