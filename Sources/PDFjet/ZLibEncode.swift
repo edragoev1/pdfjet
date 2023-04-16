@@ -97,7 +97,7 @@ public class ZLibEncode {
         let j = hashtable[index]
         hashtable[index] = i
         if j != -1 &&
-                i - j <= MASK &&
+                i - j <= 32768 &&
                 input[j] == input[i] &&
                 input[j + 1] == input[i + 1] &&
                 input[j + 2] == input[i + 2] {
