@@ -45,26 +45,26 @@ public class FlateDistance {
     static let instance = FlateDistance()
 
     var eBits = [
-            0,  0,
-            0,  0,  1,  1,  2,  2,  3,  3,  4,  4,  5,  5,
-            6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11,
-            12, 12, 13, 13]
+            0,  0,  0,  0,  1,  1,  2,  2,
+            3,  3,  4,  4,  5,  5,  6,  6,
+            7,  7,  8,  8,  9,  9, 10, 10,
+            11,11, 12, 12, 13, 13]
     var codes = [UInt32]()
     var nBits = [UInt8]()
 
     private init() {
-        var code: UInt32 = 0
-        for extra in eBits {
-            let reversed = UInt32(FlateUtils.reverse(code, length: 5))
+        var code = 0
+        while code <= 29 {
+            let reversed = FlateUtils.reverse(UInt32(code), length: 5)
+            let extra = eBits[code]
             let n = FlateUtils.twoPowerOf(extra)
             var i: UInt32 = 0
             while i < n {
                 codes.append((i << 5) | reversed)
-                nBits.append(UInt8(extra + 5))
+                nBits.append(UInt8(5 + extra))
                 i += 1
             }
             code += 1
         }
-        print(">>>>>>>>>>>>> \(codes.count)")
     }
 }
