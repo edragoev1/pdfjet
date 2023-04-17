@@ -23,7 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-public class ZLibEncode {
+public class FlateEncode {
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
     private let MASK: UInt32 = 0x7FFF   // 32767

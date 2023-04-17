@@ -55,7 +55,7 @@ public class EmbeddedFile {
         var buf = try Contents.getFromStream(stream)
         if compress {
             var buf2 = [UInt8]()
-            ZLibEncode(&buf2, buf)
+            FlateEncode(&buf2, buf)
             // LZWEncode(&buf2, buf)
             buf = buf2
         }

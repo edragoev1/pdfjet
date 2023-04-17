@@ -110,11 +110,11 @@ class OTF {
         if cff {
             let bufSlice = Array(buf[cffOff!..<(cffOff! + cffLen!)])
             // LZWEncode(&dos, bufSlice)
-            ZLibEncode(&dos, bufSlice)
+            FlateEncode(&dos, bufSlice)
         }
         else {
             // LZWEncode(&dos, buf)
-            ZLibEncode(&dos, buf)
+            FlateEncode(&dos, buf)
         }
     }
 
