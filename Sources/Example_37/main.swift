@@ -8,8 +8,8 @@ public class Example_37 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_37.pdf", append: false)!)
 
-        // var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/wirth.pdf")!)
-        var objects = try pdf.read(from: InputStream(fileAtPath: "../../eBooks/UniversityPhysicsVolume1.pdf")!)
+        var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/wirth.pdf")!)
+        // var objects = try pdf.read(from: InputStream(fileAtPath: "../../eBooks/UniversityPhysicsVolume1.pdf")!)
         // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/Smalltalk-and-OO.pdf")!)
         // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/InsideSmalltalk1.pdf")!)
         // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/InsideSmalltalk2.pdf")!)
