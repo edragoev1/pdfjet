@@ -14,10 +14,7 @@ public class Example_18 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_18.pdf")));
 
-        Font font = new Font(
-                pdf,
-                new FileInputStream("fonts/RedHatText/RedHatText-Regular.ttf.stream"),
-                Font.STREAM);
+        Font font = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream");
         font.setSize(12f);
 
         List<Page> pages = new ArrayList<Page>();
