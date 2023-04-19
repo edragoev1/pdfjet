@@ -82,17 +82,29 @@ public class FlateEncode {
             _ input: [UInt8],
             _ i: Int,
             _ hashtable: inout [Int]) -> Int {
-        // FNV-1a inline hash routine
-        var hash: UInt32 = 2166136261
-        let prime: UInt32 = 16777619
-        hash ^= UInt32(input[i])
+        // FNV-1a inline hash routines
+
+        // var hash: UInt32 = 2166136261
+        // let prime: UInt32 = 16777619
+        // hash ^= UInt32(input[i])
+        // hash = hash &* prime
+        // hash ^= UInt32(input[i + 1])
+        // hash = hash &* prime
+        // hash ^= UInt32(input[i + 2])
+        // hash = hash &* prime
+        // // Perform xor-folding operation
+        // let index = Int(((hash >> 18) ^ hash) & MASK)
+
+        var hash: UInt64 = 14695981039346656037
+        let prime: UInt64 = 1099511628211
+        hash ^= UInt64(input[i])
         hash = hash &* prime
-        hash ^= UInt32(input[i + 1])
+        hash ^= UInt64(input[i + 1])
         hash = hash &* prime
-        hash ^= UInt32(input[i + 2])
+        hash ^= UInt64(input[i + 2])
         hash = hash &* prime
         // Perform xor-folding operation
-        let index = Int(((hash >> 19) ^ hash) & MASK)
+        let index = Int(((hash >> 33) ^ hash) & UInt64(MASK))
 
         let j = hashtable[index]
         hashtable[index] = i
