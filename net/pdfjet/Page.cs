@@ -26,7 +26,6 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to create PDF page objects.
@@ -40,7 +39,6 @@ namespace PDFjet.NET {
  *
  */
 public class Page {
-
     internal PDF pdf;
     internal PDFobj pageObj;
     internal int objNumber;
@@ -99,7 +97,6 @@ public class Page {
     public Page(PDF pdf, float[] pageSize) : this(pdf, pageSize, true) {
     }
 
-
     /**
      *  Creates page object and add it to the PDF document.
      *
@@ -127,7 +124,6 @@ public class Page {
         }
     }
 
-
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
         this.pageObj = pageObj;
@@ -142,32 +138,26 @@ public class Page {
         }
     }
 
-
     public Font AddResource(CoreFont coreFont, List<PDFobj> objects) {
         return pageObj.AddResource(coreFont, objects);
     }
-
 
     public void AddResource(Image image, List<PDFobj> objects) {
         pageObj.AddResource(image, objects);
     }
 
-
     public void AddResource(Font font, List<PDFobj> objects) {
         pageObj.AddResource(font, objects);
     }
-
 
     public void Complete(List<PDFobj> objects) {
         Append("Q\n");
         pageObj.AddContent(GetContent(), objects);
     }
 
-
     public byte[] GetContent() {
         return buf.ToArray();
     }
-
 
     /**
      *  Adds destination to this page.
@@ -183,7 +173,6 @@ public class Page {
         return dest;
     }
 
-
     /**
      *  Returns the width of this page.
      *
@@ -193,7 +182,6 @@ public class Page {
         return width;
     }
 
-
     /**
      *  Returns the height of this page.
      *
@@ -202,7 +190,6 @@ public class Page {
     public float GetHeight() {
         return height;
     }
-
 
     /**
      *  Draws a line on the page, using the current color, between the points (x1, y1) and (x2, y2).
@@ -328,8 +315,7 @@ public class Page {
 
         if (font.fontID == null) {
             SetTextFont(font);
-        }
-        else {
+        } else {
             Append('/');
             Append(font.fontID);
             Append(' ');
@@ -422,8 +408,7 @@ public class Page {
                     Append(c1.ToString("X4"));
                 }
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < len; i++) {
                 int c1 = str[i];
                 if (c1 < font.firstChar || c1 > font.lastChar) {
@@ -452,8 +437,7 @@ public class Page {
         Int32 n;
         if (pdf.states.ContainsKey(state)) {
             n = pdf.states[state];
-        }
-        else {
+        } else {
             n = pdf.states.Count + 1;
             pdf.states[state] = n;
         }
@@ -850,8 +834,7 @@ public class Page {
             if (point.isControlPoint) {
                 curve = true;
                 Append(point);
-            }
-            else {
+            } else {
                 if (curve) {
                     curve = false;
                     Append(point);
@@ -862,7 +845,6 @@ public class Page {
                 }
             }
         }
-
         Append(operation);
         Append('\n');
     }
@@ -1071,8 +1053,7 @@ public class Page {
             if (p.shape == Point.CIRCLE) {
                 if (p.fillShape) {
                     DrawCircle(p.x, p.y, p.r, 'f');
-                }
-                else {
+                } else {
                     DrawCircle(p.x, p.y, p.r, 'S');
                 }
             }
@@ -1084,8 +1065,7 @@ public class Page {
                 list.Add(new Point(p.x - p.r, p.y));
                 if (p.fillShape) {
                     DrawPath(list, 'f');
-                }
-                else {
+                } else {
                     DrawPath(list, 's');
                 }
             }
@@ -1097,8 +1077,7 @@ public class Page {
                 list.Add(new Point(p.x - p.r, p.y + p.r));
                 if (p.fillShape) {
                     DrawPath(list, 'f');
-                }
-                else {
+                } else {
                     DrawPath(list, 's');
                 }
             }
@@ -1113,8 +1092,7 @@ public class Page {
                 list.Add(new Point(p.x - p.r, p.y + p.r));
                 if (p.fillShape) {
                     DrawPath(list, 'f');
-                }
-                else {
+                } else {
                     DrawPath(list, 's');
                 }
             }
@@ -1125,8 +1103,7 @@ public class Page {
                 list.Add(new Point(p.x, p.y + p.r));
                 if (p.fillShape) {
                     DrawPath(list, 'f');
-                }
-                else {
+                } else {
                     DrawPath(list, 's');
                 }
             }
@@ -1137,8 +1114,7 @@ public class Page {
                 list.Add(new Point(p.x + p.r, p.y - p.r));
                 if (p.fillShape) {
                     DrawPath(list, 'f');
-                }
-                else {
+                } else {
                     DrawPath(list, 's');
                 }
             }
@@ -1149,8 +1125,7 @@ public class Page {
                 list.Add(new Point(p.x - p.r, p.y + p.r));
                 if (p.fillShape) {
                     DrawPath(list, 'f');
-                }
-                else {
+                } else {
                     DrawPath(list, 's');
                 }
             }
@@ -1186,8 +1161,7 @@ public class Page {
                 list.Add(new Point(p.x - c, p.y + d));
                 if (p.fillShape) {
                     DrawPath(list, 'f');
-                }
-                else {
+                } else {
                     DrawPath(list, 's');
                 }
             }
@@ -1202,8 +1176,7 @@ public class Page {
     public void SetTextRenderingMode(int mode) {
         if (mode >= 0 && mode <= 7) {
             this.renderingMode = mode;
-        }
-        else {
+        } else {
             throw new Exception("Invalid text rendering mode: " + mode);
         }
     }
@@ -1217,20 +1190,15 @@ public class Page {
         if (degrees > 360) degrees %= 360;
         if (degrees == 0) {
             tm = new float[] {1f,  0f,  0f,  1f};
-        }
-        else if (degrees == 90) {
+        } else if (degrees == 90) {
             tm = new float[] {0f,  1f, -1f,  0f};
-        }
-        else if (degrees == 180) {
+        } else if (degrees == 180) {
             tm = new float[] {-1f,  0f,  0f, -1f};
-        }
-        else if (degrees == 270) {
+        } else if (degrees == 270) {
             tm = new float[] {0f, -1f,  1f,  0f};
-        }
-        else if (degrees == 360) {
+        } else if (degrees == 360) {
             tm = new float[] {1f,  0f,  0f,  1f};
-        }
-        else {
+        } else {
             float sinOfAngle = (float) Math.Sin(degrees * (Math.PI / 180));
             float cosOfAngle = (float) Math.Cos(degrees * (Math.PI / 180));
             tm = new float[] {cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle};
@@ -1289,89 +1257,11 @@ public class Page {
         Append(" Tf\n");
     }
 
-    // public void SetTextBegin(float x, float y) {
-    //     Append("BT\n");
-    //     Append(x);
-    //     Append(' ');
-    //     Append(height - y);
-    //     Append(" Td\n");
-    // }
-
-    // public void SetTextStart() {
-    //     Append("BT\n");
-    // }
-
-    // /**
-    //  *  Sets the text location.
-    //  *
-    //  *  @param x the x coordinate of new text location.
-    //  *  @param y the y coordinate of new text location.
-    //  */
-    // public void SetTextLocation(float x, float y) {
-    //     Append(x);
-    //     Append(' ');
-    //     Append(height - y);
-    //     Append(" Td\n");
-    // }
-
-    // /**
-    //  *  Sets the text leading.
-    //  *
-    //  *  @param leading the leading.
-    //  */
-    // public void SetTextLeading(float leading) {
-    //     Append(leading);
-    //     Append(" TL\n");
-    // }
-
-    // public void SetCharSpacing(float spacing) {
-    //     Append(spacing);
-    //     Append(" Tc\n");
-    // }
-
-    // public void SetWordSpacing(float spacing) {
-    //     Append(spacing);
-    //     Append(" Tw\n");
-    // }
-
-    // public void SetTextScaling(float scaling) {
-    //     Append(scaling);
-    //     Append(" Tz\n");
-    // }
-
-    // public void SetTextRise(float rise) {
-    //     Append(rise);
-    //     Append(" Ts\n");
-    // }
-
-    // public void Println(String str) {
-    //     Print(str);
-    //     Println();
-    // }
-
-    // public void Print(String str) {
-    //     if (font == null) {
-    //         return;
-    //     }
-    //     Append("[<");
-    //     DrawString(font, str);
-    //     Append(">] TJ\n");
-    // }
-
-    // public void Println() {
-    //     Append("T*\n");
-    // }
-
-    // public void SetTextEnd() {
-    //     Append("ET\n");
-    // }
-
     // Code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
     // <<
     public void DrawRectRoundCorners(
             float x, float y, float w, float h, float r1, float r2, char operation) {
-
         // The best 4-spline magic number
         float m4 = 0.551784f;
 
