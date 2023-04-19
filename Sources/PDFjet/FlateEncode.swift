@@ -1,5 +1,5 @@
 /**
- *  ZLibEncode.swift
+ *  FlateEncode.swift
  *
 Copyright 2023 Innovatics Inc.
 
