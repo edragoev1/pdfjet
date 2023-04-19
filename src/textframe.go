@@ -138,25 +138,24 @@ func (frame *TextFrame) DrawOn(page *Page) []float32 {
 			if frame.yText+frame.font.descent >= (frame.y + frame.h) {
 				// The paragraphs are reversed so we can efficiently add new first paragraph:
 				frame.paragraphs = append(frame.paragraphs, textLine)
-				if page != nil && frame.border {
-					box := NewBox()
-					box.SetLocation(frame.x, frame.y)
-					box.SetSize(frame.w, frame.h)
-					box.DrawOn(page)
-				}
+				frame.DrawBorder(page)
 				return []float32{frame.x + frame.w, frame.y + frame.h}
 			}
 		}
 		frame.xText = frame.x
 		frame.yText += frame.paragraphLeading
 	}
+	frame.DrawBorder(page)
+	return []float32{frame.x + frame.w, frame.y + frame.h}
+}
+
+func (frame *TextFrame) DrawBorder(page *Page) {
 	if page != nil && frame.border {
 		box := NewBox()
 		box.SetLocation(frame.x, frame.y)
 		box.SetSize(frame.w, frame.h)
 		box.DrawOn(page)
 	}
-	return []float32{frame.x + frame.w, frame.y + frame.h}
 }
 
 func (frame *TextFrame) drawLineOnPage(page *Page, textLine *TextLine) *TextLine {
