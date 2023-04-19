@@ -39,7 +39,7 @@ func Example47() {
 
 	paragraphs := make([]*pdfjet.TextLine, 0)
 	contents := contents.OfTextFile("data/austria_hungary.txt")
-	textLines := strings.Split(contents, "\\n\\n")
+	textLines := strings.Split(contents, "\n\n")
 	for _, textLine := range textLines {
 		paragraphs = append(paragraphs, pdfjet.NewTextLine(f1, textLine))
 	}
