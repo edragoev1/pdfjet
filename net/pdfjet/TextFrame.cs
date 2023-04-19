@@ -26,14 +26,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
-
 /**
  *  Please see Example_47
  *
  */
 namespace PDFjet.NET {
 public class TextFrame : IDrawable {
-
     private List<TextLine> paragraphs;
     private Font font;
     private float x;
@@ -44,7 +42,6 @@ public class TextFrame : IDrawable {
     private float paragraphLeading;
     private List<float[]> beginParagraphPoints;
     private bool drawBorder;
-
 
     public TextFrame(List<TextLine> paragraphs) {
         this.paragraphs = new List<TextLine>(paragraphs);
@@ -59,92 +56,75 @@ public class TextFrame : IDrawable {
         this.paragraphs.Reverse();
     }
 
-
     public TextFrame SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
-
     public TextFrame SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     public TextFrame SetWidth(float w) {
         this.w = w;
         return this;
     }
 
-
     public TextFrame SetWidth(double w) {
         return SetWidth((float) w);
     }
-
 
     public TextFrame SetHeight(float h) {
         this.h = h;
         return this;
     }
 
-
     public TextFrame SetHeight(double h) {
         return SetHeight((float) h);
     }
-
 
     public TextFrame SetLeading(float leading) {
         this.leading = leading;
         return this;
     }
 
-
     public TextFrame SetLeading(double leading) {
         return SetLeading((float) leading);
     }
-
 
     public TextFrame SetParagraphLeading(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }
 
-
     public TextFrame SetParagraphLeading(double paragraphLeading) {
         return SetParagraphLeading((float) paragraphLeading);
     }
-
 
     public void SetParagraphs(List<TextLine> paragraphs) {
         this.paragraphs = paragraphs;
     }
 
-
     public List<TextLine> GetParagraphs() {
         return this.paragraphs;
     }
-
 
     public List<float[]> GetBeginParagraphPoints() {
         return this.beginParagraphPoints;
     }
 
-
     public void SetDrawBorder(bool drawBorder) {
         this.drawBorder = drawBorder;
     }
-
 
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
 
-
     public float[] DrawOn(Page page) {
         float xText = x;
         float yText = y + font.ascent;
-
         while (paragraphs.Count > 0) {
             // The paragraphs are reversed so we can efficiently remove the first one:
             TextLine textLine = paragraphs[paragraphs.Count - 1];
@@ -160,28 +140,24 @@ public class TextFrame : IDrawable {
                 if (yText + font.descent >= (y + h)) {
                     // The paragraphs are reversed so we can efficiently add new first paragraph:
                     paragraphs.Add(textLine);
-
                     if (page != null && drawBorder) {
                         Box box = new Box();
                         box.SetLocation(x, y);
                         box.SetSize(w, h);
                         box.DrawOn(page);
                     }
-
                     return new float[] {x + w, y + h};
                 }
             }
             xText = x;
             yText += paragraphLeading;
         }
-
         if (page != null && drawBorder) {
             Box box = new Box();
             box.SetLocation(x, y);
             box.SetSize(w, h);
             box.DrawOn(page);
         }
-
         return new float[] {x + w, y + h};
     }
 
@@ -190,16 +166,12 @@ public class TextFrame : IDrawable {
         StringBuilder sb2 = new StringBuilder();
         String[] tokens = Regex.Split(textLine.GetText(), @"\s+");
         bool testForFit = true;
-        for (int i = 0; i < tokens.Length; i++) {
-            String token = tokens[i] + Single.space;
-            if (testForFit && textLine.GetStringWidth((sb1.ToString() + token).Trim()) < this.w) {
-                sb1.Append(token);
-            }
-            else {
-                if (testForFit) {
-                    testForFit = false;
-                }
-                sb2.Append(token);
+        foreach (String token in tokens) {
+            if (testForFit && textLine.GetStringWidth((sb1.ToString() + token)) < this.w) {
+                sb1.Append(token + Single.space);
+            } else {
+                testForFit = false;
+                sb2.Append(token + Single.space);
             }
         }
         textLine.SetText(sb1.ToString().Trim());
@@ -214,6 +186,5 @@ public class TextFrame : IDrawable {
     public bool IsNotEmpty() {
         return paragraphs.Count > 0;
     }
-
 }   // End of TextFrame.cs
 }   // End of namespace PDFjet.NET
