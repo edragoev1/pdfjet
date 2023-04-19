@@ -7,7 +7,7 @@ import com.pdfjet.*;
 /**
  *  Example_01.java
  */
-class Example_01 {
+public class Example_01 {
     public Example_01() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_01.pdf")));
@@ -21,6 +21,14 @@ class Example_01 {
         Font font2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
         // With the .ttf.stream font this example produces the PDF in around 130 ms
         // The PDF file size is: 2326851 bytes
+
+        // On Android you have to use code similar to this:
+        // Font font1 = new Font(pdf,
+        //         getClass().getResourceAsStream("/fonts/Droid/DroidSans.ttf.stream"),
+        //         Font.STREAM);
+        // Font font2 = new Font(pdf,
+        //         getClass().getResourceAsStream("/fonts/Droid/DroidSansFallback.ttf.stream"),
+        //         Font.STREAM);
 
         font1.setSize(12f);
         font2.setSize(12f);

@@ -304,7 +304,8 @@ public class Font {
      * @throws Exception thrown of the font file is not found.
      */
     public Font(PDF pdf, String fontPath) throws Exception {
-        FileInputStream inputStream = new FileInputStream(fontPath);
+        InputStream inputStream = new FileInputStream(fontPath);
+        // InputStream inputStream = Font.class.getClassLoader().getResourceAsStream(fontPath);
         if (fontPath.endsWith(".stream")) {
             FontStream1.register(pdf, this, inputStream);
         } else {
