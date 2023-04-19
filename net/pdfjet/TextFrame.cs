@@ -167,7 +167,7 @@ public class TextFrame : IDrawable {
         String[] tokens = Regex.Split(textLine.GetText(), @"\s+");
         bool testForFit = true;
         foreach (String token in tokens) {
-            if (testForFit && textLine.GetStringWidth((sb1.ToString() + token)) < this.w) {
+            if (testForFit && textLine.GetStringWidth(sb1.ToString() + token) < this.w) {
                 sb1.Append(token + Single.space);
             } else {
                 testForFit = false;
