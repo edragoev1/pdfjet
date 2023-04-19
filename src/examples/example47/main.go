@@ -38,9 +38,11 @@ func Example47() {
 	image2.DrawOn(page)
 
 	paragraphs := make([]*pdfjet.TextLine, 0)
-	contents := contents.OfTextFile("data/austria_hungary.txt")
+	contents := contents.OfTextFile("data/hello.txt")
 	textLines := strings.Split(contents, "\n\n")
 	for _, textLine := range textLines {
+		// fmt.Println(textLine)
+		// fmt.Println()
 		paragraphs = append(paragraphs, pdfjet.NewTextLine(f1, textLine))
 	}
 

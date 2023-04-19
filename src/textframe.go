@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/single"
@@ -53,6 +54,10 @@ func NewTextFrame(paragraphs []*TextLine) *TextFrame {
 		textFrame.paragraphLeading = 2 * textFrame.leading
 		textFrame.beginParagraphPoints = make([][]float32, 0)
 		textFrame.spaceBetweenTextLines = textFrame.font.StringWidth(textFrame.fallbackFont, single.Space)
+		// Reverse the paragraphs
+		for i, j := 0, len(paragraphs)-1; i < j; i, j = i+1, j-1 {
+			paragraphs[i], paragraphs[j] = paragraphs[j], paragraphs[i]
+		}
 	}
 	return textFrame
 }
@@ -116,15 +121,19 @@ func (frame *TextFrame) DrawOn(page *Page) []float32 {
 	for len(frame.paragraphs) > 0 {
 		// The paragraphs are reversed so we can efficiently remove the first one:
 		textLine := frame.paragraphs[len(frame.paragraphs)-1]
-		frame.paragraphs = frame.paragraphs[:len(frame.paragraphs)-1]
 		textLine.SetLocation(frame.xText, frame.yText)
+		frame.paragraphs = frame.paragraphs[:len(frame.paragraphs)-1]
 		frame.beginParagraphPoints = append(frame.beginParagraphPoints, []float32{frame.xText, frame.yText})
 		for {
 			textLine = frame.drawLineOnPage(page, textLine)
-			if textLine.text == "" {
+			if textLine.text == "" || textLine.text == "\n" {
+				fmt.Println("Are we here???")
 				break
 			}
 			frame.yText = textLine.advance(frame.leading)
+			// fmt.Println(textLine.y)
+			// fmt.Println()
+
 			if frame.yText+frame.font.descent >= (frame.y + frame.h) {
 				// The paragraphs are reversed so we can efficiently add new first paragraph:
 				frame.paragraphs = append(frame.paragraphs, textLine)
@@ -141,10 +150,13 @@ func (frame *TextFrame) drawLineOnPage(page *Page, textLine *TextLine) *TextLine
 	var sb1 strings.Builder
 	var sb2 strings.Builder
 	tokens := strings.Fields(textLine.text)
+	// tokens := strings.Split(textLine.text, " ")
+
 	testForFit := true
 	for _, token := range tokens {
-		if testForFit &&
-			textLine.font.stringWidth(sb1.String()+token) < textLine.GetWidth() {
+		fmt.Println(token)
+		fmt.Println()
+		if testForFit && textLine.font.stringWidth(sb1.String()+token) < textLine.GetWidth() {
 			sb1.WriteString(token + single.Space)
 		} else {
 			testForFit = false
