@@ -23,7 +23,6 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create PDF page objects.
 ///
@@ -35,7 +34,6 @@ import Foundation
 /// </pre>
 ///
 public class Page {
-
     var pdf: PDF?
     var pageObj: PDFobj?
     var objNumber = 0
@@ -69,7 +67,6 @@ public class Page {
 
     public static let DETACHED = false
 
-
     ///
     /// Creates page object and add it to the PDF document.
     ///
@@ -98,7 +95,6 @@ public class Page {
         }
     }
 
-
     public init(_ pdf: PDF, _ pageObj: PDFobj) {
         self.pdf = pdf
         self.pageObj = pageObj
@@ -111,7 +107,6 @@ public class Page {
             append(" gs\n")
         }
     }
-
 
     ///
     /// Creates page object and add it to the PDF document.
@@ -130,32 +125,26 @@ public class Page {
         self.init(pdf, pageSize, true)
     }
 
-
     public func addResource(_ coreFont: CoreFont, _ objects: inout [PDFobj]) -> Font {
         return pageObj!.addResource(coreFont, &objects)
     }
-
 
     public func addResource(_ image: Image, _ objects: inout [PDFobj]) {
         pageObj!.addResource(image, &objects)
     }
 
-
     public func addResource(_ font: Font, _ objects: inout [PDFobj]) {
         pageObj!.addResource(font, &objects)
     }
-
 
     public func complete(_ objects: inout [PDFobj]) {
         append("Q\n")
         pageObj!.addContent(&self.buf, &objects)
     }
 
-
     public func getContent() -> [UInt8] {
         return self.buf
     }
-
 
     ///
     /// Adds destination to this page.
@@ -174,7 +163,6 @@ public class Page {
         return dest
     }
 
-
     ///
     /// Returns the width of this page.
     ///
@@ -184,7 +172,6 @@ public class Page {
         return self.width
     }
 
-
     ///
     /// Returns the height of this page.
     ///
@@ -193,7 +180,6 @@ public class Page {
     public func getHeight() -> Float {
         return self.height
     }
-
 
     ///
     /// Draws a line on the page, using the current color, between the points (x1, y1) and (x2, y2).
@@ -212,7 +198,6 @@ public class Page {
         lineTo(x2, y2)
         strokePath()
     }
-
 
     public final func drawString(
             _ font1: Font,
@@ -270,7 +255,6 @@ public class Page {
         }
     }
 
-
     public final func drawString(
             _ font: Font,
             _ text: String?,
@@ -278,7 +262,6 @@ public class Page {
             _ y: Float) {
         drawString(font, text, x, y, Color.black, nil)                
     }
-
 
     ///
     /// Draws the text given by the specified string,
@@ -297,17 +280,14 @@ public class Page {
             _ y: Float,
             _ brush: Int32,
             _ colors: [String : Int32]?) {
-
         if text == nil || text! == "" {
             return
         }
 
         append("BT\n")
-
         if font.fontID == nil {
             setTextFont(font)
-        }
-        else {
+        } else {
             append("/")
             append(font.fontID!)
             append(" ")
@@ -354,19 +334,16 @@ public class Page {
         append("ET\n")
     }
 
-
     private final func drawString(
             _ font: Font,
             _ text: String) {
         let scalars = Array(text.unicodeScalars)
         if font.isCoreFont {
             drawAsciiString(font, scalars)
-        }
-        else {
+        } else {
             drawUnicodeString(font, scalars)
         }
     }
-
 
     private final func drawAsciiString(_ font: Font, _ scalars: [Unicode.Scalar]) {
         for i in 0..<scalars.count {
@@ -398,7 +375,6 @@ public class Page {
         }
     }
 
-
     private final func drawUnicodeString(_ font: Font, _ scalars: [Unicode.Scalar]) {
         if font.isCJK {
             for i in 0..<scalars.count {
@@ -406,26 +382,22 @@ public class Page {
                 if c1 < Unicode.Scalar(font.firstChar)! ||
                         c1 > Unicode.Scalar(font.lastChar)! {
                     appendFourHexDigits(0x0020, &self.buf)
-                }
-                else {
+                } else {
                     appendFourHexDigits(Int(c1.value), &self.buf)
                 }
             }
-        }
-        else {
+        } else {
             for i in 0..<scalars.count {
                 let c1 = scalars[i]
                 if c1 < Unicode.Scalar(font.firstChar)! ||
                         c1 > Unicode.Scalar(font.lastChar)! {
                     appendFourHexDigits(font.unicodeToGID![0x0020], &self.buf)
-                }
-                else {
+                } else {
                     appendFourHexDigits(font.unicodeToGID![Int(c1.value)], &self.buf)
                 }
             }
         }
     }
-
 
     ///
     /// Sets the graphics state. Please see Example_31.
@@ -449,7 +421,6 @@ public class Page {
         append(" gs\n")
     }
 
-
     ///
     /// Sets the color for stroking operations.
     /// The pen color is used when drawing lines and splines.
@@ -467,7 +438,6 @@ public class Page {
             pen[2] = b
         }
     }
-
 
     ///
     /// Sets the color for stroking operations using CMYK.
@@ -489,7 +459,6 @@ public class Page {
         }
     }
 
-
     ///
     /// Sets the color for brush operations.
     /// This is the color used when drawing regular text and filling shapes.
@@ -507,7 +476,6 @@ public class Page {
             brush[2] = b
         }
     }
-
 
     ///
     /// Sets the color for brush operations using CMYK.
@@ -529,7 +497,6 @@ public class Page {
         }
     }
 
-
     ///
     /// Sets the color for brush operations.
     ///
@@ -540,7 +507,6 @@ public class Page {
         setBrushColor(color[0], color[1], color[2])
     }
 
-
     ///
     /// Returns the brush color.
     ///
@@ -550,7 +516,6 @@ public class Page {
         return brush
     }
 
-
     private func setColor(_ r: Float, _ g: Float, _ b: Float) {
         append(r)
         append(" ")
@@ -558,7 +523,6 @@ public class Page {
         append(" ")
         append(b)
     }
-
 
     private func setColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
         append(c)
@@ -569,7 +533,6 @@ public class Page {
         append(" ")
         append(k)
     }
-
 
     ///
     /// Sets the pen color.
@@ -585,7 +548,6 @@ public class Page {
         setPenColor(r, g, b)
     }
 
-
     ///
     /// Sets the brush color.
     ///
@@ -600,7 +562,6 @@ public class Page {
         setBrushColor(r, g, b)
     }
 
-
     ///
     /// Sets the line width to the default.
     /// The default is the finest line width.
@@ -612,7 +573,6 @@ public class Page {
             append(" w\n")
         }
     }
-
 
     ///
     /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -645,7 +605,6 @@ public class Page {
         }
     }
 
-
     ///
     /// Sets the default line dash pattern - solid line.
     ///
@@ -653,7 +612,6 @@ public class Page {
         append("[] 0")
         append(" d\n")
     }
-
 
     ///
     /// Sets the pen width that will be used to draw lines and splines on this page.
@@ -667,7 +625,6 @@ public class Page {
             append(" w\n")
         }
     }
-
 
     ///
     /// Sets the current line cap style.
@@ -683,7 +640,6 @@ public class Page {
         }
     }
 
-
     ///
     /// Sets the line join style.
     ///
@@ -696,7 +652,6 @@ public class Page {
             append(" j\n")
         }
     }
-
 
     ///
     /// Moves the pen to the point with coordinates (x, y) on the page.
@@ -711,7 +666,6 @@ public class Page {
         append(" m\n")
     }
 
-
     ///
     /// Draws a line from the current pen position to the point with coordinates (x, y),
     /// using the current pen width and stroke color.
@@ -724,14 +678,12 @@ public class Page {
         append(" l\n")
     }
 
-
     ///
     /// Draws the path using the current pen color.
     ///
     public func strokePath() {
         append("S\n")
     }
-
 
     ///
     /// Closes the path and draws it using the current pen color.
@@ -740,14 +692,12 @@ public class Page {
         append("s\n")
     }
 
-
     ///
     /// Closes and fills the path with the current brush color.
     ///
     public func fillPath() {
         append("f\n")
     }
-
 
     ///
     /// Draws the outline of the specified rectangle on the page.
@@ -772,7 +722,6 @@ public class Page {
         closePath()
     }
 
-
     ///
     /// Fills the specified rectangle on the page.
     /// The left and right edges of the rectangle are at x and x + w.
@@ -796,7 +745,6 @@ public class Page {
         fillPath()
     }
 
-
     ///
     /// Draws or fills the specified path using the current pen or brush.
     ///
@@ -817,8 +765,7 @@ public class Page {
             if point.isControlPoint {
                 curve = true
                 append(point)
-            }
-            else {
+            } else {
                 if curve {
                     curve = false
                     append(point)
@@ -833,7 +780,6 @@ public class Page {
         append(operation)
         append("\n")
     }
-
 
     ///
     /// Draws a circle on the page.
@@ -851,7 +797,6 @@ public class Page {
         drawEllipse(x, y, r, r, Operation.STROKE)
     }
 
-
     ///
     /// Draws the specified circle on the page and fills it with the current brush color.
     ///
@@ -867,7 +812,6 @@ public class Page {
             _ operation: String) {
         drawEllipse(x, y, r, r, operation)
     }
-
 
     ///
     /// Draws an ellipse on the page using the current pen color.
@@ -885,7 +829,6 @@ public class Page {
         drawEllipse(x, y, r1, r2, Operation.STROKE)
     }
 
-
     ///
     /// Fills an ellipse on the page using the current pen color.
     ///
@@ -901,7 +844,6 @@ public class Page {
             _ r2: Float) {
         drawEllipse(x, y, r1, r2, Operation.FILL)
     }
-
 
     ///
     /// Draws an ellipse on the page and fills it using the current brush color.
@@ -947,7 +889,6 @@ public class Page {
         append(operation)
         append("\n")
     }
-
 
     ///
     /// Draws a point on the page using the current pen color.
@@ -1083,7 +1024,6 @@ public class Page {
         }
     }
 
-
     ///
     /// Sets the text rendering mode.
     ///
@@ -1098,7 +1038,6 @@ public class Page {
             Swift.print("Invalid text rendering mode: \(mode)")
         }
     }
-
 
     ///
     /// Sets the text direction.
@@ -1132,7 +1071,6 @@ public class Page {
         }
     }
 
-
     ///
     /// Draws a cubic bezier curve starting from the current point to the end point p3
     ///
@@ -1162,7 +1100,6 @@ public class Page {
         append("c\n");
     }
 
-
     ///
     /// Draws a bezier curve starting from the current point.
     /// <strong>Please note:</strong> You must call the fillPath,
@@ -1183,7 +1120,6 @@ public class Page {
         append("c\n")
     }
 
-
     public func setTextFont(_ font: Font) {
         self.font = font
         append("/F")
@@ -1192,107 +1128,6 @@ public class Page {
         append(font.size)
         append(" Tf\n")
     }
-
-
-    // ///
-    // /// Sets the start of text block.
-    // /// Please see Example_32. This method must have matching call to setTextEnd().
-    // ///
-    // public func setTextStart() {
-    //     append("BT\n")
-    // }
-
-
-    // ///
-    // /// Sets the text location.
-    // /// Please see Example_32.
-    // ///
-    // /// - Parameter x the x coordinate of new text location.
-    // /// - Parameter y the y coordinate of new text location.
-    // ///
-    // public func setTextLocation(_ x: Float, _ y: Float) {
-    //     append(x)
-    //     append(" ")
-    //     append(height - y)
-    //     append(" Td\n")
-    // }
-
-
-    // public func setTextBegin(_ x: Float, _ y: Float) {
-    //     append("BT\n")
-    //     append(x)
-    //     append(" ")
-    //     append(height - y)
-    //     append(" Td\n")
-    // }
-
-
-    // ///
-    // /// Sets the text leading.
-    // /// Please see Example_32.
-    // ///
-    // /// - Parameter leading the leading.
-    // ///
-    // public func setTextLeading(_ leading: Float) {
-    //     append(leading)
-    //     append(" TL\n")
-    // }
-
-
-    // public func setCharSpacing(_ spacing: Float) {
-    //     append(spacing)
-    //     append(" Tc\n")
-    // }
-
-
-    // public func setWordSpacing(_ spacing: Float) {
-    //     append(spacing)
-    //     append(" Tw\n")
-    // }
-
-
-    // public func setTextScaling(_ scaling: Float) {
-    //     append(scaling)
-    //     append(" Tz\n")
-    // }
-
-
-    // public func setTextRise(_ rise: Float) {
-    //     append(rise)
-    //     append(" Ts\n")
-    // }
-
-
-    // ///
-    // /// Prints a line of text.
-    // /// Please see Example_32.
-    // ///
-    // public func printString(_ str: String) {
-    //     if self.font != nil {
-    //         append("[<")
-    //         drawString(self.font!, str)
-    //         append(">] TJ\n")
-    //     }
-    // }
-
-
-    // ///
-    // /// Move to the next line.
-    // /// Please see Example_32.
-    // ///
-    // public func newLine() {
-    //     append("T*\n")
-    // }
-
-
-    // ///
-    // /// Sets the end of text block.
-    // /// Please see Example_32.
-    // ///
-    // public func setTextEnd() {
-    //     append("ET\n")
-    // }
-
 
     // Original code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
@@ -1305,7 +1140,6 @@ public class Page {
             _ r1: Float,
             _ r2: Float,
             _ operation: String) {
-
         // The best 4-spline magic number
         let m4: Float = 0.551784
 
@@ -1336,7 +1170,6 @@ public class Page {
         drawPath(list, operation)
     }
 
-
     ///
     /// Clips the path.
     ///
@@ -1344,7 +1177,6 @@ public class Page {
         append("W\n")
         append("n\n")   // Close the path without painting it.
     }
-
 
     public func clipRect(
             _ x: Float,
@@ -1358,7 +1190,6 @@ public class Page {
         clipPath()
     }
 
-
     public func save() {
         append("q\n")
         savedStates.append(State(
@@ -1369,7 +1200,6 @@ public class Page {
                 self.lineJoinStyle,
                 self.linePattern))
     }
-
 
     public func restore() {
         append("Q\n")
@@ -1384,7 +1214,6 @@ public class Page {
         }
     }
     // <<
-
 
     ///
     /// Sets the page CropBox.
@@ -1403,7 +1232,6 @@ public class Page {
         self.cropBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
     }
 
-
     ///
     /// Sets the page BleedBox.
     /// See page 77 of the PDF32000_2008.pdf specification.
@@ -1420,7 +1248,6 @@ public class Page {
             _ lowerRightY: Float) {
         self.bleedBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
     }
-
 
     ///
     /// Sets the page TrimBox.
@@ -1439,7 +1266,6 @@ public class Page {
         self.trimBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
     }
 
-
     ///
     /// Sets the page ArtBox.
     /// See page 77 of the PDF32000_2008.pdf specification.
@@ -1457,14 +1283,12 @@ public class Page {
         self.artBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
     }
 
-
     private func appendPointXY(_ x: Float, _ y: Float) {
         append(x)
         append(" ")
         append(height - y)
         append(" ")
     }
-
 
     private func append(_ point: Point) {
         append(point.x)
@@ -1473,36 +1297,29 @@ public class Page {
         append(" ")
     }
 
-
     func append(_ str: String) {
         self.buf.append(contentsOf: Array(str.utf8))
     }
-
 
     func append(_ num: UInt32) {
         append(String(num))
     }
 
-
     func append(_ num: Int) {
         append(String(num))
     }
-
 
     func append(_ val: Float) {
         append(String(val))
     }
 
-
     func append(_ byte: UInt8) {
         self.buf.append(byte)
     }
 
-
     public func append(_ buffer: [UInt8]) {
         self.buf.append(contentsOf: buffer)
     }
-
 
     private func drawWord(
             _ font: Font,
@@ -1512,8 +1329,7 @@ public class Page {
         if str != "" {
             if colors[str] != nil {
                 setBrushColor(colors[str]!)
-            }
-            else {
+            } else {
                 setBrushColor(brush)
             }
             append("[<");
@@ -1522,7 +1338,6 @@ public class Page {
             str = ""
         }
     }
-
 
     func drawColoredString(
             _ font: Font,
@@ -1544,7 +1359,6 @@ public class Page {
         drawWord(font, &buf2, brush, colors)
     }
 
-
     func setStructElementsPageObjNumber(
             _ pageObjNumber: Int) {
         for element in structures {
@@ -1552,14 +1366,12 @@ public class Page {
         }
     }
 
-
     public func addBMC(
             _ structure: String,
             _ actualText: String,
             _ altDescription: String) {
         addBMC(structure, nil, actualText, altDescription)
     }
-
 
     public func addBMC(
             _ structure: String,
@@ -1586,13 +1398,11 @@ public class Page {
         }
     }
 
-
     public func addEMC() {
         if pdf != nil && pdf!.compliance == Compliance.PDF_UA {
             append("EMC\n")
         }
     }
-
 
     func addAnnotation(_ annotation: Annotation) {
         annotation.y1 = self.height - annotation.y1
@@ -1608,7 +1418,6 @@ public class Page {
             self.structures.append(element)
         }
     }
-
 
     func beginTransform(
             _ x: Float,
@@ -1636,11 +1445,9 @@ public class Page {
         append(" Tm\n")
     }
 
-
     func endTransform() {
         append("Q\n")
     }
-
 
     public func drawContents(
             _ content: [UInt8],
@@ -1653,7 +1460,6 @@ public class Page {
         append(content)
         endTransform()
     }
-
 
     public func drawString(
             _ font: Font,
@@ -1669,7 +1475,6 @@ public class Page {
         }
     }
 
-
     private func isLetterOrDigit(_ scalar: UnicodeScalar) -> Bool {
         if (scalar.value >= 65 && scalar.value <= 90) ||
             (scalar.value >= 97 && scalar.value <= 122) ||
@@ -1678,7 +1483,6 @@ public class Page {
         }
         return false
     }
-
 
     private func isLetterOrDigit(_ value: Int) -> Bool {
         if (value >= 65 && value <= 90) ||
@@ -1689,13 +1493,11 @@ public class Page {
         return false
     }
 
-
     func appendTwoHexDigits(_ number: Int, _ buffer: inout [UInt8]) {
         let index = 2 * (number & 0xFF)
         buffer.append(Hexadecimal.instance.digits[index])
         buffer.append(Hexadecimal.instance.digits[index + 1])
     }
-
 
     func appendFourHexDigits(_ number: Int, _ buffer: inout [UInt8]) {
         var index = 2 * ((number >> 8) & 0xFF)
@@ -1705,7 +1507,6 @@ public class Page {
         buffer.append(Hexadecimal.instance.digits[index])
         buffer.append(Hexadecimal.instance.digits[index + 1])
     }
-
 
     public func addWatermark(
             _ font: Font,
@@ -1725,19 +1526,16 @@ public class Page {
         watermark.drawOn(self)
     }
 
-
     public func invertYAxis() {
         append("1 0 0 -1 0 ")
         append(self.height)
         append(" cm\n")
     }
 
-
     @discardableResult
     public func addHeader(_ textLine: TextLine) throws -> [Float] {
         return try addHeader(textLine, 1.5*textLine.font!.ascent)
     }
-
 
     @discardableResult
     public func addHeader(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
@@ -1747,17 +1545,14 @@ public class Page {
         return xy
     }
 
-
     @discardableResult
     public func addFooter(_ textLine: TextLine) throws -> [Float] {
         return try addFooter(textLine, textLine.font!.ascent);
     }
-
 
     @discardableResult
     public func addFooter(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset);
         return textLine.drawOn(self);
     }
-
 }   // End of Page.swift
