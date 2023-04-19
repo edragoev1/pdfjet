@@ -161,21 +161,17 @@ public class TextFrame implements Drawable {
         return new float[] {this.x + this.w, this.y + this.h};
     }
 
-
     private TextLine drawLineOnPage(TextLine textLine, Page page) throws Exception {
         StringBuilder sb1 = new StringBuilder();
         StringBuilder sb2 = new StringBuilder();
         String[] tokens = textLine.getText().split("\\s+");
         boolean testForFit = true;
-        for (int i = 0; i < tokens.length; i++) {
-            String token = tokens[i] + Single.space;
-            if (testForFit && textLine.getStringWidth((sb1.toString() + token).trim()) < this.w) {
-                sb1.append(token);
+        for (String token : tokens) {
+            if (testForFit && textLine.getStringWidth(sb1.toString() + token) < this.w) {
+                sb1.append(token + Single.space);
             } else {
-                if (testForFit) {
-                    testForFit = false;
-                }
-                sb2.append(token);
+                testForFit = false;
+                sb2.append(token + Single.space);
             }
         }
         textLine.setText(sb1.toString().trim());
