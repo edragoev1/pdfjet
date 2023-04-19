@@ -54,7 +54,7 @@ func Example47() {
 	frame.SetLocation(xPos, yPos)
 	frame.SetWidth(width)
 	frame.SetHeight(height)
-	// frame.SetDrawBorder(true) TODO
+	frame.SetDrawBorder(true)
 	frame.DrawOn(page)
 
 	xPos += 200.0
@@ -62,7 +62,7 @@ func Example47() {
 		frame.SetLocation(xPos, yPos)
 		frame.SetWidth(width)
 		frame.SetHeight(height)
-		// frame.SetDrawBorder(false) TODO
+		frame.SetDrawBorder(false)
 		frame.DrawOn(page)
 	}
 
@@ -71,7 +71,7 @@ func Example47() {
 		frame.SetLocation(xPos, yPos)
 		frame.SetWidth(width)
 		frame.SetHeight(height)
-		// frame.SetDrawBorder(true) TODO
+		frame.SetDrawBorder(true)
 		frame.DrawOn(page)
 	}
 

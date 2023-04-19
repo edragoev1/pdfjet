@@ -41,7 +41,7 @@ public class TextFrame : IDrawable {
     private float leading;
     private float paragraphLeading;
     private List<float[]> beginParagraphPoints;
-    private bool drawBorder;
+    private bool border;
 
     public TextFrame(List<TextLine> paragraphs) {
         this.paragraphs = new List<TextLine>(paragraphs);
@@ -115,7 +115,7 @@ public class TextFrame : IDrawable {
     }
 
     public void SetDrawBorder(bool drawBorder) {
-        this.drawBorder = drawBorder;
+        this.border = drawBorder;
     }
 
     public void SetPosition(float x, float y) {
@@ -140,25 +140,24 @@ public class TextFrame : IDrawable {
                 if (yText + font.descent >= (y + h)) {
                     // The paragraphs are reversed so we can efficiently add new first paragraph:
                     paragraphs.Add(textLine);
-                    if (page != null && drawBorder) {
-                        Box box = new Box();
-                        box.SetLocation(x, y);
-                        box.SetSize(w, h);
-                        box.DrawOn(page);
-                    }
+                    DrawBorder(page);
                     return new float[] {x + w, y + h};
                 }
             }
             xText = x;
             yText += paragraphLeading;
         }
-        if (page != null && drawBorder) {
+        DrawBorder(page);
+        return new float[] {x + w, y + h};
+    }
+
+    private void DrawBorder(Page page) {
+        if (page != null && border) {
             Box box = new Box();
             box.SetLocation(x, y);
             box.SetSize(w, h);
             box.DrawOn(page);
         }
-        return new float[] {x + w, y + h};
     }
 
     private TextLine DrawLineOnPage(TextLine textLine, Page page) {

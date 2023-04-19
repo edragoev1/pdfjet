@@ -38,7 +38,7 @@ public class TextFrame implements Drawable {
     private float leading;
     private float paragraphLeading;
     private final List<float[]> beginParagraphPoints;
-    private boolean drawBorder;
+    private boolean border;
 
     public TextFrame(List<TextLine> paragraphs) {
         this.paragraphs = new ArrayList<TextLine>(paragraphs);
@@ -115,8 +115,8 @@ public class TextFrame implements Drawable {
         return this.beginParagraphPoints;
     }
 
-    public void setDrawBorder(boolean drawBorder) {
-        this.drawBorder = drawBorder;
+    public void setBorder(boolean drawBorder) {
+        this.border = drawBorder;
     }
 
     public void setPosition(float x, float y) {
@@ -140,25 +140,24 @@ public class TextFrame implements Drawable {
                 if (yText + font.descent >= (y + h)) {
                     // The paragraphs are reversed so we can efficiently add new first paragraph:
                     paragraphs.add(textLine);
-                    if (page != null && drawBorder) {
-                        Box box = new Box();
-                        box.setLocation(x, y);
-                        box.setSize(w, h);
-                        box.drawOn(page);
-                    }
+                    drawBorder(page);
                     return new float[] {this.x + this.w, this.y + this.h};
                 }
             }
             xText = x;
             yText += paragraphLeading;
         }
-        if (page != null && drawBorder) {
+        drawBorder(page);
+        return new float[] {this.x + this.w, this.y + this.h};
+    }
+
+    private void drawBorder(Page page) throws Exception {
+        if (page != null && border) {
             Box box = new Box();
             box.setLocation(x, y);
             box.setSize(w, h);
             box.drawOn(page);
         }
-        return new float[] {this.x + this.w, this.y + this.h};
     }
 
     private TextLine drawLineOnPage(TextLine textLine, Page page) throws Exception {

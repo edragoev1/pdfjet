@@ -40,6 +40,7 @@ type TextFrame struct {
 	paragraphLeading         float32
 	beginParagraphPoints     [][]float32
 	spaceBetweenTextLines    float32
+	border                   bool
 }
 
 // NewTextFrame constructs new text frame.
@@ -113,6 +114,11 @@ func (frame *TextFrame) SetPosition(x, y float32) {
 	frame.SetLocation(x, y)
 }
 
+// SetDrawBorder sets the 'set border' variable.
+func (frame *TextFrame) SetDrawBorder(border bool) {
+	frame.border = border
+}
+
 // DrawOn draws the text frame on the page.
 func (frame *TextFrame) DrawOn(page *Page) []float32 {
 	frame.xText = frame.x
@@ -132,11 +138,23 @@ func (frame *TextFrame) DrawOn(page *Page) []float32 {
 			if frame.yText+frame.font.descent >= (frame.y + frame.h) {
 				// The paragraphs are reversed so we can efficiently add new first paragraph:
 				frame.paragraphs = append(frame.paragraphs, textLine)
+				if page != nil && frame.border {
+					box := NewBox()
+					box.SetLocation(frame.x, frame.y)
+					box.SetSize(frame.w, frame.h)
+					box.DrawOn(page)
+				}
 				return []float32{frame.x + frame.w, frame.y + frame.h}
 			}
 		}
 		frame.xText = frame.x
 		frame.yText += frame.paragraphLeading
+	}
+	if page != nil && frame.border {
+		box := NewBox()
+		box.SetLocation(frame.x, frame.y)
+		box.SetSize(frame.w, frame.h)
+		box.DrawOn(page)
 	}
 	return []float32{frame.x + frame.w, frame.y + frame.h}
 }
