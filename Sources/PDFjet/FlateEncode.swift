@@ -95,8 +95,8 @@ public class FlateEncode {
         // // Perform xor-folding operation
         // let index = Int(((hash >> 18) ^ hash) & MASK)
 
-        var hash: UInt64 = 14695981039346656037
-        let prime: UInt64 = 1099511628211
+        var hash: UInt64 = 0xcbf29ce484222325
+        let prime: UInt64 = 0x100000001b3
         hash ^= UInt64(input[i])
         hash = hash &* prime
         hash ^= UInt64(input[i + 1])
