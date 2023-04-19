@@ -113,7 +113,6 @@ func (frame *TextFrame) SetPosition(x, y float32) {
 func (frame *TextFrame) DrawOn(page *Page) []float32 {
 	frame.xText = frame.x
 	frame.yText = frame.y + frame.font.ascent
-
 	for len(frame.paragraphs) > 0 {
 		// The paragraphs are reversed so we can efficiently remove the first one:
 		textLine := frame.paragraphs[len(frame.paragraphs)-1]
@@ -135,7 +134,6 @@ func (frame *TextFrame) DrawOn(page *Page) []float32 {
 		frame.xText = frame.x
 		frame.yText += frame.paragraphLeading
 	}
-
 	return []float32{frame.x + frame.w, frame.y + frame.h}
 }
 
@@ -144,23 +142,19 @@ func (frame *TextFrame) drawLineOnPage(page *Page, textLine *TextLine) *TextLine
 	var sb2 strings.Builder
 	tokens := strings.Fields(textLine.text)
 	testForFit := true
-	for i := 0; i < len(tokens); i++ {
-		token := tokens[i] + single.Space
+	for _, token := range tokens {
 		if testForFit &&
-			textLine.font.stringWidth(strings.TrimSpace(sb1.String()+token)) < textLine.GetWidth() {
-			sb1.WriteString(token)
+			textLine.font.stringWidth(sb1.String()+token) < textLine.GetWidth() {
+			sb1.WriteString(token + single.Space)
 		} else {
-			if testForFit {
-				testForFit = false
-			}
-			sb1.WriteString(token)
+			testForFit = false
+			sb2.WriteString(token + single.Space)
 		}
 	}
 	textLine.SetText(strings.TrimSpace(sb1.String()))
 	if page != nil {
 		textLine.DrawOn(page)
 	}
-
 	textLine.SetText(strings.TrimSpace(sb2.String()))
 	return textLine
 }
