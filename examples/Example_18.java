@@ -14,11 +14,11 @@ public class Example_18 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_18.pdf")));
 
-        Font font = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream");
-        // On Adroid you have to use code similar to this:
-        // Font font = new Font(pdf,
-        //         getClass().getResourceAsStream("/fonts/RedHatText/RedHatText-Regular.ttf.stream"),
-        //         Font.STREAM);
+        // Font font = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream");
+        // On Android you have to load the font using getClass().getResourceAsStream(...) method:
+        Font font = new Font(pdf,
+                getClass().getResourceAsStream("/fonts/RedHatText/RedHatText-Regular.ttf.stream"),
+                Font.STREAM);
         font.setSize(12f);
 
         List<Page> pages = new ArrayList<Page>();
