@@ -36,7 +36,7 @@ public class TextFrame : Drawable {
     private var leading: Float = 0.0
     private var paragraphLeading: Float = 0.0
     private var beginParagraphPoints: [[Float]]?
-    private var drawBorder = false
+    private var border = false
 
     public init(_ paragraphs: Array<TextLine>) {
         self.paragraphs = Array(paragraphs)
@@ -95,8 +95,8 @@ public class TextFrame : Drawable {
         return self.beginParagraphPoints
     }
 
-    public func setDrawBorder(_ drawBorder: Bool) {
-        self.drawBorder = drawBorder
+    public func setDrawBorder(_ border: Bool) {
+        self.border = border
     }
 
     public func setPosition(_ x: Float, _ y: Float) {
@@ -121,25 +121,24 @@ public class TextFrame : Drawable {
                 if yText + font!.descent >= (self.y + self.h) {
                     // The paragraphs are reversed so we can efficiently add new first paragraph:
                     paragraphs!.append(textLine)
-                    if page != nil && drawBorder {
-                        let box = Box()
-                        box.setLocation(x, y)
-                        box.setSize(w, h)
-                        box.drawOn(page)
-                    }
+                    drawBorder(page!)
                     return [x + w, y + h]
                 }
             }
             xText = x
             yText += paragraphLeading
         }
-        if page != nil && drawBorder {
+        drawBorder(page!)
+        return [x + w, y + h]
+    }
+
+    private func drawBorder(_ page: Page?) {
+        if page != nil && border {
             let box = Box()
             box.setLocation(x, y)
             box.setSize(w, h)
             box.drawOn(page)
         }
-        return [x + w, y + h]
     }
 
     private func drawLineOnPage(_ textLine: TextLine, _ page: Page?) -> TextLine {
