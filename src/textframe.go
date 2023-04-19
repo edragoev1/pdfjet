@@ -25,7 +25,6 @@ SOFTWARE.
 */
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/single"
@@ -148,9 +147,7 @@ func (frame *TextFrame) drawLineOnPage(page *Page, textLine *TextLine) *TextLine
 	tokens := strings.Fields(textLine.text)
 	testForFit := true
 	for _, token := range tokens {
-		fmt.Println(textLine.GetWidth())
-		fmt.Println()
-		if testForFit && textLine.font.stringWidth(sb1.String()+token) < textLine.GetWidth() {
+		if testForFit && textLine.font.stringWidth(sb1.String()+token) < frame.w {
 			sb1.WriteString(token + single.Space)
 		} else {
 			testForFit = false
