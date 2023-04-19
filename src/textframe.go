@@ -126,14 +126,10 @@ func (frame *TextFrame) DrawOn(page *Page) []float32 {
 		frame.beginParagraphPoints = append(frame.beginParagraphPoints, []float32{frame.xText, frame.yText})
 		for {
 			textLine = frame.drawLineOnPage(page, textLine)
-			if textLine.text == "" || textLine.text == "\n" {
-				fmt.Println("Are we here???")
+			if textLine.text == "" {
 				break
 			}
 			frame.yText = textLine.advance(frame.leading)
-			// fmt.Println(textLine.y)
-			// fmt.Println()
-
 			if frame.yText+frame.font.descent >= (frame.y + frame.h) {
 				// The paragraphs are reversed so we can efficiently add new first paragraph:
 				frame.paragraphs = append(frame.paragraphs, textLine)
@@ -150,11 +146,9 @@ func (frame *TextFrame) drawLineOnPage(page *Page, textLine *TextLine) *TextLine
 	var sb1 strings.Builder
 	var sb2 strings.Builder
 	tokens := strings.Fields(textLine.text)
-	// tokens := strings.Split(textLine.text, " ")
-
 	testForFit := true
 	for _, token := range tokens {
-		fmt.Println(token)
+		fmt.Println(textLine.GetWidth())
 		fmt.Println()
 		if testForFit && textLine.font.stringWidth(sb1.String()+token) < textLine.GetWidth() {
 			sb1.WriteString(token + single.Space)
