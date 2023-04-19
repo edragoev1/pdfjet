@@ -47,8 +47,8 @@ public class TextLine implements Drawable {
     private int degrees = 0;
     private int color = Color.black;
 
-    private float xBox;
-    private float yBox;
+    private float xBox;     // The x and y coordinates of the top left corner
+    private float yBox;     // of a box where this text line is placed in
 
     private int textEffect = Effect.NORMAL;
     private float verticalOffset = 0f;
