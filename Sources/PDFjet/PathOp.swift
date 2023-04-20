@@ -37,22 +37,18 @@ public class PathOp {
     var y: Float = 0.0      // Initial point y
     var args: [String]
 
-    let formatter = NumberFormatter()
-
     init(_ cmd: Character) {
-        formatter.maximumFractionDigits = 3
         self.cmd = cmd
         self.args = [String]()
     }
 
     init(_ cmd: Character, _ x: Float, _ y: Float) {
-        formatter.maximumFractionDigits = 3
         self.cmd = cmd
         self.x = x
         self.y = y
         self.args = [String]()
-        self.args.append(formatter.string(from: NSNumber(value: x))!)
-        self.args.append(formatter.string(from: NSNumber(value: y))!)
+        self.args.append(String(format: "%.3f", x))
+        self.args.append(String(format: "%.3f", y))
     }
 
     func appendCubicPoints(
@@ -65,11 +61,11 @@ public class PathOp {
         self.y2 = y2
         self.x = x
         self.y = y
-        self.args.append(formatter.string(from: NSNumber(value: x1))!)
-        self.args.append(formatter.string(from: NSNumber(value: y1))!)
-        self.args.append(formatter.string(from: NSNumber(value: x2))!)
-        self.args.append(formatter.string(from: NSNumber(value: y2))!)
-        self.args.append(formatter.string(from: NSNumber(value: x))!)
-        self.args.append(formatter.string(from: NSNumber(value: y))!)
+        self.args.append(String(format: "%.3f", x1))
+        self.args.append(String(format: "%.3f", y1))
+        self.args.append(String(format: "%.3f", x2))
+        self.args.append(String(format: "%.3f", y2))
+        self.args.append(String(format: "%.3f", x))
+        self.args.append(String(format: "%.3f", y))
     }
 }
