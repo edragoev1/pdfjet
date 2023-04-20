@@ -290,7 +290,7 @@ public class Page {
         } else {
             append("/")
             append(font.fontID!)
-            append(" ")
+            append(Token.space)
             append(font.size)
             append(" Tf\n")
         }
@@ -310,15 +310,15 @@ public class Page {
         }
 
         append(self.tm[0])
-        append(" ")
+        append(Token.space)
         append(self.tm[1])
-        append(" ")
+        append(Token.space)
         append(self.tm[2] + skew)
-        append(" ")
+        append(Token.space)
         append(self.tm[3])
-        append(" ")
+        append(Token.space)
         append(x)
-        append(" ")
+        append(Token.space)
         append(self.height - y)
         append(" Tm\n")
 
@@ -518,19 +518,19 @@ public class Page {
 
     private func setColor(_ r: Float, _ g: Float, _ b: Float) {
         append(r)
-        append(" ")
+        append(Token.space)
         append(g)
-        append(" ")
+        append(Token.space)
         append(b)
     }
 
     private func setColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
         append(c)
-        append(" ")
+        append(Token.space)
         append(m)
-        append(" ")
+        append(Token.space)
         append(y)
-        append(" ")
+        append(Token.space)
         append(k)
     }
 
@@ -661,7 +661,7 @@ public class Page {
     ///
     public func moveTo(_ x: Float, _ y: Float) {
         append(x)
-        append(" ")
+        append(Token.space)
         append(height - y)
         append(" m\n")
     }
@@ -673,7 +673,7 @@ public class Page {
     ///
     public func lineTo(_ x: Float, _ y: Float) {
         append(x)
-        append(" ")
+        append(Token.space)
         append(height - y)
         append(" l\n")
     }
@@ -1124,7 +1124,7 @@ public class Page {
         self.font = font
         append("/F")
         append(font.objNumber)
-        append(" ")
+        append(Token.space)
         append(font.size)
         append(" Tf\n")
     }
@@ -1285,16 +1285,16 @@ public class Page {
 
     private func appendPointXY(_ x: Float, _ y: Float) {
         append(x)
-        append(" ")
+        append(Token.space)
         append(height - y)
-        append(" ")
+        append(Token.space)
     }
 
     private func append(_ point: Point) {
         append(point.x)
-        append(" ")
+        append(Token.space)
         append(height - point.y)
-        append(" ")
+        append(Token.space)
     }
 
     func append(_ str: String) {
@@ -1429,18 +1429,18 @@ public class Page {
         append(xScale)
         append(" 0 0 ")
         append(yScale)
-        append(" ")
+        append(Token.space)
         append(x)
-        append(" ")
+        append(Token.space)
         append(y)
         append(" cm\n")
 
         append(xScale)
         append(" 0 0 ")
         append(yScale)
-        append(" ")
+        append(Token.space)
         append(x)
-        append(" ")
+        append(Token.space)
         append(y)
         append(" Tm\n")
     }
