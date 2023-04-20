@@ -1086,17 +1086,17 @@ public class Page {
         _ x2: Float, _ y2: Float,
         _ x3: Float, _ y3: Float) {
         append(x1);
-        append(" ");
+        append(Token.space);
         append(height - y1);
-        append(" ");
+        append(Token.space);
         append(x2);
-        append(" ");
+        append(Token.space);
         append(height - y2);
-        append(" ");
+        append(Token.space);
         append(x3);
-        append(" ");
+        append(Token.space);
         append(height - y3);
-        append(" ");
+        append(Token.space);
         append("c\n");
     }
 
@@ -1310,7 +1310,7 @@ public class Page {
     }
 
     func append(_ val: Float) {
-        append(String(val))
+        append(String(format: "%.3f", val))
     }
 
     func append(_ byte: UInt8) {
