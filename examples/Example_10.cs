@@ -18,15 +18,13 @@ public class Example_10 {
         Image image1 = new Image(pdf, "images/sz-map.png");
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        f1.SetSize(10f);
-
         Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f2.SetSize(14f);
-
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f3.SetSize(12f);
-
         Font f4 = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+
+        f1.SetSize(10f);
+        f2.SetSize(14f);
+        f3.SetSize(12f);
         f4.SetSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
