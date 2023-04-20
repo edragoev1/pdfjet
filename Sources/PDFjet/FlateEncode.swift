@@ -31,7 +31,6 @@ public class FlateEncode {
 
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
-        output.reserveCapacity(input.count / 2)
         let BUFSIZE = MASK + 1  // 32768 bytes
         hashtable = [Int](repeating: -1, count: Int(BUFSIZE))
         writeCode(&output, UInt32(0x9C78), 16)      // FLG | CMF
