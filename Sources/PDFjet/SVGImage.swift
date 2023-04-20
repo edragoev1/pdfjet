@@ -80,7 +80,7 @@ public class SVGImage {
         var param: String?
         var header: Bool = false
         for scalar in scalars {
-        if buf.hasSuffix("<svg") {
+            if buf.hasSuffix("<svg") {
                 header = true
                 buf = ""
             } else if header && scalar == ">" {
@@ -160,7 +160,7 @@ public class SVGImage {
         }
         processPaths(paths!)
     }
-    
+
     func processPaths(_ paths: [SVGPath]) {
         var box: [Float] = Array(repeating: 0.0, count: 4)
         if viewBox != nil {
