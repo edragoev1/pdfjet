@@ -218,7 +218,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				y1c := lastOp.y + (2.0/3.0)*(float32(y1)-lastOp.y)
 				x2c := float32(x) + (2.0/3.0)*(float32(x1)-float32(x))
 				y2c := float32(y) + (2.0/3.0)*(float32(y1)-float32(y))
-				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
+				pathOp.setCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
@@ -249,7 +249,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				y1c := lastOp.y + (2.0/3.0)*(y1-lastOp.y)
 				x2c := float32(x) + (2.0/3.0)*(x1-float32(x))
 				y2c := float32(y) + (2.0/3.0)*(y1-float32(y))
-				pathOp.addCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
+				pathOp.setCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
@@ -288,7 +288,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 					x += float64(lastOp.x)
 					y += float64(lastOp.y)
 				}
-				pathOp.addCubicPoints(
+				pathOp.setCubicPoints(
 					float32(x1), float32(y1),
 					float32(x2), float32(y2),
 					float32(x), float32(y))
@@ -327,7 +327,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 					x += float64(lastOp.x)
 					y += float64(lastOp.y)
 				}
-				pathOp.addCubicPoints(
+				pathOp.setCubicPoints(
 					float32(x1), float32(y1),
 					float32(x2), float32(y2),
 					float32(x), float32(y))

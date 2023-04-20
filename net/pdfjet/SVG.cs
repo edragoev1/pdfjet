@@ -176,7 +176,7 @@ public class SVG {
                     float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
                     float x2c = x + (2f/3f)*(x1 - x);
                     float y2c = y + (2f/3f)*(y1 - y);
-                    pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
+                    pathOp.SetCubicPoints(x1c, y1c, x2c, y2c, x, y);
                     operations.Add(pathOp);
                     lastOp = pathOp;
                 }
@@ -201,7 +201,7 @@ public class SVG {
                     float y1c = lastOp.y + (2f/3f)*(y1 - lastOp.y);
                     float x2c = x + (2f/3f)*(x1 - x);
                     float y2c = y + (2f/3f)*(y1 - y);
-                    pathOp.addCubicPoints(x1c, y1c, x2c, y2c, x, y);
+                    pathOp.SetCubicPoints(x1c, y1c, x2c, y2c, x, y);
                     operations.Add(pathOp);
                     lastOp = pathOp;
                 }
@@ -222,7 +222,7 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    pathOp.addCubicPoints(x1, y1, x2, y2, x, y);
+                    pathOp.SetCubicPoints(x1, y1, x2, y2, x, y);
                     operations.Add(pathOp);
                     lastOp = pathOp;
                 }
@@ -246,7 +246,7 @@ public class SVG {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
-                    pathOp.addCubicPoints(x1, y1, x2, y2, x, y);
+                    pathOp.SetCubicPoints(x1, y1, x2, y2, x, y);
                     operations.Add(pathOp);
                     lastOp = pathOp;
                 }

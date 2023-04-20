@@ -47,11 +47,9 @@ public class PathOp {
         self.x = x
         self.y = y
         self.args = [String]()
-        self.args.append(String(format: "%.3f", x))
-        self.args.append(String(format: "%.3f", y))
     }
 
-    func appendCubicPoints(
+    func setCubicPoints(
             _ x1: Float, _ y1: Float,
             _ x2: Float, _ y2: Float,
             _ x: Float, _ y: Float) {
@@ -61,11 +59,5 @@ public class PathOp {
         self.y2 = y2
         self.x = x
         self.y = y
-        self.args.append(String(format: "%.3f", x1))
-        self.args.append(String(format: "%.3f", y1))
-        self.args.append(String(format: "%.3f", x2))
-        self.args.append(String(format: "%.3f", y2))
-        self.args.append(String(format: "%.3f", x))
-        self.args.append(String(format: "%.3f", y))
     }
 }

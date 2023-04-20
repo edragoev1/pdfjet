@@ -49,11 +49,9 @@ public class PathOp {
         this.x = x;
         this.y = y;
         this.args = new List<String>();
-        this.args.Add(x.ToString(".000"));
-        this.args.Add(y.ToString(".000"));
     }
 
-    public void addCubicPoints(
+    public void SetCubicPoints(
             float x1, float y1,
             float x2, float y2,
             float x, float y) {
@@ -63,12 +61,6 @@ public class PathOp {
         this.y2 = y2;
         this.x = x;
         this.y = y;
-        this.args.Add(x1.ToString(".000"));
-        this.args.Add(y1.ToString(".000"));
-        this.args.Add(x2.ToString(".000"));
-        this.args.Add(y2.ToString(".000"));
-        this.args.Add(x.ToString(".000"));
-        this.args.Add(y.ToString(".000"));
     }
 }
 }

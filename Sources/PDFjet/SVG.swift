@@ -181,7 +181,7 @@ public class SVG {
                     let y1c = lastOp!.y + (2.0/3.0)*(y1 - lastOp!.y)
                     let x2c = x + (2.0/3.0)*(x1 - x)
                     let y2c = y + (2.0/3.0)*(y1 - y)
-                    pathOp.appendCubicPoints(x1c, y1c, x2c, y2c, x, y)
+                    pathOp.setCubicPoints(x1c, y1c, x2c, y2c, x, y)
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 4
@@ -208,7 +208,7 @@ public class SVG {
                     let y1c = lastOp!.y + (2.0/3.0)*(y1 - lastOp!.y)
                     let x2c = x + (2.0/3.0)*(x1 - x)
                     let y2c = y + (2.0/3.0)*(y1 - y)
-                    pathOp.appendCubicPoints(x1c, y1c, x2c, y2c, x, y)
+                    pathOp.setCubicPoints(x1c, y1c, x2c, y2c, x, y)
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 2
@@ -231,7 +231,7 @@ public class SVG {
                         x += lastOp!.x
                         y += lastOp!.y
                     }
-                    pathOp.appendCubicPoints(x1, y1, x2, y2, x, y)
+                    pathOp.setCubicPoints(x1, y1, x2, y2, x, y)
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 6
@@ -257,7 +257,7 @@ public class SVG {
                         x += lastOp!.x
                         y += lastOp!.y
                     }
-                    pathOp.appendCubicPoints(x1, y1, x2, y2, x, y)
+                    pathOp.setCubicPoints(x1, y1, x2, y2, x, y)
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 4

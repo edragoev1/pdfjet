@@ -24,8 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import "fmt"
-
 // Path is used to create path objects.
 // The path objects may consist of lines, splines or both.
 // Please see Example_02.
@@ -58,17 +56,11 @@ func NewPathOpXY(cmd rune, x, y float32) *PathOp {
 	return pathOp
 }
 
-func (path *PathOp) addCubicPoints(x1, y1, x2, y2, x, y float32) {
+func (path *PathOp) setCubicPoints(x1, y1, x2, y2, x, y float32) {
 	path.x1 = x1
 	path.y1 = y1
 	path.x2 = x2
 	path.y2 = y2
 	path.x = x
 	path.y = y
-	path.args = append(path.args, fmt.Sprintf("%.3f", x1))
-	path.args = append(path.args, fmt.Sprintf("%.3f", y1))
-	path.args = append(path.args, fmt.Sprintf("%.3f", x2))
-	path.args = append(path.args, fmt.Sprintf("%.3f", y2))
-	path.args = append(path.args, fmt.Sprintf("%.3f", x))
-	path.args = append(path.args, fmt.Sprintf("%.3f", y))
 }
