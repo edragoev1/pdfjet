@@ -2,32 +2,20 @@ using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_10.cs
- *
  */
 public class Example_10 {
-
     public Example_10() {
-
-        int rotate = 0;
-        // int rotate = 90;
-        // int rotate = 270;
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_10.pdf", FileMode.Create)));
-
         pdf.SetTitle("Using TextColumn and Paragraph classes");
         pdf.SetSubject("Examples");
         pdf.SetAuthor("Innovatics Inc.");
 
-        String fileName = "images/sz-map.png";
-        Image image1 = new Image(
-                pdf, new FileStream(fileName, FileMode.Open, FileAccess.Read), ImageType.PNG);
+        Image image1 = new Image(pdf, "images/sz-map.png");
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
         f1.SetSize(10f);
@@ -47,6 +35,9 @@ public class Example_10 {
         image1.ScaleBy(0.75f);
         image1.DrawOn(page);
 
+        int rotate = 0;
+        // int rotate = 90;
+        // int rotate = 270;
         TextColumn column = new TextColumn(rotate);
         column.SetSpaceBetweenLines(5.0f);
         column.SetSpaceBetweenParagraphs(10.0f);
@@ -155,7 +146,6 @@ public class Example_10 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -164,5 +154,4 @@ public class Example_10 {
         sw.Stop();
         Console.WriteLine("Example_10 => " + (time1 - time0));
     }
-
 }   // End of Example_10.cs
