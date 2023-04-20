@@ -327,6 +327,9 @@ public class SVGImage {
     // string.EndsWith(...) method in Mono!
     // .NET's performance is not affected by this code.
     private bool StringEndsWith(String str1, String str2) {
+        if (str2.Length == 0) {
+            return true;
+        }
         if (str1.Length < str2.Length) {
             return false;
         }
