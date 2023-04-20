@@ -24,9 +24,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-var Space = []byte(" ")
-var Newline = []byte("\n")
-var Stream = []byte("stream\n")
-var Endstream = []byte("\nendstream\n")
 var BeginDictionary = []byte("<<\n")
 var EndDictionary = []byte(">>\n")
+var Stream = []byte("stream\n")
+var Endstream = []byte("\nendstream\n")
+var Endobj = []byte("endobj\n")
+var Count = []byte("/Count ")
+var Length = []byte("/Length ")
+var Space = []byte(" ")
+var Newline = []byte("\n")

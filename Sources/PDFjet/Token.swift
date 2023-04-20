@@ -26,16 +26,13 @@ SOFTWARE.
 /// Please see PDF.swift
 ///
 public class Token {
-    public static let stream = Array("\nstream\n".utf8)
-    public static let endstream = Array("\nendstream\n".utf8)
-    public static let space = Array(" ".utf8)
-    public static let newline = Array("\n".utf8)
-    public static let endobj = Array("endobj\n".utf8)
     public static let beginDictionary = Array("<<\n".utf8);
     public static let endDictionary = Array(">>\n".utf8);
-    public static let length = Array("/Length ".utf8);
-    public static let first = Array("/First ".utf8);
-    public static let last = Array("/Last ".utf8);
+    public static let stream = Array("stream\n".utf8)
+    public static let endstream = Array("\nendstream\n".utf8)
+    public static let endobj = Array("endobj\n".utf8)
     public static let count = Array("/Count ".utf8);
-
+    public static let length = Array("/Length ".utf8);
+    public static let space = Array(" ".utf8)
+    public static let newline = Array("\n".utf8)
 }
