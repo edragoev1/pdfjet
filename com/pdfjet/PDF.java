@@ -809,7 +809,7 @@ public class PDF {
         append(baos.size());
         append(Token.newline);
         append(Token.endDictionary);
-        append(Token.stream);
+        append("stream\n");
         append(baos);
         append(Token.endstream);
         endobj();
@@ -825,7 +825,7 @@ public class PDF {
         append(page.buf.size());
         append(Token.newline);
         append(Token.endDictionary);
-        append(Token.stream);
+        append("stream\n");
         append(page.buf);
         append(Token.endstream);
         endobj();
@@ -846,7 +846,7 @@ public class PDF {
         append(baos.size());
         append(Token.newline);
         append(Token.endDictionary);
-        append(Token.stream);
+        append("stream\n");
         append(baos);
         append(Token.endstream);
         endobj();
