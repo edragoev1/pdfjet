@@ -18,9 +18,16 @@ public class Example_03 {
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
-        Image image1 = new Image(pdf, "images/ee-map.png");
-        Image image2 = new Image(pdf, "images/fruit.jpg");
-        Image image3 = new Image(pdf, "images/mt-map.bmp");
+
+        // On Android you have use the getClass().getResourceAsStream(...) method:
+        Image image1 = new Image(pdf, getClass().getResourceAsStream("/images/ee-map.png"), ImageType.PNG);
+        Image image2 = new Image(pdf, getClass().getResourceAsStream("/images/fruit.jpg"), ImageType.JPG);
+        Image image3 = new Image(pdf, getClass().getResourceAsStream("/images/mt-map.bmp"), ImageType.BMP);
+
+        // On other platforms you can use this convenience constructors:
+        // Image image1 = new Image(pdf, "images/ee-map.png");
+        // Image image2 = new Image(pdf, "images/fruit.jpg");
+        // Image image3 = new Image(pdf, "images/mt-map.bmp");
 
         TextLine text = new TextLine(f1,
                 "React The map below is an embedded PNG image");
