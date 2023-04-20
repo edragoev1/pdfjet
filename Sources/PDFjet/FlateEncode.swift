@@ -26,12 +26,12 @@ import Foundation
 public class FlateEncode {
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
-    private let MASK: UInt32 = 0x7FFF   // 32767
+    private let MASK: UInt32 = 0xFFFF
     private var hashtable: [Int]
 
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
-        let BUFSIZE = MASK + 1  // 32768 bytes
+        let BUFSIZE = MASK + 1  // 2^16 bytes
         hashtable = [Int](repeating: -1, count: Int(BUFSIZE))
         writeCode(&output, UInt32(0x9C78), 16)      // FLG | CMF
         writeCode(&output, UInt32(0x03), 3)         // BTYPE | BFINAL
@@ -82,18 +82,6 @@ public class FlateEncode {
             _ i: Int,
             _ hashtable: inout [Int]) -> Int {
         // FNV-1a inline hash routines
-
-        // var hash: UInt32 = 2166136261
-        // let prime: UInt32 = 16777619
-        // hash ^= UInt32(input[i])
-        // hash = hash &* prime
-        // hash ^= UInt32(input[i + 1])
-        // hash = hash &* prime
-        // hash ^= UInt32(input[i + 2])
-        // hash = hash &* prime
-        // // Perform xor-folding operation
-        // let index = Int(((hash >> 18) ^ hash) & MASK)
-
         var hash: UInt64 = 0xcbf29ce484222325
         let prime: UInt64 = 0x100000001b3
         hash ^= UInt64(input[i])
@@ -103,8 +91,7 @@ public class FlateEncode {
         hash ^= UInt64(input[i + 2])
         hash = hash &* prime
         // Perform xor-folding operation
-        let index = Int(((hash >> 33) ^ hash) & UInt64(MASK))
-
+        let index = Int(((hash >> 30) ^ hash) & UInt64(MASK))
         let j = hashtable[index]
         hashtable[index] = i
         if j != -1 &&
@@ -141,7 +128,6 @@ public class FlateEncode {
             s2 = (s2 &+ s1) % prime
         }
         let adler = (s2 &<< 16) &+ s1
-
         output.append(UInt8((adler >> 24) & 0xFF))
         output.append(UInt8((adler >> 16) & 0xFF))
         output.append(UInt8((adler >>  8) & 0xFF))
