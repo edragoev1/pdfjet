@@ -323,6 +323,9 @@ public class SVGImage {
         return new float[] {x + w, y + h};
     }
 
+    // This method is around 8 times faster than the
+    // string.EndsWith(...) method in Mono!
+    // .NET's performance is not affected by this code.
     private bool StringEndsWith(String str1, String str2) {
         if (str1.Length < str2.Length) {
             return false;
