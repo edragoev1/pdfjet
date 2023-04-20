@@ -326,4 +326,28 @@ public class SVGImage {
         }
         return [self.x + self.w, self.y + self.h]
     }
+
+    private func StringEndsWith(_ str1: String, _ str2: String) -> Bool {
+        if str2.count == 0 {
+            return true
+        }
+        if str1.count < str2.count {
+            return false
+        }
+        let scalars1 = Array(str1.unicodeScalars)
+        let scalars2 = Array(str2.unicodeScalars)
+        var i = scalars1.count - 1
+        var j = scalars2.count - 1
+        while j >= 0 {
+            let scalar1 = scalars1[i]
+            let scalar2 = scalars2[j]
+            if scalar1 != scalar2 {
+                return false
+            }
+            i -= 1
+            j -= 1
+        }
+        return true
+    }
+
 }   // End of SVGImage.swift
