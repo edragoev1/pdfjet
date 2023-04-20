@@ -66,9 +66,6 @@ public class SVGImage {
      * @throws Exception  if exception occurred.
      */
     public SVGImage(Stream stream) {
-        Stopwatch sw = Stopwatch.StartNew();
-        long time0 = sw.ElapsedMilliseconds;
-
         paths = new List<SVGPath>();
         SVGPath path = null;
         StringBuilder buf = new StringBuilder();
@@ -158,9 +155,6 @@ public class SVGImage {
             }
         }
         stream.Close();
-        long time1 = sw.ElapsedMilliseconds;
-        sw.Stop();
-        Console.WriteLine("ProcessPaths => " + (time1 - time0));
         if (path != null) {
             paths.Add(path);
         }
