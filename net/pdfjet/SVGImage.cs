@@ -322,5 +322,19 @@ public class SVGImage {
         }
         return new float[] {x + w, y + h};
     }
+
+    private bool StringEndsWith(String str1, String str2) {
+        if (str1.Length < str2.Length) {
+            return false;
+        }
+        int i = str2.Length - 1;
+        while (i >= 0) {
+            if (str1[i] != str2[i]) {
+                return false;
+            }
+            i--;
+        }
+        return true;
+    }
 }   // End of SVGImage.cs
 }   // End of PDFjet.NET namespace
