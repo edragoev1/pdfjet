@@ -10,21 +10,9 @@ public class Example_28 {
         let stream = OutputStream(toFileAtPath: "Example_28.pdf", append: false)!
         let pdf = PDF(stream)
 
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf.stream")!,
-                Font.STREAM)
-
-
-        let f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Droid/DroidSansFallback.ttf.stream")!,
-                Font.STREAM)
-
-        let f3 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream")!,
-                Font.STREAM)
+        let f1 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
+        let f2 = try Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
+        let f3 = try Font(pdf, "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream")
 
         f1.setSize(11.0)
         f2.setSize(11.0)
