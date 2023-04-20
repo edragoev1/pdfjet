@@ -23,6 +23,7 @@ SOFTWARE.
 */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -52,10 +53,10 @@ public class SVGImage {
     /**
      * Used to embed SVG images in the PDF document.
      *
-     * @param fontPath the path to the font file.
+     * @param fontPath the path to the SVG file.
      */
     public SVGImage(String fontPath) : this(
-        new BufferedStream(new FileStream(fontPath, FileMode.Open, FileAccess.Read))) {
+        new FileStream(fontPath, FileMode.Open, FileAccess.Read)) {
     }
 
     /**
@@ -65,33 +66,37 @@ public class SVGImage {
      * @throws Exception  if exception occurred.
      */
     public SVGImage(Stream stream) {
+        Stopwatch sw = Stopwatch.StartNew();
+        long time0 = sw.ElapsedMilliseconds;
+
         paths = new List<SVGPath>();
         SVGPath path = null;
         StringBuilder buf = new StringBuilder();
         bool token = false;
         String param = null;
         bool header = false;
-        int ch;
-        while ((ch = stream.ReadByte()) != -1) {
-            if (buf.ToString().EndsWith("<svg")) {
+        byte[] buffer = Contents.GetFromStream(stream);
+        foreach (byte ch in buffer) {
+            String str = buf.ToString();
+            if (str.EndsWith("<svg")) {
                 header = true;
                 buf.Length = 0;
             } else if (header && ch == '>') {
                 header = false;
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith(" width=")) {
+            } else if (!token && str.EndsWith(" width=")) {
                 token = true;
                 param = "width";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith(" height=")) {
+            } else if (!token && str.EndsWith(" height=")) {
                 token = true;
                 param = "height";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith(" viewBox=")) {
+            } else if (!token && str.EndsWith(" viewBox=")) {
                 token = true;
                 param = "viewBox";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith(" d=")) {
+            } else if (!token && str.EndsWith(" d=")) {
                 token = true;
                 if (path != null) {
                     paths.Add(path);
@@ -99,37 +104,37 @@ public class SVGImage {
                 path = new SVGPath();
                 param = "data";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith(" fill=")) {
+            } else if (!token && str.EndsWith(" fill=")) {
                 token = true;
                 param = "fill";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith(" stroke=")) {
+            } else if (!token && str.EndsWith(" stroke=")) {
                 token = true;
                 param = "stroke";
                 buf.Length = 0;
-            } else if (!token && buf.ToString().EndsWith(" stroke-width=")) {
+            } else if (!token && str.EndsWith(" stroke-width=")) {
                 token = true;
                 param = "stroke-width";
                 buf.Length = 0;
             } else if (token && ch == '\"') {
                 token = false;
                 if (param.Equals("width")) {
-                    this.w = float.Parse(buf.ToString());
+                    this.w = float.Parse(str);
                 } else if (param.Equals("height")) {
-                    this.h = float.Parse(buf.ToString());
+                    this.h = float.Parse(str);
                 } else if (param.Equals("viewBox")) {
                     this.viewBox = buf.ToString();
                 } else if (param.Equals("data")) {
                     path.data = buf.ToString();
                 } else if (param.Equals("fill")) {
-                    int fillColor = getColor(buf.ToString());
+                    int fillColor = getColor(str);
                     if (header) {
                         this.fill = fillColor;
                     } else {
                         path.fill = fillColor;
                     }
                 } else if (param.Equals("stroke")) {
-                    int strokeColor = getColor(buf.ToString());
+                    int strokeColor = getColor(str);
                     if (header) {
                         this.stroke = strokeColor;
                     } else {
@@ -137,7 +142,7 @@ public class SVGImage {
                     }
                 } else if (param.Equals("stroke-width")) {
                     try {
-                        float strokeWidth = float.Parse(buf.ToString());
+                        float strokeWidth = float.Parse(str);
                         if (header) {
                             this.strokeWidth = strokeWidth;
                         } else {
@@ -152,10 +157,13 @@ public class SVGImage {
                 buf.Append((char) ch);
             }
         }
+        stream.Close();
+        long time1 = sw.ElapsedMilliseconds;
+        sw.Stop();
+        Console.WriteLine("ProcessPaths => " + (time1 - time0));
         if (path != null) {
             paths.Add(path);
         }
-        stream.Close();
         ProcessPaths(paths);
     }
 
@@ -304,8 +312,7 @@ public class SVGImage {
 
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
-        for (int i = 0; i < paths.Count; i++) {
-            SVGPath path = paths[i];
+        foreach (SVGPath path in paths) {
             drawPath(path, page);
         }
         page.AddEMC();
