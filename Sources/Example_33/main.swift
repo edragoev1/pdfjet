@@ -9,9 +9,13 @@ public class Example_33 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_33.pdf", append: false)!)
         let page = Page(pdf, Letter.PORTRAIT)
 
-        var icon = SVGImage(fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
-        icon.setLocation(20.0, 670.0)
+        var icon = SVGImage(stream: InputStream(fileAtPath: "images/svg-test/europe.svg")!)
+        icon.setLocation(-150.0, 0.0)
         var xy = icon.drawOn(page)
+
+        icon = SVGImage(fileAtPath: "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
+        icon.setLocation(20.0, 670.0)
+        xy = icon.drawOn(page)
 
         icon = SVGImage(fileAtPath: "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
         icon.setLocation(xy[0], 670.0)
@@ -44,11 +48,7 @@ public class Example_33 {
         icon = SVGImage(fileAtPath: "images/svg-test/menu-icon-close.svg")
         icon.setLocation(xy[0], 670.0)
         icon.scaleBy(2.0)
-        xy = icon.drawOn(page)
-
-        icon = SVGImage(stream: InputStream(fileAtPath: "images/svg-test/europe.svg")!)
-        icon.setLocation(-150.0, 0.0)
-        xy = icon.drawOn(page)
+        icon.drawOn(page)
 
         pdf.complete()
     }
