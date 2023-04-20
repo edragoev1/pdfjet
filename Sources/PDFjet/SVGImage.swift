@@ -325,4 +325,4 @@ public class SVGImage {
         }
         return [self.x + self.w, self.y + self.h]
     }
-}   // End of SVGImage.java
+}   // End of SVGImage.swift
