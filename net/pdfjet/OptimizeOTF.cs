@@ -125,7 +125,8 @@ public class OptimizeOTF {
 
     public static void Main(String[] args) {
         FileAttributes attr = File.GetAttributes(args[0]);
-        if (attr.HasFlag(FileAttributes.Directory)) {
+        if ((attr & FileAttributes.Directory) == FileAttributes.Directory) {
+        // if (attr.HasFlag(FileAttributes.Directory)) {    // v4 and higher
             String[] list = Directory.GetFiles(args[0]);
             foreach (String fileName in list) {
                 if (fileName.EndsWith(".ttf") || fileName.EndsWith(".otf")) {

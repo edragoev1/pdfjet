@@ -23,9 +23,6 @@ SOFTWARE.
 */
 using System;
 using System.Text;
-using System.Globalization;
-using System.Collections.Generic;
-
 
 namespace PDFjet.NET {
 /**
@@ -71,7 +68,6 @@ private static char[] forms = new char[] {
 '\u0649','\uFEEF','\uFEF0','\u0649','\u0649',
 };
 
-
     private static bool IsArabicLetter(char ch) {
         for (int i = 0; i < forms.Length; i += 5) {
             if (ch == forms[i]) {
@@ -80,7 +76,6 @@ private static char[] forms = new char[] {
         }
         return false;
     }
-
 
     /**
      *  Reorders the string so that Arabic and Hebrew text flows from right
@@ -118,23 +113,17 @@ private static char[] forms = new char[] {
                 }
                 if (ch == '«') {
                     buf1.Append('»');
-                }
-                else if (ch == '»') {
+                } else if (ch == '»') {
                     buf1.Append('«');
-                }
-                else if (ch == '(') {
+                } else if (ch == '(') {
                     buf1.Append(')');
-                }
-                else if (ch == ')') {
+                } else if (ch == ')') {
                     buf1.Append('(');
-                }
-                else if (ch == '[') {
+                } else if (ch == '[') {
                     buf1.Append(']');
-                }
-                else if (ch == ']') {
+                } else if (ch == ']') {
                     buf1.Append('[');
-                }
-                else {
+                } else {
                     buf1.Append(ch);
                 }
             }
@@ -177,24 +166,20 @@ private static char[] forms = new char[] {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 buf3.Append(ch);
             }
         }
         return buf3.ToString();
     }
 
-
     public static bool IsArabic(char ch) {
         return (ch >= 0x600 && ch <= 0x6FF);
     }
 
-
     private static bool IsHebrew(char ch) {
         return (ch >= 0x0591 && ch <= 0x05F4);
     }
-
 
     private static bool IsAlphaNumeric(char ch) {
         if (ch >= '0' && ch <= '9') {
@@ -208,7 +193,6 @@ private static char[] forms = new char[] {
         }
         return false;
     }
-
 
     private static String Process(String str) {
         StringBuilder buf1 = new StringBuilder(Reverse(str));
@@ -226,17 +210,15 @@ private static char[] forms = new char[] {
         }
         return buf3.ToString();
     }
-
 	
     public static String Reverse(String str) {
-        List<String> list = new List<String>();
-        TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator(str);
-        while (enumerator.MoveNext()) {
-            list.Add(enumerator.GetTextElement());
+        char[] charArray = str.ToCharArray();
+        Array.Reverse(charArray);
+        StringBuilder buf = new StringBuilder();
+        foreach (char ch in charArray) {
+            buf.Append(ch);
         }
-        list.Reverse();
-        return String.Join("", list);
+        return buf.ToString();
     }
-
 }
 }   // End of namespace PDFjet.NET
