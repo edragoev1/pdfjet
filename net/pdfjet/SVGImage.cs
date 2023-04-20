@@ -74,25 +74,25 @@ public class SVGImage {
         byte[] buffer = Contents.GetFromStream(stream);
         foreach (byte ch in buffer) {
             String str = buf.ToString();
-            if (str.EndsWith("<svg")) {
+            if (StringEndsWith(str, "<svg")) {
                 header = true;
                 buf.Length = 0;
             } else if (header && ch == '>') {
                 header = false;
                 buf.Length = 0;
-            } else if (!token && str.EndsWith(" width=")) {
+            } else if (!token && StringEndsWith(str, " width=")) {
                 token = true;
                 param = "width";
                 buf.Length = 0;
-            } else if (!token && str.EndsWith(" height=")) {
+            } else if (!token && StringEndsWith(str, " height=")) {
                 token = true;
                 param = "height";
                 buf.Length = 0;
-            } else if (!token && str.EndsWith(" viewBox=")) {
+            } else if (!token && StringEndsWith(str, " viewBox=")) {
                 token = true;
                 param = "viewBox";
                 buf.Length = 0;
-            } else if (!token && str.EndsWith(" d=")) {
+            } else if (!token && StringEndsWith(str, " d=")) {
                 token = true;
                 if (path != null) {
                     paths.Add(path);
@@ -100,15 +100,15 @@ public class SVGImage {
                 path = new SVGPath();
                 param = "data";
                 buf.Length = 0;
-            } else if (!token && str.EndsWith(" fill=")) {
+            } else if (!token && StringEndsWith(str, " fill=")) {
                 token = true;
                 param = "fill";
                 buf.Length = 0;
-            } else if (!token && str.EndsWith(" stroke=")) {
+            } else if (!token && StringEndsWith(str, " stroke=")) {
                 token = true;
                 param = "stroke";
                 buf.Length = 0;
-            } else if (!token && str.EndsWith(" stroke-width=")) {
+            } else if (!token && StringEndsWith(str, " stroke-width=")) {
                 token = true;
                 param = "stroke-width";
                 buf.Length = 0;
@@ -327,12 +327,16 @@ public class SVGImage {
         if (str1.Length < str2.Length) {
             return false;
         }
-        int i = str2.Length - 1;
-        while (i >= 0) {
-            if (str1[i] != str2[i]) {
+        int i = str1.Length - 1;
+        int j = str2.Length - 1;
+        while (j >= 0) {
+            char ch1 = str1[i];
+            char ch2 = str2[j];
+            if (ch1 != ch2) {
                 return false;
             }
             i--;
+            j--;
         }
         return true;
     }
