@@ -153,7 +153,6 @@ public class SVGImage {
                 buf.Append((char) ch);
             }
         }
-        stream.Close();
         if (path != null) {
             paths.Add(path);
         }
