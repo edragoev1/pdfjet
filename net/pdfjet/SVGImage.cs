@@ -123,9 +123,9 @@ public class SVGImage {
                 } else if (param.Equals("height")) {
                     this.h = float.Parse(str);
                 } else if (param.Equals("viewBox")) {
-                    this.viewBox = buf.ToString();
+                    this.viewBox = str;
                 } else if (param.Equals("data")) {
-                    path.data = buf.ToString();
+                    path.data = str;
                 } else if (param.Equals("fill")) {
                     int fillColor = getColor(str);
                     if (header) {
