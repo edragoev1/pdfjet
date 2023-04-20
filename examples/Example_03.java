@@ -11,23 +11,23 @@ public class Example_03 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_03.pdf")));
-
         pdf.setKeywords("React Vue Java Python");
-
-        Page page = new Page(pdf, A4.PORTRAIT);
-
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
-
         // On Android you have use the getClass().getResourceAsStream(...) method:
-        Image image1 = new Image(pdf, getClass().getResourceAsStream("/images/ee-map.png"), ImageType.PNG);
-        Image image2 = new Image(pdf, getClass().getResourceAsStream("/images/fruit.jpg"), ImageType.JPG);
-        Image image3 = new Image(pdf, getClass().getResourceAsStream("/images/mt-map.bmp"), ImageType.BMP);
+        Image image1 = new Image(pdf,
+                getClass().getResourceAsStream("/images/ee-map.png"), ImageType.PNG);
+        Image image2 = new Image(pdf,
+                getClass().getResourceAsStream("/images/fruit.jpg"), ImageType.JPG);
+        Image image3 = new Image(pdf,
+                getClass().getResourceAsStream("/images/mt-map.bmp"), ImageType.BMP);
 
         // On other platforms you can use this convenience constructors:
         // Image image1 = new Image(pdf, "images/ee-map.png");
         // Image image2 = new Image(pdf, "images/fruit.jpg");
         // Image image3 = new Image(pdf, "images/mt-map.bmp");
+
+        Page page = new Page(pdf, A4.PORTRAIT);
 
         TextLine text = new TextLine(f1,
                 "React The map below is an embedded PNG image");
