@@ -10,17 +10,8 @@ public class Example_33 {
     public Example_33() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_33.pdf", FileMode.Create)));
-
         Page page = new Page(pdf, A4.PORTRAIT);
-/*
-        Image image = new Image(
-                pdf,
-                new FileStream("images/photoshop.jpg", FileMode.Open, FileAccess.Read),
-                ImageType.JPG);
-        image.SetLocation(10f, 10f);
-        image.ScaleBy(0.25f);
-        image.DrawOn(page);
-*/
+
         SVGImage icon = new SVGImage("images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg");
         icon.SetLocation(20f, 670f);
         float[] xy = icon.DrawOn(page);

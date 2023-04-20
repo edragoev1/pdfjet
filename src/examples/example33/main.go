@@ -12,14 +12,8 @@ import (
 // Example33 -- TODO:
 func Example33() {
 	pdf := pdfjet.NewPDFFile("Example_33.pdf", compliance.PDF15)
-
 	page := pdfjet.NewPage(pdf, a4.Portrait)
-/*
-	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg")
-	image1.SetLocation(10.0, 10.0)
-	image1.ScaleBy(0.25)
-	image1.DrawOn(page)
-*/
+
 	// SVG test
 	image2 := pdfjet.NewSVGImageFromFile("images/svg-test/test-CC.svg")
 	image2.SetLocation(20.0, 670.0)
