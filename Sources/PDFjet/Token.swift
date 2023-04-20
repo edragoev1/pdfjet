@@ -33,6 +33,6 @@ public class Token {
     public static let endobj = Array("endobj\n".utf8)
     public static let count = Array("/Count ".utf8);
     public static let length = Array("/Length ".utf8);
-    public static let space = Array(" ".utf8)
-    public static let newline = Array("\n".utf8)
+    public static let space: UInt8 = 32     // SPACE
+    public static let newline: UInt8 = 10   // LF
 }
