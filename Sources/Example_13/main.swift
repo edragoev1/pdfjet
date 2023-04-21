@@ -105,17 +105,16 @@ public class Example_13 {
             table.drawOn(page)
             pages.append(page)
         }
-print("pages.count == \(pages.count)")
+
         var i = 0
         while i < pages.count {
-print("i == \(i)")
             let page = pages[i]
             let text = TextLine(f1)
             text.setText("Page \(i + 1) of \(pages.count)")
             text.setLocation(300.0, 780.0)
             text.drawOn(page)
             pdf.addPage(page)
-            i = i + 1
+            i += 1
         }
 
         pdf.complete()
