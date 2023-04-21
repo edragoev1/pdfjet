@@ -9,24 +9,29 @@ public class Example_18 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_18.pdf", append: false)!)
 
-/*
         let buf1 = try Contents.ofBinaryFile("images/svg-test/europe.svg")
-        var buf2 = [UInt8]()
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-        FlateEncode(&buf2, buf1)
-let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("Time to DEFLATE: \(time1 - time0)")
+        print()
+        print("Original file size:")
         print(buf1.count)
+        print()
+        
+        var buf2 = [UInt8]()
+        var time0 = Int64(Date().timeIntervalSince1970 * 1000)
+        FlateEncode(&buf2, buf1)
+        var time1 = Int64(Date().timeIntervalSince1970 * 1000)
+        print("DEFLATE size:")
         print(buf2.count)
+        print("Time to DEFLATE: \(time1 - time0)")
+        print()
 
         buf2 = [UInt8]()
-let time2 = Int64(Date().timeIntervalSince1970 * 1000)
+        time0 = Int64(Date().timeIntervalSince1970 * 1000)
         LZWEncode(&buf2, buf1)
-let time3 = Int64(Date().timeIntervalSince1970 * 1000)
-print("Time to LZWEncode: \(time3 - time2)")
-        print(buf1.count)
+        time1 = Int64(Date().timeIntervalSince1970 * 1000)
+        print("LZWEncode size:")
         print(buf2.count)
-*/
+        print("Time to LZWEncode: \(time1 - time0)")
+        print()
 
         let font = try Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
         font.setSize(12.0)
