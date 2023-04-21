@@ -397,6 +397,7 @@ public class Table {
      *  @return the number of pages.
      *  @throws Exception  If an input or output exception occurred
      */
+    @Deprecated
     public int getNumberOfPages(Page page) throws Exception {
         numOfPages = 1;
         while (hasMoreData()) {
@@ -548,6 +549,7 @@ public class Table {
      *
      *  @return the number of data rows that have been rendered so far.
      */
+    @Deprecated
     public int getRowsRendered() {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows;
     }
