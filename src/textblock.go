@@ -36,7 +36,7 @@ import (
 type TextBlock struct {
 	font, fallbackFont *Font
 	text               string
-	space              float32
+	spaceBetweenLines  float32
 	textAlign          int
 	x                  float32
 	y                  float32
@@ -57,7 +57,7 @@ func NewTextBlock(font *Font, text string) *TextBlock {
 	textBlock := new(TextBlock)
 	textBlock.font = font
 	textBlock.text = text
-	textBlock.space = font.descent
+	textBlock.spaceBetweenLines = 0.0
 	textBlock.textAlign = align.Left
 	textBlock.w = 300.0
 	textBlock.h = 200.0
@@ -121,14 +121,14 @@ func (textBlock *TextBlock) GetHeight() float32 {
 // @param space the space between two lines.
 // @return the TextBlock object.
 func (textBlock *TextBlock) SetSpaceBetweenLines(space float32) *TextBlock {
-	textBlock.space = space
+	textBlock.spaceBetweenLines = space
 	return textBlock
 }
 
 // GetSpaceBetweenLines Returns the space between two lines of text.
 // @return float the space.
 func (textBlock *TextBlock) GetSpaceBetweenLines() float32 {
-	return textBlock.space
+	return textBlock.spaceBetweenLines
 }
 
 // SetTextAlignment Sets the text alignment.
@@ -219,7 +219,7 @@ func (textBlock *TextBlock) drawText(page *Page) [2]float32 {
 		if textBlock.IsCJK(line) {
 			buf.Reset()
 			for _, ch := range line {
-				if textBlock.font.StringWidth(textBlock.fallbackFont, buf.String()+string(ch)) < textBlock.w {
+				if textBlock.font.StringWidth(textBlock.fallbackFont, buf.String()+string(ch)) <= textBlock.w {
 					buf.WriteRune(ch)
 				} else {
 					list = append(list, buf.String())
@@ -271,10 +271,9 @@ func (textBlock *TextBlock) drawText(page *Page) [2]float32 {
 			page.DrawString(textBlock.font, textBlock.fallbackFont, line, xText, yText)
 		}
 		if i < (len(lines) - 1) {
-			yText += textBlock.font.bodyHeight + textBlock.space
+			yText += textBlock.font.bodyHeight + textBlock.spaceBetweenLines
 		}
 	}
-
 	textBlock.h = (yText - textBlock.y) + textBlock.font.descent
 	if page != nil && textBlock.drawBorder {
 		box := NewBox()

@@ -244,8 +244,7 @@ public class TextBlock : IDrawable {
                 ch >= 0x30A0 && ch <= 0x30FF ||     // Katakana (Japanese)
                 ch >= 0x3040 && ch <= 0x309F) {     // Hiragana (Japanese)
                 cjk += 1;
-            }
-            else {
+            } else {
                 other += 1;
             }
         }

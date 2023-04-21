@@ -306,8 +306,8 @@ public class TextBlock implements Drawable {
                     list.add(line.trim());
                 } else {
                     StringBuilder buf = new StringBuilder();
-                    // String[] tokens = TextUtils.splitTextIntoTokens(line, font, fallbackFont, this.w);
-                    String[] tokens = line.trim().split("\\s+"); // Do not remove the trim()!
+                    String[] tokens = TextUtils.splitTextIntoTokens(line, font, fallbackFont, this.w);
+                    // String[] tokens = line.trim().split("\\s+"); // Do not remove the trim()!
                     for (String token : tokens) {
                         if (font.stringWidth(fallbackFont, (buf.toString() + " " + token).trim()) < this.w) {
                             buf.append(" ");
