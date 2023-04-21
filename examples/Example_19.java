@@ -70,10 +70,18 @@ public class Example_19 {
         textBlock = new TextBlock(f1);
         textBlock.setFallbackFont(f2);
         textBlock.setText("保健所によると、女性は１３日に旅行先のタイから札幌に戻り、１６日午後５～８時ごろ同店を訪れ、帰宅後に発熱などの症状が出て、２３日に医療機関ではしかと診断された。はしかのウイルスは発症日の１日前から感染者の呼吸などから放出され、本人がいなくなっても、２時間程度空気中に漂い、空気感染する。保健所は１６日午後５～１１時に同店を訪れた人に、発熱などの異常が出た場合、早期にマスクをして医療機関を受診するよう呼びかけている。（本郷由美子）");
-        textBlock.setLocation(x1, 600f);
+        textBlock.setLocation(x1, 550f);
         textBlock.setWidth(350f);
         textBlock.setDrawBorder(true);
         textBlock.drawOn(page);
+
+        TextBox textBox = new TextBox(f1);
+        textBox.setFallbackFont(f2);
+        textBox.setText("保健所によると、女性は１３日に旅行先のタイから札幌に戻り、１６日午後５～８時ごろ同店を訪れ、帰宅後に発熱などの症状が出て、２３日に医療機関ではしかと診断された。はしかのウイルスは発症日の１日前から感染者の呼吸などから放出され、本人がいなくなっても、２時間程度空気中に漂い、空気感染する。保健所は１６日午後５～１１時に同店を訪れた人に、発熱などの異常が出た場合、早期にマスクをして医療機関を受診するよう呼びかけている。（本郷由美子）");
+        textBox.setLocation(x1, 680f);
+        textBox.setWidth(350f);
+        textBox.setBorder(Border.ALL);
+        textBox.drawOn(page);
 
         pdf.complete();
     }

@@ -444,8 +444,7 @@ public class TextBox implements Drawable {
     /**
      * Sets the pen color.
      *
-     * @param color the color specified as an array of double values from 0.0 to
-     *              1.0.
+     * @param color the color specified as an array of double values from 0.0 to 1.0.
      */
     public void setPenColor(double[] color) {
         setPenColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
@@ -481,8 +480,7 @@ public class TextBox implements Drawable {
     /**
      * Sets the brush color.
      *
-     * @param color the color specified as an array of double values from 0.0 to
-     *              1.0.
+     * @param color the color specified as an array of double values from 0.0 to 1.0.
      */
     public void setBrushColor(double[] color) {
         setBrushColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
@@ -503,12 +501,9 @@ public class TextBox implements Drawable {
      * @param border  the border object.
      * @param visible the object visibility.
      */
-    public void setBorder(int border, boolean visible) {
-        if (visible) {
-            this.properties |= border;
-        } else {
-            this.properties &= (~border & 0x00FFFFFF);
-        }
+    public void setBorder(int border) {
+        this.properties &= 0xFFF0FFFF;
+        this.properties |= border;
     }
 
     /**
@@ -518,15 +513,32 @@ public class TextBox implements Drawable {
      * @return boolean the text border object.
      */
     public boolean getBorder(int border) {
-        return (this.properties & border) != 0;
-    }
-
-    /**
-     * Sets all borders to be invisible.
-     * This cell will have no borders when drawn on the page.
-     */
-    public void setNoBorders() {
-        this.properties &= 0x00F0FFFF;
+        if (border == Border.NONE) {
+            if (((properties >> 16) & 0xF) == 0x0) {
+                return true;
+            }
+        } else if (border == Border.TOP) {
+            if (((properties >> 16) & 0xF) == 0x1) {
+                return true;
+            }
+        } else if (border == Border.BOTTOM) {
+            if (((properties >> 16) & 0xF) == 0x2) {
+                return true;
+            }
+        } else if (border == Border.LEFT) {
+            if (((properties >> 16) & 0xF) == 0x4) {
+                return true;
+            }
+        } else if (border == Border.RIGHT) {
+            if (((properties >> 16) & 0xF) == 0x8) {
+                return true;
+            }
+        } else if (border == Border.ALL) {
+            if (((properties >> 16) & 0xF) == 0xF) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -652,10 +664,7 @@ public class TextBox implements Drawable {
     private void drawBorders(Page page) {
         page.setPenColor(pen);
         page.setPenWidth(lineWidth);
-        if (getBorder(Border.TOP) &&
-                getBorder(Border.BOTTOM) &&
-                getBorder(Border.LEFT) &&
-                getBorder(Border.RIGHT)) {
+        if (getBorder(Border.ALL)) {
             page.drawRect(x, y, width, height);
         } else {
             if (getBorder(Border.TOP)) {
