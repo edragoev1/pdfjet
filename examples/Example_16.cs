@@ -2,18 +2,14 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_16.cs
  *
  */
 public class Example_16 {
-
     public Example_16() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_16.pdf", FileMode.Create)));
 
@@ -56,6 +52,7 @@ public class Example_16 {
 
         // Find x and y without actually drawing the text box.
         // float[] xy = textBox.DrawOn(page, false);
+        textBox.SetBorder(Border.ALL);
         float[] xy = textBox.DrawOn(page);
 
         page.SetGraphicsState(new GraphicsState()); // Reset GS
@@ -68,7 +65,6 @@ public class Example_16 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -77,5 +73,4 @@ public class Example_16 {
         sw.Stop();
         Console.WriteLine("Example_16 => " + (time1 - time0));
     }
-
 }   // End of Example_16.cs
