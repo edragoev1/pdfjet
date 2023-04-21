@@ -136,7 +136,7 @@ public class Example_23 {
 
         TextBox textBox = new TextBox(f1, buf.toString());
         textBox.setWidth(400f);
-        textBox.setNoBorders();
+        textBox.setBorder(Border.NONE);
 
         tableData.get(0).get(1).setDrawable(textBox);
         table.drawOn(page);

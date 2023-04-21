@@ -32,7 +32,7 @@ public class Example_31 {
         TextBox textBox = new TextBox(f1, buf.toString(), 500f, 300f);
         textBox.setFallbackFont(f2);
         textBox.setLocation(50f, 50f);
-        textBox.setNoBorders();
+        textBox.setBorder(Border.NONE);
         textBox.drawOn(page);
 
         String str = "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?";
