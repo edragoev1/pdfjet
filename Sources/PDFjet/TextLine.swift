@@ -23,12 +23,10 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create text line objects.
 ///
 public class TextLine : Drawable {
-
     var x: Float = 0.0
     var y: Float = 0.0
 
@@ -62,7 +60,6 @@ public class TextLine : Drawable {
     private var structureType = StructElem.P
     private var colorMap: [String: Int32]
 
-
     ///
     /// Constructor for creating text line objects.
     ///
@@ -72,7 +69,6 @@ public class TextLine : Drawable {
         self.font = font
         self.colorMap = [String: Int32]()
     }
-
 
     ///
     /// Constructor for creating text line objects.
@@ -87,7 +83,6 @@ public class TextLine : Drawable {
         self.colorMap = [String: Int32]()
     }
 
-
     ///
     /// Sets the text.
     ///
@@ -101,7 +96,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text.
     ///
@@ -111,11 +105,9 @@ public class TextLine : Drawable {
         return self.text
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Sets the location where selt.text line will be drawn on the page.
@@ -131,7 +123,6 @@ public class TextLine : Drawable {
         return self;
     }
 
-
     ///
     /// Sets the font to use for selt.text line.
     ///
@@ -144,7 +135,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Gets the font to use for selt.text line.
     ///
@@ -153,7 +143,6 @@ public class TextLine : Drawable {
     public func getFont() -> Font {
         return self.font!
     }
-
 
     ///
     /// Sets the font size to use for selt.text line.
@@ -167,7 +156,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Sets the fallback font.
     ///
@@ -179,7 +167,6 @@ public class TextLine : Drawable {
         self.fallbackFont = fallbackFont
         return self
     }
-
 
     ///
     /// Sets the fallback font size to use for selt.text line.
@@ -193,7 +180,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the fallback font.
     ///
@@ -202,7 +188,6 @@ public class TextLine : Drawable {
     public func getFallbackFont() -> Font? {
         return self.fallbackFont
     }
-
 
     ///
     /// Sets the color for selt.text line.
@@ -215,7 +200,6 @@ public class TextLine : Drawable {
         self.color = color
         return self
     }
-
 
     ///
     /// Sets the pen color.
@@ -230,7 +214,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text line color.
     ///
@@ -239,7 +222,6 @@ public class TextLine : Drawable {
     public func getColor() -> Int32 {
         return self.color
     }
-
 
     ///
     /// Returns the y coordinate of the destination.
@@ -250,7 +232,6 @@ public class TextLine : Drawable {
         return y - font!.getSize()
     }
 
-
     ///
     /// Returns the width of selt.TextLine.
     ///
@@ -260,11 +241,14 @@ public class TextLine : Drawable {
         return font!.stringWidth(fallbackFont, text!)
     }
 
-
+    ///
+    /// Returns the width of the specified string.
+    ///
+    /// - Returns: the width.
+    ///
     public func getStringWidth(_ text: String) -> Float {
         return font!.stringWidth(fallbackFont, text)
     }
-
 
     ///
     /// Returns the height of selt.TextLine.
@@ -272,9 +256,10 @@ public class TextLine : Drawable {
     /// - Returns: the height.
     ///
     public func getHeight() -> Float {
-        return font!.getHeight()
+        let ascent = max(font!.ascent, fallbackFont!.ascent)
+        let descent = max(font!.descent, fallbackFont!.descent)
+        return ascent + descent
     }
-
 
     ///
     /// Sets the URI for the "click text line" action.
@@ -288,7 +273,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the action URI.
     ///
@@ -297,7 +281,6 @@ public class TextLine : Drawable {
     public func getURIAction() -> String? {
         return self.uri
     }
-
 
     ///
     /// Sets the destination key for the action.
@@ -311,7 +294,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the GoTo action string.
     ///
@@ -320,7 +302,6 @@ public class TextLine : Drawable {
     public func getGoToAction() -> String? {
         return self.key
     }
-
 
     ///
     /// Sets the underline variable.
@@ -335,7 +316,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the underline flag.
     ///
@@ -344,7 +324,6 @@ public class TextLine : Drawable {
     public func getUnderline() -> Bool {
         return self.underline
     }
-
 
     ///
     /// Sets the strike variable.
@@ -359,7 +338,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the strikeout flag.
     ///
@@ -368,7 +346,6 @@ public class TextLine : Drawable {
     public func getStrikeout() -> Bool {
         return self.strikeout
     }
-
 
     ///
     /// Sets the direction in which to draw the text.
@@ -382,7 +359,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text direction.
     ///
@@ -391,7 +367,6 @@ public class TextLine : Drawable {
     public func getTextDirection() -> Int {
         return degrees
     }
-
 
     ///
     /// Sets the text effect.
@@ -405,7 +380,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text effect.
     ///
@@ -414,7 +388,6 @@ public class TextLine : Drawable {
     public func getTextEffect() -> Int {
         return self.textEffect
     }
-
 
     ///
     /// Sets the vertical offset of the text.
@@ -428,7 +401,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the vertical text offset.
     ///
@@ -437,7 +409,6 @@ public class TextLine : Drawable {
     public func getVerticalOffset() -> Float {
         return self.verticalOffset
     }
-
 
     ///
     /// Sets the trailing space after selt.text line when used in paragraph.
@@ -451,7 +422,6 @@ public class TextLine : Drawable {
         return self
     }
 
-
     ///
     /// Returns the trailing space.
     ///
@@ -461,18 +431,15 @@ public class TextLine : Drawable {
         return self.trailingSpace
     }
 
-
     @discardableResult
     public func setLanguage(_ language: String?) -> TextLine {
         self.language = language
         return self
     }
 
-
     public func getLanguage() -> String? {
         return self.language
     }
-
 
     ///
     /// Sets the alternate description of selt.text line.
@@ -486,11 +453,9 @@ public class TextLine : Drawable {
         return self
     }
 
-
     public func getAltDescription() -> String? {
         return self.altDescription
     }
-
 
     @discardableResult
     public func setURILanguage(_ uriLanguage: String?) -> TextLine {
@@ -498,20 +463,17 @@ public class TextLine : Drawable {
         return self
     }
 
-
     @discardableResult
     public func setURIAltDescription(_ uriAltDescription: String?) -> TextLine {
         self.uriAltDescription = uriAltDescription
         return self
     }
 
-
     @discardableResult
     public func setURIActualText(_ uriActualText: String?) -> TextLine {
         self.uriActualText = uriActualText
         return self
     }
-
 
     @discardableResult
     public func setStructureType(_ structureType: String) -> TextLine {

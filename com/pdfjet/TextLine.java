@@ -260,7 +260,7 @@ public class TextLine implements Drawable {
     }
 
     /**
-     *  Returns the string width of the specified text.
+     *  Returns the string width of the specified string.
      *
      *  @return the width.
      */

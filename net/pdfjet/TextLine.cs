@@ -233,7 +233,7 @@ public class TextLine : IDrawable {
     }
 
     /**
-     *  Returns the string width of the specified text.
+     *  Returns the string width of the specified string.
      *
      *  @return the width.
      */
