@@ -371,6 +371,7 @@ public class Table {
      *
      *  @return the number of pages.
      */
+    [Obsolete("This method is deprecated. Please use Page.DETACHED. See Example_13.cs")]
     public int GetNumberOfPages(Page page) {
         numOfPages = 1;
         while (HasMoreData()) {
@@ -471,8 +472,7 @@ public class Table {
             if (page != null && (y + cellH) > (page.height - bottomMargin)) {
                 if (i == tableData.Count - 1) {
                     rendered = -1;
-                }
-                else {
+                } else {
                     rendered = i + 1;
                     numOfPages++;
                 }
@@ -828,8 +828,7 @@ public class Table {
             Cell cell = row[i];
             if (IsTextColumn(i)) {
                 textColumnWidths += cell.GetWidth();
-            }
-            else {
+            } else {
                 otherColumnWidths += cell.GetWidth();
             }
         }
