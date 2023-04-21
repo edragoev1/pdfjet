@@ -286,18 +286,6 @@ func (table *Table) GetColumnAtIndex(index int) []*Cell {
 	return table.GetColumn(index)
 }
 
-// GetNumberOfPages returns the total number of pages that are required to draw table table on.
-// @param page the type of pages we are drawing table table on.
-// @return the number of pages.
-func (table *Table) GetNumberOfPages(page *Page) int {
-	table.numOfPages = 1
-	for table.HasMoreData() {
-		table.DrawOn(page)
-	}
-	table.ResetRenderedPagesCount()
-	return table.numOfPages
-}
-
 // DrawOn draws this table on the specified page.
 // @param page the page to draw this table on.
 // @return Point the point on the page where to draw the next component.
