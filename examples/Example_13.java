@@ -125,13 +125,10 @@ public class Example_13 {
             pages.add(page);
         }
 
-        // Write "Page X of N" on each page and add the page to the PDF.
+        // Write the footer on each page and add the page to the PDF.
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
-            TextLine text = new TextLine(f1);
-            text.setText("Page " + (i + 1) + " of " + pages.size());
-            text.setLocation(300f, 780f);
-            text.drawOn(page);
+            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
             pdf.addPage(page);
         }
 

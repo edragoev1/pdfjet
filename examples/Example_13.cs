@@ -94,10 +94,7 @@ public class Example_13 {
 
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
-            TextLine text = new TextLine(f1);
-            text.SetText("Page " + (i + 1) + " of " + pages.Count);
-            text.SetLocation(300f, 780f);
-            text.DrawOn(page);
+            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
             pdf.AddPage(page);
         }
 
