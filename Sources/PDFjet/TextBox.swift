@@ -411,7 +411,33 @@ public class TextBox : Drawable {
     /// @return Bool the text border object.
     ///
     public func getBorder(_ border: UInt32) -> Bool {
-        return (self.properties & border) != 0
+        // return (self.properties & border) != 0
+        if border == Border.NONE {
+            if ((properties >> 16) & 0xF) == 0x0 {
+                return true
+            }
+        } else if border == Border.TOP {
+            if ((properties >> 16) & 0x1) == 0x1 {
+                return true
+            }
+        } else if border == Border.BOTTOM {
+            if ((properties >> 16) & 0x2) == 0x2 {
+                return true
+            }
+        } else if border == Border.LEFT {
+            if ((properties >> 16) & 0x4) == 0x4 {
+                return true
+            }
+        } else if border == Border.RIGHT {
+            if ((properties >> 16) & 0x8) == 0x8 {
+                return true
+            }
+        } else if border == Border.ALL {
+            if ((properties >> 16) & 0xF) == 0xF {
+                return true
+            }
+        }
+        return false
     }
 
     ///
