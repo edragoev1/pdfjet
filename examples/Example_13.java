@@ -29,13 +29,11 @@ public class Example_13 {
             String[] columns = line.split("\\|", -1);
             for ( int i = 0; i < columns.length; i++ ) {
                 Cell cell = new Cell(f2, columns[i]);
-
                 // WITH:
                 cell.setTopPadding(2f);
                 cell.setBottomPadding(2f);
                 cell.setLeftPadding(2f);
                 cell.setRightPadding(2f);
-
                 row.add(cell);
             }
             tableData.add(row);
@@ -78,12 +76,10 @@ public class Example_13 {
                 cell.setTextAlignment(Align.CENTER);
                 if (Integer.valueOf(cell.getText()) > 40) {
                     cell.setBgColor(Color.darkseagreen);
-                }
-                else {
+                } else {
                     cell.setBgColor(Color.yellow);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
             }
         }
 
@@ -97,8 +93,7 @@ public class Example_13 {
                 if (cell.getText().equals("Bowden")) {
                     cell.setStrikeout(true);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
             }
         }
 
@@ -109,8 +104,7 @@ public class Example_13 {
                 if (cell.getText().equals("Bowden")) {
                     cell.setStrikeout(false);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
             }
         }
 
@@ -123,23 +117,22 @@ public class Example_13 {
         table.setColumnWidth(8, 10f);
         blankOutColumn(table, 8);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        int numOfPages = table.getNumberOfPages(page);
-        int pageNumber = 1;
-        while (true) {
+        // Create detached pages and draw the table on them.
+        List<Page> pages = new ArrayList<Page>();
+        while (table.hasMoreData()) {
+            Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
             table.drawOn(page);
+            pages.add(page);
+        }
 
+        // Write "Page X of N" on each page and add the page to the PDF.
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = pages.get(i);
             TextLine text = new TextLine(f1);
-            text.setText("Page " + pageNumber++ + " of " + numOfPages);
+            text.setText("Page " + (i + 1) + " of " + pages.size());
             text.setLocation(300f, 780f);
             text.drawOn(page);
-
-            if (!table.hasMoreData()) {
-                table.resetRenderedPagesCount();
-                break;
-            }
-
-            page = new Page(pdf, Letter.PORTRAIT);
+            pdf.addPage(page);
         }
 
         pdf.complete();
