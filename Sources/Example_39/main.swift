@@ -1,17 +1,13 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_39.swift
  *
  */
 public class Example_39 {
-
     public init() throws {
-
         if let stream = OutputStream(toFileAtPath: "Example_39.pdf", append: false) {
-
             let pdf = PDF(stream)
             let page = Page(pdf, Letter.PORTRAIT)
 
@@ -32,18 +28,14 @@ public class Example_39 {
             chart.setYAxisTitle("")
             chart.setData(getData())
             chart.setDrawYAxisLabels(false)
-
             chart.drawOn(page)
 
             pdf.complete()
         }
     }
 
-
     public func getData() -> [[Point]] {
-
         var chartData = [[Point]]()
-
         var path1 = [Point]()
 
         var point = Point()
@@ -63,9 +55,7 @@ public class Example_39 {
         point.setShape(Point.INVISIBLE)
         path1.append(point)
 
-
         var path2 = [Point]()
-
         point = Point()
         point.setDrawPath()
         point.setX(0.0)
@@ -83,9 +73,7 @@ public class Example_39 {
         point.setShape(Point.INVISIBLE)
         path2.append(point)
 
-
         var path3 = [Point]()
-
         point = Point()
         point.setDrawPath()
         point.setX(0.0)
@@ -103,9 +91,7 @@ public class Example_39 {
         point.setShape(Point.INVISIBLE)
         path3.append(point)
 
-
         var path4 = [Point]()
-
         point = Point()
         point.setDrawPath()
         point.setX(0.0)
@@ -130,7 +116,6 @@ public class Example_39 {
 
         return chartData
     }
-
 }   // End of Example_39.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
