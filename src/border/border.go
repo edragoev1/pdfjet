@@ -27,10 +27,10 @@ SOFTWARE.
 // Constants used to control the visibility of cell borders.
 // See the Cell class for more information.
 const (
-	NONE   = 0x00000000
+	None   = 0x00000000
 	Top    = 0x00010000
 	Bottom = 0x00020000
 	Left   = 0x00040000
 	Right  = 0x00080000
-	ALL    = 0x000F0000
+	All    = 0x000F0000
 )

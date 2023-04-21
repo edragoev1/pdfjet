@@ -91,7 +91,7 @@ func NewTextBox(font *Font) *TextBox {
 	textBox.background = color.White
 	textBox.pen = color.Black
 	textBox.brush = color.Black
-	textBox.properties = 0x000F0001
+	textBox.properties = 0x00000001
 	textBox.SetTextAlignment(align.Left)
 	textBox.valign = align.Top
 	return textBox
@@ -295,12 +295,13 @@ func (textBox *TextBox) GetBrushColor() int32 {
 
 // SetBorder sets the TextBox border object.
 // @param border the border object.
-func (textBox *TextBox) SetBorder(border int, visible bool) {
-	if visible {
-		textBox.properties |= border
-	} else {
-		textBox.properties &= (^border & 0x00FFFFFF)
-	}
+func (textBox *TextBox) SetBorder(border int) {
+	textBox.properties |= border
+	// if visible {
+	// 	textBox.properties |= border
+	// } else {
+	// 	textBox.properties &= (^border & 0x00FFFFFF)
+	// }
 }
 
 // GetBorder returns the text box border.

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/border"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
@@ -54,6 +55,7 @@ func Example16() {
 	// textBox.SetVerticalAlignment(align.Center)
 	textBox.SetBgColor(color.Whitesmoke)
 	textBox.SetTextColors(colors)
+	textBox.SetBorder(border.All)
 	xy := textBox.DrawOn(page)
 
 	page.SetGraphicsState(pdfjet.NewGraphicsState()) // Reset GS
