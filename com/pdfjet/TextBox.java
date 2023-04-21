@@ -79,7 +79,7 @@ public class TextBox implements Drawable {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private int properties = 0x000F0001;
+    private int properties = 0x00000001;
 
     private String language = "en-US";
     private String altDescription = "";

@@ -80,7 +80,7 @@ public class TextBox : IDrawable {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private uint properties = 0x000F0001;
+    private uint properties = 0x00000001;
 
     /**
      *  Creates a text box and sets the font.
