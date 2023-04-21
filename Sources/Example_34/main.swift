@@ -66,7 +66,7 @@ public class Example_34 {
         table.drawOn(pdf, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
-            // try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
+            try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
         }
 
@@ -94,7 +94,6 @@ public class Example_34 {
             _ numOfHeaderRows: Int,
             _ f1: Font,
             _ f2: Font) throws -> [[Cell]] {
-
         var tableData = [[Cell]]()
 
         var currentRow: Int = 0
@@ -110,11 +109,9 @@ public class Example_34 {
             var cols: [String]?
             if delimiter == "|" {
                 cols = line.components(separatedBy: "|")
-            }
-            else if delimiter == "\t" {
+            } else if delimiter == "\t" {
                 cols = line.components(separatedBy: "\t")
-            }
-            else {
+            } else {
                 print("Only pipes and tabs can be used as delimiters")
             }
 
@@ -123,8 +120,7 @@ public class Example_34 {
                 var cell: Cell?
                 if currentRow < numOfHeaderRows {
                     cell = Cell(f1, text)
-                }
-                else {
+                } else {
                     cell = Cell(f2, text)
                 }
                 cell!.setTopPadding(2.0)
@@ -132,8 +128,7 @@ public class Example_34 {
                 cell!.setLeftPadding(2.0)
                 if i == 3 {
                     cell!.setRightPadding(10.0)
-                }
-                else {
+                } else {
                     cell!.setRightPadding(2.0)
                 }
                 row.append(cell!)
@@ -143,7 +138,6 @@ public class Example_34 {
             currentRow += 1
         }
         appendMissingCells(tableData, f2)
-
         return tableData
     }
 }   // End of Example_34.swift
