@@ -259,6 +259,11 @@ public class TextLine implements Drawable {
         return font.stringWidth(fallbackFont, text);
     }
 
+    /**
+     *  Returns the string width of the specified text.
+     *
+     *  @return the width.
+     */
     public float getStringWidth(String text) {
         return font.stringWidth(fallbackFont, text);
     }
@@ -269,7 +274,9 @@ public class TextLine implements Drawable {
      *  @return the height.
      */
     public float getHeight() {
-        return font.getHeight();
+        float ascent = Math.max(font.ascent, fallbackFont.ascent);
+        float descent = Math.max(font.descent, fallbackFont.descent);
+        return ascent + descent;
     }
 
     /**
