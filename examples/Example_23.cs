@@ -45,7 +45,6 @@ public class Example_23 {
         cell = new Cell(f1, "CompositeTextLine");
         cell.SetTopPadding(5f);
         cell.SetBottomPadding(5f);
-
         row.Add(cell);
 
         tableData.Add(row);
@@ -137,7 +136,7 @@ public class Example_23 {
 
         TextBox textBox = new TextBox(f1, buf.ToString());
         textBox.SetWidth(400f);
-        textBox.SetNoBorders();
+        textBox.SetBorder(Border.NONE);
         tableData[0][1].SetDrawable(textBox);
         table.DrawOn(page);
 
