@@ -132,10 +132,8 @@ public class Example_23 {
 
         let textBox = TextBox(f1, buf)
         textBox.setWidth(400.0)
-        textBox.setNoBorders()
-
+        textBox.setBorder(Border.NONE)
         tableData[0][1].setDrawable(textBox)
-
         table.drawOn(page)
 
         pdf.complete()
