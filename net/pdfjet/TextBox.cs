@@ -61,7 +61,7 @@ public class TextBox : IDrawable {
     private int background = Color.transparent;
     private int pen = Color.black;
     private int brush = Color.black;
-    private int valign = Align.TOP;
+    private uint valign = Align.TOP;
     private Dictionary<String, Int32> colors = null;
 
     // TextBox properties
@@ -80,7 +80,7 @@ public class TextBox : IDrawable {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private int properties = 0x000F0001;
+    private uint properties = 0x000F0001;
 
     /**
      *  Creates a text box and sets the font.
@@ -487,13 +487,9 @@ public class TextBox : IDrawable {
      *
      *  @param border the border object.
      */
-    public void SetBorder(int border, bool visible) {
-        if (visible) {
-            this.properties |= border;
-        }
-        else {
-            this.properties &= (~border & 0x00FFFFFF);
-        }
+    public void SetBorder(uint border) {
+        this.properties &= 0xFFF0FFFF;
+        this.properties |= border;
     }
 
     /**
@@ -501,8 +497,33 @@ public class TextBox : IDrawable {
      *
      *  @return boolean the text border object.
      */
-    public bool GetBorder(int border) {
-        return (this.properties & border) != 0;
+    public bool GetBorder(uint border) {
+        if (border == Border.NONE) {
+            if (((properties >> 16) & 0xF) == 0x0) {
+                return true;
+            }
+        } else if (border == Border.TOP) {
+            if (((properties >> 16) & 0xF) == 0x1) {
+                return true;
+            }
+        } else if (border == Border.BOTTOM) {
+            if (((properties >> 16) & 0xF) == 0x2) {
+                return true;
+            }
+        } else if (border == Border.LEFT) {
+            if (((properties >> 16) & 0xF) == 0x4) {
+                return true;
+            }
+        } else if (border == Border.RIGHT) {
+            if (((properties >> 16) & 0xF) == 0x8) {
+                return true;
+            }
+        } else if (border == Border.ALL) {
+            if (((properties >> 16) & 0xF) == 0xF) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -519,7 +540,7 @@ public class TextBox : IDrawable {
      *  @param alignment the alignment code.
      *  Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
      */
-    public void SetTextAlignment(int alignment) {
+    public void SetTextAlignment(uint alignment) {
         this.properties &= 0x00CFFFFF;
         this.properties |= (alignment & 0x00300000);
     }
@@ -529,7 +550,7 @@ public class TextBox : IDrawable {
      *
      *  @return alignment the alignment code. Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
      */
-    public int GetTextAlignment() {
+    public uint GetTextAlignment() {
         return (this.properties & 0x00300000);
     }
 
@@ -594,11 +615,11 @@ public class TextBox : IDrawable {
      *
      *  @param alignment - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
      */
-    public void SetVerticalAlignment(int alignment) {
+    public void SetVerticalAlignment(uint alignment) {
         this.valign = alignment;
     }
 
-    public int GetVerticalAlignment() {
+    public uint GetVerticalAlignment() {
         return this.valign;
     }
 
@@ -614,10 +635,7 @@ public class TextBox : IDrawable {
         page.SetPenColor(pen);
         page.SetPenWidth(lineWidth);
 
-        if (GetBorder(Border.TOP) &&
-                GetBorder(Border.BOTTOM) &&
-                GetBorder(Border.LEFT) &&
-                GetBorder(Border.RIGHT)) {
+        if (GetBorder(Border.ALL)) {
             page.DrawRect(x, y, width, height);
         }
         else {

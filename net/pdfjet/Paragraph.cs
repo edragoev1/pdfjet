@@ -37,7 +37,7 @@ public class Paragraph {
     public float x2;
     public float y2;
     internal List<TextLine> lines = null;
-    internal int alignment = Align.LEFT;
+    internal uint alignment = Align.LEFT;
 
     /**
      *  Constructor for creating paragraph objects.
@@ -71,7 +71,7 @@ public class Paragraph {
      *
      *  <pre>Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.</pre>
      */
-    public Paragraph SetAlignment(int alignment) {
+    public Paragraph SetAlignment(uint alignment) {
         this.alignment = alignment;
         return this;
     }

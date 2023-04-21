@@ -38,7 +38,7 @@ public class TextBlock : IDrawable {
     internal String text = null;
 
     private float spaceBetweenLines = 0f;
-    private int textAlign = Align.LEFT;
+    private uint textAlign = Align.LEFT;
 
     private float x;
     private float y;
@@ -193,7 +193,7 @@ public class TextBlock : IDrawable {
      *  @param textAlign the alignment parameter.
      *  Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
      */
-    public TextBlock SetTextAlignment(int textAlign) {
+    public TextBlock SetTextAlignment(uint textAlign) {
         this.textAlign = textAlign;
         return this;
     }
@@ -204,7 +204,7 @@ public class TextBlock : IDrawable {
      *
      *  @return the alignment code.
      */
-    public int GetTextAlignment() {
+    public uint GetTextAlignment() {
         return this.textAlign;
     }
 

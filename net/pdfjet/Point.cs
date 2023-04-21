@@ -55,7 +55,7 @@ public class Point : IDrawable {
     internal float r = 2f;
     internal int shape = Point.CIRCLE;
     internal int color = Color.black;
-    internal int align = Align.RIGHT;
+    internal uint align = Align.RIGHT;
     internal float lineWidth = 0.3f;
     internal String linePattern = "[] 0";
     internal bool fillShape = false;
@@ -497,7 +497,7 @@ public class Point : IDrawable {
      *
      *  @param align the alignment value.
      */
-    public void SetAlignment(int align) {
+    public void SetAlignment(uint align) {
         this.align = align;
     }
 
@@ -507,7 +507,7 @@ public class Point : IDrawable {
      *
      *  @return align the alignment value.
      */
-    public int GetAlignment() {
+    public uint GetAlignment() {
         return this.align;
     }
 

@@ -26,7 +26,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to create text column objects and draw them on a page.
@@ -34,8 +33,7 @@ namespace PDFjet.NET {
  *  Please see Example_10 and Example_29.
  */
 public class TextColumn : IDrawable {
-
-    internal int alignment = Align.LEFT;
+    internal uint alignment = Align.LEFT;
     internal int rotate;
 
     private float x;    // This variable keeps it's original value after being initialized.
@@ -184,7 +182,7 @@ public class TextColumn : IDrawable {
      *
      *  @param alignment the specified alignment code. Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
      */
-    public void SetAlignment(int alignment) {
+    public void SetAlignment(uint alignment) {
         this.alignment = alignment;
     }
 

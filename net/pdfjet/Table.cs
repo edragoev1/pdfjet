@@ -26,7 +26,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to create table objects and draw them on a page.
@@ -34,7 +33,6 @@ namespace PDFjet.NET {
  *  Please see Example_08.
  */
 public class Table {
-
     public static readonly int DATA_HAS_0_HEADER_ROWS = 0;
     public static readonly int DATA_HAS_1_HEADER_ROWS = 1;
     public static readonly int DATA_HAS_2_HEADER_ROWS = 2;
@@ -58,7 +56,6 @@ public class Table {
     private float rightMargin;
     private float bottomMargin = 30f;
 
-
     /**
      *  Create a table object.
      *
@@ -66,7 +63,6 @@ public class Table {
     public Table() {
         tableData = new List<List<Cell>>();
     }
-
 
     /**
      *  Sets the position (x, y) of the top left corner of this table on the page.
@@ -78,7 +74,6 @@ public class Table {
         SetPosition((float) x, (float) y);
     }
 
-
     /**
      *  Sets the position (x, y) of the top left corner of this table on the page.
      *
@@ -88,7 +83,6 @@ public class Table {
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location (x, y) of the top left corner of this table on the page.
@@ -101,7 +95,6 @@ public class Table {
         this.y1 = y;
     }
 
-
     /**
      *  Sets the bottom margin for this table.
      *
@@ -111,7 +104,6 @@ public class Table {
         this.bottomMargin = (float) bottomMargin;
     }
 
-
     /**
      *  Sets the bottom margin for this table.
      *
@@ -120,7 +112,6 @@ public class Table {
     public void SetBottomMargin(float bottomMargin) {
         this.bottomMargin = bottomMargin;
     }
-
 
     /**
      *  Sets the table data.
@@ -143,7 +134,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the table data and specifies the number of header rows in this data.
      *
@@ -155,7 +145,6 @@ public class Table {
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;
     }
-
 
     /**
      *  Sets the alignment of the numbers to the right.
@@ -190,7 +179,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Removes the horizontal lines between the rows from index1 to index2.
      */
@@ -207,14 +195,13 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the text alignment in the specified column.
      *
      *  @param index the index of the specified column.
      *  @param alignment the specified alignment. Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
      */
-    public void SetTextAlignInColumn(int index, int alignment) {
+    public void SetTextAlignInColumn(int index, uint alignment) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
@@ -225,7 +212,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the color of the text in the specified column.
@@ -245,7 +231,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the font for the specified column.
      *
@@ -264,7 +249,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the color of the text in the specified row.
      *
@@ -280,7 +264,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the font for the specified row.
@@ -298,7 +281,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the width of the column with the specified index.
      *
@@ -313,7 +295,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Returns the column width of the column at the specified index.
      *
@@ -323,7 +304,6 @@ public class Table {
     public float GetColumnWidth(int index) {
         return GetCellAtRowColumn(0, index).GetWidth();
     }
-
 
     /**
      *  Returns the cell at the specified row and column.
@@ -340,7 +320,6 @@ public class Table {
         return tableData[tableData.Count + row][col];
     }
 
-
     /**
      *  Returns the cell at the specified row and column.
      *
@@ -353,7 +332,6 @@ public class Table {
         return GetCellAt(row, col);
     }
 
-
     /**
      *  Returns a list of cell for the specified row.
      *
@@ -365,11 +343,9 @@ public class Table {
         return tableData[index];
     }
 
-
     public List<Cell> GetRowAtIndex(int index) {
         return GetRow(index);
     }
-
 
     /**
      *  Returns a list of cell for the specified column.
@@ -388,7 +364,6 @@ public class Table {
         return column;
     }
 
-
     /**
      *  Returns the total number of pages that are required to draw this table on.
      *
@@ -405,7 +380,6 @@ public class Table {
         return numOfPages;
     }
 
-
     /**
      *  Draws this table on the specified page.
      *
@@ -415,7 +389,6 @@ public class Table {
     public float[] DrawOn(Page page) {
         return DrawTableRows(page, DrawHeaderRows(page, 0));
     }
-
 
     public float[] DrawOn(PDF pdf, List<Page> pages, float[] pageSize) {
         float[] xy = null;
@@ -431,7 +404,6 @@ public class Table {
         return xy;
     }
 
-
     private float[] DrawHeaderRows(Page page, int pageNumber) {
         float x = x1;
         float y = (pageNumber == 1) ? y1FirstPage : y1;
@@ -443,7 +415,7 @@ public class Table {
             for (int j = 0; j < dataRow.Count; j++) {
                 Cell cell = dataRow[j];
                 float cellW = cell.GetWidth();
-                int colspan = cell.GetColSpan();
+                uint colspan = cell.GetColSpan();
                 for (int k = 1; k < colspan; k++) {
                     cellW += dataRow[++j].GetWidth();
                 }
@@ -460,7 +432,6 @@ public class Table {
         return new float[] {x, y};
     }
 
-
     private float[] DrawTableRows(Page page, float[] parameter) {
         float x = parameter[0];
         float y = parameter[1];
@@ -472,7 +443,7 @@ public class Table {
             for (int j = 0; j < dataRow.Count; j++) {
                 Cell cell = dataRow[j];
                 float cellW = cell.GetWidth();
-                int colspan = cell.GetColSpan();
+                uint colspan = cell.GetColSpan();
                 for (int k = 1; k < colspan; k++) {
                     cellW += dataRow[++j].GetWidth();
                 }
@@ -513,7 +484,6 @@ public class Table {
         return new float[] {x, y};
     }
 
-
     private float GetMaxCellHeight(List<Cell> row) {
         float maxCellHeight = 0f;
         foreach (Cell cell in row) {
@@ -524,14 +494,12 @@ public class Table {
         return maxCellHeight;
     }
 
-
     /**
      *  Returns true if the table contains more data that needs to be drawn on a page.
      */
     public bool HasMoreData() {
         return rendered != -1;
     }
-
 
     /**
      *  Returns the width of this table when drawn on a page.
@@ -547,7 +515,6 @@ public class Table {
         return tableWidth;
     }
 
-
     /**
      *  Returns the number of data rows that have been rendered so far.
      *
@@ -556,7 +523,6 @@ public class Table {
     public int GetRowsRendered() {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows;
     }
-
 
     /**
      *  Wraps around the text in all cells so it fits the column width.
@@ -569,7 +535,7 @@ public class Table {
             List<Cell> row = tableData[i];
             for (int j = 0; j < row.Count; j++) {
                 Cell cell = row[j];
-                int colspan = cell.GetColSpan();
+                uint colspan = cell.GetColSpan();
                 for (int n = 1; n < colspan; n++) {
                     Cell next = row[j + n];
                     cell.SetWidth(cell.GetWidth() + next.GetWidth());
@@ -616,7 +582,6 @@ public class Table {
 
         tableData = tableData2;
     }
-
 
     private void AddExtraTableRows(List<List<Cell>> tableData2) {
         foreach (List<Cell> row in tableData) {
@@ -692,7 +657,6 @@ public class Table {
         return numberOfHeaderRows;
     }
 
-
     /**
      *  Sets all table cells borders to <strong>false</strong>.
      *
@@ -705,7 +669,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the color of the cell border lines.
@@ -721,7 +684,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the width of the cell border lines.
      *
@@ -736,7 +698,6 @@ public class Table {
         }
     }
 
-
     /**
      * Resets the rendered pages count.
      * Call this method if you have to draw this table more than one time.
@@ -744,7 +705,6 @@ public class Table {
     public void ResetRenderedPagesCount() {
         this.rendered = numOfHeaderRows;
     }
-
 
     /**
      * This method removes borders that have the same color and overlap 100%.
@@ -776,7 +736,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Auto adjusts the widths of all columns so that they are just wide enough to hold the text without truncation.
@@ -848,7 +807,6 @@ public class Table {
         AutoResizeColumnsWithColspanBiggerThanOne();
     }
 
-
     private bool IsTextColumn(int index) {
         for (int i = numOfHeaderRows; i < tableData.Count; i++) {
             List<Cell> dataRow = tableData[i];
@@ -858,7 +816,6 @@ public class Table {
         }
         return true;
     }
-
 
     public void FitToPage(float[] pageSize) {
         AutoAdjustColumnWidths();
@@ -895,14 +852,12 @@ public class Table {
         MergeOverlaidBorders();
     }
 
-
-
     private void AutoResizeColumnsWithColspanBiggerThanOne() {
         for (int i = 0; i < tableData.Count; i++) {
             List<Cell> dataRow = tableData[i];
             for (int j = 0; j < dataRow.Count; j++) {
                 Cell cell = dataRow[j];
-                int colspan = cell.GetColSpan();
+                uint colspan = cell.GetColSpan();
                 if (colspan > 1) {
                     if (cell.textBlock != null) {
                         float sumOfWidths = cell.GetWidth();
@@ -916,16 +871,13 @@ public class Table {
         }
     }
 
-
     public void SetRightMargin(float rightMargin) {
         this.rightMargin = rightMargin;
     }
 
-
     public void SetFirstPageTopMargin(float topMargin) {
         this.y1FirstPage = y1 + topMargin;
     }
-
 
     public static void AddToRow(List<Cell> row, Cell cell) {
         row.Add(cell);
@@ -933,6 +885,5 @@ public class Table {
             row.Add(new Cell(cell.GetFont(), ""));
         }
     }
-
 }   // End of Table.cs
 }   // End of namespace PDFjet.NET

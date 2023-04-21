@@ -23,8 +23,6 @@ SOFTWARE.
 */
 using System;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /**
@@ -71,10 +69,10 @@ public class Cell {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private int properties = 0x000F0001;
+    private uint properties = 0x000F0001;
     private String uri;
 
-    private int valign = Align.TOP;
+    private uint valign = Align.TOP;
 
 
     /**
@@ -465,12 +463,12 @@ public class Cell {
     }
 
 
-    internal void SetProperties(int properties) {
+    internal void SetProperties(uint properties) {
         this.properties = properties;
     }
 
 
-    internal int GetProperties() {
+    internal uint GetProperties() {
         return this.properties;
     }
 
@@ -482,7 +480,7 @@ public class Cell {
      */
     public void SetColSpan(int colspan) {
         this.properties &= 0x00FF0000;
-        this.properties |= (colspan & 0x0000FFFF);
+        this.properties |= ((uint) (colspan & 0x0000FFFF));
     }
 
 
@@ -491,7 +489,7 @@ public class Cell {
      *
      *  @return the column span value.
      */
-    public int GetColSpan() {
+    public uint GetColSpan() {
         return (this.properties & 0x0000FFFF);
     }
 
@@ -501,7 +499,7 @@ public class Cell {
      *
      *  @param border the border object.
      */
-    public void SetBorder(int border, bool visible) {
+    public void SetBorder(uint border, bool visible) {
         if (visible) {
             this.properties |= border;
         }
@@ -516,7 +514,7 @@ public class Cell {
      *
      *  @return the cell border object.
      */
-    public bool GetBorder(int border) {
+    public bool GetBorder(uint border) {
         return (this.properties & border) != 0;
     }
 
@@ -536,7 +534,7 @@ public class Cell {
      *  @param alignment the alignment code.
      *  Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
      */
-    public void SetTextAlignment(int alignment) {
+    public void SetTextAlignment(uint alignment) {
         this.properties &= 0x00CFFFFF;
         this.properties |= (alignment & 0x00300000);
     }
@@ -547,7 +545,7 @@ public class Cell {
      *
      *  @return the horizontal alignment code.
      */
-    public int GetTextAlignment() {
+    public uint GetTextAlignment() {
         return (this.properties & 0x00300000);
     }
 
@@ -558,7 +556,7 @@ public class Cell {
      *  @param alignment the alignment code.
      *  Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
      */
-    public void SetVerTextAlignment(int alignment) {
+    public void SetVerTextAlignment(uint alignment) {
         this.valign = alignment;
     }
 
@@ -568,7 +566,7 @@ public class Cell {
      *
      *  @return the vertical alignment code.
      */
-    public int GetVerTextAlignment() {
+    public uint GetVerTextAlignment() {
         return this.valign;
     }
 
@@ -714,10 +712,8 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
-
         page.SetPenColor(pen);
         page.SetPenWidth(lineWidth);
-
         if (GetBorder(Border.TOP) &&
                 GetBorder(Border.BOTTOM) &&
                 GetBorder(Border.LEFT) &&
@@ -725,8 +721,7 @@ public class Cell {
             page.AddBMC(StructElem.P, Single.space, Single.space);
             page.DrawRect(x, y, cellW, cellH);
             page.AddEMC();
-        }
-        else {
+        } else {
             float qWidth = lineWidth / 4;
             if (GetBorder(Border.TOP)) {
                 page.AddBMC(StructElem.P, Single.space, Single.space);
@@ -757,9 +752,7 @@ public class Cell {
                 page.AddEMC();
             }
         }
-
     }
-
 
     private void DrawText(
             Page page,
@@ -772,20 +765,16 @@ public class Cell {
         float yText;
         if (valign == Align.TOP) {
             yText = y + font.ascent + this.topPadding;
-        }
-        else if (valign == Align.CENTER) {
+        } else if (valign == Align.CENTER) {
             yText = y + cellH/2 + font.ascent/2;
-        }
-        else if (valign == Align.BOTTOM) {
+        } else if (valign == Align.BOTTOM) {
             yText = (y + cellH) - this.bottomPadding;
-        }
-        else {
+        } else {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
         page.SetPenColor(pen);
         page.SetBrushColor(brush);
-
         if (GetTextAlignment() == Align.RIGHT) {
             if (compositeTextLine == null) {
                 xText = (x + cellW) - (font.StringWidth(text) + this.rightPadding);
@@ -798,16 +787,14 @@ public class Cell {
                 if (GetStrikeout()) {
                     StrikeoutText(page, font, text, xText, yText);
                 }
-            }
-            else {
+            } else {
                 xText = (x + cellW) - (compositeTextLine.GetWidth() + this.rightPadding);
                 compositeTextLine.SetLocation(xText, yText);
                 page.AddBMC(StructElem.P, Single.space, Single.space);
                 compositeTextLine.DrawOn(page);
                 page.AddEMC();
             }
-        }
-        else if (GetTextAlignment() == Align.CENTER) {
+        } else if (GetTextAlignment() == Align.CENTER) {
             if (compositeTextLine == null) {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font.StringWidth(text)) / 2);
@@ -820,8 +807,7 @@ public class Cell {
                 if (GetStrikeout()) {
                     StrikeoutText(page, font, text, xText, yText);
                 }
-            }
-            else {
+            } else {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - compositeTextLine.GetWidth()) / 2);
                 compositeTextLine.SetLocation(xText, yText);
@@ -829,8 +815,7 @@ public class Cell {
                 compositeTextLine.DrawOn(page);
                 page.AddEMC();
             }
-        }
-        else if (GetTextAlignment() == Align.LEFT) {
+        } else if (GetTextAlignment() == Align.LEFT) {
             xText = x + this.leftPadding;
             if (compositeTextLine == null) {
                 page.AddBMC(StructElem.P, Single.space, Single.space);
@@ -842,15 +827,13 @@ public class Cell {
                 if (GetStrikeout()) {
                     StrikeoutText(page, font, text, xText, yText);
                 }
-            }
-            else {
+            } else {
                 compositeTextLine.SetLocation(xText, yText);
                 page.AddBMC(StructElem.P, Single.space, Single.space);
                 compositeTextLine.DrawOn(page);
                 page.AddEMC();
             }
-        }
-        else {
+        } else {
             throw new Exception("Invalid Text Alignment!");
         }
 
@@ -870,7 +853,6 @@ public class Cell {
         }
     }
 
-
     private void UnderlineText(
             Page page, Font font, String text, float x, float y) {
         page.AddBMC(StructElem.P, Single.space, Single.space);
@@ -881,7 +863,6 @@ public class Cell {
         page.AddEMC();
     }
 
-
     private void StrikeoutText(
             Page page, Font font, String text, float x, float y) {
         page.AddBMC(StructElem.P, Single.space, Single.space);
@@ -891,7 +872,6 @@ public class Cell {
         page.StrokePath();
         page.AddEMC();
     }
-
 
     /**
      *  Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
@@ -911,8 +891,7 @@ public class Cell {
             if (font.StringWidth(fallbackFont, (buf.ToString() + " " + token).Trim()) > effectiveWidth) {
                 numOfVerCells++;
                 buf = new StringBuilder(token);
-            }
-            else {
+            } else {
                 buf.Append(" ");
                 buf.Append(token);
             }
@@ -924,6 +903,5 @@ public class Cell {
     public TextBlock GetTextBlock() {
         return textBlock;
     }
-
 }   // End of Cell.cs
 }   // End of namespace PDFjet.NET

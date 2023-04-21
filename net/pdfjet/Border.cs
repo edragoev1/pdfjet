@@ -21,9 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 using System;
-
 
 namespace PDFjet.NET {
 /**
@@ -32,9 +30,11 @@ namespace PDFjet.NET {
  *
  */
 public class Border {
-    public const int TOP    = 0x00010000;
-    public const int BOTTOM = 0x00020000;
-    public const int LEFT   = 0x00040000;
-    public const int RIGHT  = 0x00080000;
+    public const uint NONE   = 0x00000000;
+    public const uint TOP    = 0x00010000;
+    public const uint BOTTOM = 0x00020000;
+    public const uint LEFT   = 0x00040000;
+    public const uint RIGHT  = 0x00080000;
+    public const uint ALL    = 0x000F0000;
 }
 }   // End of namespace PDFjet.NET
