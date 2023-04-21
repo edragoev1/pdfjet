@@ -99,19 +99,9 @@ public class Example_23 {
         table.SetColumnWidth(2, 100f);
         table.SetColumnWidth(3, 150f);
         table.WrapAroundCellText();
-
-        int numOfPages = table.GetNumberOfPages(page);
-        while (true) {
-            table.DrawOn(page);
-            if (!table.HasMoreData()) {
-                break;
-            }
-            page = new Page(pdf, Letter.PORTRAIT);
-            table.SetLocation(50f, 50f);
-        }
+        table.DrawOn(page);
 
         tableData = new List<List<Cell>>();
-
         row = new List<Cell>();
         row.Add(new Cell(f1));
         row.Add(new Cell(f2));
