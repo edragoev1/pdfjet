@@ -302,8 +302,33 @@ func (textBox *TextBox) SetBorder(border int) {
 
 // GetBorder returns the text box border.
 // @return boolean the text border object.
-func (textBox *TextBox) GetBorder(border int) bool {
-	return (textBox.properties & border) != 0
+func (textBox *TextBox) GetBorder(value int) bool {
+	if value == border.None {
+		if ((textBox.properties >> 16) & 0xF) == 0x0 {
+			return true
+		}
+	} else if value == border.Top {
+		if ((textBox.properties >> 16) & 0x1) == 0x1 {
+			return true
+		}
+	} else if value == border.Bottom {
+		if ((textBox.properties >> 16) & 0x2) == 0x2 {
+			return true
+		}
+	} else if value == border.Left {
+		if ((textBox.properties >> 16) & 0x4) == 0x4 {
+			return true
+		}
+	} else if value == border.Right {
+		if ((textBox.properties >> 16) & 0x8) == 0x8 {
+			return true
+		}
+	} else if value == border.All {
+		if ((textBox.properties >> 16) & 0xF) == 0xF {
+			return true
+		}
+	}
+	return false
 }
 
 // SetTextAlignment sets the cell text alignment.
