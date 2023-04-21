@@ -488,7 +488,6 @@ public class TextBox : IDrawable {
      *  @param border the border object.
      */
     public void SetBorder(uint border) {
-        this.properties &= 0xFFF0FFFF;
         this.properties |= border;
     }
 
@@ -503,19 +502,19 @@ public class TextBox : IDrawable {
                 return true;
             }
         } else if (border == Border.TOP) {
-            if (((properties >> 16) & 0xF) == 0x1) {
+            if (((properties >> 16) & 0x1) == 0x1) {
                 return true;
             }
         } else if (border == Border.BOTTOM) {
-            if (((properties >> 16) & 0xF) == 0x2) {
+            if (((properties >> 16) & 0x2) == 0x2) {
                 return true;
             }
         } else if (border == Border.LEFT) {
-            if (((properties >> 16) & 0xF) == 0x4) {
+            if (((properties >> 16) & 0x4) == 0x4) {
                 return true;
             }
         } else if (border == Border.RIGHT) {
-            if (((properties >> 16) & 0xF) == 0x8) {
+            if (((properties >> 16) & 0x8) == 0x8) {
                 return true;
             }
         } else if (border == Border.ALL) {

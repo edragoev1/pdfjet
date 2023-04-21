@@ -223,6 +223,7 @@ func (textBox *TextBox) SetBgColor(color int32) {
 	textBox.background = color
 }
 
+// TODO
 /*
 // SetBgColor sets the background to the specified color.
 // @param color the color specified as array of integer values from 0x00 to 0xFF.
@@ -297,11 +298,6 @@ func (textBox *TextBox) GetBrushColor() int32 {
 // @param border the border object.
 func (textBox *TextBox) SetBorder(border int) {
 	textBox.properties |= border
-	// if visible {
-	// 	textBox.properties |= border
-	// } else {
-	// 	textBox.properties &= (^border & 0x00FFFFFF)
-	// }
 }
 
 // GetBorder returns the text box border.

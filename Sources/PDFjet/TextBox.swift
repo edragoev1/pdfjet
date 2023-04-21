@@ -23,7 +23,6 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// A box containing line-wrapped text.
 ///
@@ -527,14 +526,9 @@ public class TextBox : Drawable {
     private func drawBorders(_ page: Page) {
         page.setPenColor(pen)
         page.setPenWidth(lineWidth)
-
-        if getBorder(Border.TOP) &&
-                getBorder(Border.BOTTOM) &&
-                getBorder(Border.LEFT) &&
-                getBorder(Border.RIGHT) {
+        if getBorder(Border.ALL) {
             page.drawRect(x, y, width, height)
-        }
-        else {
+        } else {
             if getBorder(Border.TOP) {
                 page.moveTo(x, y)
                 page.lineTo(x + width, y)

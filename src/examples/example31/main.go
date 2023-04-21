@@ -52,7 +52,8 @@ func Example31() {
 	textBox.SetLocation(500.0, 300.0)
 	textBox.SetFallbackFont(font2)
 	textBox.SetLocation(50.0, 50.0)
-	textBox.SetBorder(border.All)
+	textBox.SetBorder(border.Left)
+	textBox.SetBorder(border.Right)
 	textBox.DrawOn(page)
 
 	str := "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?"
