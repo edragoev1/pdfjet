@@ -32,7 +32,8 @@ public class Example_31 {
         TextBox textBox = new TextBox(f1, buf.ToString(), 500f, 300f);
         textBox.SetFallbackFont(f2);
         textBox.SetLocation(50f, 50f);
-        textBox.SetBorder(Border.NONE);
+        textBox.SetBorder(Border.LEFT);
+        textBox.SetBorder(Border.RIGHT);
         textBox.DrawOn(page);
 
         String str = "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?";
