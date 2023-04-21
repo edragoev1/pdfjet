@@ -275,7 +275,7 @@ public class TextBlock : Drawable {
     private func drawText(_ page: Page?) -> [Float] {
         var list = [String]()
         var buf = String()
-        var lines = text!.components(separatedBy: "\n")
+        var lines = text!.components(separatedBy: "\r?\n")
         for line in lines {
             if isCJK(line) {
                 buf = ""
