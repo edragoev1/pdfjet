@@ -3,17 +3,12 @@ import PDFjet
 
 /**
  *  Example_20.swift
- *
  */
 public class Example_20 {
     public init() throws {
-        let stream = OutputStream(toFileAtPath: "Example_20.pdf", append: false)!
-
-        let pdf = PDF(stream)
-
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_20.pdf", append: false)!)
         var objects = try pdf.read(
                 from: InputStream(fileAtPath: "data/testPDFs/PDFjetLogo.pdf")!)
-
         pdf.addResourceObjects(&objects)
 
         let f1 = try Font(
@@ -22,9 +17,7 @@ public class Example_20 {
                 Font.STREAM).setSize(18.0)
 
         let pages = pdf.getPageObjects(from: objects)
-
         let contents = pages[0].getContentsObject(&objects)!
-
         var page = Page(pdf, Letter.PORTRAIT)
 
         let height: Float = 105.0   // The logo height in points.
@@ -101,7 +94,6 @@ public class Example_20 {
 
         pdf.complete()
     }
-
 }   // End of Example_20.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

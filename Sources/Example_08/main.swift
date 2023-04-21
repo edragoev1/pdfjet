@@ -1,15 +1,12 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_08.swift
  *
  */
 public class Example_08 {
-
     public init() throws {
-
         let stream = OutputStream(toFileAtPath: "Example_08.pdf", append: false)
         let pdf = PDF(stream!)
 
@@ -78,10 +75,8 @@ public class Example_08 {
         pdf.complete()
     }
 
-
     public func getTextData(_ fileName: String, _ delimiter: String) throws -> [[String]] {
         var tableTextData = [[String]]()
-
         let lines = (try String(contentsOfFile:
                 fileName, encoding: .utf8)).components(separatedBy: "\n")
         for line1 in lines {
@@ -101,7 +96,6 @@ public class Example_08 {
             }
             tableTextData.append(cols!)
         }
-
         return tableTextData
     }
 
@@ -150,7 +144,6 @@ public class Example_08 {
             tableData.append(row)
             currentRow += 1
         }
-
         return tableData
     }
 
@@ -169,7 +162,6 @@ public class Example_08 {
             i += 1
         }
     }
-
 }   // End of Example_08.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
