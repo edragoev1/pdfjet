@@ -109,10 +109,7 @@ public class Example_13 {
         var i = 0
         while i < pages.count {
             let page = pages[i]
-            let text = TextLine(f1)
-            text.setText("Page \(i + 1) of \(pages.count)")
-            text.setLocation(300.0, 780.0)
-            text.drawOn(page)
+            try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
             i += 1
         }
