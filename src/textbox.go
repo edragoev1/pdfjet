@@ -223,14 +223,11 @@ func (textBox *TextBox) SetBgColor(color int32) {
 	textBox.background = color
 }
 
-// TODO
-/*
-// SetBgColor sets the background to the specified color.
+// SetBgColor sets the background to the specified color using RGB values.
 // @param color the color specified as array of integer values from 0x00 to 0xFF.
-func (textBox *TextBox) SetBgColor(color []int) {
+func (textBox *TextBox) SetBgColorRGB(color []int32) {
 	textBox.background = color[0]<<16 | color[1]<<8 | color[2]
 }
-*/
 
 // GetBgColor returns the background color.
 // @return int the color as 0xRRGGBB integer.
@@ -238,33 +235,29 @@ func (textBox *TextBox) GetBgColor() int32 {
 	return textBox.background
 }
 
-//  Sets the pen and brush colors to the specified color.
-//  @param color the color specified as 0xRRGGBB integer.
-/*
-func (textBox *TextBox) SetFgColor(color uint32) {
-	textBox.pen = color
-	textBox.brush = color
-}
-*/
-
-// SetFgColor sets the pen and brush colors to the specified color.
+// Sets the pen and brush colors to the specified color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBox *TextBox) SetFgColor(color []int32) {
+func (textBox *TextBox) SetFgColor(color uint32) {
+	textBox.pen = int32(color)
+	textBox.brush = int32(color)
+}
+
+// SetFgColor sets the pen and brush colors to the specified color using RGB values.
+// @param color the color specified as 0xRRGGBB integer.
+func (textBox *TextBox) SetFgColorRGB(color []int32) {
 	textBox.pen = color[0]<<16 | color[1]<<8 | color[2]
 	textBox.brush = textBox.pen
 }
 
-/**
-//  Sets the pen color.
-//  @param color the color specified as 0xRRGGBB integer.
-func (textBox *TextBox) SetPenColor(color uint32) {
+// Sets the pen color.
+// @param color the color specified as 0xRRGGBB integer.
+func (textBox *TextBox) SetPenColor(color int32) {
 	textBox.pen = color
 }
-*/
 
-// SetPenColor sets the pen color.
+// SetPenColor sets the pen color using RGB values.
 // @param color the color specified as an array of int values from 0x00 to 0xFF.
-func (textBox *TextBox) SetPenColor(color []int32) {
+func (textBox *TextBox) SetPenColorRGB(color []int32) {
 	textBox.pen = color[0]<<16 | color[1]<<8 | color[2]
 }
 
@@ -274,17 +267,15 @@ func (textBox *TextBox) GetPenColor() int32 {
 	return textBox.pen
 }
 
-/*
-//  Sets the brush color.
-//  @param color the color specified as 0xRRGGBB integer.
+// Sets the brush color.
+// @param color the color specified as 0xRRGGBB integer.
 func (textBox *TextBox) SetBrushColor(color uint32) {
-	textBox.brush = color
+	textBox.brush = int32(color)
 }
-*/
 
 // SetBrushColor sets the brush color.
 // @param color the color specified as an array of int values from 0x00 to 0xFF.
-func (textBox *TextBox) SetBrushColor(color []int32) {
+func (textBox *TextBox) SetBrushColorRGB(color []int32) {
 	textBox.brush = color[0]<<16 | color[1]<<8 | color[2]
 }
 
