@@ -527,14 +527,6 @@ public class TextBox : IDrawable {
     }
 
     /**
-     *  Sets all borders to be invisible.
-     *  This cell will have no borders when drawn on the page.
-     */
-    public void SetNoBorders() {
-        this.properties &= 0x00F0FFFF;
-    }
-
-    /**
      *  Sets the cell text alignment.
      *
      *  @param alignment the alignment code.
