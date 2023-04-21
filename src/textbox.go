@@ -310,12 +310,6 @@ func (textBox *TextBox) GetBorder(border int) bool {
 	return (textBox.properties & border) != 0
 }
 
-// SetNoBorders sets all borders to be invisible.
-// This cell will have no borders when drawn on the page.
-func (textBox *TextBox) SetNoBorders() {
-	textBox.properties &= 0x00F0FFFF
-}
-
 // SetTextAlignment sets the cell text alignment.
 // @param alignment the alignment code.
 // Supported values: align.Left, align.Right and align.Center
@@ -395,10 +389,7 @@ func (textBox *TextBox) GetTextColors() map[string]int32 {
 func (textBox *TextBox) drawBorders(page *Page) {
 	page.SetPenColor(textBox.pen)
 	page.SetPenWidth(textBox.lineWidth)
-	if textBox.GetBorder(border.Top) &&
-		textBox.GetBorder(border.Bottom) &&
-		textBox.GetBorder(border.Left) &&
-		textBox.GetBorder(border.Right) {
+	if textBox.GetBorder(border.All) {
 		page.DrawRect(textBox.x, textBox.y, textBox.width, textBox.height)
 	} else {
 		if textBox.GetBorder(border.Top) {

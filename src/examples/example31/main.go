@@ -9,6 +9,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/border"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
@@ -51,7 +52,7 @@ func Example31() {
 	textBox.SetLocation(500.0, 300.0)
 	textBox.SetFallbackFont(font2)
 	textBox.SetLocation(50.0, 50.0)
-	textBox.SetNoBorders()
+	textBox.SetBorder(border.None)
 	textBox.DrawOn(page)
 
 	str := "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?"
