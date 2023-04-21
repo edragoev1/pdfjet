@@ -1,17 +1,13 @@
 import Foundation
 import PDFjet
 
-
 /**
  *  Example_16.java
  *
  */
 public class Example_16 {
-
     public init() throws {
-
-        let stream = OutputStream(toFileAtPath: "Example_16.pdf", append: false)
-        let pdf = PDF(stream!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_16.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA)
         f1.setSize(14.0)
@@ -47,6 +43,7 @@ public class Example_16 {
         // textBox.setVerticalAlignment(Align.CENTER)
         textBox.setBgColor(Color.whitesmoke);
         textBox.setTextColors(colors)
+        textBox.setBorder(Border.ALL)
         let xy = textBox.drawOn(page)
 
         page.setGraphicsState(GraphicsState())      // Reset GS
@@ -58,7 +55,6 @@ public class Example_16 {
 
         pdf.complete()
     }
-
 }   // End of Example_16.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
