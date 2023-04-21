@@ -232,6 +232,12 @@ public class TextLine : IDrawable {
         return font.StringWidth(fallbackFont, text);
     }
 
+    /**
+     *  Returns the string width of the specified text.
+     *
+     *  @return the width.
+     */
+
     public float GetStringWidth(String text) {
         return font.StringWidth(fallbackFont, text);
     }
@@ -242,7 +248,9 @@ public class TextLine : IDrawable {
      *  @return the height.
      */
     public double GetHeight() {
-        return font.GetHeight();
+        float ascent = Math.Max(font.ascent, fallbackFont.ascent);
+        float descent = Math.Max(font.descent, fallbackFont.descent);
+        return ascent + descent;
     }
 
     /**
