@@ -25,14 +25,12 @@ package com.pdfjet;
 
 import java.util.*;
 
-
 /**
  *  Used to create table objects and draw them on a page.
  *
  *  Please see Example_08.
  */
 public class Table {
-
     public static final int DATA_HAS_0_HEADER_ROWS = 0;
     public static final int DATA_HAS_1_HEADER_ROWS = 1;
     public static final int DATA_HAS_2_HEADER_ROWS = 2;
@@ -56,7 +54,6 @@ public class Table {
     private float rightMargin;
     private float bottomMargin = 30f;
 
-
     /**
      *  Create a table object.
      *
@@ -75,7 +72,7 @@ public class Table {
         setLocation(x, y);
     }
 
-     /**
+    /**
      *  Sets the position (x, y) of the top left corner of this table on the page.
      *
      *  @param x the x coordinate of the top left point of the table.
@@ -84,7 +81,6 @@ public class Table {
     public void setPosition(double x, double y) {
         setLocation(x, y);
     }
-
 
     /**
      *  Sets the location (x, y) of the top left corner of this table on the page.
@@ -107,7 +103,6 @@ public class Table {
         setLocation((float) x, (float) y);
     }
 
-
     /**
      *  Sets the bottom margin for this table.
      *
@@ -117,7 +112,6 @@ public class Table {
         this.bottomMargin = (float) bottomMargin;
     }
 
-
     /**
      *  Sets the bottom margin for this table.
      *
@@ -126,7 +120,6 @@ public class Table {
     public void setBottomMargin(float bottomMargin) {
         this.bottomMargin = bottomMargin;
     }
-
 
     /**
      *  Sets the table data.
@@ -138,13 +131,11 @@ public class Table {
      *  @param tableData the table data.
      */
     public void setData(List<List<Cell>> tableData) {
-        // TODO: Do we need this method?
         this.tableData = tableData;
         this.numOfHeaderRows = 0;
         this.rendered = 0;
         addCellsToCompleteTheGrid(tableData);
     }
-
 
     /**
      *  Sets the table data and specifies the number of header rows in this data.
@@ -159,7 +150,6 @@ public class Table {
         addCellsToCompleteTheGrid(tableData);
     }
 
-
     private void addCellsToCompleteTheGrid(List<List<Cell>> tableData) {
         // Add the missing cells.
         int numOfColumns = tableData.get(0).size();
@@ -171,7 +161,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the alignment of the numbers to the right.
@@ -205,7 +194,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Removes the horizontal lines between the rows from index1 to index2.
      *  @param index1 the index of the first specified row.
@@ -223,7 +211,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the text alignment in the specified column.
@@ -243,7 +230,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the color of the text in the specified column.
      *
@@ -261,7 +247,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the font for the specified column.
@@ -281,7 +266,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the color of the text in the specified row.
      *
@@ -298,7 +282,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the font for the specified row.
      *
@@ -314,7 +297,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the width of the column with the specified index.
@@ -334,7 +316,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Returns the column width of the column at the specified index.
      *
@@ -344,7 +325,6 @@ public class Table {
     public float getColumnWidth(int index) {
         return getCellAtRowColumn(0, index).getWidth();
     }
-
 
     /**
      *  Returns the cell at the specified row and column.
@@ -361,7 +341,6 @@ public class Table {
         return tableData.get(tableData.size() + row).get(col);
     }
 
-
     /**
      *  Returns the cell at the specified row and column.
      *
@@ -374,7 +353,6 @@ public class Table {
         return getCellAt(row, col);
     }
 
-
     /**
      *  Returns a list of cells for the specified row.
      *
@@ -386,11 +364,9 @@ public class Table {
         return tableData.get(index);
     }
 
-
     public List<Cell> getRowAtIndex(int index) {
         return getRow(index);
     }
-
 
     /**
      *  Returns a list of cells for the specified column.
@@ -409,11 +385,9 @@ public class Table {
         return column;
     }
 
-
     public List<Cell> getColumnAtIndex(int index) {
         return getColumn(index);
     }
-
 
     /**
      *  Returns the total number of pages that are required to draw this table on.
@@ -432,7 +406,6 @@ public class Table {
         return numOfPages;
     }
 
-
     /**
      *  Draws this table on the specified page.
      *
@@ -444,7 +417,6 @@ public class Table {
     public float[] drawOn(Page page) throws Exception {
         return drawTableRows(page, drawHeaderRows(page, 0));
     }
-
 
     public float[] drawOn(PDF pdf, List<Page> pages, float[] pageSize) throws Exception {
         float[] xy = null;
@@ -459,7 +431,6 @@ public class Table {
         resetRenderedPagesCount();
         return xy;
     }
-
 
     private float[] drawHeaderRows(Page page, int pageNumber) throws Exception {
         float x = x1;
@@ -485,10 +456,8 @@ public class Table {
             x = x1;
             y += cellH;
         }
-
         return new float[] {x, y};
     }
-
 
     private float[] drawTableRows(Page page, float[] parameter) throws Exception {
         float x = parameter[0];
@@ -541,7 +510,6 @@ public class Table {
         return new float[] {x, y};
     }
 
-
     private float getMaxCellHeight(List<Cell> row) {
         float maxCellHeight = 0f;
         for (Cell cell : row) {
@@ -552,7 +520,6 @@ public class Table {
         return maxCellHeight;
     }
 
-
     /**
      *  Returns true if the table contains more data that needs to be drawn on a page.
      *
@@ -561,7 +528,6 @@ public class Table {
     public boolean hasMoreData() {
         return rendered != -1;
     }
-
 
     /**
      *  Returns the width of this table when drawn on a page.
@@ -577,7 +543,6 @@ public class Table {
         return tableWidth;
     }
 
-
     /**
      *  Returns the number of data rows that have been rendered so far.
      *
@@ -587,7 +552,6 @@ public class Table {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows;
     }
 
-
     /**
      *  Just calls the wrapAroundCellText method.
      */
@@ -595,7 +559,6 @@ public class Table {
     public void wrapAroundCellText2() {
         wrapAroundCellText();
     }
-
 
     /**
      *  Wraps around the text in all cells so it fits the column width.
@@ -655,7 +618,6 @@ public class Table {
         tableData = tableData2;
     }
 
-
     private void addExtraTableRows(List<List<Cell>> tableData2) {
         for (List<Cell> row : tableData) {
             int maxNumVerCells = 0;
@@ -714,7 +676,6 @@ public class Table {
         }
     }
 
-
     private int getNumHeaderRows() {
         int numberOfHeaderRows = 0;
         for (int i = 0; i < this.numOfHeaderRows; i++) {
@@ -731,7 +692,6 @@ public class Table {
         return numberOfHeaderRows;
     }
 
-
     /**
      *  Sets all table cells borders to <strong>false</strong>.
      *
@@ -743,7 +703,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Sets the color of the cell border lines.
@@ -758,7 +717,6 @@ public class Table {
         }
     }
 
-
     /**
      *  Sets the width of the cell border lines.
      *
@@ -772,7 +730,6 @@ public class Table {
         }
     }
 
-
     /**
      * Resets the rendered pages count.
      * Call this method if you have to draw this table more than one time.
@@ -780,7 +737,6 @@ public class Table {
     public void resetRenderedPagesCount() {
         this.rendered = numOfHeaderRows;
     }
-
 
     /**
      * This method removes borders that have the same color and overlap 100%.
@@ -812,7 +768,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Auto adjusts the widths of all columns so that they are just wide enough to hold the text without truncation.
@@ -883,7 +838,6 @@ public class Table {
         autoResizeColumnsWithColspanBiggerThanOne();
     }
 
-
     private boolean isTextColumn(int index) {
         for (int i = numOfHeaderRows; i < tableData.size(); i++) {
             List<Cell> dataRow = tableData.get(i);
@@ -893,7 +847,6 @@ public class Table {
         }
         return true;
     }
-
 
     public void fitToPage(float[] pageSize) {
         autoAdjustColumnWidths();
@@ -930,7 +883,6 @@ public class Table {
         mergeOverlaidBorders();
     }
 
-
     private void autoResizeColumnsWithColspanBiggerThanOne() {
         for (int i = 0; i < tableData.size(); i++) {
             List<Cell> dataRow = tableData.get(i);
@@ -950,16 +902,13 @@ public class Table {
         }
     }
 
-
     public void setRightMargin(float rightMargin) {
         this.rightMargin = rightMargin;
     }
 
-
     public void setFirstPageTopMargin(float topMargin) {
         this.y1FirstPage = y1 + topMargin;
     }
-
 
     public static void addToRow(List<Cell> row, Cell cell) {
         row.add(cell);
@@ -967,5 +916,4 @@ public class Table {
             row.add(new Cell(cell.getFont(), ""));
         }
     }
-
 }   // End of Table.java
