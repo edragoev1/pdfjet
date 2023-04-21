@@ -36,9 +36,6 @@ public class Example_13 {
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
         table.setLocation(100.0, 50.0)
 
-        // REPLACED:
-        // table.setCellMargin(2.0)
-
         setFontForRow(table, 0, f1)
         setFontForRow(table, 1, f1)
 
@@ -102,25 +99,23 @@ public class Example_13 {
         table.setColumnWidth(8, 10.0)
         blankOutColumn(table, 8)
 
-        var page = Page(pdf, Letter.PORTRAIT)
-        let numOfPages = try table.getNumberOfPages(page)
-        var pageNumber = 1
-        while true {
+        var pages = [Page]()
+        while table.hasMoreData() {
+            let page = Page(pdf, Letter.PORTRAIT, Page.DETACHED)
             table.drawOn(page)
-
+            pages.append(page)
+        }
+print("pages.count == \(pages.count)")
+        var i = 0
+        while i < pages.count {
+print("i == \(i)")
+            let page = pages[i]
             let text = TextLine(f1)
-            text.setText("Page \(pageNumber) of \(numOfPages)")
+            text.setText("Page \(i + 1) of \(pages.count)")
             text.setLocation(300.0, 780.0)
             text.drawOn(page)
-
-            pageNumber += 1
-
-            if !table.hasMoreData() {
-                table.resetRenderedPagesCount()
-                break
-            }
-
-            page = Page(pdf, Letter.PORTRAIT)
+            pdf.addPage(page)
+            i = i + 1
         }
 
         pdf.complete()
