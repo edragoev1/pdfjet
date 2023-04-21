@@ -2,18 +2,14 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_34.cs
  *
  */
 public class Example_34 {
-
     public Example_34() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_34.pdf", FileMode.Create)), Compliance.PDF_A_1B);
 
@@ -78,7 +74,6 @@ public class Example_34 {
             page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
             pdf.AddPage(page);
         }
-
         TextLine textLine = new TextLine(f1, "Hello, World!");
         textLine.SetLocation(lastPageXY[0], lastPageXY[1] + f1.GetBodyHeight());
         textLine.DrawOn(pages[pages.Count - 1]);
@@ -86,14 +81,12 @@ public class Example_34 {
         pdf.Complete();
     }
 
-
     public List<List<Cell>> GetData(
             String fileName,
             String delimiter,
             int numOfHeaderRows,
             Font f1,
             Font f2) {
-
         List<List<Cell>> tableData = new List<List<Cell>>();
 
         int currentRow = 0;
@@ -104,11 +97,9 @@ public class Example_34 {
             String[] cols = null;
             if (delimiter.Equals("|")) {
                 cols = line.Split(new Char[] {'|'});
-            }
-            else if (delimiter.Equals("\t")) {
+            } else if (delimiter.Equals("\t")) {
                 cols = line.Split(new Char[] {'\t'});
-            }
-            else {
+            } else {
                 throw new Exception(
                 		"Only pipes and tabs can be used as delimiters");
             }
@@ -117,29 +108,24 @@ public class Example_34 {
                 Cell cell = null;
                 if (currentRow < numOfHeaderRows) {
                     cell = new Cell(f1, text);
-                }
-                else {
+                } else {
                     cell = new Cell(f2, text);
                 }
-
                 // WITH:
                 cell.SetTopPadding(2f);
                 cell.SetBottomPadding(2f);
                 cell.SetLeftPadding(2f);
                 if (i == 3) {
                     cell.SetRightPadding(10f);
-                }
-                else {
+                } else {
                     cell.SetRightPadding(2f);
                 }
-
                 row.Add(cell);
             }
             tableData.Add(row);
             currentRow++;
         }
         reader.Close();
-
         AppendMissingCells(tableData, f2);
 
         return tableData;
@@ -162,7 +148,6 @@ public class Example_34 {
         }
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -171,5 +156,4 @@ public class Example_34 {
         sw.Stop();
         Console.WriteLine("Example_34 => " + (time1 - time0));
     }
-
 }   // End of Example_34.cs
