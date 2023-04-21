@@ -26,13 +26,10 @@ public class Example_13 {
             String[] columns = line.Split(new Char[] {'|'});
             for ( int i = 0; i < columns.Length; i++ ) {
                 Cell cell = new Cell(f2, columns[i]);
-
-                // WITH:
                 cell.SetTopPadding(2f);
                 cell.SetBottomPadding(2f);
                 cell.SetLeftPadding(2f);
                 cell.SetRightPadding(2f);
-
                 row.Add(cell);
             }
             tableData.Add(row);
@@ -42,10 +39,6 @@ public class Example_13 {
         Table table = new Table();
         table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
         table.SetLocation(100f, 50f);
-
-        // REPLACED:
-        // table.SetCellMargin(2f);
-
         table.RemoveLineBetweenRows(0, 1);
 
         Cell cell3 = table.GetCellAt(1, 1);
@@ -58,7 +51,6 @@ public class Example_13 {
         SetFontForRow(table, 1, f1);
 
         table.AutoAdjustColumnWidths();
-
         List<Cell> column = table.GetColumn(7);
         for (int i = 0; i < column.Count; i++) {
             Cell cell = column[i];
@@ -72,12 +64,10 @@ public class Example_13 {
                 cell.SetTextAlignment(Align.CENTER);
                 if (Int32.Parse( cell.GetText()) > 40) {
                     cell.SetBgColor(Color.darkseagreen);
-                }
-                else {
+                } else {
                     cell.SetBgColor(Color.yellow);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Console.WriteLine(e);
             }
         }
@@ -95,23 +85,20 @@ public class Example_13 {
         table.SetColumnWidth(8, 10f);
         blankOutColumn(table, 8);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        int numOfPages = table.GetNumberOfPages(page);
-        int pageNumber = 1;
-        while (true) {
+        List<Page> pages = new List<Page>();
+        while (table.HasMoreData()) {
+            Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
             table.DrawOn(page);
+            pages.Add(page);
+        }
 
+        for (int i = 0; i < pages.Count; i++) {
+            Page page = pages[i];
             TextLine text = new TextLine(f1);
-            text.SetText("Page " + pageNumber++ + " of " + numOfPages);
+            text.SetText("Page " + (i + 1) + " of " + pages.Count);
             text.SetLocation(300f, 780f);
             text.DrawOn(page);
-
-            if (!table.HasMoreData()) {
-                table.ResetRenderedPagesCount();
-                break;
-            }
-
-            page = new Page(pdf, Letter.PORTRAIT);
+            pdf.AddPage(page);
         }
 
         pdf.Complete();
