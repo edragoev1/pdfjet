@@ -25,13 +25,11 @@ package com.pdfjet;
 
 import java.util.*;
 
-
 /**
  *  Class for creating blocks of text.
  *
  */
 public class TextBlock implements Drawable {
-
     protected Font font;
     protected Font fallbackFont = null;
     protected String text = null;
@@ -54,7 +52,6 @@ public class TextBlock implements Drawable {
     private String uriActualText = null;
     private String uriAltDescription = null;
 
-
     /**
      *  Creates a text block.
      *
@@ -65,13 +62,11 @@ public class TextBlock implements Drawable {
         this.spaceBetweenLines = this.font.descent;
     }
 
-
     public TextBlock(Font font, String text) {
         this.font = font;
         this.text = text;
         this.spaceBetweenLines = this.font.descent;
     }
-
 
     /**
      *  Sets the fallback font.
@@ -84,7 +79,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     /**
      *  Sets the block text.
      *
@@ -96,16 +90,13 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     public void setPosition(float x, float y) {
         setLocation(x, y);
     }
 
-
     public void setPosition(double x, double y) {
         setLocation(x, y);
     }
-
 
     /**
      *  Sets the location where this text block will be drawn on the page.
@@ -131,7 +122,6 @@ public class TextBlock implements Drawable {
         return setLocation((float) x, (float) y);
     }
 
-
     /**
      *  Sets the width of this text block.
      *
@@ -143,7 +133,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the text block width.
      *
@@ -152,7 +141,6 @@ public class TextBlock implements Drawable {
     public float getWidth() {
         return this.w;
     }
-
 
     /**
      *  Sets the height of this text block.
@@ -165,7 +153,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the text block height.
      *
@@ -175,7 +162,6 @@ public class TextBlock implements Drawable {
     public float getHeight() throws Exception {
         return drawOn(null)[1];
     }
-
 
     /**
      *  Sets the space between two lines of text.
@@ -188,7 +174,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the space between two lines of text.
      *
@@ -197,7 +182,6 @@ public class TextBlock implements Drawable {
     public float getSpaceBetweenLines() {
         return spaceBetweenLines;
     }
-
 
     /**
      *  Sets the text alignment.
@@ -211,7 +195,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the text alignment.
      *
@@ -220,7 +203,6 @@ public class TextBlock implements Drawable {
     public int getTextAlignment() {
         return this.textAlign;
     }
-
 
     /**
      *  Sets the background to the specified color.
@@ -233,7 +215,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     /**
      *  Returns the background color.
      *
@@ -242,7 +223,6 @@ public class TextBlock implements Drawable {
     public int getBgColor() {
         return this.background;
     }
-
 
     /**
      *  Sets the brush color.
@@ -255,7 +235,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-
     /**
      * Returns the brush color.
      *
@@ -265,11 +244,9 @@ public class TextBlock implements Drawable {
         return this.brush;
     }
 
-
     public void setDrawBorder(boolean drawBorder) {
         this.drawBorder = drawBorder;
     }
-
 
     // Is the text Chinese, Japanese or Korean?
     private boolean isCJK(String text) {
@@ -289,7 +266,6 @@ public class TextBlock implements Drawable {
         return cjk > other;
     }
 
-
     /**
      *  Draws this text block on the specified page.
      *
@@ -306,7 +282,6 @@ public class TextBlock implements Drawable {
         }
         return drawText(page);
     }
-
 
     private float[] drawText(Page page) throws Exception {
         List<String> list = new ArrayList<String>();
@@ -404,7 +379,6 @@ public class TextBlock implements Drawable {
         return new float[] {this.x + this.w, this.y + this.h};
     }
 
-
     /**
      *  Sets the URI for the "click text line" action.
      *
@@ -415,5 +389,4 @@ public class TextBlock implements Drawable {
         this.uri = uri;
         return this;
     }
-
 }   // End of TextBlock.java
