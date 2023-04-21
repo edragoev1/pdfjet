@@ -2,18 +2,14 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_40.java
  *
  */
 public class Example_40 {
-
     public Example_40() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_40.pdf")));
 
@@ -37,12 +33,10 @@ public class Example_40 {
         chart.setDrawYAxisLines(false);
         chart.setDrawXAxisLabels(false);
         chart.setXYChart(false);
-
         chart.drawOn(page);
 
         pdf.complete();
     }
-
 
     public List<List<Point>> getData() throws Exception {
         List<List<Point>> chartData = new ArrayList<List<Point>>();
@@ -146,5 +140,4 @@ public class Example_40 {
         long t1 = System.currentTimeMillis();
         System.out.println("Example_40 => " + (t1 - t0));
     }
-
 }   // End of Example_40.java

@@ -2,23 +2,18 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_80.java
  */
 public class Example_80 {
-
     public Example_80() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_80.pdf")));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-
         Font f2 = new Font(
                 pdf,
                 getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
@@ -161,12 +156,10 @@ public class Example_80 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_80();
         long t1 = System.currentTimeMillis();
         System.out.println("Example_80 => " + (t1 - t0));
     }
-
 }   // End of Example_80.java
