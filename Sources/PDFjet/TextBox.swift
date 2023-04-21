@@ -77,7 +77,7 @@ public class TextBox : Drawable {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private var properties: UInt32 = 0x000F0001
+    private var properties: UInt32 = 0x00000001
 
     ///
     /// Creates a text box and sets the font.
@@ -401,13 +401,8 @@ public class TextBox : Drawable {
     /// @param border the border object.
     ///
     @discardableResult
-    public func setBorder(_ border: UInt32, _ visible: Bool) -> TextBox {
-        if visible {
-            self.properties |= border
-        }
-        else {
-            self.properties &= (~border & 0x00FFFFFF)
-        }
+    public func setBorder(_ border: UInt32) -> TextBox {
+        self.properties |= border
         return self
     }
 
