@@ -31,7 +31,6 @@ namespace PDFjet.NET {
  *
  */
 public class Cell {
-
     internal Font font;
     internal Font fallbackFont;
     internal String text;
@@ -71,9 +70,7 @@ public class Cell {
     // bits 24 to 31
     private uint properties = 0x000F0001;
     private String uri;
-
     private uint valign = Align.TOP;
-
 
     /**
      *  Creates a cell object and sets the font.
@@ -83,7 +80,6 @@ public class Cell {
     public Cell(Font font) {
         this.font = font;
     }
-
 
     /**
      *  Creates a cell object and sets the font and the cell text.
@@ -95,7 +91,6 @@ public class Cell {
         this.font = font;
         this.text = text;
     }
-
 
     /**
      *  Creates a cell object and sets the font, fallback font and the cell text.
@@ -110,7 +105,6 @@ public class Cell {
         this.text = text;
     }
 
-
     /**
      *  Sets the font for this cell.
      *
@@ -119,7 +113,6 @@ public class Cell {
     public void SetFont(Font font) {
         this.font = font;
     }
-
 
     /**
      *  Sets the fallback font for this cell.
@@ -130,7 +123,6 @@ public class Cell {
         this.fallbackFont = fallbackFont;
     }
 
-
     /**
      *  Returns the font used by this cell.
      *
@@ -139,7 +131,6 @@ public class Cell {
     public Font GetFont() {
         return this.font;
     }
-
 
     /**
      *  Returns the fallback font used by this cell.
@@ -150,7 +141,6 @@ public class Cell {
         return this.fallbackFont;
     }
 
-
     /**
      *  Sets the cell text.
      *
@@ -159,7 +149,6 @@ public class Cell {
     public void SetText(String text) {
         this.text = text;
     }
-
 
     /**
      *  Returns the cell text.
@@ -170,7 +159,6 @@ public class Cell {
         return this.text;
     }
 
-
     /**
      *  Sets the image inside this cell.
      *
@@ -179,7 +167,6 @@ public class Cell {
     public void SetImage(Image image) {
         this.image = image;
     }
-
 
     /**
      *  Sets the barcode inside this cell.
@@ -190,7 +177,6 @@ public class Cell {
         this.barCode = barCode;
     }
 
-
     /**
      *  Returns the cell image.
      *
@@ -199,7 +185,6 @@ public class Cell {
     public Image GetImage() {
         return this.image;
     }
-
 
     /**
      *  Sets the point inside this cell.
@@ -211,7 +196,6 @@ public class Cell {
         this.point = point;
     }
 
-
     /**
      *  Returns the cell point.
      *
@@ -221,34 +205,25 @@ public class Cell {
         return this.point;
     }
 
-
     public void SetCompositeTextLine(CompositeTextLine compositeTextLine) {
         this.compositeTextLine = compositeTextLine;
     }
-
 
     public CompositeTextLine GetCompositeTextLine() {
         return this.compositeTextLine;
     }
 
-
     public void SetDrawable(IDrawable drawable) {
         this.drawable = drawable;
     }
-
 
     public IDrawable GetDrawable() {
         return this.drawable;
     }
 
-
     public void SetTextBlock(TextBlock textBlock) {
         this.textBlock = textBlock;
-        // TODO: Remove?
-        // this.textBlock.SetWidth(this.width - (this.leftPadding + this.rightPadding));
     }
-
-
 
     /**
      *  Sets the width of this cell.
@@ -262,7 +237,6 @@ public class Cell {
         }
     }
 
-
     /**
      *  Returns the cell width.
      *
@@ -271,7 +245,6 @@ public class Cell {
     public float GetWidth() {
         return this.width;
     }
-
 
     /**
      *  Sets the top padding of this cell.
@@ -282,7 +255,6 @@ public class Cell {
         this.topPadding = padding;
     }
 
-
     /**
      *  Sets the bottom padding of this cell.
      *
@@ -291,7 +263,6 @@ public class Cell {
     public void SetBottomPadding(float padding) {
         this.bottomPadding = padding;
     }
-
 
     /**
      *  Sets the left padding of this cell.
@@ -302,7 +273,6 @@ public class Cell {
         this.leftPadding = padding;
     }
 
-
     /**
      *  Sets the right padding of this cell.
      *
@@ -311,7 +281,6 @@ public class Cell {
     public void SetRightPadding(float padding) {
         this.rightPadding = padding;
     }
-
 
     /**
      *  Sets the top, bottom, left and right paddings of this cell.
@@ -325,7 +294,6 @@ public class Cell {
         this.rightPadding = padding;
     }
 
-
     /**
      *  Returns the cell height.
      *
@@ -333,21 +301,18 @@ public class Cell {
      */
     public float GetHeight() {
         float cellHeight = 0f;
-
         if (image != null) {
             float height = image.GetHeight() + topPadding + bottomPadding;
             if (height > cellHeight) {
                 cellHeight = height;
             }
         }
-
         if (barCode != null) {
             float height = barCode.GetHeight() + topPadding + bottomPadding;
             if (height > cellHeight) {
                 cellHeight = height;
             }
         }
-
         if (textBlock != null) {
             try {
                 float height = textBlock.DrawOn(null)[1] + topPadding + bottomPadding;
@@ -358,7 +323,6 @@ public class Cell {
             catch (Exception) {
             }
         }
-
         if (drawable != null) {
             try {
                 float height = drawable.DrawOn(null)[1] + topPadding + bottomPadding;
@@ -369,7 +333,6 @@ public class Cell {
             catch (Exception) {
             }
         }
-
         if (text != null) {
             float fontHeight = font.GetHeight();
             if (fallbackFont != null && fallbackFont.GetHeight() > fontHeight) {
@@ -380,20 +343,16 @@ public class Cell {
                 cellHeight = height;
             }
         }
-
         return cellHeight;
     }
-
 
     public void SetLineWidth(float lineWidth) {
         this.lineWidth = lineWidth;
     }
 
-
     public float GetLineWidth() {
         return this.lineWidth;
     }
-
 
     /**
      *  Sets the background to the specified color.
@@ -404,7 +363,6 @@ public class Cell {
         this.background = color;
     }
 
-
     /**
      *  Returns the background color of this cell.
      *
@@ -412,7 +370,6 @@ public class Cell {
     public int GetBgColor() {
         return this.background;
     }
-
 
     /**
      *  Sets the pen color.
@@ -423,7 +380,6 @@ public class Cell {
         this.pen = color;
     }
 
-
     /**
      *  Returns the pen color.
      *
@@ -431,7 +387,6 @@ public class Cell {
     public int GetPenColor() {
         return pen;
     }
-
 
     /**
      *  Sets the brush color.
@@ -442,7 +397,6 @@ public class Cell {
         this.brush = color;
     }
 
-
     /**
      *  Returns the brush color.
      *
@@ -450,7 +404,6 @@ public class Cell {
     public int GetBrushColor() {
         return brush;
     }
-
 
     /**
      *  Sets the pen and brush colors to the specified color.
@@ -462,16 +415,13 @@ public class Cell {
         this.brush = color;
     }
 
-
     internal void SetProperties(uint properties) {
         this.properties = properties;
     }
 
-
     internal uint GetProperties() {
         return this.properties;
     }
-
 
     /**
      *  Sets the column span private variable.
@@ -483,7 +433,6 @@ public class Cell {
         this.properties |= ((uint) (colspan & 0x0000FFFF));
     }
 
-
     /**
      *  Returns the column span private variable value.
      *
@@ -493,7 +442,6 @@ public class Cell {
         return (this.properties & 0x0000FFFF);
     }
 
-
     /**
      *  Sets the cell border object.
      *
@@ -502,12 +450,10 @@ public class Cell {
     public void SetBorder(uint border, bool visible) {
         if (visible) {
             this.properties |= border;
-        }
-        else {
+        } else {
             this.properties &= (~border & 0x00FFFFFF);
         }
     }
-
 
     /**
      *  Returns the cell border object.
@@ -518,7 +464,6 @@ public class Cell {
         return (this.properties & border) != 0;
     }
 
-
     /**
      *  Sets all border object parameters to false.
      *  This cell will have no borders when drawn on the page.
@@ -526,7 +471,6 @@ public class Cell {
     public void SetNoBorders() {
         this.properties &= 0x00F0FFFF;
     }
-
 
     /**
      *  Sets the cell text alignment.
@@ -539,7 +483,6 @@ public class Cell {
         this.properties |= (alignment & 0x00300000);
     }
 
-
     /**
      *  Returns the text alignment.
      *
@@ -548,7 +491,6 @@ public class Cell {
     public uint GetTextAlignment() {
         return (this.properties & 0x00300000);
     }
-
 
     /**
      *  Sets the cell text vertical alignment.
@@ -560,7 +502,6 @@ public class Cell {
         this.valign = alignment;
     }
 
-
     /**
      *  Returns the cell text vertical alignment.
      *
@@ -569,7 +510,6 @@ public class Cell {
     public uint GetVerTextAlignment() {
         return this.valign;
     }
-
 
     /**
      *  Sets the underline variable.
@@ -580,37 +520,30 @@ public class Cell {
     public void SetUnderline(bool underline) {
         if (underline) {
             this.properties |= 0x00400000;
-        }
-        else {
+        } else {
             this.properties &= 0x00BFFFFF;
         }
     }
-
 
     public bool GetUnderline() {
         return (properties & 0x00400000) != 0;
     }
 
-
     public void SetStrikeout(bool strikeout) {
         if (strikeout) {
             this.properties |= 0x00800000;
-        }
-        else {
+        } else {
             this.properties &= 0x007FFFFF;
         }
     }
-
 
     public bool GetStrikeout() {
         return (properties & 0x00800000) != 0;
     }
 
-
     public void SetURIAction(String uri) {
         this.uri = uri;
     }
-
 
     /**
      *  Draws the point, text and borders of this cell.
@@ -628,12 +561,10 @@ public class Cell {
             if (GetTextAlignment() == Align.LEFT) {
                 image.SetLocation(x + leftPadding, y + topPadding);
                 image.DrawOn(page);
-            }
-            else if (GetTextAlignment() == Align.CENTER) {
+            } else if (GetTextAlignment() == Align.CENTER) {
                 image.SetLocation((x + w/2f) - image.GetWidth()/2f, y + topPadding);
                 image.DrawOn(page);
-            }
-            else if (GetTextAlignment() == Align.RIGHT) {
+            } else if (GetTextAlignment() == Align.RIGHT) {
                 image.SetLocation((x + w) - (image.GetWidth() + leftPadding), y + topPadding);
                 image.DrawOn(page);
             }
@@ -642,17 +573,14 @@ public class Cell {
             try {
                 if (GetTextAlignment() == Align.LEFT) {
                     barCode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
-                }
-                else if (GetTextAlignment() == Align.CENTER) {
+                } else if (GetTextAlignment() == Align.CENTER) {
                     float barcodeWidth = barCode.DrawOn(null)[0];
                     barCode.DrawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
-                }
-                else if (GetTextAlignment() == Align.RIGHT) {
+                } else if (GetTextAlignment() == Align.RIGHT) {
                     float barcodeWidth = barCode.DrawOn(null)[0];
                     barCode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Console.WriteLine(e.ToString());
             }
         }
@@ -667,8 +595,7 @@ public class Cell {
         if (point != null) {
             if (point.align == Align.LEFT) {
                 point.x = x + 2*point.r;
-            }
-            else if (point.align == Align.RIGHT) {
+            } else if (point.align == Align.RIGHT) {
                 point.x = (x + w) - this.rightPadding/2;
             }
             point.y = y + h/2;
@@ -694,7 +621,6 @@ public class Cell {
         }
     }
 
-
     private void DrawBackground(
             Page page,
             float x,
@@ -704,7 +630,6 @@ public class Cell {
         page.SetBrushColor(background);
         page.FillRect(x, y + lineWidth / 2, cellW, cellH + lineWidth);
     }
-
 
     private void DrawBorders(
             Page page,
@@ -760,7 +685,6 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
-
         float xText;
         float yText;
         if (valign == Align.TOP) {
