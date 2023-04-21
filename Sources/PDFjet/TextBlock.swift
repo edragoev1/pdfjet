@@ -23,12 +23,10 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Class for creating blocks of text.
 ///
 public class TextBlock : Drawable {
-
     internal var font: Font
     internal var fallbackFont: Font?
     internal var text: String?
@@ -51,7 +49,6 @@ public class TextBlock : Drawable {
     private var uriActualText: String?
     private var uriAltDescription: String?
 
-
     ///
     /// Creates a text block.
     ///
@@ -59,16 +56,12 @@ public class TextBlock : Drawable {
     ///
     public init(_ font: Font) {
         self.font = font
-        self.spaceBetweenLines = self.font.descent
     }
-
 
     public init(_ font: Font, _ text: String) {
         self.font = font
         self.text = text
-        self.spaceBetweenLines = self.font.descent
     }
-
 
     ///
     /// Sets the fallback font.
@@ -82,7 +75,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Sets the block text.
     ///
@@ -94,7 +86,6 @@ public class TextBlock : Drawable {
         self.text = text
         return self
     }
-
 
     ///
     /// Sets the location where this text block will be drawn on the page.
@@ -110,7 +101,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Sets the width of this text block.
     ///
@@ -123,7 +113,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text block width.
     ///
@@ -132,7 +121,6 @@ public class TextBlock : Drawable {
     public func getWidth() -> Float {
         return self.w
     }
-
 
     ///
     /// Sets the height of this text block.
@@ -146,7 +134,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text block height.
     ///
@@ -155,7 +142,6 @@ public class TextBlock : Drawable {
     public func getHeight() -> Float {
         return drawOn(nil)[1]
     }
-
 
     ///
     /// Sets the space between two lines of text.
@@ -169,7 +155,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Returns the space between two lines of text.
     ///
@@ -178,7 +163,6 @@ public class TextBlock : Drawable {
     public func getSpaceBetweenLines() -> Float {
         return self.spaceBetweenLines
     }
-
 
     ///
     /// Sets the text alignment.
@@ -192,7 +176,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text alignment.
     ///
@@ -201,7 +184,6 @@ public class TextBlock : Drawable {
     public func getTextAlignment() -> UInt32 {
         return self.textAlign
     }
-
 
     ///
     /// Sets the background to the specified color.
@@ -215,7 +197,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Returns the background color.
     ///
@@ -224,7 +205,6 @@ public class TextBlock : Drawable {
     public func getBgColor() -> Int32 {
         return self.background
     }
-
 
     ///
     /// Sets the brush color.
@@ -238,7 +218,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-
     ///
     /// Returns the brush color.
     ///
@@ -248,13 +227,11 @@ public class TextBlock : Drawable {
         return self.brush
     }
 
-
     @discardableResult
     public func setDrawBorder(_ drawBorder: Bool) -> TextBlock {
         self.drawBorder = drawBorder
         return self
     }
-
 
     // Is the text Chinese, Japanese or Korean?
     private func isCJK(_ text: String) -> Bool {
@@ -266,19 +243,16 @@ public class TextBlock : Drawable {
                     scalar >= "\u{30A0}" && scalar <= "\u{30FF}" ||     // Katakana (Japanese)
                     scalar >= "\u{3040}" && scalar <= "\u{309F}" {      // Hiragana (Japanese)
                 cjk += 1
-            }
-            else {
+            } else {
                 other += 1
             }
         }
         return cjk > other
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Draws this text block on the specified page.
@@ -298,9 +272,7 @@ public class TextBlock : Drawable {
         return drawText(page)
     }
 
-
     private func drawText(_ page: Page?) -> [Float] {
-
         var list = [String]()
         var buf = String()
         var lines = text!.components(separatedBy: "\n")
@@ -308,10 +280,9 @@ public class TextBlock : Drawable {
             if isCJK(line) {
                 buf = ""
                 for ch in line {
-                    if font.stringWidth(fallbackFont, buf + String(ch)) < self.w {
+                    if font.stringWidth(fallbackFont, buf + String(ch)) <= self.w {
                         buf.append(ch)
-                    }
-                    else {
+                    } else {
                         list.append(buf)
                         buf = ""
                         buf.append(ch)
@@ -320,19 +291,16 @@ public class TextBlock : Drawable {
                 if !buf.trim().isEmpty {
                     list.append(buf.trim())
                 }
-            }
-            else {
+            } else {
                 if font.stringWidth(fallbackFont, line) < self.w {
                     list.append(line)
-                }
-                else {
+                } else {
                     buf = ""
                     let tokens = TextUtils.splitTextIntoTokens(line, font, fallbackFont, self.w)
                     for token in tokens {
                         if font.stringWidth(fallbackFont, (buf + " " + token).trim()) < self.w {
                             buf.append(" " + token)
-                        }
-                        else {
+                        } else {
                             list.append(buf.trim())
                             buf = ""
                             buf.append(token)
@@ -352,26 +320,20 @@ public class TextBlock : Drawable {
         for i in 0..<lines.count {
             if textAlign == Align.LEFT {
                 xText = x
-            }
-            else if textAlign == Align.RIGHT {
+            } else if textAlign == Align.RIGHT {
                 xText = (x + self.w) - (font.stringWidth(fallbackFont, lines[i]))
-            }
-            else if textAlign == Align.CENTER {
+            } else if textAlign == Align.CENTER {
                 xText = x + (self.w - font.stringWidth(fallbackFont, lines[i]))/2
-            }
-            else {
+            } else {
                 Swift.print("Invalid text alignment option.")
             }
-
             if page != nil {
                 page!.drawString(font, fallbackFont, lines[i], xText, yText)
             }
-
             if i < (lines.count - 1) {
                 yText += font.bodyHeight + spaceBetweenLines
             }
         }
-
         self.h = (yText - y) + font.descent
         if page != nil && drawBorder {
             let box = Box()
@@ -396,7 +358,6 @@ public class TextBlock : Drawable {
         return [self.x + self.w, self.y + self.h];
     }
 
-
     /// Sets the URI for the "click text line" action.
     ///
     /// @param uri the URI
@@ -407,5 +368,4 @@ public class TextBlock : Drawable {
         self.uri = uri
         return self
     }
-
 }   // End of TextBlock.swift

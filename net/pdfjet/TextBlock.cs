@@ -60,13 +60,11 @@ public class TextBlock : IDrawable {
      */
     public TextBlock(Font font) {
         this.font = font;
-        this.spaceBetweenLines = this.font.descent;
     }
 
     public TextBlock(Font font, String text) {
         this.font = font;
         this.text = text;
-        this.spaceBetweenLines = this.font.descent;
     }
 
     /**
@@ -279,7 +277,7 @@ public class TextBlock : IDrawable {
                 StringBuilder buf = new StringBuilder();
                 for (int i = 0; i < line.Length; i++) {
                     Char ch = line[i];
-                    if (font.StringWidth(fallbackFont, buf.ToString() + ch) < this.w) {
+                    if (font.StringWidth(fallbackFont, buf.ToString() + ch) <= this.w) {
                         buf.Append(ch);
                     } else {
                         list.Add(buf.ToString());

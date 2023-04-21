@@ -289,7 +289,7 @@ public class TextBlock implements Drawable {
                 StringBuilder buf = new StringBuilder();
                 for (int i = 0; i < line.length(); i++) {
                     Character ch = line.charAt(i);
-                    if (font.stringWidth(fallbackFont, buf.toString() + ch) < this.w) {
+                    if (font.stringWidth(fallbackFont, buf.toString() + ch) <= this.w) {
                         buf.append(ch);
                     } else {
                         list.add(buf.toString());
@@ -306,9 +306,10 @@ public class TextBlock implements Drawable {
                     list.add(line.trim());
                 } else {
                     StringBuilder buf = new StringBuilder();
-                    String[] tokens = TextUtils.splitTextIntoTokens(line, font, fallbackFont, this.w);
+                    // String[] tokens = TextUtils.splitTextIntoTokens(line, font, fallbackFont, this.w);
+                    String[] tokens = line.trim().split("\\s+"); // Do not remove the trim()!
                     for (String token : tokens) {
-                        if (font.stringWidth(fallbackFont, (buf.toString() + " " + token).trim()) <= this.w) {
+                        if (font.stringWidth(fallbackFont, (buf.toString() + " " + token).trim()) < this.w) {
                             buf.append(" ");
                             buf.append(token);
                         } else {
