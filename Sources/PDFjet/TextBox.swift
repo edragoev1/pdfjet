@@ -416,16 +416,6 @@ public class TextBox : Drawable {
     }
 
     ///
-    /// Sets all borders to be invisible.
-    /// This cell will have no borders when drawn on the page.
-    ///
-    @discardableResult
-    public func setNoBorders() -> TextBox {
-        self.properties &= 0x00F0FFFF
-        return self
-    }
-
-    ///
     /// Sets the cell text alignment.
     ///
     /// @param alignment the alignment code.
