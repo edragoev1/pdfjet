@@ -34,20 +34,17 @@ public class TextUtils {
             Font fallbackFont,
             float width) {
         List<String> tokens2 = new List<String>();
-
         String[] tokens = Regex.Split(text, @"\s+");
         foreach (String token in tokens) {
             if (font.StringWidth(fallbackFont, token) <= width) {
                 tokens2.Add(token);
-            }
-            else {
+            } else {
                 StringBuilder buf = new StringBuilder();
                 for (int i = 0; i < token.Length; i++) {
                     String ch = token[i].ToString();
                     if (font.StringWidth(fallbackFont, buf.ToString() + ch) <= width) {
                         buf.Append(ch);
-                    }
-                    else {
+                    } else {
                         tokens2.Add(buf.ToString());
                         buf.Length = 0;
                         buf.Append(ch);
@@ -59,7 +56,6 @@ public class TextUtils {
                 }
             }
         }
-
         return tokens2.ToArray();
     }
 }   // End of TextUtils.cs

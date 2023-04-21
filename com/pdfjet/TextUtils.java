@@ -36,8 +36,7 @@ public class TextUtils {
         for (String token : tokens) {
             if (font.stringWidth(fallbackFont, token) <= width) {
                 tokens2.add(token);
-            }
-            else {
+            } else {
                 StringBuilder buf = new StringBuilder();
                 for (int i = 0; i < token.length(); i++) {
                     String ch = String.valueOf(token.charAt(i));
