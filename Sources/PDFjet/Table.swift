@@ -23,14 +23,12 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create table objects and draw them on a page.
 ///
 /// Please see Example_08.
 ///
 public class Table {
-
     public static let DATA_HAS_0_HEADER_ROWS = 0
     public static let DATA_HAS_1_HEADER_ROWS = 1
     public static let DATA_HAS_2_HEADER_ROWS = 2
@@ -54,14 +52,12 @@ public class Table {
     private var bottomMargin: Float = 30.0
     private var numOfHeaderRowsAdjusted: Bool = false
 
-
     ///
     /// Create a table object.
     ///
     public init() {
         tableData = [[Cell]]()
     }
-
 
     ///
     /// Sets the location (x, y) of the top left corner of this table on the page.
@@ -74,7 +70,6 @@ public class Table {
         self.y1 = y
     }
 
-
     ///
     /// Sets the bottom margin for this table.
     ///
@@ -83,7 +78,6 @@ public class Table {
     public func setBottomMargin(_ bottomMargin: Float) {
         self.bottomMargin = bottomMargin
     }
-
 
     ///
     /// Sets the table data.
@@ -111,7 +105,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Sets the table data and specifies the number of header rows in this data.
     ///
@@ -134,43 +127,6 @@ public class Table {
             }
         }
     }
-
-
-    ///
-    /// Auto adjusts the widths of all columns so that they are just wide enough to hold the text without truncation.
-    ///
-/*
-    public func autoAdjustColumnWidths() {
-        // Find the maximum text width for each column
-        var maxColWidths = [Float](repeating: 0, count: (tableData[0].count))
-        for row in tableData {
-            for (i, cell) in row.enumerated() {
-                if cell.getColSpan() == 1 {
-                    var cellWidth: Float = 0.0
-                    if cell.getImage() != nil {
-                        cellWidth = cell.getImage()!.getWidth()!
-                    }
-                    if cell.text != nil {
-                        if cell.font!.stringWidth(cell.fallbackFont, cell.text) > cellWidth {
-                            cellWidth = cell.font!.stringWidth(cell.fallbackFont, cell.text)
-                        }
-                    }
-                    cell.setWidth(cellWidth + cell.leftPadding + cell.rightPadding)
-                    if maxColWidths[i] == 0.0 ||
-                            cell.getWidth() > maxColWidths[i] {
-                        maxColWidths[i] = cell.getWidth()
-                    }
-                }
-            }
-        }
-
-        for row in tableData {
-            for (i, cell) in row.enumerated() {
-                cell.setWidth(maxColWidths[i])
-            }
-        }
-    }
-*/
 
     ///
     /// Sets the alignment of the numbers to the right.
@@ -199,7 +155,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Removes the horizontal lines between the rows from index1 to index2.
     ///
@@ -217,7 +172,6 @@ public class Table {
             j += 1
         }
     }
-
 
     ///
     /// Sets the text alignment in the specified column.
@@ -238,7 +192,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Sets the color of the text in the specified column.
     ///
@@ -256,7 +209,6 @@ public class Table {
             }
         }
     }
-
 
     ///
     /// Sets the font for the specified column.
@@ -276,7 +228,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Sets the color of the text in the specified row.
     ///
@@ -294,7 +245,6 @@ public class Table {
             }
         }
     }
-
 
     ///
     /// Sets the font for the specified row.
@@ -314,7 +264,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Sets the width of the column with the specified index.
     ///
@@ -333,7 +282,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Returns the column width of the column at the specified index.
     ///
@@ -343,7 +291,6 @@ public class Table {
     public func getColumnWidth(_ index: Int) -> Float {
         return getCellAtRowColumn(0, index).getWidth();
     }
-
 
     ///
     /// Returns the cell at the specified row and column.
@@ -360,7 +307,6 @@ public class Table {
         return tableData[tableData.count + row][col]
     }
 
-
     ///
     /// Returns the cell at the specified row and column.
     ///
@@ -373,7 +319,6 @@ public class Table {
         return getCellAt(row, col)
     }
 
-
     ///
     /// Returns a list of cell for the specified row.
     ///
@@ -385,11 +330,9 @@ public class Table {
         return tableData[index]
     }
 
-
     public func getRowAtIndex(_ index: Int) -> [Cell] {
         return getRow(index)
     }
-
 
     ///
     /// Returns a list of cell for the specified column.
@@ -408,29 +351,9 @@ public class Table {
         return column
     }
 
-
     public func getColumnAtIndex(_ index: Int) -> [Cell] {
         return getColumn(index)
     }
-
-
-    ///
-    /// Returns the total number of pages that are required to draw this table on.
-    ///
-    /// @param page the type of pages we are drawing this table on.
-    ///
-    /// @return the number of pages.
-    ///
-    @discardableResult
-    public func getNumberOfPages(_ page: Page) throws -> Int {
-        self.numOfPages = 1
-        while hasMoreData() {
-            drawOn(nil)
-        }
-        resetRenderedPagesCount()
-        return self.numOfPages
-    }
-
 
     ///
     /// Draws this table on the specified page.
@@ -444,7 +367,6 @@ public class Table {
     public func drawOn(_ page: Page?) -> [Float] {
         return drawTableRows(page, drawHeaderRows(page, 0))
     }
-
 
     @discardableResult
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: [Float]) -> [Float] {
@@ -460,7 +382,6 @@ public class Table {
         resetRenderedPagesCount()
         return xy!
     }
-
 
     private func drawHeaderRows(_ page: Page?, _ pageNumber: Int) -> [Float] {
         var x = x1
@@ -495,7 +416,6 @@ public class Table {
 
         return [x!, y!]
     }
-
 
     private func drawTableRows(_ page: Page?, _ parameter: [Float]) -> [Float] {
         var x = parameter[0]
@@ -554,7 +474,6 @@ public class Table {
         return [x, y]
     }
 
-
     private func getMaxCellHeight(_ row: [Cell]) -> Float {
         var maxCellHeight: Float = 0.0
         for cell in row {
@@ -565,14 +484,12 @@ public class Table {
         return maxCellHeight
     }
 
-
     ///
     /// Returns true if the table contains more data that needs to be drawn on a page.
     ///
     public func hasMoreData() -> Bool {
         return self.rendered != -1
     }
-
 
     ///
     /// Returns the width of this table when drawn on a page.
@@ -590,7 +507,6 @@ public class Table {
         return table_width
     }
 
-
     ///
     /// Returns the number of data rows that have been rendered so far.
     ///
@@ -599,7 +515,6 @@ public class Table {
     public func getRowsRendered() -> Int {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows
     }
-
 
     ///
     /// Wraps around the text in all cells so it fits the column width.
@@ -710,7 +625,6 @@ public class Table {
         tableData = tableData2
     }
 
-
     ///
     /// Sets all table cells borders to <strong>false</strong>.
     ///
@@ -721,7 +635,6 @@ public class Table {
             }
         }
     }
-
 
     ///
     /// Sets the color of the cell border lines.
@@ -736,7 +649,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Sets the width of the cell border lines.
     ///
@@ -750,7 +662,6 @@ public class Table {
         }
     }
 
-
     ///
     /// Resets the rendered pages count.
     /// Call this method if you have to draw this table more than one time.
@@ -758,7 +669,6 @@ public class Table {
     public func resetRenderedPagesCount() {
         self.rendered = numOfHeaderRows
     }
-
 
     ///
     /// This method removes borders that have the same color and overlap 100%.
@@ -788,7 +698,6 @@ public class Table {
             }
         }
     }
-
 
     /**
      *  Auto adjusts the widths of all columns so that they are just wide enough to hold the text without truncation.
@@ -856,7 +765,6 @@ public class Table {
         autoResizeColumnsWithColspanBiggerThanOne()
     }
 
-
     private func isTextColumn(_ index: Int) -> Bool {
         for i in numOfHeaderRows..<tableData.count {
             let dataRow = tableData[i]
@@ -866,7 +774,6 @@ public class Table {
         }
         return true
     }
-
 
     public func fitToPage(_ pageSize: [Float]) {
         autoAdjustColumnWidths()
@@ -879,8 +786,7 @@ public class Table {
             let cell = row[i]
             if isTextColumn(i) {
                 textColumnWidths += cell.getWidth()
-            }
-            else {
+            } else {
                 otherColumnWidths += cell.getWidth()
             }
         }
@@ -902,7 +808,6 @@ public class Table {
         autoResizeColumnsWithColspanBiggerThanOne()
         mergeOverlaidBorders()
     }
-
 
     private func autoResizeColumnsWithColspanBiggerThanOne() {
         for i in 0..<tableData.count {
@@ -926,16 +831,13 @@ public class Table {
         }
     }
 
-
     public func setRightMargin(_ rightMargin: Float) {
         self.rightMargin = rightMargin
     }
 
-
     public func setFirstPageTopMargin(_ topMargin: Float) {
         self.y1FirstPage = y1! + topMargin
     }
-
 
     public func addToRow(_ row: inout [Cell], _ cell: Cell) {
         row.append(cell)
@@ -943,5 +845,4 @@ public class Table {
             row.append(Cell(cell.getFont(), ""))
         }
     }
-
 }   // End of Table.swift
