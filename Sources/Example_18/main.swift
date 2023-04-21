@@ -9,7 +9,7 @@ public class Example_18 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_18.pdf", append: false)!)
 
-
+/*
         let buf1 = try Contents.ofBinaryFile("images/svg-test/europe.svg")
         var buf2 = [UInt8]()
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
@@ -26,7 +26,7 @@ let time3 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Time to LZWEncode: \(time3 - time2)")
         print(buf1.count)
         print(buf2.count)
-
+*/
 
         let font = try Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
         font.setSize(12.0)
