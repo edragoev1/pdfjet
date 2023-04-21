@@ -79,10 +79,8 @@ public class Example_08 {
         pdf.complete();
     }
 
-
     public List<List<String>> getTextData(String fileName, String delimiter) throws Exception {
         List<List<String>> tableTextData = new ArrayList<List<String>>();
-
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
         String line;
         while ((line = reader.readLine()) != null) {
@@ -97,7 +95,6 @@ public class Example_08 {
             tableTextData.add(Arrays.asList(cols));
         }
         reader.close();
-
         return tableTextData;
     }
 
@@ -108,7 +105,6 @@ public class Example_08 {
             Font f1,
             Font f2) throws Exception {
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-
         List<List<String>> tableTextData = getTextData(fileName, delimiter);
         int currentRow = 0;
         for (List<String> rowData : tableTextData) {        	
@@ -118,8 +114,7 @@ public class Example_08 {
                 Cell cell;
                 if (currentRow < numOfHeaderRows) {
                     cell = new Cell(f1, text);
-                }
-                else {
+                } else {
                     cell = new Cell(f2);
                     if (i == 0 && currentRow == 5) {
                         cell.setImage(image1);
@@ -128,13 +123,11 @@ public class Example_08 {
                         cell.setBarcode(barCode);
                         cell.setTextAlignment(Align.CENTER);
                         cell.setColSpan(8);
-                    }
-                    else {
+                    } else {
                         TextBlock textBlock = new TextBlock(f2, text);
                         if (i == 0) {
                             textBlock.setTextAlignment(Align.LEFT);
-                        }
-                        else {
+                        } else {
                             textBlock.setTextAlignment(Align.RIGHT);
                         }
                         cell.setTextBlock(textBlock);
@@ -145,7 +138,6 @@ public class Example_08 {
             tableData.add(row);
             currentRow++;
         }
-
         return tableData;
     }
 
@@ -155,5 +147,4 @@ public class Example_08 {
         long time1 = System.currentTimeMillis();
         System.out.println("Example_08 => " + (time1 - time0));
     }
-
 }   // End of Example_08.java
