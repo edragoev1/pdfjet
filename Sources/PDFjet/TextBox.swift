@@ -411,7 +411,6 @@ public class TextBox : Drawable {
     /// @return Bool the text border object.
     ///
     public func getBorder(_ border: UInt32) -> Bool {
-        // return (self.properties & border) != 0
         if border == Border.NONE {
             if ((properties >> 16) & 0xF) == 0x0 {
                 return true
