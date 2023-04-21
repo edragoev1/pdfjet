@@ -26,10 +26,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-
 namespace PDFjet.NET {
 public class TextUtils {
-
     public static String[] SplitTextIntoTokens(
             String text,
             Font font,
@@ -64,6 +62,5 @@ public class TextUtils {
 
         return tokens2.ToArray();
     }
-
 }   // End of TextUtils.cs
 }   // End of namespace PDFjet.NET

@@ -25,14 +25,12 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  *  Class for creating blocks of text.
  *
  */
 public class TextBlock : IDrawable {
-
     internal Font font = null;
     internal Font fallbackFont = null;
     internal String text = null;
@@ -55,7 +53,6 @@ public class TextBlock : IDrawable {
     private String uriActualText = null;
     private String uriAltDescription = null;
 
-
     /**
      *  Creates a text block.
      *
@@ -72,7 +69,6 @@ public class TextBlock : IDrawable {
         this.spaceBetweenLines = this.font.descent;
     }
 
-
     /**
      *  Sets the fallback font.
      *
@@ -83,7 +79,6 @@ public class TextBlock : IDrawable {
         this.fallbackFont = fallbackFont;
         return this;
     }
-
 
     /**
      *  Sets the block text.
@@ -96,11 +91,9 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     public TextBlock SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     /**
      *  Sets the location where this text block will be drawn on the page.
@@ -115,11 +108,9 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the width of this text block.
@@ -132,7 +123,6 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the text block width.
      *
@@ -141,7 +131,6 @@ public class TextBlock : IDrawable {
     public float GetWidth() {
         return this.w;
     }
-
 
     /**
      *  Sets the height of this text block.
@@ -154,7 +143,6 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the text block height.
      *
@@ -163,7 +151,6 @@ public class TextBlock : IDrawable {
     public float GetHeight() {
         return DrawOn(null)[1];
     }
-
 
     /**
      *  Sets the space between two lines of text.
@@ -176,7 +163,6 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the space between two lines of text.
      *
@@ -185,7 +171,6 @@ public class TextBlock : IDrawable {
     public float GetSpaceBetweenLines() {
         return spaceBetweenLines;
     }
-
 
     /**
      *  Sets the text alignment.
@@ -198,7 +183,6 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the text alignment.
      *
@@ -207,7 +191,6 @@ public class TextBlock : IDrawable {
     public uint GetTextAlignment() {
         return this.textAlign;
     }
-
 
     /**
      *  Sets the background to the specified color.
@@ -220,7 +203,6 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the background color.
      *
@@ -229,7 +211,6 @@ public class TextBlock : IDrawable {
     public int GetBgColor() {
         return this.background;
     }
-
 
     /**
      *  Sets the brush color.
@@ -242,7 +223,6 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-
     /**
      * Returns the brush color.
      *
@@ -252,11 +232,9 @@ public class TextBlock : IDrawable {
         return this.brush;
     }
 
-
     public void SetDrawBorder(bool drawBorder) {
         this.drawBorder = drawBorder;
     }
-
 
     // Is the text Chinese, Japanese or Korean?
     private bool IsCJK(String text) {
@@ -276,7 +254,6 @@ public class TextBlock : IDrawable {
         return cjk > other;
     }
 
-
     /**
      *  Draws this text block on the specified page.
      *
@@ -294,7 +271,6 @@ public class TextBlock : IDrawable {
         return DrawText(page);
     }
 
-
     private float[] DrawText(Page page) {
         List<String> list = new List<String>();
         String[] lines = text.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
@@ -305,8 +281,7 @@ public class TextBlock : IDrawable {
                     Char ch = line[i];
                     if (font.StringWidth(fallbackFont, buf.ToString() + ch) < this.w) {
                         buf.Append(ch);
-                    }
-                    else {
+                    } else {
                         list.Add(buf.ToString());
                         buf.Length = 0;
                         buf.Append(ch);
@@ -316,12 +291,10 @@ public class TextBlock : IDrawable {
                 if (!str.Equals("")) {
                     list.Add(str);
                 }
-            }
-            else {
+            } else {
                 if (font.StringWidth(fallbackFont, line) < this.w) {
                     list.Add(line);
-                }
-                else {
+                } else {
                     StringBuilder buf = new StringBuilder();
                     String[] tokens = TextUtils.SplitTextIntoTokens(line, font, fallbackFont, this.w);
                     foreach (String token in tokens) {
@@ -348,26 +321,20 @@ public class TextBlock : IDrawable {
         for (int i = 0; i < lines.Length; i++) {
             if (textAlign == Align.LEFT) {
                 xText = x;
-            }
-            else if (textAlign == Align.RIGHT) {
+            } else if (textAlign == Align.RIGHT) {
                 xText = (x + this.w) - (font.StringWidth(fallbackFont, lines[i]));
-            }
-            else if (textAlign == Align.CENTER) {
+            } else if (textAlign == Align.CENTER) {
                 xText = x + (this.w - font.StringWidth(fallbackFont, lines[i]))/2;
-            }
-            else {
+            } else {
                 throw new Exception("Invalid text alignment option.");
             }
-
             if (page != null) {
                 page.DrawString(font, fallbackFont, lines[i], xText, yText);
             }
-
             if (i < (lines.Length - 1)) {
                 yText += font.bodyHeight + spaceBetweenLines;
             }
         }
-
         this.h = (yText - y) + font.descent;
         if (page != null && drawBorder) {
             Box box = new Box();
@@ -392,7 +359,6 @@ public class TextBlock : IDrawable {
         return new float[] {this.x + this.w, this.y + this.h};
     }
 
-
     /**
      *  Sets the URI for the "click text line" action.
      *
@@ -403,6 +369,5 @@ public class TextBlock : IDrawable {
         this.uri = uri;
         return this;
     }
-
 }   // End of TextBlock.cs
 }   // End of namespace PDFjet.NET

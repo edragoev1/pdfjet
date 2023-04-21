@@ -25,16 +25,13 @@ package com.pdfjet;
 
 import java.util.*;
 
-
 public class TextUtils {
-
     public static String[] splitTextIntoTokens(
             String text,
             Font font,
             Font fallbackFont,
             float width) {
         List<String> tokens2 = new ArrayList<String>();
-
         String[] tokens = text.split("\\s+");
         for (String token : tokens) {
             if (font.stringWidth(fallbackFont, token) <= width) {
@@ -46,8 +43,7 @@ public class TextUtils {
                     String ch = String.valueOf(token.charAt(i));
                     if (font.stringWidth(fallbackFont, buf.toString() + ch) <= width) {
                         buf.append(ch);
-                    }
-                    else {
+                    } else {
                         tokens2.add(buf.toString());
                         buf.setLength(0);
                         buf.append(ch);
@@ -59,8 +55,6 @@ public class TextUtils {
                 }
             }
         }
-
         return tokens2.toArray(new String[] {});
     }
-
 }

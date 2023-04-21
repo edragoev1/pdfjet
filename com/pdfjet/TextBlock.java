@@ -34,7 +34,7 @@ public class TextBlock implements Drawable {
     protected Font fallbackFont = null;
     protected String text = null;
 
-    private float spaceBetweenLines;
+    private float spaceBetweenLines = 0f;
     private int textAlign = Align.LEFT;
 
     private float x;
@@ -59,13 +59,11 @@ public class TextBlock implements Drawable {
      */
     public TextBlock(Font font) {
         this.font = font;
-        this.spaceBetweenLines = this.font.descent;
     }
 
     public TextBlock(Font font, String text) {
         this.font = font;
         this.text = text;
-        this.spaceBetweenLines = this.font.descent;
     }
 
     /**
@@ -293,8 +291,7 @@ public class TextBlock implements Drawable {
                     Character ch = line.charAt(i);
                     if (font.stringWidth(fallbackFont, buf.toString() + ch) < this.w) {
                         buf.append(ch);
-                    }
-                    else {
+                    } else {
                         list.add(buf.toString());
                         buf.setLength(0);
                         buf.append(ch);
@@ -304,20 +301,17 @@ public class TextBlock implements Drawable {
                 if (!str.equals("")) {
                     list.add(str);
                 }
-            }
-            else {
+            } else {
                 if (font.stringWidth(fallbackFont, line) < this.w) {
                     list.add(line.trim());
-                }
-                else {
+                } else {
                     StringBuilder buf = new StringBuilder();
                     String[] tokens = TextUtils.splitTextIntoTokens(line, font, fallbackFont, this.w);
                     for (String token : tokens) {
-                        if (font.stringWidth(fallbackFont, (buf.toString() + " " + token).trim()) < this.w) {
+                        if (font.stringWidth(fallbackFont, (buf.toString() + " " + token).trim()) <= this.w) {
                             buf.append(" ");
                             buf.append(token);
-                        }
-                        else {
+                        } else {
                             list.add(buf.toString().trim());
                             buf.setLength(0);
                             buf.append(token);
@@ -337,14 +331,11 @@ public class TextBlock implements Drawable {
         for (int i = 0; i < lines.length; i++) {
             if (textAlign == Align.LEFT) {
                 xText = x;
-            }
-            else if (textAlign == Align.RIGHT) {
+            } else if (textAlign == Align.RIGHT) {
                 xText = (x + this.w) - (font.stringWidth(fallbackFont, lines[i]));
-            }
-            else if (textAlign == Align.CENTER) {
+            } else if (textAlign == Align.CENTER) {
                 xText = x + (this.w - font.stringWidth(fallbackFont, lines[i]))/2;
-            }
-            else {
+            } else {
                 throw new Exception("Invalid text alignment option.");
             }
             if (page != null) {
@@ -354,7 +345,6 @@ public class TextBlock implements Drawable {
                 yText += font.bodyHeight + spaceBetweenLines;
             }
         }
-
         this.h = (yText - y) + font.descent;
         if (page != null && drawBorder) {
             Box box = new Box();
