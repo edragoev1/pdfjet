@@ -80,12 +80,10 @@ class FontStream1 {
         let metadataObjNumber = pdf.addMetadataObject(font.info, true)
 
         pdf.newobj()
-        pdf.append("<<\n")
-
+        pdf.append(Token.beginDictionary)
         pdf.append("/Metadata ")
         pdf.append(metadataObjNumber)
         pdf.append(" 0 R\n")
-
         if font.cff! {
             pdf.append("/Subtype /CIDFontType0C\n")
         }
@@ -97,11 +95,11 @@ class FontStream1 {
         if !font.cff! {
             pdf.append("/Length1 ")
             pdf.append(font.uncompressedSize!)
-            pdf.append("\n")
+            pdf.append(Token.newline)
         }
 
-        pdf.append(">>\n")
-        pdf.append("stream\n")
+        pdf.append(Token.endDictionary)
+        pdf.append(Token.stream)
         var buffer = [UInt8](repeating: 0, count: 4096)
         while stream.hasBytesAvailable {
             let count = stream.read(&buffer, maxLength: buffer.count)
@@ -109,8 +107,7 @@ class FontStream1 {
                 pdf.append(buffer, 0, count)
             }
         }
-
-        pdf.append("\nendstream\n")
+        pdf.append(Token.endstream)
         pdf.endobj()
 
         font.fileObjNumber = pdf.getObjNumber()
