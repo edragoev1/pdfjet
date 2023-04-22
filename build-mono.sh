@@ -3,9 +3,9 @@ mcs -warn:2 -debug -sdk:4.0 net/pdfjet/*.cs -reference:System.Drawing.dll -targe
 for i in $(seq 1 51);
 do
     if [ $i -lt 10 ]; then
-        mcs -warn:2 -debug examples/Example_0$i.cs -reference:PDFjet.dll
+        mcs -warn:2 -optimize examples/Example_0$i.cs -reference:PDFjet.dll
     else
-        mcs -warn:2 -debug examples/Example_$i.cs -reference:PDFjet.dll
+        mcs -warn:2 -optimize examples/Example_$i.cs -reference:PDFjet.dll
     fi
 done
 
