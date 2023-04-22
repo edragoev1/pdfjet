@@ -344,9 +344,9 @@ class FontStream1 {
     }
 
 
-    private static func getInt16(
-            _ buffer: [UInt8], _ offset: inout Int) -> Int16 {
-        let value = (Int16(buffer[offset]) << 8) | Int16(buffer[offset + 1])
+    private static func getInt(
+            _ buffer: [UInt8], _ offset: inout Int) -> Int {
+        let value = (Int(buffer[offset]) << 8) | Int(buffer[offset + 1])
         offset += 2
         return value
     }
@@ -402,17 +402,21 @@ class FontStream1 {
             font.advanceWidth![i] = getUInt16(inflated, &offset)
         }
 
+let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         len = Int(getInt32(inflated, &offset))
         font.glyphWidth = [Int](repeating: 0, count: len)
         for i in 0..<len {
-            font.glyphWidth![i] = Int(getInt16(inflated, &offset))
+            font.glyphWidth![i] = getInt(inflated, &offset)
         }
 
         len = Int(getInt32(inflated, &offset))
         font.unicodeToGID = [Int](repeating: 0, count: len)
         for i in 0..<len {
-            font.unicodeToGID![i] = Int(getInt16(inflated, &offset))
+            font.unicodeToGID![i] = getInt(inflated, &offset)
         }
+let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+print("Example_28 => \(time1 - time0)")
+
 
         font.cff = false
         if String(try getInt8(stream)) == "Y" {
