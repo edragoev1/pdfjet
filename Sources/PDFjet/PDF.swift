@@ -1066,6 +1066,10 @@ public class PDF {
         append(String(number))
     }
 
+    func append(_ number: UInt16) {
+        append(String(number))
+    }
+
     func append(_ val: Float) {
         append(formatter.string(from: NSNumber(value: val))!)
     }

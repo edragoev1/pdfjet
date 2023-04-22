@@ -229,8 +229,7 @@ class FontStream1 {
         pdf.append("/Type /Font\n")
         if font.cff! {
             pdf.append("/Subtype /CIDFontType0\n")
-        }
-        else {
+        } else {
             pdf.append("/Subtype /CIDFontType2\n")
         }
         pdf.append("/BaseFont /")
@@ -250,8 +249,8 @@ class FontStream1 {
         pdf.append("\n")
         pdf.append("/W [0[\n")
         for i in 0..<font.advanceWidth!.count {
-            pdf.append(Int32(round(k * Float(font.advanceWidth![i]))))
-            pdf.append(" ")
+            pdf.append(UInt16(round(k * Float(font.advanceWidth![i]))))
+            pdf.append(Token.space)
         }
         pdf.append("]]\n")
 
