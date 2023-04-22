@@ -483,18 +483,19 @@ public class TextBox : IDrawable {
     }
 
     /**
-     *  Sets the TextBox border object.
+     *  Sets the TextBox border properties.
      *
-     *  @param border the border object.
+     *  @param border the border properties.
      */
     public void SetBorder(uint border) {
         this.properties |= border;
     }
 
     /**
-     *  Returns the text box border.
+     * Returns the text box specific border value.
      *
-     *  @return boolean the text border object.
+     * @param border the border property.
+     * @return boolean the specific border value.
      */
     public bool GetBorder(uint border) {
         if (border == Border.NONE) {
@@ -523,6 +524,19 @@ public class TextBox : IDrawable {
             }
         }
         return false;
+    }
+
+    /**
+     * Sets the TextBox borders on and off.
+     *
+     * @param borders the borders flag.
+     */
+    public void SetBorders(bool borders) {
+        if (borders) {
+            SetBorder(Border.ALL);
+        } else {
+            SetBorder(Border.NONE);
+        }
     }
 
     /**

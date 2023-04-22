@@ -496,20 +496,19 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the TextBox border object.
+     * Sets the TextBox border properties.
      *
-     * @param border  the border object.
-     * @param visible the object visibility.
+     * @param border the border properties.
      */
     public void setBorder(int border) {
         this.properties |= border;
     }
 
     /**
-     * Returns the text box border.
+     * Returns the text box specific border value.
      *
-     * @param border the border.
-     * @return boolean the text border object.
+     * @param border the border property.
+     * @return boolean the specific border value.
      */
     public boolean getBorder(int border) {
         if (border == Border.NONE) {
@@ -538,6 +537,19 @@ public class TextBox implements Drawable {
             }
         }
         return false;
+    }
+
+    /**
+     * Sets the TextBox borders on and off.
+     *
+     * @param borders the borders flag.
+     */
+    public void setBorders(boolean borders) {
+        if (borders) {
+            setBorder(Border.ALL);
+        } else {
+            setBorder(Border.NONE);
+        }
     }
 
     /**
