@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 class LZWHashTable {
-
     private let mask = 0x3FFF
     private var offsets: [Int]
     private var lengths: [Int]
@@ -91,5 +89,4 @@ class LZWHashTable {
         codes[index] = code
         return nil
     }
-
 }

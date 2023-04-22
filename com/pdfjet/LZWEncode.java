@@ -3,10 +3,8 @@ package com.pdfjet;
 import java.io.*;
 import java.util.*;
 
-
 class LZWEncode {
-
-    private final LookupTable table = new LookupTable();
+    private final LZWHashTable table = new LZWHashTable();
     private int bitBuffer = 0;
     private int bitsInBuffer = 0;
 
@@ -41,8 +39,8 @@ class LZWEncode {
                 else if (code2 == 2048) {
                     length = 12;
                 }
-                else if (code2 == 4095) {               // EarlyChange is 1
-                    writeCode(256, length, stream);     // Clear Table code
+                else if (code2 == 4095) {                   // EarlyChange is 1
+                    writeCode(256, length, stream);    // Clear Table code
                     code2 = 258;
                     length = 9;
                     table.clear();
