@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 class FontStream1 {
-
     enum StreamError: Error {
         case read
         case write
@@ -35,7 +33,6 @@ class FontStream1 {
             _ pdf: PDF,
             _ font: Font,
             _ stream: InputStream) throws {
-
         stream.open()
         try getFontData(font, stream)
         embedFontFile(pdf, font, stream)
@@ -66,7 +63,6 @@ class FontStream1 {
         pdf.fonts.append(font)
     }
 
-
     private static func embedFontFile(
             _ pdf: PDF, _ font: Font, _ stream: InputStream) {
         // Check if the font file is already embedded
@@ -78,7 +74,6 @@ class FontStream1 {
         }
 
         let metadataObjNumber = pdf.addMetadataObject(font.info, true)
-
         pdf.newobj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Metadata ")
@@ -112,7 +107,6 @@ class FontStream1 {
 
         font.fileObjNumber = pdf.getObjNumber()
     }
-
 
     private static func addFontDescriptorObject(_ pdf: PDF, _ font: Font) {
         for f in pdf.fonts {
@@ -163,7 +157,6 @@ class FontStream1 {
         font.fontDescriptorObjNumber = pdf.getObjNumber()
     }
 
-
     private static func addToUnicodeCMapObject(_ pdf: PDF, _ font: Font) {
         for f in pdf.fonts {
             if f.toUnicodeCMapObjNumber != 0 && f.name == font.name {
@@ -173,7 +166,6 @@ class FontStream1 {
         }
 
         var sb = String()
-
         sb.append("/CIDInit /ProcSet findresource begin\n")
         sb.append("12 dict begin\n")
         sb.append("begincmap\n")
@@ -224,7 +216,6 @@ class FontStream1 {
         font.toUnicodeCMapObjNumber = pdf.getObjNumber()
     }
 
-
     private static func addCIDFontDictionaryObject(_ pdf: PDF, _ font: Font) {
         for f in pdf.fonts {
             if f.cidFontDictObjNumber != 0 && f.name == font.name {
@@ -271,21 +262,17 @@ class FontStream1 {
         font.cidFontDictObjNumber = pdf.getObjNumber()
     }
 
-
     private static func toHexString(_ code: Int32) -> String {
         let str = String(code, radix: 16)
         if str.count == 1 {
             return "000" + str
-        }
-        else if str.count == 2 {
+        } else if str.count == 2 {
             return "00" + str
-        }
-        else if str.count == 3 {
+        } else if str.count == 3 {
             return "0" + str
         }
         return str
     }
-
 
     private static func writeListToBuffer(
             _ list: inout [String], _ sb: inout String) {
@@ -298,7 +285,6 @@ class FontStream1 {
         list.removeAll()
     }
 
-
     private static func getUInt16(_ stream: InputStream) throws -> UInt16 {
         var buffer = [UInt8](repeating: 0, count: 2)
         if stream.read(&buffer, maxLength: 2) == 2 {
@@ -306,7 +292,6 @@ class FontStream1 {
         }
         throw StreamError.read
     }
-
 
     private static func getInt8(_ stream: InputStream) throws -> Int {
         var buffer = [UInt8](repeating: 0, count: 1)
@@ -316,7 +301,6 @@ class FontStream1 {
         throw StreamError.read
     }
 
-
     private static func getInt24(_ stream: InputStream) throws -> Int {
         var buffer = [UInt8](repeating: 0, count: 3)
         if stream.read(&buffer, maxLength: 3) == 3 {
@@ -324,7 +308,6 @@ class FontStream1 {
         }
         throw StreamError.read
     }
-
 
     private static func getInt32(_ stream: InputStream) throws -> Int32 {
         var buffer = [UInt8](repeating: 0, count: 4)
@@ -335,14 +318,12 @@ class FontStream1 {
         throw StreamError.read
     }
 
-
     private static func getUInt16(
             _ buffer: [UInt8], _ offset: inout Int) -> UInt16 {
         let value = (UInt16(buffer[offset]) << 8) | UInt16(buffer[offset + 1])
         offset += 2
         return value
     }
-
 
     private static func getInt(
             _ buffer: [UInt8], _ offset: inout Int) -> Int {
@@ -351,7 +332,6 @@ class FontStream1 {
         return value
     }
 
-
     private static func getInt32(
             _ buffer: [UInt8], _ offset: inout Int) -> Int32 {
         let value = (Int32(buffer[offset]) << 24) | (Int32(buffer[offset + 1]) << 16) |
@@ -359,7 +339,6 @@ class FontStream1 {
         offset += 4
         return value
     }
-
 
     static func getFontData(_ font: Font, _ stream: InputStream) throws {
         var len = try getInt8(stream)
@@ -402,7 +381,6 @@ class FontStream1 {
             font.advanceWidth![i] = getUInt16(inflated, &offset)
         }
 
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         len = Int(getInt32(inflated, &offset))
         font.glyphWidth = [Int](repeating: 0, count: len)
         for i in 0..<len {
@@ -414,9 +392,6 @@ let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         for i in 0..<len {
             font.unicodeToGID![i] = getInt(inflated, &offset)
         }
-let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("Example_28 => \(time1 - time0)")
-
 
         font.cff = false
         if String(try getInt8(stream)) == "Y" {
@@ -426,5 +401,4 @@ print("Example_28 => \(time1 - time0)")
         font.uncompressedSize = Int(try getInt32(stream))
         font.compressedSize = Int(try getInt32(stream))
     }
-
 }   // End of FontStream1.swift
