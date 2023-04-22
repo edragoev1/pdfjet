@@ -23,13 +23,11 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create PDF objects that represent PDF documents.
 ///
 ///
 public class PDF {
-
     var metadataObjNumber = 0
     var outputIntentObjNumber = 0
     var fonts = [Font]()
@@ -61,7 +59,6 @@ public class PDF {
     private var language: String = "en-US"
     private var uuid: String?
 
-
     ///
     /// The default constructor - use when reading PDF files.
     ///
@@ -71,7 +68,6 @@ public class PDF {
         self.uuid = Salsa20().getID()
     }
 
-
     ///
     /// Creates a PDF object that represents a PDF document.
     ///
@@ -80,7 +76,6 @@ public class PDF {
     public convenience init(_ os: OutputStream) {
         self.init(os, 0)
     }
-
 
     /// Here is the layout of the PDF document:
     ///
@@ -145,23 +140,19 @@ public class PDF {
         append("\n")
     }
 
-
     func newobj() {
         objOffset.append(byteCount)
         append(objOffset.count)
         append(" 0 obj\n")
     }
 
-
     func endobj() {
         append("endobj\n")
     }
 
-
     func getObjNumber() -> Int {
         return objOffset.count
     }
-
 
     func addMetadataObject(_ notice: String, _ fontMetadataObject: Bool) -> Int {
         var sb = String()
@@ -291,7 +282,6 @@ public class PDF {
         return self.getObjNumber()
     }
 
-
     func addOutputIntentObject() -> Int {
         newobj()
         append("<<\n")
@@ -324,7 +314,6 @@ public class PDF {
 
         return self.getObjNumber()
     }
-
 
     private func addResourcesObject() -> Int {
         newobj()
@@ -400,7 +389,6 @@ public class PDF {
         return getObjNumber()
     }
 
-
     @discardableResult
     private func addPagesObject() -> Int {
         newobj()
@@ -422,7 +410,6 @@ public class PDF {
         endobj()
         return getObjNumber()
     }
-
 
     private func addInfoObject() -> Int {
         // Add the info object
@@ -451,7 +438,6 @@ public class PDF {
         return getObjNumber()
     }
 
-
     private func addStructTreeRootObject() -> Int {
         newobj()
         append("<<\n")
@@ -467,7 +453,6 @@ public class PDF {
         endobj()
         return getObjNumber()
     }
-
 
     @discardableResult
     private func addStructDocumentObject(_ parent: Int) -> Int {
@@ -490,7 +475,6 @@ public class PDF {
         endobj()
         return getObjNumber()
     }
-
 
     private func addStructElementObjects() {
         var structTreeRootObjNumber = getObjNumber() + 1
@@ -545,7 +529,6 @@ public class PDF {
         }
     }
 
-
     private func addNumsParentTree() {
         newobj()
         append("<<\n")
@@ -579,7 +562,6 @@ public class PDF {
         append(">>\n")
         endobj()
     }
-
 
     private func addRootObject(
             _ structTreeRootObjNumber: Int,
@@ -649,7 +631,6 @@ public class PDF {
         return getObjNumber()
     }
 
-
     private func addPageBox(
             _ boxName: String,
             _ page: Page,
@@ -667,7 +648,6 @@ public class PDF {
         append("]\n")
     }
 
-
     private func setDestinationObjNumbers() {
         var numberOfAnnotations = 0
         for page in pages {
@@ -682,9 +662,7 @@ public class PDF {
         }
     }
 
-
     private func addAllPages(_ resObjNumber: Int) {
-
         setDestinationObjNumbers()
         addAnnotDictionaries()
 
@@ -792,7 +770,6 @@ public class PDF {
         page.contents.append(getObjNumber())
     }
 
-
     @discardableResult
     private func addAnnotationObject(
             _ annot: Annotation,
@@ -862,7 +839,6 @@ public class PDF {
         return index2
     }
 
-
     private func addAnnotDictionaries() {
         var index = self.pages.count
         for page in self.pages {
@@ -872,15 +848,13 @@ public class PDF {
                         index = addAnnotationObject(element.annotation!, index)
                     }
                 }
-            }
-            else if page.annots!.count > 0 {
+            } else if page.annots!.count > 0 {
                 for annotation in page.annots! {
                     addAnnotationObject(annotation, -1)
                 }
             }
         }
     }
-
 
     private func addOCProperties() {
         var buf = String()
@@ -917,7 +891,6 @@ public class PDF {
         append(">>\n")
     }
 
-
     public func addPage(_ page: Page) {
         let n = pages.count
         if n > 0 {
@@ -925,7 +898,6 @@ public class PDF {
         }
         pages.append(page)
     }
-
 
     ///
     /// Completes the generation of the PDF object and writes it to the output stream.
@@ -1019,7 +991,6 @@ public class PDF {
         os!.close()
     }
 
-
     ///
     /// Set the "Language" document property of the PDF file.
     /// - Parameter language The language of this document.
@@ -1027,7 +998,6 @@ public class PDF {
     public func setLanguage(_ language: String) {
         self.language = language
     }
-
 
     ///
     /// Set the "Title" document property of the PDF file.
@@ -1037,7 +1007,6 @@ public class PDF {
         self.title = title
     }
 
-
     ///
     /// Set the "Author" document property of the PDF file.
     /// - Parameter author The author of this document.
@@ -1045,7 +1014,6 @@ public class PDF {
     public func setAuthor(_ author: String) {
         self.author = author
     }
-
 
     ///
     /// Set the "Subject" document property of the PDF file.
@@ -1055,7 +1023,6 @@ public class PDF {
         self.subject = subject
     }
 
-
     ///
     /// Set the "Keywords" document property of the PDF file.
     /// - Parameter keywords The author of this document.
@@ -1063,7 +1030,6 @@ public class PDF {
     public func setKeywords(_ keywords: String) {
         self.keywords = keywords
     }
-
 
     ///
     /// Set the "Creator" document property of the PDF file.
@@ -1073,16 +1039,13 @@ public class PDF {
         self.creator = creator
     }
 
-
     public func setPageLayout(_ pageLayout: String) {
         self.pageLayout = pageLayout
     }
 
-
     public func setPageMode(_ pageMode: String) {
         self.pageMode = pageMode
     }
-
 
     func append(_ number: UInt8) {
         var buffer = number
@@ -1091,26 +1054,21 @@ public class PDF {
         }
     }
 
-
     func append(_ number: Int) {
         append(String(number))
     }
-
 
     func append(_ number: Int32) {
         append(String(number))
     }
 
-
     func append(_ number: UInt32) {
         append(String(number))
     }
 
-
     func append(_ val: Float) {
         append(formatter.string(from: NSNumber(value: val))!)
     }
-
 
     func append(_ str: String) {
         if str.count == 0 {
@@ -1119,20 +1077,17 @@ public class PDF {
         append(Array(str.utf8))
     }
 
-
     func append(_ buf: [UInt8], _ off: Int, _ len: Int) {
         if os!.write(buf, maxLength: len) == len {
             self.byteCount += len
         }
     }
 
-
     func append(_ buf: [UInt8]) {
         if os!.write(buf, maxLength: buf.count) == buf.count {
             self.byteCount += buf.count
         }
     }
-
 
     func getSortedObjects(_ objects: [PDFobj]) -> [PDFobj] {
         var sorted = [PDFobj]()
@@ -1156,7 +1111,6 @@ public class PDF {
 
         return sorted
     }
-
 
     ///
     /// Returns a list of objects of type PDFobj read from input stream.
@@ -1208,7 +1162,6 @@ public class PDF {
         return getSortedObjects(objects2)
     }
 
-
     private func process(
             _ obj: inout PDFobj,
             _ token: inout [UInt8],
@@ -1239,12 +1192,10 @@ public class PDF {
         return false
     }
 
-
     private func getObject(
             _ buf: inout [UInt8],
             _ off: Int,
             _ len: Int) -> PDFobj {
-
         var offset = off
 
         var obj = PDFobj()
@@ -1265,15 +1216,13 @@ public class PDF {
                     token.append(c2)
                     p1 += 1
                 }
-            }
-            else if c2 == 0x29 {        // ")"
+            } else if c2 == 0x29 {      // ")"
                 token.append(c2)
                 p1 -= 1
                 if p1 == 0 {
                     done = process(&obj, &token, buf, offset)
                 }
-            }
-            else if c2 == 0x00          // NULL
+            } else if c2 == 0x00        // NULL
                     || c2 == 0x09       // Horizontal Tab
                     || c2 == 0x0A       // Line Feed (LF)
                     || c2 == 0x0C       // Form Feed
@@ -1283,15 +1232,13 @@ public class PDF {
                 if !done {
                     c1 = 0x20
                 }
-            }
-            else if c2 == 0x2F {        // "/"
+            } else if c2 == 0x2F {      // "/"
                 done = process(&obj, &token, buf, offset)
                 if !done {
                     token.append(c2)
                     c1 = c2
                 }
-            }
-            else if c2 == 0x3C ||       // "<"
+            } else if c2 == 0x3C ||     // "<"
                     c2 == 0x3E ||       // ">"
                     c2 == 0x25 {        // "%"
                 if c2 != c1 {
@@ -1300,8 +1247,7 @@ public class PDF {
                         token.append(c2)
                         c1 = c2
                     }
-                }
-                else {
+                } else {
                     token.append(c2)
                     done = process(&obj, &token, buf, offset)
                     if !done {
@@ -1317,20 +1263,16 @@ public class PDF {
                 if !done {
                     if c2 == 0x5B {
                         obj.dict.append("[")
-                    }
-                    else if c2 == 0x5D {
+                    } else if c2 == 0x5D {
                         obj.dict.append("]")
-                    }
-                    else if c2 == 0x7B {
+                    } else if c2 == 0x7B {
                         obj.dict.append("{")
-                    }
-                    else if c2 == 0x7D {
+                    } else if c2 == 0x7D {
                         obj.dict.append("}")
                     }
                     c1 = c2
                 }
-            }
-            else {
+            } else {
                 token.append(c2)
                 if p1 == 0 {
                     c1 = c2
@@ -1340,7 +1282,6 @@ public class PDF {
 
         return obj
     }
-
 
     ///
     /// Converts an array of bytes to an integer.
@@ -1362,7 +1303,6 @@ public class PDF {
         }
         return n
     }
-
 
     private func getObjects1(
             _ buf: inout [UInt8],
@@ -1402,7 +1342,6 @@ public class PDF {
         }
 
     }
-
 
     private func getObjects2(
             _ buf: inout [UInt8],
@@ -1482,7 +1421,6 @@ public class PDF {
         }
     }
 
-
     private func getStartXRef(_ buf: inout [UInt8]) -> Int {
         var bytes = [UInt8]()
         var i = buf.count - 10
@@ -1511,7 +1449,6 @@ public class PDF {
         return Int(String(bytes: bytes, encoding: .ascii)!)!
     }
 
-
     public func addOutlineDict(_ toc: Bookmark) -> Int {
         let numOfChildren = getNumOfChildren(0, toc)
         newobj()
@@ -1530,7 +1467,6 @@ public class PDF {
         endobj()
         return getObjNumber()
     }
-
 
     public func addOutlineItem(
             _ parent: Int,
@@ -1598,7 +1534,6 @@ public class PDF {
         endobj()
     }
 
-
     private func getNumOfChildren(
             _ numOfChildren: Int,
             _ bm1: Bookmark) -> Int {
@@ -1612,12 +1547,10 @@ public class PDF {
         return numberOfChildren
     }
 
-
     public func addObjects(_ objects: inout [PDFobj]) {
         self.pagesObjNumber = Int(getPagesObject(objects)!.dict[0])!
         addObjectsToPDF(&objects)
     }
-
 
     public func getPagesObject(
             _ objects: [PDFobj]) -> PDFobj? {
@@ -1630,14 +1563,12 @@ public class PDF {
         return nil
     }
 
-
     public func getPageObjects(from objects: [PDFobj]) -> [PDFobj] {
         var pageObjects = [PDFobj]()
         let pagesObject = getPagesObject(objects)!
         getPageObjects(pagesObject, &pageObjects, objects)
         return pageObjects
     }
-
 
     private func getPageObjects(
             _ pdfObj: PDFobj,
@@ -1655,7 +1586,6 @@ public class PDF {
         }
     }
 
-
     private func isPageObject(_ object: PDFobj) -> Bool {
         var isPage = false
         for i in 0..<object.dict.count {
@@ -1666,7 +1596,6 @@ public class PDF {
         }
         return isPage
     }
-
 
     private func getExtGState(_ resources: PDFobj) -> String {
         var buf = String()
@@ -1702,7 +1631,6 @@ public class PDF {
         return buf
     }
 
-
     private func getFontObjects(
             _ resources: PDFobj,
             _ objects: inout [PDFobj]) -> [PDFobj] {
@@ -1737,7 +1665,6 @@ public class PDF {
         return fonts
     }
 
-
     private func getDescendantFonts(
             _ font: PDFobj,
             _ objects: inout [PDFobj]) -> [PDFobj] {
@@ -1755,7 +1682,6 @@ public class PDF {
         return descendantFonts
     }
 
-
     private func getObject(
             _ name: String,
             _ object: PDFobj,
@@ -1769,7 +1695,6 @@ public class PDF {
         }
         return nil
     }
-
 
     public func addResourceObjects(_ objects: inout [PDFobj]) {
         var resources = [PDFobj]()
@@ -1798,7 +1723,6 @@ public class PDF {
         resources.sort(by: { $0.number < $1.number })
         addObjectsToPDF(&resources)
     }
-
 
     private func addObjectsToPDF(_ objects: inout [PDFobj]) {
         for obj in objects {
@@ -1840,27 +1764,22 @@ public class PDF {
                     }
                     if i < (n - 1) {
                         if !link {
-                            // append(" ")
                             append(Token.space)
                         }
                     } else {
-                        // append("\n")
                         append(Token.newline)
                     }
                 }
                 if obj.stream != nil {
                     append(obj.stream!)
-                    // append("\nendstream\n")
                     append(Token.endstream)
                 }
                 if token! != "endobj" {
-                    // append("endobj\n")
                     append(Token.endobj)
                 }
             }
         }
     }
-
 
     private func toHex(_ str: String) -> String {
         var buffer = String("FEFF")
@@ -1878,5 +1797,4 @@ public class PDF {
         }
         return buffer
     }
-
 }   // End of PDF.swift
