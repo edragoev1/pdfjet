@@ -285,14 +285,14 @@ func (textBox *TextBox) GetBrushColor() int32 {
 	return textBox.brush
 }
 
-// SetBorder sets the TextBox border object.
-// @param border the border object.
+// SetBorder sets the TextBox border properties.
+// @param border the border properties.
 func (textBox *TextBox) SetBorder(border int) {
 	textBox.properties |= border
 }
 
-// GetBorder returns the text box border.
-// @return boolean the text border object.
+// GetBorder returns the text box border property values.
+// @return boolean true if the specific border property value is set.
 func (textBox *TextBox) GetBorder(value int) bool {
 	if value == border.None {
 		if ((textBox.properties >> 16) & 0xF) == 0x0 {
@@ -320,6 +320,16 @@ func (textBox *TextBox) GetBorder(value int) bool {
 		}
 	}
 	return false
+}
+
+// SetBorder sets all the TextBox borders.
+// @param borders sets all borders if true, no borders otherwise.
+func (textBox *TextBox) SetBorders(borders bool) {
+	if borders {
+		textBox.SetBorder(border.All)
+	} else {
+		textBox.SetBorder(border.None)
+	}
 }
 
 // SetTextAlignment sets the cell text alignment.
