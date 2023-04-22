@@ -395,9 +395,9 @@ public class TextBox : Drawable {
     }
 
     ///
-    /// Sets the TextBox border object.
+    /// Sets the TextBox border properties.
     ///
-    /// @param border the border object.
+    /// @param border the border properties value.
     ///
     @discardableResult
     public func setBorder(_ border: UInt32) -> TextBox {
@@ -437,6 +437,19 @@ public class TextBox : Drawable {
             }
         }
         return false
+    }
+
+    ///
+    /// Sets the TextBox borders on and off.
+    ///
+    /// @param borders the borders flag.
+    ///
+    public func SetBorders(_ borders: Bool) {
+        if (borders) {
+            setBorder(Border.ALL);
+        } else {
+            setBorder(Border.NONE);
+        }
     }
 
     ///
