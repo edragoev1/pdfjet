@@ -1809,7 +1809,6 @@ public class PDF {
                 if !obj.dict.isEmpty {
                     for obj in obj.dict {
                         append(obj)
-                        // append(" ")
                         append(Token.space)
                     }
                 }
@@ -1820,12 +1819,11 @@ public class PDF {
                         append(" >>")
                     }
                     // append("\nstream\n")
+                    append(Token.newline)
                     append(Token.stream)
                     append(obj.stream!, 0, obj.stream!.count)
-                    // append("\nendstream\n")
                     append(Token.endstream)
                 }
-                // append("endobj\n")
                 append(Token.endobj)
             } else {
                 objOffset.append(byteCount)
