@@ -40,14 +40,11 @@ public class Example_19 {
         textBlock.setDrawBorder(true)
         let xy = textBlock.drawOn(page)
 
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         // Draw the second row image and text:
         let image2 = try Image(pdf, "images/ee-map.png")
         image2.setLocation(x1, xy[1] + 10.0)
         image2.scaleBy(1.0/3.0)
         image2.drawOn(page)
-let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("=============> \(time1 - time0)")
 
         textBlock = TextBlock(f1)
         textBlock.setText(try Contents.ofTextFile("data/latin.txt"))
