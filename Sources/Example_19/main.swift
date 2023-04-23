@@ -9,7 +9,7 @@ public class Example_19 {
         let stream = OutputStream(toFileAtPath: "Example_19.pdf", append: false)
         let pdf = PDF(stream!)
 
-        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+        let f1 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
         let f2 = try Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
 
         f1.setSize(10.0)

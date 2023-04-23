@@ -225,7 +225,7 @@ class FontStream1 {
         }
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /Font\n")
         if font.cff! {
             pdf.append("/Subtype /CIDFontType0\n")
@@ -234,7 +234,7 @@ class FontStream1 {
         }
         pdf.append("/BaseFont /")
         pdf.append(font.name)
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
         pdf.append("/FontDescriptor ")
         pdf.append(font.fontDescriptorObjNumber)
@@ -248,14 +248,19 @@ class FontStream1 {
         pdf.append(Int32(round(k * Float(font.advanceWidth![0]))))
         pdf.append("\n")
         pdf.append("/W [0[\n")
+
+let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         for i in 0..<font.advanceWidth!.count {
             pdf.append(UInt16(round(k * Float(font.advanceWidth![i]))))
             pdf.append(Token.space)
         }
+let time1 = Int64(Date().timeIntervalSince1970 * 1000)
+print("Example_28 => \(time1 - time0)")
+
         pdf.append("]]\n")
 
         pdf.append("/CIDToGIDMap /Identity\n")
-        pdf.append(">>\n")
+        pdf.append(Token.endDictionary)
         pdf.endobj()
 
         font.cidFontDictObjNumber = pdf.getObjNumber()

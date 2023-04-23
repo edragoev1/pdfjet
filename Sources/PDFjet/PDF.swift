@@ -36,7 +36,6 @@ public class PDF {
     var destinations = [String : Destination]()
     var groups = [OptionalContentGroup]()
     var states = [String : Int]()
-    let formatter = NumberFormatter()
     var compliance = 0
     var toc: Bookmark?
     var importedFonts = [String]()
@@ -63,8 +62,6 @@ public class PDF {
     /// The default constructor - use when reading PDF files.
     ///
     public init() {
-        formatter.decimalSeparator = ","
-        formatter.maximumFractionDigits = 3
         self.uuid = Salsa20().getID()
     }
 
@@ -1071,7 +1068,7 @@ public class PDF {
     }
 
     func append(_ val: Float) {
-        append(formatter.string(from: NSNumber(value: val))!)
+        append(String(format: "%.3f", val))
     }
 
     func append(_ str: String) {
