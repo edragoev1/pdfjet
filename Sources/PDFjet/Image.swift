@@ -97,8 +97,7 @@ public class Image : Drawable {
             } else if jpg.getColorComponents() == 4 {
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceCMYK", 8)
             }
-        }
-        else if imageType == ImageType.PNG {
+        } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
             w = Float(png.getWidth()!)
             h = Float(png.getHeight()!)
@@ -369,7 +368,6 @@ public class Image : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         page!.addBMC(StructElem.P, language, actualText, altDescription)
-
         if xBox != nil {
             x += xBox!
         }
@@ -377,7 +375,6 @@ public class Image : Drawable {
             y += yBox!
         }
         page!.append("q\n")
-
         if degrees == 0 {
             page!.append(w!)
             page!.append(" ")
@@ -443,7 +440,6 @@ public class Image : Drawable {
         page!.append(objNumber!)
         page!.append(" Do\n")
         page!.append("Q\n")
-
         page!.addEMC()
 
         if uri != nil || key != nil {
@@ -528,13 +524,12 @@ public class Image : Drawable {
         }
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
         if imageType == ImageType.JPG {
             pdf.append("/Filter /DCTDecode\n")
-        }
-        else {
+        } else {
             // pdf.append("/Filter /LZWDecode\n")
             pdf.append("/Filter /FlateDecode\n")
             if alpha.count > 0 {
@@ -545,27 +540,27 @@ public class Image : Drawable {
         }
         pdf.append("/Width ")
         pdf.append(Int(w!))
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/Height ")
         pdf.append(Int(h!))
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/ColorSpace /")
         pdf.append(colorSpace)
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/BitsPerComponent ")
         pdf.append(bitsPerComponent)
-        pdf.append("\n")
+        pdf.append(Token.newline)
         if colorSpace == "DeviceCMYK" {
             // If the image was created with Photoshop - invert the colors:
             pdf.append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
         }
         pdf.append("/Length ")
         pdf.append(data.count)
-        pdf.append("\n")
-        pdf.append(">>\n")
-        pdf.append("stream\n")
+        pdf.append(Token.newline)
+        pdf.append(Token.endDictionary)
+        pdf.append(Token.stream)
         pdf.append(data, 0, data.count)
-        pdf.append("\nendstream\n")
+        pdf.append(Token.endstream)
         pdf.endobj()
         pdf.images.append(self)
         self.objNumber = pdf.getObjNumber()
@@ -573,7 +568,6 @@ public class Image : Drawable {
 
     // Used for .png.stream images!
     private func addImage(_ pdf: PDF, _ stream: InputStream) throws {
-
         self.w = Float(try getUInt32(stream)!)  // Width
         self.h = Float(try getUInt32(stream)!)  // Height
         let color = try getUInt8(stream)!       // Color Space
@@ -629,11 +623,13 @@ public class Image : Drawable {
         } else if color == 3 || color == 6 {
             pdf.append("DeviceRGB")
         }
-        pdf.append("\n")
+        pdf.append(Token.newline)
+
+        // TODO:
         pdf.append("/BitsPerComponent 8\n")
         pdf.append("/Length ")
         pdf.append(try getUInt32(stream)!)
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append(Token.endDictionary)
         pdf.append(Token.stream)
         var buffer = [UInt8](repeating: 0, count: 4096)
@@ -707,7 +703,6 @@ public class Image : Drawable {
             _ imageType: ImageType,
             _ colorSpace: String,
             _ bitsPerComponent: Int) {
-
         if !alpha.isEmpty {
             addSoftMask2(&objects, &alpha, "DeviceGray", bitsPerComponent)
         }
