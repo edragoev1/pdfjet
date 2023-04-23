@@ -26,16 +26,12 @@ package com.pdfjet;
 import java.io.*;
 import java.util.*;
 
-
 class FontStream1 {
-
     protected static void register(
             PDF pdf,
             Font font,
             InputStream inputStream) throws Exception {
         getFontData(font, inputStream);
-        // System.out.println(font.fontUnderlineThickness);
-
         embedFontFile(pdf, font, inputStream);
         addFontDescriptorObject(pdf, font);
         addCIDFontDictionaryObject(pdf, font);
@@ -61,7 +57,6 @@ class FontStream1 {
         font.objNumber = pdf.getObjNumber();
         pdf.fonts.add(font);
     }
-
 
     private static void embedFontFile(
             PDF pdf, Font font, InputStream inputStream) throws Exception {
@@ -109,7 +104,6 @@ class FontStream1 {
 
         font.fileObjNumber = pdf.getObjNumber();
     }
-
 
     private static void addFontDescriptorObject(PDF pdf, Font font) throws Exception {
         for (Font f : pdf.fonts) {
@@ -160,7 +154,6 @@ class FontStream1 {
         font.fontDescriptorObjNumber = pdf.getObjNumber();
     }
 
-
     private static void addToUnicodeCMapObject(PDF pdf, Font font) throws Exception {
         for (Font f : pdf.fonts) {
             if (f.toUnicodeCMapObjNumber != 0 && f.name.equals(font.name)) {
@@ -170,7 +163,6 @@ class FontStream1 {
         }
 
         StringBuilder sb = new StringBuilder();
-
         sb.append("/CIDInit /ProcSet findresource begin\n");
         sb.append("12 dict begin\n");
         sb.append("begincmap\n");
@@ -221,7 +213,6 @@ class FontStream1 {
         font.toUnicodeCMapObjNumber = pdf.getObjNumber();
     }
 
-
     private static void addCIDFontDictionaryObject(PDF pdf, Font font) throws Exception {
         for (Font f : pdf.fonts) {
             if (f.cidFontDictObjNumber != 0 && f.name.equals(font.name)) {
@@ -235,8 +226,7 @@ class FontStream1 {
         pdf.append("/Type /Font\n");
         if (font.cff) {
             pdf.append("/Subtype /CIDFontType0\n");
-        }
-        else {
+        } else {
             pdf.append("/Subtype /CIDFontType2\n");
         }
         pdf.append("/BaseFont /");
@@ -251,7 +241,6 @@ class FontStream1 {
         pdf.append("/DW ");
         pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[0])));
         pdf.append('\n');
-
         pdf.append("/W [0[\n");
         for (int i = 0; i < font.advanceWidth.length; i++) {
             pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[i])));
@@ -266,21 +255,17 @@ class FontStream1 {
         font.cidFontDictObjNumber = pdf.getObjNumber();
     }
 
-
     protected static String toHexString(int code) {
         String str = Integer.toHexString(code);
         if (str.length() == 1) {
             return "000" + str;
-        }
-        else if (str.length() == 2) {
+        } else if (str.length() == 2) {
             return "00" + str;
-        }
-        else if (str.length() == 3) {
+        } else if (str.length() == 3) {
             return "0" + str;
         }
         return str;
     }
-
 
     protected static void writeListToBuffer(StringBuilder sb, List<String> list) {
         sb.append(list.size());
@@ -292,23 +277,19 @@ class FontStream1 {
         list.clear();
     }
 
-
     private static int getInt16(InputStream stream) throws Exception {
         return stream.read() << 8 | stream.read();
     }
-
 
     private static int getInt24(InputStream stream) throws Exception {
         return stream.read() << 16 |
                 stream.read() << 8 | stream.read();
     }
 
-
     private static int getInt32(InputStream stream) throws Exception {
         return stream.read() << 24 | stream.read() << 16 |
                 stream.read() << 8 | stream.read();
     }
-
 
     protected static void getFontData(Font font, InputStream inputStream) throws Exception {
         int len = inputStream.read();
@@ -361,5 +342,4 @@ class FontStream1 {
         font.uncompressedSize = getInt32(inputStream);
         font.compressedSize = getInt32(inputStream);
     }
-
 }   // End of FontStream1.java
