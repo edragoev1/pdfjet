@@ -248,15 +248,10 @@ class FontStream1 {
         pdf.append(Int32(round(k * Float(font.advanceWidth![0]))))
         pdf.append("\n")
         pdf.append("/W [0[\n")
-
-let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         for i in 0..<font.advanceWidth!.count {
             pdf.append(UInt16(round(k * Float(font.advanceWidth![i]))))
             pdf.append(Token.space)
         }
-let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("Example_28 => \(time1 - time0)")
-
         pdf.append("]]\n")
 
         pdf.append("/CIDToGIDMap /Identity\n")

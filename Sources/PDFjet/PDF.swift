@@ -1051,7 +1051,7 @@ public class PDF {
         }
     }
 
-    func append(_ number: Int) {
+    func append(_ number: UInt16) {
         append(String(number))
     }
 
@@ -1063,7 +1063,7 @@ public class PDF {
         append(String(number))
     }
 
-    func append(_ number: UInt16) {
+    func append(_ number: Int) {
         append(String(number))
     }
 
