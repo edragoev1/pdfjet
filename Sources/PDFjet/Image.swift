@@ -23,7 +23,6 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create image objects and draw them on a page.
 /// The image type can be one of the following:
@@ -32,7 +31,6 @@ import Foundation
 /// Please see Example_03 and Example_24.
 ///
 public class Image : Drawable {
-
     var objNumber: Int?
 
     var x: Float = 0.0      // Position of the image on the page
@@ -53,12 +51,10 @@ public class Image : Drawable {
     private var altDescription: String = Single.space
     private var actualText: String = Single.space
 
-
     enum StreamError: Error {
         case read
         case write
     }
-
 
     ///
     /// The main constructor for the Image class.
@@ -78,7 +74,6 @@ public class Image : Drawable {
         }
     }
 
-
     ///
     /// The main constructor for the Image class.
     ///
@@ -97,11 +92,9 @@ public class Image : Drawable {
             h = Float(jpg.getHeight())
             if jpg.getColorComponents() == 1 {
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceGray", 8)
-            }
-            else if jpg.getColorComponents() == 3 {
+            } else if jpg.getColorComponents() == 3 {
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceRGB", 8)
-            }
-            else if jpg.getColorComponents() == 4 {
+            } else if jpg.getColorComponents() == 4 {
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceCMYK", 8)
             }
         }
@@ -111,28 +104,23 @@ public class Image : Drawable {
             h = Float(png.getHeight()!)
             if png.getColorType() == 0 {
                 addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceGray", png.getBitDepth())
-            }
-            else {
+            } else {
                 if png.getBitDepth() == 16 {
                     addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceRGB", 16)
-                }
-                else {
+                } else {
                     addImage(pdf, png.getData(), png.getAlpha(), imageType, "DeviceRGB", 8)
                 }
             }
-        }
-        else if imageType == ImageType.BMP {
+        } else if imageType == ImageType.BMP {
             let bmp = BMPImage(stream)
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
             addImage(pdf, bmp.getData(), [UInt8](), imageType, "DeviceRGB", 8)
-        }
-        else if imageType == ImageType.PNG_STREAM {
+        } else if imageType == ImageType.PNG_STREAM {
             try addImage(pdf, stream)
         }
         stream.close()
     }
-
 
     ///
     /// Constructor used to attach images to existing PDF.
@@ -162,8 +150,7 @@ public class Image : Drawable {
             else if jpg.getColorComponents() == 4 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceCMYK", 8)
             }
-        }
-        else if imageType == ImageType.PNG {
+        } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
             data = png.getData()
             alpha = png.getAlpha()
@@ -171,27 +158,22 @@ public class Image : Drawable {
             h = Float(png.getHeight()!)
             if png.getColorType() == 0 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceGray", png.getBitDepth())
-            }
-            else {
+            } else {
                 if png.getBitDepth() == 16 {
                     addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 16)
-                }
-                else {
+                } else {
                     addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
                 }
             }
-        }
-        else if imageType == ImageType.BMP {
+        } else if imageType == ImageType.BMP {
             let bmp = BMPImage(stream)
             data = bmp.getData()
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
             addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
         }
-
         stream.close()
     }
-
 
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         w = Float(obj.getValue("/Width"))
@@ -242,11 +224,9 @@ public class Image : Drawable {
         objNumber = pdf.getObjNumber()
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Sets the location of this image on the page to (x, y).
@@ -261,7 +241,6 @@ public class Image : Drawable {
         return self
     }
 
-
     ///
     /// Scales this image by the specified factor.
     ///
@@ -271,7 +250,6 @@ public class Image : Drawable {
     public func scaleBy(_ factor: Float) -> Image {
         return self.scaleBy(factor, factor)
     }
-
 
     ///
     /// Scales this image by the specified width and height factor.
@@ -287,18 +265,15 @@ public class Image : Drawable {
         return self
     }
 
-
     public func resizeWidth(_ width: Float) -> Image {
         let factor = width / getWidth()
         return self.scaleBy(factor, factor)
     }
 
-
     public func resizeHeight(_ height: Float) -> Image {
         let factor = height / getHeight()
         return self.scaleBy(factor, factor)
     }
-
 
     ///
     /// Places this image in the specified box.
@@ -311,7 +286,6 @@ public class Image : Drawable {
         return self
     }
 
-
     ///
     /// Sets the URI for the "click box" action.
     ///
@@ -322,7 +296,6 @@ public class Image : Drawable {
         self.uri = uri
         return self
     }
-
 
     ///
     /// Sets the destination key for the action.
@@ -335,7 +308,6 @@ public class Image : Drawable {
         return self
     }
 
-
     ///
     /// Sets the rotate90 flag.
     /// When the flag is true the image is rotated 90 degrees clockwise.
@@ -346,13 +318,11 @@ public class Image : Drawable {
     public func setRotateCW90(_ rotate90: Bool) -> Image {
         if rotate90 {
             self.degrees = 90
-        }
-        else {
+        } else {
             self.degrees = 0
         }
         return self
     }
-
 
     ///
     /// Sets the image rotation to the specified number of degrees.
@@ -364,7 +334,6 @@ public class Image : Drawable {
         self.degrees = degrees
         return self
     }
-
 
     ///
     /// Sets the alternate description of this image.
@@ -378,7 +347,6 @@ public class Image : Drawable {
         return self
     }
 
-
     ///
     /// Sets the actual text for this image.
     ///
@@ -391,7 +359,6 @@ public class Image : Drawable {
         return self
     }
 
-
     ///
     /// Draws this image on the specified page.
     ///
@@ -401,7 +368,6 @@ public class Image : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-
         page!.addBMC(StructElem.P, language, actualText, altDescription)
 
         if xBox != nil {
@@ -425,8 +391,7 @@ public class Image : Drawable {
             page!.append(" ")
             page!.append((page!.height - (y + h!)).rounded())
             page!.append(" cm\n")
-        }
-        else if degrees == 90 {
+        } else if degrees == 90 {
             page!.append(h!)
             page!.append(" ")
             page!.append(0.0)
@@ -440,8 +405,7 @@ public class Image : Drawable {
             page!.append((page!.height - y).rounded())
             page!.append(" cm\n")
             page!.append("0 -1 1 0 0 0 cm\n")
-        }
-        else if degrees == 180 {
+        } else if degrees == 180 {
             page!.append(w!)
             page!.append(" ")
             page!.append(0.0)
@@ -455,8 +419,7 @@ public class Image : Drawable {
             page!.append((page!.height - y).rounded())
             page!.append(" cm\n")
             page!.append("-1 0 0 -1 0 0 cm\n")
-        }
-        else if degrees == 270 {
+        } else if degrees == 270 {
             page!.append(h!)
             page!.append(" ")
             page!.append(0.0)
@@ -499,7 +462,6 @@ public class Image : Drawable {
         return [x + w!, y + h!]
     }
 
-
     ///
     /// Returns the width of this image when drawn on the page.
     /// The scaling is take into account.
@@ -510,7 +472,6 @@ public class Image : Drawable {
         return self.w!
     }
 
-
     ///
     /// Returns the height of this image when drawn on the page.
     /// The scaling is take into account.
@@ -520,7 +481,6 @@ public class Image : Drawable {
     public func getHeight() -> Float {
         return self.h!
     }
-
 
     private func addSoftMask(
             _ pdf: PDF,
@@ -556,7 +516,6 @@ public class Image : Drawable {
         objNumber = pdf.getObjNumber()
     }
 
-
     private func addImage(
             _ pdf: PDF,
             _ data: [UInt8],
@@ -564,7 +523,6 @@ public class Image : Drawable {
             _ imageType: ImageType,
             _ colorSpace: String,
             _ bitsPerComponent: Int)  {
-
         if alpha.count > 0 {
             addSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent)
         }
@@ -612,7 +570,6 @@ public class Image : Drawable {
         pdf.images.append(self)
         self.objNumber = pdf.getObjNumber()
     }
-
 
     // Used for .png.stream images!
     private func addImage(_ pdf: PDF, _ stream: InputStream) throws {
@@ -669,8 +626,7 @@ public class Image : Drawable {
         pdf.append("/ColorSpace /")
         if color == 1 {
             pdf.append("DeviceGray")
-        }
-        else if color == 3 || color == 6 {
+        } else if color == 3 || color == 6 {
             pdf.append("DeviceRGB")
         }
         pdf.append("\n")
@@ -693,7 +649,6 @@ public class Image : Drawable {
         objNumber = pdf.getObjNumber()
     }
 
-
     private func getUInt8(_ stream: InputStream) throws -> UInt8? {
         var buffer = [UInt8](repeating: 0, count: 1)
         if stream.read(&buffer, maxLength: 1) == 1 {
@@ -701,7 +656,6 @@ public class Image : Drawable {
         }
         throw StreamError.read
     }
-
 
     private func getUInt32(_ stream: InputStream) throws -> UInt32? {
         var buffer = [UInt8](repeating: 0, count: 4)
@@ -715,13 +669,11 @@ public class Image : Drawable {
         throw StreamError.read
     }
 
-
     private func addSoftMask2(
             _ objects: inout [PDFobj],
             _ data: inout [UInt8],
             _ colorSpace: String,
             _ bitsPerComponent: Int) {
-
         let obj = PDFobj()
         obj.dict.append("<<")
         obj.dict.append("/Type")
@@ -745,10 +697,8 @@ public class Image : Drawable {
         obj.setStream(&data)
         obj.number = objects.count + 1
         objects.append(obj)
-
         objNumber = obj.number
     }
-
 
     func addImageToObjects(
             _ objects: inout [PDFobj],
@@ -771,8 +721,7 @@ public class Image : Drawable {
         if imageType == ImageType.JPG {
             obj.dict.append("/Filter")
             obj.dict.append("/DCTDecode")
-        }
-        else if imageType == ImageType.PNG ||
+        } else if imageType == ImageType.PNG ||
                 imageType == ImageType.BMP {
             obj.dict.append("/Filter")
             // obj.dict.append("/LZWDecode")
@@ -816,19 +765,15 @@ public class Image : Drawable {
         objNumber = obj.number
     }
 
-
     public func resizeToFit(_ page: Page, keepAspectRatio: Bool) {
         if keepAspectRatio {
             self.scaleBy(min((page.width - self.x)/self.w!, (page.height - self.y)/self.h!))
-        }
-        else {
+        } else {
             self.scaleBy((page.width - self.x)/self.w!, (page.height - self.y)/self.h!)
         }
     }
 
-
     public func flipUpsideDown(_ flipUpsideDown: Bool) {
         self.flipUpsideDown = flipUpsideDown
     }
-
 }   // End of Image.swift
