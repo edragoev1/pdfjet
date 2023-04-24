@@ -10,13 +10,10 @@ public class Example_04 {
 
         // Chinese (Traditional) font
         let f1 = Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT)
-
         // Chinese (Simplified) font
         let f2 = Font(pdf, CJKFont.ST_HEITI_SC_LIGHT)
-
         // Japanese font
         let f3 = Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR)
-
         // Korean font
         let f4 = Font(pdf, CJKFont.ADOBE_MYUNGJO_STD_MEDIUM)
 
