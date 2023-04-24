@@ -660,7 +660,7 @@ public class Table {
                         if (maxNumVerCells > 1) {
                             cell2.setBorder(Border.BOTTOM, false);
                         }
-                    } else  {
+                    } else {
                         cell2.setBorder(Border.TOP, false);
                         if (i < (maxNumVerCells - 1)) {
                             cell2.setBorder(Border.BOTTOM, false);
