@@ -38,11 +38,9 @@ public class Example_04 {
         for line in lines {
             if line.contains("Simplified") {
                 text.setFont(f2)
-            }
-            else if line.contains("Japanese") {
+            } else if line.contains("Japanese") {
                 text.setFont(f3)
-            }
-            else if line.contains("Korean") {
+            } else if line.contains("Korean") {
                 text.setFont(f4)
             }
             text.setText(line)
