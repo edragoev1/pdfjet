@@ -74,9 +74,9 @@ public class Example_05 {
     }
 
     public static void main(String[] args) throws Exception {
-        long t0 = System.currentTimeMillis();
+        long time0 = System.currentTimeMillis();
         new Example_05();
-        long t1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_05", t0, t1);
+        long time1 = System.currentTimeMillis();
+        TextUtils.printDuration("Example_05", time0, time1);
     }
 }   // End of Example_05.java
