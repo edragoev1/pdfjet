@@ -3,35 +3,33 @@ import PDFjet
 
 /**
  *  Example_39.swift
- *
  */
 public class Example_39 {
     public init() throws {
-        if let stream = OutputStream(toFileAtPath: "Example_39.pdf", append: false) {
-            let pdf = PDF(stream)
-            let page = Page(pdf, Letter.PORTRAIT)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_39.pdf", append: false)!)
 
-            let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-            let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
 
-            f1.setItalic(true)
-            f2.setItalic(true)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-            f1.setSize(10.0)
-            f2.setSize(8.0)
+        f1.setItalic(true)
+        f2.setItalic(true)
 
-            let chart = Chart(f1, f2)
-            chart.setLocation(70.0, 50.0)
-            chart.setSize(500.0, 300.0)
-            chart.setTitle("Horizontal Bar Chart Example")
-            chart.setXAxisTitle("")
-            chart.setYAxisTitle("")
-            chart.setData(getData())
-            chart.setDrawYAxisLabels(false)
-            chart.drawOn(page)
+        f1.setSize(10.0)
+        f2.setSize(8.0)
 
-            pdf.complete()
-        }
+        let chart = Chart(f1, f2)
+        chart.setLocation(70.0, 50.0)
+        chart.setSize(500.0, 300.0)
+        chart.setTitle("Horizontal Bar Chart Example")
+        chart.setXAxisTitle("")
+        chart.setYAxisTitle("")
+        chart.setData(getData())
+        chart.setDrawYAxisLabels(false)
+        chart.drawOn(page)
+
+        pdf.complete()
     }
 
     public func getData() -> [[Point]] {
