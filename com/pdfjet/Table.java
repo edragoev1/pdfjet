@@ -602,15 +602,13 @@ public class Table {
                             tableData2.get(i + n).get(j).setText(buf.toString().trim());
                             buf = new StringBuilder(token);
                             n++;
-                        }
-                        else {
+                        } else {
                             buf.append(" ");
                             buf.append(token);
                         }
                     }
                     tableData2.get(i + n).get(j).setText(buf.toString().trim());
-                }
-                else {
+                } else {
                     tableData2.get(i).get(j).setCompositeTextLine(cell.getCompositeTextLine());
                 }
             }
@@ -656,8 +654,7 @@ public class Table {
                         }
                         if (cell.getCompositeTextLine() != null) {
                             cell2.setCompositeTextLine(cell.getCompositeTextLine());
-                        }
-                        else {
+                        } else {
                             cell2.setText(cell.getText());
                         }
                         if (maxNumVerCells > 1) {
