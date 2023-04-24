@@ -14,7 +14,8 @@ public class Example_08 {
 
     public Example_08() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_08.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_08.pdf")),
+                Compliance.PDF_UA);
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
