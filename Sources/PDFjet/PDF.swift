@@ -949,16 +949,17 @@ public class PDF {
         append("0 ")
         append(rootObjNumber + 1)
         append("\n")
-
         append("0000000000 65535 f \n")
+        var buffer = String()
         for offset in objOffset {
             let str = String(offset)
             for _ in 0..<(10 - str.count) {
-                append("0")
+                buffer.append("0")
             }
-            append(str)
-            append(" 00000 n \n")
+            buffer.append(str)
+            buffer.append(" 00000 n \n")
         }
+        append(buffer)
         append("trailer\n")
         append("<<\n")
         append("/Size ")
