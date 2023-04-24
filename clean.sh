@@ -4,6 +4,8 @@ rm -f com/pdfjet/*.class
 rm -f net/pdfjet/*.exe.mdb
 rm -f examples/*.class
 rm -f examples/*.exe.mdb
+rm -r tests/*.exe.mdb
+rm -f util/*.class
 rm -f *.jar
 rm -f *.exe
 rm -f *.mdb
