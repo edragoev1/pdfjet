@@ -1745,7 +1745,6 @@ public class PDF {
                         append(obj.stream!.count)
                         append(" >>")
                     }
-                    // append("\nstream\n")
                     append(Token.newline)
                     append(Token.stream)
                     append(obj.stream!, 0, obj.stream!.count)
