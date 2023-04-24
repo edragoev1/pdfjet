@@ -18,10 +18,14 @@ public class Example_08 {
                         new FileOutputStream("Example_08.pdf")), Compliance.PDF_UA);
         pdf.setTitle("PDF/UA compliant PDF");
 
+        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
+/*
         Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
         Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
-
+*/
         f1.setSize(7f);
         f2.setSize(7f);
         f3.setSize(7f);
@@ -72,10 +76,9 @@ public class Example_08 {
         table.drawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
-            // page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
+            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
             pdf.addPage(page);
         }
-
         pdf.complete();
     }
 

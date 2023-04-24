@@ -15,15 +15,15 @@ public class Example_08 {
     public Example_08() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_08.pdf", FileMode.Create)), Compliance.PDF_A_1B);
-
+/* TODO:
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
-/* TODO:
+*/
         Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
         Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
-*/
+
         f1.SetSize(7f);
         f2.SetSize(7f);
         f3.SetSize(7f);
