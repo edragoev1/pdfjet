@@ -660,8 +660,7 @@ public class Table {
                         if (maxNumVerCells > 1) {
                             cell2.setBorder(Border.BOTTOM, false);
                         }
-                    }
-                    else  {
+                    } else  {
                         cell2.setBorder(Border.TOP, false);
                         if (i < (maxNumVerCells - 1)) {
                             cell2.setBorder(Border.BOTTOM, false);
@@ -857,8 +856,7 @@ public class Table {
             Cell cell = row.get(i);
             if (isTextColumn(i)) {
                 textColumnWidths += cell.getWidth();
-            }
-            else {
+            } else {
                 otherColumnWidths += cell.getWidth();
             }
         }
@@ -866,8 +864,7 @@ public class Table {
         float adjusted;
         if ((tableWidth - otherColumnWidths) > textColumnWidths) {
             adjusted = textColumnWidths + ((tableWidth - otherColumnWidths) - textColumnWidths);
-        }
-        else {
+        } else {
             adjusted = textColumnWidths - (textColumnWidths - (tableWidth - otherColumnWidths));
         }
         float factor = adjusted / textColumnWidths;
