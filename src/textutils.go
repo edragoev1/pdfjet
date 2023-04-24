@@ -77,8 +77,10 @@ func ReadTextLines(filePath string) []string {
 }
 
 func PrintDuration(example string, duration time.Duration) {
-	durationAsString := fmt.Sprintf("%.2f", float32(duration.Microseconds())/float32(1000.0))
-	if len(durationAsString) == 4 {
+	durationAsString := fmt.Sprintf("%.1f", float32(duration.Microseconds())/float32(1000.0))
+	if len(durationAsString) == 3 {
+		durationAsString = "   " + durationAsString
+	} else if len(durationAsString) == 4 {
 		durationAsString = "  " + durationAsString
 	} else if len(durationAsString) == 5 {
 		durationAsString = " " + durationAsString
