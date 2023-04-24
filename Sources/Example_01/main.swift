@@ -73,7 +73,6 @@ public class Example_01 {
 		    }
             i += 1
         }
-
         var text = Text(paragraphs)
         text.setLocation(50.0, 50.0)
         text.setWidth(500.0)
@@ -90,7 +89,6 @@ public class Example_01 {
                 paragraphNumber += 1
             }
         }
-
         let box = Box()
         box.setLocation(xy[0], xy[1])
         box.setSize(20.0, 20.0)
@@ -99,7 +97,6 @@ public class Example_01 {
         page = Page(pdf, Letter.PORTRAIT)
 
         paragraphs = [Paragraph]()
-
         str = try String(contentsOfFile: "data/CJK.txt", encoding: .utf8)
         lines = str.split(separator: "\n")
         for line in lines {
@@ -119,7 +116,6 @@ public class Example_01 {
 
         pdf.complete()
     }
-
 }   // End of Example_01.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
