@@ -70,7 +70,7 @@ public class Example_18 {
         new Example_18();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        Console.WriteLine("Example_18 => " + (time1 - time0));
+        TextUtils.PrintDuration("Example_18", time0, time1);
     }
 
 }   // End of Example_18.cs
