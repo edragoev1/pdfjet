@@ -68,7 +68,7 @@ Console.WriteLine(xy[1]);
         new Example_42();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        Console.WriteLine("Example_42 => " + (time1 - time0));
+        TextUtils.PrintDuration("Example_42", time0, time1);
     }
 
 }   // End of Example_42.cs

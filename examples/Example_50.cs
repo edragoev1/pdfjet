@@ -187,6 +187,6 @@ public class Example_50 {
         // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
         // new Example_50("50", "../../eBooks/PDF32000_2008.pdf");
         long time1 = sw.ElapsedMilliseconds;
-        Console.WriteLine("Example_50 => " + (time1 - time0));
+        TextUtils.PrintDuration("Example_50", time0, time1);
     }
 }   // End of Example_50.cs
