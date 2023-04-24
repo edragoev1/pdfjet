@@ -76,7 +76,7 @@ func ReadTextLines(filePath string) []string {
 	return lines
 }
 
-func PrintDuration(duration time.Duration) {
+func PrintDuration(example string, duration time.Duration) {
 	durationAsString := fmt.Sprintf("%.2f", float32(duration.Microseconds())/float32(1000.0))
 	if len(durationAsString) == 4 {
 		durationAsString = "   " + durationAsString
@@ -85,5 +85,5 @@ func PrintDuration(duration time.Duration) {
 	} else if len(durationAsString) == 6 {
 		durationAsString = " " + durationAsString
 	}
-	fmt.Print("Example_05 => ", durationAsString+"\n")
+	fmt.Print(example + " => " + durationAsString + " ms\n")
 }

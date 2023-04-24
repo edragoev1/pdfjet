@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -160,6 +159,5 @@ func getData(
 func main() {
 	start := time.Now()
 	Example08()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_08 => %.2fms\n", float32(elapsed.Microseconds())/float32(1000.0))
+	pdfjet.PrintDuration("Example_08", time.Since(start))
 }
