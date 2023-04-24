@@ -150,6 +150,6 @@ public class Example_10 {
         new Example_10();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        Console.WriteLine("Example_10 => " + (time1 - time0));
+        TextUtils.PrintDuration("Example_10", time0, time1);
     }
 }   // End of Example_10.cs

@@ -2,38 +2,25 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using PDFjet.NET;
-
 
 /**
  *  Example_09.cs
- *
  */
 public class Example_09 {
-
     public Example_09() {
-
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_09.pdf", FileMode.Create)));
+        // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        // Font f2 = new Font(pdf, CoreFont.HELVETICA);
+
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+
+        f1.SetSize(8f);
+        f2.SetSize(8f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
-        // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Bold.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read),
-                Font.STREAM);
-        f1.SetSize(8f);
-
-        // Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf.stream",
-                FileMode.Open,
-                FileAccess.Read),
-                Font.STREAM);
-        f2.SetSize(8f);
 
         Chart chart = new Chart(f1, f2);
         chart.SetData(GetData("data/world-communications.txt", "|"));
@@ -51,7 +38,6 @@ public class Example_09 {
 
         pdf.Complete();
     }
-
 
     public void addTrendLine(Chart chart) {
         List<Point> points = chart.GetData()[0];
@@ -77,7 +63,6 @@ public class Example_09 {
 
         chart.GetData().Add(trendline);
     }
-
 
     public void AddTableToChart(
             Page page, Chart chart, Font f1, Font f2) {
@@ -115,7 +100,6 @@ public class Example_09 {
         table.SetColumnWidth(0, 9f);
         table.DrawOn(page);
     }
-
 
     public List<List<Point>> GetData(
             String fileName,
@@ -187,14 +171,12 @@ public class Example_09 {
         return chartData;
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_09();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        Console.WriteLine("Example_09 => " + (time1 - time0));
+        TextUtils.PrintDuration("Example_09", time0, time1);
     }
-
 }   // End of Example_09.cs

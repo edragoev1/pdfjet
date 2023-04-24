@@ -80,6 +80,6 @@ public class Example_07 {
         new Example_07("stream");
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        Console.WriteLine("Example_07 => " + (time1 - time0));
+        TextUtils.PrintDuration("Example_07", time0, time1);
     }
 }   // End of Example_07.cs
