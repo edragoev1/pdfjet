@@ -630,20 +630,21 @@ public class PDF {
     }
 
     private func addPageBox(
+            _ buffer: inout String,
             _ boxName: String,
             _ page: Page,
             _ rect: [Float]) {
-        append("/")
-        append(boxName)
-        append(" [")
-        append(rect[0])
-        append(" ")
-        append(page.height - rect[3])
-        append(" ")
-        append(rect[2])
-        append(" ")
-        append(page.height - rect[1])
-        append("]\n")
+        buffer.append("/")
+        buffer.append(boxName)
+        buffer.append(" [")
+        buffer.append(String(rect[0]))
+        buffer.append(" ")
+        buffer.append(String(page.height - rect[3]))
+        buffer.append(" ")
+        buffer.append(String(rect[2]))
+        buffer.append(" ")
+        buffer.append(String(page.height - rect[1]))
+        buffer.append("]\n")
     }
 
     private func setDestinationObjNumbers() {
@@ -663,66 +664,65 @@ public class PDF {
     private func addAllPages(_ resObjNumber: Int) {
         setDestinationObjNumbers()
         addAnnotDictionaries()
-
         // Calculate the object number of the Pages object
         pagesObjNumber = getObjNumber() + pages.count + 1
 
         for (i, page) in pages.enumerated() {
-
             // Page object
             newobj()
+            var buffer = String()
             page.objNumber = getObjNumber()
-            append("<<\n")
-            append("/Type /Page\n")
-            append("/Parent ")
-            append(pagesObjNumber)
-            append(" 0 R\n")
-            append("/MediaBox [0 0 ")
-            append(Int(page.width))
-            append(" ")
-            append(Int(page.height))
-            append("]\n")
+            buffer.append("<<\n")
+            buffer.append("/Type /Page\n")
+            buffer.append("/Parent ")
+            buffer.append(String(pagesObjNumber))
+            buffer.append(" 0 R\n")
+            buffer.append("/MediaBox [0 0 ")
+            buffer.append(String(Int(page.width)))
+            buffer.append(" ")
+            buffer.append(String(Int(page.height)))
+            buffer.append("]\n")
 
             if page.cropBox != nil {
-                addPageBox("CropBox", page, page.cropBox!)
+                addPageBox(&buffer, "CropBox", page, page.cropBox!)
             }
             if page.bleedBox != nil {
-                addPageBox("BleedBox", page, page.bleedBox!)
+                addPageBox(&buffer, "BleedBox", page, page.bleedBox!)
             }
             if page.trimBox != nil {
-                addPageBox("TrimBox", page, page.trimBox!)
+                addPageBox(&buffer, "TrimBox", page, page.trimBox!)
             }
             if page.artBox != nil {
-                addPageBox("ArtBox", page, page.artBox!)
+                addPageBox(&buffer, "ArtBox", page, page.artBox!)
             }
 
-            append("/Resources ")
-            append(resObjNumber)
-            append(" 0 R\n")
+            buffer.append("/Resources ")
+            buffer.append(String(resObjNumber))
+            buffer.append(" 0 R\n")
 
-            append("/Contents [ ")
+            buffer.append("/Contents [ ")
             for n in page.contents {
-                append(n)
-                append(" 0 R ")
+                buffer.append(String(n))
+                buffer.append(" 0 R ")
             }
-            append("]\n")
+            buffer.append("]\n")
             if page.annots!.count > 0 {
-                append("/Annots [ ")
+                buffer.append("/Annots [ ")
                 for annot in page.annots! {
-                    append(annot.objNumber)
-                    append(" 0 R ")
+                    buffer.append(String(annot.objNumber))
+                    buffer.append(" 0 R ")
                 }
-                append("]\n")
+                buffer.append("]\n")
             }
 
             if compliance == Compliance.PDF_UA {
-                append("/Tabs /S\n")
-                append("/StructParents ")
-                append(i)
-                append("\n")
+                buffer.append("/Tabs /S\n")
+                buffer.append("/StructParents ")
+                buffer.append(String(i))
+                buffer.append("\n")
             }
-
-            append(">>\n")
+            buffer.append(">>\n")
+            append(buffer)
             endobj()
         }
     }
