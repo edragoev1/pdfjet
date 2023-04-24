@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -82,6 +81,5 @@ func Example41() {
 func main() {
 	start := time.Now()
 	Example41()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_41 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_41", time.Since(start))
 }

@@ -90,6 +90,5 @@ func AddFooterToPDF() {
 func main() {
 	start := time.Now()
 	Example51()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_51 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_51", time.Since(start))
 }

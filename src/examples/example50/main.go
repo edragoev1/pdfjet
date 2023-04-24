@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -209,8 +208,7 @@ func stripSpacesAndDashes(str string) string {
 func main() {
 	start := time.Now()
 	Example50("rc65-16e.pdf")
-	// Example50("PDF32000_2008.pdf")
+	// Example50("../specification/PDF32000_2008.pdf")
 	// Example50("NoPredictor.pdf")
-	elapsed := time.Since(start)
-	fmt.Printf("Example_50 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_50", time.Since(start))
 }
