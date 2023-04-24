@@ -1,3 +1,5 @@
+package tests;
+
 import java.io.*;
 import com.pdfjet.*;
 
