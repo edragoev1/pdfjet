@@ -71,6 +71,5 @@ func Example18() {
 func main() {
 	start := time.Now()
 	Example18()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_18 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_18", time.Since(start))
 }
