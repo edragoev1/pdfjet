@@ -33,8 +33,7 @@ public class Example_14 {
             for (int j = 0; j < 5; j++) {
                 if (i == 0) {
                     cell = new Cell(f1);
-                }
-                else {
+                } else {
                     cell = new Cell(f2);
                 }
                 cell.setNoBorders();
@@ -92,9 +91,9 @@ public class Example_14 {
     }
 
     public static void main(String[] args) throws Exception {
-        long t0 = System.currentTimeMillis();
+        long time0 = System.currentTimeMillis();
         new Example_14();
-        long t1 = System.currentTimeMillis();
-        System.out.println("Example_14 => " + (t1 - t0));
+        long time1 = System.currentTimeMillis();
+        TextUtils.printDuration("Example_14", time0, time1);
     }
 }   // End of Example_14.java

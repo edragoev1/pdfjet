@@ -93,6 +93,6 @@ public class Example_06 {
         long t0 = System.currentTimeMillis();
         new Example_06();
         long t1 = System.currentTimeMillis();
-        System.out.println("Example_06 => " + (t1 - t0));
+        TextUtils.printDuration("Example_06", t0, t1);
     }
 }   // End of Example_06.java

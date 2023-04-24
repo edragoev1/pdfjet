@@ -11,26 +11,20 @@ public class Example_10 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_10.pdf")));
-
         pdf.setTitle("Using TextColumn and Paragraph classes");
         pdf.setSubject("Examples");
         pdf.setAuthor("Innovatics Inc.");
 
-        String fileName = "images/sz-map.png";
-        FileInputStream stream = new FileInputStream(fileName);
-        Image image1 = new Image(pdf, stream, ImageType.PNG);
-        stream.close();
+        Image image1 = new Image(pdf, "images/sz-map.png");
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        f1.setSize(10f);
-
         Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f2.setSize(14f);
-
         Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f3.setSize(12f);
-
         Font f4 = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+
+        f1.setSize(10f);
+        f2.setSize(14f);
+        f3.setSize(12f);
         f4.setSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -128,11 +122,9 @@ public class Example_10 {
 
         if (rotate == 0) {
             column.setLocation(90f, 300f);
-        }
-        else if (rotate == 90) {
+        } else if (rotate == 90) {
             column.setLocation(90f, 780f);
-        }
-        else if (rotate == 270) {
+        } else if (rotate == 270) {
             column.setLocation(550f, 310f);
         }
 
@@ -153,9 +145,9 @@ public class Example_10 {
     }
 
     public static void main(String[] args) throws Exception {
-        long t0 = System.currentTimeMillis();
+        long time0 = System.currentTimeMillis();
         new Example_10();
-        long t1 = System.currentTimeMillis();
-        System.out.println("Example_10 => " + (t1 - t0));
+        long time1 = System.currentTimeMillis();
+        TextUtils.printDuration("Example_10", time0, time1);
     }
 }   // End of Example_10.java
