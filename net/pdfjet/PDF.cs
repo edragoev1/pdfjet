@@ -55,8 +55,8 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v7.06.8";
-    private String creator = "PDFjet v7.06.8";
+    private String producer = "PDFjet v7.06.9";
+    private String creator;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
     private int byteCount = 0;
@@ -115,6 +115,7 @@ public class PDF {
         this.os = os;
         this.compliance = compliance;
         this.uuid = (new Salsa20()).GetID();
+        this.creator = this.producer;
 
         DateTime date = new DateTime(DateTime.Now.Ticks);
 

@@ -47,8 +47,8 @@ public class PDF {
     private var author: String = ""
     private var subject: String = ""
     private var keywords: String = ""
-    private var producer = "PDFjet v7.06.8"
-    private var creator = "PDFjet v7.06.8"
+    private var producer = "PDFjet v7.06.9"
+    private var creator: String?
     private var createDate: String?
     private var creationDate: String?
     private var byteCount = 0
@@ -116,9 +116,9 @@ public class PDF {
         self.os = os
         self.compliance = compliance
         self.uuid = Salsa20().getID()
+        self.creator = self.producer
 
         let date = Date()
-
         let dateFormatter1 = DateFormatter()
         dateFormatter1.dateFormat = "yyyy-MM-dd'T'hh:mm:ss"
         self.createDate = dateFormatter1.string(from: date)
@@ -228,7 +228,7 @@ public class PDF {
             sb.append("</rdf:li></rdf:Alt></dc:description>\n");
 
             sb.append("  <xmp:CreatorTool>");
-            sb.append(creator);
+            sb.append(creator!);
             sb.append("</xmp:CreatorTool>\n");
 
             sb.append("  <xmp:CreateDate>");
@@ -425,7 +425,7 @@ public class PDF {
         append(producer)
         append(")\n")
         append("/Creator (")
-        append(creator)
+        append(creator!)
         append(")\n")
         append("/CreationDate (D:")
         append(self.creationDate!)
