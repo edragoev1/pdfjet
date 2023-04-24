@@ -8,11 +8,11 @@ import PDFjet
 public class Example_08 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_08.pdf", append: false)!)
-/*
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        let f2 = Font(pdf, CoreFont.HELVETICA)
-        let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
-*/
+
+        // let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        // let f2 = Font(pdf, CoreFont.HELVETICA)
+        // let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
+
         let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
         let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
         let f3 = try Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream")

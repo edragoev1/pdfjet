@@ -14,12 +14,12 @@ public class Example_08 {
 
     public Example_08() {
         PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_08.pdf", FileMode.Create)), Compliance.PDF_A_1B);
-/* TODO:
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
-*/
+                new FileStream("Example_08.pdf", FileMode.Create)));
+
+        // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        // Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        // Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
+
         Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
         Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
