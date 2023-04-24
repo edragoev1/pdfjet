@@ -60,7 +60,7 @@ public class TextUtils {
     }
 
     public static void PrintDuration(String example, long time0, long time1) {
-        String duration = String.Format("{0:N2}", time1 - time0);
+        String duration = String.Format("{0:N2}", (time1 - time0)/1.0);
         if (duration.Length == 4) {
             duration = "   " + duration;
         } else if (duration.Length == 5) {
