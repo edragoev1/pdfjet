@@ -121,5 +121,5 @@ func main() {
 	start := time.Now()
 	Example14()
 	elapsed := time.Since(start)
-	fmt.Printf("Example_14 => %dµs\n", elapsed.Microseconds())
+	fmt.Printf("Example_14 => %.2fms\n", float32(elapsed.Microseconds())/float32(1000.0))
 }

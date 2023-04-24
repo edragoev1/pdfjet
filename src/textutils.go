@@ -26,9 +26,11 @@ SOFTWARE.
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 // SplitTextIntoTokens splits the text into tokens.
@@ -72,4 +74,16 @@ func ReadTextLines(filePath string) []string {
 		lines = append(lines, line)
 	}
 	return lines
+}
+
+func PrintDuration(duration time.Duration) {
+	durationAsString := fmt.Sprintf("%.2f", float32(duration.Microseconds())/float32(1000.0))
+	if len(durationAsString) == 4 {
+		durationAsString = "   " + durationAsString
+	} else if len(durationAsString) == 5 {
+		durationAsString = "  " + durationAsString
+	} else if len(durationAsString) == 6 {
+		durationAsString = " " + durationAsString
+	}
+	fmt.Print("Example_05 => ", durationAsString+"\n")
 }
