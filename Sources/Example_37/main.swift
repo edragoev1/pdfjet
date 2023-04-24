@@ -8,8 +8,8 @@ public class Example_37 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_37.pdf", append: false)!)
 
-        // var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/wirth.pdf")!)
-        var objects = try pdf.read(from: InputStream(fileAtPath: "../../eBooks/UniversityPhysicsVolume1.pdf")!)
+        var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/wirth.pdf")!)
+        // var objects = try pdf.read(from: InputStream(fileAtPath: "../../eBooks/UniversityPhysicsVolume1.pdf")!)
         // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/Smalltalk-and-OO.pdf")!)
         // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/InsideSmalltalk1.pdf")!)
         // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/InsideSmalltalk2.pdf")!)
@@ -23,9 +23,9 @@ public class Example_37 {
                 Font.STREAM)
         f1.setSize(72.0)
 
-        // let line = TextLine(f1, "This is a test!")
-        // line.setLocation(50.0, 350.0)
-        // line.setColor(Color.peru)
+        let line = TextLine(f1, "This is a test!")
+        line.setLocation(50.0, 350.0)
+        line.setColor(Color.peru)
 
         let pages = pdf.getPageObjects(from: objects)
         for pageObj in pages {
@@ -38,7 +38,7 @@ public class Example_37 {
             page.addResource(f1, &objects)
             page.setBrushColor(Color.blue)
             page.drawString(f1, "Hello, World!", 50.0, 200.0)
-            //line.drawOn(page)
+            line.drawOn(page)
             page.complete(&objects) // The graphics stack is unwinded automatically
         }
         pdf.addObjects(&objects)
