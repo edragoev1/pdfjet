@@ -7,7 +7,7 @@ import PDFjet
  */
 public class Example_08 {
     public init() throws {
-        let pdf = PDF(OutputStream(toFileAtPath: "Example_08.pdf", append: false)!, Compliance.PDF_UA)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_08.pdf", append: false)!)
 
         // let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
         // let f2 = Font(pdf, CoreFont.HELVETICA)
