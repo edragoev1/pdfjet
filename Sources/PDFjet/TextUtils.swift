@@ -23,32 +23,27 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Text processing utilities.
 ///
 public class TextUtils {
-
     public static func splitTextIntoTokens(
             _ text: String,
             _ font: Font,
             _ fallbackFont: Font?,
             _ width: Float) -> [String] {
         var tokens2 = [String]()
-
         let tokens = text.components(separatedBy: .whitespaces)
         for token in tokens {
             if font.stringWidth(fallbackFont, token) <= width {
                 tokens2.append(token)
-            }
-            else {
+            } else {
                 var buf = String()
                 for scalar in token.unicodeScalars {
                     let ch = String(scalar)
                     if font.stringWidth(fallbackFont, buf + ch) <= width {
                         buf.append(ch)
-                    }
-                    else {
+                    } else {
                         tokens2.append(buf)
                         buf = ""
                         buf.append(ch)
@@ -59,8 +54,17 @@ public class TextUtils {
                 }
             }
         }
-
         return tokens2
     }
 
+    public static func printDuration(_ example: String, _ time0: Int64, _ time1: Int64) {
+        var duration = String(time1 - time0)
+        if duration.count == 2 {
+            duration = "  " + duration
+        } else if duration.count == 3 {
+            duration = " " + duration
+        }
+        duration += ".0"
+        print(example + " => " + duration)
+    }
 }   // End of TextUtils.swift
