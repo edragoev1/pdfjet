@@ -61,4 +61,4 @@ Used for performance testing:
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_46()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("Example_46 => \(time1 - time0)")
+TextUtils.printDuration("Example_46", time0, time1)
