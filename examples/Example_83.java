@@ -64,9 +64,9 @@ public class Example_83 {
     }
 
     public static void main(String[] args) throws Exception {
-        long t0 = System.currentTimeMillis();
+        long time0 = System.currentTimeMillis();
         new Example_83();
-        long t1 = System.currentTimeMillis();
-        System.out.println("Example_83 => " + (t1 - t0));
+        long time1 = System.currentTimeMillis();
+        TextUtils.printDuration("Example_83", time0, time1);
     }
 }   // End of Example_83.java

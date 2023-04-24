@@ -181,6 +181,6 @@ class Example_50 {
         // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
         // new Example_50("50", "../../eBooks/PDF32000_2008.pdf");
         long time1 = System.currentTimeMillis();
-        System.out.println("Example_50 => " + (time1 - time0));
+        TextUtils.printDuration("Example_50", time0, time1);
     }
 }   // End of Example_50.java

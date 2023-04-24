@@ -61,12 +61,10 @@ System.out.println(xy[1]);
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
-        long t0 = System.currentTimeMillis();
+        long time0 = System.currentTimeMillis();
         new Example_42();
-        long t1 = System.currentTimeMillis();
-        System.out.println("Example_42 => " + (t1 - t0));
+        long time1 = System.currentTimeMillis();
+        TextUtils.printDuration("Example_42", time0, time1);
     }
-
 }   // End of Example_42.java

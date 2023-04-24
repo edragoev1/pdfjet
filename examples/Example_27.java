@@ -11,32 +11,21 @@ public class Example_27 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_27.pdf")));
+        // Thai font
+        Font f1 = new Font(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream");
+        // Latin font
+        Font f2 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        // Hebrew font
+        Font f3 = new Font(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream");
+        // Arabic font
+        Font f4 = new Font(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream");
+
+        f1.setSize(14f);
+        f2.setSize(12f);
+        f3.setSize(12f);
+        f4.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
-        // Thai font
-        FileInputStream stream = new FileInputStream("fonts/Noto/NotoSansThai-Regular.ttf");
-        Font f1 = new Font(pdf, stream);
-        stream.close();
-        f1.setSize(14f);
-
-        // Latin font
-        stream = new FileInputStream("fonts/Droid/DroidSans.ttf");
-        Font f2 = new Font(pdf, stream);
-        stream.close();
-        f2.setSize(12f);
-
-        // Hebrew font
-        stream = new FileInputStream("fonts/Noto/NotoSansHebrew-Regular.ttf");
-        Font f3 = new Font(pdf, stream);
-        stream.close();
-        f3.setSize(12f);
-
-        // Arabic font
-        stream = new FileInputStream("fonts/Noto/NotoNaskhArabic-Regular.ttf");
-        Font f4 = new Font(pdf, stream);
-        stream.close();
-        f4.setSize(12f);
 
         float x = 50f;
         float y = 50f;
@@ -151,9 +140,9 @@ public class Example_27 {
     }
 
     public static void main(String[] args) throws Exception {
-        long t0 = System.currentTimeMillis();
+        long time0 = System.currentTimeMillis();
         new Example_27();
-        long t1 = System.currentTimeMillis();
-        System.out.println("Example_27 => " + (t1 - t0));
+        long time1 = System.currentTimeMillis();
+        TextUtils.printDuration("Example_27", time0, time1);
     }
 }   // End of Example_27.java
