@@ -1755,10 +1755,12 @@ public class PDF {
                 objOffset.append(byteCount)
                 var link = false
                 let n = obj.dict.count
+
+                var buffer = String()
                 var token: String?
                 for i in 0..<n {
                     token = obj.dict[i]
-                    append(token!)
+                    buffer.append(token!)
                     if token!.hasPrefix("(http:") {
                         link = true
                     } else if token!.hasSuffix(")") {
@@ -1766,12 +1768,14 @@ public class PDF {
                     }
                     if i < (n - 1) {
                         if !link {
-                            append(Token.space)
+                            buffer.append(" ")
                         }
                     } else {
-                        append(Token.newline)
+                        buffer.append("\n")
                     }
                 }
+                append(buffer)
+
                 if obj.stream != nil {
                     append(obj.stream!)
                     append(Token.endstream)
