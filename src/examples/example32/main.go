@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -49,6 +48,5 @@ func Example32() {
 func main() {
 	start := time.Now()
 	Example32()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_32 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_32", time.Since(start))
 }

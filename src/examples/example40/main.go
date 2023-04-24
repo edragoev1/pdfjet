@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -141,6 +140,5 @@ func AddVerticalBar(
 func main() {
 	start := time.Now()
 	Example40()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_40 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_40", time.Since(start))
 }

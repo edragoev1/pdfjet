@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -242,6 +241,5 @@ func getCell(
 func main() {
 	start := time.Now()
 	Example38()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_38 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_38", time.Since(start))
 }

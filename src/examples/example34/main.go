@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -158,6 +157,5 @@ func appendMissingCells(tableData [][]*pdfjet.Cell, font *pdfjet.Font) {
 func main() {
 	start := time.Now()
 	Example34()
-	elapsed := time.Since(start)
-	fmt.Printf("Example_34 => %dµs\n", elapsed.Microseconds())
+	pdfjet.PrintDuration("Example_34", time.Since(start))
 }
