@@ -498,8 +498,7 @@ public class Table {
             if (page != null && (y + cellH) > (page.height - bottomMargin)) {
                 if (i == tableData.size() - 1) {
                     rendered = -1;
-                }
-                else {
+                } else {
                     rendered = i + 1;
                     numOfPages++;
                 }
