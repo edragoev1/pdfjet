@@ -528,35 +528,36 @@ public class PDF {
 
     private func addNumsParentTree() {
         newobj()
-        append("<<\n")
-        append("/Nums [\n")
+        append(Token.beginDictionary)
+        var buffer = String("/Nums [\n")
         for i in 0..<pages.count {
             let page = pages[i]
-            append(i)
-            append(" [\n")
+            buffer.append(String(i))
+            buffer.append(" [\n")
             for element in page.structures {
                 if element.annotation == nil {
-                    append(element.objNumber!)
-                    append(" 0 R\n")
+                    buffer.append(String(element.objNumber!))
+                    buffer.append(" 0 R\n")
                 }
             }
-            append("]\n")
+            buffer.append("]\n")
         }
 
         var index = pages.count
         for page in pages {
             for element in page.structures {
                 if element.annotation != nil {
-                    append(index)
-                    append(" ")
-                    append(element.objNumber!)
-                    append(" 0 R\n")
+                    buffer.append(String(index))
+                    buffer.append(" ")
+                    buffer.append(String(element.objNumber!))
+                    buffer.append(" 0 R\n")
                     index += 1
                 }
             }
         }
-        append("]\n")
-        append(">>\n")
+        buffer.append("]\n")
+        append(buffer)
+        append(Token.endDictionary)
         endobj()
     }
 
