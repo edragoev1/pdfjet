@@ -152,6 +152,6 @@ public class Example_01 {
         long t0 = System.currentTimeMillis();
         new Example_01();
         long t1 = System.currentTimeMillis();
-        System.out.println("Example_01 => " + (t1 - t0));
+        TextUtils.printDuration("Example_01", t0, t1);
     }
 }   // End of Example_01.java

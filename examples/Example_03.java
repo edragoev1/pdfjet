@@ -84,13 +84,10 @@ public class Example_03 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_03();
         long t1 = System.currentTimeMillis();
-        System.out.println("Example_03 => " + (t1 - t0));
-        // Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler Example_03.pdf");
+        TextUtils.printDuration("Example_03", t0, t1);
     }
-
 }   // End of Example_03.java

@@ -88,7 +88,7 @@ public class Example_02 {
         long t0 = System.currentTimeMillis();
         new Example_02();
         long t1 = System.currentTimeMillis();
-        System.out.println("Example_02 => " + (t1 - t0));
+        TextUtils.printDuration("Example_02", t0, t1);
     }
 
 }   // End of Example_02.java

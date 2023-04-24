@@ -1,9 +1,7 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_04.java
@@ -13,9 +11,7 @@ import com.pdfjet.*;
  *  requires the Asian Font Packs from Adobe or Foxit Software respectively.
  */
 public class Example_04 {
-
     public Example_04() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_04.pdf")));
 
@@ -48,11 +44,9 @@ public class Example_04 {
         while ((line = reader.readLine()) != null) {
             if (line.contains("Simplified")) {
                 text.setFont(f2);
-            }
-            else if (line.contains("Japanese")) {
+            } else if (line.contains("Japanese")) {
                 text.setFont(f3);
-            }
-            else if (line.contains("Korean")) {
+            } else if (line.contains("Korean")) {
                 text.setFont(f4);
             }
             text.setText(line);
@@ -65,12 +59,10 @@ public class Example_04 {
         pdf.complete();
     }
 
-
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         new Example_04();
         long t1 = System.currentTimeMillis();
-        System.out.println("Example_04 => " + (t1 - t0));
+        TextUtils.printDuration("Example_04", t0, t1);
     }
-
 }   // End of Example_04.java
