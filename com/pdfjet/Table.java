@@ -408,8 +408,6 @@ public class Table {
             xy = drawTableRows(page, drawHeaderRows(page, pageNumber));
             pageNumber++;
         }
-        // Allow the table to be drawn again later:
-        resetRenderedPagesCount();
         return xy;
     }
 
@@ -685,14 +683,6 @@ public class Table {
                 cell.setLineWidth(width);
             }
         }
-    }
-
-    /**
-     * Resets the rendered pages count.
-     * Call this method if you have to draw this table more than one time.
-     */
-    public void resetRenderedPagesCount() {
-        this.rendered = numOfHeaderRows;
     }
 
     /**
