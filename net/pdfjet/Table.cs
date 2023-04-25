@@ -54,7 +54,7 @@ public class Table {
     private float y1;
     private float y1FirstPage;
     private float rightMargin;
-    private float bottomMargin = 30f;
+    private float bottomMargin;
 
     /**
      *  Create a table object.

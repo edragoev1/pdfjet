@@ -43,7 +43,7 @@ public class Example_08 {
         table.RemoveLineBetweenRows(0, 1);
         table.SetLocation(100f, 0f);
         table.SetRightMargin(20f);
-        table.SetBottomMargin(0f);
+        table.SetBottomMargin(10f);
         table.SetCellBordersWidth(0f);
         table.SetTextColorInRow(12, Color.blue);
         table.SetTextColorInRow(13, Color.red);
