@@ -696,7 +696,6 @@ public class Cell {
             float cellH) {
         page.setPenColor(pen);
         page.setPenWidth(lineWidth);
-
         if (getBorder(Border.TOP) &&
                 getBorder(Border.BOTTOM) &&
                 getBorder(Border.LEFT) &&
@@ -743,7 +742,6 @@ public class Cell {
             float y,
             float cellW,
             float cellH) throws Exception {
-
         float xText;
         float yText;
         if (valign == Align.TOP) {
@@ -866,7 +864,6 @@ public class Cell {
         if (this.text == null) {
             return numOfVerCells;
         }
-
         float effectiveWidth = this.width - (this.leftPadding + this.rightPadding);
         String[] tokens = TextUtils.splitTextIntoTokens(this.text, this.font, this.fallbackFont, effectiveWidth);
         StringBuilder buf = new StringBuilder();
@@ -874,13 +871,11 @@ public class Cell {
             if (font.stringWidth(fallbackFont, (buf.toString() + " " + token).trim()) > effectiveWidth) {
                 numOfVerCells++;
                 buf = new StringBuilder(token);
-            }
-            else {
+            } else {
                 buf.append(" ");
                 buf.append(token);
             }
         }
-
         return numOfVerCells;
     }
 
