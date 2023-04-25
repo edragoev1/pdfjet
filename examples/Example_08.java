@@ -43,11 +43,10 @@ public class Example_08 {
         table.removeLineBetweenRows(0, 1);
         table.setLocation(100f, 0f);
         table.setRightMargin(20f);
-        table.setBottomMargin(0f);
+        table.setBottomMargin(10f);
         table.setCellBordersWidth(0f);
         table.setTextColorInRow(12, Color.blue);
         table.setTextColorInRow(13, Color.red);
-        // TODO:
         table.getCellAt(13, 0).getTextBlock().setURIAction("http://pdfjet.com");
         table.setFontInRow(14, f3);
         table.getCellAt(21, 0).setColSpan(6);
