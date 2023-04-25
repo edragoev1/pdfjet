@@ -39,12 +39,12 @@ public class TextBlock implements Drawable {
 
     private float x;
     private float y;
-    private float w = 300f;
-    private float h = 200f;
+    private float w;
+    private float h;
 
     private int background = Color.white;
     private int brush = Color.black;
-    private boolean drawBorder;
+    private boolean border;
 
     private String uri = null;
     private String key = null;
@@ -242,8 +242,8 @@ public class TextBlock implements Drawable {
         return this.brush;
     }
 
-    public void setDrawBorder(boolean drawBorder) {
-        this.drawBorder = drawBorder;
+    public void setBorder(boolean drawBorder) {
+        this.border = drawBorder;
     }
 
     // Is the text Chinese, Japanese or Korean?
@@ -272,7 +272,8 @@ public class TextBlock implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         if (page != null) {
-            if (getBgColor() != Color.white) {
+            if (getBgColor() != Color.white && getBgColor() != Color.transparent) {
+                // TODO: Is white color a valid option?
                 page.setBrushColor(this.background);
                 page.fillRect(x, y, w, h);
             }
@@ -346,7 +347,8 @@ public class TextBlock implements Drawable {
             }
         }
         this.h = (yText - y) + font.descent;
-        if (page != null && drawBorder) {
+        if (page != null && border) {
+            // This border is only use when TextBlock is standalone!
             Box box = new Box();
             box.setLocation(x, y);
             box.setSize(w, h);

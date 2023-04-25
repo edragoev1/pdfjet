@@ -42,17 +42,15 @@ public class Table {
     public static final int DATA_HAS_8_HEADER_ROWS = 8;
     public static final int DATA_HAS_9_HEADER_ROWS = 9;
 
-    private int rendered = 0;
-    private int numOfPages;
-
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 0;
+    private int rendered = 0;
 
     private float x1;
     private float y1;
     private float y1FirstPage;
     private float rightMargin;
-    private float bottomMargin = 30f;
+    private float bottomMargin = 0f;
 
     /**
      *  Create a table object.
@@ -390,24 +388,6 @@ public class Table {
     }
 
     /**
-     *  Returns the total number of pages that are required to draw this table on.
-     *
-     *  @param page the type of pages we are drawing this table on.
-     *
-     *  @return the number of pages.
-     *  @throws Exception  If an input or output exception occurred
-     */
-    @Deprecated
-    public int getNumberOfPages(Page page) throws Exception {
-        numOfPages = 1;
-        while (hasMoreData()) {
-            drawOn(null);
-        }
-        resetRenderedPagesCount();
-        return numOfPages;
-    }
-
-    /**
      *  Draws this table on the specified page.
      *
      *  @param page the page to draw this table on.
@@ -436,7 +416,6 @@ public class Table {
     private float[] drawHeaderRows(Page page, int pageNumber) throws Exception {
         float x = x1;
         float y = (pageNumber == 1) ? y1FirstPage : y1;
-
         float cellH;
         for (int i = 0; i < numOfHeaderRows; i++) {
             List<Cell> dataRow = tableData.get(i);
@@ -468,6 +447,9 @@ public class Table {
         for (int i = rendered; i < tableData.size(); i++) {
             List<Cell> dataRow = tableData.get(i);
             cellH = getMaxCellHeight(dataRow);
+            if (page != null && (y + cellH) > (page.height - bottomMargin)) {
+                return new float[] {x, y};
+            }
             for (int j = 0; j < dataRow.size(); j++) {
                 Cell cell = dataRow.get(j);
                 float cellW = cell.getWidth();
@@ -483,34 +465,14 @@ public class Table {
             }
             x = x1;
             y += cellH;
-
-            // Consider the height of the next row when checking if we must go to a new page
-            if (i < (tableData.size() - 1)) {
-                List<Cell> nextRow = tableData.get(i + 1);
-                for (Cell cell : nextRow) {
-                    float cellHeight = cell.getHeight();
-                    if (cellHeight > cellH) {
-                        cellH = cellHeight;
-                    }
-                }
-            }
-
-            if (page != null && (y + cellH) > (page.height - bottomMargin)) {
-                if (i == tableData.size() - 1) {
-                    rendered = -1;
-                } else {
-                    rendered = i + 1;
-                    numOfPages++;
-                }
-                return new float[] {x, y};
-            }
+            rendered = i + 1;
         }
         rendered = -1;
 
         return new float[] {x, y};
     }
 
-    private float getMaxCellHeight(List<Cell> row) {
+    private float getMaxCellHeight(List<Cell> row) throws Exception {
         float maxCellHeight = 0f;
         for (Cell cell : row) {
             if (cell.getHeight() > maxCellHeight) {
@@ -567,7 +529,6 @@ public class Table {
      */
     public void wrapAroundCellText() {
         List<List<Cell>> tableData2 = new ArrayList<List<Cell>>();
-
         for (List<Cell> row : tableData) {
             for (int i = 0; i < row.size(); i++) {
                 Cell cell = row.get(i);
@@ -579,7 +540,6 @@ public class Table {
                 }
             }
         }
-
         // Adjust the number of header rows automatically!
         numOfHeaderRows = getNumHeaderRows();
         rendered = numOfHeaderRows;

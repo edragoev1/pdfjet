@@ -320,56 +320,21 @@ public class Cell {
      *
      *  @return the cell height.
      */
-    public float getHeight() {
+    public float getHeight() throws Exception {
         float cellHeight = 0f;
-
         if (image != null) {
-            float height = image.getHeight() + topPadding + bottomPadding;
-            if (height > cellHeight) {
-                cellHeight = height;
-            }
-        }
-
-        if (barCode != null) {
-            float height = barCode.getHeight() + topPadding + bottomPadding;
-            if (height > cellHeight) {
-                cellHeight = height;
-            }
-        }
-
-        if (textBlock != null) {
-            try {
-                float height = textBlock.drawOn(null)[1] + topPadding + bottomPadding;
-                if (height > cellHeight) {
-                    cellHeight = height;
-                }
-            }
-            catch (Exception e) {
-            }
-        }
-
-        if (drawable != null) {
-            try {
-                float height = drawable.drawOn(null)[1] + topPadding + bottomPadding;
-                if (height > cellHeight) {
-                    cellHeight = height;
-                }
-            }
-            catch (Exception e) {
-            }
-        }
-
-        if (text != null) {
+            cellHeight = image.getHeight() + topPadding + bottomPadding;
+        } else if (barCode != null) {
+            cellHeight = barCode.getHeight() + topPadding + bottomPadding;
+        } else if (textBlock != null) {
+            cellHeight = textBlock.drawOn(null)[1] + topPadding + bottomPadding;
+        } else if (text != null) {
             float fontHeight = font.getHeight();
             if (fallbackFont != null && fallbackFont.getHeight() > fontHeight) {
                 fontHeight = fallbackFont.getHeight();
             }
-            float height = fontHeight + topPadding + bottomPadding;
-            if (height > cellHeight) {
-                cellHeight = height;
-            }
+            cellHeight = fontHeight + topPadding + bottomPadding;
         }
-
         return cellHeight;
     }
 
@@ -645,10 +610,10 @@ public class Cell {
             textBlock.setLocation(x + leftPadding, y + topPadding);
             textBlock.drawOn(page);
         }
-        drawBorders(page, x, y, w, h);
         if (text != null && !text.equals("")) {
             drawText(page, x, y, w, h);
         }
+        drawBorders(page, x, y, w, h);
         if (point != null) {
             if (point.align == Align.LEFT) {
                 point.x = x + 2*point.r;
@@ -671,7 +636,6 @@ public class Cell {
             }
             page.drawPoint(point);
         }
-
         if (drawable != null) {
             drawable.setPosition(x + leftPadding, y + topPadding);
             drawable.drawOn(page);
