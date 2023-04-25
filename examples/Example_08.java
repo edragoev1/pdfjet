@@ -5,17 +5,12 @@ import java.util.*;
 import com.pdfjet.*;
 
 /**
- *  Example_08.java
- *
+ * Example_08.java
  */
 public class Example_08 {
-    private Image image1;
-    private BarCode barCode;
-
     public Example_08() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_08.pdf")));
-
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
         // Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
@@ -28,17 +23,22 @@ public class Example_08 {
         f2.setSize(7f);
         f3.setSize(7f);
 
-        image1 = new Image(pdf, "images/fruit.jpg");
-        image1.scaleBy(0.20f);
+        Image image = new Image(pdf, "images/fruit.jpg");
+        image.scaleBy(0.20f);
 
-        barCode = new BarCode(BarCode.CODE128, "Hello, World!");
+        BarCode barCode = new BarCode(BarCode.CODE128, "Hello, World!");
         barCode.setModuleLength(0.75f);
         // Uncomment the line below if you want to print the text underneath the barcode.
         // barCode.setFont(f1);
-
         Table table = new Table();
         List<List<Cell>> tableData = getData(
-        		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2);
+        		"data/world-communications.txt",
+                "|",
+                Table.DATA_HAS_2_HEADER_ROWS,
+                f1,
+                f2,
+                image,
+                barCode);
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
         table.removeLineBetweenRows(0, 1);
         table.setLocation(100f, 0f);
@@ -47,6 +47,7 @@ public class Example_08 {
         table.setCellBordersWidth(0f);
         table.setTextColorInRow(12, Color.blue);
         table.setTextColorInRow(13, Color.red);
+        // TODO:
         table.getCellAt(13, 0).getTextBlock().setURIAction("http://pdfjet.com");
         table.setFontInRow(14, f3);
         table.getCellAt(21, 0).setColSpan(6);
@@ -104,7 +105,9 @@ public class Example_08 {
             String delimiter,
             int numOfHeaderRows,
             Font f1,
-            Font f2) throws Exception {
+            Font f2,
+            Image image,
+            BarCode barCode) throws Exception {
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
         List<List<String>> tableTextData = getTextData(fileName, delimiter);
         int currentRow = 0;
@@ -118,7 +121,7 @@ public class Example_08 {
                 } else {
                     cell = new Cell(f2);
                     if (i == 0 && currentRow == 5) {
-                        cell.setImage(image1);
+                        cell.setImage(image);
                     }
                     if (i == 0 && currentRow == 6) {
                         cell.setBarcode(barCode);
