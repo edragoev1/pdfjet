@@ -53,14 +53,10 @@ public class Example_08 {
         table.getCellAt(21, 6).setColSpan(2);
 
         // Set the column widths manually:
-        // table.setColumnWidth(0, 70f);
-        // table.setColumnWidth(1, 50f);
-        // table.setColumnWidth(2, 70f);
-        // table.setColumnWidth(3, 70f);
-        // table.setColumnWidth(4, 70f);
-        // table.setColumnWidth(5, 70f);
-        // table.setColumnWidth(6, 50f);
-        // table.setColumnWidth(7, 50f);
+        // float[] widths = {70f, 50f, 70f, 70f, 70f, 70f, 50f, 50f};
+        // for (int i = 0; i < widths.length; i++) {
+        //     table.setColumnWidth(i, widths[i]);            
+        // }
 
         // Auto adjust the column widths to be just wide enough to fit the text without truncation.
         // Columns with colspan > 1 will not be adjusted.
