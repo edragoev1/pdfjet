@@ -43,9 +43,7 @@ public class Example_13 {
         Table table = new Table();
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
         table.setLocation(100f, 50f);
-
-        // REPLACED:
-        // table.setCellMargin(2f);
+        table.setBottomMargin(10f);
 
         setFontForRow(table, 0, f1);
         setFontForRow(table, 1, f1);
