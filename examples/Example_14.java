@@ -76,15 +76,9 @@ public class Example_14 {
             }
             tableData.add(row);
         }
-
         table.setData(tableData);
         table.setCellBordersWidth(0.2f);
         table.setLocation(70f, 30f);
-        table.drawOn(page);
-
-        // Must call this method before drawing the table again.
-        table.resetRenderedPagesCount();
-        table.setLocation(70f, 200f);
         table.drawOn(page);
 
         pdf.complete();
