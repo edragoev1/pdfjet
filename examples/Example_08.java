@@ -43,6 +43,7 @@ public class Example_08 {
         table.removeLineBetweenRows(0, 1);
         table.setLocation(100f, 0f);
         table.setRightMargin(20f);
+        // TODO:
         table.setBottomMargin(10f);
         table.setCellBordersWidth(0f);
         table.setTextColorInRow(12, Color.blue);

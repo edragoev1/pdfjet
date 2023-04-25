@@ -50,7 +50,7 @@ public class Example_19 {
         textBlock.setText(buf.toString());
         textBlock.setLocation(x2, y1);
         textBlock.setWidth(w2);
-        textBlock.setDrawBorder(true);
+        textBlock.setBorder(true);
         // textBlock.setTextAlignment(Align.RIGHT);
         // textBlock.setTextAlignment(Align.CENTER);
         float[] xy = textBlock.drawOn(page);
@@ -64,7 +64,7 @@ public class Example_19 {
         textBlock.setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla elementum interdum elit, quis vehicula urna interdum quis. Phasellus gravida ligula quam, nec blandit nulla. Sed posuere, lorem eget feugiat placerat, ipsum nulla euismod nisi, in semper mi nibh sed elit. Mauris libero est, sodales dignissim congue sed, pulvinar non ipsum. Sed risus nisi, ultrices nec eleifend at, viverra sed neque. Integer vehicula massa non arcu viverra ullamcorper. Ut id tellus id ante mattis commodo. Donec dignissim aliquam tortor, eu pharetra ipsum ullamcorper in. Vivamus ultrices imperdiet iaculis.");
         textBlock.setLocation(x2, xy[1] + 10f);
         textBlock.setWidth(w2);
-        textBlock.setDrawBorder(true);
+        textBlock.setBorder(true);
         textBlock.drawOn(page);
 
         textBlock = new TextBlock(f1);
@@ -72,8 +72,13 @@ public class Example_19 {
         textBlock.setText("保健所によると、女性は１３日に旅行先のタイから札幌に戻り、１６日午後５～８時ごろ同店を訪れ、帰宅後に発熱などの症状が出て、２３日に医療機関ではしかと診断された。はしかのウイルスは発症日の１日前から感染者の呼吸などから放出され、本人がいなくなっても、２時間程度空気中に漂い、空気感染する。保健所は１６日午後５～１１時に同店を訪れた人に、発熱などの異常が出た場合、早期にマスクをして医療機関を受診するよう呼びかけている。（本郷由美子）");
         textBlock.setLocation(x1, 550f);
         textBlock.setWidth(350f);
-        textBlock.setDrawBorder(true);
-        textBlock.drawOn(page);
+        textBlock.setBorder(true);
+        xy = textBlock.drawOn(page);
+
+        Box box = new Box();
+        box.setLocation(xy[0], xy[1]);
+        box.setSize(20f, 20f);
+        box.drawOn(page);
 
         TextBox textBox = new TextBox(f1);
         textBox.setFallbackFont(f2);
