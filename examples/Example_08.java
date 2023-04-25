@@ -128,11 +128,7 @@ public class Example_08 {
                         cell.setColSpan(8);
                     } else {
                         TextBlock textBlock = new TextBlock(f2, text);
-                        if (i == 0) {
-                            textBlock.setTextAlignment(Align.LEFT);
-                        } else {
-                            textBlock.setTextAlignment(Align.RIGHT);
-                        }
+                        textBlock.setTextAlignment(i == 0 ? Align.LEFT : Align.RIGHT);
                         cell.setTextBlock(textBlock);
                     }
                 }
