@@ -84,6 +84,12 @@ public class TextBox implements Drawable {
     private String language = "en-US";
     private String altDescription = "";
 
+    private String uri = null;
+    private String key = null;
+    private String uriLanguage = null;
+    private String uriActualText = null;
+    private String uriAltDescription = null;
+
     /**
      * Creates a text box and sets the font.
      *
@@ -872,7 +878,18 @@ public class TextBox implements Drawable {
         if (page != null) {
             drawBorders(page);
         }
-
+        if (page != null && (uri != null || key != null)) {
+            page.addAnnotation(new Annotation(
+                    uri,
+                    key,    // The destination name
+                    x,
+                    y,
+                    x + width,
+                    y + height,
+                    uriLanguage,
+                    uriActualText,
+                    uriAltDescription));
+        }
         return new float[] { x + width, y + height };
     }
 
@@ -903,4 +920,13 @@ public class TextBox implements Drawable {
         }
     }
 
+    /**
+     *  Sets the URI for the "click text line" action.
+     *
+     *  @param uri the URI
+     *  @return this TextBox.
+     */
+    public void setURIAction(String uri) {
+        this.uri = uri;
+    }
 } // End of TextBox.java

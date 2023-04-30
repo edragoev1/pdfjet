@@ -12,10 +12,8 @@ public class Example_80 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_80.pdf")));
-
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(
-                pdf,
+        Font f2 = new Font(pdf,
                 getClass().getResourceAsStream("../fonts/OpenSans/OpenSans-Regular.ttf.stream"),
                 Font.STREAM);
 
@@ -34,7 +32,6 @@ public class Example_80 {
                 true);      // Compress text files.
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
         f1.setSize(10f);
 
         FileAttachment attachment = new FileAttachment(pdf, file1);
@@ -111,11 +108,6 @@ public class Example_80 {
         buf.append("Proin pretium, augue quis eleifend hendrerit, leo libero auctor magna, ");
         buf.append("vitae porttitor lorem urna eget urna. ");
         buf.append("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
-
-        TextBlock textBlock = new TextBlock(f1);
-        textBlock.setText(buf.toString());
-        textBlock.setLocation(0f, xy[1]);
-        xy = textBlock.drawOn(page);
 
         BarCode code = new BarCode(BarCode.CODE128, "Hello, World!");
         code.setLocation(0f, xy[1]);

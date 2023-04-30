@@ -47,7 +47,7 @@ public class Example_08 {
         table.setCellBordersWidth(0f);
         table.setTextColorInRow(12, Color.blue);
         table.setTextColorInRow(13, Color.red);
-        table.getCellAt(13, 0).getTextBlock().setURIAction("http://pdfjet.com");
+        table.getCellAt(13, 0).getTextBox().setURIAction("http://pdfjet.com");
         table.setFontInRow(14, f3);
         table.getCellAt(21, 0).setColSpan(6);
         table.getCellAt(21, 6).setColSpan(2);
@@ -123,9 +123,9 @@ public class Example_08 {
                         cell.setTextAlignment(Align.CENTER);
                         cell.setColSpan(8);
                     } else {
-                        TextBlock textBlock = new TextBlock(f2, text);
-                        textBlock.setTextAlignment(i == 0 ? Align.LEFT : Align.RIGHT);
-                        cell.setTextBlock(textBlock);
+                        TextBox textBox = new TextBox(f2, text);
+                        textBox.setTextAlignment(i == 0 ? Align.LEFT : Align.RIGHT);
+                        cell.setTextBox(textBox);
                     }
                 }
                 row.add(cell);

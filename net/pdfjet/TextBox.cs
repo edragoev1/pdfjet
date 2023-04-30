@@ -44,10 +44,9 @@ namespace PDFjet.NET {
  *  It was completely rewritten in 2013 by Eugene Dragoev.
  */
 public class TextBox : IDrawable {
-
-    private Font font;
-    private Font fallbackFont;
-    private String text;
+    public Font font;
+    public Font fallbackFont;
+    public String text;
 
     private float x;
     private float y;
@@ -81,6 +80,12 @@ public class TextBox : IDrawable {
     // Future use:
     // bits 24 to 31
     private uint properties = 0x00000001;
+
+    private String uri = null;
+    private String key = null;
+    private String uriLanguage = null;
+    private String uriActualText = null;
+    private String uriAltDescription = null;
 
     /**
      *  Creates a text box and sets the font.
@@ -756,7 +761,6 @@ public class TextBox : IDrawable {
     public float[] DrawOn(Page page) {
         String[] lines = getTextLines();
         float leading = font.ascent + font.descent + spacing;
-
         if (height > 0f) {  // TextBox with fixed height
             if ((lines.Length*leading - spacing) > (height - 2*margin)) {
                 List<String> list = new List<String>();
@@ -839,7 +843,18 @@ public class TextBox : IDrawable {
         if (page != null) {
             DrawBorders(page);
         }
-
+        if (page != null && (uri != null || key != null)) {
+            page.AddAnnotation(new Annotation(
+                    uri,
+                    key,    // The destination name
+                    x,
+                    y,
+                    x + width,
+                    y + height,
+                    uriLanguage,
+                    uriActualText,
+                    uriAltDescription));
+        }
         return new float[] {x + width, y + height};
     }
 
@@ -865,6 +880,17 @@ public class TextBox : IDrawable {
             page.LineTo(xText + lineLength, yText - yAdjust);
             page.StrokePath();
         }
+    }
+
+    /**
+     *  Sets the URI for the "click text line" action.
+     *
+     *  @param uri the URI
+     *  @return this TextBox.
+     */
+    public TextBox SetURIAction(String uri) {
+        this.uri = uri;
+        return this;
     }
 }   // End of TextBox.cs
 }   // End of namespace PDFjet.NET

@@ -240,8 +240,7 @@ public class Page {
             Dictionary<String, Int32> colors) {
         if (font.isCoreFont || font.isCJK || fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
             DrawString(font, str, x, y, brush, colors);
-        }
-        else {
+        } else {
             Font activeFont = font;
             StringBuilder buf = new StringBuilder();
             for (int i = 0; i < str.Length; i++) {
@@ -253,8 +252,7 @@ public class Page {
                     // Switch the font
                     if (activeFont == font) {
                         activeFont = fallbackFont;
-                    }
-                    else {
+                    } else {
                         activeFont = font;
                     }
                 }
@@ -310,9 +308,7 @@ public class Page {
         if (str == null || str.Equals("")) {
             return;
         }
-
         Append("BT\n");
-
         if (font.fontID == null) {
             SetTextFont(font);
         } else {
@@ -351,22 +347,18 @@ public class Page {
         Append(" Tm\n");
 
         if (colors == null) {
+            SetBrushColor(brush);
             Append("[<");
-            DrawString(font, str);
+            if (font.isCoreFont) {
+                DrawAsciiString(font, str);
+            } else {
+                DrawUnicodeString(font, str);
+            }
             Append(">] TJ\n");
         } else {
             DrawColoredString(font, str, brush, colors);
         }
-
         Append("ET\n");
-    }
-
-    private void DrawString(Font font, String str) {
-        if (font.isCoreFont) {
-            DrawAsciiString(font, str);
-        } else {
-            DrawUnicodeString(font, str);
-        }
     }
 
     private void DrawAsciiString(Font font, String str) {
@@ -1441,7 +1433,11 @@ public class Page {
                 SetBrushColor(brush);
             }
             Append("[<");
-            DrawString(font, str);
+            if (font.isCoreFont) {
+                DrawAsciiString(font, str);
+            } else {
+                DrawUnicodeString(font, str);
+            }
             Append(">] TJ\n");
             buf.Length = 0;
         }

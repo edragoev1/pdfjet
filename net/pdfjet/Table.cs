@@ -206,8 +206,8 @@ public class Table {
             if (index < row.Count) {
                 Cell cell = row[index];
                 cell.SetTextAlignment(alignment);
-                if (cell.textBlock != null) {
-                    cell.textBlock.SetTextAlignment(alignment);
+                if (cell.textBox != null) {
+                    cell.textBox.SetTextAlignment(alignment);
                 }
             }
         }
@@ -224,8 +224,8 @@ public class Table {
             if (index < row.Count) {
                 Cell cell = row[index];
                 cell.SetBrushColor(color);
-                if (cell.textBlock != null) {
-                    cell.textBlock.SetBrushColor(color);
+                if (cell.textBox != null) {
+                    cell.textBox.SetBrushColor(color);
                 }
             }
         }
@@ -242,8 +242,8 @@ public class Table {
             if (index < row.Count) {
                 Cell cell = row[index];
                 cell.font = font;
-                if (cell.textBlock != null) {
-                    cell.textBlock.font = font;
+                if (cell.textBox != null) {
+                    cell.textBox.font = font;
                 }
             }
         }
@@ -259,8 +259,8 @@ public class Table {
         List<Cell> row = tableData[index];
         foreach (Cell cell in row) {
             cell.SetBrushColor(color);
-            if (cell.textBlock != null) {
-                cell.textBlock.SetBrushColor(color);
+            if (cell.textBox != null) {
+                cell.textBox.SetBrushColor(color);
             }
         }
     }
@@ -275,8 +275,8 @@ public class Table {
         List<Cell> row = tableData[index];
         foreach (Cell cell in row) {
             cell.font = font;
-            if (cell.textBlock != null) {
-                cell.textBlock.font = font;
+            if (cell.textBox != null) {
+                cell.textBox.font = font;
             }
         }
     }
@@ -783,10 +783,10 @@ public class Table {
                     catch (Exception) {
                     }
                 }
-                if (cell.textBlock != null) {
-                    String[] tokens = Regex.Split(cell.textBlock.text, @"\s+");
+                if (cell.textBox != null) {
+                    String[] tokens = Regex.Split(cell.textBox.text, @"\s+");
                     foreach (String token in tokens) {
-                        float tokenWidth = cell.textBlock.font.StringWidth(cell.textBlock.fallbackFont, token);
+                        float tokenWidth = cell.textBox.font.StringWidth(cell.textBox.fallbackFont, token);
                         tokenWidth += cell.leftPadding + cell.rightPadding;
                         if (tokenWidth > maxColWidths[j]) {
                             maxColWidths[j] = tokenWidth;
@@ -858,12 +858,12 @@ public class Table {
                 Cell cell = dataRow[j];
                 uint colspan = cell.GetColSpan();
                 if (colspan > 1) {
-                    if (cell.textBlock != null) {
+                    if (cell.textBox != null) {
                         float sumOfWidths = cell.GetWidth();
                         for (int k = 1; k < colspan; k++) {
                             sumOfWidths += dataRow[++j].GetWidth();
                         }
-                        cell.textBlock.SetWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding));
+                        cell.textBox.SetWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding));
                     }
                 }
             }

@@ -30,7 +30,10 @@ public class Token {
     public static let endDictionary = Array(">>\n".utf8);
     public static let stream = Array("stream\n".utf8)
     public static let endstream = Array("\nendstream\n".utf8)
+    public static let newobj = Array(" 0 obj\n".utf8)
     public static let endobj = Array("endobj\n".utf8)
+    public static let beginText = Array("BT\n".utf8)
+    public static let endText = Array("ET\n".utf8)
     public static let count = Array("/Count ".utf8);
     public static let length = Array("/Length ".utf8);
     public static let space: UInt8 = 32     // SPACE

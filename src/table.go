@@ -150,8 +150,8 @@ func (table *Table) SetTextAlignInColumn(index, alignment int) {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetTextAlignment(alignment)
-			if cell.textBlock != nil {
-				cell.textBlock.SetTextAlignment(alignment)
+			if cell.textBox != nil {
+				cell.textBox.SetTextAlignment(alignment)
 			}
 		}
 	}
@@ -165,8 +165,8 @@ func (table *Table) SetTextColorInColumn(index int, color int32) {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetBrushColor(color)
-			if cell.textBlock != nil {
-				cell.textBlock.SetBrushColor(color)
+			if cell.textBox != nil {
+				cell.textBox.SetBrushColor(color)
 			}
 		}
 	}
@@ -180,8 +180,8 @@ func (table *Table) SetFontInColumn(index int, font *Font) {
 		if index < len(row) {
 			cell := row[index]
 			cell.font = font
-			if cell.textBlock != nil {
-				cell.textBlock.font = font
+			if cell.textBox != nil {
+				cell.textBox.font = font
 			}
 		}
 	}
@@ -194,8 +194,8 @@ func (table *Table) SetTextColorInRow(index, color int32) {
 	row := table.tableData[index]
 	for _, cell := range row {
 		cell.SetBrushColor(color)
-		if cell.textBlock != nil {
-			cell.textBlock.SetBrushColor(color)
+		if cell.textBox != nil {
+			cell.textBox.SetBrushColor(color)
 		}
 	}
 }
@@ -207,8 +207,8 @@ func (table *Table) SetFontInRow(index int, font *Font) {
 	row := table.tableData[index]
 	for _, cell := range row {
 		cell.font = font
-		if cell.textBlock != nil {
-			cell.textBlock.font = font
+		if cell.textBox != nil {
+			cell.textBox.font = font
 		}
 	}
 }
@@ -221,8 +221,8 @@ func (table *Table) SetColumnWidth(index int, width float32) {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetWidth(width)
-			if cell.textBlock != nil {
-				cell.textBlock.SetWidth(width - (cell.leftPadding + cell.rightPadding))
+			if cell.textBox != nil {
+				cell.textBox.SetWidth(width - (cell.leftPadding + cell.rightPadding))
 			}
 		}
 	}
@@ -638,10 +638,10 @@ func (table *Table) AutoAdjustColumnWidths() {
 					maxColWidths[j] = barcodeWidth
 				}
 			}
-			if cell.textBlock != nil {
-				tokens := strings.Fields(cell.textBlock.text)
+			if cell.textBox != nil {
+				tokens := strings.Fields(cell.textBox.text)
 				for _, token := range tokens {
-					tokenWidth := cell.textBlock.font.StringWidth(cell.textBlock.fallbackFont, token)
+					tokenWidth := cell.textBox.font.StringWidth(cell.textBox.fallbackFont, token)
 					tokenWidth += cell.leftPadding + cell.rightPadding
 					if tokenWidth > maxColWidths[j] {
 						maxColWidths[j] = tokenWidth
@@ -714,13 +714,13 @@ func (table *Table) AutoResizeColumnsWithColspanBiggerThanOne() {
 			cell := dataRow[j]
 			colspan := cell.GetColSpan()
 			if colspan > 1 {
-				if cell.textBlock != nil {
+				if cell.textBox != nil {
 					sumOfWidths := cell.GetWidth()
 					for k := 1; k < colspan; k++ {
 						j++
 						sumOfWidths += dataRow[j].GetWidth()
 					}
-					cell.textBlock.SetWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding))
+					cell.textBox.SetWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding))
 				}
 			}
 		}

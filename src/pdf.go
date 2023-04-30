@@ -681,7 +681,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 		pdf.appendString("/Parent ")
 		pdf.appendInteger(pdf.pagesObjNumber)
 		pdf.appendString(" 0 R\n")
-		pdf.appendString("/MediaBox [0.0 0.0 ")
+		pdf.appendString("/MediaBox [0 0 ")
 		pdf.appendFloat32(page.width)
 		pdf.appendString(" ")
 		pdf.appendFloat32(page.height)
@@ -1723,7 +1723,6 @@ func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
 			pdf.objOffsets = append(pdf.objOffsets, pdf.byteCount)
 			pdf.appendInteger(obj.number)
 			pdf.appendString(" 0 obj\n")
-
 			if obj.dict != nil {
 				for _, token := range obj.dict {
 					pdf.appendString(token)
@@ -1740,11 +1739,9 @@ func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
 				pdf.appendByteArray(obj.stream)
 				pdf.appendString("\nendstream\n")
 			}
-
 			pdf.appendString("endobj\n")
 		} else {
 			pdf.objOffsets = append(pdf.objOffsets, pdf.byteCount)
-
 			// Uncomment to see the format of the objects.
 			// fmt.Println(obj.dict)
 			var link bool = false

@@ -247,7 +247,7 @@ class FontStream1 {
         pdf.append("/DW ")
         pdf.append(Int32(round(k * Float(font.advanceWidth![0]))))
         pdf.append(Token.newline)
-        var buffer = String("")
+        var buffer = String()
         pdf.append("/W [0[\n")
         for i in 0..<font.advanceWidth!.count {
             buffer.append(String(UInt16(round(k * Float(font.advanceWidth![i])))))

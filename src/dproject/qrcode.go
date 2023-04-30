@@ -16,6 +16,7 @@ DENSO WAVE INCORPORATED
 
 import (
 	"log"
+	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 )
@@ -281,14 +282,9 @@ func (qrcode *QRCode) createData(errorCorrectLevel int) []byte {
 	}
 
 	if buffer.getLengthInBits() > totalDataCount*8 {
-		log.Fatal("String length overflow. (" + string(buffer.getLengthInBits()) + ")")
-		/* TODO:
-			   throw new IllegalArgumentException("String length overflow. ("
-		           + buffer.getLengthInBits()
-		           + ">"
-		           +  totalDataCount * 8
-		           + ")")
-		*/
+		log.Fatal("String length overflow. (" +
+			strconv.Itoa(buffer.getLengthInBits()) + ">" +
+			strconv.Itoa(totalDataCount*8) + ")")
 	}
 
 	if buffer.getLengthInBits()+4 <= totalDataCount*8 {

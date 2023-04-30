@@ -49,7 +49,7 @@ func Example08() {
 	table.SetCellBordersWidth(0.0)
 	table.SetTextColorInRow(12, color.Blue)
 	table.SetTextColorInRow(13, color.Red)
-	table.GetCellAt(13, 0).GetTextBlock().SetURIAction("http://pdfjet.com")
+	table.GetCellAt(13, 0).GetTextBox().SetURIAction("http://pdfjet.com")
 	table.SetFontInRow(14, f3)
 	table.GetCellAt(21, 0).SetColSpan(6)
 	table.GetCellAt(21, 6).SetColSpan(2)
@@ -85,13 +85,11 @@ func Example08() {
 
 func getTextData(fileName, delimiter string) [][]string {
 	tableTextData := make([][]string, 0)
-
 	f, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
-
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -105,7 +103,6 @@ func getTextData(fileName, delimiter string) [][]string {
 		}
 		tableTextData = append(tableTextData, cols)
 	}
-
 	return tableTextData
 }
 
@@ -138,13 +135,14 @@ func getData(
 					cell.SetTextAlignment(align.Center)
 					cell.SetColSpan(8)
 				} else {
-					textBlock := pdfjet.NewTextBlock(f2, text)
+					textBox := pdfjet.NewTextBox(f2)
+					textBox.SetText(text)
 					if i == 0 {
-						textBlock.SetTextAlignment(align.Left)
+						textBox.SetTextAlignment(align.Left)
 					} else {
-						textBlock.SetTextAlignment(align.Right)
+						textBox.SetTextAlignment(align.Right)
 					}
-					cell.SetTextBlock(textBlock)
+					cell.SetTextBox(textBox)
 				}
 			}
 			row = append(row, cell)

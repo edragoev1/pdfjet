@@ -43,7 +43,6 @@ type Cell struct {
 	text              *string
 	image             *Image
 	barCode           *BarCode
-	textBlock         *TextBlock
 	point             *Point
 	compositeTextLine *CompositeTextLine
 	textBox           *TextBox
@@ -156,11 +155,6 @@ func (cell *Cell) SetBarcode(barCode *BarCode) {
 	cell.barCode = barCode
 }
 
-// SetTextBlock -- TODO:
-func (cell *Cell) SetTextBlock(textBlock *TextBlock) {
-	cell.textBlock = textBlock
-}
-
 // SetPoint sets the point inside this cell.
 // See the Point class and Example_09 for more information.
 func (cell *Cell) SetPoint(point *Point) {
@@ -200,8 +194,8 @@ func (cell *Cell) SetTextBox(textBox *TextBox) {
 // @param width the specified width.
 func (cell *Cell) SetWidth(width float32) {
 	cell.width = width
-	if cell.textBlock != nil {
-		cell.textBlock.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
+	if cell.textBox != nil {
+		cell.textBox.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
 	}
 }
 
@@ -263,8 +257,8 @@ func (cell *Cell) GetHeight() float32 {
 		}
 	}
 
-	if cell.textBlock != nil {
-		height := cell.textBlock.DrawOn(nil)[1] + cell.topPadding + cell.bottomPadding
+	if cell.textBox != nil {
+		height := cell.textBox.DrawOn(nil)[1] + cell.topPadding + cell.bottomPadding
 		if height > cellHeight {
 			cellHeight = height
 		}
@@ -480,9 +474,9 @@ func (cell *Cell) Paint(page *Page, x, y, w, h float32) {
 			cell.barCode.drawOnPageAtLocation(page, (x+w)-(barcodeWidth+cell.leftPadding), y+cell.topPadding)
 		}
 	}
-	if cell.textBlock != nil {
-		cell.textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-		cell.textBlock.DrawOn(page)
+	if cell.textBox != nil {
+		cell.textBox.SetLocation(x+cell.leftPadding, y+cell.topPadding)
+		cell.textBox.DrawOn(page)
 	}
 	cell.drawBorders(page, x, y, w, h)
 	if cell.text != nil {
@@ -724,7 +718,7 @@ func (cell *Cell) getNumVerCells() int {
 	return n
 }
 
-// GetTextBlock -- TODO:
-func (cell *Cell) GetTextBlock() *TextBlock {
-	return cell.textBlock
+// GetTextBox -- TODO:
+func (cell *Cell) GetTextBox() *TextBox {
+	return cell.textBox
 }

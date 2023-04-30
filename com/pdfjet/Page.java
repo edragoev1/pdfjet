@@ -332,12 +332,10 @@ public class Page {
         if (str == null || str.equals("")) {
             return;
         }
-
         append("BT\n");
         if (font.fontID == null) {
             setTextFont(font);
-        }
-        else {
+        } else {
             append('/');
             append(font.fontID);
             append(' ');
@@ -373,24 +371,18 @@ public class Page {
         append(" Tm\n");
 
         if (colors == null) {
+            setBrushColor(brush);
             append("[<");
-            drawString(font, str);
+            if (font.isCoreFont) {
+                drawAsciiString(font, str);
+            } else {
+                drawUnicodeString(font, str);
+            }
             append(">] TJ\n");
-        }
-        else {
+        } else {
             drawColoredString(font, str, brush, colors);
         }
-
         append("ET\n");
-    }
-
-    private void drawString(Font font, String str) {
-        if (font.isCoreFont) {
-            drawAsciiString(font, str);
-        }
-        else {
-            drawUnicodeString(font, str);
-        }
     }
 
     private void drawAsciiString(Font font, String str) {
@@ -428,13 +420,11 @@ public class Page {
                 }
                 if (c1 < font.firstChar || c1 > font.lastChar) {
                     append(String.format("%04X", 0x0020));
-                }
-                else {
+                } else {
                     append(String.format("%04X", c1));
                 }
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < str.length(); i++) {
                 int c1 = str.charAt(i);
                 if (c1 == 0xFEFF) {     // BOM marker
@@ -442,8 +432,7 @@ public class Page {
                 }
                 if (c1 < font.firstChar || c1 > font.lastChar) {
                     append(String.format("%04X", font.unicodeToGID[0x0020]));
-                }
-                else {
+                } else {
                     append(String.format("%04X", font.unicodeToGID[c1]));
                 }
             }
@@ -1502,7 +1491,11 @@ public class Page {
                 setBrushColor(color);
             }
             append("[<");
-            drawString(font, str);
+            if (font.isCoreFont) {
+                drawAsciiString(font, str);
+            } else {
+                drawUnicodeString(font, str);
+            }
             append(">] TJ\n");
             buf.setLength(0);
         }

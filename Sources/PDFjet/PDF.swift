@@ -140,11 +140,11 @@ public class PDF {
     func newobj() {
         objOffset.append(byteCount)
         append(objOffset.count)
-        append(" 0 obj\n")
+        append(Token.newobj)
     }
 
     func endobj() {
-        append("endobj\n")
+        append(Token.endobj)
     }
 
     func getObjNumber() -> Int {
@@ -168,8 +168,7 @@ public class PDF {
             sb.append("</rdf:Alt>\n");
             sb.append("</xmpRights:UsageTerms>\n");
             sb.append("</rdf:Description>\n");
-        }
-        else {
+        } else {
             sb.append("<rdf:Description rdf:about=\"\"\n");
             sb.append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n");
             sb.append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
@@ -181,28 +180,22 @@ public class PDF {
             sb.append("  <dc:format>application/pdf</dc:format>\n");
             if compliance == Compliance.PDF_UA {
                 sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
-            }
-            else if compliance == Compliance.PDF_A_1A {
+            } else if compliance == Compliance.PDF_A_1A {
                 sb.append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
-            }
-            else if compliance == Compliance.PDF_A_1B {
+            } else if compliance == Compliance.PDF_A_1B {
                 sb.append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
-            }
-            else if compliance == Compliance.PDF_A_2A {
+            } else if compliance == Compliance.PDF_A_2A {
                 sb.append("  <pdfaid:part>2</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
-            }
-            else if compliance == Compliance.PDF_A_2B {
+            } else if compliance == Compliance.PDF_A_2B {
                 sb.append("  <pdfaid:part>2</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
-            }
-            else if compliance == Compliance.PDF_A_3A {
+            } else if compliance == Compliance.PDF_A_3A {
                 sb.append("  <pdfaid:part>3</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
-            }
-            else if compliance == Compliance.PDF_A_3B {
+            } else if compliance == Compliance.PDF_A_3B {
                 sb.append("  <pdfaid:part>3</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
@@ -326,8 +319,7 @@ public class PDF {
                 append(token)
                 if token == "R" {
                     append("\n")
-                }
-                else {
+                } else {
                     append(" ")
                 }
             }
@@ -502,8 +494,7 @@ public class PDF {
                     append(element.annotation!.objNumber)
                     append(" 0 R\n")
                     append(">>\n")
-                }
-                else {
+                } else {
                     append("/K ")
                     append(element.mcid)
                     append("\n")
@@ -726,7 +717,6 @@ public class PDF {
             endobj()
         }
     }
-
 /*
     // Use this method on systems that don't have Deflater stream or when troubleshooting.
     private func addPageContent(_ page: inout Page) {
@@ -743,7 +733,6 @@ public class PDF {
         page.contents.append(getObjNumber())
     }
 */
-
     private func addPageContent(_ page: inout Page) {
         var buffer = [UInt8]()
         // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
@@ -754,16 +743,16 @@ public class PDF {
         page.buf.removeAll()   // Release the page content memory!
 
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         // append("/Filter /LZWDecode\n")
         append("/Filter /FlateDecode\n")
         append("/Length ")
         append(buffer.count)
-        append("\n")
-        append(">>\n")
-        append("stream\n")
+        append(Token.newline)
+        append(Token.endDictionary)
+        append(Token.stream)
         append(buffer)
-        append("\nendstream\n")
+        append(Token.endstream)
         endobj()
         page.contents.append(getObjNumber())
     }
@@ -791,8 +780,7 @@ public class PDF {
             append("/Name /")
             append(annot.fileAttachment!.icon)
             append("\n")
-        }
-        else {
+        } else {
             append("/Subtype /Link\n")
         }
         append("/Rect [")
@@ -813,8 +801,7 @@ public class PDF {
             append(annot.uri!)
             append(")\n")
             append(">>\n")
-        }
-        else if annot.key != nil {
+        } else if annot.key != nil {
             let destination = destinations[annot.key!]
             if destination != nil {
                 append("/F 4\n")    // No Zoom
@@ -1582,8 +1569,7 @@ public class PDF {
             let object = objects[number - 1]
             if isPageObject(object) {
                 pages.append(object)
-            }
-            else {
+            } else {
                 getPageObjects(object, &pages, objects)
             }
         }
@@ -1615,15 +1601,13 @@ public class PDF {
                     let token = dict[i]
                     if token == "<<" {
                         level += 1
-                    }
-                    else if token == ">>" {
+                    } else if token == ">>" {
                         level -= 1
                     }
                     buf.append(token)
                     if level > 0 {
                         buf.append(" ")
-                    }
-                    else {
+                    } else {
                         buf.append("\n")
                     }
                 }

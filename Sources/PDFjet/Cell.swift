@@ -23,37 +23,30 @@ SOFTWARE.
 */
 import Foundation
 
-
 /**
  *  Used to create table cell objects.
  *  See the Table class for more information.
  *
  */
 public class Cell {
-
     var font: Font?
     var fallbackFont: Font?
     var text: String?
     var image: Image?
     var barCode: BarCode?
-    var textBlock: TextBlock?
+    var textBox: TextBox?
     var point: Point?
     var compositeTextLine: CompositeTextLine?
     var drawable: Drawable?
-
     var width: Float = 50.0
-
     var topPadding: Float = 2.0
     var bottomPadding: Float = 2.0
     var leftPadding: Float = 2.0
     var rightPadding: Float = 2.0
-
     var lineWidth: Float = 0.2
-
     private var background: Int32?
     private var pen: Int32 = Color.black
     private var brush: Int32 = Color.black
-
     // Cell properties
     // Colspan:
     // bits 0 to 15
@@ -72,9 +65,7 @@ public class Cell {
     // bits 24 to 31
     private var properties: UInt32 = 0x000F0001
     private var uri: String?
-
     private var valign = Align.TOP
-
 
     /**
      *  Creates a cell object and sets the font.
@@ -84,7 +75,6 @@ public class Cell {
     public init(_ font: Font) {
         self.font = font
     }
-
 
     /**
      *  Creates a cell object and sets the font and the cell text.
@@ -96,7 +86,6 @@ public class Cell {
         self.font = font
         self.text = text
     }
-
 
     /**
      *  Creates a cell object and sets the font, fallback font and the cell text.
@@ -111,7 +100,6 @@ public class Cell {
         self.text = text
     }
 
-
     /**
      *  Sets the font for this cell.
      *
@@ -120,7 +108,6 @@ public class Cell {
     public func setFont(_ font: Font?) {
         self.font = font
     }
-
 
     /**
      *  Sets the fallback font for this cell.
@@ -131,7 +118,6 @@ public class Cell {
         self.fallbackFont = fallbackFont
     }
 
-
     /**
      *  Returns the font used by this cell.
      *
@@ -141,7 +127,6 @@ public class Cell {
         return self.font
     }
 
-
     /**
      *  Returns the fallback font used by this cell.
      *
@@ -150,7 +135,6 @@ public class Cell {
     public func getFallbackFont() -> Font? {
         return self.fallbackFont
     }
-
 
     /**
      *  Sets the cell text.
@@ -163,7 +147,6 @@ public class Cell {
         return self
     }
 
-
     /**
      *  Returns the cell text.
      *
@@ -172,7 +155,6 @@ public class Cell {
     public func getText() -> String? {
         return self.text
     }
-
 
     /**
      *  Sets the image inside this cell.
@@ -185,7 +167,6 @@ public class Cell {
         return self
     }
 
-
     /**
      *  Returns the cell image.
      *
@@ -195,16 +176,13 @@ public class Cell {
         return self.image
     }
 
-
     public func setBarcode(_ barCode: BarCode) {
         self.barCode = barCode
     }
 
-
-    public func setTextBlock(_ textBlock: TextBlock) {
-        self.textBlock = textBlock;
+    public func setTextBox(_ textBox: TextBox) {
+        self.textBox = textBox;
     }
-
 
     /**
      *  Sets the point inside this cell.
@@ -218,7 +196,6 @@ public class Cell {
         return self
     }
 
-
     /**
      *  Returns the cell point.
      *
@@ -227,7 +204,6 @@ public class Cell {
     public func getPoint() -> Point? {
         return self.point
     }
-
 
     /**
      * Sets the composite text object.
@@ -238,7 +214,6 @@ public class Cell {
         self.compositeTextLine = compositeTextLine
     }
 
-
     /**
      * Returns the composite text object.
      *
@@ -247,7 +222,6 @@ public class Cell {
     public func getCompositeTextLine() -> CompositeTextLine? {
         return self.compositeTextLine
     }
-
 
     /**
      * Sets the drawable object.
@@ -258,7 +232,6 @@ public class Cell {
         self.drawable = drawable
     }
 
-
     /**
      * Returns the drawable object.
      *
@@ -268,7 +241,6 @@ public class Cell {
         return self.drawable
     }
 
-
     /**
      *  Sets the width of this cell.
      *
@@ -276,11 +248,10 @@ public class Cell {
      */
     public func setWidth(_ width: Float) {
         self.width = width
-        if self.textBlock != nil {
-            self.textBlock!.setWidth(self.width - (self.leftPadding + self.rightPadding))
+        if self.textBox != nil {
+            self.textBox!.setWidth(self.width - (self.leftPadding + self.rightPadding))
         }
     }
-
 
     /**
      *  Returns the cell width.
@@ -291,7 +262,6 @@ public class Cell {
         return self.width
     }
 
-
     /**
      *  Sets the top padding of this cell.
      *
@@ -300,7 +270,6 @@ public class Cell {
     public func setTopPadding(_ padding: Float) {
         self.topPadding = padding
     }
-
 
     /**
      *  Sets the bottom padding of this cell.
@@ -311,7 +280,6 @@ public class Cell {
         self.bottomPadding = padding
     }
 
-
     /**
      *  Sets the left padding of this cell.
      *
@@ -321,7 +289,6 @@ public class Cell {
         self.leftPadding = padding
     }
 
-
     /**
      *  Sets the right padding of this cell.
      *
@@ -330,7 +297,6 @@ public class Cell {
     public func setRightPadding(_ padding: Float) {
         self.rightPadding = padding
     }
-
 
     /**
      *  Sets the top, bottom, left and right paddings of this cell.
@@ -344,7 +310,6 @@ public class Cell {
         self.rightPadding = padding
     }
 
-
     /**
      *  Returns the cell height.
      *
@@ -352,35 +317,30 @@ public class Cell {
      */
     public func getHeight() -> Float {
         var cellHeight = Float(0.0)
-
         if image != nil {
             let height = image!.getHeight() + topPadding + bottomPadding
             if height > cellHeight {
                 cellHeight = height
             }
         }
-
         if barCode != nil {
             let height = barCode!.getHeight() + topPadding + bottomPadding
             if height > cellHeight {
                 cellHeight = height
             }
         }
-
-        if textBlock != nil {
-            let height = textBlock!.drawOn(nil)[1] + topPadding + bottomPadding;
+        if textBox != nil {
+            let height = textBox!.drawOn(nil)[1] + topPadding + bottomPadding;
             if height > cellHeight {
                 cellHeight = height
             }
         }
-
         if drawable != nil {
             let height = drawable!.drawOn(nil)[1] + topPadding + bottomPadding
             if height > cellHeight {
                 cellHeight = height
             }
         }
-
         if text != nil {
             var fontHeight = font!.getHeight()
             if fallbackFont != nil && fallbackFont!.getHeight() > fontHeight {
@@ -391,10 +351,8 @@ public class Cell {
                 cellHeight = height
             }
         }
-
         return cellHeight
     }
-
 
     /**
      * Sets the border line width.
@@ -405,7 +363,6 @@ public class Cell {
         self.lineWidth = lineWidth
     }
 
-
     /**
      * Returns the border line width.
      *
@@ -414,7 +371,6 @@ public class Cell {
     public func getLineWidth() -> Float {
         return self.lineWidth
     }
-
 
     /**
      *  Sets the background to the specified color.
@@ -425,7 +381,6 @@ public class Cell {
         self.background = color
     }
 
-
     /**
      *  Returns the background color of this cell.
      *
@@ -433,7 +388,6 @@ public class Cell {
     public func getBgColor() -> Int32? {
         return self.background
     }
-
 
     /**
      *  Sets the pen color.
@@ -444,7 +398,6 @@ public class Cell {
         self.pen = color
     }
 
-
     /**
      *  Returns the pen color.
      *
@@ -452,7 +405,6 @@ public class Cell {
     public func getPenColor() -> Int32 {
         return pen
     }
-
 
     /**
      *  Sets the brush color.
@@ -463,7 +415,6 @@ public class Cell {
         self.brush = color
     }
 
-
     /**
      *  Returns the brush color.
      *
@@ -472,7 +423,6 @@ public class Cell {
     public func getBrushColor() -> Int32 {
         return brush
     }
-
 
     /**
      *  Sets the pen and brush colors to the specified color.
@@ -484,16 +434,13 @@ public class Cell {
         self.brush = color
     }
 
-
     func setProperties(_ properties: UInt32) {
         self.properties = properties
     }
 
-
     func getProperties() -> UInt32 {
         return self.properties
     }
-
 
     /**
      *  Sets the column span private variable.
@@ -505,7 +452,6 @@ public class Cell {
         self.properties |= (colspan & 0x0000FFFF)
     }
 
-
     /**
      *  Returns the column span private variable value.
      *
@@ -515,7 +461,6 @@ public class Cell {
         return (self.properties & 0x0000FFFF)
     }
 
-
     /**
      *  Sets the cell border object.
      *
@@ -524,12 +469,10 @@ public class Cell {
     public func setBorder(_ border: UInt32, _ visible: Bool) {
         if visible {
             self.properties |= border
-        }
-        else {
+        } else {
             self.properties &= (~border & 0x00FFFFFF)
         }
     }
-
 
     /**
      *  Returns the cell border object.
@@ -540,7 +483,6 @@ public class Cell {
         return (self.properties & border) != 0
     }
 
-
     /**
      *  Sets all border object parameters to false.
      *  This cell will have no borders when drawn on the page.
@@ -548,7 +490,6 @@ public class Cell {
     public func setNoBorders() {
         self.properties &= 0x00F0FFFF
     }
-
 
     /**
      *  Sets the cell text alignment.
@@ -561,7 +502,6 @@ public class Cell {
         self.properties |= (alignment & 0x00300000)
     }
 
-
     /**
      *  Returns the text alignment.
      *
@@ -570,7 +510,6 @@ public class Cell {
     public func getTextAlignment() -> UInt32{
         return (self.properties & 0x00300000)
     }
-
 
     /**
      *  Sets the cell text vertical alignment.
@@ -582,7 +521,6 @@ public class Cell {
         self.valign = alignment
     }
 
-
     /**
      *  Returns the cell text vertical alignment.
      *
@@ -591,7 +529,6 @@ public class Cell {
     public func getVerTextAlignment() -> UInt32 {
         return self.valign
     }
-
 
     /**
      *  Sets the underline text parameter.
@@ -608,7 +545,6 @@ public class Cell {
         }
     }
 
-
     /**
      * Returns the underline text parameter.
      *
@@ -617,7 +553,6 @@ public class Cell {
     public func getUnderline() -> Bool {
         return (properties & 0x00400000) != 0
     }
-
 
     /**
      * Sets the strikeout text parameter.
@@ -633,7 +568,6 @@ public class Cell {
         }
     }
 
-
     /**
      * Returns the strikeout text parameter.
      *
@@ -643,11 +577,9 @@ public class Cell {
         return (properties & 0x00800000) != 0
     }
 
-
     public func setURIAction(_ uri: String) {
         self.uri = uri
     }
-
 
     /**
      *  Draws the point, text and borders of this cell.
@@ -666,12 +598,10 @@ public class Cell {
             if (getTextAlignment() == Align.LEFT) {
                 image!.setLocation(x + leftPadding, y + topPadding)
                 image!.drawOn(page);
-            }
-            else if (getTextAlignment() == Align.CENTER) {
+            } else if (getTextAlignment() == Align.CENTER) {
                 image!.setLocation((x + w/2.0) - image!.getWidth()/2.0, y + topPadding)
                 image!.drawOn(page)
-            }
-            else if (getTextAlignment() == Align.RIGHT) {
+            } else if (getTextAlignment() == Align.RIGHT) {
                 image!.setLocation((x + w) - (image!.getWidth() + leftPadding), y + topPadding)
                 image!.drawOn(page)
             }
@@ -679,19 +609,17 @@ public class Cell {
         if barCode != nil {
             if (getTextAlignment() == Align.LEFT) {
                 barCode!.drawOnPageAtLocation(page, x + leftPadding, y + topPadding)
-            }
-            else if (getTextAlignment() == Align.CENTER) {
+            } else if (getTextAlignment() == Align.CENTER) {
                 let barcodeWidth = barCode!.drawOn(nil)[0]
                 barCode!.drawOnPageAtLocation(page, (x + w/2.0) - barcodeWidth/2.0, y + topPadding)
-            }
-            else if (getTextAlignment() == Align.RIGHT) {
+            } else if (getTextAlignment() == Align.RIGHT) {
                 let barcodeWidth = barCode!.drawOn(nil)[0]
                 barCode!.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding)
             }
         }
-        if textBlock != nil {
-            textBlock!.setLocation(x + leftPadding, y + topPadding)
-            textBlock!.drawOn(page)
+        if textBox != nil {
+            textBox!.setLocation(x + leftPadding, y + topPadding)
+            textBox!.drawOn(page)
         }
         drawBorders(page, x, y, w, h)
         if text != nil && text != "" {
@@ -726,7 +654,6 @@ public class Cell {
         }
     }
 
-
     private func drawBackground(
             _ page: Page,
             _ x: Float,
@@ -737,17 +664,14 @@ public class Cell {
         page.fillRect(x, y + lineWidth / 2, cellW, cellH + lineWidth)
     }
 
-
     private func drawBorders(
             _ page: Page,
             _ x: Float,
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
-
         page.setPenColor(pen)
         page.setPenWidth(lineWidth)
-
         if getBorder(Border.TOP) &&
                 getBorder(Border.BOTTOM) &&
                 getBorder(Border.LEFT) &&
@@ -755,8 +679,7 @@ public class Cell {
             page.addBMC(StructElem.P, Single.space, Single.space)
             page.drawRect(x, y, cellW, cellH)
             page.addEMC()
-        }
-        else {
+        } else {
             let qWidth: Float = lineWidth / 4
             if getBorder(Border.TOP) {
                 page.addBMC(StructElem.P, Single.space, Single.space)
@@ -787,9 +710,7 @@ public class Cell {
                 page.addEMC()
             }
         }
-
     }
-
 
     private func drawText(
             _ page: Page,
@@ -802,20 +723,16 @@ public class Cell {
         var yText: Float?
         if valign == Align.TOP {
             yText = y + font!.ascent + self.topPadding
-        }
-        else if valign == Align.CENTER {
+        } else if valign == Align.CENTER {
             yText = y + cellH/2 + font!.ascent/2
-        }
-        else if valign == Align.BOTTOM {
+        } else if valign == Align.BOTTOM {
             yText = (y + cellH) - self.bottomPadding
-        }
-        else {
+        } else {
             Swift.print("Invalid vertical text alignment option.")
         }
 
         page.setPenColor(pen)
         page.setBrushColor(brush)
-
         if getTextAlignment() == Align.RIGHT {
             if compositeTextLine == nil {
                 xText = (x + cellW) - (font!.stringWidth(text) + self.rightPadding)
@@ -828,16 +745,14 @@ public class Cell {
                 if getStrikeout() {
                     strikeoutText(page, font!, text!, xText!, yText!)
                 }
-            }
-            else {
+            } else {
                 xText = (x + cellW) - (compositeTextLine!.getWidth() + self.rightPadding)
                 compositeTextLine!.setLocation(xText!, yText!)
                 page.addBMC(StructElem.P, text!, text!)
                 compositeTextLine!.drawOn(page)
                 page.addEMC()
             }
-        }
-        else if getTextAlignment() == Align.CENTER {
+        } else if getTextAlignment() == Align.CENTER {
             if compositeTextLine == nil {
                 xText = x + self.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font!.stringWidth(text)) / 2)
@@ -850,8 +765,7 @@ public class Cell {
                 if getStrikeout() {
                     strikeoutText(page, font!, text!, xText!, yText!)
                 }
-            }
-            else {
+            } else {
                 xText = x + self.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - compositeTextLine!.getWidth()) / 2)
                 compositeTextLine!.setLocation(xText!, yText!)
@@ -859,8 +773,7 @@ public class Cell {
                 compositeTextLine!.drawOn(page)
                 page.addEMC()
             }
-        }
-        else if getTextAlignment() == Align.LEFT {
+        } else if getTextAlignment() == Align.LEFT {
             xText = x + self.leftPadding
             if compositeTextLine == nil {
                 page.addBMC(StructElem.P, text!, text!)
@@ -872,15 +785,13 @@ public class Cell {
                 if getStrikeout() {
                     strikeoutText(page, font!, text!, xText!, yText!)
                 }
-            }
-            else {
+            } else {
                 compositeTextLine!.setLocation(xText!, yText!)
                 page.addBMC(StructElem.P, text!, text!)
                 compositeTextLine!.drawOn(page)
                 page.addEMC()
             }
-        }
-        else {
+        } else {
             print("Invalid Text Alignment!")
         }
 
@@ -900,7 +811,6 @@ public class Cell {
         }
     }
 
-
     private func underlineText(
             _ page: Page, _ font: Font, _ text: String, _ x: Float, _ y: Float) {
         page.addBMC(StructElem.P, "underline", "underline")
@@ -911,7 +821,6 @@ public class Cell {
         page.addEMC()
     }
 
-
     private func strikeoutText(
             _ page: Page, _ font: Font, _ text: String, _ x: Float, _ y: Float) {
         page.addBMC(StructElem.P, "strike out", "strike out")
@@ -921,7 +830,6 @@ public class Cell {
         page.strokePath()
         page.addEMC()
     }
-
 
     /**
      *  Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
@@ -950,8 +858,7 @@ public class Cell {
                             (getWidth() - (self.leftPadding + self.rightPadding)) {
                         sb = String(token)
                         n += 1
-                    }
-                    else {
+                    } else {
                         if i > 0 {
                             sb.append(" ")
                         }
@@ -965,9 +872,7 @@ public class Cell {
         return n
     }
 
-
-    public func getTextBlock() -> TextBlock? {
-        return textBlock
+    public func getTextBox() -> TextBox? {
+        return textBox
     }
-
 }   // End of Cell.swift

@@ -32,10 +32,8 @@ namespace PDFjet.NET {
 /**
  *  Used to create PDF objects that represent PDF documents.
  *
- *
  */
 public class PDF {
-
     private bool eval = false;
 
     internal int metadataObjNumber = 0;
@@ -70,7 +68,6 @@ public class PDF {
     internal List<String> importedFonts = new List<String>();
     internal String extGState = "";
 
-
     /**
      * The default constructor - use when reading PDF files.
      */
@@ -78,9 +75,7 @@ public class PDF {
         this.uuid = (new Salsa20()).GetID();
     }
 
-
     public PDF(Stream os) : this(os, 0) {}
-
 
     // Here is the layout of the PDF document:
     //
@@ -135,23 +130,19 @@ public class PDF {
         Append('\n');
     }
 
-
     internal void Newobj() {
         objOffset.Add(byteCount);
         Append(objOffset.Count);
         Append(" 0 obj\n");
     }
 
-
     internal void Endobj() {
         Append("endobj\n");
     }
 
-
     internal int GetObjNumber() {
         return objOffset.Count;
     }
-
 
     internal int AddMetadataObject(String notice, bool fontMetadataObject) {
         StringBuilder sb = new StringBuilder();
@@ -170,8 +161,7 @@ public class PDF {
             sb.Append("</rdf:Alt>\n");
             sb.Append("</xmpRights:UsageTerms>\n");
             sb.Append("</rdf:Description>\n");
-        }
-        else {
+        } else {
             sb.Append("<rdf:Description rdf:about=\"\"\n");
             sb.Append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n");
             sb.Append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
@@ -183,28 +173,22 @@ public class PDF {
             sb.Append("  <dc:format>application/pdf</dc:format>\n");
             if (compliance == Compliance.PDF_UA) {
                 sb.Append("  <pdfuaid:part>1</pdfuaid:part>\n");
-            }
-            else if (compliance == Compliance.PDF_A_1A) {
+            } else if (compliance == Compliance.PDF_A_1A) {
                 sb.Append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
-            }
-            else if (compliance == Compliance.PDF_A_1B) {
+            } else if (compliance == Compliance.PDF_A_1B) {
                 sb.Append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
-            }
-            else if (compliance == Compliance.PDF_A_2A) {
+            } else if (compliance == Compliance.PDF_A_2A) {
                 sb.Append("  <pdfaid:part>2</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
-            }
-            else if (compliance == Compliance.PDF_A_2B) {
+            } else if (compliance == Compliance.PDF_A_2B) {
                 sb.Append("  <pdfaid:part>2</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
-            }
-            else if (compliance == Compliance.PDF_A_3A) {
+            } else if (compliance == Compliance.PDF_A_3A) {
                 sb.Append("  <pdfaid:part>3</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
-            }
-            else if (compliance == Compliance.PDF_A_3B) {
+            } else if (compliance == Compliance.PDF_A_3B) {
                 sb.Append("  <pdfaid:part>3</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
             }
@@ -281,7 +265,6 @@ public class PDF {
         return GetObjNumber();
     }
 
-
     private int AddOutputIntentObject() {
         Newobj();
         Append("<<\n");
@@ -315,7 +298,6 @@ public class PDF {
         return GetObjNumber();
     }
 
-
     private int AddResourcesObject() {
         Newobj();
         Append("<<\n");
@@ -330,8 +312,7 @@ public class PDF {
                 Append(token);
                 if (token.Equals("R")) {
                     Append('\n');
-                }
-                else {
+                } else {
                     Append(' ');
                 }
             }
@@ -391,7 +372,6 @@ public class PDF {
         return GetObjNumber();
     }
 
-
     private int AddPagesObject() {
         Newobj();
         Append("<<\n");
@@ -413,7 +393,6 @@ public class PDF {
         Endobj();
         return GetObjNumber();
     }
-
 
     private int AddInfoObject() {
         // Add the info object
@@ -442,7 +421,6 @@ public class PDF {
         return GetObjNumber();
     }
 
-
     private int AddStructTreeRootObject() {
         Newobj();
         Append("<<\n");
@@ -458,7 +436,6 @@ public class PDF {
         Endobj();
         return GetObjNumber();
     }
-
 
     private int AddStructDocumentObject(int parent) {
         Newobj();
@@ -480,7 +457,6 @@ public class PDF {
         Endobj();
         return GetObjNumber();
     }
-
 
     private void AddStructElementObjects() {
         int structTreeRootObjNumber = GetObjNumber() + 1;
@@ -536,7 +512,6 @@ public class PDF {
         }
     }
 
-
     private String ToHex(String str) {
         StringBuilder buf = new StringBuilder();
         if (str != null) {
@@ -544,10 +519,9 @@ public class PDF {
             for (int i = 0; i < str.Length; i++) {
                 buf.Append(((int) str[i]).ToString("X4"));
             }
-    }
+        }
         return buf.ToString();
     }
-
 
     private void AddNumsParentTree() {
         Newobj();
@@ -582,7 +556,6 @@ public class PDF {
         Append(">>\n");
         Endobj();
     }
-
 
     private int AddRootObject(int structTreeRootObjNumber, int outlineDictNum) {
         // Add the root object
@@ -648,7 +621,6 @@ public class PDF {
         return GetObjNumber();
     }
 
-
     private void AddPageBox(String boxName, Page page, float[] rect) {
         Append("/");
         Append(boxName);
@@ -662,7 +634,6 @@ public class PDF {
         Append(page.height - rect[1]);
         Append("]\n");
     }
-
 
     private void SetDestinationObjNumbers() {
         int numberOfAnnotations = 0;
@@ -679,7 +650,6 @@ public class PDF {
             }
         }
     }
-
 
     private void AddAllPages(int resObjNumber) {
         SetDestinationObjNumbers();
@@ -699,7 +669,7 @@ public class PDF {
             Append("/Parent ");
             Append(pagesObjNumber);
             Append(" 0 R\n");
-            Append("/MediaBox [0.0 0.0 ");
+            Append("/MediaBox [0 0 ");
             Append(page.width);
             Append(' ');
             Append(page.height);
@@ -747,7 +717,6 @@ public class PDF {
             Endobj();
         }
     }
-
 
     private void AddPageContent(Page page) {
         if (eval && fonts.Count > 0) {
@@ -799,7 +768,6 @@ public class PDF {
         Endobj();
         page.contents.Add(GetObjNumber());
     }
-
 /*
 Use this method on systems that don't have Deflater stream or when troubleshooting.
     private void AddPageContent(Page page) {
@@ -817,7 +785,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         page.contents.Add(GetObjNumber());
     }
 */
-
     private int AddAnnotationObject(Annotation annot, int index) {
         Newobj();
         annot.objNumber = GetObjNumber();
@@ -837,8 +804,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             Append("/Name /");
             Append(annot.fileAttachment.icon);
             Append("\n");
-        }
-        else {
+        } else {
             Append("/Subtype /Link\n");
         }
         Append("/Rect [");
@@ -859,8 +825,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             Append(annot.uri);
             Append(")\n");
             Append(">>\n");
-        }
-        else if (annot.key != null) {
+        } else if (annot.key != null) {
             Destination destination = destinations[annot.key];
             if (destination != null) {
                 Append("/F 4\n");
@@ -882,7 +847,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return index;
     }
 
-
     private void AddAnnotDictionaries() {
         int index = pages.Count;
         for (int i = 0; i < pages.Count; i++) {
@@ -894,8 +858,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                         AddAnnotationObject(element.annotation, index);
                     }
                 }
-            }
-            else if (page.annots.Count > 0) {
+            } else if (page.annots.Count > 0) {
                 for (int j = 0; j < page.annots.Count; j++) {
                     Annotation annotation = page.annots[j];
                     if (annotation != null) {
@@ -905,7 +868,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             }
         }
     }
-
 
     private void AddOCProperties() {
         if (groups.Count > 0) {
@@ -944,7 +906,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         }
     }
 
-
     public void AddPage(Page page) {
         int n = pages.Count;
         if (n > 0) {
@@ -953,14 +914,12 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         pages.Add(page);
     }
 
-
     /**
      *  Writes the PDF object to the output stream and closes it.
      */
     public void Close() {
         Complete();
     }
-
 
     /**
      *  Writes the PDF object to the output stream.
@@ -1052,7 +1011,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         os.Close();
     }
 
-
     /**
      *  Set the "Title" document property of the PDF file.
      *  @param title The title of this document.
@@ -1060,7 +1018,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
     public void SetTitle(String title) {
         this.title = title;
     }
-
 
     /**
      *  Set the "Author" document property of the PDF file.
@@ -1070,7 +1027,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         this.author = author;
     }
 
-
     /**
      *  Set the "Subject" document property of the PDF file.
      *  @param subject The subject of this document.
@@ -1079,36 +1035,29 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         this.subject = subject;
     }
 
-
     public void SetKeywords(String keywords) {
         this.keywords = keywords;
     }
-
 
     public void SetCreator(String creator) {
         this.creator = creator;
     }
 
-
     public void SetPageLayout(String pageLayout) {
         this.pageLayout = pageLayout;
     }
-
 
     public void SetPageMode(String pageMode) {
         this.pageMode = pageMode;
     }
 
-
     internal void Append(int num) {
         Append(num.ToString());
     }
 
-
     internal void Append(float val) {
         Append(val.ToString("0.###", PDF.culture_en_us));
     }
-
 
     internal void Append(String str) {
         int len = str.Length;
@@ -1118,35 +1067,29 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         byteCount += len;
     }
 
-
     internal void Append(char ch) {
         Append((byte) ch);
     }
-
 
     internal void Append(byte b) {
         os.WriteByte(b);
         byteCount += 1;
     }
 
-
     internal void Append(byte[] buf) {
         os.Write(buf, 0, buf.Length);
         byteCount += buf.Length;
     }
-
 
     internal void Append(byte[] buf, int off, int len) {
         os.Write(buf, off, len);
         byteCount += len;
     }
 
-
     internal void Append(MemoryStream baos) {
         baos.WriteTo(os);
         byteCount += (int) baos.Length;
     }
-
 
     internal List<PDFobj> GetSortedObjects(List<PDFobj> objects) {
         List<PDFobj> sorted = new List<PDFobj>();
@@ -1180,8 +1123,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         PDFobj obj1 = GetObject(buf, xref);
         if (obj1.dict[0].Equals("xref")) {
             GetObjects1(buf, obj1, objects1);
-        }
-        else {
+        } else {
             GetObjects2(buf, obj1, objects1);
         }
 
@@ -1209,18 +1151,15 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     o3.dict.Insert(0, num);
                     objects2.Add(o3);
                 }
-            }
-            else if (obj.GetValue("/Type").Equals("/XRef")) {
+            } else if (obj.GetValue("/Type").Equals("/XRef")) {
                 // Skip the stream XRef object.
-            }
-            else {
+            } else {
                 objects2.Add(obj);
             }
         }
 
         return GetSortedObjects(objects2);
     }
-
 
     private bool Process(
             PDFobj obj, StringBuilder sb1, byte[] buf, int off) {
@@ -1232,28 +1171,23 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
 
         if (str.Equals("endobj")) {
             return true;
-        }
-        else if (str.Equals("stream")) {
+        } else if (str.Equals("stream")) {
             obj.streamOffset = off;
             if (buf[off] == '\n') {
                 obj.streamOffset += 1;
             }
             return true;
-        }
-        else if (str.Equals("startxref")) {
+        } else if (str.Equals("startxref")) {
             return true;
         }
         return false;
     }
 
-
     private PDFobj GetObject(byte[] buf, int off) {
         return GetObject(buf, off, buf.Length);
     }
 
-
     private PDFobj GetObject(byte[] buf, int off, int len) {
-
         PDFobj obj = new PDFobj();
         obj.offset = off;
         StringBuilder token = new StringBuilder();
@@ -1278,16 +1212,14 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     c1 = c2;
                     ++p;
                 }
-            }
-            else if (c2 == ')') {
+            } else if (c2 == ')') {
                 token.Append(c2);
                 c1 = c2;
                 --p;
                 if (p == 0) {
                     done = Process(obj, token, buf, off);
                 }
-            }
-            else if (c2 == 0x00         // Null
+            } else if (c2 == 0x00       // Null
                     || c2 == 0x09       // Horizontal Tab
                     || c2 == 0x0A       // Line Feed (LF)
                     || c2 == 0x0C       // Form Feed
@@ -1297,28 +1229,24 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                 if (!done) {
                     c1 = ' ';
                 }
-            }
-            else if (c2 == '/') {
+            } else if (c2 == '/') {
                 done = Process(obj, token, buf, off);
                 if (!done) {
                     token.Append(c2);
                     c1 = c2;
                 }
-            }
-            else if (c2 == '<' || c2 == '>' || c2 == '%') {
+            } else if (c2 == '<' || c2 == '>' || c2 == '%') {
                 if (p > 0) {
                     token.Append(c2);
                     c1 = c2;
-                }
-                else {
+                } else {
                     if (c2 != c1) {
                         done = Process(obj, token, buf, off);
                         if (!done) {
                             token.Append(c2);
                             c1 = c2;
                         }
-                    }
-                    else {
+                    } else {
                         token.Append(c2);
                         done = Process(obj, token, buf, off);
                         if (!done) {
@@ -1326,8 +1254,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                         }
                     }
                 }
-            }
-            else if (c2 == '[' || c2 == ']' || c2 == '{' || c2 == '}') {
+            } else if (c2 == '[' || c2 == ']' || c2 == '{' || c2 == '}') {
                 if (p > 0) {
                     token.Append(c2);
                     c1 = c2;
@@ -1339,8 +1266,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                         c1 = c2;
                     }
                 }
-            }
-            else {
+            } else {
                 token.Append(c2);
                 c1 = c2;
             }
@@ -1348,7 +1274,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
 
         return obj;
     }
-
 
     /**
      * Converts an array of bytes to an integer.
@@ -1366,12 +1291,10 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return i;
     }
 
-
     private void GetObjects1(
             byte[] buf,
             PDFobj obj,
             List<PDFobj> objects) {
-
         String xref = obj.GetValue("/Prev");
         if (!xref.Equals("")) {
             GetObjects1(
@@ -1399,15 +1322,12 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                 }
             }
         }
-
     }
-
 
     private void GetObjects2(
             byte[] buf,
             PDFobj obj,
             List<PDFobj> objects) {
-
         String prev = obj.GetValue("/Prev");
         if (!prev.Equals("")) {
             GetObjects2(
@@ -1425,11 +1345,9 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             String token = obj.dict[i];
             if (token.Equals("/Predictor")) {
                 predictor = Int32.Parse(obj.dict[i + 1]);
-            }
-            else if (token.Equals("/Length")) {
+            } else if (token.Equals("/Length")) {
                 length = Int32.Parse(obj.dict[i + 1]);
-            }
-            else if (token.Equals("/W")) {
+            } else if (token.Equals("/W")) {
                 // "/W [ 1 3 1 ]"
                 n1 = Int32.Parse(obj.dict[i + 2]);
                 n2 = Int32.Parse(obj.dict[i + 3]);
@@ -1451,8 +1369,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                 for (int j = 1; j < n; j++) {
                     entry[j] += obj.data[i + j];
                 }
-            }
-            else {
+            } else {
                 for (int j = 0; j < n; j++) {
                     entry[j] = obj.data[i + j];
                 }
@@ -1465,8 +1382,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     o2.number = Int32.Parse(o2.dict[0]);
                     objects.Add(o2);
                 }
-            }
-            else {
+            } else {
                 if (entry[0] == 1) {    // Type 1 entry
                     PDFobj o2 = GetObject(buf, ToInt(entry, n1, n2));
                     o2.number = Int32.Parse(o2.dict[0]);
@@ -1475,7 +1391,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             }
         }
     }
-
 
     private int GetStartXRef(byte[] buf) {
         StringBuilder sb = new StringBuilder();
@@ -1503,7 +1418,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return Int32.Parse(sb.ToString());
     }
 
-
     public int AddOutlineDict(Bookmark toc) {
         int numOfChildren = GetNumOfChildren(0, toc);
         Newobj();
@@ -1523,9 +1437,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return GetObjNumber();
     }
 
-
     public void AddOutlineItem(int parent, int i, Bookmark bm1) {
-
         int prev = (bm1.GetPrevBookmark() == null) ? 0 : parent + (i - 1);
         int next = (bm1.GetNextBookmark() == null) ? 0 : parent + (i + 1);
 
@@ -1581,7 +1493,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         Endobj();
     }
 
-
     private int GetNumOfChildren(int numOfChildren, Bookmark bm1) {
         List<Bookmark> children = bm1.GetChildren();
         if (children != null) {
@@ -1592,12 +1503,10 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return numOfChildren;
     }
 
-
     public void AddObjects(List<PDFobj> objects) {
         this.pagesObjNumber = Int32.Parse(GetPagesObject(objects).dict[0]);
         AddObjectsToPDF(objects);
     }
-
 
     public PDFobj GetPagesObject(List<PDFobj> objects) {
         foreach (PDFobj obj in objects) {
@@ -1609,13 +1518,11 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return null;
     }
 
-
     public List<PDFobj> GetPageObjects(List<PDFobj> objects) {
         List<PDFobj> pages = new List<PDFobj>();
         GetPageObjects(GetPagesObject(objects), objects, pages);
         return pages;
     }
-
 
     private void GetPageObjects(
             PDFobj pdfObj,
@@ -1626,13 +1533,11 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             PDFobj obj =  objects[number - 1];
             if (IsPageObject(obj)) {
                 pages.Add(obj);
-            }
-            else {
+            } else {
                 GetPageObjects(obj, objects, pages);
             }
         }
     }
-
 
     private bool IsPageObject(PDFobj obj) {
         bool isPage = false;
@@ -1644,7 +1549,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         }
         return isPage;
     }
-
 
     private String GetExtGState(PDFobj resources) {
         StringBuilder buf = new StringBuilder();
@@ -1659,15 +1563,13 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     String token = dict[++i];
                     if (token.Equals("<<")) {
                         ++level;
-                    }
-                    else if (token.Equals(">>")) {
+                    } else if (token.Equals(">>")) {
                         --level;
                     }
                     buf.Append(token);
                     if (level > 0) {
                         buf.Append(' ');
-                    }
-                    else {
+                    } else {
                         buf.Append('\n');
                     }
                 }
@@ -1676,7 +1578,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         }
         return buf.ToString();
     }
-
 
     private List<PDFobj> GetFontObjects(
             PDFobj resources, List<PDFobj> objects) {
@@ -1713,7 +1614,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return fonts;
     }
 
-
     private List<PDFobj> GetDescendantFonts(PDFobj font, List<PDFobj> objects) {
         List<PDFobj> descendantFonts = new List<PDFobj>();
         List<String> dict = font.GetDict();
@@ -1728,7 +1628,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         return descendantFonts;
     }
 
-
     private PDFobj GetObject(String name, PDFobj obj, List<PDFobj> objects) {
         List<String> dict = obj.GetDict();
         for (int i = 0; i < dict.Count; i++) {
@@ -1739,7 +1638,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         }
         return null;
     }
-
 
     public void AddResourceObjects(List<PDFobj> objects) {
         List<PDFobj> resources = new List<PDFobj>();
@@ -1784,7 +1682,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                 // Create new object.
                 objOffset.Add(byteCount);
                 Append(obj.number);
-                Append(" 0 obj\n");
+                Append(Token.newobj);
                 if (obj.dict != null) {
                     for (int i = 0; i < obj.dict.Count; i++) {
                         Append(obj.dict[i]);
@@ -1797,9 +1695,10 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                         Append(obj.stream.Length);
                         Append(" >>");
                     }
-                    Append("\nstream\n");
+                    Append(Token.newline);
+                    Append(Token.stream);
                     Append(obj.stream, 0, obj.stream.Length);
-                    Append("\nendstream\n");
+                    Append(Token.endstream);
                 }
                 Append("endobj\n");
             } else {
@@ -1812,29 +1711,26 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     Append(token);
                     if (token.StartsWith("(http:")) {
                         link = true;
-                    }
-                    else if (link == true && token.EndsWith(")")) {
+                    } else if (link == true && token.EndsWith(")")) {
                         link = false;
                     }
                     if (i < (n - 1)) {
                         if (!link) {
-                            Append(' ');
+                            Append(Token.space);
                         }
-                    }
-                    else {
-                        Append('\n');
+                    } else {
+                        Append(Token.newline);
                     }
                 }
                 if (obj.stream != null) {
                     Append(obj.stream, 0, obj.stream.Length);
-                    Append("\nendstream\n");
+                    Append(Token.endstream);
                 }
                 if (!token.Equals("endobj")) {
-                    Append("endobj\n");
+                    Append(Token.endobj);
                 }
             }
         }
     }
-
 }   // End of PDF.cs
 }   // End of namespace PDFjet.NET

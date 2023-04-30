@@ -36,7 +36,7 @@ public class Cell {
     internal String text;
     internal Image image;
     internal BarCode barCode;
-    internal TextBlock textBlock;
+    internal TextBox textBox;
     internal Point point;
     internal CompositeTextLine compositeTextLine;
     internal IDrawable drawable;
@@ -221,8 +221,8 @@ public class Cell {
         return this.drawable;
     }
 
-    public void SetTextBlock(TextBlock textBlock) {
-        this.textBlock = textBlock;
+    public void SetTextBox(TextBox textBox) {
+        this.textBox = textBox;
     }
 
     /**
@@ -232,8 +232,8 @@ public class Cell {
      */
     public void SetWidth(double width) {
         this.width = (float) width;
-        if (textBlock != null) {
-            textBlock.SetWidth(this.width - (this.leftPadding + this.rightPadding));
+        if (textBox != null) {
+            textBox.SetWidth(this.width - (this.leftPadding + this.rightPadding));
         }
     }
 
@@ -313,9 +313,9 @@ public class Cell {
                 cellHeight = height;
             }
         }
-        if (textBlock != null) {
+        if (textBox != null) {
             try {
-                float height = textBlock.DrawOn(null)[1] + topPadding + bottomPadding;
+                float height = textBox.DrawOn(null)[1] + topPadding + bottomPadding;
                 if (height > cellHeight) {
                     cellHeight = height;
                 }
@@ -584,9 +584,9 @@ public class Cell {
                 Console.WriteLine(e.ToString());
             }
         }
-        if (textBlock != null) {
-            textBlock.SetLocation(x + leftPadding, y + topPadding);
-            textBlock.DrawOn(page);
+        if (textBox != null) {
+            textBox.SetLocation(x + leftPadding, y + topPadding);
+            textBox.DrawOn(page);
         }
         DrawBorders(page, x, y, w, h);
         if (text != null && !text.Equals("")) {
@@ -824,8 +824,8 @@ public class Cell {
         return numOfVerCells;
     }
 
-    public TextBlock GetTextBlock() {
-        return textBlock;
+    public TextBox GetTextBox() {
+        return this.textBox;
     }
 }   // End of Cell.cs
 }   // End of namespace PDFjet.NET

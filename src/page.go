@@ -256,10 +256,7 @@ func (page *Page) drawString(font *Font, str string, x, y float32, brush int32, 
 	if str == "" {
 		return
 	}
-
 	appendString(&page.buf, "BT\n")
-
-	// if font.fontID == nil {
 	if font.fontID == "" {
 		page.SetTextFont(font)
 	} else {
@@ -298,6 +295,7 @@ func (page *Page) drawString(font *Font, str string, x, y float32, brush int32, 
 	appendString(&page.buf, " Tm\n")
 
 	if colors == nil {
+		page.SetBrushColor(brush)
 		appendString(&page.buf, "[<")
 		if font.isCoreFont {
 			page.drawASCIIString(font, str)
@@ -308,7 +306,6 @@ func (page *Page) drawString(font *Font, str string, x, y float32, brush int32, 
 	} else {
 		page.drawColoredString(font, str, brush, colors)
 	}
-
 	appendString(&page.buf, "ET\n")
 }
 

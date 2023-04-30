@@ -110,7 +110,7 @@ func Example73() {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-	text := contents.OfTextFile("data/chinese-text.txt")
+	text := contents.OfTextFile("data/chinese.txt")
 
 	textBox = pdfjet.NewTextBox(f1)
 	textBox.SetFallbackFont(f2)

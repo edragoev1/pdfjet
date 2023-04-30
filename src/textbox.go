@@ -59,7 +59,6 @@ type TextBox struct {
 	brush              int32
 	valign             int
 	colors             map[string]int32
-
 	// TextBox properties
 	// Future use:
 	// bits 0 to 15
@@ -77,6 +76,12 @@ type TextBox struct {
 	// Future use:
 	// bits 24 to 31
 	properties int
+
+	uri               *string
+	key               *string
+	uriLanguage       string
+	uriActualText     string
+	uriAltDescription string
 }
 
 // NewTextBox creates a text box and sets the font.
@@ -605,7 +610,18 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	if page != nil {
 		textBox.drawBorders(page)
 	}
-
+	if page != nil && (textBox.uri != nil || textBox.key != nil) {
+		page.AddAnnotation(NewAnnotation(
+			textBox.uri,
+			textBox.key, // The destination name
+			textBox.x,
+			textBox.y,
+			textBox.x+textBox.width,
+			textBox.y+textBox.height,
+			textBox.uriLanguage,
+			textBox.uriActualText,
+			textBox.uriAltDescription))
+	}
 	return [2]float32{textBox.x + textBox.width, textBox.y + textBox.height}
 }
 
@@ -631,4 +647,10 @@ func (textBox *TextBox) DrawText(
 		page.LineTo(xText+lineLength, yText-yAdjust)
 		page.StrokePath()
 	}
+}
+
+// SetURIAction -- TODO:
+func (textBlock *TextBox) SetURIAction(uri string) *TextBox {
+	textBlock.uri = &uri
+	return textBlock
 }

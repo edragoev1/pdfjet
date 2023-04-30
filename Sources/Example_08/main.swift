@@ -42,8 +42,7 @@ public class Example_08 {
         table.setCellBordersWidth(0.0)
         table.setTextColorInRow(12, Color.blue)
         table.setTextColorInRow(13, Color.red)
-        // TODO:
-        table.getCellAt(13, 0).getTextBlock()!.setURIAction("http://pdfjet.com")
+        table.getCellAt(13, 0).getTextBox()!.setURIAction("http://pdfjet.com")
         table.setFontInRow(14, f3)
         table.getCellAt(21, 0).setColSpan(6)
         table.getCellAt(21, 6).setColSpan(2)
@@ -89,11 +88,9 @@ public class Example_08 {
             var cols: [String]?
             if delimiter == "|" {
                 cols = line.components(separatedBy: "|")
-            }
-            else if delimiter == "\t" {
+            } else if delimiter == "\t" {
                 cols = line.components(separatedBy: "\t")
-            }
-            else {
+            } else {
                 print("Only pipes and tabs can be used as delimiters.")
             }
             tableTextData.append(cols!)
@@ -119,8 +116,7 @@ public class Example_08 {
             	let text = rowData[i].trim()
                 if currentRow < numOfHeaderRows {
                     row.append(Cell(f1, text))
-                }
-                else {
+                } else {
                     let cell = Cell(f2)
                     if i == 0 && currentRow == 5 {
                         cell.setImage(image)
@@ -129,16 +125,10 @@ public class Example_08 {
                         cell.setBarcode(barCode)
                         cell.setTextAlignment(Align.CENTER)
                         cell.setColSpan(8)
-                    }
-                    else {
-                        let textBlock = TextBlock(f2, text)
-                        if i == 0 {
-                            textBlock.setTextAlignment(Align.LEFT)
-                        }
-                        else {
-                            textBlock.setTextAlignment(Align.RIGHT)
-                        }
-                        cell.setTextBlock(textBlock)
+                    } else {
+                        let textBox = TextBox(f2, text)
+                        textBox.setTextAlignment((i == 0) ? Align.LEFT : Align.RIGHT)
+                        cell.setTextBox(textBox)
                     }
                     row.append(cell)
                 }

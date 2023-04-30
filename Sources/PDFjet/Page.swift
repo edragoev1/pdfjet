@@ -244,8 +244,7 @@ public class Page {
                     // Switch the font
                     if activeFont === font {
                         activeFont = fallbackFont!
-                    }
-                    else {
+                    } else {
                         activeFont = font
                     }
                 }
@@ -283,8 +282,7 @@ public class Page {
         if text == nil || text! == "" {
             return
         }
-
-        append("BT\n")
+        append(Token.beginText)
         if font.fontID == nil {
             setTextFont(font)
         } else {
@@ -323,29 +321,22 @@ public class Page {
         append(" Tm\n")
 
         if (colors == nil) {
+            setBrushColor(brush)
             append("[<")
-            drawString(font, text!)
+            if font.isCoreFont {
+                drawAsciiString(font, text!)
+            } else {
+                drawUnicodeString(font, text!)
+            }
             append(">] TJ\n")
-        }
-        else {
+        } else {
             drawColoredString(font, text!, brush, colors!);
         }
-
-        append("ET\n")
+        append(Token.endText)
     }
 
-    private final func drawString(
-            _ font: Font,
-            _ text: String) {
+    private final func drawAsciiString(_ font: Font, _ text: String) {
         let scalars = Array(text.unicodeScalars)
-        if font.isCoreFont {
-            drawAsciiString(font, scalars)
-        } else {
-            drawUnicodeString(font, scalars)
-        }
-    }
-
-    private final func drawAsciiString(_ font: Font, _ scalars: [Unicode.Scalar]) {
         for i in 0..<scalars.count {
             let c1 = scalars[i]
             if c1 < Unicode.Scalar(font.firstChar)! ||
@@ -375,25 +366,24 @@ public class Page {
         }
     }
 
-    private final func drawUnicodeString(_ font: Font, _ scalars: [Unicode.Scalar]) {
+    private final func drawUnicodeString(_ font: Font, _ text: String) {
+        let scalars = Array(text.unicodeScalars)
         if font.isCJK {
-            for i in 0..<scalars.count {
-                let c1 = scalars[i]
-                if c1 < Unicode.Scalar(font.firstChar)! ||
-                        c1 > Unicode.Scalar(font.lastChar)! {
+            for scalar in scalars {
+                if scalar < Unicode.Scalar(font.firstChar)! ||
+                        scalar > Unicode.Scalar(font.lastChar)! {
                     appendFourHexDigits(0x0020, &self.buf)
                 } else {
-                    appendFourHexDigits(Int(c1.value), &self.buf)
+                    appendFourHexDigits(Int(scalar.value), &self.buf)
                 }
             }
         } else {
-            for i in 0..<scalars.count {
-                let c1 = scalars[i]
-                if c1 < Unicode.Scalar(font.firstChar)! ||
-                        c1 > Unicode.Scalar(font.lastChar)! {
+            for scalar in scalars {
+                if scalar < Unicode.Scalar(font.firstChar)! ||
+                        scalar > Unicode.Scalar(font.lastChar)! {
                     appendFourHexDigits(font.unicodeToGID![0x0020], &self.buf)
                 } else {
-                    appendFourHexDigits(font.unicodeToGID![Int(c1.value)], &self.buf)
+                    appendFourHexDigits(font.unicodeToGID![Int(scalar.value)], &self.buf)
                 }
             }
         }
@@ -1333,7 +1323,11 @@ public class Page {
                 setBrushColor(brush)
             }
             append("[<");
-            drawString(font, str);
+            if font.isCoreFont {
+                drawAsciiString(font, str)
+            } else {
+                drawUnicodeString(font, str)
+            }
             append(">] TJ\n");
             str = ""
         }
@@ -1494,16 +1488,16 @@ public class Page {
     }
 
     func appendTwoHexDigits(_ number: Int, _ buffer: inout [UInt8]) {
-        let index = 2 * (number & 0xFF)
+        let index = (number & 0xFF) << 1
         buffer.append(Hexadecimal.instance.digits[index])
         buffer.append(Hexadecimal.instance.digits[index + 1])
     }
 
     func appendFourHexDigits(_ number: Int, _ buffer: inout [UInt8]) {
-        var index = 2 * ((number >> 8) & 0xFF)
+        var index = ((number >> 8) & 0xFF) << 1
         buffer.append(Hexadecimal.instance.digits[index])
         buffer.append(Hexadecimal.instance.digits[index + 1])
-        index = 2 * (number & 0xFF)
+        index = ((number) & 0xFF) << 1
         buffer.append(Hexadecimal.instance.digits[index])
         buffer.append(Hexadecimal.instance.digits[index + 1])
     }

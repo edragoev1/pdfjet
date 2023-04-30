@@ -224,8 +224,8 @@ public class Table {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setTextAlignment(alignment);
-                if (cell.textBlock != null) {
-                    cell.textBlock.setTextAlignment(alignment);
+                if (cell.textBox != null) {
+                    cell.textBox.setTextAlignment(alignment);
                 }
             }
         }
@@ -242,8 +242,8 @@ public class Table {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setBrushColor(color);
-                if (cell.textBlock != null) {
-                    cell.textBlock.setBrushColor(color);
+                if (cell.textBox != null) {
+                    cell.textBox.setBrushColor(color);
                 }
             }
         }
@@ -260,8 +260,8 @@ public class Table {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.font = font;
-                if (cell.textBlock != null) {
-                    cell.textBlock.font = font;
+                if (cell.textBox != null) {
+                    cell.textBox.font = font;
                 }
             }
         }
@@ -277,8 +277,8 @@ public class Table {
         List<Cell> row = tableData.get(index);
         for (Cell cell : row) {
             cell.setBrushColor(color);
-            if (cell.textBlock != null) {
-                cell.textBlock.setBrushColor(color);
+            if (cell.textBox != null) {
+                cell.textBox.setBrushColor(color);
             }
         }
     }
@@ -293,8 +293,8 @@ public class Table {
         List<Cell> row = tableData.get(index);
         for (Cell cell : row) {
             cell.font = font;
-            if (cell.textBlock != null) {
-                cell.textBlock.font = font;
+            if (cell.textBox != null) {
+                cell.textBox.font = font;
             }
         }
     }
@@ -310,8 +310,8 @@ public class Table {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setWidth(width);
-                if (cell.textBlock != null) {
-                    cell.textBlock.setWidth(width - (cell.leftPadding + cell.rightPadding));
+                if (cell.textBox != null) {
+                    cell.textBox.setWidth(width - (cell.leftPadding + cell.rightPadding));
                 }
             }
         }
@@ -766,10 +766,10 @@ public class Table {
                     } catch (Exception e) {
                     }
                 }
-                if (cell.textBlock != null) {
-                    String[] tokens = cell.textBlock.text.split("\\s+");
+                if (cell.textBox != null) {
+                    String[] tokens = cell.textBox.text.split("\\s+");
                     for (String token : tokens) {
-                        float tokenWidth = cell.textBlock.font.stringWidth(cell.textBlock.fallbackFont, token);
+                        float tokenWidth = cell.textBox.font.stringWidth(cell.textBox.fallbackFont, token);
                         tokenWidth += cell.leftPadding + cell.rightPadding;
                         if (tokenWidth > maxColWidths[j]) {
                             maxColWidths[j] = tokenWidth;
@@ -840,13 +840,14 @@ public class Table {
                 Cell cell = dataRow.get(j);
                 int colspan = cell.getColSpan();
                 if (colspan > 1) {
-                    if (cell.textBlock != null) {
+                    if (cell.textBox != null) {
                         float sumOfWidths = cell.getWidth();
                         for (int k = 1; k < colspan; k++) {
                             sumOfWidths += dataRow.get(++j).getWidth();
                         }
-                        cell.textBlock.setWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding));
+                        cell.textBox.setWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding));
                     }
+
                 }
             }
         }

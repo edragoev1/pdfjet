@@ -42,6 +42,7 @@ import Foundation
 ///
 public class TextBox : Drawable {
     var font: Font?
+    var fallbackFont: Font?
     var text: String?
 
     var x: Float = 0.0
@@ -57,7 +58,6 @@ public class TextBox : Drawable {
     private var pen = Color.black
     private var brush = Color.black
     private var valign = Align.TOP
-    private var fallbackFont: Font?
     private var colors: [String : Int32]?
 
     // TextBox properties
@@ -77,6 +77,12 @@ public class TextBox : Drawable {
     // Future use:
     // bits 24 to 31
     private var properties: UInt32 = 0x00000001
+
+    private var uri: String?
+    private var key: String?
+    private var uriLanguage: String?
+    private var uriActualText: String?
+    private var uriAltDescription: String?
 
     ///
     /// Creates a text box and sets the font.
@@ -444,7 +450,7 @@ public class TextBox : Drawable {
     ///
     /// @param borders the borders flag.
     ///
-    public func SetBorders(_ borders: Bool) {
+    public func setBorders(_ borders: Bool) {
         if (borders) {
             setBorder(Border.ALL);
         } else {
@@ -660,7 +666,6 @@ public class TextBox : Drawable {
     public func drawOn(_ page: Page?) -> [Float32] {
         var lines = getTextLines()
         let leading = font!.ascent + font!.descent + spacing
-
         if height > 0.0 {   // TextBox with fixed height
             if Float32(lines.count)*leading - spacing > (height - 2*margin) {
                 var list = [String]()
@@ -750,7 +755,18 @@ public class TextBox : Drawable {
         if page != nil {
             drawBorders(page!)
         }
-
+        if page != nil && (uri != nil || key != nil) {
+            page!.addAnnotation(Annotation(
+                    uri,
+                    key,    // The destination name
+                    x,
+                    y,
+                    x + width,
+                    y + height,
+                    uriLanguage,
+                    uriActualText,
+                    uriAltDescription))
+        }
         return [x + width, y + height]
     }
 
@@ -765,12 +781,10 @@ public class TextBox : Drawable {
         if fallbackFont == nil {
             if colors == nil {
                 page!.drawString(font, text, xText, yText)
-            }
-            else {
+            } else {
                 page!.drawString(font, text, xText, yText, brush, colors!)
             }
-        }
-        else {
+        } else {
             page!.drawString(font, fallbackFont, text, xText, yText)
         }
 
@@ -789,4 +803,13 @@ public class TextBox : Drawable {
         }
     }
 
+    /**
+     *  Sets the URI for the "click text line" action.
+     *
+     *  @param uri the URI
+     *  @return this TextBox.
+     */
+    public func setURIAction(_ uri: String) {
+        self.uri = uri
+    }
 }   // End of TextBox.swift

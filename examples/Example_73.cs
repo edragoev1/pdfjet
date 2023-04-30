@@ -10,8 +10,7 @@ using PDFjet.NET;
 public class Example_73 {
     public Example_73() {
         PDF pdf = new PDF(
-                new BufferedStream(
-                        new FileStream("Example_73.pdf", FileMode.Create)));
+                new BufferedStream(new FileStream("Example_73.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
         Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
@@ -29,6 +28,7 @@ public class Example_73 {
         textBox.SetLocation(50f, 50f);
         textBox.SetWidth(line1.GetWidth() + 2*textBox.GetMargin());
         textBox.SetBgColor(Color.lightgreen);
+        textBox.SetBorders(true);
         // The DrawOn method returns the x and y of the bottom right corner of the TextBox
         float[] xy = textBox.DrawOn(page);
 
@@ -40,6 +40,7 @@ public class Example_73 {
         textBox = new TextBox(f1, line1.GetText() + "!");
         textBox.SetWidth(line1.GetWidth() + 2*textBox.GetMargin());
         textBox.SetLocation(50f, 100f);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         box = new Box();
@@ -50,6 +51,7 @@ public class Example_73 {
         textBox = new TextBox(f1, line2.GetText());
         textBox.SetWidth(line2.GetWidth() + 2*textBox.GetMargin());
         textBox.SetLocation(50f, 200f);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         box = new Box();
@@ -60,6 +62,7 @@ public class Example_73 {
         textBox = new TextBox(f1, line2.GetText() + "!");
         textBox.SetWidth(line2.GetWidth() + 2*textBox.GetMargin());
         textBox.SetLocation(50f, 300f);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         box = new Box();
@@ -71,6 +74,7 @@ public class Example_73 {
         textBox.SetMargin(10f);
         textBox.SetWidth(line2.GetWidth() + 2*textBox.GetMargin());
         textBox.SetLocation(50f, 400f);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         box = new Box();
@@ -83,6 +87,7 @@ public class Example_73 {
         textBox.SetTextAlignment(Align.RIGHT);
         textBox.SetWidth(line2.GetWidth() + 2*textBox.GetMargin());
         textBox.SetLocation(50f, 500f);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         box = new Box();
@@ -95,6 +100,7 @@ public class Example_73 {
         textBox.SetTextAlignment(Align.CENTER);
         textBox.SetWidth(line2.GetWidth() + 2*textBox.GetMargin());
         textBox.SetLocation(50f, 600f);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         box = new Box();
@@ -102,7 +108,7 @@ public class Example_73 {
         box.SetSize(20f, 20f);
         box.DrawOn(page);
 
-        String text = Contents.OfTextFile("data/chinese-text.txt");
+        String text = Contents.OfTextFile("data/chinese.txt");
 
         textBox = new TextBox(f1);
         textBox.SetFallbackFont(f2);
@@ -115,6 +121,7 @@ public class Example_73 {
         textBox.SetHeight(14f);
         textBox.SetWidth(300f);
         textBox.SetLocation(250f, 50f);
+        textBox.SetBorders(true);
         textBox.DrawOn(page);
 
         textBox = new TextBox(f1);
@@ -127,6 +134,7 @@ public class Example_73 {
         textBox.SetHeight(151f);
         textBox.SetWidth(300f);
         textBox.SetLocation(250f, 300f);
+        textBox.SetBorders(true);
         textBox.DrawOn(page);
 
         textBox = new TextBox(f1);
@@ -139,6 +147,7 @@ public class Example_73 {
         textBox.SetHeight(151f);
         textBox.SetWidth(300f);
         textBox.SetLocation(250f, 550f);
+        textBox.SetBorders(true);
         textBox.DrawOn(page);
 
         pdf.Complete();

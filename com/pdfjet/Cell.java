@@ -26,7 +26,6 @@ package com.pdfjet;
 /**
  *  Used to create table cell objects.
  *  See the Table class for more information.
- *
  */
 public class Cell {
     protected Font font;
@@ -34,7 +33,7 @@ public class Cell {
     protected String text;
     protected Image image;
     protected BarCode barCode;
-    protected TextBlock textBlock;
+    protected TextBox textBox;
     protected Point point;
     protected CompositeTextLine compositeTextLine;
     protected Drawable drawable;
@@ -242,8 +241,8 @@ public class Cell {
         return this.drawable;
     }
 
-    public void setTextBlock(TextBlock textBlock) {
-        this.textBlock = textBlock;
+    public void setTextBox(TextBox textBox) {
+        this.textBox = textBox;
     }
 
     /**
@@ -253,8 +252,8 @@ public class Cell {
      */
     public void setWidth(float width) {
         this.width = width;
-        if (textBlock != null) {
-            textBlock.setWidth(this.width - (this.leftPadding + this.rightPadding));
+        if (textBox != null) {
+            textBox.setWidth(this.width - (this.leftPadding + this.rightPadding));
         }
     }
 
@@ -326,8 +325,8 @@ public class Cell {
             cellHeight = image.getHeight() + topPadding + bottomPadding;
         } else if (barCode != null) {
             cellHeight = barCode.getHeight() + topPadding + bottomPadding;
-        } else if (textBlock != null) {
-            cellHeight = textBlock.drawOn(null)[1] + topPadding + bottomPadding;
+        } else if (textBox != null) {
+            cellHeight = textBox.drawOn(null)[1] + topPadding + bottomPadding;
         } else if (text != null) {
             float fontHeight = font.getHeight();
             if (fallbackFont != null && fallbackFont.getHeight() > fontHeight) {
@@ -567,6 +566,10 @@ public class Cell {
         this.uri = uri;
     }
 
+    public TextBox getTextBox() {
+        return textBox;
+    }
+
     /**
      * Draws the point, text and borders of this cell.
      */
@@ -606,9 +609,9 @@ public class Cell {
                 e.printStackTrace();
             }
         }
-        if (textBlock != null) {
-            textBlock.setLocation(x + leftPadding, y + topPadding);
-            textBlock.drawOn(page);
+        if (textBox != null) {
+            textBox.setLocation(x + leftPadding, y + topPadding);
+            textBox.drawOn(page);
         }
         if (text != null && !text.equals("")) {
             drawText(page, x, y, w, h);
@@ -841,9 +844,5 @@ public class Cell {
             }
         }
         return numOfVerCells;
-    }
-
-    public TextBlock getTextBlock() {
-        return textBlock;
     }
 }   // End of Cell.java

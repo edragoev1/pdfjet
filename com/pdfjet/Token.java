@@ -1,13 +1,16 @@
 package com.pdfjet;
 
 public class Token {
-    public static byte[] beginDictionary = "<<\n".getBytes();
-    public static byte[] endDictionary = ">>\n".getBytes();
-    public static byte[] stream = "stream\n".getBytes();
-    public static byte[] endstream = "\nendstream\n".getBytes();
-    public static byte[] endobj = "endobj\n".getBytes();
-    public static byte[] count = "/Count ".getBytes();
-    public static byte[] length = "/Length ".getBytes();
-    public static byte space = ' ';
-    public static byte newline = '\n';
+    public static final byte[] beginDictionary = "<<\n".getBytes();
+    public static final byte[] endDictionary = ">>\n".getBytes();
+    public static final byte[] stream = "stream\n".getBytes();
+    public static final byte[] endstream = "\nendstream\n".getBytes();
+    public static final byte[] newobj = " 0 obj\n".getBytes();
+    public static final byte[] endobj = "endobj\n".getBytes();
+    public static final byte[] beginText = "BT\n".getBytes();
+    public static final byte[] endText = "ET\n".getBytes();
+    public static final byte[] count = "/Count ".getBytes();
+    public static final byte[] length = "/Length ".getBytes();
+    public static final byte space = ' ';
+    public static final byte newline = '\n';
 }
