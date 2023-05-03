@@ -878,7 +878,6 @@ public class PDF {
     }
 
     public func addPage(_ page: Page) {
-        addPageContent(page)
         pages.append(page)
     }
 
@@ -887,6 +886,9 @@ public class PDF {
     /// The output stream is then closed.
     ///
     public func complete() {
+        for page in pages {
+            addPageContent(page)
+        }
         if compliance == Compliance.PDF_UA ||
                 compliance == Compliance.PDF_A_1A ||
                 compliance == Compliance.PDF_A_1B ||

@@ -956,16 +956,7 @@ public class PDF {
     }
 
     public void addPage(Page page) throws Exception {
-        addPageContent(page);
         pages.add(page);
-    }
-
-    /**
-     *  Writes the PDF object to the output stream and closes it.
-     *  @throws Exception  If an input or output exception occurred
-     */
-    public void close() throws Exception {
-        complete();
     }
 
     /**
@@ -974,6 +965,9 @@ public class PDF {
      *  @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
+        for (Page page : pages) {
+            addPageContent(page);
+        }
         if (compliance == Compliance.PDF_UA ||
                 compliance == Compliance.PDF_A_1A ||
                 compliance == Compliance.PDF_A_1B ||

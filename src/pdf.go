@@ -745,7 +745,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 
 func (pdf *PDF) addPageContent(page *Page) {
 	compressed := compressor.Deflate(page.buf)
-	page.buf = nil
+	page.buf = nil // Release the page content memory!
 
 	pdf.newobj()
 	pdf.appendString("<<\n")
@@ -919,12 +919,14 @@ func (pdf *PDF) addOCProperties() {
 
 // AddPage adds page to the PDF.
 func (pdf *PDF) AddPage(page *Page) {
-	pdf.addPageContent(page)
 	pdf.pages = append(pdf.pages, page)
 }
 
 // Complete writes the PDF to the bufio.Writer and calls the Flush method.
 func (pdf *PDF) Complete() {
+	for _, page := range pdf.pages {
+		pdf.addPageContent(page)
+	}
 	if pdf.compliance == compliance.PDF_UA ||
 		pdf.compliance == compliance.PDF_A_1A ||
 		pdf.compliance == compliance.PDF_A_1B ||

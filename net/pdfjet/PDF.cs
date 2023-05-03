@@ -914,15 +914,7 @@ public class PDF {
     }
 
     public void AddPage(Page page) {
-        AddPageContent(page);
         pages.Add(page);
-    }
-
-    /**
-     *  Writes the PDF object to the output stream and closes it.
-     */
-    public void Close() {
-        Complete();
     }
 
     /**
@@ -930,6 +922,9 @@ public class PDF {
      *  Does not close the underlying output stream.
      */
     public void Complete() {
+        foreach (Page page in pages) {
+            AddPageContent(page);
+        }
         if (compliance == Compliance.PDF_UA ||
                 compliance == Compliance.PDF_A_1A ||
                 compliance == Compliance.PDF_A_1B ||
