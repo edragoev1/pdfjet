@@ -66,6 +66,7 @@ public class PDF {
     protected Bookmark toc = null;
     protected List<String> importedFonts = new ArrayList<String>();
     protected String extGState = "";
+    protected Page prevPage = null;
 
     /**
      * The default constructor - use when reading PDF files.
@@ -957,6 +958,10 @@ public class PDF {
 
     public void addPage(Page page) throws Exception {
         pages.add(page);
+        if (prevPage != null) {
+            addPageContent(prevPage);
+        }
+        prevPage = page;
     }
 
     /**
@@ -965,8 +970,8 @@ public class PDF {
      *  @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
-        for (Page page : pages) {
-            addPageContent(page);
+        if (prevPage != null) {
+            addPageContent(prevPage);
         }
         if (compliance == Compliance.PDF_UA ||
                 compliance == Compliance.PDF_A_1A ||

@@ -66,6 +66,7 @@ public class PDF {
     internal Bookmark toc = null;
     internal List<String> importedFonts = new List<String>();
     internal String extGState = "";
+    internal Page prevPage = null;
 
     /**
      * The default constructor - use when reading PDF files.
@@ -915,6 +916,10 @@ public class PDF {
 
     public void AddPage(Page page) {
         pages.Add(page);
+        if (prevPage != null) {
+            AddPageContent(prevPage);
+        }
+        prevPage = page;
     }
 
     /**
@@ -922,8 +927,8 @@ public class PDF {
      *  Does not close the underlying output stream.
      */
     public void Complete() {
-        foreach (Page page in pages) {
-            AddPageContent(page);
+        if (prevPage != null) {
+            AddPageContent(prevPage);
         }
         if (compliance == Compliance.PDF_UA ||
                 compliance == Compliance.PDF_A_1A ||

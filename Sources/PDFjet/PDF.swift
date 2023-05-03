@@ -57,6 +57,7 @@ public class PDF {
     private var pageMode: String?
     private var language: String = "en-US"
     private var uuid: String?
+    private var prevPage: Page?
 
     ///
     /// The default constructor - use when reading PDF files.
@@ -879,6 +880,10 @@ public class PDF {
 
     public func addPage(_ page: Page) {
         pages.append(page)
+        if prevPage != nil {
+            addPageContent(prevPage!)
+        }
+        prevPage = page
     }
 
     ///
@@ -886,8 +891,8 @@ public class PDF {
     /// The output stream is then closed.
     ///
     public func complete() {
-        for page in pages {
-            addPageContent(page)
+        if prevPage != nil {
+            addPageContent(prevPage!)
         }
         if compliance == Compliance.PDF_UA ||
                 compliance == Compliance.PDF_A_1A ||
