@@ -10,9 +10,10 @@ public class Example_03 {
     public Example_03() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                        new FileOutputStream("Example_03.pdf")));
+                        new FileOutputStream("Example_03.pdf")), Compliance.PDF_UA);
         pdf.setKeywords("React Vue Java Python");
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, "fonts/Andika/Andika-Regular.ttf");
 
         // On Android you have use the getClass().getResourceAsStream(...) method:
         Image image1 = new Image(pdf,

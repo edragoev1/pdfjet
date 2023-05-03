@@ -54,6 +54,7 @@ public class Example_46 {
         Text textArea = new Text(paragraphs);
         textArea.setLocation(70f, 70f);
         textArea.setWidth(500f);
+        textArea.setBorder(true);
         textArea.drawOn(page);
 
         pdf.complete();

@@ -10,7 +10,7 @@ public class Example_33 {
     public Example_33() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                        new FileOutputStream("Example_33.pdf")));
+                        new FileOutputStream("Example_33.pdf")), Compliance.PDF_UA);
         Page page = new Page(pdf, A4.PORTRAIT);
 
         SVGImage image = new SVGImage("images/svg-test/europe.svg");

@@ -10,17 +10,22 @@ public class Example_10 {
     public Example_10() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                        new FileOutputStream("Example_10.pdf")));
+                        new FileOutputStream("Example_10.pdf")), Compliance.PDF_UA);
         pdf.setTitle("Using TextColumn and Paragraph classes");
         pdf.setSubject("Examples");
         pdf.setAuthor("Innovatics Inc.");
 
         Image image1 = new Image(pdf, "images/sz-map.png");
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f4 = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        // Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        // Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        // Font f4 = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+
+        Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream");
+        Font f2 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream");
+        Font f3 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream");
+        Font f4 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-It.otf.stream");
 
         f1.setSize(10f);
         f2.setSize(14f);
@@ -111,6 +116,7 @@ public class Example_10 {
         text.setColor(Color.blue);
         text.setURIAction(
                 "https://www.cia.gov/library/publications/the-world-factbook/geos/sz.html");
+        text.setURIActualText("Hello, World");
         p6.add(text);
 
         column.addParagraph(p1);

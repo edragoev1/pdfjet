@@ -10,12 +10,10 @@ import com.pdfjet.*;
  *
  */
 public class Example_16 {
-
     public Example_16() throws Exception {
-
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                        new FileOutputStream("Example_16.pdf")));
+                        new FileOutputStream("Example_16.pdf")), Compliance.PDF_UA);
 
         /// Font f1 = new Font(pdf, CoreFont.HELVETICA);
         Font f1 = new Font(
@@ -59,6 +57,7 @@ public class Example_16 {
         // textBox.setVerticalAlignment(Align.CENTER);
         textBox.setBgColor(Color.whitesmoke);
         textBox.setTextColors(colors);
+        textBox.setBorders(true);
         float[] xy = textBox.drawOn(page);
 
         page.setGraphicsState(new GraphicsState()); // Reset GS

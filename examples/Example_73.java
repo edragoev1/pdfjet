@@ -10,7 +10,7 @@ public class Example_73 {
     public Example_73() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                    new FileOutputStream("Example_73.pdf")));
+                    new FileOutputStream("Example_73.pdf")), Compliance.PDF_UA);
 
         Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
         Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
@@ -27,6 +27,7 @@ public class Example_73 {
         textBox.setLocation(50f, 50f);
         textBox.setWidth(line1.getWidth() + 2*textBox.getMargin());
         textBox.setBgColor(Color.lightgreen);
+        textBox.setBorders(true);
         // The drawOn method returns the x and y of the bottom right corner of the TextBox
         float[] xy = textBox.drawOn(page);
 
@@ -38,6 +39,7 @@ public class Example_73 {
         textBox = new TextBox(f1, line1.getText() + "!");
         textBox.setWidth(line1.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 100f);
+        textBox.setBorders(true);
         xy = textBox.drawOn(page);
 
         box = new Box();
@@ -48,6 +50,7 @@ public class Example_73 {
         textBox = new TextBox(f1, line2.getText());
         textBox.setWidth(line2.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 200f);
+        textBox.setBorders(true);
         xy = textBox.drawOn(page);
 
         box = new Box();
@@ -58,6 +61,7 @@ public class Example_73 {
         textBox = new TextBox(f1, line2.getText() + "!");
         textBox.setWidth(line2.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 300f);
+        textBox.setBorders(true);
         xy = textBox.drawOn(page);
 
         box = new Box();
@@ -71,6 +75,7 @@ public class Example_73 {
         textBox.setBgColor(Color.lightgreen);
         textBox.setWidth(line2.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 400f);
+        textBox.setBorders(true);
         xy = textBox.drawOn(page);
 
         box = new Box();
@@ -83,6 +88,7 @@ public class Example_73 {
         textBox.setTextAlignment(Align.RIGHT);
         textBox.setWidth(line2.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 500f);
+        textBox.setBorders(true);
         xy = textBox.drawOn(page);
 
         box = new Box();
@@ -95,6 +101,7 @@ public class Example_73 {
         textBox.setTextAlignment(Align.CENTER);
         textBox.setWidth(line2.getWidth() + 2*textBox.getMargin());
         textBox.setLocation(50f, 600f);
+        textBox.setBorders(true);
         xy = textBox.drawOn(page);
 
         box = new Box();
@@ -115,6 +122,7 @@ public class Example_73 {
         textBox.setHeight(14f);
         textBox.setWidth(300f);
         textBox.setLocation(250f, 50f);
+        textBox.setBorders(true);
         textBox.drawOn(page);
 
         textBox = new TextBox(f1);
@@ -127,6 +135,7 @@ public class Example_73 {
         textBox.setHeight(151f);
         textBox.setWidth(300f);
         textBox.setLocation(250f, 300f);
+        textBox.setBorders(true);
         textBox.drawOn(page);
 
         textBox = new TextBox(f1);
@@ -139,6 +148,7 @@ public class Example_73 {
         textBox.setHeight(151f);
         textBox.setWidth(300f);
         textBox.setLocation(250f, 550f);
+        textBox.setBorders(true);
         textBox.drawOn(page);
 
         pdf.complete();

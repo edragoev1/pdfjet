@@ -11,7 +11,7 @@ public class Example_47 {
     public Example_47() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                        new FileOutputStream("Example_47.pdf")));
+                        new FileOutputStream("Example_47.pdf")), Compliance.PDF_UA);
 
         Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream");

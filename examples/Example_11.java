@@ -10,7 +10,7 @@ public class Example_11 {
     public Example_11() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                        new FileOutputStream("Example_11.pdf")));
+                        new FileOutputStream("Example_11.pdf")), Compliance.PDF_UA);
 
         Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
 

@@ -9,8 +9,9 @@ import com.pdfjet.*;
  */
 public class Example_12 {
     public Example_12() throws Exception {
-        PDF pdf = new PDF(new FileOutputStream("Example_12.pdf"));
-        Font font = new Font(pdf, CoreFont.HELVETICA);
+        PDF pdf = new PDF(new FileOutputStream("Example_12.pdf"), Compliance.PDF_UA);
+        // Font font = new Font(pdf, CoreFont.HELVETICA);
+        Font font = new Font(pdf, "fonts/Andika/Andika-Regular.ttf");
         Page page = new Page(pdf, Letter.PORTRAIT);
  
         List<String> lines = Text.readLines("examples/Example_12.java");
