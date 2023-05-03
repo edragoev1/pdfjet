@@ -550,7 +550,6 @@ public class TextLine implements Drawable {
         }
 
         page.setTextDirection(degrees);
-
         x += xBox;
         y += yBox;
 

@@ -242,8 +242,7 @@ public class CheckBox implements Drawable {
                 page.lineTo((x + w/6 + checkWidth) + penWidth, ((yBox + h) - 4f*checkWidth/3f) + penWidth);
                 page.lineTo(((x + w) - checkWidth) + penWidth, (yBox + checkWidth) + penWidth);
                 page.strokePath();
-            }
-            else if (mark == Mark.X) {
+            } else if (mark == Mark.X) {
                 // Draw 'X' mark
                 page.moveTo(x + checkWidth + penWidth, yBox + checkWidth + penWidth);
                 page.lineTo(((x + w) - checkWidth) + penWidth, ((yBox + h) - checkWidth) + penWidth);

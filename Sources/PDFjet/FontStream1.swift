@@ -43,12 +43,12 @@ class FontStream1 {
 
         // Type0 Font Dictionary
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /Type0\n")
         pdf.append("/BaseFont /")
-        pdf.append(font.name)
-        pdf.append("\n")
+        pdf.append(Array(font.name.utf8))
+        pdf.append(Token.newline)
         pdf.append("/Encoding /Identity-H\n")
         pdf.append("/DescendantFonts [")
         pdf.append(font.cidFontDictObjNumber)
@@ -56,7 +56,7 @@ class FontStream1 {
         pdf.append("/ToUnicode ")
         pdf.append(font.toUnicodeCMapObjNumber)
         pdf.append(" 0 R\n")
-        pdf.append(">>\n")
+        pdf.append(Token.endDictionary)
         pdf.endobj()
 
         font.objNumber = pdf.getObjNumber()
@@ -79,15 +79,15 @@ class FontStream1 {
         pdf.append("/Metadata ")
         pdf.append(metadataObjNumber)
         pdf.append(" 0 R\n")
-        if font.cff! {
+        if font.cff {
             pdf.append("/Subtype /CIDFontType0C\n")
         }
         pdf.append("/Filter /FlateDecode\n")
         pdf.append("/Length ")
         pdf.append(font.compressedSize!)
-        pdf.append("\n")
+        pdf.append(Token.newline)
 
-        if !font.cff! {
+        if !font.cff {
             pdf.append("/Length1 ")
             pdf.append(font.uncompressedSize!)
             pdf.append(Token.newline)
@@ -117,15 +117,14 @@ class FontStream1 {
         }
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /FontDescriptor\n")
         pdf.append("/FontName /")
-        pdf.append(font.name)
-        pdf.append("\n")
-        if font.cff! {
+        pdf.append(Array(font.name.utf8))
+        pdf.append(Token.newline)
+        if font.cff {
             pdf.append("/FontFile3 ")
-        }
-        else {
+        } else {
             pdf.append("/FontFile2 ")
         }
         pdf.append(font.fileObjNumber)
@@ -133,25 +132,25 @@ class FontStream1 {
         pdf.append("/Flags 32\n")
         pdf.append("/FontBBox [")
         pdf.append(Int32(font.bBoxLLx))
-        pdf.append(" ")
+        pdf.append(Token.space)
         pdf.append(Int32(font.bBoxLLy))
-        pdf.append(" ")
+        pdf.append(Token.space)
         pdf.append(Int32(font.bBoxURx))
-        pdf.append(" ")
+        pdf.append(Token.space)
         pdf.append(Int32(font.bBoxURy))
         pdf.append("]\n")
         pdf.append("/Ascent ")
         pdf.append(Int32(font.fontAscent))
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/Descent ")
         pdf.append(Int32(font.fontDescent))
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/ItalicAngle 0\n")
         pdf.append("/CapHeight ")
         pdf.append(Int32(font.capHeight))
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/StemV 79\n")
-        pdf.append(">>\n")
+        pdf.append(Token.endDictionary)
         pdf.endobj()
 
         font.fontDescriptorObjNumber = pdf.getObjNumber()
@@ -203,14 +202,14 @@ class FontStream1 {
         sb.append("end\nend")
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Length ")
         pdf.append(sb.count)
-        pdf.append("\n")
-        pdf.append(">>\n")
-        pdf.append("stream\n")
+        pdf.append(Token.newline)
+        pdf.append(Token.endDictionary)
+        pdf.append(Token.stream)
         pdf.append(sb)
-        pdf.append("\nendstream\n")
+        pdf.append(Token.endstream)
         pdf.endobj()
 
         font.toUnicodeCMapObjNumber = pdf.getObjNumber()
@@ -227,13 +226,13 @@ class FontStream1 {
         pdf.newobj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Font\n")
-        if font.cff! {
+        if font.cff {
             pdf.append("/Subtype /CIDFontType0\n")
         } else {
             pdf.append("/Subtype /CIDFontType2\n")
         }
         pdf.append("/BaseFont /")
-        pdf.append(font.name)
+        pdf.append(Array(font.name.utf8))
         pdf.append(Token.newline)
         pdf.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
         pdf.append("/FontDescriptor ")
@@ -394,8 +393,8 @@ class FontStream1 {
             font.unicodeToGID![i] = getInt(inflated, &offset)
         }
 
-        font.cff = false
-        if String(try getInt8(stream)) == "Y" {
+        let flag = UnicodeScalar(try getInt8(stream))
+        if flag == UnicodeScalar("Y") {
             font.cff = true
         }
 

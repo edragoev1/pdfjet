@@ -206,8 +206,7 @@ public class Form : Drawable {
             let line = line1.trim()
             if font.stringWidth(line) < width {
                 lines.append(line)
-            }
-            else {
+            } else {
                 var buffer = String()
                 let characters = Array(line)
                 var j = 0
@@ -218,8 +217,7 @@ public class Form : Drawable {
                             while j > 0 && characters[j] != " " {
                                 j += 1
                             }
-                        }
-                        else {
+                        } else {
                             while j > 0 && characters[j] != " " {
                                 j -= 1
                                 buffer.removeLast()

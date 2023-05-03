@@ -319,8 +319,7 @@ public class Cell {
                 if (height > cellHeight) {
                     cellHeight = height;
                 }
-            }
-            catch (Exception) {
+            } catch (Exception) {
             }
         }
         if (drawable != null) {
@@ -329,8 +328,7 @@ public class Cell {
                 if (height > cellHeight) {
                     cellHeight = height;
                 }
-            }
-            catch (Exception) {
+            } catch (Exception) {
             }
         }
         if (text != null) {
@@ -807,7 +805,6 @@ public class Cell {
         if (this.text == null) {
             return numOfVerCells;
         }
-
         float effectiveWidth = this.width - (this.leftPadding + this.rightPadding);
         String[] tokens = TextUtils.SplitTextIntoTokens(this.text, this.font, this.fallbackFont, effectiveWidth);
         StringBuilder buf = new StringBuilder();
@@ -820,7 +817,6 @@ public class Cell {
                 buf.Append(token);
             }
         }
-
         return numOfVerCells;
     }
 

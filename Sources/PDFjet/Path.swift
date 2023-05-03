@@ -257,20 +257,17 @@ public class Path : Drawable {
             list.append(Point(x + m4*r1, y - r2, Point.CONTROL_POINT))
             list.append(Point(x + r1, y - m4*r2, Point.CONTROL_POINT))
             list.append(Point(x + r1, y))
-        }
-        else if segment == 1 {
+        } else if segment == 1 {
             list.append(Point(x + r1, y))
             list.append(Point(x + r1, y + m4*r2, Point.CONTROL_POINT))
             list.append(Point(x + m4*r1, y + r2, Point.CONTROL_POINT))
             list.append(Point(x, y + r2))
-        }
-        else if segment == 2 {
+        } else if segment == 2 {
             list.append(Point(x, y + r2))
             list.append(Point(x - m4*r1, y + r2, Point.CONTROL_POINT))
             list.append(Point(x - r1, y + m4*r2, Point.CONTROL_POINT))
             list.append(Point(x - r1, y))
-        }
-        else if segment == 3 {
+        } else if segment == 3 {
             list.append(Point(x - r1, y))
             list.append(Point(x - r1, y - m4*r2, Point.CONTROL_POINT))
             list.append(Point(x - m4*r1, y - r2, Point.CONTROL_POINT))
@@ -291,8 +288,7 @@ public class Path : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         if fillShape {
             page!.setBrushColor(self.color)
-        }
-        else {
+        } else {
             page!.setPenColor(self.color)
         }
         page!.setPenWidth(self.width)
@@ -308,12 +304,10 @@ public class Path : Drawable {
 
         if fillShape {
             page!.drawPath(points!, "f")
-        }
-        else {
+        } else {
             if closePath {
                 page!.drawPath(points!, "s")
-            }
-            else {
+            } else {
                 page!.drawPath(points!, "S")
             }
         }

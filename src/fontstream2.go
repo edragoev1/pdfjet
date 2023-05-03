@@ -33,8 +33,7 @@ import (
 
 // FontStream2 constructs font object and adds it to the PDF objects slice.
 func FontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
-	readFontData(font, reader)
-
+	getFontData(font, reader)
 	embedFontFile2(objects, font, reader)
 	addFontDescriptorObject2(objects, font)
 	addCIDFontDictionaryObject2(objects, font)
@@ -69,14 +68,14 @@ func FontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 
 func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	var sb strings.Builder
-	sb.WriteString("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+	sb.WriteString("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
 	sb.WriteString("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n")
 	sb.WriteString("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
 	sb.WriteString("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")
 	sb.WriteString("<xmpRights:UsageTerms>\n")
 	sb.WriteString("<rdf:Alt>\n")
 	sb.WriteString("<rdf:li xml:lang=\"x-default\">\n")
-	sb.WriteString(font.info)
+	sb.WriteString(string([]byte(font.info)))
 	sb.WriteString("</rdf:li>\n")
 	sb.WriteString("</rdf:Alt>\n")
 	sb.WriteString("</xmpRights:UsageTerms>\n")

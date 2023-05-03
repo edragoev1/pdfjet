@@ -495,8 +495,7 @@ public class Point : Drawable {
 
         if fillShape {
             page!.setBrushColor(color)
-        }
-        else {
+        } else {
             page!.setPenColor(color)
         }
 

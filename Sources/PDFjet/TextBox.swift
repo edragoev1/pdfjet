@@ -490,8 +490,7 @@ public class TextBox : Drawable {
     public func setUnderline(_ underline: Bool) -> TextBox {
         if underline {
             self.properties |= 0x00400000
-        }
-        else {
+        } else {
             self.properties &= 0x00BFFFFF
         }
         return self
@@ -516,8 +515,7 @@ public class TextBox : Drawable {
     public func setStrikeout(_ strikeout: Bool) -> TextBox {
         if strikeout {
             self.properties |= 0x00800000
-        }
-        else {
+        } else {
             self.properties &= 0x007FFFFF
         }
         return self

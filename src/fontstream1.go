@@ -36,7 +36,7 @@ import (
 
 // FontStream1 is used to add stream fonts to the PDF.
 func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
-	readFontData(font, reader)
+	getFontData(font, reader)
 	embedFontFile(pdf, font, reader)
 	addFontDescriptorObject(pdf, font)
 	addCIDFontDictionaryObject(pdf, font)
@@ -48,7 +48,7 @@ func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /Type0\n")
 	pdf.appendString("/BaseFont /")
-	pdf.appendString(font.name)
+	pdf.appendString(string([]byte(font.name)))
 	pdf.appendString("\n")
 	pdf.appendString("/Encoding /Identity-H\n")
 	pdf.appendString("/DescendantFonts [")
@@ -171,7 +171,6 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	}
 
 	var sb strings.Builder
-
 	sb.WriteString("/CIDInit /ProcSet findresource begin\n")
 	sb.WriteString("12 dict begin\n")
 	sb.WriteString("begincmap\n")
@@ -277,7 +276,7 @@ func writeListTo(sb *strings.Builder, list []string) {
 	sb.WriteString("endbfchar\n")
 }
 
-func readFontData(font *Font, reader io.Reader) {
+func getFontData(font *Font, reader io.Reader) {
 	length := int(getUint8(reader))
 	fontName := make([]byte, length)
 	io.ReadFull(reader, fontName)

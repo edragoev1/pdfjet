@@ -573,8 +573,7 @@ public class TextBox : IDrawable {
     public void SetUnderline(bool underline) {
         if (underline) {
             this.properties |= 0x00400000;
-        }
-        else {
+        } else {
             this.properties &= 0x00BFFFFF;
         }
     }
@@ -597,8 +596,7 @@ public class TextBox : IDrawable {
     public void SetStrikeout(bool strikeout) {
         if (strikeout) {
             this.properties |= 0x00800000;
-        }
-        else {
+        } else {
             this.properties &= 0x007FFFFF;
         }
     }
@@ -647,8 +645,7 @@ public class TextBox : IDrawable {
 
         if (GetBorder(Border.ALL)) {
             page.DrawRect(x, y, width, height);
-        }
-        else {
+        } else {
             if (GetBorder(Border.TOP)) {
                 page.MoveTo(x, y);
                 page.LineTo(x + width, y);

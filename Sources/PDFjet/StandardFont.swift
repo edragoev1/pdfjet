@@ -22,8 +22,7 @@ class StandardFont {
             font.underlinePosition = Courier.underlinePosition
             font.underlineThickness = Courier.underlineThickness
             font.metrics = Courier.metrics
-        }
-        else if coreFont == CoreFont.COURIER_BOLD {
+        } else if coreFont == CoreFont.COURIER_BOLD {
             font.name = Courier_Bold.name
             font.bBoxLLx = Courier_Bold.bBoxLLx
             font.bBoxLLy = Courier_Bold.bBoxLLy
@@ -32,8 +31,7 @@ class StandardFont {
             font.underlinePosition = Courier_Bold.underlinePosition
             font.underlineThickness = Courier_Bold.underlineThickness
             font.metrics = Courier_Bold.metrics
-        }
-        else if coreFont == CoreFont.COURIER_OBLIQUE {
+        } else if coreFont == CoreFont.COURIER_OBLIQUE {
             font.name = Courier_Oblique.name
             font.bBoxLLx = Courier_Oblique.bBoxLLx
             font.bBoxLLy = Courier_Oblique.bBoxLLy
@@ -42,8 +40,7 @@ class StandardFont {
             font.underlinePosition = Courier_Oblique.underlinePosition
             font.underlineThickness = Courier_Oblique.underlineThickness
             font.metrics = Courier_Oblique.metrics
-        }
-        else if coreFont == CoreFont.COURIER_BOLD_OBLIQUE {
+        } else if coreFont == CoreFont.COURIER_BOLD_OBLIQUE {
             font.name = Courier_BoldOblique.name
             font.bBoxLLx = Courier_BoldOblique.bBoxLLx
             font.bBoxLLy = Courier_BoldOblique.bBoxLLy
@@ -52,8 +49,7 @@ class StandardFont {
             font.underlinePosition = Courier_BoldOblique.underlinePosition
             font.underlineThickness = Courier_BoldOblique.underlineThickness
             font.metrics = Courier_BoldOblique.metrics
-        }
-        else if coreFont == CoreFont.HELVETICA {
+        } else if coreFont == CoreFont.HELVETICA {
             font.name = Helvetica.name
             font.bBoxLLx = Helvetica.bBoxLLx
             font.bBoxLLy = Helvetica.bBoxLLy
@@ -62,8 +58,7 @@ class StandardFont {
             font.underlinePosition = Helvetica.underlinePosition
             font.underlineThickness = Helvetica.underlineThickness
             font.metrics = Helvetica.metrics
-        }
-        else if coreFont == CoreFont.HELVETICA_BOLD {
+        } else if coreFont == CoreFont.HELVETICA_BOLD {
             font.name = Helvetica_Bold.name
             font.bBoxLLx = Helvetica_Bold.bBoxLLx
             font.bBoxLLy = Helvetica_Bold.bBoxLLy
@@ -72,8 +67,7 @@ class StandardFont {
             font.underlinePosition = Helvetica_Bold.underlinePosition
             font.underlineThickness = Helvetica_Bold.underlineThickness
             font.metrics = Helvetica_Bold.metrics
-        }
-        else if coreFont == CoreFont.HELVETICA_OBLIQUE {
+        } else if coreFont == CoreFont.HELVETICA_OBLIQUE {
             font.name = Helvetica_Oblique.name
             font.bBoxLLx = Helvetica_Oblique.bBoxLLx
             font.bBoxLLy = Helvetica_Oblique.bBoxLLy
@@ -82,8 +76,7 @@ class StandardFont {
             font.underlinePosition = Helvetica_Oblique.underlinePosition
             font.underlineThickness = Helvetica_Oblique.underlineThickness
             font.metrics = Helvetica_Oblique.metrics
-        }
-        else if coreFont == CoreFont.HELVETICA_BOLD_OBLIQUE {
+        } else if coreFont == CoreFont.HELVETICA_BOLD_OBLIQUE {
             font.name = Helvetica_BoldOblique.name
             font.bBoxLLx = Helvetica_BoldOblique.bBoxLLx
             font.bBoxLLy = Helvetica_BoldOblique.bBoxLLy
@@ -92,8 +85,7 @@ class StandardFont {
             font.underlinePosition = Helvetica_BoldOblique.underlinePosition
             font.underlineThickness = Helvetica_BoldOblique.underlineThickness
             font.metrics = Helvetica_BoldOblique.metrics
-        }
-        else if coreFont == CoreFont.TIMES_ROMAN {
+        } else if coreFont == CoreFont.TIMES_ROMAN {
             font.name = Times_Roman.name
             font.bBoxLLx = Times_Roman.bBoxLLx
             font.bBoxLLy = Times_Roman.bBoxLLy
@@ -102,8 +94,7 @@ class StandardFont {
             font.underlinePosition = Times_Roman.underlinePosition
             font.underlineThickness = Times_Roman.underlineThickness
             font.metrics = Times_Roman.metrics
-        }
-        else if coreFont == CoreFont.TIMES_BOLD {
+        } else if coreFont == CoreFont.TIMES_BOLD {
             font.name = Times_Bold.name
             font.bBoxLLx = Times_Bold.bBoxLLx
             font.bBoxLLy = Times_Bold.bBoxLLy
@@ -112,8 +103,7 @@ class StandardFont {
             font.underlinePosition = Times_Bold.underlinePosition
             font.underlineThickness = Times_Bold.underlineThickness
             font.metrics = Times_Bold.metrics
-        }
-        else if coreFont == CoreFont.TIMES_ITALIC {
+        } else if coreFont == CoreFont.TIMES_ITALIC {
             font.name = Times_Italic.name
             font.bBoxLLx = Times_Italic.bBoxLLx
             font.bBoxLLy = Times_Italic.bBoxLLy
@@ -122,8 +112,7 @@ class StandardFont {
             font.underlinePosition = Times_Italic.underlinePosition
             font.underlineThickness = Times_Italic.underlineThickness
             font.metrics = Times_Italic.metrics
-        }
-        else if coreFont == CoreFont.TIMES_BOLD_ITALIC {
+        } else if coreFont == CoreFont.TIMES_BOLD_ITALIC {
             font.name = Times_BoldItalic.name
             font.bBoxLLx = Times_BoldItalic.bBoxLLx
             font.bBoxLLy = Times_BoldItalic.bBoxLLy
@@ -132,8 +121,7 @@ class StandardFont {
             font.underlinePosition = Times_BoldItalic.underlinePosition
             font.underlineThickness = Times_BoldItalic.underlineThickness
             font.metrics = Times_BoldItalic.metrics
-        }
-        else if coreFont == CoreFont.SYMBOL {
+        } else if coreFont == CoreFont.SYMBOL {
             font.name = Symbol.name
             font.bBoxLLx = Symbol.bBoxLLx
             font.bBoxLLy = Symbol.bBoxLLy
@@ -142,8 +130,7 @@ class StandardFont {
             font.underlinePosition = Symbol.underlinePosition
             font.underlineThickness = Symbol.underlineThickness
             font.metrics = Symbol.metrics
-        }
-        else if coreFont == CoreFont.ZAPF_DINGBATS {
+        } else if coreFont == CoreFont.ZAPF_DINGBATS {
             font.name = ZapfDingbats.name
             font.bBoxLLx = ZapfDingbats.bBoxLLx
             font.bBoxLLy = ZapfDingbats.bBoxLLy
@@ -156,5 +143,4 @@ class StandardFont {
 
         return font
     }
-
 }

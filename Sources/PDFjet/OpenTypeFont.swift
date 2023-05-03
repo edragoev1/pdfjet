@@ -34,12 +34,12 @@ class OpenTypeFont {
 
         // Type0 Font Dictionary
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /Type0\n")
         pdf.append("/BaseFont /")
         pdf.append(otf.fontName!)
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/Encoding /Identity-H\n")
         pdf.append("/DescendantFonts [")
         pdf.append(font.cidFontDictObjNumber)
@@ -49,13 +49,12 @@ class OpenTypeFont {
         pdf.append(font.toUnicodeCMapObjNumber)
         pdf.append(" 0 R\n")
 
-        pdf.append(">>\n")
+        pdf.append(Token.endDictionary)
         pdf.endobj()
 
         font.objNumber = pdf.getObjNumber()
         pdf.fonts.append(font)
     }
-
 
     private static func embedFontFile(_ pdf: PDF, _ font: Font, _ otf: OTF) {
         // Check if the font file is already embedded
@@ -74,7 +73,7 @@ class OpenTypeFont {
         }
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         if otf.cff {
             pdf.append("/Subtype /CIDFontType0C\n")
         }
@@ -83,23 +82,22 @@ class OpenTypeFont {
 
         pdf.append("/Length ")
         pdf.append(otf.dos.count)      // The compressed size
-        pdf.append("\n")
+        pdf.append(Token.newline)
 
         if !otf.cff {
             pdf.append("/Length1 ")
             pdf.append(otf.buf.count)   // The uncompressed size
-            pdf.append("\n")
+            pdf.append(Token.newline)
         }
 
-        pdf.append(">>\n")
-        pdf.append("stream\n")
+        pdf.append(Token.endDictionary)
+        pdf.append(Token.stream)
         pdf.append(otf.dos)
-        pdf.append("\nendstream\n")
+        pdf.append(Token.endstream)
         pdf.endobj()
 
         font.fileObjNumber = pdf.getObjNumber()
     }
-
 
     private static func addFontDescriptorObject(
             _ pdf: PDF,
@@ -113,17 +111,15 @@ class OpenTypeFont {
         }
 
         let factor = Float(1000.0) / Float(otf.unitsPerEm!)
-
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /FontDescriptor\n")
         pdf.append("/FontName /")
         pdf.append(otf.fontName!)
         pdf.append("\n")
         if otf.cff {
             pdf.append("/FontFile3 ")
-        }
-        else {
+        } else {
             pdf.append("/FontFile2 ")
         }
         pdf.append(font.fileObjNumber)
@@ -149,18 +145,16 @@ class OpenTypeFont {
         pdf.append(Int32(Float(otf.capHeight!) * factor))
         pdf.append("\n")
         pdf.append("/StemV 79\n")
-        pdf.append(">>\n")
+        pdf.append(Token.endDictionary)
         pdf.endobj()
 
         font.fontDescriptorObjNumber = pdf.getObjNumber()
     }
 
-
     private static func addToUnicodeCMapObject(
             _ pdf: PDF,
             _ font: Font,
             _ otf: OTF) {
-
         for f in pdf.fonts {
             if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
@@ -169,7 +163,6 @@ class OpenTypeFont {
         }
 
         var sb = String()
-
         sb.append("/CIDInit /ProcSet findresource begin\n")
         sb.append("12 dict begin\n")
         sb.append("begincmap\n")
@@ -207,19 +200,18 @@ class OpenTypeFont {
         sb.append("end\nend")
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Length ")
         pdf.append(sb.count)
-        pdf.append("\n")
-        pdf.append(">>\n")
-        pdf.append("stream\n")
+        pdf.append(Token.newline)
+        pdf.append(Token.endDictionary)
+        pdf.append(Token.stream)
         pdf.append(sb)
-        pdf.append("\nendstream\n")
+        pdf.append(Token.endstream)
         pdf.endobj()
 
         font.toUnicodeCMapObjNumber = pdf.getObjNumber()
     }
-
 
     private static func addCIDFontDictionaryObject(
             _ pdf: PDF,
@@ -233,17 +225,16 @@ class OpenTypeFont {
         }
 
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /Font\n")
         if otf.cff {
             pdf.append("/Subtype /CIDFontType0\n")
-        }
-        else {
+        } else {
             pdf.append("/Subtype /CIDFontType2\n")
         }
         pdf.append("/BaseFont /")
         pdf.append(otf.fontName!)
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
         pdf.append("/FontDescriptor ")
         pdf.append(font.fontDescriptorObjNumber)
@@ -255,7 +246,7 @@ class OpenTypeFont {
         }
         pdf.append("/DW ")
         pdf.append(Int32(round(k * Float(font.advanceWidth![0]))))
-        pdf.append("\n")
+        pdf.append(Token.newline)
         pdf.append("/W [0[\n")
         for i in 0..<font.advanceWidth!.count {
             pdf.append(Int32(round(k * Float(font.advanceWidth![i]))))
@@ -264,27 +255,23 @@ class OpenTypeFont {
         pdf.append("]]\n")
 
         pdf.append("/CIDToGIDMap /Identity\n")
-        pdf.append(">>\n")
+        pdf.append(Token.endDictionary)
         pdf.endobj()
 
         font.cidFontDictObjNumber = pdf.getObjNumber()
     }
 
-
     private static func toHexString(_ code: Int) -> String {
         let str = String(code, radix: 16)
         if str.unicodeScalars.count == 1 {
             return "000" + str
-        }
-        else if str.unicodeScalars.count == 2 {
+        } else if str.unicodeScalars.count == 2 {
             return "00" + str
-        }
-        else if str.unicodeScalars.count == 3 {
+        } else if str.unicodeScalars.count == 3 {
             return "0" + str
         }
         return str
     }
-
 
     private static func writeListToBuffer(
             _ list: inout [String], _ sb: inout String) {
@@ -296,5 +283,4 @@ class OpenTypeFont {
         sb.append("endbfchar\n")
         list.removeAll()
     }
-
 }   // End of OpenTypeFont.swift

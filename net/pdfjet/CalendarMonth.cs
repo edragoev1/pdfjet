@@ -112,8 +112,7 @@ public class CalendarMonth : IDrawable {
                             x1 + 7*dx,
                             y1 + dy/2 + f1.descent);
                     line.DrawOn(page);
-                }
-                else {
+                } else {
                     int dayOfMonth = ((7*row + col) - 6) - dayOfWeek;
                     if (dayOfMonth > 0 && dayOfMonth <= daysInMonth) {
                         String s1 = dayOfMonth.ToString();

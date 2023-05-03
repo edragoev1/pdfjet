@@ -114,8 +114,7 @@ public class OTF {
                 new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_SPEED));
         if (cff) {
             dos.write(buf, cffOff, cffLen);
-        }
-        else {
+        } else {
             dos.write(buf, 0, buf.length);
         }
         dos.finish();
@@ -170,20 +169,17 @@ public class OTF {
                         buf, table.offset + stringOffset + offset, length, "UTF-8");
                 if (nameID == 6) {
                     fontName = str;
-                }
-                else {
+                } else {
                     macFontInfo.append(str);
                     macFontInfo.append('\n');
                 }
-            }
-            else if (platformID == 3 && encodingID == 1 && languageID == 0x409) {
+            } else if (platformID == 3 && encodingID == 1 && languageID == 0x409) {
                 // Windows
                 String str = new String(
                         buf, table.offset + stringOffset + offset, length, "UTF-16");
                 if (nameID == 6) {
-                    fontName = str;
-                }
-                else {
+                    fontName = new String(str.getBytes("UTF-8"));
+                } else {
                     winFontInfo.append(str);
                     winFontInfo.append('\n');
                 }

@@ -142,11 +142,9 @@ public class Image : Drawable {
             h = Float(jpg.getHeight())
             if jpg.getColorComponents() == 1 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceGray", 8)
-            }
-            else if jpg.getColorComponents() == 3 {
+            } else if jpg.getColorComponents() == 3 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
-            }
-            else if jpg.getColorComponents() == 4 {
+            } else if jpg.getColorComponents() == 4 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceCMYK", 8)
             }
         } else if imageType == ImageType.PNG {
@@ -178,7 +176,7 @@ public class Image : Drawable {
         w = Float(obj.getValue("/Width"))
         h = Float(obj.getValue("/Height"))
         pdf.newobj()
-        pdf.append("<<\n")
+        pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
         pdf.append("/Filter ")
@@ -214,10 +212,10 @@ public class Image : Drawable {
         pdf.append("/Length ")
         pdf.append(obj.stream!.count)
         pdf.append("\n")
-        pdf.append(">>\n")
-        pdf.append("stream\n")
+        pdf.append(Token.endDictionary)
+        pdf.append(Token.stream)
         pdf.append(obj.stream!, 0, obj.stream!.count)
-        pdf.append("\nendstream\n")
+        pdf.append(Token.endstream)
         pdf.endobj()
         pdf.images.append(self)
         objNumber = pdf.getObjNumber()

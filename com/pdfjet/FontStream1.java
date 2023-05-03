@@ -39,12 +39,12 @@ class FontStream1 {
 
         // Type0 Font Dictionary
         pdf.newobj();
-        pdf.append("<<\n");
+        pdf.append(Token.beginDictionary);
         pdf.append("/Type /Font\n");
         pdf.append("/Subtype /Type0\n");
         pdf.append("/BaseFont /");
-        pdf.append(font.name);
-        pdf.append('\n');
+        pdf.append(font.name.getBytes("UTF-8"));
+        pdf.append(Token.newline);
         pdf.append("/Encoding /Identity-H\n");
         pdf.append("/DescendantFonts [");
         pdf.append(font.cidFontDictObjNumber);
@@ -52,7 +52,7 @@ class FontStream1 {
         pdf.append("/ToUnicode ");
         pdf.append(font.toUnicodeCMapObjNumber);
         pdf.append(" 0 R\n");
-        pdf.append(">>\n");
+        pdf.append(Token.endDictionary);
         pdf.endobj();
         font.objNumber = pdf.getObjNumber();
         pdf.fonts.add(font);
@@ -71,7 +71,7 @@ class FontStream1 {
         int metadataObjNumber = pdf.addMetadataObject(font.info, true);
 
         pdf.newobj();
-        pdf.append("<<\n");
+        pdf.append(Token.beginDictionary);
 
         pdf.append("/Metadata ");
         pdf.append(metadataObjNumber);
@@ -83,23 +83,23 @@ class FontStream1 {
         pdf.append("/Filter /FlateDecode\n");
         pdf.append("/Length ");
         pdf.append(font.compressedSize);
-        pdf.append("\n");
+        pdf.append(Token.newline);
 
         if (!font.cff) {
             pdf.append("/Length1 ");
             pdf.append(font.uncompressedSize);
-            pdf.append('\n');
+            pdf.append(Token.newline);
         }
 
-        pdf.append(">>\n");
-        pdf.append("stream\n");
+        pdf.append(Token.endDictionary);
+        pdf.append(Token.stream);
         byte[] buf = new byte[4096];
         int len;
         while ((len = inputStream.read(buf, 0, buf.length)) > 0) {
             pdf.append(buf, 0, len);
         }
         inputStream.close();
-        pdf.append("\nendstream\n");
+        pdf.append(Token.endstream);
         pdf.endobj();
 
         font.fileObjNumber = pdf.getObjNumber();
@@ -121,8 +121,7 @@ class FontStream1 {
         pdf.append('\n');
         if (font.cff) {
             pdf.append("/FontFile3 ");
-        }
-        else {
+        } else {
             pdf.append("/FontFile2 ");
         }
         pdf.append(font.fileObjNumber);

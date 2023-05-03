@@ -43,6 +43,10 @@ public class Page {
     protected int objNumber;
     protected ByteArrayOutputStream buf;
     protected float[] tm = new float[] {1f, 0f, 0f, 1f};
+    protected byte[] tm0;   // Used for caching tm values
+    protected byte[] tm1;
+    protected byte[] tm2;
+    protected byte[] tm3;
     protected int renderingMode = 0;
     protected float width;
     protected float height;
@@ -122,6 +126,10 @@ public class Page {
         width = pageSize[0];
         height = pageSize[1];
         buf = new ByteArrayOutputStream(8192);
+        tm0 = PDF.df.format(tm[0]).getBytes();
+        tm1 = PDF.df.format(tm[1]).getBytes();
+        tm2 = PDF.df.format(tm[2]).getBytes();
+        tm3 = PDF.df.format(tm[3]).getBytes();
         if (addPageToPDF) {
             pdf.addPage(this);
         }
@@ -133,6 +141,10 @@ public class Page {
         width = pageObj.getPageSize()[0];
         height = pageObj.getPageSize()[1];
         buf = new ByteArrayOutputStream(8192);
+        tm0 = PDF.df.format(tm[0]).getBytes();
+        tm1 = PDF.df.format(tm[1]).getBytes();
+        tm2 = PDF.df.format(tm[2]).getBytes();
+        tm3 = PDF.df.format(tm[3]).getBytes();
         append("q\n");
         if (pageObj.gsNumber != -1) {
             append("/GS");
@@ -260,8 +272,7 @@ public class Page {
             Map<String, Integer> colors) {
         if (font.isCoreFont || font.isCJK || fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
             drawString(font, str, x, y, brush, colors);
-        }
-        else {
+        } else {
             Font activeFont = font;
             StringBuilder buf = new StringBuilder();
             for (int i = 0; i < str.length(); i++) {
@@ -273,8 +284,7 @@ public class Page {
                     // Switch the active font
                     if (activeFont == font) {
                         activeFont = fallbackFont;
-                    }
-                    else {
+                    } else {
                         activeFont = font;
                     }
                 }
@@ -348,27 +358,38 @@ public class Page {
             append(" Tr\n");
         }
 
-        float skew = 0f;
         if (font.skew15 &&
                 tm[0] == 1f &&
                 tm[1] == 0f &&
                 tm[2] == 0f &&
                 tm[3] == 1f) {
-            skew = 0.26f;
+            float skew = 0.26f;
+            append(tm[0]);
+            append(' ');
+            append(tm[1]);
+            append(' ');
+            append(tm[2] + skew);
+            append(' ');
+            append(tm[3]);
+            append(' ');
+            append(x);
+            append(' ');
+            append(height - y);
+            append(" Tm\n");
+        } else {
+            append(tm0);
+            append(' ');
+            append(tm1);
+            append(' ');
+            append(tm2);
+            append(' ');
+            append(tm3);
+            append(' ');
+            append(x);
+            append(' ');
+            append(height - y);
+            append(" Tm\n");
         }
-
-        append(tm[0]);
-        append(' ');
-        append(tm[1]);
-        append(' ');
-        append(tm[2] + skew);
-        append(' ');
-        append(tm[3]);
-        append(' ');
-        append(x);
-        append(' ');
-        append(height - y);
-        append(" Tm\n");
 
         if (colors == null) {
             setBrushColor(brush);
@@ -608,6 +629,14 @@ public class Page {
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         setPenColor(r, g, b);
+    }
+
+    public void setPenColor(float[] color) {
+        setPenColor(color[0], color[1], color[2]);
+    }
+
+    public float[] getPenColor() {
+        return pen;        
     }
 
     /**
@@ -880,14 +909,12 @@ public class Page {
             if (point.isControlPoint) {
                 curve = true;
                 append(point);
-            }
-            else {
+            } else {
                 if (curve) {
                     curve = false;
                     append(point);
                     append("c\n");
-                }
-                else {
+                } else {
                     lineTo(point.x, point.y);
                 }
             }
@@ -1041,7 +1068,6 @@ public class Page {
             char operation) {
         // The best 4-spline magic number
         float m4 = 0.551784f;
-
         // Starting point
         moveTo(x, y - r2);
 
@@ -1081,12 +1107,10 @@ public class Page {
             if (p.shape == Point.CIRCLE) {
                 if (p.fillShape) {
                     drawCircle(p.x, p.y, p.r, 'f');
-                }
-                else {
+                } else {
                     drawCircle(p.x, p.y, p.r, 'S');
                 }
-            }
-            else if (p.shape == Point.DIAMOND) {
+            } else if (p.shape == Point.DIAMOND) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y));
@@ -1094,12 +1118,10 @@ public class Page {
                 list.add(new Point(p.x - p.r, p.y));
                 if (p.fillShape) {
                     drawPath(list, 'f');
-                }
-                else {
+                } else {
                     drawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.BOX) {
+            } else if (p.shape == Point.BOX) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x - p.r, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y - p.r));
@@ -1107,80 +1129,65 @@ public class Page {
                 list.add(new Point(p.x - p.r, p.y + p.r));
                 if (p.fillShape) {
                     drawPath(list, 'f');
-                }
-                else {
+                } else {
                     drawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.PLUS) {
+            } else if (p.shape == Point.PLUS) {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            }
-            else if (p.shape == Point.UP_ARROW) {
+            } else if (p.shape == Point.UP_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y + p.r));
                 list.add(new Point(p.x - p.r, p.y + p.r));
                 if (p.fillShape) {
                     drawPath(list, 'f');
-                }
-                else {
+                } else {
                     drawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.DOWN_ARROW) {
+            } else if (p.shape == Point.DOWN_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x - p.r, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y - p.r));
                 list.add(new Point(p.x, p.y + p.r));
                 if (p.fillShape) {
                     drawPath(list, 'f');
-                }
-                else {
+                } else {
                     drawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.LEFT_ARROW) {
+            } else if (p.shape == Point.LEFT_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x + p.r, p.y + p.r));
                 list.add(new Point(p.x - p.r, p.y));
                 list.add(new Point(p.x + p.r, p.y - p.r));
                 if (p.fillShape) {
                     drawPath(list, 'f');
-                }
-                else {
+                } else {
                     drawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.RIGHT_ARROW) {
+            } else if (p.shape == Point.RIGHT_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x - p.r, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y));
                 list.add(new Point(p.x - p.r, p.y + p.r));
                 if (p.fillShape) {
                     drawPath(list, 'f');
-                }
-                else {
+                } else {
                     drawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.H_DASH) {
+            } else if (p.shape == Point.H_DASH) {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
-            }
-            else if (p.shape == Point.V_DASH) {
+            } else if (p.shape == Point.V_DASH) {
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            }
-            else if (p.shape == Point.X_MARK) {
+            } else if (p.shape == Point.X_MARK) {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
-            }
-            else if (p.shape == Point.MULTIPLY) {
+            } else if (p.shape == Point.MULTIPLY) {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            }
-            else if (p.shape == Point.STAR) {
+            } else if (p.shape == Point.STAR) {
                 float angle = (float) Math.PI / 10;
                 float sin18 = (float) Math.sin(angle);
                 float cos18 = (float) Math.cos(angle);
@@ -1196,8 +1203,7 @@ public class Page {
                 list.add(new Point(p.x - c, p.y + d));
                 if (p.fillShape) {
                     drawPath(list, 'f');
-                }
-                else {
+                } else {
                     drawPath(list, 's');
                 }
             }
@@ -1213,8 +1219,7 @@ public class Page {
     public void setTextRenderingMode(int mode) throws Exception {
         if (mode >= 0 && mode <= 7) {
             this.renderingMode = mode;
-        }
-        else {
+        } else {
             throw new Exception("Invalid text rendering mode: " + mode);
         }
     }
@@ -1228,24 +1233,23 @@ public class Page {
         if (degrees > 360) degrees %= 360;
         if (degrees == 0) {
             tm = new float[] { 1f,  0f,  0f,  1f};
-        }
-        else if (degrees == 90) {
+        } else if (degrees == 90) {
             tm = new float[] { 0f,  1f, -1f,  0f};
-        }
-        else if (degrees == 180) {
+        } else if (degrees == 180) {
             tm = new float[] {-1f,  0f,  0f, -1f};
-        }
-        else if (degrees == 270) {
+        } else if (degrees == 270) {
             tm = new float[] { 0f, -1f,  1f,  0f};
-        }
-        else if (degrees == 360) {
+        } else if (degrees == 360) {
             tm = new float[] { 1f,  0f,  0f,  1f};
-        }
-        else {
+        } else {
             float sinOfAngle = (float) Math.sin(degrees * (Math.PI / 180));
             float cosOfAngle = (float) Math.cos(degrees * (Math.PI / 180));
             tm = new float[] {cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle};
         }
+        tm0 = PDF.df.format(tm[0]).getBytes();
+        tm1 = PDF.df.format(tm[1]).getBytes();
+        tm2 = PDF.df.format(tm[2]).getBytes();
+        tm3 = PDF.df.format(tm[3]).getBytes();
     }
 
     /**
@@ -1307,10 +1311,8 @@ public class Page {
     public void drawRectRoundCorners(
             float x, float y, float w, float h, float r1, float r2, char operation)
         throws Exception {
-
         // The best 4-spline magic number
         float m4 = 0.551784f;
-
         List<Point> list = new ArrayList<Point>();
 
         // Starting point
@@ -1477,8 +1479,10 @@ public class Page {
      *  @param buffer the array of bytes that is appended.
      *  @throws IOException  If an input or output exception occurred
      */
-    public void append(byte[] buffer) throws IOException {
-        buf.write(buffer);
+    public void append(byte[] buffer) {
+        for (int i = 0; i < buffer.length; i++) {
+            buf.write(buffer[i]);
+        }
     }
 
     private void drawWord(
@@ -1555,6 +1559,12 @@ public class Page {
             append(mcid++);
             append(">>\n");
             append("BDC\n");
+        }
+    }
+
+    public void addArtifactBMC() {
+        if (pdf.compliance == Compliance.PDF_UA) {
+            append("/Artifact BMC\n");
         }
     }
 

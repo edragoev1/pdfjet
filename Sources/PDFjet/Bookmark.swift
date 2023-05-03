@@ -86,8 +86,7 @@ public class Bookmark {
         bookmark.dest = page.addDestination(key, title.textLine!.getDestinationY())
         if children == nil {
             children = [Bookmark]()
-        }
-        else {
+        } else {
             bookmark.prev = children![children!.count - 1]
             children![children!.count - 1].next = bookmark
         }
@@ -118,28 +117,23 @@ public class Bookmark {
             bm = getParent()
             if bm!.prefix == nil {
                 prefix = "1"
-            }
-            else {
+            } else {
                 prefix = bm!.prefix! + ".1"
             }
-        }
-        else {
+        } else {
             if bm!.prefix == nil {
                 if bm!.getParent()!.prefix == nil {
                     prefix = "1"
-                }
-                else {
+                } else {
                     prefix = bm!.getParent()!.prefix! + ".1"
                 }
-            }
-            else {
+            } else {
                 if let index = bm!.prefix!.lastIndexOf(".") {
                     // TODO: Compare to the Java code!!!
                     let index2 = bm!.prefix!.index(after: index)
                     prefix = String(bm!.prefix![...index]) +
                             String(Int(bm!.prefix![index2...])! + 1)
-                }
-                else {
+                } else {
                     prefix = String(Int(bm!.prefix!)! + 1)
                 }
             }

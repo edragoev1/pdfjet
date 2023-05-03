@@ -303,20 +303,17 @@ public class Path implements Drawable {
             list.add(new Point(x + m4*r1, y - r2, Point.CONTROL_POINT));
             list.add(new Point(x + r1, y - m4*r2, Point.CONTROL_POINT));
             list.add(new Point(x + r1, y));
-        }
-        else if (segment == 1) {
+        } else if (segment == 1) {
             list.add(new Point(x + r1, y));
             list.add(new Point(x + r1, y + m4*r2, Point.CONTROL_POINT));
             list.add(new Point(x + m4*r1, y + r2, Point.CONTROL_POINT));
             list.add(new Point(x, y + r2));
-        }
-        else if (segment == 2) {
+        } else if (segment == 2) {
             list.add(new Point(x, y + r2));
             list.add(new Point(x - m4*r1, y + r2, Point.CONTROL_POINT));
             list.add(new Point(x - r1, y + m4*r2, Point.CONTROL_POINT));
             list.add(new Point(x - r1, y));
-        }
-        else if (segment == 3) {
+        } else if (segment == 3) {
             list.add(new Point(x - r1, y));
             list.add(new Point(x - r1, y - m4*r2, Point.CONTROL_POINT));
             list.add(new Point(x - m4*r1, y - r2, Point.CONTROL_POINT));
@@ -337,8 +334,7 @@ public class Path implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         if (fillShape) {
             page.setBrushColor(color);
-        }
-        else {
+        } else {
             page.setPenColor(color);
         }
         page.setPenWidth(width);
@@ -354,12 +350,10 @@ public class Path implements Drawable {
 
         if (fillShape) {
             page.drawPath(points, 'f');
-        }
-        else {
+        } else {
             if (closePath) {
                 page.drawPath(points, 's');
-            }
-            else {
+            } else {
                 page.drawPath(points, 'S');
             }
         }

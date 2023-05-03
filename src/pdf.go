@@ -38,6 +38,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/compressor"
 	"github.com/edragoev1/pdfjet/src/djb"
+	"github.com/edragoev1/pdfjet/src/token"
 )
 
 // PDF is used to create PDF objects.
@@ -143,6 +144,10 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	return pdf
 }
 
+func (pdf *PDF) SetCompliance(compliance int) {
+	pdf.compliance = compliance
+}
+
 func NewPDFFile(filePath string, pdfCompliance int) *PDF {
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -167,7 +172,7 @@ func (pdf *PDF) getObjNumber() int {
 
 func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	var sb strings.Builder
-	sb.WriteString("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+	sb.WriteString("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
 	sb.WriteString("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n")
 	sb.WriteString("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n")
 	sb.WriteString("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
@@ -177,7 +182,7 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		sb.WriteString("<xmpRights:UsageTerms>\n")
 		sb.WriteString("<rdf:Alt>\n")
 		sb.WriteString("<rdf:li xml:lang=\"x-default\">\n")
-		sb.WriteString(notice)
+		sb.WriteString(string([]byte(notice)))
 		sb.WriteString("</rdf:li>\n")
 		sb.WriteString("</rdf:Alt>\n")
 		sb.WriteString("</xmpRights:UsageTerms>\n")
@@ -393,11 +398,17 @@ func (pdf *PDF) addResourcesObject() int {
 
 func (pdf *PDF) addPagesObject() int {
 	pdf.newobj()
-	pdf.appendString("<<\n")
+	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Pages\n")
 	pdf.appendString("/Kids [\n")
 	for _, page := range pdf.pages {
-		if pdf.compliance == compliance.PDF_UA {
+		if pdf.compliance == compliance.PDF_UA ||
+			pdf.compliance == compliance.PDF_A_1A ||
+			pdf.compliance == compliance.PDF_A_1B ||
+			pdf.compliance == compliance.PDF_A_2A ||
+			pdf.compliance == compliance.PDF_A_2B ||
+			pdf.compliance == compliance.PDF_A_3A ||
+			pdf.compliance == compliance.PDF_A_3B {
 			page.setStructElementsPageObjNumber(page.objNumber)
 		}
 		pdf.appendInteger(page.objNumber)
@@ -406,8 +417,8 @@ func (pdf *PDF) addPagesObject() int {
 	pdf.appendString("]\n")
 	pdf.appendString("/Count ")
 	pdf.appendInteger(len(pdf.pages))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
+	pdf.appendByte('\n')
+	pdf.appendByteArray(token.EndDictionary)
 	pdf.endobj()
 	return pdf.getObjNumber()
 }
@@ -441,7 +452,7 @@ func (pdf *PDF) addInfoObject() int {
 
 func (pdf *PDF) addStructTreeRootObject() int {
 	pdf.newobj()
-	pdf.appendString("<<\n")
+	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /StructTreeRoot\n")
 	pdf.appendString("/ParentTree ")
 	pdf.appendInteger(pdf.getObjNumber() + 1)
@@ -450,7 +461,7 @@ func (pdf *PDF) addStructTreeRootObject() int {
 	pdf.appendInteger(pdf.getObjNumber() + 2)
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("]\n")
-	pdf.appendString(">>\n")
+	pdf.appendByteArray(token.EndDictionary)
 	pdf.endobj()
 	return pdf.getObjNumber()
 }
@@ -481,48 +492,36 @@ func (pdf *PDF) addStructElementObjects() {
 	for _, page := range pdf.pages {
 		structTreeRootObjNumber += len(page.structures)
 	}
-
 	for _, page := range pdf.pages {
 		for _, element := range page.structures {
 			pdf.newobj()
 			element.objNumber = pdf.getObjNumber()
-			pdf.appendString("<<\n")
-			pdf.appendString("/Type /StructElem\n")
-			pdf.appendString("/S /")
+			pdf.appendString("<<\n/Type /StructElem /S /")
 			pdf.appendString(element.structure)
-			pdf.appendString("\n")
-			pdf.appendString("/P ")
+			pdf.appendString("\n/P ")
 			pdf.appendInteger(structTreeRootObjNumber + 2) // Use the document struct as parent!
-			pdf.appendString(" 0 R\n")
-			pdf.appendString("/Pg ")
+			pdf.appendString(" 0 R\n/Pg ")
 			pdf.appendInteger(element.pageObjNumber)
 			pdf.appendString(" 0 R\n")
-
 			if element.annotation != nil {
-				pdf.appendString("/K <<\n")
-				pdf.appendString("/Type /OBJR\n")
-				pdf.appendString("/Obj ")
+				pdf.appendString("/K <</Type /OBJR /Obj ")
 				pdf.appendInteger(element.annotation.objNumber)
-				pdf.appendString(" 0 R\n")
-				pdf.appendString(">>\n")
+				pdf.appendString(" 0 R>>")
 			} else {
 				pdf.appendString("/K ")
 				pdf.appendInteger(element.mcid)
-				pdf.appendString("\n")
 			}
-
+			pdf.appendString("\n/Lang (")
 			if element.language != "" {
-				pdf.appendString("/Lang (")
 				pdf.appendString(element.language)
-				pdf.appendString(")\n")
+			} else {
+				pdf.appendString(pdf.language)
 			}
-			pdf.appendString("/Alt <")
+			pdf.appendString(")\n/Alt <")
 			pdf.appendString(encodeToHex(element.altDescription))
-			pdf.appendString(">\n")
-			pdf.appendString("/ActualText <")
+			pdf.appendString(">\n/ActualText <")
 			pdf.appendString(encodeToHex(element.actualText))
-			pdf.appendString(">\n")
-			pdf.appendString(">>\n")
+			pdf.appendString(">\n>>\n")
 			pdf.endobj()
 		}
 	}
@@ -579,7 +578,13 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Catalog\n")
 
-	if pdf.compliance == compliance.PDF_UA {
+	if pdf.compliance == compliance.PDF_UA ||
+		pdf.compliance == compliance.PDF_A_1A ||
+		pdf.compliance == compliance.PDF_A_1B ||
+		pdf.compliance == compliance.PDF_A_2A ||
+		pdf.compliance == compliance.PDF_A_2B ||
+		pdf.compliance == compliance.PDF_A_3A ||
+		pdf.compliance == compliance.PDF_A_3B {
 		pdf.appendString("/Lang (")
 		pdf.appendString(pdf.language)
 		pdf.appendString(")\n")
@@ -720,7 +725,13 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 			pdf.appendString("]\n")
 		}
 
-		if pdf.compliance == compliance.PDF_UA {
+		if pdf.compliance == compliance.PDF_UA ||
+			pdf.compliance == compliance.PDF_A_1A ||
+			pdf.compliance == compliance.PDF_A_1B ||
+			pdf.compliance == compliance.PDF_A_2A ||
+			pdf.compliance == compliance.PDF_A_2B ||
+			pdf.compliance == compliance.PDF_A_3A ||
+			pdf.compliance == compliance.PDF_A_3B {
 			pdf.appendString("/Tabs /S\n")
 			pdf.appendString("/StructParents ")
 			pdf.appendInteger(i)
@@ -908,10 +919,7 @@ func (pdf *PDF) addOCProperties() {
 
 // AddPage adds page to the PDF.
 func (pdf *PDF) AddPage(page *Page) {
-	n := len(pdf.pages)
-	if n > 0 {
-		pdf.addPageContent(pdf.pages[n-1])
-	}
+	pdf.addPageContent(page)
 	pdf.pages = append(pdf.pages, page)
 }
 
@@ -929,13 +937,18 @@ func (pdf *PDF) Complete() {
 	}
 
 	if pdf.pagesObjNumber == 0 {
-		pdf.addPageContent(pdf.pages[len(pdf.pages)-1])
 		pdf.addAllPages(pdf.addResourcesObject())
 		pdf.addPagesObject()
 	}
 
 	structTreeRootObjNumber := 0
-	if pdf.compliance == compliance.PDF_UA {
+	if pdf.compliance == compliance.PDF_UA ||
+		pdf.compliance == compliance.PDF_A_1A ||
+		pdf.compliance == compliance.PDF_A_1B ||
+		pdf.compliance == compliance.PDF_A_2A ||
+		pdf.compliance == compliance.PDF_A_2B ||
+		pdf.compliance == compliance.PDF_A_3A ||
+		pdf.compliance == compliance.PDF_A_3B {
 		pdf.addStructElementObjects()
 		structTreeRootObjNumber = pdf.addStructTreeRootObject()
 		pdf.addNumsParentTree()
@@ -1359,7 +1372,6 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 	}
 
 	obj.SetStreamAndData(buf, length)
-
 	n := n1 + n2 + n3 // Number of bytes per entry
 	if predictor > 0 {
 		n++
@@ -1791,7 +1803,7 @@ func (pdf *PDF) appendString(text string) {
 }
 
 func (pdf *PDF) appendByte(b byte) {
-	pdf.writer.Write([]byte{b})
+	pdf.writer.WriteByte(b)
 	pdf.byteCount++
 }
 

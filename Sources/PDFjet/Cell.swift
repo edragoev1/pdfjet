@@ -539,8 +539,7 @@ public class Cell {
     public func setUnderline(_ underline: Bool) {
         if underline {
             self.properties |= 0x00400000
-        }
-        else {
+        } else {
             self.properties &= 0x00BFFFFF
         }
     }
@@ -562,8 +561,7 @@ public class Cell {
     public func setStrikeout(_ strikeout: Bool) {
         if strikeout {
             self.properties |= 0x00800000
-        }
-        else {
+        } else {
             self.properties &= 0x007FFFFF
         }
     }
@@ -628,8 +626,7 @@ public class Cell {
         if point != nil {
             if point!.align == Align.LEFT {
                 point!.x = x + 2*point!.r
-            }
-            else if point!.align == Align.RIGHT {
+            } else if point!.align == Align.RIGHT {
                 point!.x = (x + w) - self.rightPadding/2
             }
             point!.y = y + h/2

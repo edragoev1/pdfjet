@@ -147,8 +147,7 @@ public class Text : IDrawable {
         String[] tokens = null;
         if (StringIsCJK(textLine.text)) {
             tokens = TokenizeCJK(textLine, this.width);
-        }
-        else {
+        } else {
             tokens = Regex.Split(textLine.text, @"\s+");
         }
 
@@ -219,8 +218,7 @@ public class Text : IDrawable {
             char ch = textLine.text[i];
             if (textLine.font.StringWidth(textLine.fallbackFont, buf.ToString() + ch) < textWidth) {
                 buf.Append(ch);
-            }
-            else {
+            } else {
                 list.Add(buf.ToString());
                 buf.Length = 0;
                 buf.Append(ch);

@@ -58,8 +58,7 @@ public class SimpleDateFormat {
                 }
                 dateAndTime += str;
             }
-        }
-        else {
+        } else {
             List<int> list = new List<int>();
             list.Add(now.Month);
             list.Add(now.Day);

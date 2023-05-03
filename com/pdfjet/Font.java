@@ -408,8 +408,7 @@ public class Font {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 if (c1 < firstChar || c1 > lastChar) {
                     width += advanceWidth[0];
                 } else {
@@ -501,8 +500,7 @@ public class Font {
 
             if (c1 < firstChar || c1 > lastChar) {
                 w -= advanceWidth[0];
-            }
-            else {
+            } else {
                 w -= glyphWidth[c1];
             }
 
@@ -595,8 +593,7 @@ public class Font {
                 // Switch the active font
                 if (activeFont == this) {
                     activeFont = fallbackFont;
-                }
-                else {
+                } else {
                     activeFont = this;
                 }
             }

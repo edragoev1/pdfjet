@@ -44,7 +44,6 @@ import java.util.*;
  * It was completely rewritten in 2013 by Eugene Dragoev.
  */
 public class TextBox implements Drawable {
-
     protected Font font;
     protected Font fallbackFont;
     protected String text;
@@ -679,6 +678,7 @@ public class TextBox implements Drawable {
     }
 
     private void drawBorders(Page page) {
+        page.addArtifactBMC();
         page.setPenColor(pen);
         page.setPenWidth(lineWidth);
         if (getBorder(Border.ALL)) {
@@ -705,6 +705,7 @@ public class TextBox implements Drawable {
                 page.strokePath();
             }
         }
+        page.addEMC();
     }
 
     // Preserves the leading spaces and tabs
@@ -816,7 +817,9 @@ public class TextBox implements Drawable {
             if (page != null) {
                 if (getBgColor() != Color.transparent) {
                     page.setBrushColor(background);
+                    page.addArtifactBMC();
                     page.fillRect(x, y, width, height);
+                    page.addEMC();
                 }
                 page.setPenColor(this.pen);
                 page.setBrushColor(this.brush);
@@ -852,7 +855,9 @@ public class TextBox implements Drawable {
             if (page != null) {
                 if (getBgColor() != Color.transparent) {
                     page.setBrushColor(background);
+                    page.addArtifactBMC();
                     page.fillRect(x, y, width, (lines.length * leading - spacing) + 2*margin);
+                    page.addEMC();
                 }
                 page.setPenColor(this.pen);
                 page.setBrushColor(this.brush);
@@ -908,15 +913,19 @@ public class TextBox implements Drawable {
         float lineLength = font.stringWidth(fallbackFont, text);
         if (getUnderline()) {
             float yAdjust = font.underlinePosition;
+            page.addArtifactBMC();
             page.moveTo(xText, yText + yAdjust);
             page.lineTo(xText + lineLength, yText + yAdjust);
             page.strokePath();
+            page.addEMC();
         }
         if (getStrikeout()) {
             float yAdjust = font.bodyHeight / 4;
+            page.addArtifactBMC();
             page.moveTo(xText, yText - yAdjust);
             page.lineTo(xText + lineLength, yText - yAdjust);
             page.strokePath();
+            page.addEMC();
         }
     }
 

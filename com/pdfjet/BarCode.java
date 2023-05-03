@@ -357,8 +357,10 @@ public class BarCode implements Drawable {
             float h) {
         if (page != null) {
             // 101
+            page.addArtifactBMC();
             drawBar(page, x + (0.5f * m1), y, m1, h);
             drawBar(page, x + (2.5f * m1), y, m1, h);
+            page.addEMC();
         }
         return (x + (3.0f * m1));
     }
@@ -372,8 +374,10 @@ public class BarCode implements Drawable {
             float h) {
         if (page != null) {
             // 01010
+            page.addArtifactBMC();
             drawBar(page, x + (1.5f * m1), y, m1, h);
             drawBar(page, x + (3.5f * m1), y, m1, h);
+            page.addEMC();
         }
         return (x + (5.0f * m1));
     }
@@ -650,7 +654,6 @@ public class BarCode implements Drawable {
         return new float[] {xy[0], xy[1]};
     }
 
-
     private void drawVertBar(
             Page page,
             float x,
@@ -658,13 +661,14 @@ public class BarCode implements Drawable {
             float m1,   // Module length
             float h) throws Exception {
         if (page != null) {
+            page.addArtifactBMC();
             page.setPenWidth(m1);
             page.moveTo(x + m1 / 2, y);
             page.lineTo(x + m1 / 2, y + h);
             page.strokePath();
+            page.addEMC();
         }
     }
-
 
     private void drawHorzBar(
             Page page,
@@ -673,13 +677,14 @@ public class BarCode implements Drawable {
             float m1,   // Module length
             float w) {
         if (page != null) {
+            page.addArtifactBMC();
             page.setPenWidth(m1);
             page.moveTo(x, y + m1 / 2);
             page.lineTo(x + w, y + m1 / 2);
             page.strokePath();
+            page.addEMC();
         }
     }
-
 
     private void drawHorzBar2(
             Page page,
@@ -688,13 +693,14 @@ public class BarCode implements Drawable {
             float m1,   // Module length
             float w) throws Exception {
         if (page != null) {
+            page.addArtifactBMC();
             page.setPenWidth(m1);
             page.moveTo(x, y - m1 / 2);
             page.lineTo(x + w, y - m1 / 2);
             page.strokePath();
+            page.addEMC();
         }
     }
-
 
     public float getHeight() {
         if (font == null) {
@@ -702,5 +708,4 @@ public class BarCode implements Drawable {
         }
         return m1 * barHeightFactor + font.getHeight();
     }
-
 }   // End of BarCode.java

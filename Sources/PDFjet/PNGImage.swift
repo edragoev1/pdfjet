@@ -104,24 +104,18 @@ public class PNGImage {
             // Grayscale Image
             if bitDepth == 16 {
                 image = getImageColorType0BitDepth16(inflatedImageData)
-            }
-            else if bitDepth == 8 {
+            } else if bitDepth == 8 {
                 image = getImageColorType0BitDepth8(inflatedImageData)
-            }
-            else if bitDepth == 4 {
+            } else if bitDepth == 4 {
                 image = getImageColorType0BitDepth4(inflatedImageData)
-            }
-            else if bitDepth == 2 {
+            } else if bitDepth == 2 {
                 image = getImageColorType0BitDepth2(inflatedImageData)
-            }
-            else if bitDepth == 1 {
+            } else if bitDepth == 1 {
                 image = getImageColorType0BitDepth1(inflatedImageData)
-            }
-            else {
+            } else {
                 Swift.print("Image with unsupported bit depth == \(String(bitDepth))")
             }
-        }
-        else if colorType == 6 {
+        } else if colorType == 6 {
             if bitDepth == 8 {
                 image = getImageColorType6BitDepth8(inflatedImageData)
             } else {
@@ -272,8 +266,7 @@ public class PNGImage {
         for i in 0..<buf.count {
             if i % bytesPerLine == 0 {
                 filters.append(buf[i])
-            }
-            else {
+            } else {
                 image[j] = buf[i]
                 j += 1
             }
@@ -291,8 +284,7 @@ public class PNGImage {
         for i in 0..<buf.count {
             if i % bytesPerLine == 0 {
                 filters.append(buf[i])
-            }
-            else {
+            } else {
                 image[j] = buf[i]
                 j += 1
             }
@@ -355,8 +347,7 @@ public class PNGImage {
         for i in 0..<buf.count {
             if i % bytesPerLine == 0 {
                 filters.append(buf[i])
-            }
-            else {
+            } else {
                 let k = Int(buf[i]) & Int(0xff)
                 if tRNS != nil && k < tRNS!.count {
                     alpha![n] = tRNS![k]
@@ -728,7 +719,7 @@ public class PNGImage {
                     image[index] = image[index] &+ UInt8(b)
                 } else if filter == 0x03 {      // Average
                     image[index] = image[index] &+ UInt8(floor(Double(a + b) / 2.0))
-                }  else if filter == 0x04 {     // Paeth
+                } else if filter == 0x04 {     // Paeth
                     let p = a + b - c
                     let pa = abs(p - a)
                     let pb = abs(p - b)

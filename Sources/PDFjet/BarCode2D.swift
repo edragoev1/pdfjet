@@ -94,12 +94,10 @@ public class BarCode2D : Drawable {
             if k == 1 {
                 lf = cf + ((rows - 1) / 3)
                 lr = cf + (cols - 1)
-            }
-            else if k == 2 {
+            } else if k == 2 {
                 lf = cf + 3*compression + ((rows - 1) % 3)
                 lr = cf + ((rows - 1) / 3)
-            }
-            else if k == 3 {
+            } else if k == 3 {
                 lf = cf + (cols - 1)
                 lr = cf + 3*compression + ((rows - 1) % 3)
             }
@@ -189,46 +187,37 @@ public class BarCode2D : Drawable {
             let mode = TextCompact.TABLE[Int(scalar.value)][2]
             if mode == currentMode {
                 list.append(value)
-            }
-            else {
+            } else {
                 if mode == BarCode2D.ALPHA && currentMode == BarCode2D.LOWER {
                     list.append(BarCode2D.SHIFT_TO_ALPHA)
                     list.append(value)
-                }
-                else if mode == BarCode2D.ALPHA && currentMode == BarCode2D.MIXED {
+                } else if mode == BarCode2D.ALPHA && currentMode == BarCode2D.MIXED {
                     list.append(BarCode2D.LATCH_TO_ALPHA)
                     list.append(value)
                     currentMode = mode
-                }
-                else if mode == BarCode2D.LOWER && currentMode == BarCode2D.ALPHA {
+                } else if mode == BarCode2D.LOWER && currentMode == BarCode2D.ALPHA {
                     list.append(BarCode2D.LATCH_TO_LOWER)
                     list.append(value)
                     currentMode = mode
-                }
-                else if mode == BarCode2D.LOWER && currentMode == BarCode2D.MIXED {
+                } else if mode == BarCode2D.LOWER && currentMode == BarCode2D.MIXED {
                     list.append(BarCode2D.LATCH_TO_LOWER)
                     list.append(value)
                     currentMode = mode
-                }
-                else if mode == BarCode2D.MIXED && currentMode == BarCode2D.ALPHA {
+                } else if mode == BarCode2D.MIXED && currentMode == BarCode2D.ALPHA {
                     list.append(BarCode2D.LATCH_TO_MIXED)
                     list.append(value)
                     currentMode = mode
-                }
-                else if mode == BarCode2D.MIXED && currentMode == BarCode2D.LOWER {
+                } else if mode == BarCode2D.MIXED && currentMode == BarCode2D.LOWER {
                     list.append(BarCode2D.LATCH_TO_MIXED)
                     list.append(value)
                     currentMode = mode
-                }
-                else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.ALPHA {
+                } else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.ALPHA {
                     list.append(BarCode2D.SHIFT_TO_PUNCT)
                     list.append(value)
-                }
-                else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.LOWER {
+                } else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.LOWER {
                     list.append(BarCode2D.SHIFT_TO_PUNCT)
                     list.append(value)
-                }
-                else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.MIXED {
+                } else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.MIXED {
                     list.append(BarCode2D.SHIFT_TO_PUNCT)
                     list.append(value)
                 }

@@ -26,20 +26,16 @@ class LZWEncode {
                     continue;
                 }
                 writeCode(code1, length, stream);
-            }
-            else {
+            } else {
                 writeCode(code1, length, stream);
                 code2 += 1;
                 if (code2 == 512) {
                     length = 10;
-                }
-                else if (code2 == 1024) {
+                } else if (code2 == 1024) {
                     length = 11;
-                }
-                else if (code2 == 2048) {
+                } else if (code2 == 2048) {
                     length = 12;
-                }
-                else if (code2 == 4095) {                   // EarlyChange is 1
+                } else if (code2 == 4095) {                   // EarlyChange is 1
                     writeCode(256, length, stream);    // Clear Table code
                     code2 = 258;
                     length = 9;

@@ -23,7 +23,6 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create font objects.
 /// The font objects must added to the PDF before they can be used to draw text.
@@ -58,7 +57,7 @@ public class Font {
     var advanceWidth: [UInt16]?
     var glyphWidth: [Int]?
     var unicodeToGID: [Int]?
-    var cff: Bool?
+    var cff: Bool = false
     var compressedSize: Int?
     var uncompressedSize: Int?
     var metrics: [[Int16]]?
@@ -75,7 +74,6 @@ public class Font {
     var bodyHeight: Float = 0.0
     var underlinePosition: Float = 0.0
     var underlineThickness: Float = 0.0
-
 
     ///
     /// Constructor for the 14 standard fonts.
@@ -124,7 +122,6 @@ public class Font {
         pdf.fonts.append(self)
     }
 
-
     // Used by PDFobj
     init(_ coreFont: CoreFont) {
         let font = StandardFont.getInstance(coreFont)
@@ -141,7 +138,6 @@ public class Font {
         self.fontDescent = Int16(font.bBoxLLy!)
         setSize(size)
     }
-
 
     ///
     /// Constructor for CJK - Chinese, Japanese and Korean fonts.
@@ -248,20 +244,17 @@ public class Font {
         pdf.fonts.append(self)
     }
 
-
     // Constructor for .ttf.stream fonts:
     public init(_ pdf: PDF, _ stream: InputStream, _ flag: Bool) throws {
         try FontStream1.register(pdf, self, stream)
         setSize(size)
     }
 
-
     // Constructor for .ttf.stream fonts:
     public init(_ objects: inout [PDFobj], _ stream: InputStream, _ flag: Bool) throws {
         try FontStream2.register(&objects, self, stream)
         setSize(size)
     }
-
 
     ///
     /// Constructor for OpenType and TrueType fonts.
@@ -273,7 +266,6 @@ public class Font {
         try OpenTypeFont.register(pdf, self, stream)
         setSize(size)
     }
-
 
     ///
     /// Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
@@ -291,7 +283,6 @@ public class Font {
         }
         setSize(size);
     }
-
 
     ///
     /// Sets the size of this font.
@@ -318,7 +309,6 @@ public class Font {
         return self
     }
 
-
     ///
     /// Returns the current font size.
     ///
@@ -327,7 +317,6 @@ public class Font {
     public func getSize() -> Float {
         return self.size
     }
-
 
     ///
     /// Sets the kerning for the selected font to 'true' or 'false'
@@ -343,7 +332,6 @@ public class Font {
         return self
     }
 
-
     ///
     /// Returns the width of the specified string when drawn on the page with this font using the current font size.
     ///
@@ -355,11 +343,9 @@ public class Font {
         if str == nil {
             return 0.0
         }
-
         if isCJK {
             return Float(str!.count) * self.ascent
         }
-
         let scalars = Array(str!.unicodeScalars)
         var width = 0
         var i = 0
@@ -376,7 +362,6 @@ public class Font {
                     if c2 < self.firstChar || c2 > self.lastChar {
                         c2 = 32
                     }
-
                     var j: Int = 2
                     while j < metrics![c1].count {
                         if metrics![c1][j] == c2 {
@@ -386,21 +371,17 @@ public class Font {
                         j += 2
                     }
                 }
-            }
-            else {
+            } else {
                 if c1 < firstChar || c1 > lastChar {
                     width += Int(advanceWidth![0])
-                }
-                else {
+                } else {
                     width += glyphWidth![c1]
                 }
             }
             i += 1
         }
-
         return Float(width) * self.size / Float(self.unitsPerEm)
     }
-
 
     ///
     /// Returns the ascent of this font.
@@ -411,7 +392,6 @@ public class Font {
         return self.ascent
     }
 
-
     ///
     /// Returns the descent of this font.
     ///
@@ -420,7 +400,6 @@ public class Font {
     public func getDescent() -> Float {
         return self.descent
     }
-
 
     ///
     /// Returns the height of this font.
@@ -431,7 +410,6 @@ public class Font {
         return self.ascent + self.descent
     }
 
-
     ///
     /// Returns the height of the body of the font.
     ///
@@ -440,7 +418,6 @@ public class Font {
     public func getBodyHeight() -> Float {
         return self.bodyHeight
     }
-
 
     ///
     /// Returns the number of characters from the specified string that will fit within the specified width.
@@ -453,24 +430,19 @@ public class Font {
     public func getFitChars(
             _ str: String,
             _ width: Float) -> Int {
-
         var w = width * Float(unitsPerEm) / size
-
         if isCJK {
             return Int(w / Float(self.ascent))
         }
-
         if isCoreFont {
             return getCoreFontFitChars(str, w)
         }
-
         var i = 0
         for scalar in str.unicodeScalars {
             let c1 = Int(scalar.value)
             if c1 < firstChar || c1 > lastChar {
                 w -= Float(advanceWidth![0])
-            }
-            else {
+            } else {
                 w -= Float(glyphWidth![c1])
             }
             if w < 0 {
@@ -478,17 +450,13 @@ public class Font {
             }
             i += 1
         }
-
         return i
     }
-
 
     private func getCoreFontFitChars(
             _ str: String,
             _ width: Float) -> Int {
-
         var w: Float = width
-
         let scalars = Array(str.unicodeScalars)
         var i: Int = 0
         for scalar in scalars {
@@ -496,19 +464,16 @@ public class Font {
             if c1 < firstChar || c1 > lastChar {
                 c1 = 32
             }
-
             c1 -= 32
             w -= Float(metrics![c1][1])
             if w < 0 {
                 return i
             }
-
             if kernPairs && i < (scalars.count - 1) {
                 var c2 = scalars[i + 1].value
                 if c2 < firstChar || c2 > lastChar {
                     c2 = 32
                 }
-
                 var j: Int = 2
                 while j < metrics![c1].count {
                     if metrics![c1][j] == c2 {
@@ -523,10 +488,8 @@ public class Font {
             }
             i += 1
         }
-
         return i
     }
-
 
     ///
     /// Sets the skew15 private variable.
@@ -542,7 +505,6 @@ public class Font {
         self.skew15 = skew15
     }
 
-
     ///
     /// Returns the width of a string drawn using two fonts.
     ///
@@ -552,11 +514,9 @@ public class Font {
     ///
     public func stringWidth(_ fallbackFont: Font?, _ str: String?) -> Float {
         var width: Float = 0.0
-
         if self.isCoreFont || self.isCJK || fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK {
             return stringWidth(str)
         }
-
         var activeFont = self
         var buf = String()
         for scalar in str!.unicodeScalars {
@@ -566,16 +526,13 @@ public class Font {
                 // Switch the active font
                 if activeFont === self {
                     activeFont = fallbackFont!
-                }
-                else {
+                } else {
                     activeFont = self
                 }
             }
             buf.append(String(scalar))
         }
         width += activeFont.stringWidth(buf)
-
         return width
     }
-
 }   // End of Font.swift

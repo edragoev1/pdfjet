@@ -144,6 +144,10 @@ public class PDF {
         append('\n');
     }
 
+    public void setCompliance(int compliance) {
+        this.compliance = compliance;
+    }
+
     protected void newobj() throws IOException {
         objOffset.add(byteCount);
         append(objOffset.size());
@@ -160,7 +164,7 @@ public class PDF {
 
     protected int addMetadataObject(String notice, boolean fontMetadataObject) throws Exception {
         StringBuilder sb = new StringBuilder();
-        sb.append("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
+        sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
         sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n");
         sb.append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n");
         sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
@@ -170,7 +174,7 @@ public class PDF {
             sb.append("<xmpRights:UsageTerms>\n");
             sb.append("<rdf:Alt>\n");
             sb.append("<rdf:li xml:lang=\"x-default\">\n");
-            sb.append(notice);
+            sb.append(notice.getBytes("UTF-8"));
             sb.append("</rdf:li>\n");
             sb.append("</rdf:Alt>\n");
             sb.append("</xmpRights:UsageTerms>\n");
@@ -187,7 +191,7 @@ public class PDF {
             sb.append("  <dc:format>application/pdf</dc:format>\n");
             if (compliance == Compliance.PDF_UA) {
                 sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
-            } else if (compliance == Compliance.PDF_A_1A) {
+            } else  if (compliance == Compliance.PDF_A_1A) {
                 sb.append("  <pdfaid:part>1</pdfaid:part>\n");
                 sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
             } else if (compliance == Compliance.PDF_A_1B) {
@@ -258,7 +262,7 @@ public class PDF {
 
         sb.append("</rdf:RDF>\n");
         sb.append("</x:xmpmeta>\n");
-        sb.append("<?xpacket end=\"w\"?>");
+        sb.append("<?xpacket end=\"r\"?>");
 
         byte[] xml = sb.toString().getBytes("UTF-8");
 
@@ -269,11 +273,11 @@ public class PDF {
         append("/Subtype /XML\n");
         append("/Length ");
         append(xml.length);
-        append("\n");
+        append(Token.newline);
         append(Token.endDictionary);
-        append("stream\n");
+        append(Token.stream);
         append(xml, 0, xml.length);
-        append("\nendstream\n");
+        append(Token.endstream);
         endobj();
 
         return getObjNumber();
@@ -393,7 +397,13 @@ public class PDF {
         append("/Kids [\n");
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
-            if (compliance == Compliance.PDF_UA) {
+            if (compliance == Compliance.PDF_UA ||
+                    compliance == Compliance.PDF_A_1A ||
+                    compliance == Compliance.PDF_A_1B ||
+                    compliance == Compliance.PDF_A_2A ||
+                    compliance == Compliance.PDF_A_2B ||
+                    compliance == Compliance.PDF_A_3A ||
+                    compliance == Compliance.PDF_A_3B) {
                 page.setStructElementsPageObjNumber(page.objNumber);
             }
             append(page.objNumber);
@@ -474,52 +484,41 @@ public class PDF {
 
     private void addStructElementObjects() throws Exception {
         int structTreeRootObjNumber = getObjNumber() + 1;
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
+        for (Page page : pages) {
             structTreeRootObjNumber += page.structures.size();
         }
-
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
             for (int j = 0; j < page.structures.size(); j++) {
                 newobj();
                 StructElem element = page.structures.get(j);
                 element.objNumber = getObjNumber();
-                append(Token.beginDictionary);
-                append("/Type /StructElem\n");
-                append("/S /");
+                append(Token.beginStructElem);
                 append(element.structure);
-                append("\n");
-                append("/P ");
+                append("\n/P ");
                 append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
-                append(" 0 R\n");
-                append("/Pg ");
+                append(" 0 R\n/Pg ");
                 append(element.pageObjNumber);
                 append(" 0 R\n");
-
                 if (element.annotation != null) {
-                    append("/K <<\n");
-                    append("/Type /OBJR\n");
-                    append("/Obj ");
+                    append(Token.beginAnnotation);
                     append(element.annotation.objNumber);
-                    append(" 0 R\n");
-                    append(Token.endDictionary);
+                    append(Token.endAnnotation);
                 } else {
                     append("/K ");
                     append(element.mcid);
-                    append("\n");
                 }
-
-                append("/Lang (");
-                append(element.language != null ? element.language : language);
-                append(")\n");
-                append("/Alt <");
+                append("\n/Lang (");
+                if (element.language != null) {
+                    append(element.language);
+                } else {
+                    append(language);
+                }
+                append(Token.altDescription);
                 append(toHex(element.altDescription));
-                append(">\n");
-                append("/ActualText <");
+                append(Token.actualText);
                 append(toHex(element.actualText));
-                append(">\n");
-                append(Token.endDictionary);
+                append(Token.endStructElem);
                 endobj();
             }
         }
@@ -577,7 +576,13 @@ public class PDF {
         append(Token.beginDictionary);
         append("/Type /Catalog\n");
 
-        if (compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             append("/Lang (");
             append(language);
             append(")\n");
@@ -721,7 +726,13 @@ public class PDF {
                 append("]\n");
             }
 
-            if (compliance == Compliance.PDF_UA) {
+            if (compliance == Compliance.PDF_UA ||
+                    compliance == Compliance.PDF_A_1A ||
+                    compliance == Compliance.PDF_A_1B ||
+                    compliance == Compliance.PDF_A_2A ||
+                    compliance == Compliance.PDF_A_2B ||
+                    compliance == Compliance.PDF_A_3A ||
+                    compliance == Compliance.PDF_A_3B) {
                 append("/Tabs /S\n");
                 append("/StructParents ");
                 append(i);
@@ -827,12 +838,12 @@ public class PDF {
         append("/Type /Annot\n");
         if (annot.fileAttachment != null) {
             append("/Subtype /FileAttachment\n");
-            append("/T (");
-            append(annot.fileAttachment.title);
-            append(")\n");
-            append("/Contents (");
-            append(annot.fileAttachment.contents);
-            append(")\n");
+            append("/T <");
+            append(toHex(annot.fileAttachment.title));
+            append(">\n");
+            append("/Contents <");
+            append(toHex(annot.fileAttachment.contents));
+            append(">\n");
             append("/FS ");
             append(annot.fileAttachment.embeddedFile.objNumber);
             append(" 0 R\n");
@@ -841,6 +852,9 @@ public class PDF {
             append("\n");
         } else {
             append("/Subtype /Link\n");
+            append("/Contents <");
+            append(toHex(annot.contents));
+            append(">\n");
         }
         append("/Rect [");
         append(annot.x1);
@@ -893,8 +907,7 @@ public class PDF {
                         index = addAnnotationObject(element.annotation, index);
                     }
                 }
-            }
-            else if (page.annots.size() > 0) {
+            } else if (page.annots.size() > 0) {
                 for (int j = 0; j < page.annots.size(); j++) {
                     Annotation annotation = page.annots.get(j);
                     if (annotation != null) {
@@ -943,10 +956,7 @@ public class PDF {
     }
 
     public void addPage(Page page) throws Exception {
-        int n = pages.size();
-        if (n > 0) {
-            addPageContent(pages.get(n - 1));
-        }
+        addPageContent(page);
         pages.add(page);
     }
 
@@ -976,13 +986,18 @@ public class PDF {
         }
 
         if (pagesObjNumber == 0) {
-            addPageContent(pages.get(pages.size() - 1));
             addAllPages(addResourcesObject());
             addPagesObject();
         }
 
         int structTreeRootObjNumber = 0;
-        if (compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             addStructElementObjects();
             structTreeRootObjNumber = addStructTreeRootObject();
             addNumsParentTree();

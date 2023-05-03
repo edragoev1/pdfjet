@@ -566,8 +566,7 @@ public class Point : IDrawable {
 
         if (fillShape) {
             page.SetBrushColor(color);
-        }
-        else {
+        } else {
             page.SetPenColor(color);
         }
 

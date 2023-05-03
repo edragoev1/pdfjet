@@ -51,7 +51,7 @@ public class OptimizeOTF {
         fos.write(name.length);
         fos.write(name);
 
-        byte[] info = otf.fontInfo.toString().getBytes("UTF8");
+        byte[] info = otf.fontInfo.getBytes("UTF8");
         writeInt24(info.length, fos);
         fos.write(info);
 
@@ -105,8 +105,7 @@ public class OptimizeOTF {
             for (int i = 0; i < otf.cffLen; i++) {
                 buf3[i] = otf.buf[otf.cffOff + i];
             }
-        }
-        else {
+        } else {
             fos.write('N');
         }
 
@@ -193,8 +192,7 @@ public class OptimizeOTF {
                     System.out.println("Writing: " + fileName + ".stream");
                 }
             }
-        }
-        else {
+        } else {
             System.out.println("Reading: " + args[0]);
             convertFontFile(args[0]);
             System.out.println("Writing: " + args[0] + ".stream");

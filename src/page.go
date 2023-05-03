@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -54,6 +55,10 @@ type Page struct {
 	pageObj       *PDFobj
 	objNumber     int
 	tm            [4]float32
+	tm0           []byte
+	tm1           []byte
+	tm2           []byte
+	tm3           []byte
 	renderingMode int
 	width         float32
 	height        float32
@@ -135,6 +140,10 @@ func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
 	page.tm = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.buf = []byte{}
 	page.penWidth = -1.0
+	page.tm0 = []byte(strconv.FormatFloat(float64(page.tm[0]), 'f', 2, 32))
+	page.tm1 = []byte(strconv.FormatFloat(float64(page.tm[1]), 'f', 2, 32))
+	page.tm2 = []byte(strconv.FormatFloat(float64(page.tm[2]), 'f', 2, 32))
+	page.tm3 = []byte(strconv.FormatFloat(float64(page.tm[3]), 'f', 2, 32))
 	if addToPDF {
 		pdf.AddPage(page)
 	}
@@ -150,6 +159,10 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.height = pageObj.GetPageSize()[1]
 	page.tm = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.buf = []byte{}
+	page.tm0 = []byte(strconv.FormatFloat(float64(page.tm[0]), 'f', 2, 32))
+	page.tm1 = []byte(strconv.FormatFloat(float64(page.tm[1]), 'f', 2, 32))
+	page.tm2 = []byte(strconv.FormatFloat(float64(page.tm[2]), 'f', 2, 32))
+	page.tm3 = []byte(strconv.FormatFloat(float64(page.tm[3]), 'f', 2, 32))
 	appendString(&page.buf, "q\n")
 	if pageObj.gsNumber != 0 {
 		appendString(&page.buf, "/GS")
@@ -272,27 +285,38 @@ func (page *Page) drawString(font *Font, str string, x, y float32, brush int32, 
 		appendString(&page.buf, " Tr\n")
 	}
 
-	var skew float32 = 0.0
 	if font.skew15 &&
 		page.tm[0] == 1.0 &&
 		page.tm[1] == 0.0 &&
 		page.tm[2] == 0.0 &&
 		page.tm[3] == 1.0 {
-		skew = 0.26
+		var skew float32 = 0.26
+		appendFloat32(&page.buf, page.tm[0])
+		appendString(&page.buf, " ")
+		appendFloat32(&page.buf, page.tm[1])
+		appendString(&page.buf, " ")
+		appendFloat32(&page.buf, page.tm[2]+skew)
+		appendString(&page.buf, " ")
+		appendFloat32(&page.buf, page.tm[3])
+		appendString(&page.buf, " ")
+		appendFloat32(&page.buf, x)
+		appendString(&page.buf, " ")
+		appendFloat32(&page.buf, page.height-y)
+		appendString(&page.buf, " Tm\n")
+	} else {
+		appendByteArray(&page.buf, page.tm0)
+		appendString(&page.buf, " ")
+		appendByteArray(&page.buf, page.tm1)
+		appendString(&page.buf, " ")
+		appendByteArray(&page.buf, page.tm2)
+		appendString(&page.buf, " ")
+		appendByteArray(&page.buf, page.tm3)
+		appendString(&page.buf, " ")
+		appendFloat32(&page.buf, x)
+		appendString(&page.buf, " ")
+		appendFloat32(&page.buf, page.height-y)
+		appendString(&page.buf, " Tm\n")
 	}
-
-	appendFloat32(&page.buf, page.tm[0])
-	appendString(&page.buf, " ")
-	appendFloat32(&page.buf, page.tm[1])
-	appendString(&page.buf, " ")
-	appendFloat32(&page.buf, page.tm[2]+skew)
-	appendString(&page.buf, " ")
-	appendFloat32(&page.buf, page.tm[3])
-	appendString(&page.buf, " ")
-	appendFloat32(&page.buf, x)
-	appendString(&page.buf, " ")
-	appendFloat32(&page.buf, page.height-y)
-	appendString(&page.buf, " Tm\n")
 
 	if colors == nil {
 		page.SetBrushColor(brush)
@@ -413,12 +437,12 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) {
 	}
 }
 
-// setBrushColorRGB sets the color for brush operations.
+// SetBrushColorRGB sets the color for brush operations.
 // This is the color used when drawing regular text and filling shapes.
 // @param r the red component is float value from 0.0 to 1.0.
 // @param g the green component is float value from 0.0 to 1.0.
 // @param b the blue component is float value from 0.0 to 1.0.
-func (page *Page) setBrushColorRGB(r, g, b float32) {
+func (page *Page) SetBrushColorRGB(r, g, b float32) {
 	if page.brush[0] != r || page.brush[1] != g || page.brush[2] != b {
 		page.SetColorRGB(r, g, b)
 		appendString(&page.buf, " rg\n")
@@ -443,12 +467,6 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) {
 		page.brushCMYK[2] = y
 		page.brushCMYK[3] = k
 	}
-}
-
-// SetBrushColorFloat32Array sets the color for brush operations.
-// @param color the color.
-func (page *Page) SetBrushColorFloat32Array(color [3]float32) {
-	page.setBrushColorRGB(color[0], color[1], color[2])
 }
 
 // GetBrushColor returns the brush color.
@@ -486,13 +504,17 @@ func (page *Page) SetPenColor(color int32) {
 	page.SetPenColorRGB(r, g, b)
 }
 
+func (page *Page) GetPenColor() [3]float32 {
+	return page.pen
+}
+
 // SetBrushColor sets the brush color.
 // See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
 func (page *Page) SetBrushColor(color int32) {
 	r := float32(((color >> 16) & 0xff)) / 255.0
 	g := float32(((color >> 8) & 0xff)) / 255.0
 	b := float32(((color) & 0xff)) / 255.0
-	page.setBrushColorRGB(r, g, b)
+	page.SetBrushColorRGB(r, g, b)
 }
 
 // SetDefaultLineWidth sets the line width to the default.
@@ -882,6 +904,10 @@ func (page *Page) SetTextDirection(degrees int) {
 		cosOfAngle := float32(math.Cos(float64(degrees) * (math.Pi / 180)))
 		page.tm = [4]float32{cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle}
 	}
+	page.tm0 = []byte(strconv.FormatFloat(float64(page.tm[0]), 'f', 2, 32))
+	page.tm1 = []byte(strconv.FormatFloat(float64(page.tm[1]), 'f', 2, 32))
+	page.tm2 = []byte(strconv.FormatFloat(float64(page.tm[2]), 'f', 2, 32))
+	page.tm3 = []byte(strconv.FormatFloat(float64(page.tm[3]), 'f', 2, 32))
 }
 
 /**
@@ -1126,6 +1152,12 @@ func (page *Page) AddBMC(structure, language, actualText, altDescription string)
 		page.mcid++
 		appendString(&page.buf, ">>\n")
 		appendString(&page.buf, "BDC\n")
+	}
+}
+
+func (page *Page) AddArtifactBMC() {
+	if page.pdf.compliance == compliance.PDF_UA {
+		appendString(&page.buf, "/Artifact BMC\n")
 	}
 }
 

@@ -110,8 +110,7 @@ public class CalendarMonth : Drawable {
                         // line.setWidth(0.5) // only changes width of first line
                         line.drawOn(page!)
                     }
-                }
-                else {
+                } else {
                     let dayOfMonth = ((7*row + col) - 6) - dayOfWeek!
                     if dayOfMonth > 0 && dayOfMonth <= daysInMonth! {
                         let s1 = String(dayOfMonth)

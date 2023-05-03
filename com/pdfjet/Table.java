@@ -505,24 +505,6 @@ public class Table {
         return tableWidth;
     }
 
-    // /**
-    //  * Returns the number of data rows that have been rendered so far.
-    //  *
-    //  * @return the number of data rows that have been rendered so far.
-    //  */
-    // @Deprecated
-    // public int getRowsRendered() {
-    //     return rendered == -1 ? rendered : rendered - numOfHeaderRows;
-    // }
-
-    // /**
-    //  * Just calls the wrapAroundCellText method.
-    //  */
-    // @Deprecated
-    // public void wrapAroundCellText2() {
-    //     wrapAroundCellText();
-    // }
-
     /**
      * Wraps around the text in all cells so it fits the column width.
      * This method should be called after all calls to setColumnWidth and

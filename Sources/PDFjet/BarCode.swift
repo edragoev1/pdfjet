@@ -204,14 +204,11 @@ public class BarCode : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         if barcodeType == BarCode.UPC {
             return drawCodeUPC(page, x1, y1)
-        }
-        else if barcodeType == BarCode.CODE128 {
+        } else if barcodeType == BarCode.CODE128 {
             return drawCode128(page, x1, y1)
-        }
-        else if barcodeType == BarCode.CODE39 {
+        } else if barcodeType == BarCode.CODE39 {
             return drawCode39(page, x1, y1)
-        }
-        else {
+        } else {
             Swift.print("Unsupported Barcode Type.")
         }
         return [Float]()
@@ -221,14 +218,11 @@ public class BarCode : Drawable {
     func drawOnPageAtLocation(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         if (barcodeType == BarCode.UPC) {
             return drawCodeUPC(page, x1, y1)
-        }
-        else if (barcodeType == BarCode.CODE128) {
+        } else if (barcodeType == BarCode.CODE128) {
             return drawCode128(page, x1, y1)
-        }
-        else if (barcodeType == BarCode.CODE39) {
+        } else if (barcodeType == BarCode.CODE39) {
             return drawCode39(page, x1, y1)
-        }
-        else {
+        } else {
             Swift.print("Unsupported Barcode Type.")
         }
         return [Float]()
@@ -388,8 +382,7 @@ public class BarCode : Drawable {
 
         if direction == BarCode.TOP_TO_BOTTOM {
             w *= barHeightFactor
-        }
-        else if direction == BarCode.LEFT_TO_RIGHT {
+        } else if direction == BarCode.LEFT_TO_RIGHT {
             h *= barHeightFactor
         }
 
@@ -398,15 +391,12 @@ public class BarCode : Drawable {
             if symchar.value < 32 {
                 list.append(UInt16(GS1_128.SHIFT))
                 list.append(UInt16(symchar.value + 64))
-            }
-            else if symchar.value < 128 {
+            } else if symchar.value < 128 {
                 list.append(UInt16(symchar.value - 32))
-            }
-            else if symchar.value < 256 {
+            } else if symchar.value < 256 {
                 list.append(UInt16(GS1_128.FNC_4))
                 list.append(UInt16(symchar.value - 160))    // 128 + 32
-            }
-            else {
+            } else {
                 // list.append(UInt16(31))                  // '?'
                 list.append(UInt16(256))                    // This will generate an exception.
             }
@@ -437,15 +427,13 @@ public class BarCode : Drawable {
                 if j%2 == 0 {
                     if direction == BarCode.LEFT_TO_RIGHT {
                         drawVertBar(page, x, y, m1 * Float(n), h)
-                    }
-                    else if direction == BarCode.TOP_TO_BOTTOM {
+                    } else if direction == BarCode.TOP_TO_BOTTOM {
                         drawHorzBar(page, x, y, m1 * Float(n), w)
                     }
                 }
                 if direction == BarCode.LEFT_TO_RIGHT {
                     x += Float(n) * m1
-                }
-                else if direction == BarCode.TOP_TO_BOTTOM {
+                } else if direction == BarCode.TOP_TO_BOTTOM {
                     y += Float(n) * m1
                 }
                 j += 1
@@ -460,8 +448,7 @@ public class BarCode : Drawable {
                 xy = textLine.drawOn(page)
                 xy[0] = max(x, xy[0])
                 return [xy[0], xy[1] + font!.descent]
-            }
-            else if direction == BarCode.TOP_TO_BOTTOM {
+            } else if direction == BarCode.TOP_TO_BOTTOM {
                 let textLine = TextLine(font!, text)
                         .setLocation(
                                 x + w + font!.bodyHeight,
@@ -492,22 +479,18 @@ public class BarCode : Drawable {
                 if code == nil {
                     Swift.print("The input string '" + text +
                             "' contains characters that are invalid in a Code39 barcode.")
-                }
-                else {
+                } else {
                     let scalars = Array(code!.unicodeScalars)
                     for i in 0..<9 {
                         let ch = String(scalars[i])
                         if ch == "w" {
                             x += m1
-                        }
-                        else if ch == "W" {
+                        } else if ch == "W" {
                             x += m1 * 3
-                        }
-                        else if ch == "b" {
+                        } else if ch == "b" {
                             drawVertBar(page, x, y, m1, h)
                             x += m1
-                        }
-                        else if ch == "B" {
+                        } else if ch == "B" {
                             drawVertBar(page, x, y, m1 * 3, h)
                             x += m1 * 3
                         }
@@ -524,29 +507,24 @@ public class BarCode : Drawable {
                 xy = textLine.drawOn(page)
                 xy[0] = max(x, xy[0])
             }
-        }
-        else if direction == BarCode.TOP_TO_BOTTOM {
+        } else if direction == BarCode.TOP_TO_BOTTOM {
             for symchar in text.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
                     Swift.print("The input string '" + text +
                             "' contains characters that are invalid in a Code39 barcode.")
-                }
-                else {
+                } else {
                     let scalars = Array(code!.unicodeScalars)
                     for i in 0..<9 {
                         let ch = String(scalars[i])
                         if ch == "w" {
                             y += m1
-                        }
-                        else if ch == "W" {
+                        } else if ch == "W" {
                             y += 3 * m1
-                        }
-                        else if ch == "b" {
+                        } else if ch == "b" {
                             drawHorzBar(page, x, y, m1, h)
                             y += m1
-                        }
-                        else if ch == "B" {
+                        } else if ch == "B" {
                             drawHorzBar(page, x, y, 3 * m1, h)
                             y += 3 * m1
                         }
@@ -565,8 +543,7 @@ public class BarCode : Drawable {
                 xy[0] = max(x, xy[0]) + w
                 xy[1] = max(y, xy[1])
             }
-        }
-        else if direction == BarCode.BOTTOM_TO_TOP {
+        } else if direction == BarCode.BOTTOM_TO_TOP {
             var height: Float = 0.0
 
             for symchar in text.unicodeScalars {
@@ -574,15 +551,13 @@ public class BarCode : Drawable {
                 if code == nil {
                     Swift.print("The input string '" + text +
                             "' contains characters that are invalid in a Code39 barcode.")
-                }
-                else {
+                } else {
                     let scalar = Array(code!.unicodeScalars)
                     for i in 0..<9 {
                         let ch = String(scalar[i])
                         if ch == "w" || ch == "b" {
                             height += m1
-                        }
-                        else if ch == "W" || ch == "B" {
+                        } else if ch == "W" || ch == "B" {
                             height += 3 * m1
                         }
                     }
@@ -597,22 +572,18 @@ public class BarCode : Drawable {
                 if code == nil {
                     Swift.print("The input string '" + text +
                             "' contains characters that are invalid in a Code39 barcode.")
-                }
-                else {
+                } else {
                     let scalars = Array(code!.unicodeScalars)
                     for i in 0..<9 {
                         let ch = String(scalars[i])
                         if ch == "w" {
                             y -= m1
-                        }
-                        else if ch == "W" {
+                        } else if ch == "W" {
                             y -= 3 * m1
-                        }
-                        else if ch == "b" {
+                        } else if ch == "b" {
                             drawHorzBar2(page, x, y, m1, h)
                             y -= m1
-                        }
-                        else if ch == "B" {
+                        } else if ch == "B" {
                             drawHorzBar2(page, x, y, 3 * m1, h)
                             y -= 3 * m1
                         }

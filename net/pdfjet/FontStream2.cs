@@ -69,14 +69,14 @@ class FontStream2 {
     private static int AddMetadataObject(List<PDFobj> objects, Font font) {
 
         StringBuilder sb = new StringBuilder();
-        sb.Append("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
+        sb.Append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
         sb.Append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n");
         sb.Append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
         sb.Append("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n");
         sb.Append("<xmpRights:UsageTerms>\n");
         sb.Append("<rdf:Alt>\n");
         sb.Append("<rdf:li xml:lang=\"x-default\">\n");
-        sb.Append(font.info);
+        sb.Append(Encoding.UTF8.GetBytes(font.info));
         sb.Append("</rdf:li>\n");
         sb.Append("</rdf:Alt>\n");
         sb.Append("</xmpRights:UsageTerms>\n");
@@ -125,8 +125,7 @@ class FontStream2 {
         if (font.cff) {
             obj.dict.Add("/Subtype");
             obj.dict.Add("/CIDFontType0C");
-        }
-        else {
+        } else {
             obj.dict.Add("/Length1");
             obj.dict.Add(font.uncompressedSize.ToString());
         }

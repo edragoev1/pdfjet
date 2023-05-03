@@ -134,7 +134,11 @@ public class PDF {
         append(UInt8(0x00F4))
         append(UInt8(0x00F5))
         append(UInt8(0x00F6))
-        append("\n")
+        append(Token.newline)
+    }
+
+    public func setCompliance(_ compliance: Int) {
+        self.compliance = compliance
     }
 
     func newobj() {
@@ -153,7 +157,7 @@ public class PDF {
 
     func addMetadataObject(_ notice: String, _ fontMetadataObject: Bool) -> Int {
         var sb = String()
-        sb.append("<?xpacket begin='\u{FEFF}' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
+        sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
         sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n");
         sb.append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n");
         sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
@@ -163,7 +167,7 @@ public class PDF {
             sb.append("<xmpRights:UsageTerms>\n");
             sb.append("<rdf:Alt>\n");
             sb.append("<rdf:li xml:lang=\"x-default\">\n");
-            sb.append(notice);
+            sb.append(String(notice.utf8));
             sb.append("</rdf:li>\n");
             sb.append("</rdf:Alt>\n");
             sb.append("</xmpRights:UsageTerms>\n");
@@ -257,16 +261,16 @@ public class PDF {
 
         // This is the metadata object
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /Metadata\n")
         append("/Subtype /XML\n")
         append("/Length ")
         append(buf.count)
-        append("\n")
-        append(">>\n")
-        append("stream\n")
+        append(Token.newline)
+        append(Token.endDictionary)
+        append(Token.stream)
         append(buf)
-        append("\nendstream\n")
+        append(Token.endstream)
         endobj()
 
         return self.getObjNumber()
@@ -274,23 +278,23 @@ public class PDF {
 
     func addOutputIntentObject() -> Int {
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/N 3\n")
 
         append("/Length ")
         append(ICCBlackScaled.profile.count)
-        append("\n")
+        append(Token.newline)
 
         append("/Filter /FlateDecode\n")
-        append(">>\n")
-        append("stream\n")
+        append(Token.endDictionary)
+        append(Token.stream)
         append(ICCBlackScaled.profile, 0, ICCBlackScaled.profile.count)
-        append("\nendstream\n")
+        append(Token.endstream)
         endobj()
 
         // OutputIntent object
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /OutputIntent\n")
         append("/S /GTS_PDFA1\n")
         append("/OutputCondition (sRGB IEC61966-2.1)\n")
@@ -299,7 +303,7 @@ public class PDF {
         append("/DestOutputProfile ")
         append(getObjNumber() - 1)
         append(" 0 R\n")
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
 
         return self.getObjNumber()
@@ -307,14 +311,13 @@ public class PDF {
 
     private func addResourcesObject() -> Int {
         newobj()
-        append("<<\n")
-
+        append(Token.beginDictionary)
         if extGState != "" {
             append(extGState)
         }
         if fonts.count > 0 || importedFonts.count > 0 {
             append("/Font\n")
-            append("<<\n")
+            append(Token.beginDictionary)
             for token in importedFonts {
                 append(token)
                 if token == "R" {
@@ -326,40 +329,37 @@ public class PDF {
             for font in fonts {
                 append("/F")
                 append(font.objNumber)
-                append(" ")
+                append(Token.space)
                 append(font.objNumber)
                 append(" 0 R\n")
             }
-            append(">>\n")
+            append(Token.endDictionary)
         }
-
         if images.count > 0 {
             append("/XObject\n")
-            append("<<\n")
+            append(Token.beginDictionary)
             for image in images {
                 append("/Im")
                 append(image.objNumber!)
-                append(" ")
+                append(Token.space)
                 append(image.objNumber!)
                 append(" 0 R\n")
             }
-            append(">>\n")
+            append(Token.endDictionary)
         }
-
         if groups.count > 0 {
             append("/Properties\n")
-            append("<<\n")
+            append(Token.beginDictionary)
             for i in 0..<groups.count {
                 let ocg = groups[i]
                 append("/OC")
                 append(i + 1)
-                append(" ")
+                append(Token.space)
                 append(ocg.objNumber)
                 append(" 0 R\n")
             }
-            append(">>\n")
+            append(Token.endDictionary)
         }
-
         // String state = "/CA 0.5 /ca 0.5"
         if states.count > 0 {
             append("/ExtGState <<\n")
@@ -370,10 +370,9 @@ public class PDF {
                 append(state)
                 append(" >>\n")
             }
-            append(">>\n")
+            append(Token.endDictionary)
         }
-
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
         return getObjNumber()
     }
@@ -381,11 +380,17 @@ public class PDF {
     @discardableResult
     private func addPagesObject() -> Int {
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /Pages\n")
         append("/Kids [\n")
         for page in pages {
-            if compliance == Compliance.PDF_UA {
+            if compliance == Compliance.PDF_UA ||
+                    compliance == Compliance.PDF_A_1A ||
+                    compliance == Compliance.PDF_A_1B ||
+                    compliance == Compliance.PDF_A_2A ||
+                    compliance == Compliance.PDF_A_2B ||
+                    compliance == Compliance.PDF_A_3A ||
+                    compliance == Compliance.PDF_A_3B {
                 page.setStructElementsPageObjNumber(page.objNumber)
             }
             append(page.objNumber)
@@ -394,8 +399,8 @@ public class PDF {
         append("]\n")
         append("/Count ")
         append(pages.count)
-        append("\n")
-        append(">>\n")
+        append(Token.newline)
+        append(Token.endDictionary)
         endobj()
         return getObjNumber()
     }
@@ -403,7 +408,7 @@ public class PDF {
     private func addInfoObject() -> Int {
         // Add the info object
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Title (")
         append(title)
         append(")\n")
@@ -422,14 +427,14 @@ public class PDF {
         append("/CreationDate (D:")
         append(self.creationDate!)
         append("-05'00')\n");
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
         return getObjNumber()
     }
 
     private func addStructTreeRootObject() -> Int {
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /StructTreeRoot\n")
         append("/ParentTree ")
         append(getObjNumber() + 1)
@@ -438,7 +443,7 @@ public class PDF {
         append(getObjNumber() + 2)
         append(" 0 R\n")
         append("]\n")
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
         return getObjNumber()
     }
@@ -446,7 +451,7 @@ public class PDF {
     @discardableResult
     private func addStructDocumentObject(_ parent: Int) -> Int {
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /StructElem\n")
         append("/S /Document\n")
         append("/P ")
@@ -456,11 +461,11 @@ public class PDF {
         for page in pages {
             for structElement in page.structures {
                 append(structElement.objNumber!)
-                append(" 0 R\n")
+                append(Token.objRef)
             }
         }
         append("]\n")
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
         return getObjNumber()
     }
@@ -470,48 +475,36 @@ public class PDF {
         for page in pages {
             structTreeRootObjNumber += page.structures.count
         }
-
         for page in pages {
             for element in page.structures {
                 newobj()
                 element.objNumber = getObjNumber()
-                append("<<\n")
-                append("/Type /StructElem\n")
-                append("/S /")
+                append(Token.beginStructElem)
                 append(element.structure!)
-                append("\n")
-                append("/P ")
+                append("\n/P ")
                 append(structTreeRootObjNumber + 2)
-                append(" 0 R\n")
-                append("/Pg ")
+                append(" 0 R /Pg ")
                 append(element.pageObjNumber!)
                 append(" 0 R\n")
-
                 if element.annotation != nil {
-                    append("/K <<\n")
-                    append("/Type /OBJR\n")
-                    append("/Obj ")
+                    append(Token.beginAnnotation)
                     append(element.annotation!.objNumber)
-                    append(" 0 R\n")
-                    append(">>\n")
+                    append(Token.endAnnotation)
                 } else {
                     append("/K ")
                     append(element.mcid)
-                    append("\n")
                 }
-
+                append("\n/Lang (")
                 if element.language != nil {
-                    append("/Lang (")
                     append(element.language!)
-                    append(")\n")
+                } else {
+                    append(language)
                 }
-                append("/Alt <")
+                append(Token.altDescription)
                 append(toHex(element.altDescription!))
-                append(">\n")
-                append("/ActualText <")
+                append(Token.actualText)
                 append(toHex(element.actualText!))
-                append(">\n")
-                append(">>\n")
+                append(Token.endStructElem)
                 endobj()
             }
         }
@@ -533,7 +526,6 @@ public class PDF {
             }
             buffer.append("]\n")
         }
-
         var index = pages.count
         for page in pages {
             for element in page.structures {
@@ -557,10 +549,15 @@ public class PDF {
             _ outlineDictNumber: Int) -> Int {
         // Add the root object
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /Catalog\n")
-
-        if compliance == Compliance.PDF_UA {
+        if compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B {
             append("/Lang (")
             append(language)
             append(")\n")
@@ -615,7 +612,7 @@ public class PDF {
             append(" 0 R\n")
         }
 
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
         return getObjNumber()
     }
@@ -657,7 +654,6 @@ public class PDF {
         addAnnotDictionaries()
         // Calculate the object number of the Pages object
         pagesObjNumber = getObjNumber() + pages.count + 1
-
         for (i, page) in pages.enumerated() {
             // Page object
             newobj()
@@ -705,8 +701,13 @@ public class PDF {
                 }
                 buffer.append("]\n")
             }
-
-            if compliance == Compliance.PDF_UA {
+            if compliance == Compliance.PDF_UA ||
+                    compliance == Compliance.PDF_A_1A ||
+                    compliance == Compliance.PDF_A_1B ||
+                    compliance == Compliance.PDF_A_2A ||
+                    compliance == Compliance.PDF_A_2B ||
+                    compliance == Compliance.PDF_A_3A ||
+                    compliance == Compliance.PDF_A_3B {
                 buffer.append("/Tabs /S\n")
                 buffer.append("/StructParents ")
                 buffer.append(String(i))
@@ -721,19 +722,19 @@ public class PDF {
     // Use this method on systems that don't have Deflater stream or when troubleshooting.
     private func addPageContent(_ page: inout Page) {
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Length ")
         append(page.buf.count)
-        append("\n")
-        append(">>\n")
-        append("stream\n")
+        append(Token.newline)
+        append(Token.endDictionary)
+        append(Token.stream)
         append(page.buf)
-        append("\nendstream\n")
+        append(Token.endstream)
         endobj()
         page.contents.append(getObjNumber())
     }
 */
-    private func addPageContent(_ page: inout Page) {
+    private func addPageContent(_ page: Page) {
         var buffer = [UInt8]()
         // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
         // LZWEncode(&buffer, page.buf)
@@ -764,7 +765,7 @@ public class PDF {
         var index2 = index
         newobj()
         annot.objNumber = getObjNumber()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /Annot\n")
         if annot.fileAttachment != nil {
             append("/Subtype /FileAttachment\n")
@@ -818,7 +819,7 @@ public class PDF {
             index2 += 1
             append("\n")
         }
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
 
         return index2
@@ -850,7 +851,7 @@ public class PDF {
         }
 
         append("/OCProperties\n")
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/OCGs [")
         append(buf)
         append(" ]\n")
@@ -872,15 +873,12 @@ public class PDF {
         append(buf)
         append(" ]]\n")
 
-        append(">>\n")
-        append(">>\n")
+        append(Token.endDictionary)
+        append(Token.endDictionary)
     }
 
     public func addPage(_ page: Page) {
-        let n = pages.count
-        if n > 0 {
-            addPageContent(&pages[n - 1])
-        }
+        addPageContent(page)
         pages.append(page)
     }
 
@@ -901,13 +899,18 @@ public class PDF {
         }
 
         if pagesObjNumber == 0 {
-            addPageContent(&pages[pages.count - 1])
             addAllPages(addResourcesObject())
             addPagesObject()
         }
 
         var structTreeRootObjNumber = 0
-        if compliance == Compliance.PDF_UA {
+        if compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B {
             addStructElementObjects();
             structTreeRootObjNumber = addStructTreeRootObject();
             addNumsParentTree();
@@ -1081,24 +1084,20 @@ public class PDF {
 
     func getSortedObjects(_ objects: [PDFobj]) -> [PDFobj] {
         var sorted = [PDFobj]()
-
         var maxObjNumber = 0
         for obj in objects {
             if obj.number > maxObjNumber {
                 maxObjNumber = obj.number
             }
         }
-
         for number in 1...maxObjNumber {
             let obj = PDFobj()
             obj.setNumber(number)
             sorted.append(obj)
         }
-
         for obj in objects {
             sorted[obj.number - 1] = obj
         }
-
         return sorted
     }
 
@@ -1165,7 +1164,6 @@ public class PDF {
             obj.dict.append(str)
         }
         token.removeAll()
-
         if str == "endobj" {
             return true
         }
@@ -1187,7 +1185,6 @@ public class PDF {
             _ off: Int,
             _ len: Int) -> PDFobj {
         var offset = off
-
         var obj = PDFobj()
         obj.offset = offset
         var token = [UInt8]()
@@ -1244,8 +1241,7 @@ public class PDF {
                         c1 = 0x20       // Space
                     }
                 }
-            }
-            else if c2 == 0x5B ||       // "["
+            } else if c2 == 0x5B ||       // "["
                     c2 == 0x5D ||       // "]"
                     c2 == 0x7B ||       // "{"
                     c2 == 0x7D {        // "}"
@@ -1298,7 +1294,6 @@ public class PDF {
             _ buf: inout [UInt8],
             _ obj: PDFobj,
             _ objects: inout [PDFobj]) {
-
         let xref = obj.getValue("/Prev")
         if xref != "" {
             getObjects1(
@@ -1306,7 +1301,6 @@ public class PDF {
                     getObject(&buf, Int(xref)!, buf.count),
                     &objects)
         }
-
         var i = 1
         while true {
             let token = obj.dict[i]
@@ -1330,14 +1324,12 @@ public class PDF {
                 }
             }
         }
-
     }
 
     private func getObjects2(
             _ buf: inout [UInt8],
             _ obj: PDFobj,
             _ objects: inout [PDFobj]) throws {
-
         let prev = obj.getValue("/Prev")
         if !prev.isEmpty {
             try getObjects2(
@@ -1345,7 +1337,6 @@ public class PDF {
                     getObject(&buf, Int(prev)!, buf.count),
                     &objects)
         }
-
         var predictor = 0   // The predictor
         var n1 = 0          // Field 1 number of bytes
         var n2 = 0          // Field 2 number of bytes
@@ -1355,11 +1346,9 @@ public class PDF {
             let token = obj.dict[i]
             if token == "/Predictor" {
                 predictor = Int(obj.dict[i + 1])!
-            }
-            else if token == "/Length" {
+            } else if token == "/Length" {
                 length = Int(obj.dict[i + 1])!
-            }
-            else if token == "/W" {
+            } else if token == "/W" {
                 // "/W [ 1 3 1 ]"
                 n1 = Int(obj.dict[i + 2])!
                 n2 = Int(obj.dict[i + 3])!
@@ -1368,7 +1357,6 @@ public class PDF {
         }
 
         try obj.setStreamAndData(&buf, length)
-
         var n = n1 + n2 + n3    // Number of bytes per entry
         if predictor > 0 {
             n += 1
@@ -1384,8 +1372,7 @@ public class PDF {
                     entry[j] = entry[j] &+ obj.data[i + j]
                     j += 1
                 }
-            }
-            else {
+            } else {
                 while j < n {
                     entry[j] = obj.data[i + j]
                     j += 1
@@ -1399,8 +1386,7 @@ public class PDF {
                     o2.number = Int(o2.dict[0])!
                     objects.append(o2)
                 }
-            }
-            else {
+            } else {
                 if entry[0] == 1 {      // Type 1 entry
                     let o2 = getObject(&buf, toInt(&entry, n1, n2), buf.count)
                     o2.number = Int(o2.dict[0])!
@@ -1442,7 +1428,7 @@ public class PDF {
     public func addOutlineDict(_ toc: Bookmark) -> Int {
         let numOfChildren = getNumOfChildren(0, toc)
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Type /Outlines\n")
         append("/First ")
         append(getObjNumber() + 1)
@@ -1452,8 +1438,8 @@ public class PDF {
         append(" 0 R\n")
         append("/Count ")
         append(numOfChildren)
-        append("\n")
-        append(">>\n")
+        append(Token.newline)
+        append(Token.endDictionary)
         endobj()
         return getObjNumber()
     }
@@ -1462,7 +1448,6 @@ public class PDF {
             _ parent: Int,
             _ i: Int,
             _ bm1: Bookmark) {
-
         var prev = 0
         if bm1.getPrevBookmark() != nil {
             prev = parent + (i - 1)
@@ -1482,7 +1467,7 @@ public class PDF {
         }
 
         newobj()
-        append("<<\n")
+        append(Token.beginDictionary)
         append("/Title <")
         append(toHex(bm1.getTitle()))
         append(">\n")
@@ -1520,7 +1505,7 @@ public class PDF {
         append(" 0 R /XYZ 0 ")
         append(bm1.getDestination()!.yPosition)
         append(" 0]\n")
-        append(">>\n")
+        append(Token.endDictionary)
         endobj()
     }
 
@@ -1759,7 +1744,6 @@ public class PDF {
                     }
                 }
                 append(buffer)
-
                 if obj.stream != nil {
                     append(obj.stream!)
                     append(Token.endstream)
@@ -1777,11 +1761,9 @@ public class PDF {
             let str2 = String(scalar.value, radix: 16, uppercase: true)
             if str2.count == 1 {
                 buffer.append("000" + str2)
-            }
-            else if str2.count == 2 {
+            } else if str2.count == 2 {
                 buffer.append("00" + str2)
-            }
-            else if str2.count == 3 {
+            } else if str2.count == 3 {
                 buffer.append("0" + str2)
             }
         }

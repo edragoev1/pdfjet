@@ -116,35 +116,26 @@ private static let forms: [Character] = [
                 }
                 if ch == "«" {
                     buf1.append("»")
-                }
-                else if ch == "»" {
+                } else if ch == "»" {
                     buf1.append("«")
-                }
-                else if ch == "(" {
+                } else if ch == "(" {
                     buf1.append(")")
-                }
-                else if ch == ")" {
+                } else if ch == ")" {
                     buf1.append("(")
-                }
-                else if ch == "[" {
+                } else if ch == "[" {
                     buf1.append("]")
-                }
-                else if ch == "]" {
+                } else if ch == "]" {
                     buf1.append("[")
-                }
-                else {
+                } else {
                     buf1.append(ch)
                 }
-            }
-            else if isAlphaNumeric(ch) {
+            } else if isAlphaNumeric(ch) {
                 rightToLeft = false
                 buf2.append(ch)
-            }
-            else {
+            } else {
                 if rightToLeft {
                     buf1.append(ch)
-                }
-                else {
+                } else {
                     buf2.append(ch)
                 }
             }
@@ -164,20 +155,16 @@ private static let forms: [Character] = [
                     if ch == forms[j] {
                         if (!isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
                             buf3.append(forms[j + 1]);  // Isolated
-                        }
-                        else if (isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
+                        } else if (isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
                             buf3.append(forms[j + 2]);  // End
-                        }
-                        else if (isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
+                        } else if (isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
                             buf3.append(forms[j + 3]);  // Middle
-                        }
-                        else if (!isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
+                        } else if (!isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
                             buf3.append(forms[j + 4]);  // Beginning
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 buf3.append(ch)
             }
             i -= 1

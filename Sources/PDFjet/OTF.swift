@@ -31,7 +31,6 @@ struct FontTable {
 }
 
 class OTF {
-
     var fontName: String?
     var fontInfo: String?
     var unitsPerEm: Int?
@@ -70,8 +69,7 @@ class OTF {
             version == 0x74727565 ||    // Mac TTF
             version == 0x4F54544F {     // CFF OTF
             // We should be able to read this font
-        }
-        else {
+        } else {
             Swift.print("OTF version == \(version) is not supported.")
         }
 
@@ -111,8 +109,7 @@ class OTF {
             let bufSlice = Array(buf[cffOff!..<(cffOff! + cffLen!)])
             // LZWEncode(&dos, bufSlice)
             FlateEncode(&dos, bufSlice)
-        }
-        else {
+        } else {
             // LZWEncode(&dos, buf)
             FlateEncode(&dos, buf)
         }
@@ -168,21 +165,18 @@ class OTF {
                 let str = String(bytes: buffer, encoding: .utf8)
                 if nameID == 6 {
                     fontName = str
-                }
-                else {
+                } else {
                     macFontInfo.append(str!)
                     macFontInfo.append("\n")
                 }
-            }
-            else if platformID == 3 && encodingID == 1 && languageID == 0x409 {
+            } else if platformID == 3 && encodingID == 1 && languageID == 0x409 {
                 // Windows
                 let index2 = Int(table.offset!) + Int(stringOffset) + Int(offset)
                 let buffer = buf[index2..<(index2 + Int(length))]
                 let str = String(bytes: buffer, encoding: .utf16)
                 if nameID == 6 {
                     fontName = str
-                }
-                else {
+                } else {
                     winFontInfo.append(str!)
                     winFontInfo.append("\n")
                 }
@@ -268,8 +262,7 @@ class OTF {
                 var offset = idRangeOffset[seg]
                 if offset == 0 {
                     gid = (idDelta[seg] + ch) % 65536
-                }
-                else {
+                } else {
                     offset /= 2
                     offset -= segCount - seg
                     gid = glyphIdArray[offset + (ch - startCount[seg])]

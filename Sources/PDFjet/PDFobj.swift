@@ -129,8 +129,7 @@ public final class PDFobj {
                     }
                     buffer.append(">>")
                     return buffer
-                }
-                else if token == "[" {
+                } else if token == "[" {
                     var buffer = String()
                     buffer.append("[ ")
                     i += 2
@@ -141,8 +140,7 @@ public final class PDFobj {
                     }
                     buffer.append("]")
                     return buffer
-                }
-                else {
+                } else {
                     return token
                 }
             }
@@ -169,8 +167,7 @@ public final class PDFobj {
                         i += 1  // 0
                         i += 1  // R
                     }
-                }
-                else {
+                } else {
                     numbers.append(Int(dict[i])!)
                 }
                 break
@@ -199,8 +196,7 @@ public final class PDFobj {
                 if dict[i + 2] == "0" &&
                         dict[i + 3] == "R" {
                     return getLength(number, from: &objects)
-                }
-                else {
+                } else {
                     return number
                 }
             }
@@ -282,8 +278,7 @@ public final class PDFobj {
                 let token = dict[i]
                 if token == "<<" {                  // Direct resources object
                     addFontResource(self, &objects, font.fontID!, obj.number)
-                }
-                else if firstCharIsDigit(token) {   // Indirect resources object
+                } else if firstCharIsDigit(token) {   // Indirect resources object
                     let object = getObject(number: Int(token)!, from: &objects)!
                     addFontResource(object, &objects, font.fontID!, obj.number)
                 }
@@ -333,8 +328,7 @@ public final class PDFobj {
                     obj.dict.insert("0", at: i + 4)
                     obj.dict.insert("R", at: i + 5)
                     return
-                }
-                else if firstCharIsDigit(token) {
+                } else if firstCharIsDigit(token) {
                     let o2 = getObject(number: Int(token)!, from: &objects)!
                     var j = 0
                     while j < o2.dict.count {
@@ -384,8 +378,7 @@ public final class PDFobj {
                 let token = obj.dict[i + 1]
                 if token == "<<" {
                     insertNewObject(&obj.dict, &list, type)
-                }
-                else {
+                } else {
                     let object = getObject(number: Int(token)!, from: &objects)!
                     insertNewObject(&object.dict, &list, type)
                 }
@@ -418,8 +411,7 @@ public final class PDFobj {
                 let token = dict[i + 1]
                 if token == "<<" {      // Direct resources object
                     addResource("/XObject", self, &objects, image.objNumber!)
-                }
-                else {                  // Indirect resources object
+                } else {                  // Indirect resources object
                     let object = getObject(number: Int(token)!, from: &objects)!
                     addResource("/XObject", object, &objects, image.objNumber!)
                 }
@@ -437,8 +429,7 @@ public final class PDFobj {
                 let token = dict[i + 1]
                 if token == "<<" {      // Direct resources object
                     addResource("/Font", self, &objects, font.objNumber)
-                }
-                else {                  // Indirect resources object
+                } else {                  // Indirect resources object
                     let object = getObject(number: Int(token)!, from: &objects)!
                     addResource("/Font", object, &objects, font.objNumber)
                 }
@@ -483,8 +474,7 @@ public final class PDFobj {
                         }
                         i += 2  // Skip the 0 and R
                     }
-                }
-                else {
+                } else {
                     // Single content object
                     let obj2 = objects[Int(token)! - 1]
                     if obj2.data.count == 0 && obj2.stream == nil {
@@ -540,8 +530,7 @@ public final class PDFobj {
                     dict.insert("0", at: i)
                     dict.insert(objNumber, at: i)
                     return
-                }
-                else {
+                } else {
                     // Single content object
                     let obj2 = objects[Int(token)! - 1]
                     if obj2.data.count == 0 && obj2.stream == nil {
@@ -596,8 +585,7 @@ public final class PDFobj {
                 if token == "<<" {
                     obj = self
                     index = i + 2
-                }
-                else {
+                } else {
                     obj = objects[Int(token)! - 1]
                     var j = 0
                     while j < obj!.dict.count {
@@ -620,8 +608,7 @@ public final class PDFobj {
             obj!.dict.insert("/ExtGState", at: index)   // Add ExtGState dictionary
             index += 1
             obj!.dict.insert("<<", at: index)
-        }
-        else {
+        } else {
             while index < obj!.dict.count {
                 let token = obj!.dict[index]
                 if token == "/ExtGState" {

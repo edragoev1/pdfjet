@@ -247,8 +247,7 @@ public class QRCode : Drawable {
                         (0 <= c && c <= 6 && (r == 0 || r == 6)) ||
                         (2 <= r && r <= 4 && 2 <= c && c <= 4) {
                     modules![row + r][col + c] = true
-                }
-                else {
+                } else {
                     modules![row + r][col + c] = false
                 }
             }
@@ -282,11 +281,9 @@ public class QRCode : Drawable {
             let mod = (!test && ((bits >> i) & 1) == 1)
             if i < 6 {
                 modules![i][8] = mod
-            }
-            else if i < 8 {
+            } else if i < 8 {
                 modules![i + 1][8] = mod
-            }
-            else {
+            } else {
                 modules![moduleCount - 15 + i][8] = mod
             }
         }
@@ -295,11 +292,9 @@ public class QRCode : Drawable {
             let mod = (!test && ((bits >> i) & 1) == 1)
             if i < 8 {
                 modules![8][moduleCount - i - 1] = mod
-            }
-            else if i < 9 {
+            } else if i < 9 {
                 modules![8][15 - i - 1 + 1] = mod
-            }
-            else {
+            } else {
                 modules![8][15 - i - 1] = mod
             }
         }

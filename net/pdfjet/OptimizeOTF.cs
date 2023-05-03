@@ -89,8 +89,7 @@ public class OptimizeOTF {
             for (int i = 0; i < otf.cffLen; i++) {
                 buf3[i] = otf.buf[otf.cffOff + i];
             }
-        }
-        else {
+        } else {
             fos.WriteByte((byte) 'N');
         }
 

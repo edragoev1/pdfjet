@@ -75,20 +75,17 @@ public class OptionalContentGroup {
             page.pdf.Append("/Usage <<\n");
             if (visible) {
                 page.pdf.Append("/View << /ViewState /ON >>\n");
-            }
-            else {
+            } else {
                 page.pdf.Append("/View << /ViewState /OFF >>\n");
             }
             if (printable) {
                 page.pdf.Append("/Print << /PrintState /ON >>\n");
-            }
-            else {
+            } else {
                 page.pdf.Append("/Print << /PrintState /OFF >>\n");
             }
             if (exportable) {
                 page.pdf.Append("/Export << /ExportState /ON >>\n");
-            }
-            else {
+            } else {
                 page.pdf.Append("/Export << /ExportState /OFF >>\n");
             }
             page.pdf.Append(">>\n");

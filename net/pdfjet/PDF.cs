@@ -27,7 +27,6 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to create PDF objects that represent PDF documents.
@@ -127,17 +126,21 @@ public class PDF {
         Append((byte) 0x00F4);
         Append((byte) 0x00F5);
         Append((byte) 0x00F6);
-        Append('\n');
+        Append(Token.newline);
+    }
+
+    public void SetCompliance(int compliance) {
+        this.compliance = compliance;
     }
 
     internal void Newobj() {
         objOffset.Add(byteCount);
         Append(objOffset.Count);
-        Append(" 0 obj\n");
+        Append(Token.newobj);
     }
 
     internal void Endobj() {
-        Append("endobj\n");
+        Append(Token.endobj);
     }
 
     internal int GetObjNumber() {
@@ -146,7 +149,7 @@ public class PDF {
 
     internal int AddMetadataObject(String notice, bool fontMetadataObject) {
         StringBuilder sb = new StringBuilder();
-        sb.Append("<?xpacket begin='\uFEFF' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
+        sb.Append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
         sb.Append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n");
         sb.Append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n");
         sb.Append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
@@ -156,7 +159,7 @@ public class PDF {
             sb.Append("<xmpRights:UsageTerms>\n");
             sb.Append("<rdf:Alt>\n");
             sb.Append("<rdf:li xml:lang=\"x-default\">\n");
-            sb.Append(notice);
+            sb.Append(Encoding.UTF8.GetBytes(notice));
             sb.Append("</rdf:li>\n");
             sb.Append("</rdf:Alt>\n");
             sb.Append("</xmpRights:UsageTerms>\n");
@@ -250,16 +253,16 @@ public class PDF {
 
         // This is the metadata object
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /Metadata\n");
         Append("/Subtype /XML\n");
         Append("/Length ");
         Append(xml.Length);
-        Append("\n");
-        Append(">>\n");
-        Append("stream\n");
+        Append(Token.newline);
+        Append(Token.endDictionary);
+        Append(Token.stream);
         Append(xml, 0, xml.Length);
-        Append("\nendstream\n");
+        Append(Token.endstream);
         Endobj();
 
         return GetObjNumber();
@@ -267,7 +270,7 @@ public class PDF {
 
     private int AddOutputIntentObject() {
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/N 3\n");
 
         Append("/Length ");
@@ -275,15 +278,15 @@ public class PDF {
         Append("\n");
 
         Append("/Filter /FlateDecode\n");
-        Append(">>\n");
-        Append("stream\n");
+        Append(Token.endDictionary);
+        Append(Token.stream);
         Append(ICCBlackScaled.profile, 0, ICCBlackScaled.profile.Length);
-        Append("\nendstream\n");
+        Append(Token.endstream);
         Endobj();
 
         // OutputIntent object
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /OutputIntent\n");
         Append("/S /GTS_PDFA1\n");
         Append("/OutputCondition (sRGB IEC61966-2.1)\n");
@@ -292,7 +295,7 @@ public class PDF {
         Append("/DestOutputProfile ");
         Append(GetObjNumber() - 1);
         Append(" 0 R\n");
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
 
         return GetObjNumber();
@@ -300,14 +303,13 @@ public class PDF {
 
     private int AddResourcesObject() {
         Newobj();
-        Append("<<\n");
-
+        Append(Token.beginDictionary);
         if (!extGState.Equals("")) {
             Append(extGState);
         }
         if (fonts.Count > 0 || importedFonts.Count > 0) {
             Append("/Font\n");
-            Append("<<\n");
+            Append(Token.beginDictionary);
             foreach (String token in importedFonts) {
                 Append(token);
                 if (token.Equals("R")) {
@@ -323,12 +325,12 @@ public class PDF {
                 Append(font.objNumber);
                 Append(" 0 R\n");
             }
-            Append(">>\n");
+            Append(Token.endDictionary);
         }
 
         if (images.Count > 0) {
             Append("/XObject\n");
-            Append("<<\n");
+            Append(Token.beginDictionary);
             for (int i = 0; i < images.Count; i++) {
                 Image image = images[i];
                 Append("/Im");
@@ -337,12 +339,12 @@ public class PDF {
                 Append(image.objNumber);
                 Append(" 0 R\n");
             }
-            Append(">>\n");
+            Append(Token.endDictionary);
         }
 
         if (groups.Count > 0) {
             Append("/Properties\n");
-            Append("<<\n");
+            Append(Token.beginDictionary);
             for (int i = 0; i < groups.Count; i++) {
                 OptionalContentGroup ocg = groups[i];
                 Append("/OC");
@@ -351,7 +353,7 @@ public class PDF {
                 Append(ocg.objNumber);
                 Append(" 0 R\n");
             }
-            Append(">>\n");
+            Append(Token.endDictionary);
         }
 
         // String state = "/CA 0.5 /ca 0.5";
@@ -367,19 +369,25 @@ public class PDF {
             Append(">>\n");
         }
 
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
     }
 
     private int AddPagesObject() {
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /Pages\n");
         Append("/Kids [\n");
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
-            if (compliance == Compliance.PDF_UA) {
+            if (compliance == Compliance.PDF_UA ||
+                    compliance == Compliance.PDF_A_1A ||
+                    compliance == Compliance.PDF_A_1B ||
+                    compliance == Compliance.PDF_A_2A ||
+                    compliance == Compliance.PDF_A_2B ||
+                    compliance == Compliance.PDF_A_3A ||
+                    compliance == Compliance.PDF_A_3B) {
                 page.SetStructElementsPageObjNumber(page.objNumber);
             }
             Append(page.objNumber);
@@ -388,8 +396,8 @@ public class PDF {
         Append("]\n");
         Append("/Count ");
         Append(pages.Count);
-        Append('\n');
-        Append(">>\n");
+        Append(Token.newline);
+        Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
     }
@@ -397,7 +405,7 @@ public class PDF {
     private int AddInfoObject() {
         // Add the info object
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Title (");
         Append(title);
         Append(")\n");
@@ -416,14 +424,14 @@ public class PDF {
         Append("/CreationDate (D:");
         Append(creationDate.Substring(0, creationDate.Length - 1)); // Remove the 'Z'
         Append("-05'00')\n");
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
     }
 
     private int AddStructTreeRootObject() {
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /StructTreeRoot\n");
         Append("/ParentTree ");
         Append(GetObjNumber() + 1);
@@ -432,14 +440,14 @@ public class PDF {
         Append(GetObjNumber() + 2);
         Append(" 0 R\n");
         Append("]\n");
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
     }
 
     private int AddStructDocumentObject(int parent) {
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /StructElem\n");
         Append("/S /Document\n");
         Append("/P ");
@@ -453,60 +461,48 @@ public class PDF {
             }
         }
         Append("]\n");
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
     }
 
     private void AddStructElementObjects() {
         int structTreeRootObjNumber = GetObjNumber() + 1;
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
+        foreach (Page page in pages) {
             structTreeRootObjNumber += page.structures.Count;
         }
-
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
             for (int j = 0; j < page.structures.Count; j++) {
                 Newobj();
                 StructElem element = page.structures[j];
                 element.objNumber = GetObjNumber();
-                Append("<<\n");
-                Append("/Type /StructElem\n");
-                Append("/S /");
+                Append("<<\n/Type /StructElem /S /");
                 Append(element.structure);
-                Append("\n");
-                Append("/P ");
+                Append("\n/P ");
                 Append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
-                Append(" 0 R\n");
-                Append("/Pg ");
+                Append(" 0 R\n/Pg ");
                 Append(element.pageObjNumber);
                 Append(" 0 R\n");
-
                 if (element.annotation != null) {
-                    Append("/K <<\n");
-                    Append("/Type /OBJR\n");
-                    Append("/Obj ");
+                    Append("/K <</Type /OBJR /Obj ");
                     Append(element.annotation.objNumber);
-                    Append(" 0 R\n");
-                    Append(">>\n");
-                }
-                else {
+                    Append(" 0 R>>");
+                } else {
                     Append("/K ");
                     Append(element.mcid);
-                    Append("\n");
                 }
-
-                Append("/Lang (");
-                Append(element.language != null ? element.language : language);
-                Append(")\n");
-                Append("/ActualText <");
+                Append("\n/Lang (");
+                if (element.language != null) {
+                    Append(element.language);
+                } else {
+                    Append(language);
+                }
+                Append(")\n/ActualText <");
                 Append(ToHex(element.actualText));
-                Append(">\n");
-                Append("/Alt <");
+                Append(">\n/Alt <");
                 Append(ToHex(element.altDescription));
-                Append(">\n");
-                Append(">>\n");
+                Append(">\n>>\n");
                 Endobj();
             }
         }
@@ -525,7 +521,7 @@ public class PDF {
 
     private void AddNumsParentTree() {
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Nums [\n");
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
@@ -553,17 +549,23 @@ public class PDF {
             }
         }
         Append("]\n");
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
     }
 
     private int AddRootObject(int structTreeRootObjNumber, int outlineDictNum) {
         // Add the root object
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /Catalog\n");
 
-        if (compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             Append("/Lang (");
             Append(language);
             Append(")\n");
@@ -579,13 +581,13 @@ public class PDF {
         if (pageLayout != null) {
             Append("/PageLayout /");
             Append(pageLayout);
-            Append("\n");
+            Append(Token.newline);
         }
 
         if (pageMode != null) {
             Append("/PageMode /");
             Append(pageMode);
-            Append("\n");
+            Append(Token.newline);
         }
 
         AddOCProperties();
@@ -616,7 +618,7 @@ public class PDF {
             Append(" 0 R\n");
         }
 
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
     }
@@ -654,7 +656,6 @@ public class PDF {
     private void AddAllPages(int resObjNumber) {
         SetDestinationObjNumbers();
         AddAnnotDictionaries();
-
         // Calculate the object number of the Pages object
         pagesObjNumber = GetObjNumber() + pages.Count + 1;
 
@@ -664,7 +665,7 @@ public class PDF {
             // Page object
             Newobj();
             page.objNumber = GetObjNumber();
-            Append("<<\n");
+            Append(Token.beginDictionary);
             Append("/Type /Page\n");
             Append("/Parent ");
             Append(pagesObjNumber);
@@ -706,14 +707,20 @@ public class PDF {
                 Append("]\n");
             }
 
-            if (compliance == Compliance.PDF_UA) {
+            if (compliance == Compliance.PDF_UA ||
+                    compliance == Compliance.PDF_A_1A ||
+                    compliance == Compliance.PDF_A_1B ||
+                    compliance == Compliance.PDF_A_2A ||
+                    compliance == Compliance.PDF_A_2B ||
+                    compliance == Compliance.PDF_A_3A ||
+                    compliance == Compliance.PDF_A_3B) {
                 Append("/Tabs /S\n");
                 Append("/StructParents ");
                 Append(i);
-                Append("\n");
+                Append(Token.newline);
             }
 
-            Append(">>\n");
+            Append(Token.endDictionary);
             Endobj();
         }
     }
@@ -756,30 +763,30 @@ public class PDF {
         page.buf = null;    // Release the page content memory!
 
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Filter /FlateDecode\n");
         Append("/Length ");
         Append(baos.Length);
-        Append("\n");
-        Append(">>\n");
-        Append("stream\n");
+        Append(Token.newline);
+        Append(Token.endDictionary);
+        Append(Token.stream);
         Append(baos);
-        Append("\nendstream\n");
+        Append(Token.endstream);
         Endobj();
         page.contents.Add(GetObjNumber());
     }
 /*
-Use this method on systems that don't have Deflater stream or when troubleshooting.
+    // Use this method on systems that don't have Deflater stream or when troubleshooting.
     private void AddPageContent(Page page) {
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Length ");
         Append(page.buf.Length);
-        Append("\n");
-        Append(">>\n");
-        Append("stream\n");
+        Append(Token.newline);
+        Append(Token.endDictionary);
+        Append(Token.stream);
         Append(page.buf);
-        Append("\nendstream\n");
+        Append(Token.endstream);
         Endobj();
         page.buf = null;    // Release the page content memory!
         page.contents.Add(GetObjNumber());
@@ -788,7 +795,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
     private int AddAnnotationObject(Annotation annot, int index) {
         Newobj();
         annot.objNumber = GetObjNumber();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /Annot\n");
         if (annot.fileAttachment != null) {
             Append("/Subtype /FileAttachment\n");
@@ -841,7 +848,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             Append(index++);
             Append("\n");
         }
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
 
         return index;
@@ -907,10 +914,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
     }
 
     public void AddPage(Page page) {
-        int n = pages.Count;
-        if (n > 0) {
-            AddPageContent(pages[n - 1]);
-        }
+        AddPageContent(page);
         pages.Add(page);
     }
 
@@ -938,13 +942,18 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         }
 
         if (pagesObjNumber == 0) {
-            AddPageContent(pages[pages.Count - 1]);
             AddAllPages(AddResourcesObject());
             pagesObjNumber = AddPagesObject();
         }
 
         int structTreeRootObjNumber = 0;
-        if (compliance == Compliance.PDF_UA) {
+        if (compliance == Compliance.PDF_UA ||
+                compliance == Compliance.PDF_A_1A ||
+                compliance == Compliance.PDF_A_1B ||
+                compliance == Compliance.PDF_A_2A ||
+                compliance == Compliance.PDF_A_2B ||
+                compliance == Compliance.PDF_A_3A ||
+                compliance == Compliance.PDF_A_3B) {
             AddStructElementObjects();
             structTreeRootObjNumber = AddStructTreeRootObject();
             AddNumsParentTree();
@@ -1168,7 +1177,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
             obj.dict.Add(str);
         }
         sb1.Length = 0;
-
         if (str.Equals("endobj")) {
             return true;
         } else if (str.Equals("stream")) {
@@ -1258,8 +1266,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                 if (p > 0) {
                     token.Append(c2);
                     c1 = c2;
-                }
-                else {
+                } else {
                     done = Process(obj, token, buf, off);
                     if (!done) {
                         obj.dict.Add(c2.ToString());
@@ -1356,7 +1363,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         }
 
         obj.SetStreamAndData(buf, length);
-
         int n = n1 + n2 + n3;   // Number of bytes per entry
         if (predictor > 0) {
             n += 1;
@@ -1421,7 +1427,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
     public int AddOutlineDict(Bookmark toc) {
         int numOfChildren = GetNumOfChildren(0, toc);
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Type /Outlines\n");
         Append("/First ");
         Append(GetObjNumber() + 1);
@@ -1431,8 +1437,8 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         Append(" 0 R\n");
         Append("/Count ");
         Append(numOfChildren);
-        Append("\n");
-        Append(">>\n");
+        Append(Token.newline);
+        Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
     }
@@ -1451,7 +1457,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         }
 
         Newobj();
-        Append("<<\n");
+        Append(Token.beginDictionary);
         Append("/Title <");
         Append(ToHex(bm1.GetTitle()));
         Append(">\n");
@@ -1489,7 +1495,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         Append(" 0 R /XYZ 0 ");
         Append(bm1.GetDestination().yPosition);
         Append(" 0]\n");
-        Append(">>\n");
+        Append(Token.endDictionary);
         Endobj();
     }
 
@@ -1641,7 +1647,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
 
     public void AddResourceObjects(List<PDFobj> objects) {
         List<PDFobj> resources = new List<PDFobj>();
-
         List<PDFobj> pages = GetPageObjects(objects);
         foreach (PDFobj page in pages) {
             PDFobj resObj = page.GetResourcesObject(objects);
@@ -1672,7 +1677,6 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
         resources.Sort(delegate(PDFobj o1, PDFobj o2){
             return o1.number.CompareTo(o2.number);
         });
-
         AddObjectsToPDF(resources);
     }
 
@@ -1700,7 +1704,7 @@ Use this method on systems that don't have Deflater stream or when troubleshooti
                     Append(obj.stream, 0, obj.stream.Length);
                     Append(Token.endstream);
                 }
-                Append("endobj\n");
+                Append(Token.endobj);
             } else {
                 objOffset.Add(byteCount);
                 bool link = false;

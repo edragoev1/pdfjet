@@ -202,11 +202,9 @@ public class TextColumn : Drawable {
         self.lineHeight = paragraph.lines![0].font!.bodyHeight + spaceBetweenLines
         if rotate == ClockWise._0_degrees {
             self.y1 += paragraph.lines![0].font!.ascent
-        }
-        else if rotate == ClockWise._90_degrees {
+        } else if rotate == ClockWise._90_degrees {
             self.x1 += paragraph.lines![0].font!.ascent
-        }
-        else if rotate == ClockWise._270_degrees {
+        } else if rotate == ClockWise._270_degrees {
             self.x1 -= paragraph.lines![0].font!.ascent
         }
 
@@ -228,8 +226,7 @@ public class TextColumn : Drawable {
                 if runLength < w {
                     list.append(text!)
                     runLength += line.font!.stringWidth(line.fallbackFont, Single.space)
-                }
-                else {
+                } else {
                     if page != nil {
                         drawLineOfText(page!, list)
                     }
@@ -261,12 +258,10 @@ public class TextColumn : Drawable {
         if rotate == 0 {
             x1 = x
             y1 += lineHeight
-        }
-        else if rotate == 90 {
+        } else if rotate == 90 {
             x1 += lineHeight
             y1 = y
-        }
-        else if rotate == 270 {
+        } else if rotate == 270 {
             x1 -= lineHeight
             y1 = y
         }
@@ -278,12 +273,10 @@ public class TextColumn : Drawable {
         if rotate == ClockWise._0_degrees {
             x1 = x
             y1 += spaceBetweenParagraphs
-        }
-        else if rotate == ClockWise._90_degrees {
+        } else if rotate == ClockWise._90_degrees {
             x1 += spaceBetweenParagraphs
             y1 = y
-        }
-        else if rotate == ClockWise._270_degrees {
+        } else if rotate == ClockWise._270_degrees {
             x1 -= spaceBetweenParagraphs
             y1 = y
         }
@@ -319,18 +312,15 @@ public class TextColumn : Drawable {
                 if rotate == 0 {
                     textLine.setTextDirection(0).drawOn(page)
                     x1 += textLine.font!.stringWidth(textLine.fallbackFont, textLine.text) + dx
-                }
-                else if rotate == 90 {
+                } else if rotate == 90 {
                     textLine.setTextDirection(90).drawOn(page)
                     y1 -= textLine.font!.stringWidth(textLine.fallbackFont, textLine.text) + dx
-                }
-                else if rotate == 270 {
+                } else if rotate == 270 {
                     textLine.setTextDirection(270).drawOn(page)
                     y1 += textLine.font!.stringWidth(textLine.fallbackFont, textLine.text) + dx
                 }
             }
-        }
-        else {
+        } else {
             return drawNonJustifiedLine(page, list)
         }
 
@@ -355,22 +345,17 @@ public class TextColumn : Drawable {
         if alignment == Align.CENTER {
             if rotate == ClockWise._0_degrees {
                 x1 = x + ((w - runLength) / 2)
-            }
-            else if rotate == ClockWise._90_degrees {
+            } else if rotate == ClockWise._90_degrees {
                 y1 = y - ((w - runLength) / 2)
-            }
-            else if rotate == ClockWise._270_degrees {
+            } else if rotate == ClockWise._270_degrees {
                 y1 = y + ((w - runLength) / 2)
             }
-        }
-        else if alignment == Align.RIGHT {
+        } else if alignment == Align.RIGHT {
             if rotate == ClockWise._0_degrees {
                 x1 = x + (w - runLength)
-            }
-            else if rotate == ClockWise._90_degrees {
+            } else if rotate == ClockWise._90_degrees {
                 y1 = y - (w - runLength)
-            }
-            else if rotate == ClockWise._270_degrees {
+            } else if rotate == ClockWise._270_degrees {
                 y1 = y + (w - runLength)
             }
         }
@@ -392,12 +377,10 @@ public class TextColumn : Drawable {
             if rotate == ClockWise._0_degrees {
                 textLine.setTextDirection(0).drawOn(page)
                 x1 += textLine.font!.stringWidth(textLine.fallbackFont, textLine.text)
-            }
-            else if rotate == ClockWise._90_degrees {
+            } else if rotate == ClockWise._90_degrees {
                 textLine.setTextDirection(90).drawOn(page)
                 y1 -= textLine.font!.stringWidth(textLine.fallbackFont, textLine.text)
-            }
-            else if rotate == ClockWise._270_degrees {
+            } else if rotate == ClockWise._270_degrees {
                 textLine.setTextDirection(270).drawOn(page)
                 y1 += textLine.font!.stringWidth(textLine.fallbackFont, textLine.text)
             }

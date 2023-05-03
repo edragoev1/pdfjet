@@ -129,9 +129,7 @@ public final class Puff {
     public init(output: inout [UInt8], input: inout [UInt8]) throws {
         var last: Int?                              // block information
         var type: Int?
-
         var error = 0                               // return value
-
         // skip the zlib header
         self.incnt += 2
 
@@ -141,14 +139,11 @@ public final class Puff {
             type = try bits(2, &input)              // block type 0..3
             if type == 0 {
                 error = stored(&output, &input)
-            }
-            else if type == 1 {
+            } else if type == 1 {
                 error = try fixed(&output, &input)
-            }
-            else if type == 2 {
+            } else if type == 2 {
                 error = try dynamic(&output, &input)
-            }
-            else {
+            } else {
                 error = -1                          // type == 3, invalid
             }
             if error != 0 {
@@ -333,7 +328,6 @@ public final class Puff {
     }
 
     private final func stored(_ output: inout [UInt8], _ input: inout [UInt8]) -> Int {
-
         // discard leftover bits from current byte (assumes self.bitcnt < 8)
         self.bitbuf = 0
         self.bitcnt = 0
@@ -431,7 +425,6 @@ public final class Puff {
         _ input: inout [UInt8],
         _ lencode: inout Huffman,
         _ distcode: inout Huffman) throws -> Int {
-
         var symbol: Int         // decoded symbol
         var len: Int            // length for copy
         var dist: Int           // distance for copy
@@ -445,8 +438,7 @@ public final class Puff {
             if symbol < 256 {               // literal: symbol is the byte
                 // write out the literal
                 output.append(UInt8(symbol))
-            }
-            else if symbol > 256 {          // length
+            } else if symbol > 256 {        // length
                 // get and compute length
                 symbol -= 257
                 if symbol >= 29 {
@@ -601,15 +593,12 @@ public final class Puff {
      *   block is around 80 bytes.
      */
     private final func dynamic(_ output: inout [UInt8], _ input: inout [UInt8]) throws -> Int {
-
         // descriptor code lengths
         var lengths = [Int](repeating: 0, count: MAXCODES)
-
         // construct lencode and distcode
         var lencode = Huffman(
                 count: [Int](repeating: 0, count: MAXBITS + 1),
                 symbol: [Int](repeating: 0, count: MAXLCODES))
-
         var distcode = Huffman(
                 count: [Int](repeating: 0, count: MAXBITS + 1),
                 symbol: [Int](repeating: 0, count: MAXDCODES))
@@ -654,8 +643,7 @@ public final class Puff {
             if symbol < 16 {                            // length in 0..15
                 lengths[index] = symbol
                 index += 1
-            }
-            else {                                      // repeat instruction
+            } else {                                    // repeat instruction
                 var len = 0                             // last length to repeat. Assume repeating zeros
                 if symbol == 16 {                       // repeat last length 3..6 times
                     if index == 0 {
@@ -663,11 +651,9 @@ public final class Puff {
                     }
                     len = lengths[index - 1]            // last length
                     symbol = try bits(2, &input) + 3
-                }
-                else if symbol == 17 {                  // repeat zero 3..10 times
+                } else if symbol == 17 {                // repeat zero 3..10 times
                     symbol = try bits(3, &input) + 3
-                }
-                else {                                  // == 18, repeat zero 11..138 times
+                } else {                                // == 18, repeat zero 11..138 times
                     symbol = try bits(7, &input) + 11
                 }
 

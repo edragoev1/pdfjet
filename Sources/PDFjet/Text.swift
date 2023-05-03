@@ -218,8 +218,7 @@ public class Text : Drawable {
         for scalar in scalars {
             if textLine.font!.stringWidth(textLine.fallbackFont, buf + String(scalar)) < textWidth {
                 buf.append(String(scalar))
-            }
-            else {
+            } else {
                 list.append(buf)
                 buf = ""
                 buf.append(String(scalar))

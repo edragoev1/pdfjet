@@ -39,6 +39,10 @@ public class Page {
     var objNumber = 0
     var buf = [UInt8]()
     var tm: [Float] = [1.0, 0.0, 0.0, 1.0]
+    var tm0: [UInt8]
+    var tm1: [UInt8]   
+    var tm2: [UInt8]
+    var tm3: [UInt8]
     var renderingMode = 0
     var width: Float = 0.0
     var height: Float = 0.0
@@ -90,6 +94,10 @@ public class Page {
         self.destinations = [Destination]()
         self.width = pageSize[0]
         self.height = pageSize[1]
+        self.tm0 = Array(String(format: "%.3f", tm[0]).utf8)
+        self.tm1 = Array(String(format: "%.3f", tm[1]).utf8)
+        self.tm2 = Array(String(format: "%.3f", tm[2]).utf8)
+        self.tm3 = Array(String(format: "%.3f", tm[3]).utf8)
         if addPageToPDF {
             pdf.addPage(self)
         }
@@ -100,6 +108,10 @@ public class Page {
         self.pageObj = pageObj
         self.width = pageObj.getPageSize()[0]
         self.height = pageObj.getPageSize()[1]
+        self.tm0 = Array(String(format: "%.3f", tm[0]).utf8)
+        self.tm1 = Array(String(format: "%.3f", tm[1]).utf8)
+        self.tm2 = Array(String(format: "%.3f", tm[2]).utf8)
+        self.tm3 = Array(String(format: "%.3f", tm[3]).utf8)
         append("q\n")
         if pageObj.gsNumber != -1 {
             append("/GS")
@@ -232,8 +244,7 @@ public class Page {
         let y = yOrig
         if (font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK) {
             drawString(font, str, x, y, brush, colors)
-        }
-        else {
+        } else {
             var activeFont = font
             var buf = String()
             for scalar in str!.unicodeScalars {
@@ -298,27 +309,38 @@ public class Page {
             append(" Tr\n")
         }
 
-        var skew: Float = 0.0
         if font.skew15 &&
                 self.tm[0] == 1.0 &&
                 self.tm[1] == 0.0 &&
                 self.tm[2] == 0.0 &&
                 self.tm[3] == 1.0 {
-            skew = 0.26
+            let skew = Float(0.26)
+            append(self.tm[0])
+            append(Token.space)
+            append(self.tm[1])
+            append(Token.space)
+            append(self.tm[2] + skew)
+            append(Token.space)
+            append(self.tm[3])
+            append(Token.space)
+            append(x)
+            append(Token.space)
+            append(self.height - y)
+            append(" Tm\n")
+        } else {
+            append(self.tm0)
+            append(Token.space)
+            append(self.tm1)
+            append(Token.space)
+            append(self.tm2)
+            append(Token.space)
+            append(self.tm3)
+            append(Token.space)
+            append(x)
+            append(Token.space)
+            append(self.height - y)
+            append(" Tm\n")
         }
-
-        append(self.tm[0])
-        append(Token.space)
-        append(self.tm[1])
-        append(Token.space)
-        append(self.tm[2] + skew)
-        append(Token.space)
-        append(self.tm[3])
-        append(Token.space)
-        append(x)
-        append(Token.space)
-        append(self.height - y)
-        append(" Tm\n")
 
         if (colors == nil) {
             setBrushColor(brush)
@@ -427,6 +449,16 @@ public class Page {
             pen[1] = g
             pen[2] = b
         }
+    }
+
+    public final func setPenColor(_ color: [Float]) {
+        pen[0] = color[0]
+        pen[1] = color[1]
+        pen[2] = color[2]
+    }
+
+    public final func getPenColor() -> [Float] {
+        return pen;
     }
 
     ///
@@ -760,13 +792,11 @@ public class Page {
                     curve = false
                     append(point)
                     append("c\n")
-                }
-                else {
+                } else {
                     lineTo(point.x, point.y)
                 }
             }
         }
-
         append(operation)
         append("\n")
     }
@@ -891,12 +921,10 @@ public class Page {
             if p.shape == Point.CIRCLE {
                 if p.fillShape {
                     drawCircle(p.x, p.y, p.r, "f")
-                }
-                else {
+                } else {
                     drawCircle(p.x, p.y, p.r, "S")
                 }
-            }
-            else if p.shape == Point.DIAMOND {
+            } else if p.shape == Point.DIAMOND {
                 list = [Point]()
                 list.append(Point(p.x, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y))
@@ -904,12 +932,10 @@ public class Page {
                 list.append(Point(p.x - p.r, p.y))
                 if p.fillShape {
                     drawPath(list, "f")
-                }
-                else {
+                } else {
                     drawPath(list, "s")
                 }
-            }
-            else if p.shape == Point.BOX {
+            } else if p.shape == Point.BOX {
                 list = [Point]()
                 list.append(Point(p.x - p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y - p.r))
@@ -917,80 +943,65 @@ public class Page {
                 list.append(Point(p.x - p.r, p.y + p.r))
                 if p.fillShape {
                     drawPath(list, "f")
-                }
-                else {
+                } else {
                     drawPath(list, "s")
                 }
-            }
-            else if p.shape == Point.PLUS {
+            } else if p.shape == Point.PLUS {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
-            }
-            else if p.shape == Point.UP_ARROW {
+            } else if p.shape == Point.UP_ARROW {
                 list = [Point]()
                 list.append(Point(p.x, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y + p.r))
                 if p.fillShape {
                     drawPath(list, "f")
-                }
-                else {
+                } else {
                     drawPath(list, "s")
                 }
-            }
-            else if p.shape == Point.DOWN_ARROW {
+            } else if p.shape == Point.DOWN_ARROW {
                 list = [Point]()
                 list.append(Point(p.x - p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y - p.r))
                 list.append(Point(p.x, p.y + p.r))
                 if p.fillShape {
                     drawPath(list, "f")
-                }
-                else {
+                } else {
                     drawPath(list, "s")
                 }
-            }
-            else if p.shape == Point.LEFT_ARROW {
+            } else if p.shape == Point.LEFT_ARROW {
                 list = [Point]()
                 list.append(Point(p.x + p.r, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y))
                 list.append(Point(p.x + p.r, p.y - p.r))
                 if p.fillShape {
                     drawPath(list, "f")
-                }
-                else {
+                } else {
                     drawPath(list, "s")
                 }
-            }
-            else if p.shape == Point.RIGHT_ARROW {
+            } else if p.shape == Point.RIGHT_ARROW {
                 list = [Point]()
                 list.append(Point(p.x - p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y))
                 list.append(Point(p.x - p.r, p.y + p.r))
                 if p.fillShape {
                     drawPath(list, "f")
-                }
-                else {
+                } else {
                     drawPath(list, "s")
                 }
-            }
-            else if p.shape == Point.H_DASH {
+            } else if p.shape == Point.H_DASH {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
-            }
-            else if p.shape == Point.V_DASH {
+            } else if p.shape == Point.V_DASH {
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
-            }
-            else if p.shape == Point.X_MARK {
+            } else if p.shape == Point.X_MARK {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r)
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r)
-            }
-            else if p.shape == Point.MULTIPLY {
+            } else if p.shape == Point.MULTIPLY {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r)
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r)
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
-            }
-            else if p.shape == Point.STAR {
+            } else if p.shape == Point.STAR {
                 let angle = Float.pi / 10.0
                 let sin18 = Float(sin(angle))
                 let cos18 = Float(cos(angle))
@@ -1006,8 +1017,7 @@ public class Page {
                 list.append(Point(p.x - c, p.y + d))
                 if p.fillShape {
                     drawPath(list, "f")
-                }
-                else {
+                } else {
                     drawPath(list, "s")
                 }
             }
@@ -1022,8 +1032,7 @@ public class Page {
     public func setTextRenderingMode(_ mode: Int) throws {
         if mode >= 0 && mode <= 7 {
             self.renderingMode = mode
-        }
-        else {
+        } else {
             // TODO:
             Swift.print("Invalid text rendering mode: \(mode)")
         }
@@ -1041,24 +1050,23 @@ public class Page {
         }
         if degrees == 0 {
             self.tm = [ 1.0,  0.0,  0.0,  1.0 ]
-        }
-        else if degrees == 90 {
+        } else if degrees == 90 {
             self.tm = [ 0.0,  1.0, -1.0,  0.0 ]
-        }
-        else if degrees == 180 {
+        } else if degrees == 180 {
             self.tm = [-1.0,  0.0,  0.0, -1.0 ]
-        }
-        else if degrees == 270 {
+        } else if degrees == 270 {
             self.tm = [ 0.0, -1.0,  1.0,  0.0 ]
-        }
-        else if degrees == 360 {
+        } else if degrees == 360 {
             self.tm = [ 1.0,  0.0,  0.0,  1.0 ]
-        }
-        else {
+        } else {
             let sinOfAngle = Float(sin(Float(degrees) * (Float.pi / 180.0)))
             let cosOfAngle = Float(cos(Float(degrees) * (Float.pi / 180.0)))
             self.tm = [cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle]
         }
+        self.tm0 = Array(String(format: "%.3f", tm[0]).utf8)
+        self.tm1 = Array(String(format: "%.3f", tm[1]).utf8)
+        self.tm2 = Array(String(format: "%.3f", tm[2]).utf8)
+        self.tm3 = Array(String(format: "%.3f", tm[3]).utf8)
     }
 
     ///
@@ -1121,7 +1129,7 @@ public class Page {
 
     // Original code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
-    // <<
+    // >>
     public func drawRectRoundCorners(
             _ x: Float,
             _ y: Float,
@@ -1132,9 +1140,7 @@ public class Page {
             _ operation: String) {
         // The best 4-spline magic number
         let m4: Float = 0.551784
-
         var list = [Point]()
-
         // Starting point
         list.append(Point(x + w - r1, y))
         list.append(Point(x + w - r1 + m4*r1, y, Point.CONTROL_POINT))
@@ -1372,7 +1378,6 @@ public class Page {
             _ language: String?,
             _ actualText: String,
             _ altDescription: String) {
-
         if pdf != nil && pdf!.compliance == Compliance.PDF_UA {
             let element = StructElem()
             element.structure = structure
@@ -1381,7 +1386,6 @@ public class Page {
             element.actualText = actualText
             element.altDescription = altDescription
             structures.append(element)
-
             append("/")
             append(structure)
             append(" <</MCID ")
@@ -1389,6 +1393,12 @@ public class Page {
             append(">>\n")
             append("BDC\n")
             mcid += 1
+        }
+    }
+
+    public func addArtifactBMC() {
+        if pdf!.compliance == Compliance.PDF_UA {
+            append("/Artifact BMC\n");
         }
     }
 

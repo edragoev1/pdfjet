@@ -127,8 +127,7 @@ class JPGImage {
                 index += 2
                 colorComponents = UInt16(buffer[index])
                 break
-            }
-            else {
+            } else {
                 skipVariable(&buffer)
             }
         }

@@ -71,8 +71,7 @@ class BMPImage {
                 if offset > 54 {
                     skipNBytes(stream, offset - 54)
                 }
-            }
-            else {
+            } else {
                 skipNBytes(stream, 12)
                 var numPalColors = readSignedInt(stream)
                 if numPalColors == 0 {
@@ -82,8 +81,7 @@ class BMPImage {
                 parsePalette(stream, numPalColors)
             }
             parseData(stream)
-        }
-        else {
+        } else {
             // TODO:
             Swift.print("BMP data could not be parsed!")
         }
@@ -98,27 +96,20 @@ class BMPImage {
             row = getBytes(stream, rowsize)!
             if self.bpp == 1 {
                 row = bit1to8(row, w)           // opslag i palette
-            }
-            else if self.bpp == 4 {
+            } else if self.bpp == 4 {
                 row = bit4to8(row, w)           // opslag i palette
-            }
-            else if self.bpp == 8 {             // opslag i palette
+            } else if self.bpp == 8 {             // opslag i palette
                 //
-            }
-            else if self.bpp == 16 {
+            } else if self.bpp == 16 {
                 if self.r5g6b5 {                // 5,6,5 bit
                     row = bit16to24(row, w)
-                }
-                else {
+                } else {
                     row = bit16to24b(row, w)
                 }
-            }
-            else if self.bpp == 24 {            // bytes are correct
-            }
-            else if self.bpp == 32 {
+            } else if self.bpp == 24 {            // bytes are correct
+            } else if self.bpp == 32 {
                 row = bit32to24(row, w)
-            }
-            else {
+            } else {
                 Swift.print("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images.")
             }
 
@@ -133,8 +124,7 @@ class BMPImage {
                     image![index] = self.palette![Int(row[j])][0]
                     index += 1
                 }
-            }
-            else {
+            } else {
                 // not indexed
                 var j = 0
                 while j < 3*self.w {
@@ -210,8 +200,7 @@ class BMPImage {
         for i in 0..<width {
             if i % 2 == 0 {
                 ret[i] = UInt8((row[i/2] & m11110000) >> 4)
-            }
-            else {
+            } else {
                 ret[i] = UInt8((row[i/2] & m00001111))
             }
         }

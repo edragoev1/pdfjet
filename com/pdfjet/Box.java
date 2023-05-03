@@ -333,8 +333,7 @@ public class Box implements Drawable {
         page.setLinePattern(pattern);
         if (fillShape) {
             page.setBrushColor(color);
-        }
-        else {
+        } else {
             page.setPenColor(color);
         }
         page.moveTo(x, y);
@@ -343,8 +342,7 @@ public class Box implements Drawable {
         page.lineTo(x, y + h);
         if (fillShape) {
             page.fillPath();
-        }
-        else {
+        } else {
             page.closePath();
         }
         page.addEMC();

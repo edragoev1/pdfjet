@@ -22,14 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 /**
  *  Used to create rectangular boxes on a page.
  *  Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
  *
  */
 public class Box : Drawable {
-
     var x: Float = 0.0
     var y: Float = 0.0
 
@@ -276,8 +274,7 @@ public class Box : Drawable {
         page!.setLinePattern(pattern)
         if fillShape {
             page!.setBrushColor(color)
-        }
-        else {
+        } else {
             page!.setPenColor(color)
         }
         page!.moveTo(x, y)
@@ -286,8 +283,7 @@ public class Box : Drawable {
         page!.lineTo(x, y + h)
         if fillShape {
             page!.fillPath()
-        }
-        else {
+        } else {
             page!.closePath()
         }
         page!.addEMC()
@@ -307,5 +303,4 @@ public class Box : Drawable {
 
         return [x + w, y + h]
     }
-
 }   // End of Box.swift

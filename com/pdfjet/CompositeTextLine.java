@@ -178,16 +178,14 @@ public class CompositeTextLine implements Drawable {
             component.setLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition);
-        }
-        else if (component.getTextEffect() == Effect.SUBSCRIPT) {
+        } else if (component.getTextEffect() == Effect.SUBSCRIPT) {
             if (fontSize > 0f) {
                 component.font.setSize(fontSize * subscriptSizeFactor);
             }
             component.setLocation(
                     current[X],
                     current[Y] + fontSize * subscriptPosition);
-        }
-        else {
+        } else {
             if (fontSize > 0f) {
                 component.getFont().setSize(fontSize);
             }
@@ -253,13 +251,11 @@ public class CompositeTextLine implements Drawable {
                 component.setLocation(
                         current[X],
                         current[Y] - fontSize * superscriptPosition);
-            }
-            else if (component.getTextEffect() == Effect.SUBSCRIPT) {
+            } else if (component.getTextEffect() == Effect.SUBSCRIPT) {
                 component.setLocation(
                         current[X],
                         current[Y] + fontSize * subscriptPosition);
-            }
-            else {
+            } else {
                 component.setLocation(current[X], current[Y]);
             }
             current[X] += component.getWidth();
@@ -333,13 +329,11 @@ public class CompositeTextLine implements Drawable {
                 cur = (position[Y] - component.font.ascent) - fontSize * superscriptPosition;
                 if (cur < min)
                     min = cur;
-            }
-            else if (component.getTextEffect() == Effect.SUBSCRIPT) {
+            } else if (component.getTextEffect() == Effect.SUBSCRIPT) {
                 cur = (position[Y] + component.font.descent) + fontSize * subscriptPosition;
                 if (cur > max)
                     max = cur;
-            }
-            else {
+            } else {
                 cur = position[Y] - component.font.ascent;
                 if (cur < min)
                     min = cur;

@@ -57,17 +57,13 @@ class RSBlock {
             _ errorCorrectLevel: Int) -> [Int] {
         if errorCorrectLevel == ErrorCorrectLevel.L {
             return [1, 100, 80]
-        }
-        else if errorCorrectLevel == ErrorCorrectLevel.M {
+        } else if errorCorrectLevel == ErrorCorrectLevel.M {
             return [2, 50, 32]
-        }
-        else if errorCorrectLevel == ErrorCorrectLevel.Q {
+        } else if errorCorrectLevel == ErrorCorrectLevel.Q {
             return [2, 50, 24]
-        }
-        else if errorCorrectLevel == ErrorCorrectLevel.H {
+        } else if errorCorrectLevel == ErrorCorrectLevel.H {
             return [4, 25, 9]
         }
         return []
     }
-
 }

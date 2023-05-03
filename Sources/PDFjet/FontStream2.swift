@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 class FontStream2 {
-
     enum StreamError: Error {
         case read
         case write
@@ -35,7 +33,6 @@ class FontStream2 {
             _ objects: inout [PDFobj],
             _ font: Font,
             _ stream: InputStream) throws {
-
         stream.open()
         try FontStream1.getFontData(font, stream)
         embedFontFile(&objects, font, stream)
@@ -73,20 +70,18 @@ class FontStream2 {
         font.objNumber = obj.number
     }
 
-
     private static func addMetadataObject(
             _ objects: inout [PDFobj],
             _ font: Font) -> Int {
-
         var sb = String()
-        sb.append("<?xpacket begin='\u{FEFF}' id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+        sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
         sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n")
         sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
         sb.append("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")
         sb.append("<xmpRights:UsageTerms>\n")
         sb.append("<rdf:Alt>\n")
         sb.append("<rdf:li xml:lang=\"x-default\">\n")
-        sb.append(font.info)
+        sb.append(String(font.info.utf8))
         sb.append("</rdf:li>\n")
         sb.append("</rdf:Alt>\n")
         sb.append("</xmpRights:UsageTerms>\n")
@@ -119,7 +114,6 @@ class FontStream2 {
             _ objects: inout [PDFobj],
             _ font: Font,
             _ stream: InputStream) {
-
         let metadataObjNumber = addMetadataObject(&objects, font)
 
         let obj = PDFobj()
@@ -132,11 +126,10 @@ class FontStream2 {
         obj.dict.append("/FlateDecode")
         obj.dict.append("/Length")
         obj.dict.append(String(font.compressedSize!))
-        if font.cff! {
+        if font.cff {
             obj.dict.append("/Subtype")
             obj.dict.append("/CIDFontType0C")
-        }
-        else {
+        } else {
             obj.dict.append("/Length1")
             obj.dict.append(String(font.uncompressedSize!))
         }
@@ -156,7 +149,6 @@ class FontStream2 {
         font.fileObjNumber = obj.number
     }
 
-
     private static func addFontDescriptorObject(_ objects: inout [PDFobj], _ font: Font) {
         let obj = PDFobj()
         obj.dict.append("<<")
@@ -164,7 +156,7 @@ class FontStream2 {
         obj.dict.append("/FontDescriptor")
         obj.dict.append("/FontName")
         obj.dict.append("/" + font.name)
-        obj.dict.append("/FontFile" + (font.cff! ? "3" : "2"))
+        obj.dict.append("/FontFile" + (font.cff ? "3" : "2"))
         obj.dict.append(String(font.fileObjNumber))
         obj.dict.append("0")
         obj.dict.append("R")
@@ -194,13 +186,10 @@ class FontStream2 {
         font.fontDescriptorObjNumber = obj.number
     }
 
-
     private static func addToUnicodeCMapObject(
             _ objects: inout [PDFobj],
             _ font: Font) {
-
         var sb = String()
-
         sb.append("/CIDInit /ProcSet findresource begin\n")
         sb.append("12 dict begin\n")
         sb.append("begincmap\n")
@@ -254,13 +243,12 @@ class FontStream2 {
     private static func addCIDFontDictionaryObject(
             _ objects: inout [PDFobj],
             _ font: Font) {
-
         let obj = PDFobj()
         obj.dict.append("<<")
         obj.dict.append("/Type")
         obj.dict.append("/Font")
         obj.dict.append("/Subtype")
-        obj.dict.append("/CIDFontType" + (font.cff! ? "0" : "2"))
+        obj.dict.append("/CIDFontType" + (font.cff ? "0" : "2"))
         obj.dict.append("/BaseFont")
         obj.dict.append("/" + font.name)
         obj.dict.append("/CIDSystemInfo")
@@ -302,21 +290,17 @@ class FontStream2 {
         font.cidFontDictObjNumber = obj.number
     }
 
-
     private static func toHexString(_ code: Int) -> String {
         let str = String(code, radix: 16)
         if str.unicodeScalars.count == 1 {
             return "000" + str
-        }
-        else if str.unicodeScalars.count == 2 {
+        } else if str.unicodeScalars.count == 2 {
             return "00" + str
-        }
-        else if str.unicodeScalars.count == 3 {
+        } else if str.unicodeScalars.count == 3 {
             return "0" + str
         }
         return str
     }
-
 
     private static func writeListToBuffer(
             _ list: inout [String],
@@ -330,7 +314,6 @@ class FontStream2 {
         list.removeAll()
     }
 
-
     private static func getUInt16(_ stream: InputStream) throws -> UInt16 {
         var buffer = [UInt8](repeating: 0, count: 2)
         if stream.read(&buffer, maxLength: 2) == 2 {
@@ -341,7 +324,6 @@ class FontStream2 {
         throw StreamError.read
     }
 
-
     private static func getInt8(_ stream: InputStream) throws -> Int {
         var buffer = [UInt8](repeating: 0, count: 1)
         if stream.read(&buffer, maxLength: 1) == 1 {
@@ -349,5 +331,4 @@ class FontStream2 {
         }
         throw StreamError.read
     }
-
 }   // End of FontStream2.swift

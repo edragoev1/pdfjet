@@ -44,6 +44,10 @@ public class Page {
     internal int objNumber;
     internal MemoryStream buf;
     internal float[] tm = {1f, 0f, 0f, 1f};
+    internal byte[] tm0;
+    internal byte[] tm1;
+    internal byte[] tm2;
+    internal byte[] tm3;
     internal int renderingMode = 0;
     internal readonly float width;
     internal float height;
@@ -119,6 +123,10 @@ public class Page {
         width = pageSize[0];
         height = pageSize[1];
         buf = new MemoryStream(8192);
+        tm0 = toByteArray(tm[0]);
+        tm1 = toByteArray(tm[1]);
+        tm2 = toByteArray(tm[2]);
+        tm3 = toByteArray(tm[3]);
         if (addPageToPDF) {
             pdf.AddPage(this);
         }
@@ -130,6 +138,10 @@ public class Page {
         width = pageObj.GetPageSize()[0];
         height = pageObj.GetPageSize()[1];
         buf = new MemoryStream(8192);
+        tm0 = toByteArray(tm[0]);
+        tm1 = toByteArray(tm[1]);
+        tm2 = toByteArray(tm[2]);
+        tm3 = toByteArray(tm[3]);
         Append("q\n");
         if (pageObj.gsNumber != -1) {
             Append("/GS");
@@ -324,27 +336,38 @@ public class Page {
             Append(" Tr\n");
         }
 
-        float skew = 0f;
         if (font.skew15 &&
                 tm[0] == 1f &&
                 tm[1] == 0f &&
                 tm[2] == 0f &&
                 tm[3] == 1f) {
-            skew = 0.26f;
+            float skew = 0.26f;
+            Append(tm[0]);
+            Append(' ');
+            Append(tm[1]);
+            Append(' ');
+            Append(tm[2] + skew);
+            Append(' ');
+            Append(tm[3]);
+            Append(' ');
+            Append(x);
+            Append(' ');
+            Append(height - y);
+            Append(" Tm\n");
+        } else {
+            Append(tm0);
+            Append(' ');
+            Append(tm1);
+            Append(' ');
+            Append(tm2);
+            Append(' ');
+            Append(tm3);
+            Append(' ');
+            Append(x);
+            Append(' ');
+            Append(height - y);
+            Append(" Tm\n");
         }
-
-        Append(tm[0]);
-        Append(' ');
-        Append(tm[1]);
-        Append(' ');
-        Append(tm[2] + skew);
-        Append(' ');
-        Append(tm[3]);
-        Append(' ');
-        Append(x);
-        Append(' ');
-        Append(height - y);
-        Append(" Tm\n");
 
         if (colors == null) {
             SetBrushColor(brush);
@@ -395,8 +418,7 @@ public class Page {
                 int c1 = str[i];
                 if (c1 < font.firstChar || c1 > font.lastChar) {
                     Append(0x0020.ToString("X4"));
-                }
-                else {
+                } else {
                     Append(c1.ToString("X4"));
                 }
             }
@@ -405,8 +427,7 @@ public class Page {
                 int c1 = str[i];
                 if (c1 < font.firstChar || c1 > font.lastChar) {
                     Append(font.unicodeToGID[0x0020].ToString("X4"));
-                }
-                else {
+                } else {
                     Append(font.unicodeToGID[c1].ToString("X4"));
                 }
             }
@@ -589,6 +610,14 @@ public class Page {
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         SetPenColor(r, g, b);
+    }
+
+    public void SetPenColor(float[] color) {
+        SetPenColor(color[0], color[1], color[2]);
+    }
+
+    public float[] GetPenColor() {
+        return pen;
     }
 
     /**
@@ -831,8 +860,7 @@ public class Page {
                     curve = false;
                     Append(point);
                     Append("c\n");
-                }
-                else {
+                } else {
                     LineTo(point.x, point.y);
                 }
             }
@@ -869,7 +897,6 @@ public class Page {
                 Append("c\n");
             }
         }
-
         Append(operation);
         Append('\n');
     }
@@ -1005,7 +1032,6 @@ public class Page {
             char operation) {
         // The best 4-spline magic number
         float m4 = 0.551784f;
-
         // Starting point
         MoveTo(x, y - r2);
 
@@ -1041,15 +1067,13 @@ public class Page {
     public void DrawPoint(Point p) {
         if (p.shape != Point.INVISIBLE) {
             List<Point> list;
-
             if (p.shape == Point.CIRCLE) {
                 if (p.fillShape) {
                     DrawCircle(p.x, p.y, p.r, 'f');
                 } else {
                     DrawCircle(p.x, p.y, p.r, 'S');
                 }
-            }
-            else if (p.shape == Point.DIAMOND) {
+            } else if (p.shape == Point.DIAMOND) {
                 list = new List<Point>();
                 list.Add(new Point(p.x, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y));
@@ -1060,8 +1084,7 @@ public class Page {
                 } else {
                     DrawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.BOX) {
+            } else if (p.shape == Point.BOX) {
                 list = new List<Point>();
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y - p.r));
@@ -1072,12 +1095,10 @@ public class Page {
                 } else {
                     DrawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.PLUS) {
+            } else if (p.shape == Point.PLUS) {
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 DrawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            }
-            else if (p.shape == Point.UP_ARROW) {
+            } else if (p.shape == Point.UP_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y + p.r));
@@ -1087,8 +1108,7 @@ public class Page {
                 } else {
                     DrawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.DOWN_ARROW) {
+            } else if (p.shape == Point.DOWN_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y - p.r));
@@ -1098,8 +1118,7 @@ public class Page {
                 } else {
                     DrawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.LEFT_ARROW) {
+            } else if (p.shape == Point.LEFT_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x + p.r, p.y + p.r));
                 list.Add(new Point(p.x - p.r, p.y));
@@ -1109,8 +1128,7 @@ public class Page {
                 } else {
                     DrawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.RIGHT_ARROW) {
+            } else if (p.shape == Point.RIGHT_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y));
@@ -1120,24 +1138,19 @@ public class Page {
                 } else {
                     DrawPath(list, 's');
                 }
-            }
-            else if (p.shape == Point.H_DASH) {
+            } else if (p.shape == Point.H_DASH) {
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
-            }
-            else if (p.shape == Point.V_DASH) {
+            } else if (p.shape == Point.V_DASH) {
                 DrawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            }
-            else if (p.shape == Point.X_MARK) {
+            } else if (p.shape == Point.X_MARK) {
                 DrawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 DrawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
-            }
-            else if (p.shape == Point.MULTIPLY) {
+            } else if (p.shape == Point.MULTIPLY) {
                 DrawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 DrawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 DrawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            }
-            else if (p.shape == Point.STAR) {
+            } else if (p.shape == Point.STAR) {
                 float angle = (float) Math.PI / 10;
                 float sin18 = (float) Math.Sin(angle);
                 float cos18 = (float) Math.Cos(angle);
@@ -1195,6 +1208,10 @@ public class Page {
             float cosOfAngle = (float) Math.Cos(degrees * (Math.PI / 180));
             tm = new float[] {cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle};
         }
+        tm0 = toByteArray(tm[0]);
+        tm1 = toByteArray(tm[1]);
+        tm2 = toByteArray(tm[2]);
+        tm3 = toByteArray(tm[3]);
     }
 
     /**
@@ -1256,7 +1273,6 @@ public class Page {
             float x, float y, float w, float h, float r1, float r2, char operation) {
         // The best 4-spline magic number
         float m4 = 0.551784f;
-
         List<Point> list = new List<Point>();
 
         // Starting point
@@ -1455,8 +1471,7 @@ public class Page {
             if (Char.IsLetterOrDigit(ch)) {
                 DrawWord(font, buf2, brush, colors);
                 buf1.Append(ch);
-            }
-            else {
+            } else {
                 DrawWord(font, buf1, brush, colors);
                 buf2.Append(ch);
             }
@@ -1498,6 +1513,12 @@ public class Page {
             Append(mcid++);
             Append(">>\n");
             Append("BDC\n");
+        }
+    }
+
+    public void AddArtifactBMC() {
+        if (pdf.compliance == Compliance.PDF_UA) {
+            Append("/Artifact BMC\n");
         }
     }
 
@@ -1613,7 +1634,6 @@ public class Page {
         if (Math.Asin(values[MSKEW_Y]) != 0f) {
             transx -= values[MSKEW_Y] * height / scaley;
         }
-
         Append(transx);
         Append(" ");
         Append(-transy);
@@ -1641,6 +1661,15 @@ public class Page {
     public float[] AddFooter(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, GetHeight() - offset);
         return textLine.DrawOn(this);
+    }
+
+    private byte[] toByteArray(float value) {
+        MemoryStream buf = new MemoryStream();
+        String str = value.ToString("0.###", PDF.culture_en_us);
+        for (int i = 0; i < str.Length; i++) {
+            buf.WriteByte((byte) str[i]);
+        }
+        return buf.ToArray();
     }
 }   // End of Page.cs
 }   // End of namespace PDFjet.NET

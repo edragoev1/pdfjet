@@ -215,8 +215,7 @@ public class CheckBox : Drawable {
                 page!.lineTo(x + w/6 + checkWidth!, (yBox + h) - 4.0*checkWidth!/3.0)
                 page!.lineTo((x + w) - checkWidth!, yBox + checkWidth!)
                 page!.strokePath()
-            }
-            else if mark == Mark.X {
+            } else if mark == Mark.X {
                 // Draw 'X' mark
                 page!.moveTo(self.x + checkWidth!, yBox + checkWidth!)
                 page!.lineTo((self.x + self.w) - checkWidth!, (yBox + self.h) - checkWidth!)

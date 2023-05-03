@@ -117,8 +117,7 @@ public class CalendarMonth implements Drawable {
                             x1 + 7*dx,
                             y1 + dy/2 + f1.descent);
                     line.drawOn(page);
-                }
-                else {
+                } else {
                     int dayOfMonth = ((7*row + col) - 6) - (dayOfWeek - 1);
                     if (dayOfMonth > 0 && dayOfMonth <= daysInMonth) {
                         String s1 = String.valueOf(dayOfMonth);

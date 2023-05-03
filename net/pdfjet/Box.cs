@@ -326,8 +326,7 @@ public class Box : IDrawable {
         page.SetLinePattern(pattern);
         if (fillShape) {
             page.SetBrushColor(color);
-        }
-        else {
+        } else {
             page.SetPenColor(color);
         }
         page.MoveTo(x, y);
@@ -336,8 +335,7 @@ public class Box : IDrawable {
         page.LineTo(x, y + h);
         if (fillShape) {
             page.FillPath();
-        }
-        else {
+        } else {
             page.ClosePath();
         }
         page.AddEMC();

@@ -54,14 +54,11 @@ public class LZWEncode {
                 code2 += 1
                 if code2 == 512 {
                     length = 10
-                }
-                else if code2 == 1024 {
+                } else if code2 == 1024 {
                     length = 11
-                }
-                else if code2 == 2048 {
+                } else if code2 == 2048 {
                     length = 12
-                }
-                else if code2 == 4095 {                 // EarlyChange is 1
+                } else if code2 == 4095 {                 // EarlyChange is 1
                     writeCode(256, length, &output)     // Clear Table code
                     code2 = 258
                     length = 9

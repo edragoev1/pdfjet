@@ -116,7 +116,7 @@ public class Table {
         self.numOfHeaderRows = numOfHeaderRows
         self.rendered = numOfHeaderRows
 
-                // Add the missing cells.
+        // Add the missing cells.
         let numOfColumns = tableData[0].count
         let font = tableData[0][0].font
         for i in 0..<tableData.count {
@@ -459,14 +459,12 @@ public class Table {
             if page != nil && (y + cellH) > (page!.height - bottomMargin) {
                 if i == (tableData.count - 1) {
                     rendered = -1
-                }
-                else {
+                } else {
                     rendered = i + 1
                     numOfPages += 1
                 }
                 return [x, y]
             }
-
             i += 1
         }
         rendered = -1
@@ -564,15 +562,13 @@ public class Table {
                         }
                         if cell.getCompositeTextLine() != nil {
                             cell2.setCompositeTextLine(cell.getCompositeTextLine())
-                        }
-                        else {
+                        } else {
                             cell2.setText(cell.getText())
                         }
                         if maxNumVerCells > 1 {
                             cell2.setBorder(Border.BOTTOM, false)
                         }
-                    }
-                    else  {
+                    } else  {
                         cell2.setBorder(Border.TOP, false)
                         if i < (maxNumVerCells - 1) {
                             cell2.setBorder(Border.BOTTOM, false)
@@ -594,8 +590,7 @@ public class Table {
                         let tokens = textLine.trim().components(separatedBy: .whitespaces)
                         if tokens.count == 1 {
                             sb.append(tokens[0])
-                        }
-                        else {
+                        } else {
                             for k in 0..<tokens.count {
                                 let token = tokens[k].trim()
                                 if cell.font!.stringWidth(cell.fallbackFont, sb + " " + token) >
@@ -603,8 +598,7 @@ public class Table {
                                     tableData2[i + n][j].setText(sb)
                                     sb = token
                                     n += 1
-                                }
-                                else {
+                                } else {
                                     if k > 0 {
                                         sb.append(" ")
                                     }
@@ -615,8 +609,7 @@ public class Table {
                         tableData2[i + n][j].setText(sb)
                         n += 1
                     }
-                }
-                else {
+                } else {
                     tableData2[i][j].setCompositeTextLine(cell.getCompositeTextLine())
                 }
             }
@@ -794,8 +787,7 @@ public class Table {
         var adjusted: Float = 0.0
         if (tableWidth - otherColumnWidths) > textColumnWidths {
             adjusted = textColumnWidths + ((tableWidth - otherColumnWidths) - textColumnWidths)
-        }
-        else {
+        } else {
             adjusted = textColumnWidths - (textColumnWidths - (tableWidth - otherColumnWidths))
         }
         let factor: Float = adjusted / textColumnWidths

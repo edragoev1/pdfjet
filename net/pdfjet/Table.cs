@@ -547,9 +547,7 @@ public class Table {
         // Adjust the number of header rows automatically!
         numOfHeaderRows = GetNumHeaderRows();
         rendered = numOfHeaderRows;
-
         AddExtraTableRows(tableData2);
-
         for (int i = 0; i < tableData2.Count; i++) {
             List<Cell> row = tableData2[i];
             for (int j = 0; j < row.Count; j++) {
@@ -566,15 +564,13 @@ public class Table {
                             tableData2[i + n][j].SetText(buf.ToString().Trim());
                             buf = new StringBuilder(token);
                             n++;
-                        }
-                        else {
+                        } else {
                             buf.Append(" ");
                             buf.Append(token);
                         }
                     }
                     tableData2[i + n][j].SetText(buf.ToString().Trim());
-                }
-                else {
+                } else {
                     tableData2[i][j].SetCompositeTextLine(cell.GetCompositeTextLine());
                 }
             }
@@ -620,15 +616,13 @@ public class Table {
                         }
                         if (cell.GetCompositeTextLine() != null) {
                             cell2.SetCompositeTextLine(cell.GetCompositeTextLine());
-                        }
-                        else {
+                        } else {
                             cell2.SetText(cell.GetText());
                         }
                         if (maxNumVerCells > 1) {
                             cell2.SetBorder(Border.BOTTOM, false);
                         }
-                    }
-                    else  {
+                    } else  {
                         cell2.SetBorder(Border.TOP, false);
                         if (i < (maxNumVerCells - 1)) {
                             cell2.SetBorder(Border.BOTTOM, false);
@@ -779,8 +773,7 @@ public class Table {
                         if (barcodeWidth > maxColWidths[j]) {
                             maxColWidths[j] = barcodeWidth;
                         }
-                    }
-                    catch (Exception) {
+                    } catch (Exception) {
                     }
                 }
                 if (cell.textBox != null) {
@@ -836,8 +829,7 @@ public class Table {
         float adjusted;
         if ((tableWidth - otherColumnWidths) > textColumnWidths) {
             adjusted = textColumnWidths + ((tableWidth - otherColumnWidths) - textColumnWidths);
-        }
-        else {
+        } else {
             adjusted = textColumnWidths - (textColumnWidths - (tableWidth - otherColumnWidths));
         }
         float factor = adjusted / textColumnWidths;

@@ -111,20 +111,17 @@ public class OptionalContentGroup {
             page.pdf.append("/Usage <<\n");
             if (visible) {
                 page.pdf.append("/View << /ViewState /ON >>\n");
-            }
-            else {
+            } else {
                 page.pdf.append("/View << /ViewState /OFF >>\n");
             }
             if (printable) {
                 page.pdf.append("/Print << /PrintState /ON >>\n");
-            }
-            else {
+            } else {
                 page.pdf.append("/Print << /PrintState /OFF >>\n");
             }
             if (exportable) {
                 page.pdf.append("/Export << /ExportState /ON >>\n");
-            }
-            else {
+            } else {
                 page.pdf.append("/Export << /ExportState /OFF >>\n");
             }
             page.pdf.append(">>\n");

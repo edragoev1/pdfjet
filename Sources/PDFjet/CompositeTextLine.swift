@@ -192,16 +192,14 @@ public class CompositeTextLine : Drawable {
             component.setLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition)
-        }
-        else if component.getTextEffect() == Effect.SUBSCRIPT {
+        } else if component.getTextEffect() == Effect.SUBSCRIPT {
             if fontSize > 0 {
                 component.getFont().setSize(fontSize * subscriptSizeFactor)
             }
             component.setLocation(
                     current[X],
                     current[Y] + fontSize * subscriptPosition)
-        }
-        else {
+        } else {
             if fontSize > 0 {
                 component.getFont().setSize(fontSize)
             }
@@ -240,13 +238,11 @@ public class CompositeTextLine : Drawable {
                 component.setLocation(
                         current[X],
                         current[Y] - fontSize * superscriptPosition)
-            }
-            else if component.getTextEffect() == Effect.SUBSCRIPT {
+            } else if component.getTextEffect() == Effect.SUBSCRIPT {
                 component.setLocation(
                         current[X],
                         current[Y] + fontSize * subscriptPosition)
-            }
-            else {
+            } else {
                 component.setLocation(current[X], current[Y])
             }
             current[X] += component.getWidth()
@@ -310,14 +306,12 @@ public class CompositeTextLine : Drawable {
                 if cur < min {
                     min = cur
                 }
-            }
-            else if component.getTextEffect() == Effect.SUBSCRIPT {
+            } else if component.getTextEffect() == Effect.SUBSCRIPT {
                 cur = (position[Y] + component.font!.descent) + fontSize * subscriptPosition
                 if cur > max {
                     max = cur
                 }
-            }
-            else {
+            } else {
                 cur = position[Y] - component.font!.ascent
                 if cur < min {
                     min = cur

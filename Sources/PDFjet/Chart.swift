@@ -310,8 +310,7 @@ public class Chart : Drawable {
                     point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin)
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
                     point.lineWidth *= (x6 - x5) / w
-                }
-                else {
+                } else {
                     point.x = x5 + point.x * (x6 - x5) / w
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
                 }

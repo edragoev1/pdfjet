@@ -25,7 +25,6 @@ package com.pdfjet;
 
 import java.util.*;
 
-
 /**
  *  Used to create PDF417 2D barcodes.
  *
@@ -53,11 +52,8 @@ public class BarCode2D implements Drawable {
 
     private int rows = 50;
     private int cols = 18;
-
     private int[] codewords;
-
     private String str;
-
 
     /**
      *  Constructor for 2D barcodes.
@@ -170,7 +166,6 @@ public class BarCode2D implements Drawable {
         return setLocation((float) x, (float) y);
     }
 
-
     /**
      *  Sets the module width for this barcode.
      *  This changes the barcode size while preserving the aspect.
@@ -183,7 +178,6 @@ public class BarCode2D implements Drawable {
         this.w1 = width;
         this.h1 = 3 * w1;
     }
-
 
     private List<Integer> textToArrayOfIntegers() {
         List<Integer> list = new ArrayList<Integer>();
@@ -201,46 +195,37 @@ public class BarCode2D implements Drawable {
             int mode = TextCompact.TABLE[ch][2];
             if (mode == currentMode) {
                 list.add(value);
-            }
-            else {
+            } else {
                 if (mode == ALPHA && currentMode == LOWER) {
                     list.add(SHIFT_TO_ALPHA);
                     list.add(value);
-                }
-                else if (mode == ALPHA && currentMode == MIXED) {
+                } else if (mode == ALPHA && currentMode == MIXED) {
                     list.add(LATCH_TO_ALPHA);
                     list.add(value);
                     currentMode = mode;
-                }
-                else if (mode == LOWER && currentMode == ALPHA) {
+                } else if (mode == LOWER && currentMode == ALPHA) {
                     list.add(LATCH_TO_LOWER);
                     list.add(value);
                     currentMode = mode;
-                }
-                else if (mode == LOWER && currentMode == MIXED) {
+                } else if (mode == LOWER && currentMode == MIXED) {
                     list.add(LATCH_TO_LOWER);
                     list.add(value);
                     currentMode = mode;
-                }
-                else if (mode == MIXED && currentMode == ALPHA) {
+                } else if (mode == MIXED && currentMode == ALPHA) {
                     list.add(LATCH_TO_MIXED);
                     list.add(value);
                     currentMode = mode;
-                }
-                else if (mode == MIXED && currentMode == LOWER) {
+                } else if (mode == MIXED && currentMode == LOWER) {
                     list.add(LATCH_TO_MIXED);
                     list.add(value);
                     currentMode = mode;
-                }
-                else if (mode == PUNCT && currentMode == ALPHA) {
+                } else if (mode == PUNCT && currentMode == ALPHA) {
                     list.add(SHIFT_TO_PUNCT);
                     list.add(value);
-                }
-                else if (mode == PUNCT && currentMode == LOWER) {
+                } else if (mode == PUNCT && currentMode == LOWER) {
                     list.add(SHIFT_TO_PUNCT);
                     list.add(value);
-                }
-                else if (mode == PUNCT && currentMode == MIXED) {
+                } else if (mode == PUNCT && currentMode == MIXED) {
                     list.add(SHIFT_TO_PUNCT);
                     list.add(value);
                 }
@@ -249,7 +234,6 @@ public class BarCode2D implements Drawable {
 
         return list;
     }
-
 
     private void addData(int[] buffer, int dataLen) {
         List<Integer> list = textToArrayOfIntegers();
@@ -271,7 +255,6 @@ public class BarCode2D implements Drawable {
             buffer[bi] = 30*hi + lo;
         }
     }
-
 
     private void addECC(int[] buf) {
         int[] ecc = new int[ECC_L5.table.length];
@@ -298,7 +281,6 @@ public class BarCode2D implements Drawable {
             }
         }
     }
-
 
     /**
      *  Draws this barcode on the specified page.
@@ -358,17 +340,17 @@ public class BarCode2D implements Drawable {
         return new float[] {x, y + h1*rows};
     }
 
-
     private void drawBar(
             Page page,
             float x,
             float y,
             float w,    // Bar width
             float h) throws Exception {
+        page.addArtifactBMC();
         page.setPenWidth(w);
         page.moveTo(x + w/2, y);
         page.lineTo(x + w/2, y + h);
         page.strokePath();
+        page.addEMC();
     }
-
 }   // End of BarCode2D.java
