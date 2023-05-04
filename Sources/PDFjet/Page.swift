@@ -294,15 +294,7 @@ public class Page {
             return
         }
         append(Token.beginText)
-        if font.fontID == nil {
-            setTextFont(font)
-        } else {
-            append("/")
-            append(font.fontID!)
-            append(Token.space)
-            append(font.size)
-            append(" Tf\n")
-        }
+        setTextFont(font)
 
         if self.renderingMode != 0 {
             append(renderingMode)
@@ -346,7 +338,7 @@ public class Page {
             setBrushColor(brush)
             append("[<")
             if font.isCoreFont {
-                drawAsciiString(font, text!)
+                drawASCIIString(font, text!)
             } else {
                 drawUnicodeString(font, text!)
             }
@@ -357,7 +349,7 @@ public class Page {
         append(Token.endText)
     }
 
-    private final func drawAsciiString(_ font: Font, _ text: String) {
+    private final func drawASCIIString(_ font: Font, _ text: String) {
         let scalars = Array(text.unicodeScalars)
         for i in 0..<scalars.count {
             let c1 = scalars[i]
@@ -1120,8 +1112,13 @@ public class Page {
 
     public func setTextFont(_ font: Font) {
         self.font = font
-        append("/F")
-        append(font.objNumber)
+        if font.fontID != nil {
+            append("/")
+            append(font.fontID!)
+        } else {
+            append("/F")
+            append(font.objNumber)
+        }
         append(Token.space)
         append(font.size)
         append(" Tf\n")
@@ -1330,7 +1327,7 @@ public class Page {
             }
             append("[<");
             if font.isCoreFont {
-                drawAsciiString(font, str)
+                drawASCIIString(font, str)
             } else {
                 drawUnicodeString(font, str)
             }
@@ -1558,5 +1555,72 @@ public class Page {
     public func addFooter(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset);
         return textLine.drawOn(self);
+    }
+
+    /**
+     *  Begin text block.
+     */
+    func beginText() {
+        append("BT\n")
+    }
+
+    /**
+     *  End the text block.
+     */
+    func endText() {
+        append("ET\n")
+    }
+
+    /**
+     *  Sets the text location.
+     *
+     *  @param x the x coordinate of new text location.
+     *  @param y the y coordinate of new text location.
+     */
+    func setTextLocation(_ x: Float, _ y: Float) {
+        append(x)
+        append(Token.space)
+        append(height - y)
+        append(" Td\n")
+    }
+
+    /**
+     *  Sets the text leading.
+     *  @param leading the leading.
+     */
+    func setTextLeading(_ leading: Float) {
+        append(leading)
+        append(" TL\n")
+    }
+
+    /**
+     *  Advance to the next line.
+     */
+    func nextLine() {
+        append("T*\n")
+    }
+
+    func setTextScaling(_ scaling: Float) {
+        append(scaling)
+        append(" Tz\n")
+    }
+
+    func setTextRise(_ rise: Float) {
+        append(rise)
+        append(" Ts\n")
+    }
+
+    /**
+     *  Draws a string at the currect location.
+     *  @param str the string.
+     */
+    func drawText(_ str: String) {
+        append("[<")
+        if (font!.isCoreFont) {
+            drawASCIIString(font!, str)
+        } else {
+            drawUnicodeString(font!, str)
+        }
+        append(">] TJ\n")
     }
 }   // End of Page.swift

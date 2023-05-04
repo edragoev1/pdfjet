@@ -29,7 +29,9 @@ import (
 
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/border"
+	"github.com/edragoev1/pdfjet/src/clockwise"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/direction"
 )
 
 // TextBox creates box containing line-wrapped text.
@@ -75,13 +77,15 @@ type TextBox struct {
 	// bit 23 - strikeout
 	// Future use:
 	// bits 24 to 31
-	properties int
-
+	properties        int
+	language          string
+	altDescription    string
 	uri               *string
 	key               *string
 	uriLanguage       string
 	uriActualText     string
 	uriAltDescription string
+	textDirection     int
 }
 
 // NewTextBox creates a text box and sets the font.
@@ -99,6 +103,9 @@ func NewTextBox(font *Font) *TextBox {
 	textBox.properties = 0x00000001
 	textBox.SetTextAlignment(align.Left)
 	textBox.valign = align.Top
+	textBox.language = "en-US"
+	textBox.altDescription = ""
+	textBox.textDirection = direction.LeftToRight
 	return textBox
 }
 
@@ -459,7 +466,12 @@ func getStringBuilder(line string) *strings.Builder {
 
 func (textBox *TextBox) getTextLines() []string {
 	list := make([]string, 0)
-	textAreaWidth := textBox.width - 2*textBox.margin
+	var textAreaWidth float32
+	if textBox.textDirection == direction.LeftToRight {
+		textAreaWidth = textBox.width - 2*textBox.margin
+	} else {
+		textAreaWidth = textBox.height - 2*textBox.margin
+	}
 	lines := strings.Split(strings.ReplaceAll(textBox.text, "\r\n", "\n"), "\n")
 	for _, line := range lines {
 		if textBox.font.StringWidth(textBox.fallbackFont, line) <= textAreaWidth {
@@ -556,28 +568,39 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		}
 		xText := textBox.x + textBox.margin
 		yText := textBox.y + textBox.margin + textBox.font.ascent
-		if textBox.valign == align.Top {
+		if textBox.textDirection == direction.LeftToRight {
+			if textBox.valign == align.Top {
+				yText = textBox.y + textBox.margin + textBox.font.ascent
+			} else if textBox.valign == align.Bottom {
+				yText = (textBox.y + textBox.height) - (float32(len(lines))*leading + textBox.margin)
+				yText += textBox.font.ascent
+			} else if textBox.valign == align.Center {
+				yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2
+				yText += textBox.font.ascent
+			}
+		} else {
 			yText = textBox.y + textBox.margin + textBox.font.ascent
-		} else if textBox.valign == align.Bottom {
-			yText = (textBox.y + textBox.height) - (float32(len(lines))*leading + textBox.margin)
-			yText += textBox.font.ascent
-		} else if textBox.valign == align.Center {
-			yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2
-			yText += textBox.font.ascent
 		}
 		for _, line := range lines {
-			if textBox.GetTextAlignment() == align.Left {
-				xText = textBox.x + textBox.margin
-			} else if textBox.GetTextAlignment() == align.Right {
-				xText = (textBox.x + textBox.width) - (textBox.font.StringWidth(textBox.fallbackFont, line) + textBox.margin)
-			} else if textBox.GetTextAlignment() == align.Right {
-				xText = textBox.x + (textBox.width-textBox.font.StringWidth(textBox.fallbackFont, line))/2
-			}
-			if yText+textBox.font.descent <= textBox.y+textBox.height {
-				if page != nil {
-					textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.colors)
+			if textBox.textDirection == direction.LeftToRight {
+				if textBox.GetTextAlignment() == align.Left {
+					xText = textBox.x + textBox.margin
+				} else if textBox.GetTextAlignment() == align.Right {
+					xText = (textBox.x + textBox.width) - (textBox.font.StringWidth(textBox.fallbackFont, line) + textBox.margin)
+				} else if textBox.GetTextAlignment() == align.Right {
+					xText = textBox.x + (textBox.width-textBox.font.StringWidth(textBox.fallbackFont, line))/2
 				}
+			} else {
+				xText = textBox.x + textBox.margin
+			}
+			if page != nil {
+				textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.brush, textBox.colors)
+			}
+			if textBox.textDirection == direction.LeftToRight ||
+				textBox.textDirection == direction.BottomToTop {
 				yText += leading
+			} else {
+				yText -= leading
 			}
 		}
 	} else { // TextBox that expands to fit the content
@@ -593,24 +616,34 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		xText := textBox.x + textBox.margin
 		yText := textBox.y + textBox.margin + textBox.font.ascent
 		for _, line := range lines {
-			if textBox.GetTextAlignment() == align.Left {
+			if textBox.textDirection == direction.LeftToRight {
+				if textBox.GetTextAlignment() == align.Left {
+					xText = textBox.x + textBox.margin
+				} else if textBox.GetTextAlignment() == align.Right {
+					xText = (textBox.x + textBox.width) - (textBox.font.StringWidth(textBox.fallbackFont, line) + textBox.margin)
+				} else if textBox.GetTextAlignment() == align.Center {
+					xText = textBox.x + (textBox.width-textBox.font.StringWidth(textBox.fallbackFont, line))/2
+				}
+			} else {
 				xText = textBox.x + textBox.margin
-			} else if textBox.GetTextAlignment() == align.Right {
-				xText = (textBox.x + textBox.width) - (textBox.font.StringWidth(textBox.fallbackFont, line) + textBox.margin)
-			} else if textBox.GetTextAlignment() == align.Center {
-				xText = textBox.x + (textBox.width-textBox.font.StringWidth(textBox.fallbackFont, line))/2
 			}
 			if page != nil {
-				textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.colors)
+				textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.brush, textBox.colors)
 			}
-			yText += leading
+			if textBox.textDirection == direction.LeftToRight ||
+				textBox.textDirection == direction.BottomToTop {
+				yText += leading
+			} else {
+				yText -= leading
+			}
 		}
 		textBox.height = ((yText - textBox.y) - (textBox.font.ascent + textBox.spacing)) + textBox.margin
 	}
 	if page != nil {
 		textBox.drawBorders(page)
 	}
-	if page != nil && (textBox.uri != nil || textBox.key != nil) {
+	if textBox.textDirection == direction.LeftToRight &&
+		page != nil && (textBox.uri != nil || textBox.key != nil) {
 		page.AddAnnotation(NewAnnotation(
 			textBox.uri,
 			textBox.key, // The destination name
@@ -632,20 +665,34 @@ func (textBox *TextBox) DrawText(
 	text string,
 	xText float32,
 	yText float32,
+	brush int32,
 	colors map[string]int32) {
-	page.DrawStringUsingColorMap(font, fallbackFont, text, xText, yText, color.Black, colors)
-	lineLength := textBox.font.stringWidth(text)
-	if textBox.GetUnderline() {
-		yAdjust := font.underlinePosition
-		page.MoveTo(xText, yText+yAdjust)
-		page.LineTo(xText+lineLength, yText+yAdjust)
-		page.StrokePath()
+	page.AddBMC("P", textBox.language, text, textBox.altDescription)
+	if textBox.textDirection == direction.LeftToRight {
+		page.DrawStringUsingColorMap(font, fallbackFont, text, xText, yText, brush, colors)
+	} else if textBox.textDirection == direction.BottomToTop {
+		page.SetTextDirection(clockwise.NinetyDegrees)
+		page.DrawStringUsingColorMap(font, fallbackFont, text, yText, xText+textBox.height, textBox.brush, colors)
+	} else if textBox.textDirection == direction.TopToBottom {
+		page.SetTextDirection(clockwise.TwoSeventyDegrees)
+		page.DrawStringUsingColorMap(font, fallbackFont, text,
+			(yText+textBox.width)-(textBox.margin+2*font.ascent), xText, textBox.brush, colors)
 	}
-	if textBox.GetStrikeout() {
-		yAdjust := font.bodyHeight / 4
-		page.MoveTo(xText, yText-yAdjust)
-		page.LineTo(xText+lineLength, yText-yAdjust)
-		page.StrokePath()
+	page.AddEMC()
+	if textBox.textDirection == direction.LeftToRight {
+		lineLength := textBox.font.stringWidth(text)
+		if textBox.GetUnderline() {
+			yAdjust := font.underlinePosition
+			page.MoveTo(xText, yText+yAdjust)
+			page.LineTo(xText+lineLength, yText+yAdjust)
+			page.StrokePath()
+		}
+		if textBox.GetStrikeout() {
+			yAdjust := font.bodyHeight / 4
+			page.MoveTo(xText, yText-yAdjust)
+			page.LineTo(xText+lineLength, yText-yAdjust)
+			page.StrokePath()
+		}
 	}
 }
 
@@ -653,4 +700,8 @@ func (textBox *TextBox) DrawText(
 func (textBlock *TextBox) SetURIAction(uri string) *TextBox {
 	textBlock.uri = &uri
 	return textBlock
+}
+
+func (textBox *TextBox) SetTextDirection(textDirection int) {
+	textBox.textDirection = textDirection
 }

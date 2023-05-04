@@ -9,6 +9,7 @@ public class Token {
     public static byte[] endstream = Encoding.ASCII.GetBytes("\nendstream\n");
     public static byte[] newobj = Encoding.ASCII.GetBytes(" 0 obj\n");
     public static byte[] endobj = Encoding.ASCII.GetBytes("endobj\n");
+    public static byte[] objRef = Encoding.ASCII.GetBytes(" 0 R\n");
     public static byte[] beginText = Encoding.ASCII.GetBytes("BT\n");
     public static byte[] endText = Encoding.ASCII.GetBytes("ET\n");
     public static byte[] count = Encoding.ASCII.GetBytes("/Count ");

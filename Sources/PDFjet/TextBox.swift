@@ -78,11 +78,14 @@ public class TextBox : Drawable {
     // bits 24 to 31
     private var properties: UInt32 = 0x00000001
 
+    private var language = "en-US"
+    private var altDescription = ""
     private var uri: String?
     private var key: String?
     private var uriLanguage: String?
     private var uriActualText: String?
     private var uriAltDescription: String?
+    private var textDirection = Direction.LEFT_TO_RIGHT
 
     ///
     /// Creates a text box and sets the font.
@@ -611,7 +614,12 @@ public class TextBox : Drawable {
 
     private func getTextLines() -> [String] {
         var list = [String]()
-        let textAreaWidth = width - 2*margin
+        var textAreaWidth: Float
+        if textDirection == Direction.LEFT_TO_RIGHT {
+            textAreaWidth = width - 2*margin
+        } else {
+            textAreaWidth = height - 2*margin
+        }
         let lines = text!.components(separatedBy: "\n")
         for line in lines {
             if font!.stringWidth(fallbackFont, line) <= textAreaWidth {
@@ -699,28 +707,39 @@ public class TextBox : Drawable {
             }
             var xText = x + margin
             var yText = y + margin + font!.ascent
-            if valign == Align.TOP {
+            if textDirection == Direction.LEFT_TO_RIGHT {
+                if valign == Align.TOP {
+                    yText = y + margin + font!.ascent
+                } else if valign == Align.BOTTOM {
+                    yText = (y + height) - ((Float(lines.count)*leading) + margin)
+                    yText += font!.ascent
+                } else if valign == Align.CENTER {
+                    yText = y + (height - Float(lines.count)*leading)/2
+                    yText += font!.ascent
+                }
+            } else {
                 yText = y + margin + font!.ascent
-            } else if valign == Align.BOTTOM {
-                yText = (y + height) - ((Float(lines.count)*leading) + margin)
-                yText += font!.ascent
-            } else if valign == Align.CENTER {
-                yText = y + (height - Float(lines.count)*leading)/2
-                yText += font!.ascent
             }
             for line in lines {
-                if getTextAlignment() == Align.LEFT {
-                    xText = x + margin
-                } else if getTextAlignment() == Align.RIGHT {
-                    xText = (x + width) - (font!.stringWidth(fallbackFont, line) + margin)
-                } else if getTextAlignment() == Align.CENTER {
-                    xText = x + (width - font!.stringWidth(fallbackFont, line))/2
-                }
-                if (yText + font!.descent <= y + height) {
-                    if page != nil {
-                        drawText(page, font!, fallbackFont, line, xText, yText, colors)
+                if textDirection == Direction.LEFT_TO_RIGHT {
+                    if getTextAlignment() == Align.LEFT {
+                        xText = x + margin
+                    } else if getTextAlignment() == Align.RIGHT {
+                        xText = (x + width) - (font!.stringWidth(fallbackFont, line) + margin)
+                    } else if getTextAlignment() == Align.CENTER {
+                        xText = x + (width - font!.stringWidth(fallbackFont, line))/2
                     }
+                } else {
+                    xText = x + margin
+                }
+                if page != nil {
+                    drawText(page, font!, fallbackFont, line, xText, yText, brush, colors)
+                }
+                if textDirection == Direction.LEFT_TO_RIGHT ||
+                        textDirection == Direction.BOTTOM_TO_TOP {
                     yText += leading
+                } else {
+                    yText -= leading
                 }
             }
         } else {    // TextBox that expands to fit the content
@@ -736,24 +755,34 @@ public class TextBox : Drawable {
             var xText = x + margin
             var yText = y + margin + font!.ascent
             for line in lines {
-                if (getTextAlignment() == Align.LEFT) {
+                if textDirection == Direction.LEFT_TO_RIGHT {
+                    if (getTextAlignment() == Align.LEFT) {
+                        xText = x + margin
+                    } else if (getTextAlignment() == Align.RIGHT) {
+                        xText = (x + width) - (font!.stringWidth(fallbackFont, line) + margin)
+                    } else if (getTextAlignment() == Align.CENTER) {
+                        xText = x + (width - font!.stringWidth(fallbackFont, line))/2
+                    }
+                } else {
                     xText = x + margin
-                } else if (getTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font!.stringWidth(fallbackFont, line) + margin)
-                } else if (getTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font!.stringWidth(fallbackFont, line))/2
                 }
                 if page != nil {
-                    drawText(page, font!, fallbackFont, line, xText, yText, colors)
+                    drawText(page, font!, fallbackFont, line, xText, yText, brush, colors)
                 }
-                yText += leading
+                if textDirection == Direction.LEFT_TO_RIGHT ||
+                        textDirection == Direction.BOTTOM_TO_TOP {
+                    yText += leading
+                } else {
+                    yText -= leading
+                }
             }
             height = ((yText - y) - (font!.ascent + spacing)) + margin
         }
         if page != nil {
             drawBorders(page!)
         }
-        if page != nil && (uri != nil || key != nil) {
+        if textDirection == Direction.LEFT_TO_RIGHT &&
+                page != nil && (uri != nil || key != nil) {
             page!.addAnnotation(Annotation(
                     uri,
                     key,    // The destination name
@@ -775,29 +804,34 @@ public class TextBox : Drawable {
             _ text: String,
             _ xText: Float,
             _ yText: Float,
+            _ color: Int32,
             _ colors: [String : Int32]?) {
-        if fallbackFont == nil {
-            if colors == nil {
-                page!.drawString(font, text, xText, yText)
-            } else {
-                page!.drawString(font, text, xText, yText, brush, colors!)
+        page!.addBMC(StructElem.P, language, text, altDescription);
+        if (textDirection == Direction.LEFT_TO_RIGHT) {
+            page!.drawString(font, fallbackFont, text, xText, yText, color, colors);
+        } else if (textDirection == Direction.BOTTOM_TO_TOP) {
+            page!.setTextDirection(ClockWise._90_degrees);
+            page!.drawString(font, fallbackFont, text, yText, xText + height, color, colors);
+        } else if (textDirection == Direction.TOP_TO_BOTTOM) {
+            page!.setTextDirection(ClockWise._270_degrees);
+            page!.drawString(font, fallbackFont, text,
+                    (yText + width) - (margin + 2*font.ascent), xText, color, colors);
+        }
+        page!.addEMC();
+        if textDirection == Direction.LEFT_TO_RIGHT {
+            let lineLength = font.stringWidth(text)
+            if getUnderline() {
+                let yAdjust = font.underlinePosition
+                page!.moveTo(xText, yText + yAdjust)
+                page!.lineTo(xText + lineLength, yText + yAdjust)
+                page!.strokePath()
             }
-        } else {
-            page!.drawString(font, fallbackFont, text, xText, yText)
-        }
-
-        let lineLength = font.stringWidth(text)
-        if getUnderline() {
-            let yAdjust = font.underlinePosition
-            page!.moveTo(xText, yText + yAdjust)
-            page!.lineTo(xText + lineLength, yText + yAdjust)
-            page!.strokePath()
-        }
-        if getStrikeout() {
-            let yAdjust = font.bodyHeight/4
-            page!.moveTo(xText, yText - yAdjust)
-            page!.lineTo(xText + lineLength, yText - yAdjust)
-            page!.strokePath()
+            if getStrikeout() {
+                let yAdjust = font.bodyHeight/4
+                page!.moveTo(xText, yText - yAdjust)
+                page!.lineTo(xText + lineLength, yText - yAdjust)
+                page!.strokePath()
+            }
         }
     }
 
@@ -809,5 +843,9 @@ public class TextBox : Drawable {
      */
     public func setURIAction(_ uri: String) {
         self.uri = uri
+    }
+
+    public func setTextDirection(_ textDirection: Direction) {
+        self.textDirection = textDirection
     }
 }   // End of TextBox.swift

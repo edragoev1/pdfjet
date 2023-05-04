@@ -343,15 +343,7 @@ public class Page {
             return;
         }
         append("BT\n");
-        if (font.fontID == null) {
-            setTextFont(font);
-        } else {
-            append('/');
-            append(font.fontID);
-            append(' ');
-            append(font.size);
-            append(" Tf\n");
-        }
+        setTextFont(font);
 
         if (renderingMode != 0) {
             append(renderingMode);
@@ -395,7 +387,7 @@ public class Page {
             setBrushColor(brush);
             append("[<");
             if (font.isCoreFont) {
-                drawAsciiString(font, str);
+                drawASCIIString(font, str);
             } else {
                 drawUnicodeString(font, str);
             }
@@ -406,7 +398,7 @@ public class Page {
         append("ET\n");
     }
 
-    private void drawAsciiString(Font font, String str) {
+    private void drawASCIIString(Font font, String str) {
         for (int i = 0; i < str.length(); i++) {
             int c1 = str.charAt(i);
             if (c1 < font.firstChar || c1 > font.lastChar) {
@@ -1298,9 +1290,14 @@ public class Page {
 
     public void setTextFont(Font font) {
         this.font = font;
-        append("/F");
-        append(font.objNumber);
-        append(' ');
+        if (font.fontID != null) {
+            append('/');
+            append(font.fontID);
+        } else {
+            append("/F");
+            append(font.objNumber);
+        }
+        append(Token.space);
         append(font.size);
         append(" Tf\n");
     }
@@ -1477,7 +1474,6 @@ public class Page {
     /**
      *  Appends the specified array of bytes to the page.
      *  @param buffer the array of bytes that is appended.
-     *  @throws IOException  If an input or output exception occurred
      */
     public void append(byte[] buffer) {
         for (int i = 0; i < buffer.length; i++) {
@@ -1496,7 +1492,7 @@ public class Page {
             }
             append("[<");
             if (font.isCoreFont) {
-                drawAsciiString(font, str);
+                drawASCIIString(font, str);
             } else {
                 drawUnicodeString(font, str);
             }
@@ -1673,20 +1669,20 @@ public class Page {
         float transy = values[MTRANS_Y];
 
         append(scalex);
-        append(" ");
+        append(Token.space);
         append(values[MSKEW_X]);
-        append(" ");
+        append(Token.space);
         append(values[MSKEW_Y]);
-        append(" ");
+        append(Token.space);
         append(scaley);
-        append(" ");
+        append(Token.space);
 
         if (Math.asin(values[MSKEW_Y]) != 0f) {
             transx -= values[MSKEW_Y] * height / scaley;
         }
 
         append(transx);
-        append(" ");
+        append(Token.space);
         append(-transy);
         append(" cm\n");
 
@@ -1712,5 +1708,72 @@ public class Page {
     public float[] addFooter(TextLine textLine, float offset) throws Exception {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset);
         return textLine.drawOn(this);
+    }
+
+    /**
+     *  Begin text block.
+     */
+    protected void beginText() {
+        append("BT\n");
+    }
+
+    /**
+     *  End the text block.
+     */
+    protected void endText() {
+        append("ET\n");
+    }
+
+    /**
+     *  Sets the text location.
+     *
+     *  @param x the x coordinate of new text location.
+     *  @param y the y coordinate of new text location.
+     */
+    protected void setTextLocation(float x, float y) {
+        append(x);
+        append(Token.space);
+        append(height - y);
+        append(" Td\n");
+    }
+
+    /**
+     *  Sets the text leading.
+     *  @param leading the leading.
+     */
+    protected void setTextLeading(float leading) {
+        append(leading);
+        append(" TL\n");
+    }
+
+    /**
+     *  Advance to the next line.
+     */
+    protected void nextLine() {
+        append("T*\n");
+    }
+
+    protected void setTextScaling(float scaling) {
+        append(scaling);
+        append(" Tz\n");
+    }
+
+    protected void setTextRise(float rise) {
+        append(rise);
+        append(" Ts\n");
+    }
+
+    /**
+     *  Draws a string at the currect location.
+     *  @param str the string.
+     */
+    protected void drawText(String str) {
+        append("[<");
+        if (font.isCoreFont) {
+            drawASCIIString(font, str);
+        } else {
+            drawUnicodeString(font, str);
+        }
+        append(">] TJ\n");
     }
 }   // End of Page.java

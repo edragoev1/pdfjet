@@ -52,7 +52,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v7.06.9";
+    private String producer = "PDFjet v7.07.1";
     private String creator = producer;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
@@ -330,17 +330,17 @@ public class PDF {
             for (String token : importedFonts) {
                 append(token);
                 if (token.equals("R")) {
-                    append('\n');
+                    append(Token.newline);
                 } else {
-                    append(' ');
+                    append(Token.space);
                 }
             }
             for (Font font : fonts) {
                 append("/F");
                 append(font.objNumber);
-                append(' ');
+                append(Token.space);
                 append(font.objNumber);
-                append(" 0 R\n");
+                append(Token.objRef);
             }
             append(Token.endDictionary);
         }
@@ -352,9 +352,9 @@ public class PDF {
                 Image image = images.get(i);
                 append("/Im");
                 append(image.objNumber);
-                append(' ');
+                append(Token.space);
                 append(image.objNumber);
-                append(" 0 R\n");
+                append(Token.objRef);
             }
             append(Token.endDictionary);
         }
@@ -366,9 +366,9 @@ public class PDF {
                 OptionalContentGroup ocg = groups.get(i);
                 append("/OC");
                 append(i + 1);
-                append(' ');
+                append(Token.space);
                 append(ocg.objNumber);
-                append(" 0 R\n");
+                append(Token.objRef);
             }
             append(Token.endDictionary);
         }
@@ -408,12 +408,12 @@ public class PDF {
                 page.setStructElementsPageObjNumber(page.objNumber);
             }
             append(page.objNumber);
-            append(" 0 R\n");
+            append(Token.objRef);
         }
         append("]\n");
         append("/Count ");
         append(pages.size());
-        append('\n');
+        append(Token.newline);
         append(Token.endDictionary);
         endobj();
         return getObjNumber();
@@ -558,7 +558,7 @@ public class PDF {
             for (StructElem element : page.structures) {
                 if (element.annotation != null) {
                     append(index);
-                    append(" ");
+                    append(Token.space);
                     append(element.objNumber);
                     append(" 0 R\n");
                     index++;

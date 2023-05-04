@@ -7,6 +7,7 @@ public class Token {
     public static final byte[] endstream = "\nendstream\n".getBytes();
     public static final byte[] newobj = " 0 obj\n".getBytes();
     public static final byte[] endobj = "endobj\n".getBytes();
+    public static final byte[] objRef = " 0 R\n".getBytes();
     public static final byte[] beginText = "BT\n".getBytes();
     public static final byte[] endText = "ET\n".getBytes();
     public static final byte[] count = "/Count ".getBytes();

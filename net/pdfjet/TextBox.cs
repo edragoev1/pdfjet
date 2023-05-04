@@ -81,11 +81,14 @@ public class TextBox : IDrawable {
     // bits 24 to 31
     private uint properties = 0x00000001;
 
+    private String language = "en-US";
+    private String altDescription = "";
     private String uri = null;
     private String key = null;
     private String uriLanguage = null;
     private String uriActualText = null;
     private String uriAltDescription = null;
+    private Direction textDirection = Direction.LEFT_TO_RIGHT;
 
     /**
      *  Creates a text box and sets the font.
@@ -687,7 +690,12 @@ public class TextBox : IDrawable {
 
     private String[] getTextLines() {
         List<String> list = new List<String>();
-        float textAreaWidth = width - 2*margin;
+        float textAreaWidth;
+        if (textDirection == Direction.LEFT_TO_RIGHT) {
+            textAreaWidth = width - 2*margin;
+        } else {
+            textAreaWidth = height - 2*margin;
+        }
         String[] lines = text.Split(new String[] {"\r\n", "\n"}, StringSplitOptions.None);
         foreach (String line in lines) {
             if (font.StringWidth(fallbackFont, line) <= textAreaWidth) {
@@ -786,28 +794,39 @@ public class TextBox : IDrawable {
             }
             float xText = x + margin;
             float yText = y + margin + font.ascent;
-            if (valign == Align.TOP) {
+            if (textDirection == Direction.LEFT_TO_RIGHT) {
+                if (valign == Align.TOP) {
+                    yText = y + margin + font.ascent;
+                } else if (valign == Align.BOTTOM) {
+                    yText = (y + height) - (((float) lines.Length)*leading + margin);
+                    yText += font.ascent;
+                } else if (valign == Align.CENTER) {
+                    yText = y + (height - ((float) lines.Length)*leading)/2;
+                    yText += font.ascent;
+                }
+            } else {
                 yText = y + margin + font.ascent;
-            } else if (valign == Align.BOTTOM) {
-                yText = (y + height) - (((float) lines.Length)*leading + margin);
-                yText += font.ascent;
-            } else if (valign == Align.CENTER) {
-                yText = y + (height - ((float) lines.Length)*leading)/2;
-                yText += font.ascent;
             }
             foreach (String line in lines) {
-                if (GetTextAlignment() == Align.LEFT) {
-                    xText = x + margin;
-                } else if (GetTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
-                } else if (GetTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.StringWidth(fallbackFont, line))/2;
-                }
-                if (yText + font.descent <= y + height) {
-                    if (page != null) {
-                        DrawText(page, font, fallbackFont, line, xText, yText, colors);
+                if (textDirection == Direction.LEFT_TO_RIGHT) {
+                    if (GetTextAlignment() == Align.LEFT) {
+                        xText = x + margin;
+                    } else if (GetTextAlignment() == Align.RIGHT) {
+                        xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
+                    } else if (GetTextAlignment() == Align.CENTER) {
+                        xText = x + (width - font.StringWidth(fallbackFont, line))/2;
                     }
+                } else {
+                    xText = x + margin;
+                }
+                if (page != null) {
+                    DrawText(page, font, fallbackFont, line, xText, yText, brush, colors);
+                }
+                if (textDirection == Direction.LEFT_TO_RIGHT ||
+                        textDirection == Direction.BOTTOM_TO_TOP) {
                     yText += leading;
+                } else {
+                    yText -= leading;
                 }
             }
         } else {            // TextBox that expands to fit the content
@@ -823,24 +842,34 @@ public class TextBox : IDrawable {
             float xText = x + margin;
             float yText = y + margin + font.ascent;
             foreach (String line in lines) {
-                if (GetTextAlignment() == Align.LEFT) {
-                    xText = x + margin;
-                } else if (GetTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
-                } else if (GetTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.StringWidth(fallbackFont, line))/2;
+                if (textDirection == Direction.LEFT_TO_RIGHT) {
+                    if (GetTextAlignment() == Align.LEFT) {
+                        xText = x + margin;
+                    } else if (GetTextAlignment() == Align.RIGHT) {
+                        xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
+                    } else if (GetTextAlignment() == Align.CENTER) {
+                        xText = x + (width - font.StringWidth(fallbackFont, line))/2;
+                    }
+                } else {
+                    xText = x + margin;                    
                 }
                 if (page != null) {
-                    DrawText(page, font, fallbackFont, line, xText, yText, colors);
+                    DrawText(page, font, fallbackFont, line, xText, yText, brush, colors);
                 }
-                yText += leading;
+                if (textDirection == Direction.LEFT_TO_RIGHT ||
+                        textDirection == Direction.BOTTOM_TO_TOP) {
+                    yText += leading;
+                } else {
+                    yText -= leading;
+                }
             }
             height = ((yText - y) - (font.ascent + spacing)) + margin;
         }
         if (page != null) {
             DrawBorders(page);
         }
-        if (page != null && (uri != null || key != null)) {
+        if (textDirection == Direction.LEFT_TO_RIGHT &&
+                page != null && (uri != null || key != null)) {
             page.AddAnnotation(new Annotation(
                     uri,
                     key,    // The destination name
@@ -862,20 +891,34 @@ public class TextBox : IDrawable {
             String text,
             float xText,
             float yText,
+            int color,
             Dictionary<String, Int32> colors) {
-        page.DrawString(font, fallbackFont, text, xText, yText, brush, colors);
-        float lineLength = font.StringWidth(text);
-        if (GetUnderline()) {
-            float yAdjust = font.underlinePosition;
-            page.MoveTo(xText, yText + yAdjust);
-            page.LineTo(xText + lineLength, yText + yAdjust);
-            page.StrokePath();
+        page.AddBMC(StructElem.P, language, text, altDescription);
+        if (textDirection == Direction.LEFT_TO_RIGHT) {
+            page.DrawString(font, fallbackFont, text, xText, yText, color, colors);
+        } else if (textDirection == Direction.BOTTOM_TO_TOP) {
+            page.SetTextDirection(ClockWise._90_degrees);
+            page.DrawString(font, fallbackFont, text, yText, xText + height, color, colors);
+        } else if (textDirection == Direction.TOP_TO_BOTTOM) {
+            page.SetTextDirection(ClockWise._270_degrees);
+            page.DrawString(font, fallbackFont, text,
+                    (yText + width) - (margin + 2*font.ascent), xText, color, colors);
         }
-        if (GetStrikeout()) {
-            float yAdjust = font.bodyHeight/4;
-            page.MoveTo(xText, yText - yAdjust);
-            page.LineTo(xText + lineLength, yText - yAdjust);
-            page.StrokePath();
+        page.AddEMC();
+        if (textDirection == Direction.LEFT_TO_RIGHT) {
+            float lineLength = font.StringWidth(text);
+            if (GetUnderline()) {
+                float yAdjust = font.underlinePosition;
+                page.MoveTo(xText, yText + yAdjust);
+                page.LineTo(xText + lineLength, yText + yAdjust);
+                page.StrokePath();
+            }
+            if (GetStrikeout()) {
+                float yAdjust = font.bodyHeight/4;
+                page.MoveTo(xText, yText - yAdjust);
+                page.LineTo(xText + lineLength, yText - yAdjust);
+                page.StrokePath();
+            }
         }
     }
 
@@ -888,6 +931,10 @@ public class TextBox : IDrawable {
     public TextBox SetURIAction(String uri) {
         this.uri = uri;
         return this;
+    }
+
+    public void SetTextDirection(Direction textDirection) {
+        this.textDirection = textDirection;
     }
 }   // End of TextBox.cs
 }   // End of namespace PDFjet.NET

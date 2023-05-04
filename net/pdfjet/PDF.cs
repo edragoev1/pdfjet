@@ -52,7 +52,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v7.06.9";
+    private String producer = "PDFjet v7.07.0";
     private String creator;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
@@ -542,7 +542,7 @@ public class PDF {
             foreach (StructElem element in page.structures) {
                 if (element.annotation != null) {
                     Append(index);
-                    Append(" ");
+                    Append(Token.space);
                     Append(element.objNumber);
                     Append(" 0 R\n");
                     index++;

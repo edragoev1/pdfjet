@@ -321,15 +321,7 @@ public class Page {
             return;
         }
         Append("BT\n");
-        if (font.fontID == null) {
-            SetTextFont(font);
-        } else {
-            Append('/');
-            Append(font.fontID);
-            Append(' ');
-            Append(font.size);
-            Append(" Tf\n");
-        }
+        SetTextFont(font);
 
         if (renderingMode != 0) {
             Append(renderingMode);
@@ -373,7 +365,7 @@ public class Page {
             SetBrushColor(brush);
             Append("[<");
             if (font.isCoreFont) {
-                DrawAsciiString(font, str);
+                DrawASCIIString(font, str);
             } else {
                 DrawUnicodeString(font, str);
             }
@@ -384,7 +376,7 @@ public class Page {
         Append("ET\n");
     }
 
-    private void DrawAsciiString(Font font, String str) {
+    private void DrawASCIIString(Font font, String str) {
         int len = str.Length;
         for (int i = 0; i < len; i++) {
             int c1 = str[i];
@@ -1259,9 +1251,14 @@ public class Page {
 
     public void SetTextFont(Font font) {
         this.font = font;
-        Append("/F");
-        Append(font.objNumber);
-        Append(' ');
+        if (font.fontID != null) {
+            Append('/');
+            Append(font.fontID);
+        } else {
+            Append("/F");
+            Append(font.objNumber);
+        }
+        Append(Token.space);
         Append(font.size);
         Append(" Tf\n");
     }
@@ -1450,7 +1447,7 @@ public class Page {
             }
             Append("[<");
             if (font.isCoreFont) {
-                DrawAsciiString(font, str);
+                DrawASCIIString(font, str);
             } else {
                 DrawUnicodeString(font, str);
             }
@@ -1623,19 +1620,19 @@ public class Page {
         float transy = values[MTRANS_Y];
 
         Append(scalex);
-        Append(" ");
+        Append(Token.space);
         Append(values[MSKEW_X]);
-        Append(" ");
+        Append(Token.space);
         Append(values[MSKEW_Y]);
-        Append(" ");
+        Append(Token.space);
         Append(scaley);
-        Append(" ");
+        Append(Token.space);
 
         if (Math.Asin(values[MSKEW_Y]) != 0f) {
             transx -= values[MSKEW_Y] * height / scaley;
         }
         Append(transx);
-        Append(" ");
+        Append(Token.space);
         Append(-transy);
         Append(" cm\n");
 
@@ -1670,6 +1667,73 @@ public class Page {
             buf.WriteByte((byte) str[i]);
         }
         return buf.ToArray();
+    }
+
+    /**
+     *  Begin text block.
+     */
+    internal void BeginText() {
+        Append("BT\n");
+    }
+
+    /**
+     *  End the text block.
+     */
+    internal void EndText() {
+        Append("ET\n");
+    }
+
+    /**
+     *  Sets the text location.
+     *
+     *  @param x the x coordinate of new text location.
+     *  @param y the y coordinate of new text location.
+     */
+    internal void SetTextLocation(float x, float y) {
+        Append(x);
+        Append(Token.space);
+        Append(height - y);
+        Append(" Td\n");
+    }
+
+    /**
+     *  Sets the text leading.
+     *  @param leading the leading.
+     */
+    internal void SetTextLeading(float leading) {
+        Append(leading);
+        Append(" TL\n");
+    }
+
+    /**
+     *  Advance to the next line.
+     */
+    internal void NextLine() {
+        Append("T*\n");
+    }
+
+    internal void SetTextScaling(float scaling) {
+        Append(scaling);
+        Append(" Tz\n");
+    }
+
+    internal void SetTextRise(float rise) {
+        Append(rise);
+        Append(" Ts\n");
+    }
+
+    /**
+     *  Draws a string at the currect location.
+     *  @param str the string.
+     */
+    internal void DrawText(String str) {
+        Append("[<");
+        if (font.isCoreFont) {
+            DrawASCIIString(font, str);
+        } else {
+            DrawUnicodeString(font, str);
+        }
+        Append(">] TJ\n");
     }
 }   // End of Page.cs
 }   // End of namespace PDFjet.NET

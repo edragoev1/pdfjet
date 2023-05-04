@@ -82,12 +82,12 @@ public class TextBox implements Drawable {
 
     private String language = "en-US";
     private String altDescription = "";
-
     private String uri = null;
     private String key = null;
     private String uriLanguage = null;
     private String uriActualText = null;
     private String uriAltDescription = null;
+    private Direction textDirection = Direction.LEFT_TO_RIGHT;
 
     /**
      * Creates a text box and sets the font.
@@ -726,7 +726,12 @@ public class TextBox implements Drawable {
 
     private String[] getTextLines() {
         List<String> list = new ArrayList<String>();
-        float textAreaWidth = width - 2 * margin;
+        float textAreaWidth;
+        if (textDirection == Direction.LEFT_TO_RIGHT) {
+            textAreaWidth = width - 2*margin;
+        } else {
+            textAreaWidth = height - 2*margin;
+        }
         String[] lines = text.split("\\r?\\n", -1);
         for (String line : lines) {
             if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
@@ -825,30 +830,42 @@ public class TextBox implements Drawable {
                 page.setBrushColor(this.brush);
                 page.setPenWidth(this.font.underlineThickness);
             }
+
             float xText = x + margin;
             float yText = y + margin + font.ascent;
-            if (valign == Align.TOP) {
+            if (textDirection == Direction.LEFT_TO_RIGHT) {
+                if (valign == Align.TOP) {
+                    yText = y + margin + font.ascent;
+                } else if (valign == Align.BOTTOM) {
+                    yText = (y + height) - (Float.valueOf(lines.length)*leading + margin);
+                    yText += font.ascent;
+                } else if (valign == Align.CENTER) {
+                    yText = y + (height - Float.valueOf(lines.length)*leading)/2;
+                    yText += font.ascent;
+                }
+            } else {
                 yText = y + margin + font.ascent;
-            } else if (valign == Align.BOTTOM) {
-                yText = (y + height) - (Float.valueOf(lines.length)*leading + margin);
-                yText += font.ascent;
-            } else if (valign == Align.CENTER) {
-                yText = y + (height - Float.valueOf(lines.length)*leading)/2;
-                yText += font.ascent;
             }
             for (String line : lines) {
-                if (getTextAlignment() == Align.LEFT) {
-                    xText = x + margin;
-                } else if (getTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
-                } else if (getTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.stringWidth(fallbackFont, line))/2;
-                }
-                if (yText + font.descent <= y + height) {
-                    if (page != null) {
-                        drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
+                if (textDirection == Direction.LEFT_TO_RIGHT) {
+                    if (getTextAlignment() == Align.LEFT) {
+                        xText = x + margin;
+                    } else if (getTextAlignment() == Align.RIGHT) {
+                        xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
+                    } else if (getTextAlignment() == Align.CENTER) {
+                        xText = x + (width - font.stringWidth(fallbackFont, line))/2;
                     }
+                } else {
+                    xText = x + margin;
+                }
+                if (page != null) {
+                    drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
+                }
+                if (textDirection == Direction.LEFT_TO_RIGHT ||
+                        textDirection == Direction.BOTTOM_TO_TOP) {
                     yText += leading;
+                } else {
+                    yText -= leading;
                 }
             }
         } else { // TextBox that expands to fit the content
@@ -866,24 +883,34 @@ public class TextBox implements Drawable {
             float xText = x + margin;
             float yText = y + margin + font.ascent;
             for (String line : lines) {
-                if (getTextAlignment() == Align.LEFT) {
+                if (textDirection == Direction.LEFT_TO_RIGHT) {
+                    if (getTextAlignment() == Align.LEFT) {
+                        xText = x + margin;
+                    } else if (getTextAlignment() == Align.RIGHT) {
+                        xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
+                    } else if (getTextAlignment() == Align.CENTER) {
+                        xText = x + (width - font.stringWidth(fallbackFont, line))/2;
+                    }
+                } else {
                     xText = x + margin;
-                } else if (getTextAlignment() == Align.RIGHT) {
-                    xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
-                } else if (getTextAlignment() == Align.CENTER) {
-                    xText = x + (width - font.stringWidth(fallbackFont, line))/2;
                 }
                 if (page != null) {
                     drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
                 }
-                yText += leading;
+                if (textDirection == Direction.LEFT_TO_RIGHT ||
+                        textDirection == Direction.BOTTOM_TO_TOP) {
+                    yText += leading;
+                } else {
+                    yText -= leading;
+                }
             }
             height = ((yText - y) - (font.ascent + spacing)) + margin;
         }
         if (page != null) {
             drawBorders(page);
         }
-        if (page != null && (uri != null || key != null)) {
+        if (textDirection == Direction.LEFT_TO_RIGHT &&
+                page != null && (uri != null || key != null)) {
             page.addAnnotation(new Annotation(
                     uri,
                     key,    // The destination name
@@ -908,24 +935,35 @@ public class TextBox implements Drawable {
             int color,
             Map<String, Integer> colors) {
         page.addBMC(StructElem.P, language, text, altDescription);
-        page.drawString(font, fallbackFont, text, xText, yText, color, colors);
-        page.addEMC();
-        float lineLength = font.stringWidth(fallbackFont, text);
-        if (getUnderline()) {
-            float yAdjust = font.underlinePosition;
-            page.addArtifactBMC();
-            page.moveTo(xText, yText + yAdjust);
-            page.lineTo(xText + lineLength, yText + yAdjust);
-            page.strokePath();
-            page.addEMC();
+        if (textDirection == Direction.LEFT_TO_RIGHT) {
+            page.drawString(font, fallbackFont, text, xText, yText, color, colors);
+        } else if (textDirection == Direction.BOTTOM_TO_TOP) {
+            page.setTextDirection(ClockWise._90_degrees);
+            page.drawString(font, fallbackFont, text, yText, xText + height, color, colors);
+        } else if (textDirection == Direction.TOP_TO_BOTTOM) {
+            page.setTextDirection(ClockWise._270_degrees);
+            page.drawString(font, fallbackFont, text,
+                    (yText + width) - (margin + 2*font.ascent), xText, color, colors);
         }
-        if (getStrikeout()) {
-            float yAdjust = font.bodyHeight / 4;
-            page.addArtifactBMC();
-            page.moveTo(xText, yText - yAdjust);
-            page.lineTo(xText + lineLength, yText - yAdjust);
-            page.strokePath();
-            page.addEMC();
+        page.addEMC();
+        if (textDirection == Direction.LEFT_TO_RIGHT) {
+            float lineLength = font.stringWidth(fallbackFont, text);
+            if (getUnderline()) {
+                float yAdjust = font.underlinePosition;
+                page.addArtifactBMC();
+                page.moveTo(xText, yText + yAdjust);
+                page.lineTo(xText + lineLength, yText + yAdjust);
+                page.strokePath();
+                page.addEMC();
+            }
+            if (getStrikeout()) {
+                float yAdjust = font.bodyHeight / 4;
+                page.addArtifactBMC();
+                page.moveTo(xText, yText - yAdjust);
+                page.lineTo(xText + lineLength, yText - yAdjust);
+                page.strokePath();
+                page.addEMC();
+            }
         }
     }
 
@@ -933,9 +971,12 @@ public class TextBox implements Drawable {
      *  Sets the URI for the "click text line" action.
      *
      *  @param uri the URI
-     *  @return this TextBox.
      */
     public void setURIAction(String uri) {
         this.uri = uri;
+    }
+
+    public void setTextDirection(Direction textDirection) {
+        this.textDirection = textDirection;
     }
 } // End of TextBox.java

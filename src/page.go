@@ -37,6 +37,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/operation"
 	"github.com/edragoev1/pdfjet/src/shape"
+	"github.com/edragoev1/pdfjet/src/token"
 )
 
 // Page is used to create PDF page objects.
@@ -270,15 +271,7 @@ func (page *Page) drawString(font *Font, str string, x, y float32, brush int32, 
 		return
 	}
 	appendString(&page.buf, "BT\n")
-	if font.fontID == "" {
-		page.SetTextFont(font)
-	} else {
-		appendString(&page.buf, "/")
-		appendString(&page.buf, font.fontID)
-		appendString(&page.buf, " ")
-		appendFloat32(&page.buf, font.size)
-		appendString(&page.buf, " Tf\n")
-	}
+	page.SetTextFont(font)
 
 	if page.renderingMode != 0 {
 		appendInteger(&page.buf, page.renderingMode)
@@ -955,9 +948,14 @@ func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 // SetTextFont sets the text fonts.
 func (page *Page) SetTextFont(font *Font) {
 	page.font = font
-	appendString(&page.buf, "/F")
-	appendInteger(&page.buf, font.objNumber)
-	appendString(&page.buf, " ")
+	if font.fontID != "" {
+		appendByte(&page.buf, '/')
+		appendString(&page.buf, font.fontID)
+	} else {
+		appendString(&page.buf, "/F")
+		appendInteger(&page.buf, font.objNumber)
+	}
+	appendByteArray(&page.buf, token.Space)
 	appendFloat32(&page.buf, font.size)
 	appendString(&page.buf, " Tf\n")
 }
@@ -1308,4 +1306,50 @@ func (page *Page) AddFooter(textLine *TextLine) []float32 {
 func (page *Page) AddFooterOffsetBy(textLine *TextLine, offset float32) []float32 {
 	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, page.GetHeight()-offset)
 	return textLine.DrawOn(page)
+}
+
+// BeginText begins text block.
+func (page *Page) BeginText() {
+	appendString(&page.buf, "BT\n")
+}
+
+// EndText ends text block.
+func (page *Page) EndText() {
+	appendString(&page.buf, "ET\n")
+}
+
+func (page *Page) SetTextLocation(x, y float32) {
+	appendFloat32(&page.buf, x)
+	appendByteArray(&page.buf, token.Space)
+	appendFloat32(&page.buf, page.height-y)
+	appendString(&page.buf, " Td\n")
+}
+
+func (page *Page) SetTextLeading(leading float32) {
+	appendFloat32(&page.buf, leading)
+	appendString(&page.buf, " TL\n")
+}
+
+func (page *Page) NextLine() {
+	appendString(&page.buf, "T*\n")
+}
+
+func (page *Page) SetTextScaling(scaling float32) {
+	appendFloat32(&page.buf, scaling)
+	appendString(&page.buf, " Tz\n")
+}
+
+func (page *Page) SetTextRise(rise float32) {
+	appendFloat32(&page.buf, rise)
+	appendString(&page.buf, " Ts\n")
+}
+
+func (page *Page) DrawText(str string) {
+	appendString(&page.buf, "[<")
+	if page.font.isCoreFont {
+		page.drawASCIIString(page.font, str)
+	} else {
+		page.drawUnicodeString(page.font, str)
+	}
+	appendString(&page.buf, ">] TJ\n")
 }

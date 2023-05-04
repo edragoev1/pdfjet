@@ -47,7 +47,7 @@ public class PDF {
     private var author: String = ""
     private var subject: String = ""
     private var keywords: String = ""
-    private var producer = "PDFjet v7.06.9"
+    private var producer = "PDFjet v7.07.0"
     private var creator: String?
     private var createDate: String?
     private var creationDate: String?
@@ -322,9 +322,9 @@ public class PDF {
             for token in importedFonts {
                 append(token)
                 if token == "R" {
-                    append("\n")
+                    append(Token.newline)
                 } else {
-                    append(" ")
+                    append(Token.space)
                 }
             }
             for font in fonts {
@@ -332,7 +332,7 @@ public class PDF {
                 append(font.objNumber)
                 append(Token.space)
                 append(font.objNumber)
-                append(" 0 R\n")
+                append(Token.objRef)
             }
             append(Token.endDictionary)
         }
@@ -344,7 +344,7 @@ public class PDF {
                 append(image.objNumber!)
                 append(Token.space)
                 append(image.objNumber!)
-                append(" 0 R\n")
+                append(Token.objRef)
             }
             append(Token.endDictionary)
         }
@@ -357,7 +357,7 @@ public class PDF {
                 append(i + 1)
                 append(Token.space)
                 append(ocg.objNumber)
-                append(" 0 R\n")
+                append(Token.objRef)
             }
             append(Token.endDictionary)
         }
@@ -395,7 +395,7 @@ public class PDF {
                 page.setStructElementsPageObjNumber(page.objNumber)
             }
             append(page.objNumber)
-            append(" 0 R\n")
+            append(Token.objRef)
         }
         append("]\n")
         append("/Count ")
@@ -486,7 +486,7 @@ public class PDF {
                 append(structTreeRootObjNumber + 2)
                 append(" 0 R /Pg ")
                 append(element.pageObjNumber!)
-                append(" 0 R\n")
+                append(Token.objRef)
                 if element.annotation != nil {
                     append(Token.beginAnnotation)
                     append(element.annotation!.objNumber)

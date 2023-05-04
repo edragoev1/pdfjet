@@ -116,7 +116,7 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
 	pdf.compliance = pdfCompliance
-	pdf.producer = "PDFjet v7.06.9"
+	pdf.producer = "PDFjet v7.07.0"
 	pdf.creator = pdf.producer
 	pdf.language = "en-US"
 
@@ -327,14 +327,13 @@ func (pdf *PDF) addOutputIntentObject() int {
 
 func (pdf *PDF) addResourcesObject() int {
 	pdf.newobj()
-	pdf.appendString("<<\n")
-
+	pdf.appendByteArray(token.BeginDictionary)
 	if pdf.extGState != "" {
 		pdf.appendString(pdf.extGState)
 	}
 	if len(pdf.fonts) > 0 || len(pdf.importedFonts) > 0 {
 		pdf.appendString("/Font\n")
-		pdf.appendString("<<\n")
+		pdf.appendByteArray(token.BeginDictionary)
 		for _, token := range pdf.importedFonts {
 			pdf.appendString(token)
 			if token == "R" {
@@ -350,12 +349,11 @@ func (pdf *PDF) addResourcesObject() int {
 			pdf.appendInteger(font.objNumber)
 			pdf.appendString(" 0 R\n")
 		}
-		pdf.appendString(">>\n")
+		pdf.appendByteArray(token.EndDictionary)
 	}
-
 	if len(pdf.images) > 0 {
 		pdf.appendString("/XObject\n")
-		pdf.appendString("<<\n")
+		pdf.appendByteArray(token.BeginDictionary)
 		for _, image := range pdf.images {
 			pdf.appendString("/Im")
 			pdf.appendInteger(image.objNumber)
@@ -363,12 +361,11 @@ func (pdf *PDF) addResourcesObject() int {
 			pdf.appendInteger(image.objNumber)
 			pdf.appendString(" 0 R\n")
 		}
-		pdf.appendString(">>\n")
+		pdf.appendByteArray(token.EndDictionary)
 	}
-
 	if len(pdf.groups) > 0 {
 		pdf.appendString("/Properties\n")
-		pdf.appendString("<<\n")
+		pdf.appendByteArray(token.BeginDictionary)
 		for i, ocg := range pdf.groups {
 			pdf.appendString("/OC")
 			pdf.appendInteger(i + 1)
@@ -376,9 +373,8 @@ func (pdf *PDF) addResourcesObject() int {
 			pdf.appendInteger(ocg.objNumber)
 			pdf.appendString(" 0 R\n")
 		}
-		pdf.appendString(">>\n")
+		pdf.appendByteArray(token.EndDictionary)
 	}
-
 	// String state = "/CA 0.5 /ca 0.5"
 	if len(pdf.states) > 0 {
 		pdf.appendString("/ExtGState <<\n")
@@ -389,10 +385,9 @@ func (pdf *PDF) addResourcesObject() int {
 			pdf.appendString(key)
 			pdf.appendString(" >>\n")
 		}
-		pdf.appendString(">>\n")
+		pdf.appendByteArray(token.EndDictionary)
 	}
-
-	pdf.appendString(">>\n")
+	pdf.appendByteArray(token.EndDictionary)
 	pdf.endobj()
 	return pdf.getObjNumber()
 }
@@ -469,21 +464,21 @@ func (pdf *PDF) addStructTreeRootObject() int {
 
 func (pdf *PDF) addStructDocumentObject(parent int) int {
 	pdf.newobj()
-	pdf.appendString("<<\n")
+	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /StructElem\n")
 	pdf.appendString("/S /Document\n")
 	pdf.appendString("/P ")
 	pdf.appendInteger(parent)
-	pdf.appendString(" 0 R\n")
+	pdf.appendByteArray(token.ObjRef)
 	pdf.appendString("/K [\n")
 	for _, page := range pdf.pages {
 		for _, structElement := range page.structures {
 			pdf.appendInteger(structElement.objNumber)
-			pdf.appendString(" 0 R\n")
+			pdf.appendByteArray(token.ObjRef)
 		}
 	}
 	pdf.appendString("]\n")
-	pdf.appendString(">>\n")
+	pdf.appendByteArray(token.EndDictionary)
 	pdf.endobj()
 	return pdf.getObjNumber()
 }
