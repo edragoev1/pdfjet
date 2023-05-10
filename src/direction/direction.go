@@ -1,4 +1,4 @@
-package joinstyle
+package direction
 
 /**
  * direction.go
