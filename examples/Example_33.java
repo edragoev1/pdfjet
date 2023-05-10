@@ -42,7 +42,7 @@ public class Example_33 {
         image.setLocation(xy[0], 670);
         xy = image.drawOn(page);
 
-        image = new SVGImage("images/svg-test/test-QQ.svg");
+        image = new SVGImage("images/svg-test/test-QQ1.svg");
         image.setLocation(xy[0], 670);
         xy = image.drawOn(page);
 

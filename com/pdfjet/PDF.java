@@ -52,7 +52,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v7.07.1";
+    private String producer = "PDFjet v7.07.3";
     private String creator = producer;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
@@ -142,7 +142,7 @@ public class PDF {
         append((byte) 0x00F4);
         append((byte) 0x00F5);
         append((byte) 0x00F6);
-        append('\n');
+        append(Token.newline);
     }
 
     public void setCompliance(int compliance) {
@@ -291,13 +291,13 @@ public class PDF {
 
         append("/Length ");
         append(ICCBlackScaled.profile.length);
-        append("\n");
+        append(Token.newline);
 
         append("/Filter /FlateDecode\n");
         append(Token.endDictionary);
-        append("stream\n");
+        append(Token.stream);
         append(ICCBlackScaled.profile, 0, ICCBlackScaled.profile.length);
-        append("\nendstream\n");
+        append(Token.endstream);
         endobj();
 
         // OutputIntent object
@@ -310,7 +310,7 @@ public class PDF {
         append("/Info (sRGB IEC61966-2.1)\n");
         append("/DestOutputProfile ");
         append(getObjNumber() - 1);
-        append(" 0 R\n");
+        append(Token.objRef);
         append(Token.endDictionary);
         endobj();
 
@@ -320,7 +320,6 @@ public class PDF {
     private int addResourcesObject() throws Exception {
         newobj();
         append(Token.beginDictionary);
-
         if (!extGState.equals("")) {
             append(extGState);
         }
@@ -344,12 +343,10 @@ public class PDF {
             }
             append(Token.endDictionary);
         }
-
         if (images.size() > 0) {
             append("/XObject\n");
             append(Token.beginDictionary);
-            for (int i = 0; i < images.size(); i++) {
-                Image image = images.get(i);
+            for (Image image : images) {
                 append("/Im");
                 append(image.objNumber);
                 append(Token.space);
@@ -358,7 +355,6 @@ public class PDF {
             }
             append(Token.endDictionary);
         }
-
         if (groups.size() > 0) {
             append("/Properties\n");
             append(Token.beginDictionary);
@@ -372,20 +368,18 @@ public class PDF {
             }
             append(Token.endDictionary);
         }
-
         // String state = "/CA 0.5 /ca 0.5";
         if (states.size() > 0) {
             append("/ExtGState <<\n");
             for (String state : states.keySet()) {
                 append("/GS");
                 append(states.get(state));
-                append(" << ");
+                append(" <<");
                 append(state);
-                append(" >>\n");
+                append(Token.endDictionary);
             }
             append(Token.endDictionary);
         }
-
         append(Token.endDictionary);
         endobj();
         return getObjNumber();
@@ -455,7 +449,7 @@ public class PDF {
         append(" 0 R\n");
         append("/K [\n");
         append(getObjNumber() + 2);
-        append(" 0 R\n");
+        append(Token.objRef);
         append("]\n");
         append(Token.endDictionary);
         endobj();
@@ -474,7 +468,7 @@ public class PDF {
         for (Page page : pages) {
             for (StructElem structElement : page.structures) {
                 append(structElement.objNumber);
-                append(" 0 R\n");
+                append(Token.objRef);
             }
         }
         append("]\n");
@@ -488,28 +482,26 @@ public class PDF {
         for (Page page : pages) {
             structTreeRootObjNumber += page.structures.size();
         }
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            for (int j = 0; j < page.structures.size(); j++) {
+        for (Page page : pages) {
+            for (StructElem element : page.structures) {
                 newobj();
-                StructElem element = page.structures.get(j);
                 element.objNumber = getObjNumber();
                 append(Token.beginStructElem);
                 append(element.structure);
-                append("\n/P ");
+                append(Token.P);
                 append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
-                append(" 0 R\n/Pg ");
+                append(Token.objRefPg);
                 append(element.pageObjNumber);
-                append(" 0 R\n");
+                append(Token.objRef);
                 if (element.annotation != null) {
                     append(Token.beginAnnotation);
                     append(element.annotation.objNumber);
                     append(Token.endAnnotation);
                 } else {
-                    append("/K ");
+                    append(Token.K);
                     append(element.mcid);
                 }
-                append("\n/Lang (");
+                append(Token.lang);
                 if (element.language != null) {
                     append(element.language);
                 } else {
@@ -523,6 +515,55 @@ public class PDF {
                 endobj();
             }
         }
+    }
+
+    // This method is sligtly slower for Example_52.java
+    private void addStructElementObjectsBackup() throws Exception {
+        int structTreeRootObjNumber = getObjNumber() + 1;
+        for (Page page : pages) {
+            structTreeRootObjNumber += page.structures.size();
+        }
+        StringBuilder buffer = new StringBuilder();
+        for (Page page : pages) {
+            for (StructElem element : page.structures) {
+                // newobj();
+                objOffset.add(byteCount);
+                buffer.append(objOffset.size());
+                buffer.append(" 0 obj\n");
+
+                element.objNumber = getObjNumber();
+                buffer.append("<<\n/Type /StructElem /S /");
+                buffer.append(element.structure);
+                buffer.append("\n/P ");
+                buffer.append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
+                buffer.append(" 0 R /Pg ");
+                buffer.append(element.pageObjNumber);
+                append(Token.objRef);
+                if (element.annotation != null) {
+                    buffer.append("/K <</Type /OBJR /Obj ");
+                    buffer.append(element.annotation.objNumber);
+                    buffer.append(" 0 R>>");
+                } else {
+                    buffer.append("/K ");
+                    buffer.append(element.mcid);
+                }
+                buffer.append(Token.lang);
+                if (element.language != null) {
+                    buffer.append(element.language);
+                } else {
+                    buffer.append(language);
+                }
+                buffer.append(Token.altDescription);
+                buffer.append(toHex(element.altDescription));
+                buffer.append(Token.actualText);
+                buffer.append(toHex(element.actualText));
+                buffer.append(Token.endStructElem);
+
+                // endobj();
+                buffer.append("endobj\n");
+            }
+        }
+        append(buffer.toString());
     }
 
     private String toHex(String str) {
@@ -547,12 +588,11 @@ public class PDF {
             for (StructElem element : page.structures) {
                 if (element.annotation == null) {
                     append(element.objNumber);
-                    append(" 0 R\n");
+                    append(Token.objRef);
                 }
             }
             append("]\n");
         }
-
         int index = pages.size();
         for (Page page : pages) {
             for (StructElem element : page.structures) {
@@ -560,7 +600,7 @@ public class PDF {
                     append(index);
                     append(Token.space);
                     append(element.objNumber);
-                    append(" 0 R\n");
+                    append(Token.objRef);
                     index++;
                 }
             }
@@ -590,7 +630,7 @@ public class PDF {
 
             append("/StructTreeRoot ");
             append(structTreeRootObjNumber);
-            append(" 0 R\n");
+            append(Token.objRef);
 
             append("/MarkInfo <</Marked true>>\n");
             append("/ViewerPreferences <</DisplayDocTitle true>>\n");
@@ -599,20 +639,20 @@ public class PDF {
         if (pageLayout != null) {
             append("/PageLayout /");
             append(pageLayout);
-            append("\n");
+            append(Token.newline);
         }
 
         if (pageMode != null) {
             append("/PageMode /");
             append(pageMode);
-            append("\n");
+            append(Token.newline);
         }
 
         addOCProperties();
 
         append("/Pages ");
         append(pagesObjNumber);
-        append(" 0 R\n");
+        append(Token.objRef);
 
         if (compliance == Compliance.PDF_UA ||
                 compliance == Compliance.PDF_A_1A ||
@@ -623,7 +663,7 @@ public class PDF {
                 compliance == Compliance.PDF_A_3B) {
             append("/Metadata ");
             append(metadataObjNumber);
-            append(" 0 R\n");
+            append(Token.objRef);
 
             append("/OutputIntents [");
             append(outputIntentObjNumber);
@@ -633,7 +673,7 @@ public class PDF {
         if (outlineDictNumber > 0) {
             append("/Outlines ");
             append(outlineDictNumber);
-            append(" 0 R\n");
+            append(Token.objRef);
         }
 
         append(Token.endDictionary);
@@ -646,19 +686,18 @@ public class PDF {
         append(boxName);
         append(" [");
         append(rect[0]);
-        append(' ');
+        append(Token.space);
         append(page.height - rect[3]);
-        append(' ');
+        append(Token.space);
         append(rect[2]);
-        append(' ');
+        append(Token.space);
         append(page.height - rect[1]);
         append("]\n");
     }
 
     private void setDestinationObjNumbers() {
         int numberOfAnnotations = 0;
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
+        for (Page page : pages) {
             numberOfAnnotations += page.annots.size();
         }
         for (int i = 0; i < pages.size(); i++) {
@@ -680,7 +719,6 @@ public class PDF {
 
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
-
             // Page object
             newobj();
             page.objNumber = getObjNumber();
@@ -688,10 +726,10 @@ public class PDF {
             append("/Type /Page\n");
             append("/Parent ");
             append(pagesObjNumber);
-            append(" 0 R\n");
+            append(Token.objRef);
             append("/MediaBox [0 0 ");
             append(page.width);
-            append(' ');
+            append(Token.space);
             append(page.height);
             append("]\n");
 
@@ -710,7 +748,7 @@ public class PDF {
 
             append("/Resources ");
             append(resObjNumber);
-            append(" 0 R\n");
+            append(Token.objRef);
 
             append("/Contents [ ");
             for (Integer n : page.contents) {
@@ -737,7 +775,7 @@ public class PDF {
                 append("/Tabs /S\n");
                 append("/StructParents ");
                 append(i);
-                append("\n");
+                append(Token.newline);
             }
 
             append(Token.endDictionary);
@@ -847,10 +885,10 @@ public class PDF {
             append(">\n");
             append("/FS ");
             append(annot.fileAttachment.embeddedFile.objNumber);
-            append(" 0 R\n");
+            append(Token.objRef);
             append("/Name /");
             append(annot.fileAttachment.icon);
-            append("\n");
+            append(Token.newline);
         } else {
             append("/Subtype /Link\n");
             append("/Contents <");
@@ -859,11 +897,11 @@ public class PDF {
         }
         append("/Rect [");
         append(annot.x1);
-        append(' ');
+        append(Token.space);
         append(annot.y1);
-        append(' ');
+        append(Token.space);
         append(annot.x2);
-        append(' ');
+        append(Token.space);
         append(annot.y2);
         append("]\n");
         append("/Border [0 0 0]\n");
@@ -889,7 +927,7 @@ public class PDF {
         if (index != -1) {
             append("/StructParent ");
             append(index++);
-            append("\n");
+            append(Token.newline);
         }
         append(Token.endDictionary);
         endobj();
@@ -899,18 +937,15 @@ public class PDF {
 
     private void addAnnotDictionaries() throws Exception {
         int index = pages.size();
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
+        for (Page page : pages) {
             if (page.structures.size() > 0) {
-                for (int j = 0; j < page.structures.size(); j++) {
-                    StructElem element = page.structures.get(j);
+                for (StructElem element : page.structures) {
                     if (element.annotation != null) {
                         index = addAnnotationObject(element.annotation, index);
                     }
                 }
             } else if (page.annots.size() > 0) {
-                for (int j = 0; j < page.annots.size(); j++) {
-                    Annotation annotation = page.annots.get(j);
+                for (Annotation annotation : page.annots) {
                     if (annotation != null) {
                         addAnnotationObject(annotation, -1);
                     }

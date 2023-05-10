@@ -49,14 +49,12 @@ public class Example_03 {
         image2.DrawOn(page);
 
         image2.SetLocation(260f, xy[1] + f1.GetDescent());
-        image2.SetRotate(ClockWise._90_degrees);
-        // image2.SetRotate(ClockWise._180_degrees);
-        // image2.SetRotate(ClockWise._270_degrees);
+        image2.RotateClockwise(90);
         image2.ScaleBy(0.5f);
         image2.DrawOn(page);
 
         image2.SetLocation(350f, xy[1] + f1.GetDescent());
-        image2.SetRotate(ClockWise.degrees_0);
+        image2.RotateClockwise(0);
         image2.ScaleBy(0.5f);
         image2.DrawOn(page);
 

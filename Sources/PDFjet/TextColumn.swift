@@ -47,9 +47,9 @@ public class TextColumn : Drawable {
     /// @param rotateByDegrees the specified rotation angle in degrees.
     ///
     public init(_ rotateByDegrees: Int) {
-        if rotateByDegrees != ClockWise._0_degrees &&
-                rotateByDegrees != ClockWise._90_degrees &&
-                rotateByDegrees != ClockWise._270_degrees {
+        if rotateByDegrees != 0 &&
+                rotateByDegrees != 90 &&
+                rotateByDegrees != 270 {
             // TODO:
             Swift.print("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
         }
@@ -200,11 +200,11 @@ public class TextColumn : Drawable {
             _ paragraph: Paragraph) -> [Float] {
 
         self.lineHeight = paragraph.lines![0].font!.bodyHeight + spaceBetweenLines
-        if rotate == ClockWise._0_degrees {
+        if rotate == 0 {
             self.y1 += paragraph.lines![0].font!.ascent
-        } else if rotate == ClockWise._90_degrees {
+        } else if rotate == 90 {
             self.x1 += paragraph.lines![0].font!.ascent
-        } else if rotate == ClockWise._270_degrees {
+        } else if rotate == 270 {
             self.x1 -= paragraph.lines![0].font!.ascent
         }
 
@@ -270,13 +270,13 @@ public class TextColumn : Drawable {
 
 
     private func moveToNextParagraph(_ spaceBetweenParagraphs: Float) -> [Float] {
-        if rotate == ClockWise._0_degrees {
+        if rotate == 0 {
             x1 = x
             y1 += spaceBetweenParagraphs
-        } else if rotate == ClockWise._90_degrees {
+        } else if rotate == 90 {
             x1 += spaceBetweenParagraphs
             y1 = y
-        } else if rotate == ClockWise._270_degrees {
+        } else if rotate == 270 {
             x1 -= spaceBetweenParagraphs
             y1 = y
         }
@@ -343,19 +343,19 @@ public class TextColumn : Drawable {
         }
 
         if alignment == Align.CENTER {
-            if rotate == ClockWise._0_degrees {
+            if rotate == 0 {
                 x1 = x + ((w - runLength) / 2)
-            } else if rotate == ClockWise._90_degrees {
+            } else if rotate == 90 {
                 y1 = y - ((w - runLength) / 2)
-            } else if rotate == ClockWise._270_degrees {
+            } else if rotate == 270 {
                 y1 = y + ((w - runLength) / 2)
             }
         } else if alignment == Align.RIGHT {
-            if rotate == ClockWise._0_degrees {
+            if rotate == 0 {
                 x1 = x + (w - runLength)
-            } else if rotate == ClockWise._90_degrees {
+            } else if rotate == 90 {
                 y1 = y - (w - runLength)
-            } else if rotate == ClockWise._270_degrees {
+            } else if rotate == 270 {
                 y1 = y + (w - runLength)
             }
         }
@@ -374,13 +374,13 @@ public class TextColumn : Drawable {
                         nil,
                         nil))
             }
-            if rotate == ClockWise._0_degrees {
+            if rotate == 0 {
                 textLine.setTextDirection(0).drawOn(page)
                 x1 += textLine.font!.stringWidth(textLine.fallbackFont, textLine.text)
-            } else if rotate == ClockWise._90_degrees {
+            } else if rotate == 90 {
                 textLine.setTextDirection(90).drawOn(page)
                 y1 -= textLine.font!.stringWidth(textLine.fallbackFont, textLine.text)
-            } else if rotate == ClockWise._270_degrees {
+            } else if rotate == 270 {
                 textLine.setTextDirection(270).drawOn(page)
                 y1 += textLine.font!.stringWidth(textLine.fallbackFont, textLine.text)
             }

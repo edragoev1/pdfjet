@@ -53,7 +53,7 @@ func appendInteger(a1 *[]byte, value int) {
 }
 
 func appendFloat32(a1 *[]byte, value float32) {
-	*a1 = append(*a1, []byte(strconv.FormatFloat(float64(value), 'f', 2, 32))...)
+	*a1 = append(*a1, []byte(strconv.FormatFloat(float64(value), 'f', 3, 32))...)
 }
 
 func appendString(a1 *[]byte, s1 string) {
@@ -120,4 +120,8 @@ func getNBytes(r io.Reader, n int) []byte {
 	buf := make([]byte, n)
 	io.ReadFull(r, buf)
 	return buf
+}
+
+func formatFloat32(value float32) []byte {
+	return []byte(strconv.FormatFloat(float64(value), 'f', 3, 32))
 }

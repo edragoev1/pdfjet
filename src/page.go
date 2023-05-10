@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -141,10 +140,10 @@ func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
 	page.tm = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.buf = []byte{}
 	page.penWidth = -1.0
-	page.tm0 = []byte(strconv.FormatFloat(float64(page.tm[0]), 'f', 2, 32))
-	page.tm1 = []byte(strconv.FormatFloat(float64(page.tm[1]), 'f', 2, 32))
-	page.tm2 = []byte(strconv.FormatFloat(float64(page.tm[2]), 'f', 2, 32))
-	page.tm3 = []byte(strconv.FormatFloat(float64(page.tm[3]), 'f', 2, 32))
+	page.tm0 = formatFloat32(page.tm[0])
+	page.tm1 = formatFloat32(page.tm[1])
+	page.tm2 = formatFloat32(page.tm[2])
+	page.tm3 = formatFloat32(page.tm[3])
 	if addToPDF {
 		pdf.AddPage(page)
 	}
@@ -160,10 +159,10 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.height = pageObj.GetPageSize()[1]
 	page.tm = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.buf = []byte{}
-	page.tm0 = []byte(strconv.FormatFloat(float64(page.tm[0]), 'f', 2, 32))
-	page.tm1 = []byte(strconv.FormatFloat(float64(page.tm[1]), 'f', 2, 32))
-	page.tm2 = []byte(strconv.FormatFloat(float64(page.tm[2]), 'f', 2, 32))
-	page.tm3 = []byte(strconv.FormatFloat(float64(page.tm[3]), 'f', 2, 32))
+	page.tm0 = formatFloat32(page.tm[0])
+	page.tm1 = formatFloat32(page.tm[1])
+	page.tm2 = formatFloat32(page.tm[2])
+	page.tm3 = formatFloat32(page.tm[3])
 	appendString(&page.buf, "q\n")
 	if pageObj.gsNumber != 0 {
 		appendString(&page.buf, "/GS")
@@ -897,10 +896,10 @@ func (page *Page) SetTextDirection(degrees int) {
 		cosOfAngle := float32(math.Cos(float64(degrees) * (math.Pi / 180)))
 		page.tm = [4]float32{cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle}
 	}
-	page.tm0 = []byte(strconv.FormatFloat(float64(page.tm[0]), 'f', 2, 32))
-	page.tm1 = []byte(strconv.FormatFloat(float64(page.tm[1]), 'f', 2, 32))
-	page.tm2 = []byte(strconv.FormatFloat(float64(page.tm[2]), 'f', 2, 32))
-	page.tm3 = []byte(strconv.FormatFloat(float64(page.tm[3]), 'f', 2, 32))
+	page.tm0 = formatFloat32(page.tm[0])
+	page.tm1 = formatFloat32(page.tm[1])
+	page.tm2 = formatFloat32(page.tm[2])
+	page.tm3 = formatFloat32(page.tm[3])
 }
 
 /**

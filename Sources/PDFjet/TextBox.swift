@@ -718,7 +718,7 @@ public class TextBox : Drawable {
                     yText += font!.ascent
                 }
             } else {
-                yText = y + margin + font!.ascent
+                yText = x + margin + font!.ascent
             }
             for line in lines {
                 if textDirection == Direction.LEFT_TO_RIGHT {
@@ -730,7 +730,7 @@ public class TextBox : Drawable {
                         xText = x + (width - font!.stringWidth(fallbackFont, line))/2
                     }
                 } else {
-                    xText = x + margin
+                    xText = y + margin
                 }
                 if page != nil {
                     drawText(page, font!, fallbackFont, line, xText, yText, brush, colors)
@@ -780,19 +780,19 @@ public class TextBox : Drawable {
         }
         if page != nil {
             drawBorders(page!)
-        }
-        if textDirection == Direction.LEFT_TO_RIGHT &&
-                page != nil && (uri != nil || key != nil) {
-            page!.addAnnotation(Annotation(
-                    uri,
-                    key,    // The destination name
-                    x,
-                    y,
-                    x + width,
-                    y + height,
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription))
+            if textDirection == Direction.LEFT_TO_RIGHT && (uri != nil || key != nil) {
+                page!.addAnnotation(Annotation(
+                        uri,
+                        key,    // The destination name
+                        x,
+                        y,
+                        x + width,
+                        y + height,
+                        uriLanguage,
+                        uriActualText,
+                        uriAltDescription))
+            }
+            page!.setTextDirection(0)
         }
         return [x + width, y + height]
     }
@@ -810,10 +810,10 @@ public class TextBox : Drawable {
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page!.drawString(font, fallbackFont, text, xText, yText, color, colors);
         } else if (textDirection == Direction.BOTTOM_TO_TOP) {
-            page!.setTextDirection(ClockWise._90_degrees);
+            page!.setTextDirection(90);
             page!.drawString(font, fallbackFont, text, yText, xText + height, color, colors);
         } else if (textDirection == Direction.TOP_TO_BOTTOM) {
-            page!.setTextDirection(ClockWise._270_degrees);
+            page!.setTextDirection(270);
             page!.drawString(font, fallbackFont, text,
                     (yText + width) - (margin + 2*font.ascent), xText, color, colors);
         }

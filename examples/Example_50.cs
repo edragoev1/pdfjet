@@ -124,48 +124,38 @@ public class Example_50 {
         page.DrawString(f1, "2016-08-07", x + 475f, 651f);
 
         // Female Checkbox 1
-        // xMarkCheckBox(page, 477.5f, 197.5f, 7f);
+        // CheckBox.XMark(page, 477.5f, 197.5f, 7f);
 
         // Male Checkbox 1
-        XMarkCheckBox(page, 534.5f, 197.5f, 7f);
+        CheckBox.XMark(page, 534.5f, 197.5f, 7f);
 
         // Married
-        XMarkCheckBox(page, 34.5f, 424f, 7f);
+        CheckBox.XMark(page, 34.5f, 424f, 7f);
 
         // Living common-law
-        // XMarkCheckBox(page, 121.5f, 424f, 7f);
+        // CheckBox.XMark(page, 121.5f, 424f, 7f);
 
         // Widowed
-        // XMarkCheckBox(page, 235.5f, 424f, 7f);
+        // CheckBox.XMark(page, 235.5f, 424f, 7f);
 
         // Divorced
-        // XMarkCheckBox(page, 325.5f, 424f, 7f);
+        // CheckBox.XMark(page, 325.5f, 424f, 7f);
 
         // Separated
-        // XMarkCheckBox(page, 415.5f, 424f, 7f);
+        // CheckBox.XMark(page, 415.5f, 424f, 7f);
 
         // Single
-        // XMarkCheckBox(page, 505.5f, 424f, 7f);
+        // CheckBox.XMark(page, 505.5f, 424f, 7f);
 
         // Female Checkbox 2
-        XMarkCheckBox(page, 478.5f, 536.5f, 7f);
+        CheckBox.XMark(page, 478.5f, 536.5f, 7f);
 
         // Male Checkbox 2
-        // XMarkCheckBox(page, 535.5f, 536.5f, 7f);
+        // CheckBox.XMark(page, 535.5f, 536.5f, 7f);
         page.Complete(objects);
         pdf.AddObjects(objects);
 
         pdf.Complete();
-    }
-
-    private void XMarkCheckBox(Page page, float x, float y, float diagonal) {
-        page.SetPenColor(Color.blue);
-        page.SetPenWidth(diagonal / 5);
-        page.MoveTo(x, y);
-        page.LineTo(x + diagonal, y + diagonal);
-        page.MoveTo(x, y + diagonal);
-        page.LineTo(x + diagonal, y);
-        page.StrokePath();
     }
 
     private String StripSpacesAndDashes(String str) {

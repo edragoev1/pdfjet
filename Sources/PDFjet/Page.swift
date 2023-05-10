@@ -34,7 +34,7 @@ import Foundation
 /// </pre>
 ///
 public class Page {
-    var pdf: PDF?
+    var pdf: PDF
     var pageObj: PDFobj?
     var objNumber = 0
     var buf = [UInt8]()
@@ -68,7 +68,6 @@ public class Page {
     private var font: Font?
     private var savedStates = [State]()
     private var mcid = 0
-
     public static let DETACHED = false
 
     ///
@@ -94,10 +93,10 @@ public class Page {
         self.destinations = [Destination]()
         self.width = pageSize[0]
         self.height = pageSize[1]
-        self.tm0 = Array(String(format: "%.3f", tm[0]).utf8)
-        self.tm1 = Array(String(format: "%.3f", tm[1]).utf8)
-        self.tm2 = Array(String(format: "%.3f", tm[2]).utf8)
-        self.tm3 = Array(String(format: "%.3f", tm[3]).utf8)
+        self.tm0 = Array(String(format: pdf.floatFormat, tm[0]).utf8)
+        self.tm1 = Array(String(format: pdf.floatFormat, tm[1]).utf8)
+        self.tm2 = Array(String(format: pdf.floatFormat, tm[2]).utf8)
+        self.tm3 = Array(String(format: pdf.floatFormat, tm[3]).utf8)
         if addPageToPDF {
             pdf.addPage(self)
         }
@@ -108,10 +107,10 @@ public class Page {
         self.pageObj = pageObj
         self.width = pageObj.getPageSize()[0]
         self.height = pageObj.getPageSize()[1]
-        self.tm0 = Array(String(format: "%.3f", tm[0]).utf8)
-        self.tm1 = Array(String(format: "%.3f", tm[1]).utf8)
-        self.tm2 = Array(String(format: "%.3f", tm[2]).utf8)
-        self.tm3 = Array(String(format: "%.3f", tm[3]).utf8)
+        self.tm0 = Array(String(format: pdf.floatFormat, tm[0]).utf8)
+        self.tm1 = Array(String(format: pdf.floatFormat, tm[1]).utf8)
+        self.tm2 = Array(String(format: pdf.floatFormat, tm[2]).utf8)
+        self.tm3 = Array(String(format: pdf.floatFormat, tm[3]).utf8)
         append("q\n")
         if pageObj.gsNumber != -1 {
             append("/GS")
@@ -415,10 +414,10 @@ public class Page {
         buf.append(" ")
         buf.append("/ca ")
         buf.append(String(gs.getAlphaNonStroking()))
-        var n = pdf!.states[buf]
+        var n = pdf.states[buf]
         if n == nil {
-            n = pdf!.states.count + 1
-            pdf!.states[buf] = n
+            n = pdf.states.count + 1
+            pdf.states[buf] = n
         }
         append("/GS")
         append(n!)
@@ -1055,10 +1054,10 @@ public class Page {
             let cosOfAngle = Float(cos(Float(degrees) * (Float.pi / 180.0)))
             self.tm = [cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle]
         }
-        self.tm0 = Array(String(format: "%.3f", tm[0]).utf8)
-        self.tm1 = Array(String(format: "%.3f", tm[1]).utf8)
-        self.tm2 = Array(String(format: "%.3f", tm[2]).utf8)
-        self.tm3 = Array(String(format: "%.3f", tm[3]).utf8)
+        self.tm0 = Array(String(format: pdf.floatFormat, tm[0]).utf8)
+        self.tm1 = Array(String(format: pdf.floatFormat, tm[1]).utf8)
+        self.tm2 = Array(String(format: pdf.floatFormat, tm[2]).utf8)
+        self.tm3 = Array(String(format: pdf.floatFormat, tm[3]).utf8)
     }
 
     ///
@@ -1303,7 +1302,7 @@ public class Page {
     }
 
     func append(_ val: Float) {
-        append(String(format: "%.3f", val))
+        append(String(format: pdf.floatFormat, val))
     }
 
     func append(_ byte: UInt8) {
@@ -1375,7 +1374,7 @@ public class Page {
             _ language: String?,
             _ actualText: String,
             _ altDescription: String) {
-        if pdf != nil && pdf!.compliance == Compliance.PDF_UA {
+        if pdf.compliance == Compliance.PDF_UA {
             let element = StructElem()
             element.structure = structure
             element.mcid = mcid
@@ -1387,21 +1386,21 @@ public class Page {
             append(structure)
             append(" <</MCID ")
             append(mcid)
-            append(">>\n")
-            append("BDC\n")
+            append(Token.endDictionary)
+            append(Token.BDC)
             mcid += 1
         }
     }
 
     public func addArtifactBMC() {
-        if pdf!.compliance == Compliance.PDF_UA {
-            append("/Artifact BMC\n");
+        if pdf.compliance == Compliance.PDF_UA {
+            append(Token.ArtifactBMC);
         }
     }
 
     public func addEMC() {
-        if pdf != nil && pdf!.compliance == Compliance.PDF_UA {
-            append("EMC\n")
+        if pdf.compliance == Compliance.PDF_UA {
+            append(Token.EMC)
         }
     }
 
@@ -1409,7 +1408,7 @@ public class Page {
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
         self.annots!.append(annotation)
-        if pdf != nil && pdf!.compliance == Compliance.PDF_UA {
+        if pdf.compliance == Compliance.PDF_UA {
             let element = StructElem()
             element.structure = StructElem.LINK
             element.language = annotation.language
@@ -1561,14 +1560,14 @@ public class Page {
      *  Begin text block.
      */
     func beginText() {
-        append("BT\n")
+        append(Token.beginText)
     }
 
     /**
      *  End the text block.
      */
     func endText() {
-        append("ET\n")
+        append(Token.endText)
     }
 
     /**
@@ -1615,12 +1614,12 @@ public class Page {
      *  @param str the string.
      */
     func drawText(_ str: String) {
-        append("[<")
+        append(Token.beginHexString)
         if (font!.isCoreFont) {
             drawASCIIString(font!, str)
         } else {
             drawUnicodeString(font!, str)
         }
-        append(">] TJ\n")
+        append(Token.endHexString)
     }
 }   // End of Page.swift

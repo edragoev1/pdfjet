@@ -52,7 +52,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v7.07.0";
+    private String producer = "PDFjet v7.07.3";
     private String creator;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
@@ -67,6 +67,7 @@ public class PDF {
     internal List<String> importedFonts = new List<String>();
     internal String extGState = "";
     internal Page prevPage = null;
+    internal String floatFormat = "0.###";
 
     /**
      * The default constructor - use when reading PDF files.
@@ -295,7 +296,7 @@ public class PDF {
         Append("/Info (sRGB IEC61966-2.1)\n");
         Append("/DestOutputProfile ");
         Append(GetObjNumber() - 1);
-        Append(" 0 R\n");
+        Append(Token.objRef);
         Append(Token.endDictionary);
         Endobj();
 
@@ -314,35 +315,32 @@ public class PDF {
             foreach (String token in importedFonts) {
                 Append(token);
                 if (token.Equals("R")) {
-                    Append('\n');
+                    Append(Token.newline);
                 } else {
-                    Append(' ');
+                    Append(Token.space);
                 }
             }
             foreach (Font font in fonts) {
                 Append("/F");
                 Append(font.objNumber);
-                Append(' ');
+                Append(Token.space);
                 Append(font.objNumber);
-                Append(" 0 R\n");
+                Append(Token.objRef);
             }
             Append(Token.endDictionary);
         }
-
         if (images.Count > 0) {
             Append("/XObject\n");
             Append(Token.beginDictionary);
-            for (int i = 0; i < images.Count; i++) {
-                Image image = images[i];
+            foreach (Image image in images) {
                 Append("/Im");
                 Append(image.objNumber);
-                Append(' ');
+                Append(Token.space);
                 Append(image.objNumber);
-                Append(" 0 R\n");
+                Append(Token.objRef);
             }
             Append(Token.endDictionary);
         }
-
         if (groups.Count > 0) {
             Append("/Properties\n");
             Append(Token.beginDictionary);
@@ -350,26 +348,24 @@ public class PDF {
                 OptionalContentGroup ocg = groups[i];
                 Append("/OC");
                 Append(i + 1);
-                Append(' ');
+                Append(Token.space);
                 Append(ocg.objNumber);
-                Append(" 0 R\n");
+                Append(Token.objRef);
             }
             Append(Token.endDictionary);
         }
-
         // String state = "/CA 0.5 /ca 0.5";
         if (states.Count > 0) {
             Append("/ExtGState <<\n");
             foreach (String state in states.Keys) {
                 Append("/GS");
                 Append(states[state]);
-                Append(" << ");
+                Append(" <<");
                 Append(state);
-                Append(" >>\n");
+                Append(Token.endDictionary);
             }
-            Append(">>\n");
+            Append(Token.endDictionary);
         }
-
         Append(Token.endDictionary);
         Endobj();
         return GetObjNumber();
@@ -436,10 +432,10 @@ public class PDF {
         Append("/Type /StructTreeRoot\n");
         Append("/ParentTree ");
         Append(GetObjNumber() + 1);
-        Append(" 0 R\n");
+        Append(Token.objRef);
         Append("/K [\n");
         Append(GetObjNumber() + 2);
-        Append(" 0 R\n");
+        Append(Token.objRef);
         Append("]\n");
         Append(Token.endDictionary);
         Endobj();
@@ -453,7 +449,7 @@ public class PDF {
         Append("/S /Document\n");
         Append("/P ");
         Append(parent);
-        Append(" 0 R\n");
+        Append(Token.objRef);
         Append("/K [\n");
         foreach (Page page in pages) {
             foreach (StructElem structElement in page.structures) {
@@ -472,11 +468,9 @@ public class PDF {
         foreach (Page page in pages) {
             structTreeRootObjNumber += page.structures.Count;
         }
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            for (int j = 0; j < page.structures.Count; j++) {
+        foreach (Page page in pages) {
+            foreach (StructElem element in page.structures) {
                 Newobj();
-                StructElem element = page.structures[j];
                 element.objNumber = GetObjNumber();
                 Append("<<\n/Type /StructElem /S /");
                 Append(element.structure);
@@ -484,7 +478,7 @@ public class PDF {
                 Append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
                 Append(" 0 R\n/Pg ");
                 Append(element.pageObjNumber);
-                Append(" 0 R\n");
+                Append(Token.objRef);
                 if (element.annotation != null) {
                     Append("/K <</Type /OBJR /Obj ");
                     Append(element.annotation.objNumber);
@@ -531,12 +525,11 @@ public class PDF {
             foreach (StructElem element in page.structures) {
                 if (element.annotation == null) {
                     Append(element.objNumber);
-                    Append(" 0 R\n");
+                    Append(Token.objRef);
                 }
             }
             Append("]\n");
         }
-
         int index = pages.Count;
         foreach (Page page in pages) {
             foreach (StructElem element in page.structures) {
@@ -544,7 +537,7 @@ public class PDF {
                     Append(index);
                     Append(Token.space);
                     Append(element.objNumber);
-                    Append(" 0 R\n");
+                    Append(Token.objRef);
                     index++;
                 }
             }
@@ -629,19 +622,18 @@ public class PDF {
         Append(boxName);
         Append(" [");
         Append(rect[0]);
-        Append(' ');
+        Append(Token.space);
         Append(page.height - rect[3]);
-        Append(' ');
+        Append(Token.space);
         Append(rect[2]);
-        Append(' ');
+        Append(Token.space);
         Append(page.height - rect[1]);
         Append("]\n");
     }
 
     private void SetDestinationObjNumbers() {
         int numberOfAnnotations = 0;
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
+        foreach (Page page in pages) {
             numberOfAnnotations += page.annots.Count;
         }
         for (int i = 0; i < pages.Count; i++) {
@@ -857,18 +849,15 @@ public class PDF {
 
     private void AddAnnotDictionaries() {
         int index = pages.Count;
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
+        foreach (Page page in pages) {
             if (page.structures.Count > 0) {
-                for (int j = 0; j < page.structures.Count; j++) {
-                    StructElem element = page.structures[j];
+                foreach (StructElem element in page.structures) {
                     if (element.annotation != null) {
                         AddAnnotationObject(element.annotation, index);
                     }
                 }
             } else if (page.annots.Count > 0) {
-                for (int j = 0; j < page.annots.Count; j++) {
-                    Annotation annotation = page.annots[j];
+                foreach (Annotation annotation in page.annots) {
                     if (annotation != null) {
                         AddAnnotationObject(annotation, -1);
                     }
@@ -1065,7 +1054,7 @@ public class PDF {
     }
 
     internal void Append(float val) {
-        Append(val.ToString("0.###", PDF.culture_en_us));
+        Append(val.ToString(floatFormat, PDF.culture_en_us));
     }
 
     internal void Append(String str) {

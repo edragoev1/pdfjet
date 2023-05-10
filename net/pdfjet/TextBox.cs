@@ -805,7 +805,7 @@ public class TextBox : IDrawable {
                     yText += font.ascent;
                 }
             } else {
-                yText = y + margin + font.ascent;
+                yText = x + margin + font.ascent;
             }
             foreach (String line in lines) {
                 if (textDirection == Direction.LEFT_TO_RIGHT) {
@@ -817,7 +817,7 @@ public class TextBox : IDrawable {
                         xText = x + (width - font.StringWidth(fallbackFont, line))/2;
                     }
                 } else {
-                    xText = x + margin;
+                    xText = y + margin;
                 }
                 if (page != null) {
                     DrawText(page, font, fallbackFont, line, xText, yText, brush, colors);
@@ -867,19 +867,19 @@ public class TextBox : IDrawable {
         }
         if (page != null) {
             DrawBorders(page);
-        }
-        if (textDirection == Direction.LEFT_TO_RIGHT &&
-                page != null && (uri != null || key != null)) {
-            page.AddAnnotation(new Annotation(
-                    uri,
-                    key,    // The destination name
-                    x,
-                    y,
-                    x + width,
-                    y + height,
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription));
+            if (textDirection == Direction.LEFT_TO_RIGHT && (uri != null || key != null)) {
+                page.AddAnnotation(new Annotation(
+                        uri,
+                        key,    // The destination name
+                        x,
+                        y,
+                        x + width,
+                        y + height,
+                        uriLanguage,
+                        uriActualText,
+                        uriAltDescription));
+            }
+            page.SetTextDirection(0);
         }
         return new float[] {x + width, y + height};
     }
@@ -897,10 +897,10 @@ public class TextBox : IDrawable {
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page.DrawString(font, fallbackFont, text, xText, yText, color, colors);
         } else if (textDirection == Direction.BOTTOM_TO_TOP) {
-            page.SetTextDirection(ClockWise._90_degrees);
+            page.SetTextDirection(90);
             page.DrawString(font, fallbackFont, text, yText, xText + height, color, colors);
         } else if (textDirection == Direction.TOP_TO_BOTTOM) {
-            page.SetTextDirection(ClockWise._270_degrees);
+            page.SetTextDirection(270);
             page.DrawString(font, fallbackFont, text,
                     (yText + width) - (margin + 2*font.ascent), xText, color, colors);
         }

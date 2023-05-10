@@ -137,6 +137,16 @@ func (checkBox *CheckBox) SetActualText(actualText string) *CheckBox {
 	return checkBox
 }
 
+func XMarkCheckBox(page *Page, x, y, size float32) {
+	page.SetPenColor(color.Blue)
+	page.SetPenWidth(size / 5)
+	page.MoveTo(x, y)
+	page.LineTo(x+size, y+size)
+	page.MoveTo(x, y+size)
+	page.LineTo(x+size, y)
+	page.StrokePath()
+}
+
 // DrawOn draws checkBox CheckBox on the specified Page.
 //
 // @param page the Page where the CheckBox is to be drawn.

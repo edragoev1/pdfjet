@@ -23,16 +23,14 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Creates a CheckBox, which can be set checked or unchecked.
  *  By default the check box is unchecked.
  *  Portions provided by Shirley C. Christenson
  *  Shirley Christenson Consulting
  */
+namespace PDFjet.NET {
 public class CheckBox : IDrawable {
-
     private float x;
     private float y;
     private float w;
@@ -50,7 +48,6 @@ public class CheckBox : IDrawable {
     private String actualText = Single.space;
     private String altDescription = Single.space;
 
-
     /**
      *  Creates a CheckBox with blue check mark.
      *
@@ -59,7 +56,6 @@ public class CheckBox : IDrawable {
         this.font = font;
         this.label = label;
     }
-
 
     /**
      *  Sets the font size to use for this text line.
@@ -72,7 +68,6 @@ public class CheckBox : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the color of the check box.
      *
@@ -83,7 +78,6 @@ public class CheckBox : IDrawable {
         this.boxColor = boxColor;
         return this;
     }
-
 
     /**
      *  Sets the color of the check mark.
@@ -96,7 +90,6 @@ public class CheckBox : IDrawable {
         return this;
     }
 
-
     /**
      *  Set the x,y position on the Page.
      *
@@ -108,16 +101,13 @@ public class CheckBox : IDrawable {
         SetLocation((float) x, (float) y);
     }
 
-
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
 
-
     public CheckBox SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     /**
      *  Set the x,y location on the Page.
@@ -132,7 +122,6 @@ public class CheckBox : IDrawable {
         return this;
     }
 
-
     /**
      *  Gets the height of the CheckBox.
      *
@@ -141,7 +130,6 @@ public class CheckBox : IDrawable {
         return this.h;
     }
 
-
     /**
      *  Gets the width of the CheckBox.
      *
@@ -149,7 +137,6 @@ public class CheckBox : IDrawable {
     public float GetWidth() {
         return this.w;
     }
-
 
     /**
      *  Checks or unchecks this check box. See the Mark class for available options.
@@ -160,7 +147,6 @@ public class CheckBox : IDrawable {
         this.mark = mark;
         return this;
     }
-
 
     /**
      *  Sets the URI for the "click text line" action.
@@ -173,7 +159,6 @@ public class CheckBox : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the alternate description of this check box.
      *
@@ -184,7 +169,6 @@ public class CheckBox : IDrawable {
         this.altDescription = altDescription;
         return this;
     }
-
 
     /**
      *  Sets the actual text for this check box.
@@ -197,6 +181,15 @@ public class CheckBox : IDrawable {
         return this;
     }
 
+    public static void XMark(Page page, float x, float y, float size) {
+        page.SetPenColor(Color.blue);
+        page.SetPenWidth(size / 5);
+        page.MoveTo(x, y);
+        page.LineTo(x + size, y + size);
+        page.MoveTo(x, y + size);
+        page.LineTo(x + size, y);
+        page.StrokePath();
+    }
 
     /**
      *  Draws this CheckBox on the specified Page.
@@ -264,6 +257,5 @@ public class CheckBox : IDrawable {
 
         return new float[] { x + 3f*w + font.StringWidth(label), y + font.bodyHeight };
     }
-
 }   // End of CheckBox.java
 }   // End of namespace PDFjet.NET

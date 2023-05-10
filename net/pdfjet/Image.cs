@@ -25,16 +25,14 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to create image objects and draw them on a page.
  *  The image type can be one of the following: ImageType.JPG, ImageType.PNG, ImageType.BMP or ImageType.PNG_STREAM
  *
  *  Please see Example_03 and Example_24.
  */
+namespace PDFjet.NET {
 public class Image : IDrawable {
-
     internal int objNumber;
 
     internal float x = 0f;  // Position of the image on the page
@@ -55,7 +53,6 @@ public class Image : IDrawable {
     private String altDescription = Single.space;
     private String actualText = Single.space;
 
-
     /**
      *  Convenience constructor for the Image class.
      *
@@ -68,7 +65,6 @@ public class Image : IDrawable {
             filePath.ToLower().EndsWith(".png") ? ImageType.PNG :
             filePath.ToLower().EndsWith(".bmp") ? ImageType.BMP : ImageType.JPG) {
     }
-
 
     /**
      *  The main constructor for the Image class.
@@ -87,45 +83,37 @@ public class Image : IDrawable {
             h = jpg.GetHeight();
             if (jpg.GetColorComponents() == 1) {
                 AddImage(pdf, data, null, imageType, "DeviceGray", 8);
-            }
-            else if (jpg.GetColorComponents() == 3) {
+            } else if (jpg.GetColorComponents() == 3) {
                 AddImage(pdf, data, null, imageType, "DeviceRGB", 8);
-            }
-            else if (jpg.GetColorComponents() == 4) {
+            } else if (jpg.GetColorComponents() == 4) {
                 AddImage(pdf, data, null, imageType, "DeviceCMYK", 8);
             }
-        }
-        else if (imageType == ImageType.PNG) {
+        } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.GetData();
             w = png.GetWidth();
             h = png.GetHeight();
             if (png.GetColorType() == 0) {
                 AddImage(pdf, data, null, imageType, "DeviceGray", png.GetBitDepth());
-            }
-            else {
+            } else {
                 if (png.GetBitDepth() == 16) {
                     AddImage(pdf, data, null, imageType, "DeviceRGB", 16);
-                }
-                else {
+                } else {
                     AddImage(pdf, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
-        }
-        else if (imageType == ImageType.BMP) {
+        } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
             w = bmp.GetWidth();
             h = bmp.GetHeight();
             AddImage(pdf, data, null, imageType, "DeviceRGB", 8);
-        }
-        else if (imageType == ImageType.PNG_STREAM) {
+        } else if (imageType == ImageType.PNG_STREAM) {
             AddImage(pdf, inputStream);
         }
 
         inputStream.Dispose();
     }
-
 
     /**
      *  Constructor used to attach images to existing PDF.
@@ -144,32 +132,26 @@ public class Image : IDrawable {
             h = jpg.GetHeight();
             if (jpg.GetColorComponents() == 1) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceGray", 8);
-            }
-            else if (jpg.GetColorComponents() == 3) {
+            } else if (jpg.GetColorComponents() == 3) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
-            }
-            else if (jpg.GetColorComponents() == 4) {
+            } else if (jpg.GetColorComponents() == 4) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
             }
-        }
-        else if (imageType == ImageType.PNG) {
+        } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.GetData();
             w = png.GetWidth();
             h = png.GetHeight();
             if (png.GetColorType() == 0) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceGray", png.GetBitDepth());
-            }
-            else {
+            } else {
                 if (png.GetBitDepth() == 16) {
                     AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 16);
-                }
-                else {
+                } else {
                     AddImageToObjects(objects, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
-        }
-        else if (imageType == ImageType.BMP) {
+        } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
             w = bmp.GetWidth();
@@ -178,7 +160,6 @@ public class Image : IDrawable {
         }
         inputStream.Close();
     }
-
 
     // Creates new image from an existing PDF object
     public Image(PDF pdf, PDFobj obj) {
@@ -230,7 +211,6 @@ public class Image : IDrawable {
         objNumber = pdf.GetObjNumber();
     }
 
-
     /**
      *  Sets the position of this image on the page to (x, y).
      *
@@ -240,7 +220,6 @@ public class Image : IDrawable {
     public void SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
     }
-
 
     /**
      *  Sets the position of this image on the page to (x, y).
@@ -252,11 +231,9 @@ public class Image : IDrawable {
         SetLocation(x, y);
     }
 
-
     public Image SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     /**
      *  Sets the location of this image on the page to (x, y).
@@ -270,7 +247,6 @@ public class Image : IDrawable {
         return this;
     }
 
-
     /**
      *  Scales this image by the specified factor.
      *
@@ -280,7 +256,6 @@ public class Image : IDrawable {
         return this.ScaleBy((float) factor, (float) factor);
     }
 
-
     /**
      *  Scales this image by the specified factor.
      *
@@ -289,7 +264,6 @@ public class Image : IDrawable {
     public Image ScaleBy(float factor) {
         return this.ScaleBy(factor, factor);
     }
-
 
     /**
      *  Scales this image by the specified width and height factor.
@@ -304,18 +278,15 @@ public class Image : IDrawable {
         return this;
     }
 
-
     public Image ResizeWidth(float width) {
         float factor = width / GetWidth();
         return this.ScaleBy(factor, factor);
     }
 
-
     public Image ResizeHeight(float height) {
         float factor = height / GetHeight();
         return this.ScaleBy(factor, factor);
     }
-
 
     /**
      *  Places this image in the specified box.
@@ -327,7 +298,6 @@ public class Image : IDrawable {
         yBox = box.y;
     }
 
-
     /**
      *  Sets the URI for the "click box" action.
      *
@@ -336,7 +306,6 @@ public class Image : IDrawable {
     public void SetURIAction(String uri) {
         this.uri = uri;
     }
-
 
     /**
      *  Sets the destination key for the action.
@@ -347,32 +316,17 @@ public class Image : IDrawable {
         this.key = key;
     }
 
-
-    /**
-     *  Sets the rotate90 flag.
-     *  When the flag is true the image is rotated 90 degrees clockwise.
-     *
-     *  @param rotate90 the flag.
-     */
-    public void SetRotateCW90(bool rotate90) {
-        if (rotate90) {
-            this.degrees = 90;
-        }
-        else {
-            this.degrees = 0;
-        }
-    }
-
-
     /**
      *  Sets the image rotation to the specified number of degrees.
      *
      *  @param degrees the number of degrees.
      */
-    public void SetRotate(int degrees) {
+    public void RotateClockwise(int degrees) {
+        if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
+            throw new Exception("The rotation angle must be 0, 90, 180 or 270");
+        }
         this.degrees = degrees;
     }
-
 
     /**
      *  Sets the alternate description of this image.
@@ -385,7 +339,6 @@ public class Image : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the actual text for this image.
      *
@@ -396,7 +349,6 @@ public class Image : IDrawable {
         this.actualText = actualText;
         return this;
     }
-
 
     /**
      *  Draws this image on the specified page.
@@ -499,7 +451,6 @@ public class Image : IDrawable {
         return new float[] {x + w, y + h};
     }
 
-
     /**
      *  Returns the width of this image when drawn on the page.
      *  The scaling is take into account.
@@ -510,7 +461,6 @@ public class Image : IDrawable {
         return this.w;
     }
 
-
     /**
      *  Returns the height of this image when drawn on the page.
      *  The scaling is take into account.
@@ -520,7 +470,6 @@ public class Image : IDrawable {
     public float GetHeight() {
         return this.h;
     }
-
 
     private void AddSoftMask(
             PDF pdf,
@@ -555,7 +504,6 @@ public class Image : IDrawable {
         objNumber = pdf.GetObjNumber();
     }
 
-
     private void AddImage(
             PDF pdf,
             byte[] data,
@@ -572,8 +520,7 @@ public class Image : IDrawable {
         pdf.Append("/Subtype /Image\n");
         if (imageType == ImageType.JPG) {
             pdf.Append("/Filter /DCTDecode\n");
-        }
-        else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
+        } else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
             pdf.Append("/Filter /FlateDecode\n");
             if (alpha != null) {
                 pdf.Append("/SMask ");
@@ -609,9 +556,7 @@ public class Image : IDrawable {
         objNumber = pdf.GetObjNumber();
     }
 
-
     private void AddImage(PDF pdf, Stream inputStream) {
-
         w = GetInt(inputStream);                // Width
         h = GetInt(inputStream);                // Height
         byte c = (byte) inputStream.ReadByte(); // Color Space
@@ -686,7 +631,6 @@ public class Image : IDrawable {
         objNumber = pdf.GetObjNumber();
     }
 
-
     private int GetInt(Stream inputStream) {
         byte[] buf = new byte[4];
         inputStream.Read(buf, 0, 4);
@@ -700,7 +644,6 @@ public class Image : IDrawable {
         val |= buf[3] & 0xff;
         return val;
     }
-
 
     private void AddSoftMask(
             List<PDFobj> objects,
@@ -732,7 +675,6 @@ public class Image : IDrawable {
         objNumber = obj.number;
     }
 
-
     private void AddImageToObjects(
             List<PDFobj> objects,
             byte[] data,
@@ -752,8 +694,7 @@ public class Image : IDrawable {
         if (imageType == ImageType.JPG) {
             obj.dict.Add("/Filter");
             obj.dict.Add("/DCTDecode");
-        }
-        else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
+        } else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
             obj.dict.Add("/Filter");
             obj.dict.Add("/FlateDecode");
             if (alpha != null) {
@@ -794,20 +735,16 @@ public class Image : IDrawable {
         objNumber = obj.number;
     }
 
-
     public void ResizeToFit(Page page, bool keepAspectRatio) {
         if (keepAspectRatio) {
             this.ScaleBy(Math.Min((page.width - x)/w, (page.height - y)/h));
-        }
-        else {
+        } else {
             this.ScaleBy((page.width - x)/w, (page.height - y)/h);
         }
     }
 
-
     public void FlipUpsideDown(bool flipUpsideDown) {
         this.flipUpsideDown = flipUpsideDown;
     }
-
 }   // End of Image.cs
 }   // End of namespace PDFjet.NET

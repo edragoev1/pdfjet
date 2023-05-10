@@ -80,7 +80,7 @@ class Example_37 {
             // image.FlipUpsideDown(true);
             // image.SetLocation(0f, -image.GetHeight());
 
-            // image.SetRotate(ClockWise._180_degrees);
+            // image.RotateClockwise(180);
             // image.SetLocation(0f, 0f);
 
             image.DrawOn(page);

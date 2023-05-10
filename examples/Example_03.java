@@ -52,13 +52,11 @@ public class Example_03 {
 
         image2.setLocation(260f, point[1] + f1.getDescent());
         image2.scaleBy(0.5f);
-        image2.setRotate(ClockWise._90_degrees);
-        // image2.setRotate(ClockWise._180_degrees);
-        // image2.setRotate(ClockWise._270_degrees);
+        image2.rotateClockwise(90);
         image2.drawOn(page);
 
         image2.setLocation(350f, point[1] + f1.getDescent());
-        image2.setRotate(ClockWise.degrees_0);
+        image2.rotateClockwise(0);
         image2.scaleBy(0.5f);
         image2.drawOn(page);
 

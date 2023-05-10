@@ -38,11 +38,11 @@ public class Example_36 {
 
         image2.setLocation(xy4[0] + 10f, xy3[1] + 10f);
         image2.scaleBy(0.5f);
-        image2.setRotateCW90(true);
+        image2.rotateClockwise(90);
         float[] xy5 = image2.drawOn(page1);
 
         image2.setLocation(xy5[0] + 10f, xy3[1] + 10f);
-        image2.setRotateCW90(false);
+        image2.rotateClockwise(0);
         image2.scaleBy(0.5f);
         float[] xy6 = image2.drawOn(page1);
 

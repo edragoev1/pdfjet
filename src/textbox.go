@@ -29,7 +29,6 @@ import (
 
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/border"
-	"github.com/edragoev1/pdfjet/src/clockwise"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/direction"
 )
@@ -579,7 +578,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				yText += textBox.font.ascent
 			}
 		} else {
-			yText = textBox.y + textBox.margin + textBox.font.ascent
+			yText = textBox.x + textBox.margin + textBox.font.ascent
 		}
 		for _, line := range lines {
 			if textBox.textDirection == direction.LeftToRight {
@@ -591,7 +590,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 					xText = textBox.x + (textBox.width-textBox.font.StringWidth(textBox.fallbackFont, line))/2
 				}
 			} else {
-				xText = textBox.x + textBox.margin
+				xText = textBox.y + textBox.margin
 			}
 			if page != nil {
 				textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.brush, textBox.colors)
@@ -641,19 +640,19 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	}
 	if page != nil {
 		textBox.drawBorders(page)
-	}
-	if textBox.textDirection == direction.LeftToRight &&
-		page != nil && (textBox.uri != nil || textBox.key != nil) {
-		page.AddAnnotation(NewAnnotation(
-			textBox.uri,
-			textBox.key, // The destination name
-			textBox.x,
-			textBox.y,
-			textBox.x+textBox.width,
-			textBox.y+textBox.height,
-			textBox.uriLanguage,
-			textBox.uriActualText,
-			textBox.uriAltDescription))
+		if textBox.textDirection == direction.LeftToRight && (textBox.uri != nil || textBox.key != nil) {
+			page.AddAnnotation(NewAnnotation(
+				textBox.uri,
+				textBox.key, // The destination name
+				textBox.x,
+				textBox.y,
+				textBox.x+textBox.width,
+				textBox.y+textBox.height,
+				textBox.uriLanguage,
+				textBox.uriActualText,
+				textBox.uriAltDescription))
+		}
+		page.SetTextDirection(0)
 	}
 	return [2]float32{textBox.x + textBox.width, textBox.y + textBox.height}
 }
@@ -671,10 +670,10 @@ func (textBox *TextBox) DrawText(
 	if textBox.textDirection == direction.LeftToRight {
 		page.DrawStringUsingColorMap(font, fallbackFont, text, xText, yText, brush, colors)
 	} else if textBox.textDirection == direction.BottomToTop {
-		page.SetTextDirection(clockwise.NinetyDegrees)
+		page.SetTextDirection(90)
 		page.DrawStringUsingColorMap(font, fallbackFont, text, yText, xText+textBox.height, textBox.brush, colors)
 	} else if textBox.textDirection == direction.TopToBottom {
-		page.SetTextDirection(clockwise.TwoSeventyDegrees)
+		page.SetTextDirection(270)
 		page.DrawStringUsingColorMap(font, fallbackFont, text,
 			(yText+textBox.width)-(textBox.margin+2*font.ascent), xText, textBox.brush, colors)
 	}

@@ -35,7 +35,6 @@ import java.util.*;
  *  The size of the pages are represented in points.
  *  1 point is 1/72 inches.
  *  </pre>
- *
  */
 public class Page {
     protected PDF pdf;
@@ -714,6 +713,10 @@ public class Page {
             append(penWidth);
             append(" w\n");
         }
+    }
+
+    public float getPenWidth() {
+        return penWidth;
     }
 
     /**

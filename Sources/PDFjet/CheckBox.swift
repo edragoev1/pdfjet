@@ -22,16 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 ///
 /// Creates a CheckBox, which can be set checked or unchecked.
 /// By default the check box is unchecked.
 ///
 /// Portions of the code was provided by Shirley C. Christenson
 /// Shirley Christenson Consulting
-
 public class CheckBox : Drawable {
-
     private var x: Float = 0.0
     private var y: Float = 0.0
     private var w: Float = 0.0
@@ -49,7 +46,6 @@ public class CheckBox : Drawable {
     private var altDescription: String = Single.space
     private var actualText: String = Single.space
 
-
     ///
     /// Creates a CheckBox with black check mark.
     ///
@@ -57,7 +53,6 @@ public class CheckBox : Drawable {
         self.font = font
         self.label = label
     }
-
 
     ///
     /// Sets the font size to use for this text line.
@@ -71,7 +66,6 @@ public class CheckBox : Drawable {
         return self
     }
 
-
     ///
     /// Sets the color of the check box.
     ///
@@ -83,7 +77,6 @@ public class CheckBox : Drawable {
         self.boxColor = boxColor
         return self
     }
-
 
     ///
     /// Sets the color of the check mark.
@@ -97,11 +90,9 @@ public class CheckBox : Drawable {
         return self
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Set the x,y location on the Page.
@@ -117,7 +108,6 @@ public class CheckBox : Drawable {
         return self
     }
 
-
     ///
     /// Gets the height of the CheckBox.
     ///
@@ -125,14 +115,12 @@ public class CheckBox : Drawable {
         return self.h
     }
 
-
     ///
     /// Gets the width of the CheckBox.
     ///
     public func getWidth() -> Float {
         return self.w
     }
-
 
     ///
     /// Checks or unchecks this check box. See the Mark class for available options.
@@ -144,7 +132,6 @@ public class CheckBox : Drawable {
         self.mark = mark
         return self
     }
-
 
     ///
     /// Sets the URI for the "click text line" action.
@@ -158,7 +145,6 @@ public class CheckBox : Drawable {
         return self
     }
 
-
     ///
     /// Sets the alternate description of this check box.
     ///
@@ -170,7 +156,6 @@ public class CheckBox : Drawable {
         self.altDescription = altDescription
         return self
     }
-
 
     ///
     /// Sets the actual text for this check box.
@@ -184,6 +169,15 @@ public class CheckBox : Drawable {
         return self
     }
 
+    public static func xMark(_ page: Page, _ x: Float, _ y: Float, _ size: Float) {
+        page.setPenColor(Color.blue);
+        page.setPenWidth(size / 5);
+        page.moveTo(x, y);
+        page.lineTo(x + size, y + size);
+        page.moveTo(x, y + size);
+        page.lineTo(x + size, y);
+        page.strokePath();
+    }
 
     ///
     /// Draws this CheckBox on the specified Page.
@@ -192,7 +186,6 @@ public class CheckBox : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-
         page!.addBMC(StructElem.P, language, actualText, altDescription)
 
         self.w = self.font.getAscent()
@@ -232,10 +225,9 @@ public class CheckBox : Drawable {
         page!.setPenWidth(0.0)
         page!.setPenColor(Color.black)
         page!.setBrushColor(Color.black)
-
         page!.addEMC()
 
-        if uri != nil {
+        if uri != nil {     // TODO: BMC and EMC here!
             page!.addAnnotation(Annotation(
                     uri,
                     nil,
@@ -250,5 +242,4 @@ public class CheckBox : Drawable {
 
         return [x + 3.0*w + font.stringWidth(label), y + font.bodyHeight]
     }
-
 }   // End of CheckBox.swift

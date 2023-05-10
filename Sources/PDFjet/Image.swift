@@ -56,6 +56,10 @@ public class Image : Drawable {
         case write
     }
 
+    enum ImageError: Error {
+        case rotation(String)
+    }
+
     ///
     /// The main constructor for the Image class.
     ///
@@ -306,28 +310,15 @@ public class Image : Drawable {
     }
 
     ///
-    /// Sets the rotate90 flag.
-    /// When the flag is true the image is rotated 90 degrees clockwise.
-    ///
-    /// @param rotate90 the flag.
-    ///
-    @discardableResult
-    public func setRotateCW90(_ rotate90: Bool) -> Image {
-        if rotate90 {
-            self.degrees = 90
-        } else {
-            self.degrees = 0
-        }
-        return self
-    }
-
-    ///
     /// Sets the image rotation to the specified number of degrees.
     ///
     /// @param degrees the number of degrees.
     ///
     @discardableResult
-    public func setRotate(_ degrees: Int) -> Image {
+    public func rotateClockwise(_ degrees: Int) throws -> Image {
+        if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
+            throw ImageError.rotation("The rotation angle must be 0, 90, 180 or 270")
+        }
         self.degrees = degrees
         return self
     }

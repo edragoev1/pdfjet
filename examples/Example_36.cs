@@ -39,11 +39,11 @@ public class Example_36 {
 
         image2.SetLocation(260f, 560f);
         image2.ScaleBy(0.5f);
-        image2.SetRotateCW90(true);
+        image2.RotateClockwise(90);
         image2.DrawOn(page1);
 
         image2.SetLocation(350f, 560f);
-        image2.SetRotateCW90(false);
+        image2.RotateClockwise(0);
         image2.ScaleBy(0.5f);
         image2.DrawOn(page1);
 

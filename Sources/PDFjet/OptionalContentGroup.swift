@@ -23,7 +23,6 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Container for drawable objects that can be drawn on a page as part of Optional Content Group.
 /// Please see the PDF specification and Example_30 for more details.
@@ -31,7 +30,6 @@ import Foundation
 ///  @author Mark Paxton
 ///
 public class OptionalContentGroup {
-
     var name: String?
     var ocgNumber = 0
     var objNumber = 0
@@ -40,7 +38,6 @@ public class OptionalContentGroup {
     var exportable: Bool?
 
     private var components = [Drawable]()
-
 
     public init(_ name: String) {
         self.name = name
@@ -64,34 +61,34 @@ public class OptionalContentGroup {
 
     public func drawOn(_ page: Page) {
         if !components.isEmpty {
-            page.pdf!.groups.append(self)
-            ocgNumber = page.pdf!.groups.count
+            page.pdf.groups.append(self)
+            ocgNumber = page.pdf.groups.count
 
-            page.pdf!.newobj()
-            page.pdf!.append("<<\n")
-            page.pdf!.append("/Type /OCG\n")
-            page.pdf!.append("/Name (" + name! + ")\n")
-            page.pdf!.append("/Usage <<\n")
+            page.pdf.newobj()
+            page.pdf.append("<<\n")
+            page.pdf.append("/Type /OCG\n")
+            page.pdf.append("/Name (" + name! + ")\n")
+            page.pdf.append("/Usage <<\n")
             if visible != nil {
-                page.pdf!.append("/View << /ViewState /ON >>\n")
+                page.pdf.append("/View << /ViewState /ON >>\n")
             } else {
-                page.pdf!.append("/View << /ViewState /OFF >>\n")
+                page.pdf.append("/View << /ViewState /OFF >>\n")
             }
             if printable != nil {
-                page.pdf!.append("/Print << /PrintState /ON >>\n")
+                page.pdf.append("/Print << /PrintState /ON >>\n")
             } else {
-                page.pdf!.append("/Print << /PrintState /OFF >>\n")
+                page.pdf.append("/Print << /PrintState /OFF >>\n")
             }
             if exportable != nil {
-                page.pdf!.append("/Export << /ExportState /ON >>\n")
+                page.pdf.append("/Export << /ExportState /ON >>\n")
             } else {
-                page.pdf!.append("/Export << /ExportState /OFF >>\n")
+                page.pdf.append("/Export << /ExportState /OFF >>\n")
             }
-            page.pdf!.append(">>\n")
-            page.pdf!.append(">>\n")
-            page.pdf!.endobj()
+            page.pdf.append(">>\n")
+            page.pdf.append(">>\n")
+            page.pdf.endobj()
 
-            objNumber = page.pdf!.getObjNumber()
+            objNumber = page.pdf.getObjNumber()
 
             page.append("/OC /OC")
             page.append(ocgNumber)
@@ -102,5 +99,4 @@ public class OptionalContentGroup {
             page.append("\nEMC\n")
         }
     }
-
 }   // End of OptionalContentGroup.swift

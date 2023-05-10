@@ -68,7 +68,7 @@ class Example_37 {
             // image.flipUpsideDown(true);
             // image.setLocation(0f, -image.getHeight());
 
-            // image.setRotate(ClockWise._180_degrees);
+            // image.rotateClockwise(180);
             // image.setLocation(0f, 0f);
 
             image.drawOn(page);

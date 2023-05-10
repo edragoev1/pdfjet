@@ -40,7 +40,7 @@ public class Example_33 {
         image.SetLocation(xy[0], 670);
         xy = image.DrawOn(page);
 
-        image = new SVGImage("images/svg-test/test-QQ.svg");
+        image = new SVGImage("images/svg-test/test-QQ1.svg");
         image.SetLocation(xy[0], 670);
         xy = image.DrawOn(page);
 

@@ -635,7 +635,7 @@ public class TextBox implements Drawable {
     /**
      * Sets the vertical alignment of the text in this TextBox.
      *
-     * @param alignment - valid values areAlign.TOP, Align.BOTTOM and Align.CENTER
+     * @param alignment - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
      */
     public void setVerticalAlignment(int alignment) {
         this.valign = alignment;
@@ -801,7 +801,6 @@ public class TextBox implements Drawable {
     public float[] drawOn(Page page) {
         String[] lines = getTextLines();
         float leading = font.ascent + font.descent + spacing;
-
         if (height > 0f) { // TextBox with fixed height
             if ((lines.length*leading - spacing) > (height - 2*margin)) {
                 List<String> list = new ArrayList<String>();
@@ -830,7 +829,6 @@ public class TextBox implements Drawable {
                 page.setBrushColor(this.brush);
                 page.setPenWidth(this.font.underlineThickness);
             }
-
             float xText = x + margin;
             float yText = y + margin + font.ascent;
             if (textDirection == Direction.LEFT_TO_RIGHT) {
@@ -844,7 +842,7 @@ public class TextBox implements Drawable {
                     yText += font.ascent;
                 }
             } else {
-                yText = y + margin + font.ascent;
+                yText = x + margin + font.ascent;
             }
             for (String line : lines) {
                 if (textDirection == Direction.LEFT_TO_RIGHT) {
@@ -856,7 +854,7 @@ public class TextBox implements Drawable {
                         xText = x + (width - font.stringWidth(fallbackFont, line))/2;
                     }
                 } else {
-                    xText = x + margin;
+                    xText = y + margin;
                 }
                 if (page != null) {
                     drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
@@ -908,19 +906,19 @@ public class TextBox implements Drawable {
         }
         if (page != null) {
             drawBorders(page);
-        }
-        if (textDirection == Direction.LEFT_TO_RIGHT &&
-                page != null && (uri != null || key != null)) {
-            page.addAnnotation(new Annotation(
-                    uri,
-                    key,    // The destination name
-                    x,
-                    y,
-                    x + width,
-                    y + height,
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription));
+            if (textDirection == Direction.LEFT_TO_RIGHT && (uri != null || key != null)) {
+                page.addAnnotation(new Annotation(
+                        uri,
+                        key,    // The destination name
+                        x,
+                        y,
+                        x + width,
+                        y + height,
+                        uriLanguage,
+                        uriActualText,
+                        uriAltDescription));
+            }
+            page.setTextDirection(0);
         }
         return new float[] { x + width, y + height };
     }
@@ -938,10 +936,10 @@ public class TextBox implements Drawable {
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page.drawString(font, fallbackFont, text, xText, yText, color, colors);
         } else if (textDirection == Direction.BOTTOM_TO_TOP) {
-            page.setTextDirection(ClockWise._90_degrees);
+            page.setTextDirection(90);
             page.drawString(font, fallbackFont, text, yText, xText + height, color, colors);
         } else if (textDirection == Direction.TOP_TO_BOTTOM) {
-            page.setTextDirection(ClockWise._270_degrees);
+            page.setTextDirection(270);
             page.drawString(font, fallbackFont, text,
                     (yText + width) - (margin + 2*font.ascent), xText, color, colors);
         }

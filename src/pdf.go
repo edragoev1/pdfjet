@@ -116,7 +116,7 @@ func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
 	pdf.compliance = pdfCompliance
-	pdf.producer = "PDFjet v7.07.0"
+	pdf.producer = "PDFjet v7.07.3"
 	pdf.creator = pdf.producer
 	pdf.language = "en-US"
 
@@ -274,19 +274,18 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	sb.WriteString("<?xpacket end=\"w\"?>")
 
 	xml := []byte(sb.String())
-
 	// This is the metadata object
 	pdf.newobj()
-	pdf.appendString("<<\n")
+	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Metadata\n")
 	pdf.appendString("/Subtype /XML\n")
-	pdf.appendString("/Length ")
+	pdf.appendByteArray(token.Length)
 	pdf.appendInteger(len(xml))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
+	pdf.appendByteArray(token.Newline)
+	pdf.appendByteArray(token.EndDictionary)
+	pdf.appendByteArray(token.Stream)
 	pdf.appendByteArray(xml)
-	pdf.appendString("\nendstream\n")
+	pdf.appendByteArray(token.Endstream)
 	pdf.endobj()
 
 	return pdf.getObjNumber()
@@ -294,23 +293,23 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 
 func (pdf *PDF) addOutputIntentObject() int {
 	pdf.newobj()
-	pdf.appendString("<<\n")
+	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/N 3\n")
 
-	pdf.appendString("/Length ")
+	pdf.appendByteArray(token.Length)
 	pdf.appendInteger(len(ICCBlackScaledProfile))
-	pdf.appendString("\n")
+	pdf.appendByteArray(token.Newline)
 
 	pdf.appendString("/Filter /FlateDecode\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
+	pdf.appendByteArray(token.EndDictionary)
+	pdf.appendByteArray(token.Stream)
 	pdf.appendByteArray(ICCBlackScaledProfile)
-	pdf.appendString("\nendstream\n")
+	pdf.appendByteArray(token.Endstream)
 	pdf.endobj()
 
 	// OutputIntent object
 	pdf.newobj()
-	pdf.appendString("<<\n")
+	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /OutputIntent\n")
 	pdf.appendString("/S /GTS_PDFA1\n")
 	pdf.appendString("/OutputCondition (sRGB IEC61966-2.1)\n")
@@ -318,8 +317,8 @@ func (pdf *PDF) addOutputIntentObject() int {
 	pdf.appendString("/Info (sRGB IEC61966-2.1)\n")
 	pdf.appendString("/DestOutputProfile ")
 	pdf.appendInteger(pdf.getObjNumber() - 1)
-	pdf.appendString(" 0 R\n")
-	pdf.appendString(">>\n")
+	pdf.appendByteArray(token.ObjRef)
+	pdf.appendByteArray(token.EndDictionary)
 	pdf.endobj()
 
 	return pdf.getObjNumber()
@@ -381,9 +380,9 @@ func (pdf *PDF) addResourcesObject() int {
 		for key, value := range pdf.states {
 			pdf.appendString("/GS")
 			pdf.appendInteger(value)
-			pdf.appendString(" << ")
+			pdf.appendString(" <<")
 			pdf.appendString(key)
-			pdf.appendString(" >>\n")
+			pdf.appendByteArray(token.EndDictionary)
 		}
 		pdf.appendByteArray(token.EndDictionary)
 	}
@@ -1793,7 +1792,7 @@ func (pdf *PDF) appendInteger(value int) {
 }
 
 func (pdf *PDF) appendFloat32(f float32) {
-	p := []byte(strconv.FormatFloat(float64(f), 'f', 2, 32))
+	p := formatFloat32(f)
 	pdf.writer.Write(p)
 	pdf.byteCount += len(p)
 }

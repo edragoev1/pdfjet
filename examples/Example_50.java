@@ -117,50 +117,40 @@ class Example_50 {
         page.drawString(f1, "2016-08-07", x + 475f, 651f);
 
         // Female Checkbox 1
-        // xMarkCheckBox(page, 477.5f, 197.5f, 7f);
+        // CheckBox.xMark(page, 477.5f, 197.5f, 7f);
 
         // Male Checkbox 1
-        xMarkCheckBox(page, 534.5f, 197.5f, 7f);
+        CheckBox.xMark(page, 534.5f, 197.5f, 7f);
 
         // Married
-        xMarkCheckBox(page, 34.5f, 424f, 7f);
+        CheckBox.xMark(page, 34.5f, 424f, 7f);
 
         // Living common-law
-        // xMarkCheckBox(page, 121.5f, 424f, 7f);
+        // CheckBox.xMark(page, 121.5f, 424f, 7f);
 
         // Widowed
-        // xMarkCheckBox(page, 235.5f, 424f, 7f);
+        // CheckBox.xMark(page, 235.5f, 424f, 7f);
 
         // Divorced
-        // xMarkCheckBox(page, 325.5f, 424f, 7f);
+        // CheckBox.xMark(page, 325.5f, 424f, 7f);
 
         // Separated
-        // xMarkCheckBox(page, 415.5f, 424f, 7f);
+        // CheckBox.xMark(page, 415.5f, 424f, 7f);
 
         // Single
-        // xMarkCheckBox(page, 505.5f, 424f, 7f);
+        // CheckBox.xMark(page, 505.5f, 424f, 7f);
 
         // Female Checkbox 2
-        xMarkCheckBox(page, 478.5f, 536.5f, 7f);
+        CheckBox.xMark(page, 478.5f, 536.5f, 7f);
 
         // Male Checkbox 2
-        // xMarkCheckBox(page, 535.5f, 536.5f, 7f);
+        // CheckBox.xMark(page, 535.5f, 536.5f, 7f);
 
         page.complete(objects);
 
         pdf.addObjects(objects);
 
         pdf.complete();
-    }
-
-    private void xMarkCheckBox(Page page, float x, float y, float diagonal) throws Exception {
-        page.setPenColor(Color.blue);
-        page.setPenWidth(diagonal / 5);
-        page.moveTo(x, y);
-        page.lineTo(x + diagonal, y + diagonal);
-        page.moveTo(x, y + diagonal);
-        page.lineTo(x + diagonal, y);
-        page.strokePath();
     }
 
     private String stripSpacesAndDashes(String str) {
@@ -176,9 +166,9 @@ class Example_50 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        // new Example_50("50", "data/testPDFs/rc65-16e.pdf");
+        new Example_50("50", "data/testPDFs/rc65-16e.pdf");
         // new Example_50("50", "data/testPDFs/NoPredictor.pdf");
-        new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
+        // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
         // new Example_50("50", "../../eBooks/PDF32000_2008.pdf");
         long time1 = System.currentTimeMillis();
         TextUtils.printDuration("Example_50", time0, time1);
