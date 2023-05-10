@@ -43,19 +43,16 @@ public class Example_03 {
                 .drawOn(page)
 
         image2.setLocation(260.0, point[1] + f1.getDescent())
-                .scaleBy(0.5)
-                .setRotate(ClockWise._90_degrees)
-                // .setRotate(ClockWise._180_degrees)
-                // .setRotate(ClockWise._270_degrees)
-                .drawOn(page)
+        image2.scaleBy(0.5)
+        try image2.rotateClockwise(90)
+        image2.drawOn(page)
 
         image2.setLocation(350.0, point[1] + f1.getDescent())
-                .setRotate(ClockWise._0_degrees)
-                .scaleBy(0.5)
-                .drawOn(page)
+        try image2.rotateClockwise(0)
+        image2.scaleBy(0.5)
+        image2.drawOn(page)
 
-        TextLine(f1,
-                "The map on the right is an embedded BMP image")
+        TextLine(f1, "The map on the right is an embedded BMP image")
                 .setUnderline(true)
                 .setVerticalOffset(3.0)
                 .setStrikeout(true)

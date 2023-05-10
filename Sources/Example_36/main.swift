@@ -36,11 +36,11 @@ public class Example_36 {
 
         image2.setLocation(260.0, 560.0)
         image2.scaleBy(0.5)
-        image2.setRotateCW90(true)
+        try image2.rotateClockwise(90)
         image2.drawOn(page1)
 
         image2.setLocation(350.0, 560.0)
-        image2.setRotateCW90(false)
+        try image2.rotateClockwise(0)
         image2.scaleBy(0.5)
         image2.drawOn(page1)
 
