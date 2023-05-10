@@ -39,11 +39,11 @@ func Example36() {
 
 	image2.SetLocation(xy4[0]+10.0, xy3[1]+10.0)
 	image2.ScaleBy(0.5)
-	image2.SetRotateCW90(true)
+	image2.RotateClockwise(90)
 	xy5 := image2.DrawOn(page1)
 
 	image2.SetLocation(xy5[0]+10.0, xy3[1]+10.0)
-	image2.SetRotateCW90(false)
+	image2.RotateClockwise(0)
 	image2.ScaleBy(0.5)
 	xy6 := image2.DrawOn(page1)
 
