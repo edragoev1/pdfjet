@@ -37,7 +37,7 @@ public class Example_33 {
         image.setLocation(xy[0], 670.0)
         xy = image.drawOn(page)
 
-        image = SVGImage(fileAtPath: "images/svg-test/test-QQ.svg")
+        image = SVGImage(fileAtPath: "images/svg-test/test-QQ1.svg")
         image.setLocation(xy[0], 670.0)
         xy = image.drawOn(page)
 

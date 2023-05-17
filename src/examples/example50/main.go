@@ -149,50 +149,38 @@ func Example50(fileName string) {
 	page.DrawString(font1, nil, "2016-08-07", x+475.0, 651.0)
 
 	// Female Checkbox 1
-	// xMarkCheckBox(page, 477.5, 197.5, 7.0)
+	// pdfjet.XMarkCheckBox(page, 477.5, 197.5, 7.0)
 
 	// Male Checkbox 1
-	xMarkCheckBox(page, 534.5, 197.5, 7.0)
+	pdfjet.XMarkCheckBox(page, 534.5, 197.5, 7.0)
 
 	// Married
-	xMarkCheckBox(page, 34.5, 424.0, 7.0)
+	pdfjet.XMarkCheckBox(page, 34.5, 424.0, 7.0)
 
 	// Living common-law
-	// xMarkCheckBox(page, 121.5, 424.0, 7.0)
+	// pdfjet.XMarkCheckBox(page, 121.5, 424.0, 7.0)
 
 	// Widowed
-	// xMarkCheckBox(page, 235.5, 424.0, 7.0)
+	// pdfjet.XMarkCheckBox(page, 235.5, 424.0, 7.0)
 
 	// Divorced
-	// xMarkCheckBox(page, 325.5, 424.0, 7.0)
+	// pdfjet.XMarkCheckBox(page, 325.5, 424.0, 7.0)
 
 	// Separated
-	// xMarkCheckBox(page, 415.5, 424.0, 7.0)
+	// pdfjet.XMarkCheckBox(page, 415.5, 424.0, 7.0)
 
 	// Single
-	// xMarkCheckBox(page, 505.5, 424.0, 7.0)
+	// pdfjet.XMarkCheckBox(page, 505.5, 424.0, 7.0)
 
 	// Female Checkbox 2
-	xMarkCheckBox(page, 478.5, 536.5, 7.0)
+	pdfjet.XMarkCheckBox(page, 478.5, 536.5, 7.0)
 
 	// Male Checkbox 2
-	// xMarkCheckBox(page, 535.5, 536.5, 7.0)
-
+	// pdfjet.XMarkCheckBox(page, 535.5, 536.5, 7.0)
 	page.Complete(&objects)
-
 	pdf.AddObjects(&objects)
 
 	pdf.Complete()
-}
-
-func xMarkCheckBox(page *pdfjet.Page, x, y, diagonal float32) {
-	page.SetPenColor(color.Blue)
-	page.SetPenWidth(diagonal / 5.0)
-	page.MoveTo(x, y)
-	page.LineTo(x+diagonal, y+diagonal)
-	page.MoveTo(x, y+diagonal)
-	page.LineTo(x+diagonal, y)
-	page.StrokePath()
 }
 
 func stripSpacesAndDashes(str string) string {

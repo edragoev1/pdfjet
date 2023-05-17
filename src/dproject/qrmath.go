@@ -24,7 +24,6 @@ type QRMath struct {
 // NewQRMath constructs QRMath object.
 func NewQRMath() *QRMath {
 	qrmath := new(QRMath)
-
 	for i := 0; i < 8; i++ {
 		qrmath.expTable[i] = 1 << i
 	}
@@ -37,7 +36,6 @@ func NewQRMath() *QRMath {
 	for i := 0; i < 255; i++ {
 		qrmath.logTable[qrmath.expTable[i]] = i
 	}
-
 	return qrmath
 }
 

@@ -22,23 +22,23 @@ func Example33() {
 	image.SetLocation(20.0, 670.0)
 	xy = image.DrawOn(page)
 
-	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-QQ.svg")
+	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-QQ1.svg")
 	image.SetLocation(xy[0], 670.0)
 	xy = image.DrawOn(page)
 
-	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-qt.svg")
+	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-qt3.svg")
 	image.SetLocation(xy[0], 670.0)
 	xy = image.DrawOn(page)
 
-	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-qT.svg")
+	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-qT4.svg")
 	image.SetLocation(xy[0], 670.0)
 	xy = image.DrawOn(page)
 
-	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-QT.svg")
+	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-QT1.svg")
 	image.SetLocation(xy[0], 670.0)
 	xy = image.DrawOn(page)
 
-	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-qq.svg")
+	image = pdfjet.NewSVGImageFromFile("images/svg-test/test-qq3.svg")
 	image.SetLocation(xy[0], 670.0)
 	xy = image.DrawOn(page)
 

@@ -25,20 +25,19 @@ public class Example_08 {
         let image1 = try Image(pdf, stream2!, ImageType.JPG)
         image1.scaleBy(0.20)
 
-        let barCode = BarCode(BarCode.CODE128, "Hello, World!")
-        barCode.setModuleLength(0.75)
+        let barcode = Barcode(Barcode.CODE128, "Hello, World!")
+        barcode.setModuleLength(0.75)
         // Uncomment the line below if you want to print the text underneath the barcode.
-        // barCode.setFont(f1)
+        // barcode.setFont(f1)
 
         let table = Table();
         let tableData = try getData(
-        		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2, image1, barCode)
+        		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2, image1, barcode)
 
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
         table.removeLineBetweenRows(0, 1)
         table.setLocation(100.0, 0.0)
-        table.setRightMargin(20.0)
-        table.setBottomMargin(0.0)
+        table.setBottomMargin(15.0)
         table.setCellBordersWidth(0.0)
         table.setTextColorInRow(12, Color.blue)
         table.setTextColorInRow(13, Color.red)
@@ -46,30 +45,13 @@ public class Example_08 {
         table.setFontInRow(14, f3)
         table.getCellAt(21, 0).setColSpan(6)
         table.getCellAt(21, 6).setColSpan(2)
-
-        // Set the column widths manually:
-        // table.setColumnWidth(0, 70f)
-        // table.setColumnWidth(1, 50f)
-        // table.setColumnWidth(2, 70f)
-        // table.setColumnWidth(3, 70f)
-        // table.setColumnWidth(4, 70f)
-        // table.setColumnWidth(5, 70f)
-        // table.setColumnWidth(6, 50f)
-        // table.setColumnWidth(7, 50f)
-
-        // Auto adjust the column widths to be just wide enough to fit the text without truncation.
-        // Columns with colspan > 1 will not be adjusted.
-        // table.autoAdjustColumnWidths()
-
-        // Auto adjust the column widths in a way that allows the table to fit perfectly on the page.
-        // Columns with colspan > 1 will not be adjusted.
-        table.fitToPage(Letter.PORTRAIT)
+        table.setColumnWidths()
 
         var pages = [Page]()
         table.drawOn(pdf, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
-            // try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
+            try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
         }
 
@@ -105,7 +87,7 @@ public class Example_08 {
             _ f1: Font,
             _ f2: Font,
             _ image: Image,
-            _ barCode: BarCode) throws -> [[Cell]] {
+            _ barcode: Barcode) throws -> [[Cell]] {
         var tableData = [[Cell]]()
 
         let tableTextData = try getTextData(fileName, delimiter)
@@ -120,9 +102,8 @@ public class Example_08 {
                     let cell = Cell(f2)
                     if i == 0 && currentRow == 5 {
                         cell.setImage(image)
-                    }
-                    if i == 0 && currentRow == 6 {
-                        cell.setBarcode(barCode)
+                    } else if i == 0 && currentRow == 6 {
+                        cell.setBarcode(barcode)
                         cell.setTextAlignment(Align.CENTER)
                         cell.setColSpan(8)
                     } else {

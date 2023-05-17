@@ -16,7 +16,7 @@ public class Example_44 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let rotate = ClockWise._0_degrees
+        let rotate = 0 // degrees
         let column = TextColumn(rotate)
         column.setLocation(70.0, 70.0)
         column.setWidth(500.0)

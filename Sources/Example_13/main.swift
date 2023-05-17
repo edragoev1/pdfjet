@@ -35,12 +35,9 @@ public class Example_13 {
         let table = Table()
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
         table.setLocation(100.0, 50.0)
-
         setFontForRow(table, 0, f1)
         setFontForRow(table, 1, f1)
-
-        table.autoAdjustColumnWidths()
-
+        table.setColumnWidths()
         table.removeLineBetweenRows(0, 1)
 
         var cell = table.getCellAt(1, 1)
@@ -65,8 +62,7 @@ public class Example_13 {
             cell.setTextAlignment(Align.CENTER)
             if Int(cell.getText()!)! > 40 {
                 cell.setBgColor(Color.darkseagreen)
-            }
-            else {
+            } else {
                 cell.setBgColor(Color.yellow)
             }
         }
@@ -100,18 +96,11 @@ public class Example_13 {
         blankOutColumn(table, 8)
 
         var pages = [Page]()
-        while table.hasMoreData() {
-            let page = Page(pdf, Letter.PORTRAIT, Page.DETACHED)
-            table.drawOn(page)
-            pages.append(page)
-        }
-
-        var i = 0
-        while i < pages.count {
+        table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        for i in 0..<pages.count {
             let page = pages[i]
             try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
-            i += 1
         }
 
         pdf.complete()

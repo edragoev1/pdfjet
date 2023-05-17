@@ -58,16 +58,13 @@ func (polynomial *Polynomial) mod(e *Polynomial) *Polynomial {
 	if polynomial.getLength()-e.getLength() < 0 {
 		return polynomial
 	}
-
 	ratio := NewQRMath().glog(polynomial.get(0)) - NewQRMath().glog(e.get(0))
 	num := make([]int, polynomial.getLength())
 	for i := 0; i < polynomial.getLength(); i++ {
 		num[i] = polynomial.get(i)
 	}
-
 	for i := 0; i < e.getLength(); i++ {
 		num[i] ^= NewQRMath().gexp(NewQRMath().glog(e.get(i)) + ratio)
 	}
-
 	return NewPolynomial(num, 0).mod(e)
 }

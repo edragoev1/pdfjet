@@ -30,7 +30,7 @@ public class Example_14 {
                 } else {
                     cell = Cell(f2)
                 }
-                cell!.setNoBorders()
+                cell!.setBorders(false)
 
                 // WITH:
                 cell!.setTopPadding(10.0)
@@ -74,11 +74,6 @@ public class Example_14 {
         table.setData(tableData)
         table.setCellBordersWidth(0.2)
         table.setLocation(70.0, 30.0)
-        table.drawOn(page)
-
-        // Must call this method before drawing the table again.
-        table.resetRenderedPagesCount()
-        table.setLocation(70.0, 200.0)
         table.drawOn(page)
 
         pdf.complete()

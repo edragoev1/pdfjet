@@ -58,7 +58,7 @@ public class Example_15 {
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
         table.setCellBordersWidth(0.2)
         table.setLocation(70.0, 30.0)
-        table.autoAdjustColumnWidths()
+        table.setColumnWidths()
         var pages = [Page]()
         let xy = table.drawOn(pdf, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {

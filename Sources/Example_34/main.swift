@@ -47,20 +47,17 @@ public class Example_34 {
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
         tableData[6][3].setPoint(p1)
 
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
         table.setBottomMargin(15.0)
-        // table.setCellBordersWidth(1.2)
         table.setCellBordersWidth(0.2)
-        table.setLocation(70.0, 30.0);
+        table.setLocation(70.0, 30.0)
         table.setTextColorInRow(6, Color.blue)
         table.setTextColorInRow(39, Color.red)
         table.setFontInRow(26, f3)
         table.removeLineBetweenRows(0, 1)
-        table.autoAdjustColumnWidths()
-        // table.setColumnWidth(0, 120f)
-        table.setColumnWidth(0, 50.0);
-        table.wrapAroundCellText();
-        table.rightAlignNumbers();
+        table.setColumnWidths()
+        table.setColumnWidth(0, 50.0)
+        table.rightAlignNumbers()
 
         var pages = [Page]()
         table.drawOn(pdf, &pages, Letter.PORTRAIT)

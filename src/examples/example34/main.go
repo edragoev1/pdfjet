@@ -70,8 +70,8 @@ func Example34() {
 	table.SetTextColorInRow(39, color.Red)
 	table.SetFontInRow(26, f3)
 	table.RemoveLineBetweenRows(0, 1)
-	table.AutoAdjustColumnWidths()
-	table.SetColumnWidth(0, 120.0)
+	table.SetColumnWidths()
+	table.SetColumnWidth(0, 50.0)
 	table.RightAlignNumbers()
 
 	pages := make([]*pdfjet.Page, 0)

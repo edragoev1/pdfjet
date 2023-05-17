@@ -24,7 +24,7 @@ func Example12() {
 		buf.WriteString("\r\n") // CR and LF are both required!
 	}
 
-	code2D := pdfjet.NewBarCode2D(buf.String())
+	code2D := pdfjet.NewBarcode2D(buf.String())
 	code2D.SetModuleWidth(0.5)
 	code2D.SetLocation(100.0, 60.0)
 	code2D.DrawOn(page)

@@ -10,6 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/direction"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -45,10 +46,11 @@ func Example16() {
 	f1.SetSize(14.0)
 	textBox := pdfjet.NewTextBox(f1)
 	textBox.SetText(string(buf))
-	textBox.SetLocation(50.0, 50.0)
+	textBox.SetLocation(100.0, 50.0)
 	textBox.SetWidth(400.0)
 	// If no height is specified the height will be calculated based on the text.
-	// textBox.SetHeight(400.0)
+	textBox.SetHeight(450.0)
+	textBox.SetTextDirection(direction.TopToBottom)
 	// textBox.SetVerticalAlignment(align.Top)
 	// textBox.SetVerticalAlignment(align.Bottom)
 	// textBox.SetVerticalAlignment(align.Center)

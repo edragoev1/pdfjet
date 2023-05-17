@@ -130,52 +130,38 @@ public class Example_50 {
         page.drawString(f1, "2016-08-07", x + Float(475.0), 651.0)
 
         // Female Checkbox 1
-        // xMarkCheckBox(page, 477.5, 197.5, 7.0)
+        // CheckBox.xMark(page, 477.5, 197.5, 7.0)
 
         // Male Checkbox 1
-        xMarkCheckBox(page, 534.5, 197.5, 7.0)
+        CheckBox.xMark(page, 534.5, 197.5, 7.0)
 
         // Married
-        xMarkCheckBox(page, 34.5, 424.0, 7.0)
+        CheckBox.xMark(page, 34.5, 424.0, 7.0)
 
         // Living common-law
-        // xMarkCheckBox(page, 121.5, 424.0, 7.0)
+        // CheckBox.xMark(page, 121.5, 424.0, 7.0)
 
         // Widowed
-        // xMarkCheckBox(page, 235.5, 424.0, 7.0)
+        // CheckBox.xMark(page, 235.5, 424.0, 7.0)
 
         // Divorced
-        // xMarkCheckBox(page, 325.5, 424.0, 7.0)
+        // CheckBox.xMark(page, 325.5, 424.0, 7.0)
 
         // Separated
-        // xMarkCheckBox(page, 415.5, 424.0, 7.0)
+        // CheckBox.xMark(page, 415.5, 424.0, 7.0)
 
         // Single
-        // xMarkCheckBox(page, 505.5, 424.0, 7.0)
+        // CheckBox.xMark(page, 505.5, 424.0, 7.0)
 
         // Female Checkbox 2
-        xMarkCheckBox(page, 478.5, 536.5, 7.0)
+        CheckBox.xMark(page, 478.5, 536.5, 7.0)
 
         // Male Checkbox 2
-        // xMarkCheckBox(page, 535.5, 536.5, 7.0)
+        // CheckBox.xMark(page, 535.5, 536.5, 7.0)
         page.complete(&objects)
         pdf.addObjects(&objects)
 
         pdf.complete()
-    }
-
-    private func xMarkCheckBox(
-            _ page: Page,
-            _ x: Float,
-            _ y: Float,
-            _ diagonal: Float) {
-        page.setPenColor(Color.blue)
-        page.setPenWidth(diagonal / 5)
-        page.moveTo(x, y)
-        page.lineTo(x + diagonal, y + diagonal)
-        page.moveTo(x, y + diagonal)
-        page.lineTo(x + diagonal, y)
-        page.strokePath()
     }
 
     private func stripSpacesAndDashes(_ str: String) -> String {

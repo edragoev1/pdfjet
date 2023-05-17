@@ -29,7 +29,7 @@ public class Example_10 {
         image1.scaleBy(0.75)
         image1.drawOn(page)
 
-        let rotate = ClockWise._0_degrees
+        let rotate = 0  // degrees
         let column = TextColumn(rotate)
         column.setSpaceBetweenLines(5.0)
         column.setSpaceBetweenParagraphs(10.0)
@@ -116,23 +116,20 @@ public class Example_10 {
         column.addParagraph(p5)
         column.addParagraph(p6)
 
-        if rotate == ClockWise._0_degrees {
+        if rotate == 0 {
             column.setLocation(90.0, 300.0)
-        } else if rotate == ClockWise._90_degrees {
-            column.setLocation(90.0, 780.0)
-        } else if rotate == ClockWise._270_degrees {
-            column.setLocation(550.0, 310.0)
         }
+        // else if rotate == 90 {
+        //     column.setLocation(90.0, 780.0)
+        // } else if rotate == 270 {
+        //     column.setLocation(550.0, 310.0)
+        // }
 
         let columnWidth: Float = 470.0
         column.setSize(columnWidth, 100.0)
         let xy = column.drawOn(page)
-        if rotate == ClockWise._0_degrees {
-            Line(
-                    xy[0],
-                    xy[1],
-                    xy[0] + columnWidth,
-                    xy[1]).drawOn(page)
+        if rotate == 0 {
+            Line(xy[0], xy[1], xy[0] + columnWidth, xy[1]).drawOn(page)
         }
 
         pdf.complete()

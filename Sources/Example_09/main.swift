@@ -12,14 +12,8 @@ public class Example_09 {
         // let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
         // let f2 = Font(pdf, CoreFont.HELVETICA)
 
-        let f1 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Bold.ttf.stream")!,
-                Font.STREAM)
-        let f2 = try Font(
-                pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
-                Font.STREAM)
+        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
+        let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 
         f1.setSize(8.0)
         f2.setSize(8.0)
@@ -135,7 +129,7 @@ public func addTableToChart(
         }
     }
     table.setData(tableData)
-    table.autoAdjustColumnWidths()
+    table.setColumnWidths()
     table.setCellBordersWidth(0.2)
     table.setLocation(70.0, 360.0)
     table.setColumnWidth(0, 9.0)
@@ -157,8 +151,7 @@ public func getData(
         var cols: [String]?
         if delimiter == "|" {
             cols = line.components(separatedBy: "|")
-        }
-        else if delimiter == "\t" {
+        } else if delimiter == "\t" {
             cols = line.components(separatedBy: "\t")
         } else {
             // TODO:

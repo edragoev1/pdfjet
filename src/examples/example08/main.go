@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -33,19 +34,18 @@ func Example08() {
 	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
 	image1.ScaleBy(0.20)
 
-	barCode := pdfjet.NewBarCode(pdfjet.CODE128, "Hello, World!")
-	barCode.SetModuleLength(0.75)
+	barcode := pdfjet.NewBarcode(pdfjet.CODE128, "Hello, World!")
+	barcode.SetModuleLength(0.75)
 	// Uncomment the line below if you want to print the text underneath the barcode.
-	// barCode.SetFont(f1);
+	// barcode.SetFont(f1);
 
 	table := pdfjet.NewTable()
 	tableData := getData(
-		"data/world-communications.txt", "|", pdfjet.TableWith2HeaderRows, f1, f2, image1, barCode)
+		"data/world-communications.txt", "|", pdfjet.TableWith2HeaderRows, f1, f2, image1, barcode)
 	table.SetData(tableData, pdfjet.TableWith2HeaderRows)
 	table.RemoveLineBetweenRows(0, 1)
 	table.SetLocation(100.0, 0.0)
-	table.SetRightMargin(20.0)
-	table.SetBottomMargin(0.0)
+	table.SetBottomMargin(15.0)
 	table.SetCellBordersWidth(0.0)
 	table.SetTextColorInRow(12, color.Blue)
 	table.SetTextColorInRow(13, color.Red)
@@ -53,30 +53,13 @@ func Example08() {
 	table.SetFontInRow(14, f3)
 	table.GetCellAt(21, 0).SetColSpan(6)
 	table.GetCellAt(21, 6).SetColSpan(2)
-
-	// Set the column widths manually:
-	// table.SetColumnWidth(0, 70f);
-	// table.SetColumnWidth(1, 50f);
-	// table.SetColumnWidth(2, 70f);
-	// table.SetColumnWidth(3, 70f);
-	// table.SetColumnWidth(4, 70f);
-	// table.SetColumnWidth(5, 70f);
-	// table.SetColumnWidth(6, 50f);
-	// table.SetColumnWidth(7, 50f);
-
-	// Auto adjust the column widths to be just wide enough to fit the text without truncation.
-	// Columns with colspan > 1 will not be adjusted.
-	// table.AutoAdjustColumnWidths();
-
-	// Auto adjust the column widths in a way that allows the table to fit perfectly on the page.
-	// Columns with colspan > 1 will not be adjusted.
-	table.FitToPage(letter.Portrait)
+	table.SetColumnWidths()
 
 	pages := make([]*pdfjet.Page, 0)
 	table.DrawOnPages(pdf, &pages, letter.Portrait)
 	for i := 0; i < len(pages); i++ {
 		page := pages[i]
-		// page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + len(pages)))
+		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+1)+" of "+fmt.Sprint(len(pages))))
 		pdf.AddPage(page)
 	}
 
@@ -113,7 +96,7 @@ func getData(
 	f1 *pdfjet.Font,
 	f2 *pdfjet.Font,
 	image *pdfjet.Image,
-	barCode *pdfjet.BarCode) [][]*pdfjet.Cell {
+	barcode *pdfjet.Barcode) [][]*pdfjet.Cell {
 	tableData := make([][]*pdfjet.Cell, 0)
 
 	tableTextData := getTextData(fileName, delimiter)
@@ -129,9 +112,8 @@ func getData(
 				cell = pdfjet.NewCell(f2, "")
 				if i == 0 && currentRow == 5 {
 					cell.SetImage(image)
-				}
-				if i == 0 && currentRow == 6 {
-					cell.SetBarcode(barCode)
+				} else if i == 0 && currentRow == 6 {
+					cell.SetBarcode(barcode)
 					cell.SetTextAlignment(align.Center)
 					cell.SetColSpan(8)
 				} else {

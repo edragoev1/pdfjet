@@ -14,7 +14,6 @@ public class Example_38 {
         table.setData(createTableData(font))
         table.setBottomMargin(10.0)
         table.setLocation(50.0, 50.0)
-        table.mergeOverlaidBorders()
         table.drawOn(page)
 
         pdf.complete()
@@ -105,8 +104,7 @@ public class Example_38 {
                 row.append(getCell(font, 1,    "", true, false))
                 row.append(getCell(font, 2, "2x1", true, true))
                 row.append(getCell(font, 1,    "", true, false))
-            }
-            else if i == 1 {
+            } else if i == 1 {
                 row.append(getCell(font, 2,   "^", false, true))
                 row.append(getCell(font, 1,    "", true,  true))
                 row.append(getCell(font, 2, "2x2", true,  false))
@@ -117,8 +115,7 @@ public class Example_38 {
                 row.append(getCell(font, 1,    "", true,  true))
                 row.append(getCell(font, 1,    "", true,  true))
                 row.append(getCell(font, 1,    "", true,  true))
-            }
-            else if i == 2 {
+            } else if i == 2 {
                 row.append(getCell(font, 1, "1x2", true,  false))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 2,   "^", false, true))
@@ -129,8 +126,7 @@ public class Example_38 {
                 row.append(getCell(font, 1,    "", true,  true))
                 row.append(getCell(font, 1,    "", true,  true))
                 row.append(getCell(font, 1, "1x1", true,  true))
-            }
-            else if i == 3 {
+            } else if i == 3 {
                 row.append(getCell(font, 1,   "^", false, true))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1, "1x3", true,  false))
@@ -141,8 +137,7 @@ public class Example_38 {
                 row.append(getCell(font, 2, "2x1", true,  true))
                 row.append(getCell(font, 1,    "", true,  false))
                 row.append(getCell(font, 1, "1x2", true,  false))
-            }
-            else if i == 4 {
+            } else if i == 4 {
                 row.append(getCell(font, 1, "1x2", true,  false))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1,   "^", false, false))
@@ -153,8 +148,7 @@ public class Example_38 {
                 row.append(getCell(font, 1,    "", false, true))
                 row.append(getCell(font, 1,    "", false, true))
                 row.append(getCell(font, 1,   "^", false, true))
-            }
-            else if i == 5 {
+            } else if i == 5 {
                 row.append(getCell(font, 1,   "^", false, true))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1,   "^", false, true))
@@ -165,8 +159,7 @@ public class Example_38 {
                 row.append(getCell(font, 1,    "", false, false))
                 row.append(getCell(font, 1,    "", false, false))
                 row.append(getCell(font, 1, "1x3", true,  false))
-            }
-            else if i == 6 {
+            } else if i == 6 {
                 row.append(getCell(font, 1, "1x2", true,  false))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1, "1x4", true,  false))
@@ -177,8 +170,7 @@ public class Example_38 {
                 row.append(getCell(font, 1,    "", false, false))
                 row.append(getCell(font, 1,    "", false, false))
                 row.append(getCell(font, 1,   "^", false, false))
-            }
-            else if i == 7 {
+            } else if i == 7 {
                 row.append(getCell(font, 1,   "^", false, true))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1,   "^", false, false))
@@ -189,8 +181,7 @@ public class Example_38 {
                 row.append(getCell(font, 1,    "", false, true))
                 row.append(getCell(font, 1,    "", false, true))
                 row.append(getCell(font, 1,   "^", false, true))
-            }
-            else if i == 8 {
+            } else if i == 8 {
                 row.append(getCell(font, 1, "1x2", true,  false))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1,   "^", false, false))
@@ -201,8 +192,7 @@ public class Example_38 {
                 row.append(getCell(font, 1, "1x2", true,  false))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1, "1x1", true,  true))
-            }
-            else if i == 9 {
+            } else if i == 9 {
                 row.append(getCell(font, 1,   "^", false, true))
                 row.append(getCell(font, 1, "1x1", true,  true))
                 row.append(getCell(font, 1,   "^", false, true))

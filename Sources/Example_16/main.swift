@@ -2,7 +2,7 @@ import Foundation
 import PDFjet
 
 /**
- *  Example_16.java
+ *  Example_16.swift
  *
  */
 public class Example_16 {
@@ -34,10 +34,13 @@ public class Example_16 {
 
         f1.setSize(14.0)
         let textBox = TextBox(f1, latinText)
-        textBox.setLocation(50.0, 50.0)
+        textBox.setLocation(100.0, 50.0)
         textBox.setWidth(400.0)
         // If no height is specified the height will be calculated based on the text.
-        // textBox.setHeight(400.0)
+        textBox.setHeight(450.0)
+
+        textBox.setTextDirection(Direction.TOP_TO_BOTTOM)
+        // textBox.setTextDirection(Direction.BOTTOM_TO_TOP)
         // textBox.setVerticalAlignment(Align.TOP)
         // textBox.setVerticalAlignment(Align.BOTTOM)
         // textBox.setVerticalAlignment(Align.CENTER)
