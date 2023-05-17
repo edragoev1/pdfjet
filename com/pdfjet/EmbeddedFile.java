@@ -61,17 +61,17 @@ public class EmbeddedFile {
         if (compress) {
             pdf.append("/Filter /FlateDecode\n");
         }
-        pdf.append("/Length ");
+        pdf.append(Token.length);
         pdf.append(buf.length);
-        pdf.append("\n");
-        pdf.append(">>\n");
-        pdf.append("stream\n");
+        pdf.append(Token.newline);
+        pdf.append(Token.endDictionary);
+        pdf.append(Token.stream);
         pdf.append(buf);
-        pdf.append("\nendstream\n");
+        pdf.append(Token.endstream);
         pdf.endobj();
 
         pdf.newobj();
-        pdf.append("<<\n");
+        pdf.append(Token.beginDictionary);
         pdf.append("/Type /Filespec\n");
         pdf.append("/F (");
         pdf.append(fileName);

@@ -41,7 +41,7 @@ public class Example_14 {
                 cell.SetLeftPadding(10f);
                 cell.SetRightPadding(10f);
 
-                cell.SetNoBorders();
+                cell.SetBorders(false);
                 cell.SetText("Hello " + i + " " + j);
                 if (i == 0) {
                     cell.SetBorder(Border.TOP, true);
@@ -76,11 +76,6 @@ public class Example_14 {
         table.SetData(tableData);
         table.SetCellBordersWidth(0.2f);
         table.SetLocation(70f, 30f);
-        table.DrawOn(page);
-
-        // Must call this method before drawing the table again.
-        table.ResetRenderedPagesCount();
-        table.SetLocation(70f, 200f);
         table.DrawOn(page);
 
         pdf.Complete();

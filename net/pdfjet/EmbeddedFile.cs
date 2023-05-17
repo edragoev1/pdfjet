@@ -55,17 +55,17 @@ public class EmbeddedFile {
         if (compress) {
             pdf.Append("/Filter /FlateDecode\n");
         }
-        pdf.Append("/Length ");
+        pdf.Append(Token.length);
         pdf.Append(buf.Length);
-        pdf.Append("\n");
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
+        pdf.Append(Token.newline);
+        pdf.Append(Token.endDictionary);
+        pdf.Append(Token.stream);
         pdf.Append(buf);
-        pdf.Append("\nendstream\n");
+        pdf.Append(Token.endstream);
         pdf.Endobj();
 
         pdf.Newobj();
-        pdf.Append("<<\n");
+        pdf.Append(Token.beginDictionary);
         pdf.Append("/Type /Filespec\n");
         pdf.Append("/F (");
         pdf.Append(fileName);

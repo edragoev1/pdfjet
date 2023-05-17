@@ -23,40 +23,7 @@ SOFTWARE.
 */
 package com.pdfjet;
 
-import java.util.*;
-
 public class TextUtils {
-    public static String[] splitTextIntoTokens(
-            String text,
-            Font font,
-            Font fallbackFont,
-            float width) {
-        List<String> tokens2 = new ArrayList<String>();
-        String[] tokens = text.split("\\s+");
-        for (String token : tokens) {
-            if (font.stringWidth(fallbackFont, token) <= width) {
-                tokens2.add(token);
-            } else {
-                StringBuilder buf = new StringBuilder();
-                for (int i = 0; i < token.length(); i++) {
-                    String ch = String.valueOf(token.charAt(i));
-                    if (font.stringWidth(fallbackFont, buf.toString() + ch) <= width) {
-                        buf.append(ch);
-                    } else {
-                        tokens2.add(buf.toString());
-                        buf.setLength(0);
-                        buf.append(ch);
-                    }
-                }
-                String str = buf.toString();
-                if (!str.equals("")) {
-                    tokens2.add(str);
-                }
-            }
-        }
-        return tokens2.toArray(new String[] {});
-    }
-
     public static void printDuration(String example, long time0, long time1) {
         String duration = String.valueOf(time1 - time0);
         if (duration.length() == 1) {

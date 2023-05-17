@@ -1,5 +1,5 @@
 /**
- *  BarCode2D.cs
+ *  Barcode2D.cs
  *
 Copyright 2023 Innovatics Inc.
 
@@ -24,15 +24,13 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  *  Used to create PDF417 2D barcodes.
  *
  *  Please see Example_12.
  */
-public class BarCode2D : IDrawable {
-
+public class Barcode2D : IDrawable {
     private const int ALPHA = 0x08;
     private const int LOWER = 0x04;
     private const int MIXED = 0x02;
@@ -43,28 +41,23 @@ public class BarCode2D : IDrawable {
     private const int LATCH_TO_MIXED = 28;
     private const int LATCH_TO_ALPHA = 28;
     private const int SHIFT_TO_PUNCT = 29;
-
     private float x1 = 0f;
     private float y1 = 0f;
 
     // Critical defaults!
     private float w1 = 0.75f;
     private float h1 = 0f;
-
     private int rows = 50;
     private int cols = 18;
-
     private int[] codewords = null;
-
     private String str = null;
-
 
     /**
      *  Constructor for 2D barcodes.
      *
      *  @param str the specified string.
      */
-    public BarCode2D(String str) {
+    public Barcode2D(String str) {
         this.str = str;
         this.h1 = 3 * w1;
         this.codewords = new int[rows * (cols + 2)];
@@ -122,7 +115,6 @@ public class BarCode2D : IDrawable {
         }
     }
 
-
     /**
      *  Sets the position of this barcode on the page.
      *
@@ -132,7 +124,6 @@ public class BarCode2D : IDrawable {
     public void SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
     }
-
 
     /**
      *  Sets the position of this barcode on the page.
@@ -144,11 +135,9 @@ public class BarCode2D : IDrawable {
         SetLocation(x, y);
     }
 
-
     public void SetXY(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location of this barcode on the page.
@@ -156,12 +145,11 @@ public class BarCode2D : IDrawable {
      *  @param x the x coordinate of the top left corner of the barcode.
      *  @param y the y coordinate of the top left corner of the barcode.
      */
-    public BarCode2D SetLocation(float x, float y) {
+    public Barcode2D SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
     }
-
 
     /**
      *  Sets the module width for this barcode.
@@ -176,7 +164,6 @@ public class BarCode2D : IDrawable {
         this.h1 = 3 * w1;
     }
 
-
     /**
      *  Draws this barcode on the specified page.
      *
@@ -187,7 +174,6 @@ public class BarCode2D : IDrawable {
     public float[] DrawOn(Page page) {
         return DrawPdf417(page);
     }
-
 
     private List<Int32> textToArrayOfIntegers() {
         List<Int32> list = new List<Int32>();
@@ -200,51 +186,41 @@ public class BarCode2D : IDrawable {
                 list.Add(26);   // The codeword for space
                 continue;
             }
-
             int value = TextCompact.TABLE[ch,1];
             int mode = TextCompact.TABLE[ch,2];
             if (mode == currentMode) {
                 list.Add(value);
-            }
-            else {
+            } else {
                 if (mode == ALPHA && currentMode == LOWER) {
                     list.Add(SHIFT_TO_ALPHA);
                     list.Add(value);
-                }
-                else if (mode == ALPHA && currentMode == MIXED) {
+                } else if (mode == ALPHA && currentMode == MIXED) {
                     list.Add(LATCH_TO_ALPHA);
                     list.Add(value);
                     currentMode = mode;
-                }
-                else if (mode == LOWER && currentMode == ALPHA) {
+                } else if (mode == LOWER && currentMode == ALPHA) {
                     list.Add(LATCH_TO_LOWER);
                     list.Add(value);
                     currentMode = mode;
-                }
-                else if (mode == LOWER && currentMode == MIXED) {
+                } else if (mode == LOWER && currentMode == MIXED) {
                     list.Add(LATCH_TO_LOWER);
                     list.Add(value);
                     currentMode = mode;
-                }
-                else if (mode == MIXED && currentMode == ALPHA) {
+                } else if (mode == MIXED && currentMode == ALPHA) {
                     list.Add(LATCH_TO_MIXED);
                     list.Add(value);
                     currentMode = mode;
-                }
-                else if (mode == MIXED && currentMode == LOWER) {
+                } else if (mode == MIXED && currentMode == LOWER) {
                     list.Add(LATCH_TO_MIXED);
                     list.Add(value);
                     currentMode = mode;
-                }
-                else if (mode == PUNCT && currentMode == ALPHA) {
+                } else if (mode == PUNCT && currentMode == ALPHA) {
                     list.Add(SHIFT_TO_PUNCT);
                     list.Add(value);
-                }
-                else if (mode == PUNCT && currentMode == LOWER) {
+                } else if (mode == PUNCT && currentMode == LOWER) {
                     list.Add(SHIFT_TO_PUNCT);
                     list.Add(value);
-                }
-                else if (mode == PUNCT && currentMode == MIXED) {
+                } else if (mode == PUNCT && currentMode == MIXED) {
                     list.Add(SHIFT_TO_PUNCT);
                     list.Add(value);
                 }
@@ -253,7 +229,6 @@ public class BarCode2D : IDrawable {
 
         return list;
     }
-
 
     private void addData(int[] buffer, int dataLen) {
         List<Int32> list = textToArrayOfIntegers();
@@ -274,7 +249,6 @@ public class BarCode2D : IDrawable {
             buffer[bi] = 30*hi + lo;
         }
     }
-
 
     private void addECC(int[] buf) {
         int[] ecc = new int[ECC_L5.table.Length];
@@ -301,7 +275,6 @@ public class BarCode2D : IDrawable {
             }
         }
     }
-
 
     private float[] DrawPdf417(Page page) {
         float x = x1;
@@ -350,7 +323,6 @@ public class BarCode2D : IDrawable {
         return new float[] {x, y + h1*rows};
     }
 
-
     private void DrawBar(
             Page page,
             float x,
@@ -362,6 +334,5 @@ public class BarCode2D : IDrawable {
         page.LineTo(x + w/2, y + h);
         page.StrokePath();
     }
-
-}   // End of BarCode2D.cs
+}   // End of Barcode2D.cs
 }   // End of namespace PDFjet.NET

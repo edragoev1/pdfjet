@@ -25,8 +25,8 @@ SOFTWARE.
 */
 
 import (
+	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/border"
@@ -35,13 +35,11 @@ import (
 // Table is used to create table objects and draw them on a page.
 // Please see Example_08.
 type Table struct {
-	rendered        int
-	numOfPages      int
 	tableData       [][]*Cell
+	rendered        int
 	numOfHeaderRows int
 	x1, y1          float32
 	y1FirstPage     float32
-	rightMargin     float32
 	bottomMargin    float32
 }
 
@@ -98,27 +96,26 @@ func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) {
 
 // RightAlignNumbers sets the alignment of the numbers.
 func (table *Table) RightAlignNumbers() {
-	for i := table.numOfHeaderRows; i < len(table.tableData); i++ {
-		row := table.tableData[i]
+	var buf strings.Builder
+	for _, row := range table.tableData {
 		for _, cell := range row {
 			if cell.text != nil {
-				isNumber := true
+				buf.Reset()
 				runes := []rune(*cell.text)
-				k := 0
-				for k < len(runes) {
-					ch := runes[k]
-					k++
-					if !unicode.IsDigit(ch) &&
-						ch != '(' &&
-						ch != ')' &&
-						ch != '-' &&
-						ch != '.' &&
-						ch != ',' &&
-						ch != '\'' {
-						isNumber = false
+				var index1 = 0
+				var index2 = len(runes)
+				if len(runes) > 2 && runes[0] == '(' && runes[len(runes)-1] == ')' {
+					index1 = 1
+					index2 = len(runes) - 1
+				}
+				for i := index1; i < index2; i++ {
+					ch := runes[i]
+					if ch != '.' && ch != ',' && ch != '\'' {
+						buf.WriteRune(ch)
 					}
 				}
-				if isNumber {
+				_, err := strconv.ParseFloat(buf.String(), 64)
+				if err == nil {
 					cell.SetTextAlignment(align.Right)
 				}
 			}
@@ -290,19 +287,23 @@ func (table *Table) GetColumnAtIndex(index int) []*Cell {
 // @param page the page to draw this table on.
 // @return Point the point on the page where to draw the next component.
 func (table *Table) DrawOn(page *Page) [2]float32 {
+	table.wrapAroundCellText()
+	table.setRightBorderOnLastColumn()
+	table.setBottomBorderOnLastRow()
 	return table.drawTableRows(page, table.drawHeaderRows(page))
 }
 
 // DrawOnPages draws the table on pdf pages with the specified size.
 func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [2]float32 {
+	table.wrapAroundCellText()
+	table.setRightBorderOnLastColumn()
+	table.setBottomBorderOnLastRow()
 	var xy [2]float32
-	for table.HasMoreData() {
+	for table.hasMoreData() {
 		page := NewPageDetached(pdf, pageSize)
 		*pages = append(*pages, page)
 		xy = table.drawTableRows(page, table.drawHeaderRows(page))
 	}
-	// Allow the table to be drawn again later:
-	table.ResetRenderedPagesCount()
 	return xy
 }
 
@@ -311,87 +312,60 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [
  *  @param page the page to draw table table on.
  *  @return Point the point on the page where to draw the next component.
  */
-func (table *Table) drawHeaderRows(page *Page) []float32 {
+func (table *Table) drawHeaderRows(page *Page) [2]float32 {
 	x := table.x1
 	y := table.y1
-	var wCell float32
-	var hCell float32
-
 	for i := 0; i < table.numOfHeaderRows; i++ {
-		dataRow := table.tableData[i]
-		hCell = table.getMaxCellHeight(dataRow)
-
-		for j := 0; j < len(dataRow); j++ {
-			cell := dataRow[j]
-			wCell = cell.GetWidth()
+		row := table.tableData[i]
+		h := table.getMaxCellHeight(row)
+		for j := 0; j < len(row); j++ {
+			cell := row[j]
+			w := cell.GetWidth()
 			colspan := cell.GetColSpan()
 			for k := 1; k < colspan; k++ {
 				j++
-				wCell += dataRow[j].width
+				w += row[j].width
 			}
 			if table != nil {
 				page.SetBrushColor(cell.GetBrushColor())
-				cell.Paint(page, x, y, wCell, hCell)
+				cell.DrawOn(page, x, y, w, h)
 			}
-			x += wCell
+			x += w
 		}
 		x = table.x1
-		y += hCell
+		y += h
 	}
-
-	return []float32{x, y, wCell, hCell}
+	return [2]float32{x, y}
 }
 
-func (table *Table) drawTableRows(page *Page, parameter []float32) [2]float32 {
-	x := parameter[0]
-	y := parameter[1]
-	wCell := parameter[2]
-	hCell := parameter[3]
-
+func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
+	x := xy[0]
+	y := xy[1]
 	for i := table.rendered; i < len(table.tableData); i++ {
-		dataRow := table.tableData[i]
-		hCell = table.getMaxCellHeight(dataRow)
-
-		for j := 0; j < len(dataRow); j++ {
-			cell := dataRow[j]
-			wCell = cell.GetWidth()
+		row := table.tableData[table.rendered]
+		h := table.getMaxCellHeight(row)
+		if page != nil && (y+h) > (page.height-table.bottomMargin) {
+			return [2]float32{x, y}
+		}
+		for i := 0; i < len(row); i++ {
+			cell := row[i]
+			w := cell.GetWidth()
 			colspan := cell.GetColSpan()
-			for k := 1; k < colspan; k++ {
-				j++
-				wCell += dataRow[j].GetWidth()
+			for j := 1; j < colspan; j++ {
+				i++
+				w += row[i].GetWidth()
 			}
 			if page != nil {
 				page.SetBrushColor(cell.GetBrushColor())
-				cell.Paint(page, x, y, wCell, hCell)
+				cell.DrawOn(page, x, y, w, h)
 			}
-			x += wCell
+			x += w
 		}
 		x = table.x1
-		y += hCell
-
-		// Consider the height of the next row when checking if we must go to a new page
-		if i < len(table.tableData)-1 {
-			nextRow := table.tableData[i+1]
-			for _, cell := range nextRow {
-				cellHeight := cell.GetHeight()
-				if cellHeight > hCell {
-					hCell = cellHeight
-				}
-			}
-		}
-
-		if (y + hCell) > (page.height - table.bottomMargin) {
-			if i == len(table.tableData)-1 {
-				table.rendered = -1
-			} else {
-				table.rendered = i + 1
-				table.numOfPages++
-			}
-			return [2]float32{x, y}
-		}
+		y += h
+		table.rendered++
 	}
-	table.rendered = -1
-
+	table.rendered = -1 // We are done!
 	return [2]float32{x, y}
 }
 
@@ -406,7 +380,7 @@ func (table *Table) getMaxCellHeight(row []*Cell) float32 {
 }
 
 // HasMoreData returns true if the table contains more data that needs to be drawn on a page.
-func (table *Table) HasMoreData() bool {
+func (table *Table) hasMoreData() bool {
 	return table.rendered != -1
 }
 
@@ -430,116 +404,11 @@ func (table *Table) GetRowsRendered() int {
 	return -1
 }
 
-// WrapAroundCellText wraps around the text in all cells so it fits the column width.
-// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
-func (table *Table) WrapAroundCellText() {
-	tableData2 := make([][]*Cell, 0)
-
-	for _, row := range table.tableData {
-		maxNumVerCells := 1
-		for j, cell := range row {
-			colspan := cell.GetColSpan()
-			for n := 1; n < colspan; n++ {
-				next := row[j+n]
-				cell.SetWidth(cell.GetWidth() + next.GetWidth())
-				next.SetWidth(0.0)
-			}
-			numVerCells := cell.getNumVerCells()
-			if numVerCells > maxNumVerCells {
-				maxNumVerCells = numVerCells
-			}
-		}
-
-		for j := 0; j < maxNumVerCells; j++ {
-			row2 := make([]*Cell, 0)
-			for _, cell := range row {
-
-				cell2 := NewEmptyCell(cell.GetFont())
-				cell2.SetFallbackFont(cell.GetFallbackFont())
-				cell2.SetPoint(cell.GetPoint())
-				cell2.SetWidth(cell.GetWidth())
-				if j == 0 {
-					cell2.SetTopPadding(cell.topPadding)
-				}
-				if j == (maxNumVerCells - 1) {
-					cell2.SetBottomPadding(cell.bottomPadding)
-				}
-				cell2.SetLeftPadding(cell.leftPadding)
-				cell2.SetRightPadding(cell.rightPadding)
-				cell2.SetLineWidth(cell.lineWidth)
-				cell2.SetBgColor(cell.GetBgColor())
-				cell2.SetPenColor(cell.GetPenColor())
-				cell2.SetBrushColor(cell.GetBrushColor())
-				cell2.SetProperties(cell.GetProperties())
-				cell2.SetVerTextAlignment(cell.GetVerTextAlignment())
-				if j == 0 {
-					if cell.GetImage() != nil {
-						cell2.SetImage(cell.GetImage())
-					}
-					if cell.GetCompositeTextLine() != nil {
-						cell2.SetCompositeTextLine(cell.GetCompositeTextLine())
-					} else {
-						cell2.SetText(cell.GetText())
-					}
-					if maxNumVerCells > 1 {
-						cell2.SetBorder(border.Bottom, false)
-					}
-				} else {
-					cell2.SetBorder(border.Top, false)
-					if j < (maxNumVerCells - 1) {
-						cell2.SetBorder(border.Bottom, false)
-					}
-				}
-				row2 = append(row2, cell2)
-			}
-			tableData2 = append(tableData2, row2)
-		}
-	}
-
-	for i, row := range tableData2 {
-		for j, cell := range row {
-			if cell.text != nil {
-				n := 0
-				textLines := strings.Fields(*cell.text)
-				for _, textLine := range textLines {
-					var sb strings.Builder
-					tokens := strings.Fields(textLine)
-					if len(tokens) == 1 {
-						sb.WriteString(tokens[0])
-					} else {
-						for k := 0; k < len(tokens); k++ {
-							token := tokens[k]
-							if cell.font.StringWidth(
-								cell.fallbackFont, sb.String()+" "+token) > cell.GetWidth()-(cell.leftPadding+cell.rightPadding) {
-								tableData2[i+n][j].SetText(sb.String())
-								sb.Reset()
-								sb.WriteString(token)
-								n++
-							} else {
-								if k > 0 {
-									sb.WriteString(" ")
-								}
-								sb.WriteString(token)
-							}
-						}
-					}
-					tableData2[i+n][j].SetText(sb.String())
-					n++
-				}
-			} else {
-				tableData2[i][j].SetCompositeTextLine(cell.GetCompositeTextLine())
-			}
-		}
-	}
-
-	table.tableData = tableData2
-}
-
-// SetNoCellBorders sets all table cells borders to <strong>false</strong>.
-func (table *Table) SetNoCellBorders() {
+// SetNoCellBorders sets all table cells borders to <strong>false</strong> or <strong>true</strong>.
+func (table *Table) SetCellBorders(borders bool) {
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetNoBorders()
+			cell.SetBorders(borders)
 		}
 	}
 }
@@ -564,161 +433,86 @@ func (table *Table) SetCellBordersWidth(width float32) {
 	}
 }
 
-// ResetRenderedPagesCount resets the rendered pages count.
-// Call table method if you have to draw table table more than one time.
-func (table *Table) ResetRenderedPagesCount() {
-	table.rendered = table.numOfHeaderRows
+// SetFirstPageTopMargin -- TODO:
+func (table *Table) SetFirstPageTopMargin(topMargin float32) {
+	table.y1FirstPage = table.y1 + topMargin
 }
 
-// MergeOverlaidBorders removes borders that have the same color and overlap 100%.
-// The result is improved onscreen rendering of thin border lines by some PDF viewers.
-func (table *Table) MergeOverlaidBorders() {
-	for i, row := range table.tableData {
-		for j, currentCell := range row {
-			if j < len(row)-1 {
-				cellAtRight := row[j+1]
-				if cellAtRight.GetBorder(border.Left) &&
-					(currentCell.GetPenColor() == cellAtRight.GetPenColor()) &&
-					(currentCell.GetLineWidth() == cellAtRight.GetLineWidth()) &&
-					(currentCell.GetColSpan()+j < (len(row) - 1)) {
-					currentCell.SetBorder(border.Right, false)
-				}
-			}
-			if i < (len(table.tableData) - 1) {
-				nextRow := table.tableData[i+1]
-				cellBelow := nextRow[j]
-				if cellBelow.GetBorder(border.Top) &&
-					(currentCell.GetPenColor() == cellBelow.GetPenColor()) &&
-					(currentCell.GetLineWidth() == cellBelow.GetLineWidth()) {
-					currentCell.SetBorder(border.Bottom, false)
-				}
-			}
+// Sets the right border on all cells in the last column.
+func (table *Table) setRightBorderOnLastColumn() {
+	for _, row := range table.tableData {
+		var cell *Cell
+		var i = 0
+		for i < len(row) {
+			cell = row[i]
+			i += cell.GetColSpan()
 		}
+		cell.SetBorder(border.Right, true)
 	}
 }
 
-// AutoAdjustColumnWidths adjusts the widths of all columns so that they are just wide enough to hold the text without truncation.
-func (table *Table) AutoAdjustColumnWidths() {
-	// Find the maximum text width for each column
-	maxColWidths := make([]float32, len(table.tableData[0]))
-
-	for i := 0; i < table.numOfHeaderRows; i++ {
-		for j := 0; j < len(maxColWidths); j++ {
-			cell := table.tableData[i][j]
-			textWidth := cell.font.StringWidth(cell.fallbackFont, *cell.text)
-			textWidth += cell.leftPadding + cell.rightPadding
-			if textWidth > maxColWidths[j] {
-				maxColWidths[j] = textWidth
-			}
-		}
+// Sets the bottom border on all cells in the last row.
+func (table *Table) setBottomBorderOnLastRow() {
+	lastRow := table.tableData[len(table.tableData)-1]
+	for _, cell := range lastRow {
+		cell.SetBorder(border.Bottom, true)
 	}
+}
 
-	for i := table.numOfHeaderRows; i < len(table.tableData); i++ {
-		for j := 0; j < len(maxColWidths); j++ {
-			cell := table.tableData[i][j]
-			if cell.GetColSpan() > 1 {
-				continue
-			}
-			if cell.text != nil {
-				textWidth := cell.font.StringWidth(cell.fallbackFont, *cell.text)
-				textWidth += cell.leftPadding + cell.rightPadding
-				if textWidth > maxColWidths[j] {
-					maxColWidths[j] = textWidth
-				}
-			}
-			if cell.image != nil {
-				imageWidth := cell.image.GetWidth() + cell.leftPadding + cell.rightPadding
-				if imageWidth > maxColWidths[j] {
-					maxColWidths[j] = imageWidth
-				}
-			}
-			if cell.barCode != nil {
-				barcodeWidth := cell.barCode.DrawOn(nil)[0] + cell.leftPadding + cell.rightPadding
-				if barcodeWidth > maxColWidths[j] {
-					maxColWidths[j] = barcodeWidth
-				}
-			}
-			if cell.textBox != nil {
-				tokens := strings.Fields(cell.textBox.text)
-				for _, token := range tokens {
-					tokenWidth := cell.textBox.font.StringWidth(cell.textBox.fallbackFont, token)
-					tokenWidth += cell.leftPadding + cell.rightPadding
-					if tokenWidth > maxColWidths[j] {
-						maxColWidths[j] = tokenWidth
+// Auto adjusts the widths of all columns so that they are just wide enough to
+// hold the text without truncation.
+func (table *Table) SetColumnWidths() {
+	maxColWidths := []float32{}
+	firstRow := table.tableData[0]
+	for range firstRow {
+		maxColWidths = append(maxColWidths, 0.0)
+	}
+	for _, row := range table.tableData {
+		for i := 0; i < len(row); i++ {
+			cell := row[i]
+			if cell.GetColSpan() == 1 {
+				if cell.textBox != nil {
+					tokens := strings.Fields(cell.textBox.text)
+					for _, token := range tokens {
+						tokenWidth := cell.textBox.font.StringWidth(cell.textBox.fallbackFont, token)
+						tokenWidth += cell.leftPadding + cell.rightPadding
+						if tokenWidth > maxColWidths[i] {
+							maxColWidths[i] = tokenWidth
+						}
+					}
+				} else if cell.image != nil {
+					imageWidth := cell.image.GetWidth() + cell.leftPadding + cell.rightPadding
+					if imageWidth > maxColWidths[i] {
+						maxColWidths[i] = imageWidth
+					}
+				} else if cell.barcode != nil {
+					barcodeWidth := cell.barcode.DrawOn(nil)[0] + cell.leftPadding + cell.rightPadding
+					if barcodeWidth > maxColWidths[i] {
+						maxColWidths[i] = barcodeWidth
+					}
+				} else if cell.text != nil {
+					textWidth := cell.font.StringWidth(cell.fallbackFont, *cell.text)
+					textWidth += cell.leftPadding + cell.rightPadding
+					if textWidth > maxColWidths[i] {
+						maxColWidths[i] = textWidth
 					}
 				}
 			}
 		}
 	}
-
-	for i := 0; i < len(table.tableData); i++ {
-		row := table.tableData[i]
-		for j := 0; j < len(row); j++ {
-			cell := row[j]
-			cell.SetWidth(maxColWidths[j] + 0.1)
+	for _, row := range table.tableData {
+		for i, cell := range row {
+			cell.SetWidth(maxColWidths[i])
 		}
 	}
-
-	table.AutoResizeColumnsWithColspanBiggerThanOne()
-}
-
-func (table *Table) isTextColumn(index int) bool {
-	for i := table.numOfHeaderRows; i < len(table.tableData); i++ {
-		dataRow := table.tableData[i]
-		if dataRow[index].image != nil || dataRow[index].barCode != nil {
-			return false
-		}
-	}
-	return true
-}
-
-// FitToPage -- TODO:
-func (table *Table) FitToPage(pageSize [2]float32) {
-	table.AutoAdjustColumnWidths()
-
-	tableWidth := (pageSize[0] - table.x1) - table.rightMargin
-	textColumnWidths := float32(0.0)
-	otherColumnWidths := float32(0.0)
-	row := table.tableData[0]
-	for i := 0; i < len(row); i++ {
-		cell := row[i]
-		if table.isTextColumn(i) {
-			textColumnWidths += cell.GetWidth()
-		} else {
-			otherColumnWidths += cell.GetWidth()
-		}
-	}
-
-	var adjusted float32 = 0.0
-	if (tableWidth - otherColumnWidths) > textColumnWidths {
-		adjusted = textColumnWidths + ((tableWidth - otherColumnWidths) - textColumnWidths)
-	} else {
-		adjusted = textColumnWidths - (textColumnWidths - (tableWidth - otherColumnWidths))
-	}
-	factor := adjusted / textColumnWidths
-	for i := 0; i < len(row); i++ {
-		if table.isTextColumn(i) {
-			table.SetColumnWidth(i, table.GetColumnWidth(i)*factor)
-		}
-	}
-
-	table.AutoResizeColumnsWithColspanBiggerThanOne()
-	table.MergeOverlaidBorders()
-}
-
-// AutoResizeColumnsWithColspanBiggerThanOne -- TODO:
-func (table *Table) AutoResizeColumnsWithColspanBiggerThanOne() {
-	for i := 0; i < len(table.tableData); i++ {
-		dataRow := table.tableData[i]
-		for j := 0; j < len(dataRow); j++ {
-			cell := dataRow[j]
+	for _, row := range table.tableData {
+		for i, cell := range row {
 			colspan := cell.GetColSpan()
 			if colspan > 1 {
 				if cell.textBox != nil {
-					sumOfWidths := cell.GetWidth()
-					for k := 1; k < colspan; k++ {
-						j++
-						sumOfWidths += dataRow[j].GetWidth()
+					sumOfWidths := float32(0.0)
+					for j := 0; j < colspan; j++ {
+						sumOfWidths += row[i+j].GetWidth()
 					}
 					cell.textBox.SetWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding))
 				}
@@ -727,20 +521,132 @@ func (table *Table) AutoResizeColumnsWithColspanBiggerThanOne() {
 	}
 }
 
-// SetRightMargin -- TODO:
-func (table *Table) SetRightMargin(rightMargin float32) {
-	table.rightMargin = rightMargin
-}
-
-// SetFirstPageTopMargin -- TODO:
-func (table *Table) SetFirstPageTopMargin(topMargin float32) {
-	table.y1FirstPage = table.y1 + topMargin
-}
-
-// AddToRow -- TODO:
-func (table *Table) AddToRow(row []*Cell, cell *Cell) {
-	row = append(row, cell)
-	for i := 1; i < cell.GetColSpan(); i++ {
-		row = append(row, NewCell(cell.GetFont(), ""))
+func (table *Table) addExtraTableRows() [][]*Cell {
+	tableData2 := make([][]*Cell, 0)
+	for _, row := range table.tableData {
+		tableData2 = append(tableData2, row) // Add the original row
+		maxNumVerCells := 0
+		for i := 0; i < len(row); i++ {
+			numVerCells := getNumVerCells(row, i)
+			if numVerCells > maxNumVerCells {
+				maxNumVerCells = numVerCells
+			}
+		}
+		for i := 1; i < maxNumVerCells; i++ {
+			row2 := make([]*Cell, 0)
+			for _, cell := range row {
+				cell2 := NewEmptyCell(cell.GetFont())
+				cell2.SetFallbackFont(cell.GetFallbackFont())
+				cell2.SetWidth(cell.GetWidth())
+				cell2.SetLeftPadding(cell.leftPadding)
+				cell2.SetRightPadding(cell.rightPadding)
+				cell2.SetLineWidth(cell.lineWidth)
+				cell2.SetBgColor(cell.GetBgColor())
+				cell2.SetPenColor(cell.GetPenColor())
+				cell2.SetBrushColor(cell.GetBrushColor())
+				cell2.SetProperties(cell.GetProperties())
+				cell2.SetVerTextAlignment(cell.GetVerTextAlignment())
+				cell2.SetTopPadding(0.0)
+				cell2.SetBorder(border.Top, false)
+				row2 = append(row2, cell2)
+			}
+			tableData2 = append(tableData2, row2)
+		}
 	}
+	return tableData2
+}
+
+func getTotalWidth(row []*Cell, index int) float32 {
+	cell := row[index]
+	colspan := cell.GetColSpan()
+	cellWidth := float32(0.0)
+	for i := 0; i < colspan; i++ {
+		cellWidth += row[index+i].GetWidth()
+	}
+	cellWidth -= (cell.leftPadding + row[index+(colspan-1)].rightPadding)
+	return cellWidth
+}
+
+// WrapAroundCellText wraps around the text in all cells so it fits the column width.
+// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
+func (table *Table) wrapAroundCellText() {
+	tableData2 := table.addExtraTableRows()
+	for i := 0; i < len(tableData2); i++ {
+		row := tableData2[i]
+		for j := 0; j < len(row); j++ {
+			cell := row[j]
+			if cell.text != nil {
+				cellWidth := getTotalWidth(row, j)
+				tokens := strings.Fields(cell.GetText())
+				var n = 0
+				var buf strings.Builder
+				for _, token := range tokens {
+					if cell.font.StringWidth(cell.fallbackFont, token) > cellWidth {
+						if len(buf.String()) > 0 {
+							buf.WriteString(" ")
+						}
+						for _, ch := range token {
+							if cell.font.StringWidth(cell.fallbackFont, strings.TrimSpace(buf.String()+" "+string(ch))) > cellWidth {
+								tableData2[i+n][j].SetText(buf.String())
+								buf.Reset()
+								n++
+							}
+							buf.WriteRune(ch)
+						}
+					} else {
+						if cell.font.StringWidth(cell.fallbackFont, strings.TrimSpace(buf.String()+" "+token)) > cellWidth {
+							tableData2[i+n][j].SetText(strings.TrimSpace(buf.String()))
+							buf.Reset()
+							buf.WriteString(token)
+							n++
+						} else {
+							if len(buf.String()) > 0 {
+								buf.WriteString(" ")
+							}
+							buf.WriteString(token)
+						}
+					}
+				}
+				tableData2[i+n][j].SetText(strings.TrimSpace(buf.String()))
+			}
+		}
+	}
+	table.tableData = tableData2
+}
+
+func getNumVerCells(row []*Cell, index int) int {
+	cell := row[index]
+	numOfVerCells := 1
+	if cell.text == nil {
+		return numOfVerCells
+	}
+	cellWidth := getTotalWidth(row, index)
+	tokens := strings.Fields(*cell.text)
+	var buf strings.Builder
+	for _, token := range tokens {
+		if cell.font.StringWidth(cell.fallbackFont, token) > cellWidth {
+			if len(buf.String()) > 0 {
+				buf.WriteString(" ")
+			}
+			for _, ch := range token {
+				if cell.font.StringWidth(cell.fallbackFont, strings.TrimSpace(buf.String()+" "+string(ch))) > cellWidth {
+					numOfVerCells++
+					buf.Reset()
+				}
+				buf.WriteRune(ch)
+			}
+		} else {
+			if cell.font.StringWidth(cell.fallbackFont, strings.TrimSpace(buf.String()+" "+token)) > cellWidth {
+				numOfVerCells++
+				buf.Reset()
+				buf.WriteString(token)
+			} else {
+				if len(buf.String()) > 0 {
+					buf.WriteString(" ")
+				}
+				buf.WriteString(token)
+			}
+		}
+	}
+	return numOfVerCells
 }

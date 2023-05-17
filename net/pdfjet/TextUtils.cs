@@ -28,36 +28,36 @@ using System.Text.RegularExpressions;
 
 namespace PDFjet.NET {
 public class TextUtils {
-    public static String[] SplitTextIntoTokens(
-            String text,
-            Font font,
-            Font fallbackFont,
-            float width) {
-        List<String> tokens2 = new List<String>();
-        String[] tokens = Regex.Split(text, @"\s+");
-        foreach (String token in tokens) {
-            if (font.StringWidth(fallbackFont, token) <= width) {
-                tokens2.Add(token);
-            } else {
-                StringBuilder buf = new StringBuilder();
-                for (int i = 0; i < token.Length; i++) {
-                    String ch = token[i].ToString();
-                    if (font.StringWidth(fallbackFont, buf.ToString() + ch) <= width) {
-                        buf.Append(ch);
-                    } else {
-                        tokens2.Add(buf.ToString());
-                        buf.Length = 0;
-                        buf.Append(ch);
-                    }
-                }
-                String str = buf.ToString();
-                if (!str.Equals("")) {
-                    tokens2.Add(str);
-                }
-            }
-        }
-        return tokens2.ToArray();
-    }
+    // public static String[] SplitTextIntoTokens(
+    //         String text,
+    //         Font font,
+    //         Font fallbackFont,
+    //         float width) {
+    //     List<String> tokens2 = new List<String>();
+    //     String[] tokens = Regex.Split(text, @"\s+");
+    //     foreach (String token in tokens) {
+    //         if (font.StringWidth(fallbackFont, token) <= width) {
+    //             tokens2.Add(token);
+    //         } else {
+    //             StringBuilder buf = new StringBuilder();
+    //             for (int i = 0; i < token.Length; i++) {
+    //                 String ch = token[i].ToString();
+    //                 if (font.StringWidth(fallbackFont, buf.ToString() + ch) <= width) {
+    //                     buf.Append(ch);
+    //                 } else {
+    //                     tokens2.Add(buf.ToString());
+    //                     buf.Length = 0;
+    //                     buf.Append(ch);
+    //                 }
+    //             }
+    //             String str = buf.ToString();
+    //             if (!str.Equals("")) {
+    //                 tokens2.Add(str);
+    //             }
+    //         }
+    //     }
+    //     return tokens2.ToArray();
+    // }
 
     public static void PrintDuration(String example, long time0, long time1) {
         String duration = String.Format("{0:N1}", (time1 - time0)/1.0);

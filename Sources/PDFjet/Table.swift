@@ -40,17 +40,13 @@ public class Table {
     public static let DATA_HAS_8_HEADER_ROWS = 8
     public static let DATA_HAS_9_HEADER_ROWS = 9
 
-    private var rendered = 0
-    private var numOfPages = 0
     private var tableData: [[Cell]]
+    private var rendered = 0
     private var numOfHeaderRows = 0
-
-    private var x1: Float?
-    private var y1: Float?
+    private var x1: Float = 0.0
+    private var y1: Float = 0.0
     private var y1FirstPage: Float = 0.0
-    private var rightMargin: Float = 0.0
-    private var bottomMargin: Float = 30.0
-    private var numOfHeaderRowsAdjusted: Bool = false
+    private var bottomMargin: Float = 0.0
 
     ///
     /// Create a table object.
@@ -132,26 +128,30 @@ public class Table {
     /// Sets the alignment of the numbers to the right.
     ///
     public func rightAlignNumbers() {
-        let digitsPlus = [UnicodeScalar]("0123456789()-.,'".unicodeScalars)
-        var i = numOfHeaderRows
-        while i < tableData.count {
-            let row = tableData[i]
+        var buf = String()
+        for row in tableData {
             for cell in row {
                 if cell.text != nil {
+                    buf = ""
                     let scalars = [UnicodeScalar](cell.text!.unicodeScalars)
-                    var isNumber = true
-                    for scalar in scalars {
-                        if digitsPlus.firstIndex(of: scalar) == nil {
-                            isNumber = false
-                            break
+                    var index1 = 0
+                    var index2 = scalars.count
+                    if scalars.count > 2 && scalars[0] == "(" && scalars[scalars.count-1] == ")" {
+                        index1 = 1
+                        index2 = scalars.count - 1
+                    }
+                    for i in index1..<index2 {
+                        let scalar = scalars[i]
+                        if scalar != "." && scalar != "," && scalar != "'" {
+                            buf.append(String(scalar));
                         }
                     }
-                    if isNumber {
+                    let value = Double(buf)
+                    if value != nil {
                         cell.setTextAlignment(Align.RIGHT)
                     }
                 }
             }
-            i += 1
         }
     }
 
@@ -289,7 +289,7 @@ public class Table {
     /// @return the width of the column.
     ///
     public func getColumnWidth(_ index: Int) -> Float {
-        return getCellAtRowColumn(0, index).getWidth();
+        return getCellAtRowColumn(0, index).getWidth()
     }
 
     ///
@@ -365,110 +365,86 @@ public class Table {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        wrapAroundCellText()
+        setRightBorderOnLastColumn()
+        setBottomBorderOnLastRow()
         return drawTableRows(page, drawHeaderRows(page, 0))
     }
 
     @discardableResult
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: [Float]) -> [Float] {
+        wrapAroundCellText()
+        setRightBorderOnLastColumn()
+        setBottomBorderOnLastRow()
         var xy: [Float]?
         var pageNumber: Int = 1
-        while (self.hasMoreData()) {
+        while (hasMoreData()) {
             let page = Page(pdf, pageSize, false)
             pages.append(page)
             xy = drawTableRows(page, drawHeaderRows(page, pageNumber))
             pageNumber += 1
         }
-        // Allow the table to be drawn again later:
-        resetRenderedPagesCount()
         return xy!
     }
 
     private func drawHeaderRows(_ page: Page?, _ pageNumber: Int) -> [Float] {
         var x = x1
-        var y = (pageNumber == 1) ? y1FirstPage : y1;
-
-        var cellH: Float = 0.0
+        var y = (pageNumber == 1) ? y1FirstPage : y1
         for i in 0..<numOfHeaderRows {
-            let dataRow = tableData[i]
-            cellH = getMaxCellHeight(dataRow)
+            let row = tableData[i]
+            let h = getMaxCellHeight(row)
             var j = 0
-            while j < dataRow.count {
-                let cell = dataRow[j]
-                var cellW = dataRow[j].getWidth()
-                let colspan = dataRow[j].getColSpan()
-                var k = 1
-                while k < colspan {
+            while j < row.count {
+                let cell = row[j]
+                var w = row[j].getWidth()
+                let colspan = row[j].getColSpan()
+                for _ in 1..<colspan {
                     j += 1
-                    cellW += dataRow[j].width
-                    k += 1
+                    w += row[j].width
                 }
                 if page != nil {
                     page!.setBrushColor(cell.getBrushColor())
-                    cell.paint(page!, x!, y!, cellW, cellH)
+                    cell.drawOn(page!, x, y, w, h)
                 }
-
-                x! += cellW
+                x += w
                 j += 1
             }
             x = x1
-            y! += cellH
+            y += h
         }
-
-        return [x!, y!]
+        return [x, y]
     }
 
-    private func drawTableRows(_ page: Page?, _ parameter: [Float]) -> [Float] {
-        var x = parameter[0]
-        var y = parameter[1]
-
-        var cellH: Float = 0.0
-        var i = rendered
-        while i < tableData.count {
-            let dataRow = tableData[i]
-            cellH = getMaxCellHeight(dataRow)
-            var j = 0
-            while j < dataRow.count {
-                let cell = dataRow[j]
-                var cellW = cell.getWidth()
-                let colspan = dataRow[j].getColSpan()
-                var k = 1
-                while k < colspan {
-                    j += 1
-                    cellW += dataRow[j].getWidth()
-                    k += 1
+    private func drawTableRows(_ page: Page?, _ xy: [Float]) -> [Float] {
+        var x = xy[0]
+        var y = xy[1]
+        while rendered < tableData.count {
+            let row = tableData[rendered]
+            let h = getMaxCellHeight(row)
+            if page != nil && (y + h) > (page!.height - bottomMargin) {
+                return [x, y]
+            }
+            var i = 0
+            while i < row.count {
+                let cell = row[i]
+                var w = cell.getWidth()
+                let colspan = cell.getColSpan()
+                for _ in 1..<colspan {
+                    i += 1
+                    w += row[i].getWidth()
                 }
                 if page != nil {
                     page!.setBrushColor(cell.getBrushColor())
-                    cell.paint(page!, x, y, cellW, cellH)
+                    cell.drawOn(page!, x, y, w, h)
                 }
-                x += cellW
-                j += 1
+                x += w
+                i += 1
             }
-            x = x1!
-            y += cellH
-
-            // Consider the height of the next row when checking if we must go to a new page
-            if i < (tableData.count - 1) {
-                for cell in tableData[i + 1] {
-                    if cell.getHeight() > cellH {
-                        cellH = cell.getHeight()
-                    }
-                }
-            }
-
-            if page != nil && (y + cellH) > (page!.height - bottomMargin) {
-                if i == (tableData.count - 1) {
-                    rendered = -1
-                } else {
-                    rendered = i + 1
-                    numOfPages += 1
-                }
-                return [x, y]
-            }
-            i += 1
+            x = x1
+            y += h
+            rendered += 1
         }
-        rendered = -1
-
+        rendered = -1   // We are done!
         return [x, y]
     }
 
@@ -485,7 +461,7 @@ public class Table {
     ///
     /// Returns true if the table contains more data that needs to be drawn on a page.
     ///
-    public func hasMoreData() -> Bool {
+    private func hasMoreData() -> Bool {
         return self.rendered != -1
     }
 
@@ -515,116 +491,12 @@ public class Table {
     }
 
     ///
-    /// Wraps around the text in all cells so it fits the column width.
-    /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
+    /// Sets all table cells borders to <strong>false</strong> or <strong>true</strong>.
     ///
-    public func wrapAroundCellText() {
-        var tableData2 = [[Cell]]()
-        for row in tableData {
-            var maxNumVerCells = 1
-            for i in 0..<row.count {
-                var n = 1
-                while n < row[i].getColSpan() {
-                    row[i].width += row[i + n].width
-                    row[i + n].width = 0.0
-                    n += 1
-                }
-                let numVerCells = row[i].getNumVerCells()
-                if numVerCells > maxNumVerCells {
-                    maxNumVerCells = numVerCells
-                }
-            }
-
-            for i in 0..<maxNumVerCells {
-                var row2 = [Cell]()
-                for cell in row {
-                    let cell2 = Cell(cell.getFont(), "")
-                    cell2.setFallbackFont(cell.getFallbackFont())
-                    cell2.setPoint(cell.getPoint())
-                    cell2.setWidth(cell.getWidth())
-                    if i == 0 {
-                        cell2.setTopPadding(cell.topPadding)
-                    }
-                    if i == (maxNumVerCells - 1) {
-                        cell2.setBottomPadding(cell.bottomPadding)
-                    }
-                    cell2.setLeftPadding(cell.leftPadding)
-                    cell2.setRightPadding(cell.rightPadding)
-                    cell2.setLineWidth(cell.lineWidth)
-                    cell2.setBgColor(cell.getBgColor())
-                    cell2.setPenColor(cell.getPenColor())
-                    cell2.setBrushColor(cell.getBrushColor())
-                    cell2.setProperties(cell.getProperties())
-                    cell2.setVerTextAlignment(cell.getVerTextAlignment())
-                    if i == 0 {
-                        if (cell.getImage() != nil) {
-                            cell2.setImage(cell.getImage())
-                        }
-                        if cell.getCompositeTextLine() != nil {
-                            cell2.setCompositeTextLine(cell.getCompositeTextLine())
-                        } else {
-                            cell2.setText(cell.getText())
-                        }
-                        if maxNumVerCells > 1 {
-                            cell2.setBorder(Border.BOTTOM, false)
-                        }
-                    } else  {
-                        cell2.setBorder(Border.TOP, false)
-                        if i < (maxNumVerCells - 1) {
-                            cell2.setBorder(Border.BOTTOM, false)
-                        }
-                    }
-                    row2.append(cell2)
-                }
-                tableData2.append(row2)
-            }
-        }
-
-        for (i, row) in tableData2.enumerated() {
-            for (j, cell) in row.enumerated() {
-                if cell.text != nil {
-                    var n = 0
-                    let textLines = cell.text!.trim().components(separatedBy: "\n")
-                    for textLine in textLines {
-                        var sb = String()
-                        let tokens = textLine.trim().components(separatedBy: .whitespaces)
-                        if tokens.count == 1 {
-                            sb.append(tokens[0])
-                        } else {
-                            for k in 0..<tokens.count {
-                                let token = tokens[k].trim()
-                                if cell.font!.stringWidth(cell.fallbackFont, sb + " " + token) >
-                                        (cell.getWidth() - (cell.leftPadding + cell.rightPadding)) {
-                                    tableData2[i + n][j].setText(sb)
-                                    sb = token
-                                    n += 1
-                                } else {
-                                    if k > 0 {
-                                        sb.append(" ")
-                                    }
-                                    sb.append(token)
-                                }
-                            }
-                        }
-                        tableData2[i + n][j].setText(sb)
-                        n += 1
-                    }
-                } else {
-                    tableData2[i][j].setCompositeTextLine(cell.getCompositeTextLine())
-                }
-            }
-        }
-
-        tableData = tableData2
-    }
-
-    ///
-    /// Sets all table cells borders to <strong>false</strong>.
-    ///
-    public func setNoCellBorders() {
+    public func setCellBorders(_ borders: Bool) {
         for row in tableData {
             for cell in row {
-                cell.setNoBorders()
+                cell.setBorders(borders)
             }
         }
     }
@@ -655,186 +527,226 @@ public class Table {
         }
     }
 
-    ///
-    /// Resets the rendered pages count.
-    /// Call this method if you have to draw this table more than one time.
-    ///
-    public func resetRenderedPagesCount() {
-        self.rendered = numOfHeaderRows
+    public func setFirstPageTopMargin(_ topMargin: Float) {
+        self.y1FirstPage = y1 + topMargin
     }
 
-    ///
-    /// This method removes borders that have the same color and overlap 100%.
-    /// The result is improved onscreen rendering of thin border lines by some PDF viewers.
-    ///
-    public func mergeOverlaidBorders() {
-        for (i, row) in tableData.enumerated() {
-            for (j, cell) in row.enumerated() {
-                if j < (row.count - 1) {
-                    let cellAtRight = row[j + 1]
-                    if cellAtRight.getBorder(Border.LEFT) &&
-                            cell.getPenColor() == cellAtRight.getPenColor() &&
-                            cell.getLineWidth() == cellAtRight.getLineWidth() &&
-                            (Int(cell.getColSpan()) + j) < (row.count - 1) {
-                        cell.setBorder(Border.RIGHT, false)
-                    }
-                }
-                if i < (tableData.count - 1) {
-                    let nextRow = tableData[i + 1]
-                    let cellBelow = nextRow[j]
-                    if cellBelow.getBorder(Border.TOP) &&
-                            cell.getPenColor() == cellBelow.getPenColor() &&
-                            cell.getLineWidth() == cellBelow.getLineWidth() {
-                        cell.setBorder(Border.BOTTOM, false)
-                    }
-                }
+    // Sets the right border on all cells in the last column.
+    private func setRightBorderOnLastColumn() {
+        for row in tableData {
+            var cell: Cell?
+            var i = 0
+            while i < row.count {
+                cell = row[i]
+                i += Int(cell!.getColSpan())
             }
+            cell!.setBorder(Border.RIGHT, true)
         }
     }
 
-    /**
-     *  Auto adjusts the widths of all columns so that they are just wide enough to hold the text without truncation.
-     */
-    public func autoAdjustColumnWidths() {
-        var maxColWidths = [Float](repeating: 0, count: (tableData[0].count))
-
-        for i in 0..<numOfHeaderRows {
-            for j in 0..<maxColWidths.count {
-                let cell = tableData[i][j]
-                var textWidth = cell.font!.stringWidth(cell.fallbackFont, cell.text)
-                textWidth += cell.leftPadding + cell.rightPadding
-                if textWidth > maxColWidths[j] {
-                    maxColWidths[j] = textWidth
-                }
-            }
+    // Sets the bottom border on all cells in the last row.
+    private func setBottomBorderOnLastRow() {
+        let lastRow = tableData[tableData.count - 1]
+        for cell in lastRow {
+            cell.setBorder(Border.BOTTOM, true)
         }
+    }
 
-        for i in numOfHeaderRows..<tableData.count {
-            for j in 0..<maxColWidths.count {
-                let cell = tableData[i][j]
-                if cell.getColSpan() > 1 {
-                    continue
-                }
-                if cell.text != nil {
-                    var textWidth = cell.font!.stringWidth(cell.fallbackFont, cell.text)
-                    textWidth += cell.leftPadding + cell.rightPadding
-                    if textWidth > maxColWidths[j] {
-                        maxColWidths[j] = textWidth
-                    }
-                }
-                if cell.image != nil {
-                    let imageWidth = cell.image!.getWidth() + cell.leftPadding + cell.rightPadding
-                    if imageWidth > maxColWidths[j] {
-                        maxColWidths[j] = imageWidth
-                    }
-                }
-                if cell.barCode != nil {
-                    let barcodeWidth = cell.barCode!.drawOn(nil)[0] + cell.leftPadding + cell.rightPadding
-                    if barcodeWidth > maxColWidths[j] {
-                        maxColWidths[j] = barcodeWidth
-                    }
-                }
-                if cell.textBox != nil {
-                    let tokens = cell.textBox!.text!.components(separatedBy: .whitespaces)
-                    for token in tokens {
-                        var tokenWidth = cell.textBox!.font!.stringWidth(cell.textBox!.fallbackFont, token)
-                        tokenWidth += cell.leftPadding + cell.rightPadding
-                        if tokenWidth > maxColWidths[j] {
-                            maxColWidths[j] = tokenWidth
+    //
+    // Auto adjusts the widths of all columns so that they are just wide enough to
+    // hold the text without truncation.
+    //
+    public func setColumnWidths() {
+        var maxColWidths = [Float](repeating: 0.0, count: tableData[0].count)
+        for row in tableData {
+            var i = 0
+            while i < row.count {
+                let cell = row[i]
+                if cell.getColSpan() == 1 {
+                    if cell.textBox != nil {
+                        let tokens = cell.textBox!.text!.components(separatedBy: .whitespaces)
+                        for token in tokens {
+                            var tokenWidth = cell.textBox!.font!.stringWidth(cell.textBox!.fallbackFont, token)
+                            tokenWidth += cell.leftPadding + cell.rightPadding
+                            if (tokenWidth > maxColWidths[i]) {
+                                maxColWidths[i] = tokenWidth
+                            }
+                        }
+                    } else if cell.image != nil {
+                        let imageWidth = cell.image!.getWidth() + cell.leftPadding + cell.rightPadding
+                        if (imageWidth > maxColWidths[i]) {
+                            maxColWidths[i] = imageWidth
+                        }
+                    } else if cell.barcode != nil {
+                        let barcodeWidth = cell.barcode!.drawOn(nil)[0] + cell.leftPadding + cell.rightPadding
+                        if (barcodeWidth > maxColWidths[i]) {
+                            maxColWidths[i] = barcodeWidth
+                        }
+                    } else if cell.text != nil {
+                        var textWidth = cell.font!.stringWidth(cell.fallbackFont, cell.text)
+                        textWidth += cell.leftPadding + cell.rightPadding
+                        if (textWidth > maxColWidths[i]) {
+                            maxColWidths[i] = textWidth
                         }
                     }
                 }
+                i += 1
             }
         }
-
-        for i in 0..<tableData.count {
-            let row = tableData[i]
-            for j in 0..<row.count {
-                let cell = row[j]
-                cell.setWidth(maxColWidths[j] + 0.1)
+        for row in tableData {
+            for i in 0..<row.count {
+                row[i].setWidth(maxColWidths[i])
             }
         }
-
-        autoResizeColumnsWithColspanBiggerThanOne()
-    }
-
-    private func isTextColumn(_ index: Int) -> Bool {
-        for i in numOfHeaderRows..<tableData.count {
-            let dataRow = tableData[i]
-            if dataRow[index].image != nil || dataRow[index].barCode != nil {
-                return false
-            }
-        }
-        return true
-    }
-
-    public func fitToPage(_ pageSize: [Float]) {
-        autoAdjustColumnWidths()
-
-        let tableWidth: Float = (pageSize[0] - self.x1!) - rightMargin
-        var textColumnWidths: Float = 0.0
-        var otherColumnWidths: Float = 0.0
-        let row = tableData[0]
-        for i in 0..<row.count {
-            let cell = row[i]
-            if isTextColumn(i) {
-                textColumnWidths += cell.getWidth()
-            } else {
-                otherColumnWidths += cell.getWidth()
-            }
-        }
-
-        var adjusted: Float = 0.0
-        if (tableWidth - otherColumnWidths) > textColumnWidths {
-            adjusted = textColumnWidths + ((tableWidth - otherColumnWidths) - textColumnWidths)
-        } else {
-            adjusted = textColumnWidths - (textColumnWidths - (tableWidth - otherColumnWidths))
-        }
-        let factor: Float = adjusted / textColumnWidths
-        for i in 0..<row.count {
-            if isTextColumn(i) {
-                setColumnWidth(i, getColumnWidth(i) * factor)
-            }
-        }
-
-        autoResizeColumnsWithColspanBiggerThanOne()
-        mergeOverlaidBorders()
-    }
-
-    private func autoResizeColumnsWithColspanBiggerThanOne() {
-        for i in 0..<tableData.count {
-            let dataRow = tableData[i]
-            var j = 0
-            while j < dataRow.count {
-                let cell = dataRow[j]
+        for row in tableData {
+            for i in 0..<row.count {
+                let cell = row[i]
                 let colspan = cell.getColSpan()
                 if colspan > 1 {
                     if cell.textBox != nil {
-                        var sumOfWidths = cell.getWidth()
-                        for _ in 1..<colspan {
-                            j += 1
-                            sumOfWidths += dataRow[j].getWidth()
+                        var sumOfWidths = Float(0.0)
+                        for j in 0..<colspan {
+                            sumOfWidths += row[i + Int(j)].getWidth()
                         }
                         cell.textBox!.setWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding))
                     }
                 }
-                j += 1
             }
         }
     }
 
-    public func setRightMargin(_ rightMargin: Float) {
-        self.rightMargin = rightMargin
-    }
-
-    public func setFirstPageTopMargin(_ topMargin: Float) {
-        self.y1FirstPage = y1! + topMargin
-    }
-
-    public func addToRow(_ row: inout [Cell], _ cell: Cell) {
-        row.append(cell)
-        for _ in 1..<cell.getColSpan() {
-            row.append(Cell(cell.getFont(), ""))
+    private func addExtraTableRows() -> [[Cell]] {
+        var tableData2 = [[Cell]]()
+        for row in tableData {
+            tableData2.append(row)  // Add the original row
+            var maxNumVerCells = 0
+            for i in 0..<row.count {
+                let numVerCells = getNumVerCells(row, i)
+                if numVerCells > maxNumVerCells {
+                    maxNumVerCells = numVerCells
+                }
+            }
+            for _ in 1..<maxNumVerCells {
+                var row2 = [Cell]()
+                for cell in row {
+                    let cell2 = Cell(cell.getFont())
+                    cell2.setFallbackFont(cell.getFallbackFont())
+                    cell2.setWidth(cell.getWidth())
+                    cell2.setLeftPadding(cell.leftPadding)
+                    cell2.setRightPadding(cell.rightPadding)
+                    cell2.setLineWidth(cell.lineWidth)
+                    cell2.setBgColor(cell.getBgColor())
+                    cell2.setPenColor(cell.getPenColor())
+                    cell2.setBrushColor(cell.getBrushColor())
+                    cell2.setProperties(cell.getProperties())
+                    cell2.setVerTextAlignment(cell.getVerTextAlignment())
+                    cell2.setTopPadding(0.0)
+                    cell2.setBorder(Border.TOP, false)
+                    row2.append(cell2)
+                }
+                tableData2.append(row2)
+            }
         }
+        return tableData2
+    }
+
+    func getTotalWidth(_ row: [Cell], _ index: Int) -> Float {
+        let cell = row[index]
+        let colspan = Int(cell.getColSpan())
+        var cellWidth = Float(0.0)
+        for i in 0..<colspan {
+            cellWidth += row[index + i].getWidth()
+        }
+        cellWidth -= (cell.leftPadding + row[index + (colspan - 1)].rightPadding)
+        return cellWidth
+    }
+
+    ///
+    /// Wraps around the text in all cells so it fits the column width.
+    /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
+    ///
+    public func wrapAroundCellText() {
+        let tableData2 = addExtraTableRows()
+        for (i, row) in tableData2.enumerated() {
+            for (j, cell) in row.enumerated() {
+                if cell.text != nil {
+                    let cellWidth = getTotalWidth(row, j)
+                    let tokens = cell.text!.components(separatedBy: .whitespaces)
+                    var n = 0
+                    var buf = String()
+                    for token in tokens {
+                        if cell.font!.stringWidth(cell.fallbackFont, token) > cellWidth {
+                            if buf.count > 0 {
+                                buf.append(" ")
+                            }
+                            for scalar in token.unicodeScalars {
+                                if cell.font!.stringWidth(cell.fallbackFont, buf + String(scalar)) > cellWidth {
+                                    tableData2[i + n][j].setText(buf)
+                                    buf = ""
+                                    n += 1
+                                }
+                                buf.append(String(scalar))
+                            }
+                        } else {
+                            if cell.font!.stringWidth(cell.fallbackFont, (buf + " " + token).trim()) > cellWidth {
+                                tableData2[i + n][j].setText(buf.trim())
+                                buf = ""
+                                buf.append(token)
+                                n += 1
+                            } else {
+                                if buf.count > 0 {
+                                    buf.append(" ")
+                                }
+                                buf.append(token)
+                            }
+                        }
+                    }
+                    tableData2[i + n][j].setText(buf.trim())
+                }
+            }
+        }
+        tableData = tableData2
+    }
+
+    ///
+    /// Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
+    ///
+    /// @return the number of vertical cells needed to wrap around the cell text.
+    ///
+    public func getNumVerCells(_ row: [Cell], _ index: Int) -> Int {
+        let cell = row[index]
+        var numOfVerCells = 1
+        if cell.text == nil {
+            return numOfVerCells
+        }
+        let cellWidth = getTotalWidth(row, index)
+        let tokens = cell.text!.components(separatedBy: .whitespaces)
+        var buf = String()
+        for token in tokens {
+            if cell.font!.stringWidth(cell.fallbackFont, token) > cellWidth {
+                if buf.count > 0 {
+                    buf.append(" ")
+                }
+                for scalar in token.unicodeScalars {
+                    if cell.font!.stringWidth(cell.fallbackFont, (buf + " " + String(scalar)).trim()) > cellWidth {
+                        numOfVerCells += 1
+                        buf = ""
+                    }
+                    buf.append(String(scalar))
+                }
+            } else {
+                if cell.font!.stringWidth(cell.fallbackFont, (buf + " " + token).trim()) > cellWidth {
+                    numOfVerCells += 1
+                    buf = ""
+                    buf.append(token)
+                } else {
+                    if buf.count > 0 {
+                        buf.append(" ")
+                    }
+                    buf.append(token)
+                }
+            }
+        }
+        return numOfVerCells
     }
 }   // End of Table.swift

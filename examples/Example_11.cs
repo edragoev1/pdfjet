@@ -15,43 +15,43 @@ public class Example_11 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        BarCode code = new BarCode(BarCode.CODE128, "Hellö, World!");
+        Barcode code = new Barcode(Barcode.CODE128, "Hellö, World!");
         code.SetLocation(170f, 70f);
         code.SetModuleLength(0.75f);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new BarCode(BarCode.CODE128, "G86513JVW0C");
+        code = new Barcode(Barcode.CODE128, "G86513JVW0C");
         code.SetLocation(170f, 170f);
         code.SetModuleLength(0.75f);
-        code.SetDirection(BarCode.TOP_TO_BOTTOM);
+        code.SetDirection(Barcode.TOP_TO_BOTTOM);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new BarCode(BarCode.CODE39, "WIKIPEDIA");
+        code = new Barcode(Barcode.CODE39, "WIKIPEDIA");
         code.SetLocation(270f, 370f);
         code.SetModuleLength(0.75f);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new BarCode(BarCode.CODE39, "CODE39");
+        code = new Barcode(Barcode.CODE39, "CODE39");
         code.SetLocation(400f, 70f);
         code.SetModuleLength(0.75f);
-        code.SetDirection(BarCode.TOP_TO_BOTTOM);
+        code.SetDirection(Barcode.TOP_TO_BOTTOM);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new BarCode(BarCode.CODE39, "CODE39");
+        code = new Barcode(Barcode.CODE39, "CODE39");
         code.SetLocation(450f, 70f);
         code.SetModuleLength(0.75f);
-        code.SetDirection(BarCode.BOTTOM_TO_TOP);
+        code.SetDirection(Barcode.BOTTOM_TO_TOP);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new BarCode(BarCode.UPC, "712345678904");
+        code = new Barcode(Barcode.UPC, "712345678904");
         code.SetLocation(450f, 270f);
         code.SetModuleLength(0.75f);
-        code.SetDirection(BarCode.BOTTOM_TO_TOP);
+        code.SetDirection(Barcode.BOTTOM_TO_TOP);
         code.SetFont(f1);
         code.DrawOn(page);
 

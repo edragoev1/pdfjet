@@ -9,7 +9,7 @@ using PDFjet.NET;
  */
 public class Example_08 {
     private Image image1;
-    private BarCode barCode;
+    private Barcode barcode;
 
     public Example_08() {
         PDF pdf = new PDF(new BufferedStream(
@@ -29,19 +29,19 @@ public class Example_08 {
         image1 = new Image(pdf, "images/fruit.jpg");
         image1.ScaleBy(0.20f);
 
-        barCode = new BarCode(BarCode.CODE128, "Hello, World!");
-        barCode.SetModuleLength(0.75f);
+        barcode = new Barcode(Barcode.CODE128, "Hello, World!");
+        barcode.SetModuleLength(0.75f);
         // Uncomment the line below if you want to print the text underneath the barcode.
-        // barCode.SetFont(f1);
+        // barcode.SetFont(f1);
 
         Table table = new Table();
         List<List<Cell>> tableData = GetData(
         		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2);
         table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.SetColumnWidths();
         table.RemoveLineBetweenRows(0, 1);
         table.SetLocation(100f, 0f);
-        table.SetRightMargin(20f);
-        table.SetBottomMargin(10f);
+        table.SetBottomMargin(15f);
         table.SetCellBordersWidth(0f);
         table.SetTextColorInRow(12, Color.blue);
         table.SetTextColorInRow(13, Color.red);
@@ -50,29 +50,11 @@ public class Example_08 {
         table.GetCellAt(21, 0).SetColSpan(6);
         table.GetCellAt(21, 6).SetColSpan(2);
 
-        // Set the column widths manually:
-        // table.SetColumnWidth(0, 70f);
-        // table.SetColumnWidth(1, 50f);
-        // table.SetColumnWidth(2, 70f);
-        // table.SetColumnWidth(3, 70f);
-        // table.SetColumnWidth(4, 70f);
-        // table.SetColumnWidth(5, 70f);
-        // table.SetColumnWidth(6, 50f);
-        // table.SetColumnWidth(7, 50f);
-
-        // Auto adjust the column widths to be just wide enough to fit the text without truncation.
-        // Columns with colspan > 1 will not be adjusted.
-        // table.AutoAdjustColumnWidths();
-
-        // Auto adjust the column widths in a way that allows the table to fit perfectly on the page.
-        // Columns with colspan > 1 will not be adjusted.
-        table.FitToPage(Letter.PORTRAIT);
-
         List<Page> pages = new List<Page>();
         table.DrawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
-            // page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
+            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
             pdf.AddPage(page);
         }
 
@@ -119,9 +101,8 @@ public class Example_08 {
                     cell = new Cell(f2);
                     if (i == 0 && currentRow == 5) {
                         cell.SetImage(image1);
-                    }
-                    if (i == 0 && currentRow == 6) {
-                        cell.SetBarcode(barCode);
+                    } else if (i == 0 && currentRow == 6) {
+                        cell.SetBarcode(barcode);
                         cell.SetTextAlignment(Align.CENTER);
                         cell.SetColSpan(8);
                     } else {

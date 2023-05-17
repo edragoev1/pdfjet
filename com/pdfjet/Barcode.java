@@ -1,5 +1,5 @@
 /**
- *  BarCode.java
+ *  Barcode.java
  *
 Copyright 2023 Innovatics Inc.
 
@@ -25,14 +25,12 @@ package com.pdfjet;
 
 import java.util.*;
 
-
 /**
  *  Used to create one dimentional barcodes - UPC, Code 39 and Code 128.
  *
  *  Please see Example_11.
  */
-public class BarCode implements Drawable {
-
+public class Barcode implements Drawable {
     public static final int UPC = 0;
     public static final int CODE128 = 1;
     public static final int CODE39 = 2;
@@ -59,7 +57,7 @@ public class BarCode implements Drawable {
      *  @param barcodeType the type of the barcode.
      *  @param text the content text of the barcode.
      */
-    public BarCode(int barcodeType, String text) {
+    public Barcode(int barcodeType, String text) {
         this.barcodeType = barcodeType;
         this.text = text;
 
@@ -129,15 +127,14 @@ public class BarCode implements Drawable {
         setLocation(x1, y1);
     }
 
-
     /**
      *  Sets the location where this barcode will be drawn on the page.
      *
      *  @param x1 the x coordinate of the top left corner of the barcode.
      *  @param y1 the y coordinate of the top left corner of the barcode.
-     *  @return this BarCode object.
+     *  @return this Barcode object.
      */
-    public BarCode setLocation(float x1, float y1) {
+    public Barcode setLocation(float x1, float y1) {
         this.x1 = x1;
         this.y1 = y1;
         return this;
@@ -148,12 +145,11 @@ public class BarCode implements Drawable {
      *
      *  @param x1 the x coordinate of the top left corner of the barcode.
      *  @param y1 the y coordinate of the top left corner of the barcode.
-     *  @return this BarCode object.
+     *  @return this Barcode object.
      */
-    public BarCode setLocation(double x1, double y1) {
+    public Barcode setLocation(double x1, double y1) {
         return setLocation((float) x1, (float) y1);
     }
-
 
     /**
      *  Sets the module length of this barcode.
@@ -165,7 +161,6 @@ public class BarCode implements Drawable {
         this.m1 = (float) moduleLength;
     }
 
-
     /**
      *  Sets the module length of this barcode.
      *  The default value is 0.75
@@ -175,7 +170,6 @@ public class BarCode implements Drawable {
     public void setModuleLength(float moduleLength) {
         this.m1 = moduleLength;
     }
-
 
     /**
      *  Sets the bar height factor.
@@ -188,7 +182,6 @@ public class BarCode implements Drawable {
         this.barHeightFactor = (float) barHeightFactor;
     }
 
-
     /**
      *  Sets the bar height factor.
      *  The height of the bars is the moduleLength * barHeightFactor
@@ -200,7 +193,6 @@ public class BarCode implements Drawable {
         this.barHeightFactor = barHeightFactor;
     }
 
-
     /**
      *  Sets the drawing direction for this font.
      *
@@ -209,7 +201,6 @@ public class BarCode implements Drawable {
     public void setDirection(int direction) {
         this.direction = direction;
     }
-
 
     /**
      *  Sets the font to be used with this barcode.
@@ -220,7 +211,6 @@ public class BarCode implements Drawable {
         this.font = font;
     }
 
-
     /**
      *  Draws this barcode on the specified page.
      *
@@ -229,36 +219,28 @@ public class BarCode implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        if (barcodeType == BarCode.UPC) {
+        if (barcodeType == Barcode.UPC) {
             return drawCodeUPC(page, x1, y1);
-        }
-        else if (barcodeType == BarCode.CODE128) {
+        } else if (barcodeType == Barcode.CODE128) {
             return drawCode128(page, x1, y1);
-        }
-        else if (barcodeType == BarCode.CODE39) {
+        } else if (barcodeType == Barcode.CODE39) {
             return drawCode39(page, x1, y1);
-        }
-        else {
+        } else {
             throw new Exception("Unsupported Barcode Type.");
         }
     }
-
 
     protected float[] drawOnPageAtLocation(Page page, float x1, float y1) throws Exception {
-        if (barcodeType == BarCode.UPC) {
+        if (barcodeType == Barcode.UPC) {
             return drawCodeUPC(page, x1, y1);
-        }
-        else if (barcodeType == BarCode.CODE128) {
+        } else if (barcodeType == Barcode.CODE128) {
             return drawCode128(page, x1, y1);
-        }
-        else if (barcodeType == BarCode.CODE39) {
+        } else if (barcodeType == Barcode.CODE39) {
             return drawCode39(page, x1, y1);
-        }
-        else {
+        } else {
             throw new Exception("Unsupported Barcode Type.");
         }
     }
-
 
     private float[] drawCodeUPC(Page page, float x1, float y1) throws Exception {
         float x = x1;
@@ -348,7 +330,6 @@ public class BarCode implements Drawable {
         return new float[] {xy[0], xy[1]};
     }
 
-
     private float drawEGuard(
             Page page,
             float x,
@@ -364,7 +345,6 @@ public class BarCode implements Drawable {
         }
         return (x + (3.0f * m1));
     }
-
 
     private float drawMGuard(
             Page page,
@@ -382,7 +362,6 @@ public class BarCode implements Drawable {
         return (x + (5.0f * m1));
     }
 
-
     private void drawBar(
             Page page,
             float x,
@@ -396,7 +375,6 @@ public class BarCode implements Drawable {
             page.strokePath();
         }
     }
-
 
     private float[] drawCode128(Page page, float x1, float y1) throws Exception {
         float x = x1;
@@ -418,15 +396,12 @@ public class BarCode implements Drawable {
             if (symchar < 32) {
                 list.add(GS1_128.SHIFT);
                 list.add(symchar + 64);
-            }
-            else if (symchar < 128) {
+            } else if (symchar < 128) {
                 list.add(symchar - 32);
-            }
-            else if (symchar < 256) {
+            } else if (symchar < 256) {
                 list.add(GS1_128.FNC_4);
                 list.add(symchar - 160);    // 128 + 32
-            }
-            else {
+            } else {
                 // list.add(31);            // '?'
                 list.add(256);              // This will generate an exception.
             }
@@ -462,8 +437,7 @@ public class BarCode implements Drawable {
                 }
                 if (direction == LEFT_TO_RIGHT) {
                     x += n * m1;
-                }
-                else if (direction == TOP_TO_BOTTOM) {
+                } else if (direction == TOP_TO_BOTTOM) {
                     y += n * m1;
                 }
             }
@@ -494,45 +468,35 @@ public class BarCode implements Drawable {
         return xy;
     }
 
-
     private float[] drawCode39(Page page, float x1, float y1) throws Exception {
         text = "*" + text + "*";
-
         float x = x1;
         float y = y1;
         float w = m1 * barHeightFactor; // Barcode width when drawn vertically
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
         float[] xy = new float[] {0f, 0f};
-
         if (direction == LEFT_TO_RIGHT) {
-
             for (int i = 0; i < text.length(); i++) {
                 String code = tableB.get(text.charAt(i));
-
                 if (code == null) {
                     throw new Exception("The input string '" + text +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
-
                 for (int j = 0; j < 9; j++) {
                     char ch = code.charAt(j);
                     if (ch == 'w') {
                         x += m1;
-                    }
-                    else if (ch == 'W') {
+                    } else if (ch == 'W') {
                         x += m1 * 3;
-                    }
-                    else if (ch == 'b') {
+                    } else if (ch == 'b') {
                         drawVertBar(page, x, y, m1, h);
                         x += m1;
-                    }
-                    else if (ch == 'B') {
+                    } else if (ch == 'B') {
                         drawVertBar(page, x, y, m1 * 3, h);
                         x += m1 * 3;
                     }
                 }
-
                 x += m1;
             }
 
@@ -544,34 +508,27 @@ public class BarCode implements Drawable {
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]);
             }
-        }
-        else if (direction == TOP_TO_BOTTOM) {
+        } else if (direction == TOP_TO_BOTTOM) {
             for (int i = 0; i < text.length(); i++) {
                 String code = tableB.get(text.charAt(i));
-
                 if (code == null) {
                     throw new Exception("The input string '" + text +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
-
                 for (int j = 0; j < 9; j++) {
                     char ch = code.charAt(j);
                     if (ch == 'w') {
                         y += m1;
-                    }
-                    else if (ch == 'W') {
+                    } else if (ch == 'W') {
                         y += 3 * m1;
-                    }
-                    else if (ch == 'b') {
+                    } else if (ch == 'b') {
                         drawHorzBar(page, x, y, m1, h);
                         y += m1;
-                    }
-                    else if (ch == 'B') {
+                    } else if (ch == 'B') {
                         drawHorzBar(page, x, y, 3 * m1, h);
                         y += 3 * m1;
                     }
                 }
-
                 y += m1;
             }
 
@@ -585,61 +542,48 @@ public class BarCode implements Drawable {
                 xy[0] = Math.max(x, xy[0]) + w;
                 xy[1] = Math.max(y, xy[1]);
             }
-
-        }
-        else if (direction == BOTTOM_TO_TOP) {
+        } else if (direction == BOTTOM_TO_TOP) {
             float height = 0.0f;
 
             for (int i = 0; i < text.length(); i++) {
                 String code = tableB.get(text.charAt(i));
-
                 if (code == null) {
                     throw new Exception("The input string '" + text +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
-
                 for (int j = 0; j < 9; j++) {
                     char ch = code.charAt(j);
                     if (ch == 'w' || ch == 'b') {
                         height += m1;
-                    }
-                    else if (ch == 'W' || ch == 'B') {
+                    } else if (ch == 'W' || ch == 'B') {
                         height += 3 * m1;
                     }
                 }
-
                 height += m1;
             }
 
             y += height - m1;
-
             for (int i = 0; i < text.length(); i++) {
                 String code = tableB.get(text.charAt(i));
-
                 for (int j = 0; j < 9; j++) {
                     char ch = code.charAt(j);
                     if (ch == 'w') {
                         y -= m1;
-                    }
-                    else if (ch == 'W') {
+                    } else if (ch == 'W') {
                         y -= 3 * m1;
-                    }
-                    else if (ch == 'b') {
+                    } else if (ch == 'b') {
                         drawHorzBar2(page, x, y, m1, h);
                         y -= m1;
-                    }
-                    else if (ch == 'B') {
+                    } else if (ch == 'B') {
                         drawHorzBar2(page, x, y, 3 * m1, h);
                         y -= 3 * m1;
                     }
                 }
-
                 y -= m1;
             }
 
             if (font != null) {
                 y = y1 + (height - m1);
-
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
                         x + w + font.bodyHeight,
@@ -708,4 +652,4 @@ public class BarCode implements Drawable {
         }
         return m1 * barHeightFactor + font.getHeight();
     }
-}   // End of BarCode.java
+}   // End of Barcode.java

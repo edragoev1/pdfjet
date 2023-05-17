@@ -26,7 +26,6 @@ SOFTWARE.
 
 import (
 	"log"
-	"strings"
 
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/border"
@@ -42,7 +41,7 @@ type Cell struct {
 	fallbackFont      *Font
 	text              *string
 	image             *Image
-	barCode           *BarCode
+	barcode           *Barcode
 	point             *Point
 	compositeTextLine *CompositeTextLine
 	textBox           *TextBox
@@ -75,7 +74,6 @@ type Cell struct {
 	properties uint32
 	uri, key   *string
 	valign     int
-	drawable   Drawable
 }
 
 // NewEmptyCell creates a cell object and sets the font.
@@ -96,11 +94,11 @@ func NewCell(font *Font, text string) *Cell {
 	cell.bottomPadding = 2.0
 	cell.leftPadding = 2.0
 	cell.rightPadding = 2.0
-	cell.lineWidth = 0.2
+	cell.lineWidth = 0.0
 	cell.background = color.White
 	cell.pen = color.Black
 	cell.brush = color.Black
-	cell.properties = 0x000F0001
+	cell.properties = 0x00050001 // Set only left and top borders!
 	cell.valign = align.Top
 	return cell
 }
@@ -143,6 +141,7 @@ func (cell *Cell) GetText() string {
 // SetImage sets the image inside this cell.
 func (cell *Cell) SetImage(image *Image) {
 	cell.image = image
+	cell.text = nil
 }
 
 // GetImage returns the cell image.
@@ -151,8 +150,9 @@ func (cell *Cell) GetImage() *Image {
 }
 
 // SetBarcode -- TODO:
-func (cell *Cell) SetBarcode(barCode *BarCode) {
-	cell.barCode = barCode
+func (cell *Cell) SetBarcode(barcode *Barcode) {
+	cell.barcode = barcode
+	cell.text = nil
 }
 
 // SetPoint sets the point inside this cell.
@@ -242,46 +242,19 @@ func (cell *Cell) SetPadding(padding float32) {
 // @return the cell height.
 func (cell *Cell) GetHeight() float32 {
 	cellHeight := float32(0.0)
-
-	if cell.image != nil {
-		height := cell.image.GetHeight() + cell.topPadding + cell.bottomPadding
-		if height > cellHeight {
-			cellHeight = height
-		}
-	}
-
-	if cell.barCode != nil {
-		height := cell.barCode.GetHeight() + cell.topPadding + cell.bottomPadding
-		if height > cellHeight {
-			cellHeight = height
-		}
-	}
-
 	if cell.textBox != nil {
-		height := cell.textBox.DrawOn(nil)[1] + cell.topPadding + cell.bottomPadding
-		if height > cellHeight {
-			cellHeight = height
-		}
-	}
-
-	if cell.drawable != nil {
-		height := cell.drawable.DrawOn(nil)[1] + cell.topPadding + cell.bottomPadding
-		if height > cellHeight {
-			cellHeight = height
-		}
-	}
-
-	if cell.text != nil {
+		cellHeight = cell.textBox.DrawOn(nil)[1] + cell.topPadding + cell.bottomPadding
+	} else if cell.image != nil {
+		cellHeight = cell.image.GetHeight() + cell.topPadding + cell.bottomPadding
+	} else if cell.barcode != nil {
+		cellHeight = cell.barcode.GetHeight() + cell.topPadding + cell.bottomPadding
+	} else if cell.text != nil {
 		fontHeight := cell.font.GetHeight()
 		if cell.fallbackFont != nil && cell.fallbackFont.GetHeight() > fontHeight {
 			fontHeight = cell.fallbackFont.GetHeight()
 		}
-		height := fontHeight + cell.topPadding + cell.bottomPadding
-		if height > cellHeight {
-			cellHeight = height
-		}
+		cellHeight = fontHeight + cell.topPadding + cell.bottomPadding
 	}
-
 	return cellHeight
 }
 
@@ -375,10 +348,13 @@ func (cell *Cell) GetBorder(border int) bool {
 	return (cell.properties & uint32(border)) != 0
 }
 
-// SetNoBorders sets all border object parameters to false.
-// This cell will have no borders when drawn on the page.
-func (cell *Cell) SetNoBorders() {
-	cell.properties &= 0x00F0FFFF
+// SetBorders sets all cell borders to true or false.
+func (cell *Cell) SetBorders(borders bool) {
+	if borders {
+		cell.properties &= 0x00FFFFFF
+	} else {
+		cell.properties &= 0x00F0FFFF
+	}
 }
 
 // SetTextAlignment sets the cell text alignment.
@@ -446,12 +422,17 @@ func (cell *Cell) SetURIAction(uri *string) {
 	cell.uri = uri
 }
 
-// Paint draws the point, text and borders of this cell.
-func (cell *Cell) Paint(page *Page, x, y, w, h float32) {
+// DrawOn draws the point, text and borders of this cell.
+func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 	if cell.background != color.White {
 		cell.drawBackground(page, x, y, w, h)
 	}
-	if cell.image != nil {
+
+	if cell.textBox != nil {
+		cell.textBox.SetLocation(x+cell.leftPadding, y+cell.topPadding)
+		cell.textBox.SetWidth(w - (cell.leftPadding + cell.rightPadding))
+		cell.textBox.DrawOn(page)
+	} else if cell.image != nil {
 		if cell.GetTextAlignment() == align.Left {
 			cell.image.SetLocation(x+cell.leftPadding, y+cell.topPadding)
 			cell.image.DrawOn(page)
@@ -462,26 +443,21 @@ func (cell *Cell) Paint(page *Page, x, y, w, h float32) {
 			cell.image.SetLocation((x+w)-(cell.image.GetWidth()+cell.leftPadding), y+cell.topPadding)
 			cell.image.DrawOn(page)
 		}
-	}
-	if cell.barCode != nil {
+	} else if cell.barcode != nil {
 		if cell.GetTextAlignment() == align.Left {
-			cell.barCode.drawOnPageAtLocation(page, x+cell.leftPadding, y+cell.topPadding)
+			cell.barcode.drawOnPageAtLocation(page, x+cell.leftPadding, y+cell.topPadding)
 		} else if cell.GetTextAlignment() == align.Center {
-			barcodeWidth := cell.barCode.DrawOn(nil)[0]
-			cell.barCode.drawOnPageAtLocation(page, (x+w/2.0)-barcodeWidth/2.0, y+cell.topPadding)
+			barcodeWidth := cell.barcode.DrawOn(nil)[0]
+			cell.barcode.drawOnPageAtLocation(page, (x+w/2.0)-barcodeWidth/2.0, y+cell.topPadding)
 		} else if cell.GetTextAlignment() == align.Right {
-			barcodeWidth := cell.barCode.DrawOn(nil)[0]
-			cell.barCode.drawOnPageAtLocation(page, (x+w)-(barcodeWidth+cell.leftPadding), y+cell.topPadding)
+			barcodeWidth := cell.barcode.DrawOn(nil)[0]
+			cell.barcode.drawOnPageAtLocation(page, (x+w)-(barcodeWidth+cell.leftPadding), y+cell.topPadding)
 		}
-	}
-	if cell.textBox != nil {
-		cell.textBox.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-		cell.textBox.DrawOn(page)
-	}
-	cell.drawBorders(page, x, y, w, h)
-	if cell.text != nil {
+	} else if cell.text != nil {
 		cell.DrawText(page, x, y, w, h)
 	}
+
+	cell.drawBorders(page, x, y, w, h)
 	if cell.point != nil {
 		if cell.point.align == align.Left {
 			cell.point.x = x + 2*cell.point.r
@@ -505,11 +481,6 @@ func (cell *Cell) Paint(page *Page, x, y, w, h float32) {
 		}
 
 		page.DrawPoint(cell.point)
-	}
-
-	if cell.drawable != nil {
-		cell.drawable.SetPosition(x+cell.leftPadding, y+cell.topPadding)
-		cell.drawable.DrawOn(page)
 	}
 }
 
@@ -681,44 +652,7 @@ func (cell *Cell) StrikeoutText(page *Page, font *Font, text string, x, y float3
 	page.AddEMC()
 }
 
-// getNumVerCells returns the number of vertical cells needed to wrap around the cell text.
-func (cell *Cell) getNumVerCells() int {
-	n := 1
-	if cell.text == nil {
-		return n
-	}
-
-	textLines := strings.Fields(*cell.text)
-	if len(textLines) == 0 {
-		return n
-	}
-
-	n = 0
-	for _, textLine := range textLines {
-		tokens := strings.Fields(textLine)
-		var sb strings.Builder
-		if len(tokens) > 1 {
-			for i, token := range tokens {
-				if cell.font.stringWidth(sb.String()+" "+token) >
-					cell.width-(cell.leftPadding+cell.rightPadding) {
-					sb.Reset()
-					sb.WriteString(token)
-					n++
-				} else {
-					if i > 0 {
-						sb.WriteString(" ")
-					}
-					sb.WriteString(token)
-				}
-			}
-		}
-		n++
-	}
-
-	return n
-}
-
-// GetTextBox -- TODO:
+// GetTextBox returns the cell's text box.
 func (cell *Cell) GetTextBox() *TextBox {
 	return cell.textBox
 }

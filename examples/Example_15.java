@@ -20,7 +20,7 @@ public class Example_15 {
         Font f4 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
         Font f5 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
 
-        Page page = new Page(pdf, A4.PORTRAIT);
+        // Page page = new Page(pdf, A4.PORTRAIT);
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
         List<Cell> row = null;
@@ -70,20 +70,16 @@ public class Example_15 {
 
         Table table = new Table();
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
-        table.setCellBordersWidth(0.2f);
+        table.setBottomMargin(15f);
         table.setLocation(70f, 30f);
-        table.autoAdjustColumnWidths();
+        table.setColumnWidths();
 
-        while (true) {
-            float[] xy = table.drawOn(page);
-            TextLine text = new TextLine(f1, "Hello, World.");
-            text.setLocation(xy[0] + table.getWidth(), xy[1]);
-            text.drawOn(page);
-
-            if (!table.hasMoreData()) {
-                break;
-            }
-            page = new Page(pdf, A4.PORTRAIT);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, A4.PORTRAIT);
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = pages.get(i);
+            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
+            pdf.addPage(page);
         }
 
         pdf.complete();

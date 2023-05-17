@@ -23,7 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-public class FlateLiteral {
+internal class FlateLiteral {
     //  Huffman codes for the literal alphabet:
     //  ==========================================
     //  Literal      nBits       Codes

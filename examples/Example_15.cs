@@ -65,13 +65,15 @@ public class Example_15 {
 
         Table table = new Table();
         table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
-        table.SetCellBordersWidth(0.2f);
+        table.SetBottomMargin(15f);
         table.SetLocation(70f, 30f);
-        table.AutoAdjustColumnWidths();
+        table.SetColumnWidths();
 
         List<Page> pages = new List<Page>();
         table.DrawOn(pdf, pages, A4.PORTRAIT);
-        foreach (Page page in pages) {
+        for (int i = 0; i < pages.Count; i++) {
+            Page page = pages[i];
+            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
             pdf.AddPage(page);
         }
 

@@ -32,8 +32,8 @@ namespace PDFjet.NET {
  */
 public class Bidi {
 /*
-General,Isolated,End,Middle,Beginning
-*/
+ * General,Isolated,End,Middle,Beginning
+ */
 private static char[] forms = new char[] {
 '\u0623','\uFE83','\uFE84','\u0623','\u0623',
 '\u0628','\uFE8F','\uFE90','\uFE92','\uFE91',
@@ -126,16 +126,13 @@ private static char[] forms = new char[] {
                 } else {
                     buf1.Append(ch);
                 }
-            }
-            else if (IsAlphaNumeric(ch)) {
+            } else if (IsAlphaNumeric(ch)) {
                 rightToLeft = false;
                 buf2.Append(ch);
-            }
-            else {
+            } else {
                 if (rightToLeft) {
                     buf1.Append(ch);
-                }
-                else {
+                } else {
                     buf2.Append(ch);
                 }
             }
@@ -143,7 +140,6 @@ private static char[] forms = new char[] {
         if (buf2.Length > 0) {
             buf1.Append(Process(buf2.ToString()));
         }
-
         StringBuilder buf3 = new StringBuilder();
         for (int i = (buf1.Length - 1); i >= 0; i--) {
             char ch = buf1[i];
@@ -154,14 +150,11 @@ private static char[] forms = new char[] {
                     if (ch == forms[j]) {
                         if (!IsArabicLetter(prevCh) && !IsArabicLetter(nextCh)) {
                             buf3.Append(forms[j + 1]);  // Isolated
-                        }
-                        else if (IsArabicLetter(prevCh) && !IsArabicLetter(nextCh)) {
+                        } else if (IsArabicLetter(prevCh) && !IsArabicLetter(nextCh)) {
                             buf3.Append(forms[j + 2]);  // End
-                        }
-                        else if (IsArabicLetter(prevCh) && IsArabicLetter(nextCh)) {
+                        } else if (IsArabicLetter(prevCh) && IsArabicLetter(nextCh)) {
                             buf3.Append(forms[j + 3]);  // Middle
-                        }
-                        else if (!IsArabicLetter(prevCh) && IsArabicLetter(nextCh)) {
+                        } else if (!IsArabicLetter(prevCh) && IsArabicLetter(nextCh)) {
                             buf3.Append(forms[j + 4]);  // Beginning
                         }
                     }

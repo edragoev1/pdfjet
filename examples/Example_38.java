@@ -21,7 +21,7 @@ public class Example_38 {
         table.setData(createTableData());
         table.setBottomMargin(10f);
         table.setLocation(50f, 50f);
-        table.mergeOverlaidBorders();
+        // table.mergeOverlaidBorders();
         table.drawOn(page);
 
         pdf.complete();

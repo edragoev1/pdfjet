@@ -82,7 +82,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	}
 	pdf.appendString("/Length ")
 	pdf.appendInteger(len(file.content))
-	pdf.appendString("\n")
+	pdf.appendByte('\n')
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.appendByteArray(token.Stream)
 	pdf.appendByteArray(file.content)

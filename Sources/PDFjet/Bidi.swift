@@ -23,17 +23,15 @@ SOFTWARE.
 */
 import Foundation
 
-
 /**
  *  Provides BIDI processing for Arabic and Hebrew.
  *
  *  Please see Example_27.
  */
 public class Bidi {
-
 /*
-General,Isolated,End,Middle,Beginning
-*/
+ * General,Isolated,End,Middle,Beginning
+ */
 private static let forms: [Character] = [
 "\u{0623}","\u{FE83}","\u{FE84}","\u{0623}","\u{0623}",
 "\u{0628}","\u{FE8F}","\u{FE90}","\u{FE92}","\u{FE91}",
@@ -68,7 +66,6 @@ private static let forms: [Character] = [
 "\u{0649}","\u{FEEF}","\u{FEF0}","\u{0649}","\u{0649}",
 ]
 
-
     private static func isArabicLetter(_ ch: Character) -> Bool {
         // for i in 0..<forms.count; i += 5) {
         for i in stride(from: 0, to: forms.count, by: 5) {
@@ -78,7 +75,6 @@ private static let forms: [Character] = [
         }
         return false
     }
-
 
     /**
      *  Reorders the string so that Arabic and Hebrew text flows from right
@@ -143,7 +139,6 @@ private static let forms: [Character] = [
         if buf2.count > 0 {
             buf1.append(process(buf2))
         }
-
         var buf3 = String()
         var i: Int = buf1.count - 1
         while i >= 0 {
@@ -172,16 +167,13 @@ private static let forms: [Character] = [
         return buf3
     }
 
-
     public static func isArabic(_ ch: Character) -> Bool {
         return (ch >= "\u{0600}" && ch <= "\u{06FF}")
     }
 
-
     private static func isHebrew(_ ch: Character) -> Bool {
         return (ch >= "\u{0591}" && ch <= "\u{05F4}")
     }
-
 
     private static func isAlphaNumeric(_ ch: Character) -> Bool {
         if ch >= "0" && ch <= "9" {
@@ -196,7 +188,6 @@ private static let forms: [Character] = [
         return false
     }
 
-
     private static func process(_ buf: String) -> String {
         let buf1 = String(buf.reversed())
         var buf2 = String()
@@ -207,14 +198,11 @@ private static let forms: [Character] = [
                 buf2.append(ch)
                 continue
             }
-
             let index1 = buf1.index(buf1.startIndex, offsetBy: i)
             buf3.append(String(buf1[index1...]))
-
             buf3.append(String(buf2.reversed()))
             break
         }
         return buf3
     }
-
 }

@@ -137,7 +137,6 @@ func ReorderVisually(text string) string {
 	if len(buf2) > 0 {
 		buf1 = append(buf1, processText(buf2)...)
 	}
-
 	buf3 := make([]rune, 0)
 	for i := (len(buf1) - 1); i >= 0; i-- {
 		ch := buf1[i]
@@ -150,7 +149,6 @@ func ReorderVisually(text string) string {
 			if i < len(runes)-1 {
 				nextCh = runes[i+1]
 			}
-
 			for j := 0; j < len(forms); j += 5 {
 				if ch == forms[j] {
 					if !isArabicLetter(prevCh) && !isArabicLetter(nextCh) {

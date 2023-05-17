@@ -29,38 +29,37 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 )
 
 // SplitTextIntoTokens splits the text into tokens.
-func SplitTextIntoTokens(text string, font, fallbackFont *Font, width float32) []string {
-	tokens2 := make([]string, 0)
+// func SplitTextIntoTokens(text string, font, fallbackFont *Font, width float32) []string {
+// 	tokens2 := make([]string, 0)
 
-	tokens := strings.Fields(text)
-	for _, token := range tokens {
-		if font.StringWidth(fallbackFont, token) <= width {
-			tokens2 = append(tokens2, token)
-		} else {
-			var buf strings.Builder
-			for _, ch := range token {
-				if font.StringWidth(fallbackFont, buf.String()+string(ch)) <= width {
-					buf.WriteRune(ch)
-				} else {
-					tokens2 = append(tokens2, buf.String())
-					buf.Reset()
-					buf.WriteRune(ch)
-				}
-			}
-			str := buf.String()
-			if str != "" {
-				tokens2 = append(tokens2, str)
-			}
-		}
-	}
+// 	tokens := strings.Fields(text)
+// 	for _, token := range tokens {
+// 		if font.StringWidth(fallbackFont, token) <= width {
+// 			tokens2 = append(tokens2, token)
+// 		} else {
+// 			var buf strings.Builder
+// 			for _, ch := range token {
+// 				if font.StringWidth(fallbackFont, buf.String()+string(ch)) <= width {
+// 					buf.WriteRune(ch)
+// 				} else {
+// 					tokens2 = append(tokens2, buf.String())
+// 					buf.Reset()
+// 					buf.WriteRune(ch)
+// 				}
+// 			}
+// 			str := buf.String()
+// 			if str != "" {
+// 				tokens2 = append(tokens2, str)
+// 			}
+// 		}
+// 	}
 
-	return tokens2
-}
+// 	return tokens2
+// }
 
 func ReadTextLines(filePath string) []string {
 	lines := make([]string, 0)

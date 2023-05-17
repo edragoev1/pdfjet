@@ -23,10 +23,8 @@ SOFTWARE.
 using System;
 using System.IO;
 
-
 namespace PDFjet.NET {
 public class BMPImage {
-
     int w = 0;              // Image width in pixels
     int h = 0;              // Image height in pixels
 
@@ -50,7 +48,6 @@ public class BMPImage {
 
     /* Tested with images created from GIMP */
     public BMPImage( System.IO.Stream stream ) {
-
         byte[] bm = GetBytes(stream, 2);
         // From Wikipedia
         if((bm[0] == 'B' && bm[1] == 'M')||
@@ -86,7 +83,6 @@ public class BMPImage {
         } else {
             throw new Exception("BMP data could not be parsed!");
         }
-
     }
 
     private void parseData(System.IO.Stream stream) {
@@ -262,6 +258,5 @@ public class BMPImage {
     public byte[] GetData() {
         return this.deflated;
     }
-
 }
 }   // End of namespace PDFjet.NET

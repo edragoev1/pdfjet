@@ -12,17 +12,14 @@ DENSO WAVE INCORPORATED
   http://www.denso-wave.com/qrcode/faqpatent-e.html
 */
 
-
 /**
  * BitBuffer
  * @author Kazuhiko Arase
  */
 class BitBuffer {
-
     private var buffer: [UInt8]
     private var length = 0
     private var increments = 32
-
 
     public init() {
         buffer = [UInt8](repeating: 0, count: increments)
@@ -50,12 +47,9 @@ class BitBuffer {
             }
             buffer = newBuffer
         }
-
         if bit {
             buffer[length / 8] |= (UInt8(0x80) >> (length % 8))
         }
-
         length += 1
     }
-
 }

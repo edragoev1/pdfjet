@@ -21,7 +21,6 @@ public class Example_38 {
         table.SetData(CreateTableData());
         table.SetBottomMargin(10f);
         table.SetLocation(50f, 50f);
-        table.MergeOverlaidBorders();
         table.DrawOn(page);
 
         pdf.Complete();

@@ -47,10 +47,8 @@ public class Box : Drawable {
     private var actualText: String = Single.space
     private var altDescription: String = Single.space
 
-
     public init() {
     }
-
 
     /**
      *  Creates a box object.
@@ -71,11 +69,9 @@ public class Box : Drawable {
         self.h = h
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     /**
      *  Sets the location of this box on the page.
@@ -92,7 +88,6 @@ public class Box : Drawable {
         return self
     }
 
-
     /**
      *  Sets the size of this box.
      *
@@ -108,7 +103,6 @@ public class Box : Drawable {
         return self
     }
 
-
     /**
      *  Sets the color for this box.
      *
@@ -119,7 +113,6 @@ public class Box : Drawable {
         self.color = color
         return self
     }
-
 
     /**
      *  Sets the width of this line.
@@ -132,7 +125,6 @@ public class Box : Drawable {
         return self
     }
 
-
     /**
      *  Sets the URI for the "click box" action.
      *
@@ -144,7 +136,6 @@ public class Box : Drawable {
         return self
     }
 
-
     /**
      *  Sets the destination key for the action.
      *
@@ -155,7 +146,6 @@ public class Box : Drawable {
         self.key = key
         return self
     }
-
 
     /**
      *  Sets the alternate description of this box.
@@ -170,7 +160,6 @@ public class Box : Drawable {
         return self
     }
 
-
     /**
      *  Sets the actual text for this box.
      *
@@ -183,7 +172,6 @@ public class Box : Drawable {
         self.actualText = actualText
         return self
     }
-
 
     /**
      *  The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -215,7 +203,6 @@ public class Box : Drawable {
         return self
     }
 
-
     /**
      *  Sets the private fillShape variable.
      *  If the value of fillShape is true - the box is filled with the current brush color.
@@ -228,7 +215,6 @@ public class Box : Drawable {
         self.fillShape = fillShape
         return self
     }
-
 
     /**
      *  Places this box in the another box.
@@ -247,7 +233,6 @@ public class Box : Drawable {
         return self
     }
 
-
     /**
      *  Scales this box by the spacified factor.
      *
@@ -259,7 +244,6 @@ public class Box : Drawable {
         self.y = self.y * factor
         return self
     }
-
 
     /**
      *  Draws this box on the specified page.

@@ -12,7 +12,6 @@ DENSO WAVE INCORPORATED
   http://www.denso-wave.com/qrcode/faqpatent-e.html
 */
 
-
 class MaskPattern {
     public static let PATTERN000 = 0
     public static let PATTERN001 = 1

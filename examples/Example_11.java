@@ -16,43 +16,43 @@ public class Example_11 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        BarCode code = new BarCode(BarCode.CODE128, "Hellö, World!");
+        Barcode code = new Barcode(Barcode.CODE128, "Hellö, World!");
         code.setLocation(170f, 70f);
         code.setModuleLength(0.75f);
         code.setFont(f1);
         code.drawOn(page);
 
-        code = new BarCode(BarCode.CODE128, "G86513JVW0C");
+        code = new Barcode(Barcode.CODE128, "G86513JVW0C");
         code.setLocation(170f, 170f);
         code.setModuleLength(0.75f);
-        code.setDirection(BarCode.TOP_TO_BOTTOM);
+        code.setDirection(Barcode.TOP_TO_BOTTOM);
         code.setFont(f1);
         code.drawOn(page);
 
-        code = new BarCode(BarCode.CODE39, "WIKIPEDIA");
+        code = new Barcode(Barcode.CODE39, "WIKIPEDIA");
         code.setLocation(270f, 370f);
         code.setModuleLength(0.75f);
         code.setFont(f1);
         code.drawOn(page);
 
-        code = new BarCode(BarCode.CODE39, "CODE39");
+        code = new Barcode(Barcode.CODE39, "CODE39");
         code.setLocation(400f, 70f);
         code.setModuleLength(0.75f);
-        code.setDirection(BarCode.TOP_TO_BOTTOM);
+        code.setDirection(Barcode.TOP_TO_BOTTOM);
         code.setFont(f1);
         code.drawOn(page);
 
-        code = new BarCode(BarCode.CODE39, "CODE39");
+        code = new Barcode(Barcode.CODE39, "CODE39");
         code.setLocation(450f, 70f);
         code.setModuleLength(0.75f);
-        code.setDirection(BarCode.BOTTOM_TO_TOP);
+        code.setDirection(Barcode.BOTTOM_TO_TOP);
         code.setFont(f1);
         code.drawOn(page);
 
-        code = new BarCode(BarCode.UPC, "712345678904");
+        code = new Barcode(Barcode.UPC, "712345678904");
         code.setLocation(450f, 270f);
         code.setModuleLength(0.75f);
-        code.setDirection(BarCode.BOTTOM_TO_TOP);
+        code.setDirection(Barcode.BOTTOM_TO_TOP);
         code.setFont(f1);
         code.drawOn(page);
 

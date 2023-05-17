@@ -13,14 +13,12 @@ DENSO WAVE INCORPORATED
 */
 using System;
 
-
 namespace PDFjet.NET {
 /**
  * BitBuffer
  * @author Kazuhiko Arase
  */
 public class BitBuffer {
-
     private byte[] buffer;
     private int length;
     private int increments = 32;
@@ -50,13 +48,10 @@ public class BitBuffer {
             Array.Copy(buffer, 0, newBuffer, 0, buffer.Length);
             buffer = newBuffer;
         }
-
         if (bit) {
             buffer[length / 8] |= (byte) ((uint) 0x80 >> (length % 8));
         }
-
         length++;
     }
-
 }
 }   // End of namespace PDFjet.NET

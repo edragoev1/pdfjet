@@ -32,9 +32,9 @@ import (
 	"github.com/edragoev1/pdfjet/src/code128"
 )
 
-// BarCode describes one dimentional barcodes - UPC, Code 39 and Code 128.
+// Barcode describes one dimentional barcodes - UPC, Code 39 and Code 128.
 // Please see Example_11.
-type BarCode struct {
+type Barcode struct {
 	barcodeType     int
 	text            string
 	x1              float32
@@ -61,11 +61,11 @@ const (
 	BottomToTop
 )
 
-// NewBarCode constructs barcode objects.
+// NewBarcode constructs barcode objects.
 // @param type the type of the barcode.
 // @param str the content string of the barcode.
-func NewBarCode(barcodeType int, text string) *BarCode {
-	barcode := new(BarCode)
+func NewBarcode(barcodeType int, text string) *Barcode {
+	barcode := new(Barcode)
 	barcode.barcodeType = barcodeType
 	barcode.text = text
 	barcode.x1 = 0.0
@@ -127,38 +127,38 @@ func NewBarCode(barcodeType int, text string) *BarCode {
 // SetLocation sets the location where this barcode will be drawn on the page.
 // @param x1 the x coordinate of the top left corner of the barcode.
 // @param y1 the y coordinate of the top left corner of the barcode.
-func (barcode *BarCode) SetLocation(x1, y1 float32) {
+func (barcode *Barcode) SetLocation(x1, y1 float32) {
 	barcode.x1 = x1
 	barcode.y1 = y1
 }
 
 // SetModuleLength sets the module length of this barcode.
 // The default value is 0.75
-func (barcode *BarCode) SetModuleLength(moduleLength float32) {
+func (barcode *Barcode) SetModuleLength(moduleLength float32) {
 	barcode.m1 = moduleLength
 }
 
 // SetBarHeightFactor sets the bar height factor.
 // The height of the bars is the moduleLength * barHeightFactor
 // The default value is 50.0f
-func (barcode *BarCode) SetBarHeightFactor(barHeightFactor float32) {
+func (barcode *Barcode) SetBarHeightFactor(barHeightFactor float32) {
 	barcode.barHeightFactor = barHeightFactor
 }
 
 // SetDirection sets the drawing direction for this font.
 // @param direction the specified direction.
-func (barcode *BarCode) SetDirection(direction int) {
+func (barcode *Barcode) SetDirection(direction int) {
 	barcode.direction = direction
 }
 
 // SetFont sets the font to be used with this barcode.
 // @param font the specified font.
-func (barcode *BarCode) SetFont(font *Font) {
+func (barcode *Barcode) SetFont(font *Font) {
 	barcode.font = font
 }
 
 // DrawOn draws this barcode on the specified page.
-func (barcode *BarCode) DrawOn(page *Page) []float32 {
+func (barcode *Barcode) DrawOn(page *Page) []float32 {
 	if barcode.barcodeType == Upc {
 		return barcode.drawCodeUPC(page, barcode.x1, barcode.y1)
 	} else if barcode.barcodeType == CODE128 {
@@ -172,7 +172,7 @@ func (barcode *BarCode) DrawOn(page *Page) []float32 {
 }
 
 // drawOnPageAtLocation draws this barcode on the specified page at the spacified location.
-func (barcode *BarCode) drawOnPageAtLocation(page *Page, x1, y1 float32) []float32 {
+func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) []float32 {
 	if barcode.barcodeType == Upc {
 		return barcode.drawCodeUPC(page, x1, y1)
 	} else if barcode.barcodeType == CODE128 {
@@ -185,7 +185,7 @@ func (barcode *BarCode) drawOnPageAtLocation(page *Page, x1, y1 float32) []float
 	return []float32{0.0, 0.0}
 }
 
-func (barcode *BarCode) drawCodeUPC(page *Page, x1, y1 float32) []float32 {
+func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) []float32 {
 	x := x1
 	y := y1
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
@@ -271,7 +271,7 @@ func (barcode *BarCode) drawCodeUPC(page *Page, x1, y1 float32) []float32 {
 	return xy
 }
 
-func (barcode *BarCode) drawEGuard(page *Page, x, y, m1, h float32) float32 {
+func (barcode *Barcode) drawEGuard(page *Page, x, y, m1, h float32) float32 {
 	if page != nil {
 		// 101
 		barcode.drawBar(page, x+(0.5*m1), y, m1, h)
@@ -280,7 +280,7 @@ func (barcode *BarCode) drawEGuard(page *Page, x, y, m1, h float32) float32 {
 	return (x + (3.0 * m1))
 }
 
-func (barcode *BarCode) drawMGuard(page *Page, x, y, m1, h float32) float32 {
+func (barcode *Barcode) drawMGuard(page *Page, x, y, m1, h float32) float32 {
 	if page != nil {
 		// 01010
 		barcode.drawBar(page, x+(1.5*m1), y, m1, h)
@@ -289,7 +289,7 @@ func (barcode *BarCode) drawMGuard(page *Page, x, y, m1, h float32) float32 {
 	return (x + (5.0 * m1))
 }
 
-func (barcode *BarCode) drawBar(page *Page, x, y, m1, h float32) {
+func (barcode *Barcode) drawBar(page *Page, x, y, m1, h float32) {
 	if page != nil {
 		page.SetPenWidth(m1)
 		page.MoveTo(x, y)
@@ -298,7 +298,7 @@ func (barcode *BarCode) drawBar(page *Page, x, y, m1, h float32) {
 	}
 }
 
-func (barcode *BarCode) drawCode128(page *Page, x1, y1 float32) []float32 {
+func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
 	x := x1
 	y := y1
 
@@ -385,7 +385,7 @@ func (barcode *BarCode) drawCode128(page *Page, x1, y1 float32) []float32 {
 	return xy
 }
 
-func (barcode *BarCode) drawCode39(page *Page, x1, y1 float32) []float32 {
+func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) []float32 {
 	xy := []float32{0.0, 0.0}
 
 	barcode.text = "*" + barcode.text + "*"
@@ -509,7 +509,7 @@ func (barcode *BarCode) drawCode39(page *Page, x1, y1 float32) []float32 {
 	return xy
 }
 
-func (barcode *BarCode) drawVertBar(page *Page, x, y, m1, h float32) {
+func (barcode *Barcode) drawVertBar(page *Page, x, y, m1, h float32) {
 	if page != nil {
 		page.SetPenWidth(m1)
 		page.MoveTo(x+m1/2, y)
@@ -518,7 +518,7 @@ func (barcode *BarCode) drawVertBar(page *Page, x, y, m1, h float32) {
 	}
 }
 
-func (barcode *BarCode) drawHorzBar(page *Page, x, y, m1, w float32) {
+func (barcode *Barcode) drawHorzBar(page *Page, x, y, m1, w float32) {
 	if page != nil {
 		page.SetPenWidth(m1)
 		page.MoveTo(x, y+m1/2)
@@ -527,7 +527,7 @@ func (barcode *BarCode) drawHorzBar(page *Page, x, y, m1, w float32) {
 	}
 }
 
-func (barcode *BarCode) drawHorzBar2(page *Page, x, y, m1, w float32) {
+func (barcode *Barcode) drawHorzBar2(page *Page, x, y, m1, w float32) {
 	if page != nil {
 		page.SetPenWidth(m1)
 		page.MoveTo(x, y-m1/2)
@@ -537,7 +537,7 @@ func (barcode *BarCode) drawHorzBar2(page *Page, x, y, m1, w float32) {
 }
 
 // GetHeight -- TODO:
-func (barcode *BarCode) GetHeight() float32 {
+func (barcode *Barcode) GetHeight() float32 {
 	if barcode.font == nil {
 		return barcode.m1 * barcode.barHeightFactor
 	}

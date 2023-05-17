@@ -23,7 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-public class FlateLength {
+internal class FlateLength {
     //      Extra               Extra               Extra
     // Code Bits Length(s) Code Bits Lengths   Code Bits Length(s)
     // ---- ---- ------     ---- ---- -------   ---- ---- -------

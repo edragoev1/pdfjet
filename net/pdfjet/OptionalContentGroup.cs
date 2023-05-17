@@ -24,7 +24,6 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  * Container for drawable objects that can be drawn on a page as part of Optional Content Group.
@@ -33,7 +32,6 @@ namespace PDFjet.NET {
  * @author Mark Paxton
  */
 public class OptionalContentGroup {
-
     internal String name;
     internal int ocgNumber;
     internal int objNumber;
@@ -103,6 +101,5 @@ public class OptionalContentGroup {
             page.Append("\nEMC\n");
         }
     }
-
 }   // End of OptionalContentGroup.cs
 }   // End of namespace PDFjet.NET

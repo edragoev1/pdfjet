@@ -2,21 +2,16 @@ package examples;
 
 import java.io.*;
 import java.util.*;
-
 import com.pdfjet.*;
-
 
 /**
  *  Example_34.java
- *
  */
 public class Example_34 {
-
     public Example_34() throws Exception {
-
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_34.pdf")), Compliance.PDF_A_1B);
+                new BufferedOutputStream(new FileOutputStream("Example_34.pdf")));
+        pdf.setCompliance(Compliance.PDF_A_1B);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
@@ -59,30 +54,23 @@ public class Example_34 {
 
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
         table.setBottomMargin(15f);
-        // table.setCellBordersWidth(1.2f);
-        table.setCellBordersWidth(0.2f);
         table.setLocation(70f, 30f);
         table.setTextColorInRow(6, Color.blue);
         table.setTextColorInRow(39, Color.red);
         table.setFontInRow(26, f3);
         table.removeLineBetweenRows(0, 1);
-        table.autoAdjustColumnWidths();
-        // table.setColumnWidth(0, 120f);
+        table.setColumnWidths();
         table.setColumnWidth(0, 50f);
-        table.wrapAroundCellText();
+        table.setColumnWidth(3, 80f);
         table.rightAlignNumbers();
 
         List<Page> pages = new ArrayList<Page>();
-        float[] lastPageXY = table.drawOn(pdf, pages, Letter.PORTRAIT);
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
             page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
             pdf.addPage(page);
         }
-
-        TextLine textLine = new TextLine(f1, "Hello, World!");
-        textLine.setLocation(lastPageXY[0], lastPageXY[1] + f1.getBodyHeight());
-        textLine.drawOn(pages.get(pages.size() - 1));
 
         pdf.complete();
     }
@@ -94,7 +82,6 @@ public class Example_34 {
             int numOfHeaderRows,
             Font f1,
             Font f2) throws Exception {
-
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
 
         int currentRow = 0;
@@ -105,11 +92,9 @@ public class Example_34 {
             String[] cols = null;
             if (delimiter.equals("|")) {
                 cols = line.split("\\|", -1);
-            }
-            else if (delimiter.equals("\t")) {
+            } else if (delimiter.equals("\t")) {
                 cols = line.split("\t", -1);
-            }
-            else {
+            } else {
                 throw new Exception(
                 		"Only pipes and tabs can be used as delimiters");
             }
@@ -118,8 +103,7 @@ public class Example_34 {
                 Cell cell = null;
                 if (currentRow < numOfHeaderRows) {
                     cell = new Cell(f1, text);
-                }
-                else {
+                } else {
                     cell = new Cell(f2, text);
                 }
                 cell.setTopPadding(2f);
@@ -127,8 +111,7 @@ public class Example_34 {
                 cell.setLeftPadding(2f);
                 if (i == 3) {
                     cell.setRightPadding(10f);
-                }
-                else {
+                } else {
                     cell.setRightPadding(2f);
                 }
                 row.add(cell);
@@ -137,8 +120,7 @@ public class Example_34 {
             currentRow++;
         }
         reader.close();
-
-        appendMissingCells(tableData, f2);
+        appendMissingCells(tableData, f2);  // TODO??
 
         return tableData;
     }

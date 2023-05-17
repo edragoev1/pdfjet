@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 using System;
-using System.Text;
 
 namespace PDFjet.NET {
 /**
@@ -35,23 +34,19 @@ public class Cell {
     internal Font fallbackFont;
     internal String text;
     internal Image image;
-    internal BarCode barCode;
+    internal Barcode barcode;
     internal TextBox textBox;
     internal Point point;
     internal CompositeTextLine compositeTextLine;
-    internal IDrawable drawable;
-
     internal float width = 50f;
     internal float topPadding = 2f;
     internal float bottomPadding = 2f;
     internal float leftPadding = 2f;
     internal float rightPadding = 2f;
-    internal float lineWidth = 0.2f;
-
+    internal float lineWidth = 0f;
     private int background = -1;
     private int pen = Color.black;
     private int brush = Color.black;
-
     // Cell properties
     // Colspan:
     // bits 0 to 15
@@ -68,7 +63,7 @@ public class Cell {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private uint properties = 0x000F0001;
+    private uint properties = 0x00050001;   // Set only left and top borders!
     private String uri;
     private uint valign = Align.TOP;
 
@@ -166,15 +161,17 @@ public class Cell {
      */
     public void SetImage(Image image) {
         this.image = image;
+        this.text = null;
     }
 
     /**
      *  Sets the barcode inside this cell.
      *
-     *  @param barCode the barcode.
+     *  @param barcode the barcode.
      */
-    public void SetBarcode(BarCode barCode) {
-        this.barCode = barCode;
+    public void SetBarcode(Barcode barcode) {
+        this.barcode = barcode;
+        this.text = null;
     }
 
     /**
@@ -211,14 +208,6 @@ public class Cell {
 
     public CompositeTextLine GetCompositeTextLine() {
         return this.compositeTextLine;
-    }
-
-    public void SetDrawable(IDrawable drawable) {
-        this.drawable = drawable;
-    }
-
-    public IDrawable GetDrawable() {
-        return this.drawable;
     }
 
     public void SetTextBox(TextBox textBox) {
@@ -299,47 +288,21 @@ public class Cell {
      *
      *  @return the cell height.
      */
-    public float GetHeight() {
+    public float GetHeight(float width) {
         float cellHeight = 0f;
-        if (image != null) {
-            float height = image.GetHeight() + topPadding + bottomPadding;
-            if (height > cellHeight) {
-                cellHeight = height;
-            }
-        }
-        if (barCode != null) {
-            float height = barCode.GetHeight() + topPadding + bottomPadding;
-            if (height > cellHeight) {
-                cellHeight = height;
-            }
-        }
         if (textBox != null) {
-            try {
-                float height = textBox.DrawOn(null)[1] + topPadding + bottomPadding;
-                if (height > cellHeight) {
-                    cellHeight = height;
-                }
-            } catch (Exception) {
-            }
-        }
-        if (drawable != null) {
-            try {
-                float height = drawable.DrawOn(null)[1] + topPadding + bottomPadding;
-                if (height > cellHeight) {
-                    cellHeight = height;
-                }
-            } catch (Exception) {
-            }
-        }
-        if (text != null) {
+            textBox.SetWidth(width);
+            cellHeight = textBox.DrawOn(null)[1] + topPadding + bottomPadding;
+        } else if (image != null) {
+            cellHeight = image.GetHeight() + topPadding + bottomPadding;
+        } else if (barcode != null) {
+            cellHeight = barcode.GetHeight() + topPadding + bottomPadding;
+        } else if (text != null) {
             float fontHeight = font.GetHeight();
             if (fallbackFont != null && fallbackFont.GetHeight() > fontHeight) {
                 fontHeight = fallbackFont.GetHeight();
             }
-            float height = fontHeight + topPadding + bottomPadding;
-            if (height > cellHeight) {
-                cellHeight = height;
-            }
+            cellHeight = fontHeight + topPadding + bottomPadding;
         }
         return cellHeight;
     }
@@ -463,11 +426,15 @@ public class Cell {
     }
 
     /**
-     *  Sets all border object parameters to false.
-     *  This cell will have no borders when drawn on the page.
+     * Sets all cell borders.
+     * @param borders true or false.
      */
-    public void SetNoBorders() {
-        this.properties &= 0x00F0FFFF;
+    public void SetBorders(bool borders) {
+        if (borders) {
+            this.properties &= 0x00FFFFFF;
+        } else {
+            this.properties &= 0x00F0FFFF;
+        }
     }
 
     /**
@@ -546,7 +513,7 @@ public class Cell {
     /**
      *  Draws the point, text and borders of this cell.
      */
-    internal void Paint(
+    internal void DrawOn(
             Page page,
             float x,
             float y,
@@ -555,7 +522,12 @@ public class Cell {
         if (background != -1) {
             DrawBackground(page, x, y, w, h);
         }
-        if (image != null) {
+
+        if (textBox != null) {
+            textBox.SetLocation(x + leftPadding, y + topPadding);
+            textBox.SetWidth(w - (leftPadding + rightPadding));
+            textBox.DrawOn(page);
+        } else if (image != null) {
             if (GetTextAlignment() == Align.LEFT) {
                 image.SetLocation(x + leftPadding, y + topPadding);
                 image.DrawOn(page);
@@ -566,30 +538,25 @@ public class Cell {
                 image.SetLocation((x + w) - (image.GetWidth() + leftPadding), y + topPadding);
                 image.DrawOn(page);
             }
-        }
-        if (barCode != null) {
+        } else if (barcode != null) {
             try {
                 if (GetTextAlignment() == Align.LEFT) {
-                    barCode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+                    barcode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
                 } else if (GetTextAlignment() == Align.CENTER) {
-                    float barcodeWidth = barCode.DrawOn(null)[0];
-                    barCode.DrawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
+                    float barcodeWidth = barcode.DrawOn(null)[0];
+                    barcode.DrawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
                 } else if (GetTextAlignment() == Align.RIGHT) {
-                    float barcodeWidth = barCode.DrawOn(null)[0];
-                    barCode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+                    float barcodeWidth = barcode.DrawOn(null)[0];
+                    barcode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
                 }
             } catch (Exception e) {
                 Console.WriteLine(e.ToString());
             }
-        }
-        if (textBox != null) {
-            textBox.SetLocation(x + leftPadding, y + topPadding);
-            textBox.DrawOn(page);
-        }
-        DrawBorders(page, x, y, w, h);
-        if (text != null && !text.Equals("")) {
+        } else if (text != null && !text.Equals("")) {
             DrawText(page, x, y, w, h);
         }
+
+        DrawBorders(page, x, y, w, h);
         if (point != null) {
             if (point.align == Align.LEFT) {
                 point.x = x + 2*point.r;
@@ -611,11 +578,6 @@ public class Cell {
                         null));
             }
             page.DrawPoint(point);
-        }
-
-        if (drawable != null) {
-            drawable.SetPosition(x + leftPadding, y + topPadding);
-            drawable.DrawOn(page);
         }
     }
 
@@ -793,31 +755,6 @@ public class Cell {
         page.LineTo(x + font.StringWidth(text), y - font.GetAscent()/3f);
         page.StrokePath();
         page.AddEMC();
-    }
-
-    /**
-     *  Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
-     *
-     *  @return the number of vertical cells needed to wrap around the cell text.
-     */
-    public int GetNumVerCells() {
-        int numOfVerCells = 1;
-        if (this.text == null) {
-            return numOfVerCells;
-        }
-        float effectiveWidth = this.width - (this.leftPadding + this.rightPadding);
-        String[] tokens = TextUtils.SplitTextIntoTokens(this.text, this.font, this.fallbackFont, effectiveWidth);
-        StringBuilder buf = new StringBuilder();
-        foreach (String token in tokens) {
-            if (font.StringWidth(fallbackFont, (buf.ToString() + " " + token).Trim()) > effectiveWidth) {
-                numOfVerCells++;
-                buf = new StringBuilder(token);
-            } else {
-                buf.Append(" ");
-                buf.Append(token);
-            }
-        }
-        return numOfVerCells;
     }
 
     public TextBox GetTextBox() {

@@ -23,13 +23,11 @@ SOFTWARE.
 */
 package com.pdfjet;
 
-
 import java.io.ByteArrayOutputStream;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 class BMPImage {
-
     int w = 0;              // Image width in pixels
     int h = 0;              // Image height in pixels
 
@@ -266,5 +264,4 @@ class BMPImage {
     public byte[] getData() {
         return this.deflated;
     }
-
 }

@@ -30,7 +30,6 @@ namespace PDFjet.NET {
  *
  */
 public class Box : IDrawable {
-
     internal float x;
     internal float y;
 
@@ -49,14 +48,12 @@ public class Box : IDrawable {
     internal String uri = null;
     internal String key = null;
 
-
     /**
      *  The default constructor.
      *
      */
     public Box() {
     }
-
 
     /**
      *  Creates a box object.
@@ -68,7 +65,6 @@ public class Box : IDrawable {
      */
     public Box(double x, double y, double w, double h) : this((float) x, (float) y, (float) w, (float) h) {
     }
-
 
     /**
      *  Creates a box object.
@@ -85,7 +81,6 @@ public class Box : IDrawable {
         this.h = h;
     }
 
-
     /**
      *  Sets the position of this box on the page.
      *
@@ -95,7 +90,6 @@ public class Box : IDrawable {
     public void SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
     }
-
 
     /**
      *  Sets the position of this box on the page.
@@ -107,11 +101,9 @@ public class Box : IDrawable {
         SetLocation(x, y);
     }
 
-
     public void SetXY(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location of this box on the page.
@@ -124,7 +116,6 @@ public class Box : IDrawable {
         this.y = y;
     }
 
-
     /**
      *  Sets the size of this box.
      *
@@ -134,7 +125,6 @@ public class Box : IDrawable {
     public void SetSize(double w, double h) {
         SetSize((float) w, (float) h);
     }
-
 
     /**
      *  Sets the size of this box.
@@ -147,7 +137,6 @@ public class Box : IDrawable {
         this.h = h;
     }
 
-
     /**
      *  Sets the color for this box.
      *
@@ -156,7 +145,6 @@ public class Box : IDrawable {
     public void SetColor(int color) {
         this.color = color;
     }
-
 
     /**
      *  Sets the width of this line.
@@ -167,7 +155,6 @@ public class Box : IDrawable {
         this.width = (float) width;
     }
 
-
     /**
      *  Sets the width of this line.
      *
@@ -176,7 +163,6 @@ public class Box : IDrawable {
     public void SetLineWidth(float width) {
         this.width = width;
     }
-
 
     /**
      *  Sets the URI for the "click box" action.
@@ -187,7 +173,6 @@ public class Box : IDrawable {
         this.uri = uri;
     }
 
-
     /**
      *  Sets the destination key for the action.
      *
@@ -196,7 +181,6 @@ public class Box : IDrawable {
     public void SetGoToAction(String key) {
         this.key = key;
     }
-
 
     /**
      *  Sets the alternate description of this box.
@@ -209,7 +193,6 @@ public class Box : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the actual text for this box.
      *
@@ -220,7 +203,6 @@ public class Box : IDrawable {
         this.actualText = actualText;
         return this;
     }
-
 
     /**
      *  The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -249,7 +231,6 @@ public class Box : IDrawable {
         this.pattern = pattern;
     }
 
-
     /**
      *  Sets the private fillShape variable.
      *  If the value of fillShape is true - the box is filled with the current brush color.
@@ -259,7 +240,6 @@ public class Box : IDrawable {
     public void SetFillShape(bool fillShape) {
         this.fillShape = fillShape;
     }
-
 
     /**
      *  Places this box in the another box.
@@ -274,7 +254,6 @@ public class Box : IDrawable {
             double yOffset) {
         PlaceIn(box, (float) xOffset, (float) yOffset);
     }
-
 
     /**
      *  Places this box in the another box.
@@ -291,7 +270,6 @@ public class Box : IDrawable {
         this.y = box.y + yOffset;
     }
 
-
     /**
      *  Scales this box by the spacified factor.
      *
@@ -300,7 +278,6 @@ public class Box : IDrawable {
     public void ScaleBy(double factor) {
         ScaleBy((float) factor);
     }
-
 
     /**
      *  Scales this box by the spacified factor.
@@ -311,7 +288,6 @@ public class Box : IDrawable {
         this.x *= factor;
         this.y *= factor;
     }
-
 
     /**
      *  Draws this box on the specified page.
@@ -355,6 +331,5 @@ public class Box : IDrawable {
 
         return new float[] {x + w, y + h + width};
     }
-
 }   // End of Box.cs
 }   // End of namespace PDFjet.NET

@@ -22,7 +22,7 @@ public class Example_12 {
             buf.append("\r\n");
         }
 
-        BarCode2D code2D = new BarCode2D(buf.toString());
+        Barcode2D code2D = new Barcode2D(buf.toString());
         code2D.setModuleWidth(0.5f);
         code2D.setLocation(100f, 60f);
         code2D.drawOn(page);

@@ -778,7 +778,9 @@ public class TextBox : IDrawable {
                 }
                 if (list.Count > 0) {
                     String lastLine = list[list.Count - 1];
-                    lastLine = lastLine.Substring(0, lastLine.Length - 3);
+                    if (lastLine.Length > 3) {
+                        lastLine = lastLine.Substring(0, lastLine.Length - 3);
+                    }
                     list[list.Count - 1] = lastLine + "...";
                     lines = list.ToArray();
                 }

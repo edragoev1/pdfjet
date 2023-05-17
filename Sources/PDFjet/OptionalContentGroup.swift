@@ -65,7 +65,7 @@ public class OptionalContentGroup {
             ocgNumber = page.pdf.groups.count
 
             page.pdf.newobj()
-            page.pdf.append("<<\n")
+            page.pdf.append(Token.beginDictionary)
             page.pdf.append("/Type /OCG\n")
             page.pdf.append("/Name (" + name! + ")\n")
             page.pdf.append("/Usage <<\n")
@@ -84,12 +84,11 @@ public class OptionalContentGroup {
             } else {
                 page.pdf.append("/Export << /ExportState /OFF >>\n")
             }
-            page.pdf.append(">>\n")
-            page.pdf.append(">>\n")
+            page.pdf.append(Token.endDictionary)
+            page.pdf.append(Token.endDictionary)
             page.pdf.endobj()
 
             objNumber = page.pdf.getObjNumber()
-
             page.append("/OC /OC")
             page.append(ocgNumber)
             page.append(" BDC\n")

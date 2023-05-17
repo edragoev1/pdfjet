@@ -32,7 +32,6 @@ namespace PDFjet.NET {
  *  Used to create composite text line objects.
  */
 public class CompositeTextLine : IDrawable {
-
     private const int X = 0;
     private const int Y = 1;
 
@@ -51,14 +50,12 @@ public class CompositeTextLine : IDrawable {
 
     private float fontSize = 0f;
 
-
     public CompositeTextLine(float x, float y) {
         position[X] = x;
         position[Y] = y;
         current[X]  = x;
         current[Y]  = y;
     }
-
 
     /**
      *  Sets the font size.
@@ -69,7 +66,6 @@ public class CompositeTextLine : IDrawable {
         this.fontSize = fontSize;
     }
 
-
     /**
      *  Gets the font size.
      *
@@ -78,7 +74,6 @@ public class CompositeTextLine : IDrawable {
     public float GetFontSize() {
         return fontSize;
     }
-
 
     /**
      *  Sets the superscript factor for this composite text line.
@@ -89,7 +84,6 @@ public class CompositeTextLine : IDrawable {
         this.superscriptSizeFactor = superscript;
     }
 
-
     /**
      *  Gets the superscript factor for this text line.
      *
@@ -98,7 +92,6 @@ public class CompositeTextLine : IDrawable {
     public float GetSuperscriptFactor() {
         return superscriptSizeFactor;
     }
-
 
     /**
      *  Sets the subscript factor for this composite text line.
@@ -109,7 +102,6 @@ public class CompositeTextLine : IDrawable {
         this.subscriptSizeFactor = subscript;
     }
 
-
     /**
      *  Gets the subscript factor for this text line.
      *
@@ -118,7 +110,6 @@ public class CompositeTextLine : IDrawable {
     public float GetSubscriptFactor() {
         return subscriptSizeFactor;
     }
-
 
     /**
      *  Sets the superscript position for this composite text line.
@@ -129,7 +120,6 @@ public class CompositeTextLine : IDrawable {
         this.superscriptPosition = superscriptPosition;
     }
 
-
     /**
      *  Gets the superscript position for this text line.
      *
@@ -138,7 +128,6 @@ public class CompositeTextLine : IDrawable {
     public float GetSuperscriptPosition() {
         return superscriptPosition;
     }
-
 
     /**
      *  Sets the subscript position for this composite text line.
@@ -149,7 +138,6 @@ public class CompositeTextLine : IDrawable {
         this.subscriptPosition = subscriptPosition;
     }
 
-
     /**
      *  Gets the subscript position for this text line.
      *
@@ -158,7 +146,6 @@ public class CompositeTextLine : IDrawable {
     public float GetSubscriptPosition() {
         return subscriptPosition;
     }
-
 
     /**
      *  Add a new text line.
@@ -178,16 +165,14 @@ public class CompositeTextLine : IDrawable {
             component.SetLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition);
-        }
-        else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+        } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
             if (fontSize > 0f) {
                 component.GetFont().SetSize(fontSize * subscriptSizeFactor);
             }
             component.SetLocation(
                     current[X],
                     current[Y] + fontSize * subscriptPosition);
-        }
-        else {
+        } else {
             if (fontSize > 0f) {
                 component.GetFont().SetSize(fontSize);
             }
@@ -196,7 +181,6 @@ public class CompositeTextLine : IDrawable {
         current[X] += component.GetWidth();
         textLines.Add(component);
     }
-
 
     /**
      *  Loop through all the text lines and reset their position based on
@@ -209,7 +193,6 @@ public class CompositeTextLine : IDrawable {
         SetLocation((float) x, (float) y);
     }
 
-
     /**
      *  Loop through all the text lines and reset their position based on
      *  the new position set here.
@@ -221,11 +204,9 @@ public class CompositeTextLine : IDrawable {
         SetLocation(x, y);
     }
 
-
     public void SetXY(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Loop through all the text lines and reset their location based on
@@ -249,19 +230,16 @@ public class CompositeTextLine : IDrawable {
                 component.SetLocation(
                         current[X],
                         current[Y] - fontSize * superscriptPosition);
-            }
-            else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+            } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
                 component.SetLocation(
                         current[X],
                         current[Y] + fontSize * subscriptPosition);
-            }
-            else {
+            } else {
                 component.SetLocation(current[X], current[Y]);
             }
             current[X] += component.GetWidth();
         }
     }
-
 
     /**
      *  Return the position of this composite text line.
@@ -271,7 +249,6 @@ public class CompositeTextLine : IDrawable {
     public float[] GetPosition() {
         return position;
     }
-
 
     /**
      *  Return the nth entry in the TextLine array.
@@ -289,7 +266,6 @@ public class CompositeTextLine : IDrawable {
         return textLines[index];
     }
 
-
     /**
      *  Returns the number of text lines.
      *
@@ -298,7 +274,6 @@ public class CompositeTextLine : IDrawable {
     public int Size() {
        return textLines.Count;
     }
-
 
     /**
      *  Returns the vertical coordinates of the top left and bottom right corners
@@ -316,13 +291,11 @@ public class CompositeTextLine : IDrawable {
                 cur = (position[Y] - component.font.ascent) - fontSize * superscriptPosition;
                 if (cur < min)
                     min = cur;
-            }
-            else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+            } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
                 cur = (position[Y] + component.font.descent) + fontSize * subscriptPosition;
                 if (cur > max)
                     max = cur;
-            }
-            else {
+            } else {
                 cur = position[Y] - component.font.ascent;
                 if (cur < min)
                     min = cur;
@@ -335,7 +308,6 @@ public class CompositeTextLine : IDrawable {
         return new float[] {min, max};
     }
 
-
     /**
      *  Returns the height of this CompositeTextLine.
      *
@@ -346,7 +318,6 @@ public class CompositeTextLine : IDrawable {
         return yy[1] - yy[0];
     }
 
-
     /**
      *  Returns the width of this CompositeTextLine.
      *
@@ -355,7 +326,6 @@ public class CompositeTextLine : IDrawable {
     public float GetWidth() {
         return (current[X] - position[X]);
     }
-
 
     /**
      *  Draws this line on the specified page.
@@ -375,6 +345,5 @@ public class CompositeTextLine : IDrawable {
         }
         return new float[] {xMax, yMax};
     }
-
 }   // End of CompositeTextLine.cs
 }   // End of namespace PDFjet.NET

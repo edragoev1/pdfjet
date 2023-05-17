@@ -26,10 +26,11 @@ public class Example_08 {
         Image image = new Image(pdf, "images/fruit.jpg");
         image.scaleBy(0.20f);
 
-        BarCode barCode = new BarCode(BarCode.CODE128, "Hello, World!");
-        barCode.setModuleLength(0.75f);
+        Barcode barcode = new Barcode(Barcode.CODE128, "Hello, World!");
+        barcode.setModuleLength(0.75f);
         // Uncomment the line below if you want to print the text underneath the barcode.
-        // barCode.setFont(f1);
+        // barcode.setFont(f1);
+
         Table table = new Table();
         List<List<Cell>> tableData = getData(
         		"data/world-communications.txt",
@@ -38,33 +39,26 @@ public class Example_08 {
                 f1,
                 f2,
                 image,
-                barCode);
+                barcode);
         table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
-        table.removeLineBetweenRows(0, 1);
-        table.setLocation(100f, 0f);
-        table.setRightMargin(20f);
-        table.setBottomMargin(10f);
-        table.setCellBordersWidth(0f);
-        table.setTextColorInRow(12, Color.blue);
-        table.setTextColorInRow(13, Color.red);
-        table.getCellAt(13, 0).getTextBox().setURIAction("http://pdfjet.com");
+        table.getCellAt(5, 0).setImage(image);
+        // table.getCellAt(6, 0).setTextBox(new TextBox(f2, "table.getCellAt(6, 0).getText() Hello, World!"));
+        table.getCellAt(6, 0).setColSpan(8);
+        table.getCellAt(6, 0).setBarcode(barcode);
         table.setFontInRow(14, f3);
         table.getCellAt(21, 0).setColSpan(6);
         table.getCellAt(21, 6).setColSpan(2);
+        table.setColumnWidths();
+        table.setColumnWidth(0, image.getWidth() + 4f);
+        table.rightAlignNumbers();
 
-        // Set the column widths manually:
-        // float[] widths = {70f, 50f, 70f, 70f, 70f, 70f, 50f, 50f};
-        // for (int i = 0; i < widths.length; i++) {
-        //     table.setColumnWidth(i, widths[i]);            
-        // }
-
-        // Auto adjust the column widths to be just wide enough to fit the text without truncation.
-        // Columns with colspan > 1 will not be adjusted.
-        // table.autoAdjustColumnWidths();
-
-        // Auto adjust the column widths in a way that allows the table to fit perfectly on the page.
-        // Columns with colspan > 1 will not be adjusted.
-        table.fitToPage(Letter.PORTRAIT);
+        table.removeLineBetweenRows(0, 1);
+        table.setLocation(100f, 0f);
+        table.setBottomMargin(15f);
+        table.setCellBordersWidth(0f);
+        table.setTextColorInRow(12, Color.blue);
+        table.setTextColorInRow(13, Color.red);
+        // table.getCellAt(13, 0).getTextBox().setURIAction("http://pdfjet.com");
 
         List<Page> pages = new ArrayList<Page>();
         table.drawOn(pdf, pages, Letter.PORTRAIT);
@@ -73,6 +67,7 @@ public class Example_08 {
             page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
             pdf.addPage(page);
         }
+
         pdf.complete();
     }
 
@@ -102,7 +97,7 @@ public class Example_08 {
             Font f1,
             Font f2,
             Image image,
-            BarCode barCode) throws Exception {
+            Barcode barcode) throws Exception {
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
         List<List<String>> tableTextData = getTextData(fileName, delimiter);
         int currentRow = 0;
@@ -110,25 +105,11 @@ public class Example_08 {
         	List<Cell> row = new ArrayList<Cell>();
             for (int i = 0; i < rowData.size(); i++) {
             	String text = rowData.get(i).trim();
-                Cell cell;
                 if (currentRow < numOfHeaderRows) {
-                    cell = new Cell(f1, text);
+                    row.add(new Cell(f1, text));
                 } else {
-                    cell = new Cell(f2);
-                    if (i == 0 && currentRow == 5) {
-                        cell.setImage(image);
-                    }
-                    if (i == 0 && currentRow == 6) {
-                        cell.setBarcode(barCode);
-                        cell.setTextAlignment(Align.CENTER);
-                        cell.setColSpan(8);
-                    } else {
-                        TextBox textBox = new TextBox(f2, text);
-                        textBox.setTextAlignment(i == 0 ? Align.LEFT : Align.RIGHT);
-                        cell.setTextBox(textBox);
-                    }
+                    row.add(new Cell(f2, text));
                 }
-                row.add(cell);
             }
             tableData.add(row);
             currentRow++;

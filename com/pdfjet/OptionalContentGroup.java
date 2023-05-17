@@ -33,7 +33,6 @@ import java.util.List;
  * @author Mark Paxton
  */
 public class OptionalContentGroup {
-
     protected String name;
     protected int ocgNumber;
     protected int objNumber;
@@ -52,7 +51,6 @@ public class OptionalContentGroup {
         this.components = new ArrayList<Drawable>();
     }
 
-
     /**
      * Add drawable object to the group
      * 
@@ -61,7 +59,6 @@ public class OptionalContentGroup {
     public void add(Drawable drawable) {
         components.add(drawable);
     }
-
 
     /**
      * Sets the visibility of this group
@@ -72,7 +69,6 @@ public class OptionalContentGroup {
         this.visible = visible;
     }
 
-
     /**
      * Sets the printability of this group
      * 
@@ -82,7 +78,6 @@ public class OptionalContentGroup {
         this.printable = printable;
     }
 
-
     /**
      * Sets the exportability of this group
      * 
@@ -91,7 +86,6 @@ public class OptionalContentGroup {
     public void setExportable(boolean exportable) {
         this.exportable = exportable;
     }
-
 
     /**
      * Draws this content group on a page
@@ -139,5 +133,4 @@ public class OptionalContentGroup {
             page.append("\nEMC\n");
         }
     }
-
 }   // End of OptionalContentGroup.java

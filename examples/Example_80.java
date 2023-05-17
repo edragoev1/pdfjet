@@ -109,7 +109,7 @@ public class Example_80 {
         buf.append("vitae porttitor lorem urna eget urna. ");
         buf.append("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
 
-        BarCode code = new BarCode(BarCode.CODE128, "Hello, World!");
+        Barcode code = new Barcode(Barcode.CODE128, "Hello, World!");
         code.setLocation(0f, xy[1]);
         code.setModuleLength(0.75f);
         code.setFont(f1);
@@ -121,10 +121,10 @@ public class Example_80 {
         textBox.setLocation(0f, xy[1]);
         xy = textBox.drawOn(page);
 
-        code = new BarCode(BarCode.CODE128, "G86513JVW0C");
+        code = new Barcode(Barcode.CODE128, "G86513JVW0C");
         code.setLocation(0f, xy[1]);
         code.setModuleLength(0.75f);
-        code.setDirection(BarCode.TOP_TO_BOTTOM);
+        code.setDirection(Barcode.TOP_TO_BOTTOM);
         code.setFont(f1);
         xy = code.drawOn(page);
 
@@ -140,7 +140,7 @@ public class Example_80 {
         }
         reader.close();
 
-        BarCode2D code2D = new BarCode2D(buf.toString());
+        Barcode2D code2D = new Barcode2D(buf.toString());
         code2D.setModuleWidth(0.5f);
         code2D.setLocation(0f, xy[1]);
         code2D.drawOn(page);

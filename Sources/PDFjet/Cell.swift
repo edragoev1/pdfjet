@@ -33,17 +33,16 @@ public class Cell {
     var fallbackFont: Font?
     var text: String?
     var image: Image?
-    var barCode: BarCode?
+    var barcode: Barcode?
     var textBox: TextBox?
     var point: Point?
     var compositeTextLine: CompositeTextLine?
-    var drawable: Drawable?
     var width: Float = 50.0
     var topPadding: Float = 2.0
     var bottomPadding: Float = 2.0
     var leftPadding: Float = 2.0
     var rightPadding: Float = 2.0
-    var lineWidth: Float = 0.2
+    var lineWidth: Float = 0.0
     private var background: Int32?
     private var pen: Int32 = Color.black
     private var brush: Int32 = Color.black
@@ -63,7 +62,7 @@ public class Cell {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private var properties: UInt32 = 0x000F0001
+    private var properties: UInt32 = 0x00050001 // Set only left and top borders!
     private var uri: String?
     private var valign = Align.TOP
 
@@ -72,7 +71,7 @@ public class Cell {
      *
      *  @param font the font.
      */
-    public init(_ font: Font) {
+    public init(_ font: Font?) {
         self.font = font
     }
 
@@ -161,10 +160,9 @@ public class Cell {
      *
      *  @param image the image.
      */
-    @discardableResult
-    public func setImage(_ image: Image?) -> Cell {
+    public func setImage(_ image: Image?) {
         self.image = image
-        return self
+        self.text = nil
     }
 
     /**
@@ -176,12 +174,13 @@ public class Cell {
         return self.image
     }
 
-    public func setBarcode(_ barCode: BarCode) {
-        self.barCode = barCode
+    public func setBarcode(_ barcode: Barcode) {
+        self.barcode = barcode
+        self.text = nil
     }
 
     public func setTextBox(_ textBox: TextBox) {
-        self.textBox = textBox;
+        self.textBox = textBox
     }
 
     /**
@@ -221,24 +220,6 @@ public class Cell {
      */
     public func getCompositeTextLine() -> CompositeTextLine? {
         return self.compositeTextLine
-    }
-
-    /**
-     * Sets the drawable object.
-     *
-     * @param drawable the drawable object.
-     */
-    public func setDrawable(_ drawable: Drawable?) {
-        self.drawable = drawable
-    }
-
-    /**
-     * Returns the drawable object.
-     *
-     * @return the drawable object.
-     */
-    public func getDrawable() -> Drawable? {
-        return self.drawable
     }
 
     /**
@@ -317,39 +298,18 @@ public class Cell {
      */
     public func getHeight() -> Float {
         var cellHeight = Float(0.0)
-        if image != nil {
-            let height = image!.getHeight() + topPadding + bottomPadding
-            if height > cellHeight {
-                cellHeight = height
-            }
-        }
-        if barCode != nil {
-            let height = barCode!.getHeight() + topPadding + bottomPadding
-            if height > cellHeight {
-                cellHeight = height
-            }
-        }
         if textBox != nil {
-            let height = textBox!.drawOn(nil)[1] + topPadding + bottomPadding;
-            if height > cellHeight {
-                cellHeight = height
-            }
-        }
-        if drawable != nil {
-            let height = drawable!.drawOn(nil)[1] + topPadding + bottomPadding
-            if height > cellHeight {
-                cellHeight = height
-            }
-        }
-        if text != nil {
+            cellHeight = textBox!.drawOn(nil)[1] + topPadding + bottomPadding
+        } else if image != nil {
+            cellHeight = image!.getHeight() + topPadding + bottomPadding
+        } else if barcode != nil {
+            cellHeight = barcode!.getHeight() + topPadding + bottomPadding
+        } else if text != nil {
             var fontHeight = font!.getHeight()
             if fallbackFont != nil && fallbackFont!.getHeight() > fontHeight {
                 fontHeight = fallbackFont!.getHeight()
             }
-            let height = fontHeight + topPadding + bottomPadding
-            if height > cellHeight {
-                cellHeight = height
-            }
+            cellHeight = fontHeight + topPadding + bottomPadding
         }
         return cellHeight
     }
@@ -484,11 +444,14 @@ public class Cell {
     }
 
     /**
-     *  Sets all border object parameters to false.
-     *  This cell will have no borders when drawn on the page.
+     *  Sets all cell borders.
      */
-    public func setNoBorders() {
-        self.properties &= 0x00F0FFFF
+    public func setBorders(_ borders: Bool) {
+        if borders {
+            self.properties &= 0x00FFFFFF
+        } else {
+            self.properties &= 0x00F0FFFF
+        }
     }
 
     /**
@@ -583,7 +546,7 @@ public class Cell {
      *  Draws the point, text and borders of this cell.
      *
      */
-    func paint(
+    func drawOn(
             _ page: Page,
             _ x: Float,
             _ y: Float,
@@ -592,10 +555,15 @@ public class Cell {
         if background != nil {
             drawBackground(page, x, y, w, h)
         }
-        if image != nil {
+
+        if textBox != nil {
+            textBox!.setLocation(x + leftPadding, y + topPadding)
+            textBox!.setWidth(w - (leftPadding + rightPadding))
+            textBox!.drawOn(page)
+        } else if image != nil {
             if (getTextAlignment() == Align.LEFT) {
                 image!.setLocation(x + leftPadding, y + topPadding)
-                image!.drawOn(page);
+                image!.drawOn(page)
             } else if (getTextAlignment() == Align.CENTER) {
                 image!.setLocation((x + w/2.0) - image!.getWidth()/2.0, y + topPadding)
                 image!.drawOn(page)
@@ -603,26 +571,21 @@ public class Cell {
                 image!.setLocation((x + w) - (image!.getWidth() + leftPadding), y + topPadding)
                 image!.drawOn(page)
             }
-        }
-        if barCode != nil {
+        } else if barcode != nil {
             if (getTextAlignment() == Align.LEFT) {
-                barCode!.drawOnPageAtLocation(page, x + leftPadding, y + topPadding)
+                barcode!.drawOnPageAtLocation(page, x + leftPadding, y + topPadding)
             } else if (getTextAlignment() == Align.CENTER) {
-                let barcodeWidth = barCode!.drawOn(nil)[0]
-                barCode!.drawOnPageAtLocation(page, (x + w/2.0) - barcodeWidth/2.0, y + topPadding)
+                let barcodeWidth = barcode!.drawOn(nil)[0]
+                barcode!.drawOnPageAtLocation(page, (x + w/2.0) - barcodeWidth/2.0, y + topPadding)
             } else if (getTextAlignment() == Align.RIGHT) {
-                let barcodeWidth = barCode!.drawOn(nil)[0]
-                barCode!.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding)
+                let barcodeWidth = barcode!.drawOn(nil)[0]
+                barcode!.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding)
             }
-        }
-        if textBox != nil {
-            textBox!.setLocation(x + leftPadding, y + topPadding)
-            textBox!.drawOn(page)
-        }
-        drawBorders(page, x, y, w, h)
-        if text != nil && text != "" {
+        } else if text != nil && text != "" {
             drawText(page, x, y, w, h)
         }
+
+        drawBorders(page, x, y, w, h)
         if point != nil {
             if point!.align == Align.LEFT {
                 point!.x = x + 2*point!.r
@@ -644,10 +607,6 @@ public class Cell {
                         nil))
             }
             page.drawPoint(point!)
-        }
-        if drawable != nil {
-            drawable!.setPosition(x + leftPadding, y + topPadding)
-            drawable!.drawOn(page)
         }
     }
 
@@ -826,47 +785,6 @@ public class Cell {
         page.lineTo(x + font.stringWidth(text), y - font.getAscent()/3.0)
         page.strokePath()
         page.addEMC()
-    }
-
-    /**
-     *  Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
-     *
-     *  @return the number of vertical cells needed to wrap around the cell text.
-     */
-    public func getNumVerCells() -> Int {
-        var n = 1
-        if getText() == nil {
-            return n
-        }
-
-        let textLines = getText()!.components(separatedBy: "\n")
-        if textLines.count == 0 {
-            return n
-        }
-
-        n = 0
-        for textLine in textLines {
-            let tokens = textLine.components(separatedBy: .whitespacesAndNewlines)
-            var sb = String()
-            if tokens.count > 1 {
-                for i in 0..<tokens.count {
-                    let token = tokens[i]
-                    if font!.stringWidth(sb + " " + token) >
-                            (getWidth() - (self.leftPadding + self.rightPadding)) {
-                        sb = String(token)
-                        n += 1
-                    } else {
-                        if i > 0 {
-                            sb.append(" ")
-                        }
-                        sb.append(String(token))
-                    }
-                }
-            }
-            n += 1
-        }
-
-        return n
     }
 
     public func getTextBox() -> TextBox? {

@@ -23,7 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-public class FlateDistance {
+internal class FlateDistance {
     //     Extra            Extra                Extra
     // Code Bits  Dist  Code Bits    Dist    Code Bits  Distance
     // ---- ----  ----  ---- ----  ------    ---- ----  --------

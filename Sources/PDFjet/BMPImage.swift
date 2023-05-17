@@ -22,9 +22,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 class BMPImage {
-
     var w = 0                           // Image width in pixels
     var h = 0                           // Image height in pixels
 
@@ -45,7 +43,6 @@ class BMPImage {
     private let m00000001: UInt8 = 0x01
     private let m11110000: UInt8 = 0xF0
     private let m00001111: UInt8 = 0x0F
-
 
     // Tested with images created from GIMP
     public init(_ stream: InputStream) {
@@ -280,5 +277,4 @@ class BMPImage {
     public func getData() -> [UInt8] {
         return self.deflated!
     }
-
 }

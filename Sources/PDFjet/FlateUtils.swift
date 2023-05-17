@@ -23,7 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-public class FlateUtils {
+internal class FlateUtils {
     static func reverse(_ code: UInt32, length: Int) -> UInt32 {
         var temp = code
         var mirror: UInt32 = 0

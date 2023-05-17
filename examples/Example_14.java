@@ -36,7 +36,7 @@ public class Example_14 {
                 } else {
                     cell = new Cell(f2);
                 }
-                cell.setNoBorders();
+                cell.setBorders(false);
 
                 // WITH:
                 cell.setTopPadding(10f);

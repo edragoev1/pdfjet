@@ -38,6 +38,7 @@ public class Example_13 {
 
         Table table = new Table();
         table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.SetBottomMargin(15f);
         table.SetLocation(100f, 50f);
         table.RemoveLineBetweenRows(0, 1);
 
@@ -50,7 +51,7 @@ public class Example_13 {
         SetFontForRow(table, 0, f1);
         SetFontForRow(table, 1, f1);
 
-        table.AutoAdjustColumnWidths();
+        table.SetColumnWidths();
         List<Cell> column = table.GetColumn(7);
         for (int i = 0; i < column.Count; i++) {
             Cell cell = column[i];
@@ -86,12 +87,7 @@ public class Example_13 {
         blankOutColumn(table, 8);
 
         List<Page> pages = new List<Page>();
-        while (table.HasMoreData()) {
-            Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
-            table.DrawOn(page);
-            pages.Add(page);
-        }
-
+        table.DrawOn(pdf, pages, A4.PORTRAIT);
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
             page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));

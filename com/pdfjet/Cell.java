@@ -32,25 +32,19 @@ public class Cell {
     protected Font fallbackFont;
     protected String text;
     protected Image image;
-    protected BarCode barCode;
+    protected Barcode barcode;
     protected TextBox textBox;
     protected Point point;
     protected CompositeTextLine compositeTextLine;
-    protected Drawable drawable;
-
     protected float width = 50f;
-
     protected float topPadding = 2f;
     protected float bottomPadding = 2f;
     protected float leftPadding = 2f;
     protected float rightPadding = 2f;
-
-    protected float lineWidth = 0.2f;
-
+    protected float lineWidth = 0f;
     private int background = -1;
     private int pen = Color.black;
     private int brush = Color.black;
-
     // Cell properties
     // Colspan:
     // bits 0 to 15
@@ -67,9 +61,8 @@ public class Cell {
     // bit 23 - strikeout
     // Future use:
     // bits 24 to 31
-    private int properties = 0x000F0001;
+    private int properties = 0x00050001;    // Set only left and top borders!
     private String uri;
-
     private int valign = Align.TOP;
 
     /**
@@ -166,15 +159,17 @@ public class Cell {
      */
     public void setImage(Image image) {
         this.image = image;
+        this.text = null;
     }
 
     /**
      *  Sets the barcode inside this cell.
      *
-     *  @param barCode the barcode.
+     *  @param barcode the barcode.
      */
-    public void setBarcode(BarCode barCode) {
-        this.barCode = barCode;
+    public void setBarcode(Barcode barcode) {
+        this.barcode = barcode;
+        this.text = null;
     }
 
     /**
@@ -223,26 +218,9 @@ public class Cell {
         return this.compositeTextLine;
     }
 
-    /**
-     * Sets the drawable object.
-     *
-     * @param drawable the drawable object.
-     */
-    public void setDrawable(Drawable drawable) {
-        this.drawable = drawable;
-    }
-
-    /**
-     * Returns the drawable object.
-     *
-     * @return the drawable object.
-     */
-    public Drawable getDrawable() {
-        return this.drawable;
-    }
-
     public void setTextBox(TextBox textBox) {
         this.textBox = textBox;
+        this.text = null;
     }
 
     /**
@@ -252,9 +230,6 @@ public class Cell {
      */
     public void setWidth(float width) {
         this.width = width;
-        if (textBox != null) {
-            textBox.setWidth(this.width - (this.leftPadding + this.rightPadding));
-        }
     }
 
     /**
@@ -319,14 +294,15 @@ public class Cell {
      *
      *  @return the cell height.
      */
-    public float getHeight() throws Exception {
+    public float getHeight(float width) throws Exception {
         float cellHeight = 0f;
-        if (image != null) {
+        if (textBox != null) {
+            textBox.setWidth(width);
+            cellHeight = (textBox.drawOn(null)[1] + topPadding + bottomPadding);
+        } else if (image != null) {
             cellHeight = image.getHeight() + topPadding + bottomPadding;
-        } else if (barCode != null) {
-            cellHeight = barCode.getHeight() + topPadding + bottomPadding;
-        } else if (textBox != null) {
-            cellHeight = textBox.drawOn(null)[1] + topPadding + bottomPadding;
+        } else if (barcode != null) {
+            cellHeight = barcode.getHeight() + topPadding + bottomPadding;
         } else if (text != null) {
             float fontHeight = font.getHeight();
             if (fallbackFont != null && fallbackFont.getHeight() > fontHeight) {
@@ -471,11 +447,15 @@ public class Cell {
     }
 
     /**
-     *  Sets all border object parameters to false.
-     *  This cell will have no borders when drawn on the page.
+     * Sets all cell borders.
+     * @param borders true or false.
      */
-    public void setNoBorders() {
-        this.properties &= 0x00F0FFFF;
+    public void setBorders(boolean borders) {
+        if (borders) {
+            this.properties &= 0x00FFFFFF;
+        } else {
+            this.properties &= 0x00F0FFFF;
+        }
     }
 
     /**
@@ -566,23 +546,24 @@ public class Cell {
         this.uri = uri;
     }
 
-    public TextBox getTextBox() {
-        return textBox;
-    }
-
     /**
      * Draws the point, text and borders of this cell.
      */
-    protected void paint(
+    protected void drawOn(
             Page page,
             float x,
             float y,
             float w,
             float h) throws Exception {
-        if (background != -1) {
+        if (background != Color.transparent) {
             drawBackground(page, x, y, w, h);
         }
-        if (image != null) {
+
+        if (textBox != null) {
+            textBox.setLocation(x + leftPadding, y + topPadding);
+            textBox.setWidth(w - (leftPadding + rightPadding));
+            textBox.drawOn(page);
+        } else if (image != null) {
             if (getTextAlignment() == Align.LEFT) {
                 image.setLocation(x + leftPadding, y + topPadding);
                 image.drawOn(page);
@@ -593,29 +574,24 @@ public class Cell {
                 image.setLocation((x + w) - (image.getWidth() + leftPadding), y + topPadding);
                 image.drawOn(page);
             }
-        }
-        if (barCode != null) {
+        } else if (barcode != null) {
             try {
                 if (getTextAlignment() == Align.LEFT) {
-                    barCode.drawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+                    barcode.drawOnPageAtLocation(page, x + leftPadding, y + topPadding);
                 } else if (getTextAlignment() == Align.CENTER) {
-                    float barcodeWidth = barCode.drawOn(null)[0];
-                    barCode.drawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
+                    float barcodeWidth = barcode.drawOn(null)[0];
+                    barcode.drawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
                 } else if (getTextAlignment() == Align.RIGHT) {
-                    float barcodeWidth = barCode.drawOn(null)[0];
-                    barCode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+                    float barcodeWidth = barcode.drawOn(null)[0];
+                    barcode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-        if (textBox != null) {
-            textBox.setLocation(x + leftPadding, y + topPadding);
-            textBox.drawOn(page);
-        }
-        if (text != null && !text.equals("")) {
+        } else if (text != null && !text.equals("")) {
             drawText(page, x, y, w, h);
         }
+
         drawBorders(page, x, y, w, h);
         if (point != null) {
             if (point.align == Align.LEFT) {
@@ -639,10 +615,6 @@ public class Cell {
             }
             page.drawPoint(point);
         }
-        if (drawable != null) {
-            drawable.setPosition(x + leftPadding, y + topPadding);
-            drawable.drawOn(page);
-        }
     }
 
     private void drawBackground(
@@ -663,43 +635,38 @@ public class Cell {
             float cellH) {
         page.setPenColor(pen);
         page.setPenWidth(lineWidth);
-        if (getBorder(Border.TOP) &&
-                getBorder(Border.BOTTOM) &&
-                getBorder(Border.LEFT) &&
+        if (getBorder(Border.TOP) ||
+                getBorder(Border.BOTTOM) ||
+                getBorder(Border.LEFT) ||
                 getBorder(Border.RIGHT)) {
-            page.addBMC(StructElem.P, Single.space, Single.space);
-            page.drawRect(x, y, cellW, cellH);
+            page.addArtifactBMC();
+        }
+        float qWidth = lineWidth / 4;
+        if (getBorder(Border.TOP)) {
+            page.moveTo(x - qWidth, y);
+            page.lineTo(x + cellW, y);
+            page.strokePath();
+        }
+        if (getBorder(Border.BOTTOM)) {
+            page.moveTo(x - qWidth, y + cellH);
+            page.lineTo(x + cellW, y + cellH);
+            page.strokePath();
+        }
+        if (getBorder(Border.LEFT)) {
+            page.moveTo(x, y - qWidth);
+            page.lineTo(x, y + cellH + qWidth);
+            page.strokePath();
+        }
+        if (getBorder(Border.RIGHT)) {
+            page.moveTo(x + cellW, y - qWidth);
+            page.lineTo(x + cellW, y + cellH + qWidth);
+            page.strokePath();
+        }
+        if (getBorder(Border.TOP) ||
+                getBorder(Border.BOTTOM) ||
+                getBorder(Border.LEFT) ||
+                getBorder(Border.RIGHT)) {
             page.addEMC();
-        } else {
-            float qWidth = lineWidth / 4;
-            if (getBorder(Border.TOP)) {
-                page.addBMC(StructElem.P, Single.space, Single.space);
-                page.moveTo(x - qWidth, y);
-                page.lineTo(x + cellW, y);
-                page.strokePath();
-                page.addEMC();
-            }
-            if (getBorder(Border.BOTTOM)) {
-                page.addBMC(StructElem.P, Single.space, Single.space);
-                page.moveTo(x - qWidth, y + cellH);
-                page.lineTo(x + cellW, y + cellH);
-                page.strokePath();
-                page.addEMC();
-            }
-            if (getBorder(Border.LEFT)) {
-                page.addBMC(StructElem.P, Single.space, Single.space);
-                page.moveTo(x, y - qWidth);
-                page.lineTo(x, y + cellH + qWidth);
-                page.strokePath();
-                page.addEMC();
-            }
-            if (getBorder(Border.RIGHT)) {
-                page.addBMC(StructElem.P, Single.space, Single.space);
-                page.moveTo(x + cellW, y - qWidth);
-                page.lineTo(x + cellW, y + cellH + qWidth);
-                page.strokePath();
-                page.addEMC();
-            }
         }
     }
 
@@ -821,28 +788,7 @@ public class Cell {
         page.addEMC();
     }
 
-    /**
-     *  Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
-     *
-     *  @return the number of vertical cells needed to wrap around the cell text.
-     */
-    public int getNumVerCells() {
-        int numOfVerCells = 1;
-        if (this.text == null) {
-            return numOfVerCells;
-        }
-        float effectiveWidth = this.width - (this.leftPadding + this.rightPadding);
-        String[] tokens = TextUtils.splitTextIntoTokens(this.text, this.font, this.fallbackFont, effectiveWidth);
-        StringBuilder buf = new StringBuilder();
-        for (String token : tokens) {
-            if (font.stringWidth(fallbackFont, (buf.toString() + " " + token).trim()) > effectiveWidth) {
-                numOfVerCells++;
-                buf = new StringBuilder(token);
-            } else {
-                buf.append(" ");
-                buf.append(token);
-            }
-        }
-        return numOfVerCells;
+    public TextBox getTextBox() {
+        return textBox;
     }
 }   // End of Cell.java

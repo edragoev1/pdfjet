@@ -550,7 +550,9 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 			if len(list) > 0 {
 				lastLine := list[len(list)-1]
 				runes := []rune(lastLine)
-				runes = runes[:len(runes)-3]
+				if len(runes) > 3 {
+					runes = runes[:len(runes)-3]
+				}
 				lastLine = string(runes)
 				list[len(list)-1] = lastLine + "..."
 				lines = list

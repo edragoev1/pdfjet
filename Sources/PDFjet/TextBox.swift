@@ -687,7 +687,9 @@ public class TextBox : Drawable {
                     for scalar in lastLine.unicodeScalars {
                         scalars.append(scalar)
                     }
-                    scalars.removeLast(3)
+                    if scalars.count > 3 {
+                        scalars.removeLast(3)
+                    }
                     lastLine = ""
                     for scalar in scalars {
                         lastLine += String(scalar)

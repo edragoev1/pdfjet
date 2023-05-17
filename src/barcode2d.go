@@ -33,9 +33,9 @@ import (
 	"github.com/edragoev1/pdfjet/src/textcompact"
 )
 
-// BarCode2D describes PDF417 2D barcodes.
+// Barcode2D describes PDF417 2D barcodes.
 // Please see Example_12.
-type BarCode2D struct {
+type Barcode2D struct {
 	x1, y1    float32
 	w1        float32
 	h1        float32
@@ -58,10 +58,10 @@ const (
 	ShiftToPunct = 29
 )
 
-// NewBarCode2D constructor for 2D barcodes.
+// NewBarcode2D constructor for 2D barcodes.
 // @param str the specified string.
-func NewBarCode2D(str string) *BarCode2D {
-	barcode := new(BarCode2D)
+func NewBarcode2D(str string) *Barcode2D {
+	barcode := new(Barcode2D)
 	barcode.str = str
 	barcode.w1 = 0.75
 	barcode.h1 = 3.0 * barcode.w1
@@ -128,13 +128,13 @@ func NewBarCode2D(str string) *BarCode2D {
 // SetLocation sets the location of this barcode on the page.
 // @param x the x coordinate of the top left corner of the barcode.
 // @param y the y coordinate of the top left corner of the barcode.
-func (barcode *BarCode2D) SetLocation(x, y float32) {
+func (barcode *Barcode2D) SetLocation(x, y float32) {
 	barcode.x1 = x
 	barcode.y1 = y
 }
 
 // SetPosition sets the barcode location on the page.
-func (barcode *BarCode2D) SetPosition(x, y float32) {
+func (barcode *Barcode2D) SetPosition(x, y float32) {
 	barcode.SetLocation(x, y)
 }
 
@@ -142,12 +142,12 @@ func (barcode *BarCode2D) SetPosition(x, y float32) {
 // This changes the barcode size while preserving the aspect.
 // Use value between 0.5 and 0.75
 // If the value is too small some scanners may have difficulty reading the barcode.
-func (barcode *BarCode2D) SetModuleWidth(width float32) {
+func (barcode *Barcode2D) SetModuleWidth(width float32) {
 	barcode.w1 = width
 	barcode.h1 = 3 * barcode.w1
 }
 
-func (barcode *BarCode2D) textToArrayOfIntegers() []int {
+func (barcode *Barcode2D) textToArrayOfIntegers() []int {
 	list := make([]int, 0)
 
 	currentMode := ALPHA
@@ -201,7 +201,7 @@ func (barcode *BarCode2D) textToArrayOfIntegers() []int {
 	return list
 }
 
-func (barcode *BarCode2D) addData(buf []int, dataLen int) {
+func (barcode *Barcode2D) addData(buf []int, dataLen int) {
 	list := barcode.textToArrayOfIntegers()
 	bi := 1 // buffer index = 1 to skip the Symbol Length Descriptor
 	hi := 0
@@ -221,7 +221,7 @@ func (barcode *BarCode2D) addData(buf []int, dataLen int) {
 	}
 }
 
-func (barcode *BarCode2D) addECC(buf []int) {
+func (barcode *Barcode2D) addECC(buf []int) {
 	ecc := make([]int, len(ecclevel5.TABLE))
 	t2 := 0
 	t3 := 0
@@ -246,7 +246,7 @@ func (barcode *BarCode2D) addECC(buf []int) {
 
 // DrawOn draws this barcode on the specified page.
 // @return x and y coordinates of the bottom right corner of this component.
-func (barcode *BarCode2D) DrawOn(page *Page) []float32 {
+func (barcode *Barcode2D) DrawOn(page *Page) []float32 {
 	x := barcode.x1
 	y := barcode.y1
 
@@ -298,7 +298,7 @@ func (barcode *BarCode2D) DrawOn(page *Page) []float32 {
 	return []float32{x, y + barcode.h1*float32(barcode.rows)}
 }
 
-func (barcode *BarCode2D) drawBar(page *Page, x, y, w, h float32) {
+func (barcode *Barcode2D) drawBar(page *Page, x, y, w, h float32) {
 	page.SetPenWidth(w)
 	page.MoveTo(x+w/2, y)
 	page.LineTo(x+w/2, y+h)

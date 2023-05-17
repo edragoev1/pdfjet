@@ -19,7 +19,7 @@ public class Example_12 {
             buf.Append("\r\n"); // CR and LF both required!
         }
 
-        BarCode2D code2D = new BarCode2D(buf.ToString());
+        Barcode2D code2D = new Barcode2D(buf.ToString());
         code2D.SetModuleWidth(0.5f);
         code2D.SetLocation(100f, 60f);
         code2D.DrawOn(page);

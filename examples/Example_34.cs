@@ -6,12 +6,12 @@ using PDFjet.NET;
 
 /**
  *  Example_34.cs
- *
  */
 public class Example_34 {
     public Example_34() {
         PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_34.pdf", FileMode.Create)), Compliance.PDF_A_1B);
+                new FileStream("Example_34.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_A_1B);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
@@ -54,29 +54,23 @@ public class Example_34 {
 
         table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
         table.SetBottomMargin(15f);
-        // table.SetCellBordersWidth(1.2f);
-        table.SetCellBordersWidth(0.2f);
         table.SetLocation(70f, 30f);
         table.SetTextColorInRow(6, Color.blue);
         table.SetTextColorInRow(39, Color.red);
         table.SetFontInRow(26, f3);
         table.RemoveLineBetweenRows(0, 1);
-        table.AutoAdjustColumnWidths();
-        // table.setColumnWidth(0, 120f);
+        table.SetColumnWidths();
         table.SetColumnWidth(0, 50f);
-        table.WrapAroundCellText();
+        table.SetColumnWidth(3, 80f);
         table.RightAlignNumbers();
 
         List<Page> pages = new List<Page>();
-        float[] lastPageXY = table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
             page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
             pdf.AddPage(page);
         }
-        TextLine textLine = new TextLine(f1, "Hello, World!");
-        textLine.SetLocation(lastPageXY[0], lastPageXY[1] + f1.GetBodyHeight());
-        textLine.DrawOn(pages[pages.Count - 1]);
 
         pdf.Complete();
     }

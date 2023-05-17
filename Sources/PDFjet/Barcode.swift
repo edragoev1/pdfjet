@@ -1,5 +1,5 @@
 /**
- *  BarCode.swift
+ *  Barcode.swift
  *
 Copyright 2023 Innovatics Inc.
 
@@ -23,14 +23,12 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create one dimentional barcodes - UPC, Code 39 and Code 128.
 ///
 /// Please see Example_11.
 ///
-public class BarCode : Drawable {
-
+public class Barcode : Drawable {
     public static let UPC = 0
     public static let CODE128 = 1
     public static let CODE39 = 2
@@ -109,11 +107,9 @@ public class BarCode : Drawable {
         tableB["Z"] = "bWBwBwbwb"
     }
 
-
     public func setPosition(_ x1: Float, _ y1: Float) {
         setLocation(x1, y1)
     }
-
 
     ///
     /// Sets the location where this barcode will be drawn on the page.
@@ -126,7 +122,6 @@ public class BarCode : Drawable {
         self.y1 = y1
     }
 
-
     ///
     /// Sets the module length of this barcode.
     /// The default value is 0.75
@@ -137,7 +132,6 @@ public class BarCode : Drawable {
         self.m1 = Float(moduleLength)
     }
 
-
     ///
     /// Sets the module length of this barcode.
     /// The default value is 0.75
@@ -147,7 +141,6 @@ public class BarCode : Drawable {
     public func setModuleLength(_ moduleLength: Float) {
         self.m1 = moduleLength
     }
-
 
     ///
     /// Sets the bar height factor.
@@ -160,7 +153,6 @@ public class BarCode : Drawable {
         self.barHeightFactor = Float(barHeightFactor)
     }
 
-
     ///
     /// Sets the bar height factor.
     /// The height of the bars is the moduleLength * barHeightFactor
@@ -172,7 +164,6 @@ public class BarCode : Drawable {
         self.barHeightFactor = barHeightFactor
     }
 
-
     ///
     /// Sets the drawing direction for this font.
     ///
@@ -181,7 +172,6 @@ public class BarCode : Drawable {
     public func setDirection(_ direction: Int) {
         self.direction = direction
     }
-
 
     ///
     /// Sets the font to be used with this barcode.
@@ -192,7 +182,6 @@ public class BarCode : Drawable {
         self.font = font
     }
 
-
     ///
     /// Draws this barcode on the specified page.
     ///
@@ -202,11 +191,11 @@ public class BarCode : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if barcodeType == BarCode.UPC {
+        if barcodeType == Barcode.UPC {
             return drawCodeUPC(page, x1, y1)
-        } else if barcodeType == BarCode.CODE128 {
+        } else if barcodeType == Barcode.CODE128 {
             return drawCode128(page, x1, y1)
-        } else if barcodeType == BarCode.CODE39 {
+        } else if barcodeType == Barcode.CODE39 {
             return drawCode39(page, x1, y1)
         } else {
             Swift.print("Unsupported Barcode Type.")
@@ -216,18 +205,17 @@ public class BarCode : Drawable {
 
     @discardableResult
     func drawOnPageAtLocation(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
-        if (barcodeType == BarCode.UPC) {
+        if (barcodeType == Barcode.UPC) {
             return drawCodeUPC(page, x1, y1)
-        } else if (barcodeType == BarCode.CODE128) {
+        } else if (barcodeType == Barcode.CODE128) {
             return drawCode128(page, x1, y1)
-        } else if (barcodeType == BarCode.CODE39) {
+        } else if (barcodeType == Barcode.CODE39) {
             return drawCode39(page, x1, y1)
         } else {
             Swift.print("Unsupported Barcode Type.")
         }
         return [Float]()
     }
-
 
     private func drawCodeUPC(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         var x: Float = x1
@@ -327,7 +315,6 @@ public class BarCode : Drawable {
         return [xy[0], xy[1]]
     }
 
-
     private func drawEGuard(
             _ page: Page?,
             _ x: Float,
@@ -341,7 +328,6 @@ public class BarCode : Drawable {
         }
         return (x + (3.0 * m1))
     }
-
 
     private func drawMGuard(
             _ page: Page?,
@@ -357,7 +343,6 @@ public class BarCode : Drawable {
         return (x + (5.0 * m1))
     }
 
-
     private func drawBar(
             _ page: Page?,
             _ x: Float,
@@ -372,7 +357,6 @@ public class BarCode : Drawable {
         }
     }
 
-
     private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         var x: Float = x1
         var y: Float = y1
@@ -380,9 +364,9 @@ public class BarCode : Drawable {
         var w: Float = m1
         var h: Float = m1
 
-        if direction == BarCode.TOP_TO_BOTTOM {
+        if direction == Barcode.TOP_TO_BOTTOM {
             w *= barHeightFactor
-        } else if direction == BarCode.LEFT_TO_RIGHT {
+        } else if direction == Barcode.LEFT_TO_RIGHT {
             h *= barHeightFactor
         }
 
@@ -425,15 +409,15 @@ public class BarCode : Drawable {
             for scalar in symbol.unicodeScalars {
                 let n = Int(scalar.value) - 0x30
                 if j%2 == 0 {
-                    if direction == BarCode.LEFT_TO_RIGHT {
+                    if direction == Barcode.LEFT_TO_RIGHT {
                         drawVertBar(page, x, y, m1 * Float(n), h)
-                    } else if direction == BarCode.TOP_TO_BOTTOM {
+                    } else if direction == Barcode.TOP_TO_BOTTOM {
                         drawHorzBar(page, x, y, m1 * Float(n), w)
                     }
                 }
-                if direction == BarCode.LEFT_TO_RIGHT {
+                if direction == Barcode.LEFT_TO_RIGHT {
                     x += Float(n) * m1
-                } else if direction == BarCode.TOP_TO_BOTTOM {
+                } else if direction == Barcode.TOP_TO_BOTTOM {
                     y += Float(n) * m1
                 }
                 j += 1
@@ -442,13 +426,13 @@ public class BarCode : Drawable {
 
         var xy = [x, y]
         if font != nil {
-            if direction == BarCode.LEFT_TO_RIGHT {
+            if direction == Barcode.LEFT_TO_RIGHT {
                 let textLine = TextLine(font!, text)
                         .setLocation(x1 + ((x - x1) - font!.stringWidth(text))/2, y1 + h + font!.bodyHeight)
                 xy = textLine.drawOn(page)
                 xy[0] = max(x, xy[0])
                 return [xy[0], xy[1] + font!.descent]
-            } else if direction == BarCode.TOP_TO_BOTTOM {
+            } else if direction == Barcode.TOP_TO_BOTTOM {
                 let textLine = TextLine(font!, text)
                         .setLocation(
                                 x + w + font!.bodyHeight,
@@ -462,7 +446,6 @@ public class BarCode : Drawable {
         return xy
     }
 
-
     private func drawCode39(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         text = "*" + text + "*"
 
@@ -473,7 +456,7 @@ public class BarCode : Drawable {
 
         var xy: [Float] = [0.0, 0.0]
 
-        if direction == BarCode.LEFT_TO_RIGHT {
+        if direction == Barcode.LEFT_TO_RIGHT {
             for symchar in text.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
@@ -507,7 +490,7 @@ public class BarCode : Drawable {
                 xy = textLine.drawOn(page)
                 xy[0] = max(x, xy[0])
             }
-        } else if direction == BarCode.TOP_TO_BOTTOM {
+        } else if direction == Barcode.TOP_TO_BOTTOM {
             for symchar in text.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
@@ -543,7 +526,7 @@ public class BarCode : Drawable {
                 xy[0] = max(x, xy[0]) + w
                 xy[1] = max(y, xy[1])
             }
-        } else if direction == BarCode.BOTTOM_TO_TOP {
+        } else if direction == Barcode.BOTTOM_TO_TOP {
             var height: Float = 0.0
 
             for symchar in text.unicodeScalars {
@@ -609,7 +592,6 @@ public class BarCode : Drawable {
         return [xy[0], xy[1]]
     }
 
-
     private func drawVertBar(
             _ page: Page?,
             _ x: Float,
@@ -623,7 +605,6 @@ public class BarCode : Drawable {
             page!.strokePath()
         }
     }
-
 
     private func drawHorzBar(
             _ page: Page?,
@@ -639,7 +620,6 @@ public class BarCode : Drawable {
         }
     }
 
-
     private func drawHorzBar2(
             _ page: Page?,
             _ x: Float,
@@ -654,12 +634,10 @@ public class BarCode : Drawable {
         }
     }
 
-
     public func getHeight() -> Float {
         if font == nil {
             return m1 * barHeightFactor
         }
         return m1 * barHeightFactor + font!.getHeight()
     }
-
-}   // End of BarCode.swift
+}   // End of Barcode.swift

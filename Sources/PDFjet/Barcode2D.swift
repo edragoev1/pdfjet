@@ -1,5 +1,5 @@
 /**
- *  BarCode2D.swift
+ *  Barcode2D.swift
  *
 Copyright 2023 Innovatics Inc.
 
@@ -23,44 +23,35 @@ SOFTWARE.
 */
 import Foundation
 
-
 enum EncodingError: Error {
     case unencodable
 }
-
 
 /**
  *  Used to create PDF417 2D barcodes.
  *
  *  Please see Example_12.
  */
-public class BarCode2D : Drawable {
-
+public class Barcode2D : Drawable {
     private static let ALPHA = 0x08
     private static let LOWER = 0x04
     private static let MIXED = 0x02
     private static let PUNCT = 0x01
-
     private static let LATCH_TO_LOWER = 27
     private static let SHIFT_TO_ALPHA = 27
     private static let LATCH_TO_MIXED = 28
     private static let LATCH_TO_ALPHA = 28
     private static let SHIFT_TO_PUNCT = 29
-
     private var x1: Float = 0.0
     private var y1: Float = 0.0
 
     // Critical defaults!
     private var w1: Float = 0.75
     private var h1: Float = 0.0
-
     private var rows = 50
     private var cols = 18
-
     private var codewords = [Int]()
-
     private var str: String = ""
-
 
     /**
      *  Constructor for 2D barcodes.
@@ -68,7 +59,6 @@ public class BarCode2D : Drawable {
      *  @param str the specified string.
      */
     public init(_ str: String) throws {
-
         self.str = str
         self.h1 = 3 * w1
         self.codewords = [Int](repeating: 0, count: rows * (cols + 2))
@@ -128,11 +118,9 @@ public class BarCode2D : Drawable {
         }
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     /**
      *  Sets the location of this barcode on the page.
@@ -144,7 +132,6 @@ public class BarCode2D : Drawable {
         self.x1 = x
         self.y1 = y
     }
-
 
     /**
      *  Sets the module width for this barcode.
@@ -159,7 +146,6 @@ public class BarCode2D : Drawable {
         self.h1 = 3 * w1
     }
 
-
     /**
      *  Draws this barcode on the specified page.
      *
@@ -172,11 +158,10 @@ public class BarCode2D : Drawable {
         return drawPdf417(page!)
     }
 
-
     private func textToArrayOfIntegers() -> [Int] {
         var list = [Int]()
 
-        var currentMode = BarCode2D.ALPHA
+        var currentMode = Barcode2D.ALPHA
         for scalar in str.unicodeScalars {
             if scalar == Unicode.Scalar(0x20) {
                 list.append(26)
@@ -188,37 +173,37 @@ public class BarCode2D : Drawable {
             if mode == currentMode {
                 list.append(value)
             } else {
-                if mode == BarCode2D.ALPHA && currentMode == BarCode2D.LOWER {
-                    list.append(BarCode2D.SHIFT_TO_ALPHA)
+                if mode == Barcode2D.ALPHA && currentMode == Barcode2D.LOWER {
+                    list.append(Barcode2D.SHIFT_TO_ALPHA)
                     list.append(value)
-                } else if mode == BarCode2D.ALPHA && currentMode == BarCode2D.MIXED {
-                    list.append(BarCode2D.LATCH_TO_ALPHA)
-                    list.append(value)
-                    currentMode = mode
-                } else if mode == BarCode2D.LOWER && currentMode == BarCode2D.ALPHA {
-                    list.append(BarCode2D.LATCH_TO_LOWER)
+                } else if mode == Barcode2D.ALPHA && currentMode == Barcode2D.MIXED {
+                    list.append(Barcode2D.LATCH_TO_ALPHA)
                     list.append(value)
                     currentMode = mode
-                } else if mode == BarCode2D.LOWER && currentMode == BarCode2D.MIXED {
-                    list.append(BarCode2D.LATCH_TO_LOWER)
+                } else if mode == Barcode2D.LOWER && currentMode == Barcode2D.ALPHA {
+                    list.append(Barcode2D.LATCH_TO_LOWER)
                     list.append(value)
                     currentMode = mode
-                } else if mode == BarCode2D.MIXED && currentMode == BarCode2D.ALPHA {
-                    list.append(BarCode2D.LATCH_TO_MIXED)
+                } else if mode == Barcode2D.LOWER && currentMode == Barcode2D.MIXED {
+                    list.append(Barcode2D.LATCH_TO_LOWER)
                     list.append(value)
                     currentMode = mode
-                } else if mode == BarCode2D.MIXED && currentMode == BarCode2D.LOWER {
-                    list.append(BarCode2D.LATCH_TO_MIXED)
+                } else if mode == Barcode2D.MIXED && currentMode == Barcode2D.ALPHA {
+                    list.append(Barcode2D.LATCH_TO_MIXED)
                     list.append(value)
                     currentMode = mode
-                } else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.ALPHA {
-                    list.append(BarCode2D.SHIFT_TO_PUNCT)
+                } else if mode == Barcode2D.MIXED && currentMode == Barcode2D.LOWER {
+                    list.append(Barcode2D.LATCH_TO_MIXED)
                     list.append(value)
-                } else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.LOWER {
-                    list.append(BarCode2D.SHIFT_TO_PUNCT)
+                    currentMode = mode
+                } else if mode == Barcode2D.PUNCT && currentMode == Barcode2D.ALPHA {
+                    list.append(Barcode2D.SHIFT_TO_PUNCT)
                     list.append(value)
-                } else if mode == BarCode2D.PUNCT && currentMode == BarCode2D.MIXED {
-                    list.append(BarCode2D.SHIFT_TO_PUNCT)
+                } else if mode == Barcode2D.PUNCT && currentMode == Barcode2D.LOWER {
+                    list.append(Barcode2D.SHIFT_TO_PUNCT)
+                    list.append(value)
+                } else if mode == Barcode2D.PUNCT && currentMode == Barcode2D.MIXED {
+                    list.append(Barcode2D.SHIFT_TO_PUNCT)
                     list.append(value)
                 }
             }
@@ -226,7 +211,6 @@ public class BarCode2D : Drawable {
 
         return list
     }
-
 
     private func addData(_ buffer: inout [Int], _ dataLen: Int) {
         let list = textToArrayOfIntegers()
@@ -239,7 +223,7 @@ public class BarCode2D : Drawable {
         while i < list.count {
             hi = list[i]
             if i + 1 == list.count {
-                lo = BarCode2D.SHIFT_TO_PUNCT       // Pad
+                lo = Barcode2D.SHIFT_TO_PUNCT       // Pad
             } else {
                 lo = list[i + 1]
             }
@@ -251,7 +235,6 @@ public class BarCode2D : Drawable {
             i += 2
         }
     }
-
 
     private func addECC(_ buf: inout [Int]) {
         var ecc = [Int](repeating: 0, count: ECC_L5.table.count)
@@ -280,7 +263,6 @@ public class BarCode2D : Drawable {
             }
         }
     }
-
 
     private func drawPdf417(_ page: Page) -> [Float] {
         var x: Float = x1
@@ -333,7 +315,6 @@ public class BarCode2D : Drawable {
         return [x, y + h1*Float(rows)]
     }
 
-
     private func drawBar(
             _ page: Page,
             _ x: Float,
@@ -345,5 +326,4 @@ public class BarCode2D : Drawable {
         page.lineTo(x + w/2, y + h)
         page.strokePath()
     }
-
-}   // End of BarCode2D.swift
+}   // End of Barcode2D.swift
