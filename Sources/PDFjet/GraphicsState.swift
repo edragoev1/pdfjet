@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 public class GraphicsState {
-
     // Default values
     private var CA: Float = 1.0
     private var ca: Float = 1.0
@@ -51,5 +50,4 @@ public class GraphicsState {
     public func getAlphaNonStroking() -> Float {
         return self.ca
     }
-
 }

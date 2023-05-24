@@ -22,10 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace PDFjet.NET {
 /**
  *  Used to select Chinese, Japanese or Korean fonts.
  */
+namespace PDFjet.NET {
 public enum CJKFont {
     ADOBE_MING_STD_LIGHT,       // Chinese (Traditional) font
     ST_HEITI_SC_LIGHT,          // Chinese (Simplified) font

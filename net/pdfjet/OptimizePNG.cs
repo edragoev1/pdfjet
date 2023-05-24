@@ -26,7 +26,6 @@ using System.IO;
 
 namespace PDFjet.NET {
 public class OptimizePNG {
-
     public static void Main(String[] args) {
         String fileName = args[0];
         FileStream fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
@@ -56,13 +55,11 @@ public class OptimizePNG {
         bos.Dispose();
     }
 
-
     private static void WriteInt(int i, Stream os) {
         os.WriteByte((byte) (i >> 24));
         os.WriteByte((byte) (i >> 16));
         os.WriteByte((byte) (i >>  8));
         os.WriteByte((byte) (i >>  0));
     }
-
 }   // End of OptimizePNG.cs
 }   // End of namespace PDFjet.NET

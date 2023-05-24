@@ -27,7 +27,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
  * Used to embed SVG images in the PDF document.
  */

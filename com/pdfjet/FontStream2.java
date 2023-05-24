@@ -26,9 +26,7 @@ package com.pdfjet;
 import java.io.*;
 import java.util.*;
 
-
 class FontStream2 {
-
     protected static void register(
             List<PDFobj> objects,
             Font font,
@@ -67,7 +65,6 @@ class FontStream2 {
         font.objNumber = obj.number;
     }
 
-
     private static int addMetadataObject(List<PDFobj> objects, Font font) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
@@ -105,12 +102,10 @@ class FontStream2 {
         return obj.number;
     }
 
-
     private static void embedFontFile(
             List<PDFobj> objects,
             Font font,
             InputStream inputStream) throws Exception {
-
         int metadataObjNumber = addMetadataObject(objects, font);
 
         PDFobj obj = new PDFobj();
@@ -143,7 +138,6 @@ class FontStream2 {
         objects.add(obj);
         font.fileObjNumber = obj.number;
     }
-
 
     private static void addFontDescriptorObject(List<PDFobj> objects, Font font) {
         PDFobj obj = new PDFobj();
@@ -181,10 +175,8 @@ class FontStream2 {
         font.fontDescriptorObjNumber = obj.number;
     }
 
-
     private static void addToUnicodeCMapObject(
             List<PDFobj> objects, Font font) throws Exception {
-
         StringBuilder sb = new StringBuilder();
 
         sb.append("/CIDInit /ProcSet findresource begin\n");
@@ -233,7 +225,6 @@ class FontStream2 {
         font.toUnicodeCMapObjNumber = obj.number;
     }
 
-
     private static void addCIDFontDictionaryObject(List<PDFobj> objects, Font font) {
         PDFobj obj = new PDFobj();
         obj.dict.add("<<");
@@ -276,5 +267,4 @@ class FontStream2 {
         objects.add(obj);
         font.cidFontDictObjNumber = obj.number;
     }
-
 }   // End of FontStream2.java

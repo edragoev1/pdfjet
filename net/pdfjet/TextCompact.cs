@@ -5,14 +5,11 @@ Copyright 2023 Innovatics Inc.
 */
 using System;
 
-
 namespace PDFjet.NET {
 class TextCompact {
-
 /*
  * The following table contains:
  * ASCII Value, Base 30 Value, Code specifying in what subtable is the character.
- *
  */
 public static readonly int[,] TABLE = {
 {0,26,0x04},    // space

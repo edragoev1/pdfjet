@@ -1,9 +1,7 @@
 using System;
 
-
 namespace PDFjet.NET {
 public class GraphicsState {
-
     // Default values
     private float CA = 1f;
     private float ca = 1f;
@@ -27,6 +25,5 @@ public class GraphicsState {
     public float GetAlphaNonStroking() {
         return this.ca;
     }
-
 }
 }

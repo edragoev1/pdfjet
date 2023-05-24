@@ -37,7 +37,7 @@ public class DonutChart {
     var r2: Float = 0.0
     var slices: [Slice]?
     var isDonutChart = true
-    
+
     public init(_ f1: Font, _ f2: Font, _ isDonutChart: Bool) {
         self.f1 = f1
         self.f2 = f2

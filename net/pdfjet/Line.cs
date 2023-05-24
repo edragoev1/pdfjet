@@ -21,35 +21,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to create line objects.
  *
  *  Please see Example_01.
  */
+namespace PDFjet.NET {
 public class Line : IDrawable {
-
     private float x1;
     private float y1;
     private float x2;
     private float y2;
-
     private float xBox;
     private float yBox;
-
     private int color = Color.black;
     private float width = 0.3f;
     private String pattern = "[] 0";
     private CapStyle capStyle = CapStyle.BUTT;
-
     private String language = null;
     private String actualText = Single.space;
     private String altDescription = Single.space;
-
 
     /**
      *  The default constructor.
@@ -57,7 +50,6 @@ public class Line : IDrawable {
      */
     public Line() {
     }
-
 
     /**
      *  Create a line object.
@@ -69,7 +61,6 @@ public class Line : IDrawable {
      */
     public Line(double x1, double y1, double x2, double y2) : this((float) x1, (float) y1, (float) x2, (float) y2) {
     }
-
 
     /**
      *  Create a line object.
@@ -85,7 +76,6 @@ public class Line : IDrawable {
         this.x2 = x2;
         this.y2 = y2;
     }
-
 
     /**
      *  The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -116,7 +106,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the x and y coordinates of the start point.
      *
@@ -130,11 +119,9 @@ public class Line : IDrawable {
         return this;
     }
 
-
     public void SetPosition(float x, float y) {
         SetStartPoint(x, y);
     }
-
 
     /**
      *  Sets the x and y coordinates of the start point.
@@ -149,7 +136,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the x and y coordinates of the start point.
      *
@@ -163,7 +149,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the start point of this line.
      *
@@ -172,7 +157,6 @@ public class Line : IDrawable {
     public Point GetStartPoint() {
         return new Point(x1, y1);
     }
-
 
     /**
      *  Sets the x and y coordinates of the end point.
@@ -187,7 +171,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the x and y coordinates of the end point.
      *
@@ -200,7 +183,6 @@ public class Line : IDrawable {
         this.y2 = y;
         return this;
     }
-
 
     /**
      *  Sets the x and y coordinates of the end point.
@@ -215,7 +197,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the end point of this line.
      *
@@ -224,7 +205,6 @@ public class Line : IDrawable {
     public Point GetEndPoint() {
         return new Point(x2, y2);
     }
-
 
     /**
      *  Sets the width of this line.
@@ -237,7 +217,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the width of this line.
      *
@@ -249,7 +228,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the color for this line.
      *
@@ -260,7 +238,6 @@ public class Line : IDrawable {
         this.color = color;
         return this;
     }
-
 
     /**
      *  Sets the line cap style.
@@ -274,7 +251,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the line cap style.
      *
@@ -283,7 +259,6 @@ public class Line : IDrawable {
     public CapStyle GetCapStyle() {
         return capStyle;
     }
-
 
     /**
      *  Sets the alternate description of this line.
@@ -296,7 +271,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the actual text for this line.
      *
@@ -308,7 +282,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Places this line in the specified box at position (0.0f, 0.0f).
      *
@@ -319,7 +292,6 @@ public class Line : IDrawable {
         PlaceIn(box, 0.0f, 0.0f);
         return this;
     }
-
 
     /**
      *  Places this line in the specified box.
@@ -335,7 +307,6 @@ public class Line : IDrawable {
             double yOffset) {
         return PlaceIn(box, (float) xOffset, (float) yOffset);
     }
-
 
     /**
      *  Places this line in the specified box.
@@ -354,7 +325,6 @@ public class Line : IDrawable {
         return this;
     }
 
-
     /**
      *  Scales this line by the spacified factor.
      *
@@ -364,7 +334,6 @@ public class Line : IDrawable {
     public Line ScaleBy(double factor) {
         return ScaleBy((float) factor);
     }
-
 
     /**
      *  Scales this line by the spacified factor.
@@ -379,7 +348,6 @@ public class Line : IDrawable {
         this.y2 *= factor;
         return this;
     }
-
 
     /**
      *  Draws this line on the specified page.
@@ -405,6 +373,5 @@ public class Line : IDrawable {
         float yMax = Math.Max(y1 + yBox, y2 + yBox);
         return new float[] {xMax, yMax};
     }
-
 }   // End of Line.cs
 }   // End of namespace PDFjet.NET

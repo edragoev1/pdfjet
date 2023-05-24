@@ -25,25 +25,20 @@ using System;
 
 namespace PDFjet.NET {
 public class NumberFormat {
-
     int minFractionDigits = 0;
     int maxFractionDigits = 0;
-
 
     public static NumberFormat GetInstance() {
         return new NumberFormat();
     }
 
-
     public void SetMinimumFractionDigits(int minFractionDigits) {
         this.minFractionDigits = minFractionDigits;
     }
 
-
     public void SetMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
     }
-
 
     public String Format(double value) {
         String format = "0.";
@@ -52,6 +47,5 @@ public class NumberFormat {
         }
         return value.ToString(format);
     }
-
 }   // End of NumberFormat.cs
 }   // End of package PDFjet.NET

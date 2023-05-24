@@ -26,7 +26,6 @@ SOFTWARE.
 /// Encapsulates the width and height of a component.
 ///
 public class Dimension {
-
     var w: Float?
     var h: Float?
 
@@ -41,15 +40,11 @@ public class Dimension {
         self.h = height
     }
 
-
     public func getWidth() -> Float? {
         return self.w
     }
 
-
     public func getHeight() -> Float? {
         return self.h
     }
-
 }   // End of Dimension.swift
-

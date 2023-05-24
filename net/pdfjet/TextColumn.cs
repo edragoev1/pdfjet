@@ -40,18 +40,13 @@ public class TextColumn : IDrawable {
     private float y;    // This variable keeps it's original value after being initialized.
     private float w;
     private float h;
-
     private float x1;
     private float y1;
     private float lineHeight;
-
     private float spaceBetweenLines = 1.0f;
     private float spaceBetweenParagraphs = 2.0f;
-
     private List<Paragraph> paragraphs;
-
     private bool lineBetweenParagraphs = false;
-
 
     /**
      *  Create a text column object.
@@ -61,7 +56,6 @@ public class TextColumn : IDrawable {
         this.paragraphs = new List<Paragraph>();
     }
 
-
     /**
      *  Create a text column object and set the rotation angle.
      *
@@ -70,14 +64,12 @@ public class TextColumn : IDrawable {
     public TextColumn(int rotateByDegrees) {
         this.rotate = rotateByDegrees;
         if (rotate == 0 || rotate == 90 || rotate == 270) {
-        }
-        else {
+        } else {
             throw new Exception(
                     "Invalid rotation angle. Please use 0, 90 or 270 degrees.");
         }
         this.paragraphs = new List<Paragraph>();
     }
-
 
     /**
      *  Sets the lineBetweenParagraphs private variable value.
@@ -89,16 +81,13 @@ public class TextColumn : IDrawable {
         this.lineBetweenParagraphs = lineBetweenParagraphs;
     }
 
-
     public void SetSpaceBetweenLines(float spaceBetweenLines) {
         this.spaceBetweenLines = spaceBetweenLines;
     }
 
-
     public void SetSpaceBetweenParagraphs(float spaceBetweenParagraphs) {
         this.spaceBetweenParagraphs = spaceBetweenParagraphs;
     }
-
 
     /**
      *  Sets the position of this text column on the page.
@@ -109,7 +98,6 @@ public class TextColumn : IDrawable {
     public void SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
     }
-
 
     /**
      *  Sets the position of this text column on the page.
@@ -124,11 +112,9 @@ public class TextColumn : IDrawable {
         this.y1 = y;
     }
 
-
     public void SetXY(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location of this text column on the page.
@@ -143,7 +129,6 @@ public class TextColumn : IDrawable {
         this.y1 = y;
     }
 
-
     /**
      *  Sets the size of this text column.
      *
@@ -153,7 +138,6 @@ public class TextColumn : IDrawable {
     public void SetSize(double w, double h) {
         SetSize((float) w, (float) h);
     }
-
 
     /**
      *  Sets the size of this text column.
@@ -166,7 +150,6 @@ public class TextColumn : IDrawable {
         this.h = h;
     }
 
-
     /**
      *  Sets the desired width of this text column.
      *
@@ -175,7 +158,6 @@ public class TextColumn : IDrawable {
     public void SetWidth(float w) {
         this.w = w;
     }
-
 
     /**
      *  Sets the text alignment.
@@ -186,7 +168,6 @@ public class TextColumn : IDrawable {
         this.alignment = alignment;
     }
 
-
     /**
      *  Sets the spacing between the lines in this text column.
      *
@@ -195,7 +176,6 @@ public class TextColumn : IDrawable {
     public void SetLineSpacing(double spacing) {
         this.spaceBetweenLines = (float) spacing;
     }
-
 
     /**
      *  Sets the spacing between the lines in this text column.
@@ -206,7 +186,6 @@ public class TextColumn : IDrawable {
         this.spaceBetweenLines = spacing;
     }
 
-
     /**
      *  Adds a new paragraph to this text column.
      *
@@ -215,7 +194,6 @@ public class TextColumn : IDrawable {
     public void AddParagraph(Paragraph paragraph) {
         this.paragraphs.Add(paragraph);
     }
-
 
     /**
      *  Removes the last paragraph added to this text column.
@@ -227,7 +205,6 @@ public class TextColumn : IDrawable {
         }
     }
 
-
     /**
      *  Returns dimension object containing the width and height of this component.
      *  Please see Example_29.
@@ -238,7 +215,6 @@ public class TextColumn : IDrawable {
         float[] xy = DrawOn(null);
         return new Dimension(this.w, xy[1] - this.y);
     }
-
 
     /**
      *  Draws this text column on the specified page.
@@ -258,9 +234,7 @@ public class TextColumn : IDrawable {
         return xy;
     }
 
-
     private float[] DrawParagraphOn(Page page, Paragraph paragraph) {
-
         List<TextLine> list = new List<TextLine>();
         float runLength = 0f;
         for (int i = 0; i < paragraph.lines.Count; i++) {
@@ -269,11 +243,9 @@ public class TextColumn : IDrawable {
                 lineHeight = line.font.bodyHeight + spaceBetweenLines;
                 if (rotate == 0) {
                     y1 += line.font.ascent;
-                }
-                else if (rotate == 90) {
+                } else if (rotate == 90) {
                     x1 += line.font.ascent;
-                }
-                else if (rotate == 270) {
+                } else if (rotate == 270) {
                     x1 -= line.font.ascent;
                 }
             }
@@ -294,8 +266,7 @@ public class TextColumn : IDrawable {
                 if (runLength < w) {
                     list.Add(text);
                     runLength += line.font.StringWidth(line.fallbackFont, Single.space);
-                }
-                else {
+                } else {
                     DrawLineOfText(page, list);
                     MoveToNextLine();
                     list.Clear();
@@ -317,40 +288,33 @@ public class TextColumn : IDrawable {
         return MoveToNextParagraph(this.spaceBetweenParagraphs);
     }
 
-
     private float[] MoveToNextLine() {
         if (rotate == 0) {
             x1 = x;
             y1 += lineHeight;
-        }
-        else if (rotate == 90) {
+        } else if (rotate == 90) {
             x1 += lineHeight;
             y1 = y;
-        }
-        else if (rotate == 270) {
+        } else if (rotate == 270) {
             x1 -= lineHeight;
             y1 = y;
         }
         return new float[] {x1, y1};
     }
 
-
     private float[] MoveToNextParagraph(float spaceBetweenParagraphs) {
         if (rotate == 0) {
             x1 = x;
             y1 += spaceBetweenParagraphs;
-        }
-        else if (rotate == 90) {
+        } else if (rotate == 90) {
             x1 += spaceBetweenParagraphs;
             y1 = y;
-        }
-        else if (rotate == 270) {
+        } else if (rotate == 270) {
             x1 -= spaceBetweenParagraphs;
             y1 = y;
         }
         return new float[] {x1, y1};
     }
-
 
     private float[] DrawLineOfText(Page page, List<TextLine> list) {
         if (alignment == Align.JUSTIFY) {
@@ -381,26 +345,22 @@ public class TextColumn : IDrawable {
                     textLine.SetTextDirection(0);
                     textLine.DrawOn(page);
                     x1 += textLine.font.StringWidth(textLine.fallbackFont, textLine.text) + dx;
-                }
-                else if (rotate == 90) {
+                } else if (rotate == 90) {
                     textLine.SetTextDirection(90);
                     textLine.DrawOn(page);
                     y1 -= textLine.font.StringWidth(textLine.fallbackFont, textLine.text) + dx;
-                }
-                else if (rotate == 270) {
+                } else if (rotate == 270) {
                     textLine.SetTextDirection(270);
                     textLine.DrawOn(page);
                     y1 += textLine.font.StringWidth(textLine.fallbackFont, textLine.text) + dx;
                 }
             }
-        }
-        else {
+        } else {
             return DrawNonJustifiedLine(page, list);
         }
 
         return new float[] {x1, y1};
     }
-
 
     private float[] DrawNonJustifiedLine(Page page, List<TextLine> list) {
         float runLength = 0f;
@@ -417,22 +377,17 @@ public class TextColumn : IDrawable {
         if (alignment == Align.CENTER) {
             if (rotate == 0) {
                 x1 = x + ((w - runLength) / 2);
-            }
-            else if (rotate == 90) {
+            } else if (rotate == 90) {
                 y1 = y - ((w - runLength) / 2);
-            }
-            else if (rotate == 270) {
+            } else if (rotate == 270) {
                 y1 = y + ((w - runLength) / 2);
             }
-        }
-        else if (alignment == Align.RIGHT) {
+        } else if (alignment == Align.RIGHT) {
             if (rotate == 0) {
                 x1 = x + (w - runLength);
-            }
-            else if (rotate == 90) {
+            } else if (rotate == 90) {
                 y1 = y - (w - runLength);
-            }
-            else if (rotate == 270) {
+            } else if (rotate == 270) {
                 y1 = y + (w - runLength);
             }
         }
@@ -458,13 +413,11 @@ public class TextColumn : IDrawable {
                 textLine.SetTextDirection(0);
                 textLine.DrawOn(page);
                 x1 += textLine.font.StringWidth(textLine.fallbackFont, textLine.text);
-            }
-            else if (rotate == 90) {
+            } else if (rotate == 90) {
                 textLine.SetTextDirection(90);
                 textLine.DrawOn(page);
                 y1 -= textLine.font.StringWidth(textLine.fallbackFont, textLine.text);
-            }
-            else if (rotate == 270) {
+            } else if (rotate == 270) {
                 textLine.SetTextDirection(270);
                 textLine.DrawOn(page);
                 y1 += textLine.font.StringWidth(textLine.fallbackFont, textLine.text);
@@ -473,7 +426,6 @@ public class TextColumn : IDrawable {
 
         return new float[] {x1, y1};
     }
-
 
     /**
      *  Adds a new paragraph with Chinese text to this text column.
@@ -499,7 +451,6 @@ public class TextColumn : IDrawable {
         AddParagraph(paragraph);
     }
 
-
     /**
      *  Adds a new paragraph with Japanese text to this text column.
      *
@@ -509,6 +460,5 @@ public class TextColumn : IDrawable {
     public void AddJapaneseParagraph(Font font, String japanese) {
         AddChineseParagraph(font, japanese);
     }
-
 }   // End of TextColumn.cs
 }   // End of namespace PDFjet.NET

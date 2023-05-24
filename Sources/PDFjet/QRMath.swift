@@ -13,13 +13,11 @@ DENSO WAVE INCORPORATED
 */
 import Foundation
 
-
 /**
  * QRMath
  * @author Kazuhiko Arase
  */
 class QRMath {
-
     static let singleton = QRMath()
 
     private static var EXP_TABLE = [Int](repeating: 0, count: 256)
@@ -58,5 +56,4 @@ class QRMath {
         }
         return QRMath.EXP_TABLE[n]
     }
-
 }

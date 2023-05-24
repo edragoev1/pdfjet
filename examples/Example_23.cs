@@ -67,7 +67,7 @@ public class Example_23 {
         // tableData.Add(row);
 
         Table table = new Table();
-        table.SetData(tableData, Table.DATA_HAS_1_HEADER_ROWS);
+        table.SetData(tableData, Table.WITH_1_HEADER_ROW);
         table.SetLocation(50f, 50f);
         // table.SetColumnWidths();    // << - Important!
         table.SetColumnWidth(0, 100f);

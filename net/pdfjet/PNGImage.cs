@@ -25,7 +25,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-
 /**
  * Used to embed PNG images in the PDF document.
  * <p>
@@ -39,7 +38,6 @@ using System.Collections.Generic;
  */
 namespace PDFjet.NET {
 public class PNGImage {
-
     int w = 0;                  // Image width in pixels
     int h = 0;                  // Image height in pixels
 
@@ -52,7 +50,6 @@ public class PNGImage {
 
     private byte bitDepth = 8;
     private int colorType = 0;
-
 
     /**
      * Used to embed PNG images in the PDF document.
@@ -83,98 +80,76 @@ public class PNGImage {
                     Console.WriteLine("Interlaced PNG images are not supported.");
                     Console.WriteLine("Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png\n");
                 }
-            }
-            else if (chunkType.Equals("IDAT")) {
+            } else if (chunkType.Equals("IDAT")) {
                 iDAT = AppendIdatChunk(iDAT, chunk.GetData());
-            }
-            else if (chunkType.Equals("PLTE")) {
+            } else if (chunkType.Equals("PLTE")) {
                 pLTE = chunk.GetData();
                 if (pLTE.Length % 3 != 0) {
                     throw new Exception("Incorrect palette length.");
                 }
-            }
-            else if (chunkType.Equals("gAMA")) {
+            } else if (chunkType.Equals("gAMA")) {
                 // TODO:
                 // Console.WriteLine("gAMA chunk found!");
-            }
-            else if (chunkType.Equals("tRNS")) {
+            } else if (chunkType.Equals("tRNS")) {
                 // Console.WriteLine("tRNS chunk found!");
                 if (colorType == 3) {
                     tRNS = chunk.GetData();
                 }
-            }
-            else if (chunkType.Equals("cHRM")) {
+            } else if (chunkType.Equals("cHRM")) {
                 // TODO:
                 // Console.WriteLine("cHRM chunk found!");
-            }
-            else if (chunkType.Equals("sBIT")) {
+            } else if (chunkType.Equals("sBIT")) {
                 // TODO:
                 // Console.WriteLine("sBIT chunk found!");
-            }
-            else if (chunkType.Equals("bKGD")) {
+            } else if (chunkType.Equals("bKGD")) {
                 // TODO:
                 // Console.WriteLine("bKGD chunk found!");
             }
         }
 
         byte[] inflatedImageData = Decompressor.inflate(iDAT);
-
         byte[] imageData;
         if (colorType == 0) {
             // Grayscale Image
             if (bitDepth == 16) {
                 imageData = GetImageColorType0BitDepth16(inflatedImageData);
-            }
-            else if (bitDepth == 8) {
+            } else if (bitDepth == 8) {
                 imageData = GetImageColorType0BitDepth8(inflatedImageData);
-            }
-            else if (bitDepth == 4) {
+            } else if (bitDepth == 4) {
                 imageData = GetImageColorType0BitDepth4(inflatedImageData);
-            }
-            else if (bitDepth == 2) {
+            } else if (bitDepth == 2) {
                 imageData = GetImageColorType0BitDepth2(inflatedImageData);
-            }
-            else if (bitDepth == 1) {
+            } else if (bitDepth == 1) {
                 imageData = GetImageColorType0BitDepth1(inflatedImageData);
-            }
-            else {
+            } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
-        }
-        else if (colorType == 6) {
+        } else if (colorType == 6) {
             if (bitDepth == 8) {
                 imageData = GetImageColorType6BitDepth8(inflatedImageData);
-            }
-            else {
+            } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
-        }
-        else {
+        } else {
             // Color Image
             if (pLTE == null) {
                 // Trucolor Image
                 if (bitDepth == 16) {
                     imageData = GetImageColorType2BitDepth16(inflatedImageData);
-                }
-                else {
+                } else {
                     imageData = GetImageColorType2BitDepth8(inflatedImageData);
                 }
-            }
-            else {
+            } else {
                 // Indexed Image
                 if (bitDepth == 8) {
                     imageData = GetImageColorType3BitDepth8(inflatedImageData);
-                }
-                else if (bitDepth == 4) {
+                } else if (bitDepth == 4) {
                     imageData = GetImageColorType3BitDepth4(inflatedImageData);
-                }
-                else if (bitDepth == 2) {
+                } else if (bitDepth == 2) {
                     imageData = GetImageColorType3BitDepth2(inflatedImageData);
-                }
-                else if (bitDepth == 1) {
+                } else if (bitDepth == 1) {
                     imageData = GetImageColorType3BitDepth1(inflatedImageData);
-                }
-                else {
+                } else {
                     throw new Exception("Image with unsupported bit depth == " + bitDepth);
                 }
             }
@@ -183,36 +158,29 @@ public class PNGImage {
         deflatedImageData = Compressor.deflate(imageData);
     }
 
-
     public int GetWidth() {
         return this.w;
     }
-
 
     public int GetHeight() {
         return this.h;
     }
 
-
     public int GetColorType() {
         return this.colorType;
     }
-
 
     public int GetBitDepth() {
         return this.bitDepth;
     }
 
-
     public byte[] GetData() {
         return this.deflatedImageData;
     }
 
-
     public byte[] GetAlpha() {
         return this.deflatedAlphaData;
     }
-
 
     private List<Chunk> ProcessPNG(System.IO.Stream inputStream) {
         List<Chunk> chunks = new List<Chunk>();
@@ -226,7 +194,6 @@ public class PNGImage {
         }
         return chunks;
     }
-
 
     private void ValidatePNG(Stream inputStream) {
         byte[] buf = new byte[8];
@@ -247,7 +214,6 @@ public class PNGImage {
         }
     }
 
-
     private Chunk GetChunk(System.IO.Stream inputStream) {
         Chunk chunk = new Chunk();
         chunk.length = GetUInt32(inputStream);                  // The length of the data chunk.
@@ -265,12 +231,10 @@ public class PNGImage {
         return chunk;
     }
 
-
     private UInt32 GetUInt32(System.IO.Stream inputStream) {
         byte[] buf = GetNBytes(inputStream, 4);
         return ToUInt32(buf, 0);
     }
-
 
     private byte[] GetNBytes(System.IO.Stream inputStream, UInt32 n) {
         byte[] buf = new byte[(int) n];
@@ -280,14 +244,12 @@ public class PNGImage {
         return buf;
     }
 
-
     private UInt32 ToUInt32(byte[] buf, int off) {
         return ((UInt32) buf[off]) << 24 |
                 ((UInt32) buf[off + 1]) << 16 |
                 ((UInt32) buf[off + 2]) << 8 |
                 ((UInt32) buf[off + 3]);
     }
-
 
     // Truecolor Image with Bit Depth == 16
     private byte[] GetImageColorType2BitDepth16(byte[] buf) {
@@ -299,15 +261,13 @@ public class PNGImage {
         for (int i = 0; i < buf.Length; i++) {
             if (i % bytesPerLine == 0) {
                 filters[j++] = buf[i];
-            }
-            else {
+            } else {
                 image[k++] = buf[i];
             }
         }
         ApplyFilters(filters, image, this.w, this.h, 6);
         return image;
     }
-
 
     // Truecolor Image with Bit Depth == 8
     private byte[] GetImageColorType2BitDepth8(byte[] buf) {
@@ -319,15 +279,13 @@ public class PNGImage {
         for (int i = 0; i < buf.Length; i++) {
             if (i % bytesPerLine == 0) {
                 filters[j++] = buf[i];
-            }
-            else {
+            } else {
                 image[k++] = buf[i];
             }
         }
         ApplyFilters(filters, image, this.w, this.h, 3);
         return image;
     }
-
 
     // Truecolor Image with Alpha Transparency
     private byte[] GetImageColorType6BitDepth8(byte[] buf) {
@@ -343,8 +301,7 @@ public class PNGImage {
         for (; i < buf.Length; i++) {
             if (i % bytesPerLine == 0) {
                 filters[j++] = buf[i];
-            }
-            else {
+            } else {
                 image[k++] = buf[i];
             }
         }
@@ -363,7 +320,6 @@ public class PNGImage {
 
         return idata;
     }
-
 
     // Indexed Image with Bit Depth == 8
     private byte[] GetImageColorType3BitDepth8(byte[] buf) {
@@ -385,8 +341,7 @@ public class PNGImage {
         for (int i = 0; i < buf.Length; i++) {
             if (i % bytesPerLine == 0) {
                 filters[m++] = buf[i];
-            }
-            else {
+            } else {
                 int k = ((int) buf[i]) & 0xff;
                 if (tRNS != null && k < tRNS.Length) {
                     alpha[n] = tRNS[k];
@@ -405,7 +360,6 @@ public class PNGImage {
 
         return image;
     }
-
 
     // Indexed Image with Bit Depth == 4
     private byte[] GetImageColorType3BitDepth4(byte[] buf) {
@@ -441,7 +395,6 @@ public class PNGImage {
 
         return image;
     }
-
 
     // Indexed Image with Bit Depth == 2
     private byte[] GetImageColorType3BitDepth2(byte[] buf) {
@@ -491,7 +444,6 @@ public class PNGImage {
 
         return image;
     }
-
 
     // Indexed Image with Bit Depth == 1
     private byte[] GetImageColorType3BitDepth1(byte[] buf) {
@@ -570,7 +522,6 @@ public class PNGImage {
         return image;
     }
 
-
     // Grayscale Image with Bit Depth == 16
     private byte[] GetImageColorType0BitDepth16(byte[] buf) {
         byte[] image = new byte[buf.Length - this.h];
@@ -583,8 +534,7 @@ public class PNGImage {
             if (i % bytesPerLine == 0) {
                 filters[j] = buf[i];
                 j += 1;
-            }
-            else {
+            } else {
                 image[k] = buf[i];
                 k += 1;
             }
@@ -593,7 +543,6 @@ public class PNGImage {
 
         return image;
     }
-
 
     // Grayscale Image with Bit Depth == 8
     private byte[] GetImageColorType0BitDepth8(byte[] buf) {
@@ -606,8 +555,7 @@ public class PNGImage {
         for (int i = 0; i < buf.Length; i++) {
             if (i % bytesPerLine == 0) {
                 filters[j++] = buf[i];
-            }
-            else {
+            } else {
                 image[k++] = buf[i];
             }
         }
@@ -615,7 +563,6 @@ public class PNGImage {
 
         return image;
     }
-
 
     // Grayscale Image with Bit Depth == 4
     private byte[] GetImageColorType0BitDepth4(byte[] buf) {
@@ -636,7 +583,6 @@ public class PNGImage {
         return image;
     }
 
-
     // Grayscale Image with Bit Depth == 2
     private byte[] GetImageColorType0BitDepth2(byte[] buf) {
         byte[] image = new byte[buf.Length - this.h];
@@ -655,7 +601,6 @@ public class PNGImage {
 
         return image;
     }
-
 
     // Grayscale Image with Bit Depth == 1
     private byte[] GetImageColorType0BitDepth1(byte[] buf) {
@@ -710,32 +655,26 @@ public class PNGImage {
                 int index = bytesPerLine * row + col;
                 if (filter == 0x01) {           // Sub
                     image[index] += (byte) a;
-                }
-                else if (filter == 0x02) {      // Up
+                } else if (filter == 0x02) {    // Up
                     image[index] += (byte) b;
-                }
-                else if (filter == 0x03) {      // Average
+                } else if (filter == 0x03) {    // Average
                     image[index] += (byte) Math.Floor((a + b) / 2.0);
-                }
-                else if (filter == 0x04) {      // Paeth
+                } else if (filter == 0x04) {    // Paeth
                     int p = a + b - c;
                     int pa = Math.Abs(p - a);
                     int pb = Math.Abs(p - b);
                     int pc = Math.Abs(p - c);
                     if (pa <= pb && pa <= pc) {
                         image[index] += (byte) a;
-                    }
-                    else if (pb <= pc) {
+                    } else if (pb <= pc) {
                         image[index] += (byte) b;
-                    }
-                    else {
+                    } else {
                         image[index] += (byte) c;
                     }
                 }
             }
         }
     }
-
 
     private byte[] AppendIdatChunk(byte[] array1, byte[] array2) {
         if (array1 == null) {
@@ -770,8 +709,7 @@ public class PNGImage {
             bos.WriteByte((byte) 1);
             WriteInt(alpha.Length, bos);
             bos.Write(alpha, 0, alpha.Length);
-        }
-        else {
+        } else {
             bos.WriteByte((byte) 0);
         }
         WriteInt(image.Length, bos);
@@ -780,7 +718,6 @@ public class PNGImage {
         bos.Dispose();
     }
 
-
     private static void WriteInt(int i, Stream os) {
         os.WriteByte((byte) (i >> 24));
         os.WriteByte((byte) (i >> 16));
@@ -788,6 +725,5 @@ public class PNGImage {
         os.WriteByte((byte) (i >>  0));
     }
 */
-
 }   // End of PNGImage.cs
 }   // End of namespace PDFjet.NET

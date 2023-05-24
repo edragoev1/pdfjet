@@ -23,23 +23,19 @@ SOFTWARE.
 */
 using System;
 
-
 /**
  *  Please see Example_45
  */
 namespace PDFjet.NET {
 public class Field {
-
     internal float x;
     internal String[] values;
     internal String[] altDescription;
     internal String[] actualText;
     internal bool format;
 
-
     public Field(float x, String[] values) : this(x, values, false) {
     }
-
 
     public Field(float x, String[] values, bool format) {
         this.x = x;
@@ -55,17 +51,14 @@ public class Field {
         }
     }
 
-
     public Field SetAltDescription(String altDescription) {
         this.altDescription[0] = altDescription;
         return this;
     }
 
-
     public Field SetActualText(String actualText) {
         this.actualText[0] = actualText;
         return this;
     }
-
 }   // End of Field.cs
 }   // End of namespace PDFjet.NET

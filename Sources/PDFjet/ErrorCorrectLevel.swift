@@ -12,7 +12,6 @@ DENSO WAVE INCORPORATED
   http://www.denso-wave.com/qrcode/faqpatent-e.html
 */
 
-
 /**
  * Used to specify the error correction level for QR Codes.
  *
@@ -24,4 +23,3 @@ public class ErrorCorrectLevel {
     public static let Q = 3
     public static let H = 2
 }
-

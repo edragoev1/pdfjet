@@ -21,18 +21,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to create PDF annotation objects.
  *
- *
  */
+namespace PDFjet.NET {
 internal class Annotation {
-
     internal int objNumber;
     internal String uri = null;
     internal String key = null;
@@ -40,13 +36,10 @@ internal class Annotation {
     internal float y1 = 0f;
     internal float x2 = 0f;
     internal float y2 = 0f;
-
     internal String language = null;
     internal String actualText = null;
     internal String altDescription = null;
-
     internal FileAttachment fileAttachment = null;
-
 
     /**
      *  This class is used to create annotation objects.
@@ -79,6 +72,5 @@ internal class Annotation {
         this.actualText = (actualText == null) ? uri : actualText;
         this.altDescription = (altDescription == null) ? uri : altDescription;
     }
-
 }
 }   // End of namespace PDFjet.NET

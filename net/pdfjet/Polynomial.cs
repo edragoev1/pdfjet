@@ -13,16 +13,13 @@ DENSO WAVE INCORPORATED
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  * Polynomial
  * @author Kazuhiko Arase
  */
+namespace PDFjet.NET {
 public class Polynomial {
-
     private int[] num;
-
 
     public Polynomial(int[] num) : this(num, 0) {
     }
@@ -32,7 +29,6 @@ public class Polynomial {
         while (offset < num.Length && num[offset] == 0) {
             offset++;
         }
-
         this.num = new int[num.Length - offset + shift];
         Array.Copy(num, offset, this.num, 0, num.Length - offset);
     }

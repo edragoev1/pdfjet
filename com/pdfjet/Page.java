@@ -627,7 +627,7 @@ public class Page {
     }
 
     public float[] getPenColor() {
-        return pen;        
+        return pen;
     }
 
     /**

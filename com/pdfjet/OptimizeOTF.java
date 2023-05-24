@@ -38,7 +38,7 @@ public class OptimizeOTF {
 
     /**
      * Converts font TTF or OTF file to .ttf.stream .otf.stream
-     * 
+     *
      * @param fileName the file name
      * @throws Exception if the font file is not found
      */
@@ -176,7 +176,7 @@ public class OptimizeOTF {
 
     /**
      * Entry point for the OptimizeOTF converter
-     * 
+     *
      * @param args the arguments
      * @throws Exception if there is a problem
      */

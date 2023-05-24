@@ -26,7 +26,6 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 public class Font {
     /** Is this a stream font? */
@@ -77,7 +76,6 @@ public class Font {
     internal float underlinePosition;
     internal float underlineThickness;
 
-
     /**
      *  Constructor for the 14 standard fonts.
      *  Creates a font object and adds it to the PDF.
@@ -125,7 +123,6 @@ public class Font {
         pdf.fonts.Add(this);
     }
 
-
     // Used by PDFobj
     internal Font(CoreFont coreFont) {
         StandardFont font = StandardFont.GetInstance(coreFont);
@@ -142,7 +139,6 @@ public class Font {
         this.fontDescent = font.bBoxLLy;
         SetSize(size);
     }
-
 
     // Constructor for CJK fonts
     public Font(PDF pdf, CJKFont font) {
@@ -241,20 +237,17 @@ public class Font {
         pdf.fonts.Add(this);
     }
 
-
     // Constructor for .ttf.stream fonts:
     public Font(PDF pdf, Stream inputStream, bool flag) {
         FontStream1.Register(pdf, this, inputStream);
         SetSize(size);
     }
 
-
     // Constructor for .ttf.stream fonts:
     public Font(List<PDFobj> objects, Stream inputStream, bool flag) {
         FontStream2.Register(objects, this, inputStream);
         SetSize(size);
     }
-
 
     /**
      *  Constructor for OpenType and TrueType fonts.
@@ -266,7 +259,6 @@ public class Font {
         OpenTypeFont.Register(pdf, this, inputStream);
         SetSize(size);
     }
-
 
     /**
      * Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
@@ -285,7 +277,6 @@ public class Font {
         SetSize(size);
     }
 
-
     /**
      *  Sets the size of this font.
      *
@@ -295,7 +286,6 @@ public class Font {
     public Font SetSize(double fontSize) {
         return SetSize((float) fontSize);
     }
-
 
     /**
      *  Sets the size of this font.
@@ -319,16 +309,13 @@ public class Font {
         return this;
     }
 
-
     public float GetSize() {
         return size;
     }
 
-
     public void SetKernPairs(bool kernPairs) {
         this.kernPairs = kernPairs;
     }
-
 
     public float StringWidth(String str) {
         if (str == null) {
@@ -361,12 +348,10 @@ public class Font {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 if (c1 < firstChar || c1 > lastChar) {
                     width += advanceWidth[0];
-                }
-                else {
+                } else {
                     width += glyphWidth[c1];
                 }
             }
@@ -375,55 +360,44 @@ public class Font {
         return width * size / unitsPerEm;
     }
 
-
     public float GetAscent() {
         return ascent;
     }
-
 
     public float GetDescent() {
         return descent;
     }
 
-
     public float GetHeight() {
         return ascent + descent;
     }
-
 
     public float GetBodyHeight() {
         return bodyHeight;
     }
 
-
     public int GetFitChars(String str, double width) {
         return GetFitChars(str, (float) width);
     }
 
-
     public int GetFitChars(String str, float width) {
         float w = width * unitsPerEm / size;
-
         if (isCJK) {
             return (int) (w / ascent);
         }
-
         if (isCoreFont) {
             return GetCoreFontFitChars(str, w);
         }
-
         int i;
         for (i = 0; i < str.Length; i++) {
             int c1 = str[i];
             if (c1 < firstChar || c1 > lastChar) {
                 w -= advanceWidth[0];
-            }
-            else {
+            } else {
                 w -= glyphWidth[c1];
             }
             if (w < 0) break;
         }
-
         return i;
     }
 
@@ -464,7 +438,6 @@ public class Font {
         return i;
     }
 
-
    /**
     * Sets the skew15 private variable.
     * When the variable is set to 'true' all glyphs in the font are skewed on 15 degrees.
@@ -478,7 +451,6 @@ public class Font {
     public void SetItalic(bool skew15) {
         this.skew15 = skew15;
     }
-
 
     /**
      * Returns the width of a string drawn using two fonts.
@@ -504,8 +476,7 @@ public class Font {
                 // Switch the active font
                 if (activeFont == this) {
                     activeFont = fallbackFont;
-                }
-                else {
+                } else {
                     activeFont = this;
                 }
             }
@@ -515,6 +486,5 @@ public class Font {
 
         return width;
     }
-
 }   // End of Font.cs
 }   // End of namespace PDFjet.NET

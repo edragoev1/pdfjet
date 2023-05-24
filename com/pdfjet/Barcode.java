@@ -385,8 +385,7 @@ public class Barcode implements Drawable {
 
         if (direction == TOP_TO_BOTTOM) {
             w *= barHeightFactor;
-        }
-        else if (direction == LEFT_TO_RIGHT) {
+        } else if (direction == LEFT_TO_RIGHT) {
             h *= barHeightFactor;
         }
 
@@ -453,8 +452,7 @@ public class Barcode implements Drawable {
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]);
                 return new float[] {xy[0], xy[1] + font.descent};
-            }
-            else if (direction == TOP_TO_BOTTOM) {
+            } else if (direction == TOP_TO_BOTTOM) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
                         x + w + font.bodyHeight,

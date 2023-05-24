@@ -23,18 +23,15 @@ SOFTWARE.
 */
 import Foundation
 
-
 /**
  *  Please see Example_45
  */
 public class Field {
-
     var x: Float
     var values: [String]
     var actualText: [String]
     var altDescription: [String]
     var format: Bool = false
-
 
     public init(_ x: Float, _ values: [String], _ format: Bool) {
         self.x = x
@@ -48,11 +45,9 @@ public class Field {
         }
     }
 
-
     public convenience init(_ x: Float, _ values: [String]) {
         self.init(x, values, false)
     }
-
 
     @discardableResult
     public func setAltDescription(_ altDescription: String) -> Field {
@@ -60,11 +55,9 @@ public class Field {
         return self
     }
 
-
     @discardableResult
     public func setActualText(_ actualText: String) -> Field {
         self.actualText[0] = actualText
         return self
     }
-
 }

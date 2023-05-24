@@ -221,8 +221,7 @@ public class CheckBox : IDrawable {
                 page.LineTo((x + w/6 + checkWidth) + penWidth, ((yBox + h) - 4f*checkWidth/3f) + penWidth);
                 page.LineTo(((x + w) - checkWidth) + penWidth, (yBox + checkWidth) + penWidth);
                 page.StrokePath();
-            }
-            else {
+            } else {
                 // Draw 'X' mark
                 page.MoveTo(x + checkWidth + penWidth, yBox + checkWidth + penWidth);
                 page.LineTo(((x + w) - checkWidth) + penWidth, ((yBox + h) - checkWidth) + penWidth);

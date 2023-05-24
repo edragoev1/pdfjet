@@ -30,7 +30,7 @@ public class TextUtils {
     public static func printDuration(_ example: String, _ time0: Int64, _ time1: Int64) {
         var duration = String(time1 - time0)
         if duration.count == 1 {
-            duration = "   " + duration        
+            duration = "   " + duration
         } else if duration.count == 2 {
             duration = "  " + duration
         } else if duration.count == 3 {

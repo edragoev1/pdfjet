@@ -22,11 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace PDFjet.NET {
 /**
  *  Used to specify the text effects.
- *
  */
+namespace PDFjet.NET {
 public class Effect {
     public const int NORMAL = 0;
     public const int SUBSCRIPT = 1;

@@ -26,10 +26,8 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 class OpenTypeFont {
-
     internal static void Register(PDF pdf, Font font, Stream inputStream) {
         OTF otf = new OTF(inputStream);
 
@@ -77,7 +75,6 @@ class OpenTypeFont {
         pdf.fonts.Add(font);
     }
 
-
     private static void EmbedFontFile(PDF pdf, Font font, OTF otf) {
         // Check if the font file is already embedded
         foreach (Font f in pdf.fonts) {
@@ -121,7 +118,6 @@ class OpenTypeFont {
         font.fileObjNumber = pdf.GetObjNumber();
     }
 
-
     private static void AddFontDescriptorObject(PDF pdf, Font font, OTF otf) {
         foreach (Font f in pdf.fonts) {
             if (f.fontDescriptorObjNumber != 0 && f.name.Equals(otf.fontName)) {
@@ -138,8 +134,7 @@ class OpenTypeFont {
         pdf.Append('\n');
         if (otf.cff) {
             pdf.Append("/FontFile3 ");
-        }
-        else {
+        } else {
             pdf.Append("/FontFile2 ");
         }
         pdf.Append(font.fileObjNumber);
@@ -170,7 +165,6 @@ class OpenTypeFont {
 
         font.fontDescriptorObjNumber = pdf.GetObjNumber();
     }
-
 
     private static void AddToUnicodeCMapObject(
             PDF pdf,
@@ -235,7 +229,6 @@ class OpenTypeFont {
         font.toUnicodeCMapObjNumber = pdf.GetObjNumber();
     }
 
-
     private static void AddCIDFontDictionaryObject(
             PDF pdf,
             Font font,
@@ -252,8 +245,7 @@ class OpenTypeFont {
         pdf.Append("/Type /Font\n");
         if (otf.cff) {
             pdf.Append("/Subtype /CIDFontType0\n");
-        }
-        else {
+        } else {
             pdf.Append("/Subtype /CIDFontType2\n");
         }
         pdf.Append("/BaseFont /");
@@ -283,21 +275,17 @@ class OpenTypeFont {
         font.cidFontDictObjNumber = pdf.GetObjNumber();
     }
 
-
     private static String ToHexString(int code) {
         String str = Convert.ToString(code, 16);
         if (str.Length == 1) {
             return "000" + str;
-        }
-        else if (str.Length == 2) {
+        } else if (str.Length == 2) {
             return "00" + str;
-        }
-        else if (str.Length == 3) {
+        } else if (str.Length == 3) {
             return "0" + str;
         }
         return str;
     }
-
 
     private static void WriteListToBuffer(List<String> list, StringBuilder sb) {
         sb.Append(list.Count);
@@ -308,6 +296,5 @@ class OpenTypeFont {
         sb.Append("endbfchar\n");
         list.Clear();
     }
-
 }   // End of OpenTypeFont.cs
 }   // End of namespace PDFjet.NET

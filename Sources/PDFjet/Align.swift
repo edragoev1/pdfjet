@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 /**
  *  Used to specify the text alignment in paragraphs.
  *  See the Paragraph class for more details.

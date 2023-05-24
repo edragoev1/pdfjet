@@ -39,14 +39,12 @@
 using System;
 using System.IO;
 
-
 /**
  * Used to embed JPG images in the PDF document.
  *
  */
 namespace PDFjet.NET {
 class JPGImage {
-
     const char M_SOF0  = (char) 0x00C0;  // Start Of Frame N
     const char M_SOF1  = (char) 0x00C1;  // N indicates which compression process
     const char M_SOF2  = (char) 0x00C2;  // Only SOF0-SOF2 are now in common use
@@ -66,37 +64,30 @@ class JPGImage {
     int colorComponents;
     byte[] data;
 
-
     public JPGImage(Stream stream) {
         data = Contents.GetFromStream(stream);
         ReadJPGImage(new MemoryStream(data));
     }
 
-
     internal int GetWidth() {
         return this.width;
     }
-
 
     internal int GetHeight() {
         return this.height;
     }
 
-
     public long GetFileSize() {
         return this.data.Length;
     }
-
 
     internal int GetColorComponents() {
         return this.colorComponents;
     }
 
-
     internal byte[] GetData() {
         return this.data;
     }
-
 
     private void ReadJPGImage(System.IO.Stream stream) {
         char ch1 = (char) stream.ReadByte();
@@ -146,11 +137,9 @@ class JPGImage {
         }
     }
 
-
     private int GetUInt16(System.IO.Stream stream) {
         return stream.ReadByte() << 8 | stream.ReadByte();
     }
-
 
     // Find the next JPEG marker and return its marker code.
     // We expect at least one FF byte, possibly more if the compressor
@@ -178,7 +167,6 @@ class JPGImage {
         return ch;
     }
 
-
     // Most types of marker are followed by a variable-length parameter
     // segment. This routine skips over the parameters for any marker we
     // don't otherwise want to process.
@@ -200,6 +188,5 @@ class JPGImage {
             length--;
         }
     }
-
 }   // End of JPGImage.cs
 }   // End of namespace PDFjet.NET

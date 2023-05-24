@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 class Chunk {
-
     var length: UInt32?
     var type: [UInt8]?
     var data: [UInt8]?
@@ -34,7 +32,6 @@ class Chunk {
     func getData() -> [UInt8]? {
         return self.data
     }
-
 
     func setData(_ data: [UInt8]?) {
         self.data = data

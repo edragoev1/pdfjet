@@ -24,10 +24,8 @@ SOFTWARE.
 
 namespace PDFjet.NET {
 class ECC_L1 {
-
 public static readonly int[] table = {
 522,568,723,809
 };
-
 }   // End of ECC_L1.cs
 }   // End of namespace PDFjet.NET

@@ -23,12 +23,11 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify the PDF page layout.
  *
  */
+namespace PDFjet.NET {
 public class PageMode {
     public const String USE_NONE = "UseNone";            // Neither document outline nor thumbnail images visible
     public const String USE_OUTLINES = "UseOutlines";    // Document outline visible

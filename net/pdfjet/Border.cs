@@ -23,12 +23,12 @@ SOFTWARE.
 */
 using System;
 
-namespace PDFjet.NET {
 /**
  *  Used to control the visibility of cell borders.
  *  See the Cell class for more information.
  *
  */
+namespace PDFjet.NET {
 public class Border {
     public const uint NONE   = 0x00000000;
     public const uint TOP    = 0x00010000;

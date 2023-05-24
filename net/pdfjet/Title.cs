@@ -23,17 +23,14 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  * Please see Example_51 and Example_52
  *
  */
+namespace PDFjet.NET {
 public class Title : IDrawable {
-
     public TextLine prefix = null;
     public TextLine textLine = null;
-
 
     public Title(Font font, String title, float x, float y) {
         this.prefix = new TextLine(font);
@@ -42,18 +39,15 @@ public class Title : IDrawable {
         this.textLine.SetLocation(x, y);
     }
 
-
     public Title SetPrefix(String text) {
         prefix.SetText(text);
         return this;
     }
 
-
     public Title SetOffset(float offset) {
         textLine.SetLocation(textLine.x + offset, textLine.y);
         return this;
     }
-
 
     public Title SetLocation(float x, float y) {
         prefix.SetLocation(x, y);
@@ -61,11 +55,9 @@ public class Title : IDrawable {
         return this;
     }
 
-
     public void SetPosition(float x, float y) {
         textLine.SetPosition(x, y);
     }
-
 
     public float[] DrawOn(Page page) {
         if (!prefix.Equals("")) {
@@ -73,6 +65,5 @@ public class Title : IDrawable {
         }
         return textLine.DrawOn(page);
     }
-
 }
 }   // End of namespace PDFjet.NET

@@ -23,13 +23,12 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify the join style when joining two lines.
  *  See the Page and Line classes for more details.
  *
  */
+namespace PDFjet.NET {
 public enum JoinStyle : Int32 {
     MITER = 0,
     ROUND,

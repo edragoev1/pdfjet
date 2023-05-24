@@ -25,7 +25,6 @@ using System;
 
 namespace PDFjet.NET {
 class GS1_128 {
-
 public static readonly int[] TABLE = {
 212222, // 0
 222122, // 1
@@ -147,6 +146,5 @@ public static readonly int START_A = 103;
 public static readonly int START_B = 104;
 public static readonly int START_C = 105;
 public static readonly int STOP = 106;
-
 }   // End of GS1_128.cs
 }   // End of namespace PDFjet.NET

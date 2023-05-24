@@ -34,7 +34,7 @@ public class Example_13 {
         reader.close();
 
         Table table = new Table();
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.setData(tableData, Table.WITH_2_HEADER_ROWS);
         table.setLocation(100f, 50f);
         table.setBottomMargin(10f);
 

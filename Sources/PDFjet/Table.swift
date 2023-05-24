@@ -29,20 +29,20 @@ import Foundation
 /// Please see Example_08.
 ///
 public class Table {
-    public static let DATA_HAS_0_HEADER_ROWS = 0
-    public static let DATA_HAS_1_HEADER_ROWS = 1
-    public static let DATA_HAS_2_HEADER_ROWS = 2
-    public static let DATA_HAS_3_HEADER_ROWS = 3
-    public static let DATA_HAS_4_HEADER_ROWS = 4
-    public static let DATA_HAS_5_HEADER_ROWS = 5
-    public static let DATA_HAS_6_HEADER_ROWS = 6
-    public static let DATA_HAS_7_HEADER_ROWS = 7
-    public static let DATA_HAS_8_HEADER_ROWS = 8
-    public static let DATA_HAS_9_HEADER_ROWS = 9
+    public static let WITH_0_HEADER_ROWS = 0
+    public static let WITH_1_HEADER_ROW  = 1
+    public static let WITH_2_HEADER_ROWS = 2
+    public static let WITH_3_HEADER_ROWS = 3
+    public static let WITH_4_HEADER_ROWS = 4
+    public static let WITH_5_HEADER_ROWS = 5
+    public static let WITH_6_HEADER_ROWS = 6
+    public static let WITH_7_HEADER_ROWS = 7
+    public static let WITH_8_HEADER_ROWS = 8
+    public static let WITH_9_HEADER_ROWS = 9
 
     private var tableData: [[Cell]]
+    private var numOfHeaderRows = 1
     private var rendered = 0
-    private var numOfHeaderRows = 0
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var y1FirstPage: Float = 0.0
@@ -53,6 +53,51 @@ public class Table {
     ///
     public init() {
         tableData = [[Cell]]()
+    }
+
+    ///
+    /// Create a table object.
+    ///
+    public init(_ f1: Font, _ f2: Font, _ fileName: String) throws {
+        tableData = [[Cell]]()
+        var delimiterRegex: String?
+        var numberOfFields = 0
+        var lineNumber = 0
+        let lines = (try String(contentsOfFile:
+                fileName, encoding: .utf8)).components(separatedBy: "\n")
+        for line in lines {
+            if lineNumber == 0 {
+                delimiterRegex = getDelimiterRegex(line)
+                numberOfFields = line.components(separatedBy: delimiterRegex!).count
+            }
+            var row = [Cell]()
+            let fields = line.components(separatedBy: delimiterRegex!)
+            for field in fields {
+                if lineNumber == 0 {
+                    let cell = Cell(f1)
+                    cell.setTextBox(TextBox(f1, field))
+                    row.append(cell)
+                } else {
+                    row.append(Cell(f2, field))
+                }
+            }
+            if row.count > numberOfFields {
+                var row2 = [Cell]()
+                for i in 0..<numberOfFields {
+                    row2.append(row[i])
+                }
+                tableData.append(row2)
+            } else if row.count < numberOfFields {
+                let diff = numberOfFields - row.count
+                for _ in 0..<diff {
+                    row.append(Cell(f2))
+                }
+                tableData.append(row)
+            } else {
+                tableData.append(row)
+            }
+            lineNumber += 1
+        }
     }
 
     ///
@@ -404,6 +449,9 @@ public class Table {
                 }
                 if page != nil {
                     page!.setBrushColor(cell.getBrushColor())
+                    if i == (numOfHeaderRows - 1) {
+                        cell.setBorder(Border.BOTTOM, true)
+                    }
                     cell.drawOn(page!, x, y, w, h)
                 }
                 x += w
@@ -411,6 +459,7 @@ public class Table {
             }
             x = x1
             y += h
+            rendered += 1
         }
         return [x, y]
     }
@@ -450,9 +499,12 @@ public class Table {
 
     private func getMaxCellHeight(_ row: [Cell]) -> Float {
         var maxCellHeight: Float = 0.0
-        for cell in row {
-            if cell.getHeight() > maxCellHeight {
-                maxCellHeight = cell.getHeight()
+        for i in  0..<row.count {
+            let cell = row[i]
+            let totalWidth = getTotalWidth(row, i)
+            let cellHeight = cell.getHeight(totalWidth)
+            if cellHeight > maxCellHeight {
+                maxCellHeight = cellHeight
             }
         }
         return maxCellHeight
@@ -598,21 +650,6 @@ public class Table {
                 row[i].setWidth(maxColWidths[i])
             }
         }
-        for row in tableData {
-            for i in 0..<row.count {
-                let cell = row[i]
-                let colspan = cell.getColSpan()
-                if colspan > 1 {
-                    if cell.textBox != nil {
-                        var sumOfWidths = Float(0.0)
-                        for j in 0..<colspan {
-                            sumOfWidths += row[i + Int(j)].getWidth()
-                        }
-                        cell.textBox!.setWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding))
-                    }
-                }
-            }
-        }
     }
 
     private func addExtraTableRows() -> [[Cell]] {
@@ -748,5 +785,31 @@ public class Table {
             }
         }
         return numOfVerCells
+    }
+
+    private func getDelimiterRegex(_ str: String) -> String {
+        var comma = 0
+        var pipe = 0
+        var tab = 0
+        for scalar in str.unicodeScalars {
+            if scalar == "," {
+                comma += 1
+            } else if scalar == "|" {
+                pipe += 1
+            } else if scalar == "\t" {
+                tab += 1
+            }
+        }
+        if comma >= pipe {
+            if comma >= tab {
+                return ","
+            }
+            return "\t"
+        } else {
+            if pipe >= tab {
+                return "|"
+            }
+            return "\t"
+        }
     }
 }   // End of Table.swift

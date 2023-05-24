@@ -23,12 +23,10 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Creates a RadioButton, which can be set selected or unselected.
 ///
 public class RadioButton : Drawable {
-
     private var selected: Bool = false
     private var x: Float = 0.0
     private var y: Float = 0.0
@@ -43,7 +41,6 @@ public class RadioButton : Drawable {
     private var altDescription: String = Single.space
     private var actualText: String = Single.space
 
-
     ///
     /// Creates a RadioButton that is not selected.
     ///
@@ -51,7 +48,6 @@ public class RadioButton : Drawable {
         self.font = font
         self.label = label
     }
-
 
     ///
     /// Sets the font size to use for this text line.
@@ -64,11 +60,9 @@ public class RadioButton : Drawable {
         return self
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Set the x,y location on the Page.
@@ -84,7 +78,6 @@ public class RadioButton : Drawable {
         return self
     }
 
-
     ///
     /// Sets the URI for the "click text line" action.
     ///
@@ -96,7 +89,6 @@ public class RadioButton : Drawable {
         self.uri = uri
         return self
     }
-
 
     ///
     /// Selects or deselects this radio button.
@@ -110,7 +102,6 @@ public class RadioButton : Drawable {
         return self
     }
 
-
     ///
     /// Sets the alternate description of this radio button.
     ///
@@ -121,7 +112,6 @@ public class RadioButton : Drawable {
         self.altDescription = altDescription
         return self
     }
-
 
     ///
     /// Sets the actual text for this radio button.
@@ -134,7 +124,6 @@ public class RadioButton : Drawable {
         return self
     }
 
-
     ///
     /// Draws this RadioButton on the specified Page.
     ///
@@ -144,7 +133,6 @@ public class RadioButton : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-
         page!.addBMC(StructElem.P, language, actualText, altDescription)
 
         self.r1 = font.getAscent()/2
@@ -186,5 +174,4 @@ public class RadioButton : Drawable {
 
         return [x + 6*r1 + font.stringWidth(label), y + font.bodyHeight]
     }
-
 }   // End of RadioButton.swift

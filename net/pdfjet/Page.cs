@@ -26,7 +26,6 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-namespace PDFjet.NET {
 /**
  *  Used to create PDF page objects.
  *
@@ -38,6 +37,7 @@ namespace PDFjet.NET {
  *  </pre>
  *
  */
+namespace PDFjet.NET {
 public class Page {
     internal PDF pdf;
     internal PDFobj pageObj;

@@ -18,7 +18,7 @@ public class Example_08 {
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
         // Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream");
         Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
 
@@ -34,10 +34,10 @@ public class Example_08 {
         // Uncomment the line below if you want to print the text underneath the barcode.
         // barcode.SetFont(f1);
 
-        Table table = new Table();
-        List<List<Cell>> tableData = GetData(
-        		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2);
-        table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_1000.csv");
+        // List<List<Cell>> tableData = GetData(
+        // 		"data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
+        // table.SetData(tableData, Table.WITH_2_HEADER_ROWS);
         table.SetColumnWidths();
         table.RemoveLineBetweenRows(0, 1);
         table.SetLocation(100f, 0f);
@@ -45,7 +45,8 @@ public class Example_08 {
         table.SetCellBordersWidth(0f);
         table.SetTextColorInRow(12, Color.blue);
         table.SetTextColorInRow(13, Color.red);
-        table.GetCellAt(13, 0).GetTextBox().SetURIAction("http://pdfjet.com");
+        // TODO:
+        // table.GetCellAt(13, 0).GetTextBox().SetURIAction("http://pdfjet.com");
         table.SetFontInRow(14, f3);
         table.GetCellAt(21, 0).SetColSpan(6);
         table.GetCellAt(21, 6).SetColSpan(2);

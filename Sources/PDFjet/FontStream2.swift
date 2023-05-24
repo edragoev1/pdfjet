@@ -109,7 +109,6 @@ class FontStream2 {
         return obj.number
     }
 
-
     private static func embedFontFile(
             _ objects: inout [PDFobj],
             _ font: Font,
@@ -238,7 +237,6 @@ class FontStream2 {
 
         font.toUnicodeCMapObjNumber = obj.number
     }
-
 
     private static func addCIDFontDictionaryObject(
             _ objects: inout [PDFobj],

@@ -26,10 +26,8 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 class FontStream1 {
-
     internal static void Register(
             PDF pdf,
             Font font,
@@ -61,7 +59,6 @@ class FontStream1 {
         font.objNumber = pdf.GetObjNumber();
         pdf.fonts.Add(font);
     }
-
 
     private static void EmbedFontFile(PDF pdf, Font font, Stream inputStream) {
         // Check if the font file is already embedded
@@ -156,7 +153,6 @@ class FontStream1 {
         font.fontDescriptorObjNumber = pdf.GetObjNumber();
     }
 
-
     private static void AddToUnicodeCMapObject(PDF pdf, Font font) {
         foreach (Font f in pdf.fonts) {
             if (f.toUnicodeCMapObjNumber != 0 && f.name.Equals(font.name)) {
@@ -217,7 +213,6 @@ class FontStream1 {
         font.toUnicodeCMapObjNumber = pdf.GetObjNumber();
     }
 
-
     private static void AddCIDFontDictionaryObject(PDF pdf, Font font) {
         foreach (Font f in pdf.fonts) {
             if (f.cidFontDictObjNumber != 0 && f.name.Equals(font.name)) {
@@ -261,7 +256,6 @@ class FontStream1 {
         font.cidFontDictObjNumber = pdf.GetObjNumber();
     }
 
-
     internal static String ToHexString(int code) {
         String str = Convert.ToString(code, 16);
         if (str.Length == 1) {
@@ -274,7 +268,6 @@ class FontStream1 {
         return str;
     }
 
-
     internal static void WriteListToBuffer(StringBuilder sb, List<String> list) {
         sb.Append(list.Count);
         sb.Append(" beginbfchar\n");
@@ -285,23 +278,19 @@ class FontStream1 {
         list.Clear();
     }
 
-
     private static int GetInt16(Stream stream) {
         return stream.ReadByte() << 8 | stream.ReadByte();
     }
-
 
     private static int GetInt24(Stream stream) {
         return stream.ReadByte() << 16 |
                 stream.ReadByte() << 8 | stream.ReadByte();
     }
 
-
     private static int GetInt32(Stream stream) {
         return stream.ReadByte() << 24 | stream.ReadByte() << 16 |
                 stream.ReadByte() << 8 | stream.ReadByte();
     }
-
 
     internal static void GetFontData(Font font, Stream inputStream) {
         int len = inputStream.ReadByte();
@@ -353,6 +342,5 @@ class FontStream1 {
         font.uncompressedSize = GetInt32(inputStream);
         font.compressedSize = GetInt32(inputStream);
     }
-
 }   // End of FontStream1.cs
 }   // End of namespace PDFjet.NET

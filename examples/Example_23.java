@@ -70,7 +70,7 @@ public class Example_23 {
         tableData.add(row);
 */
         Table table = new Table();
-        table.setData(tableData, Table.DATA_HAS_1_HEADER_ROWS);
+        table.setData(tableData, Table.WITH_1_HEADER_ROW);
         table.setLocation(50f, 50f);
         table.setFirstPageTopMargin(650f);
         table.setBottomMargin(15f);

@@ -2,9 +2,26 @@
  *  Chart.swift
  *
 Copyright 2023 Innovatics Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 import Foundation
-
 
 /**
  *  Used to create XY chart objects and draw them on a page.
@@ -12,31 +29,23 @@ import Foundation
  *  Please see Example_09.
  */
 public class Chart : Drawable {
-
     private var w: Float = 300.0
     private var h: Float = 200.0
 
     private var x1: Float = 0.0
     private var y1: Float = 0.0
-
     private var x2: Float = 0.0
     private var y2: Float = 0.0
-
     private var x3: Float = 0.0
     private var y3: Float = 0.0
-
     private var x4: Float = 0.0
     private var y4: Float = 0.0
-
     private var x5: Float = 0.0
     private var y5: Float = 0.0
-
     private var x6: Float = 0.0
     private var y6: Float = 0.0
-
     private var x7: Float = 0.0
     private var y7: Float = 0.0
-
     private var x8: Float = 0.0
     private var y8: Float = 0.0
 
@@ -75,7 +84,6 @@ public class Chart : Drawable {
 
     public var chartData: [[Point]]?
 
-
     /**
      *  Create a XY chart object.
      *
@@ -87,7 +95,6 @@ public class Chart : Drawable {
         self.f2 = f2
     }
 
-
     /**
      *  Sets the title of the chart.
      *
@@ -96,7 +103,6 @@ public class Chart : Drawable {
     public func setTitle(_ title: String) {
         self.title = title
     }
-
 
     /**
      *  Sets the title for the X axis.
@@ -107,7 +113,6 @@ public class Chart : Drawable {
         self.xAxisTitle = title
     }
 
-
     /**
      *  Sets the title for the Y axis.
      *
@@ -116,7 +121,6 @@ public class Chart : Drawable {
     public func setYAxisTitle(_ title: String) {
         self.yAxisTitle = title
     }
-
 
     /**
      *  Sets the data that will be used to draw this chart.
@@ -127,7 +131,6 @@ public class Chart : Drawable {
         self.chartData = chartData
     }
 
-
     /**
      *  Returns the chart data.
      *
@@ -136,7 +139,6 @@ public class Chart : Drawable {
     public func getData() -> [[Point]]? {
         return self.chartData
     }
-
 
     /**
      *  Sets the location of this chart on the page.
@@ -149,7 +151,6 @@ public class Chart : Drawable {
         self.y1 = y
     }
 
-
     /**
      *  Sets the size of this chart.
      *
@@ -161,7 +162,6 @@ public class Chart : Drawable {
         self.h = h
     }
 
-
     /**
      *  Sets the minimum number of fractions digits do display for the X and Y axis labels.
      *
@@ -171,7 +171,6 @@ public class Chart : Drawable {
         self.minFractionDigits = minFractionDigits
     }
 
-
     /**
      *  Sets the maximum number of fractions digits do display for the X and Y axis labels.
      *
@@ -180,7 +179,6 @@ public class Chart : Drawable {
     public func setMaximumFractionDigits(_ maxFractionDigits: Int) {
         self.maxFractionDigits = maxFractionDigits
     }
-
 
     /**
      *  Calculates the slope of a trend line given a list of points.
@@ -193,7 +191,6 @@ public class Chart : Drawable {
         return (covar(points) / devsq(points) * Float(points.count - 1))
     }
 
-
     /**
      *  Calculates the intercept of a trend line given a list of points.
      *  See Example_09.
@@ -204,7 +201,6 @@ public class Chart : Drawable {
     public func intercept(_ points: [Point], _ slope: Double)-> Float {
         return intercept(points, Float(slope))
     }
-
 
     /**
      *  Calculates the intercept of a trend line given a list of points.
@@ -218,16 +214,13 @@ public class Chart : Drawable {
         return (_mean[1] - slope * _mean[0])
     }
 
-
     public func setDrawXAxisLabels(_ drawXAxisLabels: Bool) {
         self.drawXAxisLabels = drawXAxisLabels
     }
 
-
     public func setDrawYAxisLabels(_ drawYAxisLabels: Bool) {
         self.drawYAxisLabels = drawYAxisLabels
     }
-
 
     public func setXYChart(_ xyChart: Bool) {
         self.xyChart = xyChart
@@ -244,7 +237,6 @@ public class Chart : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-
         formatter.minimumFractionDigits = minFractionDigits
         formatter.maximumFractionDigits = maxFractionDigits
 
@@ -291,10 +283,8 @@ public class Chart : Drawable {
         if page != nil {
             drawChartBorder(page!)
             drawInnerBorder(page!)
-
             drawHorizontalGridLines(page!)
             drawVerticalGridLines(page!)
-
             if drawXAxisLabels {
                 drawXAxisLabels(page!)
             }
@@ -373,7 +363,6 @@ public class Chart : Drawable {
         return minLabelWidth
     }
 
-
     private func setXAxisMinAndMaxChartValues() {
         if xAxisGridLines != 0 {
             return
@@ -389,7 +378,6 @@ public class Chart : Drawable {
             }
         }
     }
-
 
     private func setYAxisMinAndMaxChartValues() {
         if yAxisGridLines != 0 {
@@ -407,7 +395,6 @@ public class Chart : Drawable {
         }
     }
 
-
     private func roundXAxisMinAndMaxValues() {
         let round = roundMaxAndMinValues(&xMax, &xMin)
         xMax = round.maxValue
@@ -415,14 +402,12 @@ public class Chart : Drawable {
         xAxisGridLines = round.numOfGridLines
     }
 
-
     private func roundYAxisMinAndMaxValues() {
         let round = roundMaxAndMinValues(&yMax, &yMin)
         yMax = round.maxValue
         yMin = round.minValue
         yAxisGridLines = round.numOfGridLines
     }
-
 
     private func drawChartBorder(_ page: Page) {
         page.setPenWidth(chartBorderWidth)
@@ -435,7 +420,6 @@ public class Chart : Drawable {
         page.strokePath()
     }
 
-
     private func drawInnerBorder(_ page: Page) {
         page.setPenWidth(innerBorderWidth)
         page.setPenColor(Color.black)
@@ -446,7 +430,6 @@ public class Chart : Drawable {
         page.closePath()
         page.strokePath()
     }
-
 
     private func drawHorizontalGridLines(_ page: Page) {
         page.setPenWidth(hGridLineWidth)
@@ -461,7 +444,6 @@ public class Chart : Drawable {
         }
     }
 
-
     private func drawVerticalGridLines(_ page: Page) {
         page.setPenWidth(vGridLineWidth)
         page.setPenColor(Color.black)
@@ -474,7 +456,6 @@ public class Chart : Drawable {
             x += step
         }
     }
-
 
     private func drawXAxisLabels(_ page: Page) {
         var x = x5
@@ -492,7 +473,6 @@ public class Chart : Drawable {
         }
     }
 
-
     private func drawYAxisLabels(_ page: Page) {
         let x = x5 - getLongestAxisYLabelWidth()
         var y = y8 + f2!.ascent / 3
@@ -508,10 +488,8 @@ public class Chart : Drawable {
         }
     }
 
-
     private func drawPathsAndPoints(
             _ page: Page, _ chartData: [[Point]]) {
-
         for points in chartData {
             if points.count > 0 {
                 let point = points[0]
@@ -538,7 +516,6 @@ public class Chart : Drawable {
             }
         }
     }
-
 
     private func roundMaxAndMinValues(
             _ maxValue: inout Float,
@@ -597,7 +574,6 @@ public class Chart : Drawable {
         return round
     }
 
-
     private func mean(_ points: [Point])-> [Float] {
         var _mean = [Float](repeating: 0, count: 2)
         for point in points {
@@ -609,7 +585,6 @@ public class Chart : Drawable {
         return _mean
     }
 
-
     private func covar(_ points: [Point])-> Float {
         var covariance: Float = 0.0
         let _mean = mean(points)
@@ -618,7 +593,6 @@ public class Chart : Drawable {
         }
         return (covariance / Float(points.count - 1))
     }
-
 
     /**
      * devsq() returns the sum of squares of deviations.
@@ -633,7 +607,6 @@ public class Chart : Drawable {
         return _devsq
     }
 
-
     /// Sets xMin and xMax for the X axis and the number of X grid lines.
     public func setXAxisMinMax(_ xMin: Float, _ xMax: Float, _ xAxisGridLines: Int) {
         self.xMin = xMin
@@ -641,12 +614,10 @@ public class Chart : Drawable {
         self.xAxisGridLines = xAxisGridLines
     }
 
-
     /// Sets yMin and yMax for the Y axis and the number of Y grid lines.
     public func setYAxisMinMax(_ yMin: Float, _ yMax: Float, _ yAxisGridLines: Int) {
         self.yMin = yMin
         self.yMax = yMax
         self.yAxisGridLines = yAxisGridLines
     }
-
 }   // End of Chart.swift

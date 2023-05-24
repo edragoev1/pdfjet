@@ -24,30 +24,24 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to create path objects.
  *  The path objects may consist of lines, splines or both.
  *
  *  Please see Example_02.
  */
+namespace PDFjet.NET {
 public class Path : IDrawable {
-
     private int color = Color.black;
     private float width = 0.3f;
     private String pattern = "[] 0";
     private bool fillShape = false;
     private bool closePath = false;
-
     private List<Point> points = null;
-
     private float xBox;
     private float yBox;
-
     private CapStyle lineCapStyle = CapStyle.BUTT;
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
-
 
     /**
      *  The default constructor.
@@ -58,7 +52,6 @@ public class Path : IDrawable {
         points = new List<Point>();
     }
 
-
     /**
      *  Adds a point to this path.
      *
@@ -67,7 +60,6 @@ public class Path : IDrawable {
     public void Add(Point point) {
         points.Add(point);
     }
-
 
     /**
      *  Sets the line dash pattern for this path.
@@ -98,7 +90,6 @@ public class Path : IDrawable {
         this.pattern = pattern;
     }
 
-
     /**
      *  Sets the pen width that will be used to draw the lines and splines that are part of this path.
      *
@@ -107,7 +98,6 @@ public class Path : IDrawable {
     public void SetWidth(double width) {
         this.width = (float) width;
     }
-
 
     /**
      *  Sets the pen width that will be used to draw the lines and splines that are part of this path.
@@ -118,7 +108,6 @@ public class Path : IDrawable {
         this.width = width;
     }
 
-
     /**
      *  Sets the pen color that will be used to draw this path.
      *
@@ -127,7 +116,6 @@ public class Path : IDrawable {
     public void SetColor(int color) {
         this.color = color;
     }
-
 
     /**
      *  Sets the closePath variable.
@@ -138,7 +126,6 @@ public class Path : IDrawable {
         this.closePath = closePath;
     }
 
-
     /**
      *  Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
      *
@@ -147,7 +134,6 @@ public class Path : IDrawable {
     public void SetFillShape(bool fillShape) {
         this.fillShape = fillShape;
     }
-
 
     /**
      *  Sets the line cap style.
@@ -159,7 +145,6 @@ public class Path : IDrawable {
         this.lineCapStyle = style;
     }
 
-
     /**
      *  Returns the line cap style for this path.
      *
@@ -168,7 +153,6 @@ public class Path : IDrawable {
     public CapStyle GetLineCapStyle() {
         return this.lineCapStyle;
     }
-
 
     /**
      *  Sets the line join style.
@@ -179,7 +163,6 @@ public class Path : IDrawable {
         this.lineJoinStyle = style;
     }
 
-
     /**
      *  Returns the line join style.
      *
@@ -189,7 +172,6 @@ public class Path : IDrawable {
         return this.lineJoinStyle;
     }
 
-
     /**
      *  Places this path in the specified box at position (0.0, 0.0).
      *
@@ -198,7 +180,6 @@ public class Path : IDrawable {
     public void PlaceIn(Box box) {
         PlaceIn(box, 0.0f, 0.0f);
     }
-
 
     /**
      *  Places the path inside the spacified box at coordinates (xOffset, yOffset) of the top left corner.
@@ -213,7 +194,6 @@ public class Path : IDrawable {
             double yOffset) {
         PlaceIn(box, (float) xOffset, (float) yOffset);
     }
-
 
     /**
      *  Places the path inside the spacified box at coordinates (xOffset, yOffset) of the top left corner.
@@ -230,28 +210,23 @@ public class Path : IDrawable {
         yBox = box.y + yOffset;
     }
 
-
     public void SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
     }
-
 
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
 
-
     public Path SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     public Path SetLocation(float x, float y) {
         xBox += x;
         yBox += y;
         return this;
     }
-
 
     /**
      *  Scales the path using the specified factor.
@@ -261,7 +236,6 @@ public class Path : IDrawable {
     public void ScaleBy(double factor) {
         ScaleBy((float) factor);
     }
-
 
     /**
      *  Scales the path using the specified factor.
@@ -275,7 +249,6 @@ public class Path : IDrawable {
             point.y *= factor;
         }
     }
-
 
     /**
      * Returns a list containing the start point, first control point, second control point and the end point of elliptical curve segment.
@@ -304,20 +277,17 @@ public class Path : IDrawable {
             list.Add(new Point(x + m4*r1, y - r2, Point.CONTROL_POINT));
             list.Add(new Point(x + r1, y - m4*r2, Point.CONTROL_POINT));
             list.Add(new Point(x + r1, y));
-        }
-        else if (segment == 1) {
+        } else if (segment == 1) {
             list.Add(new Point(x + r1, y));
             list.Add(new Point(x + r1, y + m4*r2, Point.CONTROL_POINT));
             list.Add(new Point(x + m4*r1, y + r2, Point.CONTROL_POINT));
             list.Add(new Point(x, y + r2));
-        }
-        else if (segment == 2) {
+        } else if (segment == 2) {
             list.Add(new Point(x, y + r2));
             list.Add(new Point(x - m4*r1, y + r2, Point.CONTROL_POINT));
             list.Add(new Point(x - r1, y + m4*r2, Point.CONTROL_POINT));
             list.Add(new Point(x - r1, y));
-        }
-        else if (segment == 3) {
+        } else if (segment == 3) {
             list.Add(new Point(x - r1, y));
             list.Add(new Point(x - r1, y - m4*r2, Point.CONTROL_POINT));
             list.Add(new Point(x - m4*r1, y - r2, Point.CONTROL_POINT));
@@ -326,7 +296,6 @@ public class Path : IDrawable {
 
         return list;
     }
-
 
     /**
      *  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
@@ -374,6 +343,5 @@ public class Path : IDrawable {
 
         return new float[] {xMax, yMax};
     }
-
 }   // End of Path.cs
 }   // End of namespace PDFjet.NET

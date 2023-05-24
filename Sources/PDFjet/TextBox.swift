@@ -44,22 +44,19 @@ public class TextBox : Drawable {
     var font: Font?
     var fallbackFont: Font?
     var text: String?
-
     var x: Float = 0.0
     var y: Float = 0.0
-
     var width: Float = 300.0
     var height: Float = 0.0
     var spacing: Float = 0.0
     var margin: Float = 0.0
+    var lineWidth: Float = 0.0
 
-    private var lineWidth: Float = 0.0
     private var background = Color.transparent
     private var pen = Color.black
     private var brush = Color.black
     private var valign = Align.TOP
     private var colors: [String : Int32]?
-
     // TextBox properties
     // Future use:
     // bits 0 to 15
@@ -77,7 +74,6 @@ public class TextBox : Drawable {
     // Future use:
     // bits 24 to 31
     private var properties: UInt32 = 0x00000001
-
     private var language = "en-US"
     private var altDescription = ""
     private var uri: String?
@@ -546,11 +542,11 @@ public class TextBox : Drawable {
     ///
     /// Sets the vertical alignment of the text in this TextBox.
     ///
-    /// @param alignment - valid values areAlign.TOP, Align.BOTTOM and Align.CENTER
+    /// @param valign - valid values areAlign.TOP, Align.BOTTOM and Align.CENTER
     ///
     @discardableResult
-    public func setVerticalAlignment(_ alignment: UInt32) -> TextBox {
-        self.valign = alignment
+    public func setVerticalAlignment(_ valign: UInt32) -> TextBox {
+        self.valign = valign
         return self
     }
 

@@ -21,18 +21,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 using System;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
-
-namespace PDFjet.NET {
 /**
  * Please see Example_51 and Example_52
  */
+namespace PDFjet.NET {
 public class Bookmark {
-
     private int destNumber = 0;
     private Page page = null;
     private float y = 0f;
@@ -43,15 +40,12 @@ public class Bookmark {
     private Bookmark next = null;
     private List<Bookmark> children = null;
     private Destination dest = null;
-
     internal int objNumber = 0;
     internal String prefix = null;
-
 
     public Bookmark(PDF pdf) {
         pdf.toc = this;
     }
-
 
     private Bookmark(Page page, float y, String key, String title) {
         this.page = page;
@@ -59,7 +53,6 @@ public class Bookmark {
         this.key = key;
         this.title = title;
     }
-
 
     public Bookmark AddBookmark(Page page, Title title) {
         Bookmark bm = this;
@@ -74,8 +67,7 @@ public class Bookmark {
         bookmark.dest = page.AddDestination(key, title.textLine.GetDestinationY());
         if (children == null) {
             children = new List<Bookmark>();
-        }
-        else {
+        } else {
             bookmark.prev = children[children.Count - 1];
             children[children.Count - 1].next = bookmark;
         }
@@ -83,21 +75,17 @@ public class Bookmark {
         return bookmark;
     }
 
-
     public String GetDestKey() {
         return this.key;
     }
-
 
     public String GetTitle() {
         return this.title;
     }
 
-
     public Bookmark GetParent() {
         return this.parent;
     }
-
 
     public Bookmark AutoNumber(TextLine text) {
         Bookmark bm = GetPrevBookmark();
@@ -105,26 +93,21 @@ public class Bookmark {
             bm = GetParent();
             if (bm.prefix == null) {
                 prefix = "1";
-            }
-            else {
+            } else {
                 prefix = bm.prefix + ".1";
             }
-        }
-        else {
+        } else {
             if (bm.prefix == null) {
                 if (bm.GetParent().prefix == null) {
                     prefix = "1";
-                }
-                else {
+                } else {
                     prefix = bm.GetParent().prefix + ".1";
                 }
-            }
-            else {
+            } else {
                 int index = bm.prefix.LastIndexOf('.');
                 if (index == -1) {
                     prefix = (Int32.Parse(bm.prefix) + 1).ToString();
-                }
-                else {
+                } else {
                     prefix = bm.prefix.Substring(0, index) + ".";
                     prefix += (Int32.Parse(bm.prefix.Substring(index + 1)) + 1).ToString();
                 }
@@ -134,7 +117,6 @@ public class Bookmark {
         title = prefix + " " + title;
         return this;
     }
-
 
     internal List<Bookmark> ToArrayList() {
         List<Bookmark> list = new List<Bookmark>();
@@ -156,41 +138,33 @@ public class Bookmark {
         return list;
     }
 
-
     internal List<Bookmark> GetChildren() {
         return this.children;
     }
-
 
     internal Bookmark GetPrevBookmark() {
         return this.prev;
     }
 
-
     internal Bookmark GetNextBookmark() {
         return this.next;
     }
-
 
     internal Bookmark GetFirstChild() {
         return this.children[0];
     }
 
-
     internal Bookmark GetLastChild() {
         return children[children.Count - 1];
     }
-
 
     internal Destination GetDestination() {
         return this.dest;
     }
 
-
     private String Next() {
         ++destNumber;
         return "dest#" + destNumber.ToString();
     }
-
 }   // End of Bookmark.cs
 }   // End of namespace PDFjet.NET

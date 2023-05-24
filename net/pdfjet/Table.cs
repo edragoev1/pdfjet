@@ -23,31 +23,31 @@ SOFTWARE.
 */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace PDFjet.NET {
 /**
  *  Used to create table objects and draw them on a page.
  *
  *  Please see Example_08.
  */
+namespace PDFjet.NET {
 public class Table {
-    public static readonly int DATA_HAS_0_HEADER_ROWS = 0;
-    public static readonly int DATA_HAS_1_HEADER_ROWS = 1;
-    public static readonly int DATA_HAS_2_HEADER_ROWS = 2;
-    public static readonly int DATA_HAS_3_HEADER_ROWS = 3;
-    public static readonly int DATA_HAS_4_HEADER_ROWS = 4;
-    public static readonly int DATA_HAS_5_HEADER_ROWS = 5;
-    public static readonly int DATA_HAS_6_HEADER_ROWS = 6;
-    public static readonly int DATA_HAS_7_HEADER_ROWS = 7;
-    public static readonly int DATA_HAS_8_HEADER_ROWS = 8;
-    public static readonly int DATA_HAS_9_HEADER_ROWS = 9;
+    public static readonly int WITH_0_HEADER_ROWS = 0;
+    public static readonly int WITH_1_HEADER_ROW  = 1;
+    public static readonly int WITH_2_HEADER_ROWS = 2;
+    public static readonly int WITH_3_HEADER_ROWS = 3;
+    public static readonly int WITH_4_HEADER_ROWS = 4;
+    public static readonly int WITH_5_HEADER_ROWS = 5;
+    public static readonly int WITH_6_HEADER_ROWS = 6;
+    public static readonly int WITH_7_HEADER_ROWS = 7;
+    public static readonly int WITH_8_HEADER_ROWS = 8;
+    public static readonly int WITH_9_HEADER_ROWS = 9;
 
     private List<List<Cell>> tableData;
+    private int numOfHeaderRows = 1;
     private int rendered = 0;
-    private int numOfPages;
-    private int numOfHeaderRows = 0;
     private float x1;
     private float y1;
     private float y1FirstPage;
@@ -59,6 +59,53 @@ public class Table {
      */
     public Table() {
         tableData = new List<List<Cell>>();
+    }
+
+    /**
+     *  Create a table object.
+     *
+     */
+    public Table(Font f1, Font f2, String fileName) {
+        tableData = new List<List<Cell>>();
+        StreamReader reader = new StreamReader(fileName);
+        Char[] delimiterRegex = null;
+        int numberOfFields = 0;
+        int lineNumber = 0;
+        String line;
+        while ((line = reader.ReadLine()) != null) {
+            if (lineNumber == 0) {
+                delimiterRegex = GetDelimiterRegex(line);
+                numberOfFields = line.Split(delimiterRegex).Length;
+            }
+            List<Cell> row = new List<Cell>();
+            String[] fields = line.Split(delimiterRegex);
+            foreach (String field in fields) {
+                if (lineNumber == 0) {
+                    Cell cell = new Cell(f1);
+                    cell.SetTextBox(new TextBox(f1, field));
+                    row.Add(cell);
+                } else {
+                    row.Add(new Cell(f2, field));
+                }
+            }
+            if (row.Count > numberOfFields) {
+                List<Cell> row2 = new List<Cell>();
+                for (int i = 0; i < numberOfFields; i++) {
+                    row2.Add(row[i]);
+                }
+                tableData.Add(row2);
+            } else if (row.Count < numberOfFields) {
+                int diff = numberOfFields - row.Count;
+                for (int i = 0; i < diff; i++) {
+                    row.Add(new Cell(f2));
+                }
+                tableData.Add(row);
+            } else {
+                tableData.Add(row);
+            }
+            lineNumber++;
+        }
+        reader.Close();
     }
 
     /**
@@ -400,12 +447,16 @@ public class Table {
                 }
                 if (page != null) {
                     page.SetBrushColor(cell.GetBrushColor());
+                    if (i == (numOfHeaderRows - 1)) {
+                        cell.SetBorder(Border.BOTTOM, true);
+                    }
                     cell.DrawOn(page, x, y, w, h);
                 }
                 x += w;
             }
             x = x1;
             y += h;
+            rendered++;
         }
         return new float[] {x, y};
     }
@@ -445,9 +496,10 @@ public class Table {
         float maxCellHeight = 0f;
         for (int i = 0; i < row.Count; i++) {
             Cell cell = row[i];
-            float totalWidth = cell.GetHeight(GetTotalWidth(row, i));
-            if (cell.GetHeight(totalWidth) > maxCellHeight) {
-                maxCellHeight = cell.GetHeight(totalWidth);
+            float totalWidth = GetTotalWidth(row, i);
+            float cellHeight = cell.GetHeight(totalWidth);
+            if (cellHeight > maxCellHeight) {
+                maxCellHeight = cellHeight;
             }
         }
         return maxCellHeight;
@@ -595,21 +647,6 @@ public class Table {
                 row[i].SetWidth(maxColWidths[i]);
             }
         }
-        foreach (List<Cell> row in tableData) {
-            for (int i = 0; i < row.Count; i++) {
-                Cell cell = row[i];
-                int colspan = (int) cell.GetColSpan();
-                if (colspan > 1) {
-                    if (cell.textBox != null) {
-                        float sumOfWidths = 0f;
-                        for (int j = 0; j < colspan; j++) {
-                            sumOfWidths += row[i + j].GetWidth();
-                        }
-                        cell.textBox.SetWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding));
-                    }
-                }
-            }
-        }
     }
 
     private List<List<Cell>> AddExtraTableRows() {
@@ -747,6 +784,32 @@ public class Table {
             }
         }
         return numOfVerCells;
+    }
+
+    private Char[] GetDelimiterRegex(String str) {
+        int comma = 0;
+        int pipe = 0;
+        int tab = 0;
+        foreach (char ch in str) {
+            if (ch == ',') {
+                comma++;
+            } else if (ch == '|') {
+                pipe++;
+            } else if (ch == '\t') {
+                tab++;
+            }
+        }
+        if (comma >= pipe) {
+            if (comma >= tab) {
+                return new Char[] {','};
+            }
+            return new Char[] {'\t'};
+        } else {
+            if (pipe >= tab) {
+                return new Char[] {'|'};
+            }
+            return new Char[] {'\t'};
+        }
     }
 }   // End of Table.cs
 }   // End of namespace PDFjet.NET

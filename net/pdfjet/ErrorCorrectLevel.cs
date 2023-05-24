@@ -13,13 +13,10 @@ DENSO WAVE INCORPORATED
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  * Used to specify the error correction level for QR Codes.
- *
- * @author Kazuhiko Arase
  */
+namespace PDFjet.NET {
 public class ErrorCorrectLevel {
     public const int L = 1;
     public const int M = 0;

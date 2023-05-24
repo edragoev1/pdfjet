@@ -63,37 +63,30 @@ class JPGImage {
     var data: [UInt8]
     var index = 0
 
-
     public init(_ stream: InputStream) throws {
         self.data = try Contents.getFromStream(stream)
         processImage(&data)
     }
 
-
     func getWidth() -> UInt16 {
         return self.width
     }
-
 
     func getHeight() -> UInt16 {
         return self.height
     }
 
-
     func getFileSize() -> Int64 {
         return Int64(self.data.count)
     }
-
 
     func getColorComponents() -> UInt16 {
         return self.colorComponents
     }
 
-
     func getData() -> [UInt8] {
         return self.data
     }
-
 
     private func processImage(_ buffer: inout [UInt8]) {
         if buffer[0] != UInt8(0xFF) || buffer[1] != UInt8(0xD8) {
@@ -133,11 +126,9 @@ class JPGImage {
         }
     }
 
-
     private func getUInt16(_ buffer: inout [UInt8]) -> UInt16 {
         return UInt16(buffer[index]) << 8 | UInt16(buffer[index + 1])
     }
-
 
     // Find the next JPEG marker and return its marker code.
     // We expect at least one FF byte, possibly more if the compressor
@@ -166,7 +157,6 @@ class JPGImage {
         return ch
     }
 
-
     // Most types of marker are followed by a variable-length parameter
     // segment. This routine skips over the parameters for any marker we
     // don't otherwise want to process.
@@ -189,5 +179,4 @@ class JPGImage {
             length -= 1
         }
     }
-
 }   // End of JPGImage.swift

@@ -26,10 +26,8 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 class FontStream2 {
-
     internal static void Register(List<PDFobj> objects, Font font, Stream inputStream) {
         FontStream1.GetFontData(font, inputStream);
 
@@ -64,7 +62,6 @@ class FontStream2 {
         font.objNumber = obj.number;
         objects.Add(obj);
     }
-
 
     private static int AddMetadataObject(List<PDFobj> objects, Font font) {
 
@@ -104,12 +101,10 @@ class FontStream2 {
         return obj.number;
     }
 
-
     private static void EmbedFontFile(
             List<PDFobj> objects,
             Font font,
             Stream inputStream) {
-
         int metadataObjNumber = AddMetadataObject(objects, font);
 
         PDFobj obj = new PDFobj();
@@ -142,7 +137,6 @@ class FontStream2 {
         objects.Add(obj);
         font.fileObjNumber = obj.number;
     }
-
 
     private static void AddFontDescriptorObject(List<PDFobj> objects, Font font) {
         PDFobj obj = new PDFobj();
@@ -180,9 +174,7 @@ class FontStream2 {
         font.fontDescriptorObjNumber = obj.number;
     }
 
-
     private static void AddToUnicodeCMapObject(List<PDFobj> objects, Font font) {
-
         StringBuilder sb = new StringBuilder();
 
         sb.Append("/CIDInit /ProcSet findresource begin\n");
@@ -231,9 +223,7 @@ class FontStream2 {
         font.toUnicodeCMapObjNumber = obj.number;
     }
 
-
     private static void AddCIDFontDictionaryObject(List<PDFobj> objects, Font font) {
-
         PDFobj obj = new PDFobj();
         obj.dict.Add("<<");
         obj.dict.Add("/Type");
@@ -276,6 +266,5 @@ class FontStream2 {
         objects.Add(obj);
         font.cidFontDictObjNumber = obj.number;
     }
-
 }   // End of FontStream2.cs
 }   // End of namespace PDFjet.NET

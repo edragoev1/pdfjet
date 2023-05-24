@@ -13,14 +13,8 @@ DENSO WAVE INCORPORATED
 */
 using System;
 
-
 namespace PDFjet.NET {
-/**
- * QRUtil
- * @author Kazuhiko Arase
- */
 public class QRUtil {
-
     internal static Polynomial GetErrorCorrectPolynomial(int errorCorrectLength) {
         Polynomial a = new Polynomial(new int[] {1});
         for (int i = 0; i < errorCorrectLength; i++) {
@@ -55,27 +49,22 @@ public class QRUtil {
             for (int col = 0; col < moduleCount; col++) {
                 int sameCount = 0;
                 bool dark = qrCode.IsDark(row, col);
-
                 for (int r = -1; r <= 1; r++) {
                     if (row + r < 0 || moduleCount <= row + r) {
                         continue;
                     }
-
                     for (int c = -1; c <= 1; c++) {
                         if (col + c < 0 || moduleCount <= col + c) {
                             continue;
                         }
-
                         if (r == 0 && c == 0) {
                             continue;
                         }
-
                         if (dark == qrCode.IsDark(row + r, col + c)) {
                             sameCount++;
                         }
                     }
                 }
-
                 if (sameCount > 5) {
                     lostPoint += (3 + sameCount - 5);
                 }
@@ -161,6 +150,5 @@ public class QRUtil {
         }
         return digit;
     }
-
 }
 }   // End of namespace PDFjet.NET

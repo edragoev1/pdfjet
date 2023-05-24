@@ -21,17 +21,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify the image type of an image.
  *  Supported types: ImageType.JPEG, ImageType.PNG, ImageType.BMP and ImageType.PNG_STREAM
  *  See the Image class for more information.
  *
  */
+namespace PDFjet.NET {
 public class ImageType {
     public static readonly int JPG = 0;
     public static readonly int PNG = 1;

@@ -23,14 +23,12 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Creates a RadioButton, which can be set selected or unselected.
  *
  */
+namespace PDFjet.NET {
 public class RadioButton : IDrawable {
-
     private bool selected = false;
     private float x;
     private float y;
@@ -40,11 +38,9 @@ public class RadioButton : IDrawable {
     private Font font = null;
     private String label = "";
     private String uri = null;
-
     private String language = null;
     private String altDescription = Single.space;
     private String actualText = Single.space;
-
 
     /**
      *  Creates a RadioButton that is not selected.
@@ -54,7 +50,6 @@ public class RadioButton : IDrawable {
         this.font = font;
         this.label = label;
     }
-
 
     /**
      *  Sets the font size to use for this text line.
@@ -67,11 +62,9 @@ public class RadioButton : IDrawable {
         return this;
     }
 
-
     public void SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
     }
-
 
     /**
      *  Set the x,y position on the Page.
@@ -84,11 +77,9 @@ public class RadioButton : IDrawable {
         SetLocation(x, y);
     }
 
-
     public RadioButton SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     /**
      *  Set the x,y location on the Page.
@@ -103,7 +94,6 @@ public class RadioButton : IDrawable {
         return this;
     }
 
-
     /**
      *  Selects or deselects this radio button.
      *
@@ -114,7 +104,6 @@ public class RadioButton : IDrawable {
         this.selected = selected;
         return this;
     }
-
 
     /**
      *  Sets the URI for the "click text line" action.
@@ -127,7 +116,6 @@ public class RadioButton : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the alternate description of this radio button.
      *
@@ -139,7 +127,6 @@ public class RadioButton : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the actual text for this radio button.
      *
@@ -150,7 +137,6 @@ public class RadioButton : IDrawable {
         this.actualText = actualText;
         return this;
     }
-
 
     /**
      *  Draws this RadioButton on the specified Page.
@@ -201,6 +187,5 @@ public class RadioButton : IDrawable {
 
         return new float[] { x + 6*r1 + font.StringWidth(label), y + font.bodyHeight };
     }
-
 }   // End of RadioButton.cs
 }   // End of namespace PDFjet.NET

@@ -21,15 +21,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify if TrueType or OpenType font should be embedded in the PDF document.
  *  See the Font class for more details.
  *
  */
+namespace PDFjet.NET {
 public class Embed {
     public static readonly bool YES = true;
     public static readonly bool NO = false;

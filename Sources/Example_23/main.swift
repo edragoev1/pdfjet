@@ -63,7 +63,7 @@ public class Example_23 {
 
         let page = Page(pdf, Letter.PORTRAIT)
         let table = Table()
-        table.setData(tableData, Table.DATA_HAS_1_HEADER_ROWS)
+        table.setData(tableData, Table.WITH_1_HEADER_ROW)
         table.setLocation(50.0, 50.0)
         table.setColumnWidth(0, 100.0)
         table.setColumnWidth(1, 100.0)

@@ -27,7 +27,6 @@ using System.Text;
 
 namespace PDFjet.NET {
 public class OTF {
-
     public String fontName;
     public String fontInfo;
     public readonly MemoryStream baos;
@@ -104,8 +103,7 @@ public class OTF {
         DeflaterOutputStream dos = new DeflaterOutputStream(baos);
         if (cff) {
             dos.Write(buf, cffOff, cffLen);
-        }
-        else {
+        } else {
             dos.Write(buf, 0, buf.Length);
         }
     }
@@ -159,8 +157,7 @@ public class OTF {
                         buf, table.offset + stringOffset + offset, length);
                 if (nameID == 6) {
                     fontName = str;
-                }
-                else {
+                } else {
                     macFontInfo.Append(str);
                     macFontInfo.Append('\n');
                 }
@@ -316,7 +313,6 @@ public class OTF {
         val |= ((UInt32) buf[index++]);
         return val;
     }
-
 }   // End of OTF.cs
 }   // End of namespace PDFjet.NET
 

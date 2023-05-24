@@ -239,8 +239,7 @@ public class Barcode2D : IDrawable {
             hi = list[i];
             if (i + 1 == list.Count) {
                 lo = SHIFT_TO_PUNCT;    // Pad
-            }
-            else {
+            } else {
                 lo = list[i + 1];
             }
 

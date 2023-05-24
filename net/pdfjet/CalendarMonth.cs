@@ -24,10 +24,8 @@ SOFTWARE.
 using System;
 using System.Globalization;
 
-
 namespace PDFjet.NET {
 public class CalendarMonth : IDrawable {
-
     Font f1 = null;
     Font f2 = null;
 
@@ -41,7 +39,6 @@ public class CalendarMonth : IDrawable {
 
     int daysInMonth;
     int dayOfWeek;
-
 
     public CalendarMonth(Font f1, Font f2, int year, int month) {
         this.f1 = f1;
@@ -60,11 +57,9 @@ public class CalendarMonth : IDrawable {
         dy = dx;
     }
 
-
     public void SetHeadFont(Font font) {
         this.f1 = font;
     }
-
 
     public void SetBodyFont(Font font) {
         this.f2 = font;
@@ -74,7 +69,6 @@ public class CalendarMonth : IDrawable {
         this.dx = width;
     }
 
-
     public void SetCellHeight(float height) {
         this.dy = height;
     }
@@ -83,19 +77,15 @@ public class CalendarMonth : IDrawable {
         SetLocation(x, y);
     }
 
-
     public CalendarMonth SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
     }
 
-
     public CalendarMonth SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
-
 
     public float[] DrawOn(Page page) {
         for (int row = 0; row < 7; row++) {
@@ -135,11 +125,9 @@ public class CalendarMonth : IDrawable {
         return new float[] {this.x1 + 7*this.dx, this.y1 + 7*this.dy};
     }
 
-
     private bool IsLeapYear(int year) {
         return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
     }
-
 
     private int GetDaysInMonth(
             int year,
@@ -148,6 +136,5 @@ public class CalendarMonth : IDrawable {
         int[] daysInMonth = {31, daysInFebruary, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
         return daysInMonth[month];
     }
-
 }   // End of CalendarMonth.cs
 }   // End of namespace PDFjet.NET

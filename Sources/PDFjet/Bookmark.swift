@@ -27,7 +27,6 @@ extension String {
     func indexOf(_ input: String) -> String.Index? {
         return self.range(of: input)?.lowerBound
     }
-
     func lastIndexOf(_ input: String) -> String.Index? {
         return self.range(of: input, options: .backwards)?.lowerBound
     }
@@ -37,7 +36,6 @@ extension String {
 /// Please see Example_51 and Example_52
 ///
 public class Bookmark {
-
     private var destNumber = 0
     private var page: Page?
     private var y: Float = 0.0
@@ -48,15 +46,12 @@ public class Bookmark {
     private var next: Bookmark?
     private var children: [Bookmark]?
     private var dest: Destination?
-
     var objNumber = 0
     var prefix: String?
-
 
     public init(_ pdf: PDF) {
         pdf.toc = self
     }
-
 
     private init(
             _ page: Page,
@@ -68,7 +63,6 @@ public class Bookmark {
         self.key = key
         self.title = title
     }
-
 
     @discardableResult
     public func addBookmark(
@@ -94,21 +88,17 @@ public class Bookmark {
         return bookmark
     }
 
-
     public func getDestKey() -> String {
         return self.key!
     }
-
 
     public func getTitle() -> String {
         return self.title!
     }
 
-
     public func getParent() -> Bookmark? {
         return self.parent
     }
-
 
     @discardableResult
     public func autoNumber(_ text: TextLine) -> Bookmark {
@@ -143,7 +133,6 @@ public class Bookmark {
         return self
     }
 
-
     func toArrayList() -> [Bookmark] {
         var objNumber = 0
         var list = [Bookmark]()
@@ -161,40 +150,32 @@ public class Bookmark {
         return list
     }
 
-
     func getChildren() -> [Bookmark]? {
         return self.children
     }
-
 
     func getPrevBookmark() -> Bookmark? {
         return self.prev
     }
 
-
     func getNextBookmark() -> Bookmark? {
         return self.next
     }
-
 
     func getFirstChild() -> Bookmark? {
         return self.children![0]
     }
 
-
     func getLastChild() -> Bookmark? {
         return children![children!.count - 1]
     }
-
 
     func getDestination() -> Destination? {
         return self.dest
     }
 
-
     private func goToNext() -> String {
         destNumber += 1
         return "dest#" + String(destNumber)
     }
-
 }   // End of Bookmark.swift

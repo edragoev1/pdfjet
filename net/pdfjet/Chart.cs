@@ -24,39 +24,30 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to create XY chart objects and draw them on a page.
  *
  *  Please see Example_09.
  */
+namespace PDFjet.NET {
 public class Chart : IDrawable {
-
     private float w = 300f;
     private float h = 200f;
 
     private float x1;
     private float y1;
-
     private float x2;
     private float y2;
-
     private float x3;
     private float y3;
-
     private float x4;
     private float y4;
-
     private float x5;
     private float y5;
-
     private float x6;
     private float y6;
-
     private float x7;
     private float y7;
-
     private float x8;
     private float y8;
 
@@ -96,7 +87,6 @@ public class Chart : IDrawable {
 
     private List<List<Point>> chartData = null;
 
-
     /**
      *  Create a XY chart object.
      *
@@ -109,7 +99,6 @@ public class Chart : IDrawable {
         nf = NumberFormat.GetInstance();
     }
 
-
     /**
      *  Sets the title of the chart.
      *
@@ -118,7 +107,6 @@ public class Chart : IDrawable {
     public void SetTitle(String title) {
         this.title = title;
     }
-
 
     /**
      *  Sets the title for the X axis.
@@ -129,7 +117,6 @@ public class Chart : IDrawable {
         this.xAxisTitle = title;
     }
 
-
     /**
      *  Sets the title for the Y axis.
      *
@@ -138,7 +125,6 @@ public class Chart : IDrawable {
     public void SetYAxisTitle(String title) {
         this.yAxisTitle = title;
     }
-
 
     /**
      *  Sets the data that will be used to draw this chart.
@@ -149,7 +135,6 @@ public class Chart : IDrawable {
         this.chartData = chartData;
     }
 
-
     /**
      *  Returns the chart data.
      *
@@ -158,7 +143,6 @@ public class Chart : IDrawable {
     public List<List<Point>> GetData() {
         return chartData;
     }
-
 
     /**
      *  Sets the position of this chart on the page.
@@ -170,7 +154,6 @@ public class Chart : IDrawable {
         SetPosition((float) x, (float) y);
     }
 
-
     /**
      *  Sets the position of this chart on the page.
      *
@@ -180,7 +163,6 @@ public class Chart : IDrawable {
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location of this chart on the page.
@@ -193,7 +175,6 @@ public class Chart : IDrawable {
         this.y1 = y;
     }
 
-
     /**
      *  Sets the size of this chart.
      *
@@ -203,7 +184,6 @@ public class Chart : IDrawable {
     public void SetSize(double w, double h) {
         SetSize((float) w, (float) h);
     }
-
 
     /**
      *  Sets the size of this chart.
@@ -216,7 +196,6 @@ public class Chart : IDrawable {
         this.h = h;
     }
 
-
     /**
      *  Sets the minimum number of fractions digits do display for the X and Y axis labels.
      *
@@ -226,7 +205,6 @@ public class Chart : IDrawable {
         this.minFractionDigits = minFractionDigits;
     }
 
-
     /**
      *  Sets the maximum number of fractions digits do display for the X and Y axis labels.
      *
@@ -235,7 +213,6 @@ public class Chart : IDrawable {
     public void SetMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
     }
-
 
     /**
      *  Calculates the Slope of a trend line given a list of points.
@@ -248,7 +225,6 @@ public class Chart : IDrawable {
         return (Covar(points) / Devsq(points) * (points.Count - 1));
     }
 
-
     /**
      *  Calculates the Intercept of a trend line given a list of points.
      *  See Example_09.
@@ -259,7 +235,6 @@ public class Chart : IDrawable {
     public float Intercept(List<Point> points, double slope) {
         return Intercept(points, (float) slope);
     }
-
 
     /**
      *  Calculates the Intercept of a trend line given a list of points.
@@ -273,21 +248,17 @@ public class Chart : IDrawable {
         return (_mean[1] - slope * _mean[0]);
     }
 
-
     public void SetDrawXAxisLabels(bool drawXAxisLabels) {
         this.drawXAxisLabels = drawXAxisLabels;
     }
-
 
     public void SetDrawYAxisLabels(bool drawYAxisLabels) {
         this.drawYAxisLabels = drawYAxisLabels;
     }
 
-
     public void SetXYChart(bool xyChart) {
         this.xyChart = xyChart;
     }
-
 
     /**
      *  Draws this chart on the specified page.
@@ -358,8 +329,7 @@ public class Chart : IDrawable {
                     point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                     point.lineWidth *= (x6 - x5) / w;
-                }
-                else {
+                } else {
                     point.x = x5 + point.x * (x6 - x5) / w;
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                 }
@@ -404,7 +374,6 @@ public class Chart : IDrawable {
         return new float[] {this.x1 + this.w, this.y1 + this.h};
     }
 
-
     private float GetLongestAxisYLabelWidth() {
         float minLabelWidth =
                 f2.StringWidth(nf.Format(yMin) + "0");
@@ -415,7 +384,6 @@ public class Chart : IDrawable {
         }
         return minLabelWidth;
     }
-
 
     private void SetXAxisMinAndMaxChartValues() {
         if (xAxisGridLines != 0) {
@@ -433,7 +401,6 @@ public class Chart : IDrawable {
         }
     }
 
-
     private void SetYAxisMinAndMaxChartValues() {
         if (yAxisGridLines != 0) {
             return;
@@ -450,7 +417,6 @@ public class Chart : IDrawable {
         }
     }
 
-
     private void RoundXAxisMinAndMaxValues() {
         Round round = RoundMaxAndMinValues(xMax, xMin);
         xMax = round.maxValue;
@@ -458,14 +424,12 @@ public class Chart : IDrawable {
         xAxisGridLines = round.numOfGridLines;
     }
 
-
     private void RoundYAxisMinAndMaxValues() {
         Round round = RoundMaxAndMinValues(yMax, yMin);
         yMax = round.maxValue;
         yMin = round.minValue;
         yAxisGridLines = round.numOfGridLines;
     }
-
 
     private void DrawChartBorder(Page page) {
         page.SetPenWidth(chartBorderWidth);
@@ -478,7 +442,6 @@ public class Chart : IDrawable {
         page.StrokePath();
     }
 
-
     private void DrawInnerBorder(Page page) {
         page.SetPenWidth(innerBorderWidth);
         page.SetPenColor(Color.black);
@@ -489,7 +452,6 @@ public class Chart : IDrawable {
         page.ClosePath();
         page.StrokePath();
     }
-
 
     private void DrawHorizontalGridLines(Page page) {
         page.SetPenWidth(hGridLineWidth);
@@ -504,7 +466,6 @@ public class Chart : IDrawable {
         }
     }
 
-
     private void DrawVerticalGridLines(Page page) {
         page.SetPenWidth(vGridLineWidth);
         page.SetPenColor(Color.black);
@@ -518,7 +479,6 @@ public class Chart : IDrawable {
         }
     }
 
-
     private void DrawXAxisLabels(Page page) {
         float x = x5;
         float y = y8 + f2.bodyHeight;
@@ -531,7 +491,6 @@ public class Chart : IDrawable {
         }
     }
 
-
     private void DrawYAxisLabels(Page page) {
         float x = x5 - GetLongestAxisYLabelWidth();
         float y = y8 + f2.ascent / 3;
@@ -543,7 +502,6 @@ public class Chart : IDrawable {
             y -= step;
         }
     }
-
 
     private void DrawPathsAndPoints(
             Page page, List<List<Point>> chartData) {
@@ -574,9 +532,7 @@ public class Chart : IDrawable {
         }
     }
 
-
     private Round RoundMaxAndMinValues(float maxValue, float minValue) {
-
         int maxExponent = (int) Math.Floor(Math.Log(maxValue) / Math.Log(10));
         maxValue *= (float) Math.Pow(10, -maxExponent);
 
@@ -630,7 +586,6 @@ public class Chart : IDrawable {
         return round;
     }
 
-
     private float[] Mean(List<Point> points) {
         float[] _mean = new float[2];
         for (int i = 0; i < points.Count; i++) {
@@ -643,7 +598,6 @@ public class Chart : IDrawable {
         return _mean;
     }
 
-
     private float Covar(List<Point> points) {
         float covariance = 0f;
         float[] _mean = Mean(points);
@@ -653,7 +607,6 @@ public class Chart : IDrawable {
         }
         return (covariance / (points.Count - 1));
     }
-
 
     /**
      * Devsq() returns the sum of squares of deviations.
@@ -669,7 +622,6 @@ public class Chart : IDrawable {
         return _devsq;
     }
 
-
     /**
      *  Sets xMin and xMax for the X axis and the number of X grid lines.
      *
@@ -683,7 +635,6 @@ public class Chart : IDrawable {
         this.xAxisGridLines = xAxisGridLines;
     }
 
-
     /**
      *  Sets yMin and yMax for the Y axis and the number of Y grid lines.
      *
@@ -696,6 +647,5 @@ public class Chart : IDrawable {
         this.yMax = yMax;
         this.yAxisGridLines = yAxisGridLines;
     }
-
 }   // End of Chart.cs
 }   // End of namespace PDFjet.NET

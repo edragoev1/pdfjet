@@ -13,13 +13,11 @@ DENSO WAVE INCORPORATED
 */
 import Foundation
 
-
 /**
  * Polynomial
  * @author Kazuhiko Arase
  */
 class Polynomial {
-
     private var num: [Int]
 
     init(_ num: [Int], _ shift: Int) {

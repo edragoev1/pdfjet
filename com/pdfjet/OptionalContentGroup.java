@@ -43,7 +43,7 @@ public class OptionalContentGroup {
 
     /**
      * Creates OptionalContentGroup object
-     * 
+     *
      * @param name the name of the group
      */
     public OptionalContentGroup(String name) {
@@ -53,7 +53,7 @@ public class OptionalContentGroup {
 
     /**
      * Add drawable object to the group
-     * 
+     *
      * @param drawable the drawable object
      */
     public void add(Drawable drawable) {
@@ -62,7 +62,7 @@ public class OptionalContentGroup {
 
     /**
      * Sets the visibility of this group
-     * 
+     *
      * @param visible flag
      */
     public void setVisible(boolean visible) {
@@ -71,7 +71,7 @@ public class OptionalContentGroup {
 
     /**
      * Sets the printability of this group
-     * 
+     *
      * @param printable flag
      */
     public void setPrintable(boolean printable) {
@@ -80,7 +80,7 @@ public class OptionalContentGroup {
 
     /**
      * Sets the exportability of this group
-     * 
+     *
      * @param exportable flag
      */
     public void setExportable(boolean exportable) {
@@ -89,7 +89,7 @@ public class OptionalContentGroup {
 
     /**
      * Draws this content group on a page
-     * 
+     *
      * @param page the page to draw on
      * @throws Exception if there is a problem
      */

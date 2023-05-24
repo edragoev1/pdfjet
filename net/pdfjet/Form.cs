@@ -25,13 +25,11 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 
-
 /**
  *  Please see Example_45
  */
 namespace PDFjet.NET {
 public class Form : IDrawable {
-
     private List<Field> fields;
     private float x;
     private float y;
@@ -46,27 +44,22 @@ public class Form : IDrawable {
     private int valueColor = Color.blue;
     private List<float[]> endOfLinePoints;
 
-
     public Form(List<Field> fields) {
         this.fields = fields;
         this.endOfLinePoints = new List<float[]>();
     }
 
-
     public void SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
     }
-
 
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
 
-
     public Form SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
-
 
     public Form SetLocation(float x, float y) {
         this.x = x;
@@ -74,54 +67,45 @@ public class Form : IDrawable {
         return this;
     }
 
-
     public Form SetRowLength(float rowLength) {
         this.rowLength = rowLength;
         return this;
     }
-
 
     public Form SetRowHeight(float rowHeight) {
         this.rowHeight = rowHeight;
         return this;
     }
 
-
     public Form SetLabelFont(Font f1) {
         this.f1 = f1;
         return this;
     }
-
 
     public Form SetLabelFontSize(float labelFontSize) {
         this.labelFontSize = labelFontSize;
         return this;
     }
 
-
     public Form SetValueFont(Font f2) {
         this.f2 = f2;
         return this;
     }
-
 
     public Form SetValueFontSize(float valueFontSize) {
         this.valueFontSize = valueFontSize;
         return this;
     }
 
-
     public Form SetLabelColor(int labelColor) {
         this.labelColor = labelColor;
         return this;
     }
 
-
     public Form SetValueColor(int valueColor) {
         this.valueColor = valueColor;
         return this;
     }
-
 
     /**
      *  Draws this form on the specified page.
@@ -200,10 +184,8 @@ public class Form : IDrawable {
         return new float[] { x + rowLength, y + boxHeight };
     }
 
-
     public static String[] Format(
             String title, String text, Font font, float width) {
-
         String[] original = text.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
         if (original[original.Length - 1].Equals("")) {
             String[] truncated = new String[original.Length - 1];
@@ -252,6 +234,5 @@ public class Form : IDrawable {
 
         return data;
     }
-
 }   // End of Form.cs
 }   // End of namespace PDFjet.NET

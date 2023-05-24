@@ -26,11 +26,9 @@ SOFTWARE.
 /// Used to create PDF destination objects.
 ///
 public class Destination {
-
     var name: String?
     var pageObjNumber = 0
     var yPosition: Float = 0.0
-
 
     ///
     /// This class is used to create destination objects.
@@ -43,9 +41,7 @@ public class Destination {
         self.yPosition = yPosition
     }
 
-
     func setPageObjNumber(_ pageObjNumber: Int) {
         self.pageObjNumber = pageObjNumber
     }
-
 }

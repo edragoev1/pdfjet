@@ -42,6 +42,7 @@ public class Cell {
     protected float leftPadding = 2f;
     protected float rightPadding = 2f;
     protected float lineWidth = 0f;
+
     private int background = -1;
     private int pen = Color.black;
     private int brush = Color.black;
@@ -298,7 +299,7 @@ public class Cell {
         float cellHeight = 0f;
         if (textBox != null) {
             textBox.setWidth(width);
-            cellHeight = (textBox.drawOn(null)[1] + topPadding + bottomPadding);
+            cellHeight = (textBox.drawOn(null)[1] - textBox.y) + topPadding + bottomPadding;
         } else if (image != null) {
             cellHeight = image.getHeight() + topPadding + bottomPadding;
         } else if (barcode != null) {

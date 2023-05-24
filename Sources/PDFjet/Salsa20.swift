@@ -10,15 +10,12 @@
  * the first 32 characters of the hash.
  *
  */
-
 import Foundation
 
 public class Salsa20 {
-
     private var id: String = ""
 
     public init() {
-
 /*
 Test input:
 
@@ -46,7 +43,6 @@ The expected output:
 0xf62cb407
 0x6bdede3d
 */
-
         var a_in: [UInt32] = [
                 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00,
@@ -58,14 +54,11 @@ The expected output:
         id = bin2hex(salsa20_word_specification(a_in))
     }
 
-
     private func R(_ a: UInt32, _ b: UInt32) -> UInt32 {
         return (a << b) | (a >> (32 - b))
     }
 
-
     private func salsa20_word_specification(_ a_in: [UInt32]) -> [UInt32] {
-
         var a_out = [UInt32](repeating: 0, count: 16)
         var x = [UInt32](repeating: 0, count: 16)
 
@@ -115,7 +108,6 @@ The expected output:
         return a_out
     }
 
-
     private func bin2hex(_ binArray: [UInt32]) -> String {
         let hexString =
                 String(format: "%08x", binArray[0]) +
@@ -125,11 +117,9 @@ The expected output:
         return hexString
     }
 
-
     public func getID() -> String {
         return self.id
     }
-
 }
 
 /*

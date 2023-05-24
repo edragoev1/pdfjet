@@ -377,8 +377,7 @@ public class Image : IDrawable {
             page.Append(' ');
             page.Append(page.height - (y + h));
             page.Append(" cm\n");
-        }
-        else if (degrees == 90) {
+        } else if (degrees == 90) {
             page.Append(h);
             page.Append(' ');
             page.Append(0f);
@@ -392,8 +391,7 @@ public class Image : IDrawable {
             page.Append(page.height - y);
             page.Append(" cm\n");
             page.Append("0 -1 1 0 0 0 cm\n");
-        }
-        else if (degrees == 180) {
+        } else if (degrees == 180) {
             page.Append(w);
             page.Append(' ');
             page.Append(0f);
@@ -407,8 +405,7 @@ public class Image : IDrawable {
             page.Append(page.height - y);
             page.Append(" cm\n");
             page.Append("-1 0 0 -1 0 0 cm\n");
-        }
-        else if (degrees == 270) {
+        } else if (degrees == 270) {
             page.Append(h);
             page.Append(' ');
             page.Append(0f);
@@ -609,8 +606,7 @@ public class Image : IDrawable {
         pdf.Append("/ColorSpace /");
         if (c == 1) {
             pdf.Append("DeviceGray");
-        }
-        else if (c == 3 || c == 6) {
+        } else if (c == 3 || c == 6) {
             pdf.Append("DeviceRGB");
         }
         pdf.Append('\n');

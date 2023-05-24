@@ -23,7 +23,6 @@ SOFTWARE.
 */
 using System;
 
-
 /**
  *  Please see Example_45
  */

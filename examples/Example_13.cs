@@ -37,7 +37,7 @@ public class Example_13 {
         reader.Close();
 
         Table table = new Table();
-        table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.SetData(tableData, Table.WITH_2_HEADER_ROWS);
         table.SetBottomMargin(15f);
         table.SetLocation(100f, 50f);
         table.RemoveLineBetweenRows(0, 1);

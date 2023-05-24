@@ -1,6 +1,5 @@
 using System;
 
-
 namespace PDFjet.NET {
 class StandardFont {
 

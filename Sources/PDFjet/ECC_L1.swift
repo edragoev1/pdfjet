@@ -22,11 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 class ECC_L1 {
-
 public static let table: [Int] = [
 522,568,723,809
 ]
-
 }   // End of ECC_L1.swift

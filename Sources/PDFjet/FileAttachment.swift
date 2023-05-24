@@ -37,48 +37,39 @@ public class FileAttachment : Drawable {
     var y: Float = 0.0
     var h: Float = 24.0
 
-
     public init(_ pdf: PDF, _ file: EmbeddedFile) {
         self.pdf = pdf
         self.embeddedFile = file
     }
-
 
     public func setLocation(_ x: Float, _ y: Float) {
         self.x = x
         self.y = y
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     public func setIconPushPin() {
         self.icon = "PushPin"
     }
 
-
     public func setIconPaperclip() {
         self.icon = "Paperclip"
     }
-
 
     public func setIconSize(_ height: Float) {
         self.h = height
     }
 
-
     public func setTitle(_ title: String) {
         self.title = title
     }
 
-
     public func setDescription(_ description: String) {
         self.contents = description
     }
-
 
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

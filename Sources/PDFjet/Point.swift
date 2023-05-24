@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 ///
 /// Used to create point objects with different shapes and draw them on a page.
 /// Please note: When we are mentioning (x, y) coordinates of a point - we are
@@ -31,7 +30,6 @@ SOFTWARE.
 /// Please see Example_05.
 ///
 public class Point : Drawable {
-
     public static let INVISIBLE: Int = -1
     public static let CIRCLE: Int = 0
     public static let DIAMOND: Int = 1
@@ -68,10 +66,8 @@ public class Point : Drawable {
     private var xBox: Float = 0.0
     private var yBox: Float = 0.0
 
-
     public init() {
     }
-
 
     ///
     /// Constructor for creating point objects.
@@ -83,7 +79,6 @@ public class Point : Drawable {
         self.x = x
         self.y = y
     }
-
 
     ///
     /// Constructor for creating point objects.
@@ -101,11 +96,9 @@ public class Point : Drawable {
         self.isControlPoint = isControlPoint
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Sets the location (x, y) of this point.
@@ -120,7 +113,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Sets the x coordinate of this point.
     ///
@@ -132,7 +124,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the x coordinate of this point.
     ///
@@ -141,7 +132,6 @@ public class Point : Drawable {
     public func getX() -> Float {
         return self.x
     }
-
 
     ///
     /// Sets the y coordinate of this point.
@@ -154,7 +144,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the y coordinate of this point.
     ///
@@ -163,7 +152,6 @@ public class Point : Drawable {
     public func getY() -> Float {
         return self.y
     }
-
 
     ///
     /// Sets the radius of this point.
@@ -176,7 +164,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the radius of this point.
     ///
@@ -185,7 +172,6 @@ public class Point : Drawable {
     public func getRadius() -> Float {
         return self.r
     }
-
 
     ///
     /// Sets the shape of this point.
@@ -214,7 +200,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the point shape code value.
     ///
@@ -223,7 +208,6 @@ public class Point : Drawable {
     public func getShape() -> Int {
         return self.shape
     }
-
 
     ///
     /// Sets the private fillShape variable.
@@ -236,7 +220,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the value of the fillShape private variable.
     ///
@@ -245,7 +228,6 @@ public class Point : Drawable {
     public func getFillShape() -> Bool {
         return self.fillShape
     }
-
 
     ///
     /// Sets the pen color for this point.
@@ -258,7 +240,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the point color as an integer.
     ///
@@ -267,7 +248,6 @@ public class Point : Drawable {
     public func getColor() -> Int32 {
         return self.color
     }
-
 
     ///
     /// Sets the width of the lines of this point.
@@ -280,7 +260,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the width of the lines used to draw this point.
     ///
@@ -289,7 +268,6 @@ public class Point : Drawable {
     public func getLineWidth() -> Float {
         return self.lineWidth
     }
-
 
     ///
     /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -320,7 +298,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the line dash pattern.
     ///
@@ -330,7 +307,6 @@ public class Point : Drawable {
         return self.linePattern
     }
 
-
     ///
     /// Sets this point as the start of a path that will be drawn on the chart.
     ///
@@ -339,7 +315,6 @@ public class Point : Drawable {
         self.drawPath = true
         return self
     }
-
 
     ///
     /// Sets the URI for the "click point" action.
@@ -352,7 +327,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the URI for the "click point" action.
     ///
@@ -361,7 +335,6 @@ public class Point : Drawable {
     public func getURIAction() -> String? {
         return self.uri
     }
-
 
     ///
     /// Sets the point text.
@@ -374,7 +347,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the text associated with this point.
     ///
@@ -383,7 +355,6 @@ public class Point : Drawable {
     public func getText() -> String? {
         return self.text
     }
-
 
     ///
     /// Sets the point's text color.
@@ -396,7 +367,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the point's text color.
     ///
@@ -405,7 +375,6 @@ public class Point : Drawable {
     public func getTextColor() -> Int32 {
         return self.textColor
     }
-
 
     ///
     /// Sets the point's text direction.
@@ -418,7 +387,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the point's text direction.
     ///
@@ -427,7 +395,6 @@ public class Point : Drawable {
     public func getTextDirection() -> Int {
         return self.textDirection
     }
-
 
     ///
     /// Sets the point alignment inside table cell.
@@ -440,7 +407,6 @@ public class Point : Drawable {
         return self
     }
 
-
     ///
     /// Returns the point alignment.
     ///
@@ -449,7 +415,6 @@ public class Point : Drawable {
     public func getAlignment() -> UInt32 {
         return self.align
     }
-
 
     ///
     /// Places this point in the specified box at position (0f, 0f).
@@ -461,7 +426,6 @@ public class Point : Drawable {
         placeIn(box, 0.0, 0.0)
         return self
     }
-
 
     ///
     /// Places this point in the specified box.
@@ -479,7 +443,6 @@ public class Point : Drawable {
         self.yBox = box.y + yOffset
         return self
     }
-
 
     ///
     /// Draws this point on the specified page.
@@ -507,5 +470,4 @@ public class Point : Drawable {
 
         return [self.x + self.xBox + self.r, self.y + self.yBox + self.r]
     }
-
 }   // End of Point.swift

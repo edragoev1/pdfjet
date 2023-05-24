@@ -41,7 +41,6 @@ public class CheckBox : Drawable {
     private var font: Font
     private var label: String = ""
     private var uri: String?
-
     private var language: String?
     private var altDescription: String = Single.space
     private var actualText: String = Single.space

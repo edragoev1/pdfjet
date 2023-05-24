@@ -12,11 +12,7 @@ DENSO WAVE INCORPORATED
   http://www.denso-wave.com/qrcode/faqpatent-e.html
 */
 
-
 namespace PDFjet.NET {
-/**
- * @author Kazuhiko Arase
- */
 public class MaskPattern {
     public const int PATTERN000 = 0;
     public const int PATTERN001 = 1;

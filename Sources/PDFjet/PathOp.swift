@@ -25,7 +25,6 @@ import Foundation
 
 public class PathOp {
     var cmd: Character
-    
     var x1q: Float = 0.0    // Original quadratic control
     var y1q: Float = 0.0    // point coordinates
 

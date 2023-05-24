@@ -13,13 +13,11 @@ DENSO WAVE INCORPORATED
 */
 import Foundation
 
-
 /**
  * QRUtil
  * @author Kazuhiko Arase
  */
 class QRUtil {
-
     static let singleton = QRUtil()
 
     private var G15: Int
@@ -183,5 +181,4 @@ class QRUtil {
         }
         return digit
     }
-
 }

@@ -55,7 +55,7 @@ public class Example_15 {
         }
 
         let table = Table()
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
+        table.setData(tableData, Table.WITH_2_HEADER_ROWS)
         table.setCellBordersWidth(0.2)
         table.setLocation(70.0, 30.0)
         table.setColumnWidths()

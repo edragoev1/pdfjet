@@ -2,9 +2,26 @@
  *  TextColumn.swift
  *
 Copyright 2023 Innovatics Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 import Foundation
-
 
 ///
 /// Used to create text column objects and draw them on a page.
@@ -12,7 +29,6 @@ import Foundation
 /// Please see Example_10.
 ///
 public class TextColumn : Drawable {
-
     var alignment = Align.LEFT
     var rotate = 0
 
@@ -20,18 +36,13 @@ public class TextColumn : Drawable {
     private var y: Float = 0.0      // This variable is set in the beginning and only reset after the drawOn
     private var w: Float = 0.0
     private var h: Float = 0.0
-
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var lineHeight: Float = 0.0
-
     private var spaceBetweenLines: Float = 1.0
     private var spaceBetweenParagraphs: Float = 2.0
-
     private var paragraphs: [Paragraph]
-
     private var lineBetweenParagraphs = false
-
 
     ///
     /// Create a text column object.
@@ -39,7 +50,6 @@ public class TextColumn : Drawable {
     public init() {
         self.paragraphs = [Paragraph]()
     }
-
 
     ///
     /// Create a text column object and set the rotation angle.
@@ -57,7 +67,6 @@ public class TextColumn : Drawable {
         self.paragraphs = [Paragraph]()
     }
 
-
     ///
     /// Sets the lineBetweenParagraphs private variable value.
     /// If the value is set to true - an empty line will be inserted between the current and next paragraphs.
@@ -68,21 +77,17 @@ public class TextColumn : Drawable {
         self.lineBetweenParagraphs = lineBetweenParagraphs
     }
 
-
     public func setSpaceBetweenLines(_ spaceBetweenLines: Float) {
         self.spaceBetweenLines = spaceBetweenLines
     }
-
 
     public func setSpaceBetweenParagraphs(_ spaceBetweenParagraphs: Float) {
         self.spaceBetweenParagraphs = spaceBetweenParagraphs
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Sets the position of this text column on the page.
@@ -99,7 +104,6 @@ public class TextColumn : Drawable {
         return self
     }
 
-
     ///
     /// Sets the size of this text column.
     ///
@@ -111,7 +115,6 @@ public class TextColumn : Drawable {
         self.h = h
     }
 
-
     ///
     /// Sets the desired width of this text column.
     ///
@@ -120,7 +123,6 @@ public class TextColumn : Drawable {
     public func setWidth(_ w: Float) {
         self.w = w
     }
-
 
     ///
     /// Sets the text alignment.
@@ -132,7 +134,6 @@ public class TextColumn : Drawable {
         self.alignment = alignment
     }
 
-
     ///
     /// Sets the spacing between the lines in this text column.
     ///
@@ -141,7 +142,6 @@ public class TextColumn : Drawable {
     public func setLineSpacing(_ spacing: Float) {
         self.spaceBetweenLines = spacing
     }
-
 
     ///
     /// Adds a new paragraph to this text column.
@@ -152,7 +152,6 @@ public class TextColumn : Drawable {
         self.paragraphs.append(paragraph)
     }
 
-
     ///
     /// Removes the last paragraph added to this text column.
     ///
@@ -161,7 +160,6 @@ public class TextColumn : Drawable {
             self.paragraphs.removeLast()
         }
     }
-
 
     ///
     /// Returns dimension object containing the width and height of this component.
@@ -173,7 +171,6 @@ public class TextColumn : Drawable {
         let xy = drawOn(nil)
         return Dimension(self.w, xy[1] - self.y)
     }
-
 
     ///
     /// Draws this text column on the specified page if the 'draw' Bool value is 'true'.
@@ -193,7 +190,6 @@ public class TextColumn : Drawable {
         setLocation(self.x, self.y)
         return xy
     }
-
 
     private func drawParagraphOn(
             _ page: Page?,
@@ -252,7 +248,6 @@ public class TextColumn : Drawable {
         return moveToNextParagraph(self.spaceBetweenParagraphs)
     }
 
-
     @discardableResult
     private func moveToNextLine() -> [Float] {
         if rotate == 0 {
@@ -268,7 +263,6 @@ public class TextColumn : Drawable {
         return [x1, y1]
     }
 
-
     private func moveToNextParagraph(_ spaceBetweenParagraphs: Float) -> [Float] {
         if rotate == 0 {
             x1 = x
@@ -282,7 +276,6 @@ public class TextColumn : Drawable {
         }
         return [x1, y1]
     }
-
 
     @discardableResult
     private func drawLineOfText(_ page: Page, _ list: [TextLine]) -> [Float] {
@@ -327,10 +320,8 @@ public class TextColumn : Drawable {
         return [x1, y1]
     }
 
-
     @discardableResult
     private func drawNonJustifiedLine(_ page: Page, _ list: [TextLine]) -> [Float] {
-
         var runLength: Float = 0.0
         for i in 0..<list.count {
             let textLine = list[i]
@@ -389,7 +380,6 @@ public class TextColumn : Drawable {
         return [x1, y1]
     }
 
-
     ///
     /// Adds a new paragraph with Chinese text to this text column.
     ///
@@ -413,7 +403,6 @@ public class TextColumn : Drawable {
         addParagraph(paragraph)
     }
 
-
     ///
     /// Adds a new paragraph with Japanese text to this text column.
     ///
@@ -423,5 +412,4 @@ public class TextColumn : Drawable {
     public func addJapaneseParagraph(_ font: Font, _ japanese: String) {
         addChineseParagraph(font, japanese)
     }
-
 }   // End of TextColumn.swift

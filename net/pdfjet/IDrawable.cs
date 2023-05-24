@@ -22,14 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace PDFjet.NET {
 /**
  * Interface that is required for components that can be drawn on a PDF page as part of Optional Content Group.
  *
  * @author Mark Paxton
  */
+namespace PDFjet.NET {
 public interface IDrawable {
-
     /**
      *  Draw the component implementing this interface on the PDF page.
      *
@@ -39,6 +38,5 @@ public interface IDrawable {
      */
     float[] DrawOn(Page page);
     void SetPosition(float x, float y);
-
 }
 }   // End of namespace PDFjet.NET

@@ -31,7 +31,6 @@ import java.util.*;
  * Please see Example_12.
  */
 public class Barcode2D implements Drawable {
-
     private static final int ALPHA = 0x08;
     private static final int LOWER = 0x04;
     private static final int MIXED = 0x02;

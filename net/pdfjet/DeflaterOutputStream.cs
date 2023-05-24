@@ -24,7 +24,6 @@ SOFTWARE.
 using System.IO;
 using System.IO.Compression;
 
-
 namespace PDFjet.NET {
 public class DeflaterOutputStream {
     private MemoryStream buf1 = null;
@@ -63,6 +62,5 @@ public class DeflaterOutputStream {
         buf1.WriteByte((byte) (adler));
         buf1.Flush();
     }
-
 }   // End of DeflaterOutputStream.cs
 }   // End of package PDFjet.NET

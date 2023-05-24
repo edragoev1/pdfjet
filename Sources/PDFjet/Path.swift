@@ -23,7 +23,6 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create path objects.
 /// The path objects may consist of lines, splines or both.
@@ -31,7 +30,6 @@ import Foundation
 /// Please see Example_02.
 ///
 public class Path : Drawable {
-
     private var color = Color.black
     private var width: Float = 0.3
     private var pattern: String = "[] 0"
@@ -46,14 +44,12 @@ public class Path : Drawable {
     private var lineCapStyle = CapStyle.BUTT
     private var lineJoinStyle = JoinStyle.MITER
 
-
     ///
     /// The default constructor.
     ///
     public init() {
         points = Array<Point>()
     }
-
 
     ///
     /// Adds a point to this path.
@@ -63,7 +59,6 @@ public class Path : Drawable {
     public func add(_ point: Point) {
         points!.append(point)
     }
-
 
     ///
     /// Sets the line dash pattern for this path.
@@ -94,7 +89,6 @@ public class Path : Drawable {
         self.pattern = pattern
     }
 
-
     ///
     /// Sets the pen width that will be used to draw the lines and splines that are part of this path.
     ///
@@ -103,7 +97,6 @@ public class Path : Drawable {
     public func setWidth(_ width: Float) {
         self.width = width
     }
-
 
     ///
     /// Sets the pen color that will be used to draw this path.
@@ -114,7 +107,6 @@ public class Path : Drawable {
         self.color = color
     }
 
-
     ///
     /// Sets the closePath variable.
     ///
@@ -123,7 +115,6 @@ public class Path : Drawable {
     public func setClosePath(_ closePath: Bool) {
         self.closePath = closePath
     }
-
 
     ///
     /// Sets the fillShape private variable.
@@ -135,7 +126,6 @@ public class Path : Drawable {
         self.fillShape = fillShape
     }
 
-
     ///
     /// Sets the line cap style.
     ///
@@ -146,7 +136,6 @@ public class Path : Drawable {
         self.lineCapStyle = style
     }
 
-
     ///
     /// Returns the line cap style for this path.
     ///
@@ -155,7 +144,6 @@ public class Path : Drawable {
     public func getLineCapStyle() -> CapStyle {
         return self.lineCapStyle
     }
-
 
     ///
     /// Sets the line join style.
@@ -166,7 +154,6 @@ public class Path : Drawable {
         self.lineJoinStyle = style
     }
 
-
     ///
     /// Returns the line join style.
     ///
@@ -176,7 +163,6 @@ public class Path : Drawable {
         return self.lineJoinStyle
     }
 
-
     ///
     /// Places this path in the specified box at position (0.0, 0.0).
     ///
@@ -185,7 +171,6 @@ public class Path : Drawable {
     public func placeIn(_ box: Box) {
         placeIn(box, 0.0, 0.0)
     }
-
 
     ///
     /// Places the path inside the spacified box at coordinates (xOffset, yOffset) of the top left corner.
@@ -202,11 +187,9 @@ public class Path : Drawable {
         yBox = box.y + yOffset
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Path {
@@ -214,7 +197,6 @@ public class Path : Drawable {
         yBox += y
         return self
     }
-
 
     ///
     /// Scales the path using the specified factor.
@@ -228,7 +210,6 @@ public class Path : Drawable {
             point.y *= factor
         }
     }
-
 
     ///
     /// Returns a list containing the start point, first control point,
@@ -277,7 +258,6 @@ public class Path : Drawable {
         return list
     }
 
-
     ///
     /// Draws this path on the page using the current selected color, pen width, line pattern and line join style.
     ///
@@ -324,5 +304,4 @@ public class Path : Drawable {
 
         return [xMax, yMax]
     }
-
 }   // End of Path.swift

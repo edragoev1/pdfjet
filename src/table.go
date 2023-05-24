@@ -25,6 +25,9 @@ SOFTWARE.
 */
 
 import (
+	"bufio"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -36,8 +39,8 @@ import (
 // Please see Example_08.
 type Table struct {
 	tableData       [][]*Cell
-	rendered        int
 	numOfHeaderRows int
+	rendered        int
 	x1, y1          float32
 	y1FirstPage     float32
 	bottomMargin    float32
@@ -46,7 +49,7 @@ type Table struct {
 // Constants
 const (
 	TableWith0HeaderRows = iota
-	TableWith1HeaderRows
+	TableWith1HeaderRow
 	TableWith2HeaderRows
 	TableWith3HeaderRows
 	TableWith4HeaderRows
@@ -60,7 +63,59 @@ const (
 // NewTable creates table objects.
 func NewTable() *Table {
 	table := new(Table)
-	table.bottomMargin = 30.0
+	table.numOfHeaderRows = 1
+	return table
+}
+
+func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
+	table := new(Table)
+	table.numOfHeaderRows = 1
+	table.tableData = make([][]*Cell, 0)
+	delimiterRegex := ""
+	numberOfFields := 0
+	lineNumber := 0
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if lineNumber == 0 {
+			delimiterRegex = getDelimiterRegex(line)
+			numberOfFields = len(strings.Split(line, delimiterRegex))
+		}
+		row := make([]*Cell, 0)
+		fields := strings.Split(line, delimiterRegex)
+		for _, field := range fields {
+			if lineNumber == 0 {
+				cell := NewCell(f1, "")
+				textBox := NewTextBox(f1)
+				textBox.SetText(field)
+				cell.SetTextBox(textBox)
+				row = append(row, cell)
+			} else {
+				row = append(row, NewCell(f2, field))
+			}
+		}
+		if len(row) > numberOfFields {
+			row2 := make([]*Cell, 0)
+			for i := 0; i < numberOfFields; i++ {
+				row2 = append(row2, row[i])
+			}
+			table.tableData = append(table.tableData, row2)
+		} else if len(row) < numberOfFields {
+			diff := numberOfFields - len(row)
+			for i := 0; i < diff; i++ {
+				row = append(row, NewCell(f2, ""))
+			}
+			table.tableData = append(table.tableData, row)
+		} else {
+			table.tableData = append(table.tableData, row)
+		}
+		lineNumber++
+	}
 	return table
 }
 
@@ -83,7 +138,6 @@ func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) {
 	table.tableData = tableData
 	table.numOfHeaderRows = numOfHeaderRows
 	table.rendered = numOfHeaderRows
-
 	numOfColumns := len(tableData[0])
 	font := tableData[0][0].font
 	for _, row := range tableData {
@@ -328,12 +382,16 @@ func (table *Table) drawHeaderRows(page *Page) [2]float32 {
 			}
 			if table != nil {
 				page.SetBrushColor(cell.GetBrushColor())
+				if i == (table.numOfHeaderRows - 1) {
+					cell.SetBorder(border.Bottom, true)
+				}
 				cell.DrawOn(page, x, y, w, h)
 			}
 			x += w
 		}
 		x = table.x1
 		y += h
+		table.rendered++
 	}
 	return [2]float32{x, y}
 }
@@ -371,9 +429,11 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 
 func (table *Table) getMaxCellHeight(row []*Cell) float32 {
 	var maxCellHeight float32 = 0.0
-	for _, cell := range row {
-		if cell.GetHeight() > maxCellHeight {
-			maxCellHeight = cell.GetHeight()
+	for i, cell := range row {
+		totalWidth := getTotalWidth(row, i)
+		cellHeight := cell.GetHeight(totalWidth)
+		if cellHeight > maxCellHeight {
+			maxCellHeight = cellHeight
 		}
 	}
 	return maxCellHeight
@@ -503,20 +563,6 @@ func (table *Table) SetColumnWidths() {
 	for _, row := range table.tableData {
 		for i, cell := range row {
 			cell.SetWidth(maxColWidths[i])
-		}
-	}
-	for _, row := range table.tableData {
-		for i, cell := range row {
-			colspan := cell.GetColSpan()
-			if colspan > 1 {
-				if cell.textBox != nil {
-					sumOfWidths := float32(0.0)
-					for j := 0; j < colspan; j++ {
-						sumOfWidths += row[i+j].GetWidth()
-					}
-					cell.textBox.SetWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding))
-				}
-			}
 		}
 	}
 }
@@ -649,4 +695,30 @@ func getNumVerCells(row []*Cell, index int) int {
 		}
 	}
 	return numOfVerCells
+}
+
+func getDelimiterRegex(str string) string {
+	comma := 0
+	pipe := 0
+	tab := 0
+	for _, ch := range str {
+		if ch == ',' {
+			comma++
+		} else if ch == '|' {
+			pipe++
+		} else if ch == '\t' {
+			tab++
+		}
+	}
+	if comma >= pipe {
+		if comma >= tab {
+			return ","
+		}
+		return "\t"
+	} else {
+		if pipe >= tab {
+			return "|"
+		}
+		return "\t"
+	}
 }

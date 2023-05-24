@@ -14,16 +14,13 @@ DENSO WAVE INCORPORATED
 using System;
 using System.Text;
 
-
-namespace PDFjet.NET {
-
 /**
  * Used to create 2D QR Code barcodes. Please see Example_20.
  *
  * @author Kazuhiko Arase
  */
+namespace PDFjet.NET {
 public class QRCode : IDrawable {
-
     private const int PAD0 = 0xEC;
     private const int PAD1 = 0x11;
     private Boolean?[][] modules;
@@ -38,7 +35,6 @@ public class QRCode : IDrawable {
 
     private int color = Color.black;
 
-
     /**
      * Used to create 2D QR Code barcodes.
      *
@@ -52,7 +48,6 @@ public class QRCode : IDrawable {
         this.Make(false, GetBestMaskPattern());
     }
 
-
     /**
      *  Sets the position where this barcode will be drawn on the page.
      *
@@ -63,7 +58,6 @@ public class QRCode : IDrawable {
         SetPosition((float) x, (float) y);
     }
 
-
     /**
      *  Sets the position where this barcode will be drawn on the page.
      *
@@ -73,7 +67,6 @@ public class QRCode : IDrawable {
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location where this barcode will be drawn on the page.
@@ -86,7 +79,6 @@ public class QRCode : IDrawable {
         this.y = y;
     }
 
-
     /**
      *  Sets the module length of this barcode.
      *  The default value is 2.0f
@@ -96,7 +88,6 @@ public class QRCode : IDrawable {
     public void SetModuleLength(double moduleLength) {
         this.m1 = (float) moduleLength;
     }
-
 
     /**
      *  Sets the module length of this barcode.
@@ -111,7 +102,6 @@ public class QRCode : IDrawable {
     public void SetColor(int color) {
         this.color = color;
     }
-
 
     /**
      *  Draws this barcode on the specified page.
@@ -138,8 +128,7 @@ public class QRCode : IDrawable {
     internal bool IsDark(int row, int col) {
         if (modules[row][col] != null) {
             return (bool) modules[row][col];
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -283,11 +272,9 @@ public class QRCode : IDrawable {
             bool mod = (!test && ((bits >> i) & 1) == 1);
             if (i < 6) {
                 modules[i][8] = mod;
-            }
-            else if (i < 8) {
+            } else if (i < 8) {
                 modules[i + 1][8] = mod;
-            }
-            else {
+            } else {
                 modules[moduleCount - 15 + i][8] = mod;
             }
         }
@@ -296,11 +283,9 @@ public class QRCode : IDrawable {
             bool mod = (!test && ((bits >> i) & 1) == 1);
             if (i < 8) {
                 modules[8][moduleCount - i - 1] = mod;
-            }
-            else if (i < 9) {
+            } else if (i < 9) {
                 modules[8][15 - i - 1 + 1] = mod;
-            }
-            else {
+            } else {
                 modules[8][15 - i - 1] = mod;
             }
         }
@@ -413,6 +398,5 @@ public class QRCode : IDrawable {
 
         return data;
     }
-
 }
 }   // End of namespace PDFjet.NET

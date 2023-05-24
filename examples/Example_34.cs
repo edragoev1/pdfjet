@@ -23,7 +23,7 @@ public class Example_34 {
 
         Table table = new Table();
         List<List<Cell>> tableData = GetData(
-        		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2);
+        		"data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
 
         Point p1 = new Point();
         p1.SetShape(Point.CIRCLE);
@@ -52,7 +52,7 @@ public class Example_34 {
         p1.SetURIAction("https://en.wikipedia.org/wiki/United_States");
         tableData[6][3].SetPoint(p1);
 
-        table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.SetData(tableData, Table.WITH_2_HEADER_ROWS);
         table.SetBottomMargin(15f);
         table.SetLocation(70f, 30f);
         table.SetTextColorInRow(6, Color.blue);

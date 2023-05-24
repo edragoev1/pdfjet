@@ -13,16 +13,13 @@ DENSO WAVE INCORPORATED
 */
 import Foundation
 
-
 /**
  * RSBlock
  * @author Kazuhiko Arase
  */
 class RSBlock {
-
     private var totalCount = 0
     private var dataCount = 0
-
 
     init(_ totalCount: Int, _ dataCount: Int) {
         self.totalCount = totalCount

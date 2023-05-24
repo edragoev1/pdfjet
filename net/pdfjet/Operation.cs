@@ -21,14 +21,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify the 'stroke', 'close' and 'fill' operations.
  *
  */
+namespace PDFjet.NET {
 public class Operation {
     public static readonly char STROKE = 'S';
     public static readonly char ClOSE = 's';

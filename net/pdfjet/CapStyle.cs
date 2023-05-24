@@ -23,13 +23,12 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify the cap style of a line.
  *  See the Line class for more information.
  *
  */
+namespace PDFjet.NET {
 public enum CapStyle : Int32 {
     BUTT = 0,
     ROUND,

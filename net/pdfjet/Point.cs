@@ -23,16 +23,14 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to create point objects with different shapes and draw them on a page.
  *  Please note: When we are mentioning (x, y) coordinates of a point - we are talking about the coordinates of the center of the point.
  *
  *  Please see Example_05.
  */
+namespace PDFjet.NET {
 public class Point : IDrawable {
-
     public static readonly int INVISIBLE = -1;
     public static readonly int CIRCLE = 0;
     public static readonly int DIAMOND = 1;
@@ -69,14 +67,12 @@ public class Point : IDrawable {
     private float xBox;
     private float yBox;
 
-
     /**
      *  The default constructor.
      *
      */
     public Point() {
     }
-
 
     /**
      *  Constructor for creating point objects.
@@ -86,7 +82,6 @@ public class Point : IDrawable {
      */
     public Point(double x, double y) : this((float) x, (float) y) {
     }
-
 
     /**
      *  Constructor for creating point objects.
@@ -99,7 +94,6 @@ public class Point : IDrawable {
         this.y = y;
     }
 
-
     /**
      *  Constructor for creating point objects.
      *
@@ -109,7 +103,6 @@ public class Point : IDrawable {
      */
     public Point(double x, double y, bool isControlPoint) : this((float) x, (float) y, isControlPoint) {
     }
-
 
     /**
      *  Constructor for creating point objects.
@@ -124,7 +117,6 @@ public class Point : IDrawable {
         this.isControlPoint = isControlPoint;
     }
 
-
     /**
      *  Sets the position (x, y) of this point.
      *
@@ -134,7 +126,6 @@ public class Point : IDrawable {
     public void SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
     }
-
 
     /**
      *  Sets the position (x, y) of this point.
@@ -146,11 +137,9 @@ public class Point : IDrawable {
         SetLocation(x, y);
     }
 
-
     public void SetXY(float x, float y) {
         SetLocation(x, y);
     }
-
 
     /**
      *  Sets the location (x, y) of this point.
@@ -163,7 +152,6 @@ public class Point : IDrawable {
         this.y = y;
     }
 
-
     /**
      *  Sets the x coordinate of this point.
      *
@@ -172,7 +160,6 @@ public class Point : IDrawable {
     public void SetX(double x) {
         this.x = (float) x;
     }
-
 
     /**
      *  Sets the x coordinate of this point.
@@ -183,7 +170,6 @@ public class Point : IDrawable {
         this.x = x;
     }
 
-
     /**
      *  Returns the x coordinate of this point.
      *
@@ -192,7 +178,6 @@ public class Point : IDrawable {
     public float GetX() {
         return x;
     }
-
 
     /**
      *  Sets the y coordinate of this point.
@@ -203,7 +188,6 @@ public class Point : IDrawable {
         this.y = (float) y;
     }
 
-
     /**
      *  Sets the y coordinate of this point.
      *
@@ -212,7 +196,6 @@ public class Point : IDrawable {
     public void SetY(float y) {
         this.y = y;
     }
-
 
     /**
      *  Returns the y coordinate of this point.
@@ -223,7 +206,6 @@ public class Point : IDrawable {
         return y;
     }
 
-
     /**
      *  Sets the radius of this point.
      *
@@ -232,7 +214,6 @@ public class Point : IDrawable {
     public void SetRadius(double r) {
         this.r = (float) r;
     }
-
 
     /**
      *  Sets the radius of this point.
@@ -243,7 +224,6 @@ public class Point : IDrawable {
         this.r = r;
     }
 
-
     /**
      *  Returns the radius of this point.
      *
@@ -252,7 +232,6 @@ public class Point : IDrawable {
     public float GetRadius() {
         return r;
     }
-
 
     /**
      *  Sets the shape of this point.
@@ -279,7 +258,6 @@ public class Point : IDrawable {
         this.shape = shape;
     }
 
-
     /**
      *  Returns the point shape code value.
      *
@@ -288,7 +266,6 @@ public class Point : IDrawable {
     public int GetShape() {
         return shape;
     }
-
 
     /**
      *  Sets the private fillShape variable.
@@ -299,7 +276,6 @@ public class Point : IDrawable {
         this.fillShape = fillShape;
     }
 
-
     /**
      *  Returns the value of the fillShape private variable.
      *
@@ -308,7 +284,6 @@ public class Point : IDrawable {
     public bool GetFillShape() {
         return fillShape;
     }
-
 
     /**
      *  Sets the pen color for this point.
@@ -321,7 +296,6 @@ public class Point : IDrawable {
         return this;
     }
 
-
     /**
      *  Returns the point color as an integer.
      *
@@ -330,7 +304,6 @@ public class Point : IDrawable {
     public int GetColor() {
         return color;
     }
-
 
     /**
      *  Sets the width of the lines of this point.
@@ -341,7 +314,6 @@ public class Point : IDrawable {
         this.lineWidth = (float) lineWidth;
     }
 
-
     /**
      *  Sets the width of the lines of this point.
      *
@@ -351,7 +323,6 @@ public class Point : IDrawable {
         this.lineWidth = lineWidth;
     }
 
-
     /**
      *  Returns the width of the lines used to draw this point.
      *
@@ -360,7 +331,6 @@ public class Point : IDrawable {
     public float GetLineWidth() {
         return lineWidth;
     }
-
 
     /**
      *
@@ -390,7 +360,6 @@ public class Point : IDrawable {
         this.linePattern = linePattern;
     }
 
-
     /**
      *  Returns the line dash pattern.
      *
@@ -399,7 +368,6 @@ public class Point : IDrawable {
     public String GetLinePattern() {
         return linePattern;
     }
-
 
     /**
      *  Sets this point as the start of a path that will be drawn on the chart.
@@ -411,7 +379,6 @@ public class Point : IDrawable {
         return this;
     }
 
-
     /**
      *  Sets the URI for the "click point" action.
      *
@@ -420,7 +387,6 @@ public class Point : IDrawable {
     public void SetURIAction(String uri) {
         this.uri = uri;
     }
-
 
     /**
      *  Returns the URI for the "click point" action.
@@ -431,7 +397,6 @@ public class Point : IDrawable {
         return uri;
     }
 
-
     /**
      *  Sets the point text.
      *
@@ -440,7 +405,6 @@ public class Point : IDrawable {
     public void SetText(String text) {
         this.text = text;
     }
-
 
     /**
      *  Returns the text associated with this point.
@@ -451,7 +415,6 @@ public class Point : IDrawable {
         return text;
     }
 
-
     /**
      *  Sets the point's text color.
      *
@@ -460,7 +423,6 @@ public class Point : IDrawable {
     public void SetTextColor(int textColor) {
         this.textColor = textColor;
     }
-
 
     /**
      *  Returns the point's text color.
@@ -471,7 +433,6 @@ public class Point : IDrawable {
         return this.textColor;
     }
 
-
     /**
      *  Sets the point's text direction.
      *
@@ -480,7 +441,6 @@ public class Point : IDrawable {
     public void SetTextDirection(int textDirection) {
         this.textDirection = textDirection;
     }
-
 
     /**
      *  Returns the point's text direction.
@@ -491,7 +451,6 @@ public class Point : IDrawable {
         return this.textDirection;
     }
 
-
     /**
      *  Sets the point alignment.
      *
@@ -500,7 +459,6 @@ public class Point : IDrawable {
     public void SetAlignment(uint align) {
         this.align = align;
     }
-
 
     /**
      *  Returns the point alignment.
@@ -511,7 +469,6 @@ public class Point : IDrawable {
         return this.align;
     }
 
-
     /**
      *  Places this point in the specified box at position (0f, 0f).
      *
@@ -520,7 +477,6 @@ public class Point : IDrawable {
     public void PlaceIn(Box box) {
         PlaceIn(box, 0f, 0f);
     }
-
 
     /**
      *  Places this point in the specified box.
@@ -536,7 +492,6 @@ public class Point : IDrawable {
         PlaceIn(box, (float) xOffset, (float) yOffset);
     }
 
-
     /**
      *  Places this point in the specified box.
      *
@@ -551,7 +506,6 @@ public class Point : IDrawable {
         xBox = box.x + xOffset;
         yBox = box.y + yOffset;
     }
-
 
     /**
      *  Draws this point on the specified page.
@@ -578,6 +532,5 @@ public class Point : IDrawable {
 
         return new float[] {x + xBox +  r, y + yBox + r};
     }
-
 }   // End of Point.cs
 }   // End of namespace PDFjet.NET

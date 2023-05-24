@@ -13,14 +13,9 @@
 using System;
 using System.Text;
 
-
 public class Salsa20 {
-
     private String id = null;
-
-
     public Salsa20() {
-
 /*
 The Original Specification:
 
@@ -75,7 +70,6 @@ The expected output:
 0xf62cb407
 0x6bdede3d
 */
-
         int[] a_in = new int[16];
 
         StringBuilder buf =
@@ -91,18 +85,14 @@ The expected output:
         }
 
         id = Bin2hex(Salsa20_word_specification(a_in));
-        // Console.WriteLine(id);
     }
-
 
     private int R(int a, int b) {
         int c = 32 - b;
         return ( a << b ) | (int) ( (uint) a >> c );
     }
 
-
     private int[] Salsa20_word_specification(int[] a_in) {
-
         int[] a_out = new int[16];
         int[] x = new int[16];
 
@@ -136,9 +126,7 @@ The expected output:
         return a_out;
     }
 
-
     private String Bin2hex(int[] binarray) {
-
         String table = "0123456789abcdef";
         StringBuilder buf = new StringBuilder();
 
@@ -157,11 +145,9 @@ The expected output:
         return buf.ToString().Substring(0, 32);
     }
 
-
     public String GetID() {
         return id;
     }
-
 /*
     public static void Main(String[] args) {
         new Salsa20();

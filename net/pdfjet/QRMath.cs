@@ -13,14 +13,11 @@ DENSO WAVE INCORPORATED
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  * QRMath
- * @author Kazuhiko Arase
  */
+namespace PDFjet.NET {
 public class QRMath {
-
     private static readonly int[] EXP_TABLE = new int[256];
     private static readonly int[] LOG_TABLE = new int[256];
 
@@ -45,7 +42,6 @@ public class QRMath {
         if (n < 1) {
             throw new ArithmeticException("log(" + n + ")");
         }
-
         return LOG_TABLE[n];
     }
 
@@ -53,14 +49,10 @@ public class QRMath {
         while (n < 0) {
             n += 255;
         }
-
         while (n >= 256) {
             n -= 255;
         }
-
         return EXP_TABLE[n];
     }
-
 }
-
 }   // End of namespace PDFjet.NET

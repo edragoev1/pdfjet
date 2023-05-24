@@ -22,12 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace PDFjet.NET {
 /**
  *  Encapsulates the width and height of a component.
  */
+namespace PDFjet.NET {
 public class Dimension {
-
     internal float w;
     internal float h;
 
@@ -42,15 +41,12 @@ public class Dimension {
         this.h = height;
     }
 
-
     public float GetWidth() {
         return w;
     }
 
-
     public float GetHeight() {
         return h;
     }
-
 }   // End of Dimension.cs
 }   // End of namespace PDFjet.NET

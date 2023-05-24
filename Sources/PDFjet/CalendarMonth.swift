@@ -23,9 +23,7 @@ SOFTWARE.
 */
 import Foundation
 
-
 public class CalendarMonth : Drawable {
-
     var f1: Font?
     var f2: Font?
 
@@ -38,10 +36,8 @@ public class CalendarMonth : Drawable {
 
     let days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
     //            1     2     3     4     5     6     7     // DAY_OF_WEEK
-
     var daysInMonth: Int?
     var dayOfWeek: Int?
-
 
     public init(_ f1: Font, _ f2: Font, _ year: Int, _ month: Int) {
         self.f1 = f1
@@ -62,11 +58,9 @@ public class CalendarMonth : Drawable {
         dy = dx;
     }
 
-
     public func setHeadFont(_ font: Font) {
         self.f1 = font
     }
-
 
     public func setBodyFont(_ font: Font) {
         self.f2 = font
@@ -75,7 +69,6 @@ public class CalendarMonth : Drawable {
     public func setCellWidth(_ width: Float) {
         self.dx = width
     }
-
 
     public func setCellHeight(_ height: Float) {
         self.dy = height
@@ -89,7 +82,6 @@ public class CalendarMonth : Drawable {
         self.x1 = x
         self.y1 = y
     }
-
 
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -134,11 +126,9 @@ public class CalendarMonth : Drawable {
         return [self.x1 + 7*self.dx, self.y1 + 7*self.dy]
     }
 
-
     private func isLeapYear(_ year: Int) -> Bool {
         return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
     }
-
 
     private func getDaysInMonth(
             _ year: Int,
@@ -147,5 +137,4 @@ public class CalendarMonth : Drawable {
         let daysInMonth = [31, daysInFebruary, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         return daysInMonth[month]
     }
-
 }

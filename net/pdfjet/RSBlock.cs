@@ -1,16 +1,13 @@
 using System.Collections.Generic;
 
-
 namespace PDFjet.NET {
 /**
  * RSBlock
  * @author Kazuhiko Arase
  */
 class RSBlock {
-
     private int totalCount;
     private int dataCount;
-
 
     private RSBlock(int totalCount, int dataCount) {
         this.totalCount = totalCount;
@@ -56,6 +53,5 @@ class RSBlock {
         }
         return null;
     }
-
 }
 }   // End of namespace PDFjet.NET

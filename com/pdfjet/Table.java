@@ -23,6 +23,9 @@ SOFTWARE.
 */
 package com.pdfjet;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -31,19 +34,19 @@ import java.util.*;
  * Please see Example_08.
  */
 public class Table {
-    public static final int DATA_HAS_0_HEADER_ROWS = 0;
-    public static final int DATA_HAS_1_HEADER_ROWS = 1;
-    public static final int DATA_HAS_2_HEADER_ROWS = 2;
-    public static final int DATA_HAS_3_HEADER_ROWS = 3;
-    public static final int DATA_HAS_4_HEADER_ROWS = 4;
-    public static final int DATA_HAS_5_HEADER_ROWS = 5;
-    public static final int DATA_HAS_6_HEADER_ROWS = 6;
-    public static final int DATA_HAS_7_HEADER_ROWS = 7;
-    public static final int DATA_HAS_8_HEADER_ROWS = 8;
-    public static final int DATA_HAS_9_HEADER_ROWS = 9;
+    public static final int WITH_0_HEADER_ROWS = 0;
+    public static final int WITH_1_HEADER_ROW  = 1;
+    public static final int WITH_2_HEADER_ROWS = 2;
+    public static final int WITH_3_HEADER_ROWS = 3;
+    public static final int WITH_4_HEADER_ROWS = 4;
+    public static final int WITH_5_HEADER_ROWS = 5;
+    public static final int WITH_6_HEADER_ROWS = 6;
+    public static final int WITH_7_HEADER_ROWS = 7;
+    public static final int WITH_8_HEADER_ROWS = 8;
+    public static final int WITH_9_HEADER_ROWS = 9;
 
     private List<List<Cell>> tableData;
-    private int numOfHeaderRows = 0;
+    private int numOfHeaderRows = 1;
     private int rendered = 0;
     private float x1;
     private float y1;
@@ -56,6 +59,63 @@ public class Table {
      */
     public Table() {
         tableData = new ArrayList<List<Cell>>();
+    }
+
+    /**
+     * Create a table object.
+     *
+     */
+    public Table(Font f1, Font f2, String fileName) {
+        tableData = new ArrayList<List<Cell>>();
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(fileName));
+            String delimiterRegex = null;
+            int numberOfFields = 0;
+            int lineNumber = 0;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (lineNumber == 0) {
+                    delimiterRegex = getDelimiterRegex(line);
+                    numberOfFields = line.split(delimiterRegex).length;
+                }
+                List<Cell> row = new ArrayList<Cell>();
+                String[] fields = line.split(delimiterRegex);
+                for (String field : fields) {
+                    if (lineNumber == 0) {
+                        Cell cell = new Cell(f1);
+                        cell.setTextBox(new TextBox(f1, field));
+                        row.add(cell);
+                    } else {
+                        row.add(new Cell(f2, field));
+                    }
+                }
+                if (row.size() > numberOfFields) {
+                    List<Cell> row2 = new ArrayList<Cell>();
+                    for (int i = 0; i < numberOfFields; i++) {
+                        row2.add(row.get(i));
+                    }
+                    tableData.add(row2);
+                } else if (row.size() < numberOfFields) {
+                    int diff = numberOfFields - row.size();
+                    for (int i = 0; i < diff; i++) {
+                        row.add(new Cell(f2));
+                    }
+                    tableData.add(row);
+                } else {
+                    tableData.add(row);
+                }
+                lineNumber++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -190,7 +250,7 @@ public class Table {
 
     /**
      * Removes the horizontal lines between the rows from index1 to index2.
-     * 
+     *
      * @param index1 the index of the first specified row.
      * @param index2 the index of the second specified row.
      */
@@ -431,12 +491,16 @@ public class Table {
                 }
                 if (page != null) {
                     page.setBrushColor(cell.getBrushColor());
+                    if (i == (numOfHeaderRows - 1)) {
+                        cell.setBorder(Border.BOTTOM, true);
+                    }
                     cell.drawOn(page, x, y, w, h);
                 }
                 x += w;
             }
             x = x1;
             y += h;
+            rendered++;
         }
         return new float[] {x, y};
     }
@@ -476,9 +540,10 @@ public class Table {
         float maxCellHeight = 0f;
         for (int i = 0; i < row.size(); i++) {
             Cell cell = row.get(i);
-            float totalWidth = cell.getHeight(getTotalWidth(row, i));
-            if (cell.getHeight(totalWidth) > maxCellHeight) {
-                maxCellHeight = cell.getHeight(totalWidth);
+            float totalWidth = getTotalWidth(row, i);
+            float cellHeight = cell.getHeight(totalWidth);
+            if (cellHeight > maxCellHeight) {
+                maxCellHeight = cellHeight;
             }
         }
         return maxCellHeight;
@@ -616,32 +681,6 @@ public class Table {
         for (List<Cell> row : tableData) {
             for (int i = 0; i < row.size(); i++) {
                 row.get(i).setWidth(maxColWidths[i]);
-            }
-        }
-        // for (List<Cell> row : tableData) {
-        //     for (int i = 0; i < row.size(); i++) {
-        //         Cell cell = row.get(i);
-        //         int colspan = cell.getColSpan();
-        //         if (colspan > 1) {
-        //             if (cell.textBox != null) {
-        //                 float sumOfWidths = 0f;
-        //                 for (int j = 0; j < colspan; j++) {
-        //                     sumOfWidths += row.get(i + j).getWidth();
-        //                 }
-        //                 cell.textBox.setWidth(sumOfWidths - (cell.leftPadding + cell.rightPadding));
-        //             }
-        //         }
-        //     }
-        // }
-    }
-
-    public void setTextBox(int column) {
-        for (List<Cell> row : tableData) {
-            for (Cell cell : row) {
-                TextBox textBox = new TextBox(cell.getFont(), cell.text == null ? "" : cell.text);
-                textBox.setWidth(cell.getWidth() - cell.leftPadding);
-                cell.setTextBox(textBox);
-                cell.setText(null);
             }
         }
     }
@@ -782,5 +821,32 @@ public class Table {
             }
         }
         return numOfVerCells;
+    }
+
+    private String getDelimiterRegex(String str) {
+        int comma = 0;
+        int pipe = 0;
+        int tab = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            if (ch == ',') {
+                comma++;
+            } else if (ch == '|') {
+                pipe++;
+            } else if (ch == '\t') {
+                tab++;
+            }
+        }
+        if (comma >= pipe) {
+            if (comma >= tab) {
+                return ",";
+            }
+            return "\t";
+        } else {
+            if (pipe >= tab) {
+                return "\\|";
+            }
+            return "\t";
+        }
     }
 } // End of Table.java

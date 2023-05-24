@@ -22,12 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace PDFjet.NET {
 /**
  *  Used to set PDF/A compliance.
  *  See the constructors in the PDF class.
- *
  */
+namespace PDFjet.NET {
 public class Compliance {
     public static readonly int PDF_UA = 1;
     public static readonly int PDF_A_1A = 2;

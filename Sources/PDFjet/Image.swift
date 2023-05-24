@@ -615,7 +615,7 @@ public class Image : Drawable {
         pdf.append(Token.newline)
         pdf.append("/BitsPerComponent 8\n")
         pdf.append("/Length ")
-        let length = Int(try getUInt32(stream)!)        
+        let length = Int(try getUInt32(stream)!)
         pdf.append(length)
         pdf.append(Token.newline)
         pdf.append(Token.endDictionary)

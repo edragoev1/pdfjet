@@ -15,7 +15,7 @@ public class Example_08 {
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
         // Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream");
         Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
         Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
 
@@ -28,32 +28,28 @@ public class Example_08 {
 
         Barcode barcode = new Barcode(Barcode.CODE128, "Hello, World!");
         barcode.setModuleLength(0.75f);
-        // Uncomment the line below if you want to print the text underneath the barcode.
-        // barcode.setFont(f1);
+        // Uncomment the line below if you want to print the text underneath the
+        // barcode.
+        barcode.setFont(f2);
 
-        Table table = new Table();
-        List<List<Cell>> tableData = getData(
-        		"data/world-communications.txt",
-                "|",
-                Table.DATA_HAS_2_HEADER_ROWS,
-                f1,
-                f2,
-                image,
-                barcode);
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
-        table.getCellAt(5, 0).setImage(image);
-        // table.getCellAt(6, 0).setTextBox(new TextBox(f2, "table.getCellAt(6, 0).getText() Hello, World!"));
-        table.getCellAt(6, 0).setColSpan(8);
-        table.getCellAt(6, 0).setBarcode(barcode);
+        // Table table = new Table(f1, f2, "data/world-communications-1.txt");
+        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_1000.csv");
+        table.getCellAt(4, 0).setImage(image);
+        // table.getCellAt(5, 0).setTextBox(new TextBox(f2, "table.getCellAt(6, 0).getText() Hello, World!"));
+        table.getCellAt(5, 0).setColSpan(8);
+        table.getCellAt(5, 0).setBarcode(barcode);
         table.setFontInRow(14, f3);
-        table.getCellAt(21, 0).setColSpan(6);
-        table.getCellAt(21, 6).setColSpan(2);
+        table.getCellAt(20, 0).setColSpan(6);
+        table.getCellAt(20, 6).setColSpan(2);
         table.setColumnWidths();
         table.setColumnWidth(0, image.getWidth() + 4f);
+        table.setColumnWidth(3, table.getColumnWidth(3) + 10f);
+        table.setColumnWidth(5, table.getColumnWidth(5) + 10f);
         table.rightAlignNumbers();
 
         table.removeLineBetweenRows(0, 1);
         table.setLocation(100f, 0f);
+        table.setFirstPageTopMargin(100f);
         table.setBottomMargin(15f);
         table.setCellBordersWidth(0f);
         table.setTextColorInRow(12, Color.blue);
@@ -71,48 +67,67 @@ public class Example_08 {
         pdf.complete();
     }
 
-    public List<List<String>> getTextData(String fileName, String delimiter) throws Exception {
-        List<List<String>> tableTextData = new ArrayList<List<String>>();
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] cols;
-            if (delimiter.equals("|")) {
-                cols = line.split("\\|", -1);
-            } else if (delimiter.equals("\t")) {
-                cols = line.split("\t", -1);
-            } else {
-                throw new Exception("Only pipes and tabs can be used as delimiters");
+    private String getDelimiterRegex(String str) {
+        int comma = 0;
+        int pipe = 0;
+        int tab = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            if (ch == ',') {
+                comma++;
+            } else if (ch == '|') {
+                pipe++;
+            } else if (ch == '\t') {
+                tab++;
             }
-            tableTextData.add(Arrays.asList(cols));
         }
-        reader.close();
-        return tableTextData;
+        if (comma >= pipe) {
+            if (comma >= tab) {
+                return ",";
+            }
+            return "\t";
+        } else {
+            if (pipe >= tab) {
+                return "\\|";
+            }
+            return "\t";
+        }
     }
 
-    public List<List<Cell>> getData(
-            String fileName,
-            String delimiter,
-            int numOfHeaderRows,
-            Font f1,
-            Font f2,
-            Image image,
-            Barcode barcode) throws Exception {
+    public List<List<Cell>> getTableData(String fileName, char delimiter, Font f1, Font f2) {
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-        List<List<String>> tableTextData = getTextData(fileName, delimiter);
-        int currentRow = 0;
-        for (List<String> rowData : tableTextData) {        	
-        	List<Cell> row = new ArrayList<Cell>();
-            for (int i = 0; i < rowData.size(); i++) {
-            	String text = rowData.get(i).trim();
-                if (currentRow < numOfHeaderRows) {
-                    row.add(new Cell(f1, text));
-                } else {
-                    row.add(new Cell(f2, text));
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(fileName));
+            String delimiterRegex = null;
+            int lineNumber = 0;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (lineNumber == 0) {
+                    delimiterRegex = getDelimiterRegex(line);
                 }
+                List<Cell> row = new ArrayList<Cell>();
+                String[] fields = line.split(delimiterRegex);
+                for (String field : fields) {
+                    if (lineNumber == 0) {
+                        Cell cell = new Cell(f1);
+                        cell.setTextBox(new TextBox(f1, field));
+                        row.add(cell);
+                    } else {
+                        row.add(new Cell(f2, field));
+                    }
+                }
+                tableData.add(row);
+                lineNumber++;
             }
-            tableData.add(row);
-            currentRow++;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
         }
         return tableData;
     }
@@ -123,4 +138,4 @@ public class Example_08 {
         long time1 = System.currentTimeMillis();
         TextUtils.printDuration("Example_08", time0, time1);
     }
-}   // End of Example_08.java
+} // End of Example_08.java

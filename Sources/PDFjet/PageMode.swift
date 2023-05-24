@@ -22,10 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 /**
  *  Used to specify the PDF page mode.
- *
  */
 public class PageMode {
     public static let USE_NONE = "UseNone"             // Neither document outline nor thumbnail images visible

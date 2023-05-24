@@ -23,19 +23,14 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to create PDF destination objects.
- *
- *
  */
+namespace PDFjet.NET {
 public class Destination {
-
     public String name;
     public int pageObjNumber;
     public float yPosition;
-
 
     /**
      *  This class is used to create destination objects.
@@ -49,7 +44,6 @@ public class Destination {
         this.yPosition = (float) yPosition;
     }
 
-
     /**
      *  This class is used to create destination objects.
      *
@@ -62,10 +56,8 @@ public class Destination {
         this.yPosition = yPosition;
     }
 
-
     internal void SetPageObjNumber(int pageObjNumber) {
         this.pageObjNumber = pageObjNumber;
     }
-
 }
 }   // End of namespace PDFjet.NET

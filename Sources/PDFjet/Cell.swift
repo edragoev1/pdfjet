@@ -296,10 +296,11 @@ public class Cell {
      *
      *  @return the cell height.
      */
-    public func getHeight() -> Float {
+    public func getHeight(_ width: Float) -> Float {
         var cellHeight = Float(0.0)
         if textBox != nil {
-            cellHeight = textBox!.drawOn(nil)[1] + topPadding + bottomPadding
+            textBox!.setWidth(width)
+            cellHeight = (textBox!.drawOn(nil)[1] - textBox!.y) + topPadding + bottomPadding
         } else if image != nil {
             cellHeight = image!.getHeight() + topPadding + bottomPadding
         } else if barcode != nil {

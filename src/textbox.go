@@ -400,8 +400,8 @@ func (textBox *TextBox) GetFallbackFont() *Font {
 
 // SetVerticalAlignment sets the vertical alignment of the text in textBox TextBox.
 // Valid values are align.Top, align.Bottom and align.Center
-func (textBox *TextBox) SetVerticalAlignment(alignment int) {
-	textBox.valign = alignment
+func (textBox *TextBox) SetVerticalAlignment(valign int) {
+	textBox.valign = valign
 }
 
 // GetVerticalAlignment returns the vertical alignment setting.

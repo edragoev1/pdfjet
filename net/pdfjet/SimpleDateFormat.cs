@@ -26,16 +26,13 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 public class SimpleDateFormat {
-
     private String format = null;
-
 
     // SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMddHHmmss'Z'");
     // SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     public SimpleDateFormat(String format) {
         this.format = format;
     }
-
 
     public String Format(DateTime now) {
         String dateAndTime = now.Year.ToString();
@@ -77,6 +74,5 @@ public class SimpleDateFormat {
 
         return dateAndTime;
     }
-
 }   // End of SimpleDateFormat.cs
 }   // End of package PDFjet.NET

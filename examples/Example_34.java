@@ -23,7 +23,7 @@ public class Example_34 {
 
         Table table = new Table();
         List<List<Cell>> tableData = getData(
-        		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2);
+        		"data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
 
         Point p1 = new Point();
         p1.setShape(Point.CIRCLE);
@@ -52,7 +52,7 @@ public class Example_34 {
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States");
         tableData.get(6).get(3).setPoint(p1);
 
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.setData(tableData, Table.WITH_2_HEADER_ROWS);
         table.setBottomMargin(15f);
         table.setLocation(70f, 30f);
         table.setTextColorInRow(6, Color.blue);

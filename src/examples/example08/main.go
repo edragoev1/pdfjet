@@ -23,7 +23,7 @@ func Example08() {
 	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	// f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBoldOblique())
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	f3 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream")
 
@@ -39,17 +39,21 @@ func Example08() {
 	// Uncomment the line below if you want to print the text underneath the barcode.
 	// barcode.SetFont(f1);
 
-	table := pdfjet.NewTable()
-	tableData := getData(
-		"data/world-communications.txt", "|", pdfjet.TableWith2HeaderRows, f1, f2, image1, barcode)
-	table.SetData(tableData, pdfjet.TableWith2HeaderRows)
+	// table := pdfjet.NewTable()
+	// tableData := getData(
+	// 	"data/world-communications.txt", "|", pdfjet.TableWith2HeaderRows, f1, f2, image1, barcode)
+	// table.SetData(tableData, pdfjet.TableWith2HeaderRows)
+
+	// table := pdfjet.NewTableFromFile(f1, f2, "data/world-communications-1.txt")
+	table := pdfjet.NewTableFromFile(f1, f2, "data/Electric_Vehicle_Population_1000.csv")
+
 	table.RemoveLineBetweenRows(0, 1)
 	table.SetLocation(100.0, 0.0)
 	table.SetBottomMargin(15.0)
 	table.SetCellBordersWidth(0.0)
 	table.SetTextColorInRow(12, color.Blue)
 	table.SetTextColorInRow(13, color.Red)
-	table.GetCellAt(13, 0).GetTextBox().SetURIAction("http://pdfjet.com")
+	// table.GetCellAt(13, 0).GetTextBox().SetURIAction("http://pdfjet.com") TODO
 	table.SetFontInRow(14, f3)
 	table.GetCellAt(21, 0).SetColSpan(6)
 	table.GetCellAt(21, 6).SetColSpan(2)

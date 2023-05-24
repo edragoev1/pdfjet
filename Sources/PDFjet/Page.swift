@@ -40,7 +40,7 @@ public class Page {
     var buf = [UInt8]()
     var tm: [Float] = [1.0, 0.0, 0.0, 1.0]
     var tm0: [UInt8]
-    var tm1: [UInt8]   
+    var tm1: [UInt8]
     var tm2: [UInt8]
     var tm3: [UInt8]
     var renderingMode = 0
@@ -269,7 +269,7 @@ public class Page {
             _ text: String?,
             _ x: Float,
             _ y: Float) {
-        drawString(font, text, x, y, Color.black, nil)                
+        drawString(font, text, x, y, Color.black, nil)
     }
 
     ///

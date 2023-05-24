@@ -22,11 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace PDFjet.NET {
 /**
  *  Used to select one of the 14 core fonts.
  *  See the Font class for more details.
  */
+namespace PDFjet.NET {
 public enum CoreFont {
         COURIER,
         COURIER_BOLD,

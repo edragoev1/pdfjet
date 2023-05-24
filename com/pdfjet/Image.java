@@ -168,7 +168,7 @@ public class Image implements Drawable {
 
     /**
      * Creates new image from PDFobj
-     * 
+     *
      * @param pdf the PDF
      * @param obj the PDFobj
      * @throws Exception if can not parse the width or height
@@ -257,7 +257,7 @@ public class Image implements Drawable {
 
     /**
      * Sets the location of this image
-     * 
+     *
      * @param x the horizontal location
      * @param y the vertical location
      * @return the image
@@ -302,7 +302,7 @@ public class Image implements Drawable {
 
     /**
      * Resizes the image
-     * 
+     *
      * @param width the desired width
      * @return the image
      */
@@ -313,7 +313,7 @@ public class Image implements Drawable {
 
     /**
      * Resizes the image
-     * 
+     *
      * @param height the desired height
      * @return the image
      */
@@ -551,8 +551,7 @@ public class Image implements Drawable {
         pdf.append("/Subtype /Image\n");
         if (imageType == ImageType.JPG) {
             pdf.append("/Filter /DCTDecode\n");
-        }
-        else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
+        } else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
             pdf.append("/Filter /FlateDecode\n");
             if (alpha != null) {
                 pdf.append("/SMask ");
@@ -641,8 +640,7 @@ public class Image implements Drawable {
         pdf.append("/ColorSpace /");
         if (c == 1) {
             pdf.append("DeviceGray");
-        }
-        else if (c == 3 || c == 6) {
+        } else if (c == 3 || c == 6) {
             pdf.append("DeviceRGB");
         }
         pdf.append('\n');
@@ -726,8 +724,7 @@ public class Image implements Drawable {
         if (imageType == ImageType.JPG) {
             obj.dict.add("/Filter");
             obj.dict.add("/DCTDecode");
-        }
-        else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
+        } else if (imageType == ImageType.PNG || imageType == ImageType.BMP) {
             obj.dict.add("/Filter");
             obj.dict.add("/FlateDecode");
             if (alpha != null) {
@@ -770,7 +767,7 @@ public class Image implements Drawable {
 
     /**
      * Resizes this image
-     * 
+     *
      * @param page the PDF page
      * @param keepAspectRatio flag
      */
@@ -784,7 +781,7 @@ public class Image implements Drawable {
 
     /**
      * Flips this image upside down
-     * 
+     *
      * @param flipUpsideDown flag
      */
     public void flipUpsideDown(boolean flipUpsideDown) {

@@ -40,7 +40,7 @@ public class EmbeddedFile {
 
     public EmbeddedFile(PDF pdf, String fileName, boolean compress) throws Exception {
         this(pdf, fileName.substring(fileName.lastIndexOf("/") + 1),
-                new BufferedInputStream(new FileInputStream(fileName)), compress); 
+                new BufferedInputStream(new FileInputStream(fileName)), compress);
     }
 
     public EmbeddedFile(PDF pdf, String fileName, InputStream stream, boolean compress) throws Exception {

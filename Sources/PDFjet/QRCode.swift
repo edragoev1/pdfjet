@@ -11,12 +11,10 @@ The word "QR Code" is registered trademark of
 DENSO WAVE INCORPORATED
   http://www.denso-wave.com/qrcode/faqpatent-e.html
 */
-
 ///
 /// Modified and adapted for use in PDFjet by Eugene Dragoev
 ///
 import Foundation
-
 
 ///
 /// Used to create 2D QR Code barcodes. Please see Example_21.
@@ -24,7 +22,6 @@ import Foundation
 /// @author Kazuhiko Arase
 ///
 public class QRCode : Drawable {
-
     private let PAD0: UInt32 = 0xEC
     private let PAD1: UInt32 = 0x11
     private var modules: [[Bool?]]?
@@ -38,7 +35,6 @@ public class QRCode : Drawable {
     private var m1: Float = 2.0             // Module length
 
     private var color: Int32 = Color.black
-
 
     ///
     /// Used to create 2D QR Code barcodes.
@@ -55,11 +51,9 @@ public class QRCode : Drawable {
         self.make(false, getBestMaskPattern())
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     ///
     /// Sets the location where this barcode will be drawn on the page.
@@ -74,7 +68,6 @@ public class QRCode : Drawable {
         return self
     }
 
-
     ///
     /// Sets the module length of this barcode.
     /// The default value is 2.0
@@ -86,7 +79,6 @@ public class QRCode : Drawable {
         self.m1 = moduleLength
         return self
     }
-
 
     public func setColor(_ color: Int32) {
         self.color = color
@@ -406,5 +398,4 @@ public class QRCode : Drawable {
 
         return data
     }
-
 }

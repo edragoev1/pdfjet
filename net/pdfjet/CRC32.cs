@@ -1,9 +1,7 @@
 using System;
 
-
 namespace PDFjet.NET {
 public class CRC32 {
-
     readonly static uint[] table = new uint[] {
             0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419,
             0x706AF48F, 0xE963A535, 0x9E6495A3, 0x0EDB8832, 0x79DCB8A4,
@@ -59,14 +57,11 @@ public class CRC32 {
             0x2D02EF8D
     };
 
-
     private UInt32 crc;
-
 
     public CRC32() {
         crc = 0xffffffff;
     }
-
 
     public void Update(byte[] data, int off, int len) {
         for (int i = off; i < len; i++) {
@@ -74,10 +69,8 @@ public class CRC32 {
         }
     }
 
-
     public long GetValue() {
         return ~crc;
     }
-
 }
 }   // End of namespace PDFjet.NET

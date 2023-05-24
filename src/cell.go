@@ -240,10 +240,11 @@ func (cell *Cell) SetPadding(padding float32) {
 
 // GetHeight returns the cell height.
 // @return the cell height.
-func (cell *Cell) GetHeight() float32 {
+func (cell *Cell) GetHeight(width float32) float32 {
 	cellHeight := float32(0.0)
 	if cell.textBox != nil {
-		cellHeight = cell.textBox.DrawOn(nil)[1] + cell.topPadding + cell.bottomPadding
+		cell.textBox.SetWidth(width)
+		cellHeight = (cell.textBox.DrawOn(nil)[1] - cell.textBox.y) + cell.topPadding + cell.bottomPadding
 	} else if cell.image != nil {
 		cellHeight = cell.image.GetHeight() + cell.topPadding + cell.bottomPadding
 	} else if cell.barcode != nil {

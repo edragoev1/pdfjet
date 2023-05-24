@@ -23,12 +23,12 @@ SOFTWARE.
 */
 using System.Collections.Generic;
 
-namespace PDFjet.NET {
 /**
  *  Used to create paragraph objects.
  *  See the TextColumn class for more information.
  *
  */
+namespace PDFjet.NET {
 public class Paragraph {
     public float xText;
     public float yText;

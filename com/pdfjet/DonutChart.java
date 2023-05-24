@@ -34,7 +34,7 @@ public class DonutChart {
     Float r2;
     List<Slice> slices;
     boolean isDonutChart = true;
-    
+
     public DonutChart(Font f1, Font f2, boolean isDonutChart) {
         this.f1 = f1;
         this.f2 = f2;

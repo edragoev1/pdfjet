@@ -27,11 +27,11 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-namespace PDFjet.NET {
 /**
  *  Used to create PDF objects that represent PDF documents.
  *
  */
+namespace PDFjet.NET {
 public class PDF {
     private bool eval = false;
 
@@ -1111,7 +1111,6 @@ public class PDF {
 
         return sorted;
     }
-
 
     public List<PDFobj> Read(Stream inputStream) {
         byte[] buf = Contents.GetFromStream(inputStream);

@@ -69,7 +69,7 @@ public class Example_15 {
         }
 
         Table table = new Table();
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.setData(tableData, Table.WITH_2_HEADER_ROWS);
         table.setBottomMargin(15f);
         table.setLocation(70f, 30f);
         table.setColumnWidths();

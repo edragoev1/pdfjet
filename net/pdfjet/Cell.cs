@@ -44,6 +44,7 @@ public class Cell {
     internal float leftPadding = 2f;
     internal float rightPadding = 2f;
     internal float lineWidth = 0f;
+
     private int background = -1;
     private int pen = Color.black;
     private int brush = Color.black;
@@ -292,7 +293,7 @@ public class Cell {
         float cellHeight = 0f;
         if (textBox != null) {
             textBox.SetWidth(width);
-            cellHeight = textBox.DrawOn(null)[1] + topPadding + bottomPadding;
+            cellHeight = (textBox.DrawOn(null)[1] - textBox.y) + topPadding + bottomPadding;
         } else if (image != null) {
             cellHeight = image.GetHeight() + topPadding + bottomPadding;
         } else if (barcode != null) {

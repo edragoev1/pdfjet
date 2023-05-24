@@ -47,7 +47,6 @@ public class TextBox implements Drawable {
     protected Font font;
     protected Font fallbackFont;
     protected String text;
-
     protected float x;
     protected float y;
     protected float width = 300f;
@@ -61,7 +60,6 @@ public class TextBox implements Drawable {
     private int brush = Color.black;
     private int valign = Align.TOP;
     private Map<String, Integer> colors = null;
-
     // TextBox properties
     // Future use:
     // bits 0 to 15
@@ -79,7 +77,6 @@ public class TextBox implements Drawable {
     // Future use:
     // bits 24 to 31
     private int properties = 0x00000001;
-
     private String language = "en-US";
     private String altDescription = "";
     private String uri = null;
@@ -635,10 +632,10 @@ public class TextBox implements Drawable {
     /**
      * Sets the vertical alignment of the text in this TextBox.
      *
-     * @param alignment - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
+     * @param valign - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
      */
-    public void setVerticalAlignment(int alignment) {
-        this.valign = alignment;
+    public void setVerticalAlignment(int valign) {
+        this.valign = valign;
     }
 
     public int getVerticalAlignment() {

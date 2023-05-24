@@ -23,13 +23,11 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create Java or .NET objects that represent the objects in PDF document.
 /// See the PDF specification for more information.
 ///
 public final class PDFobj {
-
     var number = 0                  // The object number
     var offset = 0                  // The object offset
     final var dict = [String]()
@@ -38,16 +36,13 @@ public final class PDFobj {
     final var data = [UInt8]()      // The decompressed data
     var gsNumber = -1
 
-
     public init() {
 
     }
 
-
     final func getNumber() -> Int {
         return self.number
     }
-
 
     ///
     /// Returns the object dictionary.
@@ -58,7 +53,6 @@ public final class PDFobj {
         return self.dict
     }
 
-
     ///
     /// Returns the uncompressed stream data.
     ///
@@ -68,16 +62,13 @@ public final class PDFobj {
         return self.data
     }
 
-
     public final func setData(_ data: inout [UInt8]) {
         self.data = data
     }
 
-
     public final func getStream() -> [UInt8]? {
         return self.stream
     }
-
 
     final func setStreamAndData(_ buffer: inout [UInt8], _ length: Int) throws {
         if stream == nil {
@@ -95,16 +86,13 @@ public final class PDFobj {
         }
     }
 
-
     public final func setStream(_ stream: inout [UInt8]) {
         self.stream = stream
     }
 
-
     final func setNumber(_ number: Int) {
         self.number = number
     }
-
 
     ///
     /// Returns the dictionary value for the specified key.
@@ -149,7 +137,6 @@ public final class PDFobj {
         return ""
     }
 
-
     final func getObjectNumbers(_ key: String) -> [Int] {
         var numbers = [Int]()
         var i = 0
@@ -178,7 +165,6 @@ public final class PDFobj {
         return numbers
     }
 
-
     final func getPageSize() -> [Float] {
         for i in 0..<dict.count {
             if dict[i] == "/MediaBox" {
@@ -187,7 +173,6 @@ public final class PDFobj {
         }
         return Letter.PORTRAIT
     }
-
 
     final func getLength(_ objects: inout [PDFobj]) -> Int? {
         for i in 0..<dict.count {
@@ -204,20 +189,17 @@ public final class PDFobj {
         return nil
     }
 
-
     private final func getLength(
             _ number: Int,
             from objects: inout [PDFobj]) -> Int? {
         return Int(objects[number - 1].dict[3])
     }
 
-
     private final func getObject(
             number: Int,
             from objects: inout [PDFobj]) -> PDFobj? {
         return objects[number - 1]
     }
-
 
     public final func getContentsObject(_ objects: inout [PDFobj]) -> PDFobj? {
         for i in 0..<dict.count {
@@ -230,7 +212,6 @@ public final class PDFobj {
         }
         return nil
     }
-
 
     final func getResourcesObject(_ objects: inout [PDFobj]) -> PDFobj? {
         var i = 0
@@ -246,7 +227,6 @@ public final class PDFobj {
         }
         return nil
     }
-
 
     final func addResource(
             _ coreFont: CoreFont,
@@ -268,7 +248,6 @@ public final class PDFobj {
             obj.dict.append("/WinAnsiEncoding")
         }
         obj.dict.append(">>")
-
         objects.append(obj)
 
         var i = 0
@@ -289,13 +268,11 @@ public final class PDFobj {
         return font
     }
 
-
     private final func addFontResource(
             _ obj: PDFobj,
             _ objects: inout [PDFobj],
             _ fontID: String,
             _ number: Int) {
-
         var fonts: Bool = false
         var i = 0
         while i < obj.dict.count {
@@ -347,7 +324,6 @@ public final class PDFobj {
         }
     }
 
-
     private final func insertNewObject(
             _ dict: inout [String],
             _ list: inout [String],
@@ -363,7 +339,6 @@ public final class PDFobj {
             return
         }
     }
-
 
     private final func addResource(
             _ type: String,
@@ -402,7 +377,6 @@ public final class PDFobj {
         }
     }
 
-
     final func addResource(
             _ image: Image,
             _ objects: inout [PDFobj]) {
@@ -419,7 +393,6 @@ public final class PDFobj {
             }
         }
     }
-
 
     final func addResource(
             _ font: Font,
@@ -438,7 +411,6 @@ public final class PDFobj {
         }
     }
 
-
     private final func firstCharIsDigit(_ str: String) -> Bool {
         for scalar in str.unicodeScalars {
             if CharacterSet.decimalDigits.contains(scalar) {
@@ -448,7 +420,6 @@ public final class PDFobj {
         }
         return false
     }
-
 
     public final func addContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
         let obj = PDFobj()
@@ -501,7 +472,6 @@ public final class PDFobj {
             i += 1
         }
     }
-
 
     ///
     /// Adds new content object before the existing content objects.
@@ -560,7 +530,6 @@ public final class PDFobj {
         }
     }
 
-
     private final func getMaxGSNumber(_ obj: PDFobj) -> Int {
         var numbers = [Int]()
         for token in obj.dict {
@@ -573,7 +542,6 @@ public final class PDFobj {
         }
         return numbers.last!
     }
-
 
     public final func setGraphicsState(_ gs: GraphicsState, _ objects: inout [PDFobj]) {
         var obj: PDFobj?
@@ -643,5 +611,4 @@ public final class PDFobj {
         var array = Array(buf.utf8)
         addPrefixContent(&array, &objects)
     }
-
 }

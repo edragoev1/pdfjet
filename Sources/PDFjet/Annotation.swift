@@ -22,12 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 ///
 /// Used to create PDF annotation objects.
 ///
 class Annotation {
-
     var objNumber = 0
     var uri: String?
     var key: String?
@@ -41,7 +39,6 @@ class Annotation {
     var altDescription: String?
 
     var fileAttachment: FileAttachment?
-
 
     ///
     /// This class is used to create annotation objects.
@@ -73,5 +70,4 @@ class Annotation {
         self.actualText = (actualText == nil) ? uri : actualText
         self.altDescription = (altDescription == nil) ? uri : altDescription
     }
-
 }

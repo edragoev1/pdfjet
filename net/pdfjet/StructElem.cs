@@ -23,11 +23,10 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Defines the StructElem types.
  */
+namespace PDFjet.NET {
 public class StructElem {
     public const String DOCUMENT = "Document";
     public const String DOCUMENTFRAGMENT = "DocumentFragment";

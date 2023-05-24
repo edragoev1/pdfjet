@@ -59,7 +59,7 @@ public class OTF {
 
     /**
      * Creates OTF object
-     * 
+     *
      * @param stream the input stream
      * @throws Exception if there is a problem
      */
@@ -108,7 +108,6 @@ public class OTF {
 
         // This table must be processed last
         cmap(cmapTable);
-
         baos = new ByteArrayOutputStream();
         DeflaterOutputStream dos =
                 new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_SPEED));
@@ -331,7 +330,6 @@ public class OTF {
         return val;
     }
 }   // End of OTF.java
-
 
 class FontTable {
     protected String name;

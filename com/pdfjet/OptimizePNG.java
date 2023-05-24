@@ -36,7 +36,7 @@ import java.util.zip.InflaterInputStream;
 public class OptimizePNG {
     /**
      * Converts font TTF or OTF file to .ttf.stream .otf.stream
-     * 
+     *
      * @param args the arguments
      * @throws Exception if the image file is not found
      */

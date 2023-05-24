@@ -23,17 +23,14 @@ SOFTWARE.
 */
 using System;
 
-
 namespace PDFjet.NET {
 class State {
-
     private float[] pen;
     private float[] brush;
     private float penWidth;
     private CapStyle lineCapStyle;
     private JoinStyle lineJoinStyle;
     private String linePattern;
-
 
     public State(
             float[] pen,
@@ -50,35 +47,28 @@ class State {
         this.linePattern = linePattern;
     }
 
-
     public float[] GetPen() {
         return pen;
     }
-
 
     public float[] GetBrush() {
         return brush;
     }
 
-
     public float GetPenWidth() {
         return penWidth;
     }
-
 
     public CapStyle GetLineCapStyle() {
         return lineCapStyle;
     }
 
-
     public JoinStyle GetLineJoinStyle() {
         return lineJoinStyle;
     }
 
-
     public String GetLinePattern() {
         return linePattern;
     }
-
 }   // End of State.cs
 }   // End of namespace PDFjet.NET

@@ -13,7 +13,7 @@ public class Example_08 {
         // let f2 = Font(pdf, CoreFont.HELVETICA)
         // let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
 
-        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
+        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream")
         let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
         let f3 = try Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream")
 
@@ -30,18 +30,20 @@ public class Example_08 {
         // Uncomment the line below if you want to print the text underneath the barcode.
         // barcode.setFont(f1)
 
-        let table = Table();
-        let tableData = try getData(
-        		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2, image1, barcode)
+        // let table = Table();
+        // let tableData = try getData(
+        // 		"data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2, image1, barcode)
+        // table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
 
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
+        let table = try Table(f1, f2, "data/world-communications.txt");
+        // let table = try Table(f1, f2, "data/Electric_Vehicle_Population_1000.csv");
         table.removeLineBetweenRows(0, 1)
         table.setLocation(100.0, 0.0)
         table.setBottomMargin(15.0)
         table.setCellBordersWidth(0.0)
         table.setTextColorInRow(12, Color.blue)
         table.setTextColorInRow(13, Color.red)
-        table.getCellAt(13, 0).getTextBox()!.setURIAction("http://pdfjet.com")
+        // table.getCellAt(13, 0).getTextBox()!.setURIAction("http://pdfjet.com") TODO
         table.setFontInRow(14, f3)
         table.getCellAt(21, 0).setColSpan(6)
         table.getCellAt(21, 6).setColSpan(2)

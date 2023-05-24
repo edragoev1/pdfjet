@@ -23,13 +23,12 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify PDF page with size <strong>Executive</strong>.
  *  For more information about the page size classes - A3, A4, A5, B5, Executive, Letter, Legal and Tabloid - see the Page class.
  *
  */
+namespace PDFjet.NET {
 public class Executive {
     public static readonly float[] PORTRAIT = new float[] {522.0f, 756.0f};
     public static readonly float[] LANDSCAPE = new float[] {756.0f, 522.0f};

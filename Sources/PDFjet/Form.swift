@@ -23,12 +23,10 @@ SOFTWARE.
 */
 import Foundation
 
-
 /**
  *  Please see Example_45
  */
 public class Form : Drawable {
-
     private var fields: [Field]
     private var x: Float = 0.0
     private var y: Float = 0.0
@@ -42,16 +40,13 @@ public class Form : Drawable {
     private var labelColor: Int32 = Color.black
     private var valueColor: Int32 = Color.blue
 
-
     public init(_ fields: [Field]) {
         self.fields = fields
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }
-
 
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Form {
@@ -60,13 +55,11 @@ public class Form : Drawable {
         return self
     }
 
-
     @discardableResult
     public func setRowLength(_ rowLength: Float) -> Form {
         self.rowLength = rowLength
         return self
     }
-
 
     @discardableResult
     public func setRowHeight(_ rowHeight: Float) -> Form {
@@ -74,13 +67,11 @@ public class Form : Drawable {
         return self
     }
 
-
     @discardableResult
     public func setLabelFont(_ f1: Font) -> Form {
         self.f1 = f1
         return self
     }
-
 
     @discardableResult
     public func setLabelFontSize(_ labelFontSize: Float) -> Form {
@@ -88,13 +79,11 @@ public class Form : Drawable {
         return self
     }
 
-
     @discardableResult
     public func setValueFont(_ f2: Font) -> Form {
         self.f2 = f2
         return self
     }
-
 
     @discardableResult
     public func setValueFontSize(_ valueFontSize: Float) -> Form {
@@ -102,20 +91,17 @@ public class Form : Drawable {
         return self
     }
 
-
     @discardableResult
     public func setLabelColor(_ labelColor: Int32) -> Form {
         self.labelColor = labelColor
         return self
     }
 
-
     @discardableResult
     public func setValueColor(_ valueColor: Int32) -> Form {
         self.valueColor = valueColor
         return self
     }
-
 
     /**
      *  Draws this Form on the specified page.
@@ -146,7 +132,6 @@ public class Form : Drawable {
         }
 
         let boxHeight = rowHeight * Float(numberOfRows)
-
         let box = Box()
                 .setLocation(self.x, self.y)
                 .setSize(rowLength, boxHeight)
@@ -193,7 +178,6 @@ public class Form : Drawable {
         return [self.x + rowLength, self.y + boxHeight]
     }
 
-
     public func format(
             _ title: String,
             _ text: String,
@@ -237,5 +221,4 @@ public class Form : Drawable {
 
         return lines
     }
-
 }   // End of Form.swift

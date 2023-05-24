@@ -44,25 +44,22 @@ namespace PDFjet.NET {
  *  It was completely rewritten in 2013 by Eugene Dragoev.
  */
 public class TextBox : IDrawable {
-    public Font font;
-    public Font fallbackFont;
-    public String text;
-
-    private float x;
-    private float y;
-
-    private float width = 300f;
-    private float height = 0f;
-    private float spacing = 0f;
-    private float margin = 0f;
-    private float lineWidth;
+    internal Font font;
+    internal Font fallbackFont;
+    internal String text;
+    internal float x;
+    internal float y;
+    internal float width = 300f;
+    internal float height = 0f;
+    internal float spacing = 0f;
+    internal float margin = 0f;
+    internal float lineWidth = 0f;
 
     private int background = Color.transparent;
     private int pen = Color.black;
     private int brush = Color.black;
     private uint valign = Align.TOP;
     private Dictionary<String, Int32> colors = null;
-
     // TextBox properties
     // Future use:
     // bits 0 to 15
@@ -80,7 +77,6 @@ public class TextBox : IDrawable {
     // Future use:
     // bits 24 to 31
     private uint properties = 0x00000001;
-
     private String language = "en-US";
     private String altDescription = "";
     private String uri = null;
@@ -624,10 +620,10 @@ public class TextBox : IDrawable {
     /**
      *  Sets the vertical alignment of the text in this TextBox.
      *
-     *  @param alignment - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
+     *  @param valign - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
      */
-    public void SetVerticalAlignment(uint alignment) {
-        this.valign = alignment;
+    public void SetVerticalAlignment(uint valign) {
+        this.valign = valign;
     }
 
     public uint GetVerticalAlignment() {

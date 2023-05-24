@@ -18,7 +18,7 @@ public class Example_34 {
 
         let table = Table()
         let tableData = try getData(
-                "data/world-communications.txt", "|", Table.DATA_HAS_2_HEADER_ROWS, f1, f2)
+                "data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2)
 
         var p1 = Point()
         p1.setShape(Point.CIRCLE)
@@ -47,7 +47,7 @@ public class Example_34 {
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
         tableData[6][3].setPoint(p1)
 
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
+        table.setData(tableData, Table.WITH_2_HEADER_ROWS)
         table.setBottomMargin(15.0)
         table.setCellBordersWidth(0.2)
         table.setLocation(70.0, 30.0)

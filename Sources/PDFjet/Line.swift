@@ -23,14 +23,12 @@ SOFTWARE.
 */
 import Foundation
 
-
 ///
 /// Used to create line objects.
 ///
 /// Please see Example_01.
 ///
 public class Line : Drawable {
-
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var x2: Float = 0.0
@@ -48,13 +46,11 @@ public class Line : Drawable {
     private var actualText: String = Single.space
     private var altDescription: String = Single.space
 
-
     ///
     /// The default constructor.
     ///
     public init() {
     }
-
 
     ///
     /// Create a line object.
@@ -70,7 +66,6 @@ public class Line : Drawable {
         self.x2 = x2
         self.y2 = y2
     }
-
 
     ///
     /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -102,11 +97,9 @@ public class Line : Drawable {
         return self
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         setStartPoint(x, y)
     }
-
 
     ///
     /// Sets the x and y coordinates of the start point.
@@ -122,7 +115,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Sets the x and y coordinates of the start point.
     ///
@@ -137,7 +129,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Returns the start point of this line.
     ///
@@ -146,7 +137,6 @@ public class Line : Drawable {
     public func getStartPoint() -> Point {
         return Point(x1, y1)
     }
-
 
     ///
     /// Sets the x and y coordinates of the end point.
@@ -162,7 +152,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Sets the x and y coordinates of the end point.
     ///
@@ -177,7 +166,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Returns the end point of this line.
     ///
@@ -186,7 +174,6 @@ public class Line : Drawable {
     public func getEndPoint() -> Point {
         return Point(x2, y2)
     }
-
 
     ///
     /// Sets the width of this line.
@@ -200,7 +187,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Sets the color for this line.
     ///
@@ -212,7 +198,6 @@ public class Line : Drawable {
         self.color = color
         return self
     }
-
 
     ///
     /// Sets the line cap style.
@@ -227,7 +212,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Returns the line cap style.
     ///
@@ -236,7 +220,6 @@ public class Line : Drawable {
     public func getCapStyle() -> CapStyle {
         return self.capStyle
     }
-
 
     ///
     /// Sets the alternate description of this line.
@@ -250,7 +233,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Sets the actual text for this line.
     ///
@@ -263,7 +245,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Places this line in the specified box at position (0.0f, 0.0f).
     ///
@@ -274,7 +255,6 @@ public class Line : Drawable {
     public func placeIn(_ box: Box) -> Line {
         return placeIn(box, 0.0, 0.0)
     }
-
 
     ///
     /// Places this line in the specified box.
@@ -294,7 +274,6 @@ public class Line : Drawable {
         return self
     }
 
-
     ///
     /// Scales this line by the spacified factor.
     ///
@@ -309,7 +288,6 @@ public class Line : Drawable {
         self.y2 *= factor
         return self
     }
-
 
     ///
     /// Draws this line on the specified page.
@@ -336,5 +314,4 @@ public class Line : Drawable {
         let yMax = Float(max(y1 + yBox, y2 + yBox))
         return [xMax, yMax]
     }
-
 }   // End of Line.swift

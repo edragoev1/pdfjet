@@ -33,7 +33,7 @@ public class Example_13 {
         }
 
         let table = Table()
-        table.setData(tableData, Table.DATA_HAS_2_HEADER_ROWS)
+        table.setData(tableData, Table.WITH_2_HEADER_ROWS)
         table.setLocation(100.0, 50.0)
         setFontForRow(table, 0, f1)
         setFontForRow(table, 1, f1)

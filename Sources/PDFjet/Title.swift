@@ -22,15 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 ///
 /// Please see Example_51 and Example_52
 ///
 public class Title : Drawable {
-
     public var prefix: TextLine?
     public var textLine: TextLine?
-
 
     public init(_ font: Font, _ title: String, _ x: Float, _ y: Float) {
         self.prefix = TextLine(font)
@@ -39,24 +36,20 @@ public class Title : Drawable {
         self.textLine!.setLocation(x, y)
     }
 
-
     public func setPrefix(_ text: String) -> Title {
         prefix!.setText(text)
         return self
     }
-
 
     public func setOffset(_ offset: Float) -> Title {
         self.textLine!.setLocation(textLine!.x + offset, textLine!.y)
         return self
     }
 
-
     public func setPosition(_ x: Float, _ y: Float) {
         self.prefix!.setLocation(x, y)
         self.textLine!.setLocation(x, y)
     }
-
 
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -65,5 +58,4 @@ public class Title : Drawable {
         }
         return self.textLine!.drawOn(page)
     }
-
 }

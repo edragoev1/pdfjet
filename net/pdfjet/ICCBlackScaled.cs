@@ -1,6 +1,5 @@
 using System;
 
-
 namespace PDFjet.NET {
 class ICCBlackScaled {
     public static byte[] profile = {

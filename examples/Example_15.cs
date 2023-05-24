@@ -64,7 +64,7 @@ public class Example_15 {
         }
 
         Table table = new Table();
-        table.SetData(tableData, Table.DATA_HAS_2_HEADER_ROWS);
+        table.SetData(tableData, Table.WITH_2_HEADER_ROWS);
         table.SetBottomMargin(15f);
         table.SetLocation(70f, 30f);
         table.SetColumnWidths();

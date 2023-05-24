@@ -23,12 +23,11 @@ SOFTWARE.
 */
 using System;
 
-
-namespace PDFjet.NET {
 /**
  *  Used to specify the PDF page layout.
  *
  */
+namespace PDFjet.NET {
 public class PageLayout {
     public const String SINGLE_PAGE = "SinglePage";          // Display one page at a time
     public const String ONE_COLUMN = "OneColumn";            // Display the pages in one column
