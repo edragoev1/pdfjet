@@ -5,12 +5,11 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/compliance"
 )
 
 // Example35 -- TODO:
 func Example35() {
-	pdf := pdfjet.NewPDFFile("Example_35.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_35.pdf")
 	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg")
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)

@@ -5,12 +5,11 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/compliance"
 )
 
 // Example46 -- TODO:
 func Example46() {
-	pdf := pdfjet.NewPDFFile("Example_46.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_46.pdf")
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")

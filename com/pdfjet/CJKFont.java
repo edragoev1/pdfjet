@@ -1,7 +1,7 @@
 /**
  *  CJKFont.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,15 @@ package com.pdfjet;
  *  Used to select Chinese, Japanese and Korean fonts.
  */
 public enum CJKFont {
-    ADOBE_MING_STD_LIGHT,       // Chinese (Traditional) font
-    ST_HEITI_SC_LIGHT,          // Chinese (Simplified) font
-    KOZ_MIN_PRO_VI_REGULAR,     // Japanese font
-    ADOBE_MYUNGJO_STD_MEDIUM,   // Korean font
+    /** Chinese (Traditional) font */
+    ADOBE_MING_STD_LIGHT,
+
+    /** Chinese (Simplified) font */
+    ST_HEITI_SC_LIGHT,
+
+    /** Japanese font */
+    KOZ_MIN_PRO_VI_REGULAR,
+    
+    /** Korean font */
+    ADOBE_MYUNGJO_STD_MEDIUM
 }

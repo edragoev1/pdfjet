@@ -48,7 +48,7 @@ class BitBuffer {
             buffer = newBuffer;
         }
         if (bit) {
-            buffer[length / 8] |= (0x80 >>> (length % 8));
+            buffer[length / 8] |= (byte) (0x80 >>> (length % 8));
         }
         length++;
     }

@@ -1,7 +1,7 @@
 /**
  *  Point.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,21 +30,49 @@ package com.pdfjet;
  *  Please see Example_05.
  */
 public class Point implements Drawable {
+    /** INVISABLE point */
     public static final int INVISIBLE = -1;
+
+    /** CIRCLE shaped point */
     public static final int CIRCLE = 0;
+
+    /** DIAMOND shaped point */
     public static final int DIAMOND = 1;
+
+    /** BOX shaped point */
     public static final int BOX = 2;
+
+    /** PLUS shaped point */
     public static final int PLUS = 3;
+
+    /** H_DASH shaped point */
     public static final int H_DASH = 4;
+
+    /** V_DASH shaped point */
     public static final int V_DASH = 5;
+
+    /** MULTIPLY shaped point */
     public static final int MULTIPLY = 6;
+
+    /** STAR shaped point */
     public static final int STAR = 7;
+
+    /** X_MARK shaped point */
     public static final int X_MARK = 8;
+
+    /** UP_ARROW shaped point */
     public static final int UP_ARROW = 9;
+
+    /** DOWN_ARROW shaped point */
     public static final int DOWN_ARROW = 10;
+
+    /** LEFT_ARROW shaped point */
     public static final int LEFT_ARROW = 11;
+
+    /** RIGHT_ARROW shaped point */
     public static final int RIGHT_ARROW = 12;
 
+    /** Bezier Control Point */
     public static final boolean CONTROL_POINT = true;
 
     protected float x;
@@ -137,10 +165,22 @@ public class Point implements Drawable {
         setLocation(x, y);
     }
 
+    /**
+     * Sets the location of the point.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     */
     public void setXY(float x, float y) {
         setLocation(x, y);
     }
 
+    /**
+     * Sets the location of the point.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     */
     public void setXY(double x, double y) {
         setLocation(x, y);
     }

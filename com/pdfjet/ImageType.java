@@ -1,7 +1,7 @@
 /**
  *  ImageType.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,12 +30,19 @@ package com.pdfjet;
  *
  */
 public class ImageType {
+    /** Default Constructor */
+    public ImageType() {
+    }
+
     /** JPEG image */
     public static final int JPG = 0;
+
     /** PNG image */
     public static final int PNG = 1;
+
     /** Bitmap image */
     public static final int BMP = 2;
+
     /** PNG_STREAM image */
     public static final int PNG_STREAM = 3;
 }

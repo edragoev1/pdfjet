@@ -3,7 +3,7 @@ package pdfjet
 /**
  * page.go
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -154,7 +154,7 @@ func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
 func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page := new(Page)
 	page.pdf = pdf
-	page.pageObj = pageObj
+	page.pageObj = page.removeComments(pageObj)
 	page.width = pageObj.GetPageSize()[0]
 	page.height = pageObj.GetPageSize()[1]
 	page.tm = [4]float32{1.0, 0.0, 0.0, 1.0}
@@ -170,6 +170,28 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 		appendString(&page.buf, " gs\n")
 	}
 	return page
+}
+
+// removeComments removes object dictionary comments.
+func (page *Page) removeComments(obj *PDFobj) *PDFobj {
+	list := make([]string, 0)
+    comment := false
+    for _, token := range obj.dict {
+        if token == "%" {
+            comment = true
+        } else {
+            if strings.HasPrefix(token, "/") {
+                comment = false
+                list = append(list, token)
+            } else {
+                if !comment {
+                    list = append(list, token)
+                }
+            }
+        }
+    }
+    obj.dict = list
+    return obj
 }
 
 // AddCoreFontResource adds core font to the PDF objects.
@@ -199,9 +221,10 @@ func (page *Page) getContent() []byte {
 
 // AddDestination adds destination to this page.
 // @param name The destination name.
+// @param xPosition The horizontal position of the destination on this page.
 // @param yPosition The vertical position of the destination on this page.
-func (page *Page) AddDestination(name *string, yPosition float32) *Destination {
-	dest := NewDestination(name, page.height-yPosition)
+func (page *Page) AddDestination(name *string, xPosition, yPosition float32) *Destination {
+	dest := NewDestination(name, xPosition, page.height-yPosition)
 	page.destinations = append(page.destinations, dest)
 	return dest
 }
@@ -551,7 +574,8 @@ func (page *Page) SetLinePattern(pattern string) {
 
 // SetDefaultLinePattern sets the default line dash pattern - solid line.
 func (page *Page) SetDefaultLinePattern() {
-	appendString(&page.buf, "[] 0")
+    page.linePattern = "[] 0"
+    appendString(&page.buf, page.linePattern)
 	appendString(&page.buf, " d\n")
 }
 

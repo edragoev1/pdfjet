@@ -5,13 +5,12 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example27 -- TODO:
 func Example27() {
-	pdf := pdfjet.NewPDFFile("Example_27.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_27.pdf")
 
 	// Thai font
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream")

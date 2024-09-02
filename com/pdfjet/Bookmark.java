@@ -1,7 +1,7 @@
 /**
  *  Bookmark.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,10 +44,23 @@ public class Bookmark {
     private List<Bookmark> children = null;
     private Destination dest = null;
 
+    /**
+     * Creates a bookmark.
+     *
+     * @param pdf the PDF.
+     */
     public Bookmark(PDF pdf) {
         pdf.toc = this;
     }
 
+    /**
+     * Creates a bookmark and sets the location, key and title.
+     *
+     * @param page the page.
+     * @param y the vertical location on the page.
+     * @param key the key.
+     * @param title the title.
+     */
     private Bookmark(Page page, float y, String key, String title) {
         this.page = page;
         this.y = y;
@@ -55,6 +68,13 @@ public class Bookmark {
         this.title = title;
     }
 
+    /**
+     * Add bookmark with the spacified title to the page.
+     *
+     * @param page the page.
+     * @param title the title.
+     * @return the bookmark.
+     */
     public Bookmark addBookmark(Page page, Title title) {
         Bookmark bm = this;
         while (bm.parent != null) {
@@ -78,18 +98,39 @@ public class Bookmark {
         return bookmark2;
     }
 
+    /**
+     * Returns the destination key.
+     *
+     * @return the destination key.
+     */
     public String getDestKey() {
         return this.key;
     }
 
+    /**
+     * Returns the bookmark title.
+     *
+     * @return the bookmark title.
+     */
     public String getTitle() {
         return this.title;
     }
 
+    /**
+     * Returns the bookmark parent.
+     *
+     * @return the bookmark parent.
+     */
     public Bookmark getParent() {
         return this.parent;
     }
 
+    /**
+     * Auto number the bookmark.
+     *
+     * @param textLine the text line.
+     * @return the bookmark.
+     */
     public Bookmark autoNumber(TextLine textLine) {
         Bookmark bm = getPrevBookmark();
         if (bm == null) {

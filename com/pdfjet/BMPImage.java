@@ -138,9 +138,11 @@ class BMPImage {
         }
 
         ByteArrayOutputStream data2 = new ByteArrayOutputStream(32768);
-        DeflaterOutputStream dos = new DeflaterOutputStream(data2, new Deflater());
+        Deflater deflater = new Deflater();
+        DeflaterOutputStream dos = new DeflaterOutputStream(data2, deflater);
         dos.write(image, 0, image.length);
         dos.finish();
+        deflater.end();
         deflated = data2.toByteArray();
     }
 

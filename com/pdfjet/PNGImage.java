@@ -153,26 +153,56 @@ public class PNGImage {
         deflatedImageData = Compressor.deflate(image);
     }
 
+    /**
+     * Returns the image width.
+     *
+     * @return the image width.
+     */
     public int getWidth() {
         return this.w;
     }
 
+    /**
+     * Returns the image height.
+     *
+     * @return the image height.
+     */
     public int getHeight() {
         return this.h;
     }
 
+    /**
+     * Returns the image color type.
+     *
+     * @return the image color type.
+     */
     public int getColorType() {
         return this.colorType;
     }
 
+    /**
+     * Returns the bit depth.
+     *
+     * @return the bit depth.
+     */
     public int getBitDepth() {
         return this.bitDepth;
     }
 
+    /**
+     * Returns the image data.
+     *
+     * @return the image data.
+     */
     public byte[] getData() {
         return this.deflatedImageData;
     }
 
+    /**
+     * Returns the image alpha data.
+     *
+     * @return the image alpha data.
+     */
     public byte[] getAlpha() {
         return this.deflatedAlphaData;
     }

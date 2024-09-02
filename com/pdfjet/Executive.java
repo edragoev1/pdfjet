@@ -1,7 +1,7 @@
 /**
  *  Executive.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,13 @@ package com.pdfjet;
  *
  */
 public class Executive {
+    /** Default Constructor */
+    public Executive() {
+    }
+
+    /** PORTRAIT orientation */
     public static final float[] PORTRAIT = new float[] {522.0f, 756.0f};
+
+    /** LANDSCAPE orientation */
     public static final float[] LANDSCAPE = new float[] {756.0f, 522.0f};
 }

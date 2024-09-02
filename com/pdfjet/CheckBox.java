@@ -1,7 +1,7 @@
 /**
  *  CheckBox.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -197,6 +197,15 @@ public class CheckBox implements Drawable {
         return this;
     }
 
+    /**
+     *  Draws X mark on the specified page and location.
+     *
+     *  @param page the page.
+     *  @param x the x coordinate.
+     *  @param y the y coordinate.
+     *  @param size the size of the X mark.
+     *  @throws Exception if there is an issue.
+     */
     public static void xMark(Page page, float x, float y, float size) throws Exception {
         page.setPenColor(Color.blue);
         page.setPenWidth(size / 5);

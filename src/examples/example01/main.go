@@ -14,7 +14,7 @@ import (
 
 // Example01 --  TODO: Add proper description.
 func Example01(mode string) {
-	pdf := pdfjet.NewPDFFile("Example_01.pdf", 0)
+	pdf := pdfjet.NewPDFFile("Example_01.pdf")
 
 	font1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")

@@ -1,7 +1,7 @@
 /**
  *  PageLayout.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,13 +25,29 @@ package com.pdfjet;
 
 /**
  *  Used to specify the PDF page layout.
- *
  */
 public class PageLayout {
-    public static final String SINGLE_PAGE = "SinglePage";          // Display one page at a time
-    public static final String ONE_COLUMN = "OneColumn";            // Display the pages in one column
-    public static final String TWO_COLUMN_LEFT = "TwoColumnLeft";   // Odd-numbered pages on the left
-    public static final String TWO_COLUMN_RIGTH = "TwoColumnRight"; // Odd-numbered pages on the right
-    public static final String TWO_PAGE_LEFT = "TwoPageLeft";       // Odd-numbered pages on the left
-    public static final String TWO_PAGE_RIGTH = "TwoPageRight";     // Odd-numbered pages on the right
+    /**
+     * Creates page layout object.
+     */
+    public PageLayout() {
+    }
+
+    /** Display one page at a time */
+    public static final String SINGLE_PAGE = "SinglePage";
+
+    /** Display the pages in one column */
+    public static final String ONE_COLUMN = "OneColumn";
+
+    /** Odd-numbered pages on the left */
+    public static final String TWO_COLUMN_LEFT = "TwoColumnLeft";
+
+    /** Odd-numbered pages on the right */
+    public static final String TWO_COLUMN_RIGTH = "TwoColumnRight";
+
+    /** Odd-numbered pages on the left */
+    public static final String TWO_PAGE_LEFT = "TwoPageLeft";
+
+    /** Odd-numbered pages on the right */
+    public static final String TWO_PAGE_RIGTH = "TwoPageRight";
 }

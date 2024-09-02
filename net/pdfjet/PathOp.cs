@@ -27,7 +27,7 @@ using System.Collections.Generic;
 namespace PDFjet.NET {
 public class PathOp {
     public char cmd;
-    
+
     public float x1q;   // Original quadratic control
     public float y1q;   // point coordinates
 

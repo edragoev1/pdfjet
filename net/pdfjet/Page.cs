@@ -1,7 +1,7 @@
 /**
  *  Page.cs
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -134,7 +134,7 @@ public class Page {
 
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
-        this.pageObj = pageObj;
+        this.pageObj = RemoveComments(pageObj);
         width = pageObj.GetPageSize()[0];
         height = pageObj.GetPageSize()[1];
         buf = new MemoryStream(8192);
@@ -148,6 +148,27 @@ public class Page {
             Append(pageObj.gsNumber + 1);
             Append(" gs\n");
         }
+    }
+
+    private PDFobj RemoveComments(PDFobj obj) {
+        List<String> list = new List<String>();
+        bool comment = false;
+        foreach (String token in obj.dict) {
+            if (token.Equals("%")) {
+                comment = true;
+            } else {
+                if (token.StartsWith("/")) {
+                    comment = false;
+                    list.Add(token);
+                } else {
+                    if (!comment) {
+                        list.Add(token);
+                    }
+                }
+            }
+        }
+        obj.dict = list;
+        return obj;
     }
 
     public Font AddResource(CoreFont coreFont, List<PDFobj> objects) {
@@ -175,12 +196,27 @@ public class Page {
      *  Adds destination to this page.
      *
      *  @param name The destination name.
+     *  @param xPosition The horizontal position of the destination on this page.
+     *  @param yPosition The vertical position of the destination on this page.
+     *
+     *  @return the destination.
+     */
+    public Destination AddDestination(String name, float xPosition, float yPosition) {
+        Destination dest = new Destination(name, xPosition, height - yPosition);
+        destinations.Add(dest);
+        return dest;
+    }
+
+    /**
+     *  Adds destination to this page.
+     *
+     *  @param name The destination name.
      *  @param yPosition The vertical position of the destination on this page.
      *
      *  @return the destination.
      */
     public Destination AddDestination(String name, float yPosition) {
-        Destination dest = new Destination(name, height - yPosition);
+        Destination dest = new Destination(name, 0f, height - yPosition);
         destinations.Add(dest);
         return dest;
     }
@@ -672,7 +708,8 @@ public class Page {
      *  Sets the default line dash pattern - solid line.
      */
     public void SetDefaultLinePattern() {
-        Append("[] 0");
+        linePattern = "[] 0";
+        Append(linePattern);
         Append(" d\n");
     }
 

@@ -78,7 +78,7 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 		key,
 		whitespace.ReplaceAllString(title.textLine.text, " "))
 	bookmark2.parent = bookmark
-	bookmark2.dest = page.AddDestination(&key, title.textLine.GetDestinationY())
+	bookmark2.dest = page.AddDestination(&key, 0.0, title.textLine.GetDestinationY())
 	if bookmark.children == nil {
 		bookmark.children = make([]*Bookmark, 0)
 	} else {

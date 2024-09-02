@@ -9,20 +9,18 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 )
 
 // Example50 shows how to fill in an existing PDF form.
 func Example50(fileName string) {
+	pdf := pdfjet.NewPDFFile("Example_50.pdf")
+
 	buf, err := os.ReadFile("data/testPDFs/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	pdf := pdfjet.NewPDFFile("Example_50.pdf", compliance.PDF15)
-
 	objects := pdf.Read(buf)
 
 	file1, err := os.Open("fonts/Droid/DroidSans.ttf.stream")

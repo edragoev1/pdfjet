@@ -3,7 +3,7 @@ import PDFjet
 
 /**
  *  Example_22.swift
-  */
+ */
 public class Example_22 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_22.pdf", append: false)!)
@@ -14,8 +14,7 @@ public class Example_22 {
         var text = TextLine(f1, "Page #1 -> Go to Destination #3.")
         text.setGoToAction("dest#3")
         text.setLocation(90.0, 50.0)
-        page.addDestination("dest#0", 0.0)
-        page.addDestination("dest#1", text.getDestinationY())
+        page.addDestination("dest#1", 0.0, 0.0)
         text.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
@@ -36,8 +35,8 @@ public class Example_22 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        text = TextLine(f1, "Page #4 -> Go to Destination #0.")
-        text.setGoToAction("dest#0")
+        text = TextLine(f1, "Page #4 -> Go to Destination #1.")
+        text.setGoToAction("dest#1")
         text.setLocation(90.0, 100.0)
         page.addDestination("dest#4", text.getDestinationY())
         text.drawOn(page)
@@ -50,7 +49,7 @@ public class Example_22 {
         // Create a box with invisible borders
         let box = Box(20.0, 20.0, 20.0, 20.0)
         box.setColor(Color.white)
-        box.setGoToAction("dest#0")
+        box.setGoToAction("dest#1")
         box.drawOn(page)
 
         // Create an up arrow and place it in the box
@@ -70,7 +69,7 @@ public class Example_22 {
 
         let image = try Image(pdf, "images/up-arrow.png")
         image.setLocation(40.0, 40.0)
-        image.setGoToAction("dest#0")
+        image.setGoToAction("dest#1")
         image.drawOn(page)
 
         pdf.complete()

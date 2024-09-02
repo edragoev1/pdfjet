@@ -27,6 +27,7 @@ SOFTWARE.
 // Destination is used to create PDF destination objects.
 type Destination struct {
 	name          *string
+	xPosition     float32
 	yPosition     float32
 	pageObjNumber int
 }
@@ -34,10 +35,24 @@ type Destination struct {
 // NewDestination creates new destination objects.
 //
 // @param name the name of this destination object.
+// @param xPosition the x coordinate of the top left corner.
 // @param yPosition the y coordinate of the top left corner.
-func NewDestination(name *string, yPosition float32) *Destination {
+func NewDestination(name *string, xPosition float32, yPosition float32) *Destination {
 	destination := new(Destination)
 	destination.name = name
+	destination.yPosition = xPosition
+	destination.yPosition = yPosition
+	return destination
+}
+
+// NewDestination creates new destination objects.
+//
+// @param name the name of this destination object.
+// @param yPosition the y coordinate of the top left corner.
+func NewDestination7(name *string, yPosition float32) *Destination {
+	destination := new(Destination)
+	destination.name = name
+	destination.xPosition = 0.0
 	destination.yPosition = yPosition
 	return destination
 }

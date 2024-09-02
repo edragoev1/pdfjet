@@ -166,7 +166,7 @@ private static char[] forms = new char[] {
         return buf3.ToString();
     }
 
-    public static bool IsArabic(char ch) {
+    private static bool IsArabic(char ch) {
         return (ch >= 0x600 && ch <= 0x6FF);
     }
 
@@ -203,7 +203,7 @@ private static char[] forms = new char[] {
         }
         return buf3.ToString();
     }
-	
+
     public static String Reverse(String str) {
         char[] charArray = str.ToCharArray();
         Array.Reverse(charArray);

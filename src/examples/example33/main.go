@@ -5,12 +5,11 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/compliance"
 )
 
 // Example33 -- TODO:
 func Example33() {
-	pdf := pdfjet.NewPDFFile("Example_33.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_33.pdf")
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	// SVG test

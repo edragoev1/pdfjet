@@ -84,6 +84,10 @@ public class Example_25 {
         chart.addSlice(Slice(20.0, Color.green))
         chart.addSlice(Slice(30.0, Color.blue))
         chart.addSlice(Slice(40.0, Color.peachpuff))
+/* For testing!
+        chart.addSlice(Slice(75.0, Color.red))
+        chart.addSlice(Slice(25.0, Color.blue))
+*/
         chart.drawOn(page)
 
         pdf.complete()

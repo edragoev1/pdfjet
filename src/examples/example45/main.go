@@ -11,7 +11,8 @@ import (
 
 // Example45 -- TODO:
 func Example45() {
-	pdf := pdfjet.NewPDFFile("Example_45.pdf", compliance.PDF_UA)
+	pdf := pdfjet.NewPDFFile("Example_45.pdf")
+	pdf.SetCompliance(compliance.PDF_UA)
 	pdf.SetLanguage("en-US")
 	pdf.SetTitle("Hello, World!")
 

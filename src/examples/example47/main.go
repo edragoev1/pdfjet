@@ -5,14 +5,13 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/contents"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example47 -- TODO:
 func Example47() {
-	pdf := pdfjet.NewPDFFile("Example_47.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_47.pdf")
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream")

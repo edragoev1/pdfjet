@@ -19,9 +19,19 @@ package com.pdfjet;
  * @author Kazuhiko Arase
  */
 public class ErrorCorrectLevel {
+    /** Default Constructor */
+    public ErrorCorrectLevel() {
+    }
+
+    /** Low */
     public static final int L = 1;
+
+    /** Medium */
     public static final int M = 0;
+
+    /** Quartile */
     public static final int Q = 3;
+
+    /** High */
     public static final int H = 2;
 }
-

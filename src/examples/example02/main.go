@@ -5,14 +5,13 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example02 draws the Canadian Maple Leaf using a Path object that contains both
 // lines and curve segments. Every curve segment must have exactly 2 control points.
 func Example02() {
-	pdf := pdfjet.NewPDFFile("Example_02.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_02.pdf")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 	path := pdfjet.NewPath()

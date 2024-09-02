@@ -1,7 +1,7 @@
 /**
  *  DonutChart.cs
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -143,6 +143,20 @@ public class DonutChart {
         return a2;
     }
 
+    private void DrawLinePointer(
+            Page page,
+            int perColor,
+            float xc, float yc,
+            float r1, float r2,     // r1 > r2
+            float a1, float a2) {   // a1 > a2
+        page.SetPenColor(Color.black);
+        float angle1 = a1 - 90f;
+        float angle2 = a2 - 90f;
+        if ((angle2 - angle1) <= 90f) {
+            page.DrawLine(xc, yc, 500f, 500f);
+        }
+    }
+
     public void DrawOn(Page page) {
         float angle = 0f;
         foreach (Slice slice in slices) {
@@ -151,7 +165,14 @@ public class DonutChart {
                     xc, yc,
                     r1, r2,
                     angle, angle + slice.angle);
+/*
+            DrawLinePointer(
+                    page, slice.color,
+                    xc, yc,
+                    r1, r2,
+                    angle, angle + slice.angle);
+*/
+            }
         }
     }
-}
 }

@@ -689,12 +689,11 @@ public class Cell {
         }
 
         page.setPenColor(pen)
-        page.setBrushColor(brush)
         if getTextAlignment() == Align.RIGHT {
             if compositeTextLine == nil {
                 xText = (x + cellW) - (font!.stringWidth(text) + self.rightPadding)
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, text!, xText!, yText!)
+                page.drawString(font!, fallbackFont, text!, xText!, yText!, brush, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)
@@ -714,7 +713,7 @@ public class Cell {
                 xText = x + self.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font!.stringWidth(text)) / 2)
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, text!, xText!, yText!)
+                page.drawString(font!, fallbackFont, text!, xText!, yText!, brush, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)
@@ -734,7 +733,7 @@ public class Cell {
             xText = x + self.leftPadding
             if compositeTextLine == nil {
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, text!, xText!, yText!)
+                page.drawString(font!, fallbackFont, text!, xText!, yText!, brush, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)

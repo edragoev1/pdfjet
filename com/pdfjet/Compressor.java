@@ -35,7 +35,6 @@ class Compressor {
         deflater.setInput(data);
         // End compression with the current contents of the input buffer.
         deflater.finish();
-
         byte[] buf = new byte[4096];
         while (!deflater.finished()) {
             int count = deflater.deflate(buf);

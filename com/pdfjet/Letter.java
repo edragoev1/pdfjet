@@ -29,6 +29,10 @@ package com.pdfjet;
  *
  */
 public class Letter {
+    /** Default Constructor */
+    public Letter() {
+    }
+
     /** Portrait orientation */
     public static final float[] PORTRAIT = new float[] {612.0f, 792.0f};
     /** Landscape orientation */

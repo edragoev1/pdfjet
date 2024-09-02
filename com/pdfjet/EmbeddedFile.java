@@ -1,7 +1,7 @@
 /**
  *  EmbeddedFile.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -38,20 +38,39 @@ public class EmbeddedFile {
     protected int objNumber = -1;
     protected String fileName;
 
+    /**
+     * Embeds file with the specified name into the PDF.
+     *
+     * @param pdf the PDF.
+     * @param fileName the file name.
+     * @param compress the file if true do not compress if false.
+     * @throws Exception if there is an issue.
+     */
     public EmbeddedFile(PDF pdf, String fileName, boolean compress) throws Exception {
         this(pdf, fileName.substring(fileName.lastIndexOf("/") + 1),
                 new BufferedInputStream(new FileInputStream(fileName)), compress);
     }
 
+    /**
+     * Embeds file with the specified name from the specified stream.
+     *
+     * @param pdf the PDF.
+     * @param fileName the file name.
+     * @param stream the input stream.
+     * @param compress the file if true do not compress if false.
+     * @throws Exception if there is an issue.
+     */
     public EmbeddedFile(PDF pdf, String fileName, InputStream stream, boolean compress) throws Exception {
         this.fileName = fileName;
         byte[] buf = Contents.getFromStream(stream);
 
         if (compress) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater());
+            Deflater deflater = new Deflater();
+            DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater);
             dos.write(buf, 0, buf.length);
             dos.finish();
+            deflater.end();
             buf = baos.toByteArray();
         }
 
@@ -85,6 +104,11 @@ public class EmbeddedFile {
         this.objNumber = pdf.getObjNumber();
     }
 
+    /**
+     * Returns the file name of the embedded file.
+     *
+     * @return the file name of the embedded file.
+     */
     public String getFileName() {
         return fileName;
     }

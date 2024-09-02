@@ -7,7 +7,6 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 )
 
 /**
@@ -15,7 +14,7 @@ import (
  *  This example shows how to write "Page X of N" footer on every page.
  */
 func Example18() {
-	pdf := pdfjet.NewPDFFile("Example_18.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_18.pdf")
 
 	font := pdfjet.NewFontFromFile(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
 	font.SetSize(12.0)

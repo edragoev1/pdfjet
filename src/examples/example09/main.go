@@ -5,14 +5,13 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
 // Example09 draws the a chart that consists of three paths.
 func Example09() {
-	pdf := pdfjet.NewPDFFile("Example_09.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_09.pdf")
 
 	font1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
 	font2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")

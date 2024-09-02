@@ -3,7 +3,7 @@ package pdfjet
 /**
  * donutchart.go
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,8 @@ SOFTWARE.
 
 import (
 	"math"
+
+    "github.com/edragoev1/pdfjet/src/color"
 )
 
 // DonutChart is used for donut chart objects.
@@ -151,6 +153,20 @@ func DrawSlice(
 	return a2
 }
 
+func drawLinePointer(
+        page *Page,
+        perColor int32,
+        xc, yc float32,
+        r1, r2 float32,     // r1 > r2
+        a1, a2 float32) {   // a1 > a2
+    page.SetPenColor(color.Black)
+    angle1 := a1 - 90.0
+    angle2 := a2 - 90.0
+    if (angle2 - angle1) <= 90.0 {
+        page.DrawLine(xc, yc, 500.0, 500.0)
+    }
+}
+
 // DrawOn draws donut chart on the specified page.
 func (chart *DonutChart) DrawOn(page *Page) {
 	var angle float32 = 0.0
@@ -160,5 +176,12 @@ func (chart *DonutChart) DrawOn(page *Page) {
 			chart.xc, chart.yc,
 			chart.r1, chart.r2,
 			angle, angle+slice.angle)
+/*
+        drawLinePointer(
+            page, slice.color,
+            chart.xc, chart.yc,
+            chart.r1, chart.r2,
+            angle, angle + slice.angle)
+*/
 	}
 }

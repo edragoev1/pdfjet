@@ -1,7 +1,7 @@
 /**
  *  PDF.cs
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,9 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Reflection;
+
+[assembly:AssemblyVersionAttribute("8.0.0.0")]
 
 /**
  *  Used to create PDF objects that represent PDF documents.
@@ -52,7 +55,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v7.07.3";
+    private String producer = "PDFjet v8.0.3";
     private String creator;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
@@ -831,7 +834,9 @@ public class PDF {
                 Append("/F 4\n");
                 Append("/Dest [");
                 Append(destination.pageObjNumber);
-                Append(" 0 R /XYZ 0 ");
+                Append(" 0 R /XYZ ");
+                Append(destination.xPosition);
+                Append(" ");
                 Append(destination.yPosition);
                 Append(" 0]\n");
             }
@@ -912,8 +917,8 @@ public class PDF {
     }
 
     /**
-     *  Writes the PDF object to the output stream.
-     *  Does not close the underlying output stream.
+     * Completes the construction of the PDF and writes it to the output stream.
+     * The output stream is then automatically closed.
      */
     public void Complete() {
         if (prevPage != null) {
@@ -1480,7 +1485,9 @@ public class PDF {
         Append("/F 4\n");       // No Zoom
         Append("/Dest [");
         Append(bm1.GetDestination().pageObjNumber);
-        Append(" 0 R /XYZ 0 ");
+        Append(" 0 R /XYZ ");
+        Append(bm1.GetDestination().xPosition);
+        Append(" ");
         Append(bm1.GetDestination().yPosition);
         Append(" 0]\n");
         Append(Token.endDictionary);

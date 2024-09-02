@@ -4,14 +4,13 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/contents"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example19 draws two images and three text boxes.
 func Example19() {
-	pdf := pdfjet.NewPDFFile("Example_19.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_19.pdf")
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")

@@ -1,7 +1,7 @@
 /**
  *  Single.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,5 +27,10 @@ package com.pdfjet;
  *  Please see Example_45
  */
 public class Single {
+    /** The default constructor */
+    public Single() {
+    }
+
+    /** Single space */
     public static final String space = " ";
 }

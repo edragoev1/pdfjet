@@ -1,7 +1,7 @@
 /**
  *  Legal.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,10 @@ package com.pdfjet;
  *  For more information about the page size classes - A3, A4, A5, B5, Executive, Letter, Legal and Tabloid - see the Page class.
  */
 public class Legal {
+    /** Default Constructor */
+    public Legal() {
+    }
+
     /** Portrait orientation */
     public static final float[] PORTRAIT = new float[] {612.0f, 1008.0f};
     /** Landscape orientation */

@@ -41,10 +41,20 @@ public class Dimension {
         this.h = height;
     }
 
+    /**
+     * Returns the width.
+     *
+     * @return the width.
+     */
     public float getWidth() {
         return w;
     }
 
+    /**
+     * Returns the height.
+     *
+     * @return the height.
+     */
     public float getHeight() {
         return h;
     }

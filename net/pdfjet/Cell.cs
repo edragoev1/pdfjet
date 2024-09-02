@@ -659,12 +659,11 @@ public class Cell {
         }
 
         page.SetPenColor(pen);
-        page.SetBrushColor(brush);
         if (GetTextAlignment() == Align.RIGHT) {
             if (compositeTextLine == null) {
                 xText = (x + cellW) - (font.StringWidth(text) + this.rightPadding);
                 page.AddBMC(StructElem.P, Single.space, Single.space);
-                page.DrawString(font, fallbackFont, text, xText, yText);
+                page.DrawString(font, fallbackFont, text, xText, yText, brush, null);
                 page.AddEMC();
                 if (GetUnderline()) {
                     UnderlineText(page, font, text, xText, yText);
@@ -684,7 +683,7 @@ public class Cell {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font.StringWidth(text)) / 2);
                 page.AddBMC(StructElem.P, Single.space, Single.space);
-                page.DrawString(font, fallbackFont, text, xText, yText);
+                page.DrawString(font, fallbackFont, text, xText, yText, brush, null);
                 page.AddEMC();
                 if (GetUnderline()) {
                     UnderlineText(page, font, text, xText, yText);
@@ -704,7 +703,7 @@ public class Cell {
             xText = x + this.leftPadding;
             if (compositeTextLine == null) {
                 page.AddBMC(StructElem.P, Single.space, Single.space);
-                page.DrawString(font, fallbackFont, text, xText, yText);
+                page.DrawString(font, fallbackFont, text, xText, yText, brush, null);
                 page.AddEMC();
                 if (GetUnderline()) {
                     UnderlineText(page, font, text, xText, yText);

@@ -1,7 +1,7 @@
 /**
  *  CapStyle.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,16 @@ package com.pdfjet;
  *  See the Line class for more information.
  */
 public enum CapStyle {
+    /**
+     * BUTT cap style.
+     */
     BUTT,
+    /**
+     * ROUND cap style.
+     */
     ROUND,
+    /**
+     * PROJECTING_SQUARE cap style.
+     */
     PROJECTING_SQUARE;
 }

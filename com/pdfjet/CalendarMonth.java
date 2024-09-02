@@ -1,7 +1,7 @@
 /**
  *  CalendarMonth.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,9 @@ package com.pdfjet;
 
 import java.util.*;
 
+/**
+ * Creates calendar component.
+ */
 public class CalendarMonth implements Drawable {
     Font f1 = null;
     Font f2 = null;
@@ -42,6 +45,14 @@ public class CalendarMonth implements Drawable {
     int daysInMonth;
     int dayOfWeek;
 
+    /**
+     * Creates calendar month component.
+     *
+     * @param f1 the header font.
+     * @param f2 the body font.
+     * @param year the year.
+     * @param month the month.
+     */
     public CalendarMonth(Font f1, Font f2, int year, int month) {
         this.f1 = f1;
         this.f2 = f2;
@@ -60,38 +71,63 @@ public class CalendarMonth implements Drawable {
         dy = dx;
     }
 
+    /**
+     * Sets the header font.
+     *
+     * @param font the header font.
+     */
     public void setHeadFont(Font font) {
         this.f1 = font;
     }
 
+    /**
+     * Sets the body font.
+     *
+     * @param font the body font.
+     */
     public void setBodyFont(Font font) {
         this.f2 = font;
     }
 
+    /**
+     * Sets the cell width.
+     *
+     * @param width the cell width.
+     */
     public void setCellWidth(float width) {
         this.dx = width;
     }
 
+    /**
+     * Sets the cell height.
+     *
+     * @param height the cell height.
+     */
     public void setCellHeight(float height) {
         this.dy = height;
     }
 
+    /**
+     * Sets the calendar position.
+     *
+     * @param x the horizontal position.
+     * @param y the vertical position.
+     */
     public void setPosition(float x, float y) {
         setLocation(x, y);
     }
 
-    public void setPosition(double x, double y) {
-        setLocation(x, y);
-    }
-
+    /**
+     * Sets the calendar location.
+     *
+     * @param x the horizontal location.
+     * @param y the vertical location.
+     * @return the calendar component.
+     */
     public CalendarMonth setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
-    }
-
-    public CalendarMonth setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
     }
 
     public float[] drawOn(Page page) throws Exception {

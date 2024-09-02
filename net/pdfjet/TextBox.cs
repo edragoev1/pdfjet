@@ -849,7 +849,7 @@ public class TextBox : IDrawable {
                         xText = x + (width - font.StringWidth(fallbackFont, line))/2;
                     }
                 } else {
-                    xText = x + margin;                    
+                    xText = x + margin;
                 }
                 if (page != null) {
                     DrawText(page, font, fallbackFont, line, xText, yText, brush, colors);

@@ -1,7 +1,7 @@
 /**
  *  Operation.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,10 @@ package com.pdfjet;
  *
  */
 public class Operation {
+    /** Default Constructor */
+    public Operation() {
+    }
+
     /** Operation STROKE */
     public static char STROKE = 'S';
     /** Operation CLOSE */

@@ -6,13 +6,12 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
 // Example32 -- TODO:
 func Example32() {
-	pdf := pdfjet.NewPDFFile("Example_32.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_32.pdf")
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 	font.SetSize(8.0)

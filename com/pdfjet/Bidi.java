@@ -29,6 +29,12 @@ package com.pdfjet;
  *  Please see Example_27.
  */
 public class Bidi {
+/**
+ * The default constructor.
+ */
+public Bidi() {
+}
+
 /*
  * General,Isolated,End,Middle,Beginning
  */
@@ -66,6 +72,10 @@ private static final char[] forms = new char[] {
 '\u0649','\uFEEF','\uFEF0','\u0649','\u0649',
 };
 
+    /**
+     * Returns true if the letter is Arabic.
+     * @return true if the letter is Arabic.
+     */
     private static boolean isArabicLetter(char ch) {
         for (int i = 0; i < forms.length; i += 5) {
             if (ch == forms[i]) {
@@ -165,7 +175,7 @@ private static final char[] forms = new char[] {
         return buf3.toString();
     }
 
-    public static boolean isArabic(char ch) {
+    private static boolean isArabic(char ch) {
         return (ch >= 0x600 && ch <= 0x6FF);
     }
 

@@ -210,18 +210,44 @@ public class Path implements Drawable {
         yBox = box.y + yOffset;
     }
 
+    /**
+     * Sets the path position.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     */
     public void setPosition(double x, double y) {
         setLocation((float) x, (float) y);
     }
 
+    /**
+     * Sets the path position.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     */
     public void setPosition(float x, float y) {
         setLocation(x, y);
     }
 
+    /**
+     * Sets the path location.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return the path.
+     */
     public Path setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
 
+    /**
+     * Sets the path location.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return the path.
+     */
     public Path setLocation(float x, float y) {
         xBox += x;
         yBox += y;

@@ -717,13 +717,12 @@ public class PNGImage {
         bos.Flush();
         bos.Dispose();
     }
-
+*/
     private static void WriteInt(int i, Stream os) {
         os.WriteByte((byte) (i >> 24));
         os.WriteByte((byte) (i >> 16));
         os.WriteByte((byte) (i >>  8));
         os.WriteByte((byte) (i >>  0));
     }
-*/
 }   // End of PNGImage.cs
 }   // End of namespace PDFjet.NET

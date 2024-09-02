@@ -7,13 +7,12 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example04 shows how to use CJK fonts.
 func Example04() {
-	pdf := pdfjet.NewPDFFile("Example_04.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_04.pdf")
 
 	f1 := pdfjet.NewCJKFont(pdf, pdfjet.AdobeMingStdLight)
 

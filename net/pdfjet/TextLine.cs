@@ -215,6 +215,15 @@ public class TextLine : IDrawable {
     }
 
     /**
+     * Returns the x coordinate of the destination.
+     *
+     * @return the x coordinate of the destination.
+     */
+    public float GetDestinationX() {
+        return x;
+    }
+
+    /**
      * Returns the y coordinate of the destination.
      *
      * @return the y coordinate of the destination.

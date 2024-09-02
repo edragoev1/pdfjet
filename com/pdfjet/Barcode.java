@@ -31,12 +31,18 @@ import java.util.*;
  *  Please see Example_11.
  */
 public class Barcode implements Drawable {
+    /** Specifies UPC barcode */
     public static final int UPC = 0;
+    /** Specifies CODE128 barcode */
     public static final int CODE128 = 1;
+    /** Specifies CODE39 barcode */
     public static final int CODE39 = 2;
 
+    /** Specifies left to right writing direction */
     public static final int LEFT_TO_RIGHT = 0;
+    /** Specifies top to bottom writing direction */
     public static final int TOP_TO_BOTTOM = 1;
+    /** Specifies bottom to top writing direction */
     public static final int BOTTOM_TO_TOP = 2;
 
     private int barcodeType = 0;
@@ -644,6 +650,10 @@ public class Barcode implements Drawable {
         }
     }
 
+    /**
+     * Returns the height of this barcode.
+     * @return the height of this barcode.
+     */
     public float getHeight() {
         if (font == null) {
             return m1 * barHeightFactor;

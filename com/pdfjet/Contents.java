@@ -25,7 +25,21 @@ package com.pdfjet;
 
 import java.io.*;
 
+/**
+ * The Contents class.
+ */
 public class Contents {
+    /** The default constructor */
+    public Contents() {
+    }
+
+    /**
+     * Returns the file contents as string.
+     *
+     * @param fileName the name of the file.
+     * @return the content of the file.
+     * @throws IOException if there is an issue.
+     */
     public static String ofTextFile(String fileName) throws IOException {
         StringBuilder sb = new StringBuilder(4096);
         InputStream stream = null;
@@ -50,6 +64,13 @@ public class Contents {
         return sb.toString();
     }
 
+    /**
+     * Returns the content of the file as byte array.
+     *
+     * @param fileName the name of the file.
+     * @return the content of the file as byte array.
+     * @throws Exception if there is an issue.
+     */
     public static byte[] ofBinaryFile(String fileName) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         InputStream stream = null;
@@ -66,6 +87,14 @@ public class Contents {
         return baos.toByteArray();
     }
 
+    /**
+     * Returns the content of the input stream as byte array.
+     *
+     * @param stream the input stream.
+     * @param bufferSize the buffer size.
+     * @return the byte array.
+     * @throws Exception if there is an issue.
+     */
     public static byte[] getFromStream(InputStream stream, int bufferSize) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
@@ -80,6 +109,13 @@ public class Contents {
         return baos.toByteArray();
     }
 
+    /**
+     * Returns the content of the input stream as byte array.
+     *
+     * @param stream the input stream.
+     * @return the byte array.
+     * @throws Exception if there is an issue.
+     */
     public static byte[] getFromStream(InputStream stream) throws Exception {
         return getFromStream(stream, 4096);
     }

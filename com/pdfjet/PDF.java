@@ -1,7 +1,7 @@
 /**
  *  PDF.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,8 @@ import java.util.zip.*;
 
 /**
  *  Used to create PDF objects that represent PDF documents.
- *
  */
-public class PDF {
+final public class PDF {
     private boolean eval = false;
 
     protected int metadataObjNumber = 0;
@@ -52,7 +51,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v7.07.3";
+    private String producer = "PDFjet v8.0.3";
     private String creator = producer;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
@@ -80,7 +79,7 @@ public class PDF {
      *  Creates a PDF object that represents a PDF document.
      *
      *  @param os the associated output stream.
-     *  @throws Exception  If an input or output exception occurred
+     *  @throws Exception if an input or output exception occurred
      */
     public PDF(OutputStream os) throws Exception { this(os, 0); }
 
@@ -145,6 +144,11 @@ public class PDF {
         append(Token.newline);
     }
 
+    /**
+     * Sets the PDF document compliance.
+     *
+     * @param compliance the complince.
+     */
     public void setCompliance(int compliance) {
         this.compliance = compliance;
     }
@@ -815,10 +819,12 @@ public class PDF {
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater());
+        Deflater deflater = new Deflater();
+        DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater);
         byte[] buf = page.buf.toByteArray();
         dos.write(buf, 0, buf.length);
         dos.finish();
+        deflater.end();
         page.buf = null;    // Release the page content memory!
 
         newobj();
@@ -919,7 +925,9 @@ public class PDF {
                 append("/F 4\n");   // No Zoom
                 append("/Dest [");
                 append(destination.pageObjNumber);
-                append(" 0 R /XYZ 0 ");
+                append(" 0 R /XYZ ");
+                append(destination.xPosition);
+                append(" ");
                 append(destination.yPosition);
                 append(" 0]\n");
             }
@@ -991,6 +999,12 @@ public class PDF {
         }
     }
 
+    /**
+     * Adds the specified page to the PDF.
+     *
+     * @param page the page.
+     * @throws Exception if there is an issue.
+     */
     public void addPage(Page page) throws Exception {
         pages.add(page);
         if (prevPage != null) {
@@ -1000,9 +1014,10 @@ public class PDF {
     }
 
     /**
-     *  Writes the PDF object to the output stream.
-     *  Does not close the underlying output stream.
-     *  @throws Exception  If an input or output exception occurred
+     * Completes the construction of the PDF and writes it to the output stream.
+     * The output stream is then automatically closed.
+     *
+     * @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
         if (prevPage != null) {
@@ -1129,18 +1144,38 @@ public class PDF {
         this.subject = subject;
     }
 
+    /**
+     * Sets the PDF keywords.
+     *
+     * @param keywords the keywords.
+     */
     public void setKeywords(String keywords) {
         this.keywords = keywords;
     }
 
+    /**
+     * Sets the PDF creator.
+     *
+     * @param creator the creator.
+     */
     public void setCreator(String creator) {
         this.creator = creator;
     }
 
+    /**
+     * Sets the PDF page layout.
+     *
+     * @param pageLayout the page layout.
+     */
     public void setPageLayout(String pageLayout) {
         this.pageLayout = pageLayout;
     }
 
+    /**
+     * Set the PDF page mode.
+     *
+     * @param pageMode the page mode.
+     */
     public void setPageMode(String pageMode) {
         this.pageMode = pageMode;
     }
@@ -1321,7 +1356,7 @@ public class PDF {
                 if (p == 0) {
                     done = process(obj, token, buf, off);
                 }
-            } else if (c2 == 0x00         // Null
+            } else if (c2 == 0x00       // Null
                     || c2 == 0x09       // Horizontal Tab
                     || c2 == 0x0A       // Line Feed (LF)
                     || c2 == 0x0C       // Form Feed
@@ -1523,6 +1558,13 @@ public class PDF {
         return Integer.parseInt(sb.toString());
     }
 
+    /**
+     * Adds outline dictionary to the PDF.
+     *
+     * @param toc the bookmark table of contents.
+     * @return the number of children.
+     * @throws Exception if there is an issue.
+     */
     public int addOutlineDict(Bookmark toc) throws Exception {
         int numOfChildren = getNumOfChildren(0, toc);
         newobj();
@@ -1542,6 +1584,14 @@ public class PDF {
         return getObjNumber();
     }
 
+    /**
+     * Adds an outline item to the bookmark.
+     *
+     * @param parent the parent number.
+     * @param i the item number.
+     * @param bm1 the bookmark.
+     * @throws Exception if there is an issue.
+     */
     public void addOutlineItem(int parent, int i, Bookmark bm1) throws Exception {
         int prev = (bm1.getPrevBookmark() == null) ? 0 : parent + (i - 1);
         int next = (bm1.getNextBookmark() == null) ? 0 : parent + (i + 1);
@@ -1591,7 +1641,9 @@ public class PDF {
         append("/F 4\n");       // No Zoom
         append("/Dest [");
         append(bm1.getDestination().pageObjNumber);
-        append(" 0 R /XYZ 0 ");
+        append(" 0 R /XYZ ");
+        append(bm1.getDestination().xPosition);
+        append(" ");
         append(bm1.getDestination().yPosition);
         append(" 0]\n");
         append(Token.endDictionary);
@@ -1608,11 +1660,23 @@ public class PDF {
         return numOfChildren;
     }
 
+    /**
+     * Adds the specified objects to the PDF.
+     *
+     * @param objects the objects.
+     * @throws Exception if there is an issue.
+     */
     public void addObjects(List<PDFobj> objects) throws Exception {
         this.pagesObjNumber = Integer.parseInt(getPagesObject(objects).dict.get(0));
         addObjectsToPDF(objects);
     }
 
+    /**
+     * Returns the pages object.
+     *
+     * @param objects the page objects.
+     * @return the pages object.
+     */
     public PDFobj getPagesObject(List<PDFobj> objects) {
         for (PDFobj obj : objects) {
             if (obj.getValue("/Type").equals("/Pages") && obj.getValue("/Parent").equals("")) {
@@ -1622,6 +1686,12 @@ public class PDF {
         return null;
     }
 
+    /**
+     * Returns the page objects.
+     *
+     * @param objects the objects.
+     * @return the page objects.
+     */
     public List<PDFobj> getPageObjects(List<PDFobj> objects) {
         List<PDFobj> pages = new ArrayList<PDFobj>();
         getPageObjects(getPagesObject(objects), objects, pages);
@@ -1741,6 +1811,12 @@ public class PDF {
         return null;
     }
 
+    /**
+     * Adds the specified objects to the PDF.
+     *
+     * @param objects the objects.
+     * @throws Exception if there is an issue.
+     */
     public void addResourceObjects(List<PDFobj> objects) throws Exception {
         List<PDFobj> resources = new ArrayList<PDFobj>();
 
@@ -1780,7 +1856,13 @@ public class PDF {
         addObjectsToPDF(resources);
     }
 
-    private void addObjectsToPDF(List<PDFobj> objects) throws Exception {
+    /**
+     * Adds the specified objects to the PDF.
+     *
+     * @param objects the objects.
+     * @throws Exception if there is an issue.
+     */
+    public void addObjectsToPDF(List<PDFobj> objects) throws Exception {
         for (PDFobj obj : objects) {
             if (obj.offset == 0) {
                 // Create new object.

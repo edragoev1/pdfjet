@@ -1,7 +1,7 @@
 /**
  *  SVGImage.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,6 +48,10 @@ public class SVGImage {
     private String altDescription = Single.space;
 
     private ColorMap colorMap = null;
+
+    /** The default constructor */
+    public SVGImage() {
+    }
 
     /**
      * Used to embed SVG images in the PDF document.
@@ -199,6 +203,11 @@ public class SVGImage {
         return this;
     }
 
+    /**
+     * Scales the SVG image.
+     *
+     * @param factor the scale factor.
+     */
     public void scaleBy(float factor) {
         for (SVGPath path : paths) {
             for (PathOp op : path.operations) {
@@ -212,10 +221,20 @@ public class SVGImage {
         }
     }
 
+    /**
+     * Returns the width of the SVG image.
+     *
+     * @return the width of the SVG image.
+     */
     public float getWidth() {
         return this.w;
     }
 
+    /**
+     * Returns the height of the SVG image.
+     *
+     * @return the height of the SVG image.
+     */
     public float getHeight() {
         return this.h;
     }
@@ -280,6 +299,12 @@ public class SVGImage {
         }
     }
 
+    /**
+     * Draws the SVGImage on the page.
+     *
+     * @param page the page.
+     * @return the array containing the x and y of the SVG image.
+     */
     public float[] drawOn(Page page) {
         page.addBMC(StructElem.P, language, actualText, altDescription);
         for (int i = 0; i < paths.size(); i++) {

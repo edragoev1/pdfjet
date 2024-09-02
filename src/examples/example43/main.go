@@ -1,42 +1,106 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example43 -- TODO:
+// Example43 --
 func Example43() {
-	pdf := pdfjet.NewPDFFile("Example_43.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_43.pdf")
+	pdf.SetCompliance(compliance.PDF_UA)
 
-	// f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	f2 := pdfjet.NewCoreFont(pdf, corefont.HelveticaOblique())
+	// f1 := NewFontFromFile(pdf, CoreFont.HELVETICA_BOLD)
+	// f2 := NewFontFromFile(pdf, CoreFont.HELVETICA)
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream")
+	f1.SetSize(8.0)
+	f2.SetSize(8.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	fileName := "data/Electric_Vehicle_Population_Data.csv"
+	// fileName :=  "data/Electric_Vehicle_Population_1000.csv"
 
-	paragraphs := make([]*pdfjet.Paragraph, 0)
-	p1 := pdfjet.NewParagraph()
-	tl1 := pdfjet.NewTextLine(f2,
-		"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002.")
-	p1.Add(tl1)
+	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
+	widths := table.GetColumnWidths(fileName)
+	widths[8] = 70.0 // Override the calculated width
+	widths[9] = 99.0 // Override the calculated width
+	table.SetColumnSpacing(7.0)
+	table.SetLocation(20.0, 15.0)
+	table.SetBottomMargin(15.0)
+	table.SetColumnWidths(widths)
 
-	p2 := pdfjet.NewParagraph()
-	tl2 := pdfjet.NewTextLine(f2, "Even so, unemployment has remained at less than half the EU average.")
-	p2.Add(tl2)
+	readFile, err := os.Open(fileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	headerRow := true
+	for fileScanner.Scan() {
+		line := fileScanner.Text()
+		fields := strings.Split(line, ",")
+		// Optional step:
+		fields = selectAndProcessFields(table, fields, headerRow)
+		if fields[6] == "TOYOTA" {
+			table.DrawRow(fields, color.Red)
+		} else if fields[6] == "JEEP" {
+			table.DrawRow(fields, color.Green)
+		} else if fields[6] == "FORD" {
+			table.DrawRow(fields, color.Blue)
+		} else {
+			table.DrawRow(fields, color.Black)
+		}
+		headerRow = false
+	}
+	table.Complete()
+	readFile.Close()
 
-	paragraphs = append(paragraphs, p1)
-	paragraphs = append(paragraphs, p2)
-
-	text := pdfjet.NewText(paragraphs)
-	text.SetLocation(50.0, 50.0)
-	text.SetWidth(500.0)
-	text.DrawOn(page)
+	pages := table.GetPages()
+	for i, page := range pages {
+		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+1)+" of "+fmt.Sprint((len(pages)))))
+		pdf.AddPage(page)
+	}
 
 	pdf.Complete()
+}
+
+func selectAndProcessFields(table *pdfjet.BigTable, fields []string, headerRow bool) []string {
+	row := make([]string, 0)
+	for i := 0; i < 10; i++ {
+		field := fields[i]
+		if i == 8 {
+			if field[0] == 'B' {
+				row = append(row, "BEV")
+			} else if field[0] == 'P' {
+				row = append(row, "PHEV")
+			} else {
+				row = append(row, fields[8])
+			}
+		} else if i == 9 {
+			if headerRow {
+				row = append(row, "Clean Alternative Fuel Vehicle")
+			} else {
+				if field[0] == 'C' {
+					row = append(row, "YES")
+				} else if field[0] == 'N' {
+					row = append(row, "NO")
+				} else {
+					row = append(row, "UNKNOWN")
+				}
+			}
+		} else {
+			row = append(row, field)
+		}
+	}
+	return row
 }
 
 func main() {

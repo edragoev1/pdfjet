@@ -5,7 +5,6 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/effect"
 	"github.com/edragoev1/pdfjet/src/letter"
@@ -14,7 +13,7 @@ import (
 // Example25 draws the Canadian flag using a Path object that contains both lines
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example25() {
-	pdf := pdfjet.NewPDFFile("Example_25.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_25.pdf")
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f2 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
@@ -90,6 +89,10 @@ func Example25() {
 	chart.AddSlice(pdfjet.NewSlice(20.0, color.Green))
 	chart.AddSlice(pdfjet.NewSlice(30.0, color.Blue))
 	chart.AddSlice(pdfjet.NewSlice(40.0, color.Peachpuff))
+/* For testing1
+	chart.AddSlice(pdfjet.NewSlice(75.0, color.Red))
+	chart.AddSlice(pdfjet.NewSlice(25.0, color.Blue))
+*/
 	chart.DrawOn(page)
 
 	pdf.Complete()

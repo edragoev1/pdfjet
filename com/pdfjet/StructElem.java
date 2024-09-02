@@ -1,7 +1,7 @@
 /**
  *  StructElem.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,10 @@ package com.pdfjet;
  *  Defines the StructElem types.
  */
 public class StructElem {
+    /** The default constructor */
+    public StructElem() {
+    }
+
     public static final String DOCUMENT = "Document";
     public static final String DOCUMENTFRAGMENT = "DocumentFragment";
     public static final String PART = "Part";

@@ -10,13 +10,12 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/border"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example31 -- TODO:
 func Example31() {
-	pdf := pdfjet.NewPDFFile("Example_31.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_31.pdf")
 	pdf.SetTitle("Hello")
 	pdf.SetAuthor("Eugene")
 	pdf.SetSubject("Example")

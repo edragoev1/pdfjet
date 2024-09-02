@@ -6,14 +6,13 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
 // Example39 -- TODO:
 func Example39() {
-	pdf := pdfjet.NewPDFFile("Example_39.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_39.pdf")
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())

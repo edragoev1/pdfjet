@@ -5,13 +5,12 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
 // Example36 shows how you can add pages to PDF in random order.
 func Example36() {
-	pdf := pdfjet.NewPDFFile("Example_36.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_36.pdf")
 
 	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 	image2 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")

@@ -1,7 +1,7 @@
 /**
  *  Effect.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,16 @@ package com.pdfjet;
  *
  */
 public class Effect {
+    /** Default Constructor */
+    public Effect() {
+    }
+
+    /** Normal */
     public static final int NORMAL = 0;
+
+    /** Subscript */
     public static final int SUBSCRIPT = 1;
+
+    /** Superscript */
     public static final int SUPERSCRIPT = 2;
 }

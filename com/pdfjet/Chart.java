@@ -658,7 +658,7 @@ public class Chart implements Drawable {
         float[] _mean = mean(points);
         for (int i = 0; i < points.size(); i++) {
             Point point = points.get(i);
-            _devsq += Math.pow((point.x - _mean[0]), 2);
+            _devsq = _devsq + (float) Math.pow((point.x - _mean[0]), 2);
         }
         return _devsq;
     }

@@ -1,7 +1,7 @@
 /**
  *  Embed.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,13 @@ package com.pdfjet;
  *
  */
 public class Embed {
+    /** The default constructor */
+    public Embed() {
+    }
+
+    /** Embed the file */
     public static final boolean YES = true;
+
+    /** Do not embed the file */
     public static final boolean NO = false;
 }

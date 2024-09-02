@@ -5,14 +5,13 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example12 constructs and draws PDF417 barcode.
 func Example12() {
-	pdf := pdfjet.NewPDFFile("Example_12.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_12.pdf")
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 

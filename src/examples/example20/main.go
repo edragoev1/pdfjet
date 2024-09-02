@@ -7,13 +7,12 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example20 -- TODO:
 func Example20() {
-	pdf := pdfjet.NewPDFFile("Example_20.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_20.pdf")
 
 	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
 	if err != nil {

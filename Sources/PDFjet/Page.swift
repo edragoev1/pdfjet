@@ -1,7 +1,7 @@
 /**
  *  Page.swift
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -111,12 +111,34 @@ public class Page {
         self.tm1 = Array(String(format: pdf.floatFormat, tm[1]).utf8)
         self.tm2 = Array(String(format: pdf.floatFormat, tm[2]).utf8)
         self.tm3 = Array(String(format: pdf.floatFormat, tm[3]).utf8)
+        self.pageObj = removeComments(self.pageObj!)
         append("q\n")
         if pageObj.gsNumber != -1 {
             append("/GS")
             append(pageObj.gsNumber + 1)
             append(" gs\n")
         }
+    }
+
+    private func removeComments(_ obj: PDFobj) -> PDFobj {
+        var list = [String]()
+        var comment: Bool = false
+        for token in obj.dict {
+            if token == "%" {
+                comment = true
+            } else {
+                if token.hasPrefix("/") {
+                    comment = false
+                    list.append(token)
+                } else {
+                    if !comment {
+                        list.append(token)
+                    }
+                }
+            }
+        }
+        obj.dict = list
+        return obj
     }
 
     ///
@@ -155,6 +177,25 @@ public class Page {
 
     public func getContent() -> [UInt8] {
         return self.buf
+    }
+
+    ///
+    /// Adds destination to this page.
+    ///
+    /// - Parameter name The destination name.
+    /// - Parameter xPosition The horizontal position of the destination on this page.
+    /// - Parameter yPosition The vertical position of the destination on this page.
+    ///
+    /// - Returns: the destination.
+    ///
+    @discardableResult
+    public func addDestination(
+            _ name: String,
+            _ xPosition: Float,
+            _ yPosition: Float) -> Destination {
+        let dest = Destination(name, xPosition, height - yPosition)
+        destinations!.append(dest)
+        return dest
     }
 
     ///
@@ -343,7 +384,7 @@ public class Page {
             }
             append(">] TJ\n")
         } else {
-            drawColoredString(font, text!, brush, colors!);
+            drawColoredString(font, text!, brush, colors!)
         }
         append(Token.endText)
     }
@@ -449,7 +490,7 @@ public class Page {
     }
 
     public final func getPenColor() -> [Float] {
-        return pen;
+        return pen
     }
 
     ///
@@ -622,7 +663,8 @@ public class Page {
     /// Sets the default line dash pattern - solid line.
     ///
     public func setDefaultLinePattern() {
-        append("[] 0")
+        self.linePattern = "[] 0"
+        append(self.linePattern)
         append(" d\n")
     }
 
@@ -1074,19 +1116,19 @@ public class Page {
         _ x1: Float, _ y1: Float,
         _ x2: Float, _ y2: Float,
         _ x3: Float, _ y3: Float) {
-        append(x1);
-        append(Token.space);
-        append(height - y1);
-        append(Token.space);
-        append(x2);
-        append(Token.space);
-        append(height - y2);
-        append(Token.space);
-        append(x3);
-        append(Token.space);
-        append(height - y3);
-        append(Token.space);
-        append("c\n");
+        append(x1)
+        append(Token.space)
+        append(height - y1)
+        append(Token.space)
+        append(x2)
+        append(Token.space)
+        append(height - y2)
+        append(Token.space)
+        append(x3)
+        append(Token.space)
+        append(height - y3)
+        append(Token.space)
+        append("c\n")
     }
 
     ///
@@ -1324,13 +1366,13 @@ public class Page {
             } else {
                 setBrushColor(brush)
             }
-            append("[<");
+            append("[<")
             if font.isCoreFont {
                 drawASCIIString(font, str)
             } else {
                 drawUnicodeString(font, str)
             }
-            append(">] TJ\n");
+            append(">] TJ\n")
             str = ""
         }
     }
@@ -1394,7 +1436,7 @@ public class Page {
 
     public func addArtifactBMC() {
         if pdf.compliance == Compliance.PDF_UA {
-            append(Token.ArtifactBMC);
+            append(Token.ArtifactBMC)
         }
     }
 
@@ -1547,13 +1589,13 @@ public class Page {
 
     @discardableResult
     public func addFooter(_ textLine: TextLine) throws -> [Float] {
-        return try addFooter(textLine, textLine.font!.ascent);
+        return try addFooter(textLine, textLine.font!.ascent)
     }
 
     @discardableResult
     public func addFooter(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
-        textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset);
-        return textLine.drawOn(self);
+        textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset)
+        return textLine.drawOn(self)
     }
 
     /**

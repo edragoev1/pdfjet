@@ -8,14 +8,13 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example_28.go
 // Example that shows how to use fallback font and the NotoSans symbols font.
 func Example28() {
-	pdf := pdfjet.NewPDFFile("Example_28.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_28.pdf")
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")

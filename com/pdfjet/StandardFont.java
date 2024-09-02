@@ -20,8 +20,7 @@ class StandardFont {
             this.underlinePosition = Courier.underlinePosition;
             this.underlineThickness = Courier.underlineThickness;
             this.metrics = Courier.metrics;
-        }
-        else if (coreFont == CoreFont.COURIER_BOLD) {
+        } else if (coreFont == CoreFont.COURIER_BOLD) {
             this.name = Courier_Bold.name;
             this.bBoxLLx = Courier_Bold.bBoxLLx;
             this.bBoxLLy = Courier_Bold.bBoxLLy;
@@ -30,8 +29,7 @@ class StandardFont {
             this.underlinePosition = Courier_Bold.underlinePosition;
             this.underlineThickness = Courier_Bold.underlineThickness;
             this.metrics = Courier_Bold.metrics;
-        }
-        else if (coreFont == CoreFont.COURIER_OBLIQUE) {
+        } else if (coreFont == CoreFont.COURIER_OBLIQUE) {
             this.name = Courier_Oblique.name;
             this.bBoxLLx = Courier_Oblique.bBoxLLx;
             this.bBoxLLy = Courier_Oblique.bBoxLLy;
@@ -40,8 +38,7 @@ class StandardFont {
             this.underlinePosition = Courier_Oblique.underlinePosition;
             this.underlineThickness = Courier_Oblique.underlineThickness;
             this.metrics = Courier_Oblique.metrics;
-        }
-        else if (coreFont == CoreFont.COURIER_BOLD_OBLIQUE) {
+        } else if (coreFont == CoreFont.COURIER_BOLD_OBLIQUE) {
             this.name = Courier_BoldOblique.name;
             this.bBoxLLx = Courier_BoldOblique.bBoxLLx;
             this.bBoxLLy = Courier_BoldOblique.bBoxLLy;
@@ -50,8 +47,7 @@ class StandardFont {
             this.underlinePosition = Courier_BoldOblique.underlinePosition;
             this.underlineThickness = Courier_BoldOblique.underlineThickness;
             this.metrics = Courier_BoldOblique.metrics;
-        }
-        else if (coreFont == CoreFont.HELVETICA) {
+        } else if (coreFont == CoreFont.HELVETICA) {
             this.name = Helvetica.name;
             this.bBoxLLx = Helvetica.bBoxLLx;
             this.bBoxLLy = Helvetica.bBoxLLy;
@@ -60,8 +56,7 @@ class StandardFont {
             this.underlinePosition = Helvetica.underlinePosition;
             this.underlineThickness = Helvetica.underlineThickness;
             this.metrics = Helvetica.metrics;
-        }
-        else if (coreFont == CoreFont.HELVETICA_BOLD) {
+        } else if (coreFont == CoreFont.HELVETICA_BOLD) {
             this.name = Helvetica_Bold.name;
             this.bBoxLLx = Helvetica_Bold.bBoxLLx;
             this.bBoxLLy = Helvetica_Bold.bBoxLLy;
@@ -70,8 +65,7 @@ class StandardFont {
             this.underlinePosition = Helvetica_Bold.underlinePosition;
             this.underlineThickness = Helvetica_Bold.underlineThickness;
             this.metrics = Helvetica_Bold.metrics;
-        }
-        else if (coreFont == CoreFont.HELVETICA_OBLIQUE) {
+        } else if (coreFont == CoreFont.HELVETICA_OBLIQUE) {
             this.name = Helvetica_Oblique.name;
             this.bBoxLLx = Helvetica_Oblique.bBoxLLx;
             this.bBoxLLy = Helvetica_Oblique.bBoxLLy;
@@ -80,8 +74,7 @@ class StandardFont {
             this.underlinePosition = Helvetica_Oblique.underlinePosition;
             this.underlineThickness = Helvetica_Oblique.underlineThickness;
             this.metrics = Helvetica_Oblique.metrics;
-        }
-        else if (coreFont == CoreFont.HELVETICA_BOLD_OBLIQUE) {
+        } else if (coreFont == CoreFont.HELVETICA_BOLD_OBLIQUE) {
             this.name = Helvetica_BoldOblique.name;
             this.bBoxLLx = Helvetica_BoldOblique.bBoxLLx;
             this.bBoxLLy = Helvetica_BoldOblique.bBoxLLy;
@@ -90,8 +83,7 @@ class StandardFont {
             this.underlinePosition = Helvetica_BoldOblique.underlinePosition;
             this.underlineThickness = Helvetica_BoldOblique.underlineThickness;
             this.metrics = Helvetica_BoldOblique.metrics;
-        }
-        else if (coreFont == CoreFont.TIMES_ROMAN) {
+        } else if (coreFont == CoreFont.TIMES_ROMAN) {
             this.name = Times_Roman.name;
             this.bBoxLLx = Times_Roman.bBoxLLx;
             this.bBoxLLy = Times_Roman.bBoxLLy;
@@ -100,8 +92,7 @@ class StandardFont {
             this.underlinePosition = Times_Roman.underlinePosition;
             this.underlineThickness = Times_Roman.underlineThickness;
             this.metrics = Times_Roman.metrics;
-        }
-        else if (coreFont == CoreFont.TIMES_BOLD) {
+        } else if (coreFont == CoreFont.TIMES_BOLD) {
             this.name = Times_Bold.name;
             this.bBoxLLx = Times_Bold.bBoxLLx;
             this.bBoxLLy = Times_Bold.bBoxLLy;
@@ -110,8 +101,7 @@ class StandardFont {
             this.underlinePosition = Times_Bold.underlinePosition;
             this.underlineThickness = Times_Bold.underlineThickness;
             this.metrics = Times_Bold.metrics;
-        }
-        else if (coreFont == CoreFont.TIMES_ITALIC) {
+        } else if (coreFont == CoreFont.TIMES_ITALIC) {
             this.name = Times_Italic.name;
             this.bBoxLLx = Times_Italic.bBoxLLx;
             this.bBoxLLy = Times_Italic.bBoxLLy;
@@ -120,8 +110,7 @@ class StandardFont {
             this.underlinePosition = Times_Italic.underlinePosition;
             this.underlineThickness = Times_Italic.underlineThickness;
             this.metrics = Times_Italic.metrics;
-        }
-        else if (coreFont == CoreFont.TIMES_BOLD_ITALIC) {
+        } else if (coreFont == CoreFont.TIMES_BOLD_ITALIC) {
             this.name = Times_BoldItalic.name;
             this.bBoxLLx = Times_BoldItalic.bBoxLLx;
             this.bBoxLLy = Times_BoldItalic.bBoxLLy;
@@ -130,8 +119,7 @@ class StandardFont {
             this.underlinePosition = Times_BoldItalic.underlinePosition;
             this.underlineThickness = Times_BoldItalic.underlineThickness;
             this.metrics = Times_BoldItalic.metrics;
-        }
-        else if (coreFont == CoreFont.SYMBOL) {
+        } else if (coreFont == CoreFont.SYMBOL) {
             this.name = Symbol.name;
             this.bBoxLLx = Symbol.bBoxLLx;
             this.bBoxLLy = Symbol.bBoxLLy;
@@ -140,8 +128,7 @@ class StandardFont {
             this.underlinePosition = Symbol.underlinePosition;
             this.underlineThickness = Symbol.underlineThickness;
             this.metrics = Symbol.metrics;
-        }
-        else if (coreFont == CoreFont.ZAPF_DINGBATS) {
+        } else if (coreFont == CoreFont.ZAPF_DINGBATS) {
             this.name = ZapfDingbats.name;
             this.bBoxLLx = ZapfDingbats.bBoxLLx;
             this.bBoxLLy = ZapfDingbats.bBoxLLy;

@@ -58,6 +58,7 @@ public class Barcode2D implements Drawable {
      * Constructor for 2D barcodes.
      *
      * @param str the specified string.
+     * @throws Exception if there are unencodable characters.
      */
     public Barcode2D(String str) throws Exception {
         this.str = str;

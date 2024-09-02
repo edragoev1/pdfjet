@@ -1,7 +1,7 @@
 /**
  *  PDFobj.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -50,6 +50,11 @@ public class PDFobj {
         this.dict = new ArrayList<String>();
     }
 
+    /**
+     * Returns the PDFobj number.
+     *
+     * @return the PDFobj number.
+     */
     public int getNumber() {
         return this.number;
     }
@@ -160,6 +165,11 @@ public class PDFobj {
         return numbers;
     }
 
+    /**
+     * Returns the PDF page size.
+     *
+     * @return the PDF page size.
+     */
     public float[] getPageSize() {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/MediaBox")) {
@@ -196,6 +206,12 @@ public class PDFobj {
         return 0;
     }
 
+    /**
+     * Returns the PDF contents object.
+     *
+     * @param objects the objects list.
+     * @return the contents object.
+     */
     public PDFobj getContentsObject(List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Contents")) {
@@ -211,6 +227,12 @@ public class PDFobj {
         return null;
     }
 
+    /**
+     * Returns the PDF resources object.
+     *
+     * @param objects the objects list.
+     * @return the resources object.
+     */
     public PDFobj getResourcesObject(List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
@@ -224,6 +246,13 @@ public class PDFobj {
         return null;
     }
 
+    /**
+     * Adds core font resource object to the PDF.
+     *
+     * @param coreFont the core font.
+     * @param objects the objects list.
+     * @return the font object.
+     */
     public Font addResource(CoreFont coreFont, List<PDFobj> objects) {
         Font font = new Font(coreFont);
         font.fontID = font.name.replace('-', '_').toUpperCase();
@@ -356,6 +385,12 @@ public class PDFobj {
         }
     }
 
+    /**
+     * Adds image resource object to the PDF.
+     *
+     * @param image the image resource object.
+     * @param objects the objects list.
+     */
     public void addResource(Image image, List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
@@ -370,6 +405,12 @@ public class PDFobj {
         }
     }
 
+    /**
+     * Adds font resource to the PDF.
+     *
+     * @param font the font.
+     * @param objects the objects list.
+     */
     public void addResource(Font font, List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
@@ -384,6 +425,12 @@ public class PDFobj {
         }
     }
 
+    /**
+     * Adds content to the PDF.
+     *
+     * @param content the content.
+     * @param objects the objects list.
+     */
     public void addContent(byte[] content, List<PDFobj> objects) {
         PDFobj obj = new PDFobj();
         obj.setNumber(objects.size() + 1);
@@ -499,6 +546,12 @@ public class PDFobj {
         return Collections.max(numbers);
     }
 
+    /**
+     * Sets the graphics state of the PDF.
+     *
+     * @param gs the graphics state.
+     * @param objects the objects list.
+     */
     public void setGraphicsState(GraphicsState gs, List<PDFobj> objects) {
         PDFobj obj = null;
         int index = -1;

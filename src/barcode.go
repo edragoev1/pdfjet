@@ -367,15 +367,16 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
 		if barcode.direction == LeftToRight {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
-				barcode.x1+((x-barcode.x1)-barcode.font.stringWidth(barcode.text))/2,
-				barcode.y1+h+barcode.font.bodyHeight)
+				x1+((x-x1)-barcode.font.stringWidth(barcode.text))/2.0,
+				y1+h+barcode.font.bodyHeight)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0])))
+			return []float32{xy[0], xy[1] + barcode.font.descent}
 		} else if barcode.direction == TopToBottom {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
 				x+w+barcode.font.bodyHeight,
-				y-((y-barcode.y1)-barcode.font.stringWidth(barcode.text))/2)
+				y-((y-y1)-barcode.font.stringWidth(barcode.text))/2.0)
 			text.SetTextDirection(90)
 			xy = text.DrawOn(page)
 			xy[1] = float32(math.Max(float64(y), float64(xy[1])))

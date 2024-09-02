@@ -174,6 +174,12 @@ func (textLine *TextLine) GetColor() int32 {
 	return textLine.color
 }
 
+// GetDestinationX returns the x coordinate of the destination.
+// @return the x coordinate of the destination.
+func (textLine *TextLine) GetDestinationX() float32 {
+	return textLine.x
+}
+
 // GetDestinationY returns the y coordinate of the destination.
 // @return the y coordinate of the destination.
 func (textLine *TextLine) GetDestinationY() float32 {

@@ -1,7 +1,7 @@
 /**
  *  OptimizePNG.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,10 @@ import java.util.zip.InflaterInputStream;
  * that the original images.
  */
 public class OptimizePNG {
+    /** Default Constructor */
+    public OptimizePNG() {
+    }
+
     /**
      * Converts font TTF or OTF file to .ttf.stream .otf.stream
      *

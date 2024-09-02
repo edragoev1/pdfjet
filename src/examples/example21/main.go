@@ -4,7 +4,6 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/dproject"
 	"github.com/edragoev1/pdfjet/src/letter"
@@ -12,7 +11,7 @@ import (
 
 // Example21 -- TODO:
 func Example21() {
-	pdf := pdfjet.NewPDFFile("Example_21.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_21.pdf")
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

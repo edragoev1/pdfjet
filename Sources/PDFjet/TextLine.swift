@@ -224,6 +224,15 @@ public class TextLine : Drawable {
     }
 
     ///
+    /// Returns the x coordinate of the destination.
+    ///
+    /// - Returns: the x coordinate of the destination.
+    ///
+    public func getDestinationX() -> Float {
+        return x
+    }
+
+    ///
     /// Returns the y coordinate of the destination.
     ///
     /// - Returns: the y coordinate of the destination.

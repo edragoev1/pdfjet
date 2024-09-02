@@ -5,13 +5,12 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 func Example29() {
-	pdf := pdfjet.NewPDFFile("Example_29.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_29.pdf")
 
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	// font := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")

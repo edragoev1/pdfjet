@@ -20,7 +20,7 @@ import java.io.UnsupportedEncodingException;
  *
  * @author Kazuhiko Arase
  */
-public class QRCode implements Drawable {
+final public class QRCode implements Drawable {
     private static final int PAD0 = 0xEC;
     private static final int PAD1 = 0x11;
     private Boolean[][] modules;
@@ -109,6 +109,11 @@ public class QRCode implements Drawable {
         this.m1 = moduleLength;
     }
 
+    /**
+     * Sets the color of the QR code.
+     *
+     * @param color the color.
+     */
     public void setColor(int color) {
         this.color = color;
     }
@@ -134,6 +139,11 @@ public class QRCode implements Drawable {
         return new float[] {x + w, y + h};
     }
 
+    /**
+     * Returns the QR code data.
+     *
+     * @return the QR code data.
+     */
     public Boolean[][] getData() {
         return modules;
     }

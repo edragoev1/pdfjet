@@ -1,7 +1,7 @@
 /**
  *  PDF.swift
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@ public class PDF {
     private var author: String = ""
     private var subject: String = ""
     private var keywords: String = ""
-    private var producer = "PDFjet v7.07.3"
+    private var producer = "PDFjet v8.0.3"
     private var creator: String?
     private var createDate: String?
     private var creationDate: String?
@@ -823,7 +823,9 @@ public class PDF {
                 append("/F 4\n")    // No Zoom
                 append("/Dest [")
                 append(destination!.pageObjNumber)
-                append(" 0 R /XYZ 0 ")
+                append(" 0 R /XYZ ")
+                append(destination!.xPosition)
+                append(" ")
                 append(destination!.yPosition)
                 append(" 0]\n")
             }
@@ -901,8 +903,8 @@ public class PDF {
     }
 
     ///
-    /// Completes the generation of the PDF object and writes it to the output stream.
-    /// The output stream is then closed.
+    /// Completes the construction of the PDF and writes it to the output stream.
+    /// The output stream is then automatically closed.
     ///
     public func complete() {
         if prevPage != nil {
@@ -1520,7 +1522,9 @@ public class PDF {
         append("/F 4\n")        // No Zoom
         append("/Dest [")
         append(bm1.getDestination()!.pageObjNumber)
-        append(" 0 R /XYZ 0 ")
+        append(" 0 R /XYZ ")
+        append(bm1.getDestination()!.xPosition)
+        append(" ")
         append(bm1.getDestination()!.yPosition)
         append(" 0]\n")
         append(Token.endDictionary)

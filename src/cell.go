@@ -549,13 +549,11 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 	}
 
 	page.SetPenColor(cell.pen)
-	page.SetBrushColor(cell.brush)
-
 	if cell.GetTextAlignment() == align.Right {
 		if cell.compositeTextLine == nil {
 			xText = (x + wCell) - (cell.font.stringWidth(*cell.text) + cell.rightPadding)
 			page.AddBMC("Span", "", *cell.text, *cell.text)
-			page.DrawString(cell.font, cell.fallbackFont, *cell.text, xText, yText)
+			page.DrawStringUsingColorMap(cell.font, cell.fallbackFont, *cell.text, xText, yText, cell.brush, nil)
 			page.AddEMC()
 			if cell.GetUnderline() {
 				cell.UnderlineText(page, cell.font, *cell.text, xText, yText)
@@ -575,7 +573,7 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 			xText = x + cell.leftPadding +
 				(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.font.stringWidth(*cell.text)) / 2)
 			page.AddBMC("Span", "", *cell.text, *cell.text)
-			page.DrawString(cell.font, cell.fallbackFont, *cell.text, xText, yText)
+			page.DrawStringUsingColorMap(cell.font, cell.fallbackFont, *cell.text, xText, yText, cell.brush, nil)
 			page.AddEMC()
 			if cell.GetUnderline() {
 				cell.UnderlineText(page, cell.font, *cell.text, xText, yText)
@@ -595,7 +593,7 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		xText = x + cell.leftPadding
 		if cell.compositeTextLine == nil {
 			page.AddBMC("Span", "", *cell.text, *cell.text)
-			page.DrawString(cell.font, cell.fallbackFont, *cell.text, xText, yText)
+			page.DrawStringUsingColorMap(cell.font, cell.fallbackFont, *cell.text, xText, yText, cell.brush, nil)
 			page.AddEMC()
 			if cell.GetUnderline() {
 				cell.UnderlineText(page, cell.font, *cell.text, xText, yText)

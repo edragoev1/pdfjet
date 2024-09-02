@@ -1,7 +1,7 @@
 /**
  *  DonutChart.swift
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -151,6 +151,20 @@ public class DonutChart {
         return a2
     }
 
+    private func drawLinePointer(
+            _ page: Page,
+            _ perColor: Int32,
+            _ xc: Float, _ yc: Float,
+            _ r1: Float, _ r2: Float,   // r1 > r2
+            _ a1: Float, _ a2: Float) { // a1 > a2
+        page.setPenColor(Color.black)
+        let angle1 = a1 - 90.0
+        let angle2 = a2 - 90.0
+        if (angle2 - angle1) <= 90.0 {
+            page.drawLine(xc, yc, 500.0, 500.0)
+        }
+    }
+
     public func drawOn(_ page: Page) {
         var angle: Float = 0.0
         for slice in slices! {
@@ -159,6 +173,13 @@ public class DonutChart {
                     xc, yc,
                     r1, r2,
                     angle, angle + slice.angle)
+/*
+            drawLinePointer(
+                    page, slice.color,
+                    xc, yc,
+                    r1, r2,
+                    angle, angle + slice.angle)
+*/
         }
     }
 }   // End of DonutChart.swift

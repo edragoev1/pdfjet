@@ -1,7 +1,7 @@
 /**
  *  DonutChart.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,9 @@ package com.pdfjet;
 
 import java.util.*;
 
+/**
+ * The DonutChart class.
+ */
 public class DonutChart {
     Font f1;
     Font f2;
@@ -35,6 +38,13 @@ public class DonutChart {
     List<Slice> slices;
     boolean isDonutChart = true;
 
+    /**
+     * Creates DonutChart objects.
+     *
+     * @param f1 the main font.
+     * @param f2 the secondary font.
+     * @param isDonutChart true if we want to create donut chart.
+     */
     public DonutChart(Font f1, Font f2, boolean isDonutChart) {
         this.f1 = f1;
         this.f2 = f2;
@@ -42,16 +52,33 @@ public class DonutChart {
         this.slices = new ArrayList<Slice>();
     }
 
+    /**
+     * Sets the location of the donut chart.
+     *
+     * @param xc the horizontal location of the donut chart.
+     * @param yc the vertical location of the donut chart.
+     */
     public void setLocation(Float xc, Float yc) {
         this.xc = xc;
         this.yc = yc;
     }
 
+    /**
+     * Sets the R1 and R2 of the donut chart.
+     *
+     * @param r1 the R1 radius.
+     * @param r2 the R2 radius.
+     */
     public void setR1AndR2(Float r1, Float r2) {
         this.r1 = r1;
         this.r2 = r2;
     }
 
+    /**
+     * Adds new slice to the donut chart.
+     *
+     * @param slice the slice to add.
+     */
     public void addSlice(Slice slice) {
         this.slices.add(slice);
     }
@@ -157,6 +184,12 @@ public class DonutChart {
         }
     }
 
+    /**
+     * Draws the donut chart on the page.
+     *
+     * @param page the page.
+     * @throws Exception if there is an issue.
+     */
     public void drawOn(Page page) throws Exception {
         float angle = 0f;
         for (Slice slice : slices) {
@@ -165,11 +198,13 @@ public class DonutChart {
                     xc, yc,
                     r1, r2,
                     angle, angle + slice.angle);
+/*
             drawLinePointer(
                     page, slice.color,
                     xc, yc,
                     r1, r2,
                     angle, angle + slice.angle);
+*/
         }
     }
-}
+}   // DonutChart.java

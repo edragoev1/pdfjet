@@ -45,6 +45,7 @@ public class Table {
     private var rendered = 0
     private var x1: Float = 0.0
     private var y1: Float = 0.0
+    private var x1FirstPage: Float = 0.0
     private var y1FirstPage: Float = 0.0
     private var bottomMargin: Float = 0.0
 
@@ -434,7 +435,11 @@ public class Table {
 
     private func drawHeaderRows(_ page: Page?, _ pageNumber: Int) -> [Float] {
         var x = x1
-        var y = (pageNumber == 1) ? y1FirstPage : y1
+        var y = y1
+        if pageNumber == 1 && y1FirstPage > 0.0 {
+            x = x1FirstPage
+            y = y1FirstPage
+        }
         for i in 0..<numOfHeaderRows {
             let row = tableData[i]
             let h = getMaxCellHeight(row)
@@ -577,10 +582,6 @@ public class Table {
                 cell.setLineWidth(width)
             }
         }
-    }
-
-    public func setFirstPageTopMargin(_ topMargin: Float) {
-        self.y1FirstPage = y1 + topMargin
     }
 
     // Sets the right border on all cells in the last column.
@@ -811,5 +812,26 @@ public class Table {
             }
             return "\t"
         }
+    }
+
+    public func setVisibleColumns(_ visible: Int...) {
+        var list = [[Cell]]()
+        for row in tableData {
+            var row2 = [Cell]()
+            var i = 0
+            while i < row.count {
+                if visible.contains(i) {
+                    row2.append(row[i])
+                }
+                i += 1
+            }
+            list.append(row2)
+        }
+        tableData = list
+    }
+
+    public func setLocationFirstPage(_ x: Float, _ y: Float) {
+        self.x1FirstPage = x;
+        self.y1FirstPage = y;
     }
 }   // End of Table.swift

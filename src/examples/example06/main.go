@@ -4,14 +4,13 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/compress"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example06
 func Example06() {
-	pdf := pdfjet.NewPDFFile("Example_06.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_06.pdf")
 	pdf.SetTitle("Hello")
 	pdf.SetAuthor("World")
 	pdf.SetSubject("This is a test")

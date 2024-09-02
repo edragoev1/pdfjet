@@ -1,7 +1,7 @@
 /**
  *  OptimizeOTF.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,10 @@ import java.util.zip.*;
  */
 public class OptimizeOTF {
     private static boolean useZopfli = true;
+
+    /** Default constructor */
+    public OptimizeOTF() {
+    }
 
     /**
      * Converts font TTF or OTF file to .ttf.stream .otf.stream
@@ -89,11 +93,11 @@ public class OptimizeOTF {
             compressWithZopfli(fileName, fos, buf1, false);
         } else {
             ByteArrayOutputStream buf2 = new ByteArrayOutputStream(0xFFFF);
-            DeflaterOutputStream dos1 =
-                    new DeflaterOutputStream(
-                            buf2, new Deflater(Deflater.BEST_COMPRESSION));
+            Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+            DeflaterOutputStream dos1 = new DeflaterOutputStream(buf2, deflater);
             dos1.write(buf1, 0, buf1.length);
             dos1.finish();
+            deflater.end();
             writeInt32(buf2.size(), fos);
             buf2.writeTo(fos);
         }
@@ -113,11 +117,11 @@ public class OptimizeOTF {
             compressWithZopfli(fileName, fos, buf3, true);
         } else {
             ByteArrayOutputStream buf4 = new ByteArrayOutputStream(0xFFFF);
-            DeflaterOutputStream dos =
-                    new DeflaterOutputStream(buf4,
-                            new Deflater(Deflater.BEST_COMPRESSION));
+            Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+            DeflaterOutputStream dos = new DeflaterOutputStream(buf4, deflater);
             dos.write(buf3, 0, buf3.length);
             dos.finish();
+            deflater.end();
             writeInt32(buf3.length, fos);   // Uncompressed font size
             writeInt32(buf4.size(), fos);   // Compressed font size
             buf4.writeTo(fos);

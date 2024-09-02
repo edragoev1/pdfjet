@@ -1,7 +1,7 @@
 /**
  *  SVG.java
  *
- Copyright 2023 Innovatics Inc.
+ Copyright 2024 Innovatics Inc.
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,14 @@ package com.pdfjet;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * The SVG class.
+ */
 public class SVG {
+    /** The default constructor */
+    public SVG() {
+    }
+
     private static boolean isCommand(char ch) {
         // Please note:
         // Capital letter commands use absolute coordinates
@@ -55,6 +62,12 @@ public class SVG {
         return false;
     }
 
+    /**
+     * Returns the path operations list.
+     *
+     * @param path the path.
+     * @return the list of SVG path operation.
+     */
     public static List<PathOp> getOperations(String path) {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp op = null;
@@ -98,6 +111,12 @@ public class SVG {
         return operations;
     }
 
+    /**
+     * Returns list of PDF path operations.
+     *
+     * @param list the list of SVG path operations.
+     * @return the list of PDF path operation.
+     */
     public static List<PathOp> toPDF(List<PathOp> list) {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp lastOp = null;

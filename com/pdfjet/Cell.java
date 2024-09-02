@@ -1,7 +1,7 @@
 /**
  *  Cell.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -219,6 +219,11 @@ public class Cell {
         return this.compositeTextLine;
     }
 
+    /**
+     * Sets the text box.
+     *
+     * @param textBox the text box.
+     */
     public void setTextBox(TextBox textBox) {
         this.textBox = textBox;
         this.text = null;
@@ -293,9 +298,10 @@ public class Cell {
     /**
      *  Returns the cell height.
      *
+     *  @param width the cell width.
      *  @return the cell height.
      */
-    public float getHeight(float width) throws Exception {
+    public float getHeight(float width) {
         float cellHeight = 0f;
         if (textBox != null) {
             textBox.setWidth(width);
@@ -543,6 +549,11 @@ public class Cell {
         return (properties & 0x00800000) != 0;
     }
 
+    /**
+     * Sets the URI action.
+     *
+     * @param uri the URI.
+     */
     public void setURIAction(String uri) {
         this.uri = uri;
     }
@@ -690,12 +701,11 @@ public class Cell {
         }
 
         page.setPenColor(pen);
-        page.setBrushColor(brush);
         if (getTextAlignment() == Align.RIGHT) {
             if (compositeTextLine == null) {
                 xText = (x + cellW) - (font.stringWidth(text) + this.rightPadding);
                 page.addBMC(StructElem.P, text, text);
-                page.drawString(font, fallbackFont, text, xText, yText);
+                page.drawString(font, fallbackFont, text, xText, yText, brush, null);
                 page.addEMC();
                 if (getUnderline()) {
                     underlineText(page, font, text, xText, yText);
@@ -715,7 +725,7 @@ public class Cell {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font.stringWidth(text)) / 2);
                 page.addBMC(StructElem.P, text, text);
-                page.drawString(font, fallbackFont, text, xText, yText);
+                page.drawString(font, fallbackFont, text, xText, yText, brush, null);
                 page.addEMC();
                 if (getUnderline()) {
                     underlineText(page, font, text, xText, yText);
@@ -735,7 +745,7 @@ public class Cell {
             xText = x + this.leftPadding;
             if (compositeTextLine == null) {
                 page.addBMC(StructElem.P, text, text);
-                page.drawString(font, fallbackFont, text, xText, yText);
+                page.drawString(font, fallbackFont, text, xText, yText, brush, null);
                 page.addEMC();
                 if (getUnderline()) {
                     underlineText(page, font, text, xText, yText);
@@ -789,6 +799,11 @@ public class Cell {
         page.addEMC();
     }
 
+    /**
+     * Returns the text box.
+     *
+     * @return the text box.
+     */
     public TextBox getTextBox() {
         return textBox;
     }

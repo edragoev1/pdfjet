@@ -28,6 +28,10 @@ package com.pdfjet;
  *
  */
 public class Mark {
+    /** Default Constructor */
+    public Mark() {
+    }
+
     /** Mark UNCHECK */
     public static final int UNCHECK = 0;
     /** Mark CHECK */

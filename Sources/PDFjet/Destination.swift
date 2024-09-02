@@ -28,16 +28,31 @@ SOFTWARE.
 public class Destination {
     var name: String?
     var pageObjNumber = 0
+    var xPosition: Float = 0.0
     var yPosition: Float = 0.0
 
     ///
-    /// This class is used to create destination objects.
+    /// This initializer is used to create destination objects.
+    ///
+    /// @param name the name of this destination object.
+    /// @param xPosition the x coordinate of the top left corner.
+    /// @param yPosition the y coordinate of the top left corner.
+    ///
+    public init(_ name: String, _ xPosition: Float, _ yPosition: Float) {
+        self.name = name
+        self.xPosition = xPosition
+        self.yPosition = yPosition
+    }
+
+    ///
+    /// This initializer is used to create destination objects.
     ///
     /// @param name the name of this destination object.
     /// @param yPosition the y coordinate of the top left corner.
     ///
     public init(_ name: String, _ yPosition: Float) {
         self.name = name
+        self.xPosition = 0.0
         self.yPosition = yPosition
     }
 

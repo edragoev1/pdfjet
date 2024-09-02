@@ -242,6 +242,15 @@ public class TextLine implements Drawable {
     }
 
     /**
+     * Returns the x coordinate of the destination.
+     *
+     * @return the x coordinate of the destination.
+     */
+    public float getDestinationX() {
+        return x;
+    }
+
+    /**
      * Returns the y coordinate of the destination.
      *
      * @return the y coordinate of the destination.

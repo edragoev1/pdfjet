@@ -31,7 +31,7 @@ import java.util.List;
  *  Used to create font objects.
  *  The font objects must added to the PDF before they can be used to draw text.
  */
-public class Font {
+final public class Font {
     /** Is this a stream font? */
     public static final boolean STREAM = true;
 

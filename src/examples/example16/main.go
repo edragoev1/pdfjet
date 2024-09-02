@@ -8,7 +8,6 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/border"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/direction"
 	"github.com/edragoev1/pdfjet/src/letter"
@@ -17,7 +16,7 @@ import (
 // Example16 draws the Canadian flag using a Path object that contains both lines
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example16() {
-	pdf := pdfjet.NewPDFFile("Example_16.pdf", compliance.PDF15)
+	pdf := pdfjet.NewPDFFile("Example_16.pdf")
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

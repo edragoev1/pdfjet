@@ -14,7 +14,7 @@ import (
 // Example05 draws the Canadian flag using a Path object that contains both lines
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example05() {
-	pdf := pdfjet.NewPDFFile("Example_05.pdf", 0)
+	pdf := pdfjet.NewPDFFile("Example_05.pdf")
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f1.SetItalic(true)

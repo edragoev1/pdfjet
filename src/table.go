@@ -42,6 +42,7 @@ type Table struct {
 	numOfHeaderRows int
 	rendered        int
 	x1, y1          float32
+	x1FirstPage     float32
 	y1FirstPage     float32
 	bottomMargin    float32
 }
@@ -241,12 +242,14 @@ func (table *Table) SetFontInColumn(index int, font *Font) {
 // SetTextColorInRow sets the color of the text in the specified row.
 // @param index the index of the specified row.
 // @param color the color specified as an integer.
-func (table *Table) SetTextColorInRow(index, color int32) {
-	row := table.tableData[index]
-	for _, cell := range row {
-		cell.SetBrushColor(color)
-		if cell.textBox != nil {
-			cell.textBox.SetBrushColor(color)
+func (table *Table) SetTextColorInRow(index int, color int32) {
+	if index < len(table.tableData) {
+		row := table.tableData[index]
+		for _, cell := range row {
+			cell.SetBrushColor(color)
+			if cell.textBox != nil {
+				cell.textBox.SetBrushColor(color)
+			}
 		}
 	}
 }
@@ -255,11 +258,13 @@ func (table *Table) SetTextColorInRow(index, color int32) {
 // @param index the row index.
 // @param font the font.
 func (table *Table) SetFontInRow(index int, font *Font) {
-	row := table.tableData[index]
-	for _, cell := range row {
-		cell.font = font
-		if cell.textBox != nil {
-			cell.textBox.font = font
+	if index < len(table.tableData) {
+		row := table.tableData[index]
+		for _, cell := range row {
+			cell.font = font
+			if cell.textBox != nil {
+				cell.textBox.font = font
+			}
 		}
 	}
 }
@@ -344,7 +349,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
-	return table.drawTableRows(page, table.drawHeaderRows(page))
+	return table.drawTableRows(page, table.drawHeaderRows(page, 0))
 }
 
 // DrawOnPages draws the table on pdf pages with the specified size.
@@ -353,10 +358,12 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
 	var xy [2]float32
+	pageNumber := 1
 	for table.hasMoreData() {
 		page := NewPageDetached(pdf, pageSize)
 		*pages = append(*pages, page)
-		xy = table.drawTableRows(page, table.drawHeaderRows(page))
+		xy = table.drawTableRows(page, table.drawHeaderRows(page, pageNumber))
+		pageNumber++
 	}
 	return xy
 }
@@ -366,9 +373,13 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [
  *  @param page the page to draw table table on.
  *  @return Point the point on the page where to draw the next component.
  */
-func (table *Table) drawHeaderRows(page *Page) [2]float32 {
+func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	x := table.x1
 	y := table.y1
+	if pageNumber == 1 && table.y1FirstPage > 0.0 {
+		x = table.x1FirstPage
+		y = table.y1FirstPage
+	}
 	for i := 0; i < table.numOfHeaderRows; i++ {
 		row := table.tableData[i]
 		h := table.getMaxCellHeight(row)
@@ -491,11 +502,6 @@ func (table *Table) SetCellBordersWidth(width float32) {
 			cell.SetLineWidth(width)
 		}
 	}
-}
-
-// SetFirstPageTopMargin -- TODO:
-func (table *Table) SetFirstPageTopMargin(topMargin float32) {
-	table.y1FirstPage = table.y1 + topMargin
 }
 
 // Sets the right border on all cells in the last column.
@@ -721,4 +727,32 @@ func getDelimiterRegex(str string) string {
 		}
 		return "\t"
 	}
+}
+
+func (table *Table) contains(visible []int, index int) bool {
+	for _, i := range visible {
+		if i == index {
+			return true
+		}
+	}
+	return false
+}
+
+func (table *Table) SetVisibleColumns(visible ...int) {
+	list := make([][]*Cell, 0)
+	for _, row := range table.tableData {
+		row2 := make([]*Cell, 0)
+		for i := 0; i < len(row); i++ {
+			if table.contains(visible, i) {
+				row2 = append(row2, row[i])
+			}
+		}
+		list = append(list, row2)
+	}
+	table.tableData = list
+}
+
+func (table *Table) SetLocationFirstPage(x, y float32) {
+	table.x1FirstPage = x
+	table.y1FirstPage = y
 }

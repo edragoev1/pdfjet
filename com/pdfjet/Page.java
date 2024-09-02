@@ -1,7 +1,7 @@
 /**
  *  Page.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ import java.util.*;
  *  1 point is 1/72 inches.
  *  </pre>
  */
-public class Page {
+final public class Page {
     protected PDF pdf;
     protected PDFobj pageObj;
     protected int objNumber;
@@ -136,7 +136,7 @@ public class Page {
 
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
-        this.pageObj = pageObj;
+        this.pageObj = removeComments(pageObj);
         width = pageObj.getPageSize()[0];
         height = pageObj.getPageSize()[1];
         buf = new ByteArrayOutputStream(8192);
@@ -144,7 +144,7 @@ public class Page {
         tm1 = PDF.df.format(tm[1]).getBytes();
         tm2 = PDF.df.format(tm[2]).getBytes();
         tm3 = PDF.df.format(tm[3]).getBytes();
-        append("q\n");
+        this.append("q\n");
         if (pageObj.gsNumber != -1) {
             append("/GS");
             append(pageObj.gsNumber + 1);
@@ -152,25 +152,90 @@ public class Page {
         }
     }
 
+    private PDFobj removeComments(PDFobj obj) {
+        List<String> list = new ArrayList<String>();
+        boolean comment = false;
+        for (String token : obj.dict) {
+            if (token.equals("%")) {
+                comment = true;
+            } else {
+                if (token.startsWith("/")) {
+                    comment = false;
+                    list.add(token);
+                } else {
+                    if (!comment) {
+                        list.add(token);
+                    }
+                }
+            }
+        }
+        obj.dict = list;
+        return obj;
+    }
+
+    /**
+     * Adds core font resource to the page.
+     *
+     * @param coreFont the core font.
+     * @param objects the objects list.
+     * @return the font object.
+     */
     public Font addResource(CoreFont coreFont, List<PDFobj> objects) {
         return pageObj.addResource(coreFont, objects);
     }
 
+    /**
+     * Adds image resource to the page.
+     *
+     * @param image the image.
+     * @param objects the page objects.
+     */
     public void addResource(Image image, List<PDFobj> objects) {
         pageObj.addResource(image, objects);
     }
 
+    /**
+     * Adds resource to the page.
+     *
+     * @param font the font.
+     * @param objects the objects list.
+     */
     public void addResource(Font font, List<PDFobj> objects) {
         pageObj.addResource(font, objects);
     }
 
+    /**
+     * Completes the page.
+     *
+     * @param objects list of the page objects.
+     */
     public void complete(List<PDFobj> objects) {
         append("Q\n");
         pageObj.addContent(getContent(), objects);
     }
 
+    /**
+     * Returns the page content.
+     *
+     * @return the page content.
+     */
     public byte[] getContent() {
         return buf.toByteArray();
+    }
+
+    /**
+     *  Adds destination to this page.
+     *
+     *  @param name The destination name.
+     *  @param xPosition The horizontal position of the destination on this page.
+     *  @param yPosition The vertical position of the destination on this page.
+     *
+     *  @return the destination.
+     */
+    public Destination addDestination(String name, float xPosition, float yPosition) {
+        Destination dest = new Destination(name, xPosition, height - yPosition);
+        destinations.add(dest);
+        return dest;
     }
 
     /**
@@ -182,7 +247,7 @@ public class Page {
      *  @return the destination.
      */
     public Destination addDestination(String name, float yPosition) {
-        Destination dest = new Destination(name, height - yPosition);
+        Destination dest = new Destination(name, 0f, height - yPosition);
         destinations.add(dest);
         return dest;
     }
@@ -239,6 +304,15 @@ public class Page {
         strokePath();
     }
 
+    /**
+     *  Draws string on the page using the specified fonts and coordinates.
+     *
+     *  @param font1 the primary font.
+     *  @param font2 the fallback font.
+     *  @param str the string.
+     *  @param x the x coordinate.
+     *  @param y the y coordinate.
+     */
     public void drawString(
             Font font1,
             Font font2,
@@ -259,6 +333,7 @@ public class Page {
      *  @param str the string to be drawn.
      *  @param x the x coordinate.
      *  @param y the y coordinate.
+     *  @param brush the brush.
      *  @param colors map used to highlight specific words.
      */
     public void drawString(
@@ -689,7 +764,8 @@ public class Page {
      *  Sets the default line dash pattern - solid line.
      */
     public void setDefaultLinePattern() {
-        append("[] 0");
+        linePattern = "[] 0";
+        append(linePattern);
         append(" d\n");
     }
 
@@ -1531,6 +1607,13 @@ public class Page {
         }
     }
 
+    /**
+     * Adds BMC marker.
+     *
+     * @param structure the structure.
+     * @param actualText the actual text.
+     * @param altDescription the alternative description.
+     */
     public void addBMC(
             String structure,
             String actualText,
@@ -1538,6 +1621,14 @@ public class Page {
         addBMC(structure, null, actualText, altDescription);
     }
 
+    /**
+     * Adds BMC marker.
+     *
+     * @param structure the structure.
+     * @param language the language.
+     * @param actualText the actual text.
+     * @param altDescription the alternative description.
+     */
     public void addBMC(
             String structure,
             String language,

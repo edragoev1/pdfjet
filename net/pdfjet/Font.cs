@@ -262,7 +262,7 @@ public class Font {
 
     /**
      * Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
-     * 
+     *
      * @param pdf the pdf object.
      * @param fontPath the font path.
      * @throws Exception thrown of the font file is not found.

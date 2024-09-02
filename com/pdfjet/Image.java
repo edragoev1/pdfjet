@@ -1,7 +1,7 @@
 /**
  *  Image.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ import java.util.*;
  *
  *  Please see Example_03 and Example_24.
  */
-public class Image implements Drawable {
+final public class Image implements Drawable {
     protected int objNumber;
 
     protected float x = 0f; // Position of the image on the page
@@ -126,7 +126,6 @@ public class Image implements Drawable {
      *  @param inputStream the input stream to read the image from.
      *  @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
      *  @throws Exception  If an input or output exception occurred
-     *
      */
     public Image(List<PDFobj> objects, InputStream inputStream, int imageType) throws Exception {
         byte[] data;
@@ -354,6 +353,7 @@ public class Image implements Drawable {
      *  Sets the image rotation to the specified number of degrees.
      *
      *  @param degrees the number of degrees.
+     *  @throws Exception if there is an issue.
      */
     public void rotateClockwise(int degrees) throws Exception {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {

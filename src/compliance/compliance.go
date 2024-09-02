@@ -1,9 +1,9 @@
 package compliance
 
-// Used to set PDF/UA and PDF/A-?? compliance.
+// Used to set PDF/UA and PDF/A compliance.
 // See the constructors in the PDF class.
 const (
-	PDF15 = iota
+	PDF_15 = iota // Do not remove the PDF_15!
 	PDF_UA
 	PDF_A_1A
 	PDF_A_1B

@@ -3,7 +3,7 @@ package pdfjet
 /**
  * pdf.go
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -112,11 +112,10 @@ type PDF struct {
  *  @param os the associated output stream.
  *  @param compliance must be: compliance.PDF_UA or compliance.PDF_A_1A to compliance.PDF_A_3B
  */
-func NewPDF(w *bufio.Writer, pdfCompliance int) *PDF {
+func NewPDF(w *bufio.Writer) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
-	pdf.compliance = pdfCompliance
-	pdf.producer = "PDFjet v7.07.3"
+	pdf.producer = "PDFjet v8.0.3"
 	pdf.creator = pdf.producer
 	pdf.language = "en-US"
 
@@ -149,12 +148,12 @@ func (pdf *PDF) SetCompliance(compliance int) {
 	pdf.compliance = compliance
 }
 
-func NewPDFFile(filePath string, pdfCompliance int) *PDF {
+func NewPDFFile(filePath string) *PDF {
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return NewPDF(bufio.NewWriter(file), pdfCompliance)
+	return NewPDF(bufio.NewWriter(file))
 }
 
 func (pdf *PDF) newobj() {
@@ -839,7 +838,9 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString("/F 4\n") // No Zoom
 			pdf.appendString("/Dest [")
 			pdf.appendInteger(destination.pageObjNumber)
-			pdf.appendString(" 0 R /XYZ 0 ")
+			pdf.appendString(" 0 R /XYZ ")
+			pdf.appendFloat32(destination.xPosition)
+			pdf.appendString(" ")
 			pdf.appendFloat32(destination.yPosition)
 			pdf.appendString(" 0]\n")
 		}
@@ -1521,7 +1522,9 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 	pdf.appendString("/F 4\n") // No Zoom
 	pdf.appendString("/Dest [")
 	pdf.appendInteger(bm1.getDestination().pageObjNumber)
-	pdf.appendString(" 0 R /XYZ 0 ")
+	pdf.appendString(" 0 R /XYZ ")
+	pdf.appendFloat32(bm1.getDestination().xPosition)
+	pdf.appendString(" ")
 	pdf.appendFloat32(bm1.getDestination().yPosition)
 	pdf.appendString(" 0]\n")
 	pdf.appendString(">>\n")
@@ -1530,11 +1533,9 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 
 func getNumOfChildren(numOfChildren int, bm1 *Bookmark) int {
 	children := bm1.getChildren()
-	if children != nil {
-		for _, bm2 := range children {
-			numOfChildren++
-			numOfChildren = getNumOfChildren(numOfChildren, bm2)
-		}
+	for _, bm2 := range children {
+		numOfChildren++
+		numOfChildren = getNumOfChildren(numOfChildren, bm2)
 	}
 	return numOfChildren
 }

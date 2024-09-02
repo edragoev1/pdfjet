@@ -109,14 +109,16 @@ public class OTF {
         // This table must be processed last
         cmap(cmapTable);
         baos = new ByteArrayOutputStream();
+        Deflater deflater = new Deflater(Deflater.BEST_SPEED);
         DeflaterOutputStream dos =
-                new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_SPEED));
+                new DeflaterOutputStream(baos, deflater);
         if (cff) {
             dos.write(buf, cffOff, cffLen);
         } else {
             dos.write(buf, 0, buf.length);
         }
         dos.finish();
+        deflater.end();
     }
 
     private void head(FontTable table) {
@@ -308,10 +310,10 @@ public class OTF {
     }
 
     private short readInt16() {
-        short val = 0;
+        int val = 0;
         val |= (buf[index++] <<  8) & 0xFF00;
         val |= (buf[index++])       & 0x00FF;
-        return val;
+        return (short) val;
     }
 
     private int readUInt16() {

@@ -1,7 +1,7 @@
 /**
  *  Table.java
  *
-Copyright 2023 Innovatics Inc.
+Copyright 2024 Innovatics Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -50,6 +50,7 @@ public class Table {
     private int rendered = 0;
     private float x1;
     private float y1;
+    private float x1FirstPage;
     private float y1FirstPage;
     private float bottomMargin;
 
@@ -64,6 +65,9 @@ public class Table {
     /**
      * Create a table object.
      *
+     * @param f1 the primary font.
+     * @param f2 the secondary font.
+     * @param fileName the file name.
      */
     public Table(Font f1, Font f2, String fileName) {
         tableData = new ArrayList<List<Cell>>();
@@ -329,11 +333,13 @@ public class Table {
      * @param color the color specified as an integer.
      */
     public void setTextColorInRow(int index, int color) {
-        List<Cell> row = tableData.get(index);
-        for (Cell cell : row) {
-            cell.setBrushColor(color);
-            if (cell.textBox != null) {
-                cell.textBox.setBrushColor(color);
+        if (index < tableData.size()) {
+            List<Cell> row = tableData.get(index);
+            for (Cell cell : row) {
+                cell.setBrushColor(color);
+                if (cell.textBox != null) {
+                    cell.textBox.setBrushColor(color);
+                }
             }
         }
     }
@@ -345,11 +351,13 @@ public class Table {
      * @param font  the font.
      */
     public void setFontInRow(int index, Font font) {
-        List<Cell> row = tableData.get(index);
-        for (Cell cell : row) {
-            cell.font = font;
-            if (cell.textBox != null) {
-                cell.textBox.font = font;
+        if (index < tableData.size()) {
+            List<Cell> row = tableData.get(index);
+            for (Cell cell : row) {
+                cell.font = font;
+                if (cell.textBox != null) {
+                    cell.textBox.font = font;
+                }
             }
         }
     }
@@ -477,7 +485,11 @@ public class Table {
 
     private float[] drawHeaderRows(Page page, int pageNumber) throws Exception {
         float x = x1;
-        float y = (pageNumber == 1) ? y1FirstPage : y1;
+        float y = y1;
+        if (pageNumber == 1 && y1FirstPage > 0f) {
+            x = x1FirstPage;
+            y = y1FirstPage;
+        }
         for (int i = 0; i < numOfHeaderRows; i++) {
             List<Cell> row = tableData.get(i);
             float h = getMaxCellHeight(row);
@@ -609,10 +621,6 @@ public class Table {
                 cell.setLineWidth(width);
             }
         }
-    }
-
-    public void setFirstPageTopMargin(float topMargin) {
-        this.y1FirstPage = y1 + topMargin;
     }
 
     // Sets the right border on all cells in the last column.
@@ -784,6 +792,8 @@ public class Table {
     /**
      *  Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
      *
+     *  @param row the list of cells.
+     *  @param index the index of the column.
      *  @return the number of vertical cells needed to wrap around the cell text.
      */
     public int getNumVerCells(List<Cell> row, int index) {
@@ -848,5 +858,25 @@ public class Table {
             }
             return "\t";
         }
+    }
+
+    public void setVisibleColumns(Integer... columns) {
+        List<List<Cell>> list = new ArrayList<List<Cell>>();
+        List<Integer> visible = Arrays.asList(columns);
+        for (List<Cell> row : tableData) {
+            List<Cell> row2 = new ArrayList<Cell>();
+            for (int i = 0; i < row.size(); i++) {
+                if (visible.contains(i)) {
+                    row2.add(row.get(i));
+                }
+            }
+            list.add(row2);
+        }
+        tableData = list;
+    }
+
+    public void setLocationFirstPage(float x, float y) {
+        this.x1FirstPage = x;
+        this.y1FirstPage = y;
     }
 } // End of Table.java

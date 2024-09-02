@@ -50,6 +50,7 @@ public class Table {
     private int rendered = 0;
     private float x1;
     private float y1;
+    private float x1FirstPage;
     private float y1FirstPage;
     private float bottomMargin;
 
@@ -295,11 +296,13 @@ public class Table {
      *  @param color the color specified as an integer.
      */
     public void SetTextColorInRow(int index, int color) {
-        List<Cell> row = tableData[index];
-        foreach (Cell cell in row) {
-            cell.SetBrushColor(color);
-            if (cell.textBox != null) {
-                cell.textBox.SetBrushColor(color);
+        if (index < tableData.Count) {
+            List<Cell> row = tableData[index];
+            foreach (Cell cell in row) {
+                cell.SetBrushColor(color);
+                if (cell.textBox != null) {
+                    cell.textBox.SetBrushColor(color);
+                }
             }
         }
     }
@@ -311,11 +314,13 @@ public class Table {
      *  @param font the font.
      */
     public void SetFontInRow(int index, Font font) {
-        List<Cell> row = tableData[index];
-        foreach (Cell cell in row) {
-            cell.font = font;
-            if (cell.textBox != null) {
-                cell.textBox.font = font;
+        if (index < tableData.Count) {
+            List<Cell> row = tableData[index];
+            foreach (Cell cell in row) {
+                cell.font = font;
+                if (cell.textBox != null) {
+                    cell.textBox.font = font;
+                }
             }
         }
     }
@@ -433,7 +438,11 @@ public class Table {
 
     private float[] DrawHeaderRows(Page page, int pageNumber) {
         float x = x1;
-        float y = (pageNumber == 1) ? y1FirstPage : y1;
+        float y = y1;
+        if (pageNumber == 1 && y1FirstPage > 0f) {
+            x = x1FirstPage;
+            y = y1FirstPage;
+        }
         for (int i = 0; i < numOfHeaderRows; i++) {
             List<Cell> row = tableData[i];
             float h = GetMaxCellHeight(row);
@@ -573,10 +582,6 @@ public class Table {
                 tableData[i][j].SetLineWidth(width);
             }
         }
-    }
-
-    public void SetFirstPageTopMargin(float topMargin) {
-        this.y1FirstPage = y1 + topMargin;
     }
 
     // Sets the right border on all cells in the last column.
@@ -810,6 +815,26 @@ public class Table {
             }
             return new Char[] {'\t'};
         }
+    }
+
+    public void SetVisibleColumns(params int[] columns) {
+        List<List<Cell>> list = new List<List<Cell>>();
+        List<int> visible = new List<int>(columns);
+        foreach (List<Cell> row in tableData) {
+            List<Cell> row2 = new List<Cell>();
+            for (int i = 0; i < row.Count; i++) {
+                if (visible.Contains(i)) {
+                    row2.Add(row[i]);
+                }
+            }
+            list.Add(row2);
+        }
+        tableData = list;
+    }
+
+    public void SetLocationFirstPage(float x, float y) {
+        this.x1FirstPage = x;
+        this.y1FirstPage = y;
     }
 }   // End of Table.cs
 }   // End of namespace PDFjet.NET
