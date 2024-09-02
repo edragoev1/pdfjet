@@ -21,8 +21,7 @@ public class Example_22 {
         TextLine text = new TextLine(f1, "Page #1 -> Go to Destination #3.");
         text.SetGoToAction("dest#3");
         text.SetLocation(90f, 50f);
-        page.AddDestination("dest#0", 0f);
-        page.AddDestination("dest#1", text.GetDestinationY());
+        page.AddDestination("dest#1", 0f, 0f);
         text.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
@@ -40,8 +39,8 @@ public class Example_22 {
         text.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
-        text = new TextLine(f1, "Page #4 -> Go to Destination #0.");
-        text.SetGoToAction("dest#0");
+        text = new TextLine(f1, "Page #4 -> Go to Destination #1.");
+        text.SetGoToAction("dest#1");
         text.SetLocation(90f, 100f);
         page.AddDestination("dest#4", text.GetDestinationY());
         text.DrawOn(page);
@@ -54,7 +53,7 @@ public class Example_22 {
         // Create a box with invisible borders
         Box box = new Box(20f, 20f, 20f, 20f);
         box.SetColor(Color.white);
-        box.SetGoToAction("dest#0");
+        box.SetGoToAction("dest#1");
         box.DrawOn(page);
 
         // Create an up arrow and place it in the box
@@ -77,7 +76,7 @@ public class Example_22 {
                 "images/up-arrow.png", FileMode.Open, FileAccess.Read);
         Image image = new Image(pdf, fis, ImageType.PNG);
         image.SetLocation(40f, 40f);
-        image.SetGoToAction("dest#0");
+        image.SetGoToAction("dest#1");
         image.DrawOn(page);
 
         pdf.Complete();

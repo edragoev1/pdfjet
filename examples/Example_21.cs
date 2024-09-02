@@ -53,13 +53,8 @@ public class Example_21 {
                 ErrorCorrectLevel.H);   // Very High
         qr.SetLocation(400f, 400f);
         qr.SetModuleLength(3f);
-        float[] xy = qr.DrawOn(page);
-/*
-        Box box = new Box();
-        box.SetLocation(xy[0], xy[1]);
-        box.SetSize(20f, 20f);
-        box.DrawOn(page);
-*/
+        qr.DrawOn(page);
+
         pdf.Complete();
     }
 

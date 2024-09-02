@@ -14,6 +14,7 @@ public class Example_24 {
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
         Image image_00 = new Image(pdf, "images/gr-map.jpg");
+        // Image image_01 = new Image(pdf, "images/linux-logo.png");
         Image image_01 = new Image(pdf, "images/linux-logo.png.stream");
         Image image_02 = new Image(pdf, "images/ee-map.png");
         Image image_03 = new Image(pdf, "images/rgb24pal.bmp");
@@ -45,8 +46,8 @@ public class Example_24 {
         point = textline_03.DrawOn(page);
         image_03.SetLocation(50f, point[1]).ScaleBy(0.75f).DrawOn(page);
 
-        Image image1 = new Image(pdf, "images/fruit.jpg");
-        Image image2 = new Image(pdf, "images/linux-logo.png.stream");
+        new Image(pdf, "images/fruit.jpg");
+        new Image(pdf, "images/linux-logo.png.stream");
 
         pdf.Complete();
     }

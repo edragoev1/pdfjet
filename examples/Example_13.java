@@ -8,7 +8,7 @@ import com.pdfjet.*;
  *  Example_13.java
  *
  */
-public class Example_13 {
+final public class Example_13 {
     public Example_13() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(

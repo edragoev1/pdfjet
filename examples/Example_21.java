@@ -49,13 +49,8 @@ public class Example_21 {
                 ErrorCorrectLevel.H);   // Very High
         qr.setLocation(400f, 400f);
         qr.setModuleLength(3f);
-        float[] xy = qr.drawOn(page);
-/*
-        Box box = new Box();
-        box.setLocation(xy[0], xy[1]);
-        box.setSize(20f, 20f);
-        box.drawOn(page);
-*/
+        qr.drawOn(page);
+
         pdf.complete();
     }
 

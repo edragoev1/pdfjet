@@ -1,51 +1,106 @@
 using System;
 using System.IO;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
-
+using System.Collections.Generic;
 using PDFjet.NET;
 
-
 /**
- *  Example_43.java
- *
+ * Example_43.cs
  */
 public class Example_43 {
-
     public Example_43() {
+        PDF pdf = new PDF(
+                new BufferedStream(new FileStream("Example_43.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA);
 
-        PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_43.pdf", FileMode.Create)));
+        // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        // Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream");
+        Font f2 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream");
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+        f1.SetSize(8f);
+        f2.SetSize(8f);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        String fileName = "data/Electric_Vehicle_Population_Data.csv";
+        // String fileName = "data/Electric_Vehicle_Population_1000.csv";
 
-        List<Paragraph> paragraphs = new List<Paragraph>();
-        Paragraph p1 = new Paragraph();
-        TextLine tl1 = new TextLine(f1,
-"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002.");
-        p1.Add(tl1);
+        BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
+        List<float> widths = table.getColumnWidths(fileName);
+        // Optionally you can fine tune the widths of the columns:
+        widths[8] = 70f; // Override the calculated width
+        widths[9] = 99f; // Override the calculated width
+        table.SetColumnSpacing(7f);
+        table.SetLocation(20f, 15f);
+        table.SetBottomMargin(15f);
+        table.SetColumnWidths(widths);
 
-        Paragraph p2 = new Paragraph();
-        TextLine tl2 = new TextLine(f2,
-"Even so, unemployment has remained at less than half the EU average.");
-        p2.Add(tl2);
+        // You can override that auto column alignments if required:
+        // final int LEFT = 0;                  // Align Left
+        // final int RIGHT = 1;                 // Align Right
+        // table.SetTextAlignment(1, RIGHT);    // Override the auto alignment
+        // table.SetTextAlignment(5, LEFT);     // Override the auto alignment
 
-        paragraphs.Add(p1);
-        paragraphs.Add(p2);
+        StreamReader reader = new StreamReader(fileName);
+        bool headerRow = true;
+        String line = null;
+        while ((line = reader.ReadLine()) != null) {
+            String[] fields = line.Split(',');
+            // Optional step:
+            fields = SelectAndProcessFields(table, fields, headerRow);
+            if (fields[6].Equals("TOYOTA")) {
+                table.DrawRow(fields, Color.red);
+            } else if (fields[6].Equals("JEEP")) {
+                table.DrawRow(fields, Color.green);
+            } else if (fields[6].Equals("FORD")) {
+                table.DrawRow(fields, Color.blue);
+            } else {
+                table.DrawRow(fields, Color.black);
+            }
+            headerRow = false;
+        }
+        table.Complete();
+        reader.Close();
 
-        Text text = new Text(paragraphs);
-        text.SetLocation(50f, 50f);
-        text.SetWidth(500f);
-        text.DrawOn(page);
+        List<Page> pages = table.GetPages();
+        for (int i = 0; i < pages.Count; i++) {
+            Page page = pages[i];
+            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
+            pdf.AddPage(page);
+        }
 
         pdf.Complete();
     }
 
+    private String[] SelectAndProcessFields(BigTable table, String[] fields, bool headerRow) {
+        List<String> row = new List<String>();
+        for (int i = 0; i < 10; i++) {
+            String field = fields[i];
+            if (i == 8) {
+                if (field[0] == 'B') {
+                    row.Add("BEV");
+                } else if (field[0] == 'P') {
+                    row.Add("PHEV");
+                } else {
+                    row.Add(field);
+                }
+            } else if (i == 9) {
+                if (headerRow) {
+                    row.Add("Clean Alternative Fuel Vehicle");
+                } else {
+                    if (field[0] == 'C') {
+                        row.Add("YES");
+                    } else if (field[0] == 'N') {
+                        row.Add("NO");
+                    } else {
+                        row.Add("UNKNOWN");
+                    }
+                }
+            } else {
+                row.Add(field);
+            }
+        }
+        return row.ToArray();
+    }
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
@@ -55,5 +110,4 @@ public class Example_43 {
         sw.Stop();
         TextUtils.PrintDuration("Example_43", time0, time1);
     }
-
-}   // End of Example_43.cs
+}

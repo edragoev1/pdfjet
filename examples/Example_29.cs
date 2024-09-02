@@ -25,17 +25,18 @@ public class Example_29 {
         // column.SetLineBetweenParagraphs(true);
         column.SetLineBetweenParagraphs(false);
         column.AddParagraph(paragraph);
-
-        Dimension dim0 = column.GetSize();
+/*
         float[] point1 = column.DrawOn(page);
+*/
+        column.DrawOn(page);
         float[] point2 = column.DrawOn(null);
+/*
         Dimension dim1 = column.GetSize();
         Dimension dim2 = column.GetSize();
         Dimension dim3 = column.GetSize();
-/*
-        Console.WriteLine("height0: " + dim0.GetHeight());
-        Console.WriteLine("point1.x: " + point1.GetX() + "    point1.y " + point1.GetY());
-        Console.WriteLine("point2.x: " + point2.GetX() + "    point2.y " + point2.GetY());
+
+        Console.WriteLine("point1.x: " + point1[0] + "    point1.y " + point1[1]);
+        Console.WriteLine("point2.x: " + point2[0] + "    point2.y " + point2[1]);
         Console.WriteLine("height1: " + dim1.GetHeight());
         Console.WriteLine("height2: " + dim2.GetHeight());
         Console.WriteLine("height3: " + dim3.GetHeight());
@@ -47,12 +48,8 @@ public class Example_29 {
         paragraph.Add(new TextLine(font, "Peter Blood, bachelor of medicine and several other things besides, smoked a pipe and tended the geraniums boxed on the sill of his window above Water Lane in the town of Bridgewater."));
         column.AddParagraph(paragraph);
 
-        Dimension dim4 = column.GetSize();
         float[] xy = column.DrawOn(page);  // Draw the updated text column
-/*
-        Console.WriteLine("point.x: " + xy[0] + "    point.y " + xy[1]);
-        Console.WriteLine("height4: " + dim4.GetHeight());
-*/
+
         Box box = new Box();
         box.SetLocation(xy[0], xy[1]);
         box.SetSize(540f, 25f);

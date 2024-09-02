@@ -39,87 +39,90 @@ public class Example_40 {
     public List<List<Point>> GetData() {
         List<List<Point>> chartData = new List<List<Point>>();
 
-        List<Point> path1 = new List<Point>();
-        Point point = new Point();
-        point.SetDrawPath();
-        point.SetX(15f);
-        point.SetY(0f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetColor(Color.blue);
-        point.SetLineWidth(25f);
-        point.SetText(" Vertical");
-        point.SetTextColor(Color.white);
-        point.SetTextDirection(90);
-        path1.Add(point);
-
-        point = new Point();
-        point.SetX(15f);
-        point.SetY(45f);
-        point.SetShape(Point.INVISIBLE);
-        path1.Add(point);
-
-
-        List<Point> path2 = new List<Point>();
-        point = new Point();
-        point.SetDrawPath();
-        point.SetX(25f);
-        point.SetY(0f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetColor(Color.green);
-        point.SetLineWidth(25f);
-        point.SetText(" Bar");
-        point.SetTextColor(Color.white);
-        point.SetTextDirection(90);
-        path2.Add(point);
-        point = new Point();
-        point.SetX(25f);
-        point.SetY(20f);
-        point.SetShape(Point.INVISIBLE);
-        path2.Add(point);
-
-
-        List<Point> path3 = new List<Point>();
-        point = new Point();
-        point.SetDrawPath();
-        point.SetX(35f);
-        point.SetY(0f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetColor(Color.red);
-        point.SetLineWidth(25f);
-        point.SetText(" Chart");
-        point.SetTextColor(Color.white);
-        point.SetTextDirection(90);
-        path3.Add(point);
-        point = new Point();
-        point.SetX(35f);
-        point.SetY(31);
-        point.SetShape(Point.INVISIBLE);
-        path3.Add(point);
-
-        List<Point> path4 = new List<Point>();
-        point = new Point();
-        point.SetDrawPath();
-        point.SetX(45f);
-        point.SetY(0f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetColor(Color.gold);
-        point.SetLineWidth(25f);
-        point.SetText(" Example");
-        point.SetTextColor(Color.black);
-        point.SetTextDirection(90);
-        path4.Add(point);
-        point = new Point();
-        point.SetX(45f);
-        point.SetY(73);
-        point.SetShape(Point.INVISIBLE);
-        path4.Add(point);
-
-        chartData.Add(path1);
-        chartData.Add(path2);
-        chartData.Add(path3);
-        chartData.Add(path4);
+        float w = 14f;
+        float x = 10f;
+        float dx1 = 16f;
+        float dx2 = 26f;
+        AddVerticalBar(chartData, x, w, 45f, Color.green, " January", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 75f, Color.red, " January", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 65f, Color.green, " February", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 20f, Color.red, " February", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " March", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " March", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 45f, Color.green, " April", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 75f, Color.red, " April", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 65f, Color.green, " May", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 20f, Color.red, " May", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " June", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " June", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " July", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " July", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " August", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " August", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " Septemeber", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " Septemeber", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " October", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " October", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " November", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " November", Color.white);
+        x += dx2;
+        AddVerticalBar(chartData, x, w, 31f, Color.green, " December", Color.white);
+        x += dx1;
+        AddVerticalBar(chartData, x, w, 73f, Color.red, " December", Color.white);
 
         return chartData;
+    }
+
+    private void AddVerticalBar(
+            List<List<Point>> chartData,
+            float x,
+            float w,
+            float h,
+            int color,
+            String text,
+            int textColor) {
+        List<Point> path1 = new List<Point>();
+
+        Point point = new Point();
+        point.SetDrawPath();
+        point.SetX(x);
+        point.SetY(0f);
+        point.SetShape(Point.INVISIBLE);
+        point.SetColor(color);
+        point.SetLineWidth(w);
+        point.SetText(text);
+        point.SetTextColor(textColor);
+        point.SetTextDirection(90);
+        path1.Add(point);
+
+        point = new Point();
+        point.SetX(x);
+        point.SetY(h);
+        point.SetShape(Point.INVISIBLE);
+        path1.Add(point);
+
+        chartData.Add(path1);
     }
 
     public static void Main(String[] args) {

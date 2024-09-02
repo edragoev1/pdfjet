@@ -1,90 +1,153 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using PDFjet.NET;
+using System.Reflection;
 
 /**
- *  Example_23.cs
+ * Example_23.cs
  */
 public class Example_23 {
     public Example_23() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_23.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
-        f3.SetSize(7f * 0.583f);
+        f1.SetSize(72f);
+        f2.SetSize(24f);
 
-        Image image1 = new Image(pdf, "images/mt-map.png");
-        image1.ScaleBy(0.75f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<List<Cell>> tableData = new List<List<Cell>>();
+        StringBuilder buf = new StringBuilder();
+        buf.Append("Heya, World! This is a test to show the functionality of a TextBox.");
 
-        List<Cell> row = new List<Cell>();
-        row.Add(new Cell(f1, "Hello"));
-        row.Add(new Cell(f1, "World"));
-        row.Add(new Cell(f1, "Next Column"));
-        row.Add(new Cell(f1, "CompositeTextLine"));
-        tableData.Add(row);
+        float x1 = 90f;
+        float y1 = 50f;
 
-        row = new List<Cell>();
-        row.Add(new Cell(f2, "This is a test:"));
-        Cell cell = new Cell(f2);
-        // cell.SetText("Here we are going to test the WrapAroundCellText method.\n\nWe will create a table and place it near the bottom of the page. When we draw this table the text will wrap around the column edge and stay within the column.\n\nSo - let's  see how this is working?");
-        cell.SetText("Here we are going to test the let's  see how this is working?");
-        cell.SetColSpan(2);
-        row.Add(cell);
-        row.Add(new Cell(f2));  // We need an empty cell here because the previous cell had colSpan == 2
-        row.Add(new Cell(f2, "Test 456"));
-        tableData.Add(row);
+        TextLine textline = new TextLine(f2, "(x1, y1)");
+        textline.SetLocation(x1, y1 - 15f);
+        textline.DrawOn(page);
 
-        // row = new List<Cell>();
-        // row.Add(new Cell(f2,
-        //         "Another row.\n\n\nMake sure that this line of text will be wrapped around correctly too."));
-        // row.Add(new Cell(f2, "Yahoo!"));
-        // row.Add(new Cell(f2, "Test 789"));
+        TextBox textBox = new TextBox(f1, buf.ToString());
+        textBox.SetLocation(x1, y1);
+        textBox.SetWidth(500f);
+        // textBox.SetHeight(230f); // Test the appending of "..."
+        textBox.SetMargin(0f);
+        textBox.SetSpacing(0f);
+        textBox.SetBgColor(Color.lightgreen);
+        float[] xy = textBox.DrawOn(page);
 
-        // CompositeTextLine composite = new CompositeTextLine(0f, 0f);
-        // composite.SetFontSize(12f);
-        // TextLine line1 = new TextLine(f1, "Composite Text Line");
-        // TextLine line2 = new TextLine(f3, "Superscript");
-        // TextLine line3 = new TextLine(f3, "Subscript");
-        // line2.SetTextEffect(Effect.SUPERSCRIPT);
-        // line3.SetTextEffect(Effect.SUBSCRIPT);
-        // composite.AddComponent(line1);
-        // composite.AddComponent(line2);
-        // composite.AddComponent(line3);
+        float x2 = x1 + textBox.GetWidth();
+        float y2 = y1 + textBox.GetHeight();
 
-        // cell = new Cell(f2);
-        // cell.SetCompositeTextLine(composite);
-        // cell.SetBgColor(Color.peachpuff);
-        // row.Add(cell);
+        f2.SetSize(18f);
 
-        // tableData.Add(row);
+        // Text on the left
+        TextLine ascent_text = new TextLine(f2, "Ascent");
+        ascent_text.SetLocation(x1 - 85f, y1 + 40f);
+        ascent_text.DrawOn(page);
 
-        Table table = new Table();
-        table.SetData(tableData, Table.WITH_1_HEADER_ROW);
-        table.SetLocation(50f, 50f);
-        // table.SetColumnWidths();    // << - Important!
-        table.SetColumnWidth(0, 100f);
-        table.SetColumnWidth(1, 100f);
-        table.SetColumnWidth(2, 100f);
-        table.SetColumnWidth(3, 150f);
+        TextLine descent_text = new TextLine(f2, "Descent");
+        descent_text.SetLocation(x1 - 85f, y1 + f1.GetAscent() + 15f);
+        descent_text.DrawOn(page);
 
-        List<Page> pages = new List<Page>();
-        table.DrawOn(pdf, pages, Letter.PORTRAIT);
-        foreach (Page page in pages) {
-            pdf.AddPage(page);
-        }
+        // Lines beside the text
+        Line arrow_line1 = new Line(x1 - 10f, y1, x1 - 10f, y1 + f1.GetAscent());
+        arrow_line1.SetColor(Color.blue);
+        arrow_line1.SetWidth(3f);
+        arrow_line1.DrawOn(page);
+
+        Line arrow_line2 = new Line(
+                x1 - 10f,
+                y1 + f1.GetAscent(),
+                x1 - 10f,
+                y1 + f1.GetAscent() + f1.GetDescent());
+        arrow_line2.SetColor(Color.red);
+        arrow_line2.SetWidth(3f);
+        arrow_line2.DrawOn(page);
+
+        // Lines for first line of text
+        Line text_line1 = new Line(
+                x1,
+                y1 + f1.GetAscent(),
+                x2,
+                y1 + f1.GetAscent());
+        text_line1.DrawOn(page);
+
+        Line descent_line1 = new Line(
+                x1,
+                y1 + (f1.GetAscent() + f1.GetDescent()),
+                x2,
+                y1 + (f1.GetAscent() + f1.GetDescent()));
+        descent_line1.DrawOn(page);
+
+        // Lines for second line of text
+        float curr_y = y1 + f1.GetBodyHeight();
+
+        Line text_line2 = new Line(
+                x1,
+                curr_y + f1.GetAscent(),
+                x2,
+                curr_y + f1.GetAscent());
+        text_line2.DrawOn(page);
+
+        Line descent_line2 = new Line(
+                x1,
+                curr_y + f1.GetAscent() + f1.GetDescent(),
+                x2,
+                curr_y + f1.GetAscent() + f1.GetDescent());
+        descent_line2.DrawOn(page);
+
+        Point p1 = new Point(x1, y1);
+        p1.SetRadius(5f);
+        p1.SetFillShape(true);
+        p1.DrawOn(page);
+
+        Point p2 = new Point(x2, y2);
+        p2.SetRadius(5f);
+        p2.SetFillShape(true);
+        p2.DrawOn(page);
+
+        f2.SetSize(24f);
+        TextLine textline2 = new TextLine(f2, "(x2, y2)");
+        textline2.SetLocation(x2 - 80f, y2 + 30f);
+        textline2.DrawOn(page);
+
+        Box box = new Box();
+        box.SetLocation(xy[0], xy[1]);
+        box.SetSize(20f, 20f);
+        box.DrawOn(page);
 
         pdf.Complete();
     }
 
+    public void DrawTextAndLines(
+            String text, Page page, Font font, float x, float y) {
+        TextLine textline = new TextLine(font, text);
+        textline.SetLocation(x, y);
+        textline.DrawOn(page);
+
+        Line ascenderLine = new Line(x, y - font.GetAscent(), x + 100f, y - font.GetAscent());
+        ascenderLine.SetWidth(2f);
+        ascenderLine.DrawOn(page);
+
+        Line line = new Line(x, y, x + 100f, y);
+        line.SetWidth(2f);
+        line.DrawOn(page);
+
+        Line descenderLine = new Line(x, y + font.GetDescent(), x + 100f, y + font.GetDescent());
+        descenderLine.SetWidth(2f);
+        descenderLine.DrawOn(page);
+    }
+
     public static void Main(String[] args) {
+/*
+        AssemblyName assembly = typeof(PDF).Assembly.GetName();
+        Console.WriteLine("{0} Version={1}", assembly.Name, assembly.Version);
+*/
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_23();

@@ -5,22 +5,20 @@ import java.util.*;
 import com.pdfjet.*;
 
 /**
- *  Example_16.java
+ *  Example_83.java
  *
  */
-public class Example_16 {
-    public Example_16() throws Exception {
+public class Example_83 {
+    public Example_83() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
-                        new FileOutputStream("Example_16.pdf")));
-        pdf.setCompliance(Compliance.PDF_UA);
+                        new FileOutputStream("Example_83.pdf")));
 
-        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        // Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf");
-        // Font f1 = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf");
-        // Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf");
-        Font f1 = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf");
-        f1.setSize(14f);
+        /// Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(
+                pdf,
+                new FileInputStream("fonts/RedHatText/RedHatText-Regular.ttf.stream"),
+                Font.STREAM);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -30,35 +28,29 @@ public class Example_16 {
         colors.put("dolor", Color.green);
         colors.put("ullamcorper", Color.gray);
 
-        // TODO: Draw text line here!!!
         GraphicsState gs = new GraphicsState();
         gs.setAlphaStroking(0.5f);                  // Stroking alpha
         gs.setAlphaNonStroking(0.5f);               // Nonstroking alpha
         page.setGraphicsState(gs);
 
-        String latinText = Contents.ofTextFile("data/latin.txt");
+        File file = new File("data/physics.txt");
+        FileInputStream fis = new FileInputStream(file);
+        byte[] data = new byte[(int) file.length()];
+        fis.read(data);
+        fis.close();
+        String latinText = new String(data, "UTF-8");
+
         f1.setSize(14f);
         TextBox textBox = new TextBox(f1, latinText);
-        // textBox.setLocation(50f, 50f);
-        // textBox.setLocation(50f, 100f);
-        textBox.setLocation(100f, 50f);
-        textBox.setWidth(400f);
+        textBox.setLocation(50f, 50f);
+        textBox.setWidth(500f);
         // If no height is specified the height will be calculated based on the text.
-        textBox.setHeight(450f);
-        // textBox.setTextDirection(Direction.LEFT_TO_RIGHT);
-        // textBox.setTextDirection(Direction.BOTTOM_TO_TOP);
-        // textBox.setTextDirection(Direction.TOP_TO_BOTTOM);
-
-        // textBox.setVerticalAlignment(Align.TOP);
-        textBox.setVerticalAlignment(Align.BOTTOM);
-        // textBox.setVerticalAlignment(Align.CENTER);
-
-        // textBox.setTextAlignment(Align.CENTER);
         // textBox.setHeight(400f);
-
+        // textBox.setVerticalAlignment(Align.TOP);
+        // textBox.setVerticalAlignment(Align.BOTTOM);
+        // textBox.setVerticalAlignment(Align.CENTER);
         textBox.setBgColor(Color.whitesmoke);
         textBox.setTextColors(colors);
-        textBox.setBorders(true);
         float[] xy = textBox.drawOn(page);
 
         page.setGraphicsState(new GraphicsState()); // Reset GS
@@ -73,8 +65,8 @@ public class Example_16 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        new Example_16();
+        new Example_83();
         long time1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_16", time0, time1);
+        TextUtils.printDuration("Example_83", time0, time1);
     }
-}   // End of Example_16.java
+}   // End of Example_83.java

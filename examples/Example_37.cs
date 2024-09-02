@@ -22,7 +22,6 @@ class Example_37 {
         // FileStream fis = new FileStream("data/testPDFs/Orangebook.pdf", FileMode.Open);
 
         List<PDFobj> objects = pdf.Read(fis);
-        fis.Close();
 
         Font f1 = new Font(objects,
                 new FileStream("fonts/OpenSans/OpenSans-Regular.ttf.stream",
@@ -31,7 +30,7 @@ class Example_37 {
         f1.SetSize(72f);
 
         TextLine line = new TextLine(f1, "This is a test!");
-        line.SetLocation(50f, 350f);
+        line.SetLocation(150f, 350f);
         line.SetColor(Color.peru);
 
         List<PDFobj> pages = pdf.GetPageObjects(objects);
@@ -44,7 +43,7 @@ class Example_37 {
             Page page = new Page(pdf, pageObj);
             page.AddResource(f1, objects);
             page.SetBrushColor(Color.blue);
-            page.DrawString(f1, "Hello, World!", 50f, 200f);
+            // page.DrawString(f1, "Hello, World!", 50f, 200f);
 
             line.DrawOn(page);
 

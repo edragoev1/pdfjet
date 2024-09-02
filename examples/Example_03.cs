@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using PDFjet.NET;
+using System.Reflection;
 
 /**
  *  Example_03.cs
@@ -83,6 +84,9 @@ public class Example_03 {
     }
 
     public static void Main(String[] args) {
+        AssemblyName assembly = typeof(PDF).Assembly.GetName();
+        // Console.WriteLine("{0} Version={1}", assembly.Name, assembly.Version);
+
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_03();

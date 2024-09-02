@@ -51,10 +51,7 @@ public class Example_29 {
 
         Dimension dim4 = column.getSize();
         float[] point = column.drawOn(page);  // Draw the updated text column
-/*
-        System.out.println("point.x: " + point[0] + "    point.y " + point[1]);
-        System.out.println("height4: " + dim4.getHeight());
-*/
+
         Box box = new Box();
         box.setLocation(point[0], point[1]);
         box.setSize(540f, 25f);

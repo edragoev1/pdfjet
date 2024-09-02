@@ -83,6 +83,10 @@ public class Example_25 {
         chart.AddSlice(new Slice(20f, Color.green));
         chart.AddSlice(new Slice(30f, Color.blue));
         chart.AddSlice(new Slice(40f, Color.peachpuff));
+/* For testing!
+        chart.AddSlice(new Slice(75f, Color.red));
+        chart.AddSlice(new Slice(25f, Color.blue));
+*/
         chart.DrawOn(page);
 
         pdf.Complete();

@@ -84,6 +84,10 @@ public class Example_25 {
         chart.addSlice(new Slice(20f, Color.green));
         chart.addSlice(new Slice(30f, Color.blue));
         chart.addSlice(new Slice(40f, Color.peachpuff));
+/* For testing!
+        chart.addSlice(new Slice(75f, Color.red));
+        chart.addSlice(new Slice(25f, Color.blue));
+*/
         chart.drawOn(page);
 
         pdf.complete();

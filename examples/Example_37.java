@@ -19,7 +19,7 @@ class Example_37 {
         f1.setSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");
-        text.setLocation(50f, 350f);
+        text.setLocation(150f, 350f);
         text.setColor(Color.peru);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);
@@ -32,7 +32,7 @@ class Example_37 {
             Page page = new Page(pdf, pageObj);
             page.addResource(f1, objects);
             page.setBrushColor(Color.blue);
-            page.drawString(f1, "Hello, World!", 50f, 200f);
+            // page.drawString(f1, "Hello, World!", 50f, 200f);
             text.drawOn(page);
 
             page.complete(objects); // The graphics stack is unwinded automatically

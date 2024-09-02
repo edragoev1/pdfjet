@@ -7,8 +7,6 @@ using PDFjet.NET;
  *  Example_06.cs
  *  We will draw the American flag using Box, Line and Point objects.
  */
-// namespace examples {
-
 public class Example_06 {
     public Example_06() {
         PDF pdf = new PDF(new BufferedStream(
@@ -90,7 +88,6 @@ public class Example_06 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -99,7 +96,4 @@ public class Example_06 {
         sw.Stop();
         TextUtils.PrintDuration("Example_06", time0, time1);
     }
-
 }   // End of Example_06.cs
-
-// }   // End of namespace examples

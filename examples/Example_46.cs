@@ -53,6 +53,7 @@ public class Example_46 {
         Text textArea = new Text(paragraphs);
         textArea.SetLocation(70f, 70f);
         textArea.SetWidth(500f);
+        textArea.SetBorder(true);
         textArea.DrawOn(page);
 
         pdf.Complete();

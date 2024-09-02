@@ -8,7 +8,7 @@ import com.pdfjet.*;
  *  Example_40.java
  *
  */
-public class Example_40 {
+final public class Example_40 {
     public Example_40() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_40.pdf")));
@@ -40,14 +40,7 @@ public class Example_40 {
 
     public List<List<Point>> getData() throws Exception {
         List<List<Point>> chartData = new ArrayList<List<Point>>();
-/*
-        addVerticalBar(chartData, 15f, 24f, 45f, Color.blue, " Vertical", Color.white);
-        addVerticalBar(chartData, 17f, 24f, 75f, Color.yellow, " Vertical", Color.black);
-        addVerticalBar(chartData, 19f, 24f, 65f, Color.peachpuff, " Vertical", Color.black);
-        addVerticalBar(chartData, 25f, 24f, 20f, Color.green, " Bar", Color.white);
-        addVerticalBar(chartData, 35f, 24f, 31f, Color.red, " Chart", Color.white);
-        addVerticalBar(chartData, 45f, 24f, 73f, Color.gold, " Example", Color.black);
-*/
+
         float w = 14f;
         float x = 10f;
         float dx1 = 16f;

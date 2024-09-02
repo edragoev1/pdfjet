@@ -1,7 +1,6 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 
 /**
@@ -9,122 +8,145 @@ import com.pdfjet.*;
  */
 public class Example_23 {
     public Example_23() throws Exception {
-        PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("Example_23.pdf")), Compliance.PDF_UA);
+        PDF pdf = new PDF(new FileOutputStream("Example_23.pdf"));
+        Font f1 = new Font(
+                pdf,
+                new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
+                Font.STREAM);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        f1.setSize(72f);
+        f2.setSize(24f);
 
-        // What is this?
-        f3.setSize(7f * 0.583f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Image image1 = new Image(pdf, "images/mt-map.png");
-        image1.scaleBy(0.75f);
+        StringBuilder buf = new StringBuilder();
+        buf.append("Heya, World! This is a test to show the functionality of a TextBox.");
 
-        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
+        float x1 = 90f;
+        float y1 = 50f;
 
-        List<Cell> row = new ArrayList<Cell>();
-        row.add(new Cell(f1, "Hello"));
-        row.add(new Cell(f1, "World"));
-        row.add(new Cell(f1, "Next Column"));
-        row.add(new Cell(f1, "CompositeTextLine"));
-        tableData.add(row);
+        TextLine textline = new TextLine(f2, "(x1, y1)");
+        textline.setLocation(x1, y1 - 15f);
+        textline.drawOn(page);
 
-        row = new ArrayList<Cell>();
-        row.add(new Cell(f2, "This is a test:"));
-        TextBox textBox = new TextBox(f2,
-                "Here we are going to test the wrapAroundCellTextmethod.\n\nWe will create a table and place it near the bottom of the page. When we draw this table the text will wrap around the column edge and stay within the column.\n\nSo - let's  see how this is working?");
-        textBox.setTextAlignment(Align.RIGHT);
-        Cell cell = new Cell(f2, "Yahoo! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Hello World!");
-        cell.setBgColor(Color.aliceblue);
-        // cell.setTextBox(textBox);
-        cell.setColSpan(2);
-        row.add(cell);
-        row.add(new Cell(f2));  // We need an empty cell here because the previous cell had colSpan == 2
-        row.add(new Cell(f2, "Test 456"));
-        tableData.add(row);
-/*
-        row = new ArrayList<Cell>();
-        row.add(new Cell(f2,
-                "Another row.\n\n\nMake sure that this line of text will be wrapped around correctly too."));
-        row.add(new Cell(f2, "Yahoo!"));
-        row.add(new Cell(f2, "Test 789"));
+        TextBox textBox = new TextBox(f1, buf.toString());
+        textBox.setLocation(x1, y1);
+        textBox.setWidth(500f);
+        // textBox.setHeight(230f); // Test the appending of "..."
+        textBox.setMargin(0f);
+        textBox.setSpacing(0f);
+        textBox.setBgColor(Color.lightgreen);
+        float[] xy = textBox.drawOn(page);
 
-        CompositeTextLine composite = new CompositeTextLine(0f, 0f);
-        composite.setFontSize(12f);
-        TextLine line1 = new TextLine(f2, "Composite Text Line");
-        TextLine line2 = new TextLine(f3, "Superscript");
-        TextLine line3 = new TextLine(f3, "Subscript");
-        line2.setTextEffect(Effect.SUPERSCRIPT);
-        line3.setTextEffect(Effect.SUBSCRIPT);
-        composite.addComponent(line1);
-        composite.addComponent(line2);
-        composite.addComponent(line3);
+        float x2 = x1 + textBox.getWidth();
+        float y2 = y1 + textBox.getHeight();
 
-        cell = new Cell(f2);
-        cell.setCompositeTextLine(composite);
-        cell.setBgColor(Color.peachpuff);
-        row.add(cell);
+        f2.setSize(18f);
 
-        tableData.add(row);
-*/
-        Table table = new Table();
-        table.setData(tableData, Table.WITH_1_HEADER_ROW);
-        table.setLocation(50f, 50f);
-        table.setFirstPageTopMargin(650f);
-        table.setBottomMargin(15f);
-        table.setColumnWidth(0, 100f);
-        table.setColumnWidth(1, 100f);
-        table.setColumnWidth(2, 100f);
-        table.setColumnWidth(3, 150f);
+        // Text on the left
+        TextLine ascent_text = new TextLine(f2, "Ascent");
+        ascent_text.setLocation(x1 - 85f, y1 + 40f);
+        ascent_text.drawOn(page);
 
-        List<Page> pages = new ArrayList<Page>();
-        Page page = null;
-        table.drawOn(pdf, pages, Letter.PORTRAIT);
-        for (int i = 0; i < pages.size(); i++) {
-            page = pages.get(i);
-            pdf.addPage(page);
-        }
+        TextLine descent_text = new TextLine(f2, "Descent");
+        descent_text.setLocation(x1 - 85f, y1 + f1.getAscent() + 15f);
+        descent_text.drawOn(page);
 
-        // tableData = new ArrayList<List<Cell>>();
-        // row = new ArrayList<Cell>();
-        // row.add(new Cell(f1));
-        // row.add(new Cell(f2));
-        // tableData.add(row);
+        // Lines beside the text
+        Line arrow_line1 = new Line(x1 - 10f, y1, x1 - 10f, y1 + f1.getAscent());
+        arrow_line1.setColor(Color.blue);
+        arrow_line1.setWidth(3f);
+        arrow_line1.drawOn(page);
 
-        // row = new ArrayList<Cell>();
-        // row.add(new Cell(f1, "Hello, World!"));
-        // row.add(new Cell(f2, "This is a test."));
-        // tableData.add(row);
+        Line arrow_line2 = new Line(
+                x1 - 10f,
+                y1 + f1.getAscent(),
+                x1 - 10f,
+                y1 + f1.getAscent() + f1.getDescent());
+        arrow_line2.setColor(Color.red);
+        arrow_line2.setWidth(3f);
+        arrow_line2.drawOn(page);
 
-        // tableData.get(0).get(0).setImage(image1);
+        // Lines for first line of text
+        Line text_line1 = new Line(
+                x1,
+                y1 + f1.getAscent(),
+                x2,
+                y1 + f1.getAscent());
+        text_line1.drawOn(page);
 
-        // table = new Table();
-        // table.setData(tableData);
-        // table.setLocation(50f, 350f);
-        // table.setColumnWidth(0, 260f);
-        // table.setColumnWidth(1, 260f);
-        // table.setRightBorderOnLastColumn();
-        // table.setBottomBorderOnLastRow();
+        Line descent_line1 = new Line(
+                x1,
+                y1 + (f1.getAscent() + f1.getDescent()),
+                x2,
+                y1 + (f1.getAscent() + f1.getDescent()));
+        descent_line1.drawOn(page);
 
-        // StringBuilder buf = new StringBuilder();
-        // buf.append("Name: 20200306_050741\n");
-        // buf.append("Recorded: 2018:09:28 18:28:43\n");
+        // Lines for second line of text
+        float curr_y = y1 + f1.getBodyHeight();
 
-        // textBox = new TextBox(f1, buf.toString());
-        // textBox.setWidth(400f);
-        // textBox.setBorder(Border.NONE);
-        // tableData.get(0).get(1).setTextBox(textBox);
-        // table.drawOn(page);
+        Line text_line2 = new Line(
+                x1,
+                curr_y + f1.getAscent(),
+                x2,
+                curr_y + f1.getAscent());
+        text_line2.drawOn(page);
+
+        Line descent_line2 = new Line(
+                x1,
+                curr_y + f1.getAscent() + f1.getDescent(),
+                x2,
+                curr_y + f1.getAscent() + f1.getDescent());
+        descent_line2.drawOn(page);
+
+        Point p1 = new Point(x1, y1);
+        p1.setRadius(5f);
+        p1.setFillShape(true);
+        p1.drawOn(page);
+
+        Point p2 = new Point(x2, y2);
+        p2.setRadius(5f);
+        p2.setFillShape(true);
+        p2.drawOn(page);
+
+        f2.setSize(24f);
+        TextLine textline2 = new TextLine(f2, "(x2, y2)");
+        textline2.setLocation(x2 - 80f, y2 + 30f);
+        textline2.drawOn(page);
+
+        Box box = new Box();
+        box.setLocation(xy[0], xy[1]);
+        box.setSize(20f, 20f);
+        box.drawOn(page);
 
         pdf.complete();
+    }
+
+    public void drawTextAndLines(
+            String text, Page page, Font font, float x, float y) throws Exception {
+        TextLine textline = new TextLine(font, text);
+        textline.setLocation(x, y);
+        textline.drawOn(page);
+
+        Line ascenderLine = new Line(x, y - font.getAscent(), x + 100f, y - font.getAscent());
+        ascenderLine.setWidth(2f);
+        ascenderLine.drawOn(page);
+
+        Line line = new Line(x, y, x + 100f, y);
+        line.setWidth(2f);
+        line.drawOn(page);
+
+        Line descenderLine = new Line(x, y + font.getDescent(), x + 100f, y + font.getDescent());
+        descenderLine.setWidth(2f);
+        descenderLine.drawOn(page);
     }
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
         new Example_23();
         long time1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_23", time0, time1);
+        TextUtils.printDuration("Example_73", time0, time1);
     }
+
 }   // End of Example_23.java
