@@ -3,104 +3,87 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
-	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example43 --
+// Example_51.java
+//
+// This example shows how to add "Page X of N" footer to every page of
+// the PDF file. In this case we create new PDF and store it in a buffer.
 func Example43() {
-	pdf := pdfjet.NewPDFFile("Example_43.pdf")
-	pdf.SetCompliance(compliance.PDF_UA)
+	pdf := pdfjet.NewPDFFile("temp.pdf")
 
-	// f1 := NewFontFromFile(pdf, CoreFont.HELVETICA_BOLD)
-	// f2 := NewFontFromFile(pdf, CoreFont.HELVETICA)
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream")
-	f1.SetSize(8.0)
-	f2.SetSize(8.0)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
+	box := pdfjet.NewBox()
+	box.SetLocation(50.0, 50.0)
+	box.SetSize(100.0, 100.0)
+	box.SetColor(color.Red)
+	box.SetFillShape(true)
+	box.DrawOn(page)
 
-	fileName := "data/Electric_Vehicle_Population_Data.csv"
-	// fileName :=  "data/Electric_Vehicle_Population_1000.csv"
+	page = pdfjet.NewPage(pdf, letter.Portrait)
+	box = pdfjet.NewBox()
+	box.SetLocation(50.0, 50.0)
+	box.SetSize(100.0, 100.0)
+	box.SetColor(color.Green)
+	box.SetFillShape(true)
+	box.DrawOn(page)
 
-	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
-	widths := table.GetColumnWidths(fileName)
-	widths[8] = 70.0 // Override the calculated width
-	widths[9] = 99.0 // Override the calculated width
-	table.SetColumnSpacing(7.0)
-	table.SetLocation(20.0, 15.0)
-	table.SetBottomMargin(15.0)
-	table.SetColumnWidths(widths)
-
-	readFile, err := os.Open(fileName)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fileScanner := bufio.NewScanner(readFile)
-	fileScanner.Split(bufio.ScanLines)
-	headerRow := true
-	for fileScanner.Scan() {
-		line := fileScanner.Text()
-		fields := strings.Split(line, ",")
-		// Optional step:
-		fields = selectAndProcessFields(table, fields, headerRow)
-		if fields[6] == "TOYOTA" {
-			table.DrawRow(fields, color.Red)
-		} else if fields[6] == "JEEP" {
-			table.DrawRow(fields, color.Green)
-		} else if fields[6] == "FORD" {
-			table.DrawRow(fields, color.Blue)
-		} else {
-			table.DrawRow(fields, color.Black)
-		}
-		headerRow = false
-	}
-	table.Complete()
-	readFile.Close()
-
-	pages := table.GetPages()
-	for i, page := range pages {
-		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+1)+" of "+fmt.Sprint((len(pages)))))
-		pdf.AddPage(page)
-	}
+	page = pdfjet.NewPage(pdf, letter.Portrait)
+	box = pdfjet.NewBox()
+	box.SetLocation(50.0, 50.0)
+	box.SetSize(100.0, 100.0)
+	box.SetColor(color.Blue)
+	box.SetFillShape(true)
+	box.DrawOn(page)
 
 	pdf.Complete()
+
+	AddFooterToPDF()
 }
 
-func selectAndProcessFields(table *pdfjet.BigTable, fields []string, headerRow bool) []string {
-	row := make([]string, 0)
-	for i := 0; i < 10; i++ {
-		field := fields[i]
-		if i == 8 {
-			if field[0] == 'B' {
-				row = append(row, "BEV")
-			} else if field[0] == 'P' {
-				row = append(row, "PHEV")
-			} else {
-				row = append(row, fields[8])
-			}
-		} else if i == 9 {
-			if headerRow {
-				row = append(row, "Clean Alternative Fuel Vehicle")
-			} else {
-				if field[0] == 'C' {
-					row = append(row, "YES")
-				} else if field[0] == 'N' {
-					row = append(row, "NO")
-				} else {
-					row = append(row, "UNKNOWN")
-				}
-			}
-		} else {
-			row = append(row, field)
-		}
+func AddFooterToPDF() {
+	pdf := pdfjet.NewPDFFile("Example_51.pdf")
+
+	buf, err := os.ReadFile("temp.pdf")
+	if err != nil {
+		log.Fatal(err)
 	}
-	return row
+	objects := pdf.Read(buf)
+
+	file, err := os.Open("fonts/Droid/DroidSans.ttf.stream")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	reader := bufio.NewReader(file)
+	font := pdfjet.NewFontStream2(&objects, reader)
+	font.SetSize(12.0)
+
+	pages := pdf.GetPageObjects(objects)
+	for i := 0; i < len(pages); i++ {
+		footer := "Page " + fmt.Sprint(i+1) + " of " + fmt.Sprint((len(pages)))
+		page := pdfjet.NewPageFromObject(pdf, pages[i])
+		page.AddFontResource(font, &objects)
+		page.SetBrushColor(color.Transparent) // Required!
+		page.SetBrushColor(color.Black)
+		page.DrawString(
+			font,
+			nil,
+			footer,
+			(page.GetWidth()-font.StringWidth(font, footer))/2.0,
+			(page.GetHeight() - 5.0))
+		page.Complete(&objects)
+	}
+	pdf.AddObjects(&objects)
+
+	pdf.Complete()
 }
 
 func main() {
