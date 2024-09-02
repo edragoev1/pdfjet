@@ -5,13 +5,13 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_51.cs
+ *  Example_43.cs
  *
  *  This example shows how to add "Page X of N" footer to every page of
  *  the PDF file. In this case we create new PDF and store it in a buffer.
  */
-public class Example_51 {
-    public Example_51(String fileNumber) {
+public class Example_43 {
+    public Example_43(String fileNumber) {
         MemoryStream buf1 = new MemoryStream();
         PDF pdf = new PDF(buf1);
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -77,8 +77,8 @@ public class Example_51 {
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_51("51");
+        new Example_43("43");
         long time1 = sw.ElapsedMilliseconds;
-        TextUtils.PrintDuration("Example_51", time0, time1);
+        TextUtils.PrintDuration("Example_43", time0, time1);
     }
-}   // End of Example_51.cs
+}   // End of Example_43.cs

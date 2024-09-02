@@ -5,13 +5,13 @@ import java.util.*;
 import com.pdfjet.*;
 
 /**
- *  Example_51.java
+ *  Example_43.java
  * 
  *  This example shows how to add "Page X of N" footer to every page of
  *  the PDF file. In this case we create new PDF and store it in a buffer.
  */
-final public class Example_51 {
-    public Example_51(String fileNumber) throws Exception {
+final public class Example_43 {
+    public Example_43(String fileNumber) throws Exception {
         ByteArrayOutputStream buf1 = new ByteArrayOutputStream();
         PDF pdf = new PDF(buf1);
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -78,8 +78,8 @@ final public class Example_51 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        new Example_51("51");
+        new Example_43("43");
         long time1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_51", time0, time1);
+        TextUtils.printDuration("Example_43", time0, time1);
     }
-}   // End of Example_51.java
+}   // End of Example_43.java
