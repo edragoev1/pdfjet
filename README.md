@@ -9,14 +9,14 @@ To build the Java version and compile and run all examples:
 ./build-java.sh
 
 
-To build the C# version using .NET and compile and run all examples:
-
-./build-dotnet.sh
-
-
 To build the C# version using Mono and compile and run all examples:
 
 ./build-mono.sh
+
+
+To build the C# version using .NET and compile and run all examples:
+
+./build-dotnet.sh
 
 
 To build the Go version and compile and run all examples:
@@ -29,7 +29,7 @@ To build the Swift version and compile and run all examples:
 ./build-swift.sh
 
 
-To compile and run specific Java example (from 01 to 50) use one of the following:
+To compile and run specific Java example (from 01 to 50) use the following command:
 
 ./run-java.sh 07
 
