@@ -4,22 +4,27 @@ This high performance library have no dependencies on external packages and shou
 
 
 ```
-To build the Java version of PDFjet and compile and run all examples:
+To build the Java version and compile and run all examples:
 
 ./build-java.sh
 
 
-To build the C# version of PDFjet using Mono and compile and run all examples:
+To build the C# version using .NET and compile and run all examples:
+
+./build-dotnet.sh
+
+
+To build the C# version using Mono and compile and run all examples:
 
 ./build-mono.sh
 
 
-To build the Go version of PDFjet and compile and run all examples:
+To build the Go version and compile and run all examples:
 
 ./build-go.sh
 
 
-To build the Swift version of PDFjet and compile and run all examples:
+To build the Swift version and compile and run all examples:
 
 ./build-swift.sh
 
