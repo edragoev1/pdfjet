@@ -37,7 +37,7 @@ To compile and run specific Java example (from 01 to 50) use the following comma
 To compile and run specific C# example use one of the following:
 
 ./run-mono.sh 23
-
+or
 ./run-dotnet.sh 23
 
 
