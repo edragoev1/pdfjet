@@ -12,7 +12,7 @@ public class Example_07 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_UA)
         pdf.setTitle("PDF/UA compliant PDF")
 
-        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+        let f1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 
         var page = Page(pdf, A4.LANDSCAPE)
 

@@ -85,42 +85,46 @@ final public class Example_34 {
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
 
         int currentRow = 0;
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            List<Cell> row = new ArrayList<Cell>();
-            String[] cols = null;
-            if (delimiter.equals("|")) {
-                cols = line.split("\\|", -1);
-            } else if (delimiter.equals("\t")) {
-                cols = line.split("\t", -1);
-            } else {
-                throw new Exception(
-                		"Only pipes and tabs can be used as delimiters");
-            }
-            for (int i = 0; i < cols.length; i++) {
-                String text = cols[i].trim();
-                Cell cell = null;
-                if (currentRow < numOfHeaderRows) {
-                    cell = new Cell(f1, text);
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(fileName));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                List<Cell> row = new ArrayList<Cell>();
+                String[] cols = null;
+                if (delimiter.equals("|")) {
+                    cols = line.split("\\|", -1);
+                } else if (delimiter.equals("\t")) {
+                    cols = line.split("\t", -1);
                 } else {
-                    cell = new Cell(f2, text);
+                    throw new Exception(
+                            "Only pipes and tabs can be used as delimiters");
                 }
-                cell.setTopPadding(2f);
-                cell.setBottomPadding(2f);
-                cell.setLeftPadding(2f);
-                if (i == 3) {
-                    cell.setRightPadding(10f);
-                } else {
-                    cell.setRightPadding(2f);
+                for (int i = 0; i < cols.length; i++) {
+                    String text = cols[i].trim();
+                    Cell cell = null;
+                    if (currentRow < numOfHeaderRows) {
+                        cell = new Cell(f1, text);
+                    } else {
+                        cell = new Cell(f2, text);
+                    }
+                    cell.setTopPadding(2f);
+                    cell.setBottomPadding(2f);
+                    cell.setLeftPadding(2f);
+                    if (i == 3) {
+                        cell.setRightPadding(10f);
+                    } else {
+                        cell.setRightPadding(2f);
+                    }
+                    row.add(cell);
                 }
-                row.add(cell);
+                tableData.add(row);
+                currentRow++;
             }
-            tableData.add(row);
-            currentRow++;
+        } finally {
+            reader.close();
         }
-        reader.close();
-        appendMissingCells(tableData, f2);  // TODO??
+        appendMissingCells(tableData, f2);
 
         return tableData;
     }

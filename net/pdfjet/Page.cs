@@ -1,7 +1,7 @@
 /**
  *  Page.cs
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1475,8 +1475,8 @@ public class Page {
             StringBuilder buf,
             int brush,
             Dictionary<String, Int32> colors) {
-        String str = buf.ToString();
-        if (str.Length > 0) {
+        if (buf.Length > 0) {
+            String str = buf.ToString();
             if (colors.ContainsKey(str)) {
                 SetBrushColor(colors[str]);
             } else {

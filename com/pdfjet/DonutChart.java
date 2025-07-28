@@ -1,7 +1,7 @@
 /**
  *  DonutChart.java
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -169,7 +169,7 @@ public class DonutChart {
 
         return a2;
     }
-
+/*
     private void drawLinePointer(
             Page page,
             int perColor,
@@ -183,7 +183,7 @@ public class DonutChart {
             page.drawLine(xc, yc, 500f, 500f);
         }
     }
-
+*/
     /**
      * Draws the donut chart on the page.
      *

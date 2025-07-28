@@ -33,7 +33,7 @@ public class Example_18 {
         // print("Time to LZWEncode: \(time1 - time0)")
         // print()
 
-        let font = try Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
+        let font = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
         font.setSize(12.0)
 
         var pages = [Page]()

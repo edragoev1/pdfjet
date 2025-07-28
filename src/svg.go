@@ -3,7 +3,7 @@ package pdfjet
 /**
  * svg.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -38,28 +38,28 @@ func NewSVG() *SVG {
 }
 
 func isCommand(ch rune) bool {
-	// Please note:
 	// Capital letter commands use absolute coordinates
 	// Small letter commands use relative coordinates
-	if ch == 'M' || ch == 'm' { // moveto
+	switch ch {
+	case 'M', 'm': // moveto
 		return true
-	} else if ch == 'L' || ch == 'l' { // lineto
+	case 'L', 'l': // lineto
 		return true
-	} else if ch == 'H' || ch == 'h' { // horizontal lineto
+	case 'H', 'h': // horizontal lineto
 		return true
-	} else if ch == 'V' || ch == 'v' { // vertical lineto
+	case 'V', 'v': // vertical lineto
 		return true
-	} else if ch == 'Q' || ch == 'q' { // quadratic curveto
+	case 'Q', 'q': // quadratic curveto
 		return true
-	} else if ch == 'T' || ch == 't' { // smooth quadratic curveto
+	case 'T', 't': // smooth quadratic curveto
 		return true
-	} else if ch == 'C' || ch == 'c' { // cubic curveto
+	case 'C', 'c': // cubic curveto
 		return true
-	} else if ch == 'S' || ch == 's' { // smooth cubic curveto
+	case 'S', 's': // smooth cubic curveto
 		return true
-	} else if ch == 'A' || ch == 'a' { // elliptical arc
+	case 'A', 'a': // elliptical arc
 		return true
-	} else if ch == 'Z' || ch == 'z' { // close path
+	case 'Z', 'z': // close path
 		return true
 	}
 	return false
@@ -113,7 +113,8 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 	var x0 float32 = 0.0 // Start of subpath
 	var y0 float32 = 0.0
 	for _, op := range list {
-		if op.cmd == 'M' || op.cmd == 'm' {
+		switch op.cmd {
+		case 'M', 'm':
 			for i := 0; i <= len(op.args)-2; i += 2 {
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
@@ -138,7 +139,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'L' || op.cmd == 'l' {
+		case 'L', 'l':
 			for i := 0; i <= len(op.args)-2; i += 2 {
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
@@ -157,7 +158,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'H' || op.cmd == 'h' {
+		case 'H', 'h':
 			for i := 0; i < len(op.args); i++ {
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
@@ -171,7 +172,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'V' || op.cmd == 'v' {
+		case 'V', 'v':
 			for i := 0; i < len(op.args); i++ {
 				var pathOp *PathOp
 				y, err := strconv.ParseFloat(op.args[i], 32)
@@ -185,7 +186,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'Q' || op.cmd == 'q' {
+		case 'Q', 'q':
 			for i := 0; i <= len(op.args)-4; i += 4 {
 				pathOp := NewPathOp('C')
 				x1, err := strconv.ParseFloat(op.args[i], 32)
@@ -222,7 +223,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'T' || op.cmd == 't' {
+		case 'T', 't':
 			for i := 0; i <= len(op.args)-2; i += 2 {
 				pathOp := NewPathOp('C')
 				x1 := lastOp.x
@@ -253,7 +254,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'C' || op.cmd == 'c' {
+		case 'C', 'c':
 			for i := 0; i <= len(op.args)-6; i += 6 {
 				pathOp := NewPathOp('C')
 				x1, err := strconv.ParseFloat(op.args[i], 32)
@@ -295,7 +296,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'S' || op.cmd == 's' {
+		case 'S', 's':
 			for i := 0; i <= len(op.args)-4; i += 4 {
 				pathOp := NewPathOp('C')
 				x1 := lastOp.x
@@ -334,9 +335,9 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
-		} else if op.cmd == 'A' || op.cmd == 'a' {
+		case 'A', 'a':
 			// Elliptical Arc
-		} else if op.cmd == 'Z' || op.cmd == 'z' {
+		case 'Z', 'z':
 			pathOp := NewPathOp('Z')
 			pathOp.x = x0
 			pathOp.y = y0

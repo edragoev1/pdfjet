@@ -8,8 +8,8 @@ public class Example_47 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_47.pdf", append: false)!)
 
-        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-        let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream")
+        let f1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+        let f2 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Italic.ttf.stream")
 
         f1.setSize(12.0)
         f2.setSize(12.0)

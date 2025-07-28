@@ -3,7 +3,7 @@ package pdfjet
 /**
  * text.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ SOFTWARE.
 import (
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/single"
 )
 
@@ -87,7 +87,7 @@ func (text *Text) SetSpaceBetweenTextLines(spaceBetweenTextLines float32) *Text 
 
 // GetSize returns the size of the text block.
 func (text *Text) GetSize() [2]float32 {
-	return [2]float32{text.width, (text.yText + text.font.descent) - (text.y1 + text.paragraphLeading)}
+	return [2]float32{text.width, (text.yText - text.font.descent) - (text.y1 + text.paragraphLeading)}
 }
 
 func (text *Text) SetBorder(border bool) {
@@ -118,14 +118,15 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 			text.yText = xy[1]
 		}
 		paragraph.x2 = text.xText
-		paragraph.y2 = text.yText + text.font.descent
+		paragraph.y2 = text.yText - text.font.descent
 		text.xText = text.x1
 		text.yText += text.paragraphLeading
 	}
 
-	height := ((text.yText - text.paragraphLeading) - text.y1) + text.font.descent
+	height := ((text.yText - text.paragraphLeading) - text.y1) - text.font.descent
 	if page != nil && text.border {
 		box := NewBox()
+		// box.SetCornerRadius(12.0) // TODO:
 		box.SetLocation(text.x1, text.y1)
 		box.SetSize(text.width, height)
 		box.DrawOn(page)
@@ -139,7 +140,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 	text.yText = y
 
 	var tokens []string
-	if text.stringIsCJK(textLine.text) {
+	if text.textIsCJK(textLine.text) {
 		tokens = text.tokenizeCJK(textLine, text.width)
 	} else {
 		tokens = strings.Fields(textLine.text)
@@ -187,7 +188,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 	return []float32{text.xText + textLine.font.StringWidth(textLine.fallbackFont, buf.String()), text.yText}
 }
 
-func (text *Text) stringIsCJK(str string) bool {
+func (text *Text) textIsCJK(str string) bool {
 	// CJK Unified Ideographs Range: 4E00–9FD5
 	// Hiragana Range: 3040–309F
 	// Katakana Range: 30A0–30FF
@@ -225,11 +226,11 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 
 func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
 	paragraphs := make([]*Paragraph, 0)
-	contents := contents.OfTextFile(filePath)
+	content := content.OfTextFile(filePath)
 	paragraph := NewParagraph()
 	textLine := NewEmptyTextLine(f1)
 	sb := make([]rune, 0)
-	runes := []rune(contents)
+	runes := []rune(content)
 	for i := 0; i < len(runes); i++ {
 		ch := runes[i]
 		// We need at least one character after the \n\n to begin new paragraph!

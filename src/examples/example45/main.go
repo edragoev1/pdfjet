@@ -16,9 +16,9 @@ func Example45() {
 	pdf.SetLanguage("en-US")
 	pdf.SetTitle("Hello, World!")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream")
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSerif4/SourceSerif4-Italic.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream")
 
 	f1.SetSize(14.0)
 	f2.SetSize(14.0)
@@ -85,7 +85,7 @@ func Example45() {
 	var x float32 = 50.0
 	var y float32 = 280.0
 	leading := f3.GetBodyHeight()
-	lines := pdfjet.ReadTextLines("data/form-code-go.txt")
+	lines := pdfjet.ReadTextLines("data/languages/english.txt")
 	for _, line := range lines {
 		page.DrawStringUsingColorMap(f3, nil, line, x, y, color.Black, colors)
 		y += leading

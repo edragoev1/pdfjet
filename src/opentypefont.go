@@ -3,7 +3,7 @@ package pdfjet
 /**
  * opentypefont.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,12 +42,11 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	font.bBoxLLy = otf.bBoxLLy
 	font.bBoxURx = otf.bBoxURx
 	font.bBoxURy = otf.bBoxURy
-	font.advanceWidth = otf.advanceWidth
-	font.glyphWidth = otf.glyphWidth
 	font.fontAscent = otf.ascent
 	font.fontDescent = otf.descent
 	font.fontUnderlinePosition = otf.underlinePosition
 	font.fontUnderlineThickness = otf.underlineThickness
+	font.advanceWidth = otf.advanceWidth
 	font.SetSize(font.size)
 
 	embedOpenTypeFontFile(pdf, font, otf)

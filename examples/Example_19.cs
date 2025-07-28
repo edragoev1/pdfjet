@@ -11,10 +11,13 @@ public class Example_19 {
     public Example_19() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_19.pdf", FileMode.Create)));
-        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
+
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
         f1.SetSize(10f);
+
+        Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
         f2.SetSize(10f);
+
         String contents = Contents.OfTextFile("data/calculus-short.txt");
 
         Page page = new Page(pdf, Letter.PORTRAIT);

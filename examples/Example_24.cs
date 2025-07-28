@@ -14,8 +14,6 @@ public class Example_24 {
         Font font = new Font(pdf, CoreFont.HELVETICA);
 
         Image image_00 = new Image(pdf, "images/gr-map.jpg");
-        // Image image_01 = new Image(pdf, "images/linux-logo.png");
-        Image image_01 = new Image(pdf, "images/linux-logo.png.stream");
         Image image_02 = new Image(pdf, "images/ee-map.png");
         Image image_03 = new Image(pdf, "images/rgb24pal.bmp");
 
@@ -25,13 +23,6 @@ public class Example_24 {
         textline_00.SetLocation(50f, 50f);
         float[] point = textline_00.DrawOn(page);
         image_00.SetLocation(50f, point[1]).ScaleBy(0.25f).DrawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-        TextLine textline_01 = new TextLine(font, "This is a PNG_STREAM image.");
-        textline_01.SetTextDirection(0);
-        textline_01.SetLocation(50f, 50f);
-        point = textline_01.DrawOn(page);
-        image_01.SetLocation(50f, point[1]).DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
         TextLine textline_02 = new TextLine(font, "This is a PNG image.");
@@ -47,7 +38,6 @@ public class Example_24 {
         image_03.SetLocation(50f, point[1]).ScaleBy(0.75f).DrawOn(page);
 
         new Image(pdf, "images/fruit.jpg");
-        new Image(pdf, "images/linux-logo.png.stream");
 
         pdf.Complete();
     }

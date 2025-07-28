@@ -1,7 +1,7 @@
 /**
  *  TextCompact.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 */
 using System;
 

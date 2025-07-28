@@ -11,9 +11,9 @@ import (
 func Example46() {
 	pdf := pdfjet.NewPDFFile("Example_46.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/JetBrainsMono/JetBrainsMono-Bold.ttf.stream")
 
 	f1.SetSize(14.0)
 	f2.SetSize(14.0)
@@ -46,6 +46,7 @@ func Example46() {
 	textArea := pdfjet.NewText(paragraphs)
 	textArea.SetLocation(70.0, 70.0)
 	textArea.SetWidth(500.0)
+	textArea.SetBorder(true)
 	textArea.DrawOn(page)
 
 	pdf.Complete()

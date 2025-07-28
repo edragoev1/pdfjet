@@ -1,7 +1,7 @@
 /**
  *  SVG.swift
  *
- Copyright 2023 Innovatics Inc.
+ ©2025 PDFjet Software
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,32 +24,34 @@
 import Foundation
 
 public class SVG {
+
     static func isCommand(_ ch: Character) -> Bool {
-        // Please note:
         // Capital letter commands use absolute coordinates
         // Small letter commands use relative coordinates
-        if ch == "M" || ch == "m" {           // moveto
+        switch ch {
+        case "M", "m":  // moveto
             return true
-        } else if ch == "L" || ch == "l" {    // lineto
+        case "L", "l":  // lineto
             return true
-        } else if ch == "H" || ch == "h" {    // horizontal lineto
+        case "H", "h":  // horizontal lineto
             return true
-        } else if ch == "V" || ch == "v" {    // vertical lineto
+        case "V", "v":  // vertical lineto
             return true
-        } else if ch == "Q" || ch == "q" {    // quadratic curveto
+        case "Q", "q":  // quadratic curveto
             return true
-        } else if ch == "T" || ch == "t" {    // smooth quadratic curveto
+        case "T", "t":  // smooth quadratic curveto
             return true
-        } else if ch == "C" || ch == "c" {    // cubic curveto
+        case "C", "c":  // cubic curveto
             return true
-        } else if ch == "S" || ch == "s" {    // smooth cubic curveto
+        case "S", "s":  // smooth cubic curveto
             return true
-        } else if ch == "A" || ch == "a" {    // elliptical arc
+        case "A", "a":  // elliptical arc
             return true
-        } else if ch == "Z" || ch == "z" {    // close path
+        case "Z", "z":  // close path
             return true
+        default:
+            return false
         }
-        return false
     }
 
     public static func getOperations(_ path: String) -> [PathOp] {

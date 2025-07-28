@@ -36,7 +36,7 @@ func Example34() {
 	p1 := pdfjet.NewPoint(0.0, 0.0)
 	p1.SetShape(shape.Circle)
 	p1.SetRadius(2.0)
-	p1.SetColor(color.Darkolivegreen)
+	p1.SetColor(color.DarkOliveGreen)
 	p1.SetFillShape(true)
 	p1.SetAlignment(align.Right)
 	p1.SetURIAction(&uri)

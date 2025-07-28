@@ -13,9 +13,9 @@ public class Example_45 {
                 new FileStream("Example_45.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Italic.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream");
 
         f1.SetSize(14f);
         f2.SetSize(14f);
@@ -68,7 +68,7 @@ public class Example_45 {
         float x = 50;
         float y = 280;
         float dy = f3.GetBodyHeight();
-        List<String> lines = Text.ReadLines("data/form-code-csharp.txt");
+        List<String> lines = Text.ReadLines("data/languages/english.txt");
         foreach (String line in lines) {
             page.DrawString(f3, line, x, y, Color.gray, colors);
             y += dy;

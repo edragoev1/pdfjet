@@ -15,12 +15,11 @@ public class Example_16 {
                         new FileOutputStream("Example_16.pdf")));
         pdf.setCompliance(Compliance.PDF_UA);
 
-        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        // Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf");
-        // Font f1 = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf");
-        // Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf");
-        Font f1 = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf");
-        f1.setSize(14f);
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        // Font f1 = new Font(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf");
+        // Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf");
+
+        f1.setSize(15f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -30,15 +29,15 @@ public class Example_16 {
         colors.put("dolor", Color.green);
         colors.put("ullamcorper", Color.gray);
 
-        // TODO: Draw text line here!!!
         GraphicsState gs = new GraphicsState();
         gs.setAlphaStroking(0.5f);                  // Stroking alpha
         gs.setAlphaNonStroking(0.5f);               // Nonstroking alpha
         page.setGraphicsState(gs);
 
-        String latinText = Contents.ofTextFile("data/latin.txt");
-        f1.setSize(14f);
-        TextBox textBox = new TextBox(f1, latinText);
+        // String latinText = Contents.ofTextFile("data/latin.txt");
+        String englishText = Contents.ofTextFile("data/languages/english.txt");
+        // f1.setSize(14f);
+        TextBox textBox = new TextBox(f1, englishText);
         // textBox.setLocation(50f, 50f);
         // textBox.setLocation(50f, 100f);
         textBox.setLocation(100f, 50f);
@@ -49,8 +48,8 @@ public class Example_16 {
         // textBox.setTextDirection(Direction.BOTTOM_TO_TOP);
         // textBox.setTextDirection(Direction.TOP_TO_BOTTOM);
 
-        // textBox.setVerticalAlignment(Align.TOP);
-        textBox.setVerticalAlignment(Align.BOTTOM);
+        textBox.setVerticalAlignment(Align.TOP);
+        // textBox.setVerticalAlignment(Align.BOTTOM);
         // textBox.setVerticalAlignment(Align.CENTER);
 
         // textBox.setTextAlignment(Align.CENTER);

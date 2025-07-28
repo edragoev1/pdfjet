@@ -10,10 +10,13 @@ public class Example_19 {
     public Example_19() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_19.pdf")));
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
         f1.setSize(10f);
+
+        // Font f2 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
         f2.setSize(10f);
+
         String contents = Contents.ofTextFile("data/calculus-short.txt");
 
         Page page = new Page(pdf, Letter.PORTRAIT);

@@ -58,7 +58,7 @@ func Example29() {
 	box.SetLocation(xy[0], xy[1])
 	box.SetSize(540.0, 25.0)
 	box.SetLineWidth(2.0)
-	box.SetColor(color.Darkblue)
+	box.SetColor(color.DarkBlue)
 	box.DrawOn(page)
 
 	pdf.Complete()

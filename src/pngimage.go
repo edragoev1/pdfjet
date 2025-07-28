@@ -3,7 +3,7 @@ package pdfjet
 /**
  * pngimage.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -77,7 +77,8 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 
 	for _, chunk := range chunks {
 		chunkType := string(chunk.ChunkType)
-		if chunkType == "IHDR" {
+		switch chunkType {
+		case "IHDR":
 			image.w = int(toUint32(chunk.ChunkData, 0)) // Width
 			image.h = int(toUint32(chunk.ChunkData, 4)) // Height
 			image.bitDepth = int(chunk.ChunkData[8])    // Bit Depth
@@ -95,24 +96,24 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 				fmt.Println("Interlaced PNG images are not supported.")
 				fmt.Println("Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
 			}
-		} else if chunkType == "IDAT" {
+		case "IDAT":
 			image.iDAT = append(image.iDAT, chunk.ChunkData...)
-		} else if chunkType == "PLTE" {
+		case "PLTE":
 			image.pLTE = chunk.ChunkData
 			if len(image.pLTE)%3 != 0 {
 				log.Fatal("Incorrect palette length.")
 			}
-		} else if chunkType == "gAMA" {
+		case "gAMA":
 			// fmt.Println("gAMA chunk found!")
-		} else if chunkType == "tRNS" {
+		case "tRNS":
 			if image.colorType == 3 {
 				image.tRNS = chunk.ChunkData
 			}
-		} else if chunkType == "cHRM" {
+		case "cHRM":
 			// fmt.Println("cHRM chunk found!")
-		} else if chunkType == "sBIT" {
+		case "sBIT":
 			// fmt.Println("sBIT chunk found!")
-		} else if chunkType == "bKGD" {
+		case "bKGD":
 			// fmt.Println("bKGD chunk found!")
 		}
 	}
@@ -121,28 +122,30 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 	inflatedIDAT := decompressor.Inflate(image.iDAT)
 
 	var imageData []byte
-	if image.colorType == 0 {
+	switch image.colorType {
+	case 0:
 		// Grayscale Image
-		if image.bitDepth == 16 {
+		switch image.bitDepth {
+		case 16:
 			imageData = image.getImageColorType0BitDepth16(inflatedIDAT)
-		} else if image.bitDepth == 8 {
+		case 8:
 			imageData = image.getImageColorType0BitDepth8(inflatedIDAT)
-		} else if image.bitDepth == 4 {
+		case 4:
 			imageData = image.getImageColorType0BitDepth4(inflatedIDAT)
-		} else if image.bitDepth == 2 {
+		case 2:
 			imageData = image.getImageColorType0BitDepth2(inflatedIDAT)
-		} else if image.bitDepth == 1 {
+		case 1:
 			imageData = image.getImageColorType0BitDepth1(inflatedIDAT)
-		} else {
+		default:
 			log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
-	} else if image.colorType == 6 {
+	case 6:
 		if image.bitDepth == 8 {
 			imageData = image.getImageColorType6BitDepth8(inflatedIDAT)
 		} else {
 			log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
-	} else {
+	default:
 		// Color Image
 		if image.pLTE == nil {
 			// Trucolor Image
@@ -153,15 +156,16 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 			}
 		} else {
 			// Indexed Image
-			if image.bitDepth == 8 {
+			switch image.bitDepth {
+			case 8:
 				imageData = image.getImageColorType3BitDepth8(inflatedIDAT)
-			} else if image.bitDepth == 4 {
+			case 4:
 				imageData = image.getImageColorType3BitDepth4(inflatedIDAT)
-			} else if image.bitDepth == 2 {
+			case 2:
 				imageData = image.getImageColorType3BitDepth2(inflatedIDAT)
-			} else if image.bitDepth == 1 {
+			case 1:
 				imageData = image.getImageColorType3BitDepth1(inflatedIDAT)
-			} else {
+			default:
 				log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 			}
 		}
@@ -745,13 +749,14 @@ func applyFilters(
 			}
 
 			index := bytesPerLine*row + col
-			if filter == 0x01 { // Sub
+			switch filter {
+			case 0x01: // Sub
 				image[index] += byte(a)
-			} else if filter == 0x02 { // Up
+			case 0x02: // Up
 				image[index] += byte(b)
-			} else if filter == 0x03 { // Average
+			case 0x03: // Average
 				image[index] += byte(math.Floor(float64(a+b) / 2.0))
-			} else if filter == 0x04 { // Paeth
+			case 0x04: // Paeth
 				p := a + b - c
 				pa := math.Abs(float64(p - a))
 				pb := math.Abs(float64(p - b))

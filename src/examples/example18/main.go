@@ -16,7 +16,7 @@ import (
 func Example18() {
 	pdf := pdfjet.NewPDFFile("Example_18.pdf")
 
-	font := pdfjet.NewFontFromFile(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream")
+	font := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 	font.SetSize(12.0)
 
 	pages := make([]*pdfjet.Page, 0)

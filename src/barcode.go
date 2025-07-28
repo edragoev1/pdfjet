@@ -3,7 +3,7 @@ package pdfjet
 /**
  * barcode.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -159,13 +159,14 @@ func (barcode *Barcode) SetFont(font *Font) {
 
 // DrawOn draws this barcode on the specified page.
 func (barcode *Barcode) DrawOn(page *Page) []float32 {
-	if barcode.barcodeType == Upc {
+	switch barcode.barcodeType {
+	case Upc:
 		return barcode.drawCodeUPC(page, barcode.x1, barcode.y1)
-	} else if barcode.barcodeType == CODE128 {
+	case CODE128:
 		return barcode.drawCode128(page, barcode.x1, barcode.y1)
-	} else if barcode.barcodeType == CODE39 {
+	case CODE39:
 		return barcode.drawCode39(page, barcode.x1, barcode.y1)
-	} else {
+	default:
 		log.Fatal("Unsupported Barcode Type.")
 	}
 	return []float32{0.0, 0.0}
@@ -173,13 +174,14 @@ func (barcode *Barcode) DrawOn(page *Page) []float32 {
 
 // drawOnPageAtLocation draws this barcode on the specified page at the spacified location.
 func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) []float32 {
-	if barcode.barcodeType == Upc {
+	switch barcode.barcodeType {
+case Upc:
 		return barcode.drawCodeUPC(page, x1, y1)
-	} else if barcode.barcodeType == CODE128 {
+	case CODE128:
 		return barcode.drawCode128(page, x1, y1)
-	} else if barcode.barcodeType == CODE39 {
+	case CODE39:
 		return barcode.drawCode39(page, x1, y1)
-	} else {
+	default:
 		log.Fatal("Unsupported Barcode Type.")
 	}
 	return []float32{0.0, 0.0}

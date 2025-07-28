@@ -3,7 +3,7 @@ package pdfjet
 /**
  * point.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,6 @@ import (
 // we are talking about the coordinates of the center of the point.
 // Please see Example_05.
 type Point struct {
-	controlPoint   bool
 	x, y           float32
 	r              float32
 	shape          int
@@ -78,6 +77,16 @@ func NewPoint(x, y float32) *Point {
 func NewControlPoint(x, y float32) *Point {
 	point := NewPoint(x, y)
 	point.isControlPoint = true
+	return point
+}
+
+// NewPathPoint constructor for creating control point objects.
+// @param x the x coordinate of this point when drawn on the page.
+// @param y the y coordinate of this point when drawn on the page.
+// @param c if true this is one of control points specifying a curve.
+func NewPathPoint(x, y float32, c bool) *Point {
+	point := NewPoint(x, y)
+	point.isControlPoint = c
 	return point
 }
 

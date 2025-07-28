@@ -1,7 +1,7 @@
 /**
  *  FontStream1.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -379,12 +379,6 @@ class FontStream1 {
         font.advanceWidth = [UInt16](repeating: 0, count: len)
         for i in 0..<len {
             font.advanceWidth![i] = getUInt16(inflated, &offset)
-        }
-
-        len = Int(getInt32(inflated, &offset))
-        font.glyphWidth = [Int](repeating: 0, count: len)
-        for i in 0..<len {
-            font.glyphWidth![i] = getInt(inflated, &offset)
         }
 
         len = Int(getInt32(inflated, &offset))

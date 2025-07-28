@@ -3,7 +3,7 @@ package pdfjet
 /**
  * barcode2d.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -86,13 +86,14 @@ func NewBarcode2D(str string) *Barcode2D {
 		lf := 0
 		lr := 0
 		cf := 30 * (i / 3)
-		if k == 1 {
+		switch k {
+		case 1:
 			lf = cf + (barcode.rows-1)/3
 			lr = cf + (barcode.cols - 1)
-		} else if k == 2 {
+		case 2:
 			lf = cf + 3*compression + (barcode.rows-1)%3
 			lr = cf + (barcode.rows-1)/3
-		} else if k == 3 {
+		case 3:
 			lf = cf + (barcode.cols - 1)
 			lr = cf + 3*compression + (barcode.rows-1)%3
 		}

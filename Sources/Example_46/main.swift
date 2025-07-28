@@ -9,16 +9,10 @@ public class Example_46 {
         let stream = OutputStream(toFileAtPath: "Example_46.pdf", append: false)
         let pdf = PDF(stream!)
 
-        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf")
-        let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf")
-        let f3 = try Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf")
-/*
-Used for performance testing:
-        f1 = try Font(pdf, "fonts/Droid/DroidSans-Bold.ttf")
-        f2 = try Font(pdf, "fonts/Droid/DroidSans.ttf")
-        f1 = try Font(pdf, "fonts/Droid/DroidSans-Bold.ttf.stream")
-        f2 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
-*/
+        let f1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")
+        let f2 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        let f3 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf")
+
         f1.setSize(14.0)
         f2.setSize(14.0)
 

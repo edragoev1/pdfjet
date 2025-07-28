@@ -1,7 +1,7 @@
 /**
  *  Path.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -212,53 +212,6 @@ public class Path : Drawable {
     }
 
     ///
-    /// Returns a list containing the start point, first control point,
-    /// second control point and the end point of elliptical curve segment.
-    /// Please see Example_18.
-    ///
-    /// - Parameter x the x coordinate of the center of the ellipse.
-    /// - Parameter y the y coordinate of the center of the ellipse.
-    /// - Parameter r1 the horizontal radius of the ellipse.
-    /// - Parameter r2 the vertical radius of the ellipse.
-    /// - Parameter segment the segment to draw - please see the Segment class.
-    /// - Returns: a list of the curve points.
-    ///
-    public static func getCurvePoints(
-            _ x: Float,
-            _ y: Float,
-            _ r1: Float,
-            _ r2: Float,
-            _ segment: Int) -> [Point] {
-        // The best 4-spline magic number
-        let m4: Float = 0.551784
-        var list = Array<Point>()
-
-        if segment == 0 {
-            list.append(Point(x, y - r2))
-            list.append(Point(x + m4*r1, y - r2, Point.CONTROL_POINT))
-            list.append(Point(x + r1, y - m4*r2, Point.CONTROL_POINT))
-            list.append(Point(x + r1, y))
-        } else if segment == 1 {
-            list.append(Point(x + r1, y))
-            list.append(Point(x + r1, y + m4*r2, Point.CONTROL_POINT))
-            list.append(Point(x + m4*r1, y + r2, Point.CONTROL_POINT))
-            list.append(Point(x, y + r2))
-        } else if segment == 2 {
-            list.append(Point(x, y + r2))
-            list.append(Point(x - m4*r1, y + r2, Point.CONTROL_POINT))
-            list.append(Point(x - r1, y + m4*r2, Point.CONTROL_POINT))
-            list.append(Point(x - r1, y))
-        } else if segment == 3 {
-            list.append(Point(x - r1, y))
-            list.append(Point(x - r1, y - m4*r2, Point.CONTROL_POINT))
-            list.append(Point(x - m4*r1, y - r2, Point.CONTROL_POINT))
-            list.append(Point(x, y - r2))
-        }
-
-        return list
-    }
-
-    ///
     /// Draws this path on the page using the current selected color, pen width, line pattern and line join style.
     ///
     /// - Parameter page the page to draw this path on.
@@ -266,16 +219,6 @@ public class Path : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if fillShape {
-            page!.setBrushColor(self.color)
-        } else {
-            page!.setPenColor(self.color)
-        }
-        page!.setPenWidth(self.width)
-        page!.setLinePattern(self.pattern)
-        page!.setLineCapStyle(self.lineCapStyle)
-        page!.setLineJoinStyle(self.lineJoinStyle)
-
         for i in 0..<points!.count {
             let point = points![i]
             point.x += xBox
@@ -283,12 +226,18 @@ public class Path : Drawable {
         }
 
         if fillShape {
-            page!.drawPath(points!, "f")
+            page!.setBrushColor(self.color)
+            page!.drawPath(points!, Operation.FILL)
         } else {
+            page!.setPenWidth(self.width)
+            page!.setPenColor(self.color)
+            page!.setLinePattern(self.pattern)
+            page!.setLineCapStyle(self.lineCapStyle)
+            page!.setLineJoinStyle(self.lineJoinStyle)
             if closePath {
-                page!.drawPath(points!, "s")
+                page!.drawPath(points!, Operation.CLOSE)
             } else {
-                page!.drawPath(points!, "S")
+                page!.drawPath(points!, Operation.STROKE)
             }
         }
 

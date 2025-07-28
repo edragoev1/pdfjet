@@ -23,7 +23,7 @@ func Example50(fileName string) {
 	}
 	objects := pdf.Read(buf)
 
-	file1, err := os.Open("fonts/Droid/DroidSans.ttf.stream")
+	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func Example50(fileName string) {
 	font1 := pdfjet.NewFontStream2(&objects, reader)
 	font1.SetSize(12.0)
 
-	file2, err := os.Open("fonts/Droid/DroidSans-Bold.ttf.stream")
+	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}

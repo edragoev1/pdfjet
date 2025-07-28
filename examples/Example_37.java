@@ -14,7 +14,7 @@ class Example_37 {
 
         Font f1 = new Font(
                 objects,
-                new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream"),
+                new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream"),
                 Font.STREAM);
         f1.setSize(72f);
 

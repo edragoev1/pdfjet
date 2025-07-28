@@ -1,7 +1,7 @@
 /**
  *  SVG.java
  *
- Copyright 2024 Innovatics Inc.
+ ©2025 PDFjet Software
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -35,31 +35,33 @@ public class SVG {
     }
 
     private static boolean isCommand(char ch) {
-        // Please note:
         // Capital letter commands use absolute coordinates
         // Small letter commands use relative coordinates
-        if (ch == 'M' || ch == 'm') {           // moveto
+        switch (ch) {
+        case 'M':  // moveto
+        case 'm':  // moveto (lowercase)
+        case 'L':  // lineto
+        case 'l':  // lineto (lowercase)
+        case 'H':  // horizontal lineto
+        case 'h':  // horizontal lineto (lowercase)
+        case 'V':  // vertical lineto
+        case 'v':  // vertical lineto (lowercase)
+        case 'Q':  // quadratic curveto
+        case 'q':  // quadratic curveto (lowercase)
+        case 'T':  // smooth quadratic curveto
+        case 't':  // smooth quadratic curveto (lowercase)
+        case 'C':  // cubic curveto
+        case 'c':  // cubic curveto (lowercase)
+        case 'S':  // smooth cubic curveto
+        case 's':  // smooth cubic curveto (lowercase)
+        case 'A':  // elliptical arc
+        case 'a':  // elliptical arc (lowercase)
+        case 'Z':  // close path
+        case 'z':  // close path (lowercase)
             return true;
-        } else if (ch == 'L' || ch == 'l') {    // lineto
-            return true;
-        } else if (ch == 'H' || ch == 'h') {    // horizontal lineto
-            return true;
-        } else if (ch == 'V' || ch == 'v') {    // vertical lineto
-            return true;
-        } else if (ch == 'Q' || ch == 'q') {    // quadratic curveto
-            return true;
-        } else if (ch == 'T' || ch == 't') {    // smooth quadratic curveto
-            return true;
-        } else if (ch == 'C' || ch == 'c') {    // cubic curveto
-            return true;
-        } else if (ch == 'S' || ch == 's') {    // smooth cubic curveto
-            return true;
-        } else if (ch == 'A' || ch == 'a') {    // elliptical arc
-            return true;
-        } else if (ch == 'Z' || ch == 'z') {    // close path
-            return true;
+        default:
+            return false;
         }
-        return false;
     }
 
     /**

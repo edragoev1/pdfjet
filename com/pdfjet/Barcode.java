@@ -1,7 +1,7 @@
 /**
  *  Barcode.java
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,17 +26,19 @@ package com.pdfjet;
 import java.util.*;
 
 /**
- *  Used to create one dimentional barcodes - UPC, Code 39 and Code 128.
+ *  Used to create one dimentional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
  *
  *  Please see Example_11.
  */
 public class Barcode implements Drawable {
+    /** Specifies EAN13 barcode */
+    public static final int EAN_13 = 0;
     /** Specifies UPC barcode */
-    public static final int UPC = 0;
+    public static final int UPC_A = 1;
     /** Specifies CODE128 barcode */
-    public static final int CODE128 = 1;
+    public static final int CODE_128 = 2;
     /** Specifies CODE39 barcode */
-    public static final int CODE39 = 2;
+    public static final int CODE_39 = 3;
 
     /** Specifies left to right writing direction */
     public static final int LEFT_TO_RIGHT = 0;
@@ -54,7 +56,14 @@ public class Barcode implements Drawable {
     private int direction = LEFT_TO_RIGHT;
     private Font font = null;
 
-    private int[] tableA = {3211,2221,2122,1411,1132,1231,1114,1312,1213,3112};
+    private String[] lCode = {
+        "3211","2221","2122","1411","1132",
+        "1231","1114","1312","1213","3112"};
+    private String[] gCode = new String[10];
+    private String[] lgMap = {
+        "LLLLLL", "LLGLGG", "LLGGLG", "LLGGGL", "LGLLGG",
+        "LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"};
+
     private Map<Character, String> tableB = new HashMap<Character, String>();
 
     /**
@@ -63,9 +72,21 @@ public class Barcode implements Drawable {
      *  @param barcodeType the type of the barcode.
      *  @param text the content text of the barcode.
      */
-    public Barcode(int barcodeType, String text) {
+    public Barcode(int barcodeType, String text) throws Exception {
         this.barcodeType = barcodeType;
         this.text = text;
+
+        if (barcodeType == Barcode.UPC_A && text.length() > 11) {
+            throw new Exception("UPC-A barcodes can have maximum of 11 digits!");
+        } else if (barcodeType == Barcode.EAN_13 && text.length() > 12) {
+            throw new Exception("EAN-13 barcodes can have maximum of 12 digits!");
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            gCode[i] = sb.append(lCode[i]).reverse().toString();
+            sb.setLength(0);
+        }
 
         tableB.put('*', "bWbwBwBwb");
         tableB.put('-', "bWbwbwBwB");
@@ -225,11 +246,13 @@ public class Barcode implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        if (barcodeType == Barcode.UPC) {
+        if (barcodeType == Barcode.EAN_13) {
+            return drawCodeEAN13(page, x1, y1);
+        } else if (barcodeType == Barcode.UPC_A) {
             return drawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE128) {
+        } else if (barcodeType == Barcode.CODE_128) {
             return drawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE39) {
+        } else if (barcodeType == Barcode.CODE_39) {
             return drawCode39(page, x1, y1);
         } else {
             throw new Exception("Unsupported Barcode Type.");
@@ -237,12 +260,16 @@ public class Barcode implements Drawable {
     }
 
     protected float[] drawOnPageAtLocation(Page page, float x1, float y1) throws Exception {
-        if (barcodeType == Barcode.UPC) {
+        if (barcodeType == Barcode.EAN_13) {
+            return drawCodeEAN13(page, x1, y1);
+        } else if (barcodeType == Barcode.UPC_A) {
             return drawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE128) {
+        } else if (barcodeType == Barcode.CODE_128) {
             return drawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE39) {
+        } else if (barcodeType == Barcode.CODE_39) {
             return drawCode39(page, x1, y1);
+        } else if (barcodeType == Barcode.EAN_13) {
+            return drawCodeEAN13(page, x1, y1);
         } else {
             throw new Exception("Unsupported Barcode Type.");
         }
@@ -253,32 +280,26 @@ public class Barcode implements Drawable {
         float y = y1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
-        // Calculate the check digit:
-        // 1. Add the digits in the odd-numbered positions (first, third, fifth, etc.)
-        // together and multiply by three.
-        // 2. Add the digits in the even-numbered positions (second, fourth, sixth, etc.)
-        // to the result.
-        // 3. Subtract the result modulo 10 from ten.
-        // 4. The answer modulo 10 is the check digit.
         int sum = 0;
-        for (int i = 0; i < 11; i += 2) {
-            sum += text.charAt(i) - 48;
+        for (int i = 0; i < 11; i += 2) {   // even digits
+            sum += (text.charAt(i) - '0') * 3;
         }
-        sum *= 3;
-        for (int i = 1; i < 11; i += 2) {
-            sum += text.charAt(i) - 48;
+        for (int i = 1; i < 11; i += 2) {   // odd digits
+            sum += (text.charAt(i) - '0');
         }
-        int reminder = sum % 10;
-        int checkDigit = (10 - reminder) % 10;
+        int checkDigit = 0;
+        int remainder = sum % 10;
+        if (remainder > 0) {
+            checkDigit = (10 - remainder);
+        }
         text += Integer.toString(checkDigit);
 
         x = drawEGuard(page, x, y, m1, h + 8);
         for (int i = 0; i < 6; i++) {
-            int digit = text.charAt(i) - 0x30;
-            // page.drawString(Integer.toString(digit), x + 1, y + h + 12);
-            String symbol = Integer.toString(tableA[digit]);
-            for (int j = 0; j < symbol.length(); j++) {
-                int n = symbol.charAt(j) - 0x30;
+            int digit = text.charAt(i) - '0';
+            String str = lCode[digit];
+            for (int j = 0; j < 4; j++) {
+                int n = str.charAt(j) - '0';
                 if (j%2 != 0) {
                     drawVertBar(page, x, y, n*m1, h);
                 }
@@ -287,11 +308,10 @@ public class Barcode implements Drawable {
         }
         x = drawMGuard(page, x, y, m1, h + 8);
         for (int i = 6; i < 12; i++) {
-            int digit = text.charAt(i) - 0x30;
-            // page.drawString(Integer.toString(digit), x + 1, y + h + 12);
-            String symbol = Integer.toString(tableA[digit]);
-            for (int j = 0; j < symbol.length(); j++) {
-                int n = symbol.charAt(j) - 0x30;
+            int digit = text.charAt(i) - '0';
+            String str = lCode[digit];
+            for (int j = 0; j < 4; j++) {
+                int n = str.charAt(j) - '0';
                 if (j%2 == 0) {
                     drawVertBar(page, x, y, n*m1, h);
                 }
@@ -597,6 +617,99 @@ public class Barcode implements Drawable {
                 xy[1] = Math.max(y, xy[1]);
                 return new float[] {xy[0], xy[1] + font.descent};
             }
+        }
+
+        return new float[] {xy[0], xy[1]};
+    }
+
+    private float[] drawCodeEAN13(Page page, float x1, float y1) throws Exception {
+        float x = x1;
+        float y = y1;
+        float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
+
+        int sum = 0;
+        for (int i = 0; i < 12; i += 2) {
+            sum += (text.charAt(i) - 0x30);
+        }
+        for (int i = 1; i < 12; i += 2) {
+            sum += (text.charAt(i) - 0x30) * 3;
+        }
+        int checkDigit = 0;
+        int remainder = sum % 10;
+        if (remainder > 0) {
+            checkDigit = (10 - remainder);
+        }
+        text += Integer.toString(checkDigit);
+
+        x = drawEGuard(page, x, y, m1, h + 8);
+        String group1 = lgMap[text.charAt(0) - '0'];
+        for (int i = 1; i < 7; i++) {
+            int digit = text.charAt(i) - '0';
+            String str = gCode[digit];
+            if (group1.charAt(i - 1) == 'L') {
+                str = lCode[digit];
+            }
+            int n = str.charAt(0) - '0';
+            x += n*m1;
+            n = str.charAt(1) - '0';
+            drawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+            n = str.charAt(2) - '0';
+            x += n*m1;
+            n = str.charAt(3) - '0';
+            drawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+        }
+        x = drawMGuard(page, x, y, m1, h + 8);
+        for (int i = 7; i < 13; i++) {
+            int digit = text.charAt(i) - '0';
+            String str = lCode[digit];
+            int n = str.charAt(0) - '0';
+            drawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+            n = str.charAt(1) - '0';
+            x += n*m1;
+            n = str.charAt(2) - '0';
+            drawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+            n = str.charAt(3) - '0';
+            x += n*m1;
+        }
+        x = drawEGuard(page, x, y, m1, h + 8);
+
+        float[] xy = new float[] {x, y};
+
+        if (font != null) {     // TODO:
+            String label =
+                    text.charAt(0) +
+                    " " +
+                    text.charAt(1) +
+                    text.charAt(2) +
+                    text.charAt(3) +
+                    text.charAt(4) +
+                    text.charAt(5) +
+                    text.charAt(6) +
+                    "    " +
+                    text.charAt(7) +
+                    text.charAt(8) +
+                    text.charAt(9) +
+                    text.charAt(10) +
+                    text.charAt(11) +
+                    text.charAt(12);
+            float fontSize = font.getSize();
+            font.setSize(10f);
+
+            TextLine textLine = new TextLine(font, label);
+            textLine.setLocation(
+                    x1 + ((x - x1) - font.stringWidth(label))/2,
+                    y1 + h + font.bodyHeight);
+            xy = textLine.drawOn(page);
+            xy[0] = Math.max(x, xy[0]);
+            xy[1] = Math.max(y, xy[1]);
+
+            font.setSize(fontSize);
+
+            return new float[] {xy[0], xy[1] + font.descent};
         }
 
         return new float[] {xy[0], xy[1]};

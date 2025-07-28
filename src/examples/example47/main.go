@@ -5,7 +5,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -13,8 +13,8 @@ import (
 func Example47() {
 	pdf := pdfjet.NewPDFFile("Example_47.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Italic.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Italic.ttf.stream")
 
 	f1.SetSize(12.0)
 	f2.SetSize(12.0)
@@ -36,7 +36,7 @@ func Example47() {
 	image2.DrawOn(page)
 
 	paragraphs := make([]*pdfjet.TextLine, 0)
-	contents := contents.OfTextFile("data/austria_hungary.txt")
+	contents := content.OfTextFile("data/austria_hungary.txt")
 	textLines := strings.Split(contents, "\n\n")
 	for _, textLine := range textLines {
 		paragraphs = append(paragraphs, pdfjet.NewTextLine(f1, textLine))

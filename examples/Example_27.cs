@@ -12,14 +12,14 @@ public class Example_27 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_27.pdf", FileMode.Create)));
 
-        // Thai font
-        Font f1 = new Font(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream");
         // Latin font
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
+        // Thai font
+        Font f2 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
         // Hebrew font
-        Font f3 = new Font(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream");
         // Arabic font
-        Font f4 = new Font(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream");
+        Font f4 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

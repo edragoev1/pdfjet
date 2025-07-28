@@ -8,8 +8,8 @@ public class Example_31 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_31.pdf", append: false)!)
 
-        let f1 = try Font(pdf, "fonts/Noto/NotoSansDevanagari-Regular.ttf.stream")
-        let f2 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
+        let f1 = try Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
+        let f2 = try Font(pdf, "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream")
         f1.setSize(15.0)
         f2.setSize(15.0)
 

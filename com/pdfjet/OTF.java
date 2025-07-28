@@ -1,7 +1,7 @@
 /**
  *  OTF.java
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,16 +24,15 @@ SOFTWARE.
 package com.pdfjet;
 
 import java.io.*;
-import java.util.*;
 import java.util.zip.*;
 
 /**
  * This class parses and extracts the data from TTF and OTF font files.
  */
 public class OTF {
+    ByteArrayOutputStream baos;
     String fontName;
     String fontInfo;
-    ByteArrayOutputStream baos;
     int unitsPerEm;
     short bBoxLLx;
     short bBoxLLy;
@@ -41,20 +40,19 @@ public class OTF {
     short bBoxURy;
     short ascent;
     short descent;
-    int[] advanceWidth;
     int firstChar;
     int lastChar;
     short capHeight;
-    int[] glyphWidth;
     long postVersion;
     long italicAngle;
     short underlinePosition;
     short underlineThickness;
+    int[] advanceWidth;
+    int[] unicodeToGID = new int[0x10000];
     byte[] buf;
     boolean cff = false;
     int cffOff;
     int cffLen;
-    int[] unicodeToGID = new int[0x10000];
     int index = 0;
 
     /**
@@ -245,9 +243,6 @@ public class OTF {
             glyphIdArray[i] = readUInt16();
         }
 
-        glyphWidth = new int[lastChar + 1];
-        Arrays.fill(glyphWidth, advanceWidth[0]);
-
         for (int ch = firstChar; ch <= lastChar; ch++) {
             int seg = getSegmentFor(ch, startCount, endCount, segCount);
             if (seg != -1) {
@@ -262,9 +257,6 @@ public class OTF {
                     if (gid != 0) {
                         gid += idDelta[seg] % 65536;
                     }
-                }
-                if (gid < advanceWidth.length) {
-                    glyphWidth[ch] = advanceWidth[gid];
                 }
                 unicodeToGID[ch] = gid;
             }

@@ -1,7 +1,7 @@
 /**
  *  FontStream1.java
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -323,12 +323,6 @@ class FontStream1 {
         font.advanceWidth = new int[len];
         for (int i = 0; i < len; i++) {
             font.advanceWidth[i] = getInt16(stream);
-        }
-
-        len = getInt32(stream);
-        font.glyphWidth = new int[len];
-        for (int i = 0; i < len; i++) {
-            font.glyphWidth[i] = getInt16(stream);
         }
 
         len = getInt32(stream);

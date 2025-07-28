@@ -1,7 +1,7 @@
 /**
  *  Text.java
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- *  Please see Example_45
+ *  Please see Example_46.java
  */
 public class Text implements Drawable {
     private final List<Paragraph> paragraphs;

@@ -1,7 +1,7 @@
 /**
  *  Page.java
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1562,8 +1562,8 @@ final public class Page {
 
     private void drawWord(
             Font font, StringBuilder buf, int color, Map<String, Integer> colors) {
-        String str = buf.toString();
-        if (str.length() > 0) {
+        if (buf.length() > 0) {
+            String str = buf.toString();
             if (colors.containsKey(str)) {
                 setBrushColor(colors.get(str));
             } else {

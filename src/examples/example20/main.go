@@ -22,7 +22,7 @@ func Example20() {
 
 	pdf.AddResourceObjects(objects)
 
-	font1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 	font1.SetSize(18.0)
 
 	pages := pdf.GetPageObjects(objects)
@@ -44,7 +44,7 @@ func Example20() {
 		xScale,
 		yScale)
 
-	page.SetPenColor(color.Darkblue)
+	page.SetPenColor(color.DarkBlue)
 	page.SetPenWidth(0.0)
 	page.DrawRect(0.0, 0.0, 50.0, 50.0)
 

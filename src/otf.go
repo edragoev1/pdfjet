@@ -3,7 +3,7 @@ package pdfjet
 /**
  *  otf.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/content"
 )
 
 // FontTable is used to construct font table objects.
@@ -58,8 +58,6 @@ type OTF struct {
 	bBoxURy            int16
 	ascent             int16
 	descent            int16
-	advanceWidth       []uint16
-	glyphWidth         []uint16
 	firstChar          rune
 	lastChar           rune
 	capHeight          int16
@@ -67,10 +65,11 @@ type OTF struct {
 	italicAngle        uint32
 	underlinePosition  int16
 	underlineThickness int16
+	advanceWidth       []uint16
+	unicodeToGID       []int
 	cff                bool
 	cffOff             int
 	cffLen             int
-	unicodeToGID       []int
 	format             int
 	count              int
 	stringOffset       int
@@ -79,7 +78,7 @@ type OTF struct {
 // NewOTF is the constructor for TTF and OTF fonts.
 func NewOTF(reader io.Reader) *OTF {
 	otf := new(OTF)
-	otf.buf = contents.GetFromReader(reader)
+	otf.buf = content.GetFromReader(reader)
 	otf.unicodeToGID = make([]int, 0x10000)
 
 	// Extract the OTF metadata
@@ -106,21 +105,22 @@ func NewOTF(reader io.Reader) *OTF {
 		table.length = int(readUint32(otf))
 
 		k := otf.index // Save the current index
-		if table.name == "head" {
+		switch table.name {
+		case "head":
 			getHeadTable(otf, table)
-		} else if table.name == "hhea" {
+		case "hhea":
 			getHheaTable(otf, table)
-		} else if table.name == "OS/2" {
+		case "OS/2":
 			getOs2Table(otf, table)
-		} else if table.name == "name" {
+		case "name":
 			getNameTable(otf, table)
-		} else if table.name == "hmtx" {
+		case "hmtx":
 			getHmtxTable(otf, table)
-		} else if table.name == "post" {
+		case "post":
 			getPostTable(otf, table)
-		} else if table.name == "CFF " {
+		case "CFF ":
 			getCffTable(otf, table)
-		} else if table.name == "cmap" {
+		case "cmap":
 			cmapTable = table
 		}
 		otf.index = k // Restore the index
@@ -277,11 +277,6 @@ func getCmapTable(otf *OTF, table *FontTable) {
 		glyphIDArray[i] = readUint16(otf)
 	}
 
-	otf.glyphWidth = make([]uint16, otf.lastChar+1)
-	for i := 0; i < len(otf.glyphWidth); i++ {
-		otf.glyphWidth[i] = otf.advanceWidth[0]
-	}
-
 	for ch := otf.firstChar; ch <= otf.lastChar; ch++ {
 		seg := getSegmentFor(ch, startCount, endCount, segCount)
 		if seg != -1 {
@@ -296,9 +291,6 @@ func getCmapTable(otf *OTF, table *FontTable) {
 				if gid != 0 {
 					gid += int(idDelta[seg]) % 65536
 				}
-			}
-			if gid < len(otf.advanceWidth) {
-				otf.glyphWidth[ch] = otf.advanceWidth[gid]
 			}
 			otf.unicodeToGID[ch] = gid
 		}

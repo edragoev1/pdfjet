@@ -17,9 +17,9 @@ func Example08() {
 	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	// f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBoldOblique())
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.ttf.stream")
 
 	f1.SetSize(7.0)
 	f2.SetSize(7.0)
@@ -33,7 +33,7 @@ func Example08() {
 	// Uncomment the line below if you want to print the text underneath the barcode.
 	barcode.SetFont(f1)
 
-	table := pdfjet.NewTableFromFile(f1, f2, "data/Electric_Vehicle_Population_1000.csv")
+	table := pdfjet.NewTableFromFile(f1, f2, "data/Electric_Vehicle_Population_550.csv")
 	table.SetVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9)
 	table.GetCellAt(4, 0).SetImage(image)
 	table.GetCellAt(5, 0).SetColSpan(8)

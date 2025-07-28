@@ -18,7 +18,7 @@ class Example_20 {
 
         pdf.addResourceObjects(objects);
 
-        FileInputStream stream = new FileInputStream("fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        FileInputStream stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         Font f1 = new Font(pdf, stream, Font.STREAM);
         stream.close();
         f1.setSize(18f);

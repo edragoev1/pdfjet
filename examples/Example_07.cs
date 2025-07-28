@@ -20,7 +20,7 @@ public class Example_07 {
         pdf.SetTitle("PDF/UA compliant PDF");
 */
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
 
         Page page = new Page(pdf, A4.LANDSCAPE);
 

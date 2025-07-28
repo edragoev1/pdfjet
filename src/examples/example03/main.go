@@ -37,7 +37,7 @@ func Example03() {
 	text.SetLocation(90.0, 550.0)
 	xy := text.DrawOn(page)
 
-	image2.SetLocation(90.0, xy[1]+f1.GetDescent())
+	image2.SetLocation(90.0, xy[1]-f1.GetDescent())
 	image2.ScaleBy(0.5)
 	image2.DrawOn(page)
 

@@ -14,10 +14,11 @@ public class Example_31 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Font f1 = new Font(pdf, "fonts/Noto/NotoSansDevanagari-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
-
+        // Font f1 = new Font(pdf, "fonts/Noto/NotoSansDevanagari-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
         f1.setSize(15f);
+
+        Font f2 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
         f2.setSize(15f);
 
         StringBuilder buf = new StringBuilder();

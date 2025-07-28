@@ -10,7 +10,7 @@ public class Example_11 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_11.pdf", append: false)!)
         let f1 = try Font(
                 pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")!,
                 Font.STREAM)
 
         let page = Page(pdf, Letter.PORTRAIT)

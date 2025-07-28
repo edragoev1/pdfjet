@@ -16,9 +16,9 @@ import (
 func Example28() {
 	pdf := pdfjet.NewPDFFile("Example_28.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansSymbols-Regular-Subsetted.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
 
 	f1.SetSize(11.0)
 	f2.SetSize(11.0)

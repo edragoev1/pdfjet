@@ -1,7 +1,7 @@
 /**
  *  ImageType.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ using System;
 
 /**
  *  Used to specify the image type of an image.
- *  Supported types: ImageType.JPEG, ImageType.PNG, ImageType.BMP and ImageType.PNG_STREAM
+ *  Supported types: ImageType.JPEG, ImageType.PNG and ImageType.BMP
  *  See the Image class for more information.
  *
  */
@@ -34,6 +34,5 @@ public class ImageType {
     public static readonly int JPG = 0;
     public static readonly int PNG = 1;
     public static readonly int BMP = 2;
-    public static readonly int PNG_STREAM = 3;
 }
 }   // End of namespace PDFjet.NET

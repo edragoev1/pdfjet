@@ -13,7 +13,7 @@ public class Example_48 {
                         new FileOutputStream("Example_48.pdf")),
                         Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         f1.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

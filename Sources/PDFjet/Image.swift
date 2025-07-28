@@ -1,7 +1,7 @@
 /**
  *  Image.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ import Foundation
 ///
 /// Used to create image objects and draw them on a page.
 /// The image type can be one of the following:
-/// ImageType.JPG, ImageType.PNG, ImageType.BMP or ImageType.PNG_STREAM
+/// ImageType.JPG, ImageType.PNG or ImageType.BMP
 ///
 /// Please see Example_03 and Example_24.
 ///
@@ -67,9 +67,7 @@ public class Image : Drawable {
     /// @param filePath the path to the image file.
     ///
     public convenience init(_ pdf: PDF, _ filePath: String) throws {
-        if (filePath.lowercased().hasSuffix(".png.stream")) {
-            try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.PNG_STREAM);
-        } else if (filePath.lowercased().hasSuffix(".png")) {
+        if (filePath.lowercased().hasSuffix(".png")) {
             try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.PNG);
         } else if (filePath.lowercased().hasSuffix(".bmp")) {
             try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.BMP);
@@ -119,8 +117,6 @@ public class Image : Drawable {
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
             addImage(pdf, bmp.getData(), [UInt8](), imageType, "DeviceRGB", 8)
-        } else if imageType == ImageType.PNG_STREAM {
-            try addImage(pdf, stream)
         }
         stream.close()
     }
@@ -553,84 +549,6 @@ public class Image : Drawable {
         pdf.endobj()
         pdf.images.append(self)
         self.objNumber = pdf.getObjNumber()
-    }
-
-    // Used for .png.stream images!
-    private func addImage(_ pdf: PDF, _ stream: InputStream) throws {
-        self.w = Float(try getUInt32(stream)!)  // Width
-        self.h = Float(try getUInt32(stream)!)  // Height
-        let color = try getUInt8(stream)!       // Color Space
-        let alpha = try getUInt8(stream)!       // Alpha
-
-        if alpha != 0 {
-            pdf.newobj()
-            pdf.append(Token.beginDictionary)
-            pdf.append("/Type /XObject\n")
-            pdf.append("/Subtype /Image\n")
-            pdf.append("/Filter /FlateDecode\n")
-            pdf.append("/Width ")
-            pdf.append(Int(w!))
-            pdf.append(Token.newline)
-            pdf.append("/Height ")
-            pdf.append(Int(h!))
-            pdf.append(Token.newline)
-            pdf.append("/ColorSpace /DeviceGray\n")
-            pdf.append("/BitsPerComponent 8\n")
-            let length = Int(try getUInt32(stream)!)
-            pdf.append("/Length ")
-            pdf.append(length)
-            pdf.append(Token.newline)
-            pdf.append(Token.endDictionary)
-            pdf.append(Token.stream)
-            var buffer = [UInt8](repeating: 0, count: length)
-            let count = stream.read(&buffer, maxLength: length)
-            pdf.append(buffer, 0, count)
-            pdf.append(Token.endstream)
-            pdf.endobj()
-            objNumber = pdf.getObjNumber()
-        }
-
-        pdf.newobj()
-        pdf.append(Token.beginDictionary)
-        pdf.append("/Type /XObject\n")
-        pdf.append("/Subtype /Image\n")
-        pdf.append("/Filter /FlateDecode\n")
-        if alpha != 0 {
-            pdf.append("/SMask ")
-            pdf.append(objNumber!)
-            pdf.append(" 0 R\n")
-        }
-        pdf.append("/Width ")
-        pdf.append(Int(w!))
-        pdf.append("\n")
-        pdf.append("/Height ")
-        pdf.append(Int(h!))
-        pdf.append("\n")
-        pdf.append("/ColorSpace /")
-        if color == 1 {
-            pdf.append("DeviceGray")
-        } else if color == 3 || color == 6 {
-            pdf.append("DeviceRGB")
-        }
-        pdf.append(Token.newline)
-        pdf.append("/BitsPerComponent 8\n")
-        pdf.append("/Length ")
-        let length = Int(try getUInt32(stream)!)
-        pdf.append(length)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        var buffer = [UInt8](repeating: 0, count: 4096)
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buffer, maxLength: buffer.count)
-            if count > 0 {
-                pdf.append(buffer, 0, count)
-            }
-        }
-        pdf.append(Token.endstream)
-        pdf.endobj()
-        pdf.images.append(self)
-        objNumber = pdf.getObjNumber()
     }
 
     private func getUInt8(_ stream: InputStream) throws -> UInt8? {

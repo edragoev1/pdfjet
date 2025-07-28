@@ -12,18 +12,20 @@ import (
 func Example27() {
 	pdf := pdfjet.NewPDFFile("Example_27.pdf")
 
-	// Thai font
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream")
 	// Latin font
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
-	// Hebrew font
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream")
-	// Arabic font
-	f4 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream")
-
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
 	f1.SetSize(14.0)
+
+	// Thai font
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
 	f2.SetSize(12.0)
+
+	// Hebrew font
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
 	f3.SetSize(12.0)
+
+	// Arabic font
+	f4 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
 	f4.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

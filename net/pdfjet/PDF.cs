@@ -1,7 +1,7 @@
 /**
  *  PDF.cs
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,7 @@ public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v8.0.3";
+    private String producer = "PDFjet v8.0.4";
     private String creator;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object

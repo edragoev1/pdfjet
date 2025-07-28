@@ -3,14 +3,12 @@ import PDFjet
 
 /**
  *  Example_16.swift
- *
  */
 public class Example_16 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_16.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA)
-        f1.setSize(14.0)
+        let f1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 
         let page = Page(pdf, Letter.PORTRAIT)
 
@@ -25,21 +23,21 @@ public class Example_16 {
         gs.setAlphaNonStroking(0.5)     // Nonstroking alpha
         page.setGraphicsState(gs)
 
-        f1.setSize(72.0)
-        let text = TextLine(f1, "Hello, World")
-        text.setLocation(50.0, 300.0)
-        text.drawOn(page)
+        // f1.setSize(72.0)
+        // let text = TextLine(f1, "Hello, World")
+        // text.setLocation(50.0, 300.0)
+        // text.drawOn(page)
 
-        let latinText = try String(contentsOfFile: "data/latin.txt", encoding: String.Encoding.utf8)
+        let latinText = try String(contentsOfFile: "data/languages/english.txt", encoding: String.Encoding.utf8)
 
-        f1.setSize(14.0)
+        f1.setSize(15.0)
         let textBox = TextBox(f1, latinText)
         textBox.setLocation(100.0, 50.0)
         textBox.setWidth(400.0)
         // If no height is specified the height will be calculated based on the text.
         textBox.setHeight(450.0)
 
-        textBox.setTextDirection(Direction.TOP_TO_BOTTOM)
+        // textBox.setTextDirection(Direction.TOP_TO_BOTTOM)
         // textBox.setTextDirection(Direction.BOTTOM_TO_TOP)
         // textBox.setVerticalAlignment(Align.TOP)
         // textBox.setVerticalAlignment(Align.BOTTOM)

@@ -4,13 +4,13 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/content"
 )
 
 // Example53 -- TODO:
 func Example53(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_53.pdf")
-	objects := pdf.Read(contents.OfBinaryFile(fileName))
+	objects := pdf.Read(content.OfBinaryFile(fileName))
 
 	pages := pdf.GetPageObjects(objects)
 	for _, pageObj := range pages {

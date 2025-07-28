@@ -17,8 +17,8 @@ public class Example_35 {
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
 
         f1.SetSize(8f);
         f2.SetSize(8f);

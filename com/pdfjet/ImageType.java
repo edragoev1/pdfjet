@@ -1,7 +1,7 @@
 /**
  *  ImageType.java
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ package com.pdfjet;
 
 /**
  *  Used to specify the image type of an image.
- *  Supported types: ImageType.JPG, ImageType.PNG, ImageType.BMP and ImageType.PNG_STREAM
+ *  Supported types: ImageType.JPG, ImageType.PNG and ImageType.BMP
  *  See the Image class for more information.
  *
  */
@@ -42,7 +42,4 @@ public class ImageType {
 
     /** Bitmap image */
     public static final int BMP = 2;
-
-    /** PNG_STREAM image */
-    public static final int PNG_STREAM = 3;
 }

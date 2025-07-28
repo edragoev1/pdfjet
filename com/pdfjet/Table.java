@@ -1,7 +1,7 @@
 /**
  *  Table.java
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -626,6 +626,12 @@ public class Table {
     // Sets the right border on all cells in the last column.
     private void setRightBorderOnLastColumn() {
         for (List<Cell> row : tableData) {
+            if (row.get(0).getBorder(Border.LEFT) == false) {
+                return;
+            }
+        }
+        // Only run this code if all the cells in the first column have left border.
+        for (List<Cell> row : tableData) {
             Cell cell = null;
             int i = 0;
             while (i < row.size()) {
@@ -638,6 +644,13 @@ public class Table {
 
     // Sets the bottom border on all cells in the last row.
     private void setBottomBorderOnLastRow() {
+        List<Cell> firstRow = tableData.get(0);
+        for (Cell cell : firstRow) {
+            if (cell.getBorder(Border.TOP) == false) {
+                return;
+            }
+        }
+        // Only run this code if all the cells in the first row have top border.
         List<Cell> lastRow = tableData.get(tableData.size() - 1);
         for (Cell cell : lastRow) {
             cell.setBorder(Border.BOTTOM, true);

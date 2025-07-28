@@ -12,9 +12,9 @@ public class Example_08 {
         // let f2 = Font(pdf, CoreFont.HELVETICA)
         // let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
 
-        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream")
-        let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-        let f3 = try Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream")
+        let f1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream")
+        let f2 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+        let f3 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.ttf.stream")
 
         f1.setSize(7.0)
         f2.setSize(7.0)
@@ -28,7 +28,7 @@ public class Example_08 {
         // Uncomment the line below if you want to print the text underneath the barcode.
         barcode.setFont(f1)
 
-        let table = try Table(f1, f2, "data/Electric_Vehicle_Population_1000.csv")
+        let table = try Table(f1, f2, "data/Electric_Vehicle_Population_550.csv")
         table.setVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9);
         table.getCellAt(4, 0).setImage(image)
         table.getCellAt(5, 0).setColSpan(8)

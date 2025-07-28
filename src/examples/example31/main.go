@@ -22,8 +22,8 @@ func Example31() {
 	pdf.SetKeywords("Hello World This is a test")
 	pdf.SetCreator("Application Name")
 
-	font1 := pdfjet.NewFontFromFile(pdf, "fonts/Noto/NotoSansDevanagari-Regular.ttf.stream")
-	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
+	font1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+	font2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
 
 	font1.SetSize(15.0)
 	font2.SetSize(15.0)

@@ -13,7 +13,7 @@ public class Example_36 {
                         new FileOutputStream("Example_36.pdf")));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        Image image1 = new Image(pdf, "images/ee-map.png.stream");
+        Image image1 = new Image(pdf, "images/ee-map.png");
         Image image2 = new Image(pdf, "images/fruit.jpg");
         Image image3 = new Image(pdf, "images/palette.bmp");
 

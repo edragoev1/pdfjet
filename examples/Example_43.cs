@@ -1,84 +1,111 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using System.Collections.Generic;
 using PDFjet.NET;
 
 /**
- *  Example_43.cs
- *
- *  This example shows how to add "Page X of N" footer to every page of
- *  the PDF file. In this case we create new PDF and store it in a buffer.
+ * Example_43.cs
  */
 public class Example_43 {
-    public Example_43(String fileNumber) {
-        MemoryStream buf1 = new MemoryStream();
-        PDF pdf = new PDF(buf1);
-        Page page = new Page(pdf, Letter.PORTRAIT);
+    public Example_43() {
+        PDF pdf = new PDF(
+                new BufferedStream(new FileStream("Example_43.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA);
 
-        Box box = new Box();
-        box.SetLocation(50f, 50f);
-        box.SetSize(100.0f, 100.0f);
-        box.SetColor(Color.red);
-        box.SetFillShape(true);
-        box.DrawOn(page);
+        String fileName = "data/Electric_Vehicle_Population_Data.csv";
+        // String fileName = "data/Electric_Vehicle_Population_550.csv";
 
-        page = new Page(pdf, Letter.PORTRAIT);
-        box = new Box();
-        box.SetLocation(50f, 50f);
-        box.SetSize(100.0f, 100.0f);
-        box.SetColor(Color.green);
-        box.SetFillShape(true);
-        box.DrawOn(page);
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        f1.SetSize(9f);
+        f2.SetSize(9f);
+        BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
+        List<float> widths = table.getColumnWidths(fileName);
+        // Optionally you can fine tune the widths of the columns:
+        widths[8] = 60f;    // Override the calculated width
+        widths[9] = 70f;    // Override the calculated width
+        table.SetColumnSpacing(7f);
+        table.SetLocation(20f, 15f);
+        table.SetBottomMargin(15f);
+        table.SetColumnWidths(widths);
 
-        page = new Page(pdf, Letter.PORTRAIT);
-        box = new Box();
-        box.SetLocation(50f, 50f);
-        box.SetSize(100.0f, 100.0f);
-        box.SetColor(Color.blue);
-        box.SetFillShape(true);
-        box.DrawOn(page);
+        // You can override that auto column alignments if required:
+        // final int LEFT = 0;                  // Align Left
+        // final int RIGHT = 1;                 // Align Right
+        // table.SetTextAlignment(1, RIGHT);    // Override the auto alignment
+        // table.SetTextAlignment(5, LEFT);     // Override the auto alignment
+
+        StreamReader reader = new StreamReader(fileName);
+        bool headerRow = true;
+        String line = null;
+        while ((line = reader.ReadLine()) != null) {
+            String[] fields = line.Split(',');
+            DrawRow(table, fields, headerRow);
+            headerRow = false;
+        }
+        table.Complete();
+        reader.Close();
+
+        List<Page> pages = table.GetPages();
+        for (int i = 0; i < pages.Count; i++) {
+            Page page = pages[i];
+            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
+            pdf.AddPage(page);
+        }
 
         pdf.Complete();
-
-        BufferedStream buf2 = new BufferedStream(new FileStream(
-                "Example_" + fileNumber + ".pdf", FileMode.Create, FileAccess.Write));
-        AddFooterToPDF(buf1, buf2);
     }
 
-    public void AddFooterToPDF(MemoryStream buf, Stream outputStream) {
-        PDF pdf = new PDF(outputStream);
-        List<PDFobj> objects = pdf.Read(new MemoryStream(buf.ToArray()));
-
-        Font font = new Font(objects,
-                new FileStream("fonts/Droid/DroidSans.ttf.stream",
-                        FileMode.Open,
-                        FileAccess.Read), Font.STREAM);
-        font.SetSize(12f);
-
-        List<PDFobj> pages = pdf.GetPageObjects(objects);
-        for (int i = 0; i < pages.Count; i++) {
-            String footer = "Page " + (i + 1) + " of " + pages.Count;
-            Page page = new Page(pdf, pages[i]);
-            page.AddResource(font, objects);
-            page.SetBrushColor(Color.transparent);  // Required!
-            page.SetBrushColor(Color.black);
-            page.DrawString(
-                    font,
-                    footer,
-                    (page.GetWidth() - font.StringWidth(footer))/2f,
-                    (page.GetHeight() - 5f));
-            page.Complete(objects);
+    private void DrawRow(BigTable table, String[] fields, bool headerRow) {
+        List<String> row = new List<String>();
+        for (int i = 0; i < 10; i++) {
+            String field = fields[i];
+            if (i == 8) {
+                if (headerRow) {
+                    row.Add("Vehicle Type");
+                } else {
+                    if (field[0] == 'B') {
+                        row.Add("BEV");
+                    } else if (field[0] == 'P') {
+                        row.Add("PHEV");
+                    } else {
+                        row.Add(field);
+                    }
+                }
+            } else if (i == 9) {
+                if (headerRow) {
+                    row.Add("Green Vehicle");
+                } else {
+                    if (field[0] == 'C') {
+                        row.Add("YES");
+                    } else if (field[0] == 'N') {
+                        row.Add("NO");
+                    } else {
+                        row.Add("UNKNOWN");
+                    }
+                }
+            } else {
+                row.Add(field);
+            }
         }
-        pdf.AddObjects(objects);
-        pdf.Complete();
+        if (fields[6].Equals("TOYOTA")) {
+            table.DrawRow(row, Color.red);
+        } else if (fields[6].Equals("JEEP")) {
+            table.DrawRow(row, Color.green);
+        } else if (fields[6].Equals("FORD")) {
+            table.DrawRow(row, Color.blue);
+        } else {
+            table.DrawRow(row, Color.black);
+        }
     }
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_43("43");
+        new Example_43();
         long time1 = sw.ElapsedMilliseconds;
+        sw.Stop();
         TextUtils.PrintDuration("Example_43", time0, time1);
     }
-}   // End of Example_43.cs
+}

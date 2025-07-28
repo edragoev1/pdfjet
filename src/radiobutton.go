@@ -3,7 +3,7 @@ package pdfjet
 /**
  * radiobutton.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -147,5 +147,5 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 
 	return []float32{
 		radioButton.x + 6*radioButton.r1 + radioButton.font.stringWidth(radioButton.label),
-		radioButton.y + radioButton.font.GetDescent()}
+		radioButton.y - radioButton.font.GetDescent()}
 }

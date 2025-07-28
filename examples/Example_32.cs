@@ -12,8 +12,8 @@ public class Example_32 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_32.pdf", FileMode.Create)));
 
-        Font font = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream");
-        font.SetSize(8f);
+        Font font = new Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream");
+        font.SetSize(10f);
 
         Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
         colors["new"] = Color.red;

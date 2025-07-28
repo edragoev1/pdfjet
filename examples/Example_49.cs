@@ -13,8 +13,8 @@ public class Example_49 {
                 new FileStream("Example_49.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Italic.ttf.stream");
 
         f1.SetSize(14f);
         f2.SetSize(16f);

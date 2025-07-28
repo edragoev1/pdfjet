@@ -13,10 +13,10 @@ import (
 func Example09() {
 	pdf := pdfjet.NewPDFFile("Example_09.pdf")
 
-	font1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
-	font2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-
+	font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream")
 	font1.SetSize(8.0)
+
+	font2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 	font2.SetSize(8.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

@@ -24,13 +24,13 @@ public class Example_50 {
         image.ScaleBy(0.40f);
 
         Font f1 = new Font(objects,
-                new FileStream("fonts/Droid/DroidSans.ttf.stream",
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);
         f1.SetSize(12f);
 
         Font f2 = new Font(objects,
-                new FileStream("fonts/Droid/DroidSans-Bold.ttf.stream",
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);
         f2.SetSize(12f);

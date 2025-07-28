@@ -12,7 +12,7 @@ import (
 func Example22() {
 	pdf := pdfjet.NewPDFFile("Example_22.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 
 	dest1 := "dest#1"
 	dest2 := "dest#2"
@@ -68,8 +68,8 @@ func Example22() {
 	path.Add(pdfjet.NewPoint(7.0, 9.0))
 	path.Add(pdfjet.NewPoint(3.0, 9.0))
 	path.SetClosePath(true)
-	path.SetColor(color.Oldgloryblue)
-	path.SetColor(color.Deepskyblue)
+	path.SetColor(color.OldGloryBlue)
+	path.SetColor(color.DeepSkyBlue)
 	path.SetFillShape(true)
 	path.PlaceAtZeroZeroIn(box)
 	path.DrawOn(page)

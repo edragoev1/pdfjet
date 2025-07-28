@@ -1,7 +1,7 @@
 /**
  *  FileAttachment.java
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,6 @@ package com.pdfjet;
  *
  */
 public class FileAttachment implements Drawable {
-    protected int objNumber = -1;
     protected PDF pdf;
     protected EmbeddedFile embeddedFile;
     protected String icon = "PushPin";

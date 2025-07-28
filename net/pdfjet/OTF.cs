@@ -1,7 +1,7 @@
 /**
  *  OTF.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -38,19 +38,19 @@ public class OTF {
     public short bBoxURy;
     public short ascent;
     public short descent;
-    public int[] advanceWidth;
     public int firstChar;
     public int lastChar;
     public int capHeight;
-    public int[] glyphWidth;
     public long postVersion;
     public long italicAngle;
     public short underlinePosition;
     public short underlineThickness;
+    public int[] advanceWidth;
+    public readonly int[] unicodeToGID = new int[0x10000];
+
     public bool cff = false;
     public int cffOff;
     public int cffLen;
-    public readonly int[] unicodeToGID = new int[0x10000];
     private int index = 0;
 
     public OTF(Stream stream) {
@@ -232,11 +232,6 @@ public class OTF {
             glyphIdArray[i] = ReadUInt16();
         }
 
-        glyphWidth = new int[lastChar + 1];
-        for (int i = 0; i < glyphWidth.Length; i++) {
-            glyphWidth[i] = advanceWidth[0];
-        }
-
         for (int ch = firstChar; ch <= lastChar; ch++) {
             int seg = GetSegmentFor(ch, startCount, endCount, segCount);
             if (seg != -1) {
@@ -251,9 +246,6 @@ public class OTF {
                     if (gid != 0) {
                         gid += idDelta[seg] % 65536;
                     }
-                }
-                if (gid < advanceWidth.Length) {
-                    glyphWidth[ch] = advanceWidth[gid];
                 }
                 unicodeToGID[ch] = gid;
             }

@@ -8,14 +8,14 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/content"
 )
 
 // Example37 -- TODO:
 func Example37(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_37.pdf")
-	objects := pdf.Read(contents.OfBinaryFile(fileName))
-	file1, err := os.Open("fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	objects := pdf.Read(content.OfBinaryFile(fileName))
+	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}

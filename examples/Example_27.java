@@ -1,6 +1,9 @@
 package examples;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import com.pdfjet.*;
 
 /**
@@ -11,18 +14,20 @@ public class Example_27 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_27.pdf")));
-        // Thai font
-        Font f1 = new Font(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream");
         // Latin font
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
-        // Hebrew font
-        Font f3 = new Font(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream");
-        // Arabic font
-        Font f4 = new Font(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream");
-
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
         f1.setSize(14f);
+
+        // Thai font
+        Font f2 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
         f2.setSize(12f);
+
+        // Hebrew font
+        Font f3 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream");
         f3.setSize(12f);
+
+        // Arabic font
+        Font f4 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream");
         f4.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -30,41 +35,15 @@ public class Example_27 {
         float x = 50f;
         float y = 50f;
 
-        TextLine text = new TextLine(f1);
-        text.setFallbackFont(f2);
-        text.setLocation(x, y);
+        TextBox textBox = new TextBox(f2, new String(
+                Files.readAllBytes(Paths.get("data/languages/thai.txt"))));
+        textBox.setLocation(50f, 50f);
+        textBox.setWidth(430f);
+        textBox.drawOn(page);
 
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0x0E01; i < 0x0E5B; i++) {
-            if (i % 16 == 0) {
-                text.setText(buf.toString());
-                text.setLocation(x, y += 24f);
-                text.drawOn(page);
-                buf = new StringBuilder();
-            }
-            if (i > 0x0E30 && i < 0x0E3B) {
-                buf.append("\u0E01");
-            }
-            if (i > 0x0E46 && i < 0x0E4F) {
-                buf.append("\u0E2D");
-            }
-            buf.append((char) i);
-        }
+        y += 200f;
 
-        text.setText(buf.toString());
-        text.setLocation(x, y += 20f);
-        text.drawOn(page);
-
-        y += 20f;
-
-        String str = "\u0E1C\u0E1C\u0E36\u0E49\u0E07 abc 123";
-        text.setText(str);
-        text.setLocation(x, y);
-        text.drawOn(page);
-
-        y += 20f;
-
-        str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
+        String str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
         str = Bidi.reorderVisually(str);
         TextLine textLine = new TextLine(f3, str);
         textLine.setFallbackFont(f2);

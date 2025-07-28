@@ -3,7 +3,7 @@ package pdfjet
 /**
  * box.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ SOFTWARE.
 
 import (
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/operation"
 	"github.com/edragoev1/pdfjet/src/single"
 	"github.com/edragoev1/pdfjet/src/structuretype"
 )
@@ -34,6 +35,7 @@ import (
 // Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
 type Box struct {
 	x, y, w, h     float32
+	r              float32
 	color          int32
 	width          float32
 	pattern        string
@@ -99,6 +101,12 @@ func (box *Box) SetColor(color int32) {
 // @param width the width.
 func (box *Box) SetLineWidth(width float32) {
 	box.width = width
+}
+
+// SetCornerRadius sets the corner radious.
+// @param width the width.
+func (box *Box) SetCornerRadius(r float32) {
+	box.r = r
 }
 
 // SetURIAction sets the URI for the "click box" action.
@@ -188,22 +196,48 @@ func (box *Box) ScaleBy(factor float32) {
 // @param page the page to draw this box on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (box *Box) DrawOn(page *Page) []float32 {
+	const k float32 = 0.5517
+
 	page.AddBMC(box.structureType, box.language, box.actualText, box.altDescription)
-	page.SetPenWidth(box.width)
-	page.SetLinePattern(box.pattern)
-	if box.fillShape {
-		page.SetBrushColor(box.color)
+	if box.r == 0.0 {
+		page.MoveTo(box.x, box.y)
+		page.LineTo(box.x+box.w, box.y)
+		page.LineTo(box.x+box.w, box.y+box.h)
+		page.LineTo(box.x, box.y+box.h)
+		if box.fillShape {
+			page.SetBrushColor(box.color)
+			page.FillPath()
+		} else {
+			page.SetPenWidth(box.width)
+			page.SetPenColor(box.color)
+			page.SetLinePattern(box.pattern)
+			page.ClosePath()
+		}
 	} else {
+		page.SetPenWidth(box.width)
 		page.SetPenColor(box.color)
-	}
-	page.MoveTo(box.x, box.y)
-	page.LineTo(box.x+box.w, box.y)
-	page.LineTo(box.x+box.w, box.y+box.h)
-	page.LineTo(box.x, box.y+box.h)
-	if box.fillShape {
-		page.FillPath()
-	} else {
-		page.ClosePath()
+		page.SetLinePattern(box.pattern)
+
+		points := make([]*Point, 0)
+		points = append(points, NewPathPoint(box.x+box.r, box.y, false))
+		points = append(points, NewPathPoint((box.x+box.w)-box.r, box.y, false))
+		points = append(points, NewPathPoint(((box.x+box.w)-box.r)+box.r*k, box.y, true))
+		points = append(points, NewPathPoint((box.x+box.w), (box.y+box.r)-box.r*k, true))
+		points = append(points, NewPathPoint((box.x+box.w), (box.y+box.r), false))
+		points = append(points, NewPathPoint((box.x+box.w), (box.y+box.h)-box.r, false))
+		points = append(points, NewPathPoint((box.x+box.w), ((box.y+box.h)-box.r)+box.r*k, true))
+		points = append(points, NewPathPoint(((box.x+box.w)-box.r)+box.r*k, (box.y+box.h), true))
+		points = append(points, NewPathPoint(((box.x+box.w)-box.r), (box.y+box.h), false))
+		points = append(points, NewPathPoint((box.x+box.r), (box.y+box.h), false))
+		points = append(points, NewPathPoint(((box.x+box.r)-box.r*k), (box.y+box.h), true))
+		points = append(points, NewPathPoint(box.x, ((box.y+box.h)-box.r)+box.r*k, true))
+		points = append(points, NewPathPoint(box.x, (box.y+box.h)-box.r, false))
+		points = append(points, NewPathPoint(box.x, (box.y+box.r), false))
+		points = append(points, NewPathPoint(box.x, (box.y+box.r)-box.r*k, true))
+		points = append(points, NewPathPoint((box.x+box.r)-box.r*k, box.y, true))
+		points = append(points, NewPathPoint((box.x+box.r), box.y, false))
+
+		page.DrawPath(points, operation.Stroke)
 	}
 	page.AddEMC()
 

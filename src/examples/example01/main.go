@@ -9,6 +9,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/font"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -16,11 +17,23 @@ import (
 func Example01(mode string) {
 	pdf := pdfjet.NewPDFFile("Example_01.pdf")
 
-	font1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
-	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
-
+	font1 := pdfjet.NewFontFromFile(pdf, font.NotoSans.Regular)
 	font1.SetSize(12.0)
+
+	font2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream")
 	font2.SetSize(12.0)
+
+	font3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream")
+	font3.SetSize(12.0)
+
+	font4 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
+	font4.SetSize(12.0)
+
+	font5 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream")
+	font5.SetSize(12.0)
+
+	font6 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+	font6.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
@@ -58,20 +71,20 @@ func Example01(mode string) {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait)
 
-	lcgText, err := os.ReadFile("data/LCG.txt")
+	lcgText, err := os.ReadFile("data/english-greek-russian.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	paragraphs := make([]*pdfjet.Paragraph, 0)
 	lines := strings.Split(string(lcgText), "\n")
-	textline := pdfjet.NewTextLine(font1, "")
+	// textline := pdfjet.NewTextLine(font1, "")
 	for i, line := range lines {
 		if line == "" {
 			continue
 		}
 		paragraph := pdfjet.NewParagraph()
-		textline = pdfjet.NewTextLine(font1, line)
+		textline := pdfjet.NewTextLine(font1, line)
 		paragraph.Add(textline)
 		if i == 0 {
 			textLine := pdfjet.NewTextLine(font1,
@@ -81,7 +94,7 @@ func Example01(mode string) {
 			paragraph.Add(textLine)
 
 			textLine = pdfjet.NewTextLine(font1, "This is a test!")
-			textLine.SetColor(color.Oldgloryred)
+			textLine.SetColor(color.OldGloryRed)
 			textLine.SetUnderline(true)
 			paragraph.Add(textLine)
 		}
@@ -110,7 +123,7 @@ func Example01(mode string) {
 			paragraphNumber = 1
 		} else {
 			textLine := pdfjet.NewTextLine(font1, strconv.Itoa(paragraphNumber)+".")
-			textLine.SetLocation(p.GetX1()-15.0, p.GetY1())
+			textLine.SetLocation(p.GetX1()-15.0, p.GetY1()+font1.GetSize())
 			textLine.DrawOn(page)
 			paragraphNumber++
 		}
@@ -118,7 +131,7 @@ func Example01(mode string) {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait)
 
-	cjkText, err := os.ReadFile("data/CJK.txt")
+	cjkText, err := os.ReadFile("data/english-greek-russian.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,7 +143,7 @@ func Example01(mode string) {
 			continue
 		}
 		paragraph := pdfjet.NewParagraph()
-		textline = pdfjet.NewTextLine(font1, line)
+		textline := pdfjet.NewTextLine(font1, line)
 		textline.SetFallbackFont(font2)
 		paragraph.Add(textline)
 		paragraphs = append(paragraphs, paragraph)

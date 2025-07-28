@@ -16,9 +16,9 @@ public class Example_45 {
                         Compliance.PDF_UA);
         pdf.setLanguage("en-US");
 
-        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/SourceSerif4/SourceSerif4-Italic.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream");
 
         f1.setSize(14f);
         f2.setSize(14f);
@@ -71,7 +71,7 @@ public class Example_45 {
         float x = 50;
         float y = 280;
         float dy = f3.getBodyHeight();
-        List<String> lines = Text.readLines("data/form-code-java.txt");
+        List<String> lines = Text.readLines("data/languages/english.txt");
         for (String line : lines) {
             page.drawString(f3, line, x, y, Color.gray, colors);
             y += dy;

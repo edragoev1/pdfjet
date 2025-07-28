@@ -3,7 +3,7 @@ package pdfjet
 /**
  * font.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +60,6 @@ type Font struct {
 	fontUnderlinePosition  int16
 	fontUnderlineThickness int16
 	advanceWidth           []uint16
-	glyphWidth             []uint16
 	unicodeToGID           []int
 	cff                    bool
 	compressedSize         int
@@ -313,13 +312,13 @@ func (font *Font) SetSize(fontSize float32) *Font {
 	font.size = fontSize
 	if font.isCJK {
 		font.ascent = font.size
-		font.descent = font.ascent / 4
+		font.descent = font.size / 4
 		font.bodyHeight = font.ascent + font.descent
 		return font
 	}
 	font.ascent = float32(font.fontAscent) * font.size / float32(font.unitsPerEm)
-	font.descent = -float32(font.fontDescent) * font.size / float32(font.unitsPerEm)
-	font.bodyHeight = font.ascent + font.descent
+	font.descent = float32(font.fontDescent) * font.size / float32(font.unitsPerEm)
+	font.bodyHeight = font.ascent - font.descent
 	font.underlineThickness = float32(font.fontUnderlineThickness) * font.size / float32(font.unitsPerEm)
 	font.underlinePosition = -float32(font.fontUnderlinePosition)*font.size/float32(font.unitsPerEm) + font.underlineThickness/2.0
 	return font
@@ -376,7 +375,7 @@ func (font *Font) GetFitChars(text string, width float32) int {
 		if c1 < font.firstChar || c1 > font.lastChar {
 			w -= float32(font.advanceWidth[0])
 		} else {
-			w -= float32(font.glyphWidth[c1])
+			w -= float32(font.advanceWidth[font.unicodeToGID[c1]])
 		}
 		if w < 0 {
 			break
@@ -438,8 +437,9 @@ func (font *Font) SetItalic(skew15 bool) {
 // stringWidth returns the width of the specified string when drawn on the
 // page with this font using the current font size.
 func (font *Font) stringWidth(str string) float32 {
+	var width float32 = 0.0
 	if str == "" {
-		return 0.0
+		return width
 	}
 
 	if font.isCJK {
@@ -447,16 +447,13 @@ func (font *Font) stringWidth(str string) float32 {
 	}
 
 	runes := []rune(str)
-	var width float32
-	for i, c1 := range runes {
-		if font.isCoreFont {
+	if font.isCoreFont {
+		for i, c1 := range runes {
 			if c1 < rune(font.firstChar) || c1 > rune(font.lastChar) {
 				c1 = 0x20
 			}
 			c1 -= 32
-
 			width += float32(font.metrics[c1][1])
-
 			if font.kernPairs && i < (len(runes)-1) {
 				c2 := runes[i+1]
 				if c2 < font.firstChar || c2 > font.lastChar {
@@ -469,11 +466,13 @@ func (font *Font) stringWidth(str string) float32 {
 					}
 				}
 			}
-		} else {
-			if c1 < font.firstChar || c1 > font.lastChar {
-				width += float32(font.advanceWidth[0])
+		}
+	} else {
+		for _, c1 := range runes {
+			if font.unicodeToGID[c1] < len(font.advanceWidth) {
+				width += float32(font.advanceWidth[font.unicodeToGID[c1]])
 			} else {
-				width += float32(font.glyphWidth[c1])
+				width += float32(font.advanceWidth[0])
 			}
 		}
 	}

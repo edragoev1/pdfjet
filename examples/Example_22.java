@@ -13,7 +13,7 @@ public class Example_22 {
                         new FileOutputStream("Example_22.pdf")),
                         Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine text = new TextLine(f1, "Page #1 -> Go to Destination #3.");

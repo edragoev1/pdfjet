@@ -43,7 +43,7 @@ import (
 	"io"
 	"log"
 
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/content"
 )
 
 // JPGImage describes JPG image object.
@@ -75,7 +75,7 @@ const (
 // NewJPGImage is the constructor.
 func NewJPGImage(reader io.Reader) *JPGImage {
 	image := new(JPGImage)
-	image.data = contents.GetFromReader(reader)
+	image.data = content.GetFromReader(reader)
 	return image.readJPGImage(image.data)
 }
 

@@ -1,7 +1,7 @@
 /**
  *  FileAttachment.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@ using System;
  */
 namespace PDFjet.NET {
 public class FileAttachment : IDrawable {
-    internal int objNumber = -1;
     internal PDF pdf = null;
     internal EmbeddedFile embeddedFile = null;
     internal String icon = "PushPin";

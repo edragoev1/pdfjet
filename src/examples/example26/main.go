@@ -15,8 +15,8 @@ func Example26() {
 	pdf := pdfjet.NewPDFFile("Example_26.pdf")
 
 	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	font2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
-	font3 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansMono.ttf.stream")
+	font2 := pdfjet.NewFontFromFile(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf.stream")
+	font3 := pdfjet.NewFontFromFile(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream")
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
@@ -83,7 +83,7 @@ func Example26() {
 	font1.SetSize(24.0)
 	textField := pdfjet.NewTextLine(font1, "Hello, World!")
 	textField.SetLocation(300.0, 300.0)
-	textField.SetColor(color.Blanchedalmond)
+	textField.SetColor(color.BlanchedAlmond)
 	textField.DrawOn(page)
 
 	font2.SetSize(24.0)

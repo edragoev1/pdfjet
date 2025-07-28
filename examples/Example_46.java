@@ -14,9 +14,9 @@ public class Example_46 {
                         new FileOutputStream("Example_46.pdf")),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
 
         f1.setSize(14f);
         f2.setSize(14f);

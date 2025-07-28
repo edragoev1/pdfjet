@@ -1,7 +1,7 @@
 /**
  *  TextBox.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -171,6 +171,19 @@ public class TextBox : Drawable {
     public func setLocation(_ x: Float, _ y: Float) -> TextBox {
         self.x = x
         self.y = y
+        return self
+    }
+
+    ///
+    /// Sets the size of this text box.
+    ///
+    /// @param x the x coordinate of the top left corner of the text box.
+    /// @param y the y coordinate of the top left corner of the text box.
+    ///
+    @discardableResult
+    public func setSize(_ w: Float, _ h: Float) -> TextBox {
+        self.width = w
+        self.height = h
         return self
     }
 
@@ -593,19 +606,22 @@ public class TextBox : Drawable {
         }
     }
 
-    // Preserves the leading spaces and tabs
-    private func getStringBuilder(_ line: String) -> String {
-        var buf = String()
-        for scalar in line.unicodeScalars {
-            if scalar == " " {
-                buf.append(" ")
-            } else if scalar == "\t" {
-                buf.append("    ")
-            } else {
-                break
+    private func textIsCJK(_ str: String) -> Bool {
+        // CJK Unified Ideographs Range: 4E00–9FD5
+        // Hiragana Range: 3040–309F
+        // Katakana Range: 30A0–30FF
+        // Hangul Jamo Range: 1100–11FF
+        var numOfCJK = 0
+        let scalars = [UnicodeScalar](str.unicodeScalars)
+        for scalar in scalars {
+            if (scalar.value >= 0x4E00 && scalar.value <= 0x9FD5) ||
+                    (scalar.value >= 0x3040 && scalar.value <= 0x309F) ||
+                    (scalar.value >= 0x30A0 && scalar.value <= 0x30FF) ||
+                    (scalar.value >= 0x1100 && scalar.value <= 0x11FF) {
+                numOfCJK += 1
             }
         }
-        return buf
+        return (numOfCJK > (scalars.count / 2))
     }
 
     private func getTextLines() -> [String] {
@@ -617,43 +633,44 @@ public class TextBox : Drawable {
             textAreaWidth = height - 2*margin
         }
         let lines = text!.components(separatedBy: "\n")
+
         for line in lines {
             if font!.stringWidth(fallbackFont, line) <= textAreaWidth {
                 list.append(line)
             } else {
-                var buf1 = getStringBuilder(line)                               // Preserves the indentation
-                let tokens = line.trim().components(separatedBy: .whitespaces)  // Do not remove the trim()!
-                for token in tokens {
-                    if (font!.stringWidth(fallbackFont, token) > textAreaWidth) {
-                        // We have very long token, so we have to split it
-                        var buf2 = String()
-                        for scalar in token.unicodeScalars {
-                            if (font!.stringWidth(fallbackFont, buf2 + String(scalar)) > textAreaWidth) {
-                                list.append(buf2)
-                                buf2 = ""
-                            }
-                            buf2.append(String(scalar))
+                if textIsCJK(line) {
+                    var sb = String()
+                    for scalar in line.unicodeScalars {
+                        if font!.stringWidth(fallbackFont, sb + String(scalar)) <= textAreaWidth {
+                            sb.append(String(scalar))
+                        } else {
+                            list.append(sb)
+                            sb = ""
+                            sb.append(String(scalar))
                         }
-                        if buf2.count > 0 {
-                            buf1.append(buf2 + " ")
-                        }
-                    } else {
-                        if font!.stringWidth(fallbackFont, buf1 + token) > textAreaWidth {
-                            list.append(buf1)
-                            buf1 = ""
-                        }
-                        buf1.append(token + " ")
                     }
-                }
-                if buf1.count > 0 {
-                    list.append(buf1.trim())
+                    if sb.count > 0 {
+                        list.append(sb)
+                    }
+                } else {
+                    var sb = String()
+                    let tokens = line.components(separatedBy: .whitespaces)
+                    for token in tokens {
+                        if font!.stringWidth(fallbackFont, sb + token) <= textAreaWidth {
+                            sb.append(token + " ")
+                        } else {
+                            list.append(sb.trim())
+                            sb = ""
+                            sb.append(token + " ")
+                        }
+                    }
+                    if sb.trim().count > 0 {
+                        list.append(sb.trim())
+                    }
                 }
             }
         }
-        if list.count > 0 && list.last!.trim().count == 0 {
-            // Remove the last line if it is blank
-            list.removeLast()
-        }
+
         return list
     }
 
@@ -731,7 +748,7 @@ public class TextBox : Drawable {
                     xText = y + margin
                 }
                 if page != nil {
-                    drawText(page, font!, fallbackFont, line, xText, yText, brush, colors)
+                    drawTextLine(page, font!, fallbackFont, line, xText, yText, brush, colors)
                 }
                 if textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP {
@@ -765,7 +782,7 @@ public class TextBox : Drawable {
                     xText = x + margin
                 }
                 if page != nil {
-                    drawText(page, font!, fallbackFont, line, xText, yText, brush, colors)
+                    drawTextLine(page, font!, fallbackFont, line, xText, yText, brush, colors)
                 }
                 if textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP {
@@ -795,7 +812,7 @@ public class TextBox : Drawable {
         return [x + width, y + height]
     }
 
-    private func drawText(
+    private func drawTextLine(
             _ page: Page?,
             _ font: Font,
             _ fallbackFont: Font?,
@@ -817,18 +834,20 @@ public class TextBox : Drawable {
         }
         page!.addEMC();
         if textDirection == Direction.LEFT_TO_RIGHT {
-            let lineLength = font.stringWidth(text)
+            let lineLength = font.stringWidth(fallbackFont, text)
             if getUnderline() {
-                let yAdjust = font.underlinePosition
-                page!.moveTo(xText, yText + yAdjust)
-                page!.lineTo(xText + lineLength, yText + yAdjust)
+			    page!.addArtifactBMC()
+                page!.moveTo(xText, yText + font.underlinePosition)
+                page!.lineTo(xText + lineLength, yText + font.underlinePosition)
                 page!.strokePath()
+			    page!.addEMC()
             }
             if getStrikeout() {
-                let yAdjust = font.bodyHeight/4
-                page!.moveTo(xText, yText - yAdjust)
-                page!.lineTo(xText + lineLength, yText - yAdjust)
+			    page!.addArtifactBMC()
+                page!.moveTo(xText, yText - (font.bodyHeight/4))
+                page!.lineTo(xText + lineLength, yText - (font.bodyHeight/4))
                 page!.strokePath()
+			    page!.addEMC()
             }
         }
     }

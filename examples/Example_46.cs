@@ -12,12 +12,11 @@ public class Example_46 {
                 new FileStream("Example_46.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Semibold.otf.stream");
-
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream");
         f1.SetSize(14f);
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         f2.SetSize(14f);
+        Font f3 = new Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Bold.ttf.stream");
         f3.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

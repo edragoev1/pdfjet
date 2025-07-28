@@ -13,9 +13,9 @@ import (
 func Example23() {
 	pdf := pdfjet.NewPDFFile("Example_23.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream")
 
 	// What is this?
 	f3.SetSize(7.0 * 0.583)
@@ -39,7 +39,7 @@ func Example23() {
 	// textBox.SetTextAlignment(align.Right)
 	// cell := pdfjet.NewCell(f2, "Yahoo! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Hello World!")
 	cell := pdfjet.NewCell(f2, "Yahoo! aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAAAAAAAAAA Hello World!")
-	cell.SetBgColor(color.Aliceblue)
+	cell.SetBgColor(color.AliceBlue)
 	// cell.SetTextBox(textBox)
 	cell.SetColSpan(2)
 	row = append(row, cell)

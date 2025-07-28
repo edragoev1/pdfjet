@@ -230,7 +230,7 @@ func getCell(
 	cell.SetBorder(border.Top, topBorder)
 	cell.SetBorder(border.Bottom, bottomBorder)
 	cell.SetTextAlignment(align.Center)
-	cell.SetBgColor(color.Lightblue)
+	cell.SetBgColor(color.LightBlue)
 	cell.SetLineWidth(0.5)
 	return cell
 }

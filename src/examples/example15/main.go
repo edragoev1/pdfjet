@@ -11,8 +11,8 @@ import (
 func Example15() {
 	pdf := pdfjet.NewPDFFile("Example_15.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSans.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
 
 	f1.SetSize(12.0)
 	f2.SetSize(12.0)
@@ -31,7 +31,7 @@ func Example15() {
 	textBox.SetLocation(50.0, 50.0)
 	textBox.SetMargin(20.0)
 	textBox.SetWidth(300.0)
-	textBox.SetBgColor(color.Lightblue)
+	textBox.SetBgColor(color.LightBlue)
 	textBox.SetTextColors(colors)
 	xy := textBox.DrawOn(page)
 

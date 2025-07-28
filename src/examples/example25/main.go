@@ -34,9 +34,9 @@ func Example25() {
 	text5 := pdfjet.NewTextLine(f5, "O")
 	text6 := pdfjet.NewTextLine(f6, "6")
 
-	text1.SetColor(color.Dodgerblue)
-	text3.SetColor(color.Dodgerblue)
-	text5.SetColor(color.Dodgerblue)
+	text1.SetColor(color.DodgerBlue)
+	text3.SetColor(color.DodgerBlue)
+	text5.SetColor(color.DodgerBlue)
 
 	text2.SetTextEffect(effect.Subscript)
 	text4.SetTextEffect(effect.Subscript)
@@ -88,11 +88,11 @@ func Example25() {
 	chart.AddSlice(pdfjet.NewSlice(10.0, color.Red))
 	chart.AddSlice(pdfjet.NewSlice(20.0, color.Green))
 	chart.AddSlice(pdfjet.NewSlice(30.0, color.Blue))
-	chart.AddSlice(pdfjet.NewSlice(40.0, color.Peachpuff))
-/* For testing1
+	chart.AddSlice(pdfjet.NewSlice(40.0, color.PeachPuff))
+	/* For testing1
 	chart.AddSlice(pdfjet.NewSlice(75.0, color.Red))
 	chart.AddSlice(pdfjet.NewSlice(25.0, color.Blue))
-*/
+	*/
 	chart.DrawOn(page)
 
 	pdf.Complete()

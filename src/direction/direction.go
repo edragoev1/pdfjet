@@ -3,7 +3,7 @@ package direction
 /**
  * direction.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// Used to specify the text writing direction in textbox.go
+// Used to specify the text writing direction in textblock.go
 const (
 	LeftToRight = iota
 	BottomToTop

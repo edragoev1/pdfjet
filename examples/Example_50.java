@@ -20,11 +20,11 @@ class Example_50 {
         image.setLocation(495f, 65f);
         image.scaleBy(0.40f);
 
-        stream = new FileInputStream("fonts/Droid/DroidSans.ttf.stream");
+        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         Font f1 = new Font(objects, stream, Font.STREAM);
         f1.setSize(12f);
 
-        stream = new FileInputStream("fonts/Droid/DroidSans-Bold.ttf.stream");
+        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream");
         Font f2 = new Font(objects, stream, Font.STREAM);
         f2.setSize(12f);
 

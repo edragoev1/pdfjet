@@ -1,7 +1,7 @@
 /**
  *  Image.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ using System.Collections.Generic;
 
 /**
  *  Used to create image objects and draw them on a page.
- *  The image type can be one of the following: ImageType.JPG, ImageType.PNG, ImageType.BMP or ImageType.PNG_STREAM
+ *  The image type can be one of the following: ImageType.JPG, ImageType.PNG or ImageType.BMP
  *
  *  Please see Example_03 and Example_24.
  */
@@ -61,7 +61,6 @@ public class Image : IDrawable {
      *
      */
     public Image(PDF pdf, String filePath) : this(pdf, new FileStream(filePath, FileMode.Open, FileAccess.Read),
-            filePath.ToLower().EndsWith(".png.stream") ? ImageType.PNG_STREAM :
             filePath.ToLower().EndsWith(".png") ? ImageType.PNG :
             filePath.ToLower().EndsWith(".bmp") ? ImageType.BMP : ImageType.JPG) {
     }
@@ -108,8 +107,6 @@ public class Image : IDrawable {
             w = bmp.GetWidth();
             h = bmp.GetHeight();
             AddImage(pdf, data, null, imageType, "DeviceRGB", 8);
-        } else if (imageType == ImageType.PNG_STREAM) {
-            AddImage(pdf, inputStream);
         }
 
         inputStream.Dispose();
@@ -552,81 +549,7 @@ public class Image : IDrawable {
         pdf.images.Add(this);
         objNumber = pdf.GetObjNumber();
     }
-
-    private void AddImage(PDF pdf, Stream inputStream) {
-        w = GetInt(inputStream);                // Width
-        h = GetInt(inputStream);                // Height
-        byte c = (byte) inputStream.ReadByte(); // Color Space
-        byte a = (byte) inputStream.ReadByte(); // Alpha
-
-        if (a != 0) {
-            pdf.Newobj();
-            pdf.Append("<<\n");
-            pdf.Append("/Type /XObject\n");
-            pdf.Append("/Subtype /Image\n");
-            pdf.Append("/Filter /FlateDecode\n");
-            pdf.Append("/Width ");
-            pdf.Append(w);
-            pdf.Append('\n');
-            pdf.Append("/Height ");
-            pdf.Append(h);
-            pdf.Append('\n');
-            pdf.Append("/ColorSpace /DeviceGray\n");
-            pdf.Append("/BitsPerComponent 8\n");
-            int length = GetInt(inputStream);
-            pdf.Append("/Length ");
-            pdf.Append(length);
-            pdf.Append('\n');
-            pdf.Append(">>\n");
-            pdf.Append("stream\n");
-            byte[] buf1 = new byte[length];
-            inputStream.Read(buf1, 0, length);
-            pdf.Append(buf1, 0, length);
-            pdf.Append("\nendstream\n");
-            pdf.Endobj();
-            objNumber = pdf.GetObjNumber();
-        }
-
-        pdf.Newobj();
-        pdf.Append("<<\n");
-        pdf.Append("/Type /XObject\n");
-        pdf.Append("/Subtype /Image\n");
-        pdf.Append("/Filter /FlateDecode\n");
-        if (a != 0) {
-            pdf.Append("/SMask ");
-            pdf.Append(objNumber);
-            pdf.Append(" 0 R\n");
-        }
-        pdf.Append("/Width ");
-        pdf.Append(w);
-        pdf.Append('\n');
-        pdf.Append("/Height ");
-        pdf.Append(h);
-        pdf.Append('\n');
-        pdf.Append("/ColorSpace /");
-        if (c == 1) {
-            pdf.Append("DeviceGray");
-        } else if (c == 3 || c == 6) {
-            pdf.Append("DeviceRGB");
-        }
-        pdf.Append('\n');
-        pdf.Append("/BitsPerComponent 8\n");
-        pdf.Append("/Length ");
-        pdf.Append(GetInt(inputStream));
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        byte[] buf2 = new byte[4096];
-        int count;
-        while ((count = inputStream.Read(buf2, 0, buf2.Length)) > 0) {
-            pdf.Append(buf2, 0, count);
-        }
-        pdf.Append("\nendstream\n");
-        pdf.Endobj();
-        pdf.images.Add(this);
-        objNumber = pdf.GetObjNumber();
-    }
-
+/*
     private int GetInt(Stream inputStream) {
         byte[] buf = new byte[4];
         inputStream.Read(buf, 0, 4);
@@ -640,7 +563,7 @@ public class Image : IDrawable {
         val |= buf[3] & 0xff;
         return val;
     }
-
+*/
     private void AddSoftMask(
             List<PDFobj> objects,
             byte[] data,

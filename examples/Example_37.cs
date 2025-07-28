@@ -24,7 +24,7 @@ class Example_37 {
         List<PDFobj> objects = pdf.Read(fis);
 
         Font f1 = new Font(objects,
-                new FileStream("fonts/OpenSans/OpenSans-Regular.ttf.stream",
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream",
                 FileMode.Open,
                 FileAccess.Read), Font.STREAM);
         f1.SetSize(72f);

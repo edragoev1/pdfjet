@@ -11,7 +11,6 @@ public class Example_24 {
         let font = Font(pdf, CoreFont.HELVETICA)
 
         let image_00 = try Image(pdf, "images/gr-map.jpg")
-        let image_01 = try Image(pdf, "images/linux-logo.png.stream")
         let image_02 = try Image(pdf, "images/ee-map.png")
         let image_03 = try Image(pdf, "images/rgb24pal.bmp")
 
@@ -21,13 +20,6 @@ public class Example_24 {
         textline_00.setLocation(50.0, 50.0)
         var point = textline_00.drawOn(page)
         image_00.setLocation(50.0, point[1] + 10.0).scaleBy(0.25).drawOn(page)
-
-        page = Page(pdf, Letter.PORTRAIT)
-        let textline_01 = TextLine(font, "This is a PNG_STREAM image.")
-        textline_01.setTextDirection(0)
-        textline_01.setLocation(50.0, 50.0)
-        point = textline_01.drawOn(page)
-        image_01.setLocation(50.0, point[1] + 10.0).drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
         let textline_02 = TextLine(font, "This is a PNG image.")

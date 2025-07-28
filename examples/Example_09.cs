@@ -14,10 +14,10 @@ public class Example_09 {
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream");
         f1.SetSize(8f);
+
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         f2.SetSize(8f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

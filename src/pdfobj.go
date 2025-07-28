@@ -3,7 +3,7 @@ package pdfjet
 /**
  * pdfobj.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -590,11 +590,11 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 				obj2 = obj
 				index = i + 2
 			} else {
-				index, err := strconv.Atoi(token2)
+				index2, err := strconv.Atoi(token2)
 				if err != nil {
 					log.Fatal(err)
 				}
-				obj2 = (*objects)[index-1]
+				obj2 = (*objects)[index2-1]
 				for j := 0; j < len(obj2.dict); j++ {
 					if obj2.dict[j] == "<<" {
 						index = j + 1

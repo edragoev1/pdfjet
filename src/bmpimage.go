@@ -36,7 +36,6 @@ import (
 type BMPImage struct {
 	w        int    // Image width in pixels
 	h        int    // Image height in pixels
-	image    []byte // The reconstructed image data
 	deflated []byte // The deflated reconstructed image data
 	bpp      int
 	palette  [][]byte

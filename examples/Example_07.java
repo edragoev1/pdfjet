@@ -23,10 +23,8 @@ public class Example_07 {
                 Compliance.PDF_A_3B);
         pdf.setTitle("PDF/A-3B compliant PDF");
 
-        // Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf");
-
         // The following code is faster and consumes less memory:
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
 
         Page page = new Page(pdf, A4.LANDSCAPE);
 

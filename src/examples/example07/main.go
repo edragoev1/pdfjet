@@ -15,7 +15,7 @@ func Example07(mode string) {
 	pdf.SetCompliance(compliance.PDF_A_1B)
 	pdf.SetTitle("PDF/A-1B compliant PDF")
 
-	var f1 = pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	var f1 = pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 	page := pdfjet.NewPage(pdf, a4.Landscape)
 
 	f1.SetSize(72.0)

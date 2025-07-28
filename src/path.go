@@ -3,7 +3,7 @@ package pdfjet
 /**
  * path.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -162,69 +162,24 @@ func (path *Path) ScaleBy(factor float32) {
 	}
 }
 
-// GetCurvePoints returns a list containing the start point, first control point,
-// second control point and the end point of elliptical curve segment.
-// Please see Example_18.
-//
-// @param x the x coordinate of the center of the ellipse.
-// @param y the y coordinate of the center of the ellipse.
-// @param r1 the horizontal radius of the ellipse.
-// @param r2 the vertical radius of the ellipse.
-// @param segment the segment to draw - please see the Segment class.
-// @return a list of the curve points.
-func GetCurvePoints(x, y, r1, r2 float32, segment int) []*Point {
-	points := []*Point{}
-
-	// The best 4-spline magic number
-	var m4 float32 = 0.551784
-
-	if segment == 0 {
-		points = append(points, NewPoint(x, y-r2))
-		points = append(points, NewControlPoint(x+m4*r1, y-r2))
-		points = append(points, NewControlPoint(x+r1, y-m4*r2))
-		points = append(points, NewPoint(x+r1, y))
-	} else if segment == 1 {
-		points = append(points, NewPoint(x+r1, y))
-		points = append(points, NewControlPoint(x+r1, y+m4*r2))
-		points = append(points, NewControlPoint(x+m4*r1, y+r2))
-		points = append(points, NewPoint(x, y+r2))
-	} else if segment == 2 {
-		points = append(points, NewPoint(x, y+r2))
-		points = append(points, NewControlPoint(x-m4*r1, y+r2))
-		points = append(points, NewControlPoint(x-r1, y+m4*r2))
-		points = append(points, NewPoint(x-r1, y))
-	} else if segment == 3 {
-		points = append(points, NewPoint(x-r1, y))
-		points = append(points, NewControlPoint(x-r1, y-m4*r2))
-		points = append(points, NewControlPoint(x-m4*r1, y-r2))
-		points = append(points, NewPoint(x, y-r2))
-	}
-
-	return points
-}
-
 // DrawOn draws this path on the page using the current selected color, pen width, line pattern and line join style.
 // @param page the page to draw this path on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (path *Path) DrawOn(page *Page) []float32 {
-	if path.fillShape {
-		page.SetBrushColor(path.color)
-	} else {
-		page.SetPenColor(path.color)
-	}
-	page.SetPenWidth(path.width)
-	page.SetLinePattern(path.pattern)
-	page.SetLineCapStyle(path.lineCapStyle)
-	page.SetLineJoinStyle(path.lineJoinStyle)
-
 	for _, point := range path.points {
 		point.x += path.xBox
 		point.y += path.yBox
 	}
 
 	if path.fillShape {
+		page.SetBrushColor(path.color)
 		page.DrawPath(path.points, operation.Fill)
 	} else {
+		page.SetPenWidth(path.width)
+		page.SetPenColor(path.color)
+		page.SetLinePattern(path.pattern)
+		page.SetLineCapStyle(path.lineCapStyle)
+		page.SetLineJoinStyle(path.lineJoinStyle)
 		if path.closePath {
 			page.DrawPath(path.points, operation.Close)
 		} else {

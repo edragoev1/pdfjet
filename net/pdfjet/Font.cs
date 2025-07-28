@@ -1,7 +1,7 @@
 /**
  *  Font.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -56,7 +56,6 @@ public class Font {
     internal int fontUnderlinePosition;
     internal int fontUnderlineThickness;
     internal int[] advanceWidth;
-    internal int[] glyphWidth;
     internal int[] unicodeToGID;
     internal bool cff;
     internal int compressedSize;
@@ -318,24 +317,24 @@ public class Font {
     }
 
     public float StringWidth(String str) {
+        float width = 0.0f;
+
         if (str == null) {
-            return 0.0f;
+            return width;
         }
 
-        int width = 0;
         if (isCJK) {
             return str.Length * ascent;
         }
 
-        for (int i = 0; i < str.Length; i++) {
-            int c1 = str[i];
-            if (isCoreFont) {
+        if (isCoreFont) {
+            for (int i = 0; i < str.Length; i++) {
+                int c1 = str[i];
                 if (c1 < firstChar || c1 > lastChar) {
                     c1 = 0x20;
                 }
                 c1 -= 32;
                 width += metrics[c1][1];
-
                 if (kernPairs && i < (str.Length - 1)) {
                     int c2 = str[i + 1];
                     if (c2 < firstChar || c2 > lastChar) {
@@ -348,11 +347,14 @@ public class Font {
                         }
                     }
                 }
-            } else {
-                if (c1 < firstChar || c1 > lastChar) {
-                    width += advanceWidth[0];
+            }
+        } else {
+            for (int i = 0; i < str.Length; i++) {
+                int c1 = str[i];
+                if (unicodeToGID[c1] < advanceWidth.Length) {
+                    width += advanceWidth[unicodeToGID[c1]];
                 } else {
-                    width += glyphWidth[c1];
+                    width += advanceWidth[0];
                 }
             }
         }
@@ -394,7 +396,7 @@ public class Font {
             if (c1 < firstChar || c1 > lastChar) {
                 w -= advanceWidth[0];
             } else {
-                w -= glyphWidth[c1];
+                w -= advanceWidth[unicodeToGID[c1]];
             }
             if (w < 0) break;
         }

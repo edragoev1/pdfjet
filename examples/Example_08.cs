@@ -16,9 +16,9 @@ public class Example_08 {
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
         // Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Semibold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-BoldItalic.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.ttf.stream");
 
         f1.SetSize(7f);
         f2.SetSize(7f);
@@ -32,7 +32,7 @@ public class Example_08 {
         // Uncomment the line below if you want to print the text underneath the barcode.
         barcode.SetFont(f1);
 
-        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_1000.csv");
+        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_550.csv");
         table.SetVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9);
         table.GetCellAt(4, 0).SetImage(image);
         table.GetCellAt(5, 0).SetColSpan(8);

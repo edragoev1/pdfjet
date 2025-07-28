@@ -3,7 +3,7 @@ package pdfjet
 /**
  * table.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -507,6 +507,12 @@ func (table *Table) SetCellBordersWidth(width float32) {
 // Sets the right border on all cells in the last column.
 func (table *Table) setRightBorderOnLastColumn() {
 	for _, row := range table.tableData {
+		if !row[0].GetBorder(border.Left) {
+			return
+		}
+	}
+	// Only run this code if all the cells in the first column have left border.
+	for _, row := range table.tableData {
 		var cell *Cell
 		var i = 0
 		for i < len(row) {
@@ -519,6 +525,13 @@ func (table *Table) setRightBorderOnLastColumn() {
 
 // Sets the bottom border on all cells in the last row.
 func (table *Table) setBottomBorderOnLastRow() {
+	firstRow := table.tableData[0]
+	for _, cell := range firstRow {
+		if !cell.GetBorder(border.Top) {
+			return
+		}
+	}
+	// Only run this code if all the cells in the first row have top border.
 	lastRow := table.tableData[len(table.tableData)-1]
 	for _, cell := range lastRow {
 		cell.SetBorder(border.Bottom, true)

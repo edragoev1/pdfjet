@@ -19,7 +19,7 @@ public class Example_37 {
 
         let f1 = try Font(
                 &objects,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")!,
                 Font.STREAM)
         f1.setSize(72.0)
 

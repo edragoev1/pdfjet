@@ -14,11 +14,11 @@ public class Example_15 {
         pdf.setTitle("PDF/UA compliant PDF");
 
         // We are trying to prove here that PDFjet will not embed the same font twice
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
-        Font f4 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
-        Font f5 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Bold.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
+        Font f3 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
+        Font f4 = new Font(pdf, "fonts/NotoSans/NotoSans-Bold.ttf.stream");
+        Font f5 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
 
         // Page page = new Page(pdf, A4.PORTRAIT);
 

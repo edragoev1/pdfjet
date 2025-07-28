@@ -1,7 +1,7 @@
 /**
  *  FileAttachment.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,6 @@ import Foundation
  *  Used to attach file objects.
  */
 public class FileAttachment : Drawable {
-    var objNumber = -1
     var pdf: PDF?
     var embeddedFile: EmbeddedFile?
     var icon: String = "PushPin"

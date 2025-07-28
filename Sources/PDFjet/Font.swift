@@ -1,7 +1,7 @@
 /**
  *  Font.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,6 @@ public class Font {
     var fontUnderlinePosition: Int16 = 0
     var fontUnderlineThickness: Int16 = 0
     var advanceWidth: [UInt16]?
-    var glyphWidth: [Int]?
     var unicodeToGID: [Int]?
     var cff: Bool = false
     var compressedSize: Int?
@@ -340,18 +339,19 @@ public class Font {
     /// @return the width of the string when draw on the page with this font using the current selected size.
     ///
     public func stringWidth(_ str: String?) -> Float {
-        if str == nil {
+        var width: Int = 0
+        if str == nil || str == "" {
             return 0.0
         }
+
         if isCJK {
             return Float(str!.count) * self.ascent
         }
+
         let scalars = Array(str!.unicodeScalars)
-        var width = 0
-        var i = 0
-        while i < scalars.count {
-            var c1 = Int(scalars[i].value)
-            if self.isCoreFont {
+        if self.isCoreFont {
+            for (i, scalar) in scalars.enumerated() {
+                var c1 = Int(scalar.value)
                 if c1 < self.firstChar || c1 > self.lastChar {
                     c1 = 0x20
                 }
@@ -371,15 +371,18 @@ public class Font {
                         j += 2
                     }
                 }
-            } else {
-                if c1 < firstChar || c1 > lastChar {
-                    width += Int(advanceWidth![0])
+            }
+        } else {
+            for scalar in scalars {
+                let c1 = Int(scalar.value)
+                if unicodeToGID![c1] < advanceWidth!.count {
+                    width += Int(advanceWidth![unicodeToGID![c1]])
                 } else {
-                    width += glyphWidth![c1]
+                    width += Int(advanceWidth![0])
                 }
             }
-            i += 1
         }
+
         return Float(width) * self.size / Float(self.unitsPerEm)
     }
 
@@ -443,7 +446,7 @@ public class Font {
             if c1 < firstChar || c1 > lastChar {
                 w -= Float(advanceWidth![0])
             } else {
-                w -= Float(glyphWidth![c1])
+                w -= Float(advanceWidth![unicodeToGID![c1]])
             }
             if w < 0 {
                 break

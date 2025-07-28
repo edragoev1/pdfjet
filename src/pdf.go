@@ -3,7 +3,7 @@ package pdfjet
 /**
  * pdf.go
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -115,7 +115,7 @@ type PDF struct {
 func NewPDF(w *bufio.Writer) *PDF {
 	pdf := new(PDF)
 	pdf.writer = w
-	pdf.producer = "PDFjet v8.0.3"
+	pdf.producer = "PDFjet v8.0.4"
 	pdf.creator = pdf.producer
 	pdf.language = "en-US"
 

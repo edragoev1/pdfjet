@@ -9,18 +9,20 @@ public class Example_27 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_27.pdf", append: false)!)
         let page = Page(pdf, Letter.PORTRAIT)
 
-        // Thai font
-        let f1 = try Font(pdf, "fonts/Noto/NotoSansThai-Regular.ttf.stream")
         // Latin font
-        let f2 = try Font(pdf, "fonts/Droid/DroidSans.ttf.stream")
-        // Hebrew font
-        let f3 = try Font(pdf, "fonts/Noto/NotoSansHebrew-Regular.ttf.stream")
-        // Arabic font
-        let f4 = try Font(pdf, "fonts/Noto/NotoNaskhArabic-Regular.ttf.stream")
-
+        let f1 = try Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
         f1.setSize(12.0)
+
+        // Thai font
+        let f2 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
         f2.setSize(12.0)
+
+        // Hebrew font
+        let f3 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
         f3.setSize(12.0)
+
+        // Arabic font
+        let f4 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
         f4.setSize(12.0)
 
         let x: Float = 50.0

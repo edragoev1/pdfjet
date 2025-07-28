@@ -3,7 +3,7 @@ package pdfjet
 /**
  * compositetextline.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -166,7 +166,7 @@ func (composite *CompositeTextLine) SetLocation(x, y float32) {
 	composite.current[composite.X] = x
 	composite.current[composite.Y] = y
 
-	if composite.textLines == nil || len(composite.textLines) == 0 {
+	if len(composite.textLines) == 0 {
 		return
 	}
 
@@ -194,7 +194,7 @@ func (composite *CompositeTextLine) GetPosition() [2]float32 {
 // GetTextLine return the nth entry in the TextLine array.
 // @param index the index of the nth element.
 func (composite *CompositeTextLine) GetTextLine(index int) *TextLine {
-	if composite.textLines == nil || len(composite.textLines) == 0 {
+	if len(composite.textLines) == 0 {
 		return nil
 	}
 	if index < 0 || index > len(composite.textLines)-1 {

@@ -4,63 +4,38 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/alignment"
+	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/content"
+	"github.com/edragoev1/pdfjet/src/direction"
+	"github.com/edragoev1/pdfjet/src/font"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example19 draws two images and three text boxes.
+// Example19 show how to use the TextBlock class.
 func Example19() {
 	pdf := pdfjet.NewPDFFile("Example_19.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/Droid/DroidSansFallback.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, font.SourceSerif4.Italic)
+	f1.SetSize(18.0)
 
-	f1.SetSize(10.0)
-	f2.SetSize(10.0)
+	page := pdfjet.NewPage(pdf, letter.Landscape)
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
-	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
-
-	page := pdfjet.NewPage(pdf, letter.Portrait)
-
-	// Columns x coordinates
-	x1 := float32(75.0)
-	y1 := float32(75.0)
-	x2 := float32(325.0)
-	w2 := float32(200.0) // Width of the second column:
-
-	// Draw the first image
-	image1.SetLocation(x1, y1)
-	image1.ScaleBy(0.75)
-	image1.DrawOn(page)
-
-	textBlock := pdfjet.NewTextBox(f1)
-	textBlock.SetText("Geometry arose independently in a number of early cultures as a practical way for dealing with lengths, areas, and volumes.")
-	textBlock.SetLocation(x2, y1)
-	textBlock.SetWidth(w2)
-	textBlock.SetBorders(true)
-	// textBlock.SetTextAlignment(align.Right)
-	// textBlock.SetTextAlignment(align.Center)
-	xy := textBlock.DrawOn(page)
-
-	// Draw the second image
-	image2.SetLocation(x1, xy[1]+10.0)
-	image2.ScaleBy(1.0 / 3.0)
-	image2.DrawOn(page)
-
-	textBlock = pdfjet.NewTextBox(f1)
-	textBlock.SetText(contents.OfTextFile("data/latin.txt"))
-	textBlock.SetLocation(x2, xy[1]+10.0)
-	textBlock.SetWidth(w2)
-	textBlock.SetBorders(true)
-	textBlock.DrawOn(page)
-
-	textBlock = pdfjet.NewTextBox(f1)
-	textBlock.SetFallbackFont(f2)
-	textBlock.SetText(contents.OfTextFile("data/chinese.txt"))
-	textBlock.SetLocation(x1, 600.0)
-	textBlock.SetWidth(350.0)
-	textBlock.SetBorders(true)
+	textBlock := pdfjet.NewTextBlock(f1,
+		content.OfTextFile("data/languages/english.txt"))
+	textBlock.SetLocation(30.0, 150.0)
+	textBlock.SetSize(500.0, 300.0)
+	// textBlock.SetTextLineHeight(1.2)
+	textBlock.SetTextColor(color.Black)
+	textBlock.SetTextPadding(10.0)
+	textBlock.SetBorderColor(color.Blue)
+	textBlock.SetTextDirection(direction.LeftToRight)
+	// textBlock.SetTextDirection(direction.BottomToTop)
+	textBlock.SetTextAlignment(alignment.Left)
+	// textBlock.SetTextAlignment(alignment.Right)
+	// textBlock.SetTextAlignment(alignment.Center)
+	textBlock.SetBorderWidth(0.5)
+	textBlock.SetBorderCornerRadius(10.0)
 	textBlock.DrawOn(page)
 
 	pdf.Complete()

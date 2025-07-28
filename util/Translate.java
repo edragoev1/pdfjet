@@ -26,15 +26,12 @@ package util;
 import java.io.*;
 import java.util.*;
 
-
 /**
  * Translate.java
  * Translates the documentation created by JavaDoc to match the C# code.
  */
 public class Translate {
-
     public Translate(String readDir, String fileName, String writeDir) {
-
         // Load the Java to C# translation dictionary
         List<Pair> dict = new ArrayList<Pair>();
         try {
@@ -50,8 +47,7 @@ public class Translate {
                 }
             }
             reader.close();
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             System.err.println(ioe);
         }
 
@@ -71,8 +67,7 @@ public class Translate {
                 }
             }
             reader.close();
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             System.err.println(ioe);
         }
 /* Use this code to generated sorted list!
@@ -91,7 +86,6 @@ public class Translate {
 
             BufferedWriter out = new BufferedWriter(
                     new FileWriter(writeDir + "/" + fileName));
-
             for (int i = 0; i < dict.size(); i++) {
                 Pair pair = dict.get(i);
                 searchAndReplace(data, pair.key, pair.value);
@@ -101,19 +95,16 @@ public class Translate {
             out.close();
 
             in.close();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
 
     // Searches the buffer for 'key' and replaces it with 'value'
     private void searchAndReplace(
             StringBuffer buf, String key, String value) {
         String str = buf.toString();
         buf.setLength(0);
-
         int i = 0;
         int j = 0;
         while (true) {
@@ -147,7 +138,6 @@ public class Translate {
             new Translate(readDir, fileNames[i], writeDir);
         }
     }
-
 }   // End of Translate.java
 
 class Pair {
@@ -156,12 +146,10 @@ class Pair {
 }
 
 class HtmlFilenameFilter implements FilenameFilter {
-
     public boolean accept(File dir, String name) {
         if (name.endsWith(".html")) {
             return true;
         }
         return false;
     }
-
 }   // End of Translate.java

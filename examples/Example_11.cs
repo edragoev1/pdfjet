@@ -11,7 +11,7 @@ public class Example_11 {
         PDF pdf = new PDF( new BufferedStream(
                 new FileStream("Example_11.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

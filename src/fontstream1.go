@@ -3,7 +3,7 @@ package pdfjet
 /**
  * fontstream1.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -312,12 +312,6 @@ func getFontData(font *Font, reader io.Reader) {
 	font.advanceWidth = make([]uint16, length)
 	for i := 0; i < length; i++ {
 		font.advanceWidth[i] = getUint16(r2)
-	}
-
-	length = int(getUint32(r2))
-	font.glyphWidth = make([]uint16, length)
-	for i := 0; i < length; i++ {
-		font.glyphWidth[i] = getUint16(r2)
 	}
 
 	length = int(getUint32(r2))

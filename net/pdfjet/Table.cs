@@ -1,7 +1,7 @@
 /**
  *  Table.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -587,6 +587,12 @@ public class Table {
     // Sets the right border on all cells in the last column.
     private void SetRightBorderOnLastColumn() {
         foreach (List<Cell> row in tableData) {
+            if (row[0].GetBorder(Border.LEFT) == false) {
+                return;
+            }
+        }
+        // Only run this code if all the cells in the first column have left border.
+        foreach (List<Cell> row in tableData) {
             Cell cell = null;
             int i = 0;
             while (i < row.Count) {
@@ -599,6 +605,13 @@ public class Table {
 
     // Sets the bottom border on all cells in the last row.
     private void SetBottomBorderOnLastRow() {
+        List<Cell> firstRow = tableData[0];
+        foreach (Cell cell in firstRow) {
+            if (cell.GetBorder(Border.TOP) == false) {
+                return;
+            }
+        }
+        // Only run this code if all the cells in the first row have top border.
         List<Cell> lastRow = tableData[tableData.Count - 1];
         foreach (Cell cell in lastRow) {
             cell.SetBorder(Border.BOTTOM, true);

@@ -14,8 +14,8 @@ public class Example_49 {
                         new FileOutputStream("Example_49.pdf")),
                         Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/SourceSerif4/SourceSerif4-Italic.ttf.stream");
 
         f1.setSize(14f);
         f2.setSize(16f);

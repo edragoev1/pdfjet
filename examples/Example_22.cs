@@ -12,7 +12,7 @@ public class Example_22 {
                 new FileStream("Example_22.pdf", FileMode.Create)),
                 Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
 /*
         PDF pdf = new PDF(new FileStream("Example_22.pdf", FileMode.Create));
         Font f1 = new Font(pdf, CoreFont.HELVETICA);

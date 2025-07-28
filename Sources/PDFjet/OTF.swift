@@ -1,7 +1,7 @@
 /**
  *  OTF.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,6 @@ class OTF {
     var firstChar: Int?
     var lastChar: Int?
     var capHeight: Int16?
-    var glyphWidth: [Int]?
     var postVersion: UInt32?
     var italicAngle: UInt32?
     var underlinePosition: Int16?
@@ -166,8 +165,10 @@ class OTF {
                 if nameID == 6 {
                     fontName = str
                 } else {
-                    macFontInfo.append(str!)
-                    macFontInfo.append("\n")
+                    if str != nil {
+                        macFontInfo.append(str!)
+                        macFontInfo.append("\n")
+                    }
                 }
             } else if platformID == 3 && encodingID == 1 && languageID == 0x409 {
                 // Windows
@@ -177,8 +178,10 @@ class OTF {
                 if nameID == 6 {
                     fontName = str
                 } else {
-                    winFontInfo.append(str!)
-                    winFontInfo.append("\n")
+                    if str != nil {
+                        winFontInfo.append(str!)
+                        winFontInfo.append("\n")
+                    }
                 }
             }
         }
@@ -252,9 +255,6 @@ class OTF {
             i += 1
         }
 
-        let width = Int(advanceWidth![0])
-        glyphWidth = [Int](repeating: width, count: Int(lastChar! + 1))
-
         for ch in firstChar!...lastChar! {
             let seg = getSegmentFor(ch, startCount, endCount, Int(segCount))
             if seg != -1 {
@@ -270,11 +270,6 @@ class OTF {
                         gid += idDelta[seg] % 65536
                     }
                 }
-
-                if gid < advanceWidth!.count {
-                    glyphWidth![ch] = Int(advanceWidth![gid])
-                }
-
                 unicodeToGID[ch] = gid
             }
         }

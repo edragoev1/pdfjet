@@ -13,7 +13,7 @@ public class Example_23 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_23.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
         f1.SetSize(72f);

@@ -3,7 +3,7 @@ package pdfjet
 /**
  * textbox.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -52,9 +52,9 @@ type TextBox struct {
 	x, y               float32
 	width              float32
 	height             float32
-	spacing            float32
+	lineHeight         float32
 	margin             float32
-	lineWidth          float32
+	borderWidth        float32
 	background         int32
 	pen                int32
 	brush              int32
@@ -94,7 +94,7 @@ func NewTextBox(font *Font) *TextBox {
 	textBox := new(TextBox)
 	textBox.font = font
 	textBox.width = 300.0
-	textBox.spacing = 0.0
+	textBox.lineHeight = 1.0
 	textBox.margin = 0.0
 	textBox.background = color.White
 	textBox.pen = color.Black
@@ -113,6 +113,13 @@ func NewTextBox(font *Font) *TextBox {
 //	@param font the font.
 func (textBox *TextBox) SetFont(font *Font) {
 	textBox.font = font
+}
+
+// SetFontSize sets the font size for the text box.
+//
+// @param size the font size.
+func (textBox *TextBox) SetFontSize(size float32) {
+	textBox.font.SetSize(size)
 }
 
 // GetFont returns the font used by textBox text box.
@@ -139,6 +146,14 @@ func (textBox *TextBox) GetText() string {
 func (textBox *TextBox) SetLocation(x, y float32) {
 	textBox.x = x
 	textBox.y = y
+}
+
+// SetSize sets the size of the textBox.
+// @param w the width of the text box.
+// @param h the height of the text box.
+func (textBox *TextBox) SetSize(w, h float32) {
+	textBox.width = w
+	textBox.height = h
 }
 
 // GetLocation gets the location where textBox text box will be drawn on the page.
@@ -206,26 +221,26 @@ func (textBox *TextBox) GetMargin() float32 {
 
 // SetLineWidth sets the border line width.
 // @param lineWidth float
-func (textBox *TextBox) SetLineWidth(lineWidth float32) {
-	textBox.lineWidth = lineWidth
+func (textBox *TextBox) SetBorderWidth(borderWidth float32) {
+	textBox.borderWidth = borderWidth
 }
 
 // GetLineWidth returns the border line width.
 // @return float the line width.
-func (textBox *TextBox) GetLineWidth() float32 {
-	return textBox.lineWidth
+func (textBox *TextBox) GetBorderWidth() float32 {
+	return textBox.borderWidth
 }
 
-// SetSpacing sets the spacing between lines of text.
+// SetLineHeight sets the spacing between lines of text.
 // @param spacing
-func (textBox *TextBox) SetSpacing(spacing float32) {
-	textBox.spacing = spacing
+func (textBox *TextBox) SetLineHeight(lineHeight float32) {
+	textBox.lineHeight = lineHeight
 }
 
 // GetSpacing returns the spacing between lines of text.
 // @return float the spacing.
-func (textBox *TextBox) GetSpacing() float32 {
-	return textBox.spacing
+func (textBox *TextBox) GetLineHeight() float32 {
+	return textBox.lineHeight
 }
 
 // SetBgColor sets the background to the specified color.
@@ -305,27 +320,28 @@ func (textBox *TextBox) SetBorder(border int) {
 // GetBorder returns the text box border property values.
 // @return boolean true if the specific border property value is set.
 func (textBox *TextBox) GetBorder(value int) bool {
-	if value == border.None {
+	switch value {
+	case border.None:
 		if ((textBox.properties >> 16) & 0xF) == 0x0 {
 			return true
 		}
-	} else if value == border.Top {
+	case border.Top:
 		if ((textBox.properties >> 16) & 0x1) == 0x1 {
 			return true
 		}
-	} else if value == border.Bottom {
+	case border.Bottom:
 		if ((textBox.properties >> 16) & 0x2) == 0x2 {
 			return true
 		}
-	} else if value == border.Left {
+	case border.Left:
 		if ((textBox.properties >> 16) & 0x4) == 0x4 {
 			return true
 		}
-	} else if value == border.Right {
+	case border.Right:
 		if ((textBox.properties >> 16) & 0x8) == 0x8 {
 			return true
 		}
-	} else if value == border.All {
+	case border.All:
 		if ((textBox.properties >> 16) & 0xF) == 0xF {
 			return true
 		}
@@ -421,7 +437,7 @@ func (textBox *TextBox) GetTextColors() map[string]int32 {
 
 func (textBox *TextBox) drawBorders(page *Page) {
 	page.SetPenColor(textBox.pen)
-	page.SetPenWidth(textBox.lineWidth)
+	page.SetPenWidth(textBox.borderWidth)
 	if textBox.GetBorder(border.All) {
 		page.DrawRect(textBox.x, textBox.y, textBox.width, textBox.height)
 	} else {
@@ -448,23 +464,27 @@ func (textBox *TextBox) drawBorders(page *Page) {
 	}
 }
 
-// Preserves the leading spaces and tabs
-func getStringBuilder(line string) *strings.Builder {
-	var buf strings.Builder
-	for _, ch := range line {
-		if ch == ' ' {
-			buf.WriteRune(ch)
-		} else if ch == '\t' {
-			buf.WriteString("    ")
-		} else {
-			break
+func (text *TextBox) textIsCJK(str string) bool {
+	// CJK Unified Ideographs Range: 4E00–9FD5
+	// Hiragana Range: 3040–309F
+	// Katakana Range: 30A0–30FF
+	// Hangul Jamo Range: 1100–11FF
+	numOfCJK := 0
+	runes := []rune(str)
+	for _, ch := range runes {
+		if (ch >= 0x4E00 && ch <= 0x9FD5) ||
+			(ch >= 0x3040 && ch <= 0x309F) ||
+			(ch >= 0x30A0 && ch <= 0x30FF) ||
+			(ch >= 0x1100 && ch <= 0x11FF) {
+			numOfCJK++
 		}
 	}
-	return &buf
+	return numOfCJK > (len(runes) / 2)
 }
 
 func (textBox *TextBox) getTextLines() []string {
 	list := make([]string, 0)
+
 	var textAreaWidth float32
 	if textBox.textDirection == direction.LeftToRight {
 		textAreaWidth = textBox.width - 2*textBox.margin
@@ -476,57 +496,41 @@ func (textBox *TextBox) getTextLines() []string {
 		if textBox.font.StringWidth(textBox.fallbackFont, line) <= textAreaWidth {
 			list = append(list, line)
 		} else {
-			buf1 := getStringBuilder(line) // Preserves the indentation
-			var tokens = strings.Fields(line)
-			for _, token := range tokens {
-				if textBox.font.StringWidth(textBox.fallbackFont, token) > textAreaWidth {
-					// We have very long token, so we have to split it
-					var buf2 strings.Builder
-					for _, ch := range token {
-						if textBox.font.StringWidth(
-							textBox.fallbackFont, buf2.String()+string(ch)) > textAreaWidth {
-							list = append(list, buf2.String())
-							buf2.Reset()
-						}
-						buf2.WriteRune(ch)
-					}
-					if buf2.Len() > 0 {
-						buf1.WriteString(buf2.String() + " ")
-					}
-				} else {
+			if textBox.textIsCJK(line) {
+				var sb strings.Builder
+				for _, ch := range line {
 					if textBox.font.StringWidth(
-						textBox.fallbackFont, buf1.String()+token) > textAreaWidth {
-						list = append(list, buf1.String())
-						buf1.Reset()
+						textBox.fallbackFont, sb.String()+string(ch)) <= textAreaWidth {
+						sb.WriteRune(ch)
+					} else {
+						list = append(list, sb.String())
+						sb.Reset()
+						sb.WriteRune(ch)
 					}
-					buf1.WriteString(token + " ")
 				}
-			}
-			if buf1.Len() > 0 {
-				str := strings.Trim(buf1.String(), " ")
-				if textBox.font.StringWidth(textBox.fallbackFont, str) <= textAreaWidth {
-					list = append(list, str)
-				} else {
-					// We have very long token, so we have to split it
-					var buf2 strings.Builder
-					for _, ch := range str {
-						if textBox.font.StringWidth(textBox.fallbackFont, buf2.String()+string(ch)) > textAreaWidth {
-							list = append(list, buf2.String())
-							buf2.Reset()
-						}
-						buf2.WriteRune(ch)
+				if sb.Len() > 0 {
+					list = append(list, sb.String())
+				}
+			} else {
+				var sb strings.Builder
+				var tokens = strings.Fields(line)
+				for _, token := range tokens {
+					if textBox.font.StringWidth(
+						textBox.fallbackFont, sb.String()+token) <= textAreaWidth {
+						sb.WriteString(token + " ")
+					} else {
+						list = append(list, strings.TrimSpace(sb.String()))
+						sb.Reset()
+						sb.WriteString(token + " ")
 					}
-					if buf2.Len() > 0 {
-						list = append(list, buf2.String())
-					}
+				}
+				if len(strings.TrimSpace(sb.String())) > 0 {
+					list = append(list, strings.TrimSpace(sb.String()))
 				}
 			}
 		}
 	}
-	if len(list) > 0 && strings.Trim(list[len(list)-1], " ") == "" {
-		// Remove the last line if it is blank
-		list = list[:len(list)-1]
-	}
+
 	return list
 }
 
@@ -536,13 +540,13 @@ func (textBox *TextBox) getTextLines() []string {
 // @return x and y coordinates of the bottom right corner of textBox component.
 func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	lines := textBox.getTextLines()
-	leading := textBox.font.ascent + textBox.font.descent + textBox.spacing
+	leading := (textBox.font.ascent - textBox.font.descent) * textBox.lineHeight
 
 	if textBox.height > 0.0 { // TextBox with fixed height
-		if float32(len(lines))*leading-textBox.spacing > (textBox.height - 2*textBox.margin) {
+		if float32(len(lines))*leading > (textBox.height - 2*textBox.margin) {
 			list := make([]string, 0)
 			for _, line := range lines {
-				if float32(len(list)+1)*leading-textBox.spacing > (textBox.height - 2*textBox.margin) {
+				if float32(len(list)+1)*leading > (textBox.height - 2*textBox.margin) {
 					break
 				}
 				list = append(list, line)
@@ -570,12 +574,13 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		xText := textBox.x + textBox.margin
 		yText := textBox.y + textBox.margin + textBox.font.ascent
 		if textBox.textDirection == direction.LeftToRight {
-			if textBox.valign == align.Top {
+			switch textBox.valign {
+			case align.Top:
 				yText = textBox.y + textBox.margin + textBox.font.ascent
-			} else if textBox.valign == align.Bottom {
+			case align.Bottom:
 				yText = (textBox.y + textBox.height) - (float32(len(lines))*leading + textBox.margin)
 				yText += textBox.font.ascent
-			} else if textBox.valign == align.Center {
+			case align.Center:
 				yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2
 				yText += textBox.font.ascent
 			}
@@ -595,7 +600,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				xText = textBox.y + textBox.margin
 			}
 			if page != nil {
-				textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.brush, textBox.colors)
+				textBox.DrawTextLine(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.brush, textBox.colors)
 			}
 			if textBox.textDirection == direction.LeftToRight ||
 				textBox.textDirection == direction.BottomToTop {
@@ -608,7 +613,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		if page != nil {
 			if textBox.GetBgColor() != color.Transparent {
 				page.SetBrushColor(textBox.background)
-				page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*leading-textBox.spacing)+2*textBox.margin)
+				page.FillRect(textBox.x, textBox.y, textBox.width, (float32(len(lines))*leading)+2*textBox.margin)
 			}
 			page.SetPenColor(textBox.pen)
 			page.SetBrushColor(textBox.brush)
@@ -629,7 +634,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				xText = textBox.x + textBox.margin
 			}
 			if page != nil {
-				textBox.DrawText(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.brush, textBox.colors)
+				textBox.DrawTextLine(page, textBox.font, textBox.fallbackFont, line, xText, yText, textBox.brush, textBox.colors)
 			}
 			if textBox.textDirection == direction.LeftToRight ||
 				textBox.textDirection == direction.BottomToTop {
@@ -638,7 +643,8 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				yText -= leading
 			}
 		}
-		textBox.height = ((yText - textBox.y) - (textBox.font.ascent + textBox.spacing)) + textBox.margin
+		// TODO!!! Check the leading!!
+		textBox.height = ((yText - textBox.y) - (textBox.font.ascent * leading)) + textBox.margin
 	}
 	if page != nil {
 		textBox.drawBorders(page)
@@ -660,7 +666,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 }
 
 // DrawText draws the text on the page.
-func (textBox *TextBox) DrawText(
+func (textBox *TextBox) DrawTextLine(
 	page *Page,
 	font, fallbackFont *Font,
 	text string,
@@ -669,35 +675,37 @@ func (textBox *TextBox) DrawText(
 	brush int32,
 	colors map[string]int32) {
 	page.AddBMC("P", textBox.language, text, textBox.altDescription)
-	if textBox.textDirection == direction.LeftToRight {
+	switch textBox.textDirection {
+	case direction.LeftToRight:
 		page.DrawStringUsingColorMap(font, fallbackFont, text, xText, yText, brush, colors)
-	} else if textBox.textDirection == direction.BottomToTop {
+	case direction.BottomToTop:
 		page.SetTextDirection(90)
 		page.DrawStringUsingColorMap(font, fallbackFont, text, yText, xText+textBox.height, textBox.brush, colors)
-	} else if textBox.textDirection == direction.TopToBottom {
+	case direction.TopToBottom:
 		page.SetTextDirection(270)
 		page.DrawStringUsingColorMap(font, fallbackFont, text,
 			(yText+textBox.width)-(textBox.margin+2*font.ascent), xText, textBox.brush, colors)
 	}
 	page.AddEMC()
 	if textBox.textDirection == direction.LeftToRight {
-		lineLength := textBox.font.stringWidth(text)
+		lineLength := textBox.font.StringWidth(textBox.fallbackFont, text)
 		if textBox.GetUnderline() {
-			yAdjust := font.underlinePosition
-			page.MoveTo(xText, yText+yAdjust)
-			page.LineTo(xText+lineLength, yText+yAdjust)
+			page.AddArtifactBMC()
+			page.MoveTo(xText, yText+font.underlinePosition)
+			page.LineTo(xText+lineLength, yText+font.underlinePosition)
 			page.StrokePath()
+			page.AddEMC()
 		}
 		if textBox.GetStrikeout() {
-			yAdjust := font.bodyHeight / 4
-			page.MoveTo(xText, yText-yAdjust)
-			page.LineTo(xText+lineLength, yText-yAdjust)
+			page.AddArtifactBMC()
+			page.MoveTo(xText, yText-(font.bodyHeight/4))
+			page.LineTo(xText+lineLength, yText-(font.bodyHeight/4))
 			page.StrokePath()
+			page.AddEMC()
 		}
 	}
 }
 
-// SetURIAction -- TODO:
 func (textBlock *TextBox) SetURIAction(uri string) *TextBox {
 	textBlock.uri = &uri
 	return textBlock

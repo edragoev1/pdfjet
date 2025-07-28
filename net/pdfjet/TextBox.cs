@@ -1,7 +1,7 @@
 /**
  *  TextBox.cs
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -205,12 +205,23 @@ public class TextBox : IDrawable {
     }
 
     /**
+     * Sets the size of text box.
+     *
+     * @param w the width of the text box.
+     * @param h the height of the text box.
+     */
+    public void SetSize(float w, float h) {
+        this.width = w;
+        this.height = h;
+    }
+
+    /**
      * Gets the location where this text box will be drawn on the page.
      *
      * @return the float array of of x and y.
      */
     public float[] GetLocation() {
-        return new float[] {this.x, this.y};
+        return new float[] { this.x, this.y };
     }
 
     /**
@@ -668,24 +679,27 @@ public class TextBox : IDrawable {
         }
     }
 
-    // Preserves the leading spaces and tabs
-    private StringBuilder GetStringBuilder(String line) {
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < line.Length; i++) {
-            char ch = line[i];
-            if (ch == ' ') {
-                buf.Append(ch);
-            } else if (ch == '\t') {
-                buf.Append("    ");
-            } else {
-                break;
+    private bool textIsCJK(String str) {
+        // CJK Unified Ideographs Range: 4E00–9FD5
+        // Hiragana Range: 3040–309F
+        // Katakana Range: 30A0–30FF
+        // Hangul Jamo Range: 1100–11FF
+        int numOfCJK = 0;
+        for (int i = 0; i < str.Length; i++) {
+            char ch = str[i];
+            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
+                    (ch >= 0x3040 && ch <= 0x309F) ||
+                    (ch >= 0x30A0 && ch <= 0x30FF) ||
+                    (ch >= 0x1100 && ch <= 0x11FF)) {
+                numOfCJK += 1;
             }
         }
-        return buf;
+        return (numOfCJK > (str.Length / 2));
     }
 
     private String[] getTextLines() {
         List<String> list = new List<String>();
+
         float textAreaWidth;
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             textAreaWidth = width - 2*margin;
@@ -697,57 +711,39 @@ public class TextBox : IDrawable {
             if (font.StringWidth(fallbackFont, line) <= textAreaWidth) {
                 list.Add(line);
             } else {
-                StringBuilder buf1 = GetStringBuilder(line);    // Preserves the indentation
-                String[] tokens = line.Trim().Split(' ');       // Do not remove the Trim()!
-                foreach (String token in tokens) {
-                    if (font.StringWidth(fallbackFont, token) > textAreaWidth) {
-                        // We have very long token, so we have to split it
-                        StringBuilder buf2 = new StringBuilder();
-                        for (int i = 0; i < token.Length; i++) {
-                            char ch = token[i];
-                            if (font.StringWidth(fallbackFont, buf2.ToString() + ch) > textAreaWidth) {
-                                list.Add(buf2.ToString());
-                                buf2.Length = 0;
-                            }
-                            buf2.Append(ch);
+                if (textIsCJK(line)) {
+                    StringBuilder sb = new StringBuilder();
+                    foreach (char ch in line.ToCharArray()) {
+                        if (font.StringWidth(fallbackFont, sb.ToString() + ch) <= textAreaWidth) {
+                            sb.Append(ch);
+                        } else {
+                            list.Add(sb.ToString());
+                            sb.Length = 0;
+                            sb.Append(ch);
                         }
-                        if (buf2.Length > 0) {
-                            buf1.Append(buf2.ToString() + " ");
-                        }
-                    } else {
-                        if (font.StringWidth(fallbackFont, buf1.ToString() + token) > textAreaWidth) {
-                            list.Add(buf1.ToString());
-                            buf1.Length = 0;
-                        }
-                        buf1.Append(token + " ");
                     }
-                }
-                if (buf1.Length > 0) {
-                    String str = buf1.ToString().Trim();
-                    if (font.StringWidth(fallbackFont, str) <= textAreaWidth) {
-                        list.Add(str);
-                    } else {
-                        // We have very long token, so we have to split it
-                        StringBuilder buf2 = new StringBuilder();
-                        for (int i = 0; i < str.Length; i++) {
-                            char ch = str[i];
-                            if (font.StringWidth(fallbackFont, buf2.ToString() + ch) > textAreaWidth) {
-                                list.Add(buf2.ToString());
-                                buf2.Length = 0;
-                            }
-                            buf2.Append(ch);
+                    if (sb.Length > 0) {
+                        list.Add(sb.ToString());
+                    }
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    String[] tokens = line.Split(' '); 
+                    foreach (String token in tokens) {
+                        if (font.StringWidth(fallbackFont, sb.ToString() + token) <= textAreaWidth) {
+                            sb.Append(token + " ");
+                        } else {
+                            list.Add(sb.ToString().Trim());
+                            sb.Length = 0;
+                            sb.Append(token + " ");
                         }
-                        if (buf2.Length > 0) {
-                            list.Add(buf2.ToString());
-                        }
+                    }
+                    if (sb.ToString().Trim().Length > 0) {
+                        list.Add(sb.ToString().Trim());
                     }
                 }
             }
         }
-        int index = list.Count - 1;
-        if (list.Count > 0 && list[index].Trim().Length == 0) {
-            list.RemoveAt(index); // Remove the last line if it is blank
-        }
+
         return list.ToArray();
     }
 
@@ -818,7 +814,7 @@ public class TextBox : IDrawable {
                     xText = y + margin;
                 }
                 if (page != null) {
-                    DrawText(page, font, fallbackFont, line, xText, yText, brush, colors);
+                    DrawTextLine(page, font, fallbackFont, line, xText, yText, brush, colors);
                 }
                 if (textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP) {
@@ -852,7 +848,7 @@ public class TextBox : IDrawable {
                     xText = x + margin;
                 }
                 if (page != null) {
-                    DrawText(page, font, fallbackFont, line, xText, yText, brush, colors);
+                    DrawTextLine(page, font, fallbackFont, line, xText, yText, brush, colors);
                 }
                 if (textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP) {
@@ -882,7 +878,7 @@ public class TextBox : IDrawable {
         return new float[] {x + width, y + height};
     }
 
-    private void DrawText(
+    private void DrawTextLine(
             Page page,
             Font font,
             Font fallbackFont,
@@ -904,18 +900,20 @@ public class TextBox : IDrawable {
         }
         page.AddEMC();
         if (textDirection == Direction.LEFT_TO_RIGHT) {
-            float lineLength = font.StringWidth(text);
+            float lineLength = font.StringWidth(fallbackFont, text);
             if (GetUnderline()) {
-                float yAdjust = font.underlinePosition;
-                page.MoveTo(xText, yText + yAdjust);
-                page.LineTo(xText + lineLength, yText + yAdjust);
+                page.AddArtifactBMC();
+                page.MoveTo(xText, yText + font.underlinePosition);
+                page.LineTo(xText + lineLength, yText + font.underlinePosition);
                 page.StrokePath();
+                page.AddEMC();
             }
             if (GetStrikeout()) {
-                float yAdjust = font.bodyHeight/4;
-                page.MoveTo(xText, yText - yAdjust);
-                page.LineTo(xText + lineLength, yText - yAdjust);
+                page.AddArtifactBMC();
+                page.MoveTo(xText, yText - (font.bodyHeight/4));
+                page.LineTo(xText + lineLength, yText - (font.bodyHeight/4));
                 page.StrokePath();
+                page.AddEMC();
             }
         }
     }

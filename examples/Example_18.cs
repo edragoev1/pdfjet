@@ -13,7 +13,7 @@ public class Example_18 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_18.pdf", FileMode.Create)));
 
-        Font font = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf.stream");
+        Font font = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         font.SetSize(12f);
 
         List<Page> pages = new List<Page>();

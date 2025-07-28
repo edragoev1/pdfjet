@@ -15,9 +15,9 @@ final public class Example_09 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Bold.ttf.stream");
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
 
         f1.setSize(8f);
         f2.setSize(8f);
@@ -108,65 +108,68 @@ final public class Example_09 {
             String delimiter) throws Exception {
         List<List<Point>> chartData = new ArrayList<List<Point>>();
 
-        BufferedReader reader =
-                new BufferedReader(new FileReader(fileName));
         List<Point> points = new ArrayList<Point>();
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            String[] cols = null;
-            if (delimiter.equals("|")) {
-                cols = line.split("\\|", -1);
-            }
-            else if (delimiter.equals("\t")) {
-                cols = line.split("\t", -1);
-            }
-            else {
-                throw new Exception(
-                    "Only pipes and tabs can be used as delimiters");
-            }
-
-            Point point = new Point();
-            try {
-                double population =
-                        Double.valueOf(cols[1].replace(",", ""));
-                point.setText(cols[0].trim());
-                String country_name = point.getText();
-                country_name = country_name.replace(" ", "_");
-                country_name = country_name.replace("'", "_");
-                country_name = country_name.replace(",", "_");
-                country_name = country_name.replace("(", "_");
-                country_name = country_name.replace(")", "_");
-                point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
-                point.setX((float) (Double.valueOf(cols[5].replace(",", "")) / population));
-                point.setY((float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
-                point.setRadius(2f);
-
-                if (point.getX() > 1.25f) {
-                    point.setShape(Point.RIGHT_ARROW);
-                    point.setColor(Color.black);
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(fileName));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                String[] cols = null;
+                if (delimiter.equals("|")) {
+                    cols = line.split("\\|", -1);
                 }
-                if (point.getY() > 80f) {
-                    point.setShape(Point.UP_ARROW);
-                    point.setColor(Color.blue);
+                else if (delimiter.equals("\t")) {
+                    cols = line.split("\t", -1);
                 }
-                if (point.getText().equals("France")) {
-                    point.setShape(Point.MULTIPLY);
-                    point.setColor(Color.black);
-                }
-                if (point.getText().equals("Canada")) {
-                    point.setShape(Point.BOX);
-                    point.setColor(Color.darkolivegreen);
-                }
-                if (point.getText().startsWith("United States")) {
-                    point.setShape(Point.STAR);
-                    point.setColor(Color.red);
+                else {
+                    throw new Exception(
+                        "Only pipes and tabs can be used as delimiters");
                 }
 
-                points.add(point);
-            } catch (Exception e) {
+                Point point = new Point();
+                try {
+                    double population =
+                            Double.valueOf(cols[1].replace(",", ""));
+                    point.setText(cols[0].trim());
+                    String country_name = point.getText();
+                    country_name = country_name.replace(" ", "_");
+                    country_name = country_name.replace("'", "_");
+                    country_name = country_name.replace(",", "_");
+                    country_name = country_name.replace("(", "_");
+                    country_name = country_name.replace(")", "_");
+                    point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
+                    point.setX((float) (Double.valueOf(cols[5].replace(",", "")) / population));
+                    point.setY((float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
+                    point.setRadius(2f);
+
+                    if (point.getX() > 1.25f) {
+                        point.setShape(Point.RIGHT_ARROW);
+                        point.setColor(Color.black);
+                    }
+                    if (point.getY() > 80f) {
+                        point.setShape(Point.UP_ARROW);
+                        point.setColor(Color.blue);
+                    }
+                    if (point.getText().equals("France")) {
+                        point.setShape(Point.MULTIPLY);
+                        point.setColor(Color.black);
+                    }
+                    if (point.getText().equals("Canada")) {
+                        point.setShape(Point.BOX);
+                        point.setColor(Color.darkolivegreen);
+                    }
+                    if (point.getText().startsWith("United States")) {
+                        point.setShape(Point.STAR);
+                        point.setColor(Color.red);
+                    }
+
+                    points.add(point);
+                } catch (Exception e) {
+                }
             }
+        } finally {
+            reader.close();
         }
-        reader.close();
         chartData.add(points);
 
         return chartData;

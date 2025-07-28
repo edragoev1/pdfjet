@@ -12,8 +12,8 @@ public class Example_09 {
         // let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
         // let f2 = Font(pdf, CoreFont.HELVETICA)
 
-        let f1 = try Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream")
-        let f2 = try Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+        let f1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream")
+        let f2 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
 
         f1.setSize(8.0)
         f2.setSize(8.0)

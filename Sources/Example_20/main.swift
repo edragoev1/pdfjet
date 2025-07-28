@@ -13,7 +13,7 @@ public class Example_20 {
 
         let f1 = try Font(
                 pdf,
-                InputStream(fileAtPath: "fonts/OpenSans/OpenSans-Regular.ttf.stream")!,
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")!,
                 Font.STREAM).setSize(18.0)
 
         let pages = pdf.getPageObjects(from: objects)

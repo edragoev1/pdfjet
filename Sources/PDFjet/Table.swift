@@ -1,7 +1,7 @@
 /**
  *  Table.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -587,6 +587,12 @@ public class Table {
     // Sets the right border on all cells in the last column.
     private func setRightBorderOnLastColumn() {
         for row in tableData {
+            if row[0].getBorder(Border.LEFT) == false {
+                return
+            }
+        }
+        // Only run this code if all the cells in the first column have left border.
+        for row in tableData {
             var cell: Cell?
             var i = 0
             while i < row.count {
@@ -599,6 +605,13 @@ public class Table {
 
     // Sets the bottom border on all cells in the last row.
     private func setBottomBorderOnLastRow() {
+        let firstRow = tableData[0]
+        for cell in firstRow {
+            if cell.getBorder(Border.TOP) == false {
+                return
+            }
+        }
+        // Only run this code if all the cells in the first row have top border.
         let lastRow = tableData[tableData.count - 1]
         for cell in lastRow {
             cell.setBorder(Border.BOTTOM, true)

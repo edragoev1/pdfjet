@@ -1,7 +1,7 @@
 /**
  *  OpenTypeFont.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 */
 import Foundation
 
@@ -13,14 +13,13 @@ class OpenTypeFont {
         font.name = otf.fontName!
         font.firstChar = otf.firstChar!
         font.lastChar = otf.lastChar!
-        font.unicodeToGID = otf.unicodeToGID
         font.unitsPerEm = otf.unitsPerEm!
         font.bBoxLLx = otf.bBoxLLx!
         font.bBoxLLy = otf.bBoxLLy!
         font.bBoxURx = otf.bBoxURx!
         font.bBoxURy = otf.bBoxURy!
         font.advanceWidth = otf.advanceWidth!
-        font.glyphWidth = otf.glyphWidth
+        font.unicodeToGID = otf.unicodeToGID
         font.fontAscent = otf.ascent!
         font.fontDescent = otf.descent!
         font.fontUnderlinePosition = otf.underlinePosition!

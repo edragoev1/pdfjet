@@ -1,7 +1,7 @@
 /**
  *  Image.java
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@ import java.util.*;
 /**
  *  Used to create image objects and draw them on a page.
  *  The image type can be one of the following:
- *      ImageType.JPG, ImageType.PNG, ImageType.BMP or ImageType.PNG_STREAM
+ *      ImageType.JPG, ImageType.PNG or ImageType.BMP
  *
  *  Please see Example_03 and Example_24.
  */
@@ -64,7 +64,6 @@ final public class Image implements Drawable {
      */
     public Image(PDF pdf, String filePath) throws Exception {
         this(pdf, new FileInputStream(filePath),
-                filePath.toLowerCase().endsWith(".png.stream") ? ImageType.PNG_STREAM :
                 filePath.toLowerCase().endsWith(".png") ? ImageType.PNG :
                 filePath.toLowerCase().endsWith(".bmp") ? ImageType.BMP : ImageType.JPG);
     }
@@ -112,8 +111,6 @@ final public class Image implements Drawable {
             w = bmp.getWidth();
             h = bmp.getHeight();
             addImage(pdf, data, null, imageType, "DeviceRGB", 8);
-        } else if (imageType == ImageType.PNG_STREAM) {
-            addImage(pdf, inputStream);
         }
 
         inputStream.close();
@@ -585,94 +582,6 @@ final public class Image implements Drawable {
         pdf.endobj();
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
-    }
-
-    private void addImage(PDF pdf, InputStream inputStream) throws Exception {
-        w = getInt(inputStream);            // Width
-        h = getInt(inputStream);            // Height
-        byte c = (byte) inputStream.read(); // Color Space
-        byte a = (byte) inputStream.read(); // Alpha
-
-        if (a != 0) {
-            pdf.newobj();
-            pdf.append("<<\n");
-            pdf.append("/Type /XObject\n");
-            pdf.append("/Subtype /Image\n");
-            pdf.append("/Filter /FlateDecode\n");
-            pdf.append("/Width ");
-            pdf.append(w);
-            pdf.append('\n');
-            pdf.append("/Height ");
-            pdf.append(h);
-            pdf.append('\n');
-            pdf.append("/ColorSpace /DeviceGray\n");
-            pdf.append("/BitsPerComponent 8\n");
-            int length = getInt(inputStream);
-            pdf.append("/Length ");
-            pdf.append(length);
-            pdf.append('\n');
-            pdf.append(">>\n");
-            pdf.append("stream\n");
-            byte[] buf1 = new byte[length];
-            inputStream.read(buf1, 0, length);
-            pdf.append(buf1, 0, length);
-            pdf.append("\nendstream\n");
-            pdf.endobj();
-            objNumber = pdf.getObjNumber();
-        }
-
-        pdf.newobj();
-        pdf.append("<<\n");
-        pdf.append("/Type /XObject\n");
-        pdf.append("/Subtype /Image\n");
-        pdf.append("/Filter /FlateDecode\n");
-        if (a != 0) {
-            pdf.append("/SMask ");
-            pdf.append(objNumber);
-            pdf.append(" 0 R\n");
-        }
-        pdf.append("/Width ");
-        pdf.append(w);
-        pdf.append('\n');
-        pdf.append("/Height ");
-        pdf.append(h);
-        pdf.append('\n');
-        pdf.append("/ColorSpace /");
-        if (c == 1) {
-            pdf.append("DeviceGray");
-        } else if (c == 3 || c == 6) {
-            pdf.append("DeviceRGB");
-        }
-        pdf.append('\n');
-        pdf.append("/BitsPerComponent 8\n");
-        pdf.append("/Length ");
-        pdf.append(getInt(inputStream));
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        byte[] buf2 = new byte[4096];
-        int count;
-        while ((count = inputStream.read(buf2, 0, buf2.length)) > 0) {
-            pdf.append(buf2, 0, count);
-        }
-        pdf.append("\nendstream\n");
-        pdf.endobj();
-        pdf.images.add(this);
-        objNumber = pdf.getObjNumber();
-    }
-
-    private int getInt(InputStream inputStream) throws Exception {
-        byte[] buf = new byte[4];
-        inputStream.read(buf, 0, 4);
-        int val = 0;
-        val |= buf[0] & 0xff;
-        val <<= 8;
-        val |= buf[1] & 0xff;
-        val <<= 8;
-        val |= buf[2] & 0xff;
-        val <<= 8;
-        val |= buf[3] & 0xff;
-        return val;
     }
 
     private void addSoftMask(

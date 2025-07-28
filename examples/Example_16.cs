@@ -6,19 +6,13 @@ using PDFjet.NET;
 
 /**
  *  Example_16.cs
- *
  */
 public class Example_16 {
     public Example_16() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_16.pdf", FileMode.Create)));
 
-        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        // Font f1 = new Font(pdf, "fonts/SourceSansPro/SourceSansPro-Regular.otf");
-        // Font f1 = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf");
-        // Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf");
-        Font f1 = new Font(pdf, "fonts/RedHatText/RedHatText-Regular.ttf");
-        f1.SetSize(14f);
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -38,9 +32,9 @@ public class Example_16 {
         text.SetLocation(50f, 300f);
         text.DrawOn(page);
 */
-        String latinText = File.ReadAllText("data/latin.txt");
+        String latinText = File.ReadAllText("data/languages/english.txt");
 
-        f1.SetSize(14f);
+        f1.SetSize(15f);
         TextBox textBox = new TextBox(f1, latinText);
         textBox.SetLocation(100f, 50f);
         textBox.SetWidth(400f);
@@ -51,8 +45,8 @@ public class Example_16 {
         textBox.SetTextDirection(Direction.LEFT_TO_RIGHT);
         // textBox.SetTextDirection(Direction.BOTTOM_TO_TOP);
         // textBox.SetTextDirection(Direction.TOP_TO_BOTTOM);
-        // textBox.setVerticalAlignment(Align.TOP);
-        textBox.SetVerticalAlignment(Align.BOTTOM);
+        textBox.SetVerticalAlignment(Align.TOP);
+        // textBox.SetVerticalAlignment(Align.BOTTOM);
         // textBox.SetVerticalAlignment(Align.CENTER);
         // If no height is specified the height will be calculated based on the text.
         textBox.SetBgColor(Color.whitesmoke);

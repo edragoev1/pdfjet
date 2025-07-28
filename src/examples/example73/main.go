@@ -6,7 +6,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/align"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/contents"
+	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -30,7 +30,7 @@ func Example73() {
 	textBox.SetMargin(0.0)
 	textBox.SetLocation(50.0, 50.0)
 	textBox.SetWidth(line1.GetWidth() + 2*textBox.GetMargin())
-	textBox.SetBgColor(color.Lightgreen)
+	textBox.SetBgColor(color.LightGreen)
 	// The drawOn method returns the x and y of the bottom right corner of the TextBox
 	xy := textBox.DrawOn(page)
 
@@ -110,13 +110,13 @@ func Example73() {
 	box.SetSize(20.0, 20.0)
 	box.DrawOn(page)
 
-	text := contents.OfTextFile("data/chinese.txt")
+	text := content.OfTextFile("data/chinese.txt")
 
 	textBox = pdfjet.NewTextBox(f1)
 	textBox.SetFallbackFont(f2)
 	textBox.SetText(text)
 	// textBox.SetMargin(10.0)
-	textBox.SetBgColor(color.Lightblue)
+	textBox.SetBgColor(color.LightBlue)
 	textBox.SetVerticalAlignment(align.Top)
 	// textBox.SetHeight(210.0)
 	// textBox.SetHeight(151.0)
@@ -129,7 +129,7 @@ func Example73() {
 	textBox.SetFallbackFont(f2)
 	textBox.SetText(text)
 	// textBox.SetMargin(10.0)
-	textBox.SetBgColor(color.Lightblue)
+	textBox.SetBgColor(color.LightBlue)
 	textBox.SetVerticalAlignment(align.Center)
 	// textBox.SetHeight(210.0)
 	textBox.SetHeight(151.0)
@@ -141,7 +141,7 @@ func Example73() {
 	textBox.SetFallbackFont(f2)
 	textBox.SetText(text)
 	// textBox.SetMargin(10f);
-	textBox.SetBgColor(color.Lightblue)
+	textBox.SetBgColor(color.LightBlue)
 	textBox.SetVerticalAlignment(align.Bottom)
 	// textBox.SetHeight(210f)
 	textBox.SetHeight(151.0)

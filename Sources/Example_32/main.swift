@@ -11,7 +11,7 @@ public class Example_32 {
 
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_32.pdf", append: false)!)
-        let font = try Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")
+        let font = try Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream")
         font.setSize(8.0)
 
         var colors = [String:Int32]()

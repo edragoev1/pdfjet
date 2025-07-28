@@ -11,7 +11,7 @@ public class Example_23 {
         PDF pdf = new PDF(new FileOutputStream("Example_23.pdf"));
         Font f1 = new Font(
                 pdf,
-                new FileInputStream("fonts/Droid/DroidSans.ttf.stream"),
+                new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream"),
                 Font.STREAM);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
 

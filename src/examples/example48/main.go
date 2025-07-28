@@ -10,7 +10,7 @@ import (
 // Example48 -- TODO:
 func Example48() {
 	pdf := pdfjet.NewPDFFile("Example_48.pdf")
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 

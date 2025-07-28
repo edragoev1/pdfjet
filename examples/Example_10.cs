@@ -13,7 +13,7 @@ public class Example_10 {
                 new FileStream("Example_10.pdf", FileMode.Create)));
         pdf.SetTitle("Using TextColumn and Paragraph classes");
         pdf.SetSubject("Examples");
-        pdf.SetAuthor("Innovatics Inc.");
+        pdf.SetAuthor("PDFjet Software");
 
         Image image1 = new Image(pdf, "images/sz-map.png");
 

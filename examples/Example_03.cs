@@ -84,7 +84,7 @@ public class Example_03 {
     }
 
     public static void Main(String[] args) {
-        AssemblyName assembly = typeof(PDF).Assembly.GetName();
+        // AssemblyName assembly = typeof(PDF).Assembly.GetName();
         // Console.WriteLine("{0} Version={1}", assembly.Name, assembly.Version);
 
         Stopwatch sw = Stopwatch.StartNew();

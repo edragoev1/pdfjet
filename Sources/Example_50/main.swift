@@ -11,12 +11,12 @@ public class Example_50 {
 
         let f1 = try Font(
                 &objects,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans.ttf.stream")!,
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")!,
                 Font.STREAM).setSize(12.0)
 
         let f2 = try Font(
                 &objects,
-                InputStream(fileAtPath: "fonts/Droid/DroidSans-Bold.ttf.stream")!,
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream")!,
                 Font.STREAM).setSize(12.0)
 
         let image = try Image(

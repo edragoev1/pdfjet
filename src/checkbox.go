@@ -3,7 +3,7 @@ package pdfjet
 /**
  * checkbox.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -167,13 +167,14 @@ func (checkBox *CheckBox) DrawOn(page Page) []float32 {
 	if checkBox.mark == mark.Check || checkBox.mark == mark.X {
 		page.SetPenWidth(checkBox.checkWidth)
 		page.SetPenColor(checkBox.checkColor)
-		if checkBox.mark == mark.Check {
+		switch checkBox.mark {
+		case mark.Check:
 			// Draw check mark
 			page.MoveTo(checkBox.x+checkBox.checkWidth, yBox+checkBox.h/2)
 			page.LineTo(checkBox.x+checkBox.w/6+checkBox.checkWidth, (yBox+checkBox.h)-4.0*checkBox.checkWidth/3.0)
 			page.LineTo((checkBox.x+checkBox.w)-checkBox.checkWidth, yBox+checkBox.checkWidth)
 			page.StrokePath()
-		} else if checkBox.mark == mark.X {
+		case mark.X:
 			// Draw 'X' mark
 			page.MoveTo(checkBox.x+checkBox.checkWidth, yBox+checkBox.checkWidth)
 			page.LineTo((checkBox.x+checkBox.w)-checkBox.checkWidth, (yBox+checkBox.h)-checkBox.checkWidth)
@@ -192,7 +193,7 @@ func (checkBox *CheckBox) DrawOn(page Page) []float32 {
 	page.SetBrushColor(color.Black)
 
 	page.AddEMC()
-	if checkBox.uri != nil {
+	if checkBox.uri != nil || checkBox.key != nil {
 		page.AddAnnotation(NewAnnotation(
 			checkBox.uri,
 			nil,

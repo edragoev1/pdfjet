@@ -12,7 +12,7 @@ public class Example_32 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_32.pdf")));
 
-        Font font = new Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream");
+        Font font = new Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream");
         font.setSize(8f);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();

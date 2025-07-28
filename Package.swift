@@ -3,6 +3,9 @@ import PackageDescription
 
 let package = Package(
     name: "PDFjet",
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.2.0")
+    ],
     targets: [
         .target(name: "PDFjet"),
         .executableTarget(name: "Example_01", dependencies: ["PDFjet"]),
@@ -55,5 +58,9 @@ let package = Package(
         .executableTarget(name: "Example_48", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_49", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_50", dependencies: ["PDFjet"]),
+        .executableTarget(name: "Example_51", dependencies: ["PDFjet"]),
+        .executableTarget(name: "Example_52", dependencies: ["PDFjet"]),
+        .executableTarget(name: "Example_53", dependencies: ["PDFjet"]),
+        .executableTarget(name: "Example_73", dependencies: ["PDFjet"]),
     ]
 )

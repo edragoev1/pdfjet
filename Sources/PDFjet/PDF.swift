@@ -1,7 +1,7 @@
 /**
  *  PDF.swift
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@ public class PDF {
     private var author: String = ""
     private var subject: String = ""
     private var keywords: String = ""
-    private var producer = "PDFjet v8.0.3"
+    private var producer = "PDFjet v8.0.4"
     private var creator: String?
     private var createDate: String?
     private var creationDate: String?

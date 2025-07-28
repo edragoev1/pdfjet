@@ -13,10 +13,10 @@ public class Example_35 {
                 new BufferedOutputStream(new FileOutputStream("Example_35.pdf")));
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f1 = new Font(pdf, "fonts/OpenSans/OpenSans-Bold.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream");
 
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf, "fonts/OpenSans/OpenSans-Regular.ttf.stream");
+        Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
 
         f1.setSize(8f);
         f2.setSize(8f);

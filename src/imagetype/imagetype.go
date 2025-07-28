@@ -3,7 +3,7 @@ package imagetype
 /**
  * imagetype.go
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,10 @@ SOFTWARE.
 */
 
 // Used to specify the image type of an image.
-// Supported types: imagetype.JPG, imagetype.PNG, imagetype.BMP and imagetype.PNGStream
+// Supported types: imagetype.JPG, imagetype.PNG and imagetype.BMP
 // See the Image class for more information.
 const (
 	JPG = iota
 	PNG
 	BMP
-	PNGStream
 )

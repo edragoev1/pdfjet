@@ -3,7 +3,7 @@ package pdfjet
 /**
  * page.go
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -175,23 +175,23 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 // removeComments removes object dictionary comments.
 func (page *Page) removeComments(obj *PDFobj) *PDFobj {
 	list := make([]string, 0)
-    comment := false
-    for _, token := range obj.dict {
-        if token == "%" {
-            comment = true
-        } else {
-            if strings.HasPrefix(token, "/") {
-                comment = false
-                list = append(list, token)
-            } else {
-                if !comment {
-                    list = append(list, token)
-                }
-            }
-        }
-    }
-    obj.dict = list
-    return obj
+	comment := false
+	for _, token := range obj.dict {
+		if token == "%" {
+			comment = true
+		} else {
+			if strings.HasPrefix(token, "/") {
+				comment = false
+				list = append(list, token)
+			} else {
+				if !comment {
+					list = append(list, token)
+				}
+			}
+		}
+	}
+	obj.dict = list
+	return obj
 }
 
 // AddCoreFontResource adds core font to the PDF objects.
@@ -574,8 +574,8 @@ func (page *Page) SetLinePattern(pattern string) {
 
 // SetDefaultLinePattern sets the default line dash pattern - solid line.
 func (page *Page) SetDefaultLinePattern() {
-    page.linePattern = "[] 0"
-    appendString(&page.buf, page.linePattern)
+	page.linePattern = "[] 0"
+	appendString(&page.buf, page.linePattern)
 	appendString(&page.buf, " d\n")
 }
 
@@ -701,7 +701,6 @@ func (page *Page) DrawPath(path []*Point, operation string) {
 			}
 		}
 	}
-
 	appendString(&page.buf, operation)
 	appendString(&page.buf, "\n")
 }
@@ -1261,7 +1260,7 @@ func (page *Page) AddWatermark(font *Font, text string) {
 	offset := (hypotenuse - stringWidth) / 2.0
 	angle := math.Atan(float64(page.height / page.width))
 	watermark := NewTextLine(font, "")
-	watermark.SetColor(color.Lightgrey)
+	watermark.SetColor(color.LightGray)
 	watermark.SetText(text)
 	watermark.SetLocation(
 		offset*float32(math.Cos(angle)),

@@ -1,7 +1,7 @@
 /**
  *  PDF.java
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,7 @@ final public class PDF {
     private String author = "";
     private String subject = "";
     private String keywords = "";
-    private String producer = "PDFjet v8.0.3";
+    private String producer = "PDFjet v8.0.4";
     private String creator = producer;
     private String createDate;      // XMP metadata
     private String creationDate;    // PDF Info Object
@@ -519,55 +519,6 @@ final public class PDF {
                 endobj();
             }
         }
-    }
-
-    // This method is sligtly slower for Example_52.java
-    private void addStructElementObjectsBackup() throws Exception {
-        int structTreeRootObjNumber = getObjNumber() + 1;
-        for (Page page : pages) {
-            structTreeRootObjNumber += page.structures.size();
-        }
-        StringBuilder buffer = new StringBuilder();
-        for (Page page : pages) {
-            for (StructElem element : page.structures) {
-                // newobj();
-                objOffset.add(byteCount);
-                buffer.append(objOffset.size());
-                buffer.append(" 0 obj\n");
-
-                element.objNumber = getObjNumber();
-                buffer.append("<<\n/Type /StructElem /S /");
-                buffer.append(element.structure);
-                buffer.append("\n/P ");
-                buffer.append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
-                buffer.append(" 0 R /Pg ");
-                buffer.append(element.pageObjNumber);
-                append(Token.objRef);
-                if (element.annotation != null) {
-                    buffer.append("/K <</Type /OBJR /Obj ");
-                    buffer.append(element.annotation.objNumber);
-                    buffer.append(" 0 R>>");
-                } else {
-                    buffer.append("/K ");
-                    buffer.append(element.mcid);
-                }
-                buffer.append(Token.lang);
-                if (element.language != null) {
-                    buffer.append(element.language);
-                } else {
-                    buffer.append(language);
-                }
-                buffer.append(Token.altDescription);
-                buffer.append(toHex(element.altDescription));
-                buffer.append(Token.actualText);
-                buffer.append(toHex(element.actualText));
-                buffer.append(Token.endStructElem);
-
-                // endobj();
-                buffer.append("endobj\n");
-            }
-        }
-        append(buffer.toString());
     }
 
     private String toHex(String str) {

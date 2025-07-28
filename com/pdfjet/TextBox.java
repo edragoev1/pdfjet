@@ -1,7 +1,7 @@
 /**
  *  TextBox.java
  *
-Copyright 2024 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -177,6 +177,17 @@ public class TextBox implements Drawable {
      */
     public void setPosition(float x, float y) {
         setLocation(x, y);
+    }
+
+    /**
+     * Sets the size of text box.
+     *
+     * @param w the width of the text box.
+     * @param h the height of the text box.
+     */
+    public void setSize(float w, float h) {
+        this.width = w;
+        this.height = h;
     }
 
     /**
@@ -705,24 +716,27 @@ public class TextBox implements Drawable {
         page.addEMC();
     }
 
-    // Preserves the leading spaces and tabs
-    private StringBuilder getStringBuilder(String line) {
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < line.length(); i++) {
-            char ch = line.charAt(i);
-            if (ch == ' ') {
-                buf.append(ch);
-            } else if (ch == '\t') {
-                buf.append("    ");
-            } else {
-                break;
+    private boolean textIsCJK(String str) {
+        // CJK Unified Ideographs Range: 4E00–9FD5
+        // Hiragana Range: 3040–309F
+        // Katakana Range: 30A0–30FF
+        // Hangul Jamo Range: 1100–11FF
+        int numOfCJK = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
+                    (ch >= 0x3040 && ch <= 0x309F) ||
+                    (ch >= 0x30A0 && ch <= 0x30FF) ||
+                    (ch >= 0x1100 && ch <= 0x11FF)) {
+                numOfCJK += 1;
             }
         }
-        return buf;
+        return (numOfCJK > (str.length() / 2));
     }
 
     private String[] getTextLines() {
         List<String> list = new ArrayList<String>();
+
         float textAreaWidth;
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             textAreaWidth = width - 2*margin;
@@ -734,58 +748,39 @@ public class TextBox implements Drawable {
             if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
                 list.add(line);
             } else {
-                StringBuilder buf1 = getStringBuilder(line); // Preserves the indentation
-                String[] tokens = line.trim().split("\\s+"); // Do not remove the trim()!
-                for (String token : tokens) {
-                    if (font.stringWidth(fallbackFont, token) > textAreaWidth) {
-                        // We have very long token, so we have to split it
-                        StringBuilder buf2 = new StringBuilder();
-                        for (int i = 0; i < token.length(); i++) {
-                            char ch = token.charAt(i);
-                            if (font.stringWidth(fallbackFont, buf2.toString() + ch) > textAreaWidth) {
-                                list.add(buf2.toString());
-                                buf2.setLength(0);
-                            }
-                            buf2.append(ch);
+                if (textIsCJK(line)) {
+                    StringBuilder sb = new StringBuilder();
+                    for (char ch : line.toCharArray()) {
+                        if (font.stringWidth(fallbackFont, sb.toString() + ch) <= textAreaWidth) {
+                            sb.append(ch);
+                        } else {
+                            list.add(sb.toString());
+                            sb.setLength(0);
+                            sb.append(ch);
                         }
-                        if (buf2.length() > 0) {
-                            buf1.append(buf2.toString() + " ");
-                        }
-                    } else {
-                        if (font.stringWidth(fallbackFont, buf1.toString() + token) > textAreaWidth) {
-                            list.add(buf1.toString());
-                            buf1.setLength(0);
-                        }
-                        buf1.append(token + " ");
                     }
-                }
-                if (buf1.length() > 0) {
-                    String str = buf1.toString().trim();
-                    if (font.stringWidth(fallbackFont, str) <= textAreaWidth) {
-                        list.add(str);
-                    } else {
-                        // We have very long token, so we have to split it
-                        StringBuilder buf2 = new StringBuilder();
-                        for (int i = 0; i < str.length(); i++) {
-                            char ch = str.charAt(i);
-                            if (font.stringWidth(fallbackFont, buf2.toString() + ch) > textAreaWidth) {
-                                list.add(buf2.toString());
-                                buf2.setLength(0);
-                            }
-                            buf2.append(ch);
+                    if (sb.length() > 0) {
+                        list.add(sb.toString());
+                    }
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    String[] tokens = line.split("\\s+");
+                    for (String token : tokens) {
+                        if (font.stringWidth(fallbackFont, sb.toString() + token) <= textAreaWidth) {
+                            sb.append(token + " ");
+                        } else {
+                            list.add(sb.toString().trim());
+                            sb.setLength(0);
+                            sb.append(token + " ");
                         }
-                        if (buf2.length() > 0) {
-                            list.add(buf2.toString());
-                        }
+                    }
+                    if (sb.toString().trim().length() > 0) {
+                        list.add(sb.toString().trim());
                     }
                 }
             }
         }
-        int index = list.size() - 1;
-        if (list.size() > 0 && list.get(index).trim().length() == 0) {
-            // Remove the last line if it is blank
-            list.remove(index);
-        }
+
         return list.toArray(new String[] {});
     }
 
@@ -856,7 +851,7 @@ public class TextBox implements Drawable {
                     xText = y + margin;
                 }
                 if (page != null) {
-                    drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
+                    drawTextLine(page, font, fallbackFont, line, xText, yText, brush, colors);
                 }
                 if (textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP) {
@@ -892,7 +887,7 @@ public class TextBox implements Drawable {
                     xText = x + margin;
                 }
                 if (page != null) {
-                    drawText(page, font, fallbackFont, line, xText, yText, brush, colors);
+                    drawTextLine(page, font, fallbackFont, line, xText, yText, brush, colors);
                 }
                 if (textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP) {
@@ -922,7 +917,7 @@ public class TextBox implements Drawable {
         return new float[] { x + width, y + height };
     }
 
-    private void drawText(
+    private void drawTextLine(
             Page page,
             Font font,
             Font fallbackFont,
@@ -946,18 +941,16 @@ public class TextBox implements Drawable {
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             float lineLength = font.stringWidth(fallbackFont, text);
             if (getUnderline()) {
-                float yAdjust = font.underlinePosition;
                 page.addArtifactBMC();
-                page.moveTo(xText, yText + yAdjust);
-                page.lineTo(xText + lineLength, yText + yAdjust);
+                page.moveTo(xText, yText + font.underlinePosition);
+                page.lineTo(xText + lineLength, yText + font.underlinePosition);
                 page.strokePath();
                 page.addEMC();
             }
             if (getStrikeout()) {
-                float yAdjust = font.bodyHeight / 4;
                 page.addArtifactBMC();
-                page.moveTo(xText, yText - yAdjust);
-                page.lineTo(xText + lineLength, yText - yAdjust);
+                page.moveTo(xText, yText - (font.bodyHeight / 4));
+                page.lineTo(xText + lineLength, yText - (font.bodyHeight / 4));
                 page.strokePath();
                 page.addEMC();
             }

@@ -14,7 +14,7 @@ public class Example_48 {
                 Compliance.PDF_UA);
 
         Font f1 = new Font(pdf, new FileStream(
-                "fonts/OpenSans/OpenSans-Regular.ttf.stream",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream",
                 FileMode.Open,
                 FileAccess.Read), Font.STREAM);
 

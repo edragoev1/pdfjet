@@ -11,9 +11,9 @@ public class Example_45 {
         pdf.setLanguage("en-US")
         pdf.setTitle("Hello, World!")
 
-        let f1 = try Font(pdf, "fonts/Droid/DroidSerif-Regular.ttf.stream")
-        let f2 = try Font(pdf, "fonts/Droid/DroidSerif-Italic.ttf.stream")
-        let f3 = try Font(pdf, "fonts/SourceCodePro/SourceCodePro-Regular.ttf.stream")
+        let f1 = try Font(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf.stream")
+        let f2 = try Font(pdf, "fonts/SourceSerif4/SourceSerif4-Italic.ttf.stream")
+        let f3 = try Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream")
 
         f1.setSize(14.0)
         f2.setSize(14.0)
@@ -66,7 +66,7 @@ public class Example_45 {
         let x: Float32 = 50.0
         var y: Float32 = 280.0
         let dy = f3.getBodyHeight()
-        let lines = try Text.readLines("data/form-code-swift.txt")
+        let lines = try Text.readLines("data/languages/english.txt")
         for line in lines {
             page.drawString(f3, line, x, y, Color.black, colors)
             y += dy

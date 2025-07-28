@@ -1,0 +1,13 @@
+del out\production\com\pdfjet\*.class
+del out\production\examples\*.class
+del com\pdfjet\*.class
+del examples\*.class
+del util\*.class
+del *.jar
+del *.exe
+del *.mdb
+del *.dll
+rd/s/q bin
+rd/s/q obj
+rd/s/q .build
+del *.pdf

@@ -1,7 +1,7 @@
 /**
  *  Path.java
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -277,52 +277,6 @@ public class Path implements Drawable {
     }
 
     /**
-     * Returns a list containing the start point, first control point, second control point and the end point of elliptical curve segment.
-     * Please see Example_18.
-     *
-     * @param x the x coordinate of the center of the ellipse.
-     * @param y the y coordinate of the center of the ellipse.
-     * @param r1 the horizontal radius of the ellipse.
-     * @param r2 the vertical radius of the ellipse.
-     * @param segment the segment to draw - please see the Segment class.
-     * @return a list of the curve points.
-     */
-    public static List<Point> getCurvePoints(
-            float x,
-            float y,
-            float r1,
-            float r2,
-            int segment) {
-        // The best 4-spline magic number
-        float m4 = 0.551784f;
-        List<Point> list = new ArrayList<Point>();
-
-        if (segment == 0) {
-            list.add(new Point(x, y - r2));
-            list.add(new Point(x + m4*r1, y - r2, Point.CONTROL_POINT));
-            list.add(new Point(x + r1, y - m4*r2, Point.CONTROL_POINT));
-            list.add(new Point(x + r1, y));
-        } else if (segment == 1) {
-            list.add(new Point(x + r1, y));
-            list.add(new Point(x + r1, y + m4*r2, Point.CONTROL_POINT));
-            list.add(new Point(x + m4*r1, y + r2, Point.CONTROL_POINT));
-            list.add(new Point(x, y + r2));
-        } else if (segment == 2) {
-            list.add(new Point(x, y + r2));
-            list.add(new Point(x - m4*r1, y + r2, Point.CONTROL_POINT));
-            list.add(new Point(x - r1, y + m4*r2, Point.CONTROL_POINT));
-            list.add(new Point(x - r1, y));
-        } else if (segment == 3) {
-            list.add(new Point(x - r1, y));
-            list.add(new Point(x - r1, y - m4*r2, Point.CONTROL_POINT));
-            list.add(new Point(x - m4*r1, y - r2, Point.CONTROL_POINT));
-            list.add(new Point(x, y - r2));
-        }
-
-        return list;
-    }
-
-    /**
      *  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
      *
      *  @param page the page to draw this path on.
@@ -330,16 +284,6 @@ public class Path implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        if (fillShape) {
-            page.setBrushColor(color);
-        } else {
-            page.setPenColor(color);
-        }
-        page.setPenWidth(width);
-        page.setLinePattern(pattern);
-        page.setLineCapStyle(lineCapStyle);
-        page.setLineJoinStyle(lineJoinStyle);
-
         for (int i = 0; i < points.size(); i++) {
             Point point = points.get(i);
             point.x += xBox;
@@ -347,12 +291,18 @@ public class Path implements Drawable {
         }
 
         if (fillShape) {
-            page.drawPath(points, 'f');
+            page.setBrushColor(color);
+            page.drawPath(points, Operation.FILL);
         } else {
+            page.setPenWidth(width);
+            page.setPenColor(color);
+            page.setLinePattern(pattern);
+            page.setLineCapStyle(lineCapStyle);
+            page.setLineJoinStyle(lineJoinStyle);
             if (closePath) {
-                page.drawPath(points, 's');
+                page.drawPath(points, Operation.CLOSE);
             } else {
-                page.drawPath(points, 'S');
+                page.drawPath(points, Operation.STROKE);
             }
         }
 

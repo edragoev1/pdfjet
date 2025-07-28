@@ -1,7 +1,7 @@
 /**
  *  ImageType.swift
  *
-Copyright 2023 Innovatics Inc.
+©2025 PDFjet Software
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,12 +24,11 @@ SOFTWARE.
 
 /**
  *  Used to specify the image type of an image.
- *  Supported types: ImageType.JPG, ImageType.PNG, ImageType.BMP and ImageType.PNG_STREAM
+ *  Supported types: ImageType.JPG, ImageType.PNG and ImageType.BMP
  *  See the Image class for more information.
  */
 public enum ImageType : Int {
     case JPG
     case PNG
     case BMP
-    case PNG_STREAM
 }
