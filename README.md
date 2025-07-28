@@ -23,6 +23,10 @@ To build the Go version and compile and run all examples:
 
 ./build-go.sh
 
+## To use the Go library:
+```bash
+go get github.com/edragoev1/pdfjet@latest
+
 
 To build the Swift version and compile and run all examples:
 
