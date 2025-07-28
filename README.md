@@ -28,8 +28,6 @@ To compile and run specific Java example (from 01 to 50) use one of the followin
 
 ./run-java.sh 07
 
-./run-graalvm-native-image.sh 07 (Make sure GraalVM is installed in the correct directory)
-
 
 To compile and run specific C# example use one of the following:
 
