@@ -233,7 +233,7 @@ public class BigTable {
         int rowNumber = 0;
         String line = null;
         while ((line = reader.ReadLine()) != null) {
-            String[] fields = line.Split(',');
+            String[] fields = System.Text.RegularExpressions.Regex.Split(line, @"\,");
             for (int i = 0; i < fields.Length; i++) {
                 String field = fields[i];
                 float width = f1.StringWidth(null, field);
