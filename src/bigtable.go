@@ -219,8 +219,8 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 		table.page.SetPenWidth(0.0)
 		table.page.AddEMC()
 	}
-	table.yText += (table.f2.ascent - table.f2.descent)
-	if (table.yText - table.f2.descent) > (table.page.height - table.bottomMargin) {
+	table.yText += table.f2.ascent - table.f2.descent
+	if table.yText+table.f2.descent > table.page.height-table.bottomMargin {
 		table.newPage(color.Black)
 	}
 }
@@ -229,8 +229,8 @@ func (table *BigTable) highlightRow(page *Page, color int32, font *Font) {
 	original := page.GetBrushColor()
 	page.SetBrushColor(color)
 	page.MoveTo(float32(table.vertLines[0]), table.yText-font.ascent)
-	page.LineTo(float32(table.vertLines[len(table.headerRow)-1]), table.yText-font.ascent)
-	page.LineTo(float32(table.vertLines[len(table.headerRow)-1]), table.yText-font.descent)
+	page.LineTo(float32(table.vertLines[table.numberOfColumns]), table.yText-font.ascent)
+	page.LineTo(float32(table.vertLines[table.numberOfColumns]), table.yText-font.descent)
 	page.LineTo(float32(table.vertLines[0]), table.yText-font.descent)
 	page.FillPath()
 	page.SetBrushColorRGB(original[0], original[1], original[2])
