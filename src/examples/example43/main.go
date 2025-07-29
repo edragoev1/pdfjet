@@ -15,8 +15,10 @@ func Example43() {
 	pdf := pdfjet.NewPDFFile("Example_43.pdf")
 	pdf.SetCompliance(compliance.PDF_UA)
 
+	// Used for performance testing. Results in 2000+ pages PDF.
 	// fileName := "data/Electric_Vehicle_Population_Data.csv"
-	fileName := "data/Electric_Vehicle_Population_550.csv"
+
+	fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
 
 	f1 := pdfjet.NewFontFromFile(pdf, font.IBMPlexSans.SemiBold)
 	f1.SetSize(8.0)
@@ -26,6 +28,8 @@ func Example43() {
 
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
 	table.SetNumberOfColumns(10)
+	// TODO:
+	// table.SetColumnsToDisplay([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	table.SetTableData(fileName, ',')
 	table.SetLocation(0.0, 0.0)
 	table.SetBottomMargin(20.0)

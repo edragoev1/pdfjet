@@ -14,27 +14,28 @@ import (
  * Use this class if you have a lot of data.
  */
 type BigTable struct {
-	pdf             *PDF
-	page            *Page
-	pageSize        [2]float32
-	f1              *Font
-	f2              *Font
-	x               float32
-	y               float32
-	yText           float32
-	pages           []*Page
-	alignment       []int
-	vertLines       []float32
-	headerRow       []string
-	bottomMargin    float32
-	padding         float32
-	language        string
-	highlight       bool
-	highlightColor  int32
-	penColor        int32
-	fileName        string
-	widths          []float32
-	numberOfColumns int
+	pdf              *PDF
+	page             *Page
+	pageSize         [2]float32
+	f1               *Font
+	f2               *Font
+	x                float32
+	y                float32
+	yText            float32
+	pages            []*Page
+	alignment        []int
+	vertLines        []float32
+	headerRow        []string
+	bottomMargin     float32
+	padding          float32
+	language         string
+	highlight        bool
+	highlightColor   int32
+	penColor         int32
+	fileName         string
+	widths           []float32
+	numberOfColumns  int
+	columnsToDisplay []int
 }
 
 func NewBigTable(pdf *PDF, f1, f2 *Font, pageSize [2]float32) *BigTable {
@@ -61,6 +62,10 @@ func (table *BigTable) SetLocation(x, y float32) {
 
 func (table *BigTable) SetNumberOfColumns(numberOfColumns int) {
 	table.numberOfColumns = numberOfColumns
+}
+
+func (table *BigTable) SetColumnsToDisplay(columnsToDisplay []int) {
+	table.columnsToDisplay = columnsToDisplay
 }
 
 func (table *BigTable) SetTextAlignment(align []int) {
