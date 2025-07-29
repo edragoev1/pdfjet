@@ -18,14 +18,14 @@ func Example43() {
 	// fileName := "data/Electric_Vehicle_Population_550.csv"
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream")
-	f1.SetSize(8.0)
+	f1.SetSize(9.0)
 
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
-	f2.SetSize(8.0)
+	f2.SetSize(9.0)
 
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
 	table.SetTableData(fileName, ',')
-	table.SetLocation(50.0, 50.0)
+	table.SetLocation(50.0, 0.0)
 	table.SetBottomMargin(15.0)
 	table.Complete()
 
