@@ -12,10 +12,10 @@ public class Example_73 {
                 new BufferedOutputStream(
                     new FileOutputStream("Example_73.pdf")), Compliance.PDF_UA);
 
-        Font f1 = new Font(pdf, "fonts/Droid/DroidSans.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/Droid/DroidSansFallback.ttf.stream");
-
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         f1.setSize(12f);
+
+        Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
         f2.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
