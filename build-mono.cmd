@@ -1,5 +1,8 @@
 @echo off
 
+del PDFjet.dll
+del PDFjet.dll.mdb
+
 call dmcs /o /warn:2 /out:PDFjet.dll /target:library net/pdfjet/*.cs
 
 for /L %%i in (1,1,50) do (
@@ -14,8 +17,8 @@ move examples\Example_??.exe .
 
 for /L %%i in (1,1,50) do (
     if %%i lss 10 (
-        call mono --debug Example_0%%i.exe
+        mono --debug Example_0%%i.exe
     ) else (
-        call mono --debug Example_%%i.exe
+        mono --debug Example_%%i.exe
     )
 )
