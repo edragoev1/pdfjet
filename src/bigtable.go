@@ -14,27 +14,27 @@ import (
  * Use this class if you have a lot of data.
  */
 type BigTable struct {
-	pdf            *PDF
-	page           *Page
-	pageSize       [2]float32
-	f1             *Font
-	f2             *Font
-	x1             float32
-	y1             float32
-	yText          float32
-	pages          []*Page
-	align          []int
-	vertLines      []float32
-	headerRow      []string
-	bottomMargin   float32
-	columnSpacing  float32
-	padding        float32
-	language       string
-	highlightRow   bool
-	highlightColor int32
-	penColor       int32
-	fileName       string
-	widths         []float32
+	pdf             *PDF
+	page            *Page
+	pageSize        [2]float32
+	f1              *Font
+	f2              *Font
+	x1              float32
+	y1              float32
+	yText           float32
+	pages           []*Page
+	alignment       []int
+	vertLines       []float32
+	headerRow       []string
+	bottomMargin    float32
+	padding         float32
+	language        string
+	highlight       bool
+	highlightColor  int32
+	penColor        int32
+	fileName        string
+	widths          []float32
+	numberOfColumns int
 }
 
 func NewBigTable(pdf *PDF, f1, f2 *Font, pageSize [2]float32) *BigTable {
@@ -48,6 +48,7 @@ func NewBigTable(pdf *PDF, f1, f2 *Font, pageSize [2]float32) *BigTable {
 	table.highlightColor = 0xF0F0F0
 	table.penColor = 0xB0B0B0
 	table.padding = 2.0
+	table.numberOfColumns = 10
 	return table
 }
 
@@ -57,11 +58,7 @@ func (table *BigTable) SetLocation(x1, y1 float32) {
 }
 
 func (table *BigTable) SetTextAlignment(align []int) {
-	table.align = align
-}
-
-func (table *BigTable) SetColumnSpacing(spacing float32) {
-	table.columnSpacing = spacing
+	table.alignment = align
 }
 
 func (table *BigTable) SetBottomMargin(bottomMargin float32) {
@@ -74,16 +71,6 @@ func (table *BigTable) SetLanguage(language string) {
 
 func (table *BigTable) GetPages() []*Page {
 	return table.pages
-}
-
-func (table *BigTable) SetColumnWidths() {
-	table.vertLines = make([]float32, 0)
-	table.vertLines = append(table.vertLines, table.x1)
-	sumOfWidths := table.x1
-	for _, width := range table.widths {
-		sumOfWidths += width + table.columnSpacing
-		table.vertLines = append(table.vertLines, sumOfWidths)
-	}
 }
 
 func (table *BigTable) DrawRow(row []string, markerColor int32) {
@@ -100,11 +87,16 @@ func (table *BigTable) newPage(color int32) {
 		table.page.AddArtifactBMC()
 		original := table.page.GetPenColor()
 		table.page.SetPenColor(table.penColor)
-		table.page.DrawLine(float32(table.vertLines[0]), table.yText-table.f1.ascent,
-			float32(table.vertLines[len(table.headerRow)]), table.yText-table.f1.ascent)
+		table.page.DrawLine(
+			float32(table.vertLines[0]),
+			table.yText-table.f1.ascent,
+			float32(table.vertLines[table.numberOfColumns-1]),
+			table.yText-table.f1.ascent)
 		// Draw the vertical lines
-		for i := 0; i <= len(table.headerRow); i++ {
-			table.page.DrawLine(table.vertLines[i], table.y1, table.vertLines[i], table.yText-table.f1.ascent)
+		for i := 0; i < table.numberOfColumns; i++ {
+			table.page.DrawLine(
+				table.vertLines[i], table.y1, table.vertLines[i],
+				table.yText-table.f1.ascent)
 		}
 		table.page.SetPenColorRGB(original[0], original[1], original[2])
 		table.page.AddEMC()
@@ -117,12 +109,15 @@ func (table *BigTable) newPage(color int32) {
 
 	// Highlight row and draw horizontal line
 	table.page.AddArtifactBMC()
-	table.DrawHighlight(table.page, table.highlightColor, table.f1)
-	table.highlightRow = false
+	table.highlightRow(table.page, table.highlightColor, table.f1)
+	table.highlight = false
 	original := table.page.GetPenColor()
 	table.page.SetPenColor(table.penColor)
-	table.page.DrawLine(float32(table.vertLines[0]), table.yText-table.f1.ascent,
-		float32(table.vertLines[len(table.headerRow)]), table.yText-table.f1.ascent)
+	table.page.DrawLine(
+		float32(table.vertLines[0]),
+		table.yText-table.f1.ascent,
+		float32(table.vertLines[len(table.headerRow)-1]),
+		table.yText-table.f1.ascent)
 	table.page.SetPenColorRGB(original[0], original[1], original[2])
 	table.page.AddEMC()
 
@@ -130,16 +125,19 @@ func (table *BigTable) newPage(color int32) {
 	table.page.AddBMC("P", table.language, rowText, rowText)
 	table.page.SetTextFont(table.f1)
 	table.page.SetBrushColor(color)
-	xText := float32(0.0)
-	xText2 := float32(0.0)
-	for i, text := range table.headerRow {
-		xText = float32(table.vertLines[i])
-		xText2 = float32(table.vertLines[i+1])
+	for i := 0; i < table.numberOfColumns-1; i++ {
+		text := table.headerRow[i]
+		xText := float32(table.vertLines[i])
+		xText2 := float32(table.vertLines[i+1])
 		table.page.BeginText()
-		if table.align == nil || table.align[i] == 0 { // Align Left
-			table.page.SetTextLocation((xText + table.padding), table.yText)
-		} else if table.align[i] == 1 { // Align Right
-			table.page.SetTextLocation((xText2-table.padding)-table.f1.StringWidth(nil, text), table.yText)
+		if table.alignment == nil || table.alignment[i] == 0 { // Align Left
+			table.page.SetTextLocation(
+				(xText + table.padding),
+				table.yText)
+		} else if table.alignment[i] == 1 { // Align Right
+			table.page.SetTextLocation(
+				(xText2-table.padding)-table.f1.StringWidth(nil, text),
+				table.yText)
 		}
 		table.page.DrawText(text)
 		table.page.EndText()
@@ -157,16 +155,19 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 
 	// Highlight row and draw horizontal line
 	table.page.AddArtifactBMC()
-	if table.highlightRow {
-		table.DrawHighlight(table.page, table.highlightColor, table.f2)
-		table.highlightRow = false
+	if table.highlight {
+		table.highlightRow(table.page, table.highlightColor, table.f2)
+		table.highlight = false
 	} else {
-		table.highlightRow = true
+		table.highlight = true
 	}
 	original := table.page.GetPenColor()
 	table.page.SetPenColor(table.penColor)
-	table.page.DrawLine(float32(table.vertLines[0]), table.yText-table.f2.ascent,
-		float32(table.vertLines[len(table.headerRow)]), table.yText-table.f2.ascent)
+	table.page.DrawLine(
+		float32(table.vertLines[0]),
+		table.yText-table.f2.ascent,
+		float32(table.vertLines[table.numberOfColumns-1]),
+		table.yText-table.f2.ascent)
 	table.page.SetPenColorRGB(original[0], original[1], original[2])
 	table.page.AddEMC()
 
@@ -175,16 +176,20 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 	table.page.SetPenWidth(0.0)
 	table.page.SetTextFont(table.f2)
 	table.page.SetBrushColor(color.Black)
-	xText := float32(0.0)
 	xText2 := float32(0.0)
-	for i, text := range row {
-		xText = float32(table.vertLines[i])
+	for i := 0; i < table.numberOfColumns-1; i++ {
+		text := row[i]
+		xText := float32(table.vertLines[i])
 		xText2 = float32(table.vertLines[i+1])
 		table.page.BeginText()
-		if table.align == nil || table.align[i] == 0 { // Align Left
-			table.page.SetTextLocation((xText + table.padding), table.yText)
-		} else if table.align[i] == 1 { // Align Right
-			table.page.SetTextLocation((xText2-table.padding)-table.f2.StringWidth(nil, text), table.yText)
+		if table.alignment == nil || table.alignment[i] == 0 { // Align Left
+			table.page.SetTextLocation(
+				(xText + table.padding),
+				table.yText)
+		} else if table.alignment[i] == 1 { // Align Right
+			table.page.SetTextLocation(
+				(xText2-table.padding)-table.f2.StringWidth(nil, text),
+				table.yText)
 		}
 		table.page.DrawText(text)
 		table.page.EndText()
@@ -195,26 +200,32 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 		originalColor := table.page.GetPenColor()
 		table.page.SetPenColor(markerColor)
 		table.page.SetPenWidth(3.0)
-		table.page.DrawLine(table.vertLines[0]-table.padding, table.yText-table.f2.ascent,
-			table.vertLines[0]-table.padding, table.yText-table.f2.descent)
-		table.page.DrawLine(xText2+table.padding, table.yText-table.f2.ascent,
-			xText2+table.padding, table.yText-table.f2.descent)
+		table.page.DrawLine(
+			table.vertLines[0]-table.padding,
+			table.yText-table.f2.ascent,
+			table.vertLines[0]-table.padding,
+			table.yText-table.f2.descent)
+		table.page.DrawLine(
+			xText2+table.padding,
+			table.yText-table.f2.ascent,
+			xText2+table.padding,
+			table.yText-table.f2.descent)
 		table.page.SetPenColorRGB(originalColor[0], originalColor[1], originalColor[2])
 		table.page.SetPenWidth(0.0)
 		table.page.AddEMC()
 	}
 	table.yText += (table.f2.ascent - table.f2.descent)
-	if table.yText-table.f2.descent > (table.page.height - table.bottomMargin) {
+	if (table.yText - table.f2.descent) > (table.page.height - table.bottomMargin) {
 		table.newPage(color.Black)
 	}
 }
 
-func (table *BigTable) DrawHighlight(page *Page, color int32, font *Font) {
+func (table *BigTable) highlightRow(page *Page, color int32, font *Font) {
 	original := page.GetBrushColor()
 	page.SetBrushColor(color)
 	page.MoveTo(float32(table.vertLines[0]), table.yText-font.ascent)
-	page.LineTo(float32(table.vertLines[len(table.headerRow)]), table.yText-font.ascent)
-	page.LineTo(float32(table.vertLines[len(table.headerRow)]), table.yText-font.descent)
+	page.LineTo(float32(table.vertLines[len(table.headerRow)-1]), table.yText-font.ascent)
+	page.LineTo(float32(table.vertLines[len(table.headerRow)-1]), table.yText-font.descent)
 	page.LineTo(float32(table.vertLines[0]), table.yText-font.descent)
 	page.FillPath()
 	page.SetBrushColorRGB(original[0], original[1], original[2])
@@ -232,7 +243,7 @@ func getRowText(row []string) string {
 func (table *BigTable) SetTableData(fileName string, delimiter rune) {
 	table.fileName = fileName
 	table.widths = make([]float32, 0)
-	table.align = make([]int, 0)
+	table.alignment = make([]int, 0)
 	readFile, err := os.Open(fileName)
 	if err != nil {
 		fmt.Println(err)
@@ -243,8 +254,7 @@ func (table *BigTable) SetTableData(fileName string, delimiter rune) {
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		fields := strings.Split(line, ",")
-		// for i := 0; i < len(fields); i++ {
-		for i := 0; i < 9; i++ {
+		for i := 0; i < table.numberOfColumns; i++ {
 			width := table.f1.StringWidth(nil, fields[i])
 			if rowNumber == 0 { // Header Row
 				table.widths = append(table.widths, width+2*table.padding)
@@ -256,12 +266,20 @@ func (table *BigTable) SetTableData(fileName string, delimiter rune) {
 		}
 		if rowNumber == 1 { // First Data Row
 			for _, field := range fields {
-				table.align = append(table.align, table.getAlignment(field))
+				table.alignment = append(table.alignment, table.getAlignment(field))
 			}
 		}
 		rowNumber++
 	}
 	readFile.Close()
+
+	table.vertLines = make([]float32, 0)
+	table.vertLines = append(table.vertLines, table.x1)
+	vertLineX := table.x1
+	for i := 0; i < table.numberOfColumns-1; i++ {
+		vertLineX += table.widths[i]
+		table.vertLines = append(table.vertLines, vertLineX)
+	}
 }
 
 func (table *BigTable) getAlignment(str string) int {
@@ -281,37 +299,39 @@ func (table *BigTable) getAlignment(str string) int {
 	return 0 // Align Left
 }
 
-func (table *BigTable) DrawRows() {
+func (table *BigTable) Complete() {
 	readFile, err := os.Open(table.fileName)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
-	// headerRow := true
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		fields := strings.Split(line, ",")
 		row := make([]string, 0)
-		for i := 0; i < 9; i++ {
+		for i := 0; i < table.numberOfColumns; i++ {
 			row = append(row, fields[i])
 		}
 		table.DrawRow(row, color.Black)
-		/// fmt.Println(fields)
-		// headerRow = false
 	}
 	readFile.Close()
-}
 
-func (table *BigTable) Complete() {
 	table.page.AddArtifactBMC()
 	original := table.page.GetPenColor()
 	table.page.SetPenColor(table.penColor)
-	table.page.DrawLine(float32(table.vertLines[0]), table.yText-table.f2.ascent,
-		float32(table.vertLines[len(table.headerRow)]), table.yText-table.f2.ascent)
+	table.page.DrawLine(
+		float32(table.vertLines[0]),
+		table.yText-table.f2.ascent,
+		float32(table.vertLines[table.numberOfColumns-1]),
+		table.yText-table.f2.ascent)
 	// Draw the vertical lines
-	for i := 0; i <= len(table.headerRow); i++ {
-		table.page.DrawLine(table.vertLines[i], table.y1, table.vertLines[i], table.yText-table.f1.ascent)
+	for i := 0; i < table.numberOfColumns; i++ {
+		table.page.DrawLine(
+			table.vertLines[i],
+			table.y1,
+			table.vertLines[i],
+			table.yText-table.f1.ascent)
 	}
 	table.page.SetPenColorRGB(original[0], original[1], original[2])
 	table.page.AddEMC()
