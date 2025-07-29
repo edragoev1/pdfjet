@@ -335,11 +335,11 @@ func (table *BigTable) Complete() {
 		float32(table.vertLines[table.numberOfColumns]),
 		table.yText-table.f2.ascent)
 	// Draw the vertical lines
-	for i := 0; i < table.numberOfColumns; i++ {
+	for i := 0; i <= table.numberOfColumns; i++ {
 		table.page.DrawLine(
 			table.vertLines[i],
 			table.y,
-			table.vertLines[i+1],
+			table.vertLines[i],
 			table.yText-table.f1.ascent)
 	}
 	table.page.SetPenColorRGB(original[0], original[1], original[2])

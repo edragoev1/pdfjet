@@ -6,6 +6,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/font"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -17,14 +18,14 @@ func Example43() {
 	// fileName := "data/Electric_Vehicle_Population_Data.csv"
 	fileName := "data/Electric_Vehicle_Population_550.csv"
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, font.IBMPlexSans.SemiBold)
 	f1.SetSize(8.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, font.IBMPlexSans.Regular)
 	f2.SetSize(8.0)
 
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
-	table.SetNumberOfColumns(9)
+	table.SetNumberOfColumns(10)
 	table.SetTableData(fileName, ',')
 	table.SetLocation(0.0, 0.0)
 	table.SetBottomMargin(20.0)
