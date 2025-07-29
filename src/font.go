@@ -348,7 +348,7 @@ func (font *Font) GetDescent() float32 {
 
 // GetHeight returns the height of this font.
 func (font *Font) GetHeight() float32 {
-	return font.ascent + font.descent
+	return font.ascent - font.descent
 }
 
 // GetBodyHeight returns the height of the body of the font.

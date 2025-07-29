@@ -143,7 +143,7 @@ func (table *BigTable) newPage(color int32) {
 		table.page.EndText()
 	}
 	table.page.AddEMC()
-	table.yText += table.f1.descent + table.f2.ascent
+	table.yText += (table.f2.ascent - table.f1.descent)
 }
 
 func (table *BigTable) drawOn(row []string, markerColor int32) {
@@ -193,14 +193,14 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 		originalColor := table.page.GetPenColor()
 		table.page.SetPenColor(markerColor)
 		table.page.SetPenWidth(3.0)
-		table.page.DrawLine(table.vertLines[0]-2.0, table.yText-table.f2.ascent, table.vertLines[0]-2.0, table.yText+table.f2.descent)
-		table.page.DrawLine(xText2+2.0, table.yText-table.f2.ascent, xText2+2.0, table.yText+table.f2.descent)
+		table.page.DrawLine(table.vertLines[0]-2.0, table.yText-table.f2.ascent, table.vertLines[0]-2.0, table.yText-table.f2.descent)
+		table.page.DrawLine(xText2+2.0, table.yText-table.f2.ascent, xText2+2.0, table.yText-table.f2.descent)
 		table.page.SetPenColorRGB(originalColor[0], originalColor[1], originalColor[2])
 		table.page.SetPenWidth(0.0)
 		table.page.AddEMC()
 	}
-	table.yText += table.f2.descent + table.f2.ascent
-	if table.yText+table.f2.descent > (table.page.height - table.bottomMargin) {
+	table.yText += (table.f2.ascent - table.f2.descent)
+	if table.yText-table.f2.descent > (table.page.height - table.bottomMargin) {
 		table.newPage(color.Black)
 	}
 }
@@ -224,8 +224,8 @@ func (table *BigTable) DrawHighlight(page *Page, color int32, font *Font) {
 	page.SetBrushColor(color)
 	page.MoveTo(float32(table.vertLines[0]), table.yText-font.ascent)
 	page.LineTo(float32(table.vertLines[len(table.headerRow)]), table.yText-font.ascent)
-	page.LineTo(float32(table.vertLines[len(table.headerRow)]), table.yText+font.descent)
-	page.LineTo(float32(table.vertLines[0]), table.yText+font.descent)
+	page.LineTo(float32(table.vertLines[len(table.headerRow)]), table.yText-font.descent)
+	page.LineTo(float32(table.vertLines[0]), table.yText-font.descent)
 	page.FillPath()
 	page.SetBrushColorRGB(original[0], original[1], original[2])
 }
