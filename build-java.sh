@@ -6,7 +6,7 @@ mkdir -p out/production
 javac -O -encoding utf-8 -Xlint com/pdfjet/*.java -d out/production
 jar cf PDFjet.jar -C out/production .
 
-for i in $(seq 1 51);
+for i in $(seq 1 50);
 do
     if [ $i -lt 10 ]; then
         javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples/Example_0$i.java -d out/production
@@ -15,7 +15,7 @@ do
     fi
 done
 
-for i in $(seq 1 51);
+for i in $(seq 1 50);
 do
     if [ $i -lt 10 ]; then
         java -cp .:PDFjet.jar:out/production examples.Example_0$i

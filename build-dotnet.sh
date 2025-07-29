@@ -1,6 +1,6 @@
 rm -rf bin
 
-for i in $(seq 1 51);
+for i in $(seq 1 50);
 do
     if [ $i -lt 10 ]; then
         rm -rf obj
