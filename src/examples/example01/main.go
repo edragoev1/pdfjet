@@ -15,6 +15,7 @@ func Example01() {
 	pdf := pdfjet.NewPDFFile("Example_01.pdf")
 
 	font1 := pdfjet.NewFontFromFile(pdf, font.IBMPlexSans.Regular)
+	font1.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
