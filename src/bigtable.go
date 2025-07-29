@@ -11,33 +11,45 @@ import (
 )
 
 /**
- * Use this class if you have a lot of data.
+ * BigTable handles efficient rendering of large datasets to PDF with:
+ * - Automatic pagination
+ * - Customizable formatting (fonts, colors, alignment)
+ * - Alternating row highlighting
+ * - Accessibility tagging
+ * - Stream-based processing (low memory footprint)
  */
 type BigTable struct {
-	pdf              *PDF
-	page             *Page
-	pageSize         [2]float32
-	f1               *Font
-	f2               *Font
-	x                float32
-	y                float32
-	yText            float32
-	pages            []*Page
-	alignment        []int
-	vertLines        []float32
-	headerRow        []string
-	bottomMargin     float32
-	padding          float32
-	language         string
-	highlight        bool
-	highlightColor   int32
-	penColor         int32
-	fileName         string
-	widths           []float32
-	numberOfColumns  int
-	columnsToDisplay []int
+	pdf              *PDF       // Parent PDF document
+	page             *Page      // Current working page
+	pageSize         [2]float32 // Page dimensions [width, height]
+	f1               *Font      // Primary font (typically for headers)
+	f2               *Font      // Secondary font (for data rows)
+	x                float32    // Current X position
+	y                float32    // Current Y position (baseline)
+	yText            float32    // Text baseline Y coordinate
+	pages            []*Page    // All generated pages
+	alignment        []int      // Column alignments (0=left, 1=right)
+	vertLines        []float32  // X positions of vertical grid lines
+	headerRow        []string   // Column headers
+	bottomMargin     float32    // Bottom page margin (triggers new page)
+	padding          float32    // Cell padding
+	language         string     // Language tag for accessibility
+	highlight        bool       // Row highlight toggle
+	highlightColor   int32      // Background color for highlighted rows
+	penColor         int32      // Color for grid lines
+	fileName         string     // Source data file path
+	widths           []float32  // Calculated column widths
+	numberOfColumns  int        // Total column count
+	columnsToDisplay []int      // Column indices to render (optional filter)
 }
 
+/**
+ * NewBigTable initializes a table renderer with essential settings:
+ * pdf: The parent PDF document
+ * f1: Font for header row
+ * f2: Font for data rows
+ * pageSize: [width, height] of the PDF page
+ */
 func NewBigTable(pdf *PDF, f1, f2 *Font, pageSize [2]float32) *BigTable {
 	table := new(BigTable)
 	table.pdf = pdf
@@ -45,65 +57,108 @@ func NewBigTable(pdf *PDF, f1, f2 *Font, pageSize [2]float32) *BigTable {
 	table.f1 = f1
 	table.f2 = f2
 	table.pages = make([]*Page, 0)
-	table.bottomMargin = 15.0
-	table.highlightColor = 0xF0F0F0
-	table.penColor = 0xB0B0B0
-	table.padding = 2.0
-	table.numberOfColumns = 10
+	table.bottomMargin = 15.0       // Default 15-unit bottom margin
+	table.highlightColor = 0xF0F0F0 // Light gray highlight
+	table.penColor = 0xB0B0B0       // Medium gray grid lines
+	table.padding = 2.0             // 2-unit cell padding
+	table.numberOfColumns = 10      // Default column count
 	return table
 }
 
+/**
+ * SetLocation positions the table on the page and adjusts vertical lines
+ * x: Starting X coordinate
+ * y: Starting Y coordinate
+ */
 func (table *BigTable) SetLocation(x, y float32) {
+	// Adjust all vertical line positions relative to new X
 	for i := 0; i < table.numberOfColumns; i++ {
 		table.vertLines[i] += x
 	}
-	table.y = y
+	table.y = y // Set new baseline Y
 }
 
+/**
+ * SetNumberOfColumns updates the expected column count.
+ * Must be called before loading data.
+ */
 func (table *BigTable) SetNumberOfColumns(numberOfColumns int) {
 	table.numberOfColumns = numberOfColumns
 }
 
+/**
+ * SetColumnsToDisplay filters columns by index (zero-based).
+ * If not set, all columns are displayed.
+ */
 func (table *BigTable) SetColumnsToDisplay(columnsToDisplay []int) {
 	table.columnsToDisplay = columnsToDisplay
 }
 
+/**
+ * SetTextAlignment defines per-column text alignment:
+ * align: Slice where 0=left, 1=right alignment
+ */
 func (table *BigTable) SetTextAlignment(align []int) {
 	table.alignment = align
 }
 
+/**
+ * SetBottomMargin sets the minimum margin before page break.
+ */
 func (table *BigTable) SetBottomMargin(bottomMargin float32) {
 	table.bottomMargin = bottomMargin
 }
 
+/**
+ * SetLanguage sets the language tag for PDF accessibility.
+ */
 func (table *BigTable) SetLanguage(language string) {
 	table.language = language
 }
 
+/**
+ * GetPages returns all generated pages for multi-page tables.
+ */
 func (table *BigTable) GetPages() []*Page {
 	return table.pages
 }
 
+/**
+ * DrawRow renders a row, automatically handling:
+ * - Header row detection
+ * - Pagination
+ * - Highlighting
+ * row: Data cells to render
+ * markerColor: Optional border color for special rows
+ */
 func (table *BigTable) DrawRow(row []string, markerColor int32) {
 	if table.headerRow == nil {
 		table.headerRow = row
-		table.newPage(color.Black) // Draws the header row automatically
+		table.newPage(color.Black) // Draw header immediately
 	} else {
-		table.drawOn(row, markerColor)
+		table.drawOn(row, markerColor) // Render data row
 	}
 }
 
+/**
+ * newPage creates a fresh page and renders the header row.
+ * color: Text color for the header
+ */
 func (table *BigTable) newPage(color int32) {
+	// Finalize current page if exists
 	if table.page != nil {
-		table.page.AddArtifactBMC()
+		table.page.AddArtifactBMC() // Begin accessibility tag
 		original := table.page.GetPenColor()
 		table.page.SetPenColor(table.penColor)
+
+		// Draw horizontal line below header
 		table.page.DrawLine(
 			float32(table.vertLines[0]),
 			table.yText-table.f1.ascent,
 			float32(table.vertLines[table.numberOfColumns]),
 			table.yText-table.f1.ascent)
-		// Draw the vertical lines
+
+		// Draw vertical grid lines
 		for i := 0; i <= table.numberOfColumns; i++ {
 			table.page.DrawLine(
 				table.vertLines[i],
@@ -112,21 +167,23 @@ func (table *BigTable) newPage(color int32) {
 				table.yText-table.f1.ascent)
 		}
 		table.page.SetPenColorRGB(original[0], original[1], original[2])
-		table.page.AddEMC()
+		table.page.AddEMC() // End accessibility tag
 	}
 
+	// Initialize new page
 	table.page = NewPageDetached(table.pdf, table.pageSize)
 	table.pages = append(table.pages, table.page)
 	table.page.SetPenWidth(0.0)
-	table.yText = table.y + table.f1.ascent
+	table.yText = table.y + table.f1.ascent // Set text baseline
 
+	// Render header row
 	table.page.AddArtifactBMC()
-	// Highlight the row
 	table.highlightRow(table.page, table.highlightColor, table.f1)
-	table.highlight = false
+	table.highlight = false // Reset highlight for data rows
+
+	// Draw header grid lines
 	original := table.page.GetPenColor()
 	table.page.SetPenColor(table.penColor)
-	//Draw the horizontal line
 	table.page.DrawLine(
 		float32(table.vertLines[0]),
 		table.yText-table.f1.ascent,
@@ -135,6 +192,7 @@ func (table *BigTable) newPage(color int32) {
 	table.page.SetPenColorRGB(original[0], original[1], original[2])
 	table.page.AddEMC()
 
+	// Render header text
 	rowText := getRowText(table.headerRow)
 	table.page.AddBMC("P", table.language, rowText, rowText)
 	table.page.SetTextFont(table.f1)
@@ -143,12 +201,13 @@ func (table *BigTable) newPage(color int32) {
 		text := table.headerRow[i]
 		xText := float32(table.vertLines[i])
 		xText2 := float32(table.vertLines[i+1])
+
 		table.page.BeginText()
-		if table.alignment == nil || table.alignment[i] == 0 { // Align Left
+		if table.alignment == nil || table.alignment[i] == 0 { // Left align
 			table.page.SetTextLocation(
 				(xText + table.padding),
 				table.yText)
-		} else if table.alignment[i] == 1 { // Align Right
+		} else if table.alignment[i] == 1 { // Right align
 			table.page.SetTextLocation(
 				(xText2-table.padding)-table.f1.StringWidth(nil, text),
 				table.yText)
@@ -157,24 +216,28 @@ func (table *BigTable) newPage(color int32) {
 		table.page.EndText()
 	}
 	table.page.AddEMC()
-	table.yText += (table.f2.ascent - table.f1.descent)
+	table.yText += (table.f2.ascent - table.f1.descent) // Move baseline down
 }
 
+/**
+ * drawOn renders a data row with:
+ * - Alternating highlights
+ * - Cell alignment
+ * - Pagination checks
+ */
 func (table *BigTable) drawOn(row []string, markerColor int32) {
+	// Validate row length
 	if len(row) > len(table.headerRow) {
-		// Prevent crashes when some data rows have extra fields!
-		// The application should check for this and handle it the right way.
-		return
+		return // Silently skip malformed rows
 	}
 
-	// Highlight row and draw horizontal line
+	// Highlight and draw grid lines
 	table.page.AddArtifactBMC()
 	if table.highlight {
 		table.highlightRow(table.page, table.highlightColor, table.f2)
-		table.highlight = false
-	} else {
-		table.highlight = true
 	}
+	table.highlight = !table.highlight // Toggle for next row
+
 	original := table.page.GetPenColor()
 	table.page.SetPenColor(table.penColor)
 	table.page.DrawLine(
@@ -185,22 +248,25 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 	table.page.SetPenColorRGB(original[0], original[1], original[2])
 	table.page.AddEMC()
 
+	// Render cell content
 	rowText := getRowText(row)
 	table.page.AddBMC("P", table.language, rowText, rowText)
 	table.page.SetPenWidth(0.0)
 	table.page.SetTextFont(table.f2)
 	table.page.SetBrushColor(color.Black)
 	xText2 := float32(0.0)
+
 	for i := 0; i < table.numberOfColumns; i++ {
 		text := row[i]
 		xText := float32(table.vertLines[i])
 		xText2 = float32(table.vertLines[i+1])
+
 		table.page.BeginText()
-		if table.alignment == nil || table.alignment[i] == 0 { // Align Left
+		if table.alignment == nil || table.alignment[i] == 0 { // Left align
 			table.page.SetTextLocation(
 				(xText + table.padding),
 				table.yText)
-		} else if table.alignment[i] == 1 { // Align Right
+		} else if table.alignment[i] == 1 { // Right align
 			table.page.SetTextLocation(
 				(xText2-table.padding)-table.f2.StringWidth(nil, text),
 				table.yText)
@@ -209,6 +275,8 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 		table.page.EndText()
 	}
 	table.page.AddEMC()
+
+	// Draw special markers if requested
 	if markerColor != color.Black {
 		table.page.AddArtifactBMC()
 		originalColor := table.page.GetPenColor()
@@ -228,12 +296,17 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 		table.page.SetPenWidth(0.0)
 		table.page.AddEMC()
 	}
+
+	// Advance to next line and check pagination
 	table.yText += table.f2.ascent - table.f2.descent
 	if table.yText+table.f2.descent > table.page.height-table.bottomMargin {
 		table.newPage(color.Black)
 	}
 }
 
+/**
+ * highlightRow fills a row's background with highlight color
+ */
 func (table *BigTable) highlightRow(page *Page, color int32, font *Font) {
 	original := page.GetBrushColor()
 	page.SetBrushColor(color)
@@ -245,6 +318,9 @@ func (table *BigTable) highlightRow(page *Page, color int32, font *Font) {
 	page.SetBrushColorRGB(original[0], original[1], original[2])
 }
 
+/**
+ * getRowText concatenates cells for accessibility tagging
+ */
 func getRowText(row []string) string {
 	var buf strings.Builder
 	for _, field := range row {
@@ -254,50 +330,67 @@ func getRowText(row []string) string {
 	return buf.String()
 }
 
+/**
+ * SetTableData analyzes the input file to:
+ * 1. Calculate column widths
+ * 2. Determine alignments (numeric=right)
+ * 3. Precompute vertical line positions
+ */
 func (table *BigTable) SetTableData(fileName string, delimiter rune) {
 	table.fileName = fileName
 	table.widths = make([]float32, 0)
 	table.alignment = make([]int, 0)
-	readFile, err := os.Open(fileName)
+
+	file, err := os.Open(fileName)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
-	fileScanner := bufio.NewScanner(readFile)
-	fileScanner.Split(bufio.ScanLines)
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
 	rowNumber := 0
-	for fileScanner.Scan() {
-		line := fileScanner.Text()
+
+	for scanner.Scan() {
+		line := scanner.Text()
 		fields := strings.Split(line, ",")
+
 		for i := 0; i < table.numberOfColumns; i++ {
 			width := table.f1.StringWidth(nil, fields[i])
-			if rowNumber == 0 { // Header Row
+			if rowNumber == 0 { // Header row
 				table.widths = append(table.widths, width+2*table.padding)
-			} else {
-				if (i < len(table.widths)) && (width+2*table.padding > table.widths[i]) {
+			} else { // Data rows
+				if i < len(table.widths) && (width+2*table.padding > table.widths[i]) {
 					table.widths[i] = width + 2*table.padding
 				}
 			}
 		}
-		if rowNumber == 1 { // First Data Row
+
+		if rowNumber == 1 { // Determine alignment from first data row
 			for _, field := range fields {
 				table.alignment = append(table.alignment, table.getAlignment(field))
 			}
 		}
 		rowNumber++
 	}
-	readFile.Close()
 
+	// Precompute vertical line positions
 	table.vertLines = make([]float32, 0)
 	table.vertLines = append(table.vertLines, table.x)
 	vertLineX := table.x
+
 	for i := 0; i < table.numberOfColumns; i++ {
 		vertLineX += table.widths[i]
 		table.vertLines = append(table.vertLines, vertLineX)
 	}
 }
 
+/**
+ * getAlignment detects numeric content for right alignment
+ */
 func (table *BigTable) getAlignment(str string) int {
 	var buf strings.Builder
+	// Clean numeric formatting
 	if strings.HasPrefix(str, "(") && strings.HasSuffix(str, ")") {
 		str = str[1 : len(str)-1]
 	}
@@ -306,31 +399,47 @@ func (table *BigTable) getAlignment(str string) int {
 			buf.WriteRune(ch)
 		}
 	}
+	// Test if numeric
 	_, err := strconv.ParseFloat(str, 64)
 	if err == nil {
-		return 1 // Align Right
+		return 1 // Right-align numbers
 	}
-	return 0 // Align Left
+	return 0 // Left-align text
 }
 
+/**
+ * Complete finalizes the table by:
+ * 1. Streaming all data rows from file
+ * 2. Drawing final grid lines
+ */
 func (table *BigTable) Complete() {
-	readFile, err := os.Open(table.fileName)
+	file, err := os.Open(table.fileName)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
-	fileScanner := bufio.NewScanner(readFile)
-	fileScanner.Split(bufio.ScanLines)
-	for fileScanner.Scan() {
-		line := fileScanner.Text()
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	firstRow := true
+
+	for scanner.Scan() {
+		if firstRow { // Skip header (already processed)
+			firstRow = false
+			continue
+		}
+
+		line := scanner.Text()
 		fields := strings.Split(line, ",")
 		row := make([]string, 0)
+
 		for i := 0; i < table.numberOfColumns; i++ {
 			row = append(row, fields[i])
 		}
 		table.DrawRow(row, color.Black)
 	}
-	readFile.Close()
 
+	// Draw final grid lines
 	table.page.AddArtifactBMC()
 	original := table.page.GetPenColor()
 	table.page.SetPenColor(table.penColor)
@@ -339,7 +448,7 @@ func (table *BigTable) Complete() {
 		table.yText-table.f2.ascent,
 		float32(table.vertLines[table.numberOfColumns]),
 		table.yText-table.f2.ascent)
-	// Draw the vertical lines
+	// Vertical lines
 	for i := 0; i <= table.numberOfColumns; i++ {
 		table.page.DrawLine(
 			table.vertLines[i],
