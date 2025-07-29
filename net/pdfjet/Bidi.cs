@@ -205,11 +205,10 @@ private static char[] forms = new char[] {
     }
 
     public static String Reverse(String str) {
-        char[] charArray = str.ToCharArray();
-        Array.Reverse(charArray);
         StringBuilder buf = new StringBuilder();
-        foreach (char ch in charArray) {
-            buf.Append(ch);
+        char[] charArray = str.ToCharArray();
+        for (int i = (charArray.Length - 1); i >= 0; i--) {
+            buf.Append(charArray[i]);
         }
         return buf.ToString();
     }
