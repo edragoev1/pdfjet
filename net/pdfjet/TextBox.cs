@@ -727,7 +727,7 @@ public class TextBox : IDrawable {
                     }
                 } else {
                     StringBuilder sb = new StringBuilder();
-                    String[] tokens = line.Split(' '); 
+                    String[] tokens = System.Text.RegularExpressions.Regex.Split(line, @"\s+"); 
                     foreach (String token in tokens) {
                         if (font.StringWidth(fallbackFont, sb.ToString() + token) <= textAreaWidth) {
                             sb.Append(token + " ");
