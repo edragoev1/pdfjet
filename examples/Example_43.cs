@@ -40,7 +40,7 @@ public class Example_43 {
         bool headerRow = true;
         String line = null;
         while ((line = reader.ReadLine()) != null) {
-            String[] fields = line.Split(',');
+            String[] fields = System.Text.RegularExpressions.Regex.Split(line, @",");
             DrawRow(table, fields, headerRow);
             headerRow = false;
         }
