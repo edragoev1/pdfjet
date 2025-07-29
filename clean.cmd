@@ -1,6 +1,4 @@
 rd/s/q out\production
-del com\pdfjet\*.class
-del examples\*.class
 del util\*.class
 del *.jar
 del *.exe
