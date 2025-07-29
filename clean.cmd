@@ -1,10 +1,4 @@
-rd /s /q out\production
-del util\*.class
-del *.jar
 del *.exe
-del *.mdb
-del *.dll
 rd /s /q bin
 rd /s /q obj
-rd /s /q .build
 del *.pdf
