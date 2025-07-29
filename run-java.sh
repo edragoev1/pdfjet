@@ -7,6 +7,8 @@ fi
 rm -f out/production/com/pdfjet/*.class
 rm -f out/production/examples/*.class
 
+mkdir -p out/production
+
 # Compile and package the library.
 javac -O -encoding utf-8 -Xlint com/pdfjet/*.java -d out/production
 jar cf PDFjet.jar -C out/production .
