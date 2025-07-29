@@ -1,5 +1,4 @@
-rd/s/q out\production\com\pdfjet\*.class
-rd/s/q out\production\examples\*.class
+rd/s/q out\production
 del com\pdfjet\*.class
 del examples\*.class
 del util\*.class
