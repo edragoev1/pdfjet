@@ -59,6 +59,10 @@ func (table *BigTable) SetLocation(x, y float32) {
 	table.y = y
 }
 
+func (table *BigTable) SetNumberOfColumns(numberOfColumns int) {
+	table.numberOfColumns = numberOfColumns
+}
+
 func (table *BigTable) SetTextAlignment(align []int) {
 	table.alignment = align
 }
@@ -95,7 +99,7 @@ func (table *BigTable) newPage(color int32) {
 			float32(table.vertLines[table.numberOfColumns]),
 			table.yText-table.f1.ascent)
 		// Draw the vertical lines
-		for i := 0; i < table.numberOfColumns; i++ {
+		for i := 0; i <= table.numberOfColumns; i++ {
 			table.page.DrawLine(
 				table.vertLines[i],
 				table.y,
