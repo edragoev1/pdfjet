@@ -151,6 +151,15 @@ func (textBlock *TextBlock) SetSize(w, h float32) {
 	textBlock.height = h
 }
 
+// SetWidth sets the width of the text block.
+// The height is adjusted automatically to fit the text.
+// @param w the width of the text block.
+// @param h the height of the text block.
+func (textBlock *TextBlock) SetWidth(w float32) {
+	textBlock.width = w
+	textBlock.height = 0.0
+}
+
 // SetBorderCornerRadius sets the border corner radius.
 // @param borderRadius float the border corners radius.
 func (textBlock *TextBlock) SetBorderCornerRadius(borderCornerRadius float32) {
