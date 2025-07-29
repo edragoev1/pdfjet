@@ -52,9 +52,11 @@ func NewBigTable(pdf *PDF, f1, f2 *Font, pageSize [2]float32) *BigTable {
 	return table
 }
 
-func (table *BigTable) SetLocation(x1, y1 float32) {
-	table.x = x1
-	table.y = y1
+func (table *BigTable) SetLocation(x, y float32) {
+	for i := 0; i < table.numberOfColumns; i++ {
+		table.vertLines[i] += x
+	}
+	table.y = y
 }
 
 func (table *BigTable) SetTextAlignment(align []int) {
