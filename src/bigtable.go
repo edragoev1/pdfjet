@@ -27,12 +27,14 @@ type BigTable struct {
 	vertLines      []float32
 	headerRow      []string
 	bottomMargin   float32
-	spacing        float32
+	columnSpacing  float32
 	padding        float32
 	language       string
 	highlightRow   bool
 	highlightColor int32
 	penColor       int32
+	fileName       string
+	widths         []float32
 }
 
 func NewBigTable(pdf *PDF, f1, f2 *Font, pageSize [2]float32) *BigTable {
@@ -59,7 +61,7 @@ func (table *BigTable) SetTextAlignment(align []int) {
 }
 
 func (table *BigTable) SetColumnSpacing(spacing float32) {
-	table.spacing = spacing
+	table.columnSpacing = spacing
 }
 
 func (table *BigTable) SetBottomMargin(bottomMargin float32) {
@@ -74,12 +76,12 @@ func (table *BigTable) GetPages() []*Page {
 	return table.pages
 }
 
-func (table *BigTable) SetColumnWidths(widths []float32) {
+func (table *BigTable) SetColumnWidths() {
 	table.vertLines = make([]float32, 0)
 	table.vertLines = append(table.vertLines, table.x1)
 	sumOfWidths := table.x1
-	for _, width := range widths {
-		sumOfWidths += width + table.spacing
+	for _, width := range table.widths {
+		sumOfWidths += width + table.columnSpacing
 		table.vertLines = append(table.vertLines, sumOfWidths)
 	}
 }
@@ -193,8 +195,10 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 		originalColor := table.page.GetPenColor()
 		table.page.SetPenColor(markerColor)
 		table.page.SetPenWidth(3.0)
-		table.page.DrawLine(table.vertLines[0]-2.0, table.yText-table.f2.ascent, table.vertLines[0]-2.0, table.yText-table.f2.descent)
-		table.page.DrawLine(xText2+2.0, table.yText-table.f2.ascent, xText2+2.0, table.yText-table.f2.descent)
+		table.page.DrawLine(table.vertLines[0]-table.padding, table.yText-table.f2.ascent,
+			table.vertLines[0]-table.padding, table.yText-table.f2.descent)
+		table.page.DrawLine(xText2+table.padding, table.yText-table.f2.ascent,
+			xText2+table.padding, table.yText-table.f2.descent)
 		table.page.SetPenColorRGB(originalColor[0], originalColor[1], originalColor[2])
 		table.page.SetPenWidth(0.0)
 		table.page.AddEMC()
@@ -203,20 +207,6 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 	if table.yText-table.f2.descent > (table.page.height - table.bottomMargin) {
 		table.newPage(color.Black)
 	}
-}
-
-func (table *BigTable) Complete() {
-	table.page.AddArtifactBMC()
-	original := table.page.GetPenColor()
-	table.page.SetPenColor(table.penColor)
-	table.page.DrawLine(float32(table.vertLines[0]), table.yText-table.f2.ascent,
-		float32(table.vertLines[len(table.headerRow)]), table.yText-table.f2.ascent)
-	// Draw the vertical lines
-	for i := 0; i <= len(table.headerRow); i++ {
-		table.page.DrawLine(table.vertLines[i], table.y1, table.vertLines[i], table.yText-table.f1.ascent)
-	}
-	table.page.SetPenColorRGB(original[0], original[1], original[2])
-	table.page.AddEMC()
 }
 
 func (table *BigTable) DrawHighlight(page *Page, color int32, font *Font) {
@@ -239,8 +229,9 @@ func getRowText(row []string) string {
 	return buf.String()
 }
 
-func (table *BigTable) GetColumnWidths(fileName string) []float32 {
-	widths := make([]float32, 0)
+func (table *BigTable) SetTableData(fileName string, delimiter rune) {
+	table.fileName = fileName
+	table.widths = make([]float32, 0)
 	table.align = make([]int, 0)
 	readFile, err := os.Open(fileName)
 	if err != nil {
@@ -252,14 +243,14 @@ func (table *BigTable) GetColumnWidths(fileName string) []float32 {
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		fields := strings.Split(line, ",")
-		for i := 0; i < len(fields); i++ {
-			field := fields[i]
-			width := table.f1.StringWidth(nil, field)
+		// for i := 0; i < len(fields); i++ {
+		for i := 0; i < 9; i++ {
+			width := table.f1.StringWidth(nil, fields[i])
 			if rowNumber == 0 { // Header Row
-				widths = append(widths, width)
+				table.widths = append(table.widths, width+2*table.padding)
 			} else {
-				if i < len(widths) && width > widths[i] {
-					widths[i] = width
+				if (i < len(table.widths)) && (width+2*table.padding > table.widths[i]) {
+					table.widths[i] = width + 2*table.padding
 				}
 			}
 		}
@@ -271,7 +262,6 @@ func (table *BigTable) GetColumnWidths(fileName string) []float32 {
 		rowNumber++
 	}
 	readFile.Close()
-	return widths
 }
 
 func (table *BigTable) getAlignment(str string) int {
@@ -289,4 +279,40 @@ func (table *BigTable) getAlignment(str string) int {
 		return 1 // Align Right
 	}
 	return 0 // Align Left
+}
+
+func (table *BigTable) DrawRows() {
+	readFile, err := os.Open(table.fileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	// headerRow := true
+	for fileScanner.Scan() {
+		line := fileScanner.Text()
+		fields := strings.Split(line, ",")
+		row := make([]string, 0)
+		for i := 0; i < 9; i++ {
+			row = append(row, fields[i])
+		}
+		table.DrawRow(row, color.Black)
+		/// fmt.Println(fields)
+		// headerRow = false
+	}
+	readFile.Close()
+}
+
+func (table *BigTable) Complete() {
+	table.page.AddArtifactBMC()
+	original := table.page.GetPenColor()
+	table.page.SetPenColor(table.penColor)
+	table.page.DrawLine(float32(table.vertLines[0]), table.yText-table.f2.ascent,
+		float32(table.vertLines[len(table.headerRow)]), table.yText-table.f2.ascent)
+	// Draw the vertical lines
+	for i := 0; i <= len(table.headerRow); i++ {
+		table.page.DrawLine(table.vertLines[i], table.y1, table.vertLines[i], table.yText-table.f1.ascent)
+	}
+	table.page.SetPenColorRGB(original[0], original[1], original[2])
+	table.page.AddEMC()
 }

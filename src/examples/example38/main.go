@@ -18,6 +18,9 @@ func Example38() {
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 	page := pdfjet.NewPage(pdf, letter.Landscape)
 
+	page.SetBrushColor(color.Black)
+	page.FillRect(100, 100, 100, 100)
+
 	table := pdfjet.NewTable()
 	table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)
 	table.SetLocation(50.0, 50.0)
