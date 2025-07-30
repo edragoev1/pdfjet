@@ -193,7 +193,6 @@ public class BigTable {
      */
     private void highlightRow(Page page, Font font, int color) {
         float[] original = page.getBrushColor();
-        page.addArtifactBMC();
         page.setBrushColor(color);
         page.moveTo(vertLines[0], this.yText - font.ascent);
         page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
@@ -201,7 +200,6 @@ public class BigTable {
         page.lineTo(vertLines[0], this.yText + font.descent);
         page.fillPath();
         page.setBrushColor(original);
-        page.addEMC();
     }
 
     private void drawTheVerticalLines() {
