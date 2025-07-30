@@ -28,7 +28,7 @@ func Example43() {
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
 	table.SetNumberOfColumns(9)
 	table.SetTableData(fileName, ",")
-	table.SetLocation(0.0, 0.0)
+	table.SetLocation(50.0, 50.0)
 	table.SetBottomMargin(20.0)
 	table.Complete()
 

@@ -195,23 +195,21 @@ func (table *BigTable) newPage(color int32) {
 
 	// Render header text
 	rowText := getRowText(table.headerRow)
-	table.page.AddBMC("P", table.language, rowText, rowText)
+	table.page.AddBMC("P", table.language, rowText, rowText) // TODO:
 	table.page.SetTextFont(table.f1)
 	table.page.SetBrushColor(color)
 	for i := 0; i < table.numberOfColumns; i++ {
 		text := table.headerRow[i]
-		xText := float32(table.vertLines[i])
+		xText1 := float32(table.vertLines[i])
 		xText2 := float32(table.vertLines[i+1])
 
 		table.page.BeginText()
 		if table.alignment == nil || table.alignment[i] == 0 { // Left align
 			table.page.SetTextLocation(
-				(xText + table.padding),
-				table.yText)
+				(xText1 + table.padding), table.yText)
 		} else if table.alignment[i] == 1 { // Right align
 			table.page.SetTextLocation(
-				(xText2-table.padding)-table.f1.StringWidth(nil, text),
-				table.yText)
+				(xText2-table.padding)-table.f1.StringWidth(nil, text), table.yText)
 		}
 		table.page.DrawText(text)
 		table.page.EndText()
@@ -259,18 +257,15 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 
 	for i := 0; i < table.numberOfColumns; i++ {
 		text := row[i]
-		xText := float32(table.vertLines[i])
+		xText1 := float32(table.vertLines[i])
 		xText2 = float32(table.vertLines[i+1])
-
 		table.page.BeginText()
 		if table.alignment == nil || table.alignment[i] == 0 { // Left align
 			table.page.SetTextLocation(
-				(xText + table.padding),
-				table.yText)
+				(xText1 + table.padding), table.yText)
 		} else if table.alignment[i] == 1 { // Right align
 			table.page.SetTextLocation(
-				(xText2-table.padding)-table.f2.StringWidth(nil, text),
-				table.yText)
+				(xText2-table.padding)-table.f2.StringWidth(nil, text), table.yText)
 		}
 		table.page.DrawText(text)
 		table.page.EndText()
@@ -352,11 +347,9 @@ func (table *BigTable) SetTableData(fileName, delimiter string) {
 
 	scanner := bufio.NewScanner(file)
 	rowNumber := 0
-
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Split(line, delimiter)
-
 		for i := 0; i < table.numberOfColumns; i++ {
 			width := table.f1.StringWidth(nil, fields[i])
 			if rowNumber == 0 { // Header row
@@ -367,7 +360,6 @@ func (table *BigTable) SetTableData(fileName, delimiter string) {
 				}
 			}
 		}
-
 		if rowNumber == 1 { // Determine alignment from first data row
 			for _, field := range fields {
 				table.alignment = append(table.alignment, table.getAlignment(field))
@@ -380,7 +372,6 @@ func (table *BigTable) SetTableData(fileName, delimiter string) {
 	table.vertLines = make([]float32, 0)
 	table.vertLines = append(table.vertLines, table.x)
 	vertLineX := table.x
-
 	for i := 0; i < table.numberOfColumns; i++ {
 		vertLineX += table.widths[i]
 		table.vertLines = append(table.vertLines, vertLineX)
