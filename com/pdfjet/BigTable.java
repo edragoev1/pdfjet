@@ -131,7 +131,6 @@ public class BigTable {
         this.yText +=  f2.ascent + f2.descent;
         if (this.yText > (this.page.height - this.bottomMargin)) {
             drawTheVerticalLines();
-            drawTheLastHorizontalLine();
             startNewPage = true;
         }
     }
@@ -186,9 +185,7 @@ public class BigTable {
             this.drawTextAndLine(fields, f2);
         }
         reader.close();
-
         drawTheVerticalLines();
-        drawTheLastHorizontalLine();
     }
 
     /**
@@ -218,14 +215,7 @@ public class BigTable {
                     vertLines[i],
                     this.yText - f1.ascent);
         }
-        page.setPenColor(original);
-        page.addEMC();
-    }
-
-    private void drawTheLastHorizontalLine() {
-        page.addArtifactBMC();
-        float[] original = page.getPenColor();
-        page.setPenColor(penColor);
+        // Draw the last horizontal line
         page.moveTo(vertLines[0], this.yText - f1.ascent);
         page.lineTo(vertLines[this.numberOfColumns], this.yText - f1.ascent);
         page.strokePath();

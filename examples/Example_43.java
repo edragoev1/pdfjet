@@ -24,11 +24,11 @@ public class Example_43 {
         f2.setSize(9f);
 
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
-	    table.setNumberOfColumns(9);
-	    table.setTableData(fileName, ",");
-        table.setLocation(50f, 0f);
-        table.setBottomMargin(20f);
-        table.complete();
+	    table.setNumberOfColumns(9);        // The order of the
+	    table.setTableData(fileName, ",");  // these statements
+        table.setLocation(0f, 0f);          // is
+        table.setBottomMargin(20f);         // very
+        table.complete();                   // important!
 
         List<Page> pages = table.getPages();
         for (int i = 0; i < pages.size(); i++) {
