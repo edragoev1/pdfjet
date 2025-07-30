@@ -13,8 +13,8 @@ public class Example_43 {
                 new BufferedStream(new FileStream("Example_43.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA);
 
-        String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        // String fileName = "data/Electric_Vehicle_Population_550.csv";
+        // String fileName = "data/Electric_Vehicle_Population_Data.csv";
+        String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
 
         Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
         Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");

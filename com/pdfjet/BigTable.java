@@ -28,6 +28,8 @@ public class BigTable {
     private int highlightColor = 0xF0F0F0;
     private int penColor = 0xB0B0B0;
     private List<Float> widths;
+    private String fileName;
+    private String delimiter;
     private int numberOfColumns;    // Total column count
 
     /**
@@ -250,14 +252,40 @@ public class BigTable {
     /**
      * Draw the completed table.
      */
-    public void complete() {
+    public void complete() throws Exception {
+        BufferedReader reader =
+                new BufferedReader(new FileReader(this.fileName));
+        boolean firstRow = true;
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+    		if (firstRow) { // Skip header (already processed)
+			    firstRow = false;
+			    continue;
+		    }
+            String[] fields = line.split(this.delimiter);
+            List<String> row = new ArrayList<String>();
+            for (int i = 0; i < 10; i++) {
+                row.add(fields[i]);
+            }
+            this.drawRow(row, Color.black);
+        }
+        reader.close();
+
         page.addArtifactBMC();
         float[]original = page.getPenColor();
         page.setPenColor(penColor);
-        page.drawLine(vertLines.get(0), yText - f2.ascent, vertLines.get(headerRow.size()), yText - f2.ascent);
+        page.drawLine(
+                vertLines.get(0),
+                yText - f2.ascent,
+                vertLines.get(this.numberOfColumns),
+                yText - f2.ascent);
         // Draw the vertical lines
-        for (int i = 0; i <= headerRow.size(); i++) {
-            page.drawLine(vertLines.get(i), y1, vertLines.get(i), yText - f1.ascent);
+        for (int i = 0; i <= this.numberOfColumns; i++) {
+            page.drawLine(
+                    vertLines.get(i),
+                    y1,
+                    vertLines.get(i),
+                    yText - f1.ascent);
         }
         page.setPenColor(original);
         page.addEMC();
@@ -291,13 +319,15 @@ public class BigTable {
      * @return list of the column widths.
      */
     public void setTableData(String fileName, String delimiter) throws IOException {
+        this.fileName = fileName;
+        this.delimiter = delimiter;
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
         this.widths = new ArrayList<Float>();
         align = new ArrayList<Integer>();
         int rowNumber = 0;
         String line = null;
         while ((line = reader.readLine()) != null) {
-            String[] fields = line.split(delimiter);
+            String[] fields = line.split(this.delimiter);
             for (int i = 0; i < fields.length; i++) {
                 String field = fields[i];
                 float width = f1.stringWidth(null, field);

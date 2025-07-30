@@ -23,22 +23,11 @@ public class Example_43 {
         f2.setSize(9f);
 
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
-        // List<Float> widths = table.getColumnWidths(fileName);
 	    table.setNumberOfColumns(10);
 	    table.setTableData(fileName, ",");
         table.setLocation(0.0f, 0.0f);
         table.setBottomMargin(20.0f);
-        // table.setColumnWidths(widths);
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        boolean headerRow = true;
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            String[] fields = line.split(",");
-            drawRow(table, fields, headerRow);
-            headerRow = false;
-        }
         table.complete();
-        reader.close();
 
         List<Page> pages = table.getPages();
         for (int i = 0; i < pages.size(); i++) {
@@ -50,14 +39,6 @@ public class Example_43 {
         pdf.complete();
     }
 
-    private void drawRow(BigTable table, String[] fields, boolean headerRow) throws Exception {
-        List<String> row = new ArrayList<String>();
-        for (int i = 0; i < 10; i++) {
-            row.add(fields[i]);
-        }
-        table.drawRow(row, Color.black);
-    }
-    
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
         new Example_43();

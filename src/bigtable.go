@@ -38,9 +38,10 @@ type BigTable struct {
 	highlightColor   int32      // Background color for highlighted rows
 	penColor         int32      // Color for grid lines
 	fileName         string     // Source data file path
-	widths           []float32  // Calculated column widths
-	numberOfColumns  int        // Total column count
-	columnsToDisplay []int      // Column indices to render (optional filter)
+	delimiter        string
+	widths           []float32 // Calculated column widths
+	numberOfColumns  int       // Total column count
+	columnsToDisplay []int     // Column indices to render (optional filter)
 }
 
 /**
@@ -336,8 +337,9 @@ func getRowText(row []string) string {
  * 2. Determine alignments (numeric=right)
  * 3. Precompute vertical line positions
  */
-func (table *BigTable) SetTableData(fileName string, delimiter rune) {
+func (table *BigTable) SetTableData(fileName, delimiter string) {
 	table.fileName = fileName
+	table.delimiter = delimiter
 	table.widths = make([]float32, 0)
 	table.alignment = make([]int, 0)
 
@@ -353,7 +355,7 @@ func (table *BigTable) SetTableData(fileName string, delimiter rune) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		fields := strings.Split(line, ",")
+		fields := strings.Split(line, delimiter)
 
 		for i := 0; i < table.numberOfColumns; i++ {
 			width := table.f1.StringWidth(nil, fields[i])
@@ -428,11 +430,9 @@ func (table *BigTable) Complete() {
 			firstRow = false
 			continue
 		}
-
 		line := scanner.Text()
-		fields := strings.Split(line, ",")
+		fields := strings.Split(line, table.delimiter)
 		row := make([]string, 0)
-
 		for i := 0; i < table.numberOfColumns; i++ {
 			row = append(row, fields[i])
 		}
