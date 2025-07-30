@@ -13,3 +13,4 @@ out
 *.dll
 *.dll.mdb
 *.pdf
+.vscode/launch.json
