@@ -26,8 +26,8 @@ public class Example_43 {
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
 	    table.setNumberOfColumns(9);
 	    table.setTableData(fileName, ",");
-        table.setLocation(50.0f, 0.0f);
-        table.setBottomMargin(20.0f);
+        table.setLocation(50f, 0f);
+        table.setBottomMargin(20f);
         table.complete();
 
         List<Page> pages = table.getPages();
