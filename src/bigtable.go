@@ -95,7 +95,7 @@ func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
 		bt.yText = bt.y + bt.f1.ascent
 		bt.highlight = true
 		bt.drawFieldsAndLine(bt.headerFields, bt.f1)
-		bt.yText += bt.f2.ascent - bt.f1.descent
+		bt.yText += (-bt.f1.descent) + bt.f2.ascent
 		bt.startNewPage = false
 		return nil
 	}
@@ -104,10 +104,10 @@ func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
 		bt.page = NewPage(bt.pdf, bt.pageSize)
 		bt.pages = append(bt.pages, bt.page)
 		bt.page.SetPenWidth(0.0)
-		bt.yText = bt.f2.ascent - bt.f1.descent
+		bt.yText = bt.y + bt.f1.ascent
 		bt.highlight = true
 		bt.drawFieldsAndLine(bt.headerFields, bt.f1)
-		bt.yText += -bt.f1.descent + bt.f2.ascent
+		bt.yText += (-bt.f1.descent) + bt.f2.ascent
 		bt.startNewPage = false
 	}
 
@@ -182,8 +182,8 @@ func (bt *BigTable) drawTheVerticalLines() {
 			bt.vertLines[i],
 			bt.yText-bt.f2.ascent)
 	}
-	bt.page.MoveTo(bt.vertLines[0], bt.yText+bt.f2.ascent)
-	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText+bt.f2.ascent)
+	bt.page.MoveTo(bt.vertLines[0], bt.yText-bt.f2.ascent)
+	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-bt.f2.ascent)
 	bt.page.StrokePath()
 	// bt.page.SetPenColorWithFloat32Array(original)
 	bt.page.AddEMC()
