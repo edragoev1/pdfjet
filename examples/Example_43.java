@@ -18,10 +18,10 @@ public class Example_43 {
         String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
 
         Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
-        f1.setSize(8f);
+        f1.setSize(9f);
 
         Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
-        f2.setSize(8f);
+        f2.setSize(9f);
 
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
 	    table.setNumberOfColumns(9);
