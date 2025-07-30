@@ -103,7 +103,7 @@ public class BigTable {
         return pages;
     }
 
-    private void drawTextAndLine(List<String> row, Font font) throws Exception {
+    private void drawTextAndLine(String[] row, Font font) throws Exception {
         if (page == null || startNewPage) { // The first page
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
@@ -134,7 +134,7 @@ public class BigTable {
         page.setTextFont(font);
         page.setBrushColor(Color.black);
         for (int i = 0; i < this.numberOfColumns; i++) {
-            String text = row.get(i);
+            String text = row[i];
             float xText1 = vertLines[i] + this.padding;
             float xText2 = vertLines[i + 1] - this.padding;
             page.beginText();
@@ -167,21 +167,9 @@ public class BigTable {
         String line = null;
         while ((line = reader.readLine()) != null) {
     		// if (firstRow) { // Skip header (already processed)
-            //     String[] fields = line.split(this.delimiter);
-            //     List<String> row = new ArrayList<>();
-            //     for (int i = 0; i < numberOfColumns; i++) {
-            //         row.add(fields[i]);
-            //     }
-            //     this.drawTextAndLines(row, f1);
-            //     firstRow = false;
-			//     continue;
 		    // }
             String[] fields = line.split(this.delimiter);
-            List<String> row = new ArrayList<>();
-            for (int i = 0; i < numberOfColumns; i++) {
-                row.add(fields[i]);
-            }
-            this.drawTextAndLine(row, f2);
+            this.drawTextAndLine(fields, f2);
         }
         reader.close();
 
@@ -231,7 +219,7 @@ public class BigTable {
         page.addEMC();
     }
 
-    private String getRowText(List<String> row) {
+    private String getRowText(String[] row) {
         StringBuilder buf = new StringBuilder();
         for (String field : row) {
             buf.append(field);
