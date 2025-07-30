@@ -103,15 +103,29 @@ public class BigTable {
         return pages;
     }
 
-    private void drawTextAndLine(String[] row, Font font) throws Exception {
+    private void drawTextAndLine(String[] fields, Font font) throws Exception {
         if (page == null || startNewPage) { // The first page
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
             page.setPenWidth(0f);
             this.yText = this.y + f1.ascent;
             startNewPage = false;
+            drawFieldsAndLine(headerRow, f1);
+            this.yText +=  font.ascent + font.descent;
         }
 
+        drawFieldsAndLine(fields, font);
+
+        // Advance to next line and check pagination
+        this.yText +=  font.ascent + font.descent;
+        if (this.yText > (this.page.height - this.bottomMargin)) {
+            drawTheVerticalLines();
+            drawTheLastHorizontalLine();
+            startNewPage = true;
+        }
+    }
+
+    private void drawFieldsAndLine(String[] fields, Font font) {
         page.addArtifactBMC();
         if (this.highlightRow) {
             highlightRow(page, font, highlightColor);
@@ -128,13 +142,13 @@ public class BigTable {
         page.setPenColor(original);
         page.addEMC();
 
-        String rowText = getRowText(row);
+        String rowText = getRowText(fields);
         page.addBMC(StructElem.P, language, rowText, rowText);
         page.setPenWidth(0f);
         page.setTextFont(font);
         page.setBrushColor(Color.black);
         for (int i = 0; i < this.numberOfColumns; i++) {
-            String text = row[i];
+            String text = fields[i];
             float xText1 = vertLines[i] + this.padding;
             float xText2 = vertLines[i + 1] - this.padding;
             page.beginText();
@@ -147,14 +161,6 @@ public class BigTable {
             page.endText();
         }
         page.addEMC();
-
-        // Advance to next line and check pagination
-        this.yText +=  font.ascent + font.descent;
-        if (this.yText > (this.page.height - this.bottomMargin)) {
-            drawTheVerticalLines();
-            drawTheLastHorizontalLine();
-            startNewPage = true;
-        }
     }
 
     /**
@@ -163,11 +169,8 @@ public class BigTable {
     public void complete() throws Exception {
         BufferedReader reader =
                 new BufferedReader(new FileReader(this.fileName));
-        boolean firstRow = true;
         String line = null;
         while ((line = reader.readLine()) != null) {
-    		// if (firstRow) { // Skip header (already processed)
-		    // }
             String[] fields = line.split(this.delimiter);
             this.drawTextAndLine(fields, f2);
         }
