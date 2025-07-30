@@ -92,10 +92,10 @@ func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
 		bt.page = NewPage(bt.pdf, bt.pageSize)
 		bt.pages = append(bt.pages, bt.page)
 		bt.page.SetPenWidth(0.0)
-		bt.yText = bt.y + font.ascent
+		bt.yText = bt.y + bt.f1.ascent
 		bt.highlight = true
 		bt.drawFieldsAndLine(bt.headerFields, bt.f1)
-		bt.yText += bt.f1.descent - bt.f2.ascent
+		bt.yText += bt.f2.ascent - bt.f1.descent
 		bt.startNewPage = false
 		return nil
 	}
@@ -104,10 +104,10 @@ func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
 		bt.page = NewPage(bt.pdf, bt.pageSize)
 		bt.pages = append(bt.pages, bt.page)
 		bt.page.SetPenWidth(0.0)
-		bt.yText = bt.y + bt.f1.ascent
+		bt.yText = bt.f2.ascent - bt.f1.descent
 		bt.highlight = true
 		bt.drawFieldsAndLine(bt.headerFields, bt.f1)
-		bt.yText += bt.f1.descent - bt.f2.ascent
+		bt.yText += -bt.f1.descent + bt.f2.ascent
 		bt.startNewPage = false
 	}
 
