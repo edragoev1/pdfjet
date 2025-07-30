@@ -13,17 +13,17 @@ public class Example_43 {
                 new BufferedOutputStream(new FileOutputStream("Example_43.pdf")));
         pdf.setCompliance(Compliance.PDF_UA);
 
-        // String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+        String fileName = "data/Electric_Vehicle_Population_Data.csv";
+        // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
 
         Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
-        f1.setSize(9f);
+        f1.setSize(8f);
 
         Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
-        f2.setSize(9f);
+        f2.setSize(8f);
 
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
-	    table.setNumberOfColumns(10);
+	    table.setNumberOfColumns(9);
 	    table.setTableData(fileName, ",");
         table.setLocation(0.0f, 0.0f);
         table.setBottomMargin(20.0f);

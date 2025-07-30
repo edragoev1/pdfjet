@@ -362,7 +362,7 @@ func (table *BigTable) SetTableData(fileName, delimiter string) {
 			if rowNumber == 0 { // Header row
 				table.widths = append(table.widths, width+2*table.padding)
 			} else { // Data rows
-				if i < len(table.widths) && (width+2*table.padding > table.widths[i]) {
+				if i < table.numberOfColumns && (width+2*table.padding > table.widths[i]) {
 					table.widths[i] = width + 2*table.padding
 				}
 			}

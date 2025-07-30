@@ -55,7 +55,10 @@ public class BigTable {
      * @param y1 the y coordinate of the top left corner of the table box.
      */
     public void setLocation(float x1, float y1) {
-        this.x1 = x1;
+        // Adjust all vertical line positions relative to new X
+        for (int i = 0; i < this.numberOfColumns; i++) {
+            this.vertLines.set(i, (this.vertLines.get(i) + x1));
+        }
         this.y1 = y1;
     }
 
@@ -101,21 +104,6 @@ public class BigTable {
     }
 
     /**
-     * Sets the column widths.
-     *
-     * @param widths the widths.
-     */
-    public void setColumnWidths(List<Float> widths) {
-        vertLines = new ArrayList<Float>();
-        vertLines.add(x1);
-        float sumOfWidths = x1;
-        for (Float width : widths) {
-            sumOfWidths += width + 2 * padding;
-            vertLines.add(sumOfWidths);
-        }
-    }
-
-    /**
      * Draws the specified row.
      *
      * @param row the row to draw.
@@ -140,10 +128,10 @@ public class BigTable {
             page.drawLine(
                     vertLines.get(0),
                     yText - f1.ascent,
-                    vertLines.get(headerRow.size()),
+                    vertLines.get(this.numberOfColumns),
                     yText - f1.ascent);
             // Draw the vertical lines
-            for (int i = 0; i <= headerRow.size(); i++) {
+            for (int i = 0; i <= this.numberOfColumns; i++) {
                 page.drawLine(
                         vertLines.get(i),
                         y1,
@@ -168,7 +156,7 @@ public class BigTable {
         page.drawLine(
             vertLines.get(0),
             yText - f1.ascent,
-            vertLines.get(headerRow.size()),
+            vertLines.get(this.numberOfColumns),
             yText - f1.ascent);
         page.setPenColor(original);
         page.addEMC();
@@ -179,7 +167,7 @@ public class BigTable {
         page.setBrushColor(color);
         float xText = 0f;
         float xText2 = 0f;
-        for (int i = 0; i < headerRow.size(); i++) {
+        for (int i = 0; i < this.numberOfColumns; i++) {
             String text = headerRow.get(i);
             xText = vertLines.get(i);
             xText2 = vertLines.get(i + 1);
@@ -214,7 +202,7 @@ public class BigTable {
         float[] original = page.getPenColor();
         page.setPenColor(penColor);
         page.moveTo(vertLines.get(0), yText - f2.ascent);
-        page.lineTo(vertLines.get(headerRow.size()), yText - f2.ascent);
+        page.lineTo(vertLines.get(this.numberOfColumns), yText - f2.ascent);
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();
@@ -226,7 +214,7 @@ public class BigTable {
         page.setBrushColor(Color.black);
         float xText = 0f;
         float xText2 = 0f;
-        for (int i = 0; i < row.size(); i++) {
+        for (int i = 0; i < this.numberOfColumns; i++) {
             String text = row.get(i);
             xText = vertLines.get(i);
             xText2 = vertLines.get(i + 1);
@@ -251,10 +239,10 @@ public class BigTable {
                     vertLines.get(0) - this.padding,
                     yText + f2.descent);
             page.drawLine(
-                xText2 + this.padding,
-                yText - f2.ascent,
-                xText2 + this.padding,
-                yText + f2.descent);
+                    xText2 + this.padding,
+                    yText - f2.ascent,
+                    xText2 + this.padding,
+                    yText + f2.descent);
             page.setPenColor(originalColor);
             page.setPenWidth(0f);
             page.addEMC();
@@ -351,10 +339,10 @@ public class BigTable {
                 String field = fields[i];
                 float width = f1.stringWidth(null, field);
                 if (rowNumber == 0) {   // Header Row
-                    this.widths.add(width);
+                    this.widths.add(width + 2*this.padding);
                 } else {
-                    if (i < widths.size() && width > widths.get(i)) {
-                        this.widths.set(i, width);
+                    if (i < this.numberOfColumns && (width + 2*this.padding) > widths.get(i)) {
+                        this.widths.set(i, width + 2*this.padding);
                     }
                 }
             }
