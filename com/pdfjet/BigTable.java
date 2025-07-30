@@ -116,11 +116,11 @@ public class BigTable {
             page.addArtifactBMC();
             float[]original = page.getPenColor();
             page.setPenColor(penColor);
-            // page.drawLine(
-            //         vertLines[0],
-            //         this.yText - f2.ascent,
-            //         vertLines[this.numberOfColumns],
-            //         this.yText - f2.ascent);
+            page.drawLine(
+                    vertLines[0],
+                    this.yText - f2.ascent,
+                    vertLines[this.numberOfColumns],
+                    this.yText - f2.ascent);
             // Draw the vertical lines
             for (int i = 0; i <= this.numberOfColumns; i++) {
                 page.drawLine(
@@ -132,11 +132,15 @@ public class BigTable {
             page.setPenColor(original);
             page.addEMC();
 
+            // Now start the new one.
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
             page.setPenWidth(0f);
             this.yText = this.y + font.ascent;
             startNewPage = false;
+
+            // Now draw the header line!!
+            // ...
         }
 
         page.addArtifactBMC();
@@ -146,6 +150,8 @@ public class BigTable {
         } else {
             this.highlightRow = true;
         }
+
+        // Draw the line about the text.
         float[] original = page.getPenColor();
         page.setPenColor(penColor);
         page.moveTo(vertLines[0], this.yText - font.ascent);
@@ -179,6 +185,28 @@ public class BigTable {
         // Advance to next line and check pagination
         this.yText +=  font.ascent + font.descent;
         if (this.yText > (this.page.height - this.bottomMargin)) {
+            // Draw the last horizontal line and the vertical lines here!!!
+            // ...
+            // ...
+            page.addArtifactBMC();
+            original = page.getPenColor();
+            page.setPenColor(penColor);
+            page.drawLine(
+                    vertLines[0],
+                    this.yText - f2.ascent,
+                    vertLines[this.numberOfColumns],
+                    this.yText - f2.ascent);
+            // Draw the vertical lines
+            for (int i = 0; i <= this.numberOfColumns; i++) {
+                page.drawLine(
+                        vertLines[i],
+                        y,
+                        vertLines[i],
+                        this.yText - font.ascent);
+            }
+            page.setPenColor(original);
+            page.addEMC();
+
             startNewPage = true;
         }
     }
