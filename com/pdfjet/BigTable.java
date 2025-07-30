@@ -273,13 +273,8 @@ public class BigTable {
         this.vertLines[0] = this.x;
         float vertLineX = this.x;
         for (int i = 0; i < numberOfColumns; i++) {
-// System.out.println(widths[i]);
             vertLineX += this.widths[i];
             this.vertLines[i + 1] = vertLineX;
-        }
-
-        for (int i = 0; i < vertLines.length; i++) {
-System.out.println(this.vertLines[i]);
         }
     }
 
