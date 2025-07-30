@@ -10,23 +10,23 @@ import java.util.*;
  */
 public class BigTable {
     private final PDF pdf;
-    private Page page;
-    private float[] pageSize;
     private final Font f1;
     private final Font f2;
+    private float[] pageSize;
     private float y;
     private float yText;
     private List<Page> pages;
+    private Page page;
+    private float[] widths;
+    private String[] headerFields;
     private Integer[] alignment;
     private float[] vertLines;
-    private String[] headerRow;
-    private float bottomMargin = 15f;
+    private float bottomMargin = 20.0f;
     private float padding = 2.0f;
     private String language = "en-US";
     private boolean highlightRow = true;
     private int highlightColor = 0xF0F0F0;
     private int penColor = 0xB0B0B0;
-    private float[] widths;
     private String fileName;
     private String delimiter;
     private int numberOfColumns;    // Total column count
@@ -110,7 +110,7 @@ public class BigTable {
             page.setPenWidth(0f);
             this.yText = this.y + f1.ascent;
             this.highlightRow = true;
-            drawFieldsAndLine(headerRow, f1);
+            drawFieldsAndLine(headerFields, f1);
             this.yText += f1.descent + f2.ascent;
             startNewPage = false;
             return;
@@ -121,7 +121,7 @@ public class BigTable {
             page.setPenWidth(0f);
             this.yText = this.y + f1.ascent;
             this.highlightRow = true;
-            drawFieldsAndLine(headerRow, f1);
+            drawFieldsAndLine(headerFields, f1);
             this.yText += f1.descent + f2.ascent;
             startNewPage = false;
         }
@@ -174,21 +174,6 @@ public class BigTable {
     }
 
     /**
-     * Draw the completed table.
-     */
-    public void complete() throws Exception {
-        BufferedReader reader =
-                new BufferedReader(new FileReader(this.fileName));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            String[] fields = line.split(this.delimiter);
-            this.drawTextAndLine(fields, f2);
-        }
-        reader.close();
-        drawTheVerticalLines();
-    }
-
-    /**
      * highlightRow fills a row's background with highlight color
      */
     private void highlightRow(Page page, Font font, int color) {
@@ -230,18 +215,36 @@ public class BigTable {
         return buf.toString();
     }
 
+    private int getAlignment(String str) {
+        StringBuilder buf = new StringBuilder();
+        if (str.startsWith("(") && str.endsWith(")")) {
+            str = str.substring(1, str.length() - 1);
+        }
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            if (ch != '.' && ch != ',' && ch != '\'') {
+                buf.append(ch);
+            }
+        }
+        try {
+            Double.parseDouble(buf.toString());
+            return Align.RIGHT; // Align Right
+        } catch (NumberFormatException nfe) {
+        }
+        return Align.LEFT;      // Align Left
+    }
+
     /**
-     * Returns the column widths.
+     * Sets the column widths, the column alignment and header fields.
      *
      * @param fileName the file name.
      * @throws IOException if there is an issue.
-     * @return list of the column widths.
      */
     public void setTableData(String fileName, String delimiter) throws IOException {
         this.fileName = fileName;
         this.delimiter = delimiter;
         this.vertLines = new float[this.numberOfColumns + 1];
-        this.headerRow = new String[this.numberOfColumns];
+        this.headerFields = new String[this.numberOfColumns];
         this.widths = new float[this.numberOfColumns];
         this.alignment = new Integer[this.numberOfColumns];
 
@@ -252,7 +255,7 @@ public class BigTable {
             String[] fields = line.split(this.delimiter);
             if (rowNumber == 0) {
                 for (int i = 0; i < this.numberOfColumns; i++) {
-                    headerRow[i] = fields[i];
+                    headerFields[i] = fields[i];
                 }
             }
             if (rowNumber == 1) {    // Determine alignment from first data row
@@ -280,22 +283,15 @@ public class BigTable {
         }
     }
 
-    private int getAlignment(String str) {
-        StringBuilder buf = new StringBuilder();
-        if (str.startsWith("(") && str.endsWith(")")) {
-            str = str.substring(1, str.length() - 1);
+    public void complete() throws Exception {
+        BufferedReader reader =
+                new BufferedReader(new FileReader(this.fileName));
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            String[] fields = line.split(this.delimiter);
+            this.drawTextAndLine(fields, f2);
         }
-        for (int i = 0; i < str.length(); i++) {
-            char ch = str.charAt(i);
-            if (ch != '.' && ch != ',' && ch != '\'') {
-                buf.append(ch);
-            }
-        }
-        try {
-            Double.parseDouble(buf.toString());
-            return Align.RIGHT; // Align Right
-        } catch (NumberFormatException nfe) {
-        }
-        return Align.LEFT;      // Align Left
+        reader.close();
+        drawTheVerticalLines();
     }
 }
