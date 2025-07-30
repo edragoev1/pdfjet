@@ -22,7 +22,7 @@ public class BigTable {
     private List<Float> vertLines;
     private List<String> headerRow;
     private float bottomMargin = 15f;
-    private float padding = 2f;
+    private float padding = 2.0f;
     private String language = "en-US";
     private boolean highlightRow = true;
     private int highlightColor = 0xF0F0F0;
@@ -137,10 +137,18 @@ public class BigTable {
             page.addArtifactBMC();
             original = page.getPenColor();
             page.setPenColor(penColor);
-            page.drawLine(vertLines.get(0), yText - f1.ascent, vertLines.get(headerRow.size()), yText - f1.ascent);
+            page.drawLine(
+                    vertLines.get(0),
+                    yText - f1.ascent,
+                    vertLines.get(headerRow.size()),
+                    yText - f1.ascent);
             // Draw the vertical lines
             for (int i = 0; i <= headerRow.size(); i++) {
-                page.drawLine(vertLines.get(i), y1, vertLines.get(i), yText - f1.ascent);
+                page.drawLine(
+                        vertLines.get(i),
+                        y1,
+                        vertLines.get(i),
+                        yText - f1.ascent);
             }
             page.setPenColor(original);
             page.addEMC();
@@ -153,7 +161,7 @@ public class BigTable {
 
         // Highlight row and draw horizontal line
         page.addArtifactBMC();
-        drawHighlight(page, highlightColor, f1);
+        highlightRow(page, highlightColor, f1);
         highlightRow = false;
         original = page.getPenColor();
         page.setPenColor(penColor);
@@ -198,7 +206,7 @@ public class BigTable {
         // Highlight row and draw horizontal line
         page.addArtifactBMC();
         if (highlightRow) {
-            drawHighlight(page, highlightColor, f2);
+            highlightRow(page, highlightColor, f2);
             highlightRow = false;
         } else {
             highlightRow = true;
@@ -237,8 +245,16 @@ public class BigTable {
             float[] originalColor = page.getPenColor();
             page.setPenColor(markerColor);
             page.setPenWidth(3f);
-            page.drawLine(vertLines.get(0) - 2f, yText - f2.ascent, vertLines.get(0) - 2f, yText + f2.descent);
-            page.drawLine(xText2 + 2f, yText - f2.ascent, xText2 + 2f, yText + f2.descent);
+            page.drawLine(
+                    vertLines.get(0) - this.padding,
+                    yText - f2.ascent,
+                    vertLines.get(0) - this.padding,
+                    yText + f2.descent);
+            page.drawLine(
+                xText2 + this.padding,
+                yText - f2.ascent,
+                xText2 + this.padding,
+                yText + f2.descent);
             page.setPenColor(originalColor);
             page.setPenWidth(0f);
             page.addEMC();
@@ -291,15 +307,18 @@ public class BigTable {
         page.addEMC();
     }
 
-    private void drawHighlight(Page page, int color, Font font) {
-        // float[] original = page.getBrushColor();
-        // page.setBrushColor(color);
-        // page.moveTo(vertLines.get(0), yText - font.ascent);
-        // page.lineTo(vertLines.get(headerRow.size()), yText - font.ascent);
-        // page.lineTo(vertLines.get(headerRow.size()), yText + font.descent);
-        // page.lineTo(vertLines.get(0), yText + font.descent);
-        // page.fillPath();
-        // page.setBrushColor(original);
+    /**
+     * highlightRow fills a row's background with highlight color
+     */
+    private void highlightRow(Page page, int color, Font font) {
+        float[] original = page.getBrushColor();
+        page.setBrushColor(color);
+        page.moveTo(vertLines.get(0), yText - font.ascent);
+        page.lineTo(vertLines.get(this.numberOfColumns), yText - font.ascent);
+        page.lineTo(vertLines.get(this.numberOfColumns), yText + font.descent);
+        page.lineTo(vertLines.get(0), yText + font.descent);
+        page.fillPath();
+        page.setBrushColor(original);
     }
 
     private String getRowText(List<String> row) {
