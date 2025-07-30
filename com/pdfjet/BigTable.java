@@ -127,16 +127,16 @@ public class BigTable {
             page.setPenColor(penColor);
             page.drawLine(
                     vertLines.get(0),
-                    yText - f1.ascent,
+                    this.yText - f1.ascent,
                     vertLines.get(this.numberOfColumns),
-                    yText - f1.ascent);
+                    this.yText - f1.ascent);
             // Draw the vertical lines
             for (int i = 0; i <= this.numberOfColumns; i++) {
                 page.drawLine(
                         vertLines.get(i),
                         y1,
                         vertLines.get(i),
-                        yText - f1.ascent);
+                        this.yText - f1.ascent);
             }
             page.setPenColor(original);
             page.addEMC();
@@ -145,7 +145,7 @@ public class BigTable {
         page = new Page(pdf, pageSize, Page.DETACHED);
         pages.add(page);
         page.setPenWidth(0f);
-        yText = y1 + f1.ascent;
+        this.yText = y1 + f1.ascent;
 
         // Highlight row and draw horizontal line
         page.addArtifactBMC();
@@ -201,8 +201,8 @@ public class BigTable {
         }
         float[] original = page.getPenColor();
         page.setPenColor(penColor);
-        page.moveTo(vertLines.get(0), yText - f2.ascent);
-        page.lineTo(vertLines.get(this.numberOfColumns), yText - f2.ascent);
+        page.moveTo(vertLines.get(0), this.yText - f2.ascent);
+        page.lineTo(vertLines.get(this.numberOfColumns), this.yText - f2.ascent);
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();
@@ -220,9 +220,9 @@ public class BigTable {
             xText2 = vertLines.get(i + 1);
             page.beginText();
             if (align == null || align.get(i) == 0) {   // Align Left
-                page.setTextLocation(xText + padding, yText);
+                page.setTextLocation(xText + padding, this.yText);
             } else if (align.get(i) == 1) {             // Align Right
-                page.setTextLocation((xText2 - padding) - f2.stringWidth(text), yText);
+                page.setTextLocation((xText2 - padding) - f2.stringWidth(text), this.yText);
             }
             page.drawText(text);
             page.endText();
@@ -235,14 +235,14 @@ public class BigTable {
             page.setPenWidth(3f);
             page.drawLine(
                     vertLines.get(0) - this.padding,
-                    yText - f2.ascent,
+                    this.yText - f2.ascent,
                     vertLines.get(0) - this.padding,
-                    yText + f2.descent);
+                    this.yText + f2.descent);
             page.drawLine(
                     xText2 + this.padding,
-                    yText - f2.ascent,
+                    this.yText - f2.ascent,
                     xText2 + this.padding,
-                    yText + f2.descent);
+                    this.yText + f2.descent);
             page.setPenColor(originalColor);
             page.setPenWidth(0f);
             page.addEMC();
@@ -282,16 +282,16 @@ public class BigTable {
         page.setPenColor(penColor);
         page.drawLine(
                 vertLines.get(0),
-                yText - f2.ascent,
+                this.yText - f2.ascent,
                 vertLines.get(this.numberOfColumns),
-                yText - f2.ascent);
+                this.yText - f2.ascent);
         // Draw the vertical lines
         for (int i = 0; i <= this.numberOfColumns; i++) {
             page.drawLine(
                     vertLines.get(i),
                     y1,
                     vertLines.get(i),
-                    yText - f1.ascent);
+                    this.yText - f1.ascent);
         }
         page.setPenColor(original);
         page.addEMC();
@@ -303,10 +303,10 @@ public class BigTable {
     private void highlightRow(Page page, int color, Font font) {
         float[] original = page.getBrushColor();
         page.setBrushColor(color);
-        page.moveTo(vertLines.get(0), yText - font.ascent);
-        page.lineTo(vertLines.get(this.numberOfColumns), yText - font.ascent);
-        page.lineTo(vertLines.get(this.numberOfColumns), yText + font.descent);
-        page.lineTo(vertLines.get(0), yText + font.descent);
+        page.moveTo(vertLines.get(0), this.yText - font.ascent);
+        page.lineTo(vertLines.get(this.numberOfColumns), this.yText - font.ascent);
+        page.lineTo(vertLines.get(this.numberOfColumns), this.yText + font.descent);
+        page.lineTo(vertLines.get(0), this.yText + font.descent);
         page.fillPath();
         page.setBrushColor(original);
     }
