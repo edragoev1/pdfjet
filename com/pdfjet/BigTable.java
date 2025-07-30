@@ -57,7 +57,7 @@ public class BigTable {
      */
     public void setLocation(float x, float y) {
         // Adjust all vertical line positions relative to new X
-        for (int i = 0; i < this.numberOfColumns; i++) {
+        for (int i = 0; i <= this.numberOfColumns; i++) {
             this.vertLines[i] += x;
         }
         this.y = y;
@@ -265,7 +265,8 @@ public class BigTable {
                 for (int i = 0; i < this.numberOfColumns; i++) {
                     headerRow[i] = fields[i];
                 }
-            } else if (rowNumber == 1) {    // Determine alignment from first data row
+            }
+            if (rowNumber == 1) {    // Determine alignment from first data row
                 for (int i = 0; i < this.numberOfColumns; i++) {
                     alignment[i] = getAlignment(fields[i]);
                 }
@@ -282,9 +283,9 @@ public class BigTable {
         reader.close();
 
       	// Precompute vertical line positions
-        this.vertLines[0] = this.x;
-        float vertLineX = this.x;
-        for (int i = 0; i < numberOfColumns; i++) {
+        this.vertLines[0] = 0.0f;
+        float vertLineX = 0.0f;
+        for (int i = 0; i < widths.length; i++) {
             vertLineX += this.widths[i];
             this.vertLines[i + 1] = vertLineX;
         }
