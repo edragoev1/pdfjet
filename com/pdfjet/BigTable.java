@@ -111,7 +111,7 @@ public class BigTable {
             this.yText = this.y + f1.ascent;
             this.highlightRow = true;
             drawFieldsAndLine(headerRow, f1);
-            this.yText +=  f1.ascent + f1.descent;
+            this.yText += f1.descent + f2.ascent;
             startNewPage = false;
             return;
         }
@@ -122,7 +122,7 @@ public class BigTable {
             this.yText = this.y + f1.ascent;
             this.highlightRow = true;
             drawFieldsAndLine(headerRow, f1);
-            this.yText +=  f1.ascent + f1.descent;
+            this.yText += f1.descent + f2.ascent;
             startNewPage = false;
         }
 
@@ -146,8 +146,8 @@ public class BigTable {
         // Draw the line above the text.
         float[] original = page.getPenColor();
         page.setPenColor(penColor);
-        page.moveTo(vertLines[0], this.yText - f1.ascent);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText - f1.ascent);
+        page.moveTo(vertLines[0], this.yText - font.ascent);
+        page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();
@@ -211,11 +211,11 @@ public class BigTable {
                     vertLines[i],
                     this.y,
                     vertLines[i],
-                    this.yText - f1.ascent);
+                    this.yText - f2.ascent);
         }
         // Draw the last horizontal line
-        page.moveTo(vertLines[0], this.yText - f1.ascent);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText - f1.ascent);
+        page.moveTo(vertLines[0], this.yText - f2.ascent);
+        page.lineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent);
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();

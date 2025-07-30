@@ -18,7 +18,7 @@ public class Example_43 {
         String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
 
         Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
-        f1.setSize(9f);
+        f1.setSize(10f);
 
         Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         f2.setSize(9f);
