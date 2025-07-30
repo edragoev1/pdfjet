@@ -104,20 +104,31 @@ public class BigTable {
     }
 
     private void drawTextAndLine(String[] fields, Font font) throws Exception {
-        if (page == null || startNewPage) { // The first page
+        if (page == null) {     // The first page
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
             page.setPenWidth(0f);
             this.yText = this.y + f1.ascent;
-            startNewPage = false;
+            this.highlightRow = true;
             drawFieldsAndLine(headerRow, f1);
-            this.yText +=  font.ascent + font.descent;
+            this.yText +=  f1.ascent + f1.descent;
+            startNewPage = false;
+            return;
+        }
+        if (startNewPage) {     // Create new page
+            page = new Page(pdf, pageSize, Page.DETACHED);
+            pages.add(page);
+            page.setPenWidth(0f);
+            this.yText = this.y + f1.ascent;
+            this.highlightRow = true;
+            drawFieldsAndLine(headerRow, f1);
+            this.yText +=  f1.ascent + f1.descent;
+            startNewPage = false;
         }
 
-        drawFieldsAndLine(fields, font);
-
+        drawFieldsAndLine(fields, f2);
         // Advance to next line and check pagination
-        this.yText +=  font.ascent + font.descent;
+        this.yText +=  f2.ascent + f2.descent;
         if (this.yText > (this.page.height - this.bottomMargin)) {
             drawTheVerticalLines();
             drawTheLastHorizontalLine();
