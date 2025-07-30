@@ -104,43 +104,13 @@ public class BigTable {
         return pages;
     }
 
-    private void drawTextAndLines(List<String> row, Font font) throws Exception {
-        if (page == null) { // The first page
+    private void drawTextAndLine(List<String> row, Font font) throws Exception {
+        if (page == null || startNewPage) { // The first page
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
             page.setPenWidth(0f);
-            this.yText = this.y + font.ascent;
+            this.yText = this.y + f1.ascent;
             startNewPage = false;
-        }
-        if (startNewPage) {
-            page.addArtifactBMC();
-            float[]original = page.getPenColor();
-            page.setPenColor(penColor);
-            page.drawLine(
-                    vertLines[0],
-                    this.yText - f2.ascent,
-                    vertLines[this.numberOfColumns],
-                    this.yText - f2.ascent);
-            // Draw the vertical lines
-            for (int i = 0; i <= this.numberOfColumns; i++) {
-                page.drawLine(
-                        vertLines[i],
-                        y,
-                        vertLines[i],
-                        this.yText - font.ascent);
-            }
-            page.setPenColor(original);
-            page.addEMC();
-
-            // Now start the new one.
-            page = new Page(pdf, pageSize, Page.DETACHED);
-            pages.add(page);
-            page.setPenWidth(0f);
-            this.yText = this.y + font.ascent;
-            startNewPage = false;
-
-            // Now draw the header line!!
-            // ...
         }
 
         page.addArtifactBMC();
@@ -150,12 +120,11 @@ public class BigTable {
         } else {
             this.highlightRow = true;
         }
-
-        // Draw the line about the text.
+        // Draw the line above the text.
         float[] original = page.getPenColor();
         page.setPenColor(penColor);
-        page.moveTo(vertLines[0], this.yText - font.ascent);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
+        page.moveTo(vertLines[0], this.yText - f1.ascent);
+        page.lineTo(vertLines[this.numberOfColumns], this.yText - f1.ascent);
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();
@@ -165,12 +134,10 @@ public class BigTable {
         page.setPenWidth(0f);
         page.setTextFont(font);
         page.setBrushColor(Color.black);
-        float xText1 = 0f;
-        float xText2 = 0f;
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = row.get(i);
-            xText1 = vertLines[i];
-            xText2 = vertLines[i + 1];
+            float xText1 = vertLines[i];
+            float xText2 = vertLines[i + 1];
             page.beginText();
             if (alignment[i] == Align.LEFT) {           // Align Left
                 page.setTextLocation(xText1 + padding, this.yText);
@@ -185,28 +152,8 @@ public class BigTable {
         // Advance to next line and check pagination
         this.yText +=  font.ascent + font.descent;
         if (this.yText > (this.page.height - this.bottomMargin)) {
-            // Draw the last horizontal line and the vertical lines here!!!
-            // ...
-            // ...
-            page.addArtifactBMC();
-            original = page.getPenColor();
-            page.setPenColor(penColor);
-            page.drawLine(
-                    vertLines[0],
-                    this.yText - f2.ascent,
-                    vertLines[this.numberOfColumns],
-                    this.yText - f2.ascent);
-            // Draw the vertical lines
-            for (int i = 0; i <= this.numberOfColumns; i++) {
-                page.drawLine(
-                        vertLines[i],
-                        y,
-                        vertLines[i],
-                        this.yText - font.ascent);
-            }
-            page.setPenColor(original);
-            page.addEMC();
-
+            drawTheVerticalLines();
+            drawTheLastHorizontalLine();
             startNewPage = true;
         }
     }
@@ -220,43 +167,27 @@ public class BigTable {
         boolean firstRow = true;
         String line = null;
         while ((line = reader.readLine()) != null) {
-    		if (firstRow) { // Skip header (already processed)
-                String[] fields = line.split(this.delimiter);
-                List<String> row = new ArrayList<>();
-                for (int i = 0; i < numberOfColumns; i++) {
-                    row.add(fields[i]);
-                }
-                this.drawTextAndLines(row, f1);
-                firstRow = false;
-			    continue;
-		    }
+    		// if (firstRow) { // Skip header (already processed)
+            //     String[] fields = line.split(this.delimiter);
+            //     List<String> row = new ArrayList<>();
+            //     for (int i = 0; i < numberOfColumns; i++) {
+            //         row.add(fields[i]);
+            //     }
+            //     this.drawTextAndLines(row, f1);
+            //     firstRow = false;
+			//     continue;
+		    // }
             String[] fields = line.split(this.delimiter);
             List<String> row = new ArrayList<>();
             for (int i = 0; i < numberOfColumns; i++) {
                 row.add(fields[i]);
             }
-            this.drawTextAndLines(row, f2);
+            this.drawTextAndLine(row, f2);
         }
         reader.close();
 
-        page.addArtifactBMC();
-        float[]original = page.getPenColor();
-        page.setPenColor(penColor);
-        page.drawLine(
-                vertLines[0],
-                this.yText - f2.ascent,
-                vertLines[this.numberOfColumns],
-                this.yText - f2.ascent);
-        // Draw the vertical lines
-        for (int i = 0; i <= this.numberOfColumns; i++) {
-            page.drawLine(
-                    vertLines[i],
-                    y,
-                    vertLines[i],
-                    this.yText - f1.ascent);
-        }
-        page.setPenColor(original);
-        page.addEMC();
+        drawTheVerticalLines();
+        drawTheLastHorizontalLine();
     }
 
     /**
@@ -264,6 +195,7 @@ public class BigTable {
      */
     private void highlightRow(Page page, Font font, int color) {
         float[] original = page.getBrushColor();
+        page.addArtifactBMC();
         page.setBrushColor(color);
         page.moveTo(vertLines[0], this.yText - font.ascent);
         page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
@@ -271,6 +203,33 @@ public class BigTable {
         page.lineTo(vertLines[0], this.yText + font.descent);
         page.fillPath();
         page.setBrushColor(original);
+        page.addEMC();
+    }
+
+    private void drawTheVerticalLines() {
+        page.addArtifactBMC();
+        float[] original = page.getPenColor();
+        page.setPenColor(penColor);
+        for (int i = 0; i <= this.numberOfColumns; i++) {
+            page.drawLine(
+                    vertLines[i],
+                    this.y,
+                    vertLines[i],
+                    this.yText - f1.ascent);
+        }
+        page.setPenColor(original);
+        page.addEMC();
+    }
+
+    private void drawTheLastHorizontalLine() {
+        page.addArtifactBMC();
+        float[] original = page.getPenColor();
+        page.setPenColor(penColor);
+        page.moveTo(vertLines[0], this.yText - f1.ascent);
+        page.lineTo(vertLines[this.numberOfColumns], this.yText - f1.ascent);
+        page.strokePath();
+        page.setPenColor(original);
+        page.addEMC();
     }
 
     private String getRowText(List<String> row) {
@@ -306,8 +265,7 @@ public class BigTable {
                 for (int i = 0; i < this.numberOfColumns; i++) {
                     headerRow[i] = fields[i];
                 }
-            }
-            if (rowNumber == 1) {   // Determine alignment from first data row
+            } else if (rowNumber == 1) {    // Determine alignment from first data row
                 for (int i = 0; i < this.numberOfColumns; i++) {
                     alignment[i] = getAlignment(fields[i]);
                 }

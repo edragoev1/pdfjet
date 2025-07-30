@@ -13,8 +13,9 @@ public class Example_43 {
                 new BufferedOutputStream(new FileOutputStream("Example_43.pdf")));
         pdf.setCompliance(Compliance.PDF_UA);
 
-        String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+	    // Used for performance testing. Results in 2000+ pages PDF.
+        // String fileName = "data/Electric_Vehicle_Population_Data.csv";
+        String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
 
         Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
         f1.setSize(8f);
@@ -25,7 +26,7 @@ public class Example_43 {
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
 	    table.setNumberOfColumns(9);
 	    table.setTableData(fileName, ",");
-        table.setLocation(0.0f, 0.0f);
+        table.setLocation(50.0f, 0.0f);
         table.setBottomMargin(20.0f);
         table.complete();
 

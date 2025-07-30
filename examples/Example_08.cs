@@ -32,7 +32,7 @@ public class Example_08 {
         // Uncomment the line below if you want to print the text underneath the barcode.
         barcode.SetFont(f1);
 
-        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_550.csv");
+        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv");
         table.SetVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9);
         table.GetCellAt(4, 0).SetImage(image);
         table.GetCellAt(5, 0).SetColSpan(8);
