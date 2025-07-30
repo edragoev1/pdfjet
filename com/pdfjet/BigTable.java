@@ -22,12 +22,13 @@ public class BigTable {
     private List<Float> vertLines;
     private List<String> headerRow;
     private float bottomMargin = 15f;
-    private float spacing;
     private float padding = 2f;
     private String language = "en-US";
     private boolean highlightRow = true;
     private int highlightColor = 0xF0F0F0;
     private int penColor = 0xB0B0B0;
+    private List<Float> widths;
+    private int numberOfColumns;    // Total column count
 
     /**
      * Creates a table and sets the fonts and page size.
@@ -56,6 +57,10 @@ public class BigTable {
         this.y1 = y1;
     }
 
+    public void setNumberOfColumns(int numberOfColumns) {
+        this.numberOfColumns = numberOfColumns;
+    }
+
     /**
      * Sets the text alignment in the specified column.
      *
@@ -64,15 +69,6 @@ public class BigTable {
      */
     public void setTextAlignment(int column, int align) {
         this.align.set(column, align);
-    }
-
-    /**
-     * Sets the column spacing.
-     *
-     * @param spacing the spacing.
-     */
-    public void setColumnSpacing(float spacing) {
-        this.spacing = spacing;
     }
 
     /**
@@ -112,7 +108,7 @@ public class BigTable {
         vertLines.add(x1);
         float sumOfWidths = x1;
         for (Float width : widths) {
-            sumOfWidths += width + spacing;
+            sumOfWidths += width + 2 * padding;
             vertLines.add(sumOfWidths);
         }
     }
@@ -159,7 +155,11 @@ public class BigTable {
         highlightRow = false;
         original = page.getPenColor();
         page.setPenColor(penColor);
-        page.drawLine(vertLines.get(0), yText - f1.ascent, vertLines.get(headerRow.size()), yText - f1.ascent);
+        page.drawLine(
+            vertLines.get(0),
+            yText - f1.ascent,
+            vertLines.get(headerRow.size()),
+            yText - f1.ascent);
         page.setPenColor(original);
         page.addEMC();
 
@@ -264,14 +264,14 @@ public class BigTable {
     }
 
     private void drawHighlight(Page page, int color, Font font) {
-        float[] original = page.getBrushColor();
-        page.setBrushColor(color);
-        page.moveTo(vertLines.get(0), yText - font.ascent);
-        page.lineTo(vertLines.get(headerRow.size()), yText - font.ascent);
-        page.lineTo(vertLines.get(headerRow.size()), yText + font.descent);
-        page.lineTo(vertLines.get(0), yText + font.descent);
-        page.fillPath();
-        page.setBrushColor(original);
+        // float[] original = page.getBrushColor();
+        // page.setBrushColor(color);
+        // page.moveTo(vertLines.get(0), yText - font.ascent);
+        // page.lineTo(vertLines.get(headerRow.size()), yText - font.ascent);
+        // page.lineTo(vertLines.get(headerRow.size()), yText + font.descent);
+        // page.lineTo(vertLines.get(0), yText + font.descent);
+        // page.fillPath();
+        // page.setBrushColor(original);
     }
 
     private String getRowText(List<String> row) {
@@ -290,22 +290,22 @@ public class BigTable {
      * @throws IOException if there is an issue.
      * @return list of the column widths.
      */
-    public List<Float> getColumnWidths(String fileName) throws IOException {
+    public void setTableData(String fileName, String delimiter) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        List<Float> widths = new ArrayList<Float>();
+        this.widths = new ArrayList<Float>();
         align = new ArrayList<Integer>();
         int rowNumber = 0;
         String line = null;
         while ((line = reader.readLine()) != null) {
-            String[] fields = line.split(",");
+            String[] fields = line.split(delimiter);
             for (int i = 0; i < fields.length; i++) {
                 String field = fields[i];
                 float width = f1.stringWidth(null, field);
                 if (rowNumber == 0) {   // Header Row
-                    widths.add(width);
+                    this.widths.add(width);
                 } else {
                     if (i < widths.size() && width > widths.get(i)) {
-                        widths.set(i, width);
+                        this.widths.set(i, width);
                     }
                 }
             }
@@ -317,7 +317,15 @@ public class BigTable {
             rowNumber++;
         }
         reader.close();
-        return widths;
+
+      	// Precompute vertical line positions
+        this.vertLines = new ArrayList<>();
+        this.vertLines.add(this.x1);
+        float vertLineX = this.x1;
+        for (int i = 0; i < numberOfColumns; i++) {
+            vertLineX += this.widths.get(i);
+            this.vertLines.add(vertLineX);
+        }
     }
 
     private int getAlignment(String str) {
