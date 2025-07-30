@@ -136,13 +136,13 @@ public class BigTable {
         page.setBrushColor(Color.black);
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = row.get(i);
-            float xText1 = vertLines[i];
-            float xText2 = vertLines[i + 1];
+            float xText1 = vertLines[i] + this.padding;
+            float xText2 = vertLines[i + 1] - this.padding;
             page.beginText();
             if (alignment[i] == Align.LEFT) {           // Align Left
-                page.setTextLocation(xText1 + padding, this.yText);
+                page.setTextLocation(xText1, this.yText);
             } else if (alignment[i] == Align.RIGHT) {   // Align Right
-                page.setTextLocation((xText2 - padding) - font.stringWidth(text), this.yText);
+                page.setTextLocation(xText2 - font.stringWidth(text), this.yText);
             }
             page.drawText(text);
             page.endText();
@@ -303,9 +303,9 @@ public class BigTable {
         }
         try {
             Double.parseDouble(buf.toString());
-            return 1;   // Align Right
+            return Align.RIGHT; // Align Right
         } catch (NumberFormatException nfe) {
         }
-        return 0;       // Align Left
+        return Align.LEFT;      // Align Left
     }
 }
