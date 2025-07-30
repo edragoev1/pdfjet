@@ -300,7 +300,7 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 
 	// Advance to next line and check pagination
 	table.yText += table.f2.ascent - table.f2.descent
-	if table.yText+table.f2.descent > table.page.height-table.bottomMargin {
+	if table.yText > table.page.height-table.bottomMargin {
 		table.newPage(color.Black)
 	}
 }

@@ -155,9 +155,9 @@ public class BigTable {
         page.setPenColor(penColor);
         page.drawLine(
             vertLines.get(0),
-            yText - f1.ascent,
+            this.yText - f1.ascent,
             vertLines.get(this.numberOfColumns),
-            yText - f1.ascent);
+            this.yText - f1.ascent);
         page.setPenColor(original);
         page.addEMC();
 
@@ -173,15 +173,15 @@ public class BigTable {
             xText2 = vertLines.get(i + 1);
             page.beginText();
             if (align == null || align.get(i) == 0) {   // Align Left
-                page.setTextLocation(xText + padding, yText);
+                page.setTextLocation(xText + padding, this.yText);
             } else if (align.get(i) == 1) {             // Align Right
-                page.setTextLocation((xText2 - padding) - f1.stringWidth(text), yText);
+                page.setTextLocation((xText2 - padding) - f1.stringWidth(text), this.yText);
             }
             page.drawText(text);
             page.endText();
         }
         page.addEMC();
-        yText += f1.descent + f2.ascent;
+        this.yText += f1.descent + f2.ascent;
     }
 
     private void drawOn(List<String> row, int markerColor) throws Exception {
@@ -247,8 +247,10 @@ public class BigTable {
             page.setPenWidth(0f);
             page.addEMC();
         }
-        yText += f2.descent + f2.ascent;
-        if (yText + f2.descent > (page.height - bottomMargin)) {
+
+        // Advance to next line and check pagination
+        this.yText +=  this.f2.ascent + this.f2.descent;
+        if (this.yText > (this.page.height - this.bottomMargin)) {
             newPage(Color.black);
         }
     }
