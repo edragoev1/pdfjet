@@ -181,7 +181,7 @@ public class BigTable {
             page.endText();
         }
         page.addEMC();
-        this.yText += f1.descent + f2.ascent;
+        this.yText += f2.ascent + f1.descent;
     }
 
     private void drawOn(List<String> row, int markerColor) throws Exception {

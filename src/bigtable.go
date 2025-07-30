@@ -167,7 +167,7 @@ func (table *BigTable) newPage(color int32) {
 				table.vertLines[i],
 				table.yText-table.f1.ascent)
 		}
-		table.page.SetPenColorRGB(original[0], original[1], original[2])
+		table.page.SetPenColorWithFloat32Array(original)
 		table.page.AddEMC() // End accessibility tag
 	}
 
@@ -190,7 +190,7 @@ func (table *BigTable) newPage(color int32) {
 		table.yText-table.f1.ascent,
 		float32(table.vertLines[len(table.headerRow)]),
 		table.yText-table.f1.ascent)
-	table.page.SetPenColorRGB(original[0], original[1], original[2])
+	table.page.SetPenColorWithFloat32Array(original)
 	table.page.AddEMC()
 
 	// Render header text
@@ -246,7 +246,7 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 		table.yText-table.f2.ascent,
 		float32(table.vertLines[table.numberOfColumns]),
 		table.yText-table.f2.ascent)
-	table.page.SetPenColorRGB(original[0], original[1], original[2])
+	table.page.SetPenColorWithFloat32Array(original)
 	table.page.AddEMC()
 
 	// Render cell content
@@ -293,7 +293,7 @@ func (table *BigTable) drawOn(row []string, markerColor int32) {
 			table.yText-table.f2.ascent,
 			xText2+table.padding,
 			table.yText-table.f2.descent)
-		table.page.SetPenColorRGB(originalColor[0], originalColor[1], originalColor[2])
+		table.page.SetPenColorWithFloat32Array(originalColor)
 		table.page.SetPenWidth(0.0)
 		table.page.AddEMC()
 	}
@@ -456,6 +456,6 @@ func (table *BigTable) Complete() {
 			table.vertLines[i],
 			table.yText-table.f1.ascent)
 	}
-	table.page.SetPenColorRGB(original[0], original[1], original[2])
+	table.page.SetPenColorWithFloat32Array(original)
 	table.page.AddEMC()
 }

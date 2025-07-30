@@ -434,6 +434,10 @@ func (page *Page) SetPenColorRGB(r, g, b float32) {
 	}
 }
 
+func (page *Page) SetPenColorWithFloat32Array(rgb [3]float32) {
+	page.SetPenColorRGB(rgb[0], rgb[1], rgb[2])
+}
+
 // SetPenColorCMYK sets the color for stroking operations using CMYK.
 // The pen color is used when drawing lines and splines.
 //
