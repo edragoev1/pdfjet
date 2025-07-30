@@ -14,7 +14,6 @@ public class BigTable {
     private float[] pageSize;
     private final Font f1;
     private final Font f2;
-    private float x;
     private float y;
     private float yText;
     private List<Page> pages;
@@ -273,9 +272,9 @@ public class BigTable {
             }
             for (int i = 0; i < this.numberOfColumns; i++) {
                 String field = fields[i];
-                float width = f1.stringWidth(null, field);
-                if ((width + 2*this.padding) > widths[i]) {
-                    this.widths[i] += 2*this.padding;
+                float width = f1.stringWidth(field) + 2*this.padding;
+                if (width > widths[i]) {
+                    this.widths[i] = width;
                 }
             }
             rowNumber++;
