@@ -105,7 +105,33 @@ public class BigTable {
     }
 
     private void drawTextAndLines(List<String> row, Font font) throws Exception {
+        if (page == null) { // The first page
+            page = new Page(pdf, pageSize, Page.DETACHED);
+            pages.add(page);
+            page.setPenWidth(0f);
+            this.yText = this.y + font.ascent;
+            startNewPage = false;
+        }
         if (startNewPage) {
+            page.addArtifactBMC();
+            float[]original = page.getPenColor();
+            page.setPenColor(penColor);
+            // page.drawLine(
+            //         vertLines[0],
+            //         this.yText - f2.ascent,
+            //         vertLines[this.numberOfColumns],
+            //         this.yText - f2.ascent);
+            // Draw the vertical lines
+            for (int i = 0; i <= this.numberOfColumns; i++) {
+                page.drawLine(
+                        vertLines[i],
+                        y,
+                        vertLines[i],
+                        this.yText - font.ascent);
+            }
+            page.setPenColor(original);
+            page.addEMC();
+
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
             page.setPenWidth(0f);
@@ -168,7 +194,7 @@ public class BigTable {
         while ((line = reader.readLine()) != null) {
     		if (firstRow) { // Skip header (already processed)
                 String[] fields = line.split(this.delimiter);
-                List<String> row = new ArrayList<String>();
+                List<String> row = new ArrayList<>();
                 for (int i = 0; i < numberOfColumns; i++) {
                     row.add(fields[i]);
                 }
@@ -177,7 +203,7 @@ public class BigTable {
 			    continue;
 		    }
             String[] fields = line.split(this.delimiter);
-            List<String> row = new ArrayList<String>();
+            List<String> row = new ArrayList<>();
             for (int i = 0; i < numberOfColumns; i++) {
                 row.add(fields[i]);
             }
