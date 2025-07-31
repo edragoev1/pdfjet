@@ -200,10 +200,6 @@ public class BigTable {
         var rowNumber = 0
         let reader = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
         let lines = reader.components(separatedBy: .newlines)
-
-        // let text = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
-        // let lines = text.components(separatedBy: .newlines)
-
         for line in lines {
             let fields = line.components(separatedBy: delimiter)
             if fields.count < numberOfColumns {
