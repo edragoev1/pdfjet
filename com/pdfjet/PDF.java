@@ -1138,7 +1138,6 @@ final public class PDF {
 
     protected void append(float val) throws IOException {
         append(PDF.df.format(val));
-        // append(FastFloat.toString(val));
     }
 
     protected void append(String str) throws IOException {
