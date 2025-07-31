@@ -24,6 +24,7 @@ SOFTWARE.
 package com.pdfjet;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.*;
 import java.util.*;
 import java.util.zip.*;
@@ -1137,14 +1138,12 @@ final public class PDF {
 
     protected void append(float val) throws IOException {
         append(PDF.df.format(val));
+        // append(FastFloat.toString(val));
     }
 
     protected void append(String str) throws IOException {
-        int len = str.length();
-        for (int i = 0; i < len; i++) {
-            os.write((byte) str.charAt(i));
-        }
-        byteCount += len;
+        os.write(str.getBytes(StandardCharsets.UTF_8));
+        byteCount += str.length();
     }
 
     protected void append(char ch) throws IOException {
