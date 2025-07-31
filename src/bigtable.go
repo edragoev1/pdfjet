@@ -115,7 +115,7 @@ func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
 		return nil
 	}
 	if bt.page == nil { // First page
-		bt.page = NewPage(bt.pdf, bt.pageSize)
+		bt.page = NewPageDetached(bt.pdf, bt.pageSize)
 		bt.pages = append(bt.pages, bt.page)
 		bt.page.SetPenWidth(0.0)
 		bt.yText = bt.y + bt.f1.ascent
@@ -127,7 +127,7 @@ func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
 	}
 
 	if bt.startNewPage { // New page
-		bt.page = NewPage(bt.pdf, bt.pageSize)
+		bt.page = NewPageDetached(bt.pdf, bt.pageSize)
 		bt.pages = append(bt.pages, bt.page)
 		bt.page.SetPenWidth(0.0)
 		bt.yText = bt.y + bt.f1.ascent
