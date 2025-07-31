@@ -1063,11 +1063,9 @@ public class PDF {
     }
 
     internal void Append(String str) {
-        int len = str.Length;
-        for (int i = 0; i < len; i++) {
-            os.WriteByte((byte) str[i]);
-        }
-        byteCount += len;
+        byte[] bytes = Encoding.UTF8.GetBytes(str);
+        os.Write(bytes, 0, bytes.Length);
+        byteCount += bytes.Length;
     }
 
     internal void Append(char ch) {

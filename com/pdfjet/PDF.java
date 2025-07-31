@@ -1147,7 +1147,8 @@ final public class PDF {
     }
 
     protected void append(char ch) throws IOException {
-        append((byte) ch);
+        os.write((byte) ch);
+        byteCount += 1;
     }
 
     protected void append(byte b) throws IOException {
