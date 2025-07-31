@@ -14,8 +14,8 @@ public class Example_43 {
         pdf.setCompliance(Compliance.PDF_UA);
 
 	    // Used for performance testing. Results in 2000+ pages PDF.
-        // String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+        String fileName = "data/Electric_Vehicle_Population_Data.csv";
+        // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
 
         Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
         f1.setSize(10f);

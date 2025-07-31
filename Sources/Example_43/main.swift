@@ -8,8 +8,8 @@ public class Example_43 {
         pdf.setCompliance(Compliance.PDF_UA)
 
         // Used for performance testing. Results in 2000+ pages PDF.
-        // let fileName = "data/Electric_Vehicle_Population_Data.csv"
-        let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
+        let fileName = "data/Electric_Vehicle_Population_Data.csv"
+        // let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
 
         let f1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream")
         f1.setSize(10.0)
