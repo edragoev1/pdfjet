@@ -9,8 +9,8 @@ import com.pdfjet.*;
  */
 public class Example_43 {
     public Example_43() throws Exception {
-        PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_43.pdf")));
+        PDF pdf = new PDF(  // Use 8MB buffer to speed operation
+                new BufferedOutputStream(new FileOutputStream("Example_43.pdf"), 8*1024*1024));
         pdf.setCompliance(Compliance.PDF_UA);
 
 	    // Used for performance testing. Results in 2000+ pages PDF.
