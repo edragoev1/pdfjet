@@ -494,6 +494,10 @@ func (page *Page) GetBrushColor() [3]float32 {
 	return page.brush
 }
 
+func (page *Page) SetBrushColorWithFloat32Array(rgb [3]float32) {
+	page.SetPenColorRGB(rgb[0], rgb[1], rgb[2])
+}
+
 // SetColorRGB sets the RGB color.
 func (page *Page) SetColorRGB(r, g, b float32) {
 	appendFloat32(&page.buf, r)

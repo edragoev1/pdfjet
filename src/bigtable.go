@@ -51,8 +51,8 @@ type BigTable struct {
 	padding         float32
 	language        string
 	highlight       bool
-	highlightColor  uint32
-	penColor        uint32
+	highlightColor  int32
+	penColor        int32
 	fileName        string
 	delimiter       string
 	numberOfColumns int
@@ -147,18 +147,18 @@ func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
 func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 	bt.page.AddArtifactBMC()
 	if bt.highlight {
-		// bt.highlightRow(bt.page, font, bt.highlightColor)
+		bt.highlightRow(bt.page, font, bt.highlightColor)
 		bt.highlight = false
 	} else {
 		bt.highlight = true
 	}
 
-	// original := bt.page.GetPenColor()
-	// bt.page.SetPenColor(bt.penColor)
+	original := bt.page.GetPenColor()
+	bt.page.SetPenColor(bt.penColor)
 	bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent)
 	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent)
 	bt.page.StrokePath()
-	// bt.page.SetPenColorWithFloat32Array(original)
+	bt.page.SetPenColorWithFloat32Array(original)
 	bt.page.AddEMC()
 
 	rowText := bt.getRowText(fields)
@@ -183,21 +183,21 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 	bt.page.AddEMC()
 }
 
-func (bt *BigTable) highlightRow(page *Page, font *Font, color uint32) {
-	// original := page.GetBrushColor()
-	// page.SetBrushColor(color)
+func (bt *BigTable) highlightRow(page *Page, font *Font, color int32) {
+	original := page.GetBrushColor()
+	page.SetBrushColor(color)
 	page.MoveTo(bt.vertLines[0], bt.yText-font.ascent)
 	page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent)
-	page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText+font.descent)
-	page.LineTo(bt.vertLines[0], bt.yText+font.descent)
+	page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.descent)
+	page.LineTo(bt.vertLines[0], bt.yText-font.descent)
 	page.FillPath()
-	// page.SetBrushColorWithFloat32Array(original)
+	page.SetBrushColorWithFloat32Array(original)
 }
 
 func (bt *BigTable) drawTheVerticalLines() {
 	bt.page.AddArtifactBMC()
-	// original := bt.page.GetPenColor()
-	// bt.page.SetPenColor(bt.penColor) TODO
+	original := bt.page.GetPenColor()
+	bt.page.SetPenColor(bt.penColor)
 	for i := 0; i <= bt.numberOfColumns; i++ {
 		bt.page.DrawLine(
 			bt.vertLines[i],
@@ -208,7 +208,7 @@ func (bt *BigTable) drawTheVerticalLines() {
 	bt.page.MoveTo(bt.vertLines[0], bt.yText-bt.f2.ascent)
 	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-bt.f2.ascent)
 	bt.page.StrokePath()
-	// bt.page.SetPenColorWithFloat32Array(original)
+	bt.page.SetPenColorWithFloat32Array(original)
 	bt.page.AddEMC()
 }
 
