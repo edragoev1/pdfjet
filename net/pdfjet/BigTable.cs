@@ -63,6 +63,9 @@ namespace PDFjet.NET {
         }
 
         private void DrawTextAndLine(string[] fields, Font font) {
+            if (fields.Length < this.numberOfColumns) {
+                return;
+            }
             if (page == null) {
                 page = new Page(pdf, pageSize, Page.DETACHED);
                 pages.Add(page);
@@ -74,7 +77,6 @@ namespace PDFjet.NET {
                 startNewPage = false;
                 return;
             }
-
             if (startNewPage) {
                 page = new Page(pdf, pageSize, Page.DETACHED);
                 pages.Add(page);
@@ -205,8 +207,12 @@ namespace PDFjet.NET {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
                     string[] fields = line.Split(new string[] { this.delimiter }, StringSplitOptions.None);
+                    if (fields.Length < this.numberOfColumns) {
+                        continue;
+                    }
                     if (rowNumber == 0) {
-                        for (int i = 0; i < this.numberOfColumns; i++) {
+                        for (int i = 0; i < this.numberOfColumns; i++)
+                        {
                             headerFields[i] = fields[i];
                         }
                     }

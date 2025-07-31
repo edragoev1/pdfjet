@@ -104,6 +104,9 @@ public class BigTable {
     }
 
     private void drawTextAndLine(String[] fields, Font font) throws Exception {
+        if (fields.length < this.numberOfColumns) {
+            return;
+        }
         if (page == null) {     // The first page
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
@@ -253,6 +256,9 @@ public class BigTable {
         String line = null;
         while ((line = reader.readLine()) != null) {
             String[] fields = line.split(this.delimiter);
+            if (fields.length < this.numberOfColumns) {
+                continue;
+            }
             if (rowNumber == 0) {
                 for (int i = 0; i < this.numberOfColumns; i++) {
                     headerFields[i] = fields[i];
