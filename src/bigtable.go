@@ -111,9 +111,6 @@ func (bt *BigTable) GetPages() []*Page {
 }
 
 func (bt *BigTable) drawTextAndLine(fields []string, font *Font) error {
-	if len(fields) < bt.numberOfColumns {
-		return nil
-	}
 	if bt.page == nil { // First page
 		bt.page = NewPageDetached(bt.pdf, bt.pageSize)
 		bt.pages = append(bt.pages, bt.page)
@@ -311,6 +308,9 @@ func (bt *BigTable) Complete() error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Split(line, bt.delimiter)
+		if len(fields) < bt.numberOfColumns {
+			continue
+		}
 		if err := bt.drawTextAndLine(fields, bt.f2); err != nil {
 			return err
 		}

@@ -2,7 +2,7 @@ import Foundation
 import PDFjet
 
 public class Example_43 {
-    init() throws {
+    public init() throws {
         let outputStream = OutputStream(toFileAtPath: "Example_43.pdf", append: false)!
         let pdf = PDF(outputStream)
         pdf.setCompliance(Compliance.PDF_UA)

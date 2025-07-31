@@ -91,9 +91,6 @@ public class BigTable {
     }
 
     private func drawFieldsAndLine(fields: [String], font: Font) {
-        if fields.count < numberOfColumns {
-            return
-        }
         page!.addArtifactBMC()
         if self.highlightRow {
             highlightRow(page: page!, font: font, color: highlightColor)
@@ -175,14 +172,12 @@ public class BigTable {
         } else {
             buf = str
         }
-        
         var cleaned = ""
         for ch in buf {
             if ch != "." && ch != "," && ch != "'" {
                 cleaned.append(ch)
             }
         }
-        
         if Double(cleaned) != nil {
             return Alignment.RIGHT
         }
@@ -236,9 +231,11 @@ public class BigTable {
     public func complete() throws {
         let reader = try String(contentsOfFile: fileName)
         let lines = reader.components(separatedBy: .newlines)
-        
         for line in lines {
             let fields = line.components(separatedBy: delimiter)
+            if fields.count < numberOfColumns {
+                continue;
+            }
             try drawTextAndLine(fields: fields, font: f2)
         }
         drawTheVerticalLines()
