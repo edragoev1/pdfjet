@@ -154,6 +154,7 @@ public class BigTable {
 
         // String rowText = getRowText(fields);
         // page.addBMC(StructElem.P, language, rowText, rowText);
+        page.addArtifactBMC();
         page.setPenWidth(0f);
         page.setTextFont(font);
         page.setBrushColor(Color.black);
@@ -167,12 +168,10 @@ public class BigTable {
             } else if (alignment[i] == Align.RIGHT) {   // Align Right
                 page.setTextLocation(xText2 - font.stringWidth(text), this.yText);
             }
-            // page.addBMC(StructElem.P, language, text, text);
             page.drawText(text);
-            // page.addEMC();
             page.endText();
         }
-        // page.addEMC();
+        page.addEMC();
     }
 
     /**
