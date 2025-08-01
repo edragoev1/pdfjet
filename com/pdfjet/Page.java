@@ -518,12 +518,24 @@ final public class Page {
                     continue;
                 }
                 if (c1 < font.firstChar || c1 > font.lastChar) {
-                    append(String.format("%04X", font.unicodeToGID[0x0020]));
+                    // append(String.format("%04X", font.unicodeToGID[0x0020]));
+                    append(toHex4(font.unicodeToGID[0x0020]));
                 } else {
-                    append(String.format("%04X", font.unicodeToGID[c1]));
+                    // append(String.format("%04X", font.unicodeToGID[c1]));
+                    append(toHex4(font.unicodeToGID[c1]));
                 }
             }
         }
+    }
+
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+    public static String toHex4(int value) {
+        char[] buf = new char[4];
+        buf[0] = HEX[(value >> 12) & 0xF];
+        buf[1] = HEX[(value >> 8)  & 0xF];
+        buf[2] = HEX[(value >> 4)  & 0xF];
+        buf[3] = HEX[value         & 0xF];
+        return new String(buf);
     }
 
     /**
