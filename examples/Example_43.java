@@ -12,6 +12,7 @@ public class Example_43 {
         PDF pdf = new PDF(  // Use 8MB buffer to speed operation
                 new BufferedOutputStream(new FileOutputStream("Example_43.pdf"), 8*1024*1024));
         pdf.setCompliance(Compliance.PDF_UA);
+        pdf.setTitle("Electric Vehicle Population Data");
 
 	    // Used for performance testing. Results in 2000+ pages PDF.
         String fileName = "data/Electric_Vehicle_Population_Data.csv";
