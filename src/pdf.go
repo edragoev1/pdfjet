@@ -521,14 +521,21 @@ func (pdf *PDF) addStructElementObjects() {
 	}
 }
 
+// Pre-allocated hex digits
+var hexDigits = [16]byte{
+	'0', '1', '2', '3', '4', '5', '6', '7',
+	'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+}
+
 func encodeToHex(text string) string {
 	var buf strings.Builder
-	runes := []rune(text)
+	buf.Grow(4 + len(text)*4) // Pre-allocate capacity
 	buf.WriteString("FEFF")
-	if len(runes) > 0 {
-		for _, rune := range runes {
-			buf.WriteString(fmt.Sprintf("%04X", rune))
-		}
+	for _, r := range text {
+		buf.WriteByte(hexDigits[r>>12&0xF])
+		buf.WriteByte(hexDigits[r>>8&0xF])
+		buf.WriteByte(hexDigits[r>>4&0xF])
+		buf.WriteByte(hexDigits[r&0xF])
 	}
 	return buf.String()
 }
