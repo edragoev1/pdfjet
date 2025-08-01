@@ -167,9 +167,9 @@ public class BigTable {
             } else if (alignment[i] == Align.RIGHT) {   // Align Right
                 page.setTextLocation(xText2 - font.stringWidth(text), this.yText);
             }
-            page.addBMC(StructElem.P, language, text, text);
+            // page.addBMC(StructElem.P, language, text, text);
             page.drawText(text);
-            page.addEMC();
+            // page.addEMC();
             page.endText();
         }
         // page.addEMC();
