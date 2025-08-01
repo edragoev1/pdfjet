@@ -4,8 +4,6 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-rm -rf .build
-
 swift run --configuration release Example_$1
 # swift run --configuration debug Example_$1
 
