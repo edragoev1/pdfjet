@@ -522,28 +522,29 @@ final public class PDF {
         }
     }
 
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
     private String toHex(String str) {
-        StringBuilder buf = new StringBuilder();
-        if (str != null) {
-            buf.append("FEFF");
-            for (int i = 0; i < str.length(); i++) {
-                // Awfully slow code! Left here to compare with the toPaddedHex method.
-                // buf.append(String.format("%04X", str.codePointAt(i)));
-                buf.append(toPaddedHex(str.codePointAt(i)));
-            }
+        if (str == null) return "";
+
+        // Pre-allocate exact capacity (4 for "FEFF" + 4 per code point)
+        StringBuilder buf = new StringBuilder(4 + str.length() * 4);
+        buf.append("FEFF");
+
+        // Use char[] directly for hex conversion
+        final char[] hexBuffer = new char[4];
+        final char[] hexDigits = HEX; // Your existing HEX array
+
+        for (int i = 0; i < str.length(); ) {
+            int codePoint = str.codePointAt(i);
+            i += Character.charCount(codePoint);
+            // Manual hex conversion (no new array allocations)
+            hexBuffer[0] = hexDigits[(codePoint >> 12) & 0xF];
+            hexBuffer[1] = hexDigits[(codePoint >> 8)  & 0xF];
+            hexBuffer[2] = hexDigits[(codePoint >> 4)  & 0xF];
+            hexBuffer[3] = hexDigits[codePoint         & 0xF];
+            buf.append(hexBuffer, 0, 4);
         }
         return buf.toString();
-    }
-
-    // Reusable char buffer (thread-local for safety)
-    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
-    public static String toPaddedHex(int codePoint) {
-        char[] buf = new char[4];
-        for (int i = 3; i >= 0; i--) {
-            buf[i] = HEX[codePoint & 0xF];
-            codePoint >>= 4;
-        }
-        return new String(buf);
     }
 
     private void addNumsParentTree() throws Exception {
