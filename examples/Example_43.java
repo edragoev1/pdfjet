@@ -34,7 +34,9 @@ public class Example_43 {
         List<Page> pages = table.getPages();
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
+            page.addArtifactBMC();
             page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
+            page.addEMC();
             pdf.addPage(page);
         }
 
