@@ -25,16 +25,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PDFjet.NET
-{
-    public class SVG
-    {
-        private static bool isCommand(char ch)
-        {
+namespace PDFjet.NET {
+    public class SVG {
+        private static bool isCommand(char ch) {
             // Capital letter commands use absolute coordinates
             // Small letter commands use relative coordinates
-            switch (ch)
-            {
+            switch (ch) {
                 case 'M':  // moveto
                 case 'm':  // moveto (lowercase)
                 case 'L':  // lineto
@@ -61,57 +57,42 @@ namespace PDFjet.NET
             }
         }
 
-        public static List<PathOp> GetOperations(String path)
-        {
+        public static List<PathOp> GetOperations(String path) {
             List<PathOp> operations = new List<PathOp>();
             PathOp op = null;
             StringBuilder buf = new StringBuilder();
             bool token = false;
-            for (int i = 0; i < path.Length; i++)
-            {
+            for (int i = 0; i < path.Length; i++) {
                 char ch = path[i];
-                if (isCommand(ch))
-                {                    // open path
-                    if (token)
-                    {
+                if (isCommand(ch)) {                    // open path
+                    if (token) {
                         op.args.Add(buf.ToString());
                         buf.Length = 0;
                     }
                     token = false;
                     op = new PathOp(ch);
                     operations.Add(op);
-                }
-                else if (ch == ' ' || ch == ',')
-                {
-                    if (token)
-                    {
+                } else if (ch == ' ' || ch == ',') {
+                    if (token) {
                         op.args.Add(buf.ToString());
                         buf.Length = 0;
                     }
                     token = false;
-                }
-                else if (ch == '-')
-                {
-                    if (token)
-                    {
+                } else if (ch == '-') {
+                    if (token) {
                         op.args.Add(buf.ToString());
                         buf.Length = 0;
                     }
                     token = true;
                     buf.Append(ch);
-                }
-                else if (ch == '.')
-                {
-                    if (buf.ToString().Contains("."))
-                    {
+                } else if (ch == '.') {
+                    if (buf.ToString().Contains(".")) {
                         op.args.Add(buf.ToString());
                         buf.Length = 0;
                     }
                     token = true;
                     buf.Append(ch);
-                }
-                else
-                {
+                } else {
                     token = true;
                     buf.Append(ch);
                 }
@@ -119,48 +100,36 @@ namespace PDFjet.NET
             return operations;
         }
 
-        public static List<PathOp> ToPDF(List<PathOp> list)
-        {
+        public static List<PathOp> ToPDF(List<PathOp> list) {
             List<PathOp> operations = new List<PathOp>();
             PathOp lastOp = null;
             PathOp pathOp = null;
             float x0 = 0f;  // Start of subpath
             float y0 = 0f;
-            foreach (PathOp op in list)
-            {
-                if (op.cmd == 'M' || op.cmd == 'm')
-                {
-                    for (int i = 0; i <= op.args.Count - 2; i += 2)
-                    {
+            foreach (PathOp op in list) {
+                if (op.cmd == 'M' || op.cmd == 'm') {
+                    for (int i = 0; i <= op.args.Count - 2; i += 2) {
                         float x = float.Parse(op.args[i]);
                         float y = float.Parse(op.args[i + 1]);
-                        if (op.cmd == 'm' && lastOp != null)
-                        {
+                        if (op.cmd == 'm' && lastOp != null) {
                             x += lastOp.x;
                             y += lastOp.y;
                         }
-                        if (i == 0)
-                        {
+                        if (i == 0) {
                             x0 = x;
                             y0 = y;
                             pathOp = new PathOp('M', x, y);
-                        }
-                        else
-                        {
+                        } else {
                             pathOp = new PathOp('L', x, y);
                         }
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'L' || op.cmd == 'l')
-                {
-                    for (int i = 0; i <= op.args.Count - 2; i += 2)
-                    {
+                } else if (op.cmd == 'L' || op.cmd == 'l') {
+                    for (int i = 0; i <= op.args.Count - 2; i += 2) {
                         float x = float.Parse(op.args[i]);
                         float y = float.Parse(op.args[i + 1]);
-                        if (op.cmd == 'l' && lastOp != null)
-                        {
+                        if (op.cmd == 'l' && lastOp != null) {
                             x += lastOp.x;
                             y += lastOp.y;
                         }
@@ -168,46 +137,34 @@ namespace PDFjet.NET
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'H' || op.cmd == 'h')
-                {
-                    for (int i = 0; i < op.args.Count; i++)
-                    {
+                } else if (op.cmd == 'H' || op.cmd == 'h') {
+                    for (int i = 0; i < op.args.Count; i++) {
                         float x = float.Parse(op.args[i]);
-                        if (op.cmd == 'h' && lastOp != null)
-                        {
+                        if (op.cmd == 'h' && lastOp != null) {
                             x += lastOp.x;
                         }
                         pathOp = new PathOp('L', x, lastOp.y);
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'V' || op.cmd == 'v')
-                {
-                    for (int i = 0; i < op.args.Count; i++)
-                    {
+                } else if (op.cmd == 'V' || op.cmd == 'v') {
+                    for (int i = 0; i < op.args.Count; i++) {
                         float y = float.Parse(op.args[i]);
-                        if (op.cmd == 'v' && lastOp != null)
-                        {
+                        if (op.cmd == 'v' && lastOp != null) {
                             y += lastOp.y;
                         }
                         pathOp = new PathOp('L', lastOp.x, y);
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'Q' || op.cmd == 'q')
-                {
-                    for (int i = 0; i <= op.args.Count - 4; i += 4)
-                    {
+                } else if (op.cmd == 'Q' || op.cmd == 'q') {
+                    for (int i = 0; i <= op.args.Count - 4; i += 4) {
                         pathOp = new PathOp('C');
                         float x1 = float.Parse(op.args[i]);
                         float y1 = float.Parse(op.args[i + 1]);
                         float x = float.Parse(op.args[i + 2]);
                         float y = float.Parse(op.args[i + 3]);
-                        if (op.cmd == 'q')
-                        {
+                        if (op.cmd == 'q') {
                             x1 += lastOp.x;
                             y1 += lastOp.y;
                             x += lastOp.x;
@@ -225,24 +182,19 @@ namespace PDFjet.NET
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'T' || op.cmd == 't')
-                {
-                    for (int i = 0; i <= op.args.Count - 2; i += 2)
-                    {
+                } else if (op.cmd == 'T' || op.cmd == 't') {
+                    for (int i = 0; i <= op.args.Count - 2; i += 2) {
                         pathOp = new PathOp('C');
                         float x1 = lastOp.x;
                         float y1 = lastOp.y;
-                        if (lastOp.cmd == 'C')
-                        {
+                        if (lastOp.cmd == 'C') {
                             // Find the reflection control point
                             x1 = 2 * lastOp.x - lastOp.x1q;
                             y1 = 2 * lastOp.y - lastOp.y1q;
                         }
                         float x = float.Parse(op.args[i]);
                         float y = float.Parse(op.args[i + 1]);
-                        if (op.cmd == 't')
-                        {
+                        if (op.cmd == 't') {
                             x += lastOp.x;
                             y += lastOp.y;
                         }
@@ -255,11 +207,8 @@ namespace PDFjet.NET
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'C' || op.cmd == 'c')
-                {
-                    for (int i = 0; i <= op.args.Count - 6; i += 6)
-                    {
+                } else if (op.cmd == 'C' || op.cmd == 'c') {
+                    for (int i = 0; i <= op.args.Count - 6; i += 6) {
                         pathOp = new PathOp('C');
                         float x1 = float.Parse(op.args[i]);
                         float y1 = float.Parse(op.args[i + 1]);
@@ -267,8 +216,7 @@ namespace PDFjet.NET
                         float y2 = float.Parse(op.args[i + 3]);
                         float x = float.Parse(op.args[i + 4]);
                         float y = float.Parse(op.args[i + 5]);
-                        if (op.cmd == 'c')
-                        {
+                        if (op.cmd == 'c') {
                             x1 += lastOp.x;
                             y1 += lastOp.y;
                             x2 += lastOp.x;
@@ -280,16 +228,12 @@ namespace PDFjet.NET
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'S' || op.cmd == 's')
-                {
-                    for (int i = 0; i <= op.args.Count - 4; i += 4)
-                    {
+                } else if (op.cmd == 'S' || op.cmd == 's') {
+                    for (int i = 0; i <= op.args.Count - 4; i += 4) {
                         pathOp = new PathOp('C');
                         float x1 = lastOp.x;
                         float y1 = lastOp.y;
-                        if (lastOp.cmd == 'C')
-                        {
+                        if (lastOp.cmd == 'C') {
                             // Find the reflection control point
                             x1 = 2 * lastOp.x - lastOp.x2;
                             y1 = 2 * lastOp.y - lastOp.y2;
@@ -298,8 +242,7 @@ namespace PDFjet.NET
                         float y2 = float.Parse(op.args[i + 1]);
                         float x = float.Parse(op.args[i + 2]);
                         float y = float.Parse(op.args[i + 3]);
-                        if (op.cmd == 's')
-                        {
+                        if (op.cmd == 's') {
                             x2 += lastOp.x;
                             y2 += lastOp.y;
                             x += lastOp.x;
@@ -309,13 +252,9 @@ namespace PDFjet.NET
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
-                }
-                else if (op.cmd == 'A' || op.cmd == 'a')
-                {
+                } else if (op.cmd == 'A' || op.cmd == 'a') {
                     // TODO: Elliptical Arc
-                }
-                else if (op.cmd == 'Z' || op.cmd == 'z')
-                {
+                } else if (op.cmd == 'Z' || op.cmd == 'z') {
                     pathOp = new PathOp('Z');
                     pathOp.x = x0;
                     pathOp.y = y0;

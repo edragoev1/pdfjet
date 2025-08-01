@@ -407,7 +407,7 @@ final public class Font {
                 if (unicodeToGID[c1] < advanceWidth.length) {
                     width += advanceWidth[unicodeToGID[c1]];
                 } else {
-                    width += advanceWidth[0];                    
+                    width += advanceWidth[0];
                 }
             }
         }

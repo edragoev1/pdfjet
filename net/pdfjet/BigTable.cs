@@ -98,8 +98,7 @@ namespace PDFjet.NET {
             if (this.highlightRow) {
                 HighlightRow(page, font, highlightColor);
                 this.highlightRow = false;
-            }
-            else {
+            } else {
                 this.highlightRow = true;
             }
 
@@ -123,8 +122,7 @@ namespace PDFjet.NET {
                 page.BeginText();
                 if (alignment[i] == Align.LEFT) {
                     page.SetTextLocation(xText1, this.yText);
-                }
-                else if (alignment[i] == Align.RIGHT) {
+                } else if (alignment[i] == Align.RIGHT) {
                     page.SetTextLocation(xText2 - font.StringWidth(text), this.yText);
                 }
                 page.DrawText(text);
@@ -208,8 +206,7 @@ namespace PDFjet.NET {
                         continue;
                     }
                     if (rowNumber == 0) {
-                        for (int i = 0; i < this.numberOfColumns; i++)
-                        {
+                        for (int i = 0; i < this.numberOfColumns; i++) {
                             headerFields[i] = fields[i];
                         }
                     }

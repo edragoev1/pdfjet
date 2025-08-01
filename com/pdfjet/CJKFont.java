@@ -35,7 +35,7 @@ public enum CJKFont {
 
     /** Japanese font */
     KOZ_MIN_PRO_VI_REGULAR,
-    
+
     /** Korean font */
     ADOBE_MYUNGJO_STD_MEDIUM
 }

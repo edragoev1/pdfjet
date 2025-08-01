@@ -249,7 +249,7 @@ public class Path : IDrawable {
             point.y *= factor;
         }
     }
-    
+
     /**
      *  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
      *
