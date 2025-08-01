@@ -9,7 +9,8 @@ public class Example_01 {
         let stream = OutputStream(toFileAtPath: "Example_01.pdf", append: false)
         let pdf = PDF(stream!)
 
-        let font1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+        // let font1 = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+        let font1 = try Font(pdf, IBMPlexSans.Regular)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
