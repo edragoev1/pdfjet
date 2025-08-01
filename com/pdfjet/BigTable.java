@@ -150,11 +150,11 @@ public class BigTable {
         page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
         page.strokePath();
         page.setPenColor(original);
-        page.addEMC();
+        // page.addEMC();
 
         // String rowText = getRowText(fields);
         // page.addBMC(StructElem.P, language, rowText, rowText);
-        page.addArtifactBMC();
+        // page.addArtifactBMC();
         page.setPenWidth(0f);
         page.setTextFont(font);
         page.setBrushColor(Color.black);
