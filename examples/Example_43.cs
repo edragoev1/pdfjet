@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
-public class Example_43
-{
-    public Example_43()
-    {
+public class Example_43 {
+    public Example_43() {
         PDF pdf = new PDF(
                 new BufferedStream(new FileStream("Example_43.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA);
