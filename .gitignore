@@ -1,5 +1,6 @@
 .build/
 com/pdfjet/*.class
+com/pdfjet/font/*.class
 net/pdfjet/*.exe.mdb
 examples/*.class
 examples/*.exe.mdb
