@@ -527,10 +527,23 @@ final public class PDF {
         if (str != null) {
             buf.append("FEFF");
             for (int i = 0; i < str.length(); i++) {
-                buf.append(String.format("%04X", str.codePointAt(i)));
+                // Awfully slow code! Left here to compare with the toPaddedHex method.
+                // buf.append(String.format("%04X", str.codePointAt(i)));
+                buf.append(toPaddedHex(str.codePointAt(i)));
             }
         }
         return buf.toString();
+    }
+
+    // Reusable char buffer (thread-local for safety)
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+    public static String toPaddedHex(int codePoint) {
+        char[] buf = new char[4];
+        for (int i = 3; i >= 0; i--) {
+            buf[i] = HEX[codePoint & 0xF];
+            codePoint >>= 4;
+        }
+        return new String(buf);
     }
 
     private void addNumsParentTree() throws Exception {
