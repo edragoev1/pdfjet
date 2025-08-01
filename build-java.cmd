@@ -2,10 +2,11 @@
 
 :: Remove .class files from the specified directories
 del /f /q out\production\com\pdfjet\*.class
+del /f /q out\production\com\pdfjet\font\*.class
 del /f /q out\production\examples\*.class
 
 :: Compile all Java files in com/pdfjet
-javac -O -encoding utf-8 -Xlint com\pdfjet\*.java -d out\production
+javac -O -encoding utf-8 -Xlint com\pdfjet\*.java com\pdfjet\font\*.java -d out\production
 
 :: Create the JAR file
 jar cf PDFjet.jar -C out\production .
