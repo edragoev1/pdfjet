@@ -10,7 +10,7 @@ fi
 mkdir -p out/production
 
 # Compile and package the library.
-javac -O -encoding utf-8 -Xlint com/pdfjet/*.java -d out/production
+javac -O -encoding utf-8 -Xlint com/pdfjet/*.java com/pdfjet/font/*.java -d out/production
 jar cf PDFjet.jar -C out/production .
 
 # Compile and run the Example_?? program.
