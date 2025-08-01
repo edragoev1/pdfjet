@@ -524,26 +524,28 @@ final public class PDF {
 
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
     private String toHex(String str) {
-        if (str == null) return "";
+        if (str == null || str.isEmpty()) {
+            return "";
+        }
 
-        // Pre-allocate exact capacity (4 for "FEFF" + 4 per code point)
-        StringBuilder buf = new StringBuilder(4 + str.length() * 4);
+        // Get all code points (allocates temporary array)
+        int[] codePoints = str.codePoints().toArray();
+
+        // Pre-allocate StringBuilder (4 for "FEFF" + 4 per code point)
+        StringBuilder buf = new StringBuilder(4 + codePoints.length * 4);
         buf.append("FEFF");
 
-        // Use char[] directly for hex conversion
+        // Reusable hex buffer and digit lookup
         final char[] hexBuffer = new char[4];
         final char[] hexDigits = HEX; // Your existing HEX array
-
-        for (int i = 0; i < str.length(); ) {
-            int codePoint = str.codePointAt(i);
-            i += Character.charCount(codePoint);
-            // Manual hex conversion (no new array allocations)
+        for (int codePoint : codePoints) {
             hexBuffer[0] = hexDigits[(codePoint >> 12) & 0xF];
             hexBuffer[1] = hexDigits[(codePoint >> 8)  & 0xF];
             hexBuffer[2] = hexDigits[(codePoint >> 4)  & 0xF];
             hexBuffer[3] = hexDigits[codePoint         & 0xF];
-            buf.append(hexBuffer, 0, 4);
+            buf.append(hexBuffer);
         }
+
         return buf.toString();
     }
 
