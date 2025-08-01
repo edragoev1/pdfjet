@@ -225,9 +225,13 @@ final public class PDF {
             sb.append(keywords);
             sb.append("</pdf:Keywords>\n");
 
-            sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
+            sb.append("  <dc:title>\n");
+            sb.append("    <rdf:Alt>\n");
+            sb.append("      <rdf:li xml:lang=\"x-default\">");
             sb.append(title);
-            sb.append("</rdf:li></rdf:Alt></dc:title>\n");
+            sb.append("</rdf:li>\n");
+            sb.append("    </rdf:Alt>\n");
+            sb.append("  </dc:title>\n");
 
             sb.append("  <dc:creator><rdf:Seq><rdf:li>");
             sb.append(author);
