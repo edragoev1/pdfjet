@@ -51,22 +51,7 @@ To compile and run specific Go example:
 
 
 To compile and run specific Swift example:
+sudo apt install libc6-dev
+sudo apt install gcc
 
 ./run-swift.sh 15
-
-
-NOTE: On freshly installed Ubuntu 22.10 I got the following errors:
-
-fatal error: sys/types.h: No such file or directory
-
-You can fix this by installing libc6-dev:
-
-sudo apt install libc6-dev
-
-Then I got this error:
-
-error: invalid linker name in argument '-fuse-ld=gold'
-
-You can fix this by installing the GCC:
-
-sudo apt install gcc
