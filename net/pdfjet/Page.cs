@@ -456,7 +456,8 @@ public class Page {
                 if (c1 < font.firstChar || c1 > font.lastChar) {
                     Append(font.unicodeToGID[0x0020].ToString("X4"));
                 } else {
-                    Append(font.unicodeToGID[c1].ToString("X4"));
+                    // Append(font.unicodeToGID[c1].ToString("X4"));
+                    AppendHex4(font.unicodeToGID[c1]);
                 }
             }
         }
@@ -1449,6 +1450,19 @@ public class Page {
 
     internal void Append(int num) {
         Append(num.ToString());
+    }
+
+    private static char[] HEX = "0123456789ABCDEF".ToCharArray();
+    protected void AppendHex4(int num) {
+        char[] tmp = new char[4];
+        tmp[0] = HEX[(num >> 12) & 0xF];
+        tmp[1] = HEX[(num >> 8)  & 0xF];
+        tmp[2] = HEX[(num >> 4)  & 0xF];
+        tmp[3] = HEX[num         & 0xF];
+        buf.WriteByte((byte) tmp[0]);
+        buf.WriteByte((byte) tmp[1]);
+        buf.WriteByte((byte) tmp[2]);
+        buf.WriteByte((byte) tmp[3]);
     }
 
     internal void Append(float val) {

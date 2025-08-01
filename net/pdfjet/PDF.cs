@@ -511,7 +511,7 @@ public class PDF {
         '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
     };
 
-    private string ToHex(string str) {
+    private static string ToHex(string str) {
         if (str == null) return string.Empty;
         var buf = new StringBuilder(4 + str.Length * 4); // Pre-allocate
         buf.Append("FEFF");
