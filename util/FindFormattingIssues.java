@@ -45,13 +45,13 @@ public class FindFormattingIssues {
                 reader.close();
                 for (int i = 0; i < (lines.size() - 1); i++) {
                     if (lines.get(i).equals("") && lines.get(i + 1).equals("")) {
-                        System.out.println(fileName);
+                        System.out.println("2 empty lines " + fileName);
                     }
                     if (lines.get(i).trim().equals("else {")) {
-                        System.out.println(fileName);
+                        System.out.println("else { " + fileName);
                     }
                     if (lines.get(i).trim().startsWith("else if (")) {
-                        System.out.println(fileName);
+                        System.out.println("else if ( " + fileName);
                     }
                     if (!rtrim(lines.get(i)).equals(lines.get(i))) {
                         System.out.println(fileName + " " + lines.get(i) + " " + i);
