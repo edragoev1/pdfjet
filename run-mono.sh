@@ -4,6 +4,9 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+# Very important!!
+./clean.sh
+
 mcs -debug -sdk:4 -warn:2 net/pdfjet/*.cs -reference:System.Drawing.dll -target:library -out:PDFjet.dll
 mcs -debug -sdk:4 examples/Example_$1.cs -reference:PDFjet.dll
 mv examples/Example_$1.exe .
