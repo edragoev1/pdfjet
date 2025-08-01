@@ -1,4 +1,5 @@
-rm -rf bin
+# Very important!!
+./clean.sh
 
 for i in $(seq 1 50);
 do
