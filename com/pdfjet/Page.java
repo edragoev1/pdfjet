@@ -506,9 +506,11 @@ final public class Page {
                     continue;
                 }
                 if (c1 < font.firstChar || c1 > font.lastChar) {
-                    append(String.format("%04X", 0x0020));
+                    // append(String.format("%04X", 0x0020));
+                    appendHex4(0x0020);
                 } else {
-                    append(String.format("%04X", c1));
+                    // append(String.format("%04X", c1));
+                    appendHex4(c1);
                 }
             }
         } else {
@@ -519,23 +521,13 @@ final public class Page {
                 }
                 if (c1 < font.firstChar || c1 > font.lastChar) {
                     // append(String.format("%04X", font.unicodeToGID[0x0020]));
-                    append(toHex4(font.unicodeToGID[0x0020]));
+                    appendHex4(font.unicodeToGID[0x0020]);
                 } else {
                     // append(String.format("%04X", font.unicodeToGID[c1]));
-                    append(toHex4(font.unicodeToGID[c1]));
+                    appendHex4(font.unicodeToGID[c1]);
                 }
             }
         }
-    }
-
-    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
-    public static String toHex4(int value) {
-        char[] buf = new char[4];
-        buf[0] = HEX[(value >> 12) & 0xF];
-        buf[1] = HEX[(value >> 8)  & 0xF];
-        buf[2] = HEX[(value >> 4)  & 0xF];
-        buf[3] = HEX[value         & 0xF];
-        return new String(buf);
     }
 
     /**
@@ -1548,6 +1540,19 @@ final public class Page {
 
     protected void append(int num) {
         append(Integer.toString(num));
+    }
+
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+    protected void appendHex4(int num) {
+        char[] tmp = new char[4];
+        tmp[0] = HEX[(num >> 12) & 0xF];
+        tmp[1] = HEX[(num >> 8)  & 0xF];
+        tmp[2] = HEX[(num >> 4)  & 0xF];
+        tmp[3] = HEX[num         & 0xF];
+        buf.write((byte) tmp[0]);
+        buf.write((byte) tmp[1]);
+        buf.write((byte) tmp[2]);
+        buf.write((byte) tmp[3]);
     }
 
     protected void append(float val) {
