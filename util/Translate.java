@@ -70,11 +70,7 @@ public class Translate {
         } catch (IOException ioe) {
             System.err.println(ioe);
         }
-/* Use this code to generated sorted list!
-        for (String key : map.keySet()) {
-            System.out.println(key);
-        }
-*/
+
         StringBuffer data  = new StringBuffer();
         try {
             BufferedReader in = new BufferedReader(
