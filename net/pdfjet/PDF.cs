@@ -506,13 +506,21 @@ public class PDF {
         }
     }
 
-    private String ToHex(String str) {
-        StringBuilder buf = new StringBuilder();
-        if (str != null) {
-            buf.Append("FEFF");
-            for (int i = 0; i < str.Length; i++) {
-                buf.Append(((int) str[i]).ToString("X4"));
-            }
+    private static readonly char[] HexDigits = {
+        '0', '1', '2', '3', '4', '5', '6', '7',
+        '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+    };
+
+    private string ToHex(string str) {
+        if (str == null) return string.Empty;
+        var buf = new StringBuilder(4 + str.Length * 4); // Pre-allocate
+        buf.Append("FEFF");
+        for (int i = 0; i < str.Length; i++) {
+            int value = str[i];
+            buf.Append(HexDigits[(value >> 12) & 0xF]);
+            buf.Append(HexDigits[(value >> 8)  & 0xF]);
+            buf.Append(HexDigits[(value >> 4)  & 0xF]);
+            buf.Append(HexDigits[value         & 0xF]);
         }
         return buf.ToString();
     }
