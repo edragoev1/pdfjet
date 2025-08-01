@@ -58,7 +58,7 @@ public class LZWEncode {
                     length = 11
                 } else if code2 == 2048 {
                     length = 12
-                } else if code2 == 4095 {                 // EarlyChange is 1
+                } else if code2 == 4095 {               // EarlyChange is 1
                     writeCode(256, length, &output)     // Clear Table code
                     code2 = 258
                     length = 9
