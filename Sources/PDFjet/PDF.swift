@@ -1778,15 +1778,14 @@ public class PDF {
     }
 
     private func toHex(_ str: String) -> String {
-        var buffer = String("FEFF")
+        var buffer = "FEFF"
         for scalar in str.unicodeScalars {
-            let str2 = String(scalar.value, radix: 16, uppercase: true)
-            if str2.count == 1 {
-                buffer.append("000" + str2)
-            } else if str2.count == 2 {
-                buffer.append("00" + str2)
-            } else if str2.count == 3 {
-                buffer.append("0" + str2)
+            let hex = String(scalar.value, radix: 16, uppercase: true)
+            switch hex.count {
+            case 1: buffer.append("000" + hex)
+            case 2: buffer.append("00" + hex)
+            case 3: buffer.append("0" + hex)
+            default: buffer.append(hex) // case 4
             }
         }
         return buffer
