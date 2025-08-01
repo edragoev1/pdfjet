@@ -33,7 +33,7 @@ To build the Swift version and compile and run all examples:
 ./build-swift.sh
 
 
-To compile and run specific Java example (from 01 to 50) use the following command:
+To compile and run specific Java example use the following command:
 
 ./run-java.sh 07
 
