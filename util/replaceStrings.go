@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +10,7 @@ import (
 // Function to replace a string in a file
 func replaceInFile(filePath, oldStr, newStr string) error {
 	// Read the file content
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
@@ -20,7 +19,7 @@ func replaceInFile(filePath, oldStr, newStr string) error {
 	updatedContent := strings.ReplaceAll(string(content), oldStr, newStr)
 
 	// Write the updated content back to the file
-	err = ioutil.WriteFile(filePath, []byte(updatedContent), 0644)
+	err = os.WriteFile(filePath, []byte(updatedContent), 0644)
 	if err != nil {
 		return err
 	}
