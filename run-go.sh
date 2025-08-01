@@ -4,6 +4,9 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+# Very important!!
+./clean.sh
+
 cd src
 go build -o ../Example_$1.exe examples/example$1/main.go
 cd ..

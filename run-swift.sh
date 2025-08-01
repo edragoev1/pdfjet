@@ -4,6 +4,9 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+# Very important!!
+./clean.sh
+
 swift run --configuration release Example_$1
 # swift run --configuration debug Example_$1
 

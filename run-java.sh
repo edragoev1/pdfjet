@@ -4,8 +4,8 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-rm -f out/production/com/pdfjet/*.class
-rm -f out/production/examples/*.class
+# Very important!!
+./clean.sh
 
 mkdir -p out/production
 
