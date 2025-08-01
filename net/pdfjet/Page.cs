@@ -445,16 +445,19 @@ public class Page {
             for (int i = 0; i < len; i++) {
                 int c1 = str[i];
                 if (c1 < font.firstChar || c1 > font.lastChar) {
-                    Append(0x0020.ToString("X4"));
+                    // Append(0x0020.ToString("X4"));
+                    AppendHex4(0x0020);
                 } else {
-                    Append(c1.ToString("X4"));
+                    // Append(c1.ToString("X4"));
+                    AppendHex4(c1);
                 }
             }
         } else {
             for (int i = 0; i < len; i++) {
                 int c1 = str[i];
                 if (c1 < font.firstChar || c1 > font.lastChar) {
-                    Append(font.unicodeToGID[0x0020].ToString("X4"));
+                    // Append(font.unicodeToGID[0x0020].ToString("X4"));
+                    AppendHex4(font.unicodeToGID[0x0020]);
                 } else {
                     // Append(font.unicodeToGID[c1].ToString("X4"));
                     AppendHex4(font.unicodeToGID[c1]);
