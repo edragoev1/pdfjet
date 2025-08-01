@@ -4,7 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import com.pdfjet.*;
-import com.pdfjet.font.IBMPlexSans;
+import com.pdfjet.font.*;
 
 /**
  *  Example_01.java
