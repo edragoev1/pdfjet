@@ -1777,17 +1777,32 @@ public class PDF {
         }
     }
 
+    // private func toHex(_ str: String) -> String {
+    //     var buffer = "FEFF"
+    //     for scalar in str.unicodeScalars {
+    //         let hex = String(scalar.value, radix: 16, uppercase: true)
+    //         switch hex.count {
+    //         case 1: buffer.append("000" + hex)
+    //         case 2: buffer.append("00" + hex)
+    //         case 3: buffer.append("0" + hex)
+    //         default: buffer.append(hex) // case 4
+    //         }
+    //     }
+    //     return buffer
+    // }
+
+    let HEX = Array("0123456789ABCDEF")
     private func toHex(_ str: String) -> String {
-        var buffer = "FEFF"
-        for scalar in str.unicodeScalars {
-            let hex = String(scalar.value, radix: 16, uppercase: true)
-            switch hex.count {
-            case 1: buffer.append("000" + hex)
-            case 2: buffer.append("00" + hex)
-            case 3: buffer.append("0" + hex)
-            default: buffer.append(hex) // case 4
-            }
+        if (str == "") {
+            return ""
         }
-        return buffer
+        var buf = "FEFF"
+        for scalar in str.unicodeScalars {
+            buf.append(HEX[(Int(scalar.value) >> 12) & 0xF])
+            buf.append(HEX[(Int(scalar.value) >> 8)  & 0xF])
+            buf.append(HEX[(Int(scalar.value) >> 4)  & 0xF])
+            buf.append(HEX[(Int(scalar.value))       & 0xF])
+        }
+        return buf
     }
 }   // End of PDF.swift
