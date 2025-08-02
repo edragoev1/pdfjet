@@ -528,10 +528,6 @@ final public class PDF {
 
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
     private String toHex(String str) {
-        if (str == null || str.isEmpty()) {
-            return "";
-        }
-
         // Get all code points (allocates temporary array)
         int[] codePoints = str.codePoints().toArray();
 
@@ -539,15 +535,12 @@ final public class PDF {
         StringBuilder buf = new StringBuilder(4 + codePoints.length * 4);
         buf.append("FEFF");
 
-        // Reusable hex buffer and digit lookup
-        final char[] hexBuffer = new char[4];
         final char[] hexDigits = HEX; // Your existing HEX array
         for (int codePoint : codePoints) {
-            hexBuffer[0] = hexDigits[(codePoint >> 12) & 0xF];
-            hexBuffer[1] = hexDigits[(codePoint >> 8)  & 0xF];
-            hexBuffer[2] = hexDigits[(codePoint >> 4)  & 0xF];
-            hexBuffer[3] = hexDigits[codePoint         & 0xF];
-            buf.append(hexBuffer);
+            buf.append(hexDigits[(codePoint >> 12) & 0xF]);
+            buf.append(hexDigits[(codePoint >> 8)  & 0xF]);
+            buf.append(hexDigits[(codePoint >> 4)  & 0xF]);
+            buf.append(hexDigits[(codePoint)       & 0xF]);
         }
 
         return buf.toString();
