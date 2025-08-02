@@ -1,39 +1,46 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Diagnostics;
-
 using PDFjet.NET;
 
-/**
- *  Example_01.cs
- */
-class Example_01 {
-    public Example_01() {
-        PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_01.pdf", FileMode.Create)));
 
-        // Font font1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
-        Font font1 = new Font(pdf, IBMPlexSans.Regular);
+public class Example_01 {
+    public Example_01() {
+        FileStream fs = new FileStream("Example_01.pdf", FileMode.Create);
+        PDF pdf = new PDF(new BufferedStream(fs));
+
+        // Font font = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        Font font = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBox textBox = new TextBox(font1,
-                File.ReadAllText("data/languages/english.txt"));
-        textBox.SetLocation(50f, 50f);
-        textBox.SetWidth(430f);
-        textBox.DrawOn(page);
+        TextBlock textBlock = new TextBlock(font,
+                File.ReadAllText("data/languages/english.txt", Encoding.UTF8));
+        textBlock.SetLocation(50f, 50f);
+        textBlock.SetWidth(430f);
+        textBlock.SetTextPadding(10f);
+        float[] xy = textBlock.DrawOn(page);
 
-        textBox = new TextBox(font1,
-                File.ReadAllText("data/languages/greek.txt"));
-        textBox.SetLocation(50f, 250f);
-        textBox.SetWidth(430f);
-        textBox.DrawOn(page);
+        Rect rect = new Rect(xy[0], xy[1], 30f, 30f);
+        rect.SetBorderColor(Color.blue);
+        rect.DrawOn(page);
 
-        textBox = new TextBox(font1,
-                File.ReadAllText("data/languages/bulgarian.txt"));
-        textBox.SetLocation(50f, 450f);
-        textBox.SetWidth(430f);
-        textBox.DrawOn(page);
+        textBlock = new TextBlock(font,
+                File.ReadAllText("data/languages/greek.txt", Encoding.UTF8));
+        textBlock.SetLocation(50f, xy[1] + 30f);
+        textBlock.SetWidth(430f);
+        textBlock.SetBorderColor(Color.none);
+        xy = textBlock.DrawOn(page);
+
+        textBlock = new TextBlock(font,
+                File.ReadAllText("data/languages/bulgarian.txt", Encoding.UTF8));
+        textBlock.SetLocation(50f, xy[1] + 30f);
+        textBlock.SetWidth(430f);
+        textBlock.SetTextPadding(10f);
+        textBlock.SetBorderColor(Color.blue);
+        textBlock.SetBorderCornerRadius(10f);
+        textBlock.DrawOn(page);
 
         pdf.Complete();
     }
@@ -46,4 +53,4 @@ class Example_01 {
         sw.Stop();
         TextUtils.PrintDuration("Example_01", time0, time1);
     }
-}   // End of Example_01.cs
+}
