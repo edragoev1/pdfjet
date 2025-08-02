@@ -1777,30 +1777,22 @@ public class PDF {
         }
     }
 
-    // This method is slightly faster that the one below!
+    let HEX: [UInt8] = [
+        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,  // '0' '1' '2' '3' '4' '5' '6' '7'
+        0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46   // '8' '9' 'A' 'B' 'C' 'D' 'E' 'F'
+    ]
     private func toHex(_ str: String) -> String {
-        var buffer = "FEFF"
-        for scalar in str.unicodeScalars {
-            let hex = String(scalar.value, radix: 16, uppercase: true)
-            switch hex.count {
-            case 1: buffer.append("000" + hex)
-            case 2: buffer.append("00" + hex)
-            case 3: buffer.append("0" + hex)
-            default: buffer.append(hex) // case 4
-            }
-        }
-        return buffer
-    }
+        var buf = [UInt8]()
+        buf.reserveCapacity(str.count)
 
-    // let HEX = Array("0123456789ABCDEF")
-    // private func toHex(_ str: String) -> String {
-    //     var buf = "FEFF"
-    //     for scalar in str.unicodeScalars {
-    //         buf.append(HEX[(Int(scalar.value) >> 12) & 0xF])
-    //         buf.append(HEX[(Int(scalar.value) >> 8)  & 0xF])
-    //         buf.append(HEX[(Int(scalar.value) >> 4)  & 0xF])
-    //         buf.append(HEX[(Int(scalar.value))       & 0xF])
-    //     }
-    //     return buf
-    // }
+        var str = "FEFF"
+        for scalar in str.unicodeScalars {
+            buf.append(HEX[(Int(scalar.value) >> 12) & 0xF])
+            buf.append(HEX[(Int(scalar.value) >> 8)  & 0xF])
+            buf.append(HEX[(Int(scalar.value) >> 4)  & 0xF])
+            buf.append(HEX[(Int(scalar.value))       & 0xF])
+            str.append(String(decoding: buf, as: Unicode.ASCII.self))
+        }
+        return str
+    }
 }   // End of PDF.swift
