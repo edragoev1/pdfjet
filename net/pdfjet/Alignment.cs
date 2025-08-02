@@ -23,12 +23,12 @@ SOFTWARE.
 */
 
 namespace PDFjet.NET {
-/// <summary>
-/// Used to specify the text alignment in TextBlock.
-/// </summary>
-public enum Alignment {
-    LEFT,
-    RIGHT,
-    CENTER
-}
+    /// <summary>
+    /// Used to specify the text alignment in TextBlock.
+    /// </summary>
+    public enum Alignment {
+        LEFT,
+        RIGHT,
+        CENTER
+    }
 }
