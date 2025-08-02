@@ -738,7 +738,7 @@ public class PDF {
     }
 /*
     // Use this method on systems that don't have Deflater stream or when troubleshooting.
-    private func addPageContent(_ page: inout Page) {
+    private func addPageContent(_ page: Page) {
         newobj()
         append(Token.beginDictionary)
         append(Token.length)
