@@ -24,18 +24,18 @@ public class Example_01 {
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(430f);
         textBlock.setTextPadding(10f);
-        textBlock.drawOn(page);
+        float[] xy = textBlock.drawOn(page);
 
         textBlock = new TextBlock(font, new String(
                 Files.readAllBytes(Paths.get("data/languages/greek.txt"))));
-        textBlock.setLocation(50f, 280f);
+        textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(430f);
         textBlock.setBorderColor(Color.none);
-        textBlock.drawOn(page);
+        xy = textBlock.drawOn(page);
 
         textBlock = new TextBlock(font, new String(
                 Files.readAllBytes(Paths.get("data/languages/bulgarian.txt"))));
-        textBlock.setLocation(50f, 480f);
+        textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(430f);
         textBlock.setTextPadding(10f);
         textBlock.setBorderColor(Color.blue);
