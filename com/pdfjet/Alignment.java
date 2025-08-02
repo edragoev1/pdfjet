@@ -1,5 +1,5 @@
 /**
- *  Direction.java
+ *  Alignment.java
  *
 ©2025 PDFjet Software
 
@@ -24,9 +24,10 @@ SOFTWARE.
 package com.pdfjet;
 
 /**
- *  Used to specify the text writing direction in the TextBlock.
+ *  Used to specify the text alignment in TextBlock.
  */
-public class Direction {
-    public static final int LEFT_TO_RIGHT = 0;
-    public static final int BOTTOM_TO_TOP = 1;
+ public class Alignment {
+    public static final int LEFT   = 0;
+    public static final int RIGHT  = 1;
+    public static final int CENTER = 2;
 }
