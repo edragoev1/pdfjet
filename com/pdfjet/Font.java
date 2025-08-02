@@ -349,6 +349,14 @@ final public class Font {
         return size;
     }
 
+    public float getUnderlineThickness() {
+        return this.underlineThickness;
+    }
+
+    public float getUnderlinePosition() {
+        return this.underlinePosition;
+    }
+
     /**
      * Sets the kerning for the selected font to 'true' or 'false' depending on the
      * passed value of kernPairs parameter.
@@ -494,8 +502,9 @@ final public class Font {
                 w -= advanceWidth[unicodeToGID[c1]];
             }
 
-            if (w < 0)
+            if (w < 0) {
                 break;
+            }
         }
 
         return i;

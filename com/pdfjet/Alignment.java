@@ -26,8 +26,8 @@ package com.pdfjet;
 /**
  *  Used to specify the text alignment in TextBlock.
  */
- public class Alignment {
-    public static final int LEFT   = 0;
-    public static final int RIGHT  = 1;
-    public static final int CENTER = 2;
+ public enum Alignment {
+    LEFT,
+    RIGHT,
+    CENTER;
 }

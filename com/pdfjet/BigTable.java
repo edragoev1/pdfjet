@@ -105,6 +105,7 @@ public class BigTable {
 
     private void drawTextAndLine(String[] fields, Font font) throws Exception {
         if (page == null) {     // The first page
+            // page.addBMC(StructElem.TABLE, language, rowText, rowText);
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
             page.setPenWidth(0f);
@@ -116,6 +117,7 @@ public class BigTable {
             return;
         }
         if (startNewPage) {     // Create new page
+            // page.addBMC(StructElem.TABLE, language, rowText, rowText);
             page = new Page(pdf, pageSize, Page.DETACHED);
             pages.add(page);
             page.setPenWidth(0f);
@@ -133,6 +135,7 @@ public class BigTable {
             drawTheVerticalLines();
             startNewPage = true;
         }
+        // page.addEMC();
     }
 
     private void drawFieldsAndLine(String[] fields, Font font) {
@@ -150,11 +153,10 @@ public class BigTable {
         page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
         page.strokePath();
         page.setPenColor(original);
-        // page.addEMC();
+        page.addEMC();
 
         // String rowText = getRowText(fields);
-        // page.addBMC(StructElem.P, language, rowText, rowText);
-        // page.addArtifactBMC();
+        // page.addBMC(StructElem.TR, language, rowText, rowText);
         page.setPenWidth(0f);
         page.setTextFont(font);
         page.setBrushColor(Color.black);
@@ -163,6 +165,7 @@ public class BigTable {
             float xText1 = vertLines[i] + this.padding;
             float xText2 = vertLines[i + 1] - this.padding;
             page.beginText();
+            // page.addBMC(StructElem.TD, language, rowText, rowText);
             if (alignment[i] == Align.LEFT) {           // Align Left
                 page.setTextLocation(xText1, this.yText);
             } else if (alignment[i] == Align.RIGHT) {   // Align Right
@@ -170,8 +173,9 @@ public class BigTable {
             }
             page.drawText(text);
             page.endText();
+            // page.addEMC();  // Close TD
         }
-        page.addEMC();
+        // page.addEMC(); // Close TH
     }
 
     /**

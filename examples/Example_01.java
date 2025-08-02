@@ -14,28 +14,33 @@ public class Example_01 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_01.pdf")));
 
-        // Font font1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
-        Font font1 = new Font(pdf, IBMPlexSans.Regular);
+        // Font font = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        Font font = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBox textBox = new TextBox(font1, new String(
+        com.pdfjet.TextBlock textBlock = new TextBlock(font, new String(
                 Files.readAllBytes(Paths.get("data/languages/english.txt"))));
-        textBox.setLocation(50f, 50f);
-        textBox.setWidth(430f);
-        textBox.drawOn(page);
+        textBlock.setLocation(50f, 50f);
+        textBlock.setWidth(430f);
+        textBlock.setTextPadding(10f);
+        textBlock.drawOn(page);
 
-        textBox = new TextBox(font1, new String(
+        textBlock = new TextBlock(font, new String(
                 Files.readAllBytes(Paths.get("data/languages/greek.txt"))));
-        textBox.setLocation(50f, 250f);
-        textBox.setWidth(430f);
-        textBox.drawOn(page);
+        textBlock.setLocation(50f, 280f);
+        textBlock.setWidth(430f);
+        textBlock.setBorderColor(Color.none);
+        textBlock.drawOn(page);
 
-        textBox = new TextBox(font1, new String(
+        textBlock = new TextBlock(font, new String(
                 Files.readAllBytes(Paths.get("data/languages/bulgarian.txt"))));
-        textBox.setLocation(50f, 450f);
-        textBox.setWidth(430f);
-        textBox.drawOn(page);
+        textBlock.setLocation(50f, 480f);
+        textBlock.setWidth(430f);
+        textBlock.setTextPadding(10f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setBorderCornerRadius(10f);
+        textBlock.drawOn(page);
 
         pdf.complete();
     }
