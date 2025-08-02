@@ -32,7 +32,6 @@ using System.IO;
 ///
 namespace PDFjet.NET {
 public class Text : IDrawable {
-
     private List<Paragraph> paragraphs;
     private Font font;
     private Font fallbackFont;

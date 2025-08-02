@@ -378,6 +378,14 @@ public class Font {
         return bodyHeight;
     }
 
+    public float GetUnderlinePosition() {
+        return fontUnderlinePosition;
+    }
+
+    public float GetUnderlineThickness() {
+        return fontUnderlineThickness;
+    }
+
     public int GetFitChars(String str, double width) {
         return GetFitChars(str, (float) width);
     }

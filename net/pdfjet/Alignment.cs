@@ -1,5 +1,5 @@
 /**
- *  Direction.cs
+ *  Alignment.cs
  *
 ©2025 PDFjet Software
 
@@ -22,13 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-/**
- *  Used to specify the text writing direction in TextBox.cs
- */
 namespace PDFjet.NET {
-public enum Direction {
-    LEFT_TO_RIGHT,
-    BOTTOM_TO_TOP,
-    TOP_TO_BOTTOM,
+/// <summary>
+/// Used to specify the text alignment in TextBlock.
+/// </summary>
+public enum Alignment {
+    LEFT,
+    RIGHT,
+    CENTER
 }
-}   // End of namespace PDFjet.NET
+}
