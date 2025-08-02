@@ -26,6 +26,10 @@ public class Example_01 {
         textBlock.setTextPadding(10f);
         float[] xy = textBlock.drawOn(page);
 
+        Rect rect = new Rect(xy[0], xy[1], 30f, 30f);
+        rect.setBorderColor(Color.blue);
+        rect.drawOn(page);
+
         textBlock = new TextBlock(font, new String(
                 Files.readAllBytes(Paths.get("data/languages/greek.txt"))));
         textBlock.setLocation(50f, xy[1] + 30f);
