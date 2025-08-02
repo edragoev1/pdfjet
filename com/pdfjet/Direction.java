@@ -24,9 +24,13 @@ SOFTWARE.
 package com.pdfjet;
 
 /**
- *  Used to specify the text writing direction in the TextBlock.
+ *  Used to specify the text direction in TextBox.
  */
-public class Direction {
-    public static final int LEFT_TO_RIGHT = 0;
-    public static final int BOTTOM_TO_TOP = 1;
+public enum Direction {
+    /** Left to Right */
+    LEFT_TO_RIGHT,
+    /** Bottom to Top */
+    BOTTOM_TO_TOP,
+    /** Top to Bottom */
+    TOP_TO_BOTTOM;
 }
