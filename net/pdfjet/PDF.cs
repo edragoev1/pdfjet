@@ -474,7 +474,10 @@ public class PDF {
                 }
 
                 if (!String.IsNullOrEmpty(element.actualText) && !String.IsNullOrEmpty(element.altDescription)) {
-                    String language = element.language != null ? element.language : this.language;
+                    String language = element.language;
+                    if (language == null) {
+                        language = this.language;
+                    }
                     byte[] languageBytes = Encoding.UTF8.GetBytes(language);
                     byte[] actualTextBytes = Encoding.UTF8.GetBytes(element.actualText);
                     byte[] altDescriptionBytes = Encoding.UTF8.GetBytes(element.altDescription);

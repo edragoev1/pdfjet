@@ -482,21 +482,32 @@ func (pdf *PDF) addStructElementObjects() {
 			pdf.appendString("\n")
 		}
 
-		pdf.appendString("/Lang (")
-		if element.language != "" {
-			pdf.appendString(element.language)
-		} else {
-			pdf.appendString(pdf.language)
+		if element.actualText != "" && element.altDescription != "" {
+			language := element.language
+			if language == "" {
+				language = pdf.language
+			}
+			languageBytes := []byte(language)
+			actualTextBytes := []byte(element.actualText)
+			altDescriptionBytes := []byte(element.altDescription)
+			if pdf.encryption != nil {
+				languageBytes, _ = encryption.Encrypt(languageBytes, pdf.encryption.GetKey())
+				actualTextBytes, _ = encryption.Encrypt(actualTextBytes, pdf.encryption.GetKey())
+				altDescriptionBytes, _ = encryption.Encrypt(altDescriptionBytes, pdf.encryption.GetKey())
+			}
+
+			pdf.appendString("/Lang <")
+			pdf.appendString(toHex(string(languageBytes)))
+			pdf.appendString(">\n")
+
+			pdf.appendString("/ActualText <")
+			pdf.appendString(toHex(string(actualTextBytes)))
+			pdf.appendString(">\n")
+
+			pdf.appendString("/Alt <")
+			pdf.appendString(toHex(string(altDescriptionBytes)))
+			pdf.appendString(">\n")
 		}
-		pdf.appendString(")\n")
-
-		pdf.appendString("/Alt <")
-		pdf.appendString(toHex(element.altDescription))
-		pdf.appendString(">\n")
-
-		pdf.appendString("/ActualText <")
-		pdf.appendString(toHex(element.actualText))
-		pdf.appendString(">\n")
 
 		pdf.appendString(">>\n")
 		pdf.endobj()
