@@ -806,9 +806,9 @@ final public class PDF {
 
             if (annot.fileAttachment.title != null) {
                 byte[] title = annot.fileAttachment.title.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     title = AES256.Encrypt(title, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    title = AES256.encrypt(title, encryption.getKey());
+                }
                 append("/T <");
                 append(Util.toHexString(title));
                 append(">\n");
@@ -816,9 +816,9 @@ final public class PDF {
 
             if (annot.fileAttachment.contents != null) {
                 byte[] contents = annot.fileAttachment.contents.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     contents = AES256.Encrypt(contents, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    contents = AES256.encrypt(contents, encryption.getKey());
+                }
                 append("/Contents <");
                 append(Util.toHexString(contents));
                 append(">\n");
@@ -829,9 +829,9 @@ final public class PDF {
                 append("/A <<\n");
                 append("/S /URI\n");
                 byte[] uri = annot.uri.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     uri = AES256.Encrypt(uri, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    uri = AES256.encrypt(uri, encryption.getKey());
+                }
                 append("/URI <");
                 append(Util.toHexString(uri));
                 append(">\n");
@@ -873,9 +873,9 @@ final public class PDF {
 
             if (annot.title != null) {
                 byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     title = AES256.Encrypt(title, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    title = AES256.encrypt(title, encryption.getKey());
+                }
                 append("/T <");
                 append(Util.toHexString(title));
                 append(">\n");
@@ -883,9 +883,9 @@ final public class PDF {
 
             if (annot.contents != null) {
                 byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     contents = AES256.Encrypt(contents, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    contents = AES256.encrypt(contents, encryption.getKey());
+                }
                 append("/Contents <");
                 append(Util.toHexString(contents));
                 append(">\n");
@@ -906,9 +906,9 @@ final public class PDF {
 
             if (annot.title != null) {
                 byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     title = AES256.Encrypt(title, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    title = AES256.encrypt(title, encryption.getKey());
+                }
                 append("/T <");
                 append(Util.toHexString(title));
                 append(">\n");
@@ -916,9 +916,9 @@ final public class PDF {
 
             if (annot.contents != null) {
                 byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     contents = AES256.Encrypt(contents, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    contents = AES256.encrypt(contents, encryption.getKey());
+                }
                 append("/Contents <");
                 append(Util.toHexString(contents));
                 append(">\n");
@@ -928,9 +928,9 @@ final public class PDF {
 
             if (annot.title != null) {
                 byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     title = AES256.Encrypt(title, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    title = AES256.encrypt(title, encryption.getKey());
+                }
                 append("/T <");
                 append(Util.toHexString(title));
                 append(">\n");
@@ -938,9 +938,9 @@ final public class PDF {
 
             if (annot.contents != null) {
                 byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
-//                 if (encryption != null) {
-//                     contents = AES256.Encrypt(contents, encryption.GetKey());
-//                 }
+                if (encryption != null) {
+                    contents = AES256.encrypt(contents, encryption.getKey());
+                }
                 append("/Contents <");
                 append(Util.toHexString(contents));
                 append(">\n");
