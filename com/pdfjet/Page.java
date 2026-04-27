@@ -107,9 +107,6 @@ final public class Page {
      */
     public Page(PDF pdf, float[] pageSize, boolean addPageToPDF) throws Exception {
         this.pdf = pdf;
-//         contents = new ArrayList<Integer>();
-//         annots = new ArrayList<Annotation>();
-//         destinations = new ArrayList<Destination>();
         width = pageSize[0];
         height = pageSize[1];
         buf = new ByteArrayOutputStream(8192);
