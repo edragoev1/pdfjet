@@ -21,6 +21,7 @@ public class PDF {
     internal List<OptionalContentGroup> groups = new List<OptionalContentGroup>();
     internal Dictionary<String, Int32> states = new Dictionary<String, Int32>();
     internal List<Stamp> stamps = new List<Stamp>();
+    internal List<StructElem> structElements = new List<StructElem>();
     internal static readonly CultureInfo culture_en_us = new CultureInfo("en-US");
     internal Compliance compliance = Compliance.PDF_1_7;
     internal Bookmark toc = null;
@@ -434,11 +435,9 @@ public class PDF {
         Append(parent);
         Append(Token.ObjRef);
         Append("/K [\n");
-        foreach (Page page in pages) {
-            foreach (StructElem structElement in page.structElements) {
-                Append(structElement.objNumber);
-                Append(" 0 R\n");
-            }
+        foreach (StructElem structElement in this.structElements) {
+            Append(structElement.objNumber);
+            Append(" 0 R\n");
         }
         Append("]\n");
         Append(Token.EndDictionary);
@@ -448,62 +447,59 @@ public class PDF {
 
     private void AddStructElementObjects() {
         int structTreeRootObjNumber = GetObjNumber() + 1;
-        foreach (Page page in pages) {
-            structTreeRootObjNumber += page.structElements.Count;
-        }
-        foreach (Page page in pages) {
-            foreach (StructElem element in page.structElements) {
-                NewObj();
-                element.objNumber = GetObjNumber();
-                Append("<<\n/Type /StructElem /S /");
-                Append(element.structure);
-                Append("\n/P ");
-                Append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
-                Append(" 0 R\n/Pg ");
-                Append(element.pageObjNumber);
-                Append(Token.ObjRef);
+        structTreeRootObjNumber += this.structElements.Count;
 
-                if (element.annotation != null) {
-                    Append("/K <</Type /OBJR /Obj ");
-                    Append(element.annotation.objNumber);
-                    Append(" 0 R>>\n");
-                } else {
-                    Append("/K ");
-                    Append(element.mcid);
-                    Append("\n");
-                }
+        foreach (StructElem element in this.structElements) {
+            NewObj();
+            element.objNumber = GetObjNumber();
+            Append("<<\n/Type /StructElem /S /");
+            Append(element.structure);
+            Append("\n/P ");
+            Append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
+            Append(" 0 R\n/Pg ");
+            Append(element.pageObjNumber);
+            Append(Token.ObjRef);
 
-                if (!String.IsNullOrEmpty(element.actualText) && !String.IsNullOrEmpty(element.altDescription)) {
-                    String language = element.language;
-                    if (language == null) {
-                        language = this.language;
-                    }
-
-                    byte[] languageBytes = Encoding.UTF8.GetBytes(language);
-                    byte[] actualTextBytes = Encoding.UTF8.GetBytes(element.actualText);
-                    byte[] altDescriptionBytes = Encoding.UTF8.GetBytes(element.altDescription);
-                    if (encryption != null) {
-                        languageBytes = AES256.Encrypt(languageBytes, encryption.GetKey());
-                        actualTextBytes = AES256.Encrypt(actualTextBytes, encryption.GetKey());
-                        altDescriptionBytes = AES256.Encrypt(altDescriptionBytes, encryption.GetKey());
-                    }
-
-                    Append("/Lang <");
-                    Append(Util.ToHexString(languageBytes));
-                    Append(">\n");
-
-                    Append("/ActualText <");
-                    Append(Util.ToHexString(actualTextBytes));
-                    Append(">\n");
-
-                    Append("/Alt <");
-                    Append(Util.ToHexString(altDescriptionBytes));
-                    Append(">\n");
-                }
-
-                Append(">>\n");
-                EndObj();
+            if (element.annotation != null) {
+                Append("/K <</Type /OBJR /Obj ");
+                Append(element.annotation.objNumber);
+                Append(" 0 R>>\n");
+            } else {
+                Append("/K ");
+                Append(element.mcid);
+                Append("\n");
             }
+
+            if (!String.IsNullOrEmpty(element.actualText) && !String.IsNullOrEmpty(element.altDescription)) {
+                String language = element.language;
+                if (language == null) {
+                    language = this.language;
+                }
+
+                byte[] languageBytes = Encoding.UTF8.GetBytes(language);
+                byte[] actualTextBytes = Encoding.UTF8.GetBytes(element.actualText);
+                byte[] altDescriptionBytes = Encoding.UTF8.GetBytes(element.altDescription);
+                if (encryption != null) {
+                    languageBytes = AES256.Encrypt(languageBytes, encryption.GetKey());
+                    actualTextBytes = AES256.Encrypt(actualTextBytes, encryption.GetKey());
+                    altDescriptionBytes = AES256.Encrypt(altDescriptionBytes, encryption.GetKey());
+                }
+
+                Append("/Lang <");
+                Append(Util.ToHexString(languageBytes));
+                Append(">\n");
+
+                Append("/ActualText <");
+                Append(Util.ToHexString(actualTextBytes));
+                Append(">\n");
+
+                Append("/Alt <");
+                Append(Util.ToHexString(altDescriptionBytes));
+                Append(">\n");
+            }
+
+            Append(">>\n");
+            EndObj();
         }
     }
 
@@ -591,28 +587,13 @@ public class PDF {
         NewObj();
         Append(Token.BeginDictionary);
         Append("/Nums [\n");
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            Append(i);
-            Append(" [\n");
-            foreach (StructElem element in page.structElements) {
-                if (element.annotation == null) {
-                    Append(element.objNumber);
-                    Append(Token.ObjRef);
-                }
-            }
-            Append("]\n");
-        }
-        int index = pages.Count;
-        foreach (Page page in pages) {
-            foreach (StructElem element in page.structElements) {
-                if (element.annotation != null) {
-                    Append(index);
-                    Append(Token.Space);
-                    Append(element.objNumber);
-                    Append(Token.ObjRef);
-                    index++;
-                }
+        for (int i = 0; i < this.structElements.Count; i++) {
+            StructElem element = this.structElements[i];
+            if (element.annotation != null) {
+                Append(i);
+                Append(Token.Space);
+                Append(element.objNumber);
+                Append(Token.ObjRef);
             }
         }
         Append("]\n");
@@ -1009,14 +990,14 @@ public class PDF {
 
     private void AddAnnotDictionaries() {
         int index = pages.Count;
+        foreach (StructElem element in this.structElements) {
+            if (element.annotation != null) {
+                index = AddAnnotationObject(element.annotation, index);
+            }
+        }
+
         foreach (Page page in pages) {
-            if (page.structElements.Count > 0) {
-                foreach (StructElem element in page.structElements) {
-                    if (element.annotation != null) {
-                        AddAnnotationObject(element.annotation, index);
-                    }
-                }
-            } else if (page.annots.Count > 0) {
+            if (page.annots.Count > 0) {
                 foreach (Annotation annotation in page.annots) {
                     if (annotation != null) {
                         AddAnnotationObject(annotation, -1);

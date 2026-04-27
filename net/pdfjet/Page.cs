@@ -57,7 +57,7 @@ public class Page {
 
     internal float rotateDegrees = 0f;
 
-    internal readonly List<StructElem> structElements = new List<StructElem>();
+    // internal readonly List<StructElem> structElements = new List<StructElem>();
     internal readonly List<State> savedStates = new List<State>();
     internal readonly List<Annotation> annots;
     internal readonly List<Int32> contents;
@@ -1646,7 +1646,7 @@ public class Page {
     }
 
     internal void SetStructElementsPageObjNumber(int pageObjNumber) {
-        foreach (StructElem element in structElements) {
+        foreach (StructElem element in pdf.structElements) {
             element.pageObjNumber = pageObjNumber;
         }
     }
@@ -1671,7 +1671,7 @@ public class Page {
                 element.language = language;
                 element.actualText = actualText;
                 element.altDescription = altDescription;
-                structElements.Add(element);
+                pdf.structElements.Add(element);
 
                 Append("/");
                 Append(structure);
@@ -1888,7 +1888,7 @@ public class Page {
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;
             element.annotation = annotation;
-            structElements.Add(element);
+            pdf.structElements.Add(element);
         }
     }
 
