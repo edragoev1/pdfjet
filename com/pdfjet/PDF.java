@@ -555,25 +555,13 @@ final public class PDF {
         newobj();
         append(Token.BEGIN_DICTIONARY);
         append("/Nums [\n");
-        for (int i = 0; i < pages.size(); i++) {
-            append(i);
-            append(" [\n");
-            for (StructElem element : this.structElements) {
-                if (element.annotation == null) {
-                    append(element.objNumber);
-                    append(Token.OBJ_REF);
-                }
-            }
-            append("]\n");
-        }
-        int index = pages.size();
-        for (StructElem element : this.structElements) {
+        for (int i = 0; i < this.structElements.size(); i++) {
+            StructElem element = this.structElements.get(i);
             if (element.annotation != null) {
-                append(index);
+                append(i);
                 append(Token.SPACE);
                 append(element.objNumber);
                 append(Token.OBJ_REF);
-                index++;
             }
         }
         append("]\n");

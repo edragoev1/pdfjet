@@ -42,10 +42,6 @@ type Page struct {
 	renderingMode int
 	width         float32
 	height        float32
-	contents      []int
-	annots        []*Annotation
-	destinations  []*Destination
-	structures    []*StructElem
 
 	cropBox  []float32
 	bleedBox []float32
@@ -67,9 +63,14 @@ type Page struct {
 	lineCapStyle  int
 	lineJoinStyle int
 	linePattern   string
-	savedStates   []*State
-	mcid          int
 	savedHeight   float32
+
+	contents     []int
+	annots       []*Annotation
+	destinations []*Destination
+	savedStates  []*State
+
+	mcid int
 }
 
 // Constants from Android's Matrix object:

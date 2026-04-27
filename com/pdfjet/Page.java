@@ -30,11 +30,6 @@ final public class Page {
     protected float width;
     protected float height;
 
-    protected final List<Integer> contents = new ArrayList<Integer>();
-    protected final List<Annotation> annots = new ArrayList<Annotation>();
-    protected final List<Destination> destinations= new ArrayList<Destination>();
-    protected final List<State> savedStates = new ArrayList<State>();
-
     protected float[] cropBox = null;
     protected float[] bleedBox = null;
     protected float[] trimBox = null;
@@ -56,6 +51,11 @@ final public class Page {
     private CapStyle lineCapStyle = CapStyle.BUTT;
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
     private String strokePattern = "[] 0";
+
+    protected final List<Integer> contents = new ArrayList<Integer>();
+    protected final List<Annotation> annots = new ArrayList<Annotation>();
+    protected final List<Destination> destinations= new ArrayList<Destination>();
+    protected final List<State> savedStates = new ArrayList<State>();
 
     private int mcid = 0;
 

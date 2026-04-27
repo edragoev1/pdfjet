@@ -554,25 +554,12 @@ func (pdf *PDF) addNumsParentTree() {
 	pdf.newobj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Nums [\n")
-	for i := 0; i < len(pdf.pages); i++ {
-		pdf.appendInteger(i)
-		pdf.appendString(" [\n")
-		for _, element := range pdf.structElements {
-			if element.annotation == nil {
-				pdf.appendInteger(element.objNumber)
-				pdf.appendString(" 0 R\n")
-			}
-		}
-		pdf.appendString("]\n")
-	}
-	index := len(pdf.pages)
-	for _, element := range pdf.structElements {
+	for i, element := range pdf.structElements {
 		if element.annotation != nil {
-			pdf.appendInteger(index)
+			pdf.appendInteger(i)
 			pdf.appendString(" ")
 			pdf.appendInteger(element.objNumber)
 			pdf.appendString(" 0 R\n")
-			index++
 		}
 	}
 	pdf.appendString("]\n")

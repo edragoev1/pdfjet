@@ -57,11 +57,10 @@ public class Page {
 
     internal float rotateDegrees = 0f;
 
-    // internal readonly List<StructElem> structElements = new List<StructElem>();
-    internal readonly List<State> savedStates = new List<State>();
-    internal readonly List<Annotation> annots;
     internal readonly List<Int32> contents;
+    internal readonly List<Annotation> annots;
     internal readonly List<Destination> destinations;
+    internal readonly List<State> savedStates = new List<State>();
 
     private int mcid;
 
