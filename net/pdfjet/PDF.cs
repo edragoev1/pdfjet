@@ -478,6 +478,7 @@ public class PDF {
                     if (language == null) {
                         language = this.language;
                     }
+
                     byte[] languageBytes = Encoding.UTF8.GetBytes(language);
                     byte[] actualTextBytes = Encoding.UTF8.GetBytes(element.actualText);
                     byte[] altDescriptionBytes = Encoding.UTF8.GetBytes(element.altDescription);

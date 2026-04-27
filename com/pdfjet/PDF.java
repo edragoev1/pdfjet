@@ -461,6 +461,7 @@ final public class PDF {
     private void addStructElementObjects() throws Exception {
         int structTreeRootObjNumber = getObjNumber() + 1;
         structTreeRootObjNumber += this.structElements.size();
+
         for (StructElem element : this.structElements) {
             newobj();
             element.objNumber = getObjNumber();
@@ -482,23 +483,32 @@ final public class PDF {
                 append("\n");
             }
 
-            append("/Lang (");
-            if (element.language != null) {
-                append(element.language);
-            } else {
-                append(language);
-            }
-            append(")\n");
+            if (element.actualText != null && !element.actualText.isEmpty() &&
+                    element.altDescription != null && !element.altDescription.isEmpty()) {
+                String language = element.language;
+                if (language == null) {
+                    language = this.language;
+                }
 
-            if (element.altDescription != null) {
-                append("/Alt <");
-                append(toHex(element.altDescription));
+                byte[] languageBytes = language.getBytes(StandardCharsets.UTF_8);
+                byte[] actualTextBytes = element.actualText.getBytes(StandardCharsets.UTF_8);
+                byte[] altDescriptionBytes = element.altDescription.getBytes(StandardCharsets.UTF_8);
+                if (encryption != null) {
+                    languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
+                    actualTextBytes = AES256.encrypt(actualTextBytes, encryption.getKey());
+                    altDescriptionBytes = AES256.encrypt(altDescriptionBytes, encryption.getKey());
+                }
+
+                append("/Lang <");
+                append(Util.toHexString(languageBytes));
                 append(">\n");
-            }
 
-            if (element.actualText != null) {
                 append("/ActualText <");
-                append(toHex(element.actualText));
+                append(Util.toHexString(actualTextBytes));
+                append(">\n");
+
+                append("/Alt <");
+                append(Util.toHexString(altDescriptionBytes));
                 append(">\n");
             }
 
