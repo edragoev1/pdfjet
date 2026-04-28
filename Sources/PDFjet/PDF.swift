@@ -40,6 +40,7 @@ public class PDF {
     private var language: String = "en-US"
     private var uuid: String = Salsa20().getID()
     private var prevPage: Page?
+    var structElements = [StructElem]()
     private var contentStreamsCompression = false
 
     // The OCG type that will be stored in the list/array.
@@ -782,16 +783,18 @@ public class PDF {
 
     private func addAnnotDictionaries() {
         var index = self.pages.count
+        for element in self.structElements {
+            if element.annotation != nil {
+                index = addAnnotationObject(element.annotation!, index)
+            }
+        }
+
         for page in self.pages {
-            if page.structures.count > 0 {
-                for element in page.structures {
-                    if element.annotation != nil {
-                        index = addAnnotationObject(element.annotation!, index)
-                    }
-                }
-            } else if page.annots!.count > 0 {
+            if page.annots!.count > 0 {
                 for annotation in page.annots! {
-                    addAnnotationObject(annotation, -1)
+                    // if annotation != nil {   // TODO:
+                        addAnnotationObject(annotation, -1)
+                    // }
                 }
             }
         }
