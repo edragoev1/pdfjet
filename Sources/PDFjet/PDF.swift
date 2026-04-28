@@ -430,55 +430,52 @@ public class PDF {
 
     private func addStructElementObjects() {
         var structTreeRootObjNumber = getObjNumber() + 1
-        for page in pages {
-            structTreeRootObjNumber += page.structures.count
-        }
+        structTreeRootObjNumber += self.structElements.count
         var buffer = String()
-        for page in pages {
-            for element in page.structures {
-                // newobj()
-                objOffset.append(byteCount)
-                buffer.append(String(objOffset.count))
-                buffer.append(" 0 obj\n")
+        for element in self.structElements {
+            // newobj()
+            objOffset.append(byteCount)
+            buffer.append(String(objOffset.count))
+            buffer.append(" 0 obj\n")
 
-                element.objNumber = getObjNumber()
-                buffer.append("<<\n/Type /StructElem /S /")
-                buffer.append(element.structure!)
-                buffer.append("\n/P ")
-                buffer.append(String(structTreeRootObjNumber + 2))
-                buffer.append(" 0 R /Pg ")
-                buffer.append(String(element.pageObjNumber!))
-                buffer.append(" 0 R\n")
+            element.objNumber = getObjNumber()
+            buffer.append("<<\n/Type /StructElem /S /")
+            buffer.append(element.structure!)
+            buffer.append("\n/P ")
+            buffer.append(String(structTreeRootObjNumber + 2))
+            buffer.append(" 0 R /Pg ")
+            buffer.append(String(element.pageObjNumber!))
+            buffer.append(" 0 R\n")
 
-                if element.annotation != nil {
-                    buffer.append("/K <</Type /OBJR /Obj ")
-                    buffer.append(String(element.annotation!.objNumber))
-                    buffer.append(" 0 R>>\n")
-                } else {
-                    buffer.append("/K ")
-                    buffer.append(String(element.mcid))
-                    buffer.append("\n")
-                }
-
-                buffer.append("/Lang (")
-                if element.language != nil {
-                    buffer.append(element.language!)
-                } else {
-                    buffer.append(language)
-                }
-                buffer.append(")\n");
-
-                buffer.append("/Alt <")
-                buffer.append(toHex(element.altDescription!))
-                buffer.append(">\n")
-
-                buffer.append("/ActualText <")
-                buffer.append(toHex(element.actualText!))
-                buffer.append(">\n")
-
-                append(">>\n");
-                buffer.append("endobj\n")
+            if element.annotation != nil {
+                buffer.append("/K <</Type /OBJR /Obj ")
+                buffer.append(String(element.annotation!.objNumber))
+                buffer.append(" 0 R>>\n")
+            } else {
+                buffer.append("/K ")
+                buffer.append(String(element.mcid))
+                buffer.append("\n")
             }
+
+            var language = element.language
+            if language == nil {
+                language = self.language
+            }
+
+            buffer.append("/Lang <")
+            buffer.append(toHex(language))
+            buffer.append(">\n");
+
+            buffer.append("/Alt <")
+            buffer.append(toHex(element.altDescription!))
+            buffer.append(">\n")
+
+            buffer.append("/ActualText <")
+            buffer.append(toHex(element.actualText!))
+            buffer.append(">\n")
+
+            append(">>\n");
+            buffer.append("endobj\n")
         }
         append(buffer)
     }
@@ -492,33 +489,18 @@ public class PDF {
 
         buffer.append("<<\n")
         buffer.append("/Nums [\n")
-        for i in 0..<pages.count {
-            let page = pages[i]
-            buffer.append(String(i))
-            buffer.append(" [\n")
-            for element in page.structures {
-                if element.annotation == nil {
-                    buffer.append(String(element.objNumber!))
-                    buffer.append(" 0 R\n")
-                }
-            }
-            buffer.append("]\n")
-        }
         var index = pages.count
-        for page in pages {
-            for element in page.structures {
-                if element.annotation != nil {
-                    buffer.append(String(index))
-                    buffer.append(" ")
-                    buffer.append(String(element.objNumber!))
-                    buffer.append(" 0 R\n")
-                    index += 1
-                }
+        for element in self.structElements {
+            if element.annotation != nil {
+                buffer.append(String(index))
+                buffer.append(" ")
+                buffer.append(String(element.objNumber!))
+                buffer.append(" 0 R\n")
+                index += 1
             }
         }
         buffer.append("]\n")
         buffer.append(">>\n")
-
         buffer.append("endobj\n")
         append(buffer)
     }
