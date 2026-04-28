@@ -418,11 +418,9 @@ public class PDF {
         append(parent)
         append(" 0 R\n")
         append("/K [\n")
-        for page in pages {
-            for structElement in page.structures {
-                append(structElement.objNumber!)
-                append(Token.objRef)
-            }
+        for structElement in self.structElements {
+            append(structElement.objNumber!)
+            append(Token.objRef)
         }
         append("]\n")
         append(Token.endDictionary)
