@@ -508,12 +508,17 @@ final public class Image implements Drawable {
         pdf.append("/BitsPerComponent ");
         pdf.append(bitsPerComponent);
         pdf.append('\n');
+
+        byte[] buf = data;
+        if (pdf.encryption != null) {
+            buf = AES256.encrypt(data, pdf.encryption.getKey());
+        }
         pdf.append("/Length ");
-        pdf.append(data.length);
+        pdf.append(buf.length);
         pdf.append('\n');
         pdf.append(">>\n");
         pdf.append("stream\n");
-        pdf.append(data, 0, data.length);
+        pdf.append(buf, 0, buf.length);
         pdf.append("\nendstream\n");
         pdf.endobj();
         objNumber = pdf.getObjNumber();
@@ -559,12 +564,17 @@ final public class Image implements Drawable {
             // If the image was created with Photoshop - invert the colors:
             pdf.append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n");
         }
+
+        byte[] buf = data;
+        if (pdf.encryption != null) {
+            buf = AES256.encrypt(data, pdf.encryption.getKey());
+        }
         pdf.append("/Length ");
-        pdf.append(data.length);
+        pdf.append(buf.length);
         pdf.append('\n');
         pdf.append(">>\n");
         pdf.append("stream\n");
-        pdf.append(data, 0, data.length);
+        pdf.append(buf, 0, buf.length);
         pdf.append("\nendstream\n");
         pdf.endobj();
         pdf.images.add(this);
