@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/zlib"
+	"encoding/hex"
 	"io"
 	"log"
 	"os"
@@ -93,9 +94,9 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	if pdf.encryption != nil {
 		fileNameBytes, _ = encryption.Encrypt(fileNameBytes, pdf.encryption.GetKey())
 	}
-	pdf.appendString("/F (")
-	pdf.appendByteArray(fileNameBytes)
-	pdf.appendString(")\n")
+	pdf.appendString("/F <")
+	pdf.appendString(hex.EncodeToString(fileNameBytes))
+	pdf.appendString(">\n")
 
 	pdf.appendString("/EF <</F ")
 	pdf.appendInteger(pdf.getObjNumber() - 1)

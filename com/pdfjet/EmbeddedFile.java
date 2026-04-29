@@ -1,7 +1,7 @@
 /**
  * EmbeddedFile.java
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 package com.pdfjet;
@@ -57,6 +57,10 @@ public class EmbeddedFile {
             buf = baos.toByteArray();
         }
 
+        if (pdf.encryption != null) {
+            buf = AES256.encrypt(buf, pdf.encryption.getKey());
+        }
+
         pdf.newobj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /EmbeddedFile\n");
@@ -75,9 +79,15 @@ public class EmbeddedFile {
         pdf.newobj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /Filespec\n");
-        pdf.append("/F (");
-        pdf.append(fileName);
-        pdf.append(")\n");
+
+        byte[] fileNameBytes = fileName.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        if (pdf.encryption != null) {
+            fileNameBytes = AES256.encrypt(fileNameBytes, pdf.encryption.getKey());
+        }
+        pdf.append("/F <");
+        pdf.append(Util.toHexString(fileNameBytes));
+        pdf.append(">\n");
+
         pdf.append("/EF <</F ");
         pdf.append(pdf.getObjNumber() - 1);
         pdf.append(" 0 R>>\n");
