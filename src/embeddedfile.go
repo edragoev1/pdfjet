@@ -16,6 +16,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/edragoev1/pdfjet/src/encryption"
 	"github.com/edragoev1/pdfjet/src/token"
 )
 
@@ -65,6 +66,10 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 		file.content = buf
 	}
 
+	if pdf.encryption != nil {
+		file.content, _ = encryption.Encrypt(file.content, pdf.encryption.GetKey())
+	}
+
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /EmbeddedFile\n")
@@ -83,9 +88,15 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Filespec\n")
+
+	fileNameBytes := []byte(fileName)
+	if pdf.encryption != nil {
+		fileNameBytes, _ = encryption.Encrypt(fileNameBytes, pdf.encryption.GetKey())
+	}
 	pdf.appendString("/F (")
-	pdf.appendString(fileName)
+	pdf.appendByteArray(fileNameBytes)
 	pdf.appendString(")\n")
+
 	pdf.appendString("/EF <</F ")
 	pdf.appendInteger(pdf.getObjNumber() - 1)
 	pdf.appendString(" 0 R>>\n")
