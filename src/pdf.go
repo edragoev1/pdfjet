@@ -136,6 +136,12 @@ func (pdf *PDF) SetCompliance(compliance int) {
 	pdf.compliance = compliance
 }
 
+func (pdf *PDF) SetEncryption(encryption *Encryption, err error) {
+	if err == nil {
+		pdf.encryption = encryption
+	}
+}
+
 func NewPDFFile(filePath string) *PDF {
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -1898,11 +1904,4 @@ func (pdf *PDF) appendByteArray(buf []byte) {
 		return
 	}
 	pdf.byteCount += len(buf)
-}
-
-// SetEncryption TODO:
-func (pdf *PDF) SetEncryption(encryption *Encryption, err error) {
-	if err == nil {
-		pdf.encryption = encryption
-	}
 }

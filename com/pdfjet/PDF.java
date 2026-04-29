@@ -1,7 +1,7 @@
 /**
  * PDF.java
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 package com.pdfjet;
@@ -577,9 +577,13 @@ final public class PDF {
         append("/Type /Catalog\n");
 
         if (compliance != Compliance.PDF_17) {
-            append("/Lang (");
-            append(language);
-            append(")\n");
+            byte[] languageBytes = this.language.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            if (encryption != null) {
+                languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
+            }
+            append("/Lang <");
+            append(Util.toHexString(languageBytes));
+            append(">\n");
 
             append("/StructTreeRoot ");
             append(structTreeRootObjNumber);
