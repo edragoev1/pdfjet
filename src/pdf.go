@@ -729,6 +729,9 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 func (pdf *PDF) addPageContent(page *Page) {
 	if pdf.contentStreamsCompression {
 		compressed := compressor.Deflate(page.buf)
+		if pdf.encryption != nil {
+			compressed, _ = encryption.Encrypt(compressed, pdf.encryption.GetKey())
+		}
 		page.buf = nil // Release the page content memory!
 
 		pdf.newobj()
@@ -744,6 +747,12 @@ func (pdf *PDF) addPageContent(page *Page) {
 		pdf.endobj()
 		page.contents = append(page.contents, pdf.getObjNumber())
 	} else { // No compression. Used for diagnostics
+		buf := page.buf
+		if pdf.encryption != nil {
+			buf, _ = encryption.Encrypt(buf, pdf.encryption.GetKey())
+		}
+		page.buf = nil // Release the page content memory!
+
 		pdf.newobj()
 		pdf.appendString("<<\n")
 		pdf.appendString("/Length ")
@@ -751,7 +760,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 		pdf.appendString("\n")
 		pdf.appendString(">>\n")
 		pdf.appendString("stream\n")
-		pdf.appendByteArray(page.buf)
+		pdf.appendByteArray(buf)
 		pdf.appendString("\nendstream\n")
 		pdf.endobj()
 		page.buf = nil // Release the page content memory!
