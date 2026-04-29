@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/device"
+	"github.com/edragoev1/pdfjet/src/encryption"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/single"
 )
@@ -448,12 +449,17 @@ func (image *Image) addSoftMask(pdf *PDF, data []byte, colorSpace string, bitsPe
 	pdf.appendString("/BitsPerComponent ")
 	pdf.appendInteger(bitsPerComponent)
 	pdf.appendString("\n")
+
+	buf := data
+	if pdf.encryption != nil {
+		buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
+	}
 	pdf.appendString("/Length ")
-	pdf.appendInteger(len(data))
+	pdf.appendInteger(len(buf))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-	pdf.appendByteArray(data)
+	pdf.appendByteArray(buf)
 	pdf.appendString("\nendstream\n")
 	pdf.endobj()
 	image.objNumber = pdf.getObjNumber()
@@ -500,12 +506,17 @@ func (image *Image) addImageToPDF(
 		// If the image was created with Photoshop - invert the colors:
 		pdf.appendString("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
 	}
+
+	buf := data
+	if pdf.encryption != nil {
+		buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
+	}
 	pdf.appendString("/Length ")
-	pdf.appendInteger(len(data))
+	pdf.appendInteger(len(buf))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-	pdf.appendByteArray(data)
+	pdf.appendByteArray(buf)
 	pdf.appendString("\nendstream\n")
 	pdf.endobj()
 	pdf.images = append(pdf.images, image)
