@@ -503,15 +503,15 @@ func (pdf *PDF) addStructElementObjects() {
 			}
 
 			pdf.appendString("/Lang <")
-			pdf.appendString(toHex(string(languageBytes)))
+			pdf.appendString(hex.EncodeToString(languageBytes))
 			pdf.appendString(">\n")
 
 			pdf.appendString("/ActualText <")
-			pdf.appendString(toHex(string(actualTextBytes)))
+			pdf.appendString(hex.EncodeToString(actualTextBytes))
 			pdf.appendString(">\n")
 
 			pdf.appendString("/Alt <")
-			pdf.appendString(toHex(string(altDescriptionBytes)))
+			pdf.appendString(hex.EncodeToString(altDescriptionBytes))
 			pdf.appendString(">\n")
 		}
 
@@ -1569,10 +1569,15 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 		count = (-1) * getNumOfChildren(0, bm1)
 	}
 
+	title := []byte(bm1.GetTitle())
+	if pdf.encryption != nil {
+		title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
+	}
+
 	pdf.newobj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Title <")
-	pdf.appendString(toHex(bm1.GetTitle()))
+	pdf.appendString(hex.EncodeToString(title))
 	pdf.appendString(">\n")
 	pdf.appendString("/Parent ")
 	pdf.appendInteger(parent)
