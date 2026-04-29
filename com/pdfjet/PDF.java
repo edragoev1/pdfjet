@@ -1615,10 +1615,15 @@ final public class PDF {
             count = (-1) * getNumOfChildren(0, bm1);
         }
 
+        byte[] title = bm1.getTitle().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        if (encryption != null) {
+            title = AES256.encrypt(title, encryption.getKey());
+        }
+
         newobj();
         append(Token.BEGIN_DICTIONARY);
         append("/Title <");
-        append(toHex(bm1.getTitle()));
+        append(Util.toHexString(title));
         append(">\n");
         append("/Parent ");
         append(parent);
