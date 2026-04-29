@@ -580,9 +580,14 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString("/Type /Catalog\n")
 
 	if pdf.compliance != compliance.PDF_17 {
-		pdf.appendString("/Lang (")
-		pdf.appendString(pdf.language)
-		pdf.appendString(")\n")
+		languageBytes := []byte(pdf.language)
+		if pdf.encryption != nil {
+			languageBytes, _ = encryption.Encrypt(languageBytes, pdf.encryption.GetKey())
+		}
+
+		pdf.appendString("/Lang <")
+		pdf.appendString(hex.EncodeToString(languageBytes))
+		pdf.appendString(">\n")
 
 		pdf.appendString("/StructTreeRoot ")
 		pdf.appendInteger(structTreeRootObjNumber)
