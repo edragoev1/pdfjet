@@ -1,7 +1,7 @@
 /**
  * OptionalContentGroup.java
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  *
  * Original author: Mark Paxton
@@ -88,7 +88,15 @@ public class OptionalContentGroup {
             pdf.newobj();
             pdf.append("<<\n");
             pdf.append("/Type /OCG\n");
-            pdf.append("/Name (" + name + ")\n");
+
+            byte[] nameBytes = name.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            if (pdf.encryption != null) {
+                nameBytes = AES256.encrypt(nameBytes, pdf.encryption.getKey());
+            }
+            pdf.append("/Name <");
+            pdf.append(Util.toHexString(nameBytes));
+            pdf.append(">\n");
+
             pdf.append("/Usage <<\n");
             if (visible) {
                 pdf.append("/View << /ViewState /ON >>\n");

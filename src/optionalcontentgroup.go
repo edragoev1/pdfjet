@@ -3,14 +3,20 @@ package pdfjet
 /**
  * optionalcontentgroup.go
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  *
  * Original author: Mark Paxton
  * Modified and adapted for use in PDFjet by Evgeni Dragoev
  */
 
-import "github.com/edragoev1/pdfjet/src/token"
+import (
+	"encoding/hex"
+	"fmt"
+
+	"github.com/edragoev1/pdfjet/src/encryption"
+	"github.com/edragoev1/pdfjet/src/token"
+)
 
 // OptionalContentGroup is container for drawable objects that can be drawn on a page as part of Optional Content Group.
 // Please see the PDF specification and Example_30 for more details.
@@ -63,7 +69,20 @@ func (ocg *OptionalContentGroup) DrawOn(page *Page) {
 		ocg.pdf.newobj()
 		ocg.pdf.appendByteArray(token.BeginDictionary)
 		ocg.pdf.appendString("/Type /OCG\n")
-		ocg.pdf.appendString("/Name (" + ocg.name + ")\n")
+
+		nameBytes := []byte(ocg.name)
+		if ocg.pdf.encryption != nil {
+			var err error
+			nameBytes, err = encryption.Encrypt(nameBytes, ocg.pdf.encryption.GetKey())
+			if err != nil {
+				fmt.Println("encryption failed:", err)
+				return
+			}
+		}
+		ocg.pdf.appendString("/Name <")
+		ocg.pdf.appendString(hex.EncodeToString(nameBytes))
+		ocg.pdf.appendString(">\n")
+
 		ocg.pdf.appendString("/Usage <<\n")
 		if ocg.visible {
 			ocg.pdf.appendString("/View << /ViewState /ON >>\n")
