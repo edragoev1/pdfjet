@@ -244,7 +244,19 @@ class FontStream1 {
         pdf.append("/BaseFont /");
         pdf.append(font.name);
         pdf.append('\n');
-        pdf.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n");
+
+        byte[] registry = "Adobe".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] ordering = "Identity".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        if (pdf.encryption != null) {
+            registry = AES256.encrypt(registry, pdf.encryption.getKey());
+            ordering = AES256.encrypt(ordering, pdf.encryption.getKey());
+        }
+        pdf.append("/CIDSystemInfo <</Registry <");
+        pdf.append(Util.toHexString(registry));
+        pdf.append("> /Ordering <");
+        pdf.append(Util.toHexString(ordering));
+        pdf.append("> /Supplement 0>>\n");
+
         pdf.append("/FontDescriptor ");
         pdf.append(font.fontDescriptorObjNumber);
         pdf.append(" 0 R\n");
