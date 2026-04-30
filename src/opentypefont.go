@@ -8,6 +8,8 @@ package pdfjet
  */
 
 import (
+	"encoding/hex"
+	"fmt"
 	"io"
 	"math"
 	"strings"
@@ -242,7 +244,28 @@ func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *OTF) {
 	pdf.appendString("/BaseFont /")
 	pdf.appendString(otf.fontName)
 	pdf.appendString("\n")
-	pdf.appendString("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
+
+	registry := []byte("Adobe")
+	ordering := []byte("Identity")
+	if pdf.encryption != nil {
+		var err error
+		registry, err = encryption.Encrypt(registry, pdf.encryption.GetKey())
+		if err != nil {
+			fmt.Println("encryption failed:", err)
+			return
+		}
+		ordering, err = encryption.Encrypt(ordering, pdf.encryption.GetKey())
+		if err != nil {
+			fmt.Println("encryption failed:", err)
+			return
+		}
+	}
+	pdf.appendString("/CIDSystemInfo <</Registry <")
+	pdf.appendString(hex.EncodeToString(registry))
+	pdf.appendString("> /Ordering <")
+	pdf.appendString(hex.EncodeToString(ordering))
+	pdf.appendString("> /Supplement 0>>\n")
+
 	pdf.appendString("/FontDescriptor ")
 	pdf.appendInteger(font.fontDescriptorObjNumber)
 	pdf.appendString(" 0 R\n")
