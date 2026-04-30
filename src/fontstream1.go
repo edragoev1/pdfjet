@@ -10,6 +10,7 @@ package pdfjet
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -79,7 +80,11 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 
 	var compressed []byte
 	var encrypted []byte
-	compressed, _ = io.ReadAll(reader)
+	compressed, err := io.ReadAll(reader)
+	if err != nil {
+		fmt.Println("failed to read input:", err)
+		return
+	}
 	if pdf.encryption != nil {
 		encrypted, _ = encryption.Encrypt(compressed, pdf.encryption.GetKey())
 	}
