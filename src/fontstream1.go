@@ -82,11 +82,15 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 	var encrypted []byte
 	compressed, err := io.ReadAll(reader)
 	if err != nil {
-		fmt.Println("failed to read input:", err)
+		fmt.Println("failed to read input: ", err)
 		return
 	}
 	if pdf.encryption != nil {
-		encrypted, _ = encryption.Encrypt(compressed, pdf.encryption.GetKey())
+		encrypted, err = encryption.Encrypt(compressed, pdf.encryption.GetKey())
+		if err != nil {
+			fmt.Println("encryption failed: ", err)
+			return
+		}
 	}
 
 	pdf.appendString("/Length ")
