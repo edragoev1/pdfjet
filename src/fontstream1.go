@@ -70,30 +70,34 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 
 	if font.cff {
 		pdf.appendString("/Subtype /CIDFontType0C\n")
-	}
-	pdf.appendString("/Filter /FlateDecode\n")
-	pdf.appendString("/Length ")
-	pdf.appendInteger(font.compressedSize)
-	pdf.appendString("\n")
-
-	if !font.cff {
+	} else {
 		pdf.appendString("/Length1 ")
 		pdf.appendInteger(font.uncompressedSize)
 		pdf.appendString("\n")
 	}
+	pdf.appendString("/Filter /FlateDecode\n")
 
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-
-	buf := make([]byte, 4096) // We need this buffer to be non-zero length!
-	for {
-		n, err := reader.Read(buf)
-		pdf.appendByteArray(buf[:n])
-		if err == io.EOF {
-			break
-		}
+	var compressed []byte
+	var encrypted []byte
+	compressed, _ = io.ReadAll(reader)
+	if pdf.encryption != nil {
+		encrypted, _ = encryption.Encrypt(compressed, pdf.encryption.GetKey())
 	}
 
+	pdf.appendString("/Length ")
+	if pdf.encryption != nil {
+		pdf.appendInteger(len(encrypted))
+	} else {
+		pdf.appendInteger(font.compressedSize)
+	}
+	pdf.appendString("\n")
+	pdf.appendString(">>\n")
+	pdf.appendString("stream\n")
+	if pdf.encryption != nil {
+		pdf.appendByteArray(encrypted)
+	} else {
+		pdf.appendByteArray(compressed)
+	}
 	pdf.appendString("\nendstream\n")
 	pdf.endobj()
 
@@ -195,14 +199,19 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
 	sb.WriteString("end\nend")
 
+	buf2 := []byte(sb.String())
+	if pdf.encryption != nil {
+		buf2, _ = encryption.Encrypt(buf2, pdf.encryption.GetKey())
+	}
+
 	pdf.newobj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Length ")
-	pdf.appendInteger(sb.Len())
+	pdf.appendInteger(len(buf2))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-	pdf.appendString(sb.String())
+	pdf.appendByteArray(buf2)
 	pdf.appendString("\nendstream\n")
 	pdf.endobj()
 
