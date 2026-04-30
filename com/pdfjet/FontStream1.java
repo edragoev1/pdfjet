@@ -70,22 +70,23 @@ class FontStream1 {
         }
         pdf.append("/Filter /FlateDecode\n");
 
+        byte[] compressed = null;
         byte[] encrypted = null;
-        if (pdf.encryption != null) {
-            byte[] data;
-            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                byte[] buf = new byte[4096];
-                int len;
-                while ((len = inputStream.read(buf)) != -1) {
-                    buffer.write(buf, 0, len);
-                }
-                data = buffer.toByteArray();
-            } finally {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
+        try {
+            ByteArrayOutputStream ms = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = inputStream.read(buffer)) > 0) {
+                ms.write(buffer, 0, len);
             }
-            encrypted = AES256.encrypt(data, pdf.encryption.getKey());
+            compressed = ms.toByteArray();
+        } finally {
+            if (inputStream != null) {
+                inputStream.close();
+            }
+        }
+        if (pdf.encryption != null) {
+            encrypted = AES256.encrypt(compressed, pdf.encryption.getKey());
         }
 
         pdf.append("/Length ");
@@ -100,12 +101,7 @@ class FontStream1 {
         if (pdf.encryption != null) {
             pdf.append(encrypted);
         } else {
-            byte[] buf = new byte[4096];
-            int len;
-            while ((len = inputStream.read(buf, 0, buf.length)) > 0) {
-                pdf.append(buf, 0, len);
-            }
-            inputStream.close();
+            pdf.append(compressed);
         }
         pdf.append(Token.END_STREAM);
         pdf.endobj();
