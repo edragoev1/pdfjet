@@ -1,7 +1,7 @@
 /**
  * OpenTypeFont.java
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 package com.pdfjet;
@@ -76,23 +76,30 @@ class OpenTypeFont {
         }
         pdf.append("/Filter /FlateDecode\n");
 
-        pdf.append("/Length ");
-        pdf.append(otf.baos.size());    // The compressed size
-        pdf.append("\n");
-
         if (!otf.cff) {
             pdf.append("/Length1 ");
-            pdf.append(otf.buf.length); // The uncompressed size
+            pdf.append(otf.buf.length);
             pdf.append('\n');
         }
+
         if (metadataObjNumber != -1) {
             pdf.append("/Metadata ");
             pdf.append(metadataObjNumber);
             pdf.append(" 0 R\n");
         }
+
+        byte[] buf = otf.compressed;
+        if (pdf.encryption != null) {
+            buf = AES256.encrypt(buf, pdf.encryption.getKey());
+        }
+
+        pdf.append("/Length ");
+        pdf.append(buf.length);
+        pdf.append("\n");
+
         pdf.append(">>\n");
         pdf.append("stream\n");
-        pdf.append(otf.baos);
+        pdf.append(buf);
         pdf.append("\nendstream\n");
         pdf.endobj();
 

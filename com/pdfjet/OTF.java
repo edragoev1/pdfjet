@@ -1,7 +1,7 @@
 /**
  * OTF.java
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 package com.pdfjet;
@@ -14,7 +14,6 @@ import java.util.zip.*;
  * This class parses and extracts the data from TTF and OTF font files.
  */
 public class OTF {
-    ByteArrayOutputStream baos;
     String fontName;
     String fontInfo;
     int unitsPerEm;
@@ -34,6 +33,7 @@ public class OTF {
     int[] advanceWidth;
     int[] unicodeToGID = new int[0x10000];
     byte[] buf;
+    byte[] compressed;
     boolean cff = false;
     int cffOff;
     int cffLen;
@@ -90,10 +90,10 @@ public class OTF {
 
         // This table must be processed last
         cmap(cmapTable);
-        baos = new ByteArrayOutputStream();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Deflater deflater = new Deflater(Deflater.BEST_SPEED);
-        DeflaterOutputStream dos =
-                new DeflaterOutputStream(baos, deflater);
+        DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater);
         if (cff) {
             dos.write(buf, cffOff, cffLen);
         } else {
@@ -101,6 +101,7 @@ public class OTF {
         }
         dos.finish();
         deflater.end();
+        compressed = baos.toByteArray();
     }
 
     private void head(FontTable table) {
