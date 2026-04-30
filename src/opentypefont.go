@@ -204,14 +204,19 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
 	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
 	sb.WriteString("end\nend")
 
+	buf2 := []byte(sb.String())
+	if pdf.encryption != nil {
+		buf2, _ = encryption.Encrypt(buf2, pdf.encryption.GetKey())
+	}
+
 	pdf.newobj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Length ")
-	pdf.appendInteger(sb.Len())
+	pdf.appendInteger(len(buf2))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-	pdf.appendString(sb.String())
+	pdf.appendByteArray(buf2)
 	pdf.appendString("\nendstream\n")
 	pdf.endobj()
 
