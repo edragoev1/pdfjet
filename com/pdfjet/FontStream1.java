@@ -63,13 +63,12 @@ class FontStream1 {
 
         if (font.cff) {
             pdf.append("/Subtype /CIDFontType0C\n");
-        }
-        pdf.append("/Filter /FlateDecode\n");
-        if (!font.cff) {
+        } else {
             pdf.append("/Length1 ");
             pdf.append(font.uncompressedSize);
             pdf.append(Token.NEWLINE);
         }
+        pdf.append("/Filter /FlateDecode\n");
 
         byte[] encrypted = null;
         if (pdf.encryption != null) {
@@ -207,14 +206,19 @@ class FontStream1 {
         sb.append("CMapName currentdict /CMap defineresource pop\n");
         sb.append("end\nend");
 
+        byte[] buf2 = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        if (pdf.encryption != null) {
+            buf2 = AES256.encrypt(buf2, pdf.encryption.getKey());
+        }
+
         pdf.newobj();
         pdf.append("<<\n");
         pdf.append("/Length ");
-        pdf.append(sb.length());
+        pdf.append(buf2.length);
         pdf.append("\n");
         pdf.append(">>\n");
         pdf.append("stream\n");
-        pdf.append(sb.toString());
+        pdf.append(buf2);
         pdf.append("\nendstream\n");
         pdf.endobj();
 
