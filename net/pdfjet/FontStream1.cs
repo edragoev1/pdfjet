@@ -69,17 +69,16 @@ class FontStream1 {
         }
         pdf.Append("/Filter /FlateDecode\n");
 
+        byte[] compressed = null;
         byte[] encrypted = null;
-        if (pdf.encryption != null) {
-            MemoryStream ms = new MemoryStream();
-            byte[] buf = new byte[4096];
-            int len;
-            while ((len = stream.Read(buf, 0, buf.Length)) > 0) {
-                ms.Write(buf, 0, len);
-            }
-            stream.Dispose();
-            encrypted = AES256.Encrypt(ms.ToArray(), pdf.encryption.GetKey());
+        using (var ms = new MemoryStream()) {
+            stream.CopyTo(ms);
+            compressed = ms.ToArray();
         }
+        if (pdf.encryption != null) {
+            encrypted = AES256.Encrypt(compressed, pdf.encryption.GetKey());
+        }
+        stream.Dispose();
 
         pdf.Append("/Length ");
         if (pdf.encryption != null) {
@@ -93,12 +92,7 @@ class FontStream1 {
         if (pdf.encryption != null) {
             pdf.Append(encrypted);
         } else {
-            byte[] buf = new byte[4096];
-            int len;
-            while ((len = stream.Read(buf, 0, buf.Length)) > 0) {
-                pdf.Append(buf, 0, len);
-            }
-            stream.Dispose();
+            pdf.Append(compressed);
         }
         pdf.Append(Token.EndStream);
         pdf.EndObj();
