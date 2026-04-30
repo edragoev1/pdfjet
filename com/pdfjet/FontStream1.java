@@ -265,6 +265,7 @@ class FontStream1 {
         pdf.append("/DW ");
         pdf.append(Math.round(k * (float) font.advanceWidth[0]));
         pdf.append('\n');
+
         pdf.append("/W [0[\n");
         for (int i = 0; i < font.advanceWidth.length; i++) {
             pdf.append(Math.round(k * (float) font.advanceWidth[i]));
