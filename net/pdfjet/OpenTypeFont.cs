@@ -1,7 +1,7 @@
 /**
  * OpenTypeFont.cs
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
@@ -74,8 +74,8 @@ class OpenTypeFont {
         if (otf.cff) {
             pdf.Append("/Subtype /CIDFontType0C\n");
         }
-
         pdf.Append("/Filter /FlateDecode\n");
+
         if (!otf.cff) {
             pdf.Append("/Length1 ");
             pdf.Append(otf.buf.Length);
@@ -96,6 +96,7 @@ class OpenTypeFont {
         pdf.Append("/Length ");
         pdf.Append(buf.Length);
         pdf.Append("\n");
+
         pdf.Append(">>\n");
         pdf.Append("stream\n");
         pdf.Append(buf);

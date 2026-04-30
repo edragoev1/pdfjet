@@ -11,6 +11,8 @@ import (
 	"io"
 	"math"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/src/encryption"
 )
 
 func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
@@ -77,10 +79,6 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
 	}
 	pdf.appendString("/Filter /FlateDecode\n")
 
-	pdf.appendString("/Length ")
-	pdf.appendInteger(otf.compressed.Len()) // The compressed size
-	pdf.appendString("\n")
-
 	if !otf.cff {
 		pdf.appendString("/Length1 ")
 		pdf.appendInteger(len(otf.buf)) // The uncompressed size
@@ -93,9 +91,18 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
 		pdf.appendString(" 0 R\n")
 	}
 
+	buf := otf.compressed.Bytes()
+	if pdf.encryption != nil {
+		buf, _ = encryption.Encrypt(buf, pdf.encryption.GetKey())
+	}
+
+	pdf.appendString("/Length ")
+	pdf.appendInteger(len(buf))
+	pdf.appendString("\n")
+
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-	pdf.appendByteArray(otf.compressed.Bytes())
+	pdf.appendByteArray(buf)
 	pdf.appendString("\nendstream\n")
 	pdf.endobj()
 
