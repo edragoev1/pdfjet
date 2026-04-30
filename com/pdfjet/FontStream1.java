@@ -65,24 +65,49 @@ class FontStream1 {
             pdf.append("/Subtype /CIDFontType0C\n");
         }
         pdf.append("/Filter /FlateDecode\n");
-        pdf.append("/Length ");
-        pdf.append(font.compressedSize);
-        pdf.append(Token.NEWLINE);
-
         if (!font.cff) {
             pdf.append("/Length1 ");
             pdf.append(font.uncompressedSize);
             pdf.append(Token.NEWLINE);
         }
 
+        byte[] encrypted = null;
+        if (pdf.encryption != null) {
+            byte[] data;
+            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                byte[] buf = new byte[4096];
+                int len;
+                while ((len = inputStream.read(buf)) != -1) {
+                    buffer.write(buf, 0, len);
+                }
+                data = buffer.toByteArray();
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            }
+            encrypted = AES256.encrypt(data, pdf.encryption.getKey());
+        }
+
+        pdf.append("/Length ");
+        if (pdf.encryption != null) {
+            pdf.append(encrypted.length);
+        } else {
+            pdf.append(font.compressedSize);
+        }
+        pdf.append(Token.NEWLINE);
         pdf.append(Token.END_DICTIONARY);
         pdf.append(Token.STREAM);
-        byte[] buf = new byte[4096];
-        int len;
-        while ((len = inputStream.read(buf, 0, buf.length)) > 0) {
-            pdf.append(buf, 0, len);
+        if (pdf.encryption != null) {
+            pdf.append(encrypted);
+        } else {
+            byte[] buf = new byte[4096];
+            int len;
+            while ((len = inputStream.read(buf, 0, buf.length)) > 0) {
+                pdf.append(buf, 0, len);
+            }
+            inputStream.close();
         }
-        inputStream.close();
         pdf.append(Token.END_STREAM);
         pdf.endobj();
 
