@@ -92,15 +92,14 @@ public class OTF {
         cmap(cmapTable);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Deflater deflater = new Deflater(Deflater.BEST_SPEED);
-        DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater);
-        if (cff) {
-            dos.write(buf, cffOff, cffLen);
-        } else {
-            dos.write(buf, 0, buf.length);
+        try (DeflaterOutputStream dos =
+                 new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_SPEED))) {
+            if (cff) {
+                dos.write(buf, cffOff, cffLen);
+            } else {
+                dos.write(buf);
+            }
         }
-        dos.finish();
-        deflater.end();
         compressed = baos.toByteArray();
     }
 
