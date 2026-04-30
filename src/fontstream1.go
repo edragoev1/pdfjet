@@ -3,18 +3,20 @@ package pdfjet
 /**
  * fontstream1.go
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
 import (
 	"bytes"
+	"encoding/hex"
 	"io"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/decompressor"
+	"github.com/edragoev1/pdfjet/src/encryption"
 	"github.com/edragoev1/pdfjet/src/token"
 )
 
@@ -226,7 +228,19 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.appendString("/BaseFont /")
 	pdf.appendString(font.name)
 	pdf.appendByte(token.Newline)
-	pdf.appendString("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
+
+	registry := []byte("Adobe")
+	ordering := []byte("Identity")
+	if pdf.encryption != nil {
+		registry, _ = encryption.Encrypt(registry, pdf.encryption.GetKey())
+		ordering, _ = encryption.Encrypt(ordering, pdf.encryption.GetKey())
+	}
+	pdf.appendString("/CIDSystemInfo <</Registry <")
+	pdf.appendString(hex.EncodeToString(registry))
+	pdf.appendString("> /Ordering <")
+	pdf.appendString(hex.EncodeToString(ordering))
+	pdf.appendString("> /Supplement 0>>\n")
+
 	pdf.appendString("/FontDescriptor ")
 	pdf.appendInteger(font.fontDescriptorObjNumber)
 	pdf.appendByteArray(token.ObjRef)
@@ -285,8 +299,8 @@ func getFontData(font *Font, reader io.Reader) {
 	font.bBoxURy = int16(getInt32(r2))
 	font.fontAscent = int16(getInt32(r2))
 	font.fontDescent = int16(getInt32(r2))
-	font.firstChar = rune(getInt32(r2))
-	font.lastChar = rune(getInt32(r2))
+	font.firstChar = getInt32(r2)
+	font.lastChar = getInt32(r2)
 	font.capHeight = int16(getInt32(r2))
 	font.fontUnderlinePosition = int16(getInt32(r2))
 	font.fontUnderlineThickness = int16(getInt32(r2))
