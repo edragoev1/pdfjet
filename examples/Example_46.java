@@ -33,11 +33,19 @@ public class Example_46 {
         // Font f1 = new Font(pdf, "data/SourceSansPro-Regular.otf");
         f1.setSize(36f);
 
+        Image image = new Image(pdf, "images/ee-map.png");
+
+        // EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO);
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine textLine = new TextLine(f1, "Hello, World!");
         textLine.setLocation(100f, 100f);
         textLine.drawOn(page);
+
+        image.setLocation(100, 150);
+        image.scaleBy(.5f);
+        image.drawOn(page);
 
         pdf.complete();
     }
