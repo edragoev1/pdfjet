@@ -27,8 +27,8 @@ public class Example_46 {
 
         pdf.setEncryption(new Encryption(pdf, passwords, permissions));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        // Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         // Test OTF with CFF outlines!
         // Font f1 = new Font(pdf, "data/SourceSansPro-Regular.otf");
         f1.setSize(36f);
