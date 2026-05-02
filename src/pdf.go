@@ -1094,6 +1094,12 @@ func (pdf *PDF) Complete() {
 	pdf.appendString(pdf.uuid)
 	pdf.appendString(">]\n")
 
+	if pdf.encryption != nil {
+		pdf.appendString("/Encrypt ")
+		pdf.appendInteger(pdf.encryption.GetObjNumber())
+		pdf.appendString(" 0 R\n")
+	}
+
 	pdf.appendString("/Root ")
 	pdf.appendInteger(rootObjNumber)
 	pdf.appendString(" 0 R\n")
