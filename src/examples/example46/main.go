@@ -27,7 +27,7 @@ func Example46() {
 	pdf.SetEncryption(pdfjet.NewEncryption(pdf, passwords, permissions))
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	// f1 := NewFont(pdf, IBMPlexSans.Regular)
+	// f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	// Test OTF with CFF outlines!
 	// f1 := NewFont(pdf, "data/SourceSansPro-Regular.otf")
 	f1.SetSize(36.0)
