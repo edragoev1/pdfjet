@@ -32,11 +32,17 @@ func Example46() {
 	// f1 := NewFont(pdf, "data/SourceSansPro-Regular.otf")
 	f1.SetSize(36.0)
 
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(f1, "Hello, World!")
 	textLine.SetLocation(100.0, 100.0)
 	textLine.DrawOn(page)
+
+	image.SetLocation(100, 150)
+	image.ScaleBy(0.5)
+	image.DrawOn(page)
 
 	pdf.Complete()
 }
