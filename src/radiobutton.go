@@ -119,12 +119,13 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 
 	if radioButton.uri != nil || radioButton.key != nil {
 		page.AddAnnotation(NewAnnotation(
-			radioButton.uri,
-			nil,
+			"Link",
 			radioButton.x+3*radioButton.r1,
 			radioButton.y,
 			radioButton.x+3*radioButton.r1+radioButton.font.stringWidth(radioButton.font.size, radioButton.label),
 			radioButton.y+radioButton.font.bodyHeight,
+			radioButton.uri,
+			nil,
 			radioButton.language,
 			radioButton.actualText,
 			radioButton.altDescription))

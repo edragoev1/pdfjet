@@ -34,13 +34,15 @@ type Annotation struct {
 // @param x2 the x coordinate of the bottom right corner.
 // @param y2 the y coordinate of the bottom right corner.
 func NewAnnotation(
+	annotationType string,
+	x1, y1, x2, y2 float32,
 	uri *string,
 	key *string,
-	x1, y1, x2, y2 float32,
 	language string,
 	actualText string,
 	altDescription string) *Annotation {
 	annotation := new(Annotation)
+	annotation.annotationType = annotationType
 	annotation.x1 = x1
 	annotation.y1 = y1
 	annotation.x2 = x2
@@ -48,7 +50,6 @@ func NewAnnotation(
 
 	annotation.title = uri
 	annotation.contents = key
-
 	annotation.uri = uri
 	annotation.key = key
 

@@ -234,12 +234,13 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 
 	if rect.uri != nil || rect.key != nil {
 		page.AddAnnotation(NewAnnotation(
-			rect.uri,
-			rect.key, // The destination name
+			"Link",
 			rect.x,
 			rect.y,
 			rect.x+rect.w,
 			rect.y+rect.h,
+			rect.uri,
+			rect.key, // The destination name
 			rect.language,
 			rect.actualText,
 			rect.altDescription))

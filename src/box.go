@@ -226,12 +226,13 @@ func (box *Box) DrawOn(page *Page) []float32 {
 
 	if box.uri != nil || box.key != nil {
 		page.AddAnnotation(NewAnnotation(
-			box.uri,
-			box.key, // The destination name
+			"Link",
 			box.x,
 			box.y,
 			box.x+box.w,
 			box.y+box.h,
+			box.uri,
+			box.key, // The destination name
 			box.language,
 			box.actualText,
 			box.altDescription))

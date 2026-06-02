@@ -175,12 +175,13 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 	page.AddEMC()
 	if checkBox.uri != nil || checkBox.key != nil {
 		page.AddAnnotation(NewAnnotation(
-			checkBox.uri,
-			nil,
+			"Link",
 			checkBox.x+3.0*checkBox.w/2.0,
 			checkBox.y,
 			checkBox.x+3.0*checkBox.w/2.0+checkBox.font.stringWidth(checkBox.font.size, checkBox.label),
 			checkBox.y+checkBox.font.bodyHeight,
+			checkBox.uri,
+			nil,
 			checkBox.language,
 			checkBox.actualText,
 			checkBox.altDescription))

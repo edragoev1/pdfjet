@@ -455,12 +455,13 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 
 	if textLine.uri != nil || textLine.key != nil {
 		page.AddAnnotation(NewAnnotation(
-			textLine.uri,
-			textLine.key, // The destination name
+			"Link",
 			textLine.x,
 			textLine.y-textLine.font.ascent,
 			textLine.x+textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, textLine.text),
 			textLine.y+textLine.font.descent,
+			textLine.uri,
+			textLine.key, // The destination name
 			textLine.uriLanguage,
 			textLine.uriActualText,
 			textLine.uriAltDescription))

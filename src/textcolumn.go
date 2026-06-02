@@ -237,12 +237,13 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 			if textLine.GetGoToAction() != nil {
 				page.AddAnnotation(NewAnnotation(
-					nil,          // The URI
-					textLine.key, // The destination name
+					"Link",
 					textColumn.x,
 					page.height-(textColumn.y-textLine.font.ascent),
 					textColumn.x+textLine.GetWidth(),
 					page.height-(textColumn.y+textLine.font.descent),
+					nil,          // The URI
+					textLine.key, // The destination name
 					"",
 					"",
 					""))
@@ -295,12 +296,13 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 		if textLine.uri != nil || textLine.key != nil {
 			page.AddAnnotation(NewAnnotation(
-				nil,                      // The URI
-				textLine.GetGoToAction(), // The destination name
+				"Link",
 				textColumn.x,
 				textColumn.y-textLine.font.ascent,
 				textColumn.x+textLine.GetWidth(),
 				textColumn.y+textLine.font.descent,
+				nil,                      // The URI
+				textLine.GetGoToAction(), // The destination name
 				"",
 				"",
 				""))

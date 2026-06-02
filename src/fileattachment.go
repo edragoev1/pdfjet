@@ -66,12 +66,13 @@ func (attachment *FileAttachment) SetDescription(description string) {
 // DrawOn draws this component on the page.
 func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
 	annotation := NewAnnotation(
-		nil,
-		nil,
+		"FileAttachment",
 		attachment.x,
 		attachment.y,
 		attachment.x+attachment.h,
 		attachment.y+attachment.h,
+		nil,
+		nil,
 		"",
 		"",
 		"")

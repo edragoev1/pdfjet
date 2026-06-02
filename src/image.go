@@ -403,12 +403,13 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 	if image.uri != nil || image.key != nil {
 		page.AddAnnotation(NewAnnotation(
-			image.uri,
-			image.key, // The destination name
+			"Link",
 			image.x,
 			image.y,
 			image.x+image.w,
 			image.y+image.h,
+			image.uri,
+			image.key, // The destination name
 			image.language,
 			image.actualText,
 			image.altDescription))

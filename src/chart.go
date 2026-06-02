@@ -237,12 +237,13 @@ func (chart *Chart) DrawOn(page *Page) {
 			}
 			if point.uri != nil || point.key != nil {
 				page.AddAnnotation(NewAnnotation(
-					point.uri,
-					nil,
+					"Link",
 					point.x-point.r,
 					page.height-(point.y-point.r),
 					point.x+point.r,
 					page.height-(point.y+point.r),
+					point.uri,
+					nil,
 					"",
 					"",
 					""))
