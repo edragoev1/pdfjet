@@ -20,10 +20,10 @@ public class FileAttachment implements Drawable {
     protected float h = 24f;
 
     /**
-     * Create file attachement object
+     * Create file attachment object
      *
      * @param pdf the PDF that the object is attached to
-     * @param file the enbedded file object
+     * @param file the embedded file object
      */
     public FileAttachment(PDF pdf, EmbeddedFile file) {
         this.pdf = pdf;
@@ -33,8 +33,8 @@ public class FileAttachment implements Drawable {
     /**
      * Sets the position of the file attachment on the page
      *
-     * @param x the horizontal position of the attachement
-     * @param y the vertical position of the attachement
+     * @param x the horizontal position of the attachment
+     * @param y the vertical position of the attachment
      */
     public void setPosition(float x, float y) {
         this.x = x;
@@ -44,8 +44,8 @@ public class FileAttachment implements Drawable {
     /**
      * Sets the position of the file attachment on the page
      *
-     * @param x the horizontal position of the attachement
-     * @param y the vertical position of the attachement
+     * @param x the horizontal position of the attachment
+     * @param y the vertical position of the attachment
      */
     public void setPosition(double x, double y) {
         setPosition((float) x, (float) y);
@@ -54,8 +54,8 @@ public class FileAttachment implements Drawable {
     /**
      * Sets the location of the file attachment on the page
      *
-     * @param x the horizontal location of the attachement
-     * @param y the vertical location of the attachement
+     * @param x the horizontal location of the attachment
+     * @param y the vertical location of the attachment
      */
     public void setLocation(float x, float y) {
         this.x = x;
@@ -65,8 +65,8 @@ public class FileAttachment implements Drawable {
     /**
      * Sets the location of the file attachment on the page
      *
-     * @param x the horizontal location of the attachement
-     * @param y the vertical location of the attachement
+     * @param x the horizontal location of the attachment
+     * @param y the vertical location of the attachment
      */
     public void setLocation(double x, double y) {
         setLocation((float) x, (float) y);
