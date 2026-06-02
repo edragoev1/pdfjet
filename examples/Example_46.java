@@ -35,7 +35,7 @@ public class Example_46 {
 
         Image image = new Image(pdf, "images/ee-map.png");
 
-        // EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -46,6 +46,16 @@ public class Example_46 {
         image.setLocation(100, 150);
         image.scaleBy(.5f);
         image.drawOn(page);
+
+        // File attachment functionality
+        FileAttachment attachment = new FileAttachment(pdf, file1);
+        attachment.setLocation(100f, 550f);
+        attachment.setIconPushPin();
+        attachment.setIconSize(24f);
+        attachment.setTitle("Attached File: " + file1.getFileName());
+        attachment.setDescription(
+                "Right mouse click on the icon to save the attached file.");
+        attachment.drawOn(page);
 
         pdf.complete();
     }
