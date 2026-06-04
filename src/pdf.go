@@ -527,6 +527,7 @@ var hexDigits = [16]byte{
 	'A', 'B', 'C', 'D', 'E', 'F',
 }
 
+/*
 func toHex(s string) string {
 	if s == "" {
 		return ""
@@ -556,6 +557,7 @@ func toHex(s string) string {
 
 	return b.String()
 }
+*/
 
 func (pdf *PDF) addNumsParentTree() {
 	pdf.newobj()
