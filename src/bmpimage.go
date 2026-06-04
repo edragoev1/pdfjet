@@ -139,11 +139,11 @@ func (image *BMPImage) bit16to24(row []byte, width int) []byte {
 	ret := make([]byte, 3*width)
 	j := 0
 	for i := 0; i < 2*width; i += 2 {
-		ret[j] = (byte)((row[i] & 0x1F) << 3)
+		ret[j] = (row[i] & 0x1F) << 3
 		j++
-		ret[j] = (byte)(((row[i+1] & 0x07) << 5) + ((row[i] & 0xE0) >> 3))
+		ret[j] = ((row[i+1] & 0x07) << 5) + ((row[i] & 0xE0) >> 3)
 		j++
-		ret[j] = (byte)((row[i+1] & 0xF8))
+		ret[j] = row[i+1] & 0xF8
 		j++
 	}
 	return ret
@@ -154,11 +154,11 @@ func (image *BMPImage) bit16to24b(row []byte, width int) []byte {
 	ret := make([]byte, 3*width)
 	j := 0
 	for i := 0; i < 2*width; i += 2 {
-		ret[j] = byte((row[i] & 0x1F) << 3)
+		ret[j] = (row[i] & 0x1F) << 3
 		j++
-		ret[j] = byte(((row[i+1] & 0x03) << 6) + ((row[i] & 0xE0) >> 2))
+		ret[j] = ((row[i+1] & 0x03) << 6) + ((row[i] & 0xE0) >> 2)
 		j++
-		ret[j] = byte((row[i+1] & 0x7C) << 1)
+		ret[j] = (row[i+1] & 0x7C) << 1
 		j++
 	}
 	return ret
@@ -183,9 +183,9 @@ func (image *BMPImage) bit4to8(row []byte, width int) []byte {
 	ret := make([]byte, width)
 	for i := 0; i < width; i++ {
 		if i%2 == 0 {
-			ret[i] = (byte)((row[i/2] & m11110000) >> 4)
+			ret[i] = (row[i/2] & m11110000) >> 4
 		} else {
-			ret[i] = (byte)((row[i/2] & m00001111))
+			ret[i] = row[i/2] & m00001111
 		}
 	}
 	return ret
@@ -196,21 +196,21 @@ func (image *BMPImage) bit1to8(row []byte, width int) []byte {
 	for i := 0; i < width; i++ {
 		switch i % 8 {
 		case 0:
-			ret[i] = byte((row[i/8] & m10000000) >> 7)
+			ret[i] = (row[i/8] & m10000000) >> 7
 		case 1:
-			ret[i] = byte((row[i/8] & m01000000) >> 6)
+			ret[i] = (row[i/8] & m01000000) >> 6
 		case 2:
-			ret[i] = byte((row[i/8] & m00100000) >> 5)
+			ret[i] = (row[i/8] & m00100000) >> 5
 		case 3:
-			ret[i] = byte((row[i/8] & m00010000) >> 4)
+			ret[i] = (row[i/8] & m00010000) >> 4
 		case 4:
-			ret[i] = byte((row[i/8] & m00001000) >> 3)
+			ret[i] = (row[i/8] & m00001000) >> 3
 		case 5:
-			ret[i] = byte((row[i/8] & m00000100) >> 2)
+			ret[i] = (row[i/8] & m00000100) >> 2
 		case 6:
-			ret[i] = byte((row[i/8] & m00000010) >> 1)
+			ret[i] = (row[i/8] & m00000010) >> 1
 		case 7:
-			ret[i] = byte((row[i/8] & m00000001))
+			ret[i] = row[i/8] & m00000001
 		}
 	}
 	return ret

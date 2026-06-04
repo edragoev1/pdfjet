@@ -58,7 +58,7 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	sb.WriteString("<xmpRights:UsageTerms>\n")
 	sb.WriteString("<rdf:Alt>\n")
 	sb.WriteString("<rdf:li xml:lang=\"x-default\">\n")
-	sb.WriteString(string([]byte(font.info)))
+	sb.WriteString(font.info)
 	sb.WriteString("</rdf:li>\n")
 	sb.WriteString("</rdf:Alt>\n")
 	sb.WriteString("</xmpRights:UsageTerms>\n")
@@ -109,7 +109,7 @@ func embedFontFile2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	obj.add(">>")
 
 	buf1 := make([]byte, 0)
-	buf2 := make([]byte, 4096) // We need this buffer to be non zero length!
+	buf2 := make([]byte, 4096) // We need this buffer to be non-zero length!
 	for {
 		n, err := reader.Read(buf2)
 		buf1 = append(buf1, buf2[:n]...)
