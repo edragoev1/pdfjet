@@ -3,7 +3,7 @@ package pdfjet
 /**
  * textblock.go
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
@@ -34,8 +34,8 @@ type TextBlock struct {
 
 	language               string
 	altDescription         string
-	uri                    *string
-	key                    *string
+	uri                    string
+	key                    string
 	uriLanguage            string
 	uriActualText          string
 	uriAltDescription      string
@@ -231,7 +231,7 @@ func (textBlock *TextBlock) textIsCJK(str string) bool {
 }
 
 func (textBlock *TextBlock) SetURIAction(uri string) *TextBlock {
-	textBlock.uri = &uri
+	textBlock.uri = uri
 	return textBlock
 }
 

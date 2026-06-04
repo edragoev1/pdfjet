@@ -3,7 +3,7 @@ package pdfjet
 /**
  * bookmark.go
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
@@ -27,7 +27,7 @@ type Bookmark struct {
 	children   []*Bookmark
 	dest       *Destination
 	objNumber  int
-	prefix     *string
+	prefix     string
 }
 
 // NewBookmark creates new bookmark.
@@ -92,44 +92,44 @@ func (bookmark *Bookmark) AutoNumber(textLine *TextLine) *Bookmark {
 	bm := bookmark.getPrevBookmark()
 	if bm == nil {
 		bm = bookmark.GetParent()
-		if bm.prefix == nil {
+		if bm.prefix == "" {
 			value := "1"
-			bookmark.prefix = &value
+			bookmark.prefix = value
 		} else {
-			value := *bm.prefix + ".1"
-			bookmark.prefix = &value
+			value := bm.prefix + ".1"
+			bookmark.prefix = value
 		}
 	} else {
-		if bm.prefix == nil {
-			if bm.GetParent().prefix == nil {
+		if bm.prefix == "" {
+			if bm.GetParent().prefix == "" {
 				value := "1"
-				bookmark.prefix = &value
+				bookmark.prefix = value
 			} else {
-				value := *bm.GetParent().prefix + ".1"
-				bookmark.prefix = &value
+				value := bm.GetParent().prefix + ".1"
+				bookmark.prefix = value
 			}
 		} else {
-			index := strings.LastIndex(*bm.prefix, ".")
+			index := strings.LastIndex(bm.prefix, ".")
 			if index == -1 {
-				temp, err := strconv.Atoi(*bm.prefix)
+				temp, err := strconv.Atoi(bm.prefix)
 				if err != nil {
 					log.Fatal(err)
 				}
 				value := strconv.Itoa(temp + 1)
-				bookmark.prefix = &value
+				bookmark.prefix = value
 			} else {
-				value := (*bm.prefix)[:index] + "."
-				temp, err := strconv.Atoi((*bm.prefix)[index+1:])
+				value := (bm.prefix)[:index] + "."
+				temp, err := strconv.Atoi((bm.prefix)[index+1:])
 				if err != nil {
 					log.Fatal(err)
 				}
 				value += strconv.Itoa(temp + 1)
-				bookmark.prefix = &value
+				bookmark.prefix = value
 			}
 		}
 	}
-	textLine.SetText(*bookmark.prefix)
-	bookmark.title = *bookmark.prefix + " " + bookmark.title
+	textLine.SetText(bookmark.prefix)
+	bookmark.title = bookmark.prefix + " " + bookmark.title
 	return bookmark
 }
 

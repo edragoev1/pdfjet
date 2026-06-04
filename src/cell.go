@@ -3,7 +3,7 @@ package pdfjet
 /**
  * cell.go
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
@@ -41,7 +41,7 @@ type Cell struct {
 	rightBorder  bool
 
 	textAlignment int
-	uri, key      *string
+	uri, key      string
 	valign        int
 
 	underline bool
@@ -391,7 +391,7 @@ func (cell *Cell) GetStrikeout() bool {
 }
 
 // SetURIAction sets the URI action.
-func (cell *Cell) SetURIAction(uri *string) {
+func (cell *Cell) SetURIAction(uri string) {
 	cell.uri = uri
 }
 
