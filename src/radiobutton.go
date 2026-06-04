@@ -19,7 +19,7 @@ type RadioButton struct {
 	penWidth       float32
 	font           *Font
 	label          string
-	uri, key       *string
+	uri, key       string
 	language       string
 	altDescription string // = Single.space
 	actualText     string // = Single.space
@@ -56,7 +56,7 @@ func (radioButton *RadioButton) SetLocation(x, y float32) *RadioButton {
 // SetURIAction sets the URI for the "click text line" action.
 // @param uri the URI.
 // @return this RadioButton.
-func (radioButton *RadioButton) SetURIAction(uri *string) *RadioButton {
+func (radioButton *RadioButton) SetURIAction(uri string) *RadioButton {
 	radioButton.uri = uri
 	return radioButton
 }
@@ -106,7 +106,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 		page.FillCircle(radioButton.x+radioButton.r1, yBox+radioButton.r1, radioButton.r2)
 	}
 
-	if radioButton.uri != nil {
+	if radioButton.uri != "" {
 		page.SetBrushColor(color.Blue)
 	}
 	page.DrawStringUsingColorMap(
@@ -117,7 +117,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 
 	page.AddEMC()
 
-	if radioButton.uri != nil || radioButton.key != nil {
+	if radioButton.uri != "" || radioButton.key != "" {
 		page.AddAnnotation(NewAnnotation(
 			"Link",
 			radioButton.x+3*radioButton.r1,
@@ -130,7 +130,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 			"",
 			"",
 			radioButton.uri,
-			nil,
+			"",
 			radioButton.language,
 			radioButton.actualText,
 			radioButton.altDescription))

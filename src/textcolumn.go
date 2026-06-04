@@ -235,7 +235,7 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 		dx := (textColumn.w - sumOfWordWidths) / float32(len(textLines)-1)
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
-			if textLine.GetGoToAction() != nil {
+			if textLine.GetGoToAction() != "" {
 				page.AddAnnotation(NewAnnotation(
 					"Link",
 					textColumn.x,
@@ -247,7 +247,7 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 					0.0,
 					"",
 					"",
-					nil,          // The URI
+					"",           // The URI
 					textLine.key, // The destination name
 					"",
 					"",
@@ -299,7 +299,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 
 	for _, textLine := range textLines {
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
-		if textLine.uri != nil || textLine.key != nil {
+		if textLine.uri != "" || textLine.key != "" {
 			page.AddAnnotation(NewAnnotation(
 				"Link",
 				textColumn.x,
@@ -311,7 +311,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 				0.0,
 				"",
 				"",
-				nil,                      // The URI
+				"",                       // The URI
 				textLine.GetGoToAction(), // The destination name
 				"",
 				"",

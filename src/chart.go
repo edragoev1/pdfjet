@@ -235,7 +235,7 @@ func (chart *Chart) DrawOn(page *Page) {
 				point.x = chart.x5 + point.x*(chart.x6-chart.x5)/chart.w
 				point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
 			}
-			if point.uri != nil || point.key != nil {
+			if point.uri != "" || point.key != "" {
 				page.AddAnnotation(NewAnnotation(
 					"Link",
 					point.x-point.r,
@@ -248,7 +248,7 @@ func (chart *Chart) DrawOn(page *Page) {
 					"",
 					"",
 					point.uri,
-					nil,
+					"",
 					"",
 					"",
 					""))

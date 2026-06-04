@@ -32,7 +32,7 @@ func Example30() {
 
 	uri := "http://www.openstreetmap.org/copyright"
 	textLine = pdfjet.NewTextLine(f1, "http://www.openstreetmap.org/copyright")
-	textLine.SetURIAction(&uri)
+	textLine.SetURIAction(uri)
 	textLine.SetLocation(10.0, xy[1]+f1.GetHeight())
 	textLine.DrawOn(page)
 

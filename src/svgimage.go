@@ -25,8 +25,8 @@ type SVGImage struct {
 	stroke         int32
 	strokeWidth    float32
 	paths          []*SVGPath
-	uri            *string
-	key            *string
+	uri            string
+	key            string
 	language       string
 	altDescription string
 	actualText     string
@@ -312,7 +312,7 @@ func (image *SVGImage) DrawOn(page *Page) []float32 {
 		image.drawPath(path, page)
 	}
 	page.AddEMC()
-	if image.uri != nil || image.key != nil {
+	if image.uri != "" || image.key != "" {
 		page.AddAnnotation(NewAnnotation(
 			"Link",
 			image.x,

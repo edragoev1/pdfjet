@@ -40,7 +40,7 @@ func Example34() {
 	p1.SetColor(color.DarkOliveGreen)
 	p1.SetFillShape(true)
 	p1.SetAlignment(alignment.Right)
-	p1.SetURIAction(&uri)
+	p1.SetURIAction(uri)
 	tableData[4][3].SetPoint(p1)
 
 	uri = "https://en.wikipedia.org/wiki/European_Union"
@@ -50,7 +50,7 @@ func Example34() {
 	p1.SetColor(color.Blue)
 	p1.SetFillShape(true)
 	p1.SetAlignment(alignment.Right)
-	p1.SetURIAction(&uri)
+	p1.SetURIAction(uri)
 	tableData[5][3].SetPoint(p1)
 
 	uri = "https://en.wikipedia.org/wiki/United_States"
@@ -60,7 +60,7 @@ func Example34() {
 	p1.SetColor(color.Red)
 	p1.SetFillShape(true)
 	p1.SetAlignment(alignment.Right)
-	p1.SetURIAction(&uri)
+	p1.SetURIAction(uri)
 	tableData[6][3].SetPoint(p1)
 
 	table.SetData(tableData, pdfjet.TableWith2HeaderRows)

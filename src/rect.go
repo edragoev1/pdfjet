@@ -16,20 +16,18 @@ import (
 // Rect is used to create rectangular shapes on a page.
 // Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
 type Rect struct {
-	x float32
-	y float32
-	w float32
-	h float32
-	r float32
-
-	fillColor     [3]float32
-	borderWidth   float32
-	borderColor   [3]float32
-	borderPattern string
-
+	x              float32
+	y              float32
+	w              float32
+	h              float32
+	r              float32
+	fillColor      [3]float32
+	borderWidth    float32
+	borderColor    [3]float32
+	borderPattern  string
 	fillShape      bool
-	uri            *string
-	key            *string
+	uri            string
+	key            string
 	language       string
 	altDescription string
 	actualText     string
@@ -102,13 +100,13 @@ func (rect *Rect) SetCornerRadius(r float32) {
 
 // SetURIAction sets the URI for the "click rect" action.
 // @param uri the URI
-func (rect *Rect) SetURIAction(uri *string) {
+func (rect *Rect) SetURIAction(uri string) {
 	rect.uri = uri
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
-func (rect *Rect) SetGoToAction(key *string) {
+func (rect *Rect) SetGoToAction(key string) {
 	rect.key = key
 }
 
@@ -232,7 +230,7 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 	}
 	page.AddEMC()
 
-	if rect.uri != nil || rect.key != nil {
+	if rect.uri != "" || rect.key != "" {
 		page.AddAnnotation(NewAnnotation(
 			"Link",
 			rect.x,

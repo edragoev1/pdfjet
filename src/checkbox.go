@@ -24,7 +24,7 @@ type CheckBox struct {
 	mark           int
 	font           *Font
 	label          string
-	uri, key       *string
+	uri, key       string
 	language       string
 	altDescription string
 	actualText     string
@@ -94,7 +94,7 @@ func (checkBox *CheckBox) Check(mark int) *CheckBox {
 // SetURIAction sets the URI for the "click text line" action.
 // @param uri the URI.
 // @return the CheckBox.
-func (checkBox *CheckBox) SetURIAction(uri *string) *CheckBox {
+func (checkBox *CheckBox) SetURIAction(uri string) *CheckBox {
 	checkBox.uri = uri
 	return checkBox
 }
@@ -162,7 +162,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 		}
 	}
 
-	if checkBox.uri != nil {
+	if checkBox.uri != "" {
 		page.SetBrushColor(color.Blue)
 	}
 	page.DrawStringUsingColorMap(
@@ -173,7 +173,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 	page.SetBrushColor(color.Black)
 
 	page.AddEMC()
-	if checkBox.uri != nil || checkBox.key != nil {
+	if checkBox.uri != "" || checkBox.key != "" {
 		page.AddAnnotation(NewAnnotation(
 			"Link",
 			checkBox.x+3.0*checkBox.w/2.0,
@@ -186,7 +186,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 			"",
 			"",
 			checkBox.uri,
-			nil,
+			"",
 			checkBox.language,
 			checkBox.actualText,
 			checkBox.altDescription))

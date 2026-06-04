@@ -27,20 +27,18 @@ type TextLine struct {
 	underlineTTS       string
 	strikeoutTTS       string
 	degrees            int
-
-	color    [3]float32
-	colorMap map[string]int32
-
-	textEffect        int
-	verticalOffset    float32
-	uri, key          *string
-	language          string
-	altDescription    string
-	actualText        string
-	uriLanguage       string
-	uriActualText     string
-	uriAltDescription string
-	structureType     string
+	color              [3]float32
+	colorMap           map[string]int32
+	textEffect         int
+	verticalOffset     float32
+	uri, key           string
+	language           string
+	altDescription     string
+	actualText         string
+	uriLanguage        string
+	uriActualText      string
+	uriAltDescription  string
+	structureType      string
 }
 
 // NewTextLine is constructor for creating text line objects.
@@ -213,28 +211,28 @@ func (textLine *TextLine) GetHeight() float32 {
 // SetURIAction sets the URI for the "click text line" action.
 // @param uri the URI
 // @return this TextLine.
-func (textLine *TextLine) SetURIAction(uri *string) *TextLine {
+func (textLine *TextLine) SetURIAction(uri string) *TextLine {
 	textLine.uri = uri
 	return textLine
 }
 
 // GetURIAction returns the action URI.
 // @return the action URI.
-func (textLine *TextLine) GetURIAction() *string {
+func (textLine *TextLine) GetURIAction() string {
 	return textLine.uri
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
 // @return this TextLine.
-func (textLine *TextLine) SetGoToAction(key *string) *TextLine {
+func (textLine *TextLine) SetGoToAction(key string) *TextLine {
 	textLine.key = key
 	return textLine
 }
 
 // GetGoToAction returns the GoTo action string.
 // @return the GoTo action string.
-func (textLine *TextLine) GetGoToAction() *string {
+func (textLine *TextLine) GetGoToAction() string {
 	return textLine.key
 }
 
@@ -453,7 +451,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		page.AddEMC()
 	}
 
-	if textLine.uri != nil || textLine.key != nil {
+	if textLine.uri != "" || textLine.key != "" {
 		page.AddAnnotation(NewAnnotation(
 			"Link",
 			textLine.x,

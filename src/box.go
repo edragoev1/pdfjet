@@ -23,8 +23,8 @@ type Box struct {
 	width          float32
 	pattern        string
 	fillShape      bool
-	uri            *string
-	key            *string
+	uri            string
+	key            string
 	language       string
 	altDescription string
 	actualText     string
@@ -94,13 +94,13 @@ func (box *Box) SetCornerRadius(r float32) {
 
 // SetURIAction sets the URI for the "click box" action.
 // @param uri the URI
-func (box *Box) SetURIAction(uri *string) {
+func (box *Box) SetURIAction(uri string) {
 	box.uri = uri
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
-func (box *Box) SetGoToAction(key *string) {
+func (box *Box) SetGoToAction(key string) {
 	box.key = key
 }
 
@@ -224,7 +224,7 @@ func (box *Box) DrawOn(page *Page) []float32 {
 	}
 	page.AddEMC()
 
-	if box.uri != nil || box.key != nil {
+	if box.uri != "" || box.key != "" {
 		page.AddAnnotation(NewAnnotation(
 			"Link",
 			box.x,

@@ -34,8 +34,8 @@ type Image struct {
 	y              float32
 	w              float32 // Image width
 	h              float32 // Image height
-	uri            *string
-	key            *string
+	uri            string
+	key            string
 	xBox           float32
 	yBox           float32
 	degrees        int
@@ -287,13 +287,13 @@ func (image *Image) PlaceIn(box *Box) {
 
 // SetURIAction sets the URI for the "click box" action.
 // @param uri the URI
-func (image *Image) SetURIAction(uri *string) {
+func (image *Image) SetURIAction(uri string) {
 	image.uri = uri
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
-func (image *Image) SetGoToAction(key *string) {
+func (image *Image) SetGoToAction(key string) {
 	image.key = key
 }
 
@@ -401,7 +401,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 	page.AddEMC()
 
-	if image.uri != nil || image.key != nil {
+	if image.uri != "" || image.key != "" {
 		page.AddAnnotation(NewAnnotation(
 			"Link",
 			image.x,

@@ -31,7 +31,7 @@ type Point struct {
 	text          string
 	textColor     int32
 	textDirection int
-	uri, key      *string
+	uri, key      string
 	xBox          float32
 	yBox          float32
 }
@@ -234,13 +234,13 @@ func (point *Point) SetDrawPath() *Point {
 
 // SetURIAction sets the URI for the "click point" action.
 // @param uri the URI
-func (point *Point) SetURIAction(uri *string) {
+func (point *Point) SetURIAction(uri string) {
 	point.uri = uri
 }
 
 // GetURIAction returns the URI for the "click point" action.
 // @return the URI for the "click point" action.
-func (point *Point) GetURIAction() *string {
+func (point *Point) GetURIAction() string {
 	return point.uri
 }
 

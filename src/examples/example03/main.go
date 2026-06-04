@@ -26,7 +26,7 @@ func Example03() {
 	// text.SetStrikeout(true)
 	text.SetUnderline(true)
 	uri := "https://en.wikipedia.org/wiki/European_Union"
-	text.SetURIAction(&uri)
+	text.SetURIAction(uri)
 	text.DrawOn(page)
 
 	image1.SetLocation(50.0, 50.0)

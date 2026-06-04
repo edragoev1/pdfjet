@@ -7,6 +7,13 @@ package pdfjet
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
+const (
+	Link    = "Link"
+	Polygon = "Polygon"
+	Circle  = "Circle"
+	Square  = "Square"
+)
+
 // Annotation is used to create PDF annotation objects.
 type Annotation struct {
 	objNumber      int
@@ -15,13 +22,13 @@ type Annotation struct {
 	vertices       []float32
 	fillColor      []float32
 	transparency   float32
-	title          *string
-	contents       *string
-	uri            *string
-	key            *string
-	language       *string
-	actualText     *string
-	altDescription *string
+	title          string
+	contents       string
+	uri            string
+	key            string
+	language       string
+	actualText     string
+	altDescription string
 	fileAttachment *FileAttachment
 }
 
@@ -41,8 +48,8 @@ func NewAnnotation(
 	transparency float32,
 	title string,
 	contents string,
-	uri *string,
-	key *string,
+	uri string,
+	key string,
 	language string,
 	actualText string,
 	altDescription string) *Annotation {
@@ -52,20 +59,20 @@ func NewAnnotation(
 	annotation.y1 = y1
 	annotation.x2 = x2
 	annotation.y2 = y2
-
-	annotation.title = uri
-	annotation.contents = key
+	annotation.vertices = vertices
+	annotation.fillColor = fillColor
+	annotation.transparency = transparency
+	annotation.title = title
+	annotation.contents = contents
 	annotation.uri = uri
 	annotation.key = key
-
-	annotation.language = &language
-	annotation.actualText = &actualText
-	annotation.altDescription = &altDescription
-
-	if annotation.actualText == nil {
+	annotation.language = language
+	annotation.actualText = actualText
+	annotation.altDescription = altDescription
+	if annotation.actualText == "" {
 		annotation.actualText = uri
 	}
-	if annotation.altDescription == nil {
+	if annotation.altDescription == "" {
 		annotation.altDescription = uri
 	}
 	return annotation

@@ -821,11 +821,11 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(">\n")
 		}
 	} else if annot.annotationType == "Link" {
-		if annot.uri != nil {
+		if annot.uri != "" {
 			pdf.appendString("/F 4\n")
 			pdf.appendString("/A <<\n")
 			pdf.appendString("/S /URI\n")
-			uri := []byte(*annot.uri)
+			uri := []byte(annot.uri)
 			if pdf.encryption != nil {
 				uri, _ = encryption.Encrypt(uri, pdf.encryption.GetKey())
 			}
@@ -833,8 +833,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(uri))
 			pdf.appendString(">\n")
 			pdf.appendString(">>\n")
-		} else if annot.key != nil {
-			destination := pdf.destinations[*annot.key]
+		} else if annot.key != "" {
+			destination := pdf.destinations[annot.key]
 			if destination != nil {
 				pdf.appendString("/F 4\n")
 				pdf.appendString("/Dest [")
@@ -868,8 +868,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		pdf.appendFloat32(annot.transparency)
 		pdf.appendString("\n")
 
-		if annot.title != nil {
-			title := []byte(*annot.title)
+		if annot.title != "" {
+			title := []byte(annot.title)
 			if pdf.encryption != nil {
 				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
 			}
@@ -878,8 +878,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(">\n")
 		}
 
-		if annot.contents != nil {
-			contents := []byte(*annot.contents)
+		if annot.contents != "" {
+			contents := []byte(annot.contents)
 			if pdf.encryption != nil {
 				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
 			}
@@ -901,8 +901,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		pdf.appendFloat32(annot.transparency)
 		pdf.appendString("\n")
 
-		if annot.title != nil {
-			title := []byte(*annot.title)
+		if annot.title != "" {
+			title := []byte(annot.title)
 			if pdf.encryption != nil {
 				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
 			}
@@ -911,8 +911,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(">\n")
 		}
 
-		if annot.contents != nil {
-			contents := []byte(*annot.contents)
+		if annot.contents != "" {
+			contents := []byte(annot.contents)
 			if pdf.encryption != nil {
 				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
 			}
@@ -923,8 +923,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 	} else if annot.annotationType == "Text" {
 		pdf.appendString("/Name /Comment\n")
 
-		if annot.title != nil {
-			title := []byte(*annot.title)
+		if annot.title != "" {
+			title := []byte(annot.title)
 			if pdf.encryption != nil {
 				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
 			}
@@ -933,8 +933,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(">\n")
 		}
 
-		if annot.contents != nil {
-			contents := []byte(*annot.contents)
+		if annot.contents != "" {
+			contents := []byte(annot.contents)
 			if pdf.encryption != nil {
 				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
 			}

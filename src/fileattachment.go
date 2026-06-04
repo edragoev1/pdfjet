@@ -76,8 +76,8 @@ func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
 		0.0,
 		"",
 		"",
-		nil,
-		nil,
+		"",
+		"",
 		"",
 		"",
 		"")
