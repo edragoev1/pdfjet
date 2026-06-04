@@ -521,44 +521,6 @@ func (pdf *PDF) addStructElementObjects() {
 	}
 }
 
-// Pre-allocated hex digits
-var hexDigits = [16]byte{
-	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-	'A', 'B', 'C', 'D', 'E', 'F',
-}
-
-/*
-func toHex(s string) string {
-	if s == "" {
-		return ""
-	}
-
-	var b strings.Builder
-	b.Grow(len(s) * 6) // preallocate maximum needed
-
-	for _, r := range s {
-		cp := uint32(r)
-		if cp != 0xFEFF { // Skip BOM
-			if cp <= 0xFFFF {
-				b.WriteByte(hexDigits[(cp>>12)&0xF])
-				b.WriteByte(hexDigits[(cp>>8)&0xF])
-				b.WriteByte(hexDigits[(cp>>4)&0xF])
-				b.WriteByte(hexDigits[(cp)&0xF])
-			} else {
-				b.WriteByte(hexDigits[(cp>>20)&0xF])
-				b.WriteByte(hexDigits[(cp>>16)&0xF])
-				b.WriteByte(hexDigits[(cp>>12)&0xF])
-				b.WriteByte(hexDigits[(cp>>8)&0xF])
-				b.WriteByte(hexDigits[(cp>>4)&0xF])
-				b.WriteByte(hexDigits[(cp)&0xF])
-			}
-		}
-	}
-
-	return b.String()
-}
-*/
-
 func (pdf *PDF) addNumsParentTree() {
 	pdf.newobj()
 	pdf.appendString("<<\n")

@@ -375,6 +375,12 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 	}
 }
 
+// Pre-allocated hex digits
+var hexDigits = [16]byte{
+	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+	'A', 'B', 'C', 'D', 'E', 'F',
+}
+
 func (page *Page) appendCodePointAsHex(codePoint int) {
 	if codePoint <= 0xFFFF {
 		page.buf = append(page.buf,
