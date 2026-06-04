@@ -239,6 +239,11 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 			rect.y,
 			rect.x+rect.w,
 			rect.y+rect.h,
+			nil,
+			nil,
+			0.0,
+			"",
+			"",
 			rect.uri,
 			rect.key, // The destination name
 			rect.language,

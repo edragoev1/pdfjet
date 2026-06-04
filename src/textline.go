@@ -460,6 +460,11 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 			textLine.y-textLine.font.ascent,
 			textLine.x+textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, textLine.text),
 			textLine.y+textLine.font.descent,
+			nil,
+			nil,
+			0.0,
+			"",
+			"",
 			textLine.uri,
 			textLine.key, // The destination name
 			textLine.uriLanguage,

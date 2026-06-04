@@ -242,6 +242,11 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 					page.height-(textColumn.y-textLine.font.ascent),
 					textColumn.x+textLine.GetWidth(),
 					page.height-(textColumn.y+textLine.font.descent),
+					nil,
+					nil,
+					0.0,
+					"",
+					"",
 					nil,          // The URI
 					textLine.key, // The destination name
 					"",
@@ -301,6 +306,11 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 				textColumn.y-textLine.font.ascent,
 				textColumn.x+textLine.GetWidth(),
 				textColumn.y+textLine.font.descent,
+				nil,
+				nil,
+				0.0,
+				"",
+				"",
 				nil,                      // The URI
 				textLine.GetGoToAction(), // The destination name
 				"",

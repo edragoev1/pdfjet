@@ -36,6 +36,11 @@ type Annotation struct {
 func NewAnnotation(
 	annotationType string,
 	x1, y1, x2, y2 float32,
+	vertices []float32,
+	fillColor []float32,
+	transparency float32,
+	title string,
+	contents string,
 	uri *string,
 	key *string,
 	language string,

@@ -408,6 +408,11 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 			image.y,
 			image.x+image.w,
 			image.y+image.h,
+			nil,
+			nil,
+			0.0,
+			"",
+			"",
 			image.uri,
 			image.key, // The destination name
 			image.language,

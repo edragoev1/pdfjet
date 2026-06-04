@@ -231,6 +231,11 @@ func (box *Box) DrawOn(page *Page) []float32 {
 			box.y,
 			box.x+box.w,
 			box.y+box.h,
+			nil,
+			nil,
+			0.0,
+			"",
+			"",
 			box.uri,
 			box.key, // The destination name
 			box.language,

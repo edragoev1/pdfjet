@@ -319,6 +319,11 @@ func (image *SVGImage) DrawOn(page *Page) []float32 {
 			image.y,
 			image.x+image.w,
 			image.y+image.h,
+			nil,
+			nil,
+			0.0,
+			"",
+			"",
 			image.uri,
 			image.key, // The destination name
 			image.language,
