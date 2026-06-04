@@ -197,7 +197,7 @@ func (page *Page) getContent() []byte {
 // @param name The destination name.
 // @param xPosition The horizontal position of the destination on this page.
 // @param yPosition The vertical position of the destination on this page.
-func (page *Page) AddDestination(name *string, xPosition, yPosition float32) *Destination {
+func (page *Page) AddDestination(name string, xPosition, yPosition float32) *Destination {
 	dest := NewDestination(name, xPosition, page.height-yPosition)
 	page.destinations = append(page.destinations, dest)
 	return dest

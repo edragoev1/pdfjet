@@ -659,7 +659,7 @@ func (pdf *PDF) setDestinationObjNumbers() {
 		for _, destination := range page.destinations {
 			destination.pageObjNumber =
 				pdf.getObjNumber() + numberOfAnnotations + i + 1
-			pdf.destinations[*destination.name] = destination
+			pdf.destinations[destination.name] = destination
 		}
 	}
 }
