@@ -11,9 +11,9 @@ package pdfjet
 type FileAttachment struct {
 	pdf          *PDF
 	embeddedFile *EmbeddedFile
-	icon         *string
-	title        *string
-	contents     *string
+	icon         string
+	title        string
+	contents     string
 	x            float32
 	y            float32
 	h            float32
@@ -25,9 +25,9 @@ func NewFileAttachment(pdf *PDF, embeddedFile *EmbeddedFile) *FileAttachment {
 	attachment.pdf = pdf
 	attachment.embeddedFile = embeddedFile
 	icon := "PushPin"
-	attachment.icon = &icon
+	attachment.icon = icon
 	contents := "Right mouse click on the icon to save the attached attachment."
-	attachment.contents = &contents
+	attachment.contents = contents
 	attachment.h = 24.0
 	return attachment
 }
@@ -40,12 +40,12 @@ func (attachment *FileAttachment) SetLocation(x, y float32) {
 
 // SetIconPushPin sets the push pin icon.
 func (attachment *FileAttachment) SetIconPushPin() {
-	*attachment.icon = "PushPin"
+	attachment.icon = "PushPin"
 }
 
 // SetIconPaperclip sets the paper clip icon.
 func (attachment *FileAttachment) SetIconPaperclip() {
-	*attachment.icon = "Paperclip"
+	attachment.icon = "Paperclip"
 }
 
 // SetIconSize sets the icon size.
@@ -55,12 +55,12 @@ func (attachment *FileAttachment) SetIconSize(height float32) {
 
 // SetTitle sets the title.
 func (attachment *FileAttachment) SetTitle(title string) {
-	attachment.title = &title
+	attachment.title = title
 }
 
 // SetDescription sets the description.
 func (attachment *FileAttachment) SetDescription(description string) {
-	attachment.contents = &description
+	attachment.contents = description
 }
 
 // DrawOn draws this component on the page.

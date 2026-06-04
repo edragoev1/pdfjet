@@ -798,11 +798,11 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		pdf.appendString(strconv.Itoa(annot.fileAttachment.embeddedFile.objNumber))
 		pdf.appendString(" 0 R\n")
 		pdf.appendString("/Name /")
-		pdf.appendString(*annot.fileAttachment.icon)
+		pdf.appendString(annot.fileAttachment.icon)
 		pdf.appendString("\n")
 
-		if annot.fileAttachment.title != nil {
-			title := []byte(*annot.fileAttachment.title)
+		if annot.fileAttachment.title != "" {
+			title := []byte(annot.fileAttachment.title)
 			if pdf.encryption != nil {
 				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
 			}
@@ -811,8 +811,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(">\n")
 		}
 
-		if annot.fileAttachment.contents != nil {
-			contents := []byte(*annot.fileAttachment.contents)
+		if annot.fileAttachment.contents != "" {
+			contents := []byte(annot.fileAttachment.contents)
 			if pdf.encryption != nil {
 				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
 			}
