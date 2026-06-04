@@ -123,7 +123,7 @@ func (path *Path) PlaceAtZeroZeroIn(box *Box) {
 	path.PlaceIn(box, 0.0, 0.0)
 }
 
-// PlaceIn places the path inside the spacified box at coordinates (xOffset, yOffset) of the top left corner.
+// PlaceIn places the path inside the specified box at coordinates (xOffset, yOffset) of the top left corner.
 // @param box the specified box.
 // @param xOffset the xOffset.
 // @param yOffset the yOffset.

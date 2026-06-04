@@ -35,7 +35,7 @@ func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /Type0\n")
 	pdf.appendString("/BaseFont /")
-	pdf.appendString(string([]byte(font.name)))
+	pdf.appendString(font.name)
 	pdf.appendString("\n")
 	pdf.appendString("/Encoding /Identity-H\n")
 	pdf.appendString("/DescendantFonts [")

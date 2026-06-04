@@ -110,9 +110,8 @@ func (obj *PDFobj) getValue(key string) string {
 				}
 				sb.WriteString("]")
 				return sb.String()
-			} else {
-				return token
 			}
+			return token
 		}
 	}
 	return ""
