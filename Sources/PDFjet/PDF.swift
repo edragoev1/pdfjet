@@ -1716,4 +1716,5 @@ public class PDF {
         // Convert the result to a String from UInt8 array
         return String(decoding: result, as: UTF8.self)
     }
+
 }   // End of PDF.swift
