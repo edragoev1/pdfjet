@@ -18,6 +18,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/edragoev1/pdfjet/src/annotation"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/compressor"
 	"github.com/edragoev1/pdfjet/src/djb"
@@ -793,7 +794,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 	pdf.appendString("]\n")
 	pdf.appendString("/Border [0 0 0]\n")
 
-	if annot.annotationType == "FileAttachment" {
+	if annot.annotationType == annotation.FileAttachment {
 		pdf.appendString("/FS ")
 		pdf.appendString(strconv.Itoa(annot.fileAttachment.embeddedFile.objNumber))
 		pdf.appendString(" 0 R\n")
@@ -820,7 +821,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == "Link" {
+	} else if annot.annotationType == annotation.Link {
 		if annot.uri != "" {
 			pdf.appendString("/F 4\n")
 			pdf.appendString("/A <<\n")
@@ -846,7 +847,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 				pdf.appendString(" 0]\n")
 			}
 		}
-	} else if annot.annotationType == "Polygon" {
+	} else if annot.annotationType == annotation.Polygon {
 		pdf.appendString("/Vertices [ ")
 		for i := 0; i < len(annot.vertices); i += 2 {
 			pdf.appendFloat32(annot.x1 + annot.vertices[i])
@@ -887,8 +888,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == "Square" ||
-		annot.annotationType == "Circle" {
+	} else if annot.annotationType == annotation.Square ||
+		annot.annotationType == annotation.Circle {
 		pdf.appendString("/IC [")
 		pdf.appendFloat32(annot.fillColor[0])
 		pdf.appendString(" ")
@@ -920,7 +921,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == "Text" {
+	} else if annot.annotationType == annotation.Text {
 		pdf.appendString("/Name /Comment\n")
 
 		if annot.title != "" {
@@ -966,9 +967,9 @@ func (pdf *PDF) addAnnotDictionaries() {
 
 	for _, page := range pdf.pages {
 		if len(page.annots) > 0 {
-			for _, annotation := range page.annots {
-				if annotation != nil {
-					pdf.addAnnotationObject(annotation, -1)
+			for _, annot := range page.annots {
+				if annot != nil {
+					pdf.addAnnotationObject(annot, -1)
 				}
 			}
 		}

@@ -7,13 +7,6 @@ package pdfjet
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-const (
-	Link    = "Link"
-	Polygon = "Polygon"
-	Circle  = "Circle"
-	Square  = "Square"
-)
-
 // Annotation is used to create PDF annotation objects.
 type Annotation struct {
 	objNumber      int
