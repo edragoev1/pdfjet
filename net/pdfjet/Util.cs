@@ -23,7 +23,7 @@ public class Util {
         'A', 'B', 'C', 'D', 'E', 'F'
     };
 
-    internal string ToHexOriginal(String str) {
+    internal string ToHex(String str) {
         if (string.IsNullOrEmpty(str)) {
             return "";
         }
@@ -54,48 +54,6 @@ public class Util {
         }
 
         return buf.ToString();
-    }
-
-    internal static string ToHex(string str) {
-        if (string.IsNullOrEmpty(str)) {
-            return string.Empty;
-        }
-
-        ReadOnlySpan<char> span = str.AsSpan();
-        StringBuilder sb = new StringBuilder(str.Length * 6);
-
-        for (int i = 0; i < span.Length; i++) {
-            int codePoint;
-            // Handle surrogate pairs
-            if (char.IsHighSurrogate(span[i])) {
-                if (i + 1 < span.Length && char.IsLowSurrogate(span[i + 1])) {
-                    codePoint = char.ConvertToUtf32(span[i], span[i + 1]);
-                    i++; // skip low surrogate
-                } else {
-                    codePoint = span[i]; // isolated high surrogate
-                }
-            } else {
-                codePoint = span[i];
-            }
-
-            if (codePoint == 0xFEFF) continue; // Skip BOM
-
-            if (codePoint <= 0xFFFF) {
-                sb.Append(HEX[(codePoint >> 12) & 0xF]);
-                sb.Append(HEX[(codePoint >> 8) & 0xF]);
-                sb.Append(HEX[(codePoint >> 4) & 0xF]);
-                sb.Append(HEX[codePoint & 0xF]);
-            } else {
-                sb.Append(HEX[(codePoint >> 20) & 0xF]);
-                sb.Append(HEX[(codePoint >> 16) & 0xF]);
-                sb.Append(HEX[(codePoint >> 12) & 0xF]);
-                sb.Append(HEX[(codePoint >> 8) & 0xF]);
-                sb.Append(HEX[(codePoint >> 4) & 0xF]);
-                sb.Append(HEX[codePoint & 0xF]);
-            }
-        }
-
-        return sb.ToString();
     }
 }
 }   // End of namespace PDFjet.NET
