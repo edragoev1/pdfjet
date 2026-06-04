@@ -552,7 +552,7 @@ func (chart *Chart) covar(points []*Point) float32 {
 	for _, point := range points {
 		covariance += (point.x - _mean[0]) * (point.y - _mean[1])
 	}
-	return covariance / float32((len(points) - 1))
+	return covariance / float32(len(points)-1)
 }
 
 // devsq returns the sum of squares of deviations.
