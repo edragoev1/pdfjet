@@ -29,6 +29,7 @@ public class Cell {
     var lineWidth: Float = 0.0
 
     var backgroundColor: [Float] = [1.0, 1.0, 1.0]
+    var hasBackground: Bool = false
     var textColor: [Float] = [0.0, 0.0, 0.0]
     var strokeWidth: Float = 0.0
     var strokeColor: [Float] = [0.0, 0.0, 0.0]
@@ -319,14 +320,17 @@ public class Cell {
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.backgroundColor = [r, g, b]
+        self.hasBackground = true
     }
 
     public func setBackgroundColor(_ r: Float, _ g: Float, _ b: Float) {
         self.backgroundColor = [r, g, b]
+        self.hasBackground = true
     }
 
     public func setBackgroundColor(_ backgroundColor: [Float]) {
         self.backgroundColor = backgroundColor
+        self.hasBackground = true
     }
 
     public func getBackgroundColor() -> [Float] {
@@ -519,9 +523,9 @@ public class Cell {
             _ y: Float,
             _ w: Float,
             _ h: Float) {
-        // if backgroundColor != nil {
+        if hasBackground == true {
             drawBackground(page, x, y, w, h)
-        // }
+        }
 
         if text != nil && text != "" {
             drawText(page, x, y, w, h)
@@ -584,7 +588,7 @@ public class Cell {
             _ cellW: Float,
             _ cellH: Float) {
         page.setBrushColor(backgroundColor)
-        page.fillRect(x, y + strokeWidth / 2, cellW, cellH + strokeWidth)
+        page.fillRect(x, y + strokeWidth/2, cellW, cellH)
     }
 
     private func drawBorders(

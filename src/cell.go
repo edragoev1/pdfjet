@@ -463,7 +463,7 @@ func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 
 func (cell *Cell) drawBackground(page *Page, x, y, wCell, hCell float32) {
 	page.SetBrushColorRGB(cell.background)
-	page.FillRect(x, y+cell.lineWidth/2, wCell, hCell+cell.lineWidth)
+	page.FillRect(x, y+cell.lineWidth/2, wCell, hCell)
 }
 
 func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {

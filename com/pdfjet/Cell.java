@@ -644,7 +644,7 @@ public class Cell {
             float cellW,
             float cellH) {
         page.setBrushColor(backgroundColor);
-        page.fillRect(x, y + lineWidth / 2, cellW, cellH + lineWidth);
+        page.fillRect(x, y + lineWidth/2, cellW, cellH);
     }
 
     private void drawBorders(

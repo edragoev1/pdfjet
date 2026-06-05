@@ -650,7 +650,7 @@ public class Cell {
             float cellW,
             float cellH) {
         page.SetBrushColor(backgroundColor);
-        page.FillRect(x, y + lineWidth / 2, cellW, cellH + lineWidth);
+        page.FillRect(x, y + lineWidth/2, cellW, cellH);
     }
 
     private void DrawBorders(
