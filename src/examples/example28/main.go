@@ -1,139 +1,67 @@
 package main
 
 import (
-	"bufio"
-	"log"
-	"os"
 	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/NotoSans"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example_28.go
-// Example that shows how to use fallback font and the NotoSans symbols font.
+// Example28 shows how to use the NotoSansSymbols font.
 func Example28() {
 	pdf := pdfjet.NewPDFFile("Example_28.pdf")
 
-	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
-	f1 := pdfjet.NewFontFromFile(pdf, NotoSans.Regular)
-
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
-
-	f1.SetSize(11.0)
-	f2.SetSize(11.0)
-	f3.SetSize(11.0)
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
+	f1.SetSize(28.0)
 
 	page := pdfjet.NewPage(pdf, letter.Landscape)
 
-	f, err := os.Open("data/report.csv")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
+	x := float32(35.0)
+	y := float32(55.0)
+	dy := float32(35.0)
 
-	lines := make([]string, 0)
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	var y float32 = 40.0
-	for _, line := range lines {
-		textLine := pdfjet.NewTextLine(f1, line)
-		textLine.SetFallbackFont(f2)
-		textLine.SetLocation(50, y)
-		textLine.DrawOn(page)
-		y += 20.0
-	}
-
-	var x float32 = 50.0
-	y = 210.0
-	var dy float32 = 22.0
-
-	var buf strings.Builder
-	var text = pdfjet.NewTextLine(f3, buf.String())
-	var count = 0
-	for i := 0x2200; i <= 0x22FF; i++ {
-		// Draw the Math Symbols
-		if count%80 == 0 {
-			text.SetText(buf.String())
-			text.SetLocation(x, y)
-			text.DrawOn(page)
-			buf.Reset()
-			y += dy
-		}
-		buf.WriteRune(rune(i))
-		count++
-	}
-	text.SetText(buf.String())
-	text.SetLocation(x, y)
-	text.DrawOn(page)
-	buf.Reset()
+	drawLineOfText(page, f1, x, y, 0x0041, 0x005A)
 	y += dy
 
-	count = 0
-	for i := 0x25A0; i <= 0x25FF; i++ {
-		// Draw the Geometric Shapes
-		if count%80 == 0 {
-			text.SetText(buf.String())
-			text.SetLocation(x, y)
-			text.DrawOn(page)
-			buf.Reset()
-			y += dy
-		}
-		buf.WriteRune(rune(i))
-		count++
-	}
-	text.SetText(buf.String())
-	text.SetLocation(x, y)
-	text.DrawOn(page)
-	buf.Reset()
+	drawLineOfText(page, f1, x, y, 0x0061, 0x007A)
 	y += dy
 
-	count = 0
-	for i := 0x2701; i <= 0x27ff; i++ {
-		// Draw the Dingbats
-		if count%80 == 0 {
-			text.SetText(buf.String())
-			text.SetLocation(x, y)
-			text.DrawOn(page)
-			buf.Reset()
-			y += dy
-		}
-		buf.WriteRune(rune(i))
-		count++
-	}
-	text.SetText(buf.String())
-	text.SetLocation(x, y)
-	text.DrawOn(page)
+	drawLineOfText(page, f1, x, y, 0x24B6, 0x24CF)
 	y += dy
-	buf.Reset()
 
-	count = 0
-	for i := 0x2800; i <= 0x28FF; i++ {
-		// Draw the Braille Patterns
-		if count%80 == 0 {
-			text.SetText(buf.String())
-			text.SetLocation(x, y)
-			text.DrawOn(page)
-			buf.Reset()
-			y += dy
-		}
-		buf.WriteRune(rune(i))
-		count++
-	}
-	text.SetText(buf.String())
-	text.SetLocation(x, y)
-	text.DrawOn(page)
+	drawLineOfText(page, f1, x, y, 0x24D0, 0x24E9)
+	y += dy
+
+	drawLineOfText(page, f1, x, y, 0x24F5, 0x24FE)
+	y += dy
+
+	drawLineOfText(page, f1, x, y, 0x2624, 0x262F)
+	y += dy
+
+	drawLineOfText(page, f1, x, y, 0x2638, 0x2653)
+	y += dy
+
+	drawLineOfText(page, f1, x, y, 0x2669, 0x267E)
+	y += dy
+
+	drawLineOfText(page, f1, x, y, 0x2690, 0x26A9)
+	y += dy
+
+	drawLineOfText(page, f1, x, y, 0x26AD, 0x26BC)
+	y += dy
 
 	pdf.Complete()
+}
+
+func drawLineOfText(page *pdfjet.Page, f1 *pdfjet.Font, x, y float32, c1, c2 int) {
+	var buf strings.Builder
+	for i := c1; i <= c2; i++ {
+		buf.WriteRune(rune(i))
+	}
+	text := pdfjet.NewTextLine(f1, buf.String())
+	text.SetLocation(x, y)
+	text.DrawOn(page)
 }
 
 func main() {
