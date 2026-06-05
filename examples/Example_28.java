@@ -13,26 +13,25 @@ public class Example_28 {
                 new BufferedOutputStream(new FileOutputStream("Example_28.pdf")));
 
         Font f1 = new Font(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream");
-        f1.setSize(10f);
+        f1.setSize(24f);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         float x = 50f;
-        float y = 25f;
+        float y = 50f;
         float dy = 25f;
 
         TextLine text = new TextLine(f1);
         StringBuilder buf = new StringBuilder();
-        for (int i = 0x2200; i <= 0x55FF; i++) {
-        // for (int i = 0x2200; i <= 0x22FF; i++) {
-            // Draw the Math Symbols
-            if (buf.length() < 80) {
+        for (int i = 0x0041; i <= 0x0080; i++) {
+            if (buf.length() < 26) {
                 buf.append((char) i);
             } else {
                 text.setText(buf.toString());
                 text.setLocation(x, y += dy);
                 text.drawOn(page);
                 buf.setLength(0);
+                buf.append((char) i);
             }
         }
         text.setText(buf.toString());
@@ -40,57 +39,22 @@ public class Example_28 {
         text.drawOn(page);
         buf.setLength(0);
 
-/*
-        count = 0;
-        for (int i = 0x25A0; i <= 0x25FF; i++) {
-            // Draw the Geometric Shapes
-            if (count % 80 == 0) {
+        for (int i = 0x24B6; i <= 0x24E9; i++) {
+            if (buf.length() < 26) {
+                buf.append((char) i);
+            } else {
                 text.setText(buf.toString());
                 text.setLocation(x, y += dy);
                 text.drawOn(page);
                 buf.setLength(0);
+                buf.append((char) i);
             }
-            buf.append((char) i);
-            count++;
         }
         text.setText(buf.toString());
         text.setLocation(x, y += dy);
         text.drawOn(page);
         buf.setLength(0);
 
-        count = 0;
-        for (int i = 0x2701; i <= 0x27ff; i++) {
-            // Draw the Dingbats
-            if (count % 80 == 0) {
-                text.setText(buf.toString());
-                text.setLocation(x, y += dy);
-                text.drawOn(page);
-                buf.setLength(0);
-            }
-            buf.append((char) i);
-            count++;
-        }
-        text.setText(buf.toString());
-        text.setLocation(x, y += dy);
-        text.drawOn(page);
-        buf.setLength(0);
-
-        count = 0;
-        for (int i = 0x2800; i <= 0x28FF; i++) {
-            // Draw the Braille Patterns
-            if (count % 80 == 0) {
-                text.setText(buf.toString());
-                text.setLocation(x, y += dy);
-                text.drawOn(page);
-                buf.setLength(0);
-            }
-            buf.append((char) i);
-            count++;
-        }
-        text.setText(buf.toString());
-        text.setLocation(x, y);
-        text.drawOn(page);
-*/
         pdf.complete();
     }
 
