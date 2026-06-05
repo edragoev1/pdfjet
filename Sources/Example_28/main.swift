@@ -2,128 +2,67 @@ import Foundation
 import PDFjet
 
 ///
-/// Example_28.swift
-/// Example that shows how to use fallback font and the NotoSans symbols font.
+/// Example_28.swift shows how to use the NotoSansSymbols font.
 ///
 public class Example_28 {
     public init() throws {
         let stream = OutputStream(toFileAtPath: "Example_28.pdf", append: false)!
         let pdf = PDF(stream)
 
-        let f1 = try Font(pdf, NotoSans.Regular)
-        let f2 = try Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
-        let f3 = try Font(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
-
-        f1.setSize(11.0)
-        f2.setSize(11.0)
-        f3.setSize(11.0)
+        let f1 = try Font(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
+        f1.setSize(28.0)
 
         let page = Page(pdf, Letter.LANDSCAPE)
 
-        let str = (try String(contentsOfFile:
-                "data/report.csv", encoding: .utf8)).trimmingCharacters(in: .newlines)
-        let lines = str.components(separatedBy: "\n")
+        let x = Float(35.0)
+        var y = Float(55.0)
+        let dy = Float(35.0)
 
-        let x: Float = 50.0
-        var y: Float = 40.0
-        for line in lines {
-            y += 20.0
-            TextLine(f1, line)
-                    .setFallbackFont(f2)
-                    .setLocation(50.0, y)
-                    .drawOn(page)
-        }
+        drawLineOfText(page, f1, x, y, 0x0041, 0x005A);
+        y += dy;
 
-        y = 210.0
-        let dy: Float = 22.0
+        drawLineOfText(page, f1, x, y, 0x0061, 0x007A);
+        y += dy;
 
-        let text = TextLine(f3)
-        var buf = String()
-        var count: Int = 0
-        var i: Int = 0x2200
-        while i <= 0x22FF {
-            // Draw the Math Symbols
-            if count % 80 == 0 {
-                y += dy
-                text.setText(buf)
-                text.setLocation(x, y)
-                text.drawOn(page)
-                buf = ""
-            }
-            buf.append(Character(UnicodeScalar(i)!))
-            count += 1
-            i += 1
-        }
-        y += dy
-        text.setText(buf)
-        text.setLocation(x, y)
-        text.drawOn(page)
+        drawLineOfText(page, f1, x, y, 0x24B6, 0x24CF);
+        y += dy;
 
-        buf = ""
-        count = 0
-        i = 0x25A0
-        while i <= 0x25FF {
-            // Draw the Geometric Shapes
-            if count % 80 == 0 {
-                y += dy
-                text.setText(buf)
-                text.setLocation(x, y)
-                text.drawOn(page)
-                buf = ""
-            }
-            buf.append(Character(UnicodeScalar(i)!))
-            count += 1
-            i += 1
-        }
+        drawLineOfText(page, f1, x, y, 0x24D0, 0x24E9);
+        y += dy;
 
-        y += dy
-        text.setText(buf)
-        text.setLocation(x, y)
-        text.drawOn(page)
+        drawLineOfText(page, f1, x, y, 0x24F5, 0x24FE);
+        y += dy;
 
-        buf = ""
-        count = 0
-        i = 0x2701
-        while i <= 0x27ff {
-            // Draw the Dingbats
-            if count % 80 == 0 {
-                y += dy
-                text.setText(buf)
-                text.setLocation(x, y)
-                text.drawOn(page)
-                buf = ""
-            }
-            buf.append(Character(UnicodeScalar(i)!))
-            count += 1
-            i += 1
-        }
+        drawLineOfText(page, f1, x, y, 0x2624, 0x262F);
+        y += dy;
 
-        y += dy
-        text.setText(buf)
-        text.setLocation(x, y)
-        text.drawOn(page)
+        drawLineOfText(page, f1, x, y, 0x2638, 0x2653);
+        y += dy;
 
-        buf = ""
-        count = 0
-        i = 0x2800
-        while i <= 0x28FF {
-            // Draw the Braille Patterns
-            if count % 80 == 0 {
-                y += dy
-                text.setText(buf)
-                text.setLocation(x, y)
-                text.drawOn(page)
-                buf = ""
-            }
-            buf.append(Character(UnicodeScalar(i)!))
-            count += 1
-            i += 1
-        }
-        text.setText(buf)
-        text.setLocation(x, y)
-        text.drawOn(page)
+        drawLineOfText(page, f1, x, y, 0x2669, 0x267E);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x2690, 0x26A9);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x26AD, 0x26BC);
+        y += dy;
 
         pdf.complete()
+    }
+
+    private func drawLineOfText(
+            _ page: Page, _ f1: Font, _ x: Float, _ y: Float, _ c1: Int, _ c2: Int) {
+        var buf = String()
+        var i = c1
+        while i <= c2 {
+            buf.append(Character(UnicodeScalar(i)!))
+            i += 1
+        }
+        let text = TextLine(f1)
+        text.setText(buf)
+        text.setLocation(x, y)
+        text.drawOn(page)
     }
 }   // End of Example_28.swift
 
