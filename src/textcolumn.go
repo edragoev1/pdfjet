@@ -3,7 +3,7 @@ package pdfjet
 /**
  * textcolumn.go
  *
- * Copyright (c) 2025 PDFjet Software
+ * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
@@ -32,16 +32,6 @@ type TextColumn struct {
 	paragraphs            []*Paragraph
 	lineBetweenParagraphs bool
 }
-
-/**
- *  Create a text column object.
- *
- */
-/*
-func (textColumn *TextColumn) TextColumn() {
-    this.lines = new ArrayList<Paragraph>()
-}
-*/
 
 // NewTextColumn used to create a text column object and set the rotation angle.
 // @param rotateByDegrees the specified rotation angle in degrees.
