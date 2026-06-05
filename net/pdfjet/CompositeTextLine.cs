@@ -11,7 +11,6 @@ namespace PDFjet.NET {
 /**
  * This class was designed and implemented by Jon T. Swanson, Ph.D.
  *
- * Refactored and integrated into the project by Evgeni Dragoev - 2025-09-05
  * Used to create composite text line objects.
  */
 public class CompositeTextLine : IDrawable {
