@@ -18,44 +18,34 @@ public class Example_28 {
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         float x = 50f;
-        float y = 50f;
-        float dy = 25f;
+        float y = 55f;
+        float dy = 30f;
 
-        TextLine text = new TextLine(f1);
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0x0041; i <= 0x0080; i++) {
-            if (buf.length() < 26) {
-                buf.append((char) i);
-            } else {
-                text.setText(buf.toString());
-                text.setLocation(x, y += dy);
-                text.drawOn(page);
-                buf.setLength(0);
-                buf.append((char) i);
-            }
-        }
-        text.setText(buf.toString());
-        text.setLocation(x, y += dy);
-        text.drawOn(page);
-        buf.setLength(0);
+        drawLineOfText(page, f1, x, y, 0x0041, 0x005A);
+        y += dy;
 
-        for (int i = 0x24B6; i <= 0x24E9; i++) {
-            if (buf.length() < 26) {
-                buf.append((char) i);
-            } else {
-                text.setText(buf.toString());
-                text.setLocation(x, y += dy);
-                text.drawOn(page);
-                buf.setLength(0);
-                buf.append((char) i);
-            }
-        }
-        text.setText(buf.toString());
-        text.setLocation(x, y += dy);
-        text.drawOn(page);
-        buf.setLength(0);
+        drawLineOfText(page, f1, x, y, 0x0061, 0x007A);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x24B6, 0x24CF);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x24D0, 0x24E9);
+        y += dy;
 
         pdf.complete();
+    }
+
+    private void drawLineOfText(
+            Page page, Font f1, float x, float y, int c1, int c2) throws Exception {
+        StringBuilder buf = new StringBuilder();
+        for (int i = c1; i <= c2; i++) {
+            buf.append((char) i);
+        }
+        TextLine text = new TextLine(f1);
+        text.setText(buf.toString());
+        text.setLocation(x, y);
+        text.drawOn(page);
     }
 
     public static void main(String[] args) throws Exception {
