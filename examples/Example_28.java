@@ -5,61 +5,42 @@ import com.pdfjet.*;
 
 /**
  * Example_28.java
- * Example that shows how to use fallback font and the NotoSans symbols font.
+ * Example that shows how to use the NotoSansSymbols font.
  */
 public class Example_28 {
     public Example_28() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_28.pdf")));
 
-        Font f1 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
-        f1.setSize(11f);
-
-        Font f2 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
-        f2.setSize(11f);
-
-        Font f3 = new Font(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream");
-        f3.setSize(11f);
+        Font f1 = new Font(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream");
+        f1.setSize(10f);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(
-                        new FileInputStream("data/report.csv"), "UTF-8"));
-
-        float y = 40f;
-        String str = null;
-        while ((str = reader.readLine()) != null) {
-            new TextLine(f1, str)
-                    .setFallbackFont(f2)
-                    .setLocation(50f, y += 20f)
-                    .drawOn(page);
-        }
-        reader.close();
-
         float x = 50f;
-        y = 210f;
-        float dy = 22f;
+        float y = 25f;
+        float dy = 25f;
 
-        TextLine text = new TextLine(f3);
+        TextLine text = new TextLine(f1);
         StringBuilder buf = new StringBuilder();
-        int count = 0;
-        for (int i = 0x2200; i <= 0x22FF; i++) {
+        for (int i = 0x2200; i <= 0x55FF; i++) {
+        // for (int i = 0x2200; i <= 0x22FF; i++) {
             // Draw the Math Symbols
-            if (count % 80 == 0) {
+            if (buf.length() < 80) {
+                buf.append((char) i);
+            } else {
                 text.setText(buf.toString());
                 text.setLocation(x, y += dy);
                 text.drawOn(page);
                 buf.setLength(0);
             }
-            buf.append((char) i);
-            count++;
         }
         text.setText(buf.toString());
         text.setLocation(x, y += dy);
         text.drawOn(page);
         buf.setLength(0);
 
+/*
         count = 0;
         for (int i = 0x25A0; i <= 0x25FF; i++) {
             // Draw the Geometric Shapes
@@ -109,7 +90,7 @@ public class Example_28 {
         text.setText(buf.toString());
         text.setLocation(x, y);
         text.drawOn(page);
-
+*/
         pdf.complete();
     }
 
