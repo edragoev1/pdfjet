@@ -30,9 +30,10 @@ type Cell struct {
 	rightPadding  float32
 	lineWidth     float32
 
-	background [3]float32
-	pen        [3]float32
-	textColor  [3]float32
+	background    [3]float32
+	hasBackground bool
+	pen           [3]float32
+	textColor     [3]float32
 
 	colspan      int
 	topBorder    bool
@@ -116,7 +117,7 @@ func (cell *Cell) GetImage() *Image {
 	return cell.image
 }
 
-// SetBarcode -- TODO:
+// SetBarcode sets the barcode for this cell.
 func (cell *Cell) SetBarcode(barcode *Barcode) {
 	cell.barcode = barcode
 	cell.text = ""
@@ -256,13 +257,15 @@ func (cell *Cell) GetLineWidth() float32 {
 // SetBgColorRGB sets the background to the specified color.
 func (cell *Cell) SetBgColorRGB(color [3]float32) {
 	cell.background = color
+	cell.hasBackground = true
 }
 
-func (cell *Cell) SetBgColor(color int32) {
+func (cell *Cell) SetBackgroundColor(color int32) {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	cell.background = [3]float32{r, g, b}
+	cell.hasBackground = true
 }
 
 // GetBgColor returns the background color of this cell.
@@ -397,9 +400,9 @@ func (cell *Cell) SetURIAction(uri string) {
 
 // DrawOn draws the point, text and borders of this cell.
 func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
-	//if cell.background != color.White {		// TODO
-	// cell.drawBackground(page, x, y, w, h)
-	//}
+	if cell.hasBackground == true {
+		cell.drawBackground(page, x, y, w, h)
+	}
 
 	if cell.text != "" {
 		cell.DrawText(page, x, y, w, h)
