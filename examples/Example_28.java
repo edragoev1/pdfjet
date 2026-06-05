@@ -36,6 +36,12 @@ public class Example_28 {
         drawLineOfText(page, f1, x, y, 0x24F5, 0x24FE);
         y += dy;
 
+        drawLineOfText(page, f1, x, y, 0x2624, 0x262F);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x2638, 0x2653);
+        y += dy;
+
         pdf.complete();
     }
 
