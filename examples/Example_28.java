@@ -13,13 +13,13 @@ public class Example_28 {
                 new BufferedOutputStream(new FileOutputStream("Example_28.pdf")));
 
         Font f1 = new Font(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream");
-        f1.setSize(24f);
+        f1.setSize(28f);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
-        float x = 50f;
+        float x = 35f;
         float y = 55f;
-        float dy = 30f;
+        float dy = 35f;
 
         drawLineOfText(page, f1, x, y, 0x0041, 0x005A);
         y += dy;
@@ -40,6 +40,15 @@ public class Example_28 {
         y += dy;
 
         drawLineOfText(page, f1, x, y, 0x2638, 0x2653);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x2669, 0x267E);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x2690, 0x26A9);
+        y += dy;
+
+        drawLineOfText(page, f1, x, y, 0x26AD, 0x26BC);
         y += dy;
 
         pdf.complete();
