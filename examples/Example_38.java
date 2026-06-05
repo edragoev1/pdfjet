@@ -15,13 +15,13 @@ public class Example_38 {
 
         PDF pdf = new PDF(bos);
         font = new Font(pdf, CoreFont.COURIER);
+
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         Table table = new Table();
         table.setData(createTableData());
         table.setBottomMargin(10f);
         table.setLocation(50f, 50f);
-        // table.mergeOverlaidBorders();
         table.drawOn(page);
 
         pdf.complete();
@@ -242,8 +242,8 @@ public class Example_38 {
         cell.setBorder(Border.TOP, topBorder);
         cell.setBorder(Border.BOTTOM, bottomBorder);
         cell.setTextAlignment(Align.CENTER);
-        // cell.setBackgroundColor(Color.lightblue);
-        cell.setLineWidth(0.5f);
+        cell.setBackgroundColor(Color.lightblue);
+        cell.setLineWidth(1f);
         return cell;
     }
 

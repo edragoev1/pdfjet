@@ -5,10 +5,11 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_38.cs
+ * Example_38.cs
  */
 public class Example_38 {
     Font font = null;
+
     public Example_38() {
         BufferedStream bos = new BufferedStream(
                 new FileStream("Example_38.pdf", FileMode.Create));
