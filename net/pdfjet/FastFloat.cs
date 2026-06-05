@@ -1,3 +1,5 @@
+using System;
+
 namespace PDFjet.NET {
 internal static class FastFloat {
     internal static byte[] ToByteArray(float value) {
@@ -13,8 +15,8 @@ internal static class FastFloat {
         }
 
         // Round to 2 decimal places
-        float rounded = (float)System.Math.Round(value * 100) / 100f;
-        
+        float rounded = ((float)System.Math.Round(value * 100)) / 100f;
+
         bool negative = rounded < 0;
         if (negative) {
             rounded = -rounded;

@@ -1623,8 +1623,8 @@ final public class Page {
     }
 
     /**
-     *  Appends the specified array of bytes to the page.
-     *  @param buffer the array of bytes that is appended.
+     * Appends the specified array of bytes to the page.
+     * @param buffer the array of bytes that is appended.
      */
     public void append(byte[] buffer) {
         try {

@@ -8,8 +8,8 @@ class FastFloat {
         if (value == Float.NEGATIVE_INFINITY) return new byte[]{'-','I','n','f','i','n','i','t','y'};
 
         // Round to 2 decimal places
-        float rounded = Math.round(value * 100) / 100.0f;
-        
+        float rounded = ((float)Math.round(value * 100)) / 100.0f;
+
         boolean negative = rounded < 0;
         if (negative) rounded = -rounded;
         

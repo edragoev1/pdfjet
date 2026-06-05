@@ -390,7 +390,7 @@ public class Cell {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.backgroundColor = new float[] {r, b, b};
+        this.backgroundColor = new float[] {r, g, b};
     }
 
     public void setBackgroundColor(float[] color) {
