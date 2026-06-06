@@ -99,56 +99,16 @@ func (arc *Arc) SetSweepDegreesCCW(sweepDegrees float32) *Arc {
 	return arc
 }
 
-//    /**
-//     * The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-//     * It is specified by a dash array and a dash phase.
-//     * The elements of the dash array are positive numbers that specify the lengths of
-//     * alternating dashes and gaps.
-//     * The dash phase specifies the distance into the dash pattern at which to start the dash.
-//     * The elements of both the dash array and the dash phase are expressed in user space units.
-//     * <pre>
-//     * Examples of line dash patterns:
-//     *
-//     *     "[Array] Phase"     Appearance          Description
-//     *     _______________     _________________   ____________________________________
-//     *     "[] 0"              -----------------   Solid line
-//     *     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//     *     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//     *     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//     *     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//     *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//     * </pre>
-//     *
-//     * @param pattern the line dash pattern.
-//     * @return this Arc object.
-//     */
-//    public Arc SetStrokePattern(String pattern) {
-//        this.strokePattern = pattern;
-//        return this;
-//    }
-//
-//    /**
-//     * Sets the width of this line.
-//     *
-//     * @param width the width.
-//     * @return this Arc object.
-//     */
-//    public Arc SetStrokeWidth(double width) {
-//        this.strokeWidth = (float) width;
-//        return this;
-//    }
-//
-//    /**
-//     * Sets the width of this line.
-//     *
-//     * @param strokeWidth the width.
-//     * @return this Arc object.
-//     */
-//    public Arc SetStrokeWidth(float width) {
-//        this.strokeWidth = width;
-//        return this;
-//    }
-//
+func (arc *Arc) SetStrokePattern(pattern string) *Arc {
+	arc.strokePattern = pattern
+	return arc
+}
+
+func (arc *Arc) SetStrokeWidth(width float32) *Arc {
+	arc.strokeWidth = width
+	return arc
+}
+
 //    /**
 //     * Sets the color for this line.
 //     *
