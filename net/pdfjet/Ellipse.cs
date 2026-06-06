@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-public class Ellipse  : Arc {
+public class Ellipse : Arc {
     /**
      * The default constructor.
      */

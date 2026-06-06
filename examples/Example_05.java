@@ -63,7 +63,7 @@ public class Example_05 {
             .setStrokeWidth(5f)
             .setStrokeColor(Color.blue)
             .drawOn(page);
-/*
+
         (new Ellipse())
             .setCenterXY(300f, 720f)
             .setRadiusX(100f)
@@ -75,7 +75,7 @@ public class Example_05 {
             .setRotateDegreesCW(45f)
             // .setRotateDegreesCCW(45f)
             .drawOn(page);
-*/
+
         pdf.complete();
     }
 
