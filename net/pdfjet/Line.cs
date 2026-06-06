@@ -341,7 +341,7 @@ public class Line : IDrawable {
         page.SetPenColor(color);
         page.SetPenWidth(width);
         page.SetLineCapStyle(capStyle);
-        page.SetStrokePattern(pattern);
+        page.SetStrokeDashPattern(pattern);
         page.DrawLine(
                 x1 + xBox,
                 y1 + yBox,

@@ -806,7 +806,7 @@ public class Page {
     }
 
     /**
-     * The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
+     * The stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.
      * It is specified by a dash array and a dash phase.
      * The elements of the dash array are positive numbers that specify the lengths of
      * alternating dashes and gaps.
@@ -828,7 +828,7 @@ public class Page {
      *
      * @param pattern the line dash pattern.
      */
-    public void SetStrokePattern(String pattern) {
+    public void SetStrokeDashPattern(String pattern) {
         this.strokePattern = pattern;
         Append(pattern);
         Append(" d\n");

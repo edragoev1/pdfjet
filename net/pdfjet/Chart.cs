@@ -455,7 +455,7 @@ public class Chart : IDrawable {
     private void DrawHorizontalGridLines(Page page) {
         page.SetPenWidth(hGridLineWidth);
         page.SetPenColor(Color.black);
-        page.SetStrokePattern(hGridLinePattern);
+        page.SetStrokeDashPattern(hGridLinePattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
@@ -468,7 +468,7 @@ public class Chart : IDrawable {
     private void DrawVerticalGridLines(Page page) {
         page.SetPenWidth(vGridLineWidth);
         page.SetPenColor(Color.black);
-        page.SetStrokePattern(vGridLinePattern);
+        page.SetStrokeDashPattern(vGridLinePattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;
@@ -509,7 +509,7 @@ public class Chart : IDrawable {
             if (point.drawPath) {
                 page.SetPenColor(point.strokeColor);
                 page.SetPenWidth(point.strokeWidth);
-                page.SetStrokePattern(point.strokePattern);
+                page.SetStrokeDashPattern(point.strokePattern);
                 page.DrawPath(points, PathOperator.Stroke);
                 if (point.GetText() != null) {
                     page.SetTextDirection(point.GetTextDirection());
@@ -528,7 +528,7 @@ public class Chart : IDrawable {
 		point = points[i];
                 if (point.GetShape() != Point.INVISIBLE) {
                     page.SetPenWidth(point.strokeWidth);
-                    page.SetStrokePattern(point.strokePattern);
+                    page.SetStrokeDashPattern(point.strokePattern);
                     page.SetPenColor(point.strokeColor);
                     page.SetBrushColor(point.fillColor);
                     page.DrawPoint(point);

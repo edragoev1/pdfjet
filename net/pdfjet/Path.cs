@@ -317,7 +317,7 @@ public class Path : IDrawable {
         float centerY = (page.height - y) - h/2;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
         if (strokeColor != null && strokePattern != null) {
-            page.SetStrokePattern(strokePattern);
+            page.SetStrokeDashPattern(strokePattern);
         }
         if (fillColor != null && strokeColor == null) {
             page.SetBrushColor(fillColor);

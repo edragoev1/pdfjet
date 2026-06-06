@@ -157,7 +157,7 @@ public class Rect  : IDrawable {
 //            if (borderColor != null) {
                 page.SetPenColor(this.borderColor);
                 page.SetPenWidth(this.borderWidth);
-                page.SetStrokePattern(this.borderPattern);
+                page.SetStrokeDashPattern(this.borderPattern);
                 page.MoveTo(this.x, this.y);
                 page.LineTo(this.x + this.w, this.y);
                 page.LineTo(this.x + this.w, this.y + this.h);
@@ -193,7 +193,7 @@ public class Rect  : IDrawable {
             }
 
             if (borderColor != null && borderPattern != null) {
-                page.SetStrokePattern(borderPattern);
+                page.SetStrokeDashPattern(borderPattern);
             }
             if (fillColor != null && borderColor != null) {
                 page.SetBrushColor(fillColor);

@@ -274,7 +274,7 @@ public class Arc : IDrawable {
                 startAngle,
                 sweepDegrees);
         if (strokeColor != null && strokePattern != null) {
-            page.SetStrokePattern(strokePattern);
+            page.SetStrokeDashPattern(strokePattern);
         }
         if (fillColor != null && strokeColor != null) {
             page.SetBrushColor(fillColor);

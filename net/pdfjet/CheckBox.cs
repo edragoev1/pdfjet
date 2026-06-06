@@ -190,7 +190,7 @@ public class CheckBox : IDrawable {
         float yBox = y;
         page.SetPenWidth(penWidth);
         page.SetPenColor(boxColor);
-        page.SetStrokePattern("[] 0");
+        page.SetStrokeDashPattern("[] 0");
         page.DrawRect(x + this.penWidth, yBox + this.penWidth, w, h);
 
         if (mark == Mark.CHECK || mark == Mark.X) {
