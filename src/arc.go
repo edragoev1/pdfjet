@@ -160,50 +160,26 @@ func (arc *Arc) SetRotateDegreesCCWFloat64(degrees float64) *Arc {
 	return arc
 }
 
-//    /**
-//     * Sets the alternate description of this line.
-//     *
-//     * @param altDescription the alternate description of the line.
-//     * @return this Arc.
-//     */
-//    public Arc SetAltDescription(String altDescription) {
-//        this.altDescription = altDescription;
-//        return this;
-//    }
-//
-//    /**
-//     * Sets the actual text for this line.
-//     *
-//     * @param actualText the actual text for the line.
-//     * @return this Arc.
-//     */
-//    public Arc SetActualText(String actualText) {
-//        this.actualText = actualText;
-//        return this;
-//    }
-//
-//    /**
-//     * Scales this line by the specified factor.
-//     *
-//     * @param factor the factor used to scale the line.
-//     * @return this Arc object.
-//     */
-//    public Arc SetScaleFactor(double factor) {
-//        return SetScaleFactor((float) factor);
-//    }
-//
-//    /**
-//     * Scales this line by the specified factor.
-//     *
-//     * @param factor the factor used to scale the line.
-//     * @return this Arc object.
-//     */
-//    public Arc SetScaleFactor(float factor) {
-//        this.rx *= factor;
-//        this.ry *= factor;
-//        return this;
-//    }
-//
+func (arc *Arc) SetAltDescription(altDescription string) *Arc {
+	arc.altDescription = altDescription
+	return arc
+}
+
+func (arc *Arc) SetActualText(actualText string) *Arc {
+	arc.actualText = actualText
+	return arc
+}
+
+func (arc *Arc) SetScaleFactorFloat64(factor float64) *Arc {
+	return arc.SetScaleFactor(float32(factor))
+}
+
+func (arc *Arc) SetScaleFactor(factor float32) *Arc {
+	arc.rx *= factor
+	arc.ry *= factor
+	return arc
+}
+
 //    /**
 //     * Draws this line on the specified page.
 //     *
