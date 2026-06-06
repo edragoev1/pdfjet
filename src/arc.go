@@ -54,23 +54,20 @@ func NewArc(
 	return arc
 }
 
-//    public Arc() {
-//    }
-//
-//    public void SetPosition(float cx, float cy) {
-//        SetCenterXY(cx, cy);
-//    }
-//
-//    public Arc SetStartPointToEndOf(Line line) {
-//        this.line = line;
-//        return this;
-//    }
-//
-//    public Arc SetCenterXY(float cx, float cy) {
-//        this.cx = cx;
-//        this.cy = cy;
-//        return this;
-//    }
+func (arc *Arc) SetPosition(cx, cy float32) {
+	arc.SetCenterXY(cx, cy)
+}
+
+func (arc *Arc) SetStartPointToEndOf(line *Line) *Arc {
+	arc.line = line
+	return arc
+}
+func (arc *Arc) SetCenterXY(cx, cy float32) *Arc {
+	arc.cx = cx
+	arc.cy = cy
+	return arc
+}
+
 //
 //    public Arc SetRadiusX(float rx) {
 //        this.rx = rx;
