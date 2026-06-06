@@ -1,6 +1,10 @@
 package pdfjet
 
-import "math"
+import (
+	"math"
+
+	"github.com/edragoev1/pdfjet/src/color"
+)
 
 /**
  * arc.go
@@ -15,7 +19,9 @@ type Arc struct {
 	sweepDegrees   float32
 	rotateDegrees  float32
 	fillColor      [3]float32
+	hasFillColor   bool
 	strokeColor    [3]float32
+	hasStrokeColor bool
 	strokeWidth    float32
 	strokePattern  string // = "[] 0";
 	language       string
@@ -30,7 +36,9 @@ func NewArc(
 	sweepDegrees float32,
 	rotateDegrees float32,
 	fillColor [3]float32,
+	hasFillColor bool,
 	strokeColor [3]float32,
+	hasStrokeColor bool,
 	strokeWidth float32,
 	strokePattern string,
 	language string,
@@ -46,7 +54,9 @@ func NewArc(
 	arc.sweepDegrees = sweepDegrees
 	arc.rotateDegrees = rotateDegrees
 	arc.fillColor = fillColor
+	arc.hasFillColor = hasFillColor
 	arc.strokeColor = strokeColor
+	arc.hasStrokeColor = hasStrokeColor
 	arc.strokeWidth = strokeWidth
 	arc.strokePattern = strokePattern
 	arc.language = language
@@ -216,28 +226,29 @@ func (arc *Arc) DrawOn(page *Page) []float32 {
 		arc.startAngle,
 		arc.sweepDegrees)
 
-	//        if (strokeColor != null && strokePattern != null) {
-	//            page.SetStrokePattern(strokePattern);
-	//        }
-	//        if (fillColor != null && strokeColor != null) {
-	//            page.SetBrushColor(fillColor);
-	//            page.SetPenWidth(strokeWidth);
-	//            page.SetPenColor(strokeColor);
-	//            page.Append("B\n");
-	//        } else if (fillColor != null && strokeColor == null) {
-	//            page.SetBrushColor(fillColor);
-	//            page.Append("f\n");
-	//        } else if (fillColor == null && strokeColor != null) {
-	//            page.SetPenWidth(strokeWidth);
-	//            page.SetPenColor(strokeColor);
-	//            page.Append("S\n");
-	//        } else {    // Both brushColor == null and penColor == null
-	//            page.SetPenWidth(0f);
-	//            page.SetPenColor(Color.black);
-	//            page.Append("S\n");
-	//        }
-	//        page.Append("Q\n");
-	//        page.AddEMC();
+	if arc.hasStrokeColor && arc.strokePattern != "" {
+		// page.SetStrokePattern(strokePattern)
+	}
+
+	if arc.hasFillColor == true && arc.hasStrokeColor == true {
+		page.SetBrushColorRGB(arc.fillColor)
+		page.SetPenWidth(arc.strokeWidth)
+		page.SetPenColorRGB(arc.strokeColor)
+		page.appendString("B\n")
+	} else if arc.hasFillColor == true && arc.hasStrokeColor == false {
+		page.SetBrushColorRGB(arc.fillColor)
+		page.appendString("f\n")
+	} else if arc.hasFillColor == false && arc.hasStrokeColor == true {
+		page.SetPenWidth(arc.strokeWidth)
+		page.SetPenColorRGB(arc.strokeColor)
+		page.appendString("S\n")
+	} else { // Both arc.brushColor == false and arc.strokeColor == false
+		page.SetPenWidth(0.0)
+		page.SetPenColor(color.Black)
+		page.appendString("S\n")
+	}
+	page.appendString("Q\n")
+	page.AddEMC()
 
 	return arcPoints
 }
