@@ -50,10 +50,6 @@ public class Example_05 {
         text.setLocation(150f, 70f);
         text.drawOn(page);
 
-        float[] xy = page.drawArc(500f, 100f, 100f, 50f, 90f, 270f);
-        // (new Line(xy[0], xy[1], xy[0], xy[1] + 50f)).DrawOn(page);
-
-/*
         float[] arcPoints = (new Arc())
             .setCenterXY(300f, 600f)
             .setRadiusX(75f)
@@ -67,7 +63,7 @@ public class Example_05 {
             .setStrokeWidth(5f)
             .setStrokeColor(Color.blue)
             .drawOn(page);
-
+/*
         (new Ellipse())
             .setCenterXY(300f, 720f)
             .setRadiusX(100f)
