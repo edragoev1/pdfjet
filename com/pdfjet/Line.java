@@ -11,10 +11,10 @@ package com.pdfjet;
  * Please see Example_01.
  */
 public class Line implements Drawable {
-    private float x1;
-    private float y1;
-    private float x2;
-    private float y2;
+    protected float x1;
+    protected float y1;
+    protected float x2;
+    protected float y2;
 
     private float xBox;
     private float yBox;
