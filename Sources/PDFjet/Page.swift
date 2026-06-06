@@ -654,7 +654,7 @@ public class Page {
     }
 
     ///
-    /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
+    /// The stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.
     /// It is specified by a dash array and a dash phase.
     /// The elements of the dash array are positive numbers that specify the lengths of
     /// alternating dashes and gaps.
@@ -676,7 +676,7 @@ public class Page {
     ///
     /// - Parameter pattern the line dash pattern.
     ///
-    public func setLinePattern(_ pattern: String) {
+    public func setStrokeDashPattern(_ pattern: String) {
         if pattern != linePattern {
             self.linePattern = pattern
             append(self.linePattern)

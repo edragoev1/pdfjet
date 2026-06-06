@@ -179,7 +179,7 @@ public class CheckBox : Drawable {
         let yBox: Float = y
         page!.setPenWidth(self.penWidth!)
         page!.setPenColor(self.boxColor)
-        page!.setLinePattern("[] 0")
+        page!.setStrokeDashPattern("[] 0")
         page!.drawRect(self.x, yBox, self.w, self.h)
 
         if mark == Mark.CHECK || mark == Mark.X {

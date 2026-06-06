@@ -419,7 +419,7 @@ public class Chart : Drawable {
     private func drawHorizontalGridLines(_ page: Page) {
         page.setPenWidth(hGridLineWidth)
         page.setPenColor(Color.black)
-        page.setLinePattern(hGridLinePattern)
+        page.setStrokeDashPattern(hGridLinePattern)
         let x = x8
         var y = y8
         let step = (y8 - y5) / Float(yAxisGridLines)
@@ -432,7 +432,7 @@ public class Chart : Drawable {
     private func drawVerticalGridLines(_ page: Page) {
         page.setPenWidth(vGridLineWidth)
         page.setPenColor(Color.black)
-        page.setLinePattern(vGridLinePattern)
+        page.setStrokeDashPattern(vGridLinePattern)
         var x = x5
         let y = y5
         let step = (x6 - x5) / Float(xAxisGridLines)
@@ -481,7 +481,7 @@ public class Chart : Drawable {
                 if point.drawPath {
                     page.setPenColor(point.color)
                     page.setPenWidth(point.lineWidth)
-                    page.setLinePattern(point.linePattern)
+                    page.setStrokeDashPattern(point.linePattern)
                     page.drawPath(points, PathOperator.stroke)
                     if point.getText() != nil {
                         page.setBrushColor(point.getTextColor())
@@ -492,7 +492,7 @@ public class Chart : Drawable {
                 for point in points {
                     if point.getShape() != Point.INVISIBLE {
                         page.setPenWidth(point.lineWidth)
-                        page.setLinePattern(point.linePattern)
+                        page.setStrokeDashPattern(point.linePattern)
                         page.setPenColor(point.color)
                         page.setBrushColor(point.color)
                         page.drawPoint(point)

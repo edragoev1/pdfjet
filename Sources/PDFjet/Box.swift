@@ -237,7 +237,7 @@ public class Box : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         page!.addBMC(StructElem.P, language, actualText, altDescription)
         page!.setPenWidth(width)
-        page!.setLinePattern(pattern)
+        page!.setStrokeDashPattern(pattern)
         if fillShape {
             page!.setBrushColor(color)
         } else {

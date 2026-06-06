@@ -126,7 +126,7 @@ public class RadioButton : Drawable {
         let yBox = y
         page!.setPenWidth(1.0)
         page!.setPenColor(Color.black)
-        page!.setLinePattern("[] 0")
+        page!.setStrokeDashPattern("[] 0")
         page!.setBrushColor(Color.black)
         page!.drawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r1)
 

@@ -214,7 +214,7 @@ public class Path : Drawable {
         } else {
             page!.setPenWidth(self.width)
             page!.setPenColor(self.color)
-            page!.setLinePattern(self.pattern)
+            page!.setStrokeDashPattern(self.pattern)
             page!.setLineCapStyle(self.lineCapStyle)
             page!.setLineJoinStyle(self.lineJoinStyle)
             if closePath {

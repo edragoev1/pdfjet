@@ -228,7 +228,7 @@ public class Rect : Drawable {
         } else {
             page!.setPenWidth(self.borderWidth)
             page!.setPenColor(self.borderColor)
-            page!.setLinePattern(self.borderPattern)
+            page!.setStrokeDashPattern(self.borderPattern)
 
             var points: [Point] = []
             points.append(Point(self.x + self.r, self.y))

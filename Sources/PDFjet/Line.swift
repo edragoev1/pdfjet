@@ -284,7 +284,7 @@ public class Line : Drawable {
         page!.setPenColor(color)
         page!.setPenWidth(width)
         page!.setLineCapStyle(capStyle)
-        page!.setLinePattern(pattern)
+        page!.setStrokeDashPattern(pattern)
         page!.addBMC(StructElem.P, language, actualText, altDescription)
         page!.drawLine(
                 x1 + xBox,

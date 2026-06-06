@@ -440,7 +440,7 @@ public class Point : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         page!.setPenWidth(lineWidth)
-        page!.setLinePattern(linePattern)
+        page!.setStrokeDashPattern(linePattern)
 
         if fillShape {
             page!.setBrushColor(color)
