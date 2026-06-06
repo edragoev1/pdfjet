@@ -216,7 +216,7 @@ public class CheckBox implements Drawable {
         float yBox = y;
         page.setPenWidth(penWidth);
         page.setPenColor(boxColor);
-        page.setStrokePattern("[] 0");
+        page.setStrokeDashPattern("[] 0");
         page.drawRect(x + this.penWidth, yBox + this.penWidth, w, h);
 
         if (mark == Mark.CHECK || mark == Mark.X) {

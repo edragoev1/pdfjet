@@ -289,7 +289,7 @@ public class Box implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         page.addBMC(StructElem.P, language, actualText, altDescription);
         page.setPenWidth(width);
-        page.setStrokePattern(pattern);
+        page.setStrokeDashPattern(pattern);
         if (fillShape) {
             page.setBrushColor(color);
         } else {

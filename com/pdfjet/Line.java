@@ -346,7 +346,7 @@ public class Line implements Drawable {
         page.setPenColor(color);
         page.setPenWidth(width);
         page.setLineCapStyle(capStyle);
-        page.setStrokePattern(pattern);
+        page.setStrokeDashPattern(pattern);
         page.drawLine(
                 x1 + xBox,
                 y1 + yBox,

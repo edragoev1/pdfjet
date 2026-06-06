@@ -151,7 +151,7 @@ public class RadioButton implements Drawable {
         float yBox = y;
         page.setPenWidth(1f);
         page.setPenColor(Color.black);
-        page.setStrokePattern("[] 0");
+        page.setStrokeDashPattern("[] 0");
         page.setBrushColor(Color.black);
         page.drawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r1);
 

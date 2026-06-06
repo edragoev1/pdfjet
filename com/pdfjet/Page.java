@@ -761,7 +761,7 @@ final public class Page {
      *
      * @param pattern the line dash pattern.
      */
-    public void setStrokePattern(String pattern) {
+    public void setStrokeDashPattern(String pattern) {
         this.strokePattern = pattern;
         append(pattern);
         append(" d\n");

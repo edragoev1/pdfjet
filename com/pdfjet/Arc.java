@@ -273,7 +273,7 @@ public class Arc implements Drawable {
                 startAngle,
                 sweepDegrees);
         if (strokeColor != null && strokePattern != null) {
-            page.setStrokePattern(strokePattern);
+            page.setStrokeDashPattern(strokePattern);
         }
         if (fillColor != null && strokeColor != null) {
             page.setBrushColor(fillColor);

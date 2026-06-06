@@ -494,7 +494,7 @@ public class Chart implements Drawable {
     private void drawHorizontalGridLines(Page page) {
         page.setPenWidth(hGridLineWidth);
         page.setPenColor(Color.black);
-        page.setStrokePattern(hGridLinePattern);
+        page.setStrokeDashPattern(hGridLinePattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
@@ -507,7 +507,7 @@ public class Chart implements Drawable {
     private void drawVerticalGridLines(Page page) {
         page.setPenWidth(vGridLineWidth);
         page.setPenColor(Color.black);
-        page.setStrokePattern(vGridLinePattern);
+        page.setStrokeDashPattern(vGridLinePattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;
@@ -548,7 +548,7 @@ public class Chart implements Drawable {
             if (point.drawPath) {
                 page.setPenColor(point.color);
                 page.setPenWidth(point.strokeWidth);
-                page.setStrokePattern(point.strokePattern);
+                page.setStrokeDashPattern(point.strokePattern);
                 page.drawPath(points, PathOperator.STROKE);
                 if (point.getText() != null) {
                     page.setBrushColor(point.getTextColor());
@@ -568,7 +568,7 @@ public class Chart implements Drawable {
 		point = points.get(i);
                 if (point.getShape() != Point.INVISIBLE) {
                     page.setPenWidth(point.strokeWidth);
-                    page.setStrokePattern(point.strokePattern);
+                    page.setStrokeDashPattern(point.strokePattern);
                     page.setPenColor(point.color);
                     page.setBrushColor(point.color);
                     page.drawPoint(point);

@@ -222,7 +222,7 @@ public class Rect implements Drawable {
                 page.lineTo(this.x, this.y + this.h);
                 page.setPenColor(this.borderColor);
                 page.setPenWidth(this.borderWidth);
-                page.setStrokePattern(this.borderPattern);
+                page.setStrokeDashPattern(this.borderPattern);
                 page.closePath();
             }
         } else {
@@ -254,7 +254,7 @@ public class Rect implements Drawable {
             }
 
             if (borderColor != null && borderPattern != null) {
-                page.setStrokePattern(borderPattern);
+                page.setStrokeDashPattern(borderPattern);
             }
             if (fillColor != null && borderColor != null) {
                 page.setBrushColor(fillColor);

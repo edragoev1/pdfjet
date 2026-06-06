@@ -279,7 +279,7 @@ public class Path implements Drawable {
         } else {
             page.setPenWidth(width);
             page.setPenColor(color);
-            page.setStrokePattern(pattern);
+            page.setStrokeDashPattern(pattern);
             page.setLineCapStyle(lineCapStyle);
             page.setLineJoinStyle(lineJoinStyle);
             if (closePath) {
