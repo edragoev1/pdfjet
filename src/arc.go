@@ -109,43 +109,32 @@ func (arc *Arc) SetStrokeWidth(width float32) *Arc {
 	return arc
 }
 
-//    /**
-//     * Sets the color for this line.
-//     *
-//     * @param color the color specified as an integer.
-//     * @return this Arc object.
-//     */
-//    public Arc SetStrokeColor(int color) {
-//        float r = ((color >> 16) & 0xff)/255f;
-//        float g = ((color >>  8) & 0xff)/255f;
-//        float b = ((color)       & 0xff)/255f;
-//        this.SetStrokeColor(r, g, b);
-//        return this;
-//    }
-//
-//    public Arc SetStrokeColor(float r, float g, float b) {
-//        this.strokeColor = new float[] {r, g, b};
-//        return this;
-//    }
-//
-//    public Arc SetStrokeColor(float[] rgbColor) {
-//        this.strokeColor = rgbColor;
-//        return this;
-//    }
-//
-//    public Arc SetFillColor(int color) {
-//        float r = ((color >> 16) & 0xff)/255f;
-//        float g = ((color >>  8) & 0xff)/255f;
-//        float b = ((color)       & 0xff)/255f;
-//        this.SetFillColor(r, g, b);
-//        return this;
-//    }
-//
-//    public Arc SetFillColor(float r, float g, float b) {
-//        this.fillColor = new float[] {r, g, b};
-//        return this;
-//    }
-//
+func (arc *Arc) SetStrokeColor(color int32) *Arc {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32((color)&0xff) / 255.0
+	arc.SetStrokeColorRGB(r, g, b)
+	return arc
+}
+
+func (arc *Arc) SetStrokeColorRGB(r, g, b float32) *Arc {
+	arc.strokeColor = [3]float32{r, g, b}
+	return arc
+}
+
+func (arc *Arc) SetFillColor(color int32) *Arc {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32((color)&0xff) / 255.0
+	arc.SetFillColorRGB(r, g, b)
+	return arc
+}
+
+func (arc *Arc) SetFillColorRGB(r, g, b float32) *Arc {
+	arc.fillColor = [3]float32{r, g, b}
+	return arc
+}
+
 //    public Arc SetFillColor(float[] rgbColor) {
 //        this.fillColor = rgbColor;
 //        return this;
