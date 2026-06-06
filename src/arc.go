@@ -89,17 +89,16 @@ func (arc *Arc) SetStartAngle(angle float32) *Arc {
 	return arc
 }
 
-//
-//    public Arc SetSweepDegreesCW(float sweepDegrees) {
-//        this.sweepDegrees = sweepDegrees;
-//        return this;
-//    }
-//
-//    public Arc SetSweepDegreesCCW(float sweepDegrees) {
-//        this.sweepDegrees = -sweepDegrees;
-//        return this;
-//    }
-//
+func (arc *Arc) SetSweepDegreesCW(sweepDegrees float32) *Arc {
+	arc.sweepDegrees = sweepDegrees
+	return arc
+}
+
+func (arc *Arc) SetSweepDegreesCCW(sweepDegrees float32) *Arc {
+	arc.sweepDegrees = -sweepDegrees
+	return arc
+}
+
 //    /**
 //     * The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
 //     * It is specified by a dash array and a dash phase.
