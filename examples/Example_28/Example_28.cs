@@ -52,6 +52,9 @@ public class Example_28 {
         DrawLineOfText(page, f1, x, y, 0x26AD, 0x26BC);
         y += dy;
 
+        DrawLineOfText(page, f1, x, y, 0x26E2, 0x26FE);
+        y += dy;
+
         pdf.Complete();
     }
 
