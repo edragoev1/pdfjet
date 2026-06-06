@@ -4,7 +4,7 @@ import java.io.*;
 import com.pdfjet.*;
 
 /**
- *  Example_05.java
+ * Example_05.java
  */
 public class Example_05 {
     public Example_05() throws Exception {
@@ -15,9 +15,6 @@ public class Example_05 {
         f1.setItalic(true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
-        float[] xy = page.drawArc(500f, 100f, 100f, 50f, 90f, 270f);
-        // (new Line(xy[0], xy[1], xy[0], xy[1] + 50f)).DrawOn(page);
 
         TextLine text = new TextLine(f1);
         text.setLocation(300f, 300f);
@@ -53,24 +50,36 @@ public class Example_05 {
         text.setLocation(150f, 70f);
         text.drawOn(page);
 
-        Point point = new Point(300f, 300f);
-        point.setShape(Point.CIRCLE);
-        point.setColor(Color.blue);
-        point.setRadius(37f);
-        point.drawOn(page);
-        point.setRadius(25f);
-        point.setColor(Color.white);
-        point.drawOn(page);
+        float[] xy = page.drawArc(500f, 100f, 100f, 50f, 90f, 270f);
+        // (new Line(xy[0], xy[1], xy[0], xy[1] + 50f)).DrawOn(page);
 
-        page.setPenWidth(1f);
-        page.drawEllipse(300f, 600f, 100f, 50f);
+/*
+        float[] arcPoints = (new Arc())
+            .setCenterXY(300f, 600f)
+            .setRadiusX(75f)
+            .setRadiusY(75f)
+            .setStartAngle(0f)
+            .setSweepDegreesCW(270f)
+            // .setSweepDegreesCCW(270f)
+            // .setScaleFactor(2f)
+            // .setRotateDegreesCW(90f)
+            // .setRotateDegreesCCW(90f)
+            .setStrokeWidth(5f)
+            .setStrokeColor(Color.blue)
+            .drawOn(page);
 
-        f1.setSize(14f);
-        String unicode = "\u20AC\u0020\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160";
-        text = new TextLine(f1, unicode);
-        text.setLocation(100f, 700f);
-        text.drawOn(page);
-
+        (new Ellipse())
+            .setCenterXY(300f, 720f)
+            .setRadiusX(100f)
+            .setRadiusY(50f)
+            .setFillColor(Color.azure)
+            .setStrokeWidth(1.5f)
+            .setStrokeColor(Color.blue)
+            .setScaleFactor(0.5f)
+            .setRotateDegreesCW(45f)
+            // .setRotateDegreesCCW(45f)
+            .drawOn(page);
+*/
         pdf.complete();
     }
 
