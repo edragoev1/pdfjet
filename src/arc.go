@@ -135,31 +135,31 @@ func (arc *Arc) SetFillColorRGB(r, g, b float32) *Arc {
 	return arc
 }
 
-//    public Arc SetFillColor(float[] rgbColor) {
-//        this.fillColor = rgbColor;
-//        return this;
-//    }
-//
-//    public Arc SetRotateDegreesCW(float degrees) {
-//        this.rotateDegrees = -degrees;
-//        return this;
-//    }
-//
-//    public Arc SetRotateDegreesCW(double degrees) {
-//        this.rotateDegrees = (float) -degrees;
-//        return this;
-//    }
-//
-//    public Arc SetRotateDegreesCCW(float degrees) {
-//        this.rotateDegrees = degrees;
-//        return this;
-//    }
-//
-//    public Arc SetRotateDegreesCCW(double degrees) {
-//        this.rotateDegrees = (float) degrees;
-//        return this;
-//    }
-//
+func (arc *Arc) SetFillColorRGBArray(rgbColor [3]float32) *Arc {
+	arc.fillColor = rgbColor
+	return arc
+}
+
+func (arc *Arc) SetRotateDegreesCW(degrees float32) *Arc {
+	arc.rotateDegrees = -degrees
+	return arc
+}
+
+func (arc *Arc) SetRotateDegreesCWFloat64(degrees float64) *Arc {
+	arc.rotateDegrees = float32(-degrees)
+	return arc
+}
+
+func (arc *Arc) SetRotateDegreesCCW(degrees float32) *Arc {
+	arc.rotateDegrees = degrees
+	return arc
+}
+
+func (arc *Arc) SetRotateDegreesCCWFloat64(degrees float64) *Arc {
+	arc.rotateDegrees = float32(degrees)
+	return arc
+}
+
 //    /**
 //     * Sets the alternate description of this line.
 //     *
