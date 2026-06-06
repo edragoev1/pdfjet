@@ -1,5 +1,7 @@
 package pdfjet
 
+import "math"
+
 /**
  * arc.go
  *
@@ -180,63 +182,62 @@ func (arc *Arc) SetScaleFactor(factor float32) *Arc {
 	return arc
 }
 
-//    /**
-//     * Draws this line on the specified page.
-//     *
-//     * @param page the page to draw on.
-//     * @return x and y coordinates of the bottom right corner of this component.
-//     * @throws Exception
-//     */
-//    public float[] DrawOn(Page page) {
-//        // If a start point was set, calculate center so arc begins there
-//        if (line != null) {
-//            float dx = line.x2 - line.x1;
-//            float dy = line.y2 - line.y1;
-//            // Normalize and rotate 90° (clockwise perpendicular)
-//            float invLength = 1f / MathF.Sqrt(dx*dx + dy*dy);
-//            float nx = -dy * invLength;
-//            float ny = dx * invLength;
-//            // Adjust direction based on sweep
-//            float sign = sweepDegrees > 0f ? 1f : -1f;
-//            cx = line.x2 + nx * rx * sign;
-//            cy = line.y2 + ny * ry * sign;
-//            startAngle = MathF.Atan2(line.y2 - cy, line.x2 - cx) * (180f / MathF.PI);
-//        }
-//
-//        page.AddBMC(StructElem.P, language, actualText, altDescription);
-//        page.Append("q\n");
-//        float centerX = cx;
-//        float centerY = page.height - cy;
-//        page.RotateAroundCenter(centerX, centerY, rotateDegrees);
-//        float[] arcPoints = page.DrawArc(
-//                cx,
-//                cy,
-//                rx,
-//                ry,
-//                startAngle,
-//                sweepDegrees);
-//        if (strokeColor != null && strokePattern != null) {
-//            page.SetStrokePattern(strokePattern);
-//        }
-//        if (fillColor != null && strokeColor != null) {
-//            page.SetBrushColor(fillColor);
-//            page.SetPenWidth(strokeWidth);
-//            page.SetPenColor(strokeColor);
-//            page.Append("B\n");
-//        } else if (fillColor != null && strokeColor == null) {
-//            page.SetBrushColor(fillColor);
-//            page.Append("f\n");
-//        } else if (fillColor == null && strokeColor != null) {
-//            page.SetPenWidth(strokeWidth);
-//            page.SetPenColor(strokeColor);
-//            page.Append("S\n");
-//        } else {    // Both brushColor == null and penColor == null
-//            page.SetPenWidth(0f);
-//            page.SetPenColor(Color.black);
-//            page.Append("S\n");
-//        }
-//        page.Append("Q\n");
-//        page.AddEMC();
-//        return arcPoints;
-//    }
-//}   // End of arc.go
+func (arc *Arc) DrawOn(page *Page) []float32 {
+	// If a start point was set, calculate center so arc begins there
+	if arc.line != nil {
+		dx := arc.line.x2 - arc.line.x1
+		dy := arc.line.y2 - arc.line.y1
+		// Normalize and rotate 90° (clockwise perpendicular)
+		invLength := float32(1.0 / math.Sqrt(float64(dx*dx+dy*dy)))
+		nx := -dy * invLength
+		ny := dx * invLength
+		// Adjust direction based on sweep
+		sign := float32(-1.0)
+		if arc.sweepDegrees > 0.0 {
+			sign = float32(1.0)
+		}
+		arc.cx = arc.line.x2 + nx*arc.rx*sign
+		arc.cy = arc.line.y2 + ny*arc.ry*sign
+		arc.startAngle = float32(math.Atan2(
+			float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi))
+	}
+
+	page.AddBMC("P", arc.language, arc.actualText, arc.altDescription)
+	page.appendString("q\n")
+	centerX := arc.cx
+	centerY := page.height - arc.cy
+
+	page.RotateAroundCenter(centerX, centerY, arc.rotateDegrees)
+	arcPoints := page.DrawArc(
+		arc.cx,
+		arc.cy,
+		arc.rx,
+		arc.ry,
+		arc.startAngle,
+		arc.sweepDegrees)
+
+	//        if (strokeColor != null && strokePattern != null) {
+	//            page.SetStrokePattern(strokePattern);
+	//        }
+	//        if (fillColor != null && strokeColor != null) {
+	//            page.SetBrushColor(fillColor);
+	//            page.SetPenWidth(strokeWidth);
+	//            page.SetPenColor(strokeColor);
+	//            page.Append("B\n");
+	//        } else if (fillColor != null && strokeColor == null) {
+	//            page.SetBrushColor(fillColor);
+	//            page.Append("f\n");
+	//        } else if (fillColor == null && strokeColor != null) {
+	//            page.SetPenWidth(strokeWidth);
+	//            page.SetPenColor(strokeColor);
+	//            page.Append("S\n");
+	//        } else {    // Both brushColor == null and penColor == null
+	//            page.SetPenWidth(0f);
+	//            page.SetPenColor(Color.black);
+	//            page.Append("S\n");
+	//        }
+	//        page.Append("Q\n");
+	//        page.AddEMC();
+
+	return arcPoints
+}
