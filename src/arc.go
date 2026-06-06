@@ -68,27 +68,27 @@ func (arc *Arc) SetCenterXY(cx, cy float32) *Arc {
 	return arc
 }
 
-//
-//    public Arc SetRadiusX(float rx) {
-//        this.rx = rx;
-//        return this;
-//    }
-//
-//    public Arc SetRadiusY(float ry) {
-//        this.ry = ry;
-//        return this;
-//    }
-//
-//    public Arc SetRadius(float r) {
-//        this.rx = r;
-//        this.ry = r;
-//        return this;
-//    }
-//
-//    public Arc SetStartAngle(float angle) {
-//        this.startAngle = angle;
-//        return this;
-//    }
+func (arc *Arc) SetRadiusX(rx float32) *Arc {
+	arc.rx = rx
+	return arc
+}
+
+func (arc *Arc) SetRadiusY(ry float32) *Arc {
+	arc.ry = ry
+	return arc
+}
+
+func (arc *Arc) SetRadius(r float32) *Arc {
+	arc.rx = r
+	arc.ry = r
+	return arc
+}
+
+func (arc *Arc) SetStartAngle(angle float32) *Arc {
+	arc.startAngle = angle
+	return arc
+}
+
 //
 //    public Arc SetSweepDegreesCW(float sweepDegrees) {
 //        this.sweepDegrees = sweepDegrees;
