@@ -312,7 +312,7 @@ func (point *Point) PlaceIn(box *Box, xOffset, yOffset float32) {
 // @return x and y coordinates of the bottom right corner of this component.
 func (point *Point) DrawOn(page *Page) []float32 {
 	page.SetPenWidth(point.lineWidth)
-	page.SetLinePattern(point.linePattern)
+	page.SetStrokeDashPattern(point.linePattern)
 
 	if point.fillShape {
 		page.SetBrushColor(point.color)

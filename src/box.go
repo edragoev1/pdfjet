@@ -193,13 +193,13 @@ func (box *Box) DrawOn(page *Page) []float32 {
 		} else {
 			page.SetPenWidth(box.width)
 			page.SetPenColor(box.color)
-			page.SetLinePattern(box.pattern)
+			page.SetStrokeDashPattern(box.pattern)
 			page.ClosePath()
 		}
 	} else {
 		page.SetPenWidth(box.width)
 		page.SetPenColor(box.color)
-		page.SetLinePattern(box.pattern)
+		page.SetStrokeDashPattern(box.pattern)
 
 		points := make([]*Point, 0)
 		points = append(points, NewPoint(box.x+box.r, box.y))

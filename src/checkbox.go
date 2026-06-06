@@ -139,7 +139,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 	yBox := checkBox.y - checkBox.font.ascent
 	page.SetPenWidth(checkBox.penWidth)
 	page.SetPenColor(checkBox.boxColor)
-	page.SetLinePattern("[] 0")
+	page.SetStrokeDashPattern("[] 0")
 	page.DrawRect(checkBox.x, yBox, checkBox.w, checkBox.h)
 
 	if checkBox.mark == mark.Check || checkBox.mark == mark.X {

@@ -98,7 +98,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 	yBox := radioButton.y - radioButton.font.GetAscent(radioButton.font.size)
 	page.SetPenWidth(1.0)
 	page.SetPenColor(color.Black)
-	page.SetLinePattern("[] 0")
+	page.SetStrokeDashPattern("[] 0")
 	page.SetBrushColor(color.Black)
 	page.DrawCircle(radioButton.x+radioButton.r1, yBox+radioButton.r1, radioButton.r1)
 

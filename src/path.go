@@ -161,7 +161,7 @@ func (path *Path) DrawOn(page *Page) []float32 {
 	} else {
 		page.SetPenWidth(path.width)
 		page.SetPenColor(path.color)
-		page.SetLinePattern(path.pattern)
+		page.SetStrokeDashPattern(path.pattern)
 		page.SetLineCapStyle(path.lineCapStyle)
 		page.SetLineJoinStyle(path.lineJoinStyle)
 		if path.closePath {

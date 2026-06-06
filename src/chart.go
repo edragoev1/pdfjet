@@ -370,7 +370,7 @@ func (chart *Chart) drawInnerBorder(page *Page) {
 func (chart *Chart) drawHorizontalGridLines(page *Page) {
 	page.SetPenWidth(chart.hGridLineWidth)
 	page.SetPenColor(color.Black)
-	page.SetLinePattern(chart.hGridLinePattern)
+	page.SetStrokeDashPattern(chart.hGridLinePattern)
 	x := chart.x8
 	y := chart.y8
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
@@ -383,7 +383,7 @@ func (chart *Chart) drawHorizontalGridLines(page *Page) {
 func (chart *Chart) drawVerticalGridLines(page *Page) {
 	page.SetPenWidth(chart.vGridLineWidth)
 	page.SetPenColor(color.Black)
-	page.SetLinePattern(chart.vGridLinePattern)
+	page.SetStrokeDashPattern(chart.vGridLinePattern)
 	x := chart.x5
 	y := chart.y5
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
@@ -427,7 +427,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 		if point.drawPath {
 			page.SetPenColor(point.color)
 			page.SetPenWidth(point.lineWidth)
-			page.SetLinePattern(point.linePattern)
+			page.SetStrokeDashPattern(point.linePattern)
 			page.DrawPath(points, operator.Stroke)
 			if point.GetText() != "" {
 				page.SetBrushColor(point.GetTextColor())
@@ -439,7 +439,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			point = points[j]
 			if point.GetShape() != shape.Invisible {
 				page.SetPenWidth(point.lineWidth)
-				page.SetLinePattern(point.linePattern)
+				page.SetStrokeDashPattern(point.linePattern)
 				page.SetPenColor(point.color)
 				page.SetBrushColor(point.color)
 				page.DrawPoint(point)

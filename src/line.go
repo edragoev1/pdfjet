@@ -224,7 +224,7 @@ func (line *Line) DrawOn(page *Page) [2]float32 {
 	page.SetPenColor(line.color)
 	page.SetPenWidth(line.width)
 	page.SetLineCapStyle(line.capStyle)
-	page.SetLinePattern(line.pattern)
+	page.SetStrokeDashPattern(line.pattern)
 	page.AddBMC("Span", line.language, line.actualText, line.altDescription)
 	page.DrawLine(
 		line.x1+line.xBox,

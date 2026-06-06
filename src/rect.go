@@ -199,13 +199,13 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 		} else {
 			page.SetPenWidth(rect.borderWidth)
 			page.SetPenColorRGB(rect.borderColor)
-			page.SetLinePattern(rect.borderPattern)
+			page.SetStrokeDashPattern(rect.borderPattern)
 			page.ClosePath()
 		}
 	} else {
 		page.SetPenWidth(rect.borderWidth)
 		page.SetPenColorRGB(rect.borderColor)
-		page.SetLinePattern(rect.borderPattern)
+		page.SetStrokeDashPattern(rect.borderPattern)
 
 		points := make([]*Point, 0)
 		points = append(points, NewPoint(rect.x+rect.r, rect.y))

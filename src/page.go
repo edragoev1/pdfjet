@@ -607,7 +607,7 @@ func (page *Page) SetDefaultLineWidth() {
 	page.appendString(" w\n")
 }
 
-// SetLinePattern the line dash pattern controls the pattern of dashes and gaps used to stroke paths.
+// SetStrokeDashPattern the stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.
 // It is specified by a dash array and a dash phase.
 // The elements of the dash array are positive numbers that specify the lengths of
 // alternating dashes and gaps.
@@ -629,7 +629,7 @@ func (page *Page) SetDefaultLineWidth() {
 // </pre>
 //
 // @param pattern the line dash pattern.
-func (page *Page) SetLinePattern(pattern string) {
+func (page *Page) SetStrokeDashPattern(pattern string) {
 	if page.linePattern != pattern {
 		page.linePattern = pattern
 		page.appendString(page.linePattern)

@@ -227,8 +227,7 @@ func (arc *Arc) DrawOn(page *Page) []float32 {
 		arc.sweepDegrees)
 
 	if arc.hasStrokeColor == true && arc.strokePattern != "" {
-		// TODO!!!
-		page.SetLinePattern(arc.strokePattern)
+		page.SetStrokeDashPattern(arc.strokePattern)
 	}
 
 	if arc.hasFillColor == true && arc.hasStrokeColor == true {
