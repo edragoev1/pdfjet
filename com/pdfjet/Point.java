@@ -284,6 +284,51 @@ public class Point implements Drawable {
         return r;
     }
 
+    public void setFillColor(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        this.fillColor = new float[] {r, g, b};
+    }
+
+    public void setFillColor(float r, float g, float b) {
+        this.fillColor = new float[] {r, g, b};
+    }
+
+    public void setFillColor(float[] rgbColor) {
+        this.fillColor = rgbColor;
+    }
+
+//     public void setStrokeWidth(float strokeWidth) {
+//         this.strokeWidth = strokeWidth;
+//     }
+
+    public float[] getFillColor() {
+        return this.fillColor;
+    }
+
+    public Point setStrokeColor(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        this.strokeColor = new float[] {r, g, b};
+        return this;
+    }
+
+    public Point setStrokeColor(float r, float g, float b) {
+        this.strokeColor = new float[] {r, g, b};
+        return this;
+    }
+
+    public Point setStrokeColor(float[] rgbColor) {
+        this.strokeColor = rgbColor;
+        return this;
+    }
+
+    public float[] getStrokeColor() {
+        return this.strokeColor;
+    }
+
     /**
      *  Sets the shape of this point.
      *
