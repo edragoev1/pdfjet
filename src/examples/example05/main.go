@@ -20,14 +20,6 @@ func Example05() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	//// page.SetPenColor(color.Aqua)
-	//page.Save()
-	//page.SetPenWidth(1.0)
-	//_ = page.DrawArc(500, 100, 50, 50, 0, 90)
-	//page.StrokePath()
-	//// (new Line(xy[0], xy[1], xy[0], xy[1] + 50)).DrawOn(page);
-	//page.Restore()
-
 	text := pdfjet.NewTextLine(f1, "")
 	text.SetLocation(300.0, 300.0)
 	for i := 0; i < 360; i += 15 {
