@@ -50,6 +50,15 @@ public class Example_05 {
         text.setLocation(150f, 70f);
         text.drawOn(page);
 
+        Point point = new Point(300f, 300f);
+        point.setShape(Point.CIRCLE);
+        point.setFillColor(Color.blue);
+        point.setRadius(37f);
+        point.drawOn(page);
+        point.setRadius(25f);
+        point.setFillColor(Color.white);
+        point.drawOn(page);
+
         float[] arcPoints = (new Arc())
             .setCenterXY(300f, 600f)
             .setRadiusX(75f)
