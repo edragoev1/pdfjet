@@ -11,8 +11,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
-// Example05 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example05 shows how to draw text at different angles.
 func Example05() {
 	pdf := pdfjet.NewPDFFile("Example_05.pdf")
 
@@ -21,13 +20,13 @@ func Example05() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	// page.SetPenColor(color.Aqua)
-	page.Save()
-	page.SetPenWidth(1.0)
-	_ = page.DrawArc(500, 100, 50, 50, 0, 90)
-	page.StrokePath()
-	// (new Line(xy[0], xy[1], xy[0], xy[1] + 50)).DrawOn(page);
-	page.Restore()
+	//// page.SetPenColor(color.Aqua)
+	//page.Save()
+	//page.SetPenWidth(1.0)
+	//_ = page.DrawArc(500, 100, 50, 50, 0, 90)
+	//page.StrokePath()
+	//// (new Line(xy[0], xy[1], xy[0], xy[1] + 50)).DrawOn(page);
+	//page.Restore()
 
 	text := pdfjet.NewTextLine(f1, "")
 	text.SetLocation(300.0, 300.0)
@@ -73,8 +72,19 @@ func Example05() {
 	point.SetColor(color.White)
 	point.DrawOn(page)
 
-	page.SetPenWidth(1.0)
-	page.DrawEllipse(300.0, 600.0, 100.0, 50.0)
+	arc := new(pdfjet.Arc)
+	arc.SetCenterXY(300.0, 600.0)
+	arc.SetRadiusX(75.0)
+	arc.SetRadiusY(75.0)
+	arc.SetStartAngle(0.0)
+	arc.SetSweepDegreesCW(270.0)
+	// arc.SetSweepDegreesCCW(270.0)
+	// arc.SetScaleFactor(2.0)
+	// arc.SetRotateDegreesCW(90.0)
+	// arc.SetRotateDegreesCCW(90.0)
+	arc.SetStrokeWidth(5.0)
+	arc.SetStrokeColor(color.Blue)
+	arc.DrawOn(page)
 
 	pdf.Complete()
 }
