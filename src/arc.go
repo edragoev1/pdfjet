@@ -30,42 +30,6 @@ type Arc struct {
 	line           *Line
 }
 
-func NewArc(
-	cx, cy, rx, ry float32,
-	startAngle float32,
-	sweepDegrees float32,
-	rotateDegrees float32,
-	fillColor [3]float32,
-	hasFillColor bool,
-	strokeColor [3]float32,
-	hasStrokeColor bool,
-	strokeWidth float32,
-	strokePattern string,
-	language string,
-	actualText string,
-	altDescription string,
-	line *Line) *Arc {
-	arc := new(Arc)
-	arc.cx = cx
-	arc.cy = cy
-	arc.rx = rx
-	arc.ry = ry
-	arc.startAngle = startAngle
-	arc.sweepDegrees = sweepDegrees
-	arc.rotateDegrees = rotateDegrees
-	arc.fillColor = fillColor
-	arc.hasFillColor = hasFillColor
-	arc.strokeColor = strokeColor
-	arc.hasStrokeColor = hasStrokeColor
-	arc.strokeWidth = strokeWidth
-	arc.strokePattern = strokePattern
-	arc.language = language
-	arc.actualText = actualText
-	arc.altDescription = altDescription
-	arc.line = line
-	return arc
-}
-
 func (arc *Arc) SetPosition(cx, cy float32) {
 	arc.SetCenterXY(cx, cy)
 }
