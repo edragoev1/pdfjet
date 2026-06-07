@@ -145,6 +145,7 @@ func (arc *Arc) SetFillColor(color int32) *Arc {
 
 func (arc *Arc) SetFillColorRGB(r, g, b float32) *Arc {
 	arc.fillColor = [3]float32{r, g, b}
+	arc.hasFillColor = true
 	return arc
 }
 
