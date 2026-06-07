@@ -78,6 +78,18 @@ func Example05() {
 	arc.SetStrokeColor(color.Blue)
 	arc.DrawOn(page)
 
+	ellipse := pdfjet.NewEllipse()
+	ellipse.SetCenterXY(300.0, 720.0)
+	ellipse.SetRadiusX(100.0)
+	ellipse.SetRadiusY(50.0)
+	ellipse.SetFillColor(color.Azure)
+	ellipse.SetStrokeWidth(1.5)
+	ellipse.SetStrokeColor(color.Blue)
+	ellipse.SetScaleFactor(0.5)
+	ellipse.SetRotateDegreesCW(45.0)
+	// ellipse.SetRotateDegreesCCW(45.0)
+	ellipse.DrawOn(page)
+
 	pdf.Complete()
 }
 
