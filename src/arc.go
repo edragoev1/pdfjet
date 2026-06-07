@@ -131,6 +131,7 @@ func (arc *Arc) SetStrokeColor(color int32) *Arc {
 
 func (arc *Arc) SetStrokeColorRGB(r, g, b float32) *Arc {
 	arc.strokeColor = [3]float32{r, g, b}
+	arc.hasStrokeColor = true
 	return arc
 }
 
