@@ -48,6 +48,15 @@ public class Example_05 {
         text.SetLocation(150f, 70f);
         text.DrawOn(page);
 
+        Point point = new Point(300f, 300f);
+        point.SetShape(Point.CIRCLE);
+        point.SetFillColor(Color.blue);
+        point.SetRadius(37.0);
+        point.DrawOn(page);
+        point.SetRadius(25.0);
+        point.SetFillColor(Color.white);
+        point.DrawOn(page);
+
         float[] arcPoints = (new Arc())
             .SetCenterXY(300f, 600f)
             .SetRadiusX(75f)
