@@ -5,15 +5,12 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_39.cs
- *  We will draw the American flag using Box, Line and Point objects.
+ * Example_39.cs
  */
 public class Example_39 {
     public Example_39() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_39.pdf", FileMode.Create)));
-
-        Page page = new Page(pdf, Letter.PORTRAIT);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f1.SetItalic(true);
@@ -22,6 +19,8 @@ public class Example_39 {
         Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f2.SetItalic(true);
         f2.SetSize(8f);
+
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
         Chart chart = new Chart(f1, f2);
         chart.SetLocation(70f, 50f);

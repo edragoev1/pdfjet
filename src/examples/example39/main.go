@@ -10,17 +10,16 @@ import (
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
-// Example39 -- TODO:
+// Example39 - TODO
 func Example39() {
 	pdf := pdfjet.NewPDFFile("Example_39.pdf")
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-
 	f1.SetItalic(true)
-	f2.SetItalic(true)
-
 	f1.SetSize(10.0)
+
+	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f2.SetItalic(true)
 	f2.SetSize(8.0)
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
