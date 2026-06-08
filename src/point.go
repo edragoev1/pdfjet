@@ -36,6 +36,7 @@ type Point struct {
 
 	text          string
 	textColor     [3]float32
+	hasTextColor  bool
 	textDirection int
 	uri, key      string
 
@@ -188,6 +189,7 @@ func (point *Point) SetFillColor(fillColor int32) *Point {
 	g := float32((fillColor>>8)&0xff) / 255.0
 	b := float32((fillColor)&0xff) / 255.0
 	point.fillColor = [3]float32{r, g, b}
+	point.hasFillColor = true
 	return point
 }
 
@@ -204,6 +206,7 @@ func (point *Point) SetStrokeColor(strokeColor int32) *Point {
 	g := float32((strokeColor>>8)&0xff) / 255.0
 	b := float32((strokeColor)&0xff) / 255.0
 	point.strokeColor = [3]float32{r, g, b}
+	point.hasStrokeColor = true
 	return point
 }
 
@@ -295,6 +298,7 @@ func (point *Point) SetTextColor(textColor int32) *Point {
 	g := float32((textColor>>8)&0xff) / 255.0
 	b := float32((textColor)&0xff) / 255.0
 	point.textColor = [3]float32{r, g, b}
+	point.hasTextColor = true
 	return point
 }
 
