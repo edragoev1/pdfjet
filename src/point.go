@@ -9,7 +9,6 @@ package pdfjet
 
 import (
 	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/pathoperator"
 	"github.com/edragoev1/pdfjet/src/shape"
 )
@@ -22,7 +21,6 @@ type Point struct {
 	x, y  float32
 	r     float32
 	shape int
-	color int32
 	align int
 
 	fillColor      [3]float32
@@ -37,7 +35,7 @@ type Point struct {
 	drawPath     bool
 
 	text          string
-	textColor     int32
+	textColor     [3]float32
 	textDirection int
 	uri, key      string
 
@@ -58,7 +56,7 @@ func NewPoint(x, y float32) *Point {
 	point.y = y
 	point.r = 2.0
 	point.shape = shape.Circle
-	point.color = color.Black
+	point.textColor = [3]float32{0, 0, 0}
 	point.align = alignment.Right
 	point.strokeWidth = 1.0
 	point.strokePattern = "[] 0"
@@ -183,17 +181,36 @@ func (point *Point) GetFillShape() bool {
 	return point.fillShape
 }
 
-// SetColor sets the penColor color for this point.
+// SetFillColor sets the penColor color for this point.
 // @param color the color specified as an integer.
-func (point *Point) SetColor(color int32) *Point {
-	point.color = color
+func (point *Point) SetFillColor(fillColor int32) *Point {
+	r := float32((fillColor>>16)&0xff) / 255.0
+	g := float32((fillColor>>8)&0xff) / 255.0
+	b := float32((fillColor)&0xff) / 255.0
+	point.fillColor = [3]float32{r, g, b}
 	return point
 }
 
-// GetColor returns the point color as an integer.
+// GetFillColor returns the point color as an integer.
 // @return the color.
-func (point *Point) GetColor() int32 {
-	return point.color
+func (point *Point) GetFillColor() [3]float32 {
+	return point.fillColor
+}
+
+// SetStrokeColor sets the penColor color for this point.
+// @param color the color specified as an integer.
+func (point *Point) SetStrokeColor(strokeColor int32) *Point {
+	r := float32((strokeColor>>16)&0xff) / 255.0
+	g := float32((strokeColor>>8)&0xff) / 255.0
+	b := float32((strokeColor)&0xff) / 255.0
+	point.strokeColor = [3]float32{r, g, b}
+	return point
+}
+
+// GetStrokeColor returns the point color as an integer.
+// @return the color.
+func (point *Point) GetStrokeColor() [3]float32 {
+	return point.strokeColor
 }
 
 // SetLineWidth sets the width of the lines of this point.
@@ -273,14 +290,17 @@ func (point *Point) GetText() string {
 
 // SetTextColor sets the point's text color.
 // @param textColor the text color.
-func (point *Point) SetTextColor(textColor int32) {
-	point.textColor = textColor
-	point.hasFillColor = true
+func (point *Point) SetTextColor(textColor int32) *Point {
+	r := float32((textColor>>16)&0xff) / 255.0
+	g := float32((textColor>>8)&0xff) / 255.0
+	b := float32((textColor)&0xff) / 255.0
+	point.textColor = [3]float32{r, g, b}
+	return point
 }
 
 // GetTextColor returns the point's text color.
 // @return the text color.
-func (point *Point) GetTextColor() int32 {
+func (point *Point) GetTextColor() [3]float32 {
 	return point.textColor
 }
 

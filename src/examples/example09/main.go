@@ -25,7 +25,7 @@ func Example09() {
 	chartData := make([][]*pdfjet.Point, 0)
 
 	path1 := make([]*pdfjet.Point, 0)
-	path1 = append(path1, pdfjet.NewPoint(50.0, 50.0).SetDrawPath().SetColor(color.Blue))
+	path1 = append(path1, pdfjet.NewPoint(50.0, 50.0).SetDrawPath().SetFillColor(color.Blue))
 	path1 = append(path1, pdfjet.NewPoint(55.0, 55.0))
 	path1 = append(path1, pdfjet.NewPoint(60.0, 60.0))
 	path1 = append(path1, pdfjet.NewPoint(65.0, 58.0))
@@ -35,7 +35,7 @@ func Example09() {
 	chartData = append(chartData, path1)
 
 	path2 := make([]*pdfjet.Point, 0)
-	path2 = append(path2, pdfjet.NewPoint(50.0, 30.0).SetDrawPath().SetColor(color.Red))
+	path2 = append(path2, pdfjet.NewPoint(50.0, 30.0).SetDrawPath().SetFillColor(color.Red))
 	path2 = append(path2, pdfjet.NewPoint(55.0, 35.0))
 	path2 = append(path2, pdfjet.NewPoint(60.0, 40.0))
 	path2 = append(path2, pdfjet.NewPoint(65.0, 48.0).SetShape(shape.Diamond))
@@ -45,7 +45,7 @@ func Example09() {
 	chartData = append(chartData, path2)
 
 	path3 := make([]*pdfjet.Point, 0)
-	path3 = append(path3, pdfjet.NewPoint(50.0, 80.0).SetDrawPath().SetColor(color.Green))
+	path3 = append(path3, pdfjet.NewPoint(50.0, 80.0).SetDrawPath().SetFillColor(color.Green))
 	path3 = append(path3, pdfjet.NewPoint(55.0, 70.0))
 	path3 = append(path3, pdfjet.NewPoint(60.0, 60.0))
 	path3 = append(path3, pdfjet.NewPoint(65.0, 55.0))

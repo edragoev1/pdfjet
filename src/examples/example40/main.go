@@ -120,7 +120,7 @@ func AddVerticalBar(
 	point.SetX(x)
 	// point.SetY(0.0)
 	point.SetShape(shape.Invisible)
-	point.SetColor(color)
+	point.SetStrokeColor(color)
 	point.SetLineWidth(w)
 	point.SetText(text)
 	point.SetTextColor(textColor)

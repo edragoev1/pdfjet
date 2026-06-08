@@ -425,14 +425,15 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 		points := chartData[i]
 		point := points[0]
 		if point.drawPath {
-			page.SetPenColor(point.color)
+			page.SetPenColorRGB(point.strokeColor)
 			page.SetPenWidth(point.lineWidth)
 			page.SetStrokeDashPattern(point.linePattern)
 			page.DrawPath(points, operator.Stroke)
 			if point.GetText() != "" {
-				page.SetBrushColor(point.GetTextColor())
+				page.SetBrushColorRGB(point.textColor)
 				page.SetTextDirection(point.GetTextDirection())
-				page.drawString(chart.f2, chart.f2.size, point.text, point.x, point.y, [3]float32{0.0, 0.0, 0.0}, nil)
+				page.drawString(
+					chart.f2, chart.f2.size, point.text, point.x, point.y, [3]float32{0.0, 0.0, 0.0}, nil)
 			}
 		}
 		for j := 0; j < len(points); j++ {
@@ -440,8 +441,8 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			if point.GetShape() != shape.Invisible {
 				page.SetPenWidth(point.lineWidth)
 				page.SetStrokeDashPattern(point.linePattern)
-				page.SetPenColor(point.color)
-				page.SetBrushColor(point.color)
+				page.SetPenColorRGB(point.strokeColor)
+				page.SetBrushColorRGB(point.fillColor)
 				page.DrawPoint(point)
 			}
 		}
@@ -449,7 +450,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 }
 
 func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *Round {
-	maxExponent := int(math.Floor(float64(math.Log(float64(maxValue))) / float64(math.Log(10))))
+	maxExponent := int(math.Floor(math.Log(float64(maxValue))) / float64(math.Log(10)))
 	maxValue *= float32(math.Pow(10, float64(-maxExponent)))
 
 	if maxValue > 9.00 {
