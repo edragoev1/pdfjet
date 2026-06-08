@@ -275,6 +275,7 @@ func (point *Point) GetText() string {
 // @param textColor the text color.
 func (point *Point) SetTextColor(textColor int32) {
 	point.textColor = textColor
+	point.hasFillColor = true
 }
 
 // GetTextColor returns the point's text color.
