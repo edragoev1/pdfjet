@@ -242,7 +242,7 @@ public class Chart : Drawable {
         if page != nil {
             page!.drawString(
                     f1!,
-                    36.0,   // TODO
+                    f1!.getSize(),
                     title,
                     x1 + ((w - f1!.stringWidth(title)) / 2),
                     y1 + 1.5 * f1!.bodyHeight)
@@ -314,7 +314,7 @@ public class Chart : Drawable {
             page!.setTextDirection(90)
             page!.drawString(
                     f1!,
-                    36.0,   // TODO
+                    f1!.getSize(),
                     yAxisTitle,
                     x1 + f1!.bodyHeight,
                     y8 - ((y8 - y5) - f1!.stringWidth(yAxisTitle)) / 2)
@@ -323,7 +323,7 @@ public class Chart : Drawable {
             page!.setTextDirection(0)
             page!.drawString(
                     f1!,
-                    36.0,   // TODO
+                    f1!.getSize(),
                     xAxisTitle,
                     x5 + ((x6 - x5) - f1!.stringWidth(xAxisTitle)) / 2,
                     y4 - f1!.bodyHeight / 2)
@@ -452,7 +452,11 @@ public class Chart : Drawable {
             let label = formatter.string(from: NSNumber(value:
                     xMin + ((xMax - xMin) / Float(xAxisGridLines)) * Float(i)))!
             page.drawString(
-                    f2!, 36.0, label, x - (f2!.stringWidth(label) / 2), y)
+                    f2!,
+                    f2!.getSize(),
+                    label,
+                    x - (f2!.stringWidth(label) / 2),
+                    y)
             x += step
             i += 1
         }
@@ -467,7 +471,12 @@ public class Chart : Drawable {
         while i < (yAxisGridLines + 1) {
             let label = formatter.string(from: NSNumber(value:
                     yMin + ((yMax - yMin) / Float(yAxisGridLines)) * Float(i)))!
-            page.drawString(f2!, 36.0, label, x, y)
+            page.drawString(
+                    f2!,
+                    f2!.getSize(),
+                    label,
+                    x,
+                    y)
             y -= step
             i += 1
         }
@@ -486,7 +495,21 @@ public class Chart : Drawable {
                     if point.getText() != nil {
                         page.setBrushColor(point.getTextColor())
                         page.setTextDirection(point.getTextDirection())
-                        page.drawString(f2!, fontSize, point.getText(), point.x, point.y)
+                        page.drawString(
+                            f2!,
+                            f2!.getSize(),
+                            point.getText(),
+                            point.x + 1.5*f2!.descent,
+                            point.y + f2!.getSize()/3.0)
+
+//                         page.drawString(
+//                             chart.f2,
+//                             chart.f2.size,
+//                             point.text,
+//                             point.x+1.5*chart.f2.descent,
+//                             point.y+chart.f2.size/3.0,
+//                             point.textColor,
+//                             nil)
                     }
                 }
                 for point in points {
