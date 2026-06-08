@@ -1,4 +1,4 @@
-package operator
+package pathoperator
 
 /**
  * operator.go

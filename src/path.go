@@ -9,7 +9,7 @@ package pdfjet
 
 import (
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/operator"
+	"github.com/edragoev1/pdfjet/src/pathoperator"
 )
 
 // Path is used to create path objects.
@@ -157,7 +157,7 @@ func (path *Path) DrawOn(page *Page) []float32 {
 
 	if path.fillShape {
 		page.SetBrushColor(path.color)
-		page.DrawPath(path.points, operator.Fill)
+		page.DrawPath(path.points, pathoperator.Fill)
 	} else {
 		page.SetPenWidth(path.width)
 		page.SetPenColor(path.color)
@@ -165,9 +165,9 @@ func (path *Path) DrawOn(page *Page) []float32 {
 		page.SetLineCapStyle(path.lineCapStyle)
 		page.SetLineJoinStyle(path.lineJoinStyle)
 		if path.closePath {
-			page.DrawPath(path.points, operator.CloseAndStroke)
+			page.DrawPath(path.points, pathoperator.CloseAndStroke)
 		} else {
-			page.DrawPath(path.points, operator.Stroke)
+			page.DrawPath(path.points, pathoperator.Stroke)
 		}
 	}
 

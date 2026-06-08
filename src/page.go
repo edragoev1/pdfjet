@@ -19,7 +19,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/fastfloat"
-	"github.com/edragoev1/pdfjet/src/operator"
+	"github.com/edragoev1/pdfjet/src/pathoperator"
 	"github.com/edragoev1/pdfjet/src/shape"
 	"github.com/edragoev1/pdfjet/src/token"
 )
@@ -786,7 +786,7 @@ func (page *Page) DrawPath(path []*Point, pathOperator string) {
 // @param y the y coordinate of the center of the circle to be drawn.
 // @param r the radius of the circle to be drawn.
 func (page *Page) DrawCircle(x, y, r float32) {
-	page.drawEllipse(x, y, r, r, operator.Stroke)
+	page.drawEllipse(x, y, r, r, pathoperator.Stroke)
 }
 
 // FillCircle draws the specified circle on the page and fills it with the current brushColor color.
@@ -796,7 +796,7 @@ func (page *Page) DrawCircle(x, y, r float32) {
 // @param r the radius of the circle to be drawn.
 // @param operation must be Operation.STROKE, Operation.CLOSE or Operation.FILL.
 func (page *Page) FillCircle(x, y, r float32) {
-	page.drawEllipse(x, y, r, r, operator.Fill)
+	page.drawEllipse(x, y, r, r, pathoperator.Fill)
 }
 
 // DrawEllipse draws an ellipse on the page using the current penColor color.
@@ -805,7 +805,7 @@ func (page *Page) FillCircle(x, y, r float32) {
 // @param r1 the horizontal radius of the ellipse to be drawn.
 // @param r2 the vertical radius of the ellipse to be drawn.
 func (page *Page) DrawEllipse(x, y, r1, r2 float32) {
-	page.drawEllipse(x, y, r1, r2, operator.Stroke)
+	page.drawEllipse(x, y, r1, r2, pathoperator.Stroke)
 }
 
 // FillEllipse fills an ellipse on the page using the current penColor color.
@@ -814,7 +814,7 @@ func (page *Page) DrawEllipse(x, y, r1, r2 float32) {
 // @param r1 the horizontal radius of the ellipse to be drawn.
 // @param r2 the vertical radius of the ellipse to be drawn.
 func (page *Page) FillEllipse(x, y, r1, r2 float32) {
-	page.drawEllipse(x, y, r1, r2, operator.Fill)
+	page.drawEllipse(x, y, r1, r2, pathoperator.Fill)
 }
 
 // drawEllipse draws an ellipse on the page and fills it using the current brushColor color.
@@ -872,9 +872,9 @@ func (page *Page) DrawPoint(p *Point) {
 			list = append(list, NewPoint(p.x, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y))
 			if p.fillShape {
-				page.DrawPath(list, operator.Fill)
+				page.DrawPath(list, pathoperator.Fill)
 			} else {
-				page.DrawPath(list, operator.CloseAndStroke)
+				page.DrawPath(list, pathoperator.CloseAndStroke)
 			}
 		case shape.Box:
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
@@ -882,9 +882,9 @@ func (page *Page) DrawPoint(p *Point) {
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
 			if p.fillShape {
-				page.DrawPath(list, operator.Fill)
+				page.DrawPath(list, pathoperator.Fill)
 			} else {
-				page.DrawPath(list, operator.CloseAndStroke)
+				page.DrawPath(list, pathoperator.CloseAndStroke)
 			}
 		case shape.Plus:
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
@@ -894,36 +894,36 @@ func (page *Page) DrawPoint(p *Point) {
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
 			if p.fillShape {
-				page.DrawPath(list, operator.Fill)
+				page.DrawPath(list, pathoperator.Fill)
 			} else {
-				page.DrawPath(list, operator.CloseAndStroke)
+				page.DrawPath(list, pathoperator.CloseAndStroke)
 			}
 		case shape.DownArrow:
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x, p.y+p.r))
 			if p.fillShape {
-				page.DrawPath(list, operator.Fill)
+				page.DrawPath(list, pathoperator.Fill)
 			} else {
-				page.DrawPath(list, operator.CloseAndStroke)
+				page.DrawPath(list, pathoperator.CloseAndStroke)
 			}
 		case shape.LeftArrow:
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y))
 			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
 			if p.fillShape {
-				page.DrawPath(list, operator.Fill)
+				page.DrawPath(list, pathoperator.Fill)
 			} else {
-				page.DrawPath(list, operator.CloseAndStroke)
+				page.DrawPath(list, pathoperator.CloseAndStroke)
 			}
 		case shape.RightArrow:
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y))
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
 			if p.fillShape {
-				page.DrawPath(list, operator.Fill)
+				page.DrawPath(list, pathoperator.Fill)
 			} else {
-				page.DrawPath(list, operator.CloseAndStroke)
+				page.DrawPath(list, pathoperator.CloseAndStroke)
 			}
 		case shape.HDash:
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
@@ -951,9 +951,9 @@ func (page *Page) DrawPoint(p *Point) {
 			list = append(list, NewPoint(p.x+a, p.y-b))
 			list = append(list, NewPoint(p.x-c, p.y+d))
 			if p.fillShape {
-				page.DrawPath(list, operator.Fill)
+				page.DrawPath(list, pathoperator.Fill)
 			} else {
-				page.DrawPath(list, operator.CloseAndStroke)
+				page.DrawPath(list, pathoperator.CloseAndStroke)
 			}
 		default:
 			panic("unhandled default case")

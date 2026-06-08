@@ -525,7 +525,7 @@ public class Chart : IDrawable {
                 }
             }
             for (int i = 0; i < points.Count; i++) {
-		point = points[i];
+		        point = points[i];
                 if (point.GetShape() != Point.INVISIBLE) {
                     page.SetPenWidth(point.strokeWidth);
                     page.SetStrokeDashPattern(point.strokePattern);

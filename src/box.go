@@ -9,7 +9,7 @@ package pdfjet
 
 import (
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/operator"
+	"github.com/edragoev1/pdfjet/src/pathoperator"
 	"github.com/edragoev1/pdfjet/src/single"
 	"github.com/edragoev1/pdfjet/src/structtype"
 )
@@ -220,7 +220,7 @@ func (box *Box) DrawOn(page *Page) []float32 {
 		points = append(points, NewControlPointC((box.x+box.r)-box.r*k, box.y))
 		points = append(points, NewPoint(box.x+box.r, box.y))
 
-		page.DrawPath(points, operator.Stroke)
+		page.DrawPath(points, pathoperator.Stroke)
 	}
 	page.AddEMC()
 

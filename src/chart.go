@@ -12,7 +12,7 @@ import (
 	"math"
 
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/operator"
+	"github.com/edragoev1/pdfjet/src/pathoperator"
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
@@ -428,12 +428,11 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			page.SetPenColorRGB(point.strokeColor)
 			page.SetPenWidth(point.lineWidth)
 			page.SetStrokeDashPattern(point.linePattern)
-			page.DrawPath(points, operator.Stroke)
+			page.DrawPath(points, pathoperator.Stroke)
 			if point.GetText() != "" {
-				page.SetBrushColorRGB(point.textColor)
 				page.SetTextDirection(point.GetTextDirection())
 				page.drawString(
-					chart.f2, chart.f2.size, point.text, point.x, point.y, [3]float32{0.0, 0.0, 0.0}, nil)
+					chart.f2, chart.f2.size, point.text, point.x, point.y, point.textColor, nil)
 			}
 		}
 		for j := 0; j < len(points); j++ {
