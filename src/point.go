@@ -10,6 +10,7 @@ package pdfjet
 import (
 	"github.com/edragoev1/pdfjet/src/alignment"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/pathoperator"
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
@@ -18,22 +19,33 @@ import (
 // we are talking about the coordinates of the center of the point.
 // Please see Example_05.
 type Point struct {
-	x, y          float32
-	r             float32
-	shape         int
-	color         int32
-	align         int
-	lineWidth     float32
-	linePattern   string
-	fillShape     bool
-	controlPoint  string
-	drawPath      bool
+	x, y  float32
+	r     float32
+	shape int
+	color int32
+	align int
+
+	fillColor      [3]float32
+	hasFillColor   bool
+	strokeWidth    float32
+	strokeColor    [3]float32
+	hasStrokeColor bool
+	strokePattern  string
+	pathOperator   string
+
+	controlPoint string
+	drawPath     bool
+
 	text          string
 	textColor     int32
 	textDirection int
 	uri, key      string
-	xBox          float32
-	yBox          float32
+
+	lineWidth   float32
+	linePattern string
+	fillShape   bool
+	xBox        float32
+	yBox        float32
 }
 
 // NewPoint constructor for creating point objects.
@@ -48,6 +60,9 @@ func NewPoint(x, y float32) *Point {
 	point.shape = shape.Circle
 	point.color = color.Black
 	point.align = alignment.Right
+	point.strokeWidth = 1.0
+	point.strokePattern = "[] 0"
+	point.pathOperator = "s" // CLOSE_AND_STROKE
 	point.lineWidth = 0.0
 	point.linePattern = "[] 0"
 	return point
@@ -310,21 +325,23 @@ func (point *Point) PlaceIn(box *Box, xOffset, yOffset float32) {
 // DrawOn draws this point on the specified page.
 // @param page the page to draw this point on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (point *Point) DrawOn(page *Page) []float32 {
-	page.SetPenWidth(point.lineWidth)
-	page.SetStrokeDashPattern(point.linePattern)
-
-	if point.fillShape {
-		page.SetBrushColor(point.color)
-	} else {
-		page.SetPenColor(point.color)
+func (point *Point) DrawOn(page *Page) [3]float32 {
+	page.appendString("q\n")
+	if point.hasFillColor == true && point.hasStrokeColor == true {
+		page.SetBrushColorRGB(point.fillColor)
+		page.SetPenColorRGB(point.strokeColor)
+		page.SetPenWidth(point.strokeWidth)
+		point.pathOperator = pathoperator.FillAndStroke
+	} else if point.hasFillColor == true && point.hasStrokeColor == false {
+		page.SetBrushColorRGB(point.fillColor)
+		point.pathOperator = pathoperator.Fill
+	} else if point.hasFillColor == false && point.hasStrokeColor != true {
+		page.SetPenColorRGB(point.strokeColor)
+		page.SetPenWidth(point.strokeWidth)
+		point.pathOperator = pathoperator.CloseAndStroke
 	}
-
-	point.x += point.xBox
-	point.y += point.yBox
 	page.DrawPoint(point)
-	point.x -= point.xBox
-	point.y -= point.yBox
+	page.appendString("Q\n")
 
-	return []float32{point.x + point.xBox + point.r, point.y + point.yBox + point.r}
+	return [3]float32{point.x + point.xBox + point.r, point.y + point.yBox + point.r}
 }
