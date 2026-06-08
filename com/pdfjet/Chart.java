@@ -559,7 +559,7 @@ public class Chart implements Drawable {
                         fontSize,
                         point.getText(),
                         point.x + 1.5f*f2.getDescent(),
-                        point.y,
+                        point.y + fontSize/3f,
                         point.getTextColor(),
                         null);
                 }

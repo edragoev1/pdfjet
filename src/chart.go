@@ -432,7 +432,13 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			if point.GetText() != "" {
 				page.SetTextDirection(point.GetTextDirection())
 				page.drawString(
-					chart.f2, chart.f2.size, point.text, point.x, point.y, point.textColor, nil)
+					chart.f2,
+					chart.f2.size,
+					point.text,
+					point.x+1.5*chart.f2.descent,
+					point.y+chart.f2.size/3.0,
+					point.textColor,
+					nil)
 			}
 		}
 		for j := 0; j < len(points); j++ {

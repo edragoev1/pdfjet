@@ -519,7 +519,7 @@ public class Chart : IDrawable {
                         fontSize,
                         point.GetText(),
                         point.x + 1.5f*f2.GetDescent(),
-                        point.y,
+                        point.y + fontSize/3f,
                         point.GetTextColor(),
                         null);
                 }

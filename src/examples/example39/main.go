@@ -18,7 +18,7 @@ func Example39() {
 	f1.SetItalic(true)
 	f1.SetSize(10.0)
 
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f2 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f2.SetItalic(true)
 	f2.SetSize(8.0)
 
