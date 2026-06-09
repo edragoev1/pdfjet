@@ -350,16 +350,20 @@ namespace PDFjet.NET {
                 UnderlineText(textLines);
             }
 
-            if (borderColor != null) {
+            if (borderColor != null || fillColor != null) {
                 Rect rect = new Rect(
                     this.x,
                     this.y,
                     this.width,
                     MathF.Max(this.height, textLines.Length * leading + 2 * this.textPadding));
-                rect.SetFillColor(this.fillColor);
-                rect.SetBorderWidth(this.borderWidth);
-                rect.SetBorderColor(this.borderColor);
-                rect.SetCornerRadius(this.borderCornerRadius);
+                if (borderColor != null) {
+                    rect.SetBorderColor(this.borderColor);
+                    rect.SetBorderWidth(this.borderWidth);
+                    rect.SetCornerRadius(this.borderCornerRadius);
+                }
+                if (fillColor != null) {
+                    rect.SetFillColor(this.fillColor);
+                }
                 rect.DrawOn(page);
             }
 
