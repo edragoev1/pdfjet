@@ -171,17 +171,18 @@ func (textBlock *TextBlock) SetBorderWidth(borderWidth float32) {
 	textBlock.borderWidth = borderWidth
 }
 
-// SetBorderColorRGB sets the penColor color.
-// @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetBorderColorRGB(borderColor [3]float32) {
-	textBlock.borderColor = borderColor
-}
-
 func (textBlock *TextBlock) SetBorderColor(color int32) {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	textBlock.borderColor = [3]float32{r, g, b}
+}
+
+// SetBorderColorRGB sets the penColor color.
+// @param color the color specified as 0xRRGGBB integer.
+func (textBlock *TextBlock) SetBorderColorRGB(borderColor [3]float32) {
+	textBlock.borderColor = borderColor
+	textBlock.hasBorderColor = true
 }
 
 // SetLineSpacing sets the extra leading between lines of text.
@@ -206,11 +207,16 @@ func (textBlock *TextBlock) SetTextColor(color int32) {
 
 // SetFillColor sets the text color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetFillColor(color int32) {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+func (textBlock *TextBlock) SetFillColor(fillColor int32) {
+	r := float32((fillColor>>16)&0xff) / 255.0
+	g := float32((fillColor>>8)&0xff) / 255.0
+	b := float32((fillColor)&0xff) / 255.0
 	textBlock.fillColor = [3]float32{r, g, b}
+}
+
+func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) {
+	textBlock.fillColor = fillColor
+	textBlock.hasFillColor = true
 }
 
 // SetHighlightColors sets the text colors map.
