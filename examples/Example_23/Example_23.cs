@@ -72,12 +72,12 @@ public class Example_23 {
                 y1 + f1.GetAscent(f1.GetSize()));
         baseLine.DrawOn(page);
 
-        Line descentLine1 = new Line(
+        Line descentLine = new Line(
                 x1,
                 y1 + f1.GetBodyHeight(f1.GetSize()),
                 xy[0],
                 y1 + f1.GetBodyHeight(f1.GetSize()));
-        descentLine1.DrawOn(page);
+        descentLine.DrawOn(page);
 
         Line ascentLine = new Line(
                 x1,

@@ -43,7 +43,6 @@ public class Example_23 {
         descentText.setLocation(x1 - 85.0, y1 + f1.getAscent() + 15.0)
         descentText.drawOn(page)
 
-        // Line beside the text ascent
         let blueLine = Line(
             x1 - 10.0,
             y1,
@@ -53,7 +52,6 @@ public class Example_23 {
         blueLine.setWidth(3.0)
         blueLine.drawOn(page)
 
-        // Line beside the text descent
         let redLine = Line(
             x1 - 10.0,
             y1 + f1.getAscent(),
@@ -63,7 +61,6 @@ public class Example_23 {
         redLine.setWidth(3.0)
         redLine.drawOn(page)
 
-        // Lines for first line of text
         let textLine1 = Line(
                 x1,
                 y1 + f1.getAscent(),
@@ -73,27 +70,17 @@ public class Example_23 {
 
         let descentLine1 = Line(
                 x1,
-                y1 + (f1.getAscent() + f1.getDescent()),
+                y1 + f1.getAscent() + f1.getDescent(),
                 xy[0],
-                y1 + (f1.getAscent() + f1.getDescent()))
+                y1 + f1.getAscent() + f1.getDescent())
         descentLine1.drawOn(page)
 
-        // Lines for second line of text
-        let curr_y = y1 + f1.getBodyHeight()
-
-        let textLine2 = Line(
+        let ascentLine = Line(
                 x1,
-                curr_y + f1.getAscent(),
+                y1 + f1.getBodyHeight() + f1.getAscent(),
                 xy[0],
-                curr_y + f1.getAscent())
-        textLine2.drawOn(page)
-
-        let descentLine2 = Line(
-                x1,
-                curr_y + f1.getAscent() + f1.getDescent(),
-                xy[0],
-                curr_y + f1.getAscent() + f1.getDescent())
-        descentLine2.drawOn(page)
+                y1 + f1.getBodyHeight() + f1.getAscent())
+        ascentLine.drawOn(page)
 
         let p1 = Point(x1, y1)
         p1.setRadius(5.0)
