@@ -329,7 +329,7 @@ public class TextBlock {
             underlineText(textLines);
         }
 
-        if (borderColor != null) {
+        if (borderColor != null) {  // TODO
             Rect rect = new Rect(
                 this.x,
                 this.y,
