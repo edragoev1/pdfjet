@@ -40,6 +40,8 @@ func Example31() {
 	page.SetBrushColor(color.Blue)
 	page.FillRect(50.0, 200.0, 200.0, 200.0)
 
+	page.SaveGraphicsState()
+
 	gs := pdfjet.NewGraphicsState()
 	gs.SetAlphaStroking(0.5)    // The stroking alpha constant
 	gs.SetAlphaNonStroking(0.5) // The non-stroking alpha constant
@@ -53,8 +55,7 @@ func Example31() {
 	page.SetBrushColor(color.Red)
 	page.FillRect(150.0, 300.0, 200.0, 200.0)
 
-	// Reset the parameters to the default values
-	page.SetGraphicsState(pdfjet.NewGraphicsState())
+	page.RestoreGraphicsState()
 
 	page.SetPenColor(color.Orange)
 	page.SetBrushColor(color.Orange)
