@@ -303,7 +303,7 @@ public class TextBlock {
     }
 
     public float[] drawOn(Page page) throws Exception {
-        if (page == null) {     // TODO: We don't need this??
+        if (page == null) {
             throw new IllegalArgumentException("A valid Page object is required.");
         }
 
@@ -336,8 +336,8 @@ public class TextBlock {
                 this.width,
                 Math.max(this.height, textLines.length * leading + 2 * this.textPadding));
             if (borderColor != null) {
-                rect.setBorderWidth(this.borderWidth);
                 rect.setBorderColor(this.borderColor);
+                rect.setBorderWidth(this.borderWidth);
                 rect.setCornerRadius(this.borderCornerRadius);
             }
             if (fillColor != null) {
