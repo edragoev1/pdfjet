@@ -4,17 +4,18 @@ import java.io.*;
 import com.pdfjet.*;
 
 /**
- *  Example_31.java
+ * Example_31.java
  */
 public class Example_31 {
     public Example_31() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_31.pdf")));
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-
-        Font f1 = new Font(pdf, "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream");
+        Font f1 = new Font(pdf,
+                "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream");
         f1.setSize(15f);
+
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextBox textBox = new TextBox(f1, Content.ofTextFile("data/languages/english.txt"));
         textBox.setWidth(500f);

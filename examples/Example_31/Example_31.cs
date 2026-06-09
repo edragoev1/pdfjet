@@ -5,28 +5,20 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_31.cs
+ * Example_31.cs
  */
 public class Example_31 {
     public Example_31() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_31.pdf", FileMode.Create)));
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-
-        Font f1 = new Font(pdf, NotoSans.Regular);
+        Font f1 = new Font(pdf,
+                "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream");
         f1.SetSize(15f);
 
-        StringBuilder buf = new StringBuilder();
-        StreamReader reader = new StreamReader(
-                new FileStream("data/marathi.txt", FileMode.Open, FileAccess.Read));
-        String line = null;
-        while ((line = reader.ReadLine()) != null) {
-            buf.Append(line + "\n");
-        }
-        reader.Close();
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBox textBox = new TextBox(f1, buf.ToString(), 500f, 300f);
+        TextBox textBox = new TextBox(f1, Content.OfTextFile("data/languages/marathi.txt"), 500f, 300f);
         textBox.SetLocation(50f, 50f);
         textBox.SetBorder(Border.LEFT);
         textBox.SetBorder(Border.RIGHT);
