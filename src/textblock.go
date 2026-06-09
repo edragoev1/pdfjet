@@ -8,7 +8,6 @@ package pdfjet
  */
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/alignment"
@@ -343,9 +342,9 @@ func maxFloat32(a, b float32) float32 {
 // @param page the Page where the TextBlock is to be drawn.
 // @param draw flag specifying if text block component should actually be drawn on the page.
 // @return x and y coordinates of the bottom right corner of text block component.
-func (textBlock *TextBlock) DrawOn(page *Page) ([2]float32, error) {
+func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	if page == nil {
-		return [2]float32{0.0, 0.0}, fmt.Errorf("a valid Page object is required")
+		return [2]float32{0.0, 0.0}
 	}
 
 	page.appendString("q\n")
@@ -416,5 +415,5 @@ func (textBlock *TextBlock) DrawOn(page *Page) ([2]float32, error) {
 		maxFloat32(
 			textBlock.y+textBlock.height,
 			textBlock.y+(float32(len(textLines))*leading)+(2*textBlock.textPadding)),
-	}, nil
+	}
 }
