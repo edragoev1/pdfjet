@@ -17,8 +17,7 @@ public class Example_31 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBox textBox = new TextBox(f1, Content.ofTextFile("data/languages/english.txt"));
-        textBox.setWidth(500f);
+        TextBox textBox = new TextBox(f1, Content.ofTextFile("data/languages/marathi.txt"), 500f, 300f);
         textBox.setLocation(50f, 50f);
         textBox.setBorder(Border.LEFT);
         textBox.setBorder(Border.RIGHT);
