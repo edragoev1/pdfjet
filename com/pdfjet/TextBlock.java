@@ -303,10 +303,6 @@ public class TextBlock {
     }
 
     public float[] drawOn(Page page) throws Exception {
-        if (page == null) {
-            throw new IllegalArgumentException("A valid Page object is required.");
-        }
-
         float ascent = this.font.getAscent(fontSize);
         float descent = this.font.getDescent(fontSize);
         float leading = (ascent + descent) * this.lineSpacing;

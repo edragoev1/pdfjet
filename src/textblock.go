@@ -344,6 +344,7 @@ func maxFloat32(a, b float32) float32 {
 // @return x and y coordinates of the bottom right corner of text block component.
 func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	if page == nil {
+		// TODO
 		return [2]float32{0.0, 0.0}
 	}
 
