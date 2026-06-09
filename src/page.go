@@ -68,7 +68,6 @@ type Page struct {
 	contents     []int
 	annots       []*Annotation
 	destinations []*Destination
-	savedStates  []*State
 
 	mcid int
 }
@@ -401,16 +400,20 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 	}
 }
 
+func (page *Page) SaveGraphicsState() {
+	page.appendString("q\n")
+}
+
 // SetGraphicsState sets the graphics state. Please see Example_31.
 // @param gs the graphics state to use.
 func (page *Page) SetGraphicsState(gs *GraphicsState) {
-	var buf strings.Builder
-	buf.WriteString("/CA ")
-	buf.WriteString(fmt.Sprintf("%.2f", gs.GetAlphaStroking()))
-	buf.WriteString(" ")
-	buf.WriteString("/ca ")
-	buf.WriteString(fmt.Sprintf("%.2f", gs.GetAlphaNonStroking()))
-	state := buf.String()
+	var sb strings.Builder
+	sb.WriteString("/CA ")
+	sb.WriteString(fmt.Sprintf("%.2f", gs.GetAlphaStroking()))
+	sb.WriteString(" ")
+	sb.WriteString("/ca ")
+	sb.WriteString(fmt.Sprintf("%.2f", gs.GetAlphaNonStroking()))
+	state := sb.String()
 	n, ok := page.pdf.states[state]
 	if !ok {
 		n = len(page.pdf.states) + 1
@@ -419,6 +422,10 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) {
 	page.appendString("/GS")
 	page.appendInteger(n)
 	page.appendString(" gs\n")
+}
+
+func (page *Page) RestoreGraphicsState() {
+	page.appendString("Q\n")
 }
 
 // SetPenColor sets the pen color using a packed RGB color integer.
@@ -1157,37 +1164,6 @@ func (page *Page) ClipRect(x, y, w, h float32) {
 	page.LineTo(x+w, y+h)
 	page.LineTo(x, y+h)
 	page.ClipPath()
-}
-
-func (page *Page) Save() {
-	page.appendString("q\n")
-	page.savedStates = append(page.savedStates, NewState(
-		page.penColor,
-		page.brushColor,
-		page.penWidth,
-		page.lineCapStyle,
-		page.lineJoinStyle,
-		page.linePattern))
-	page.savedHeight = page.height
-}
-
-func (page *Page) Restore() {
-	page.appendString("Q\n")
-	if len(page.savedStates) > 0 {
-		lastIndex := len(page.savedStates) - 1
-		savedState := page.savedStates[lastIndex]
-		page.penColor = savedState.GetPen()
-		page.brushColor = savedState.GetBrush()
-		page.penWidth = savedState.GetPenWidth()
-		page.lineCapStyle = savedState.GetLineCapStyle()
-		page.lineJoinStyle = savedState.GetLineJoinStyle()
-		page.linePattern = savedState.GetLinePattern()
-		page.savedStates = page.savedStates[:lastIndex] // Remove the last state
-	}
-	if page.savedHeight != math.MaxFloat32 {
-		page.height = page.savedHeight
-		page.savedHeight = math.MaxFloat32
-	}
 }
 
 // SetCropBox sets the page CropBox.
