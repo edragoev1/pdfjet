@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -22,6 +23,9 @@ import (
 // See: pdfjet.NewCJKFont
 func Example04() {
 	pdf := pdfjet.NewPDFFile("Example_04.pdf")
+
+	f0 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f0.SetSize(14.0)
 
 	// Chinese (Traditional) font
 	// Uses Adobe's Ming Standard Light font (明體)
@@ -55,18 +59,22 @@ func Example04() {
 	}
 	strContent := string(content)
 	lines := strings.Split(strContent, "\n")
-	text := pdfjet.NewTextLine(f1, "")
+	text := pdfjet.NewTextLine(f0, "")
 	for _, line := range lines {
-		if strings.Contains(line, "Simplified") {
+		text.SetText(line)
+		text.SetLocation(xPos, yPos)
+		text.DrawOn(page)
+		if strings.Contains(line, "Traditional") {
+			text.SetFont(f2)
+		} else if strings.Contains(line, "Simplified") {
 			text.SetFont(f2)
 		} else if strings.Contains(line, "Japanese") {
 			text.SetFont(f3)
 		} else if strings.Contains(line, "Korean") {
 			text.SetFont(f4)
+		} else {
+			text.SetFont(f0)
 		}
-		text.SetText(line)
-		text.SetLocation(xPos, yPos)
-		text.DrawOn(page)
 		yPos += 25.0
 	}
 
