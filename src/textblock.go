@@ -359,7 +359,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		textBlock.y,
 		textBlock.width,
 		maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding))
-	rect.SetFillColorRGB(textBlock.fillColor)
+	// rect.SetFillColorRGB(textBlock.fillColor)
 	// rect.SetTextColorRGB(textBlock.textColor)
 	// TODO:	rect.SetBorderWidth(textBlock.borderWidth)
 	rect.SetBorderColorRGB(textBlock.borderColor)
@@ -378,6 +378,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		textBlock.textColor,
 		textBlock.keywordHighlightColors)
 	page.AddEMC()
+	page.appendString("Q\n")
 
 	// You can uncomment and adapt if required.
 	/*
