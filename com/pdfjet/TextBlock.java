@@ -329,16 +329,20 @@ public class TextBlock {
             underlineText(textLines);
         }
 
-        if (borderColor != null) {  // TODO
+        if (borderColor != null || fillColor != null) {
             Rect rect = new Rect(
                 this.x,
                 this.y,
                 this.width,
                 Math.max(this.height, textLines.length * leading + 2 * this.textPadding));
-            rect.setFillColor(this.fillColor);
-            rect.setBorderWidth(this.borderWidth);
-            rect.setBorderColor(this.borderColor);
-            rect.setCornerRadius(this.borderCornerRadius);
+            if (borderColor != null) {
+                rect.setBorderWidth(this.borderWidth);
+                rect.setBorderColor(this.borderColor);
+                rect.setCornerRadius(this.borderCornerRadius);
+            }
+            if (fillColor != null) {
+                rect.setFillColor(this.fillColor);
+            }
             rect.drawOn(page);
         }
 

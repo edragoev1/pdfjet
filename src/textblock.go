@@ -27,8 +27,11 @@ type TextBlock struct {
 	textPadding  float32
 
 	fillColor          [3]float32
+	hasFillColor       bool
 	textColor          [3]float32
+	hasTextColor       bool
 	borderColor        [3]float32
+	hasBorderColor     bool
 	borderWidth        float32
 	borderCornerRadius float32
 
@@ -353,19 +356,22 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	default:
 	}
 
-	// if textBlock.borderColor != nil {  // TODO
-	rect := NewRect(
-		textBlock.x,
-		textBlock.y,
-		textBlock.width,
-		maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding))
-	// rect.SetFillColorRGB(textBlock.fillColor)
-	// rect.SetTextColorRGB(textBlock.textColor)
-	// TODO:	rect.SetBorderWidth(textBlock.borderWidth)
-	rect.SetBorderColorRGB(textBlock.borderColor)
-	rect.SetCornerRadius(textBlock.borderCornerRadius)
-	rect.DrawOn(page)
-	// }
+	if textBlock.hasBorderColor || textBlock.hasFillColor {
+		rect := NewRect(
+			textBlock.x,
+			textBlock.y,
+			textBlock.width,
+			maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding))
+		if rect.hasBorderColor {
+			rect.SetBorderColorRGB(textBlock.borderColor)
+			rect.SetBorderWidth(textBlock.borderWidth)
+			rect.SetCornerRadius(textBlock.borderCornerRadius)
+		}
+		if rect.hasFillColor {
+			rect.SetFillColorRGB(textBlock.fillColor)
+		}
+		rect.DrawOn(page)
+	}
 
 	page.AddBMC("P", textBlock.uriLanguage, textBlock.textContent, "")
 	page.drawTextBlock(

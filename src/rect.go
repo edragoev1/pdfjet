@@ -93,9 +93,9 @@ func (rect *Rect) SetFillColorRGB(fillColor [3]float32) {
 	rect.hasFillColor = true
 }
 
-// SetLineWidth sets the width of this line.
+// SetBorderWidth sets the width of this line.
 // @param width the width.
-func (rect *Rect) SetLineWidth(borderWidth float32) {
+func (rect *Rect) SetBorderWidth(borderWidth float32) {
 	rect.borderWidth = borderWidth
 }
 
