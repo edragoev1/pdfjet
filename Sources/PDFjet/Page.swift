@@ -447,26 +447,34 @@ public class Page {
         }
     }
 
+    public func saveGraphicsState() {
+        append("q\n")
+    }
+
     ///
     /// Sets the graphics state. Please see Example_31.
     ///
     /// - Parameter gs the graphics state to use.
     ///
     public final func setGraphicsState(_ gs: GraphicsState) {
-        var buf = String()
-        buf.append("/CA ")
-        buf.append(String(gs.getAlphaStroking()))
-        buf.append(" ")
-        buf.append("/ca ")
-        buf.append(String(gs.getAlphaNonStroking()))
-        var n = pdf.states[buf]
+        var sb = String()
+        sb.append("/CA ")
+        sb.append(String(gs.getAlphaStroking()))
+        sb.append(" ")
+        sb.append("/ca ")
+        sb.append(String(gs.getAlphaNonStroking()))
+        var n = pdf.states[sb]
         if n == nil {
             n = pdf.states.count + 1
-            pdf.states[buf] = n
+            pdf.states[sb] = n
         }
         append("/GS")
         append(n!)
         append(" gs\n")
+    }
+
+    public func restoreGraphicsState() {
+        append("Q\n")
     }
 
     // setPenColor sets the pen color using a 24-bit RGB color integer.
@@ -1311,29 +1319,6 @@ public class Page {
         clipPath()
     }
 
-    public func save() {
-        append("q\n")
-        savedStates.append(State(
-                self.penColor,
-                self.brushColor,
-                self.penWidth,
-                self.lineCapStyle,
-                self.lineJoinStyle,
-                self.linePattern))
-    }
-
-    public func restore() {
-        append("Q\n")
-        if savedStates.count > 0 {
-            let savedState = savedStates.remove(at: savedStates.count - 1)
-            self.penColor = savedState.getPen()
-            self.brushColor = savedState.getBrush()
-            self.penWidth = savedState.getPenWidth()
-            self.lineCapStyle = savedState.getLineCapStyle()
-            self.lineJoinStyle = savedState.getLineJoinStyle()
-            self.linePattern = savedState.getLinePattern()
-        }
-    }
     // <<
 
     ///

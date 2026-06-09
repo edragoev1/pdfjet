@@ -13,7 +13,7 @@ public class Example_31 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let str = try String(contentsOfFile: "data/marathi.txt", encoding: .utf8)
+        let str = try String(contentsOfFile: "data/languages/marathi.txt", encoding: .utf8)
 
         let textBlock = TextBlock(f1, str)
         textBlock.setWidth(500.0)
@@ -29,6 +29,8 @@ public class Example_31 {
         page.setBrushColor(Color.blue)
         page.fillRect(50.0, 200.0, 200.0, 200.0)
 
+        page.saveGraphicsState()
+
         let gs = GraphicsState()
         gs.setAlphaStroking(0.5)    // The stroking alpha constant
         gs.setAlphaNonStroking(0.5) // The non-stroking alpha constant
@@ -42,12 +44,12 @@ public class Example_31 {
         page.setBrushColor(Color.red)
         page.fillRect(150, 300, 200.0, 200.0)
 
-        // Reset the parameters to the default values
-        page.setGraphicsState(GraphicsState())
+        page.restoreGraphicsState()
 
         page.setPenColor(Color.orange)
         page.setBrushColor(Color.orange)
         page.fillRect(200, 350, 200.0, 200.0)
+
         page.setBrushColor(0x00003865)
         page.fillRect(50, 550, 200.0, 200.0)
 
