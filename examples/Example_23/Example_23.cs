@@ -47,57 +47,44 @@ public class Example_23 {
         descentText.SetLocation(x1 - 85f, y1 + f1.GetAscent(f1.GetSize()) + 15f);
         descentText.DrawOn(page);
 
-        // Line beside the text ascent
-        Line ascentLine = new Line(
+        Line blueLine = new Line(
             x1 - 10f,
             y1,
             x1 - 10f,
             y1 + f1.GetAscent());
-        ascentLine.SetColor(Color.blue);
-        ascentLine.SetWidth(3f);
-        ascentLine.DrawOn(page);
+        blueLine.SetColor(Color.blue);
+        blueLine.SetWidth(3f);
+        blueLine.DrawOn(page);
 
-        // Line beside the text descent
-        Line descentLine = new Line(
+        Line redLine = new Line(
                 x1 - 10f,
                 y1 + f1.GetAscent(f1.GetSize()),
                 x1 - 10f,
                 y1 + f1.GetBodyHeight(f1.GetSize()));
-        descentLine.SetColor(Color.red);
-        descentLine.SetWidth(3f);
-        descentLine.DrawOn(page);
+        redLine.SetColor(Color.red);
+        redLine.SetWidth(3f);
+        redLine.DrawOn(page);
 
-        // Lines for first line of text
-        Line textLine1 = new Line(
+        Line baseLine = new Line(
                 x1,
                 y1 + f1.GetAscent(f1.GetSize()),
-                xy[1],
+                xy[0],
                 y1 + f1.GetAscent(f1.GetSize()));
-        textLine1.DrawOn(page);
+        baseLine.DrawOn(page);
 
         Line descentLine1 = new Line(
                 x1,
                 y1 + f1.GetBodyHeight(f1.GetSize()),
-                xy[1],
+                xy[0],
                 y1 + f1.GetBodyHeight(f1.GetSize()));
         descentLine1.DrawOn(page);
 
-        // Lines for second line of text
-        float curr_y = y1 + f1.GetBodyHeight(f1.GetSize());
-
-        Line textLine2 = new Line(
+        Line ascentLine = new Line(
                 x1,
-                curr_y + f1.GetAscent(f1.GetSize()),
-                xy[1],
-                curr_y + f1.GetAscent(f1.GetSize()));
-        textLine2.DrawOn(page);
-
-        Line descentLine2 = new Line(
-                x1,
-                curr_y + f1.GetBodyHeight(f1.GetSize()),
-                xy[1],
-                curr_y + f1.GetBodyHeight(f1.GetSize()));
-        descentLine2.DrawOn(page);
+                y1 + f1.GetBodyHeight(f1.GetSize()) + f1.GetAscent(f1.GetSize()),
+                xy[0],
+                y1 + f1.GetBodyHeight(f1.GetSize()) + f1.GetAscent(f1.GetSize()));
+        ascentLine.DrawOn(page);
 
         Point p1 = new Point(x1, y1);
         p1.SetRadius(5f);
