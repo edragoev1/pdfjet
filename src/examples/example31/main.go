@@ -1,14 +1,11 @@
 package main
 
 import (
-	"bufio"
-	"log"
-	"os"
-	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -21,27 +18,13 @@ func Example31() {
 	pdf.SetKeywords("Hello World This is a test")
 	pdf.SetCreator("Application Name")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(
+		pdf, "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream")
 	f1.SetSize(15.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	file3, err := os.Open("data/languages/marathi.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file3.Close()
-
-	var buf strings.Builder
-	scanner := bufio.NewScanner(file3)
-	for scanner.Scan() {
-		buf.WriteString(scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	textBlock := pdfjet.NewTextBlock(f1, buf.String())
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/marathi.txt"))
 	textBlock.SetLocation(500.0, 300.0)
 	textBlock.SetLocation(50.0, 50.0)
 	//textBlock.SetBorder(border.Left)
