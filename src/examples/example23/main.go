@@ -49,57 +49,44 @@ func Example23() {
 	descentText.SetLocation(x1-85.0, y1+f1.GetAscent(f1.GetSize())+15.0)
 	descentText.DrawOn(page)
 
-	// Line beside the text ascent
-	ascentLine := pdfjet.NewLine(
+	blueLine := pdfjet.NewLine(
 		x1-10.0,
 		y1,
 		x1-10.0,
 		y1+f1.GetAscent(f1.GetSize()))
-	ascentLine.SetColor(color.Blue)
-	ascentLine.SetWidth(3.0)
-	ascentLine.DrawOn(page)
+	blueLine.SetColor(color.Blue)
+	blueLine.SetWidth(3.0)
+	blueLine.DrawOn(page)
 
-	// Line beside the text descent
-	descentLine := pdfjet.NewLine(
+	redLine := pdfjet.NewLine(
 		x1-10.0,
 		y1+f1.GetAscent(f1.GetSize()),
 		x1-10.0,
 		y1+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()))
-	descentLine.SetColor(color.Red)
-	descentLine.SetWidth(3.0)
-	descentLine.DrawOn(page)
+	redLine.SetColor(color.Red)
+	redLine.SetWidth(3.0)
+	redLine.DrawOn(page)
 
-	// Lines for first line of text
-	textLine1 := pdfjet.NewLine(
+	baseLine := pdfjet.NewLine(
 		x1,
 		y1+f1.GetAscent(f1.GetSize()),
-		xy[1],
+		xy[0],
 		y1+f1.GetAscent(f1.GetSize()))
-	textLine1.DrawOn(page)
+	baseLine.DrawOn(page)
 
-	descentLine1 := pdfjet.NewLine(
+	descentLine := pdfjet.NewLine(
 		x1,
-		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())),
-		xy[1],
-		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())))
-	descentLine1.DrawOn(page)
+		y1+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()),
+		xy[0],
+		y1+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()))
+	descentLine.DrawOn(page)
 
-	// Lines for second line of text
-	curr_y := y1 + f1.GetBodyHeight(f1.GetSize())
-
-	textLine2 := pdfjet.NewLine(
+	ascentLine := pdfjet.NewLine(
 		x1,
-		curr_y+f1.GetAscent(f1.GetSize()),
-		xy[1],
-		curr_y+f1.GetAscent(f1.GetSize()))
-	textLine2.DrawOn(page)
-
-	descentLine2 := pdfjet.NewLine(
-		x1,
-		curr_y+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()),
-		xy[1],
-		curr_y+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()))
-	descentLine2.DrawOn(page)
+		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()),
+		xy[0],
+		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()))
+	ascentLine.DrawOn(page)
 
 	p1 := pdfjet.NewPoint(x1, y1)
 	p1.SetRadius(5.0)
