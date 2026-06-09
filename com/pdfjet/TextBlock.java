@@ -303,6 +303,11 @@ public class TextBlock {
     }
 
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            // TODO
+            return new float[] {0f, 0f};
+        }
+
         float ascent = this.font.getAscent(fontSize);
         float descent = this.font.getDescent(fontSize);
         float leading = (ascent + descent) * this.lineSpacing;
