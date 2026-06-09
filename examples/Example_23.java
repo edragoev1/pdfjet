@@ -65,37 +65,26 @@ public class Example_23 {
         redLine.setWidth(3f);
         redLine.drawOn(page);
 
-        // Lines for first line of text
-        Line textLine1 = new Line(
+        Line baseLine = new Line(
                 x1,
                 y1 + f1.getAscent(),
                 xy[0],
                 y1 + f1.getAscent());
-        textLine1.drawOn(page);
+        baseLine.drawOn(page);
 
-        Line descentLine1 = new Line(
+        Line descentLine = new Line(
                 x1,
                 y1 + (f1.getAscent() + f1.getDescent()),
                 xy[0],
                 y1 + (f1.getAscent() + f1.getDescent()));
-        descentLine1.drawOn(page);
+        descentLine.drawOn(page);
 
-        // Lines for second line of text
-        float curr_y = y1 + f1.getBodyHeight();
-
-        Line textLine2 = new Line(
+        Line ascentLine = new Line(
                 x1,
-                curr_y + f1.getAscent(),
+                y1 + f1.getBodyHeight() + f1.getAscent(),
                 xy[0],
-                curr_y + f1.getAscent());
-        textLine2.drawOn(page);
-
-        Line descentLine2 = new Line(
-                x1,
-                curr_y + f1.getAscent() + f1.getDescent(),
-                xy[0],
-                curr_y + f1.getAscent() + f1.getDescent());
-        descentLine2.drawOn(page);
+                y1 + f1.getBodyHeight() + f1.getAscent());
+        ascentLine.drawOn(page);
 
         Point p1 = new Point(x1, y1);
         p1.setRadius(5f);
