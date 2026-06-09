@@ -13,5 +13,5 @@ cd ..
 
 ./Example_$1.exe
 
-# mupdf Example_$1.pdf
-evince Example_$1.pdf
+mupdf Example_$1.pdf
+# evince Example_$1.pdf

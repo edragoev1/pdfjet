@@ -24,6 +24,5 @@ javac -O -encoding utf-8 -Xlint \
 javac -encoding utf-8 -Xlint -cp out/production examples/Example_$1.java -d out/production
 java -cp out/production examples.Example_$1
 
-# firefox Example_$1.pdf
-# mupdf Example_$1.pdf
-evince Example_$1.pdf
+mupdf Example_$1.pdf
+# evince Example_$1.pdf

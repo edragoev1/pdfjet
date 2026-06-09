@@ -17,5 +17,5 @@ dotnet build examples/Example_$1/Example_$1.csproj -c release
 dotnet examples/Example_$1/bin/release/net8.0/Example_$1.dll
 
 # Open the generated PDF for the specified Example
-evince Example_$1.pdf
-# mupdf Example_$1.pdf
+mupdf Example_$1.pdf
+# evince Example_$1.pdf
