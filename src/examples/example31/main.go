@@ -26,7 +26,7 @@ func Example31() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	file3, err := os.Open("data/marathi.txt")
+	file3, err := os.Open("data/languages/marathi.txt")
 	if err != nil {
 		log.Fatal(err)
 	}

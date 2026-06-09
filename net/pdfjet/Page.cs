@@ -60,7 +60,6 @@ public class Page {
     internal readonly List<Int32> contents;
     internal readonly List<Annotation> annots;
     internal readonly List<Destination> destinations;
-    internal readonly List<State> savedStates = new List<State>();
 
     private int mcid;
 
@@ -1486,8 +1485,6 @@ public class Page {
      */
     public void SaveGraphicsState() {
         Append("q\n");
-        savedStates.Add(new State(
-                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokePattern));
     }
 
     /**
@@ -1520,17 +1517,6 @@ public class Page {
      */
     public void RestoreGraphicsState() {
         Append("Q\n");
-        if (savedStates.Count > 0) {
-            int lastIndex = savedStates.Count - 1;
-            State savedState = savedStates[lastIndex];
-            brushColor = savedState.GetBrushColor();
-            penColor = savedState.GetPenColor();
-            penWidth = savedState.GetPenWidth();
-            lineCapStyle = savedState.GetLineCapStyle();
-            lineJoinStyle = savedState.GetLineJoinStyle();
-            strokePattern = savedState.GetStrokePattern();
-            savedStates.RemoveAt(lastIndex);
-        }
     }
 
     internal void AppendPointXY(float x, float y) {

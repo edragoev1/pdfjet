@@ -55,7 +55,6 @@ final public class Page {
     protected final List<Integer> contents = new ArrayList<Integer>();
     protected final List<Annotation> annots = new ArrayList<Annotation>();
     protected final List<Destination> destinations= new ArrayList<Destination>();
-    protected final List<State> savedStates = new ArrayList<State>();
 
     private int mcid = 0;
 
@@ -1486,8 +1485,6 @@ final public class Page {
      */
     public void saveGraphicsState() {
         append("q\n");
-        savedStates.add(new State(
-                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokePattern));
     }
 
     /**
@@ -1502,9 +1499,11 @@ final public class Page {
         sb.append(" ");
         sb.append("/ca ");
         sb.append(gs.getAlphaNonStroking());
-        String state = buf.toString();
-        Integer n = pdf.states.get(state);
-        if (n == null) {
+        String state = sb.toString();
+        Integer n;
+        if (pdf.states.containsKey(state)) {
+            n = pdf.states.get(state);
+        } else {
             n = pdf.states.size() + 1;
             pdf.states.put(state, n);
         }
@@ -1518,15 +1517,6 @@ final public class Page {
      */
     public void restoreGraphicsState() {
         append("Q\n");
-        if (savedStates.size() > 0) {
-            State savedState = savedStates.remove(savedStates.size() - 1);
-            brushColor = savedState.getBrushColor();
-            penColor = savedState.getPenColor();
-            penWidth = savedState.getPenWidth();
-            lineCapStyle = savedState.getLineCapStyle();
-            lineJoinStyle = savedState.getLineJoinStyle();
-            strokePattern = savedState.getStrokePattern();
-        }
     }
 
     /**
