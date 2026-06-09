@@ -24,7 +24,7 @@ public class Example_04 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_04.pdf", FileMode.Create)));
 
-        Font f0 = new Font(pdf, CoreFont.HELVETICA);
+        Font f0 = new Font(pdf, CoreFont.COURIER);
         f0.SetSize(14f);
 
         // Create font for Traditional Chinese text

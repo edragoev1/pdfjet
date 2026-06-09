@@ -24,7 +24,7 @@ public class Example_04 {
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_04.pdf")));
 
-        Font f0 = new Font(pdf, CoreFont.HELVETICA);
+        Font f0 = new Font(pdf, CoreFont.COURIER);
         f0.setSize(14f);
 
         // Create font for Traditional Chinese text

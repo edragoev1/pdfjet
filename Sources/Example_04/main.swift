@@ -21,6 +21,9 @@ public class Example_04 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_04.pdf", append: false)!)
 
+        let f0 = Font(pdf, CoreFont.COURIER)
+        f0.setSize(14.0)
+
         // Chinese (Traditional) font
         // Uses Adobe's Ming Standard Light font (明體)
         let f1 = Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT)
@@ -50,18 +53,22 @@ public class Example_04 {
         let lines = (try String(
                 contentsOfFile: fileName, encoding: .utf8)).components(separatedBy: .newlines)
 
-        let text = TextLine(f1)
+        let text = TextLine(f0)
         for line in lines {
-            if line.contains("Simplified") {
+            text.setText(line)
+            text.setLocation(x_pos, y_pos)
+            text.drawOn(page)
+            if line.contains("Traditional") {
+                text.setFont(f1)
+            } else if line.contains("Simplified") {
                 text.setFont(f2)
             } else if line.contains("Japanese") {
                 text.setFont(f3)
             } else if line.contains("Korean") {
                 text.setFont(f4)
+            } else {
+                text.setFont(f0)
             }
-            text.setText(line)
-            text.setLocation(x_pos, y_pos)
-            text.drawOn(page)
             y_pos += Float(25.0)
         }
 

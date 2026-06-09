@@ -24,7 +24,7 @@ import (
 func Example04() {
 	pdf := pdfjet.NewPDFFile("Example_04.pdf")
 
-	f0 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f0 := pdfjet.NewCoreFont(pdf, corefont.Courier())
 	f0.SetSize(14.0)
 
 	// Chinese (Traditional) font
