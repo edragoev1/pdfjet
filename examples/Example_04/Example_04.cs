@@ -24,6 +24,9 @@ public class Example_04 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_04.pdf", FileMode.Create)));
 
+        Font f0 = new Font(pdf, CoreFont.HELVETICA);
+        f0.SetSize(14f);
+
         // Create font for Traditional Chinese text
         // Uses Adobe's Ming Standard Light font (明體)
         Font f1 = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);
@@ -51,19 +54,23 @@ public class Example_04 {
         float y_pos = 100f;
         StreamReader reader = new StreamReader(
                 new FileStream(fileName, FileMode.Open, FileAccess.Read));
-        TextLine text = new TextLine(f1);
+        TextLine text = new TextLine(f0);
         String line = null;
         while ((line = reader.ReadLine()) != null) {
-            if (line.Contains("Simplified")) {
+            text.SetText(line);
+            text.SetLocation(x_pos, y_pos);
+            text.DrawOn(page);
+            if (line.Contains("Traditional")) {
+                text.SetFont(f1);
+            } else if (line.Contains("Simplified")) {
                 text.SetFont(f2);
             } else if (line.Contains("Japanese")) {
                 text.SetFont(f3);
             } else if (line.Contains("Korean")) {
                 text.SetFont(f4);
+            } else {
+                text.SetFont(f0);
             }
-            text.SetText(line);
-            text.SetLocation(x_pos, y_pos);
-            text.DrawOn(page);
             y_pos += 25f;
         }
         reader.Close();
