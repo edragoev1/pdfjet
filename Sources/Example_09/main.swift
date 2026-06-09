@@ -56,7 +56,7 @@ public class Example_09 {
         chart.setTitle("World View - Communications")
         chart.setXAxisTitle("Cell phones per capita")
         chart.setYAxisTitle("Internet users % of the population")
-        addTrendLine(chart)
+        // addTrendLine(chart)
         // chart.setXAxisMinMax(0.0, 100.0, 10)
         // chart.setYAxisMinMax(0.0, 100.0, 10)
         chart.drawOn(page)

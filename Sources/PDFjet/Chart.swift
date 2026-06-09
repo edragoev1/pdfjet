@@ -509,8 +509,12 @@ public class Chart : Drawable {
                     if point.getShape() != Point.INVISIBLE {
                         page.setPenWidth(point.lineWidth)
                         page.setStrokeDashPattern(point.linePattern)
-                        page.setPenColor(point.strokeColor)
-                        page.setBrushColor(point.fillColor)
+                        if point.strokeColor != nil {
+                            page.setPenColor(point.strokeColor)
+                        }
+                        if point.fillColor != nil {
+                            page.setBrushColor(point.fillColor)
+                        }
                         page.drawPoint(point)
                     }
                 }
