@@ -24,6 +24,9 @@ public class Example_04 {
         PDF pdf = new PDF(new BufferedOutputStream(
                 new FileOutputStream("Example_04.pdf")));
 
+        Font f0 = new Font(pdf, CoreFont.HELVETICA);
+        f0.setSize(14f);
+
         // Create font for Traditional Chinese text
         // Uses Adobe's Ming Standard Light font (明體)
         Font f1 = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);
@@ -51,19 +54,23 @@ public class Example_04 {
         float y_pos = 100f;
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
-        TextLine text = new TextLine(f1);
+        TextLine text = new TextLine(f0);
         String line = null;
         while ((line = reader.readLine()) != null) {
-            if (line.contains("Simplified")) {
+            text.setText(line);
+            text.setLocation(x_pos, y_pos);
+            text.drawOn(page);
+            if (line.contains("Traditional")) {
+                text.setFont(f1);
+            } else if (line.contains("Simplified")) {
                 text.setFont(f2);
             } else if (line.contains("Japanese")) {
                 text.setFont(f3);
             } else if (line.contains("Korean")) {
                 text.setFont(f4);
+            } else {
+                text.setFont(f0);
             }
-            text.setText(line);
-            text.setLocation(x_pos, y_pos);
-            text.drawOn(page);
             y_pos += 25f;
         }
         reader.close();
