@@ -41,8 +41,8 @@ public class Example_06 {
         let star = Point(h_si/2, v_si/2)
         star.setShape(Point.STAR)
         star.setRadius(3.0)
-        star.setColor(Color.white)
         star.setFillShape(true)
+        star.setFillColor(Color.white)
 
         for row in 0..<6 {
             for col in 0..<5 {

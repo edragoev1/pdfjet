@@ -488,7 +488,7 @@ public class Chart : Drawable {
             if points.count > 0 {
                 let point = points[0]
                 if point.drawPath {
-                    page.setPenColor(point.color)
+                    page.setPenColor(point.strokeColor)
                     page.setPenWidth(point.lineWidth)
                     page.setStrokeDashPattern(point.linePattern)
                     page.drawPath(points, PathOperator.stroke)
@@ -500,24 +500,17 @@ public class Chart : Drawable {
                             f2!.getSize(),
                             point.getText(),
                             point.x + 1.5*f2!.descent,
-                            point.y + f2!.getSize()/3.0)
-
-//                         page.drawString(
-//                             chart.f2,
-//                             chart.f2.size,
-//                             point.text,
-//                             point.x+1.5*chart.f2.descent,
-//                             point.y+chart.f2.size/3.0,
-//                             point.textColor,
-//                             nil)
+                            point.y + f2!.getSize()/3.0,
+                            point.getTextColor(),
+                            nil)
                     }
                 }
                 for point in points {
                     if point.getShape() != Point.INVISIBLE {
                         page.setPenWidth(point.lineWidth)
                         page.setStrokeDashPattern(point.linePattern)
-                        page.setPenColor(point.color)
-                        page.setBrushColor(point.color)
+                        page.setPenColor(point.strokeColor)
+                        page.setBrushColor(point.fillColor)
                         page.drawPoint(point)
                     }
                 }

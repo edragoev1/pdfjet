@@ -19,7 +19,7 @@ public class Example_09 {
         var chartData = [[Point]]()
 
         var path1 = [Point]()
-        path1.append(Point(50.0, 50.0).setDrawPath().setColor(Color.blue))
+        path1.append(Point(50.0, 50.0).setDrawPath().setFillColor(Color.blue))
         path1.append(Point(55.0, 55.0))
         path1.append(Point(60.0, 60.0))
         path1.append(Point(65.0, 58.0))
@@ -29,7 +29,7 @@ public class Example_09 {
         chartData.append(path1)
 
         var path2 = [Point]()
-        path2.append(Point(50.0, 30.0).setDrawPath().setColor(Color.red))
+        path2.append(Point(50.0, 30.0).setDrawPath().setFillColor(Color.red))
         path2.append(Point(55.0, 35.0))
         path2.append(Point(60.0, 40.0))
         path2.append(Point(65.0, 48.0))
@@ -39,7 +39,7 @@ public class Example_09 {
         chartData.append(path2)
 
         var path3 = [Point]()
-        path3.append(Point(50.0, 80.0).setDrawPath().setColor(Color.green))
+        path3.append(Point(50.0, 80.0).setDrawPath().setFillColor(Color.green))
         path3.append(Point(55.0, 70.0))
         path3.append(Point(60.0, 60.0))
         path3.append(Point(65.0, 55.0))
@@ -79,7 +79,7 @@ public func addTrendLine(_ chart: Chart) {
     var y: Float = m * x + b
     let p1 = Point(x, y)
     p1.setDrawPath()
-    p1.setColor(Color.blue)
+    p1.setStrokeColor(Color.blue)
     p1.setShape(Point.INVISIBLE)
 
     x = 1.5
@@ -177,23 +177,23 @@ public func getData(
 
             if point.getX() > 1.25 {
                 point.setShape(Point.RIGHT_ARROW)
-                point.setColor(Color.black)
+                point.setStrokeColor(Color.black)
             }
             if point.getY() > 80.0 {
                 point.setShape(Point.UP_ARROW)
-                point.setColor(Color.blue)
+                point.setStrokeColor(Color.blue)
             }
             if point.getText() == "France" {
                 point.setShape(Point.MULTIPLY)
-                point.setColor(Color.black)
+                point.setStrokeColor(Color.black)
             }
             if point.getText() == "Canada" {
                 point.setShape(Point.BOX)
-                point.setColor(Color.darkolivegreen)
+                point.setStrokeColor(Color.darkolivegreen)
             }
             if point.getText() == "United States" {
                 point.setShape(Point.STAR)
-                point.setColor(Color.red)
+                point.setStrokeColor(Color.red)
             }
             points.append(point)
         }

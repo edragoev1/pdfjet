@@ -564,7 +564,7 @@ public class Cell {
                 point!.x = (x + w) - self.rightPadding/2
             }
             point!.y = y + h/2
-            page.setBrushColor(point!.getColor())
+            page.setBrushColor(point!.getFillColor())
             if point!.getURIAction() != nil {
                 page.addAnnotation(Annotation(
                         point!.getURIAction(),

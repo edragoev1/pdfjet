@@ -36,8 +36,14 @@ public class Point : Drawable {
     var y: Float = 0.0
     var r: Float = 2.0
     var shape = Point.CIRCLE
-    var color = Color.black
     var align = Align.RIGHT
+
+    var fillColor: [Float]?
+    var strokeWidth: Float = 1.0
+    var strokeColor: [Float]?
+    var strokePattern = "[] 0"
+    var pathOperator = PathOperator.closeAndStroke
+
     var lineWidth: Float = 0.0
     var linePattern: String = "[] 0"
     var fillShape = false
@@ -46,7 +52,7 @@ public class Point : Drawable {
     var drawPath = false
 
     private var text: String?
-    private var textColor = Color.black
+    private var textColor: [Float] = [0.0, 0.0, 0.0]
     private var textDirection: Int = 0
     private var uri: String?
     private var xBox: Float = 0.0
@@ -216,13 +222,26 @@ public class Point : Drawable {
     }
 
     ///
-    /// Sets the pen color for this point.
+    /// Sets the fill color for this point.
     ///
-    /// - Parameter color the color specified as an integer.
+    /// - Parameter fillColor the color specified as Int32.
     ///
     @discardableResult
-    public func setColor(_ color: Int32) -> Point {
-        self.color = color
+    public func setFillColor(_ fillColor: Int32) -> Point {
+        let r = Float((fillColor >> 16) & 0xff)/255.0
+        let g = Float((fillColor >>  8) & 0xff)/255.0
+        let b = Float((fillColor)       & 0xff)/255.0
+        return setFillColor([r, g, b])
+    }
+
+    ///
+    /// Sets the fill color for this point.
+    ///
+    /// - Parameter fillColor the color specified as float array.
+    ///
+    @discardableResult
+    public func setFillColor(_ fillColor: [Float]) -> Point {
+        self.fillColor = fillColor
         return self
     }
 
@@ -231,8 +250,36 @@ public class Point : Drawable {
     ///
     /// - Returns: the color.
     ///
-    public func getColor() -> Int32 {
-        return self.color
+    public func getFillColor() -> [Float] {
+        return self.fillColor!
+    }
+
+    @discardableResult
+    public func setStrokeColor(_ strokeColor: Int32) -> Point {
+        let r = Float((strokeColor >> 16) & 0xff)/255.0
+        let g = Float((strokeColor >>  8) & 0xff)/255.0
+        let b = Float((strokeColor)       & 0xff)/255.0
+        return setStrokeColor([r, g, b])
+    }
+
+    ///
+    /// Sets the stroke color for this point.
+    ///
+    /// - Parameter strokeColor the color specified as float array.
+    ///
+    @discardableResult
+    public func setStrokeColor(_ strokeColor: [Float]) -> Point {
+        self.strokeColor = strokeColor
+        return self
+    }
+
+    ///
+    /// Returns the stroke color as float array.
+    ///
+    /// - Returns: the stroke color.
+    ///
+    public func getStrokeColor() -> [Float] {
+        return self.strokeColor!
     }
 
     ///
@@ -349,6 +396,14 @@ public class Point : Drawable {
     ///
     @discardableResult
     public func setTextColor(_ textColor: Int32) -> Point {
+        let r = Float((textColor >> 16) & 0xff)/255.0
+        let g = Float((textColor >>  8) & 0xff)/255.0
+        let b = Float((textColor)       & 0xff)/255.0
+        return setTextColor([r, g, b])
+    }
+
+    @discardableResult
+    public func setTextColor(_ textColor: [Float]) -> Point {
         self.textColor = textColor
         return self
     }
@@ -358,7 +413,7 @@ public class Point : Drawable {
     ///
     /// - Returns: the text color.
     ///
-    public func getTextColor() -> Int32 {
+    public func getTextColor() -> [Float] {
         return self.textColor
     }
 
@@ -439,20 +494,22 @@ public class Point : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.setPenWidth(lineWidth)
-        page!.setStrokeDashPattern(linePattern)
-
-        if fillShape {
-            page!.setBrushColor(color)
-        } else {
-            page!.setPenColor(color)
+        page!.append("q\n")
+        if fillColor != nil && strokeColor != nil {
+            page!.setBrushColor(fillColor)
+            page!.setPenColor(strokeColor)
+            page!.setPenWidth(strokeWidth)
+            self.pathOperator = PathOperator.fillAndStroke
+        } else if fillColor != nil && strokeColor == nil {
+            page!.setBrushColor(fillColor)
+            self.pathOperator = PathOperator.fill
+        } else if fillColor == nil && strokeColor != nil {
+            page!.setPenColor(strokeColor)
+            page!.setPenWidth(strokeWidth)
+            self.pathOperator = PathOperator.closeAndStroke
         }
-
-        self.x += xBox
-        self.y += yBox
         page!.drawPoint(self)
-        self.x -= xBox
-        self.y -= yBox
+        page!.append("Q\n")
 
         return [self.x + self.xBox + self.r, self.y + self.yBox + self.r]
     }

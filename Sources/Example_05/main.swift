@@ -55,14 +55,14 @@ public class Example_05 {
         Point(300.0, 300.0)
                 .setShape(Point.CIRCLE)
                 .setFillShape(true)
-                .setColor(Color.blue)
+                .setFillColor(Color.blue)
                 .setRadius(37.0)
                 .drawOn(page)
 
         Point(300.0, 300.0)
                 .setShape(Point.CIRCLE)
                 .setFillShape(true)
-                .setColor(Color.white)
+                .setFillColor(Color.white)
                 .setRadius(25.0)
                 .drawOn(page)
 
