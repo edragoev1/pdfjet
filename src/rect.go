@@ -22,8 +22,10 @@ type Rect struct {
 	h              float32
 	r              float32
 	fillColor      [3]float32
+	hasFillColor   bool
 	borderWidth    float32
 	borderColor    [3]float32
+	hasBorderColor bool
 	borderPattern  string
 	fillShape      bool
 	uri            string
@@ -84,6 +86,11 @@ func (rect *Rect) SetBorderColor(color int32) {
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	rect.borderColor = [3]float32{r, g, b}
+}
+
+func (rect *Rect) SetFillColorRGB(fillColor [3]float32) {
+	rect.fillColor = fillColor
+	rect.hasFillColor = true
 }
 
 // SetLineWidth sets the width of this line.
@@ -193,7 +200,7 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 		page.LineTo(rect.x+rect.w, rect.y)
 		page.LineTo(rect.x+rect.w, rect.y+rect.h)
 		page.LineTo(rect.x, rect.y+rect.h)
-		if rect.fillShape {
+		if rect.hasFillColor {
 			page.SetBrushColorRGB(rect.fillColor)
 			page.FillPath()
 		} else {

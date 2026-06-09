@@ -201,6 +201,15 @@ func (textBlock *TextBlock) SetTextColor(color int32) {
 	textBlock.textColor = [3]float32{r, g, b}
 }
 
+// SetFillColor sets the text color.
+// @param color the color specified as 0xRRGGBB integer.
+func (textBlock *TextBlock) SetFillColor(color int32) {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32((color)&0xff) / 255.0
+	textBlock.fillColor = [3]float32{r, g, b}
+}
+
 // SetHighlightColors sets the text colors map.
 func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string]int32) {
 	textBlock.keywordHighlightColors = keywordHighlightColors
@@ -350,7 +359,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		textBlock.y,
 		textBlock.width,
 		maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding))
-	// rect.SetFillColorRGB(textBlock.fillColor)
+	rect.SetFillColorRGB(textBlock.fillColor)
 	// rect.SetTextColorRGB(textBlock.textColor)
 	// TODO:	rect.SetBorderWidth(textBlock.borderWidth)
 	rect.SetBorderColorRGB(textBlock.borderColor)

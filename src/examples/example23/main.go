@@ -34,7 +34,7 @@ func Example23() {
 		"Hello, World! This example shows the functionality of the TextBlock.")
 	textBlock.SetLocation(x1, y1)
 	textBlock.SetWidth(500.0)
-	// textBlock.SetFillColor(color.LightGreen)
+	textBlock.SetFillColor(color.LightGreen)
 	textBlock.SetTextColor(color.Black)
 	xy := textBlock.DrawOn(page)
 
