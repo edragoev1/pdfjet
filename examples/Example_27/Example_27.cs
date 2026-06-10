@@ -68,7 +68,6 @@ public class Example_27 {
         textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
-/*
         y += 60f;
         str = Bidi.ReorderVisually(
                 "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا");
@@ -99,7 +98,7 @@ public class Example_27 {
         textLine = new TextLine(f3, str);
         textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
-*/
+/*
         y += 15f;
         f3.SetSize(14);
         // Arabic text from a file
@@ -112,7 +111,7 @@ public class Example_27 {
         textBlock.SetTextAlignment(Alignment.RIGHT);
         textBlock.SetTextPadding(10f);
         textBlock.DrawOn(page);
-
+*/
         pdf.Complete();
     }
 
