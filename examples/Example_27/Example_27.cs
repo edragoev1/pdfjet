@@ -35,8 +35,8 @@ public class Example_27 {
         textBlock.SetTextPadding(10f);
         float[] xy = textBlock.DrawOn(page);  // Draw the text and get coordinates
 
-        float x = 585f;
-        float y = xy[1] + 10f;
+        float x = 570f;
+        float y = xy[1] + 55f;
 
         String str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
         str = Bidi.ReorderVisually(str);
@@ -68,7 +68,7 @@ public class Example_27 {
         textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
-        y += 60f;
+        y += 65f;
         str = Bidi.ReorderVisually(
                 "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا");
         textLine = new TextLine(f3, str);
