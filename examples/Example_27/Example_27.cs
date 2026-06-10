@@ -30,8 +30,8 @@ public class Example_27 {
         TextBlock textBlock = new TextBlock(f1,
                 Content.OfTextFile("data/languages/thai.txt"));
         textBlock.SetLocation(30f, 30f);
-        textBlock.SetBorderColor(Color.blue);
         textBlock.SetWidth(430f);
+        textBlock.SetBorderColor(Color.blue);
         textBlock.SetTextPadding(10f);
         float[] xy = textBlock.DrawOn(page);  // Draw the text and get coordinates
 

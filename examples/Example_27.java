@@ -29,8 +29,10 @@ public class Example_27 {
         float y = 50f;
 
         TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("data/languages/thai.txt"));
-        textBlock.setLocation(50f, 50f);
+        textBlock.setLocation(30f, 30f);
         textBlock.setWidth(430f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setTextPadding(10f);
         textBlock.drawOn(page);
 
         y += 250f;
