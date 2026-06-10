@@ -5,7 +5,7 @@ using PDFjet.NET;
 using System.Text;
 
 /**
- *  Example_19.cs
+ * Example_19.cs
  */
 public class Example_19 {
     public Example_19() {

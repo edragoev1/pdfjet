@@ -5,8 +5,8 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_28.cs
- *  Example that shows how to use the NotoSansSymbols font.
+ * Example_28.cs
+ * Example that shows how to use the NotoSansSymbols font.
  */
 public class Example_28 {
     public Example_28() {

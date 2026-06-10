@@ -4,7 +4,7 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_44.cs
+ * Example_44.cs
  */
 public class Example_44 {
     public Example_44() {

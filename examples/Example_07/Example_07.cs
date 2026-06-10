@@ -5,7 +5,7 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_07.cs
+ * Example_07.cs
  */
 public class Example_07 {
     public Example_07(String fontType) {

@@ -5,8 +5,8 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_18.cs
- *  This example shows how to write "Page X of N" footer on every page.
+ * Example_18.cs
+ * This example shows how to write "Page X of N" footer on every page.
  */
 public class Example_18 {
     public Example_18() {

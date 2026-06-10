@@ -4,9 +4,9 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_36.cs - Demonstrates creation and placement of Form XObjects.
- *  A Form XObject is a reusable graphics object that can be drawn multiple times
- *  on different pages or locations with a single definition.
+ * Example_36.cs - Demonstrates creation and placement of Form XObjects.
+ * A Form XObject is a reusable graphics object that can be drawn multiple times
+ * on different pages or locations with a single definition.
  */
 public class Example_36 {
     public Example_36() {

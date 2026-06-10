@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using PDFjet.NET;
 
 /**
- *  Example_29.cs
+ * Example_29.cs
  */
 public class Example_29 {
     public Example_29() {

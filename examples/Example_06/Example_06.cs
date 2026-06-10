@@ -4,8 +4,8 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- *  Example_06.cs
- *  We will draw the American flag using Box, Line and Point objects.
+ * Example_06.cs
+ * We will draw the American flag using Box, Line and Point objects.
  */
 public class Example_06 {
     public Example_06() {
