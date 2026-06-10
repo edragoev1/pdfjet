@@ -608,7 +608,7 @@ public class TextBox implements Drawable {
         }
         page.addArtifactBMC();
         page.setPenColor(strokeColor);
-        page.setPenWidth(lineWidth);
+        page.setPenWidth(strokeWidth);
         if (getBorder(Border.ALL)) {
             page.drawRect(x, y, width, height);
         } else {

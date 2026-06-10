@@ -25,7 +25,7 @@ public class TextBlock {
     private Map<String, Integer> keywordHighlightColors;
     private float textPadding;
     private float[] fillColor;
-    private float borderWidth = 0f;
+    private float borderWidth = 0.5f;
     private float[] borderColor;
     private float borderCornerRadius = 0.0f;
 

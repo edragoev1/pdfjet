@@ -567,9 +567,9 @@ public class TextBox : IDrawable {
         if (page == null) {
             return;
         }
-        // page.AddArtifactBMC();
+        page.AddArtifactBMC();
         page.SetPenColor(strokeColor);
-        page.SetPenWidth(lineWidth);
+        page.SetPenWidth(strokeWidth);
         if (GetBorder(Border.ALL)) {
             page.DrawRect(x, y, width, height);
         } else {
@@ -594,7 +594,7 @@ public class TextBox : IDrawable {
                 page.StrokePath();
             }
         }
-        // page.AddEMC();
+        page.AddEMC();
     }
 
     private bool textIsCJK(String str) {
