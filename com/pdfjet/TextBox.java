@@ -39,9 +39,11 @@ public class TextBox implements Drawable {
     protected float margin = 0f;
     protected float lineWidth = 0f;
 
-    private int background = Color.transparent;
-    private int pen = Color.black;
-    private int brush = Color.black;
+    private float[] fillColor;  // The background fill color
+    private float[] textColor = new float[] {0f, 0f, 0f};
+    private float strokeWidth = 1f;
+    private float[] strokeColor;
+
     private int valign = Align.TOP;
     private Map<String, Integer> colors = null;
     // TextBox properties
@@ -359,142 +361,68 @@ public class TextBox implements Drawable {
         return spacing;
     }
 
-    /**
-     * Sets the background to the specified color.
-     *
-     * @param color the color specified as 0xRRGGBB integer.
-     */
-    public void setBgColor(int color) {
-        this.background = color;
+    public void setFillColor(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        this.fillColor = new float[] {r, g, b};
     }
 
-    /**
-     * Sets the background to the specified color.
-     *
-     * @param color the color specified as array of integer values from 0x00 to 0xFF.
-     */
-    public void setBgColor(int[] color) {
-        this.background = color[0] << 16 | color[1] << 8 | color[2];
+    public void setFillColor(float[] rgbColor) {
+        this.fillColor = rgbColor;
     }
 
-    /**
-     * Sets the background to the specified color.
-     *
-     * @param color the color specified as array of double values from 0.0 to 1.0.
-     */
-    public void setBgColor(double[] color) {
-        setBgColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
+    public void setBackgroundColor(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        this.fillColor = new float[] {r, g, b};
     }
 
-    /**
-     * Returns the background color.
-     *
-     * @return int the color as 0xRRGGBB integer.
-     */
-    public int getBgColor() {
-        return this.background;
+    public void setBackgroundColor(float[] rgbColor) {
+        this.fillColor = rgbColor;
     }
 
-    /**
-     * Sets the pen and brush colors to the specified color.
-     *
-     * @param color the color specified as 0xRRGGBB integer.
-     */
-    public void setFgColor(int color) {
-        this.pen = color;
-        this.brush = color;
+    public void setTextColor(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        this.textColor = new float[] {r, g, b};
     }
 
-    /**
-     * Sets the pen and brush colors to the specified color.
-     *
-     * @param color the color specified as 0xRRGGBB integer.
-     */
-    public void setFgColor(int[] color) {
-        this.pen = color[0] << 16 | color[1] << 8 | color[2];
-        this.brush = pen;
+    public void setTextColor(float r, float g, float b) {
+        this.textColor = new float[] {r, g, b};
     }
 
-    /**
-     * Sets the foreground pen and brush colors to the specified color.
-     *
-     * @param color the color as an array of double values from 0.0 to 1.0.
-     */
-    public void setFgColor(double[] color) {
-        setPenColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
-        setBrushColor(pen);
+    public void setTextColor(float[] rgbColor) {
+        this.textColor = rgbColor;
     }
 
-    /**
-     * Sets the pen color.
-     *
-     * @param color the color specified as 0xRRGGBB integer.
-     */
-    public void setPenColor(int color) {
-        this.pen = color;
+    public float[] getTextColor() {
+        return textColor;
     }
 
-    /**
-     * Sets the pen color.
-     *
-     * @param color the color specified as an array of int values from 0x00 to 0xFF.
-     */
-    public void setPenColor(int[] color) {
-        this.pen = color[0] << 16 | color[1] << 8 | color[2];
+    public void setStrokeWidth(float strokeWidth) {
+        this.strokeWidth = strokeWidth;
     }
 
-    /**
-     * Sets the pen color.
-     *
-     * @param color the color specified as an array of double values from 0.0 to 1.0.
-     */
-    public void setPenColor(double[] color) {
-        setPenColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
+    public void setStrokeColor(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        this.strokeColor = new float[] {r, g, b};
     }
 
-    /**
-     * Returns the pen color as 0xRRGGBB integer.
-     *
-     * @return int the pen color.
-     */
-    public int getPenColor() {
-        return this.pen;
+    public void setStrokeColor(float r, float g, float b) {
+        this.strokeColor = new float[] {r, g, b};
     }
 
-    /**
-     * Sets the brush color.
-     *
-     * @param color the color specified as 0xRRGGBB integer.
-     */
-    public void setBrushColor(int color) {
-        this.brush = color;
+    public void setStrokeColor(float[] rgbColor) {
+        this.strokeColor = rgbColor;
     }
 
-    /**
-     * Sets the brush color.
-     *
-     * @param color the color specified as an array of int values from 0x00 to 0xFF.
-     */
-    public void setBrushColor(int[] color) {
-        this.brush = color[0] << 16 | color[1] << 8 | color[2];
-    }
-
-    /**
-     * Sets the brush color.
-     *
-     * @param color the color specified as an array of double values from 0.0 to 1.0.
-     */
-    public void setBrushColor(double[] color) {
-        setBrushColor(new int[] { (int) color[0], (int) color[1], (int) color[2] });
-    }
-
-    /**
-     * Returns the brush color.
-     *
-     * @return int the brush color specified as 0xRRGGBB integer.
-     */
-    public int getBrushColor() {
-        return this.brush;
+    public float[] getStrokeColor() {
+        return strokeColor;
     }
 
     /**
@@ -679,7 +607,7 @@ public class TextBox implements Drawable {
             return;
         }
         page.addArtifactBMC();
-        page.setPenColor(pen);
+        page.setPenColor(strokeColor);
         page.setPenWidth(lineWidth);
         if (getBorder(Border.ALL)) {
             page.drawRect(x, y, width, height);
@@ -805,14 +733,14 @@ public class TextBox implements Drawable {
                 }
             }
             if (page != null) {
-                if (getBgColor() != Color.transparent) {
-                    page.setBrushColor(background);
+                if (fillColor != null) {
+                    page.setBrushColor(fillColor);
                     page.addArtifactBMC();
                     page.fillRect(x, y, width, height);
                     page.addEMC();
                 }
-                page.setPenColor(this.pen);
-                page.setBrushColor(this.brush);
+                page.setPenColor(this.strokeColor);
+                page.setBrushColor(this.fillColor);
                 page.setPenWidth(this.font.getUnderlineThickness(fontSize));
             }
             float xText = x + margin;
@@ -843,7 +771,7 @@ public class TextBox implements Drawable {
                     xText = y + margin;
                 }
                 if (page != null) {
-                    drawTextLine(page, font, fallbackFont, line, xText, yText, brush, colors);
+                    drawTextLine(page, font, fallbackFont, line, xText, yText, textColor, colors);
                 }
                 if (textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP) {
@@ -854,15 +782,15 @@ public class TextBox implements Drawable {
             }
         } else { // TextBox that expands to fit the content
             if (page != null) {
-                if (getBgColor() != Color.transparent) {
-                    page.setBrushColor(background);
+                if (fillColor!= null) {
+                    page.setBrushColor(fillColor);
                     page.addArtifactBMC();
                     page.fillRect(x, y, width, (lines.length * leading - spacing) + 2*margin);
                     page.addEMC();
                 }
-                page.setPenColor(this.pen);
-                page.setBrushColor(this.brush);
-                page.setPenWidth(this.font.underlineThickness);
+                page.setBrushColor(this.textColor);
+                page.setPenColor(this.strokeColor);
+                page.setPenWidth(this.font.getUnderlineThickness(fontSize));
             }
             float xText = x + margin;
             float yText = y + margin + font.getAscent(fontSize);
@@ -879,7 +807,7 @@ public class TextBox implements Drawable {
                     xText = x + margin;
                 }
                 if (page != null) {
-                    drawTextLine(page, font, fallbackFont, line, xText, yText, brush, colors);
+                    drawTextLine(page, font, fallbackFont, line, xText, yText, textColor, colors);
                 }
                 if (textDirection == Direction.LEFT_TO_RIGHT ||
                         textDirection == Direction.BOTTOM_TO_TOP) {
@@ -922,33 +850,40 @@ public class TextBox implements Drawable {
             String text,
             float xText,
             float yText,
-            int color,
+            float[] color,
             Map<String, Integer> colors) {
-        page.addBMC(StructElem.P, language, text, altDescription);
+        if (altDescription != null) {
+            page.addBMC(StructElem.P, language, text, altDescription);
+        }
+
         if (textDirection == Direction.LEFT_TO_RIGHT) {
-// TODO            page.drawString(font, fallbackFont, fontSize, text, xText, yText, color, colors);
+            page.drawString(font, fallbackFont, fontSize, text, xText, yText, color, colors);
         } else if (textDirection == Direction.BOTTOM_TO_TOP) {
             page.setTextDirection(90);
-// TODO            page.drawString(font, fallbackFont, fontSize, text, yText, xText + height, color, colors);
+            page.drawString(font, fallbackFont, fontSize, text, yText, xText + height, color, colors);
         } else if (textDirection == Direction.TOP_TO_BOTTOM) {
             page.setTextDirection(270);
-//             page.drawString(font, fallbackFont, fontSize, text,
-//                     (yText + width) - (margin + 2*font.ascent), xText, color, colors);
+            page.drawString(font, fallbackFont, fontSize, text,
+                    (yText + width) - (margin + 2*font.getAscent(fontSize)), xText, color, colors);
         }
-        page.addEMC();
+
+        if (altDescription != null) {
+            page.addEMC();
+        }
+
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             float lineLength = font.stringWidth(fallbackFont, text);
             if (getUnderline()) {
                 page.addArtifactBMC();
-                page.moveTo(xText, yText + font.underlinePosition);
-                page.lineTo(xText + lineLength, yText + font.underlinePosition);
+                page.moveTo(xText, yText + font.getUnderlinePosition(fontSize));
+                page.lineTo(xText + lineLength, yText + font.getUnderlinePosition(fontSize));
                 page.strokePath();
                 page.addEMC();
             }
             if (getStrikeout()) {
                 page.addArtifactBMC();
-                page.moveTo(xText, yText - (font.bodyHeight / 4));
-                page.lineTo(xText + lineLength, yText - (font.bodyHeight / 4));
+                page.moveTo(xText, yText - (font.getBodyHeight(fontSize)/4));
+                page.lineTo(xText + lineLength, yText - (font.getBodyHeight(fontSize)/4));
                 page.strokePath();
                 page.addEMC();
             }

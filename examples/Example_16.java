@@ -26,6 +26,8 @@ public class Example_16 {
         colors.put("pay", Color.green);
         colors.put("freedom", Color.blue);
 
+        // page.saveGraphicsState();
+
         GraphicsState gs = new GraphicsState();
         gs.setAlphaStroking(0.5f);                  // Stroking alpha
         gs.setAlphaNonStroking(0.5f);               // Non-Stroking alpha
@@ -51,12 +53,13 @@ public class Example_16 {
         // textBox.setTextAlignment(Align.CENTER);
         // textBox.setHeight(400f);
 
-        textBox.setBgColor(Color.whitesmoke);
+        textBox.setBackgroundColor(Color.whitesmoke);
         textBox.setTextColors(colors);
         textBox.setBorders(true);
         float[] xy = textBox.drawOn(page);
 
         page.setGraphicsState(new GraphicsState()); // Reset GS
+        // page.restoreGraphicsState();
 
         Box box = new Box();
         box.setLocation(xy[0], xy[1]);

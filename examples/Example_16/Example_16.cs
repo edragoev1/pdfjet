@@ -23,6 +23,8 @@ public class Example_16 {
         colors["dolor"] = Color.green;
         colors["ullamcorper"] = Color.gray;
 
+        page.SaveGraphicsState();
+
         GraphicsState gs = new GraphicsState();
         gs.SetAlphaStroking(0.5f);      // Set alpha for stroking operations
         gs.SetAlphaNonStroking(0.5f);   // Set alpha for nonstroking operations
@@ -54,6 +56,7 @@ public class Example_16 {
         float[] xy = textBox.DrawOn(page);
 
         page.SetGraphicsState(new GraphicsState()); // Reset GS
+        // page.RestoreGraphicsState();
 
         Box box = new Box();
         box.SetLocation(xy[0], xy[1]);
