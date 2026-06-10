@@ -6,8 +6,8 @@ import java.util.*;
 import com.pdfjet.*;
 
 /**
- *  Example_18.java
- *  This example shows how to write "Page X of N" footer on every page.
+ * Example_18.java
+ * This example shows how to write "Page X of N" footer on every page.
  */
 public class Example_18 {
     public Example_18() throws Exception {

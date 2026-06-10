@@ -4,7 +4,7 @@ import java.io.*;
 import com.pdfjet.*;
 
 /**
- *  Example_25.java
+ * Example_25.java
  */
 public class Example_25 {
     public Example_25() throws Exception {

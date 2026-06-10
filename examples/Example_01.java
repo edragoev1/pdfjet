@@ -7,10 +7,10 @@ import java.util.Map;
 import com.pdfjet.*;
 
 /**
- *  Example_01.java
+ * Example_01.java
  *
- *  A simple example demonstrating how to create a PDF with multilingual text
- *  (English, Greek, and Bulgarian) using PDFjet.
+ * A simple example demonstrating how to create a PDF with multilingual text
+ * (English, Greek, and Bulgarian) using PDFjet.
  */
 public class Example_01 {
 
