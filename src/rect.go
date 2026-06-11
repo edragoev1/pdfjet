@@ -18,9 +18,9 @@ import (
 type Rect struct {
 	x              float32
 	y              float32
-	w              float32
-	h              float32
-	r              float32
+	width          float32
+	height         float32
+	cornerRadius   float32
 	fillColor      [3]float32
 	hasFillColor   bool
 	borderWidth    float32
@@ -45,8 +45,8 @@ func NewRect(x, y, w, h float32) *Rect {
 	rect := new(Rect)
 	rect.x = x
 	rect.y = y
-	rect.w = w
-	rect.h = h
+	rect.width = w
+	rect.height = h
 
 	rect.borderColor = [3]float32{0.0, 0.0, 0.0}
 	rect.borderWidth = 0.0
@@ -71,21 +71,22 @@ func (rect *Rect) SetLocation(x, y float32) *Rect {
 // @param w the width of this rect.
 // @param h the height of this rect.
 func (rect *Rect) SetSize(w, h float32) {
-	rect.w = w
-	rect.h = h
-}
-
-// SetBorderColorRGB sets the color for this rectangle.
-// @param color the color specified as an integer.
-func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) {
-	rect.borderColor = borderColor
+	rect.width = w
+	rect.height = h
 }
 
 func (rect *Rect) SetBorderColor(color int32) {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
-	rect.borderColor = [3]float32{r, g, b}
+	rect.SetBorderColorRGB([3]float32{r, g, b})
+}
+
+// SetBorderColorRGB sets the color for this rectangle.
+// @param color the color specified as an integer.
+func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) {
+	rect.borderColor = borderColor
+	rect.hasBorderColor = true
 }
 
 func (rect *Rect) SetFillColorRGB(fillColor [3]float32) {
@@ -101,8 +102,8 @@ func (rect *Rect) SetBorderWidth(borderWidth float32) {
 
 // SetCornerRadius sets the corner radius.
 // @param width the width.
-func (rect *Rect) SetCornerRadius(r float32) {
-	rect.r = r
+func (rect *Rect) SetCornerRadius(cornerRadius float32) {
+	rect.cornerRadius = cornerRadius
 }
 
 // SetURIAction sets the URI for the "click rect" action.
@@ -195,18 +196,24 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 	const k float32 = 0.5517
 
 	page.AddBMC(rect.structureType, rect.language, rect.actualText, rect.altDescription)
-	if rect.r == 0.0 {
-		page.MoveTo(rect.x, rect.y)
-		page.LineTo(rect.x+rect.w, rect.y)
-		page.LineTo(rect.x+rect.w, rect.y+rect.h)
-		page.LineTo(rect.x, rect.y+rect.h)
+	if rect.cornerRadius == 0.0 {
 		if rect.hasFillColor {
 			page.SetBrushColorRGB(rect.fillColor)
+			page.MoveTo(rect.x, rect.y)
+			page.LineTo(rect.x+rect.width, rect.y)
+			page.LineTo(rect.x+rect.width, rect.y+rect.height)
+			page.LineTo(rect.x, rect.y+rect.height)
+			page.LineTo(rect.x, rect.y)
 			page.FillPath()
-		} else {
-			page.SetPenWidth(rect.borderWidth)
+		}
+		if rect.hasBorderColor {
+			page.MoveTo(rect.x, rect.y)
+			page.LineTo(rect.x+rect.width, rect.y)
+			page.LineTo(rect.x+rect.width, rect.y+rect.height)
+			page.LineTo(rect.x, rect.y+rect.height)
 			page.SetPenColorRGB(rect.borderColor)
-			page.SetStrokeDashPattern(rect.borderPattern)
+			page.SetPenWidth(rect.borderWidth)
+			// page.SetStrokeDashPattern(self.borderPattern) // TODO
 			page.ClosePath()
 		}
 	} else {
@@ -215,23 +222,23 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 		page.SetStrokeDashPattern(rect.borderPattern)
 
 		points := make([]*Point, 0)
-		points = append(points, NewPoint(rect.x+rect.r, rect.y))
-		points = append(points, NewPoint((rect.x+rect.w)-rect.r, rect.y))
-		points = append(points, NewControlPointC((rect.x+rect.w-rect.r)+rect.r*k, rect.y))
-		points = append(points, NewControlPointC(rect.x+rect.w, (rect.y+rect.r)-rect.r*k))
-		points = append(points, NewPoint(rect.x+rect.w, rect.y+rect.r))
-		points = append(points, NewPoint(rect.x+rect.w, (rect.y+rect.h)-rect.r))
-		points = append(points, NewControlPointC(rect.x+rect.w, ((rect.y+rect.h)-rect.r)+rect.r*k))
-		points = append(points, NewControlPointC(((rect.x+rect.w)-rect.r)+rect.r*k, rect.y+rect.h))
-		points = append(points, NewPoint((rect.x+rect.w)-rect.r, rect.y+rect.h))
-		points = append(points, NewPoint(rect.x+rect.r, rect.y+rect.h))
-		points = append(points, NewControlPointC((rect.x+rect.r)-rect.r*k, rect.y+rect.h))
-		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.h)-rect.r)+rect.r*k))
-		points = append(points, NewPoint(rect.x, (rect.y+rect.h)-rect.r))
-		points = append(points, NewPoint(rect.x, rect.y+rect.r))
-		points = append(points, NewControlPointC(rect.x, (rect.y+rect.r)-rect.r*k))
-		points = append(points, NewControlPointC((rect.x+rect.r)-rect.r*k, rect.y))
-		points = append(points, NewPoint(rect.x+rect.r, rect.y))
+		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
+		points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y))
+		points = append(points, NewControlPointC((rect.x+rect.width-rect.cornerRadius)+rect.cornerRadius*k, rect.y))
+		points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
+		points = append(points, NewPoint(rect.x+rect.width, rect.y+rect.cornerRadius))
+		points = append(points, NewPoint(rect.x+rect.width, (rect.y+rect.height)-rect.cornerRadius))
+		points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
+		points = append(points, NewControlPointC(((rect.x+rect.width)-rect.cornerRadius)+rect.cornerRadius*k, rect.y+rect.height))
+		points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y+rect.height))
+		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y+rect.height))
+		points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y+rect.height))
+		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
+		points = append(points, NewPoint(rect.x, (rect.y+rect.height)-rect.cornerRadius))
+		points = append(points, NewPoint(rect.x, rect.y+rect.cornerRadius))
+		points = append(points, NewControlPointC(rect.x, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
+		points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y))
+		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
 
 		page.DrawPath(points, pathoperator.Stroke)
 	}
@@ -242,8 +249,8 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 			"Link",
 			rect.x,
 			rect.y,
-			rect.x+rect.w,
-			rect.y+rect.h,
+			rect.x+rect.width,
+			rect.y+rect.height,
 			nil,
 			nil,
 			0.0,
@@ -256,5 +263,5 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 			rect.altDescription))
 	}
 
-	return []float32{rect.x + rect.w, rect.y + rect.h}
+	return []float32{rect.x + rect.width, rect.y + rect.height}
 }

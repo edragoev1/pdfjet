@@ -174,7 +174,7 @@ func (textBlock *TextBlock) SetBorderColor(color int32) {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
-	textBlock.borderColor = [3]float32{r, g, b}
+	textBlock.SetBorderColorRGB([3]float32{r, g, b})
 }
 
 // SetBorderColorRGB sets the penColor color.
@@ -210,7 +210,7 @@ func (textBlock *TextBlock) SetFillColor(fillColor int32) {
 	r := float32((fillColor>>16)&0xff) / 255.0
 	g := float32((fillColor>>8)&0xff) / 255.0
 	b := float32((fillColor)&0xff) / 255.0
-	textBlock.fillColor = [3]float32{r, g, b}
+	textBlock.SetFillColorRGB([3]float32{r, g, b})
 }
 
 func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) {
@@ -368,12 +368,12 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 			textBlock.y,
 			textBlock.width,
 			maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding))
-		if rect.hasBorderColor {
+		if textBlock.hasBorderColor {
 			rect.SetBorderColorRGB(textBlock.borderColor)
 			rect.SetBorderWidth(textBlock.borderWidth)
 			rect.SetCornerRadius(textBlock.borderCornerRadius)
 		}
-		if rect.hasFillColor {
+		if textBlock.hasFillColor {
 			rect.SetFillColorRGB(textBlock.fillColor)
 		}
 		rect.DrawOn(page)
