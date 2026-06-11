@@ -59,7 +59,7 @@ public class Example_19 {
         textBox = new TextBox(f1);
         textBox.setFallbackFont(f2);
         textBox.setText(Content.ofTextFile("data/chinese.txt"));
-        textBox.setLocation(x1, 530f);
+        textBox.setLocation(x1, 570f);
         textBox.setWidth(350f);
         textBox.setBorders(true);
         xy = textBox.drawOn(page);

@@ -41,7 +41,7 @@ public class TextBox : IDrawable {
 
     private float[] fillColor;  // The background fill color
     private float[] textColor = new float[] {0f, 0f, 0f};
-    private float strokeWidth = 1f;
+    private float strokeWidth = 0.5f;
     private float[] strokeColor;
 
     private uint valign = Align.TOP;

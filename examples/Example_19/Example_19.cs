@@ -59,7 +59,7 @@ public class Example_19 {
         textBox = new TextBox(f1);
         textBox.SetFallbackFont(f2);
         textBox.SetText(Content.OfTextFile("data/chinese.txt"));
-        textBox.SetLocation(x1, 530f);
+        textBox.SetLocation(x1, 570f);
         textBox.SetWidth(350f);
         textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
