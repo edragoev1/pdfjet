@@ -8,140 +8,97 @@ public class Example_27 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_27.pdf", append: false)!)
 
-        // Latin font
-        let f1 = try Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
+        // Thai font
+        let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
         f1.setSize(12.0)
 
-        // Thai font
-        let f2 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
+        // Hebrew font
+        let f2 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
         f2.setSize(12.0)
 
-        // Hebrew font
-        let f3 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
-        f3.setSize(12.0)
-
         // Arabic font
-        let f4 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
-        f4.setSize(12.0)
+        let f3 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
+        f3.setSize(12.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let x: Float = 50.0
-        var y: Float = 50.0
+        let textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/thai.txt"))
+        textBlock.setLocation(30.0, 30.0)
+        textBlock.setWidth(430.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setTextPadding(10.0)
+        let xy = textBlock.drawOn(page)
 
-        let text = TextLine(f1)
-        text.setFallbackFont(f2)
-        text.setLocation(x, y)
+        let x: Float = 570.0
+        var y: Float = xy[1] + 55.0
 
-        var scalars = Array<Unicode.Scalar>()
-        var i = 0x0E01
-        while i < 0x0E5B {
-        if i % 16 == 0 {
-            y += 24.0
-            text.setText(scalarsToString(scalars))
-            text.setLocation(x, y)
-            text.drawOn(page)
-            scalars = [UnicodeScalar]()
-        }
-        if i > 0x0E30 && i < 0x0E3B {
-            scalars.append("\u{0E01}")
-        }
-        if i > 0x0E46 && i < 0x0E4F {
-            scalars.append("\u{0E2D}")
-        }
-        scalars.append(Unicode.Scalar(i)!)
-            i += 1
-        }
-
-        y += 20.0
-        text.setText(scalarsToString(scalars))
-        text.setLocation(x, y)
-        text.drawOn(page)
-
-        y += 20.0
-        var str = "\u{0E1C}\u{0E1C}\u{0E36}\u{0E49}\u{0E07} abc 123"
-        text.setText(str)
-        text.setLocation(x, y)
-        text.drawOn(page)
-
-        y += 20.0
-        str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
+        var str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
         str = Bidi.reorderVisually(str)
-        var textLine = TextLine(f3, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f3.stringWidth(f2, str), y)
+        var textLine = TextLine(f2, str)
+        textLine.setLocation(x - f2.stringWidth(f2, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
         str = Bidi.reorderVisually(str)
-        textLine = TextLine(f3, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f3.stringWidth(f2, str), y)
+        textLine = TextLine(f2, str)
+        textLine.setLocation(x - f2.stringWidth(f2, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
         str = Bidi.reorderVisually(str)
-        textLine = TextLine(f3, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f3.stringWidth(f2, str), y)
+        textLine = TextLine(f2, str)
+        textLine.setLocation(x - f2.stringWidth(f2, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
         str = Bidi.reorderVisually(str)
-        textLine = TextLine(f3, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f3.stringWidth(f2, str), y)
+        textLine = TextLine(f2, str)
+        textLine.setLocation(x - f2.stringWidth(f2, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
         str = Bidi.reorderVisually(str)
-        textLine = TextLine(f3, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f3.stringWidth(f2, str), y)
+        textLine = TextLine(f2, str)
+        textLine.setLocation(x - f2.stringWidth(f2, str), y)
         textLine.drawOn(page)
 
-        y += 60.0
+        y += 65.0
         str = Bidi.reorderVisually(
                 "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
-        textLine = TextLine(f4, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f4.stringWidth(f2, str), y)
+        textLine = TextLine(f3, str)
+        textLine.setLocation(x - f3.stringWidth(f3, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = Bidi.reorderVisually(
                 "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
-        textLine = TextLine(f4, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f4.stringWidth(f2, str), y)
+        textLine = TextLine(f3, str)
+        textLine.setLocation(x - f3.stringWidth(f3, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = Bidi.reorderVisually(
                 "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
-        textLine = TextLine(f4, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f4.stringWidth(f2, str), y)
+        textLine = TextLine(f3, str)
+        textLine.setLocation(x - f3.stringWidth(f3, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = Bidi.reorderVisually(
                 "من بيجو وسيتروين ودونغفينغ.")
-        textLine = TextLine(f4, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f4.stringWidth(f2, str), y)
+        textLine = TextLine(f3, str)
+        textLine.setLocation(x - f3.stringWidth(f3, str), y)
         textLine.drawOn(page)
 
         y += 20.0
         str = Bidi.reorderVisually(
                 "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
-        textLine = TextLine(f4, str)
-        textLine.setFallbackFont(f2)
-        textLine.setLocation(600.0 - f4.stringWidth(f2, str), y)
+        textLine = TextLine(f3, str)
+        textLine.setLocation(x - f3.stringWidth(f3, str), y)
         textLine.drawOn(page)
 
         pdf.complete()
