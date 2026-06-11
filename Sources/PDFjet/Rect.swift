@@ -218,7 +218,6 @@ public class Rect : Drawable {
                 page!.fillPath()
             }
             if borderColor != nil {
-print(self.width)
                 page!.moveTo(self.x, self.y)
                 page!.lineTo(self.x + self.width, self.y)
                 page!.lineTo(self.x + self.width, self.y + self.height)

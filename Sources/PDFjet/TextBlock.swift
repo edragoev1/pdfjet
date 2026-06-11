@@ -273,7 +273,6 @@ public class TextBlock : Drawable {
 //         }
 
         if self.borderColor != nil || self.fillColor != nil {
-print(width)
             let rect = Rect(
                 x,
                 y,
