@@ -9,13 +9,13 @@ import Foundation
 public class Rect : Drawable {
     private var x: Float = 0.0
     private var y: Float = 0.0
-    private var w: Float = 0.0
-    private var h: Float = 0.0
+    private var width: Float = 0.0
+    private var height: Float = 0.0
     private var r: Float = 0.0
 
     private var fillColor: [Float]?
     private var borderColor: [Float]?
-    private var borderWidth: Float = 0.0
+    private var borderWidth: Float = 0.5
     private var borderPattern: String = "[] 0"
 
     private var uri: String?
@@ -42,8 +42,8 @@ public class Rect : Drawable {
         self.init()
         self.x = x
         self.y = y
-        self.w = w
-        self.h = h
+        self.width = w
+        self.height = h
     }
 
     /**
@@ -78,8 +78,8 @@ public class Rect : Drawable {
      *   - h: the height of this rect.
      */
     public func setSize(_ w: Float, _ h: Float) {
-        self.w = w
-        self.h = h
+        self.width = w
+        self.height = h
     }
 
     public func setFillColor(_ fillColor: [Float]?) {
@@ -97,16 +97,16 @@ public class Rect : Drawable {
         self.borderColor = borderColor!
     }
 
-    public func setBorderWidth(_ width: Float) {
-        self.w = width
+    public func setBorderWidth(_ borderWidth: Float) {
+        self.borderWidth = borderWidth
     }
 
     /**
      * Sets the width of this line.
      * - Parameter width: the width.
      */
-    public func setLineWidth(_ width: Float) {
-        self.w = width
+    public func setLineWidth(_ borderWidth: Float) {
+        self.borderWidth = borderWidth
     }
 
     /**
@@ -211,17 +211,18 @@ public class Rect : Drawable {
             if fillColor != nil {
                 page!.setBrushColor(self.fillColor)
                 page!.moveTo(self.x, self.y)
-                page!.lineTo(self.x + self.w, self.y)
-                page!.lineTo(self.x + self.w, self.y + self.h)
-                page!.lineTo(self.x, self.y + self.h)
+                page!.lineTo(self.x + self.width, self.y)
+                page!.lineTo(self.x + self.width, self.y + self.height)
+                page!.lineTo(self.x, self.y + self.height)
                 page!.lineTo(self.x, self.y)
                 page!.fillPath()
             }
             if borderColor != nil {
+print(self.width)
                 page!.moveTo(self.x, self.y)
-                page!.lineTo(self.x + self.w, self.y)
-                page!.lineTo(self.x + self.w, self.y + self.h)
-                page!.lineTo(self.x, self.y + self.h)
+                page!.lineTo(self.x + self.width, self.y)
+                page!.lineTo(self.x + self.width, self.y + self.height)
+                page!.lineTo(self.x, self.y + self.height)
                 page!.setPenColor(self.borderColor)
                 page!.setPenWidth(self.borderWidth)
                 // page!.setStrokeDashPattern(self.borderPattern) // TODO
@@ -234,18 +235,18 @@ public class Rect : Drawable {
 
             var points: [Point] = []
             points.append(Point(self.x + self.r, self.y))
-            points.append(Point((self.x + self.w) - self.r, self.y))
-            points.append(Point((self.x + self.w - self.r) + self.r * k, self.y, Point.controlPointC))
-            points.append(Point(self.x + self.w, (self.y + self.r) - self.r * k, Point.controlPointC))
-            points.append(Point(self.x + self.w, self.y + self.r))
-            points.append(Point(self.x + self.w, (self.y + self.h) - self.r))
-            points.append(Point(self.x + self.w, ((self.y + self.h) - self.r) + self.r * k, Point.controlPointC))
-            points.append(Point(((self.x + self.w) - self.r) + self.r * k, self.y + self.h, Point.controlPointC))
-            points.append(Point(((self.x + self.w) - self.r), self.y + self.h))
-            points.append(Point(self.x + self.r, self.y + self.h))
-            points.append(Point(((self.x + self.r) - self.r * k), self.y + self.h, Point.controlPointC))
-            points.append(Point(self.x, ((self.y + self.h) - self.r) + self.r * k, Point.controlPointC))
-            points.append(Point(self.x, (self.y + self.h) - self.r))
+            points.append(Point((self.x + self.width) - self.r, self.y))
+            points.append(Point((self.x + self.width - self.r) + self.r * k, self.y, Point.controlPointC))
+            points.append(Point(self.x + self.width, (self.y + self.r) - self.r * k, Point.controlPointC))
+            points.append(Point(self.x + self.width, self.y + self.r))
+            points.append(Point(self.x + self.width, (self.y + self.height) - self.r))
+            points.append(Point(self.x + self.width, ((self.y + self.height) - self.r) + self.r * k, Point.controlPointC))
+            points.append(Point(((self.x + self.width) - self.r) + self.r * k, self.y + self.height, Point.controlPointC))
+            points.append(Point(((self.x + self.width) - self.r), self.y + self.height))
+            points.append(Point(self.x + self.r, self.y + self.height))
+            points.append(Point(((self.x + self.r) - self.r * k), self.y + self.height, Point.controlPointC))
+            points.append(Point(self.x, ((self.y + self.height) - self.r) + self.r * k, Point.controlPointC))
+            points.append(Point(self.x, (self.y + self.height) - self.r))
             points.append(Point(self.x, self.y + self.r))
             points.append(Point(self.x, (self.y + self.r) - self.r * k, Point.controlPointC))
             points.append(Point((self.x + self.r) - self.r * k, self.y, Point.controlPointC))
@@ -268,6 +269,6 @@ public class Rect : Drawable {
 //                 self.altDescription))
 //         }
 
-        return [self.x + self.w, self.y + self.h]
+        return [self.x + self.width, self.y + self.height]
     }
 }
