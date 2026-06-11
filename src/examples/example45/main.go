@@ -30,7 +30,7 @@ func Example45() {
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	var width float32 = 530.0
-	var height float32 = 13.0
+	var height float32 = 15.0
 
 	fields := make([]*pdfjet.Field, 0)
 	fields = append(fields, pdfjet.NewField(

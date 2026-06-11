@@ -23,7 +23,7 @@ public class Example_45 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         let w: Float = 530.0
-        let h: Float = 13.0
+        let h: Float = 15.0
 
         var fields = [Field]()
         fields.append(Field(  0.0, ["Company", "Smart Widget Designs"]))
