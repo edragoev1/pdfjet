@@ -47,7 +47,7 @@ public class Example_19 {
         xy = textBlock.drawOn(page)
 
         textBlock = TextBlock(f2, try Content.ofTextFile("data/chinese.txt"))
-        textBlock.setLocation(x1, 530.0)
+        textBlock.setLocation(x1, 570.0)
         textBlock.setWidth(350.0)
         textBlock.setBorderColor(Color.blue)
         textBlock.drawOn(page)
