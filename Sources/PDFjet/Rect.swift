@@ -14,7 +14,7 @@ public class Rect : Drawable {
     private var r: Float = 0.0
 
     private var fillColor: [Float]?
-    private var borderColor: [Float] = [0.0, 0.0, 0.0]
+    private var borderColor: [Float]?
     private var borderWidth: Float = 0.0
     private var borderPattern: String = "[] 0"
 
@@ -217,16 +217,16 @@ public class Rect : Drawable {
                 page!.lineTo(self.x, self.y)
                 page!.fillPath()
             }
-//            if borderColor != nil {
-                page!.setPenColor(self.borderColor)
-                page!.setPenWidth(self.borderWidth)
-                // page!.setStrokePattern(self.borderPattern) // TODO
+            if borderColor != nil {
                 page!.moveTo(self.x, self.y)
                 page!.lineTo(self.x + self.w, self.y)
                 page!.lineTo(self.x + self.w, self.y + self.h)
                 page!.lineTo(self.x, self.y + self.h)
+                page!.setPenColor(self.borderColor)
+                page!.setPenWidth(self.borderWidth)
+                // page!.setStrokeDashPattern(self.borderPattern) // TODO
                 page!.closePath()
-//            }
+            }
         } else {
             page!.setPenWidth(self.borderWidth)
             page!.setPenColor(self.borderColor)
