@@ -86,8 +86,8 @@ func (textBlock *TextBlock) SetFont(font *Font) {
 }
 
 // SetFallbackFont sets the fallback font.
-func (textBlock *TextBlock) SetFallbackFont(font *Font) {
-	textBlock.fallbackFont = font
+func (textBlock *TextBlock) SetFallbackFont(fallbackFont *Font) {
+	textBlock.fallbackFont = fallbackFont
 }
 
 // SetFontSize sets the font size for the text block.

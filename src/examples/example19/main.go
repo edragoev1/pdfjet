@@ -5,6 +5,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/NotoSans"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -21,7 +22,7 @@ func Example19() {
 
 	contents := content.OfTextFile("data/calculus-short.txt")
 
-	page := pdfjet.NewPage(pdf, letter.Landscape)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	// Columns x coordinates
 	x1 := float32(50.0)
@@ -37,31 +38,28 @@ func Example19() {
 	image1.ScaleBy(0.75)
 	xy := image1.DrawOn(page)
 
-	textBox := pdfjet.NewTextBlock(f1, contents)
-	textBox.SetLocation(x2, y1)
-	textBox.SetWidth(w2)
-	// textBox.SetBorders(true)
-	// textBox.SetTextAlignment(align.Right)
-	// textBox.SetTextAlignment(align.Center)
-	xy = textBox.DrawOn(page)
+	textBlock := pdfjet.NewTextBlock(f1, contents)
+	textBlock.SetLocation(x2, y1)
+	textBlock.SetWidth(w2)
+	textBlock.SetBorderColor(color.Black)
+	xy = textBlock.DrawOn(page)
 
 	// Draw the second row image and text:
 	image2.SetLocation(x1, xy[1]+10.0)
 	image2.ScaleBy(1.0 / 3.0)
 	image2.DrawOn(page)
 
-	textBox = pdfjet.NewTextBlock(f1, content.OfTextFile("data/latin.txt"))
-	textBox.SetLocation(x2, xy[1]+10.0)
-	textBox.SetWidth(w2)
-	// textBox.SetBorders(true)
-	xy = textBox.DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/latin.txt"))
+	textBlock.SetLocation(x2, xy[1]+10.0)
+	textBlock.SetWidth(w2)
+	textBlock.SetBorderColor(color.Black)
+	xy = textBlock.DrawOn(page)
 
-	textBox = pdfjet.NewTextBlock(f1, content.OfTextFile("data/chinese.txt"))
-	textBox.SetFallbackFont(f2)
-	textBox.SetLocation(x1, 570.0)
-	textBox.SetWidth(350.0)
-	// textBox.SetBorders(true)
-	xy = textBox.DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/chinese.txt"))
+	textBlock.SetLocation(x1, 570.0)
+	textBlock.SetWidth(350.0)
+	textBlock.SetBorderColor(color.Blue)
+	xy = textBlock.DrawOn(page)
 
 	box := pdfjet.NewBox()
 	box.SetLocation(xy[0], xy[1])

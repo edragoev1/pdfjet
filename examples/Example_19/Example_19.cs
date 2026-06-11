@@ -39,9 +39,7 @@ public class Example_19 {
         textBox.SetText(contents);
         textBox.SetLocation(x2, y1);
         textBox.SetWidth(w2);
-        textBox.SetBorders(true);
-        // textBox.SetTextAlignment(Align.RIGHT);
-        // textBox.SetTextAlignment(Align.CENTER);
+        textBlock.SetBorderColor(Color.black);
         xy = textBox.DrawOn(page);
 
         // Draw the second row image and text:
@@ -53,16 +51,14 @@ public class Example_19 {
         textBox.SetText(Content.OfTextFile("data/latin.txt"));
         textBox.SetLocation(x2, xy[1] + 10f);
         textBox.SetWidth(w2);
-        textBox.SetBorders(true);
+        textBlock.SetBorderColor(Color.black);
         xy = textBox.DrawOn(page);
 
-        textBox = new TextBox(f1);
-        textBox.SetFallbackFont(f2);
-        textBox.SetText(Content.OfTextFile("data/chinese.txt"));
-        textBox.SetLocation(x1, 570f);
-        textBox.SetWidth(350f);
-        textBox.SetBorders(true);
-        xy = textBox.DrawOn(page);
+        TextBlock textBlock = new TextBlock(f2, Content.OfTextFile("data/chinese.txt"));
+        textBlock.SetLocation(x1, 570f);
+        textBlock.SetWidth(350f);
+        textBlock.SetBorderColor(Color.blue);
+        xy = textBlock.DrawOn(page);
 
         Box box = new Box();
         box.SetLocation(xy[0], xy[1]);
