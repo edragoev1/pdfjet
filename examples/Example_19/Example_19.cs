@@ -39,7 +39,7 @@ public class Example_19 {
         textBox.SetText(contents);
         textBox.SetLocation(x2, y1);
         textBox.SetWidth(w2);
-        textBlock.SetBorderColor(Color.black);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         // Draw the second row image and text:
@@ -51,7 +51,7 @@ public class Example_19 {
         textBox.SetText(Content.OfTextFile("data/latin.txt"));
         textBox.SetLocation(x2, xy[1] + 10f);
         textBox.SetWidth(w2);
-        textBlock.SetBorderColor(Color.black);
+        textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
         TextBlock textBlock = new TextBlock(f2, Content.OfTextFile("data/chinese.txt"));
