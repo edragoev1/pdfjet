@@ -35,8 +35,6 @@ public class Example_19 {
             "Geometry arose independently in a number of early cultures as a practical way for dealing with lengths, areas, and volumes.")
         textBlock.setLocation(x2, y1)
         textBlock.setWidth(w2)
-        // textBlock.setTextAlignment(Align.RIGHT)
-        // textBlock.setTextAlignment(Align.CENTER)
         textBlock.setBorderColor(Color.black)
         let xy = textBlock.drawOn(page)
 

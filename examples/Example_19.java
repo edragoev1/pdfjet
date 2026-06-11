@@ -56,13 +56,11 @@ public class Example_19 {
         textBox.setBorders(true);
         textBox.drawOn(page);
 
-        textBox = new TextBox(f1);
-        textBox.setFallbackFont(f2);
-        textBox.setText(Content.ofTextFile("data/chinese.txt"));
-        textBox.setLocation(x1, 570f);
-        textBox.setWidth(350f);
-        textBox.setBorders(true);
-        xy = textBox.drawOn(page);
+        TextBlock textBlock = new TextBlock(f2, Content.ofTextFile("data/chinese.txt"));
+        textBlock.setLocation(x1, 570f);
+        textBlock.setWidth(350f);
+        textBlock.setBorderColor(Color.BLUE);
+        xy = textBlock.drawOn(page);
 
         Box box = new Box();
         box.setLocation(xy[0], xy[1]);
