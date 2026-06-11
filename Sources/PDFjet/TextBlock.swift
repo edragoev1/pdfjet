@@ -110,8 +110,8 @@ public class TextBlock : Drawable {
         self.textPadding = padding
     }
 
-    public func setBorderWidth(_ width: Float) {
-        self.borderWidth = width
+    public func setBorderWidth(_ borderWidth: Float) {
+        self.borderWidth = borderWidth
     }
 
     public func setTextLineHeight(_ lineHeight: Float) {
@@ -262,26 +262,30 @@ public class TextBlock : Drawable {
         }
 
         page!.append("q\n")
-        page!.setPenWidth(borderWidth)
-        if textAlignment == Alignment.RIGHT {
-            // rightAlignText(textLines)    // TODO:
-        } else if textAlignment == Alignment.CENTER {
-            // centerText(textLines)
-        }
-        if underline {
-            // underlineText(textLines)
-        }
+        page!.setPenWidth(self.borderWidth)
+//         if textAlignment == Alignment.RIGHT {
+//             // rightAlignText(textLines)    // TODO:
+//         } else if textAlignment == Alignment.CENTER {
+//             // centerText(textLines)
+//         }
+//         if underline {
+//             // underlineText(textLines)
+//         }
 
-        if self.borderColor != nil {
+        if self.borderColor != nil || self.fillColor != nil {
             let rect = Rect(
                 x,
                 y,
                 width,
                 max(height, Float(textLines.count) * leading + 2 * textPadding))
-            rect.setFillColor(fillColor)
-            // rect.setBorderWidth(borderWidth)
-            rect.setBorderColor(self.borderColor)
-            rect.setCornerRadius(borderCornerRadius)
+            if self.borderColor != nil {
+                rect.setBorderColor(self.borderColor)
+                rect.setBorderWidth(self.borderWidth)
+                rect.setCornerRadius(borderCornerRadius)
+            }
+            if self.fillColor != nil {
+                rect.setFillColor(fillColor)
+            }
             rect.drawOn(page)
         }
 

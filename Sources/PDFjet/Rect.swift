@@ -24,8 +24,6 @@ public class Rect : Drawable {
     private var altDescription: String?
     private var actualText: String?
 
-    // private var structureType: String
-
     /**
      * Creates new Rect object.
      */
@@ -97,6 +95,10 @@ public class Rect : Drawable {
 
     public func setBorderColor(_ borderColor: [Float]?) {
         self.borderColor = borderColor!
+    }
+
+    public func setBorderWidth(_ width: Float) {
+        self.w = width
     }
 
     /**

@@ -69,7 +69,6 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 
 	textBlock.borderWidth = 0.5
 	textBlock.borderCornerRadius = 0.0
-	// textBlock.borderColor = color.Transparent TODO:
 
 	textBlock.language = "en-US"
 	textBlock.altDescription = ""
