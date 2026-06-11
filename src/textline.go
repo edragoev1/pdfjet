@@ -192,13 +192,13 @@ func (textLine *TextLine) GetDestinationY() float32 {
 // GetWidth returns the width of this TextLine.
 // @return the width.
 func (textLine *TextLine) GetWidth() float32 {
-	return textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 }
 
 // GetStringWidth returns the width of this TextLine.
 // @return the width.
 func (textLine *TextLine) GetStringWidth(text string) float32 {
-	return textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, text)
+	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, text)
 }
 
 // GetHeight returns the height of this TextLine.
@@ -424,7 +424,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 	if textLine.underline {
 		page.SetPenWidth(textLine.font.underlineThickness)
 		page.SetPenColorRGB(textLine.color)
-		lineLength := textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, textLine.text)
+		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		xAdjust := textLine.font.underlinePosition*float32(math.Sin(radians)) + textLine.verticalOffset
 		yAdjust := textLine.font.underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
@@ -439,7 +439,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 	if textLine.strikeout {
 		page.SetPenWidth(textLine.font.underlineThickness)
 		page.SetPenColorRGB(textLine.color)
-		lineLength := textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, textLine.text)
+		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		xAdjust := (textLine.font.bodyHeight / 4.0) * float32(math.Sin(radians))
 		yAdjust := (textLine.font.bodyHeight / 4.0) * float32(math.Cos(radians))
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
@@ -456,7 +456,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 			"Link",
 			textLine.x,
 			textLine.y-textLine.font.ascent,
-			textLine.x+textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, textLine.text),
+			textLine.x+textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
 			textLine.y+textLine.font.descent,
 			nil,
 			nil,
@@ -472,7 +472,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 
 	page.SetTextDirection(0)
 
-	length := textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
 	yMax := math.Max(float64(textLine.y), float64(textLine.y)-float64(length)*math.Sin(radians))
 

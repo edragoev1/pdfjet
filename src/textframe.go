@@ -149,7 +149,7 @@ func (frame *TextFrame) drawLineOnPage(page *Page, textLine *TextLine) *TextLine
 	tokens := strings.Fields(textLine.text)
 	testForFit := true
 	for _, token := range tokens {
-		if testForFit && textLine.font.stringWidth(textLine.font.size, sb1.String()+token) < frame.w {
+		if testForFit && textLine.font.StringWidth(textLine.font.size, sb1.String()+token) < frame.w {
 			sb1.WriteString(token + single.Space)
 		} else {
 			testForFit = false

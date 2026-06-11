@@ -178,7 +178,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 			"Link",
 			checkBox.x+3.0*checkBox.w/2.0,
 			checkBox.y,
-			checkBox.x+3.0*checkBox.w/2.0+checkBox.font.stringWidth(checkBox.font.size, checkBox.label),
+			checkBox.x+3.0*checkBox.w/2.0+checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
 			checkBox.y+checkBox.font.bodyHeight,
 			nil,
 			nil,
@@ -193,7 +193,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 	}
 
 	return []float32{
-		checkBox.x + 3.0*checkBox.w + checkBox.font.stringWidth(checkBox.font.size, checkBox.label),
+		checkBox.x + 3.0*checkBox.w + checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
 		checkBox.y + checkBox.font.descent,
 	}
 }

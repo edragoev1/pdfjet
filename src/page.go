@@ -238,7 +238,7 @@ func (page *Page) DrawStringUsingColorMap(
 		for _, ch := range text {
 			if activeFont.unicodeToGID[ch] == 0 {
 				page.drawString(activeFont, fontSize, buf.String(), x, y, brush, colors)
-				x += activeFont.stringWidth(activeFont.size, buf.String())
+				x += activeFont.StringWidth(activeFont.size, buf.String())
 				buf.Reset()
 				// Switch the active font
 				if activeFont == font {
@@ -1366,7 +1366,7 @@ func (page *Page) DrawArrayOfCharacters(font *Font, text string, x, y, dx float3
 func (page *Page) AddWatermark(font *Font, text string) {
 	hypotenuse := float32(math.Sqrt(
 		float64(page.height*page.height + page.width*page.width)))
-	stringWidth := font.stringWidth(font.size, text)
+	stringWidth := font.StringWidth(font.size, text)
 	offset := (hypotenuse - stringWidth) / 2.0
 	angle := math.Atan(float64(page.height / page.width))
 	watermark := NewTextLine(font, "")
@@ -1619,7 +1619,7 @@ func (page *Page) drawTextBlock(
 	for _, textLine := range textLines {
 		if textLine.underline {
 			page.MoveTo(x+textLine.xOffset, yLine)
-			page.LineTo(x+textLine.xOffset+font.StringWidth(nil, fontSize, textLine.text), yLine)
+			page.LineTo(x+textLine.xOffset+font.StringWidth(fontSize, textLine.text), yLine)
 			page.StrokePath()
 		}
 		yLine += leading

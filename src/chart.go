@@ -185,7 +185,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		chart.f1,
 		chart.f1.size,
 		chart.title,
-		chart.x1+((chart.w-chart.f1.stringWidth(chart.f1.size, chart.title))/2),
+		chart.x1+((chart.w-chart.f1.StringWidth(chart.f1.size, chart.title))/2),
 		chart.y1+1.5*chart.f1.bodyHeight,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
@@ -266,7 +266,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		chart.f1.size,
 		chart.yAxisTitle,
 		chart.x1+chart.f1.bodyHeight,
-		chart.y8-((chart.y8-chart.y5)-chart.f1.stringWidth(chart.f1.size, chart.yAxisTitle))/2,
+		chart.y8-((chart.y8-chart.y5)-chart.f1.StringWidth(chart.f1.size, chart.yAxisTitle))/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
@@ -276,7 +276,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		chart.f1,
 		chart.f1.size,
 		chart.xAxisTitle,
-		chart.x5+((chart.x6-chart.x5)-chart.f1.stringWidth(chart.f1.size, chart.xAxisTitle))/2,
+		chart.x5+((chart.x6-chart.x5)-chart.f1.StringWidth(chart.f1.size, chart.xAxisTitle))/2,
 		chart.y4-chart.f1.bodyHeight/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
@@ -287,8 +287,8 @@ func (chart *Chart) DrawOn(page *Page) {
 }
 
 func (chart *Chart) getLongestAxisYLabelWidth() float32 {
-	minLabelWidth := chart.f2.stringWidth(chart.f2.size, fmt.Sprintf("%.2f", chart.yMin)+"0")
-	maxLabelWidth := chart.f2.stringWidth(chart.f2.size, fmt.Sprintf("%.2f", chart.yMax)+"0")
+	minLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf("%.2f", chart.yMin)+"0")
+	maxLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf("%.2f", chart.yMax)+"0")
 	if maxLabelWidth > minLabelWidth {
 		return maxLabelWidth
 	}
@@ -402,7 +402,7 @@ func (chart *Chart) DrawXAxisLabels(page *Page) {
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
 		label := fmt.Sprintf("%.2f", chart.xMin+((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
 		page.drawString(
-			chart.f2, chart.f2.size, label, x-(chart.f2.stringWidth(chart.f2.size, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
+			chart.f2, chart.f2.size, label, x-(chart.f2.StringWidth(chart.f2.size, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += step
 	}
 }

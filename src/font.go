@@ -428,9 +428,9 @@ func (font *Font) SetItalic(skew15 bool) {
 	font.skew15 = skew15
 }
 
-// stringWidth returns the width of the specified string when drawn on the
+// StringWidth returns the width of the specified string when drawn on the
 // page with this font using the current font size.
-func (font *Font) stringWidth(fontSize float32, str string) float32 {
+func (font *Font) StringWidth(fontSize float32, str string) float32 {
 	var width float32 = 0.0
 	if str == "" {
 		return width
@@ -474,19 +474,19 @@ func (font *Font) stringWidth(fontSize float32, str string) float32 {
 	return width * fontSize / float32(font.unitsPerEm)
 }
 
-// StringWidth returns the width of text string drawn using main and fallback fonts.
-func (font *Font) StringWidth(fallbackFont *Font, fontSize float32, text string) float32 {
+// StringWidthFB returns the width of text string drawn using main and fallback fonts.
+func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text string) float32 {
 	var width float32 = 0.0
 
 	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
-		return font.stringWidth(fontSize, text)
+		return font.StringWidth(fontSize, text)
 	}
 
 	activeFont := font
 	var buf strings.Builder
 	for _, ch := range text {
 		if activeFont.unicodeToGID[ch] == 0 {
-			width += activeFont.stringWidth(fontSize, buf.String())
+			width += activeFont.StringWidth(fontSize, buf.String())
 			buf.Reset()
 			// Switch the active font
 			if activeFont == font {
@@ -497,7 +497,7 @@ func (font *Font) StringWidth(fallbackFont *Font, fontSize float32, text string)
 		}
 		buf.WriteRune(ch)
 	}
-	width += activeFont.stringWidth(fontSize, buf.String())
+	width += activeFont.StringWidth(fontSize, buf.String())
 
 	return width
 }

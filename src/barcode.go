@@ -245,7 +245,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) []float32 {
 
 		textLine := NewTextLine(barcode.font, label)
 		textLine.SetLocation(
-			barcode.x1+((x-barcode.x1)-barcode.font.stringWidth(barcode.font.size, label))/2,
+			barcode.x1+((x-barcode.x1)-barcode.font.StringWidth(barcode.font.size, label))/2,
 			barcode.y1+h+barcode.font.GetBodyHeight(barcode.font.GetSize()))
 		xy = textLine.DrawOn(page)
 		xy[0] = float32(math.Max(float64(x), float64(xy[0])))
@@ -353,7 +353,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
 		if barcode.direction == LeftToRight {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
-				x1+((x-x1)-barcode.font.stringWidth(barcode.font.size, barcode.text))/2.0,
+				x1+((x-x1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2.0,
 				y1+h+barcode.font.bodyHeight)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0])))
@@ -362,7 +362,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
 				x+w+barcode.font.bodyHeight,
-				y-((y-y1)-barcode.font.stringWidth(barcode.font.size, barcode.text))/2.0)
+				y-((y-y1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2.0)
 			text.SetTextDirection(90)
 			xy = text.DrawOn(page)
 			xy[1] = float32(math.Max(float64(y), float64(xy[1])))
@@ -406,7 +406,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) []float32 {
 		if barcode.font != nil {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
-				barcode.x1+((x-barcode.x1)-barcode.font.stringWidth(barcode.font.size, barcode.text))/2,
+				barcode.x1+((x-barcode.x1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2,
 				barcode.y1+h+barcode.font.bodyHeight)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0])))
@@ -438,7 +438,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) []float32 {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
 				x-barcode.font.bodyHeight,
-				barcode.y1+((y-barcode.y1)-barcode.font.stringWidth(barcode.font.size, barcode.text))/2)
+				barcode.y1+((y-barcode.y1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2)
 			text.SetTextDirection(270)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0]))) + w
@@ -486,7 +486,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) []float32 {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
 				x+w+barcode.font.bodyHeight,
-				y-((y-barcode.y1)-barcode.font.stringWidth(barcode.font.size, barcode.text))/2)
+				y-((y-barcode.y1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2)
 			text.SetTextDirection(90)
 			xy = text.DrawOn(page)
 			xy[1] = float32(math.Max(float64(y), float64(xy[1])))

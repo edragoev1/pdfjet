@@ -519,7 +519,7 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 			cell.StrikeoutText(page, cell.font, cell.text, xText, yText)
 		}
 	} else if cell.GetTextAlignment() == alignment.Right {
-		xText = (x + wCell) - (cell.font.stringWidth(cell.font.size, cell.text) + cell.rightPadding)
+		xText = (x + wCell) - (cell.font.StringWidth(cell.font.size, cell.text) + cell.rightPadding)
 		page.DrawStringUsingColorMap(
 			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
 		if cell.underline {
@@ -530,7 +530,7 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		}
 	} else if cell.GetTextAlignment() == alignment.Center {
 		xText = x + cell.leftPadding +
-			(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.font.stringWidth(cell.font.size, cell.text)) / 2)
+			(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.font.StringWidth(cell.font.size, cell.text)) / 2)
 		page.DrawStringUsingColorMap(
 			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
 		if cell.underline {
@@ -562,7 +562,7 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 func (cell *Cell) UnderlineText(page *Page, font *Font, text string, x, y float32) {
 	page.SetPenWidth(font.underlineThickness)
 	page.MoveTo(x, y+font.descent)
-	page.LineTo(x+font.stringWidth(cell.font.size, text), y+font.descent)
+	page.LineTo(x+font.StringWidth(cell.font.size, text), y+font.descent)
 	page.StrokePath()
 }
 
@@ -570,6 +570,6 @@ func (cell *Cell) UnderlineText(page *Page, font *Font, text string, x, y float3
 func (cell *Cell) StrikeoutText(page *Page, font *Font, text string, x, y float32) {
 	page.SetPenWidth(font.underlineThickness)
 	page.MoveTo(x, y-font.ascent/3.0)
-	page.LineTo(x+font.stringWidth(cell.font.size, text), y-font.ascent/3.0)
+	page.LineTo(x+font.StringWidth(cell.font.size, text), y-font.ascent/3.0)
 	page.StrokePath()
 }

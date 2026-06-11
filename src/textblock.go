@@ -266,7 +266,7 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 	textBlock.textContent = strings.TrimSpace(textBlock.textContent)
 	lines := strings.Split(textBlock.textContent, "\n")
 	for _, line := range lines {
-		if textBlock.font.StringWidth(textBlock.fallbackFont, textBlock.font.size, line) <= textAreaWidth {
+		if textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.font.size, line) <= textAreaWidth {
 			textLines = append(
 				textLines,
 				NewTextLine(textBlock.font, line))
@@ -274,7 +274,7 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 			if textBlock.textIsCJK(line) {
 				var sb strings.Builder
 				for _, ch := range line {
-					if textBlock.font.StringWidth(textBlock.fallbackFont,
+					if textBlock.font.StringWidthFB(textBlock.fallbackFont,
 						textBlock.font.size, sb.String()+string(ch)) <= textAreaWidth {
 						sb.WriteRune(ch)
 					} else {
@@ -292,7 +292,7 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 				var sb strings.Builder
 				tokens := strings.Fields(line) // Split by whitespace
 				for _, token := range tokens {
-					if textBlock.font.StringWidth(textBlock.fallbackFont,
+					if textBlock.font.StringWidthFB(textBlock.fallbackFont,
 						textBlock.font.size, sb.String()+token) <= textAreaWidth {
 						sb.WriteString(token + " ")
 					} else {
@@ -318,14 +318,14 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 	for _, textLine := range textLines {
 		textLine.xOffset = textBlock.width -
-			textBlock.font.stringWidth(textBlock.font.size, textLine.text)
+			textBlock.font.StringWidth(textBlock.font.size, textLine.text)
 	}
 }
 
 func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	for _, textLine := range textLines {
 		textLine.xOffset = (textBlock.width -
-			textBlock.font.stringWidth(textBlock.font.size, textLine.text)) / 2.0
+			textBlock.font.StringWidth(textBlock.font.size, textLine.text)) / 2.0
 	}
 }
 

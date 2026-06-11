@@ -89,7 +89,7 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 			xy := text.drawTextLine(page, text.xText, text.yText, textLine)
 			text.xText = xy[0]
 			if !textLine.isLastToken {
-				text.xText *= text.font.StringWidth(text.fallbackFont, text.font.size, single.Space)
+				text.xText *= text.font.StringWidthFB(text.fallbackFont, text.font.size, single.Space)
 			}
 			text.yText = xy[1]
 		}
@@ -124,8 +124,8 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 		if i > 0 {
 			token = single.Space + tokens[i]
 		}
-		lineWidth := textLine.font.StringWidth(textLine.fallbackFont, textLine.font.size, buf.String())
-		tokenWidth := textLine.font.StringWidth(textLine.fallbackFont, textLine.font.size, token)
+		lineWidth := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, buf.String())
+		tokenWidth := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, token)
 		if (lineWidth + tokenWidth) < (text.x1+text.width)-text.xText {
 			buf.WriteString(token)
 		} else {
@@ -160,7 +160,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 		textLine2.DrawOn(page)
 	}
 
-	return []float32{text.xText + textLine.font.StringWidth(
+	return []float32{text.xText + textLine.font.StringWidthFB(
 		textLine.fallbackFont, textLine.font.size, buf.String()), text.yText}
 }
 
@@ -186,7 +186,7 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 	tokens := make([]string, 0)
 	var sb strings.Builder
 	for _, ch := range textLine.text {
-		if text.font.StringWidth(text.fallbackFont, text.font.size, sb.String()+string(ch)) < textWidth {
+		if text.font.StringWidthFB(text.fallbackFont, text.font.size, sb.String()+string(ch)) < textWidth {
 			sb.WriteRune(ch)
 		} else {
 			tokens = append(tokens, sb.String())

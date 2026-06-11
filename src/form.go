@@ -187,7 +187,7 @@ func (form *Form) format(title, text string, font *Font, width float32) []string
 	var buf strings.Builder
 	for i := 0; i < len(original); i++ {
 		line := original[i]
-		if font.stringWidth(font.size, line) < width {
+		if font.StringWidth(font.size, line) < width {
 			lines = append(lines, line)
 			continue
 		}
@@ -196,7 +196,7 @@ func (form *Form) format(title, text string, font *Font, width float32) []string
 		runes := []rune(line)
 		for j := 0; j < len(runes); j++ {
 			buf.WriteRune(runes[j])
-			if font.stringWidth(font.size, buf.String()) > (width - font.stringWidth(font.size, "   ")) {
+			if font.StringWidth(font.size, buf.String()) > (width - font.StringWidth(font.size, "   ")) {
 				for j > 0 && runes[j] != ' ' {
 					j--
 				}

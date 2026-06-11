@@ -332,7 +332,7 @@ func (textColumn *TextColumn) AddChineseParagraph(font *Font, text string) {
 	var paragraph *Paragraph
 	var buf strings.Builder
 	for _, ch := range text {
-		if font.stringWidth(font.size, buf.String()+string(ch)) > textColumn.w {
+		if font.StringWidth(font.size, buf.String()+string(ch)) > textColumn.w {
 			paragraph = NewParagraph()
 			paragraph.Add(NewTextLine(font, buf.String()))
 			textColumn.paragraphs = append(textColumn.paragraphs, paragraph)

@@ -75,7 +75,7 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) {
 		for col := 0; col < 7; col++ {
 			if row == 0 {
 				offset := (calendarMonth.dx -
-					calendarMonth.f1.stringWidth(calendarMonth.f1.size, calendarMonth.days[col])) / 2.0
+					calendarMonth.f1.StringWidth(calendarMonth.f1.size, calendarMonth.days[col])) / 2.0
 				text := NewTextLine(calendarMonth.f1, calendarMonth.days[col])
 				text.SetLocation(
 					calendarMonth.x1+float32(col)*calendarMonth.dx+offset,
@@ -93,7 +93,7 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) {
 				dayOfMonth := ((7*row + col) - 6) - (calendarMonth.dayOfWeek - 1)
 				if dayOfMonth > 0 && dayOfMonth <= calendarMonth.daysInMonth {
 					s1 := strconv.Itoa(dayOfMonth)
-					offset := (calendarMonth.dx - calendarMonth.f2.stringWidth(calendarMonth.f2.size, s1)) / 2
+					offset := (calendarMonth.dx - calendarMonth.f2.StringWidth(calendarMonth.f2.size, s1)) / 2
 					text := NewTextLine(calendarMonth.f2, s1)
 					text.SetLocation(calendarMonth.x1+float32(col)*calendarMonth.dx+offset, calendarMonth.y1+float32(row)*calendarMonth.dy)
 					text.DrawOn(page)
