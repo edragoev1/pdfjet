@@ -18,8 +18,6 @@ public class Example_19 {
         Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
         f2.SetSize(10f);
 
-        String contents = Content.OfTextFile("data/calculus-short.txt");
-
         Page page = new Page(pdf, Letter.PORTRAIT);
         // Columns x coordinates
         float x1 = 50f;
@@ -35,8 +33,7 @@ public class Example_19 {
         image1.ScaleBy(0.75f);
         float[] xy = image1.DrawOn(page);
 
-        TextBox textBox = new TextBox(f1);
-        textBox.SetText(contents);
+        TextBox textBox = new TextBox(f1, Content.OfTextFile("data/calculus-short.txt"));
         textBox.SetLocation(x2, y1);
         textBox.SetWidth(w2);
         textBox.SetBorders(true);

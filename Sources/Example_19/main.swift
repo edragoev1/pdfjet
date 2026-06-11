@@ -16,30 +16,26 @@ public class Example_19 {
         f2.setSize(10.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
-
         // Columns x coordinates
         let x1: Float = 50.0
         let y1: Float = 50.0
-
         let x2: Float = 300.0
-
-        // Width of the second column:
         let w2: Float = 300.0
 
         let image1 = try Image(pdf, "images/fruit.jpg")
+        let image2 = try Image(pdf, "images/ee-map.png")
+
         image1.setLocation(x1, y1)
         image1.scaleBy(0.75)
         image1.drawOn(page)
 
-        var textBlock = TextBlock(f1,
-            "Geometry arose independently in a number of early cultures as a practical way for dealing with lengths, areas, and volumes.")
+        var textBlock = TextBlock(f1, try Content.ofTextFile("data/calculus-short.txt"))
         textBlock.setLocation(x2, y1)
         textBlock.setWidth(w2)
         textBlock.setBorderColor(Color.black)
-        let xy = textBlock.drawOn(page)
+        var xy = textBlock.drawOn(page)
 
         // Draw the second row image and text:
-        let image2 = try Image(pdf, "images/ee-map.png")
         image2.setLocation(x1, xy[1] + 10.0)
         image2.scaleBy(1.0/3.0)
         image2.drawOn(page)
@@ -47,8 +43,8 @@ public class Example_19 {
         textBlock = TextBlock(f1, try Content.ofTextFile("data/latin.txt"))
         textBlock.setWidth(w2)
         textBlock.setLocation(x2, xy[1] + 10.0)
-        textBlock.setBorderColor(Color.red)
-        textBlock.drawOn(page)
+        textBlock.setBorderColor(Color.black)
+        xy = textBlock.drawOn(page)
 
         textBlock = TextBlock(f2, try Content.ofTextFile("data/chinese.txt"))
         textBlock.setLocation(x1, 530.0)

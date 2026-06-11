@@ -20,8 +20,6 @@ func Example19() {
 	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
 	f2.SetSize(10.0)
 
-	contents := content.OfTextFile("data/calculus-short.txt")
-
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	// Columns x coordinates
@@ -38,7 +36,7 @@ func Example19() {
 	image1.ScaleBy(0.75)
 	xy := image1.DrawOn(page)
 
-	textBlock := pdfjet.NewTextBlock(f1, contents)
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/calculus-short.txt"))
 	textBlock.SetLocation(x2, y1)
 	textBlock.SetWidth(w2)
 	textBlock.SetBorderColor(color.Black)

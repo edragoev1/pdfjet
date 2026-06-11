@@ -18,8 +18,6 @@ public class Example_19 {
         Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
         f2.setSize(10f);
 
-        String contents = Content.ofTextFile("data/calculus-short.txt");
-
         Page page = new Page(pdf, Letter.PORTRAIT);
         // Columns x coordinates
         float x1 = 50f;
@@ -35,13 +33,10 @@ public class Example_19 {
         image1.scaleBy(0.75f);
         image1.drawOn(page);
 
-        TextBox textBox = new TextBox(f1);
-        textBox.setText(contents);
+        TextBox textBox = new TextBox(f1, Content.ofTextFile("data/calculus-short.txt"));
         textBox.setLocation(x2, y1);
         textBox.setWidth(w2);
         textBox.setBorders(true);
-        // textBlock.setTextAlignment(Align.RIGHT);
-        // textBlock.setTextAlignment(Align.CENTER);
         float[] xy = textBox.drawOn(page);
 
         // Draw the second image
@@ -59,7 +54,7 @@ public class Example_19 {
         TextBlock textBlock = new TextBlock(f2, Content.ofTextFile("data/chinese.txt"));
         textBlock.setLocation(x1, 570f);
         textBlock.setWidth(350f);
-        textBlock.setBorderColor(Color.BLUE);
+        textBlock.setBorderColor(Color.blue);
         xy = textBlock.drawOn(page);
 
         Box box = new Box();
