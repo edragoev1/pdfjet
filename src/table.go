@@ -9,6 +9,7 @@ package pdfjet
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -139,9 +140,9 @@ func (table *Table) RightAlignNumbers() {
 	var buf strings.Builder
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			if cell.text != "" {
+			if cell.text != nil {
 				buf.Reset()
-				runes := []rune(cell.text)
+				runes := []rune(*cell.text)
 				var index1 = 0
 				var index2 = len(runes)
 				if len(runes) > 2 && runes[0] == '(' && runes[len(runes)-1] == ')' {
@@ -367,6 +368,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	for i := 0; i < table.numOfHeaderRows; i++ {
 		row := table.tableData[i]
 		h := table.getMaxCellHeight(row)
+		fmt.Println(h)
 		for j := 0; j < len(row); {
 			cell := row[j]
 			colspan := cell.GetColSpan()
@@ -537,8 +539,8 @@ func (table *Table) SetColumnWidths() {
 		for i := 0; i < len(row); i++ {
 			cell := row[i]
 			if cell.GetColSpan() == 1 {
-				if cell.text != "" {
-					textWidth := cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, cell.text)
+				if cell.text != nil {
+					textWidth := cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, *cell.text)
 					textWidth += cell.leftPadding + cell.rightPadding
 					if textWidth > maxColWidths[i] {
 						maxColWidths[i] = textWidth
@@ -631,7 +633,7 @@ func (table *Table) wrapAroundCellText() {
 		row := tableData2[i]
 		for j := 0; j < len(row); j++ {
 			cell := row[j]
-			if cell.text != "" {
+			if cell.text != nil {
 				cellWidth := getTotalWidth(row, j)
 				tokens := strings.Fields(cell.GetText())
 				var n = 0
@@ -675,11 +677,11 @@ func (table *Table) wrapAroundCellText() {
 func getNumVerCells(row []*Cell, index int) int {
 	cell := row[index]
 	numOfVerCells := 1
-	if cell.text == "" {
+	if cell.text == nil {
 		return numOfVerCells
 	}
 	cellWidth := getTotalWidth(row, index)
-	tokens := strings.Fields(cell.text)
+	tokens := strings.Fields(*cell.text)
 	var buf strings.Builder
 	for _, token := range tokens {
 		if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
