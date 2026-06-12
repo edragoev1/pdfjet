@@ -346,7 +346,6 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	descent := textBlock.font.descent
 	leading := (ascent + descent) * textBlock.lineSpacing
 	textLines := textBlock.getTextLinesWithOffsets()
-
 	if page == nil {
 		return [2]float32{
 			textBlock.x + textBlock.width,

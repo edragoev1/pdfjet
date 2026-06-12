@@ -324,11 +324,6 @@ namespace PDFjet.NET {
         }
 
         public float[] DrawOn(Page page) {
-            if (page == null) {
-                // TODO
-                return new float[] {0f, 0f};
-            }
-
             float ascent = this.font.GetAscent(fontSize);
             float descent = this.font.GetDescent(fontSize);
             float leading = (ascent + descent) * this.lineSpacing;

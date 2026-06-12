@@ -248,11 +248,6 @@ public class TextBlock : Drawable {
 
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if page == nil {
-            // TODO
-            return [0.0, 0.0]
-        }
-
         let ascent = font.getAscent(fontSize)
         let descent = font.getDescent(fontSize)
         let leading = (ascent + descent) * lineSpacing
