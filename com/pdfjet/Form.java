@@ -22,8 +22,8 @@ public class Form implements Drawable {
     private int numberOfRows;
     private float rowLength = 500f;
     private float rowHeight = 12f;
-    private int labelColor = Color.black;
-    private int valueColor = Color.blue;
+    private float[] labelColor = new float[] {0f, 0f, 0f};
+    private float[] valueColor = new float[] {0f, 0f, 1f};
 
     /**
      * Creates a Form object
@@ -150,7 +150,7 @@ public class Form implements Drawable {
      * @param labelColor the label color
      * @return the form
      */
-    public Form setLabelColor(int labelColor) {
+    public Form setLabelColor(float[] labelColor) {
         this.labelColor = labelColor;
         return this;
     }
@@ -161,7 +161,7 @@ public class Form implements Drawable {
      * @param valueColor the value color
      * @return the form
      */
-    public Form setValueColor(int valueColor) {
+    public Form setValueColor(float[] valueColor) {
         this.valueColor = valueColor;
         return this;
     }
@@ -214,17 +214,19 @@ public class Form implements Drawable {
                 if (page != null) {
                     Font font = (i == 0) ? f1 : f2;
                     float fontSize = (i == 0) ? labelFontSize : valueFontSize;
-                    int color = (i == 0) ? labelColor : valueColor;
+                    float[] color = (i == 0) ? labelColor : valueColor;
                     new TextLine(font, field.values[i])
                             .setFontSize(fontSize)
                             .setTextColor(color)
-                            .setAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
+                            .setAltDescription((i == 0) ?
+                                    field.altDescription[i] : (field.altDescription[i] + ","))
+                            .setLocation(2f + x + field.x, y + yField)
                             .drawOn(page);
-                    if (i == (field.values.length - 1)) {
-                        new Line(0f, 0f, rowLength, 0f).drawOn(page);
-                        if (field.x != 0f) {
-                            new Line(0f, -(field.values.length-1)*rowHeight, 0f, 0f).drawOn(page);
-                        }
+                    if (page != null && i == (field.values.length - 1)) {
+                        new Line(x, y + yField + font.getDescent(),
+                                x + rowLength, y + yField + font.getDescent()).drawOn(page);
+                        new Line(x + field.x, y + yField + font.getDescent() - (field.values.length-1)*rowHeight,
+                                x + field.x, y + yField + font.getDescent()).drawOn(page);
                     }
                 }
                 yField += rowHeight;
