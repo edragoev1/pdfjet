@@ -342,18 +342,22 @@ func maxFloat32(a, b float32) float32 {
 // @param draw flag specifying if text block component should actually be drawn on the page.
 // @return x and y coordinates of the bottom right corner of text block component.
 func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
+	ascent := textBlock.font.ascent
+	descent := textBlock.font.descent
+	leading := (ascent + descent) * textBlock.lineSpacing
+	textLines := textBlock.getTextLinesWithOffsets()
+
 	if page == nil {
-		// TODO
-		return [2]float32{0.0, 0.0}
+		return [2]float32{
+			textBlock.x + textBlock.width,
+			maxFloat32(
+				textBlock.y+textBlock.height,
+				textBlock.y+(float32(len(textLines))*leading)+2*textBlock.textPadding),
+		}
 	}
 
 	page.appendString("q\n")
 	page.SetPenWidth(textBlock.borderWidth)
-	ascent := textBlock.font.ascent
-	descent := textBlock.font.descent
-	leading := (ascent + descent) * textBlock.lineSpacing
-
-	textLines := textBlock.getTextLinesWithOffsets()
 	switch textBlock.textAlignment {
 	case alignment.Right:
 		textBlock.rightAlignText(textLines)
@@ -393,27 +397,25 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	page.appendString("Q\n")
 
 	// You can uncomment and adapt if required.
-	/*
-		if t.TextDirection == LEFT_TO_RIGHT &&
-			(t.Uri != "" || t.Key != "") {
-			page.AddAnnotation(Annotation{
-				Uri:                 t.Uri,
-				Key:                 t.Key,
-				X:                   t.X,
-				Y:                   t.Y,
-				Width:               t.X + t.Width,
-				Height:              t.Y + t.Height,
-				UriLanguage:         t.UriLanguage,
-				UriActualText:       t.UriActualText,
-				UriAltDescription:   t.UriAltDescription,
-			})
-		}
-	*/
+	//if textBlock.textdirection == LEFT_TO_RIGHT &&
+	//	(textBlock.uri != "" || textBlock.key != "") {
+	//	page.AddAnnotation(Annotation{
+	//		Uri:               t.Uri,
+	//		Key:               t.Key,
+	//		X:                 t.X,
+	//		Y:                 t.Y,
+	//		Width:             t.X + t.Width,
+	//		Height:            t.Y + t.Height,
+	//		UriLanguage:       t.UriLanguage,
+	//		UriActualText:     t.UriActualText,
+	//		UriAltDescription: t.UriAltDescription,
+	//	})
+	//}
 
 	return [2]float32{
 		textBlock.x + textBlock.width,
 		maxFloat32(
 			textBlock.y+textBlock.height,
-			textBlock.y+(float32(len(textLines))*leading)+(2*textBlock.textPadding)),
+			textBlock.y+(float32(len(textLines))*leading)+2*textBlock.textPadding),
 	}
 }

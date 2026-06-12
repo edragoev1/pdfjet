@@ -78,8 +78,8 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		for _, field := range fields {
 			if lineNumber == 0 {
 				cell := NewCell(f1, "")
-				textBox := NewTextBlock(f1, field)
-				cell.SetTextBlock(textBox)
+				textBlock := NewTextBlock(f1, field)
+				cell.SetTextBlock(textBlock)
 				row = append(row, cell)
 			} else {
 				row = append(row, NewCell(f2, field))
@@ -139,25 +139,24 @@ func (table *Table) RightAlignNumbers() {
 	var buf strings.Builder
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			if cell.text != nil {
-				buf.Reset()
-				runes := []rune(*cell.text)
-				var index1 = 0
-				var index2 = len(runes)
-				if len(runes) > 2 && runes[0] == '(' && runes[len(runes)-1] == ')' {
-					index1 = 1
-					index2 = len(runes) - 1
+
+			buf.Reset()
+			runes := []rune(cell.text)
+			var index1 = 0
+			var index2 = len(runes)
+			if len(runes) > 2 && runes[0] == '(' && runes[len(runes)-1] == ')' {
+				index1 = 1
+				index2 = len(runes) - 1
+			}
+			for i := index1; i < index2; i++ {
+				ch := runes[i]
+				if ch != '.' && ch != ',' && ch != '\'' {
+					buf.WriteRune(ch)
 				}
-				for i := index1; i < index2; i++ {
-					ch := runes[i]
-					if ch != '.' && ch != ',' && ch != '\'' {
-						buf.WriteRune(ch)
-					}
-				}
-				_, err := strconv.ParseFloat(buf.String(), 64)
-				if err == nil {
-					cell.SetTextAlignment(alignment.Right)
-				}
+			}
+			_, err := strconv.ParseFloat(buf.String(), 64)
+			if err == nil {
+				cell.SetTextAlignment(alignment.Right)
 			}
 		}
 	}
@@ -537,13 +536,7 @@ func (table *Table) SetColumnWidths() {
 		for i := 0; i < len(row); i++ {
 			cell := row[i]
 			if cell.GetColSpan() == 1 {
-				if cell.text != nil {
-					textWidth := cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, *cell.text)
-					textWidth += cell.leftPadding + cell.rightPadding
-					if textWidth > maxColWidths[i] {
-						maxColWidths[i] = textWidth
-					}
-				} else if cell.textBlock != nil {
+				if cell.textBlock != nil {
 					tokens := strings.Fields(cell.textBlock.GetText())
 					for _, token := range tokens {
 						tokenWidth := cell.textBlock.font.StringWidthFB(
@@ -562,6 +555,12 @@ func (table *Table) SetColumnWidths() {
 					barcodeWidth := cell.barcode.DrawOn(nil)[0] + cell.leftPadding + cell.rightPadding
 					if barcodeWidth > maxColWidths[i] {
 						maxColWidths[i] = barcodeWidth
+					}
+				} else {
+					textWidth := cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, cell.text)
+					textWidth += cell.leftPadding + cell.rightPadding
+					if textWidth > maxColWidths[i] {
+						maxColWidths[i] = textWidth
 					}
 				}
 			}
@@ -631,40 +630,40 @@ func (table *Table) wrapAroundCellText() {
 		row := tableData2[i]
 		for j := 0; j < len(row); j++ {
 			cell := row[j]
-			if cell.text != nil {
-				cellWidth := getTotalWidth(row, j)
-				tokens := strings.Fields(cell.GetText())
-				var n = 0
-				var buf strings.Builder
-				for _, token := range tokens {
-					if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
+
+			cellWidth := getTotalWidth(row, j)
+			tokens := strings.Fields(cell.GetText())
+			var n = 0
+			var buf strings.Builder
+			for _, token := range tokens {
+				if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
+					if len(buf.String()) > 0 {
+						buf.WriteString(" ")
+					}
+					for _, ch := range token {
+						if cell.font.StringWidthFB(cell.fallbackFont,
+							cell.font.size, strings.TrimSpace(buf.String()+" "+string(ch))) > cellWidth {
+							tableData2[i+n][j].SetText(buf.String())
+							buf.Reset()
+							n++
+						}
+						buf.WriteRune(ch)
+					}
+				} else {
+					if cell.font.StringWidthFB(cell.fallbackFont,
+						cell.font.size, strings.TrimSpace(buf.String()+" "+token)) > cellWidth {
+						tableData2[i+n][j].SetText(strings.TrimSpace(buf.String()))
+						buf.Reset()
+						buf.WriteString(token)
+						n++
+					} else {
 						if len(buf.String()) > 0 {
 							buf.WriteString(" ")
 						}
-						for _, ch := range token {
-							if cell.font.StringWidthFB(cell.fallbackFont,
-								cell.font.size, strings.TrimSpace(buf.String()+" "+string(ch))) > cellWidth {
-								tableData2[i+n][j].SetText(buf.String())
-								buf.Reset()
-								n++
-							}
-							buf.WriteRune(ch)
-						}
-					} else {
-						if cell.font.StringWidthFB(cell.fallbackFont,
-							cell.font.size, strings.TrimSpace(buf.String()+" "+token)) > cellWidth {
-							tableData2[i+n][j].SetText(strings.TrimSpace(buf.String()))
-							buf.Reset()
-							buf.WriteString(token)
-							n++
-						} else {
-							if len(buf.String()) > 0 {
-								buf.WriteString(" ")
-							}
-							buf.WriteString(token)
-						}
+						buf.WriteString(token)
 					}
 				}
+
 				tableData2[i+n][j].SetText(strings.TrimSpace(buf.String()))
 			}
 		}
@@ -675,11 +674,8 @@ func (table *Table) wrapAroundCellText() {
 func getNumVerCells(row []*Cell, index int) int {
 	cell := row[index]
 	numOfVerCells := 1
-	if cell.text == nil {
-		return numOfVerCells
-	}
 	cellWidth := getTotalWidth(row, index)
-	tokens := strings.Fields(*cell.text)
+	tokens := strings.Fields(cell.text)
 	var buf strings.Builder
 	for _, token := range tokens {
 		if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
