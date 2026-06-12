@@ -19,6 +19,7 @@ public class Example_32 {
         colors.put("new", Color.red);
         colors.put("class", Color.blue);
         colors.put("void", Color.green);
+        float[] grayColor = new float[] {0.2f, 0.2f, 0.2f};
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         float x = 50f;
@@ -26,7 +27,7 @@ public class Example_32 {
         float leading = font.getBodyHeight();
         List<String> lines = Text.readLines("examples/Example_02.java");
         for (String line : lines) {
-            page.drawString(font, font.getSize(), line, x, y, new float[] {0.25f, 0.25f, 0.25f}, colors);
+            page.drawString(font, font.getSize(), line, x, y, grayColor, colors);
             y += leading;
             if (y > (page.getHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);

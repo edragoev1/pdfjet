@@ -11,21 +11,22 @@ public class Example_02 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_02.pdf")));
 
-        Font font1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
-        font1.setSize(12f);
+        Font f1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
+        f1.setSize(12f);
 
-        Font font2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
-        font2.setSize(12f);
+        Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
+        f2.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextBlock textBlock = new TextBlock(
-                font1, Content.ofTextFile("data/languages/japanese.txt"));
+                f1, Content.ofTextFile("data/languages/japanese.txt"));
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
 
-        textBlock = new TextBlock(font2, Content.ofTextFile("data/languages/korean.txt"));
+        textBlock = new TextBlock(
+                f2, Content.ofTextFile("data/languages/korean.txt"));
         textBlock.setLocation(50f, 450f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);

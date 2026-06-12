@@ -20,15 +20,15 @@ public class Example_32 {
         colors["new"] = Color.red;
         colors["class"] =  Color.blue;
         colors["void"] = Color.green;
+        float[] grayColor = new float[] {0.2f, 0.2f, 0.2f};
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
         float x = 50f;
         float y = 50f;
         float leading = font.GetBodyHeight(font.GetSize());
         List<String> lines = Text.ReadLines("examples/Example_02.java");
         foreach (String line in lines) {
-            page.DrawString(font, font.GetSize(), line, x, y, new float[] {0f, 0f, 0f}, colors);
+            page.DrawString(font, font.GetSize(), line, x, y, grayColor, colors);
             y += leading;
             if (y > (page.GetHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);

@@ -18,6 +18,7 @@ public class Example_32 {
         colors["new"] = Color.red
         colors["class"] = Color.blue
         colors["void"] = Color.green
+        let grayColor: [Float] = [0.2, 0.2, 0.2]
 
         var page = Page(pdf, Letter.PORTRAIT)
         let x: Float = 50.0
@@ -25,7 +26,7 @@ public class Example_32 {
         let leading = font.getBodyHeight()
         let lines = try Text.readLines("examples/Example_02.java")
         for line in lines {
-            page.drawString(font, font.getSize(), line, x, y, [0.0, 0.0, 0.0], colors)
+            page.drawString(font, font.getSize(), line, x, y, grayColor, colors)
             y += leading
             if y > (page.getHeight() - 20.0) {
                 page = Page(pdf, Letter.PORTRAIT)

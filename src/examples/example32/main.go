@@ -20,6 +20,7 @@ func Example32() {
 	colors["new"] = color.Red
 	colors["class"] = color.Blue
 	colors["void"] = color.Green
+	grayColor := [3]float32{0.2, 0.2, 0.2}
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 	x := float32(50.0)
@@ -27,7 +28,7 @@ func Example32() {
 	leading := font.GetBodyHeight(font.GetSize())
 	lines := pdfjet.ReadTextLines("examples/Example_02.java")
 	for _, line := range lines {
-		page.DrawStringUsingColorMap(font, font, font.GetSize(), line, x, y, [3]float32{0.0, 0.0, 0.0}, colors)
+		page.DrawStringUsingColorMap(font, font, font.GetSize(), line, x, y, grayColor, colors)
 		y += leading
 		if y > (page.GetHeight() - 20.0) {
 			page = pdfjet.NewPage(pdf, a4.Portrait)
