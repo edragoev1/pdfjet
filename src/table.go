@@ -9,7 +9,6 @@ package pdfjet
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -368,7 +367,6 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	for i := 0; i < table.numOfHeaderRows; i++ {
 		row := table.tableData[i]
 		h := table.getMaxCellHeight(row)
-		fmt.Println(h)
 		for j := 0; j < len(row); {
 			cell := row[j]
 			colspan := cell.GetColSpan()

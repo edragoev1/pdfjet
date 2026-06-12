@@ -482,7 +482,6 @@ public class Table {
         for (int i = 0; i < numOfHeaderRows; i++) {
             List<Cell> row = tableData.get(i);
             float h = getMaxCellHeight(row);
-System.out.println(h);
             int j = 0;
             while (j < row.size()) {
                 Cell cell = row.get(j);
