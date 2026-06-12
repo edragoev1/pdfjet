@@ -13,18 +13,12 @@ public class Example_32 {
                 new BufferedOutputStream(new FileOutputStream("Example_32.pdf")));
 
         Font font = new Font(pdf, JetBrainsMono.Regular);
-        font.setSize(8f);
+        font.setSize(10f);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
         colors.put("new", Color.red);
-        colors.put("ArrayList", Color.blue);
-        colors.put("List", Color.blue);
-        colors.put("String", Color.blue);
-        colors.put("Field", Color.blue);
-        colors.put("Form", Color.blue);
-        colors.put("Smart", Color.green);
-        colors.put("Widget", Color.green);
-        colors.put("Designs", Color.green);
+        colors.put("class", Color.blue);
+        colors.put("void", Color.green);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         float x = 50f;

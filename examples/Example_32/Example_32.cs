@@ -14,25 +14,19 @@ public class Example_32 {
                 new FileStream("Example_32.pdf", FileMode.Create)));
 
         Font font = new Font(pdf, JetBrainsMono.Regular);
-        font.SetSize(8f);
+        font.SetSize(10f);
 
         Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
         colors["new"] = Color.red;
-        colors["ArrayList"] =  Color.blue;
-        colors["List"] = Color.blue;
-        colors["String"] = Color.blue;
-        colors["Field"] = Color.blue;
-        colors["Form"] = Color.blue;
-        colors["Smart"] = Color.green;
-        colors["Widget"] = Color.green;
-        colors["Designs"] = Color.green;
+        colors["class"] =  Color.blue;
+        colors["void"] = Color.green;
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         float x = 50f;
         float y = 50f;
         float leading = font.GetBodyHeight(font.GetSize());
-        List<String> lines = Text.ReadLines("examples/Example_02/Example_02.cs");
+        List<String> lines = Text.ReadLines("examples/Example_02.java");
         foreach (String line in lines) {
             page.DrawString(font, font.GetSize(), line, x, y, new float[] {0f, 0f, 0f}, colors);
             y += leading;

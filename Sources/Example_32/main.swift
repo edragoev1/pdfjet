@@ -11,25 +11,19 @@ public class Example_32 {
 
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_32.pdf", append: false)!)
-        let font = try Font(pdf, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream")
-        font.setSize(8.0)
+        let font = try Font(pdf, JetBrainsMono.Regular)
+        font.setSize(10.0)
 
         var colors = [String:Int32]()
         colors["new"] = Color.red
-        colors["ArrayList"] = Color.blue
-        colors["List"] = Color.blue
-        colors["String"] = Color.blue
-        colors["Field"] = Color.blue
-        colors["Form"] = Color.blue
-        colors["Smart"] = Color.green
-        colors["Widget"] = Color.green
-        colors["Point"] = Color.green
+        colors["class"] = Color.blue
+        colors["void"] = Color.green
 
         var page = Page(pdf, Letter.PORTRAIT)
         let x: Float = 50.0
         var y: Float = 50.0
         let leading = font.getBodyHeight()
-        let lines = try Text.readLines("Sources/Example_02/main.swift")
+        let lines = try Text.readLines("examples/Example_02.java")
         for line in lines {
             page.drawString(font, font.getSize(), line, x, y, [0.0, 0.0, 0.0], colors)
             y += leading

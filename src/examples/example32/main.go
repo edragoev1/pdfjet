@@ -4,28 +4,22 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
 // Example32 -- TODO:
 func Example32() {
 	pdf := pdfjet.NewPDFFile("Example_32.pdf")
 
-	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
-	font.SetSize(8.0)
+	font := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
+	font.SetSize(10.0)
 
 	colors := make(map[string]int32)
 	colors["new"] = color.Red
-	colors["ArrayList"] = color.Blue
-	colors["List"] = color.Blue
-	colors["String"] = color.Blue
-	colors["Field"] = color.Blue
-	colors["Form"] = color.Blue
-	colors["Smart"] = color.Green
-	colors["Widget"] = color.Green
-	colors["Designs"] = color.Green
+	colors["class"] = color.Blue
+	colors["void"] = color.Green
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 	x := float32(50.0)

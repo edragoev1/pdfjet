@@ -19,7 +19,8 @@ public class Example_02 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBlock textBlock = new TextBlock(font1, Content.ofTextFile("data/languages/japanese.txt"));
+        TextBlock textBlock = new TextBlock(
+                font1, Content.ofTextFile("data/languages/japanese.txt"));
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
