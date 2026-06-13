@@ -25,12 +25,12 @@ public class Example_19 {
         float x2 = 300f;
         float w2 = 300f;    // Width of the second column
 
-        Image image1 = new Image(pdf, "images/fruit.jpg");
-        Image image2 = new Image(pdf, "images/ee-map.png");
+        Image image1 = new Image(pdf, "images/ee-map.png");
+        Image image2 = new Image(pdf, "images/spain-admin.jpg");
 
         // Draw the first image and text:
         image1.SetLocation(x1, y1);
-        image1.ScaleBy(0.75f);
+        image1.ScaleBy(0.3f);
         float[] xy = image1.DrawOn(page);
 
         TextBox textBox = new TextBox(f1, Content.OfTextFile("data/calculus-short.txt"));
@@ -41,7 +41,7 @@ public class Example_19 {
 
         // Draw the second row image and text:
         image2.SetLocation(x1, xy[1] + 10f);
-        image2.ScaleBy(1f/3f);
+        image2.ScaleBy(0.1f);
         image2.DrawOn(page);
 
         textBox = new TextBox(f1);
