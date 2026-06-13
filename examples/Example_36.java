@@ -14,41 +14,17 @@ public class Example_36 {
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
         Image image1 = new Image(pdf, "images/ee-map.png");
-        Image image2 = new Image(pdf, "images/fruit.jpg");
-        Image image3 = new Image(pdf, "images/palette.bmp");
+        Image image2 = new Image(pdf, "images/spain-admin.jpg");
 
         Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        TextLine text = new TextLine(f1,
-                "The map below is an embedded PNG image");
+        TextLine text = new TextLine(f1, "The map below is an embedded PNG image");
         text.setLocation(90f, 30f);
         float[] xy1 = text.drawOn(page1);
 
         image1.setLocation(90f, xy1[1] + 10f);
-        image1.scaleBy(2f/3f);
+        image1.scaleBy(0.3f);
         float[] xy2 = image1.drawOn(page1);
-
-        text.setText("JPG image file embedded once and drawn 3 times");
-        text.setLocation(90f, xy2[1] + 10f);
-        float[] xy3 = text.drawOn(page1);
-
-        image2.setLocation(90f, xy3[1] + 10f);
-        image2.scaleBy(0.5f);
-        float[] xy4 = image2.drawOn(page1);
-
-        image2.setLocation(xy4[0] + 10f, xy3[1] + 10f);
-        image2.scaleBy(0.5f);
-        image2.rotateClockwise(90);
-        float[] xy5 = image2.drawOn(page1);
-
-        image2.setLocation(xy5[0] + 10f, xy3[1] + 10f);
-        image2.rotateClockwise(0);
-        image2.scaleBy(0.5f);
-        float[] xy6 = image2.drawOn(page1);
-
-        image3.setLocation(xy6[0] + 10f, xy6[1] + 10f);
-        image3.scaleBy(0.5f);
-        image3.drawOn(page1);
 
         Page page2 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
@@ -56,8 +32,9 @@ public class Example_36 {
         text.setLocation(90f, 30f);
         float[] xy7 = text.drawOn(page2);
 
-        image1.setLocation(90f, xy7[1] + 10f);
-        image1.drawOn(page2);
+        image2.setLocation(90f, xy7[1] + 10f);
+        image2.scaleBy(0.1f);
+        image2.drawOn(page2);
 
         pdf.addPage(page2);
         pdf.addPage(page1);

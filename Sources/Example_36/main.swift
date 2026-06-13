@@ -10,9 +10,7 @@ public class Example_36 {
         let f1 = Font(pdf, CoreFont.HELVETICA)
 
         let image1 = try Image(pdf, "images/ee-map.png")
-        let image2 = try Image(pdf, "images/fruit.jpg")
-        let image3 = try Image(pdf, "images/mt-map.bmp")
-        // let image3 = try Image(pdf, "images/palette.bmp")
+        let image2 = try Image(pdf, "images/spain-admin.jpg")
 
         let page1 = Page(pdf, A4.PORTRAIT, Page.DETACHED)
 
@@ -22,46 +20,18 @@ public class Example_36 {
         text.drawOn(page1)
 
         image1.setLocation(90.0, 40.0)
-        image1.scaleBy(2.0/3.0)
+        image1.scaleBy(0.3)
         image1.drawOn(page1)
 
-        text.setText(
-                "JPG image file embedded once and drawn 3 times")
-        text.setLocation(90.0, 550.0)
-        text.drawOn(page1)
-
-        image2.setLocation(90.0, 560.0)
-        image2.scaleBy(0.5)
-        image2.drawOn(page1)
-
-        image2.setLocation(260.0, 560.0)
-        image2.scaleBy(0.5)
-        try image2.rotateClockwise(90)
-        image2.drawOn(page1)
-
-        image2.setLocation(350.0, 560.0)
-        try image2.rotateClockwise(0)
-        image2.scaleBy(0.5)
-        image2.drawOn(page1)
-
-        image3.setLocation(390.0, 630.0)
-        image3.scaleBy(0.5)
-        image3.drawOn(page1)
-
         let page2 = Page(pdf, A4.PORTRAIT, Page.DETACHED)
-        image1.drawOn(page2)
 
-        text.setText("Hello, World!!")
-        text.setLocation(90.0, 800.0)
-        text.drawOn(page2)
+        text.setText("This page was created after the second one but it was drawn first!");
+        text.setLocation(90.0, 30.0);
+        let xy = text.drawOn(page2);
 
-        text.setText(
-                "The map on the right is an embedded BMP image")
-        text.setUnderline(true)
-        text.setStrikeout(true)
-        text.setTextDirection(15)
-        text.setLocation(90.0, 800.0)
-        text.drawOn(page1)
+        image2.setLocation(90.0, xy[1] + 10.0);
+        image2.scaleBy(0.1);
+        image2.drawOn(page2);
 
         pdf.addPage(page2)
         pdf.addPage(page1)
