@@ -50,7 +50,7 @@ public class Example_41 {
         colorMap["Physics"] = Color.red;
         colorMap["physics"] = Color.red;
         colorMap["Experimentation"] = Color.orange;
-        colorMap["that"] = Color.blue;
+        colorMap["science"] = Color.blue;
         paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         float f2size = f2.GetSize();
         foreach (Paragraph p in paragraphs) {

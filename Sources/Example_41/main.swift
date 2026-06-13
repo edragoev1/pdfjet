@@ -45,7 +45,7 @@ public class Example_41 {
         colorMap["Physics"] = Color.red
         colorMap["physics"] = Color.red
         colorMap["Experimentation"] =  Color.orange
-        colorMap["that"] = Color.blue
+        colorMap["science"] = Color.blue
         paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
         let f2size = f2.getSize()
         for p in paragraphs {
