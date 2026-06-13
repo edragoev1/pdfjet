@@ -20,7 +20,7 @@ public class Example_03 {
         try page.addFooter(TextLine(f1, "And this is a footer."))
 
         let image1 = try Image(pdf, "images/ee-map.png")
-        let image2 = try Image(pdf, "images/fruit.jpg")
+        let image2 = try Image(pdf, "images/spain-admin.jpg")
         let image3 = try Image(pdf, "images/mt-map.bmp")
 
         let textline1 = TextLine(f1, "The map below is an embedded PNG image")
@@ -37,7 +37,7 @@ public class Example_03 {
         point = textline2.drawOn(page)
 
         image2.setLocation(90.0, point[1] + f1.getDescent())
-                .scaleBy(0.5)
+                .scaleBy(0.1)
                 .drawOn(page)
 
         image2.setLocation(260.0, point[1] + f1.getDescent())

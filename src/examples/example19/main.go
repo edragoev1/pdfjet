@@ -28,12 +28,12 @@ func Example19() {
 	x2 := float32(300.0)
 	w2 := float32(300.0) // Width of the second column
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
-	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	image2 := pdfjet.NewImageFromFile(pdf, "images/spain-admin.jpg")
 
 	// Draw the first image and text:
 	image1.SetLocation(x1, y1)
-	image1.ScaleBy(0.75)
+	image1.ScaleBy(0.3)
 	xy := image1.DrawOn(page)
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/calculus-short.txt"))
@@ -44,7 +44,7 @@ func Example19() {
 
 	// Draw the second row image and text:
 	image2.SetLocation(x1, xy[1]+10.0)
-	image2.ScaleBy(1.0 / 3.0)
+	image2.ScaleBy(0.1)
 	image2.DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/latin.txt"))

@@ -16,7 +16,7 @@ func Example03() {
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
 	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
-	image2 := pdfjet.NewImageFromFile(pdf, "images/fruit.jpg")
+	image2 := pdfjet.NewImageFromFile(pdf, "images/spain-admin.jpg")
 	image3 := pdfjet.NewImageFromFile(pdf, "images/mt-map.bmp")
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
@@ -38,7 +38,7 @@ func Example03() {
 	xy := text.DrawOn(page)
 
 	image2.SetLocation(90.0, xy[1]-f1.GetDescent(f1.GetSize()))
-	image2.ScaleBy(0.5)
+	image2.ScaleBy(0.1)
 	image2.DrawOn(page)
 
 	image3.SetLocation(300.0, 600.0)
