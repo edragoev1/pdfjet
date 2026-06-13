@@ -74,6 +74,9 @@ public class Example_41 {
                 TextLine(f2, String(paragraphNumber) + ".")
                         .setLocation(p.xText! - 15.0, p.yText!)
                         .drawOn(page)
+                Line(p.x1! - 3.0, p.y1!, p.x1! - 3.0, p.y2!)
+                        .setColor(Color.navy)
+                        .setWidth(1.0).drawOn(page);
                 paragraphNumber += 1
             }
         }

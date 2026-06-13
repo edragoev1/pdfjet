@@ -81,6 +81,8 @@ func Example41() {
 			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
 			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
 			textLine.DrawOn(page)
+			pdfjet.NewLine(
+				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetColor(color.Navy).SetWidth(1.0).DrawOn(page)
 			paragraphNumber++
 		}
 	}
