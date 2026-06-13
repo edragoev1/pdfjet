@@ -19,7 +19,28 @@ public class Example_41 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        var paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
+        var paragraphs = [Paragraph]()
+        var paragraph = Paragraph()
+                .add(TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .setUnderline(true))
+                .add(TextLine(f2, "This text is bold!").setTextColor(Color.blue))
+        paragraphs.append(paragraph)
+
+        paragraph = Paragraph()
+                .add(TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .setUnderline(true))
+                .add(TextLine(f3, "This text is using italic font.").setTextColor(Color.green))
+        paragraphs.append(paragraph)
+
+        var text = Text(paragraphs)
+        text.setLocation(70.0, 50.0)
+        text.setWidth(500.0)
+        text.setBorder(true)
+        text.drawOn(page)
+
+        paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
         var colorMap = [String: Int32]()
         colorMap["Physics"] = Color.red
         colorMap["physics"] = Color.red
@@ -30,16 +51,16 @@ public class Example_41 {
             if (p.startsWith("**")) {
                 f2.setSize(24.0)
                 p.getTextLines()[0].setFont(f2)
-                p.getTextLines()[0].setColor(Color.navy);
+                p.getTextLines()[0].setColor(Color.navy)
             } else {
                 p.setColor(Color.gray)
                 p.setColorMap(colorMap)
             }
         }
-        f2.setSize(f2size);
+        f2.setSize(f2size)
 
-        let text = Text(paragraphs)
-        text.setLocation(70.0, 90.0)
+        text = Text(paragraphs)
+        text.setLocation(70.0, 150.0)
         text.setWidth(500.0)
         text.setBorder(true)
         text.drawOn(page)
