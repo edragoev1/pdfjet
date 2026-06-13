@@ -1650,8 +1650,8 @@ final public class Page {
             Font font, StringBuilder buf, float[] color, Map<String, Integer> highlightColors) {
         if (buf.length() > 0) {
             String str = buf.toString();
-            if (highlightColors.containsKey(str.toLowerCase())) {
-                setBrushColor(highlightColors.get(str.toLowerCase()));
+            if (highlightColors.containsKey(str)) {
+                setBrushColor(highlightColors.get(str));
             } else {
                 setBrushColor(color);
             }

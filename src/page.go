@@ -1222,7 +1222,7 @@ func (page *Page) appendPoint(point *Point) {
 
 func (page *Page) drawWord(font *Font, buf *strings.Builder, brush [3]float32, colors map[string]int32) {
 	if buf.Len() > 0 {
-		if brushColor, ok := colors[strings.ToLower(buf.String())]; ok {
+		if brushColor, ok := colors[buf.String()]; ok {
 			page.SetBrushColor(brushColor)
 		} else {
 			page.SetBrushColorRGB(brush)

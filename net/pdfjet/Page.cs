@@ -1591,8 +1591,8 @@ public class Page {
             Dictionary<String, Int32> highlightColors) {
         if (buf.Length > 0) {
             String str = buf.ToString();
-            if (highlightColors.ContainsKey(str.ToLower())) {
-                SetBrushColor(highlightColors[str.ToLower()]);
+            if (highlightColors.ContainsKey(str)) {
+                SetBrushColor(highlightColors[str]);
             } else {
                 SetBrushColor(color);
             }
