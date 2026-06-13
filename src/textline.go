@@ -17,7 +17,7 @@ import (
 // TextLine is used to create text line objects.
 type TextLine struct {
 	text               string
-	x, y, xBox, yBox   float32
+	x, y               float32
 	font, fallbackFont *Font
 	fontSize           float32
 	isLastToken        bool
@@ -369,23 +369,6 @@ func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
 	return textLine
 }
 
-// PlaceInAtZeroZero places this text line in the specified box at location (0.0, 0.0)
-func (textLine *TextLine) PlaceInAtZeroZero(box *Box) *TextLine {
-	textLine.PlaceIn(box, 0.0, 0.0)
-	return textLine
-}
-
-// PlaceIn places this text line in the box at the specified offset.
-// @param box the specified box.
-// @param xOffset the x offset from the top left corner of the box.
-// @param yOffset the y offset from the top left corner of the box.
-// @return this TextLine.
-func (textLine *TextLine) PlaceIn(box *Box, xOffset, yOffset float32) *TextLine {
-	textLine.xBox = box.x + xOffset
-	textLine.yBox = box.y + yOffset
-	return textLine
-}
-
 func (textLine *TextLine) SetColorMap(colorMap map[string]int32) {
 	textLine.colorMap = colorMap
 }
@@ -403,10 +386,6 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 	}
 
 	page.SetTextDirection(textLine.degrees)
-
-	textLine.x += textLine.xBox
-	textLine.y += textLine.yBox
-
 	page.SetBrushColorRGB(textLine.color)
 	page.AddBMC(textLine.structureType, textLine.language, textLine.actualText, textLine.altDescription)
 	page.DrawStringUsingColorMap(

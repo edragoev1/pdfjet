@@ -156,7 +156,6 @@ func (form *Form) DrawOn(page *Page) []float32 {
 			textLine := NewTextLine(font, field.values[i])
 			textLine.SetFontSize(fontSize)
 			textLine.SetTextColor(textColor)
-			textLine.PlaceIn(box, field.x+font.descent, yField-font.descent)
 			textLine.SetAltDescription(altDescription)
 			textLine.SetActualText(actualText)
 			textLine.DrawOn(page)
