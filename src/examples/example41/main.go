@@ -50,6 +50,7 @@ func Example41() {
 	colorMap["Physics"] = color.Red
 	colorMap["physics"] = color.Red
 	colorMap["Experimentation"] = color.Orange
+	colorMap["that"] = color.Blue
 	f2size := f2.GetSize()
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {
