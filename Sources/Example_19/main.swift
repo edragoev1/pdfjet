@@ -22,11 +22,11 @@ public class Example_19 {
         let x2: Float = 300.0
         let w2: Float = 300.0
 
-        let image1 = try Image(pdf, "images/fruit.jpg")
-        let image2 = try Image(pdf, "images/ee-map.png")
+        let image1 = try Image(pdf, "images/ee-map.png")
+        let image2 = try Image(pdf, "images/spain-admin.jpg")
 
         image1.setLocation(x1, y1)
-        image1.scaleBy(0.75)
+        image1.scaleBy(0.3)
         image1.drawOn(page)
 
         var textBlock = TextBlock(f1, try Content.ofTextFile("data/calculus-short.txt"))
@@ -37,7 +37,7 @@ public class Example_19 {
 
         // Draw the second row image and text:
         image2.setLocation(x1, xy[1] + 10.0)
-        image2.scaleBy(1.0/3.0)
+        image2.scaleBy(0.1)
         image2.drawOn(page)
 
         textBlock = TextBlock(f1, try Content.ofTextFile("data/latin.txt"))
