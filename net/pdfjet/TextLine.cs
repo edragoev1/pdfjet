@@ -544,7 +544,7 @@ public class TextLine : IDrawable {
                 lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = font.GetUnderlinePosition(fontSize) * Math.Sin(radians);
-            double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians);
+            double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians) + this.verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
             page.AddBMC(structureType, language, text, "Underlined text: " + text);
@@ -562,7 +562,7 @@ public class TextLine : IDrawable {
                 lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Sin(radians);
-            double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians);
+            double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians) + this.verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
             page.AddBMC(structureType, language, text, "Strikethrough text: " + text);

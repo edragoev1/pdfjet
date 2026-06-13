@@ -419,6 +419,13 @@ public class TextLine implements Drawable {
      */
     public TextLine setTextEffect(int textEffect) {
         this.textEffect = textEffect;
+        if (textEffect == Effect.NORMAL) {
+            verticalOffset = 0f;
+        } else if (textEffect == Effect.SUPERSCRIPT) {
+            verticalOffset = -font.getBodyHeight(this.fontSize)/2f;
+        } else if (textEffect == Effect.SUBSCRIPT) {
+            verticalOffset = font.getBodyHeight(this.fontSize)/3f;
+        }
         return this;
     }
 
@@ -522,7 +529,7 @@ public class TextLine implements Drawable {
                 lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = font.getUnderlinePosition(fontSize) * Math.sin(radians);
-            double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians);
+            double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians) + this.verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
             page.addBMC(structureType, language, text, "Underlined text: " + text);
@@ -540,7 +547,7 @@ public class TextLine implements Drawable {
                 lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.sin(radians);
-            double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians);
+            double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians) + this.verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
             page.addBMC(structureType, language, text, "Strikethrough text: " + text);

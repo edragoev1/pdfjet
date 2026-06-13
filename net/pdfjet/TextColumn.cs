@@ -394,7 +394,6 @@ public class TextColumn : IDrawable {
 
         foreach (TextLine textLine in list) {
             textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
-
             if (textLine.GetGoToAction() != null) {
                 page.AddAnnotation(new Annotation(
                         Annotation.Link,

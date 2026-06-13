@@ -318,7 +318,6 @@ public class TextColumn implements Drawable {
 
             for (TextLine textLine : list) {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
-
                 if (textLine.getGoToAction() != null) {
                     page.addAnnotation(new Annotation(
                             Annotation.Link,

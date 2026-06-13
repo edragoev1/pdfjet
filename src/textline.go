@@ -404,7 +404,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		page.SetPenWidth(textLine.font.underlineThickness)
 		page.SetPenColorRGB(textLine.color)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
-		xAdjust := textLine.font.underlinePosition*float32(math.Sin(radians)) + textLine.verticalOffset
+		xAdjust := textLine.font.underlinePosition * float32(math.Sin(radians))
 		yAdjust := textLine.font.underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
@@ -420,7 +420,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		page.SetPenColorRGB(textLine.color)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		xAdjust := (textLine.font.bodyHeight / 4.0) * float32(math.Sin(radians))
-		yAdjust := (textLine.font.bodyHeight / 4.0) * float32(math.Cos(radians))
+		yAdjust := (textLine.font.bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
 		page.AddBMC(textLine.structureType, textLine.language, textLine.strikeoutTTS, textLine.strikeoutTTS)
