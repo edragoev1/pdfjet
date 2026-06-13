@@ -40,16 +40,6 @@ public class Example_03 {
                 .scaleBy(0.1)
                 .drawOn(page)
 
-        image2.setLocation(260.0, point[1] + f1.getDescent())
-        image2.scaleBy(0.5)
-        try image2.rotateClockwise(90)
-        image2.drawOn(page)
-
-        image2.setLocation(350.0, point[1] + f1.getDescent())
-        try image2.rotateClockwise(0)
-        image2.scaleBy(0.5)
-        image2.drawOn(page)
-
         TextLine(f1, "The map on the right is an embedded BMP image")
                 .setUnderline(true)
                 .setVerticalOffset(3.0)
