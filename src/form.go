@@ -162,11 +162,9 @@ func (form *Form) DrawOn(page *Page) []float32 {
 
 			if i == len(field.values)-1 {
 				line := NewLine(0.0, 0.0, form.rowWidth, 0.0)
-				line.PlaceIn(box, 0.0, yField)
 				line.DrawOn(page)
 				if field.x != 0.0 {
 					line = NewLine(0.0, -(float32(len(field.values)-1) * form.rowHeight), 0.0, 0.0)
-					line.PlaceIn(box, field.x, yField)
 					line.DrawOn(page)
 				}
 			}

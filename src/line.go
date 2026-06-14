@@ -21,8 +21,6 @@ type Line struct {
 	y1             float32
 	x2             float32
 	y2             float32
-	xBox           float32
-	yBox           float32
 	color          int32
 	width          float32
 	pattern        string
@@ -184,25 +182,6 @@ func (line *Line) SetActualText(actualText string) *Line {
 	return line
 }
 
-// PlaceInBox places this line in the specified box at position (0.0f, 0.0f).
-//
-// @param box the specified box.
-// @return this Line object.
-func (line *Line) PlaceInBox(box *Box) *Line {
-	return line.PlaceIn(box, 0.0, 0.0)
-}
-
-// PlaceIn places this line in the specified box.
-// @param box the specified box.
-// @param xOffset the x offset from the top left corner of the box.
-// @param yOffset the y offset from the top left corner of the box.
-// @return this Line object.
-func (line *Line) PlaceIn(box *Box, xOffset, yOffset float32) *Line {
-	line.xBox = box.x + xOffset
-	line.yBox = box.y + yOffset
-	return line
-}
-
 // ScaleBy scales this line by the spacified factor.
 //
 // @param factor the factor used to scale the line.
@@ -226,14 +205,10 @@ func (line *Line) DrawOn(page *Page) [2]float32 {
 	page.SetLineCapStyle(line.capStyle)
 	page.SetStrokeDashPattern(line.pattern)
 	page.AddBMC("Span", line.language, line.actualText, line.altDescription)
-	page.DrawLine(
-		line.x1+line.xBox,
-		line.y1+line.yBox,
-		line.x2+line.xBox,
-		line.y2+line.yBox)
+	page.DrawLine(line.x1, line.y1, line.x2, line.y2)
 	page.AddEMC()
 
-	xMax := math.Max(float64(line.x1+line.xBox), float64(line.x2+line.xBox))
-	yMax := math.Max(float64(line.y1+line.yBox), float64(line.y2+line.yBox))
+	xMax := math.Max(float64(line.x1), float64(line.x2))
+	yMax := math.Max(float64(line.y1), float64(line.y2))
 	return [2]float32{float32(xMax), float32(yMax)}
 }

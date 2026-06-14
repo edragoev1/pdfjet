@@ -17,9 +17,6 @@ public class Line : Drawable {
     private var x2: Float = 0.0
     private var y2: Float = 0.0
 
-    private var xBox: Float = 0.0
-    private var yBox: Float = 0.0
-
     private var color = Color.black
     private var width: Float = 0.0
     private var pattern: String = "[] 0"
@@ -229,36 +226,7 @@ public class Line : Drawable {
     }
 
     ///
-    /// Places this line in the specified box at position (0.0f, 0.0f).
-    ///
-    /// @param box the specified box.
-    /// @return this Line object.
-    ///
-    @discardableResult
-    public func placeIn(_ box: Box) -> Line {
-        return placeIn(box, 0.0, 0.0)
-    }
-
-    ///
-    /// Places this line in the specified box.
-    ///
-    /// @param box the specified box.
-    /// @param xOffset the x offset from the top left corner of the box.
-    /// @param yOffset the y offset from the top left corner of the box.
-    /// @return this Line object.
-    ///
-    @discardableResult
-    public func placeIn(
-            _ box: Box,
-            _ xOffset: Float,
-            _ yOffset: Float) -> Line {
-        self.xBox = box.x + xOffset
-        self.yBox = box.y + yOffset
-        return self
-    }
-
-    ///
-    /// Scales this line by the spacified factor.
+    /// Scales this line by the specified factor.
     ///
     /// @param factor the factor used to scale the line.
     /// @return this Line object.
@@ -286,15 +254,11 @@ public class Line : Drawable {
         page!.setLineCapStyle(capStyle)
         page!.setStrokeDashPattern(pattern)
         page!.addBMC(StructElem.P, language, actualText, altDescription)
-        page!.drawLine(
-                x1 + xBox,
-                y1 + yBox,
-                x2 + xBox,
-                y2 + yBox)
+        page!.drawLine(x1, y1, x2, y2)
         page!.addEMC()
 
-        let xMax = Float(max(x1 + xBox, x2 + xBox))
-        let yMax = Float(max(y1 + yBox, y2 + yBox))
+        let xMax = Float(max(x1, x2))
+        let yMax = Float(max(y1, y2))
         return [xMax, yMax]
     }
 }   // End of Line.swift

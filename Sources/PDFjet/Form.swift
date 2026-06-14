@@ -140,17 +140,12 @@ public class Form : Drawable {
                     TextLine(font, field.values[i])
                             .setFontSize(fontSize)
                             .setTextColor(color)
-                            .placeIn(box, field.x + font.descent, yField - font.descent)
                             .setAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
                             .drawOn(page)
                     if i == (field.values.count - 1) {
-                        Line(0.0, 0.0, rowLength, 0.0)
-                                .placeIn(box, 0.0, yField)
-                                .drawOn(page);
+                        Line(0.0, 0.0, rowLength, 0.0).drawOn(page);
                         if field.x != 0.0 {
-                            Line(0.0, -Float(field.values.count - 1) * rowHeight, 0.0, 0.0)
-                                    .placeIn(box, field.x, yField)
-                                    .drawOn(page)
+                            Line(0.0, -Float(field.values.count - 1) * rowHeight, 0.0, 0.0).drawOn(page)
                         }
                     }
                 }

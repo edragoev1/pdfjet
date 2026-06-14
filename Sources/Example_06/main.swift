@@ -24,8 +24,7 @@ public class Example_06 {
         let stripe = Line(0.0, sw/2, 190.0, sw/2)
         stripe.setWidth(sw)
         stripe.setColor(Color.oldgloryred)
-        for row in 0..<7 {
-            stripe.placeIn(flag, 0.0, Float(row) * 2.0 * sw)
+        for _ in 0..<7 {
             stripe.drawOn(page)
         }
 
@@ -33,7 +32,6 @@ public class Example_06 {
         union.setSize(76.0, 53.85)
         union.setColor(Color.oldgloryblue)
         union.setFillShape(true)
-        union.placeIn(flag, 0.0, 0.0)
         union.drawOn(page)
 
         let h_si: Float = 12.6      // horizontal star interval
@@ -44,9 +42,8 @@ public class Example_06 {
         star.setFillShape(true)
         star.setFillColor(Color.white)
 
-        for row in 0..<6 {
-            for col in 0..<5 {
-                star.placeIn(union, Float(row) * h_si, Float(col) * v_si)
+        for _ in 0..<6 {
+            for _ in 0..<5 {
                 star.drawOn(page)
             }
         }
