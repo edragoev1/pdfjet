@@ -9,53 +9,77 @@ public class Example_03 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_03.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA)
+        f1.setSize(10.0)
 
-        let page = Page(pdf, A4.PORTRAIT)
+        let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        f2.setSize(10.0)
 
-        var xy = try page.addHeader(TextLine(f1, "This is a header!"))
-        let box = Box()
-        box.setLocation(xy[0], xy[1])
-        box.setSize(30.0, 30.0)
-        box.drawOn(page)
-        try page.addFooter(TextLine(f1, "And this is a footer."))
+        let f3 = Font(pdf, CoreFont.HELVETICA_OBLIQUE)
+        f3.setSize(10.0)
 
-        let image1 = try Image(pdf, "images/ee-map.png")
-        let image2 = try Image(pdf, "images/spain-admin.jpg")
-        let image3 = try Image(pdf, "images/mt-map.bmp")
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        let textline1 = TextLine(f1, "The map below is an embedded PNG image")
-        textline1.setLocation(90.0, 30.0)
-        var point = textline1.drawOn(page)
+        var paragraphs = [Paragraph]()
+        var paragraph = Paragraph()
+                .add(TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .setUnderline(true))
+                .add(TextLine(f2, "This text is bold!").setTextColor(Color.blue))
+        paragraphs.append(paragraph)
 
-        image1.setLocation(90.0, point[1] + f1.getDescent())
-                .scaleBy(2.0/3.0)
-                .drawOn(page)
+        paragraph = Paragraph()
+                .add(TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .setUnderline(true))
+                .add(TextLine(f3, "This text is using italic font.").setTextColor(Color.green))
+        paragraphs.append(paragraph)
 
-        let textline2 = TextLine(f1, "JPG image file embedded once and drawn 3 times")
-        textline2.setLocation(90.0, 550.0)
-        textline2.setURIAction("https://en.wikipedia.org/wiki/European_Union")
-        point = textline2.drawOn(page)
+        var text = Text(paragraphs)
+        text.setLocation(70.0, 50.0)
+        text.setWidth(500.0)
+        text.setBorderColor(Color.blue)
+        text.drawOn(page)
 
-        image2.setLocation(90.0, point[1] + f1.getDescent())
-                .scaleBy(0.1)
-                .drawOn(page)
+        paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
+        var colorMap = [String: Int32]()
+        colorMap["Physics"] = Color.red
+        colorMap["physics"] = Color.red
+        colorMap["Experimentation"] =  Color.orange
+        colorMap["science"] = Color.blue
+        paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
+        let f2size = f2.getSize()
+        for p in paragraphs {
+            if (p.startsWith("**")) {
+                f2.setSize(24.0)
+                p.getTextLines()[0].setFont(f2)
+                p.getTextLines()[0].setColor(Color.navy)
+            } else {
+                p.setColor(Color.gray)
+                p.setColorMap(colorMap)
+            }
+        }
+        f2.setSize(f2size)
 
-        TextLine(f1, "The map on the right is an embedded BMP image")
-                .setUnderline(true)
-                .setVerticalOffset(3.0)
-                .setStrikeout(true)
-                .setTextDirection(15)
-                .setLocation(90.0, 800.0)
-                .drawOn(page)
+        text = Text(paragraphs)
+        text.setLocation(70.0, 150.0)
+        text.setWidth(500.0)
+        text.setBorderColor(Color.blue)
+        text.drawOn(page)
 
-        image3.setLocation(390.0, 630.0)
-                .scaleBy(0.5)
-                .drawOn(page)
-
-        let page2 = Page(pdf, A4.PORTRAIT)
-        xy = image1.drawOn(page2)
-
-        Box().setLocation(xy[0], xy[1]).setSize(20.0, 20.0).drawOn(page2)
+        var paragraphNumber: Int = 1
+        for p in paragraphs {
+            if p.startsWith("**") {
+                paragraphNumber = 1
+            } else {
+                TextLine(f2, String(paragraphNumber) + ".")
+                        .setLocation(p.xText! - 15.0, p.yText!)
+                        .drawOn(page)
+                Line(p.x1! - 3.0, p.y1!, p.x1! - 3.0, p.y2!)
+                        .setColor(Color.navy)
+                        .setWidth(1.0).drawOn(page)
+                paragraphNumber += 1
+            }
+        }
 
         pdf.complete()
     }
