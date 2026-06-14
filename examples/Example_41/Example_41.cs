@@ -41,7 +41,7 @@ public class Example_41 {
         Text text = new Text(paragraphs);
         text.SetLocation(70f, 50f);
         text.SetWidth(500f);
-        text.SetBorder(true);
+        text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 
         paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
@@ -68,7 +68,7 @@ public class Example_41 {
         text = new Text(paragraphs);
         text.SetLocation(70f, 150f);
         text.SetWidth(500f);
-        text.SetBorder(true);
+        text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 
         paragraphNumber = 1;

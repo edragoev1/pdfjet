@@ -22,7 +22,10 @@ public class Text : IDrawable {
     private float xText;
     private float yText;
     private float paragraphLeading = 24f;
-    private bool border = false;
+	private float[] borderColor;
+	private bool hasBorderColor = false;
+	private float borderWidth = 0.5f;
+	private String borderPattern;
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -56,8 +59,33 @@ public class Text : IDrawable {
         return this;
     }
 
-    public void SetBorder(Boolean border) {
-        this.border = border;
+    public void SetBorderWidth(float borderWidth) {
+        this.borderWidth = borderWidth;
+    }
+
+    public void SetBorderColor(int color) {
+        if (color == Color.transparent) {
+            this.borderColor = null;
+            return;
+        }
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        SetBorderColor(r, g, b);
+    }
+
+    public void SetBorderColor(float r, float g, float b) {
+        this.borderColor = new float[] {r, g, b};
+        this.hasBorderColor = true;
+    }
+
+    public void SetBorderColor(float[] rgbColor) {
+        this.borderColor = rgbColor;
+        this.hasBorderColor = true;
+    }
+
+    public void SetBorderPattern(String borderPattern) {
+        this.borderPattern = borderPattern;
     }
 
     public float[] DrawOn(Page page) {
@@ -82,8 +110,10 @@ public class Text : IDrawable {
         Paragraph lastParagraph = paragraphs[paragraphs.Count - 1];
         TextLine lastTextLine = lastParagraph.GetTextLines()[lastParagraph.GetTextLines().Count - 1];
         float height = ((yText - paragraphLeading) - y1) + lastTextLine.font.GetDescent(lastTextLine.fontSize);
-        if (border) {
+        if (hasBorderColor) {
             Rect rect = new Rect(x1, y1, width, height);
+            rect.SetBorderColor(borderColor);
+            // rect.SetBorderPattern(borderPattern);
             rect.DrawOn(page);
         }
 

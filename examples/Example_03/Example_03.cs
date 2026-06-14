@@ -41,9 +41,8 @@ public class Example_03 {
         Text text = new Text(paragraphs);
         text.SetLocation(70f, 50f);
         text.SetWidth(500f);
-        text.SetBorder(true);
+        text.SetBorderColor(Color.blue);
         text.DrawOn(page);
-
 
         Dictionary<String, int> colorMap = new Dictionary<String, int>();
         colorMap["Physics"] = Color.red;
@@ -60,7 +59,7 @@ public class Example_03 {
         text = new Text(paragraphs);
         text.SetLocation(70f, 150f);
         text.SetWidth(500f);
-        text.SetBorder(true);
+        text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 
         int paragraphNumber = 1;

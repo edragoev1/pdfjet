@@ -41,7 +41,7 @@ public class Example_03 {
         Text text = new Text(paragraphs);
         text.setLocation(70f, 50f);
         text.setWidth(500f);
-        text.setBorder(true);
+        text.setBorderColor(Color.blue);
         text.drawOn(page);
 
         Map<String, Integer> colorMap = new HashMap<String, Integer>();
@@ -59,7 +59,7 @@ public class Example_03 {
         text = new Text(paragraphs);
         text.setLocation(70f, 150f);
         text.setWidth(500f);
-        text.setBorder(true);
+        text.setBorderColor(Color.blue);
         text.drawOn(page);
 
         int paragraphNumber = 1;
