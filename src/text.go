@@ -22,7 +22,10 @@ type Text struct {
 	x1, y1, xText, yText, width float32
 	leading                     float32
 	paragraphLeading            float32
-	border                      bool
+	borderColor                 [3]float32
+	hasBorderColor              bool
+	borderWidth                 float32
+	borderPattern               string
 }
 
 // NewText is the constructor.
@@ -33,6 +36,9 @@ func NewText(paragraphs []*Paragraph) *Text {
 	text.fallbackFont = paragraphs[0].lines[0].GetFallbackFont()
 	text.leading = text.font.ascent + text.font.descent
 	text.paragraphLeading = 2 * text.leading
+	text.borderColor = [3]float32{0.0, 0.0, 0.0}
+	text.borderWidth = 0.5
+	text.borderPattern = "[] 0"
 	return text
 }
 
@@ -66,8 +72,16 @@ func (text *Text) GetSize() [2]float32 {
 	return [2]float32{text.width, text.yText + text.font.descent}
 }
 
-func (text *Text) SetBorder(border bool) {
-	text.border = border
+func (text *Text) SetBorderColor(color int32) {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32((color)&0xff) / 255.0
+	text.SetBorderColorRGB([3]float32{r, g, b})
+}
+
+func (text *Text) SetBorderColorRGB(borderColor [3]float32) {
+	text.borderColor = borderColor
+	text.hasBorderColor = true
 }
 
 // DrawOn draws the text on the page.
@@ -91,8 +105,9 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 	}
 
 	height := ((text.yText - text.paragraphLeading) - text.y1) + text.font.descent
-	if page != nil && text.border {
+	if page != nil && text.hasBorderColor {
 		rect := NewRect(text.x1, text.y1, text.width, height)
+		rect.SetBorderColorRGB(text.borderColor)
 		rect.DrawOn(page)
 	}
 

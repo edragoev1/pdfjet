@@ -89,6 +89,13 @@ func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) {
 	rect.hasBorderColor = true
 }
 
+func (rect *Rect) SetFillColor(color int32) {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32((color)&0xff) / 255.0
+	rect.SetFillColorRGB([3]float32{r, g, b})
+}
+
 func (rect *Rect) SetFillColorRGB(fillColor [3]float32) {
 	rect.fillColor = fillColor
 	rect.hasFillColor = true
@@ -213,7 +220,7 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 			page.LineTo(rect.x, rect.y+rect.height)
 			page.SetPenColorRGB(rect.borderColor)
 			page.SetPenWidth(rect.borderWidth)
-			// page.SetStrokeDashPattern(self.borderPattern) // TODO
+			page.SetStrokeDashPattern(rect.borderPattern)
 			page.ClosePath()
 		}
 	} else {

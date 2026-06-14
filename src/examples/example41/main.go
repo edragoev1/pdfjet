@@ -42,7 +42,7 @@ func Example41() {
 	text := pdfjet.NewText(paragraphs)
 	text.SetLocation(70.0, 50.0)
 	text.SetWidth(500.0)
-	text.SetBorder(true)
+	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
 
 	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
@@ -67,7 +67,7 @@ func Example41() {
 	text = pdfjet.NewText(paragraphs)
 	text.SetLocation(70.0, 150.0)
 	text.SetWidth(500.0)
-	text.SetBorder(true)
+	text.SetBorderColor(color.Blue)
 	xy := text.DrawOn(page)
 
 	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
