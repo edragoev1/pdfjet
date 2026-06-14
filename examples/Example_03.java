@@ -10,7 +10,8 @@ import com.pdfjet.*;
 public class Example_03 {
     public Example_03() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_03.pdf")));
+                new BufferedOutputStream(
+                        new FileOutputStream("Example_03.pdf")));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
         f1.setSize(10f);
@@ -44,25 +45,44 @@ public class Example_03 {
         text.setBorderColor(Color.blue);
         text.drawOn(page);
 
-        Map<String, Integer> colorMap = new HashMap<String, Integer>();
-        colorMap.put("Physics", Color.red);
-        colorMap.put("Extraordinary", Color.blue);
-        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        int paragraphNumber = 1;
         for (Paragraph p : paragraphs) {
             if (p.startsWith("**")) {
-                p.getTextLines().get(0).setFont(f2).setFontSize(18f).setTextColor(Color.navy);
+                paragraphNumber = 1;
             } else {
-                p.setColor(Color.darkgray);
+                new TextLine(f2, String.valueOf(paragraphNumber) + ".")
+                        .setLocation(p.xText - 15f, p.yText)
+                        .drawOn(page);
+                paragraphNumber++;
+            }
+        }
+
+        Map<String, Integer> colorMap = new HashMap<String, Integer>();
+        colorMap.put("Physics", Color.red);
+        colorMap.put("physics", Color.red);
+        colorMap.put("Experimentation", Color.orange);
+        colorMap.put("science", Color.blue);
+        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        float f2size = f2.getSize();
+        for (Paragraph p : paragraphs) {
+            if (p.startsWith("**")) {
+                f2.setSize(24.0);
+                p.getTextLines().get(0).setFont(f2);
+                p.getTextLines().get(0).setTextColor(Color.navy);
+            } else {
+                p.setColor(Color.gray);
                 p.setColorMap(colorMap);
             }
         }
+        f2.setSize(f2size);
+
         text = new Text(paragraphs);
         text.setLocation(70f, 150f);
         text.setWidth(500f);
         text.setBorderColor(Color.blue);
         text.drawOn(page);
 
-        int paragraphNumber = 1;
+        paragraphNumber = 1;
         for (Paragraph p : paragraphs) {
             if (p.startsWith("**")) {
                 paragraphNumber = 1;
