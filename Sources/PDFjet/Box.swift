@@ -198,7 +198,7 @@ public class Box : Drawable {
     }
 
     /**
-     * Scales this box by the spacified factor.
+     * Scales this box by the specified factor.
      *
      * @param factor the factor used to scale the box.
      */
