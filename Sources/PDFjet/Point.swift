@@ -55,8 +55,6 @@ public class Point : Drawable {
     private var textColor: [Float] = [0.0, 0.0, 0.0]
     private var textDirection: Int = 0
     private var uri: String?
-    private var xBox: Float = 0.0
-    private var yBox: Float = 0.0
 
     public init() {
     }
@@ -458,34 +456,6 @@ public class Point : Drawable {
     }
 
     ///
-    /// Places this point in the specified box at position (0f, 0f).
-    ///
-    /// - Parameter box the specified box.
-    ///
-    @discardableResult
-    public func placeIn(_ box: Box) -> Point {
-        placeIn(box, 0.0, 0.0)
-        return self
-    }
-
-    ///
-    /// Places this point in the specified box.
-    ///
-    /// - Parameter box the specified box.
-    /// - Parameter xOffset the x offset from the top left corner of the box.
-    /// - Parameter yOffset the y offset from the top left corner of the box.
-    ///
-    @discardableResult
-    public func placeIn(
-            _ box: Box,
-            _ xOffset: Float,
-            _ yOffset: Float) -> Point {
-        self.xBox = box.x + xOffset
-        self.yBox = box.y + yOffset
-        return self
-    }
-
-    ///
     /// Draws this point on the specified page.
     ///
     /// - Parameter page the page to draw this point on.
@@ -511,6 +481,6 @@ public class Point : Drawable {
         page!.drawPoint(self)
         page!.append("Q\n")
 
-        return [self.x + self.xBox + self.r, self.y + self.yBox + self.r]
+        return [self.x + self.r, self.y + self.r]
     }
 }   // End of Point.swift

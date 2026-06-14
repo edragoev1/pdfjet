@@ -49,9 +49,8 @@ public class Example_06 {
         }
 
         star.setLocation(h_si, v_si)
-        for row in 0..<5 {
-            for col in 0..<4 {
-                star.placeIn(union, Float(row) * h_si, Float(col) * v_si)
+        for _ in 0..<5 {
+            for _ in 0..<4 {
                 star.drawOn(page)
             }
         }

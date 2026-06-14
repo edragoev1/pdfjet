@@ -489,36 +489,6 @@ public class TextLine : Drawable {
         return self
     }
 
-    ///
-    /// Places the text line in the specified box.
-    ///
-    /// - Parameter box the specified box.
-    /// - Returns: the TextLine.
-    ///
-    @discardableResult
-    public func placeIn(_ box: Box) -> TextLine {
-        placeIn(box, 0.0, 0.0)
-        return self
-    }
-
-    ///
-    /// Places the text line in the box at the specified offset.
-    ///
-    /// - Parameter box the specified box.
-    /// - Parameter xOffset the x offset from the top left corner of the box.
-    /// - Parameter yOffset the y offset from the top left corner of the box.
-    /// - Returns: TextLine.
-    ///
-    @discardableResult
-    public func placeIn(
-            _ box: Box,
-            _ xOffset: Float,
-            _ yOffset: Float) -> TextLine {
-        self.xBox = box.x + xOffset
-        self.yBox = box.y + yOffset
-        return self
-    }
-
     public func advance(_ leading: Float) -> Float {
         self.y += leading
         return self.y

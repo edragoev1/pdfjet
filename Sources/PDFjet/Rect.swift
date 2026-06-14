@@ -171,18 +171,6 @@ public class Rect : Drawable {
     }
 
     /**
-     * Places this rect in the another rect.
-     * - Parameters:
-     * - rect: the other rect.
-     * - xOffset: the x offset from the top left corner of the rect.
-     * - yOffset: the y offset from the top left corner of the rect.
-     */
-    public func placeIn(rect: Rect, xOffset: Float, yOffset: Float) {
-        self.x = rect.x + xOffset
-        self.y = rect.y + yOffset
-    }
-
-    /**
      * Scales this rect by the specified factor.
      * - Parameter factor: the factor used to scale the rect.
      */

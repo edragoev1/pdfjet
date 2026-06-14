@@ -256,17 +256,6 @@ public class Image : Drawable {
     }
 
     ///
-    /// Places this image in the specified box.
-    ///
-    /// @param box the specified box.
-    ///
-    public func placeIn(_ box: Box) -> Image {
-        self.xBox = box.x
-        self.yBox = box.y
-        return self
-    }
-
-    ///
     /// Sets the URI for the "click box" action.
     ///
     /// @param uri the URI

@@ -7,7 +7,6 @@
 
 /**
  * Used to create rectangular boxes on a page.
- * Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
  */
 public class Box : Drawable {
     var x: Float = 0.0
@@ -195,23 +194,6 @@ public class Box : Drawable {
     public func setFillShape(
             _ fillShape: Bool) -> Box {
         self.fillShape = fillShape
-        return self
-    }
-
-    /**
-     * Places this box in the another box.
-     *
-     * @param box the other box.
-     * @param xOffset the x offset from the top left corner of the box.
-     * @param yOffset the y offset from the top left corner of the box.
-     */
-    @discardableResult
-    public func placeIn(
-            _ box: Box,
-            _ xOffset: Float,
-            _ yOffset: Float) -> Box {
-        self.x = box.x + xOffset
-        self.y = box.y + yOffset
         return self
     }
 

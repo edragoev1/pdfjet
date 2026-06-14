@@ -146,30 +146,6 @@ public class Path : Drawable {
         return self.lineJoinStyle
     }
 
-    ///
-    /// Places this path in the specified box at position (0.0, 0.0).
-    ///
-    /// - Parameter box the specified box.
-    ///
-    public func placeIn(_ box: Box) {
-        placeIn(box, 0.0, 0.0)
-    }
-
-    ///
-    /// Places the path inside the spacified box at coordinates (xOffset, yOffset) of the top left corner.
-    ///
-    /// - Parameter box the specified box.
-    /// - Parameter xOffset the xOffset.
-    /// - Parameter yOffset the yOffset.
-    ///
-    public func placeIn(
-            _ box: Box,
-            _ xOffset: Float,
-            _ yOffset: Float) {
-        xBox = box.x + xOffset
-        yBox = box.y + yOffset
-    }
-
     public func setPosition(_ x: Float, _ y: Float) {
         setLocation(x, y)
     }

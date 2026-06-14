@@ -46,12 +46,6 @@ public class Example_22 {
         text.setLocation(90.0, 200.0)
         text.drawOn(page)
 
-        // Create a box with invisible borders
-        let box = Box(20.0, 20.0, 20.0, 20.0)
-        box.setColor(Color.white)
-        box.setGoToAction("dest#1")
-        box.drawOn(page)
-
         // Create an up arrow and place it in the box
         let path = Path()
         path.add(Point(10.0,  1.0))
@@ -64,7 +58,6 @@ public class Example_22 {
         path.setClosePath(true)
         path.setColor(Color.blue)
         path.setFillShape(true)
-        path.placeIn(box)
         path.drawOn(page)
 
         let image = try Image(pdf, "images/up-arrow.png")
