@@ -21,7 +21,10 @@ public class Text implements Drawable {
     private float xText;
     private float yText;
     private float paragraphLeading = 24f;
-    private boolean border = false;
+	private float[] borderColor;
+	private boolean hasBorderColor = false;
+	private float borderWidth = 0.5f;
+	private String borderPattern;
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -55,8 +58,29 @@ public class Text implements Drawable {
         return this;
     }
 
-    public void setBorder(boolean border) {
-        this.border = border;
+    public void setBorderWidth(float borderWidth) {
+        this.borderWidth = borderWidth;
+    }
+
+    public void setBorderColor(int color) {
+        if (color == Color.transparent) {
+            this.borderColor = null;
+            return;
+        }
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        setBorderColor(r, g, b);
+    }
+
+    public void setBorderColor(float r, float g, float b) {
+        this.borderColor = new float[] {r, g, b};
+        this.hasBorderColor = true;
+    }
+
+    public void setBorderColor(float[] rgbColor) {
+        this.borderColor = rgbColor;
+        this.hasBorderColor = true;
     }
 
     public float[] drawOn(Page page) throws Exception {
@@ -81,8 +105,9 @@ public class Text implements Drawable {
         Paragraph lastParagraph = paragraphs.get(paragraphs.size() - 1);
         TextLine lastTextLine = lastParagraph.getTextLines().get(lastParagraph.getTextLines().size() - 1);
         float height = ((yText - paragraphLeading) - y1) + lastTextLine.font.getDescent(lastTextLine.fontSize);
-        if (page != null && border) {
+        if (page != null && hasBorderColor) {
             Rect rect = new Rect(x1, y1, width, height);
+            rect.setBorderColor(this.borderColor);
             rect.drawOn(page);
         }
 

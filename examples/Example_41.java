@@ -42,7 +42,7 @@ public class Example_41 {
         Text text = new Text(paragraphs);
         text.setLocation(70f, 50f);
         text.setWidth(500f);
-        text.setBorder(true);
+        text.setBorderColor(Color.blue);
         text.drawOn(page);
 
         int paragraphNumber = 1;
@@ -79,7 +79,7 @@ public class Example_41 {
         text = new Text(paragraphs);
         text.setLocation(70f, 150f);
         text.setWidth(500f);
-        text.setBorder(true);
+        text.setBorderColor(Color.blue);
         text.drawOn(page);
 
         paragraphNumber = 1;
