@@ -27,45 +27,43 @@ public class Path implements Drawable {
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
 
     /**
-     *  The default constructor.
-     *
-     *
+     * The default constructor.
      */
     public Path() {
         points = new ArrayList<Point>();
     }
 
     /**
-     *  Adds a point to this path.
+     * Adds a point to this path.
      *
-     *  @param point the point to add.
+     * @param point the point to add.
      */
     public void add(Point point) {
         points.add(point);
     }
 
     /**
-     *  Sets the line dash pattern for this path.
+     * Sets the line dash pattern for this path.
      *
-     *  The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-     *  It is specified by a dash array and a dash phase.
-     *  The elements of the dash array are positive numbers that specify the lengths of
-     *  alternating dashes and gaps.
-     *  The dash phase specifies the distance into the dash pattern at which to start the dash.
-     *  The elements of both the dash array and the dash phase are expressed in user space units.
-     *  <pre>
-     *  Examples of line dash patterns:
+     * The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
+     * It is specified by a dash array and a dash phase.
+     * The elements of the dash array are positive numbers that specify the lengths of
+     * alternating dashes and gaps.
+     * The dash phase specifies the distance into the dash pattern at which to start the dash.
+     * The elements of both the dash array and the dash phase are expressed in user space units.
+     * <pre>
+     * Examples of line dash patterns:
      *
-     *      "[Array] Phase"     Appearance          Description
-     *      _______________     _________________   ____________________________________
+     *     "[Array] Phase"     Appearance          Description
+     *     _______________     _________________   ____________________________________
      *
-     *      "[] 0"              -----------------   Solid line
-     *      "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-     *      "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-     *      "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-     *      "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-     *      "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-     *  </pre>
+     *     "[] 0"              -----------------   Solid line
+     *     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+     *     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+     *     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+     *     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+     *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+     * </pre>
      *
      *  @param pattern the line dash pattern.
      */
@@ -74,123 +72,85 @@ public class Path implements Drawable {
     }
 
     /**
-     *  Sets the pen width that will be used to draw the lines and splines that are part of this path.
+     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
      *
-     *  @param width the pen width.
+     * @param width the pen width.
      */
     public void setWidth(double width) {
         this.width = (float) width;
     }
 
     /**
-     *  Sets the pen width that will be used to draw the lines and splines that are part of this path.
+     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
      *
-     *  @param width the pen width.
+     * @param width the pen width.
      */
     public void setWidth(float width) {
         this.width = width;
     }
 
     /**
-     *  Sets the pen color that will be used to draw this path.
+     * Sets the pen color that will be used to draw this path.
      *
-     *  @param color the color is specified as an integer.
+     * @param color the color is specified as an integer.
      */
     public void setColor(int color) {
         this.color = color;
     }
 
     /**
-     *  Sets the closePath variable.
+     * Sets the closePath variable.
      *
-     *  @param closePath if closePath is true a line will be draw between the first and last point of this path.
+     * @param closePath if closePath is true a line will be draw between the first and last point of this path.
      */
     public void setClosePath(boolean closePath) {
         this.closePath = closePath;
     }
 
     /**
-     *  Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
+     * Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
      *
-     *  @param fillShape the fillShape flag.
+     * @param fillShape the fillShape flag.
      */
     public void setFillShape(boolean fillShape) {
         this.fillShape = fillShape;
     }
 
     /**
-     *  Sets the line cap style.
+     * Sets the line cap style.
      *
-     *  @param style the cap style of this path.
-     *  Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
+     * @param style the cap style of this path.
+     * Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
      */
     public void setLineCapStyle(CapStyle style) {
         this.lineCapStyle = style;
     }
 
     /**
-     *  Returns the line cap style for this path.
+     * Returns the line cap style for this path.
      *
-     *  @return the line cap style for this path.
+     * @return the line cap style for this path.
      */
     public CapStyle getLineCapStyle() {
         return this.lineCapStyle;
     }
 
     /**
-     *  Sets the line join style.
+     * Sets the line join style.
      *
-     *  @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
+     * @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
      */
     public void setLineJoinStyle(JoinStyle style) {
         this.lineJoinStyle = style;
     }
 
     /**
-     *  Returns the line join style.
+     * Returns the line join style.
      *
-     *  @return the line join style.
+     * @return the line join style.
      */
     public JoinStyle getLineJoinStyle() {
         return this.lineJoinStyle;
-    }
-
-    /**
-     *  Places this path in the specified box at position (0.0, 0.0).
-     *
-     *  @param box the specified box.
-     */
-    public void placeIn(Box box) {
-        placeIn(box, 0.0f, 0.0f);
-    }
-
-    /**
-     *  Places the path inside the spacified box at coordinates (xOffset, yOffset) of the top left corner.
-     *
-     *  @param box the specified box.
-     *  @param xOffset the xOffset.
-     *  @param yOffset the yOffset.
-     */
-    public void placeIn(
-            Box box,
-            double xOffset,
-            double yOffset) {
-        placeIn(box, (float) xOffset, (float) yOffset);
-    }
-
-    /**
-     *  Places the path inside the spacified box at coordinates (xOffset, yOffset) of the top left corner.
-     *
-     *  @param box the specified box.
-     *  @param xOffset the xOffset.
-     *  @param yOffset the yOffset.
-     */
-    public void placeIn(
-            Box box,
-            float xOffset,
-            float yOffset) {
-        xBox = box.x + xOffset;
-        yBox = box.y + yOffset;
     }
 
     /**

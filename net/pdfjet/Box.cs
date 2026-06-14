@@ -8,7 +8,6 @@ using System;
 
 /**
  * Used to create rectangular boxes on a page.
- * Also used to for layout purposes. See the PlaceIn method in the Image and TextLine classes.
  */
 namespace PDFjet.NET {
 public class Box : IDrawable {
@@ -217,36 +216,7 @@ public class Box : IDrawable {
     }
 
     /**
-     *  Places this box in the another box.
-     *
-     *  @param box the other box.
-     *  @param xOffset the x offset from the top left corner of the box.
-     *  @param yOffset the y offset from the top left corner of the box.
-     */
-    public void PlaceIn(
-            Box box,
-            double xOffset,
-            double yOffset) {
-        PlaceIn(box, (float) xOffset, (float) yOffset);
-    }
-
-    /**
-     *  Places this box in the another box.
-     *
-     *  @param box the other box.
-     *  @param xOffset the x offset from the top left corner of the box.
-     *  @param yOffset the y offset from the top left corner of the box.
-     */
-    public void PlaceIn(
-            Box box,
-            float xOffset,
-            float yOffset) {
-        this.x = box.x + xOffset;
-        this.y = box.y + yOffset;
-    }
-
-    /**
-     *  Scales this box by the spacified factor.
+     *  Scales this box by the specified factor.
      *
      *  @param factor the factor used to scale the box.
      */
@@ -255,7 +225,7 @@ public class Box : IDrawable {
     }
 
     /**
-     *  Scales this box by the spacified factor.
+     *  Scales this box by the specified factor.
      *
      *  @param factor the factor used to scale the box.
      */

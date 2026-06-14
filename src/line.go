@@ -30,7 +30,7 @@ type Line struct {
 	actualText     string
 }
 
-// NewLine is the contructor used to create a line objects.
+// NewLine is the constructor used to create a line objects.
 //
 // @param x1 the x coordinate of the start point.
 // @param y1 the y coordinate of the start point.
@@ -182,7 +182,7 @@ func (line *Line) SetActualText(actualText string) *Line {
 	return line
 }
 
-// ScaleBy scales this line by the spacified factor.
+// ScaleBy scales this line by the specified factor.
 //
 // @param factor the factor used to scale the line.
 // @return this Line object.

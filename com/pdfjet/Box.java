@@ -8,7 +8,6 @@ package com.pdfjet;
 
 /**
  * Used to create rectangular boxes on a page.
- * Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
  */
 public class Box implements Drawable {
     protected float x;
@@ -32,7 +31,6 @@ public class Box implements Drawable {
 
     /**
      *  The default constructor.
-     *
      */
     public Box() {
     }
@@ -238,30 +236,7 @@ public class Box implements Drawable {
     }
 
     /**
-     *  Places this box in the another box.
-     *
-     *  @param box the other box.
-     *  @param xOffset the x offset from the top left corner of the box.
-     *  @param yOffset the y offset from the top left corner of the box.
-     */
-    public void placeIn(Box box, double xOffset, double yOffset) {
-        placeIn(box, (float) xOffset, (float) yOffset);
-    }
-
-    /**
-     *  Places this box in the another box.
-     *
-     *  @param box the other box.
-     *  @param xOffset the x offset from the top left corner of the box.
-     *  @param yOffset the y offset from the top left corner of the box.
-     */
-    public void placeIn(Box box, float xOffset, float yOffset) {
-        this.x = box.x + xOffset;
-        this.y = box.y + yOffset;
-    }
-
-    /**
-     *  Scales this box by the spacified factor.
+     *  Scales this box by the specified factor.
      *
      *  @param factor the factor used to scale the box.
      */
@@ -270,7 +245,7 @@ public class Box implements Drawable {
     }
 
     /**
-     *  Scales this box by the spacified factor.
+     *  Scales this box by the specified factor.
      *
      *  @param factor the factor used to scale the box.
      */

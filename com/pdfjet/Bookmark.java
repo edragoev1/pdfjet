@@ -51,7 +51,7 @@ public class Bookmark {
     }
 
     /**
-     * Add bookmark with the spacified title to the page.
+     * Add bookmark with the specified title to the page.
      *
      * @param page the page.
      * @param title the title.

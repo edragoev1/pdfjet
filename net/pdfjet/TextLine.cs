@@ -485,32 +485,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-    /**
-     * Places this text line in the specified box at position (0.0, 0.0).
-     *
-     * @param box the specified box.
-     * @return this TextLine.
-     */
-    public TextLine PlaceIn(Box box) {
-        PlaceIn(box, 0.0, 0.0);
-        return this;
-    }
-
-    /**
-     * Places this text line in the box at the specified offset.
-     *
-     * @param box the specified box.
-     * @param xOffset the x offset from the top left corner of the box.
-     * @param yOffset the y offset from the top left corner of the box.
-     * @return this TextLine.
-     */
-    public TextLine PlaceIn(
-            Box box,
-            double xOffset,
-            double yOffset) {
-        return PlaceIn(box, (float) xOffset, (float) yOffset);
-    }
-
     public float Advance(float leading) {
         this.y += leading;
         return this.y;
