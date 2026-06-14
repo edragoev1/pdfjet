@@ -73,28 +73,19 @@ func (text *Text) SetBorder(border bool) {
 // DrawOn draws the text on the page.
 func (text *Text) DrawOn(page *Page) [2]float32 {
 	text.xText = text.x1
-	text.yText = text.y1 + text.font.ascent
+	text.yText = text.y1 + text.paragraphs[0].GetTextLines()[0].GetFont().ascent
 	for _, paragraph := range text.paragraphs {
-		var buf strings.Builder
+		paragraph.x1 = text.x1
+		paragraph.y1 = text.yText - paragraph.lines[0].font.ascent
+		paragraph.xText = text.xText
+		paragraph.yText = text.yText
 		for _, textLine := range paragraph.lines {
-			buf.WriteString(textLine.text)
+			point := text.drawTextLine(page, text.xText, text.yText, textLine)
+			text.xText = point[0]
+			text.yText = point[1]
+			paragraph.x2 = text.xText
+			paragraph.y2 = text.yText + textLine.font.GetDescent(textLine.font.size)
 		}
-		for i, textLine := range paragraph.lines {
-			if i == 0 {
-				paragraph.x1 = text.x1
-				paragraph.y1 = text.yText - text.font.ascent
-				paragraph.xText = text.xText
-				paragraph.yText = text.yText
-			}
-			xy := text.drawTextLine(page, text.xText, text.yText, textLine)
-			text.xText = xy[0]
-			if !textLine.isLastToken {
-				text.xText *= text.font.StringWidthFB(text.fallbackFont, text.font.size, single.Space)
-			}
-			text.yText = xy[1]
-		}
-		paragraph.x2 = text.xText
-		paragraph.y2 = text.yText - text.font.descent
 		text.xText = text.x1
 		text.yText += text.paragraphLeading
 	}
