@@ -20,7 +20,9 @@ public class Text : Drawable {
     private var yText: Float = 0.0
     private var leading: Float = 0.0
     private var paragraphLeading: Float = 0.0
-    private var border = false
+    private var borderColor: [Float]?
+    private var borderWidth: Float = 0.5
+    private var borderPattern: String = "[] 0"
 
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
@@ -61,8 +63,21 @@ public class Text : Drawable {
     }
 
     @discardableResult
-    public func setBorder(_ border: Bool) -> Text {
-        self.border = border
+    public func setBorderColor(_ color: Int32) -> Text {
+        if color == Color.transparent {
+            self.borderColor = nil
+            return self
+        }
+        let r = Float(((color >> 16) & 0xff))/255.0
+        let g = Float(((color >>  8) & 0xff))/255.0
+        let b = Float(((color)       & 0xff))/255.0
+        self.setBorderColor([r, g, b])
+        return self
+    }
+
+    @discardableResult
+    public func setBorderColor(_ borderColor: [Float]) -> Text {
+        self.borderColor = borderColor
         return self
     }
 
@@ -87,8 +102,11 @@ public class Text : Drawable {
         }
 
         let height = ((self.yText - paragraphLeading) - self.y1) + font!.descent
-        if page != nil && border {
+        if self.borderColor != nil {
             let rect = Rect(x1, y1, self.width, height)
+            rect.setBorderColor(self.borderColor)
+            rect.setBorderWidth(self.borderWidth)
+            rect.setBorderPattern(self.borderPattern)
             rect.drawOn(page)
         }
 

@@ -37,7 +37,7 @@ public class Example_41 {
         var text = Text(paragraphs)
         text.setLocation(70.0, 50.0)
         text.setWidth(500.0)
-        text.setBorder(true)
+        text.setBorderColor(Color.blue)
         text.drawOn(page)
 
         paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
@@ -63,7 +63,7 @@ public class Example_41 {
         text = Text(paragraphs)
         text.setLocation(70.0, 150.0)
         text.setWidth(500.0)
-        text.setBorder(true)
+        text.setBorderColor(Color.blue)
         text.drawOn(page)
 
         var paragraphNumber: Int = 1
@@ -76,7 +76,7 @@ public class Example_41 {
                         .drawOn(page)
                 Line(p.x1! - 3.0, p.y1!, p.x1! - 3.0, p.y2!)
                         .setColor(Color.navy)
-                        .setWidth(1.0).drawOn(page);
+                        .setWidth(1.0).drawOn(page)
                 paragraphNumber += 1
             }
         }
