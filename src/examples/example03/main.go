@@ -1,83 +1,92 @@
 package main
 
 import (
+	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
-// Example03 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example03 -- TODO:
 func Example03() {
 	pdf := pdfjet.NewPDFFile("Example_03.pdf")
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f1.SetSize(10.0)
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
-	image2 := pdfjet.NewImageFromFile(pdf, "images/spain-admin.jpg")
-	image3 := pdfjet.NewImageFromFile(pdf, "images/mt-map.bmp")
+	f2 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	f2.SetSize(10.0)
+
+	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaOblique())
+	f3.SetSize(10.0)
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 
-	text := pdfjet.NewTextLine(f1, "The map below is an embedded PNG image")
-	text.SetLocation(20.0, 20.0)
-	// text.SetStrikeout(true)
-	text.SetUnderline(true)
-	uri := "https://en.wikipedia.org/wiki/European_Union"
-	text.SetURIAction(uri)
+	paragraphs := make([]*pdfjet.Paragraph, 0)
+
+	paragraph := pdfjet.NewParagraph()
+	paragraph.Add(pdfjet.NewTextLine(f1,
+		"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
+	paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetTextColor(color.Blue))
+	paragraphs = append(paragraphs, paragraph)
+
+	paragraph = pdfjet.NewParagraph()
+	paragraph.Add(pdfjet.NewTextLine(f1,
+		"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
+	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
+	paragraphs = append(paragraphs, paragraph)
+
+	text := pdfjet.NewText(paragraphs)
+	text.SetLocation(70.0, 50.0)
+	text.SetWidth(500.0)
+	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
 
-	image1.SetLocation(50.0, 50.0)
-	image1.ScaleBy(2.0 / 3.0)
-	image1.DrawOn(page)
+	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
+	colorMap := make(map[string]int32)
+	colorMap["Physics"] = color.Red
+	colorMap["physics"] = color.Red
+	colorMap["Experimentation"] = color.Orange
+	colorMap["science"] = color.Blue
+	f2size := f2.GetSize()
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			f2.SetSize(24.0)
+			p.GetTextLines()[0].SetFont(f2)
+			p.GetTextLines()[0].SetTextColor(color.Navy)
+		} else {
+			p.SetColor(color.Gray)
+			p.SetColorMap(colorMap)
+		}
+	}
+	f2.SetSize(f2size)
 
-	text = pdfjet.NewTextLine(f1, "JPG image file embedded once and drawn 3 times")
-	text.SetLocation(90.0, 550.0)
+	text = pdfjet.NewText(paragraphs)
+	text.SetLocation(70.0, 150.0)
+	text.SetWidth(500.0)
+	text.SetBorderColor(color.Blue)
 	xy := text.DrawOn(page)
 
-	image2.SetLocation(90.0, xy[1]-f1.GetDescent(f1.GetSize()))
-	image2.ScaleBy(0.1)
-	image2.DrawOn(page)
+	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
+	rect.DrawOn(page)
 
-	image3.SetLocation(300.0, 600.0)
-	image3.ScaleBy(0.5)
-	image3.DrawOn(page)
-	/*
-		image2.SetLocation(260.0, point[1]+f1.GetDescent())
-		image2.ScaleBy(0.5)
-		image2.SetRotate(clockwise.NinetyDegrees)
-		image2.DrawOn(page)
+	paragraphNumber := 1
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			paragraphNumber = 1
+		} else {
+			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
+			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
+			textLine.DrawOn(page)
+			pdfjet.NewLine(
+				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetColor(color.Navy).SetWidth(1.0).DrawOn(page)
+			paragraphNumber++
+		}
+	}
 
-		image2.SetLocation(350.0, point[1]+f1.GetDescent())
-		image2.SetRotate(clockwise.ZeroDegrees)
-		image2.ScaleBy(0.5)
-		image2.DrawOn(page)
-
-		text = pdfjet.NewTextLine(f1, "The map on the right is an embedded BMP image")
-		text.SetColor(color.Black)
-		text.SetUnderline(true)
-		text.SetVerticalOffset(3.0)
-		text.SetStrikeout(true)
-		text.SetTextDirection(15)
-		text.SetLocation(90.0, 800.0)
-		text.DrawOn(page)
-
-		image3.SetLocation(390.0, 630.0)
-		image3.ScaleBy(0.5)
-		image3.DrawOn(page)
-
-		page2 := NewPageAddTo(pdf, a4.Portrait)
-		var xy []float32
-
-		xy = image1.DrawOn(page2)
-
-		box := NewBox()
-		box.SetLocation(xy[0], xy[1])
-		box.SetSize(20.0, 20.0)
-		box.DrawOn(page2)
-	*/
 	pdf.Complete()
 }
 
