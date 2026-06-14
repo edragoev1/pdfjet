@@ -25,7 +25,7 @@ public class Text : IDrawable {
 	private float[] borderColor;
 	private bool hasBorderColor = false;
 	private float borderWidth = 0.5f;
-	private String borderPattern;
+	private String borderPattern = "[] 0";
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -113,7 +113,7 @@ public class Text : IDrawable {
         if (hasBorderColor) {
             Rect rect = new Rect(x1, y1, width, height);
             rect.SetBorderColor(borderColor);
-            // rect.SetBorderPattern(borderPattern);
+            rect.SetBorderPattern(borderPattern);
             rect.DrawOn(page);
         }
 

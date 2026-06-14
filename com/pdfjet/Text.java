@@ -24,7 +24,7 @@ public class Text implements Drawable {
 	private float[] borderColor;
 	private boolean hasBorderColor = false;
 	private float borderWidth = 0.5f;
-	private String borderPattern;
+	private String borderPattern = "[] 0";
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -108,6 +108,7 @@ public class Text implements Drawable {
         if (page != null && hasBorderColor) {
             Rect rect = new Rect(x1, y1, width, height);
             rect.setBorderColor(this.borderColor);
+            rect.setBorderPattern(borderPattern);
             rect.drawOn(page);
         }
 
