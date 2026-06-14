@@ -22,8 +22,8 @@ public class Text : IDrawable {
     private float xText;
     private float yText;
     private float paragraphLeading = 24f;
+	private bool hasBorder = false;
 	private float[] borderColor;
-	private bool hasBorderColor = false;
 	private float borderWidth = 0.5f;
 	private String borderPattern = "[] 0";
 
@@ -76,12 +76,12 @@ public class Text : IDrawable {
 
     public void SetBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
-        this.hasBorderColor = true;
+        this.hasBorder = true;
     }
 
     public void SetBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
-        this.hasBorderColor = true;
+        this.hasBorder = true;
     }
 
     public void SetBorderPattern(String borderPattern) {
@@ -110,7 +110,7 @@ public class Text : IDrawable {
         Paragraph lastParagraph = paragraphs[paragraphs.Count - 1];
         TextLine lastTextLine = lastParagraph.GetTextLines()[lastParagraph.GetTextLines().Count - 1];
         float height = ((yText - paragraphLeading) - y1) + lastTextLine.font.GetDescent(lastTextLine.fontSize);
-        if (hasBorderColor) {
+        if (hasBorder) {
             Rect rect = new Rect(x1, y1, width, height);
             rect.SetBorderColor(borderColor);
             rect.SetBorderPattern(borderPattern);

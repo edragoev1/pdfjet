@@ -21,8 +21,8 @@ public class Text implements Drawable {
     private float xText;
     private float yText;
     private float paragraphLeading = 24f;
+	private boolean hasBorder = false;
 	private float[] borderColor;
-	private boolean hasBorderColor = false;
 	private float borderWidth = 0.5f;
 	private String borderPattern = "[] 0";
 
@@ -75,12 +75,12 @@ public class Text implements Drawable {
 
     public void setBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
-        this.hasBorderColor = true;
+        this.hasBorder = true;
     }
 
     public void setBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
-        this.hasBorderColor = true;
+        this.hasBorder = true;
     }
 
     public float[] drawOn(Page page) throws Exception {
@@ -105,7 +105,7 @@ public class Text implements Drawable {
         Paragraph lastParagraph = paragraphs.get(paragraphs.size() - 1);
         TextLine lastTextLine = lastParagraph.getTextLines().get(lastParagraph.getTextLines().size() - 1);
         float height = ((yText - paragraphLeading) - y1) + lastTextLine.font.getDescent(lastTextLine.fontSize);
-        if (page != null && hasBorderColor) {
+        if (hasBorder) {
             Rect rect = new Rect(x1, y1, width, height);
             rect.setBorderColor(this.borderColor);
             rect.setBorderPattern(borderPattern);
