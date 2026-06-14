@@ -62,7 +62,7 @@ public class Text : IDrawable {
 
     public float[] DrawOn(Page page) {
         this.xText = x1;
-        this.yText = y1 + paragraphs[0].GetTextLines()[0].GetFont().GetAscent();
+        this.yText = y1 + paragraphs[0].lines[0].font.GetAscent();
         foreach (Paragraph paragraph in paragraphs) {
             paragraph.x1 = x1;
             paragraph.y1 = yText - paragraph.lines[0].font.GetAscent();

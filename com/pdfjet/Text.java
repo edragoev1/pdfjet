@@ -61,7 +61,7 @@ public class Text implements Drawable {
 
     public float[] drawOn(Page page) throws Exception {
         this.xText = x1;
-        this.yText = y1 + paragraphs.get(0).getTextLines().get(0).getFont().getAscent();
+        this.yText = y1 + paragraphs.get(0).lines.get(0).font.getAscent();
         for (Paragraph paragraph : paragraphs) {
             paragraph.x1 = x1;
             paragraph.y1 = yText - paragraph.lines.get(0).font.getAscent();
