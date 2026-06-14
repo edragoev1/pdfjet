@@ -7,7 +7,6 @@ import (
 	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
 	"github.com/edragoev1/pdfjet/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -16,9 +15,8 @@ import (
 func Example14() {
 	pdf := pdfjet.NewPDFFile("Example_14.pdf")
 
-	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	font2 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	font3 := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
+	font1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
+	font2 := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
 
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
@@ -62,27 +60,12 @@ func Example14() {
 	path.SetClosePath(true)
 	path.SetColor(color.Red)
 	path.SetFillShape(true)
-	// path.PlaceIn(flag, 19.0, 3.0)
 
 	path.DrawOn(page)
 
-	box := pdfjet.NewBox()
-	box.SetSize(16.0, 32.0)
-	box.SetColor(color.Red)
-	box.SetFillShape(true)
-	// box.PlaceIn(flag, 0.0, 0.0)
-	box.DrawOn(page)
-	// box.PlaceIn(flag, 48.0, 0.0)
-	box.DrawOn(page)
-
 	path.ScaleBy(15.0)
 	path.SetFillShape(false)
-	xy := path.DrawOn(page)
-
-	box = pdfjet.NewBox()
-	box.SetLocation(xy[0], xy[1])
-	box.SetSize(20.0, 20.0)
-	box.DrawOn(page)
+	path.DrawOn(page)
 
 	font1.SetSize(24.0)
 	textField := pdfjet.NewTextLine(font1, "Hello, World!")
@@ -104,8 +87,8 @@ func Example14() {
 	textField2.SetTextColor(color.Blue)
 	textField2.DrawOn(page)
 
-	font3.SetSize(24.0)
-	textField2 = pdfjet.NewTextLine(font3, "This is great!")
+	font2.SetSize(24.0)
+	textField2 = pdfjet.NewTextLine(font2, "This is great!")
 	textField2.SetLocation(400.0, 600.0)
 	textField2.SetTextColor(color.Blue)
 	textField2.DrawOn(page)
