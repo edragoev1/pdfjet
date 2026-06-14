@@ -16,9 +16,6 @@ public class Line implements Drawable {
     protected float x2;
     protected float y2;
 
-    private float xBox;
-    private float yBox;
-
     private int color = Color.black;
     private float width = 0f;
     private String pattern = "[] 0";
@@ -29,9 +26,7 @@ public class Line implements Drawable {
     private String actualText = Single.space;
 
     /**
-     *  The default constructor.
-     *
-     *
+     * The default constructor.
      */
     public Line() {
     }
@@ -272,44 +267,7 @@ public class Line implements Drawable {
     }
 
     /**
-     *  Places this line in the specified box at position (0.0f, 0.0f).
-     *
-     *  @param box the specified box.
-     *  @return this Line object.
-     */
-    public Line placeIn(Box box) {
-        return placeIn(box, 0f, 0f);
-    }
-
-    /**
-     *  Places this line in the specified box.
-     *
-     *  @param box the specified box.
-     *  @param xOffset the x offset from the top left corner of the box.
-     *  @param yOffset the y offset from the top left corner of the box.
-     *  @return this Line object.
-     */
-    public Line placeIn(Box box, double xOffset, double yOffset) {
-        placeIn(box, (float) xOffset, (float) yOffset);
-        return this;
-    }
-
-    /**
-     *  Places this line in the specified box.
-     *
-     *  @param box the specified box.
-     *  @param xOffset the x offset from the top left corner of the box.
-     *  @param yOffset the y offset from the top left corner of the box.
-     *  @return this Line object.
-     */
-    public Line placeIn(Box box, float xOffset, float yOffset) {
-        xBox = box.x + xOffset;
-        yBox = box.y + yOffset;
-        return this;
-    }
-
-    /**
-     *  Scales this line by the spacified factor.
+     *  Scales this line by the specified factor.
      *
      *  @param factor the factor used to scale the line.
      *  @return this Line object.
@@ -320,7 +278,7 @@ public class Line implements Drawable {
     }
 
     /**
-     *  Scales this line by the spacified factor.
+     *  Scales this line by the specified factor.
      *
      *  @param factor the factor used to scale the line.
      *  @return this Line object.
@@ -347,16 +305,12 @@ public class Line implements Drawable {
         page.setPenWidth(width);
         page.setLineCapStyle(capStyle);
         page.setStrokeDashPattern(pattern);
-        page.drawLine(
-                x1 + xBox,
-                y1 + yBox,
-                x2 + xBox,
-                y2 + yBox);
+        page.drawLine(x1, y1, x2, y2);
         page.append("Q\n");
         page.addEMC();
 
-        float xMax = Math.max(x1 + xBox, x2 + xBox);
-        float yMax = Math.max(y1 + yBox, y2 + yBox);
+        float xMax = Math.max(x1, x2);
+        float yMax = Math.max(y1, y2);
         return new float[] {xMax, yMax};
     }
 }   // End of Line.java

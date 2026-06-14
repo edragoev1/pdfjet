@@ -17,8 +17,6 @@ public class Line : IDrawable {
     internal float y1;
     internal float x2;
     internal float y2;
-    private float xBox;
-    private float yBox;
     private float[] color = new float[] {0f, 0f, 0f};   // Black color
     private float width = 0f;
     private String pattern = "[] 0";
@@ -263,49 +261,6 @@ public class Line : IDrawable {
     }
 
     /**
-     * Places this line in the specified box at position (0.0f, 0.0f).
-     *
-     * @param box the specified box.
-     * @return this Line object.
-     */
-    public Line PlaceIn(Box box) {
-        PlaceIn(box, 0.0f, 0.0f);
-        return this;
-    }
-
-    /**
-     * Places this line in the specified box.
-     *
-     * @param box the specified box.
-     * @param xOffset the x offset from the top left corner of the box.
-     * @param yOffset the y offset from the top left corner of the box.
-     * @return this Line object.
-     */
-    public Line PlaceIn(
-            Box box,
-            double xOffset,
-            double yOffset) {
-        return PlaceIn(box, (float) xOffset, (float) yOffset);
-    }
-
-    /**
-     * Places this line in the specified box.
-     *
-     * @param box the specified box.
-     * @param xOffset the x offset from the top left corner of the box.
-     * @param yOffset the y offset from the top left corner of the box.
-     * @return this Line object.
-     */
-    public Line PlaceIn(
-            Rect rect,
-            float xOffset,
-            float yOffset) {
-        xBox = rect.x + xOffset;
-        yBox = rect.y + yOffset;
-        return this;
-    }
-
-    /**
      * Scales this line by the specified factor.
      *
      * @param factor the factor used to scale the line.
@@ -342,15 +297,11 @@ public class Line : IDrawable {
         page.SetPenWidth(width);
         page.SetLineCapStyle(capStyle);
         page.SetStrokeDashPattern(pattern);
-        page.DrawLine(
-                x1 + xBox,
-                y1 + yBox,
-                x2 + xBox,
-                y2 + yBox);
+        page.DrawLine(x1, y1, x2, y2);
         page.Append("Q\n");
 
-        float xMax = Math.Max(x1 + xBox, x2 + xBox);
-        float yMax = Math.Max(y1 + yBox, y2 + yBox);
+        float xMax = Math.Max(x1, x2);
+        float yMax = Math.Max(y1, y2);
         return new float[] {xMax, yMax};
     }
 }   // End of Line.cs
