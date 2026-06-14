@@ -112,8 +112,9 @@ public class Text : IDrawable {
         float height = ((yText - paragraphLeading) - y1) + lastTextLine.font.GetDescent(lastTextLine.fontSize);
         if (hasBorder) {
             Rect rect = new Rect(x1, y1, width, height);
-            rect.SetBorderColor(borderColor);
-            rect.SetBorderPattern(borderPattern);
+            rect.SetBorderColor(this.borderColor);
+		    rect.SetBorderWidth(this.borderWidth);
+            rect.SetBorderPattern(this.borderPattern);
             rect.DrawOn(page);
         }
 

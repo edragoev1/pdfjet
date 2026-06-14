@@ -107,6 +107,10 @@ func (rect *Rect) SetBorderWidth(borderWidth float32) {
 	rect.borderWidth = borderWidth
 }
 
+func (rect *Rect) SetBorderPattern(borderPattern string) {
+	rect.borderPattern = borderPattern
+}
+
 // SetCornerRadius sets the corner radius.
 // @param width the width.
 func (rect *Rect) SetCornerRadius(cornerRadius float32) {

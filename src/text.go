@@ -22,8 +22,8 @@ type Text struct {
 	x1, y1, xText, yText, width float32
 	leading                     float32
 	paragraphLeading            float32
+	hasBorder                   bool
 	borderColor                 [3]float32
-	hasBorderColor              bool
 	borderWidth                 float32
 	borderPattern               string
 }
@@ -81,7 +81,7 @@ func (text *Text) SetBorderColor(color int32) {
 
 func (text *Text) SetBorderColorRGB(borderColor [3]float32) {
 	text.borderColor = borderColor
-	text.hasBorderColor = true
+	text.hasBorder = true
 }
 
 // DrawOn draws the text on the page.
@@ -105,9 +105,11 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 	}
 
 	height := ((text.yText - text.paragraphLeading) - text.y1) + text.font.descent
-	if page != nil && text.hasBorderColor {
+	if text.hasBorder {
 		rect := NewRect(text.x1, text.y1, text.width, height)
 		rect.SetBorderColorRGB(text.borderColor)
+		rect.SetBorderWidth(text.borderWidth)
+		rect.SetBorderPattern(text.borderPattern)
 		rect.DrawOn(page)
 	}
 

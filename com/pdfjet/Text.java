@@ -108,7 +108,8 @@ public class Text implements Drawable {
         if (hasBorder) {
             Rect rect = new Rect(x1, y1, width, height);
             rect.setBorderColor(this.borderColor);
-            rect.setBorderPattern(borderPattern);
+		    rect.setBorderWidth(this.borderWidth);
+            rect.setBorderPattern(this.borderPattern);
             rect.drawOn(page);
         }
 
