@@ -43,8 +43,6 @@ type Point struct {
 	lineWidth   float32
 	linePattern string
 	fillShape   bool
-	xBox        float32
-	yBox        float32
 }
 
 // NewPoint constructor for creating point objects.
@@ -332,21 +330,6 @@ func (point *Point) GetAlignment() int {
 	return point.align
 }
 
-// PlaceAtZeroZeroIn places this point in the specified box at position (0f, 0f).
-// @param box the specified box.
-func (point *Point) PlaceAtZeroZeroIn(box *Box) {
-	point.PlaceIn(box, 0.0, 0.0)
-}
-
-// PlaceIn places this point in the specified box.
-// @param box the specified box.
-// @param xOffset the x offset from the top left corner of the box.
-// @param yOffset the y offset from the top left corner of the box.
-func (point *Point) PlaceIn(box *Box, xOffset, yOffset float32) {
-	point.xBox = box.x + xOffset
-	point.yBox = box.y + yOffset
-}
-
 // DrawOn draws this point on the specified page.
 // @param page the page to draw this point on.
 // @return x and y coordinates of the bottom right corner of this component.
@@ -368,5 +351,5 @@ func (point *Point) DrawOn(page *Page) [3]float32 {
 	page.DrawPoint(point)
 	page.appendString("Q\n")
 
-	return [3]float32{point.x + point.xBox + point.r, point.y + point.yBox + point.r}
+	return [3]float32{point.x + point.r, point.y + point.r}
 }

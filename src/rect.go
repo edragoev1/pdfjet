@@ -14,7 +14,6 @@ import (
 )
 
 // Rect is used to create rectangular shapes on a page.
-// Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
 type Rect struct {
 	x              float32
 	y              float32
@@ -182,15 +181,6 @@ func (rect *Rect) SetPattern(borderPattern string) {
 // @param fillShape the value used to set the private fillShape variable.
 func (rect *Rect) SetFillShape(fillShape bool) {
 	rect.fillShape = fillShape
-}
-
-// PlaceIn places this rect in the another rect.
-// @param rect the other rect.
-// @param xOffset the x offset from the top left corner of the rect.
-// @param yOffset the y offset from the top left corner of the rect.
-func (rect *Rect) PlaceIn(rect2 *Rect, xOffset, yOffset float32) {
-	rect.x = rect2.x + xOffset
-	rect.y = rect2.y + yOffset
 }
 
 // ScaleBy scales this rect by the specified factor.

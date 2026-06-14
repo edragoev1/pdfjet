@@ -278,13 +278,6 @@ func (image *Image) ResizeHeight(height float32) *Image {
 	return image.ScaleByWidthAndHeight(factor, factor)
 }
 
-// PlaceIn places this image in the specified box.
-// @param box the specified box.
-func (image *Image) PlaceIn(box *Box) {
-	image.xBox = box.x
-	image.yBox = box.y
-}
-
 // SetURIAction sets the URI for the "click box" action.
 // @param uri the URI
 func (image *Image) SetURIAction(uri string) {

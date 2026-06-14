@@ -71,7 +71,7 @@ func Example22() {
 	path.SetColor(color.OldGloryBlue)
 	path.SetColor(color.DeepSkyBlue)
 	path.SetFillShape(true)
-	path.PlaceAtZeroZeroIn(box)
+	// path.PlaceAtZeroZeroIn(box)
 	path.DrawOn(page)
 
 	image := pdfjet.NewImageFromFile(pdf, "images/up-arrow.png")

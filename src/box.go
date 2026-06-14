@@ -15,7 +15,6 @@ import (
 )
 
 // Box is used to create rectangular boxes on a page.
-// Also used to for layout purposes. See the placeIn method in the Image and TextLine classes.
 type Box struct {
 	x, y, w, h     float32
 	r              float32
@@ -157,15 +156,6 @@ func (box *Box) SetPattern(pattern string) {
 // @param fillShape the value used to set the private fillShape variable.
 func (box *Box) SetFillShape(fillShape bool) {
 	box.fillShape = fillShape
-}
-
-// PlaceIn places this box in the another box.
-// @param box the other box.
-// @param xOffset the x offset from the top left corner of the box.
-// @param yOffset the y offset from the top left corner of the box.
-func (box *Box) PlaceIn(box2 *Box, xOffset, yOffset float32) {
-	box.x = box2.x + xOffset
-	box.y = box2.y + yOffset
 }
 
 // ScaleBy scales this box by the specified factor.

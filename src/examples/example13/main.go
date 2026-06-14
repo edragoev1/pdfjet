@@ -24,7 +24,7 @@ func Example13() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	flag := pdfjet.NewBoxAt(85.0, 85.0, 64.0, 32.0)
+	// flag := pdfjet.NewBoxAt(85.0, 85.0, 64.0, 32.0)
 
 	path := pdfjet.NewPath()
 
@@ -62,7 +62,7 @@ func Example13() {
 	path.SetClosePath(true)
 	path.SetColor(color.Red)
 	path.SetFillShape(true)
-	path.PlaceIn(flag, 19.0, 3.0)
+	// path.PlaceIn(flag, 19.0, 3.0)
 
 	path.DrawOn(page)
 
@@ -70,9 +70,9 @@ func Example13() {
 	box.SetSize(16.0, 32.0)
 	box.SetColor(color.Red)
 	box.SetFillShape(true)
-	box.PlaceIn(flag, 0.0, 0.0)
+	// box.PlaceIn(flag, 0.0, 0.0)
 	box.DrawOn(page)
-	box.PlaceIn(flag, 48.0, 0.0)
+	// box.PlaceIn(flag, 48.0, 0.0)
 	box.DrawOn(page)
 
 	path.ScaleBy(15.0)
