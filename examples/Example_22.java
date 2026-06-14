@@ -66,7 +66,6 @@ public class Example_22 {
         path.setColor(Color.oldgloryblue);
         path.setColor(Color.deepskyblue);
         path.setFillShape(true);
-        path.placeIn(box);
         path.drawOn(page);
 
         Image image = new Image(pdf, "images/up-arrow.png");
