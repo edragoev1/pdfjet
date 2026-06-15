@@ -66,6 +66,13 @@ func (rect *Rect) SetLocation(x, y float32) *Rect {
 	return rect
 }
 
+// SetPosition sets the location of this rect on the page.
+// @param x the x coordinate of the top left corner of this rect when drawn on the page.
+// @param y the y coordinate of the top left corner of this rect when drawn on the page.
+func (rect *Rect) SetPosition(x, y float32) {
+	rect.SetLocation(x, y)
+}
+
 // SetSize sets the size of this rect.
 // @param w the width of this rect.
 // @param h the height of this rect.
@@ -193,7 +200,7 @@ func (rect *Rect) ScaleBy(factor float32) {
 // DrawOn draws this rect on the specified page.
 // @param page the page to draw this rect on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (rect *Rect) DrawOn(page *Page) []float32 {
+func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	const k float32 = 0.5517
 
 	page.AddBMC(rect.structureType, rect.language, rect.actualText, rect.altDescription)
@@ -264,5 +271,5 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 			rect.altDescription))
 	}
 
-	return []float32{rect.x + rect.width, rect.y + rect.height}
+	return [2]float32{rect.x + rect.width, rect.y + rect.height}
 }
