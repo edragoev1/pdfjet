@@ -18,7 +18,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/edragoev1/pdfjet/src/annotation"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/compressor"
 	"github.com/edragoev1/pdfjet/src/djb"
@@ -758,7 +757,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 	pdf.appendString("]\n")
 	pdf.appendString("/Border [0 0 0]\n")
 
-	if annot.annotationType == annotation.FileAttachment {
+	if annot.annotationType == AnnotationFileAttachment {
 		pdf.appendString("/FS ")
 		pdf.appendString(strconv.Itoa(annot.fileAttachment.embeddedFile.objNumber))
 		pdf.appendString(" 0 R\n")
@@ -785,7 +784,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == annotation.Link {
+	} else if annot.annotationType == AnnotationLink {
 		if annot.uri != "" {
 			pdf.appendString("/F 4\n")
 			pdf.appendString("/A <<\n")
@@ -811,7 +810,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 				pdf.appendString(" 0]\n")
 			}
 		}
-	} else if annot.annotationType == annotation.Polygon {
+	} else if annot.annotationType == AnnotationPolygon {
 		pdf.appendString("/Vertices [ ")
 		for i := 0; i < len(annot.vertices); i += 2 {
 			pdf.appendFloat32(annot.x1 + annot.vertices[i])
@@ -852,8 +851,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == annotation.Square ||
-		annot.annotationType == annotation.Circle {
+	} else if annot.annotationType == AnnotationSquare ||
+		annot.annotationType == AnnotationCircle {
 		pdf.appendString("/IC [")
 		pdf.appendFloat32(annot.fillColor[0])
 		pdf.appendString(" ")
@@ -885,7 +884,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == annotation.Text {
+	} else if annot.annotationType == AnnotationText {
 		pdf.appendString("/Name /Comment\n")
 
 		if annot.title != "" {

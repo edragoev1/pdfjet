@@ -216,7 +216,7 @@ func (box *Box) DrawOn(page *Page) []float32 {
 
 	if box.uri != "" || box.key != "" {
 		page.AddAnnotation(NewAnnotation(
-			"Link",
+			AnnotationLink,
 			box.x,
 			box.y,
 			box.x+box.w,

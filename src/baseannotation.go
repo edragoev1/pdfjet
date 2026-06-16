@@ -2,8 +2,6 @@ package pdfjet
 
 import (
 	"math"
-
-	"github.com/edragoev1/pdfjet/src/annotation"
 )
 
 // BaseAnnotation represents a base annotation in a PDF document.
@@ -92,7 +90,7 @@ func (b *BaseAnnotation) Rotate(degrees float64) {
 	b.point1 = rotateAroundCenter(b.point1, center, degrees)
 	b.point2 = rotateAroundCenter(b.point2, center, degrees)
 
-	if b.annotationType == annotation.Polygon {
+	if b.annotationType == AnnotationPolygon {
 		for i := 0; i < len(b.vertices); i += 2 {
 			point := rotateAroundCenter(
 				[2]float32{b.vertices[i], b.vertices[i+1]},

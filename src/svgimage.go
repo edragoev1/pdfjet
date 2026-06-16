@@ -314,7 +314,7 @@ func (image *SVGImage) DrawOn(page *Page) []float32 {
 	page.AddEMC()
 	if image.uri != "" || image.key != "" {
 		page.AddAnnotation(NewAnnotation(
-			"Link",
+			AnnotationLink,
 			image.x,
 			image.y,
 			image.x+image.w,

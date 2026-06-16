@@ -396,7 +396,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 	if image.uri != "" || image.key != "" {
 		page.AddAnnotation(NewAnnotation(
-			"Link",
+			AnnotationLink,
 			image.x,
 			image.y,
 			image.x+image.w,

@@ -237,7 +237,7 @@ func (chart *Chart) DrawOn(page *Page) {
 			}
 			if point.uri != "" || point.key != "" {
 				page.AddAnnotation(NewAnnotation(
-					"Link",
+					AnnotationLink,
 					point.x-point.r,
 					page.height-(point.y-point.r),
 					point.x+point.r,

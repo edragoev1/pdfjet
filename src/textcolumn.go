@@ -227,7 +227,7 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 			if textLine.GetGoToAction() != "" {
 				page.AddAnnotation(NewAnnotation(
-					"Link",
+					AnnotationLink,
 					textColumn.x,
 					page.height-(textColumn.y-textLine.font.ascent),
 					textColumn.x+textLine.GetWidth(),
@@ -291,7 +291,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 		if textLine.uri != "" || textLine.key != "" {
 			page.AddAnnotation(NewAnnotation(
-				"Link",
+				AnnotationLink,
 				textColumn.x,
 				textColumn.y-textLine.font.ascent,
 				textColumn.x+textLine.GetWidth(),

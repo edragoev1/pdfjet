@@ -21,6 +21,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/fastfloat"
 	"github.com/edragoev1/pdfjet/src/pathoperator"
 	"github.com/edragoev1/pdfjet/src/shape"
+	"github.com/edragoev1/pdfjet/src/structtype"
 	"github.com/edragoev1/pdfjet/src/token"
 )
 
@@ -1305,7 +1306,7 @@ func (page *Page) AddAnnotation(annotation *Annotation) {
 	page.annots = append(page.annots, annotation)
 	if page.pdf.compliance == compliance.PDF_UA_1 {
 		element := NewStructElem()
-		element.structure = "Link"
+		element.structure = structtype.Link
 		element.language = annotation.language
 		element.actualText = annotation.actualText
 		element.altDescription = annotation.altDescription
