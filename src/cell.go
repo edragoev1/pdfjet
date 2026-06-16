@@ -423,16 +423,23 @@ func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 	//	page.SetBrushColor(cell.point.GetColor())
 	//
 	//	if cell.point.uri != nil {
-	//		page.AddAnnotation(NewAnnotation(
+	//		page.AddAnnotation(&Annotation{	// TODO:
+	//			annotationType: AnnotationLink,
 	//			cell.point.uri,
 	//			nil,
-	//			cell.point.x-cell.point.r,
-	//			cell.point.y-cell.point.r,
-	//			cell.point.x+cell.point.r,
-	//			cell.point.y+cell.point.r,
+	//			x1: cell.point.x-cell.point.r,
+	//			y1: cell.point.y-cell.point.r,
+	//			x2: cell.point.x+cell.point.r,
+	//			y2: cell.point.y+cell.point.r,
+	//			vertices: nil,
 	//			"",
 	//			"",
-	//			""))
+	//			"",
+	//			"",
+	//			"",
+	//			"",
+	//			"",
+	//		})
 	//	}
 	//
 	//	page.DrawPoint(cell.point)
@@ -523,16 +530,21 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 
 	//if cell.uri != nil || cell.key != nil {
 	//	var w float32 = cell.font.stringWidth(cell.font.size, *cell.text)
-	//	page.AddAnnotation(NewAnnotation(
-	//		cell.uri,
-	//		nil,
-	//		xText,
-	//		yText-cell.font.ascent,
-	//		xText+w,
-	//		yText+cell.font.descent,
+	//	page.AddAnnotation(&Annotation{
+	//		annotationType: AnnotationLink, 	// TODO:
+	//		x1: xText,
+	//		y1: yText-cell.font.ascent,
+	//		x2: xText+w,
+	//		y2: yText+cell.font.descent,
+	//		vertices: nil,
 	//		"",
 	//		"",
-	//		""))
+	//		"",
+	//		"",
+	//		"",
+	//		"",
+	//		"",
+	//	})
 	//}
 }
 
