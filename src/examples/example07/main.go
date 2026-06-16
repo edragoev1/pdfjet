@@ -5,6 +5,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/compliance"
 )
@@ -15,7 +16,7 @@ func Example07(mode string) {
 	pdf.SetCompliance(compliance.PDF_A_1B)
 	pdf.SetTitle("PDF/A-1B compliant PDF")
 
-	var f1 = pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	var f1 = pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	page := pdfjet.NewPage(pdf, a4.Landscape)
 
 	f1.SetSize(72.0)

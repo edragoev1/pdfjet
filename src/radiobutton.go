@@ -125,7 +125,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 			radioButton.x+3*radioButton.r1+radioButton.font.StringWidth(radioButton.font.size, radioButton.label),
 			radioButton.y+radioButton.font.bodyHeight,
 			nil,
-			nil,
+			[3]float32{1.0, 1.0, 1.0}, // White color
 			0.0,
 			"",
 			"",

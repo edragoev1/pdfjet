@@ -4,24 +4,97 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/compress"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 func Example06() {
 	pdf := pdfjet.NewPDFFile("Example_06.pdf")
-	pdf.SetTitle("Hello")
-	pdf.SetAuthor("World")
-	pdf.SetSubject("This is a test")
-	pdf.SetKeywords("Hello World This is a test")
-	pdf.SetCreator("Application Name")
+
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
+	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "examples/Example_02/Example_02.cs", compress.Yes)
+
+	page := pdfjet.NewPage(pdf, letter.Portrait)
+
+	// File attachment functionality
+	attachment := pdfjet.NewFileAttachment(pdf, file1)
+	attachment.SetLocation(100.0, 600.0)
+	attachment.SetIconPushPin()
+	// attachment.SetIconSize(25.0)
+	attachment.SetTitle("Attached File: " + file1.GetFileName())
+	attachment.SetDescription(
+		"Right mouse click on the icon to save the attached file.")
+	attachment.DrawOn(page)
+
+	attachment = pdfjet.NewFileAttachment(pdf, file2)
+	attachment.SetLocation(200.0, 600.0)
+	attachment.SetIconPaperclip()
+	// attachment.SetIconSize(25.0)
+	attachment.SetTitle("Attached File: " + file2.GetFileName())
+	attachment.SetDescription(
+		"Right mouse click on the icon to save the attached file.")
+	attachment.DrawOn(page)
+
+	textLine := pdfjet.NewTextLine(f1, "pdfjet.com")
+	textLine.SetLocation(300.0, 618.0)
+	textLine.SetURIAction("https://pdfjet.com")
+	textLine.DrawOn(page)
+
+	// textAnnotation := new(pdfjet.Annotation)
+	//textAnnotation.SetLocation(400.0, 600.0)
+	//textAnnotation.SetSize(25.0, 25.0)
+	//textAnnotation.SetTitle("Hello")
+	//textAnnotation.SetContents("World")
+	//textAnnotation.DrawOn(page)
+
+	container := pdfjet.NewContainer(400.0, 400.0)
+	container.SetLocation(100.0, 100.0)
+	container.AddBorder()
+	// container.Rotate(-90)
+	// container.Rotate(-180)
+
+	rect := new(pdfjet.Rect)
+	rect.SetSize(25.0, 25.0)
+	container.Add(rect)
+
+	//polygonAnnotation = new(pdfjet.PolygonAnnotation)
+	//polygonAnnotation.SetLocation(0.0, 0.0)
+	//polygonAnnotation.SetVertices(new float[] {0f, 0f, 50f, 0f, 0f, 50f, 0f, 0f})
+	//polygonAnnotation.SetFillColor(color.Red)
+	//polygonAnnotation.SetTransparency(0.5)
+	//polygonAnnotation.SetTitle("This is a test ...")
+	//polygonAnnotation.SetContents("The quick brown cat caught the lazy mouse.")
+	//container.Add(polygonAnnotation)
+
+	//SquareAnnotation squareAnnotation = new SquareAnnotation()
+	//squareAnnotation.SetLocation(25f, 0f)
+	//squareAnnotation.SetSize(50f, 50f)
+	//squareAnnotation.SetFillColor(new float[] {0f, 0f, 1f})
+	//squareAnnotation.SetTransparency(0.5f)
+	//squareAnnotation.SetTitle("Hello, World!")
+	//squareAnnotation.SetContents("The quick brown fox jumps over the lazy dog.")
+	//container.Add(squareAnnotation)
+	//
+	//CircleAnnotation circleAnnotation = new CircleAnnotation()
+	//circleAnnotation.SetLocation(50f, 0f)
+	//circleAnnotation.SetSize(50f, 50f)
+	//circleAnnotation.SetFillColor(new float[] {0f, 0f, 1f})
+	//circleAnnotation.SetTransparency(0.5f)
+	//circleAnnotation.SetTitle("Circle")
+	//circleAnnotation.SetContents("Annotation")
+	//container.Add(circleAnnotation)
+
+	container.DrawOn(page)
 
 	embeddedFile1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
 	embeddedFile2 := pdfjet.NewEmbeddedFileAtPath(pdf, "examples/Example_06.java", compress.Yes)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait)
 
-	attachment := pdfjet.NewFileAttachment(pdf, embeddedFile1)
+	attachment = pdfjet.NewFileAttachment(pdf, embeddedFile1)
 	attachment.SetLocation(100.0, 300.0)
 	attachment.SetIconPushPin()
 	attachment.SetIconSize(24.0)

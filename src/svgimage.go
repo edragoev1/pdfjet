@@ -320,7 +320,7 @@ func (image *SVGImage) DrawOn(page *Page) []float32 {
 			image.x+image.w,
 			image.y+image.h,
 			nil,
-			nil,
+			[3]float32{1.0, 1.0, 1.0}, // White color
 			0.0,
 			"",
 			"",

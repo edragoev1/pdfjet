@@ -243,7 +243,7 @@ func (chart *Chart) DrawOn(page *Page) {
 					point.x+point.r,
 					page.height-(point.y+point.r),
 					nil,
-					nil,
+					[3]float32{1.0, 1.0, 1.0}, // White color
 					0.0,
 					"",
 					"",

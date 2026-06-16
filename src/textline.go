@@ -438,7 +438,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 			textLine.x+textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
 			textLine.y+textLine.font.descent,
 			nil,
-			nil,
+			[3]float32{1.0, 1.0, 1.0}, // White color
 			0.0,
 			"",
 			"",

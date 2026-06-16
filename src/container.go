@@ -24,6 +24,7 @@ type Container struct {
 	ScaleX        float32    // The scaling factor along the X-axis.
 	ScaleY        float32    // The scaling factor along the Y-axis.
 	Elements      []Drawable // The list of child drawable elements.
+	parent        *Container
 }
 
 // NewContainer creates a new container with the specified width and height.
@@ -75,6 +76,10 @@ func (c *Container) SetRotationClockwise(degrees float64) {
 	c.RotateDegrees = float32(-degrees)
 }
 
+func (c *Container) GetRotationCenter() [2]float32 {
+	return [2]float32{c.X + c.Width/2.0, c.Y + c.Height/2.0}
+}
+
 // SetRotationCounterClockwise sets the counter-clockwise rotation angle of the container in degrees.
 //
 // degrees specifies the angle to rotate counter-clockwise.
@@ -98,6 +103,12 @@ func (c *Container) SetScaleFactorXY(sx, sy float32) {
 	c.ScaleY = sy
 }
 
+func (c *Container) AddBorder() {
+	rect := new(Rect)
+	rect.SetSize(c.Width, c.Height)
+	c.Add(rect)
+}
+
 // Add adds a drawable element to this container.
 //
 // element is the Drawable object to add.
@@ -116,7 +127,7 @@ func (c *Container) Add(element Drawable) {
 //
 // Returns a slice containing the bottom-right position of the container.
 // Returns an error if drawing fails.
-func (c *Container) DrawOn(page *Page) ([]float32, error) {
+func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendString("q\n") // Save the graphics state
 
 	// 1) Translate container to its final position
@@ -170,5 +181,5 @@ func (c *Container) DrawOn(page *Page) ([]float32, error) {
 	page.appendString("Q\n") // Restore graphics state
 
 	// Return bottom-right position of container
-	return []float32{c.X + c.Width, c.Y + c.Height}, nil
+	return [2]float32{c.X + c.Width, c.Y + c.Height}
 }

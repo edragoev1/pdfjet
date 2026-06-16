@@ -222,7 +222,7 @@ func (box *Box) DrawOn(page *Page) []float32 {
 			box.x+box.w,
 			box.y+box.h,
 			nil,
-			nil,
+			[3]float32{1.0, 1.0, 1.0}, // White color
 			0.0,
 			"",
 			"",

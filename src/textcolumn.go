@@ -233,7 +233,7 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 					textColumn.x+textLine.GetWidth(),
 					page.height-(textColumn.y+textLine.font.descent),
 					nil,
-					nil,
+					[3]float32{1.0, 1.0, 1.0}, // White color
 					0.0,
 					"",
 					"",
@@ -297,7 +297,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 				textColumn.x+textLine.GetWidth(),
 				textColumn.y+textLine.font.descent,
 				nil,
-				nil,
+				[3]float32{1.0, 1.0, 1.0}, // White color
 				0.0,
 				"",
 				"",

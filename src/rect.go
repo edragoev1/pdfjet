@@ -260,7 +260,7 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 			rect.x+rect.width,
 			rect.y+rect.height,
 			nil,
-			nil,
+			[3]float32{1.0, 1.0, 1.0}, // White color
 			0.0,
 			"",
 			"",

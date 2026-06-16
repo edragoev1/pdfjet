@@ -1,19 +1,25 @@
 package pdfjet
 
-/**
- * annotation.go
- *
- * Copyright (c) 2026 PDFjet Software
- * Licensed under the MIT License. See LICENSE file in the project root.
- */
+// AnnotationType constants
+const (
+	AnnotationLink           = "Link"
+	AnnotationFileAttachment = "FileAttachment"
+	AnnotationPolygon        = "Polygon"
+	AnnotationCircle         = "Circle"
+	AnnotationSquare         = "Square"
+	AnnotationText           = "Text"
+)
 
-// Annotation is used to create PDF annotation objects.
+// Annotation represents a PDF annotation object.
 type Annotation struct {
 	objNumber      int
 	annotationType string
-	x1, y1, x2, y2 float32
+	x1             float32
+	y1             float32
+	x2             float32
+	y2             float32
 	vertices       []float32
-	fillColor      []float32
+	fillColor      [3]float32
 	transparency   float32
 	title          string
 	contents       string
@@ -22,51 +28,45 @@ type Annotation struct {
 	language       string
 	actualText     string
 	altDescription string
-	fileAttachment *FileAttachment
+	fileAttachment *FileAttachment // Assuming FileAttachment type exists elsewhere
 }
 
-// NewAnnotation is the constructor used to create annotation objects.
-//
-// @param uri the URI string.
-// @param key the destination name.
-// @param x1 the x coordinate of the top left corner.
-// @param y1 the y coordinate of the top left corner.
-// @param x2 the x coordinate of the bottom right corner.
-// @param y2 the y coordinate of the bottom right corner.
+// NewAnnotation creates a new Annotation instance.
+// It mimics the C# constructor behavior including the fallback logic for actualText and altDescription.
 func NewAnnotation(
 	annotationType string,
 	x1, y1, x2, y2 float32,
 	vertices []float32,
-	fillColor []float32,
+	fillColor [3]float32,
 	transparency float32,
-	title string,
-	contents string,
-	uri string,
-	key string,
-	language string,
-	actualText string,
-	altDescription string) *Annotation {
-	annotation := new(Annotation)
-	annotation.annotationType = annotationType
-	annotation.x1 = x1
-	annotation.y1 = y1
-	annotation.x2 = x2
-	annotation.y2 = y2
-	annotation.vertices = vertices
-	annotation.fillColor = fillColor
-	annotation.transparency = transparency
-	annotation.title = title
-	annotation.contents = contents
-	annotation.uri = uri
-	annotation.key = key
-	annotation.language = language
-	annotation.actualText = actualText
-	annotation.altDescription = altDescription
-	if annotation.actualText == "" {
-		annotation.actualText = uri
+	title, contents, uri, key, language, actualText, altDescription string,
+) *Annotation {
+	// Handle fallback logic: if actualText/altDescription are nil (empty in Go), use uri
+	finalActualText := actualText
+	if finalActualText == "" {
+		finalActualText = uri
 	}
-	if annotation.altDescription == "" {
-		annotation.altDescription = uri
+
+	finalAltDesc := altDescription
+	if finalAltDesc == "" {
+		finalAltDesc = uri
 	}
-	return annotation
+
+	return &Annotation{
+		annotationType: annotationType,
+		x1:             x1,
+		y1:             y1,
+		x2:             x2,
+		y2:             y2,
+		vertices:       vertices,
+		fillColor:      fillColor,
+		transparency:   transparency,
+		title:          title,
+		contents:       contents,
+		uri:            uri,
+		key:            key,
+		language:       language,
+		actualText:     finalActualText,
+		altDescription: finalAltDesc,
+	}
 }

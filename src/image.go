@@ -402,7 +402,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 			image.x+image.w,
 			image.y+image.h,
 			nil,
-			nil,
+			[3]float32{1.0, 1.0, 1.0}, // White color
 			0.0,
 			"",
 			"",
