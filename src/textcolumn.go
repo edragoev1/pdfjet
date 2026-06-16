@@ -226,22 +226,23 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 			if textLine.GetGoToAction() != "" {
-				page.AddAnnotation(NewAnnotation(
-					AnnotationLink,
-					textColumn.x,
-					page.height-(textColumn.y-textLine.font.ascent),
-					textColumn.x+textLine.GetWidth(),
-					page.height-(textColumn.y+textLine.font.descent),
-					nil,
-					[3]float32{1.0, 1.0, 1.0}, // White color
-					0.0,
-					"",
-					"",
-					"",           // The URI
-					textLine.key, // The destination name
-					"",
-					"",
-					""))
+				page.AddAnnotation(&Annotation{
+					annotationType: AnnotationLink,
+					x1:             textColumn.x,
+					y1:             page.height - (textColumn.y - textLine.font.ascent),
+					x2:             textColumn.x + textLine.GetWidth(),
+					y2:             page.height - (textColumn.y + textLine.font.descent),
+					vertices:       nil,
+					fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+					transparency:   0.0,
+					title:          "",
+					contents:       "",
+					uri:            "",           // The URI
+					key:            textLine.key, // The destination name
+					language:       "",
+					actualText:     "",
+					altDescription: "",
+				})
 			}
 
 			if textColumn.rotate == 0 {
@@ -290,22 +291,23 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 	for _, textLine := range textLines {
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 		if textLine.uri != "" || textLine.key != "" {
-			page.AddAnnotation(NewAnnotation(
-				AnnotationLink,
-				textColumn.x,
-				textColumn.y-textLine.font.ascent,
-				textColumn.x+textLine.GetWidth(),
-				textColumn.y+textLine.font.descent,
-				nil,
-				[3]float32{1.0, 1.0, 1.0}, // White color
-				0.0,
-				"",
-				"",
-				"",                       // The URI
-				textLine.GetGoToAction(), // The destination name
-				"",
-				"",
-				""))
+			page.AddAnnotation(&Annotation{
+				annotationType: AnnotationLink,
+				x1:             textColumn.x,
+				y1:             textColumn.y - textLine.font.ascent,
+				x2:             textColumn.x + textLine.GetWidth(),
+				y2:             textColumn.y + textLine.font.descent,
+				vertices:       nil,
+				fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+				transparency:   0.0,
+				title:          "",
+				contents:       "",
+				uri:            "",                       // The URI
+				key:            textLine.GetGoToAction(), // The destination name
+				language:       "",
+				actualText:     "",
+				altDescription: "",
+			})
 		}
 
 		if textColumn.rotate == 0 {
