@@ -215,23 +215,23 @@ func (box *Box) DrawOn(page *Page) []float32 {
 	page.AddEMC()
 
 	if box.uri != "" || box.key != "" {
-		page.AddAnnotation(NewAnnotation(
-			AnnotationLink,
-			box.x,
-			box.y,
-			box.x+box.w,
-			box.y+box.h,
-			nil,
-			[3]float32{1.0, 1.0, 1.0}, // White color
-			0.0,
-			"",
-			"",
-			box.uri,
-			box.key, // The destination name
-			box.language,
-			box.actualText,
-			box.altDescription))
+		page.AddAnnotation(&Annotation{
+			annotationType: AnnotationLink,
+			x1:             box.x,
+			y1:             box.y,
+			x2:             box.x + box.w,
+			y2:             box.y + box.h,
+			vertices:       nil,
+			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+			transparency:   0.0,
+			title:          "",
+			contents:       "",
+			uri:            box.uri,
+			key:            box.key, // The destination name
+			language:       box.language,
+			actualText:     box.actualText,
+			altDescription: box.altDescription,
+		})
 	}
-
 	return []float32{box.x + box.w, box.y + box.h}
 }
