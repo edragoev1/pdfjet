@@ -431,22 +431,23 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 	}
 
 	if textLine.uri != "" || textLine.key != "" {
-		page.AddAnnotation(NewAnnotation(
-			AnnotationLink,
-			textLine.x,
-			textLine.y-textLine.font.ascent,
-			textLine.x+textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
-			textLine.y+textLine.font.descent,
-			nil,
-			[3]float32{1.0, 1.0, 1.0}, // White color
-			0.0,
-			"",
-			"",
-			textLine.uri,
-			textLine.key, // The destination name
-			textLine.uriLanguage,
-			textLine.uriActualText,
-			textLine.uriAltDescription))
+		page.AddAnnotation(&Annotation{
+			annotationType: AnnotationLink,
+			x1:             textLine.x,
+			y1:             textLine.y - textLine.font.ascent,
+			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
+			y2:             textLine.y + textLine.font.descent,
+			vertices:       nil,
+			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+			transparency:   0.0,
+			title:          "",
+			contents:       "",
+			uri:            textLine.uri,
+			key:            textLine.key, // The destination name
+			language:       textLine.uriLanguage,
+			actualText:     textLine.uriActualText,
+			altDescription: textLine.uriAltDescription,
+		})
 	}
 
 	page.SetTextDirection(0)

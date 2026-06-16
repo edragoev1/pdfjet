@@ -118,22 +118,23 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 	page.AddEMC()
 
 	if radioButton.uri != "" || radioButton.key != "" {
-		page.AddAnnotation(NewAnnotation(
-			AnnotationLink,
-			radioButton.x+3*radioButton.r1,
-			radioButton.y,
-			radioButton.x+3*radioButton.r1+radioButton.font.StringWidth(radioButton.font.size, radioButton.label),
-			radioButton.y+radioButton.font.bodyHeight,
-			nil,
-			[3]float32{1.0, 1.0, 1.0}, // White color
-			0.0,
-			"",
-			"",
-			radioButton.uri,
-			"",
-			radioButton.language,
-			radioButton.actualText,
-			radioButton.altDescription))
+		page.AddAnnotation(&Annotation{
+			annotationType: AnnotationLink,
+			x1:             radioButton.x + 3*radioButton.r1,
+			y1:             radioButton.y,
+			x2:             radioButton.x + 3*radioButton.r1 + radioButton.font.StringWidth(radioButton.font.size, radioButton.label),
+			y2:             radioButton.y + radioButton.font.bodyHeight,
+			vertices:       nil,
+			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+			transparency:   0.0,
+			title:          "",
+			contents:       "",
+			uri:            radioButton.uri,
+			key:            "",
+			language:       radioButton.language,
+			actualText:     radioButton.actualText,
+			altDescription: radioButton.altDescription,
+		})
 	}
 
 	return []float32{

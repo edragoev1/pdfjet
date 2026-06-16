@@ -236,22 +236,23 @@ func (chart *Chart) DrawOn(page *Page) {
 				point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
 			}
 			if point.uri != "" || point.key != "" {
-				page.AddAnnotation(NewAnnotation(
-					AnnotationLink,
-					point.x-point.r,
-					page.height-(point.y-point.r),
-					point.x+point.r,
-					page.height-(point.y+point.r),
-					nil,
-					[3]float32{1.0, 1.0, 1.0}, // White color
-					0.0,
-					"",
-					"",
-					point.uri,
-					"",
-					"",
-					"",
-					""))
+				page.AddAnnotation(&Annotation{
+					annotationType: AnnotationLink,
+					x1:             point.x - point.r,
+					y1:             page.height - (point.y - point.r),
+					x2:             point.x + point.r,
+					y2:             page.height - (point.y + point.r),
+					vertices:       nil,
+					fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+					transparency:   0.0,
+					title:          "",
+					contents:       "",
+					uri:            point.uri,
+					key:            "",
+					language:       "",
+					actualText:     "",
+					altDescription: "",
+				})
 			}
 		}
 	}
