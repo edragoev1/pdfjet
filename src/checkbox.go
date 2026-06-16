@@ -174,22 +174,23 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 
 	page.AddEMC()
 	if checkBox.uri != "" || checkBox.key != "" {
-		page.AddAnnotation(NewAnnotation(
-			AnnotationLink,
-			checkBox.x+3.0*checkBox.w/2.0,
-			checkBox.y,
-			checkBox.x+3.0*checkBox.w/2.0+checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
-			checkBox.y+checkBox.font.bodyHeight,
-			nil,
-			[3]float32{1.0, 1.0, 1.0}, // White color
-			0.0,
-			"",
-			"",
-			checkBox.uri,
-			"",
-			checkBox.language,
-			checkBox.actualText,
-			checkBox.altDescription))
+		page.AddAnnotation(&Annotation{
+			annotationType: AnnotationLink,
+			x1:             checkBox.x + 3.0*checkBox.w/2.0,
+			y1:             checkBox.y,
+			x2:             checkBox.x + 3.0*checkBox.w/2.0 + checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
+			y2:             checkBox.y + checkBox.font.bodyHeight,
+			vertices:       nil,
+			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+			transparency:   0.0,
+			title:          "",
+			contents:       "",
+			uri:            checkBox.uri,
+			key:            "",
+			language:       checkBox.language,
+			actualText:     checkBox.actualText,
+			altDescription: checkBox.altDescription,
+		})
 	}
 
 	return []float32{
