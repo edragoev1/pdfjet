@@ -78,14 +78,14 @@ func Example06() {
 	squareAnnotation.SetContents("The quick brown fox jumps over the lazy dog.")
 	container.Add(squareAnnotation)
 
-	//CircleAnnotation circleAnnotation = new CircleAnnotation()
-	//circleAnnotation.SetLocation(50f, 0f)
-	//circleAnnotation.SetSize(50f, 50f)
-	//circleAnnotation.SetFillColor(new float[] {0f, 0f, 1f})
-	//circleAnnotation.SetTransparency(0.5f)
-	//circleAnnotation.SetTitle("Circle")
-	//circleAnnotation.SetContents("Annotation")
-	//container.Add(circleAnnotation)
+	circleAnnotation := pdfjet.NewCircleAnnotation()
+	circleAnnotation.SetLocation(50.0, 0.0)
+	circleAnnotation.SetSize(50.0, 50.0)
+	circleAnnotation.SetFillColor([3]float32{0.0, 0.0, 1.0}) // Blue color
+	circleAnnotation.SetTransparency(0.5)
+	circleAnnotation.SetTitle("Circle")
+	circleAnnotation.SetContents("Annotation")
+	container.Add(circleAnnotation)
 
 	container.DrawOn(page)
 
