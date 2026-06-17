@@ -5,6 +5,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compress"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -52,7 +53,7 @@ func Example06() {
 	*/
 	container := pdfjet.NewContainer(400.0, 400.0)
 	container.SetLocation(100.0, 100.0)
-	container.AddBorder()
+	container.SetBorderColor(color.Black)
 	container.SetRotationClockwise(90)
 
 	rect := new(pdfjet.Rect)

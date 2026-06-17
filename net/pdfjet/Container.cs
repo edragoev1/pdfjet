@@ -103,6 +103,12 @@ public class Container : IDrawable {
         this.scaleY = sy;
     }
 
+    public void SetBorderColor(int borderColor) {
+        Rect rect = new Rect(0f, 0f, width, height);
+        rect.SetBorderColor(borderColor);
+        this.Add(rect);
+    }
+
     public void AddBorder() {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.SetBorderColor(Color.black);

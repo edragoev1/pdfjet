@@ -104,6 +104,12 @@ func (c *Container) SetScaleFactorXY(sx, sy float32) {
 	c.ScaleY = sy
 }
 
+func (c *Container) SetBorderColor(borderColor int32) {
+	rect := NewRect(0.0, 0.0, c.Width, c.Height)
+	rect.SetBorderColor(borderColor)
+	c.Add(rect)
+}
+
 func (c *Container) AddBorder() {
 	rect := NewRect(0.0, 0.0, c.Width, c.Height)
 	rect.SetBorderColor(color.Black)

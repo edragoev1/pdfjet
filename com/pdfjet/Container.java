@@ -113,6 +113,12 @@ public class Container implements Drawable {
         this.scaleY = sy;
     }
 
+    public void setBorderColor(int borderColor) {
+        Rect rect = new Rect(0f, 0f, width, height);
+        rect.setBorderColor(borderColor);
+        this.add(rect);
+    }
+
     public void addBorder() {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.setBorderColor(Color.black);

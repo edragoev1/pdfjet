@@ -52,7 +52,7 @@ public class Example_06 {
 
         Container container = new Container(400f, 400f);
         container.SetLocation(100f, 100f);
-        container.AddBorder();
+        container.SetBorderColor(Color.black);
         container.SetRotationClockwise(90);
 
         Rect rect = new Rect();
