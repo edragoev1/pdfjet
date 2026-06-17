@@ -212,15 +212,21 @@ public class CheckBox : Drawable {
 
         if uri != nil {     // TODO: BMC and EMC here!
             page!.addAnnotation(Annotation(
-                    uri,
-                    nil,
+                    Annotation.Link,
                     x + 3.0*w/2.0,
                     y,
                     x + 3.0*w/2.0 + font.stringWidth(label),
-                    y + font.bodyHeight,
+                    y + font.getBodyHeight(),   // TODO: Use fontSize
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    nil,    // Title
+                    nil,    // Contents
+                    uri,
+                    null,
                     language,
                     actualText,
-                    altDescription))
+                    altDescription));
         }
 
         return [x + 3.0*w + font.stringWidth(label), y + font.bodyHeight]

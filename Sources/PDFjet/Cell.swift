@@ -708,15 +708,21 @@ public class Cell {
             let w = (compositeTextLine != nil) ?
                     compositeTextLine!.getWidth() : font!.stringWidth(text)
             page.addAnnotation(Annotation(
-                    uri!,
-                    "",
+                    Annotation.Link,
                     xText!,
                     (page.height - yText!) - font!.ascent,
                     xText! + w,
                     (page.height - yText!) + font!.descent,
-                    "",
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    "",     // Title
+                    "",     // Contents
+                    uri,
                     nil,
-                    nil))
+                    nil,
+                    nil,
+                    nil));
         }
     }
 

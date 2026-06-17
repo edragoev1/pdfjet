@@ -145,15 +145,21 @@ public class RadioButton : Drawable {
 
         if uri != nil {
             page!.addAnnotation(Annotation(
-                    uri,
-                    nil,
+                    Annotation.Link,
                     x + 3*r1,
                     y,
-                    x + 3*r1 + font.stringWidth(label),
-                    y + font.bodyHeight,
+                    x + 3*r1 + font.stringWidth(label), // TODO:
+                    y + font.getBodyHeight(),           // y + font.getBodyHeight(fontSize),
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    nil,    // Title
+                    nil,    // Contents
+                    uri,
+                    null,
                     language,
                     actualText,
-                    altDescription))
+                    altDescription));
         }
 
         return [x + 6*r1 + font.stringWidth(label), y + font.bodyHeight]

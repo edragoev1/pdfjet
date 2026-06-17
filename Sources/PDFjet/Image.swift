@@ -401,15 +401,21 @@ public class Image : Drawable {
 
         if uri != nil || key != nil {
             page!.addAnnotation(Annotation(
-                    uri,
-                    key,    // The destination name
+                    Annotation.Link,
                     x.rounded(),
                     y.rounded(),
                     (x + w!).rounded(),
                     (y + h!).rounded(),
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    "",     // Title
+                    "",     // Contents
+                    uri,
+                    key,    // The destination name
                     language,
                     actualText,
-                    altDescription))
+                    altDescription));
         }
 
         return [x + w!, y + h!]

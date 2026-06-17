@@ -266,15 +266,21 @@ public class TextColumn : Drawable {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
                 if textLine.getGoToAction() != nil {
                     page.addAnnotation(Annotation(
-                            nil,                        // The URI
-                            textLine.getGoToAction(),   // The destination name
+                            Annotation.Link,
                             x,
                             y - textLine.font!.ascent,
                             x + textLine.getWidth(),
                             y + textLine.font!.descent,
+                            nil,                        // Vertices
+                            nil,                        // Fill Color
+                            0.0                         // Transparency
+                            nil,                        // Title
+                            nil,                        // Contents
+                            nil,                        // The URI
+                            textLine.getGoToAction(),   // The destination name
                             nil,
                             nil,
-                            nil))
+                            nil));
                 }
 
                 if rotate == 0 {
@@ -324,15 +330,21 @@ public class TextColumn : Drawable {
             textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
             if textLine.getGoToAction() != nil {
                 page.addAnnotation(Annotation(
-                        nil,                        // The URI
-                        textLine.getGoToAction(),   // The destination name
+                        Annotation.Link,
                         x,
                         y - textLine.font!.ascent,
                         x + textLine.getWidth(),
                         y + textLine.font!.descent,
+                        nil,                        // Vertices
+                        nil,                        // Fill Color
+                        0.0,                        // Transparency
+                        nil,                        // Title
+                        nil,                        // Contents
+                        nil,                        // The URI
+                        textLine.getGoToAction(),   // The destination name
                         nil,
                         nil,
-                        nil))
+                        nil));
             }
             if rotate == 0 {
                 textLine.setTextDirection(0).drawOn(page)

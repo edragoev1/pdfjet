@@ -100,6 +100,36 @@ public class Container: Drawable {
         self.elements.append(element)
     }
 
+    /// Rotates a point around a center by a specified number of degrees.
+    /// - Parameters:
+    ///   - point: The point to rotate as [x, y].
+    ///   - center: The center point of rotation as [x, y].
+    ///   - degrees: The angle of rotation in degrees.
+    /// - Returns: A new array [x, y] representing the rotated point.
+    static func rotateAroundCenter(_ point: [Float], _ center: [Float], _ degrees: Float) -> [Float] {
+        // Convert degrees to radians
+        let rad = Double(degrees) * .pi / 180.0
+
+        // Translate point to origin (relative to center)
+        let dx = Double(point[0]) - Double(center[0])
+        let dy = Double(point[1]) - Double(center[1])
+
+        // Calculate cosine and sine
+        let cosValue = cos(rad)
+        let sinValue = sin(rad)
+
+        // Apply rotation matrix
+        let dxRot = dx * cosValue - dy * sinValue
+        let dyRot = dx * sinValue + dy * cosValue
+
+        // Translate back to original coordinate system
+        let nx = Double(center[0]) + dxRot
+        let ny = Double(center[1]) + dyRot
+
+        // Return as Float array (matching float[] return type in Java)
+        return [Float(nx), Float(ny)]
+    }
+
     /// Draws this container and its child elements onto the page.
     ///
     /// - Parameter page: The `Page` to draw on.

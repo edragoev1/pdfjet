@@ -295,15 +295,21 @@ public class SVGImage {
         page.addEMC()
         if (uri != nil || key != nil) {
             page.addAnnotation(Annotation(
-                    uri,
-                    key,    // The destination name
+                    Annotation.Link,
                     x,
                     y,
                     x + w,
                     y + h,
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    nil,    // Title
+                    nil,    // Contents
+                    uri,
+                    key,    // The destination name
                     language,
                     actualText,
-                    altDescription))
+                    altDescription));
         }
         return [self.x + self.w, self.y + self.h]
     }

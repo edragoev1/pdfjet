@@ -569,15 +569,21 @@ public class TextLine : Drawable {
 
         if uri != nil || key != nil {
             page!.addAnnotation(Annotation(
-                    uri,
-                    key,    // The destination name
+                    Annotation.Link,
                     self.x,
                     self.y - font!.ascent,
                     self.x + font!.stringWidth(fallbackFont, fontSize, text!),
                     self.y + font!.descent,
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    nil,    // Title
+                    nil,    // Contents
+                    uri,
+                    key,    // The destination name
                     uriLanguage,
                     uriActualText,
-                    uriAltDescription))
+                    uriAltDescription));
         }
         page!.setTextDirection(0)
 
