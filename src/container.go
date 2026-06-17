@@ -116,6 +116,29 @@ func (c *Container) Add(element Drawable) {
 	c.Elements = append(c.Elements, element)
 }
 
+// RotateAroundCenter rotates a 2D point around a center point by the given degrees.
+// Accepts []float32 slices where index 0 is X and index 1 is Y.
+func RotateAroundCenter(point, center []float32, degrees float64) []float32 {
+	// Convert degrees to radians
+	rad := degrees * math.Pi / 180.0
+
+	// Translate to center (point relative to center)
+	dx := float64(point[0]) - float64(center[0])
+	dy := float64(point[1]) - float64(center[1])
+
+	// Apply rotation using 2D rotation matrix
+	cos := math.Cos(rad)
+	sin := math.Sin(rad)
+	dxRot := dx*cos - dy*sin
+	dyRot := dx*sin + dy*cos
+
+	// Translate back
+	nx := float64(center[0]) + dxRot
+	ny := float64(center[1]) + dyRot
+
+	return []float32{float32(nx), float32(ny)}
+}
+
 // DrawOn draws the container and all child elements onto the given page.
 //
 // The transformations applied are:
