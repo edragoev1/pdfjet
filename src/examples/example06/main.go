@@ -60,14 +60,14 @@ func Example06() {
 	rect.SetSize(25.0, 25.0)
 	container.Add(rect)
 
-	//polygonAnnotation = new(pdfjet.PolygonAnnotation)
-	//polygonAnnotation.SetLocation(0.0, 0.0)
-	//polygonAnnotation.SetVertices(new float[] {0f, 0f, 50f, 0f, 0f, 50f, 0f, 0f})
-	//polygonAnnotation.SetFillColor(color.Red)
-	//polygonAnnotation.SetTransparency(0.5)
-	//polygonAnnotation.SetTitle("This is a test ...")
-	//polygonAnnotation.SetContents("The quick brown cat caught the lazy mouse.")
-	//container.Add(polygonAnnotation)
+	polygonAnnotation := pdfjet.NewPolygonAnnotation()
+	polygonAnnotation.SetLocation(0.0, 0.0)
+	polygonAnnotation.SetVertices([]float32{0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0})
+	polygonAnnotation.SetFillColor([3]float32{1.0, 0.0, 0.0}) // Red color
+	polygonAnnotation.SetTransparency(0.5)
+	polygonAnnotation.SetTitle("This is a test ...")
+	polygonAnnotation.SetContents("The quick brown cat caught the lazy mouse.")
+	container.Add(polygonAnnotation)
 
 	//SquareAnnotation squareAnnotation = new SquareAnnotation()
 	//squareAnnotation.SetLocation(25f, 0f)
