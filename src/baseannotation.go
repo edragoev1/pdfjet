@@ -86,10 +86,8 @@ func (b *BaseAnnotation) Rotate(degrees float64) {
 		center[0] += b.container.Parent.X
 		center[1] += b.container.Parent.Y
 	}
-
 	b.point1 = rotateAroundCenter(b.point1, center, degrees)
 	b.point2 = rotateAroundCenter(b.point2, center, degrees)
-
 	if b.annotationType == AnnotationPolygon {
 		for i := 0; i < len(b.vertices); i += 2 {
 			point := rotateAroundCenter(

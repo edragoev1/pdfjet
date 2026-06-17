@@ -226,7 +226,6 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 			}
 			annot.Rotate(float64(-c.RotateDegrees))
 		}
-
 		element.DrawOn(page)
 	}
 

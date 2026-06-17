@@ -42,14 +42,14 @@ func Example06() {
 	textLine.SetLocation(300.0, 618.0)
 	textLine.SetURIAction("https://pdfjet.com")
 	textLine.DrawOn(page)
-
-	// textAnnotation := new(pdfjet.Annotation)
-	//textAnnotation.SetLocation(400.0, 600.0)
-	//textAnnotation.SetSize(25.0, 25.0)
-	//textAnnotation.SetTitle("Hello")
-	//textAnnotation.SetContents("World")
-	//textAnnotation.DrawOn(page)
-
+	/*
+		textAnnotation := pdfjet.NewAnnotation()
+		textAnnotation.SetLocation(400.0, 600.0)
+		textAnnotation.SetSize(25.0, 25.0)
+		textAnnotation.SetTitle("Hello")
+		textAnnotation.SetContents("World")
+		textAnnotation.DrawOn(page)
+	*/
 	container := pdfjet.NewContainer(400.0, 400.0)
 	container.SetLocation(100.0, 100.0)
 	container.AddBorder()
