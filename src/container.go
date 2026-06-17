@@ -24,7 +24,7 @@ type Container struct {
 	ScaleX        float32    // The scaling factor along the X-axis.
 	ScaleY        float32    // The scaling factor along the Y-axis.
 	Elements      []Drawable // The list of child drawable elements.
-	parent        *Container
+	Parent        *Container
 }
 
 // NewContainer creates a new container with the specified width and height.
@@ -113,11 +113,10 @@ func (c *Container) AddBorder() {
 //
 // element is the Drawable object to add.
 func (c *Container) Add(element Drawable) {
+	if child, ok := element.(*Container); ok {
+		child.Parent = c
+	}
 	c.Elements = append(c.Elements, element)
-}
-
-func (c *Container) GetParent() *Container {
-	return c.parent
 }
 
 // RotateAroundCenter rotates a 2D point around a center point by the given degrees.
@@ -202,10 +201,6 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 
 	// 6) Draw children elements
 	for _, element := range c.Elements {
-		if element == nil {
-			continue
-		}
-
 		var annot *BaseAnnotation
 		// Check if element is a known annotation type and cast it
 		if sq, ok := element.(*SquareAnnotation); ok {
@@ -217,28 +212,18 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 		} else if txt, ok := element.(*TextAnnotation); ok {
 			annot = &txt.BaseAnnotation
 		}
-
-		// If it matches one of the annotation types, apply transformation logic
 		if annot != nil {
-			// Adjust point coordinates with container offsets
-			// Ensure arrays are long enough to avoid panic
 			annot.point1[0] += c.X
 			annot.point1[1] += c.Y
 			annot.point2[0] += c.X
 			annot.point2[1] += c.Y
-
-			// Account for parent offset if exists
-			parent := c.GetParent()
-			if parent != nil {
-				pX := parent.X
-				pY := parent.Y
-				annot.point1[0] += pX
-				annot.point1[1] += pY
-				annot.point2[0] += pX
-				annot.point2[1] += pY
+			annot.container = c
+			if c.Parent != nil {
+				annot.point1[0] += c.Parent.X
+				annot.point1[1] += c.Parent.Y
+				annot.point2[0] += c.Parent.X
+				annot.point2[1] += c.Parent.Y
 			}
-
-			// Apply rotation
 			annot.Rotate(float64(-c.RotateDegrees))
 		}
 

@@ -88,29 +88,6 @@ func Example06() {
 
 	container.DrawOn(page)
 
-	embeddedFile1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
-	embeddedFile2 := pdfjet.NewEmbeddedFileAtPath(pdf, "examples/Example_06.java", compress.Yes)
-
-	page = pdfjet.NewPage(pdf, letter.Portrait)
-
-	attachment = pdfjet.NewFileAttachment(pdf, embeddedFile1)
-	attachment.SetLocation(100.0, 300.0)
-	attachment.SetIconPushPin()
-	attachment.SetIconSize(24.0)
-	attachment.SetTitle("Attached File: " + embeddedFile1.GetFileName())
-	attachment.SetDescription(
-		"Right mouse click on the icon to save the attached file.")
-	attachment.DrawOn(page)
-
-	attachment = pdfjet.NewFileAttachment(pdf, embeddedFile2)
-	attachment.SetLocation(200.0, 300.0)
-	attachment.SetIconPaperclip()
-	attachment.SetIconSize(24.0)
-	attachment.SetTitle("Attached File: " + embeddedFile2.GetFileName())
-	attachment.SetDescription(
-		"Right mouse click on the icon to save the attached file.")
-	attachment.DrawOn(page)
-
 	pdf.Complete()
 }
 
