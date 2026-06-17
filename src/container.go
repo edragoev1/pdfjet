@@ -116,6 +116,10 @@ func (c *Container) Add(element Drawable) {
 	c.Elements = append(c.Elements, element)
 }
 
+func (c *Container) GetParent() *Container {
+	return c.parent
+}
+
 // RotateAroundCenter rotates a 2D point around a center point by the given degrees.
 // Accepts []float32 slices where index 0 is X and index 1 is Y.
 func RotateAroundCenter(point, center []float32, degrees float64) []float32 {
@@ -196,9 +200,60 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendByteArray(fastfloat.ToByteArray(-(page.height - cy)))
 	page.appendString(" cm\n")
 
-	// 6) Draw child elements
+	//// 6) Draw child elements
+	//for _, element := range c.Elements {
+	//	_ = element.DrawOn(page)
+	//}
+
+	// 6) Draw children elements
 	for _, element := range c.Elements {
-		_ = element.DrawOn(page)
+		if element == nil {
+			continue
+		}
+
+		var annot *BaseAnnotation
+		isAnnotation := false
+
+		// Check if element is a known annotation type and cast it
+		if sq, ok := element.(*SquareAnnotation); ok {
+			annot = &sq.BaseAnnotation
+			isAnnotation = true
+		} else if circ, ok := element.(*CircleAnnotation); ok {
+			annot = &circ.BaseAnnotation
+			isAnnotation = true
+		} else if poly, ok := element.(*PolygonAnnotation); ok {
+			annot = &poly.BaseAnnotation
+			isAnnotation = true
+		} else if txt, ok := element.(*TextAnnotation); ok {
+			annot = &txt.BaseAnnotation
+			isAnnotation = true
+		}
+
+		// If it matches one of the annotation types, apply transformation logic
+		if isAnnotation && annot != nil {
+			// Adjust point coordinates with container offsets
+			// Ensure arrays are long enough to avoid panic
+			annot.point1[0] += c.X
+			annot.point1[1] += c.Y
+			annot.point2[0] += c.X
+			annot.point2[1] += c.Y
+
+			// Account for parent offset if exists
+			parent := c.GetParent()
+			if parent != nil {
+				pX := parent.X
+				pY := parent.Y
+				annot.point1[0] += pX
+				annot.point1[1] += pY
+				annot.point2[0] += pX
+				annot.point2[1] += pY
+			}
+
+			// Apply rotation
+			annot.Rotate(float64(-c.RotateDegrees))
+		}
+
+		element.DrawOn(page)
 	}
 
 	page.appendString("Q\n") // Restore graphics state
