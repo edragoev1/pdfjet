@@ -66,7 +66,7 @@ class BaseAnnotation: Drawable {
             point1 = Container.rotateAroundCenter(point1, mutableCenter, Float(degrees))
             point2 = Container.rotateAroundCenter(point2, mutableCenter, Float(degrees))
             
-            if annotationType == AnnotationTypePolygon.rawValue {
+            if annotationType == Annotation.Polygon {
                 // Rotate polygon vertices in pairs (x, y)
                 for i in stride(from: 0, to: vertices?.count ?? 0, by: 2) {
                     guard i + 1 < (vertices?.count ?? 0) else { break }
@@ -81,7 +81,7 @@ class BaseAnnotation: Drawable {
             point1 = Container.rotateAroundCenter(point1, center, Float(degrees))
             point2 = Container.rotateAroundCenter(point2, center, Float(degrees))
             
-            if annotationType == AnnotationType.polygon.rawValue {
+            if annotationType == Annotation.Polygon {
                 for i in stride(from: 0, to: vertices?.count ?? 0, by: 2) {
                     guard i + 1 < (vertices?.count ?? 0) else { break }
                     

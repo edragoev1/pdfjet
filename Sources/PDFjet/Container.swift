@@ -13,6 +13,7 @@ public class Container: Drawable {
     public var scaleX: Float
     public var scaleY: Float
     private var elements: [Drawable]
+    public var parent: Container?
 
     /// Creates a new container with the specified width and height.
     ///
@@ -74,6 +75,10 @@ public class Container: Drawable {
     /// - Parameter degrees: The rotation angle in degrees (counter-clockwise).
     public func setRotationCounterClockwise(_ degrees: Double) {
         self.rotateDegrees = Float(degrees)
+    }
+
+    public func getRotationCenter() -> [Float] {
+        return [self.x + self.width/2.0, self.y + self.height/2.0]
     }
 
     /// Sets a uniform scaling factor for both X and Y axes.
