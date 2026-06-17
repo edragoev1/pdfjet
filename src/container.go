@@ -10,6 +10,7 @@ package pdfjet
 import (
 	"math"
 
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/fastfloat"
 )
 
@@ -104,8 +105,8 @@ func (c *Container) SetScaleFactorXY(sx, sy float32) {
 }
 
 func (c *Container) AddBorder() {
-	rect := new(Rect)
-	rect.SetSize(c.Width, c.Height)
+	rect := NewRect(0.0, 0.0, c.Width, c.Height)
+	rect.SetBorderColor(color.Black)
 	c.Add(rect)
 }
 
