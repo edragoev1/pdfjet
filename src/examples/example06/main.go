@@ -69,15 +69,15 @@ func Example06() {
 	polygonAnnotation.SetContents("The quick brown cat caught the lazy mouse.")
 	container.Add(polygonAnnotation)
 
-	//SquareAnnotation squareAnnotation = new SquareAnnotation()
-	//squareAnnotation.SetLocation(25f, 0f)
-	//squareAnnotation.SetSize(50f, 50f)
-	//squareAnnotation.SetFillColor(new float[] {0f, 0f, 1f})
-	//squareAnnotation.SetTransparency(0.5f)
-	//squareAnnotation.SetTitle("Hello, World!")
-	//squareAnnotation.SetContents("The quick brown fox jumps over the lazy dog.")
-	//container.Add(squareAnnotation)
-	//
+	squareAnnotation := pdfjet.NewSquareAnnotation()
+	squareAnnotation.SetLocation(25.0, 0.0)
+	squareAnnotation.SetSize(50.0, 50.0)
+	squareAnnotation.SetFillColor([3]float32{0.0, 0.0, 1.0}) // Blue color
+	squareAnnotation.SetTransparency(0.5)
+	squareAnnotation.SetTitle("Hello, World!")
+	squareAnnotation.SetContents("The quick brown fox jumps over the lazy dog.")
+	container.Add(squareAnnotation)
+
 	//CircleAnnotation circleAnnotation = new CircleAnnotation()
 	//circleAnnotation.SetLocation(50f, 0f)
 	//circleAnnotation.SetSize(50f, 50f)
