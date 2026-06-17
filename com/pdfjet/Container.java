@@ -114,8 +114,8 @@ public class Container implements Drawable {
     }
 
     public void addBorder() {
-        Rect rect = new Rect();
-        rect.setSize(width, height);
+        Rect rect = new Rect(0f, 0f, width, height);
+        rect.setBorderColor(Color.black);
         this.add(rect);
     }
 

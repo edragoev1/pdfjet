@@ -17,7 +17,7 @@ public class Rect implements Drawable {
 
     private float[] fillColor;
     private float borderWidth;
-    private float[] borderColor = new float[] {0f, 0f, 0f};
+    private float[] borderColor;
     private String borderPattern = "[] 0";
 
     private String uri;

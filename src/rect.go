@@ -47,7 +47,6 @@ func NewRect(x, y, w, h float32) *Rect {
 	rect.width = w
 	rect.height = h
 
-	rect.borderColor = [3]float32{0.0, 0.0, 0.0}
 	rect.borderWidth = 0.0
 	rect.borderPattern = "[] 0"
 

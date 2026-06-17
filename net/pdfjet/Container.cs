@@ -104,8 +104,8 @@ public class Container : IDrawable {
     }
 
     public void AddBorder() {
-        Rect rect = new Rect();
-        rect.SetSize(width, height);
+        Rect rect = new Rect(0f, 0f, width, height);
+        rect.SetBorderColor(Color.black);
         this.Add(rect);
     }
 
