@@ -53,8 +53,7 @@ public class Example_06 {
         Container container = new Container(400f, 400f);
         container.SetLocation(100f, 100f);
         container.AddBorder();
-        container.Rotate(-90);
-        // container.Rotate(-180);
+        container.SetRotationClockwise(90);
 
         Rect rect = new Rect();
         rect.SetSize(25f, 25f);

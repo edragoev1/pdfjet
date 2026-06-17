@@ -52,8 +52,7 @@ public class Example_06 {
         Container container = new Container(400f, 400f);
         container.setLocation(100f, 100f);
         container.addBorder();
-        container.rotate(-90);
-        // container.rotate(-180);
+        container.setRotationClockwise(90);
 
         Rect rect = new Rect();
         rect.setSize(25f, 25f);
