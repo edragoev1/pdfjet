@@ -223,10 +223,10 @@ public class CheckBox : Drawable {
                     nil,    // Title
                     nil,    // Contents
                     uri,
-                    null,
+                    nil,
                     language,
                     actualText,
-                    altDescription));
+                    altDescription))
         }
 
         return [x + 3.0*w + font.stringWidth(label), y + font.bodyHeight]

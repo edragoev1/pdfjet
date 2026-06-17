@@ -572,12 +572,12 @@ public class Cell {
                         point!.y - point!.r,
                         point!.x + point!.r,
                         point!.y + point!.r,
-                        nil,   // Vertices
-                        nil,   // Fill Color
-                        0.0,     // Transparency
-                        nil,   // Title
-                        nil,   // Contents
-                        point.getURIAction(),
+                        nil,    // Vertices
+                        nil,    // Fill Color
+                        0.0,    // Transparency
+                        nil,    // Title
+                        nil,    // Contents
+                        point!.getURIAction(),
                         nil,
                         nil,
                         nil,
