@@ -140,100 +140,100 @@ public class PDF {
 
     func addMetadataObject(_ notice: String, _ fontMetadataObject: Bool) -> Int {
         var sb = String()
-        sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
-        sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n");
-        sb.append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n");
-        sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
+        sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+        sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n")
+        sb.append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n")
+        sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
 
         if fontMetadataObject {
-            sb.append("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n");
-            sb.append("<xmpRights:UsageTerms>\n");
-            sb.append("<rdf:Alt>\n");
-            sb.append("<rdf:li xml:lang=\"x-default\">\n");
-            sb.append(String(notice.utf8));
-            sb.append("</rdf:li>\n");
-            sb.append("</rdf:Alt>\n");
-            sb.append("</xmpRights:UsageTerms>\n");
-            sb.append("</rdf:Description>\n");
+            sb.append("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")
+            sb.append("<xmpRights:UsageTerms>\n")
+            sb.append("<rdf:Alt>\n")
+            sb.append("<rdf:li xml:lang=\"x-default\">\n")
+            sb.append(String(notice.utf8))
+            sb.append("</rdf:li>\n")
+            sb.append("</rdf:Alt>\n")
+            sb.append("</xmpRights:UsageTerms>\n")
+            sb.append("</rdf:Description>\n")
         } else {
-            sb.append("<rdf:Description rdf:about=\"\"\n");
-            sb.append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n");
-            sb.append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
-            sb.append("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n");
-            sb.append("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n");
-            sb.append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
-            sb.append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
+            sb.append("<rdf:Description rdf:about=\"\"\n")
+            sb.append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n")
+            sb.append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n")
+            sb.append("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
+            sb.append("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n")
+            sb.append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n")
+            sb.append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
 
-            sb.append("  <dc:format>application/pdf</dc:format>\n");
+            sb.append("  <dc:format>application/pdf</dc:format>\n")
             if compliance == Compliance.PDF_UA_1 {
-                sb.append("  <pdfuaid:part>1</pdfuaid:part>\n");
+                sb.append("  <pdfuaid:part>1</pdfuaid:part>\n")
             } else if compliance == Compliance.PDF_A_1A {
-                sb.append("  <pdfaid:part>1</pdfaid:part>\n");
-                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+                sb.append("  <pdfaid:part>1</pdfaid:part>\n")
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n")
             } else if compliance == Compliance.PDF_A_1B {
-                sb.append("  <pdfaid:part>1</pdfaid:part>\n");
-                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+                sb.append("  <pdfaid:part>1</pdfaid:part>\n")
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n")
             } else if compliance == Compliance.PDF_A_2A {
-                sb.append("  <pdfaid:part>2</pdfaid:part>\n");
-                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+                sb.append("  <pdfaid:part>2</pdfaid:part>\n")
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n")
             } else if compliance == Compliance.PDF_A_2B {
-                sb.append("  <pdfaid:part>2</pdfaid:part>\n");
-                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+                sb.append("  <pdfaid:part>2</pdfaid:part>\n")
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n")
             } else if compliance == Compliance.PDF_A_3A {
-                sb.append("  <pdfaid:part>3</pdfaid:part>\n");
-                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
+                sb.append("  <pdfaid:part>3</pdfaid:part>\n")
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n")
             } else if compliance == Compliance.PDF_A_3B {
-                sb.append("  <pdfaid:part>3</pdfaid:part>\n");
-                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+                sb.append("  <pdfaid:part>3</pdfaid:part>\n")
+                sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n")
             }
 
-            sb.append("  <pdf:Producer>");
-            sb.append(producer);
-            sb.append("</pdf:Producer>\n");
+            sb.append("  <pdf:Producer>")
+            sb.append(producer)
+            sb.append("</pdf:Producer>\n")
 
             if title != nil {
-                sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
-                sb.append(title!);
-                sb.append("</rdf:li></rdf:Alt></dc:title>\n");
+                sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
+                sb.append(title!)
+                sb.append("</rdf:li></rdf:Alt></dc:title>\n")
             }
 
             if author != nil {
-                sb.append("  <dc:creator><rdf:Seq><rdf:li>");
-                sb.append(author!);
-                sb.append("</rdf:li></rdf:Seq></dc:creator>\n");
+                sb.append("  <dc:creator><rdf:Seq><rdf:li>")
+                sb.append(author!)
+                sb.append("</rdf:li></rdf:Seq></dc:creator>\n")
             }
 
             if subject != nil {
-                sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">");
-                sb.append(subject!);
-                sb.append("</rdf:li></rdf:Alt></dc:description>\n");
+                sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
+                sb.append(subject!)
+                sb.append("</rdf:li></rdf:Alt></dc:description>\n")
             }
 
             if keywords != nil {
-                sb.append("  <pdf:Keywords>");
-                sb.append(keywords!);
-                sb.append("</pdf:Keywords>\n");
+                sb.append("  <pdf:Keywords>")
+                sb.append(keywords!)
+                sb.append("</pdf:Keywords>\n")
             }
 
             if creator != nil {
-                sb.append("  <xmp:CreatorTool>");
-                sb.append(creator!);
-                sb.append("</xmp:CreatorTool>\n");
+                sb.append("  <xmp:CreatorTool>")
+                sb.append(creator!)
+                sb.append("</xmp:CreatorTool>\n")
             }
 
-            sb.append("  <xmp:CreateDate>");
-            sb.append(createDate! + "-05:00");      // Append the time zone.
-            sb.append("</xmp:CreateDate>\n");
+            sb.append("  <xmp:CreateDate>")
+            sb.append(createDate! + "-05:00")   // Append the time zone.
+            sb.append("</xmp:CreateDate>\n")
 
-            sb.append("  <xapMM:DocumentID>uuid:");
-            sb.append(uuid);
-            sb.append("</xapMM:DocumentID>\n");
+            sb.append("  <xapMM:DocumentID>uuid:")
+            sb.append(uuid)
+            sb.append("</xapMM:DocumentID>\n")
 
-            sb.append("  <xapMM:InstanceID>uuid:");
-            sb.append(uuid);
-            sb.append("</xapMM:InstanceID>\n");
+            sb.append("  <xapMM:InstanceID>uuid:")
+            sb.append(uuid)
+            sb.append("</xapMM:InstanceID>\n")
 
-            sb.append("</rdf:Description>\n");
+            sb.append("</rdf:Description>\n")
         }
 
         if !fontMetadataObject {
@@ -464,7 +464,7 @@ public class PDF {
 
             buffer.append("/Lang <")
             buffer.append(toHex(language))
-            buffer.append(">\n");
+            buffer.append(">\n")
 
             buffer.append("/Alt <")
             buffer.append(toHex(element.altDescription!))
@@ -474,7 +474,7 @@ public class PDF {
             buffer.append(toHex(element.actualText!))
             buffer.append(">\n")
 
-            append(">>\n");
+            append(">>\n")
             buffer.append("endobj\n")
         }
         append(buffer)
@@ -850,10 +850,10 @@ public class PDF {
 
         var structTreeRootObjNumber = 0
         if compliance != Compliance.PDF_17 {
-            addStructElementObjects();
-            structTreeRootObjNumber = addStructTreeRootObject();
-            addNumsParentTree();
-            addStructDocumentObject(structTreeRootObjNumber);
+            addStructElementObjects()
+            structTreeRootObjNumber = addStructTreeRootObject()
+            addNumsParentTree()
+            addStructDocumentObject(structTreeRootObjNumber)
         }
 
         var outlineDictNum = 0
