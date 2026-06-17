@@ -237,7 +237,7 @@ public class Box : Drawable {
         page!.addEMC()
 
         if uri != nil || key != nil {
-            page!.addAnnotation(new Annotation(
+            page!.addAnnotation(Annotation(
                     Annotation.Link,
                     x,
                     y,
@@ -252,7 +252,7 @@ public class Box : Drawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription));
+                    altDescription))
         }
 
         return [x + w, y + h]

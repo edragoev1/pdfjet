@@ -156,10 +156,10 @@ public class RadioButton : Drawable {
                     nil,    // Title
                     nil,    // Contents
                     uri,
-                    null,
+                    nil,
                     language,
                     actualText,
-                    altDescription));
+                    altDescription))
         }
 
         return [x + 6*r1 + font.stringWidth(label), y + font.bodyHeight]

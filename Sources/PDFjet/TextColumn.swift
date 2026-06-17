@@ -273,14 +273,14 @@ public class TextColumn : Drawable {
                             y + textLine.font!.descent,
                             nil,                        // Vertices
                             nil,                        // Fill Color
-                            0.0                         // Transparency
+                            0.0,                        // Transparency
                             nil,                        // Title
                             nil,                        // Contents
                             nil,                        // The URI
                             textLine.getGoToAction(),   // The destination name
                             nil,
                             nil,
-                            nil));
+                            nil))
                 }
 
                 if rotate == 0 {

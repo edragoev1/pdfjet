@@ -63,8 +63,8 @@ class BaseAnnotation: Drawable {
             mutableCenter[0] += parent.x
             mutableCenter[1] += parent.y
             
-            point1 = Container.rotateAroundCenter(point1, mutableCenter, degrees)
-            point2 = Container.rotateAroundCenter(point2, mutableCenter, degrees)
+            point1 = Container.rotateAroundCenter(point1, mutableCenter, Float(degrees))
+            point2 = Container.rotateAroundCenter(point2, mutableCenter, Float(degrees))
             
             if annotationType == AnnotationTypePolygon.rawValue {
                 // Rotate polygon vertices in pairs (x, y)
@@ -78,15 +78,15 @@ class BaseAnnotation: Drawable {
                 }
             }
         } else {
-            point1 = Container.rotateAroundCenter(point1, center, degrees)
-            point2 = Container.rotateAroundCenter(point2, center, degrees)
+            point1 = Container.rotateAroundCenter(point1, center, Float(degrees))
+            point2 = Container.rotateAroundCenter(point2, center, Float(degrees))
             
             if annotationType == AnnotationType.polygon.rawValue {
                 for i in stride(from: 0, to: vertices?.count ?? 0, by: 2) {
                     guard i + 1 < (vertices?.count ?? 0) else { break }
                     
                     let point: [Float] = [vertices![i], vertices![i + 1]]
-                    let rotatedPoint = Container.rotateAroundCenter(point, [0, 0], degrees)
+                    let rotatedPoint = Container.rotateAroundCenter(point, [0, 0], Float(degrees))
                     vertices?[i] = rotatedPoint[0]
                     vertices?[i + 1] = rotatedPoint[1]
                 }
@@ -96,21 +96,21 @@ class BaseAnnotation: Drawable {
 
     func drawOn(_ page: Page?) -> [Float] {
         let annotation = Annotation(
-            type: annotationType,
-            x1: point1[0],
-            y1: point1[1],
-            x2: point2[0],
-            y2: point2[1],
-            vertices: vertices,
-            fillColor: fillColor,
-            transparency: transparency,
-            title: title,
-            contents: contents,
-            uri: uri,
-            key: key,
-            language: language,
-            actualText: actualText,
-            altDescription: altDescription
+            annotationType,
+            point1[0],
+            point1[1],
+            point2[0],
+            point2[1],
+            vertices,
+            fillColor,
+            transparency,
+            title,
+            contents,
+            uri,
+            key,
+            language,
+            actualText,
+            altDescription
         )
 
         page!.addAnnotation(annotation)
