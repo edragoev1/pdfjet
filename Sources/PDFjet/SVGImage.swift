@@ -309,7 +309,7 @@ public class SVGImage {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription));
+                    altDescription))
         }
         return [self.x + self.w, self.y + self.h]
     }

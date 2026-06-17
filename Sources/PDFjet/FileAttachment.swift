@@ -56,12 +56,18 @@ public class FileAttachment : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let annotation = Annotation(
-                nil,
-                nil,
+                Annotation.FileAttachment,
                 x,
                 y,
                 x + h,
                 y + h,
+                nil,    // Vertices
+                nil,    // Fill Color
+                0.0,    // Transparency
+                nil,    // Title
+                nil,    // Contents
+                nil,
+                nil,
                 nil,
                 nil,
                 nil)

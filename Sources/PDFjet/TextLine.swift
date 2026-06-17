@@ -583,7 +583,7 @@ public class TextLine : Drawable {
                     key,    // The destination name
                     uriLanguage,
                     uriActualText,
-                    uriAltDescription));
+                    uriAltDescription))
         }
         page!.setTextDirection(0)
 

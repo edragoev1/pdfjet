@@ -415,7 +415,7 @@ public class Image : Drawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription));
+                    altDescription))
         }
 
         return [x + w!, y + h!]

@@ -291,7 +291,7 @@ public class Chart : Drawable {
                 }
                 if point.getURIAction() != nil {
                     if page != nil {
-                        page.addAnnotation(Annotation(
+                        page!.addAnnotation(Annotation(
                                 Annotation.Link,
                                 point.x - point.r,
                                 point.y - point.r,

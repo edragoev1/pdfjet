@@ -567,13 +567,19 @@ public class Cell {
             page.setBrushColor(point!.getFillColor())
             if point!.getURIAction() != nil {
                 page.addAnnotation(Annotation(
-                        point!.getURIAction(),
-                        nil,
+                        Annotation.Link,
                         point!.x - point!.r,
                         point!.y - point!.r,
                         point!.x + point!.r,
                         point!.y + point!.r,
-                        "",
+                        nil,   // Vertices
+                        nil,   // Fill Color
+                        0.0,     // Transparency
+                        nil,   // Title
+                        nil,   // Contents
+                        point.getURIAction(),
+                        nil,
+                        nil,
                         nil,
                         nil))
             }
