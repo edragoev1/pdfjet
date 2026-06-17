@@ -109,9 +109,9 @@ public class TextLine : Drawable {
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> TextLine {
-        self.x = x;
-        self.y = y;
-        return self;
+        self.x = x
+        self.y = y
+        return self
     }
 
     ///
@@ -536,7 +536,7 @@ public class TextLine : Drawable {
             page!.setPenColor(lineColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
             if (self.isLastToken) {
-                lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space);
+                lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
             let xAdjust = font!.underlinePosition * Float(sin(radians)) + verticalOffset
             let yAdjust = font!.underlinePosition * Float(cos(radians)) + verticalOffset
@@ -554,7 +554,7 @@ public class TextLine : Drawable {
             page!.setPenColor(lineColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
             if (self.isLastToken) {
-                lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space);
+                lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
             let xAdjust = (font!.bodyHeight / 4.0) * Float(sin(radians))
             let yAdjust = (font!.bodyHeight / 4.0) * Float(cos(radians))

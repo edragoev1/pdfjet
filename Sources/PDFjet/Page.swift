@@ -715,7 +715,7 @@ public class Page {
     }
 
     public func getPenWidth() -> Float {
-        return self.penWidth;
+        return self.penWidth
     }
 
     ///
