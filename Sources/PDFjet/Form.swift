@@ -143,7 +143,7 @@ public class Form : Drawable {
                             .setAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
                             .drawOn(page)
                     if i == (field.values.count - 1) {
-                        Line(0.0, 0.0, rowLength, 0.0).drawOn(page);
+                        Line(0.0, 0.0, rowLength, 0.0).drawOn(page)
                         if field.x != 0.0 {
                             Line(0.0, -Float(field.values.count - 1) * rowHeight, 0.0, 0.0).drawOn(page)
                         }

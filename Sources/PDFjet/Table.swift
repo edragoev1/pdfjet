@@ -171,7 +171,7 @@ public class Table {
                     for i in index1..<index2 {
                         let scalar = scalars[i]
                         if scalar != "." && scalar != "," && scalar != "'" {
-                            buf.append(String(scalar));
+                            buf.append(String(scalar))
                         }
                     }
                     let value = Double(buf)

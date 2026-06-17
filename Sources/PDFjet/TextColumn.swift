@@ -344,7 +344,7 @@ public class TextColumn : Drawable {
                         textLine.getGoToAction(),   // The destination name
                         nil,
                         nil,
-                        nil));
+                        nil))
             }
             if rotate == 0 {
                 textLine.setTextDirection(0).drawOn(page)
