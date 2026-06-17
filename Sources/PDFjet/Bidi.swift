@@ -50,7 +50,6 @@ private static let forms: [Character] = [
 ]
 
     private static func isArabicLetter(_ ch: Character) -> Bool {
-        // for i in 0..<forms.count; i += 5) {
         for i in stride(from: 0, to: forms.count, by: 5) {
             if ch == forms[i] {
                 return true
@@ -132,13 +131,13 @@ private static let forms: [Character] = [
                 for j in stride(from: 0, to: forms.count, by: 5) {
                     if ch == forms[j] {
                         if (!isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
-                            buf3.append(forms[j + 1]);  // Isolated
+                            buf3.append(forms[j + 1])   // Isolated
                         } else if (isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
-                            buf3.append(forms[j + 2]);  // End
+                            buf3.append(forms[j + 2])   // End
                         } else if (isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
-                            buf3.append(forms[j + 3]);  // Middle
+                            buf3.append(forms[j + 3])   // Middle
                         } else if (!isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
-                            buf3.append(forms[j + 4]);  // Beginning
+                            buf3.append(forms[j + 4])   // Beginning
                         }
                     }
                 }

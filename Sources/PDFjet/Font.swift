@@ -257,11 +257,11 @@ public class Font {
     public init(_ pdf: PDF, _ fontPath: String) throws {
         let inputStream = InputStream(fileAtPath: fontPath)!
         if (fontPath.hasSuffix(".stream")) {
-            try FontStream1.register(pdf, self, inputStream);
+            try FontStream1.register(pdf, self, inputStream)
         } else {
-            try OpenTypeFont.register(pdf, self, inputStream);
+            try OpenTypeFont.register(pdf, self, inputStream)
         }
-        setSize(size);
+        setSize(size)
     }
 
     ///

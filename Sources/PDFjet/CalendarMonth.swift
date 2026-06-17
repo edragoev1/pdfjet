@@ -38,7 +38,7 @@ public class CalendarMonth : Drawable {
                 dx = w
             }
         }
-        dy = dx;
+        dy = dx
     }
 
     public func setHeadFont(_ font: Font) {

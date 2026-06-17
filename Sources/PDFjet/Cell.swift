@@ -728,7 +728,7 @@ public class Cell {
                     nil,
                     nil,
                     nil,
-                    nil));
+                    nil))
         }
     }
 

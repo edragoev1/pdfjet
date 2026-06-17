@@ -153,13 +153,13 @@ public class CheckBox : Drawable {
     }
 
     public static func xMark(_ page: Page, _ x: Float, _ y: Float, _ size: Float) {
-        page.setPenColor(Color.blue);
-        page.setPenWidth(size / 5);
-        page.moveTo(x, y);
-        page.lineTo(x + size, y + size);
-        page.moveTo(x, y + size);
-        page.lineTo(x + size, y);
-        page.strokePath();
+        page.setPenColor(Color.blue)
+        page.setPenWidth(size / 5)
+        page.moveTo(x, y)
+        page.lineTo(x + size, y + size)
+        page.moveTo(x, y + size)
+        page.lineTo(x + size, y)
+        page.strokePath()
     }
 
     ///
