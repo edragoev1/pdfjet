@@ -25,7 +25,7 @@ public class Container: Drawable {
     /// - Parameters:
     ///   - width: The width of the container.
     ///   - height: The height of the container.
-    public init(width: Float, height: Float) {
+    public init(_ width: Float, _ height: Float) {
         self.width = width
         self.height = height
         self.rotateDegrees = 0.0

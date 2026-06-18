@@ -8,81 +8,81 @@ import PDFjet
 public class Example_06 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_06.pdf", append: false)!)
-        let font = Font(pdf, CoreFont.HELVETICA)
+
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+
         let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO)
         let file2 = try EmbeddedFile(pdf, "examples/Example_02.cs", Compress.YES)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let flag = Box()
-        flag.setLocation(100.0, 100.0)
-        flag.setSize(190.0, 100.0)
-        flag.setColor(Color.white)
-        flag.drawOn(page)
-
-        let sw: Float = 7.69        // stripe width
-        let stripe = Line(0.0, sw/2, 190.0, sw/2)
-        stripe.setWidth(sw)
-        stripe.setColor(Color.oldgloryred)
-        for _ in 0..<7 {
-            stripe.drawOn(page)
-        }
-
-        let union = Box()
-        union.setSize(76.0, 53.85)
-        union.setColor(Color.oldgloryblue)
-        union.setFillShape(true)
-        union.drawOn(page)
-
-        let h_si: Float = 12.6      // horizontal star interval
-        let v_si: Float = 10.8      // vertical star interval
-        let star = Point(h_si/2, v_si/2)
-        star.setShape(Point.STAR)
-        star.setRadius(3.0)
-        star.setFillShape(true)
-        star.setFillColor(Color.white)
-
-        for _ in 0..<6 {
-            for _ in 0..<5 {
-                star.drawOn(page)
-            }
-        }
-
-        star.setLocation(h_si, v_si)
-        for _ in 0..<5 {
-            for _ in 0..<4 {
-                star.drawOn(page)
-            }
-        }
-
-        font.setSize(Float(18))
-
-        var text = TextLine(font, "WAVE AWAY")
-        text.setLocation(Float(100), Float(250))
-        text.drawOn(page)
-
-        font.setKernPairs(true)
-        text = TextLine(font, "WAVE AWAY")
-        text.setLocation(Float(100), Float(270))
-        text.drawOn(page)
-
+        // File attachment functionality
         var attachment = FileAttachment(pdf, file1)
-        attachment.setLocation(100.0, 300.0)
+        attachment.setLocation(100.0, 600.0)
         attachment.setIconPushPin()
-        attachment.setIconSize(24.0)
+        // attachment.setIconSize(25.0)
         attachment.setTitle("Attached File: " + file1.getFileName())
         attachment.setDescription(
                 "Right mouse click on the icon to save the attached file.")
         attachment.drawOn(page)
 
         attachment = FileAttachment(pdf, file2)
-        attachment.setLocation(200.0, 300.0)
+        attachment.setLocation(200.0, 600.0)
         attachment.setIconPaperclip()
-        attachment.setIconSize(24.0)
+        // attachment.setIconSize(25.0)
         attachment.setTitle("Attached File: " + file2.getFileName())
         attachment.setDescription(
                 "Right mouse click on the icon to save the attached file.")
         attachment.drawOn(page)
+
+        let textLine = TextLine(f1, "pdfjet.com")
+        textLine.setLocation(300.0, 618.0)
+        textLine.setURIAction("https://pdfjet.com")
+        textLine.drawOn(page)
+
+        let textAnnotation = TextAnnotation()
+        textAnnotation.setLocation(400.0, 600.0)
+        textAnnotation.setSize(25.0, 25.0)
+        textAnnotation.setTitle("Hello")
+        textAnnotation.setContents("World")
+        textAnnotation.drawOn(page)
+
+        let container = Container(400.0, 400.0)
+        container.setLocation(100.0, 100.0)
+        container.setBorderColor(Color.black)
+        container.setRotationClockwise(90)
+
+        let rect = Rect(0.0, 0.0, 25.0, 25.0)
+        container.add(rect)
+
+        let polygonAnnotation = PolygonAnnotation()
+        polygonAnnotation.setLocation(0.0, 0.0)
+        polygonAnnotation.setVertices([0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0])
+        polygonAnnotation.setFillColor(Color.red)
+        polygonAnnotation.setTransparency(0.5)
+        polygonAnnotation.setTitle("This is a test ...")
+        polygonAnnotation.setContents("The quick brown cat caught the lazy mouse.")
+        container.add(polygonAnnotation)
+
+        let squareAnnotation = SquareAnnotation()
+        squareAnnotation.setLocation(25.0, 0.0)
+        squareAnnotation.setSize(50.0, 50.0)
+        squareAnnotation.setFillColor([0.0, 0.0, 1.0])
+        squareAnnotation.setTransparency(0.5)
+        squareAnnotation.setTitle("Hello, World!")
+        squareAnnotation.setContents("The quick brown fox jumps over the lazy dog.")
+        container.add(squareAnnotation)
+
+        let circleAnnotation = CircleAnnotation()
+        circleAnnotation.setLocation(50.0, 0.0)
+        circleAnnotation.setSize(50.0, 50.0)
+        circleAnnotation.setFillColor([0.0, 0.0, 1.0])
+        circleAnnotation.setTransparency(0.5)
+        circleAnnotation.setTitle("Circle");
+        circleAnnotation.setContents("Annotation")
+        container.add(circleAnnotation)
+
+        _ = container.drawOn(page)
 
         pdf.complete()
     }
