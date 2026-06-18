@@ -1,6 +1,6 @@
 import Foundation
 
-class BaseAnnotation: Drawable {
+public class BaseAnnotation: Drawable {
     var annotationType: String?
     var point1: [Float] = [0, 0]
     var point2: [Float] = [0, 0]
@@ -16,45 +16,45 @@ class BaseAnnotation: Drawable {
     var altDescription: String?
     weak var container: Container?
 
-    init() {
+    public init() {
     }
 
-    func setLocation(_ x: Float, _ y: Float) {
+    public func setLocation(_ x: Float, _ y: Float) {
         self.point1 = [x, y]
     }
 
-    func setPosition(_ x: Float, _ y: Float) {
+    public func setPosition(_ x: Float, _ y: Float) {
         self.point1 = [x, y]
     }
 
-    func setSize(_ width: Float, _ height: Float) {
+    public func setSize(_ width: Float, _ height: Float) {
         self.point2 = [point1[0] + width, point1[1] + height]
     }
 
-    func setFillColor(_ color: [Float]) {
+    public func setFillColor(_ color: [Float]) {
         self.fillColor = color
     }
 
-    func setFillColor(_ color: Int) {
+    public func setFillColor(_ color: Int32) {
         let r = Float((color >> 16) & 0xff) / 255.0
         let g = Float((color >> 8) & 0xff) / 255.0
         let b = Float(color & 0xff) / 255.0
         setFillColor([r, g, b])
     }
 
-    func setTransparency(_ transparency: Float) {
+    public func setTransparency(_ transparency: Float) {
         self.transparency = transparency
     }
 
-    func setTitle(_ title: String?) {
+    public func setTitle(_ title: String?) {
         self.title = title
     }
 
-    func setContents(_ contents: String?) {
+    public func setContents(_ contents: String?) {
         self.contents = contents
     }
 
-    func rotate(_ degrees: Double) {
+    public func rotate(_ degrees: Double) {
         guard let container = container else { return }
 
         let center = container.getRotationCenter()
@@ -94,7 +94,7 @@ class BaseAnnotation: Drawable {
         }
     }
 
-    func drawOn(_ page: Page?) -> [Float] {
+    public func drawOn(_ page: Page?) -> [Float] {
         let annotation = Annotation(
             annotationType,
             point1[0],
