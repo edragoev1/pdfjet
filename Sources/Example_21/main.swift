@@ -24,14 +24,14 @@ public class Example_21 {
         qr.setLocation(100.0, 100.0)
         qr.setModuleLength(3.0)
         // qr.setColor(Color.blue)
-        qr.drawOn(page);
+        qr.drawOn(page)
 
         qr = QRCode(
                 "https://github.com/kazuhikoarase/qrcode-generator",
                 ErrorCorrectLevel.M)    // Medium
         qr.setLocation(400.0, 100.0)
         qr.setModuleLength(3.0)
-        qr.drawOn(page);
+        qr.drawOn(page)
 
         qr = QRCode(
                 "https://github.com/kazuhikoarase/jaconv",

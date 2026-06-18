@@ -8,7 +8,7 @@ import PDFjet
 public class Example_06 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_06.pdf", append: false)!)
-        let font = Font(pdf, CoreFont.HELVETICA);
+        let font = Font(pdf, CoreFont.HELVETICA)
         let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO)
         let file2 = try EmbeddedFile(pdf, "examples/Example_02.cs", Compress.YES)
 
@@ -61,7 +61,7 @@ public class Example_06 {
         text.setLocation(Float(100), Float(250))
         text.drawOn(page)
 
-        font.setKernPairs(true);
+        font.setKernPairs(true)
         text = TextLine(font, "WAVE AWAY")
         text.setLocation(Float(100), Float(270))
         text.drawOn(page)

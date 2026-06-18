@@ -14,7 +14,7 @@ public class Example_05 {
         let page = Page(pdf, Letter.PORTRAIT)
 
       	_ = page.drawArc(500, 100, 100, 50, 90, 270)
-       	// (new Line(xy[0], xy[1], xy[0], xy[1] + 50f)).DrawOn(page);
+       	// (new Line(xy[0], xy[1], xy[0], xy[1] + 50f)).DrawOn(page)
 
         var text = TextLine(f1).setLocation(300.0, 300.0)
         var i = 0

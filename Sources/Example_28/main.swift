@@ -18,38 +18,38 @@ public class Example_28 {
         var y = Float(55.0)
         let dy = Float(35.0)
 
-        drawLineOfText(page, f1, x, y, 0x0041, 0x005A);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x0041, 0x005A)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x0061, 0x007A);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x0061, 0x007A)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x24B6, 0x24CF);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x24B6, 0x24CF)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x24D0, 0x24E9);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x24D0, 0x24E9)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x24F5, 0x24FE);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x24F5, 0x24FE)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x2624, 0x262F);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x2624, 0x262F)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x2638, 0x2653);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x2638, 0x2653)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x2669, 0x267E);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x2669, 0x267E)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x2690, 0x26A9);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x2690, 0x26A9)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x26AD, 0x26BC);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x26AD, 0x26BC)
+        y += dy
 
-        drawLineOfText(page, f1, x, y, 0x26E2, 0x26FE);
-        y += dy;
+        drawLineOfText(page, f1, x, y, 0x26E2, 0x26FE)
+        y += dy
 
         pdf.complete()
     }

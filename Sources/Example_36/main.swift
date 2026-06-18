@@ -25,13 +25,13 @@ public class Example_36 {
 
         let page2 = Page(pdf, A4.PORTRAIT, Page.DETACHED)
 
-        text.setText("This page was created after the second one but it was drawn first!");
-        text.setLocation(90.0, 30.0);
-        let xy = text.drawOn(page2);
+        text.setText("This page was created after the second one but it was drawn first!")
+        text.setLocation(90.0, 30.0)
+        let xy = text.drawOn(page2)
 
-        image2.setLocation(90.0, xy[1] + 10.0);
-        image2.scaleBy(0.1);
-        image2.drawOn(page2);
+        image2.setLocation(90.0, xy[1] + 10.0)
+        image2.scaleBy(0.1)
+        image2.drawOn(page2)
 
         pdf.addPage(page2)
         pdf.addPage(page1)

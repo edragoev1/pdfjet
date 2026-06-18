@@ -26,7 +26,7 @@ public class Example_47 {
         image2.scaleBy(0.5)
         image2.setLocation(
                 page.getWidth() - (image2.getWidth() + 20.0),
-                page.getHeight() - (image2.getHeight() + 20.0));
+                page.getHeight() - (image2.getHeight() + 20.0))
         image2.drawOn(page)
 
         var paragraphs = [TextLine]()
@@ -49,7 +49,7 @@ public class Example_47 {
         frame.setDrawBorder(true)
         frame.drawOn(page)
 
-        xPos += 200.0;
+        xPos += 200.0
         if (frame.isNotEmpty()) {
             frame.setLocation(xPos, yPos)
             frame.setWidth(width)
@@ -58,7 +58,7 @@ public class Example_47 {
             frame.drawOn(page)
         }
 
-        xPos += 200.0;
+        xPos += 200.0
         if (frame.isNotEmpty()) {
             frame.setLocation(xPos, yPos)
             frame.setWidth(width)
@@ -67,7 +67,7 @@ public class Example_47 {
             frame.drawOn(page)
         }
 
-        pdf.complete();
+        pdf.complete()
     }
 }   // End of Example_47.swift
 

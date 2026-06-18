@@ -53,7 +53,7 @@ public class Example_45 {
         form.setRowHeight(h)
         form.drawOn(page)
 
-        var colors = Dictionary<String, Int32>();
+        var colors = Dictionary<String, Int32>()
         colors["new"] = Color.red
         colors["ArrayList"] = Color.blue
         colors["List"] = Color.blue

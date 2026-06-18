@@ -42,7 +42,7 @@ public class Example_16 {
         // textBox.setVerticalAlignment(Align.TOP)
         // textBox.setVerticalAlignment(Align.BOTTOM)
         // textBox.setVerticalAlignment(Align.CENTER)
-        // textBlock.setBackgroundColor(Color.whitesmoke);
+        // textBlock.setBackgroundColor(Color.whitesmoke)
         // textBlock.setTextColors(colors)
         textBlock.setBorderColor(Color.blue)
         let xy = textBlock.drawOn(page)

@@ -26,7 +26,7 @@ public class Example_08 {
         barcode.setFont(f1)
 
         let table = try Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv")
-        table.setVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9);
+        table.setVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9)
         table.getCellAt(4, 0).setImage(image)
         table.getCellAt(5, 0).setColSpan(8)
         table.getCellAt(5, 0).setBarcode(barcode)
