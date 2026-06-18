@@ -183,7 +183,7 @@ public class BigTable {
         for line in lines {
             let fields = line.components(separatedBy: delimiter)
             if fields.count < numberOfColumns {
-                continue;
+                continue
             }
             if rowNumber == 0 {
                 for i in 0..<numberOfColumns {
@@ -219,7 +219,7 @@ public class BigTable {
         for line in lines {
             let fields = line.components(separatedBy: delimiter)
             if fields.count < numberOfColumns {
-                continue;
+                continue
             }
             try drawTextAndLine(fields: fields, font: f2)
         }
