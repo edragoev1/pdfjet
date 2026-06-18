@@ -98,6 +98,18 @@ public class Container: Drawable {
         self.scaleY = sy
     }
 
+    public func setBorderColor(_ borderColor: Int32) {
+        let rect = Rect(0.0, 0.0, width, height)
+        rect.setBorderColor(borderColor)
+        self.add(rect)
+    }
+
+    public func addBorder() {
+        let rect = Rect(0.0, 0.0, width, height)
+        rect.setBorderColor(Color.black)
+        self.add(rect)
+    }
+
     /// Adds a drawable element to this container.
     ///
     /// - Parameter element: The element to add.
