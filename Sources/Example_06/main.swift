@@ -45,7 +45,7 @@ public class Example_06 {
         textAnnotation.setSize(25.0, 25.0)
         textAnnotation.setTitle("Hello")
         textAnnotation.setContents("World")
-        textAnnotation.drawOn(page)
+        _ = textAnnotation.drawOn(page)
 
         let container = Container(400.0, 400.0)
         container.setLocation(100.0, 100.0)
