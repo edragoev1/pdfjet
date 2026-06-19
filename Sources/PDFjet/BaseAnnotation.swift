@@ -61,16 +61,13 @@ public class BaseAnnotation: Drawable {
             center[0] += container!.parent!.x
             center[1] += container!.parent!.y
         }
-        point1 = Container.rotateAroundCenter(point1, center, Float(degrees))
-        point2 = Container.rotateAroundCenter(point2, center, Float(degrees))
+        point1 = Container.rotateAroundCenter(point1, center, degrees)
+        point2 = Container.rotateAroundCenter(point2, center, degrees)
         if annotationType == Annotation.Polygon {
             var i = 0
             while i < vertices!.count {
                 let point = Container.rotateAroundCenter(
-                    [vertices![i], vertices![i + 1]],
-                    [0.0, 0.0],
-                    Float(degrees)
-                )
+                    [vertices![i], vertices![i + 1]], [0.0, 0.0], degrees)
                 vertices![i] = point[0]
                 vertices![i + 1] = point[1]
                 i += 2

@@ -123,9 +123,9 @@ public class Container: Drawable {
     ///   - center: The center point of rotation as [x, y].
     ///   - degrees: The angle of rotation in degrees.
     /// - Returns: A new array [x, y] representing the rotated point.
-    static func rotateAroundCenter(_ point: [Float], _ center: [Float], _ degrees: Float) -> [Float] {
+    static func rotateAroundCenter(_ point: [Float], _ center: [Float], _ degrees: Double) -> [Float] {
         // Convert degrees to radians
-        let rad = Double(degrees) * .pi / 180.0
+        let rad = degrees * .pi / 180.0
 
         // Translate point to origin (relative to center)
         let dx = Double(point[0]) - Double(center[0])
