@@ -919,9 +919,7 @@ public class PDF {
         foreach (Page page in pages) {
             if (page.annots.Count > 0) {
                 foreach (Annotation annotation in page.annots) {
-                    if (annotation != null) {
-                        AddAnnotationObject(annotation, -1);
-                    }
+                    AddAnnotationObject(annotation, -1);
                 }
             }
         }

@@ -931,9 +931,7 @@ func (pdf *PDF) addAnnotDictionaries() {
 	for _, page := range pdf.pages {
 		if len(page.annots) > 0 {
 			for _, annot := range page.annots {
-				if annot != nil {
-					pdf.addAnnotationObject(annot, -1)
-				}
+				pdf.addAnnotationObject(annot, -1)
 			}
 		}
 	}

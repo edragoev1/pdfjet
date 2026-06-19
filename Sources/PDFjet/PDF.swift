@@ -772,9 +772,7 @@ public class PDF {
         for page in self.pages {
             if page.annots!.count > 0 {
                 for annotation in page.annots! {
-                    // if annotation != nil {   // TODO:
-                        addAnnotationObject(annotation, -1)
-                    // }
+                    addAnnotationObject(annotation, -1)
                 }
             }
         }

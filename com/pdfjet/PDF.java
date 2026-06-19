@@ -937,9 +937,7 @@ final public class PDF {
         for (Page page : pages) {
             if (page.annots.size() > 0) {
                 for (Annotation annotation : page.annots) {
-                    if (annotation != null) {
-                        addAnnotationObject(annotation, -1);
-                    }
+                    addAnnotationObject(annotation, -1);
                 }
             }
         }
