@@ -96,6 +96,6 @@ public class BaseAnnotation implements Drawable {
                 language,
                 actualText,
                 altDescription));
-        return new float[] {point2[0], point2[1]};
+        return point2;
     }
 }

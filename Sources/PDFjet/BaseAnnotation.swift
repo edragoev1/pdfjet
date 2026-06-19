@@ -76,7 +76,7 @@ public class BaseAnnotation: Drawable {
     }
 
     public func drawOn(_ page: Page?) -> [Float] {
-        let annotation = Annotation(
+        page!.addAnnotation(Annotation(
             annotationType,
             point1[0],
             point1[1],
@@ -91,10 +91,7 @@ public class BaseAnnotation: Drawable {
             key,
             language,
             actualText,
-            altDescription
-        )
-
-        page!.addAnnotation(annotation)
+            altDescription))
         return point2
     }
 }

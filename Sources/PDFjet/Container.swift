@@ -201,8 +201,8 @@ public class Container: Drawable {
         page!.append(" cm\n")
 
         for element in elements {
-print("are we here?")
             if let annot = element as? BaseAnnotation {
+print("are we here?")
                 annot.container = self
                 annot.point1[0] += x
                 annot.point1[1] += y

@@ -134,5 +134,5 @@ func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
 		actualText:     b.actualText,
 		altDescription: b.altDescription,
 	})
-	return [2]float32{b.point2[0], b.point2[1]}
+	return b.point2
 }
