@@ -22,7 +22,6 @@ public class Example_06 {
         FileAttachment attachment = new FileAttachment(pdf, file1);
         attachment.setLocation(100f, 600f);
         attachment.setIconPushPin();
-        // attachment.setIconSize(25f);
         attachment.setTitle("Attached File: " + file1.getFileName());
         attachment.setDescription(
                 "Right mouse click on the icon to save the attached file.");
@@ -31,7 +30,6 @@ public class Example_06 {
         attachment = new FileAttachment(pdf, file2);
         attachment.setLocation(200f, 600f);
         attachment.setIconPaperclip();
-        // attachment.setIconSize(25f);
         attachment.setTitle("Attached File: " + file2.getFileName());
         attachment.setDescription(
                 "Right mouse click on the icon to save the attached file.");

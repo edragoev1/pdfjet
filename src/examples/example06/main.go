@@ -24,7 +24,6 @@ func Example06() {
 	attachment := pdfjet.NewFileAttachment(pdf, file1)
 	attachment.SetLocation(100.0, 600.0)
 	attachment.SetIconPushPin()
-	// attachment.SetIconSize(25.0)
 	attachment.SetTitle("Attached File: " + file1.GetFileName())
 	attachment.SetDescription(
 		"Right mouse click on the icon to save the attached file.")
@@ -33,7 +32,6 @@ func Example06() {
 	attachment = pdfjet.NewFileAttachment(pdf, file2)
 	attachment.SetLocation(200.0, 600.0)
 	attachment.SetIconPaperclip()
-	// attachment.SetIconSize(25.0)
 	attachment.SetTitle("Attached File: " + file2.GetFileName())
 	attachment.SetDescription(
 		"Right mouse click on the icon to save the attached file.")
@@ -43,14 +41,14 @@ func Example06() {
 	textLine.SetLocation(300.0, 618.0)
 	textLine.SetURIAction("https://pdfjet.com")
 	textLine.DrawOn(page)
-	/*
-		textAnnotation := pdfjet.NewAnnotation()
-		textAnnotation.SetLocation(400.0, 600.0)
-		textAnnotation.SetSize(25.0, 25.0)
-		textAnnotation.SetTitle("Hello")
-		textAnnotation.SetContents("World")
-		textAnnotation.DrawOn(page)
-	*/
+
+	textAnnotation := pdfjet.NewTextAnnotation()
+	textAnnotation.SetLocation(400.0, 600.0)
+	textAnnotation.SetSize(25.0, 25.0)
+	textAnnotation.SetTitle("Hello")
+	textAnnotation.SetContents("World")
+	textAnnotation.DrawOn(page)
+
 	container := pdfjet.NewContainer(400.0, 400.0)
 	container.SetLocation(100.0, 100.0)
 	container.SetBorderColor(color.Black)

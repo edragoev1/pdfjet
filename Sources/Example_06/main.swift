@@ -20,7 +20,6 @@ public class Example_06 {
         var attachment = FileAttachment(pdf, file1)
         attachment.setLocation(100.0, 600.0)
         attachment.setIconPushPin()
-        // attachment.setIconSize(25.0)
         attachment.setTitle("Attached File: " + file1.getFileName())
         attachment.setDescription(
                 "Right mouse click on the icon to save the attached file.")
@@ -29,7 +28,6 @@ public class Example_06 {
         attachment = FileAttachment(pdf, file2)
         attachment.setLocation(200.0, 600.0)
         attachment.setIconPaperclip()
-        // attachment.setIconSize(25.0)
         attachment.setTitle("Attached File: " + file2.getFileName())
         attachment.setDescription(
                 "Right mouse click on the icon to save the attached file.")
