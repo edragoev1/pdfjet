@@ -44,7 +44,7 @@ func Example06() {
 
 	textAnnotation := pdfjet.NewTextAnnotation()
 	textAnnotation.SetLocation(400.0, 600.0)
-	textAnnotation.SetSize(25.0, 25.0)
+	textAnnotation.SetSize(24.0, 24.0)
 	textAnnotation.SetTitle("Hello")
 	textAnnotation.SetContents("World")
 	textAnnotation.DrawOn(page)

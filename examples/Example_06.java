@@ -42,7 +42,7 @@ public class Example_06 {
 
         TextAnnotation textAnnotation = new TextAnnotation();
         textAnnotation.setLocation(400f, 600f);
-        textAnnotation.setSize(25f, 25f);
+        textAnnotation.setSize(24f, 24f);
         textAnnotation.setTitle("Hello");
         textAnnotation.setContents("World");
         textAnnotation.drawOn(page);

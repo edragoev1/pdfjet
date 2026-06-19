@@ -43,7 +43,7 @@ public class Example_06 {
 
         TextAnnotation textAnnotation = new TextAnnotation();
         textAnnotation.SetLocation(400f, 600f);
-        textAnnotation.SetSize(25f, 25f);
+        textAnnotation.SetSize(24f, 24f);
         textAnnotation.SetTitle("Hello");
         textAnnotation.SetContents("World");
         textAnnotation.DrawOn(page);
