@@ -3,7 +3,6 @@ import PDFjet
 
 /**
  * Example_06.swift
- * We will draw the American flag using Box, Line and Point objects.
  */
 public class Example_06 {
     public init() throws {
