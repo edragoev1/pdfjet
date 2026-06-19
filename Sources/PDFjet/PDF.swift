@@ -694,7 +694,7 @@ public class PDF {
             page.contents.append(getObjNumber())
         }
     }
-
+/*
     @discardableResult
     private func addAnnotationObject(
             _ annot: Annotation,
@@ -759,6 +759,160 @@ public class PDF {
         endobj()
 
         return index2
+    }
+*/
+
+    @discardableResult
+    func addAnnotationObject(_ annot: Annotation, _ index: Int) -> Int {
+        var index = index
+
+        newobj()
+        annot.objNumber = getObjNumber()
+
+        append(Token.beginDictionary)
+        append("/Type /Annot\n")
+        append("/Subtype /")
+        append(annot.annotationType!)
+        append("\n")
+
+        append("/Rect [")
+        append(annot.x1)
+        append(" ")
+        append(annot.y1)
+        append(" ")
+        append(annot.x2)
+        append(" ")
+        append(annot.y2)
+        append("]\n")
+
+        append("/Border [0 0 0]\n")
+
+        if annot.annotationType == Annotation.FileAttachment {
+            append("/FS ")
+            append(annot.fileAttachment!.embeddedFile!.objNumber)
+            append(" 0 R\n")
+
+            append("/Name /")
+            append(annot.fileAttachment!.icon)
+            append("\n")
+
+            if annot.fileAttachment != nil {
+                append("/T <")
+                append(toHex(annot.fileAttachment!.title))
+                append(">\n")
+            }
+
+            if annot.fileAttachment != nil {
+                append("/Contents <")
+                append(toHex(annot.fileAttachment!.contents))
+                append(">\n")
+            }
+        } else if annot.annotationType == Annotation.Link {
+            if let uri = annot.uri {
+                append("/F 4\n")
+                append("/A <<\n")
+                append("/S /URI\n")
+                append("/URI <")
+                append(toHex(uri))
+                append(">\n")
+                append(">>\n")
+            } else if let key = annot.key,
+                      let destination = destinations[key] {
+                append("/F 4\n")
+                append("/Dest [")
+                append(destination.pageObjNumber)
+                append(" 0 R /XYZ ")
+                append(destination.xPosition)
+                append(" ")
+                append(destination.yPosition)
+                append(" 0]\n")
+            }
+        } else if annot.annotationType == Annotation.Polygon {
+            append("/Vertices [ ")
+            var i = 0
+            while i < annot.vertices!.count {
+                append(annot.x1 + annot.vertices![i])
+                append(" ")
+                append(annot.y1 - annot.vertices![i + 1])
+                append(" ")
+                i += 2
+            }
+            append("]\n")
+
+            append("/IC [")
+            append(annot.fillColor![0])
+            append(" ")
+            append(annot.fillColor![1])
+            append(" ")
+            append(annot.fillColor![2])
+            append("]\n")
+
+            append("/CA ")
+            append(annot.transparency)
+            append("\n")
+
+            if let title = annot.title {
+                append("/T <")
+                append(toHex(title))
+                append(">\n")
+            }
+
+            if let contents = annot.contents {
+                append("/Contents <")
+                append(toHex(contents))
+                append(">\n")
+            }
+        } else if annot.annotationType == Annotation.Square ||
+                  annot.annotationType == Annotation.Circle {
+            append("/IC [")
+            append(annot.fillColor![0])
+            append(" ")
+            append(annot.fillColor![1])
+            append(" ")
+            append(annot.fillColor![2])
+            append("]\n")
+
+            append("/CA ")
+            append(annot.transparency)
+            append("\n")
+
+            if let title = annot.title {
+                append("/T <")
+                append(toHex(title))
+                append(">\n")
+            }
+
+            if let contents = annot.contents {
+                append("/Contents <")
+                append(toHex(contents))
+                append(">\n")
+            }
+        } else if annot.annotationType == Annotation.Text {
+            append("/Name /Comment\n")
+            if let title = annot.title {
+                append("/T <")
+                append(toHex(title))
+                append(">\n")
+            }
+
+            if let contents = annot.contents {
+                append("/Contents <")
+                append(toHex(contents))
+                append(">\n")
+            }
+        }
+
+        if index != -1 {
+            append("/StructParent ")
+            append(index)
+            append("\n")
+            index += 1
+        }
+
+        append(Token.endDictionary)
+        endobj()
+
+        return index
     }
 
     private func addAnnotDictionaries() {
