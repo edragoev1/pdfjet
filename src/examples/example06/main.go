@@ -64,8 +64,8 @@ func Example06() {
 	polygonAnnotation.SetVertices([]float32{0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0})
 	polygonAnnotation.SetFillColor([3]float32{1.0, 0.0, 0.0}) // Red color
 	polygonAnnotation.SetTransparency(0.5)
-	polygonAnnotation.SetTitle("This is a test ...")
-	polygonAnnotation.SetContents("The quick brown cat caught the lazy mouse.")
+	polygonAnnotation.SetTitle("Polygon")
+	polygonAnnotation.SetContents("Polygon Annotation")
 	container.Add(polygonAnnotation)
 
 	squareAnnotation := pdfjet.NewSquareAnnotation()
@@ -73,8 +73,8 @@ func Example06() {
 	squareAnnotation.SetSize(50.0, 50.0)
 	squareAnnotation.SetFillColor([3]float32{0.0, 0.0, 1.0}) // Blue color
 	squareAnnotation.SetTransparency(0.5)
-	squareAnnotation.SetTitle("Hello, World!")
-	squareAnnotation.SetContents("The quick brown fox jumps over the lazy dog.")
+	squareAnnotation.SetTitle("Square")
+	squareAnnotation.SetContents("Square Annotation")
 	container.Add(squareAnnotation)
 
 	circleAnnotation := pdfjet.NewCircleAnnotation()
@@ -83,7 +83,7 @@ func Example06() {
 	circleAnnotation.SetFillColor([3]float32{0.0, 0.0, 1.0}) // Blue color
 	circleAnnotation.SetTransparency(0.5)
 	circleAnnotation.SetTitle("Circle")
-	circleAnnotation.SetContents("Annotation")
+	circleAnnotation.SetContents("Circle Annotation")
 	container.Add(circleAnnotation)
 
 	container.DrawOn(page)

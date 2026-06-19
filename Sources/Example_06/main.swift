@@ -60,8 +60,8 @@ public class Example_06 {
         polygonAnnotation.setVertices([0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0])
         polygonAnnotation.setFillColor(Color.red)
         polygonAnnotation.setTransparency(0.5)
-        polygonAnnotation.setTitle("This is a test ...")
-        polygonAnnotation.setContents("The quick brown cat caught the lazy mouse.")
+        polygonAnnotation.setTitle("Polygon")
+        polygonAnnotation.setContents("Polygon Annotation")
         container.add(polygonAnnotation)
 
         let squareAnnotation = SquareAnnotation()
@@ -69,8 +69,8 @@ public class Example_06 {
         squareAnnotation.setSize(50.0, 50.0)
         squareAnnotation.setFillColor([0.0, 0.0, 1.0])
         squareAnnotation.setTransparency(0.5)
-        squareAnnotation.setTitle("Hello, World!")
-        squareAnnotation.setContents("The quick brown fox jumps over the lazy dog.")
+        squareAnnotation.setTitle("Square")
+        squareAnnotation.setContents("Square Annotation")
         container.add(squareAnnotation)
 
         let circleAnnotation = CircleAnnotation()
@@ -79,7 +79,7 @@ public class Example_06 {
         circleAnnotation.setFillColor([0.0, 0.0, 1.0])
         circleAnnotation.setTransparency(0.5)
         circleAnnotation.setTitle("Circle");
-        circleAnnotation.setContents("Annotation")
+        circleAnnotation.setContents("Circle Annotation")
         container.add(circleAnnotation)
 
         _ = container.drawOn(page)

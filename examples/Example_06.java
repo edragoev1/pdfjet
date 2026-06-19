@@ -62,8 +62,8 @@ public class Example_06 {
         polygonAnnotation.setVertices(new float[] {0f, 0f, 50f, 0f, 0f, 50f, 0f, 0f});
         polygonAnnotation.setFillColor(Color.red);
         polygonAnnotation.setTransparency(0.5f);
-        polygonAnnotation.setTitle("This is a test ...");
-        polygonAnnotation.setContents("The quick brown cat caught the lazy mouse.");
+        polygonAnnotation.setTitle("Polygon");
+        polygonAnnotation.setContents("Polygon Annotation");
         container.add(polygonAnnotation);
 
         SquareAnnotation squareAnnotation = new SquareAnnotation();
@@ -71,8 +71,8 @@ public class Example_06 {
         squareAnnotation.setSize(50f, 50f);
         squareAnnotation.setFillColor(new float[] {0f, 0f, 1f});
         squareAnnotation.setTransparency(0.5f);
-        squareAnnotation.setTitle("Hello, World!");
-        squareAnnotation.setContents("The quick brown fox jumps over the lazy dog.");
+        squareAnnotation.setTitle("Square");
+        squareAnnotation.setContents("Square Annotation");
         container.add(squareAnnotation);
 
         CircleAnnotation circleAnnotation = new CircleAnnotation();
@@ -81,7 +81,7 @@ public class Example_06 {
         circleAnnotation.setFillColor(new float[] {0f, 0f, 1f});
         circleAnnotation.setTransparency(0.5f);
         circleAnnotation.setTitle("Circle");
-        circleAnnotation.setContents("Annotation");
+        circleAnnotation.setContents("Circle Annotation");
         container.add(circleAnnotation);
 
         container.drawOn(page);
