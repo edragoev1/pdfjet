@@ -54,8 +54,9 @@ public class Example_06 {
         container.setBorderColor(Color.black);
         container.setRotationClockwise(90);
 
-        Rect rect = new Rect();
-        rect.setSize(25f, 25f);
+        Rect rect = new Rect(0f, 0f, 25f, 25f);
+        rect.setBorderColor(Color.black);
+        rect.setBorderWidth(1f);
         container.add(rect);
 
         PolygonAnnotation polygonAnnotation = new PolygonAnnotation();

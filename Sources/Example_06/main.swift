@@ -53,6 +53,8 @@ public class Example_06 {
         container.setRotationClockwise(90)
 
         let rect = Rect(0.0, 0.0, 25.0, 25.0)
+        rect.setBorderColor(Color.black)
+        rect.setBorderWidth(1.0)
         container.add(rect)
 
         let polygonAnnotation = PolygonAnnotation()

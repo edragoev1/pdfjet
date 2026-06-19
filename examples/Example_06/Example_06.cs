@@ -55,8 +55,9 @@ public class Example_06 {
         container.SetBorderColor(Color.black);
         container.SetRotationClockwise(90);
 
-        Rect rect = new Rect();
-        rect.SetSize(25f, 25f);
+        Rect rect = new Rect(0f, 0f, 25f, 25f);
+        rect.SetBorderColor(Color.black);
+        rect.SetBorderWidth(1f);
         container.Add(rect);
 
         PolygonAnnotation polygonAnnotation = new PolygonAnnotation();

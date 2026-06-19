@@ -56,8 +56,9 @@ func Example06() {
 	container.SetBorderColor(color.Black)
 	container.SetRotationClockwise(90)
 
-	rect := new(pdfjet.Rect)
-	rect.SetSize(25.0, 25.0)
+	rect := pdfjet.NewRect(0.0, 0.0, 25.0, 25.0)
+	rect.SetBorderColor(color.Black)
+	rect.SetBorderWidth(1.0)
 	container.Add(rect)
 
 	polygonAnnotation := pdfjet.NewPolygonAnnotation()
