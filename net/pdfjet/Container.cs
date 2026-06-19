@@ -216,10 +216,7 @@ public class Container : IDrawable {
 
         // 6) Draw children elements
         foreach (IDrawable element in elements) {
-            if (element.GetType() == typeof(SquareAnnotation) ||
-                element.GetType() == typeof(CircleAnnotation) ||
-                element.GetType() == typeof(PolygonAnnotation) ||
-                element.GetType() == typeof(TextAnnotation)) {
+            if (element is BaseAnnotation) {
                 BaseAnnotation annot = (BaseAnnotation) element;
                 annot.container = this;
                 annot.point1[0] += x;

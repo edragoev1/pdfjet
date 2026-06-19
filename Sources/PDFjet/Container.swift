@@ -201,6 +201,20 @@ public class Container: Drawable {
         page!.append(" cm\n")
 
         for element in elements {
+            if let annot = element as? BaseAnnotation {
+                annot.container = self
+                annot.point1[0] += x
+                annot.point1[1] += y
+                annot.point2[0] += x
+                annot.point2[1] += y
+                if let parent = parent {
+                    annot.point1[0] += parent.x
+                    annot.point1[1] += parent.y
+                    annot.point2[0] += parent.x
+                    annot.point2[1] += parent.y
+                }
+                annot.rotate(Double(-rotateDegrees))
+            }
             element.drawOn(page)
         }
 

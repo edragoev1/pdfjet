@@ -214,10 +214,7 @@ public class Container implements Drawable {
         page.append(" cm\n");
 
         for (Drawable element : elements) {
-            if (element instanceof SquareAnnotation ||
-                element instanceof CircleAnnotation ||
-                element instanceof PolygonAnnotation ||
-                element instanceof TextAnnotation) {
+            if (element instanceof BaseAnnotation) {
                 BaseAnnotation annot = (BaseAnnotation) element;
                 annot.container = this;
                 annot.point1[0] += x;
