@@ -733,9 +733,6 @@ public class PDF {
                 append("/T <")
                 append(toHex(annot.fileAttachment!.title))
                 append(">\n")
-            }
-
-            if annot.fileAttachment != nil {
                 append("/Contents <")
                 append(toHex(annot.fileAttachment!.contents))
                 append(">\n")
@@ -1771,7 +1768,7 @@ public class PDF {
 
     private let HEX: [UInt8] = Array("0123456789ABCDEF".utf8)
 
-    private func toHex(_ str: String?) -> String {
+    public func toHex(_ str: String?) -> String {
         guard let str = str, !str.isEmpty else {
             return ""
         }
@@ -1780,7 +1777,11 @@ public class PDF {
         for scalar in str.unicodeScalars {
             let codePoint = scalar.value
             if codePoint != 0xFEFF { // Skip BOM
-                if codePoint <= 0xFFFF {
+                if codePoint <= 0xFF {
+                    // BMP character (2 hex digits)
+                    result.append(HEX[Int((codePoint >> 4)  & 0xF)])
+                    result.append(HEX[Int(codePoint         & 0xF)])
+                } else if codePoint <= 0xFFFF {
                     // BMP character (4 hex digits)
                     result.append(HEX[Int((codePoint >> 12) & 0xF)])
                     result.append(HEX[Int((codePoint >> 8)  & 0xF)])

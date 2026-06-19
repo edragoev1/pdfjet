@@ -78,7 +78,7 @@ public class Example_06 {
         circleAnnotation.setSize(50.0, 50.0)
         circleAnnotation.setFillColor([0.0, 0.0, 1.0])
         circleAnnotation.setTransparency(0.5)
-        circleAnnotation.setTitle("Circle");
+        circleAnnotation.setTitle("Circle")
         circleAnnotation.setContents("Circle Annotation")
         container.add(circleAnnotation)
 
