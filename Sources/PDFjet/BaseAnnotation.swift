@@ -55,41 +55,25 @@ public class BaseAnnotation: Drawable {
     }
 
     public func rotate(_ degrees: Double) {
-        guard let container = container else { return }
-
-        let center = container.getRotationCenter()
-        if let parent = container.parent {
-            var mutableCenter = center
-            mutableCenter[0] += parent.x
-            mutableCenter[1] += parent.y
-            
-            point1 = Container.rotateAroundCenter(point1, mutableCenter, Float(degrees))
-            point2 = Container.rotateAroundCenter(point2, mutableCenter, Float(degrees))
-            
-            if annotationType == Annotation.Polygon {
-                // Rotate polygon vertices in pairs (x, y)
-                for i in stride(from: 0, to: vertices?.count ?? 0, by: 2) {
-                    guard i + 1 < (vertices?.count ?? 0) else { break }
-                    
-                    let point: [Float] = [vertices![i], vertices![i + 1]]
-                    let rotatedPoint = Container.rotateAroundCenter(point, [0, 0], Float(degrees))
-                    vertices?[i] = rotatedPoint[0]
-                    vertices?[i + 1] = rotatedPoint[1]
-                }
-            }
-        } else {
-            point1 = Container.rotateAroundCenter(point1, center, Float(degrees))
-            point2 = Container.rotateAroundCenter(point2, center, Float(degrees))
-            
-            if annotationType == Annotation.Polygon {
-                for i in stride(from: 0, to: vertices?.count ?? 0, by: 2) {
-                    guard i + 1 < (vertices?.count ?? 0) else { break }
-                    
-                    let point: [Float] = [vertices![i], vertices![i + 1]]
-                    let rotatedPoint = Container.rotateAroundCenter(point, [0, 0], Float(degrees))
-                    vertices?[i] = rotatedPoint[0]
-                    vertices?[i + 1] = rotatedPoint[1]
-                }
+        if container == nil { return }
+        var center = container!.getRotationCenter()
+        if container!.parent != nil {
+            center[0] += container!.parent!.x
+            center[1] += container!.parent!.y
+        }
+        point1 = Container.rotateAroundCenter(point1, center, Float(degrees))
+        point2 = Container.rotateAroundCenter(point2, center, Float(degrees))
+        if annotationType == Annotation.Polygon {
+            var i = 0
+            while i < vertices!.count {
+                let point = Container.rotateAroundCenter(
+                    [vertices![i], vertices![i + 1]],
+                    [0.0, 0.0],
+                    Float(degrees)
+                )
+                vertices![i] = point[0]
+                vertices![i + 1] = point[1]
+                i += 2
             }
         }
     }
