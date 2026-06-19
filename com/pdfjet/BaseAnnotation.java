@@ -61,6 +61,7 @@ public class BaseAnnotation implements Drawable {
     }
 
     public void rotate(double degrees) {
+        if (container == null) { return; }
         float[] center = container.getRotationCenter();
         if (container.parent != null) {
             center[0] += container.parent.x;

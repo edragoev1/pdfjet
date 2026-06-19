@@ -62,6 +62,7 @@ public class BaseAnnotation : IDrawable {
     }
 
     public void Rotate(double degrees) {
+        if (container == null) { return; }
         float[] center = container.GetRotationCenter();
         if (container.parent != null) {
             center[0] += container.parent.x;

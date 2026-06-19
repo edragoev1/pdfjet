@@ -77,6 +77,9 @@ func (b *BaseAnnotation) SetContents(contents string) {
 
 // Rotate rotates the annotation around its center by the given degrees.
 func (b *BaseAnnotation) Rotate(degrees float64) {
+	if b.container == nil {
+		return
+	}
 	center := b.container.GetRotationCenter()
 	if b.container.Parent != nil {
 		center[0] += b.container.Parent.X
