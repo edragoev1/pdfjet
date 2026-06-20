@@ -517,7 +517,7 @@ public class TextLine implements Drawable {
         page.setTextDirection(degrees);
         page.setBrushColor(textColor);
         page.addBMC(structureType, language, text, altDescription);
-        page.drawString(font, fallbackFont, fontSize, text, x, y, textColor, colorMap);
+        page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.addEMC();
 
         double radians = Math.PI * degrees / 180.0;
@@ -529,9 +529,9 @@ public class TextLine implements Drawable {
                 lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = font.getUnderlinePosition(fontSize) * Math.sin(radians);
-            double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians) + this.verticalOffset;
-            double x2 = x + lineLength * Math.cos(radians);
-            double y2 = y - lineLength * Math.sin(radians);
+            double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians) + verticalOffset;
+            double x2 = x + (lineLength * Math.cos(radians));
+            double y2 = y - (lineLength * Math.sin(radians));
             page.addBMC(structureType, language, text, "Underlined text: " + text);
             page.moveTo(x + xAdjust, y + yAdjust);
             page.lineTo(x2 + xAdjust, y2 + yAdjust);
@@ -547,7 +547,7 @@ public class TextLine implements Drawable {
                 lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.sin(radians);
-            double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians) + this.verticalOffset;
+            double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
             page.addBMC(structureType, language, text, "Strikethrough text: " + text);
@@ -558,12 +558,12 @@ public class TextLine implements Drawable {
         }
 
         if (uri != null || key != null) {
-            page.addAnnotation(new Annotation(
+            page.addAnnotation(new Annotation(          // TODO: Check this code!
                     Annotation.Link,
                     x,
-                    y - font.getAscent(),
+                    (y + verticalOffset) - font.getAscent(),
                     x + font.stringWidth(fallbackFont, fontSize, text),
-                    y + font.getDescent(),
+                    (y + verticalOffset) + font.getDescent(),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -577,9 +577,9 @@ public class TextLine implements Drawable {
         }
         page.setTextDirection(0);
 
-        float len = font.stringWidth(fallbackFont, text);
+        float len = font.stringWidth(fallbackFont, text);       // TODO: Check this code!
         double xMax = Math.max(x, x + len*Math.cos(radians));
-        double yMax = Math.max(y, y - len*Math.sin(radians));
+        double yMax = Math.max(y + verticalOffset, ((y + verticalOffset) - len) * Math.sin(radians));
 
         return new float[] {(float) xMax, (float) yMax};
     }

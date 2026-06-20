@@ -506,7 +506,7 @@ public class TextLine : IDrawable {
         page.SetTextDirection(degrees);
         page.SetBrushColor(textColor);
         page.AddBMC(structureType, language, text, altDescription);
-        page.DrawString(font, fallbackFont, fontSize, text, x, y, textColor, colorMap);
+        page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.AddEMC();
 
         double radians = Math.PI * degrees / 180.0;
@@ -518,7 +518,7 @@ public class TextLine : IDrawable {
                 lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = font.GetUnderlinePosition(fontSize) * Math.Sin(radians);
-            double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians) + this.verticalOffset;
+            double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
             page.AddBMC(structureType, language, text, "Underlined text: " + text);
@@ -536,7 +536,7 @@ public class TextLine : IDrawable {
                 lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
             }
             double xAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Sin(radians);
-            double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians) + this.verticalOffset;
+            double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
             page.AddBMC(structureType, language, text, "Strikethrough text: " + text);
@@ -550,9 +550,9 @@ public class TextLine : IDrawable {
             page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     x,
-                    y - font.GetAscent(fontSize),
+                    (y + verticalOffset) - font.GetAscent(fontSize),
                     x + font.StringWidth(fallbackFont, fontSize, text),
-                    y + font.GetDescent(fontSize),
+                    (y + verticalOffset) + font.GetDescent(fontSize),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -568,7 +568,7 @@ public class TextLine : IDrawable {
 
         float len = font.StringWidth(fallbackFont, fontSize, text);
         double xMax = Math.Max((double) x, x + len*Math.Cos(radians));
-        double yMax = Math.Max((double) y, y - len*Math.Sin(radians));
+        double yMax = Math.Max((double) (y + verticalOffset), (y + verticalOffset) - len*Math.Sin(radians));
 
         return new float[] {(float) xMax, (float) yMax};
     }

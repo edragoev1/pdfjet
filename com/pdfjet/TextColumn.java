@@ -255,7 +255,7 @@ public class TextColumn implements Drawable {
                 text.setTextColor(line.getTextColor());
                 text.setUnderline(line.getUnderline());
                 text.setStrikeout(line.getStrikeout());
-                text.setTextEffect(line.getTextEffect());
+                text.setVerticalOffset(line.getVerticalOffset());
                 text.setURIAction(line.getURIAction());
                 text.setGoToAction(line.getGoToAction());
                 runLength += text.getWidth();

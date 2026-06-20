@@ -28,7 +28,7 @@ public class Example_49 {
                 .add(new TextLine(f1, "r").setTextColor(Color.green))
                 .add(new TextLine(f1, "l").setTextColor(Color.blue))
                 .add(new TextLine(f1, "d").setTextColor(Color.black))
-                .add(new TextLine(f1, "$").setVerticalOffset(f1.getAscent() - f2.getAscent()))
+                .add(new TextLine(f1, "$").setVerticalOffset(1f))
                 .add(new TextLine(f2, "29.95").setTextColor(Color.blue))
                 .setAlignment(Align.RIGHT);
 
@@ -54,6 +54,13 @@ public class Example_49 {
         text.setLocation(70f, 200f);
         text.setWidth(500f);
         text.drawOn(page);
+
+        TextLine textLine = new TextLine(f1, "Hello, World!");
+        textLine.setLocation(100f, 300f);
+        textLine.setTextDirection(30);
+        textLine.setVerticalOffset(50f);
+        textLine.setUnderline(true);
+        textLine.drawOn(page);
 
         pdf.complete();
     }
