@@ -527,7 +527,7 @@ public class TextLine : Drawable {
 
         page!.setBrushColor(textColor)
         page!.addBMC(structureType, language, text!, altDescription!)
-        page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y, textColor, colorMap)
+        page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         page!.addEMC()
 
         let radians = Float.pi * Float(degrees) / 180.0
@@ -538,7 +538,7 @@ public class TextLine : Drawable {
             if (self.isLastToken) {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
-            let xAdjust = font!.underlinePosition * Float(sin(radians)) + verticalOffset
+            let xAdjust = font!.underlinePosition * Float(sin(radians))
             let yAdjust = font!.underlinePosition * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
@@ -557,7 +557,7 @@ public class TextLine : Drawable {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
             let xAdjust = (font!.bodyHeight / 4.0) * Float(sin(radians))
-            let yAdjust = (font!.bodyHeight / 4.0) * Float(cos(radians))
+            let yAdjust = (font!.bodyHeight / 4.0) * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
             page!.addBMC(structureType, language, text!, "Strikethrough text: " + text!)
@@ -571,9 +571,9 @@ public class TextLine : Drawable {
             page!.addAnnotation(Annotation(
                     Annotation.Link,
                     self.x,
-                    self.y - font!.ascent,
+                    (self.y + verticalOffset) - font!.ascent,
                     self.x + font!.stringWidth(fallbackFont, fontSize, text!),
-                    self.y + font!.descent,
+                    (self.y  + verticalOffset) + font!.descent,
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency
@@ -589,7 +589,7 @@ public class TextLine : Drawable {
 
         let len = font!.stringWidth(fallbackFont, fontSize, text!)
         let xMax = max(x, x + len*Float(cos(radians)))
-        let yMax = max(y, y - len*Float(sin(radians)))
+        let yMax = max(y + verticalOffset, (y + verticalOffset) - len*Float(sin(radians)))
 
         return [xMax, yMax]
     }
