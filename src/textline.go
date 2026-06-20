@@ -394,7 +394,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		textLine.fontSize,
 		textLine.text,
 		textLine.x,
-		textLine.y,
+		textLine.y+textLine.verticalOffset,
 		textLine.color,
 		textLine.colorMap)
 	page.AddEMC()
@@ -434,9 +434,9 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		page.AddAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             textLine.x,
-			y1:             textLine.y - textLine.font.ascent,
+			y1:             (textLine.y + textLine.verticalOffset) - textLine.font.ascent,
 			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
-			y2:             textLine.y + textLine.font.descent,
+			y2:             (textLine.y + textLine.verticalOffset) + textLine.font.descent,
 			vertices:       nil,
 			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
@@ -454,7 +454,9 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 
 	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
-	yMax := math.Max(float64(textLine.y), float64(textLine.y)-float64(length)*math.Sin(radians))
+	yMax := math.Max(
+		float64(textLine.y+textLine.verticalOffset),
+		float64(textLine.y+textLine.verticalOffset)-float64(length)*math.Sin(radians))
 
 	return []float32{float32(xMax), float32(yMax)}
 }
