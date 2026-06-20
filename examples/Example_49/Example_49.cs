@@ -56,6 +56,13 @@ public class Example_49 {
         text.SetWidth(500f);
         text.DrawOn(page);
 
+        TextLine textLine = new TextLine(f1, "Hello, World!");
+        textLine.SetLocation(100f, 300f);
+        textLine.SetTextDirection(30);
+        textLine.SetVerticalOffset(50f);
+        textLine.SetUnderline(true);
+        textLine.DrawOn(page);
+
         pdf.Complete();
     }
 

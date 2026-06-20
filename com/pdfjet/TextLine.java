@@ -558,7 +558,7 @@ public class TextLine implements Drawable {
         }
 
         if (uri != null || key != null) {
-            page.addAnnotation(new Annotation(          // TODO: Check this code!
+            page.addAnnotation(new Annotation(              // TODO: Check this code!
                     Annotation.Link,
                     x,
                     (y + verticalOffset) - font.getAscent(),
@@ -577,7 +577,7 @@ public class TextLine implements Drawable {
         }
         page.setTextDirection(0);
 
-        float len = font.stringWidth(fallbackFont, text);       // TODO: Check this code!
+        float len = font.stringWidth(fallbackFont, text);   // TODO: Check this code!
         double xMax = Math.max(x, x + len*Math.cos(radians));
         double yMax = Math.max(y + verticalOffset, ((y + verticalOffset) - len) * Math.sin(radians));
 
