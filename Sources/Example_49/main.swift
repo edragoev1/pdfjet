@@ -50,6 +50,13 @@ public class Example_49 {
         text.setWidth(500.0)
         text.drawOn(page)
 
+        let textLine = TextLine(f1, "Hello, World!")
+        textLine.setLocation(100.0, 300.0)
+        textLine.setTextDirection(30)
+        textLine.setVerticalOffset(50.0)
+        textLine.setUnderline(true)
+        textLine.drawOn(page)
+
         pdf.complete()
     }
 }   // End of Example_49.swift
