@@ -26,8 +26,7 @@ public class Example_07 {
         Page page = new Page(pdf, A4.LANDSCAPE);
 
         f1.setSize(72f);
-        // page.addWatermark(f1, "This is a Draft");
-        page.addWatermark(f1, "€, ř, š, č This is a Draft");
+        page.addWatermark(f1, "This is a Draft");
         f1.setSize(18f);
 
         float xPos = 20f;
