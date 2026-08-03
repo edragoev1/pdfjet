@@ -4,8 +4,9 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-package com.pdfjet;
+package com.pdfjet.barcodes;
 
+import com.pdfjet.*;
 import java.util.*;
 
 /**
@@ -242,7 +243,7 @@ public class Barcode implements Drawable {
         }
     }
 
-    protected float[] drawOnPageAtLocation(Page page, float x1, float y1) throws Exception {
+    public float[] drawOnPageAtLocation(Page page, float x1, float y1) throws Exception {
         if (barcodeType == Barcode.EAN_13) {
             return drawCodeEAN13(page, x1, y1);
         } else if (barcodeType == Barcode.UPC_A) {
@@ -327,13 +328,13 @@ public class Barcode implements Drawable {
             TextLine textLine = new TextLine(font, label);
             textLine.setLocation(
                     x1 + ((x - x1) - font.stringWidth(label))/2,
-                    y1 + h + font.bodyHeight);
+                    y1 + h + font.getBodyHeight());
             xy = textLine.drawOn(page);
             xy[0] = Math.max(x, xy[0]);
             xy[1] = Math.max(y, xy[1]);
 
             font.setSize(fontSize);
-            return new float[] {xy[0], xy[1] + font.descent};
+            return new float[] {xy[0], xy[1] + font.getDescent()};
         }
 
         return new float[] {xy[0], xy[1]};
@@ -457,14 +458,14 @@ public class Barcode implements Drawable {
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
                         x1 + ((x - x1) - font.stringWidth(text))/2,
-                        y1 + h + font.bodyHeight);
+                        y1 + h + font.getBodyHeight());
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]);
-                return new float[] {xy[0], xy[1] + font.descent};
+                return new float[] {xy[0], xy[1] + font.getDescent()};
             } else if (direction == TOP_TO_BOTTOM) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
-                        x + w + font.bodyHeight,
+                        x + w + font.getBodyHeight(),
                         y - ((y - y1) - font.stringWidth(text))/2);
                 textLine.setTextDirection(90);
                 xy = textLine.drawOn(page);
@@ -511,7 +512,7 @@ public class Barcode implements Drawable {
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
                         x1 + ((x - x1) - font.stringWidth(text))/2,
-                        y1 + h + font.bodyHeight);
+                        y1 + h + font.getBodyHeight());
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]);
             }
@@ -542,7 +543,7 @@ public class Barcode implements Drawable {
             if (font != null) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
-                        x - font.bodyHeight,
+                        x - font.getBodyHeight(),
                         y1 + ((y - y1) - font.stringWidth(text))/2);
                 textLine.setTextDirection(270);
                 xy = textLine.drawOn(page);
@@ -593,12 +594,12 @@ public class Barcode implements Drawable {
                 y = y1 + (height - m1);
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
-                        x + w + font.bodyHeight,
+                        x + w + font.getBodyHeight(),
                         y - ((y - y1) - font.stringWidth(text))/2);
                 textLine.setTextDirection(90);
                 xy = textLine.drawOn(page);
                 xy[1] = Math.max(y, xy[1]);
-                return new float[] {xy[0], xy[1] + font.descent};
+                return new float[] {xy[0], xy[1] + font.getDescent()};
             }
         }
 
@@ -685,14 +686,14 @@ public class Barcode implements Drawable {
             TextLine textLine = new TextLine(font, label);
             textLine.setLocation(
                     x1 + ((x - x1) - font.stringWidth(label))/2,
-                    y1 + h + font.bodyHeight);
+                    y1 + h + font.getBodyHeight());
             xy = textLine.drawOn(page);
             xy[0] = Math.max(x, xy[0]);
             xy[1] = Math.max(y, xy[1]);
 
             font.setSize(fontSize);
 
-            return new float[] {xy[0], xy[1] + font.descent};
+            return new float[] {xy[0], xy[1] + font.getDescent()};
         }
 
         return new float[] {xy[0], xy[1]};

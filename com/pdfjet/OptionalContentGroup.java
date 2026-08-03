@@ -9,6 +9,7 @@
  */
 package com.pdfjet;
 
+import com.pdfjet.encryption.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class OptionalContentGroup {
      * @param pdf the PDF.
      * @param name the name of the group.
      */
-    public OptionalContentGroup(PDF pdf, String name) throws Exception {
+    public OptionalContentGroup(PDF pdf, String name) {
         this.pdf = pdf;
         this.name = name;
         this.components = new ArrayList<Drawable>();

@@ -291,8 +291,9 @@ final public class Page {
     /**
      *  Draws string on the page using the specified fonts and coordinates.
      *
-     *  @param font1 the primary font.
-     *  @param font2 the fallback font.
+     *  @param font the primary font.
+     *  @param fallbackFont the fallback font.
+     *  @param fontSize the font size.
      *  @param str the string.
      *  @param x the x coordinate.
      *  @param y the y coordinate.
@@ -330,11 +331,12 @@ final public class Page {
      *
      *  @param font the main font.
      *  @param fallbackFont the fallback font.
+     *  @param fontSize the font size.
      *  @param str the string to be drawn.
      *  @param x the x coordinate.
      *  @param y the y coordinate.
-     *  @param brush the brush.
-     *  @param colors map used to highlight specific words.
+     *  @param textColor the text color.
+     *  @param highlightColors map used to highlight specific words.
      */
     public void drawString(
             Font font,
@@ -378,8 +380,9 @@ final public class Page {
      *  using the specified font and the current brush color.
      *  The baseline of the leftmost character is at position (x, y) on the page.
      *
-     *  @param font the font to use.
-     *  @param str the string to be drawn.
+     *  @param font the font.
+     *  @param fontSize the font size.
+     *  @param str the string.
      *  @param x the x coordinate.
      *  @param y the y coordinate.
      */
@@ -407,11 +410,12 @@ final public class Page {
      *  The baseline of the leftmost character is at position (x, y) on the page.
      *
      *  @param font the font to use.
+     *  @param fontSize the font size.
      *  @param str the string to be drawn.
      *  @param x the x coordinate.
      *  @param y the y coordinate.
-     *  @param brush the default text color.
-     *  @param colors map used to highlight specific words.
+     *  @param textColor the text color.
+     *  @param highlightColors map used to highlight specific words.
      */
     public void drawString(
             Font font,
@@ -964,7 +968,6 @@ final public class Page {
      * @param pathOperator the path painting operator to apply (e.g., PathOperator.STROKE, PathOperator.FILL)
      * @throws Exception if the path contains fewer than 2 points
      *
-     * @example
      * <pre>
      * {@code
      * List<Point> path = new ArrayList<>();
@@ -977,7 +980,7 @@ final public class Page {
      * }
      * </pre>
      *
-     * @note The method handles both straight line segments and Bézier curves:
+     * The method handles both straight line segments and Bézier curves:
      * - Straight lines: consecutive points without control points
      * - Bézier curves: points with control points ('C' for cubic, 'Q' for quadratic, etc.)
      *
@@ -1047,7 +1050,7 @@ final public class Page {
      * @param x the x coordinate of the center of the circle to be drawn.
      * @param y the y coordinate of the center of the circle to be drawn.
      * @param r the radius of the circle to be drawn.
-     * @param operation must be PathOperator.STROKE, PathOperator.CLOSE_AND_STROKE or PathOperator.FILL.
+     * @param pathOperator must be PathOperator.STROKE, PathOperator.CLOSE_AND_STROKE or PathOperator.FILL.
      */
     public void drawCircle(
             double x,

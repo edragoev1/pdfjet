@@ -6,6 +6,8 @@
  */
 package com.pdfjet;
 
+import com.pdfjet.barcodes.*;
+
 /**
  * Used to create table cell objects.
  * See the Table class for more information.
@@ -309,6 +311,7 @@ public class Cell {
      * Returns the cell height.
      *
      * @param width the cell width.
+     * @throws Exception is there is an error.
      * @return the cell height.
      */
     public float getHeight(float width) throws Exception {

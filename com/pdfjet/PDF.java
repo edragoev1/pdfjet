@@ -6,6 +6,8 @@
  */
 package com.pdfjet;
 
+import com.pdfjet.encryption.*;
+import com.pdfjet.barcodes.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.text.*;
@@ -135,17 +137,17 @@ final public class PDF {
         this.encryption = encryption;
     }
 
-    void newobj() throws IOException {
+    public void newobj() throws IOException {
         objOffset.add(byteCount);
         append(objOffset.size());
         append(Token.NEW_OBJ);
     }
 
-    void endobj() throws IOException {
+    public void endobj() throws IOException {
         append(Token.END_OBJ);
     }
 
-    int getObjNumber() {
+    public int getObjNumber() {
         return objOffset.size();
     }
 
@@ -1155,41 +1157,41 @@ final public class PDF {
         this.pageMode = pageMode;
     }
 
-    void append(int num) throws IOException {
+    public void append(int num) throws IOException {
         append(Integer.toString(num));
     }
 
-    void append(float f) throws IOException {
+    public void append(float f) throws IOException {
         append(FastFloat.toByteArray(f));
     }
 
-    void append(String str) throws IOException {
+    public void append(String str) throws IOException {
         byte[] buf = str.getBytes(StandardCharsets.UTF_8);
         os.write(buf);
         byteCount += buf.length;
     }
 
-    void append(char ch) throws IOException {
+    public void append(char ch) throws IOException {
         os.write((byte) ch);
         byteCount += 1;
     }
 
-    void append(byte b) throws IOException {
+    public void append(byte b) throws IOException {
         os.write(b);
         byteCount += 1;
     }
 
-    void append(byte[] buf) throws IOException {
+    public void append(byte[] buf) throws IOException {
         os.write(buf, 0, buf.length);
         byteCount += buf.length;
     }
 
-    void append(byte[] buf, int off, int len) throws IOException {
+    public void append(byte[] buf, int off, int len) throws IOException {
         os.write(buf, off, len);
         byteCount += len;
     }
 
-    void append(ByteArrayOutputStream baos) throws IOException {
+    public void append(ByteArrayOutputStream baos) throws IOException {
         baos.writeTo(os);
         byteCount += baos.size();
     }

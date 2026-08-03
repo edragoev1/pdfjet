@@ -242,7 +242,7 @@ public class Arc implements Drawable {
      *
      * @param page the page to draw on.
      * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
+     * @throws Exception if there is an error.
      */
     public float[] drawOn(Page page) throws Exception {
         // If a start point was set, calculate center so arc begins there

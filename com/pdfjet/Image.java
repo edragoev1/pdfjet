@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import com.pdfjet.encryption.*;
 import java.io.*;
 import java.util.*;
 
