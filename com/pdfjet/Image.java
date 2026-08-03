@@ -234,11 +234,11 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Sets the location of this image
+     * Sets the location of this image.
      *
-     * @param x the horizontal location
-     * @param y the vertical location
-     * @return the image
+     * @param x the x coordinate of the top left corner of the image.
+     * @param y the y coordinate of the top left corner of the image.
+     * @return the Image object.
      */
     public Image setLocation(double x, double y) {
         return setLocation((float) x, (float) y);

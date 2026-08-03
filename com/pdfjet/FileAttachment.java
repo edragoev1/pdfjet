@@ -56,10 +56,12 @@ public class FileAttachment implements Drawable {
      *
      * @param x the horizontal location of the attachment
      * @param y the vertical location of the attachment
+     * @return this drawable object.
      */
-    public void setLocation(float x, float y) {
+    public Drawable setLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**
@@ -67,9 +69,10 @@ public class FileAttachment implements Drawable {
      *
      * @param x the horizontal location of the attachment
      * @param y the vertical location of the attachment
+     * @return this drawable object.
      */
-    public void setLocation(double x, double y) {
-        setLocation((float) x, (float) y);
+    public Drawable setLocation(double x, double y) {
+        return setLocation((float) x, (float) y);
     }
 
     /**
