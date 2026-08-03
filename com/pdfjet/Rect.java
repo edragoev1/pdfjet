@@ -152,13 +152,13 @@ public class Rect implements Drawable {
      * @return this Rect.
      */
     public Rect setStructureType(String structureType) {
-// TODO:        this.structureType = structureType;
+        // this.structureType = structureType;  // TODO
         return this;
     }
 
     /**
      * Sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
-     * @param pattern the line dash pattern.
+     * @param borderPattern the line dash pattern.
      */
     public void setBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;

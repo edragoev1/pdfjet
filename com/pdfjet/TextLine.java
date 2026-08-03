@@ -197,6 +197,8 @@ public class TextLine implements Drawable {
 
     /**
      * @deprecated Use {@link #setTextColor(int color)} instead.
+     * @param color the color value.
+     * @return the text line.
      */
     @Deprecated
     public TextLine setColor(int color) {
@@ -294,6 +296,7 @@ public class TextLine implements Drawable {
     /**
      * Returns the string width of the specified string.
      *
+     * @param text the text string.
      * @return the width.
      */
     public float getStringWidth(String text) {

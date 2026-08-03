@@ -120,7 +120,7 @@ public class Point implements Drawable {
      *
      *  @param x the x coordinate of this point when drawn on the page.
      *  @param y the y coordinate of this point when drawn on the page.
-     *  @param isControlPoint true if this point is one of the points specifying a curve.
+     *  @param controlPoint the type of control point.
      */
     public Point(double x, double y, char controlPoint) {
         this((float) x, (float) y, controlPoint);
@@ -131,7 +131,7 @@ public class Point implements Drawable {
      *
      *  @param x the x coordinate of this point when drawn on the page.
      *  @param y the y coordinate of this point when drawn on the page.
-     *  @param isControlPoint true if this point is one of the points specifying a curve.
+     *  @param controlPoint the type of control point specifying.
      */
     public Point(float x, float y, char controlPoint) {
         this.x = x;

@@ -70,7 +70,7 @@ public class BigTable {
      * Sets the text alignment in the specified column.
      *
      * @param column the column.
-     * @param align the alignment.
+     * @param alignment the alignment.
      */
     public void setTextAlignment(int column, Alignment alignment) {
         this.alignment[column] = alignment;
@@ -212,6 +212,7 @@ public class BigTable {
      * Sets the column widths, the column alignment and header fields.
      *
      * @param fileName the file name.
+     * @param delimiter the delimiter.
      * @throws IOException if there is an issue.
      */
     public void setTableData(String fileName, String delimiter) throws IOException {

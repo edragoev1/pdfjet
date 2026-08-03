@@ -359,6 +359,7 @@ final public class Font {
      * Returns the width of the specified string when drawn on the page with this
      * font using the current font size.
      *
+     * @param fontSize the font size.
      * @param str the specified string.
      *
      * @return the width of the string when draw on the page with this font using
@@ -587,7 +588,8 @@ final public class Font {
      * Returns the width of a string drawn using two fonts.
      *
      * @param fallbackFont the fallback font.
-     * @param str          the string.
+     * @param fontSize the font size.
+     * @param str the string.
      * @return the width.
      */
     public float stringWidth(Font fallbackFont, float fontSize, String str) {

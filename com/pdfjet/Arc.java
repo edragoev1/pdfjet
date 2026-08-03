@@ -112,11 +112,11 @@ public class Arc implements Drawable {
     /**
      * Sets the width of this line.
      *
-     * @param width the width.
+     * @param strokeWidth the width.
      * @return this Arc object.
      */
-    public Arc setStrokeWidth(double width) {
-        this.strokeWidth = (float) width;
+    public Arc setStrokeWidth(double strokeWidth) {
+        this.strokeWidth = (float) strokeWidth;
         return this;
     }
 
@@ -126,8 +126,8 @@ public class Arc implements Drawable {
      * @param strokeWidth the width.
      * @return this Arc object.
      */
-    public Arc setStrokeWidth(float width) {
-        this.strokeWidth = width;
+    public Arc setStrokeWidth(float strokeWidth) {
+        this.strokeWidth = strokeWidth;
         return this;
     }
 
@@ -244,7 +244,7 @@ public class Arc implements Drawable {
      * @return x and y coordinates of the bottom right corner of this component.
      * @throws Exception
      */
-    public float[] drawOn(Page page) {
+    public float[] drawOn(Page page) throws Exception {
         // If a start point was set, calculate center so arc begins there
         if (line != null) {
             float dx = line.x2 - line.x1;
