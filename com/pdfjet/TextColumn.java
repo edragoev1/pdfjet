@@ -88,12 +88,14 @@ public class TextColumn implements Drawable {
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
      * @param y the y coordinate of the top left corner of this text column when drawn on the page.
+     * @return this text column.
      */
-    public void setLocation(float x, float y) {
+    public TextColumn setLocation(float x, float y) {
         this.x = x;
         this.y = y;
         this.x1 = x;
         this.y1 = y;
+        return this;
     }
 
     /**

@@ -105,9 +105,10 @@ public class TextBlock {
         return this.textContent;
     }
 
-    public void setLocation(float x, float y) {
+    public TextBlock setLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     public void setSize(float w, float h) {
