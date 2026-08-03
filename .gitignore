@@ -19,5 +19,7 @@ out
 .idea/dictionaries/
 .idea/compiler.xml
 .idea/go.imports.xml
+docs/java/*.html
+docs/_net/*.html
 docs/java/com/pdfjet/*.html
 docs/_net/net/pdfjet/*.html
