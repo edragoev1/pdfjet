@@ -25,9 +25,10 @@ public class DonutChart {
         this.slices = new List<Slice>();
     }
 
-    public void SetLocation(float xc, float yc) {
+    public DonutChart SetLocation(float xc, float yc) {
         this.xc = xc;
         this.yc = yc;
+        return this;
     }
 
     public void SetR1AndR2(float r1, float r2) {

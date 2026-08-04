@@ -207,15 +207,6 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Gets the location where this text box will be drawn on the page.
-     *
-     * @return the float array of of x and y.
-     */
-    public float[] getLocation() {
-        return new float[] {this.x, this.y};
-    }
-
-    /**
      * Sets the location where this text box will be drawn on the page.
      *
      * @param x the x coordinate of the top left corner of the text box.
@@ -224,6 +215,15 @@ public class TextBox implements Drawable {
      */
     public TextBox setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
+    }
+
+    /**
+     * Gets the location where this text box will be drawn on the page.
+     *
+     * @return the float array of of x and y.
+     */
+    public float[] getLocation() {
+        return new float[] {this.x, this.y};
     }
 
     /**

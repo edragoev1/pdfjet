@@ -88,10 +88,6 @@ public class CheckBox : IDrawable {
         SetLocation(x, y);
     }
 
-    public CheckBox SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /**
      * Set the x,y location on the Page.
      *
@@ -103,6 +99,10 @@ public class CheckBox : IDrawable {
         this.x = x;
         this.y = y;
         return this;
+    }
+
+    public CheckBox SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     /**

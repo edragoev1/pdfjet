@@ -39,14 +39,14 @@ public class Text : IDrawable {
         SetLocation(x, y);
     }
 
-    public Text SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     public Text SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
+    }
+
+    public Text SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     public Text SetWidth(float width) {
