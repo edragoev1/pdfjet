@@ -40,10 +40,12 @@ public class DonutChart {
      *
      * @param xc the horizontal location of the donut chart.
      * @param yc the vertical location of the donut chart.
+     * @return DonutChart the donut chart.
      */
-    public void setLocation(Float xc, Float yc) {
+    public DonutChart setLocation(Float xc, Float yc) {
         this.xc = xc;
         this.yc = yc;
+        return this;
     }
 
     /**

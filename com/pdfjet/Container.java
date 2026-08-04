@@ -52,10 +52,12 @@ public class Container implements Drawable {
      *
      * @param x the X coordinate
      * @param y the Y coordinate
+     * @return Container this container
      */
-    public void setLocation(float x, float y) {
+    public Container setLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     public void rotate(double degrees) {

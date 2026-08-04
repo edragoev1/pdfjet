@@ -107,6 +107,12 @@ public class Line implements Drawable {
         setStartPoint(x, y);
     }
 
+    public Line setLocation(float x, float y) {
+        this.x1 = x;
+        this.y1 = y;
+        return this;
+    }
+
     /**
      *  Sets the x and y coordinates of the start point.
      *
