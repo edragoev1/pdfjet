@@ -52,9 +52,7 @@ public class Stamp implements Drawable {
     }
 
     public Stamp setLocation(double x, double y) {
-        this.x = (float)x;
-        this.y = (float)y;
-        return this;
+        return setLocation((float) x, (float) y);
     }
 
     private void append(float value) {

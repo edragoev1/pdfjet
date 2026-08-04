@@ -52,9 +52,7 @@ public class Stamp : IDrawable {
     }
 
     public Stamp SetLocation(double x, double y) {
-        this.x = (float)x;
-        this.y = (float)y;
-        return this;
+        return SetLocation((float) x, (float) y);
     }
 
     private void Append(float value) {
