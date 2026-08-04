@@ -29,29 +29,29 @@ public class Box : IDrawable {
     private String altDescription = null;
 
     /**
-     *  The default constructor.
+     * The default constructor.
      */
     public Box() {
     }
 
     /**
-     *  Creates a box object.
+     * Creates a box object.
      *
-     *  @param x the x coordinate of the top left corner of this box when drawn on the page.
-     *  @param y the y coordinate of the top left corner of this box when drawn on the page.
-     *  @param w the width of this box.
-     *  @param h the height of this box.
+     * @param x the x coordinate of the top left corner of this box when drawn on the page.
+     * @param y the y coordinate of the top left corner of this box when drawn on the page.
+     * @param w the width of this box.
+     * @param h the height of this box.
      */
 //    public Box(double x, double y, double w, double h) : this((float) x, (float) y, (float) w, (float) h) {
 //    }
 
     /**
-     *  Creates a box object.
+     * Creates a box object.
      *
-     *  @param x the x coordinate of the top left corner of this box when drawn on the page.
-     *  @param y the y coordinate of the top left corner of this box when drawn on the page.
-     *  @param w the width of this box.
-     *  @param h the height of this box.
+     * @param x the x coordinate of the top left corner of this box when drawn on the page.
+     * @param y the y coordinate of the top left corner of this box when drawn on the page.
+     * @param w the width of this box.
+     * @param h the height of this box.
      */
     public Box(float x, float y, float w, float h) {
         this.x = x;
@@ -61,10 +61,10 @@ public class Box : IDrawable {
     }
 
     /**
-     *  Sets the position of this box on the page.
+     * Sets the position of this box on the page.
      *
-     *  @param x the x coordinate of the top left corner of this box when drawn on the page.
-     *  @param y the y coordinate of the top left corner of this box when drawn on the page.
+     * @param x the x coordinate of the top left corner of this box when drawn on the page.
+     * @param y the y coordinate of the top left corner of this box when drawn on the page.
      */
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
@@ -75,36 +75,36 @@ public class Box : IDrawable {
     }
 
     /**
-     *  Sets the location of this box on the page.
+     * Sets the location of this box on the page.
      *
-     *  @param x the x coordinate of the top left corner of this box when drawn on the page.
-     *  @param y the y coordinate of the top left corner of this box when drawn on the page.
+     * @param x the x coordinate of the top left corner of this box when drawn on the page.
+     * @param y the y coordinate of the top left corner of this box when drawn on the page.
      */
-    public void SetLocation(float x, float y) {
+    public Box SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
-    public void SetLocation(double x, double y) {
-        this.x = (float) x;
-        this.y = (float) y;
+    public Box SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     /**
-     *  Sets the size of this box.
+     * Sets the size of this box.
      *
-     *  @param w the width of this box.
-     *  @param h the height of this box.
+     * @param w the width of this box.
+     * @param h the height of this box.
      */
     public void SetSize(double w, double h) {
         SetSize((float) w, (float) h);
     }
 
     /**
-     *  Sets the size of this box.
+     * Sets the size of this box.
      *
-     *  @param w the width of this box.
-     *  @param h the height of this box.
+     * @param w the width of this box.
+     * @param h the height of this box.
      */
     public void SetSize(float w, float h) {
         this.w = w;
@@ -112,55 +112,55 @@ public class Box : IDrawable {
     }
 
     /**
-     *  Sets the color for this box.
+     * Sets the color for this box.
      *
-     *  @param color the color specified as an integer.
+     * @param color the color specified as an integer.
      */
     public void SetColor(int color) {
         this.color = color;
     }
 
     /**
-     *  Sets the width of this line.
+     * Sets the width of this line.
      *
-     *  @param width the width.
+     * @param width the width.
      */
     public void SetLineWidth(double width) {
         this.width = (float) width;
     }
 
     /**
-     *  Sets the width of this line.
+     * Sets the width of this line.
      *
-     *  @param width the width.
+     * @param width the width.
      */
     public void SetLineWidth(float width) {
         this.width = width;
     }
 
     /**
-     *  Sets the URI for the "click box" action.
+     * Sets the URI for the "click box" action.
      *
-     *  @param uri the URI
+     * @param uri the URI
      */
     public void SetURIAction(String uri) {
         this.uri = uri;
     }
 
     /**
-     *  Sets the destination key for the action.
+     * Sets the destination key for the action.
      *
-     *  @param key the destination name.
+     * @param key the destination name.
      */
     public void SetGoToAction(String key) {
         this.key = key;
     }
 
     /**
-     *  Sets the alternate description of this box.
+     * Sets the alternate description of this box.
      *
-     *  @param altDescription the alternate description of the box.
-     *  @return this Box.
+     * @param altDescription the alternate description of the box.
+     * @return this Box.
      */
     public Box SetAltDescription(String altDescription) {
         this.altDescription = altDescription;
@@ -168,10 +168,10 @@ public class Box : IDrawable {
     }
 
     /**
-     *  Sets the actual text for this box.
+     * Sets the actual text for this box.
      *
-     *  @param actualText the actual text for the box.
-     *  @return this Box.
+     * @param actualText the actual text for the box.
+     * @return this Box.
      */
     public Box SetActualText(String actualText) {
         this.actualText = actualText;
@@ -179,55 +179,55 @@ public class Box : IDrawable {
     }
 
     /**
-     *  The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-     *  It is specified by a dash array and a dash phase.
-     *  The elements of the dash array are positive numbers that specify the lengths of
-     *  alternating dashes and gaps.
-     *  The dash phase specifies the distance into the dash pattern at which to start the dash.
-     *  The elements of both the dash array and the dash phase are expressed in user space units.
-     *  <pre>
-     *  Examples of line dash patterns:
+     * The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
+     * It is specified by a dash array and a dash phase.
+     * The elements of the dash array are positive numbers that specify the lengths of
+     * alternating dashes and gaps.
+     * The dash phase specifies the distance into the dash pattern at which to start the dash.
+     * The elements of both the dash array and the dash phase are expressed in user space units.
+     * <pre>
+     * Examples of line dash patterns:
      *
-     *      "[Array] Phase"     Appearance          Description
-     *      _______________     _________________   ____________________________________
+     *     "[Array] Phase"     Appearance          Description
+     *     _______________     _________________   ____________________________________
      *
-     *      "[] 0"              -----------------   Solid line
-     *      "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-     *      "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-     *      "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-     *      "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-     *      "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-     *  </pre>
+     *     "[] 0"              -----------------   Solid line
+     *     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+     *     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+     *     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+     *     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+     *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+     * </pre>
      *
-     *  @param pattern the line dash pattern.
+     * @param pattern the line dash pattern.
      */
     public void SetPattern(String pattern) {
         this.pattern = pattern;
     }
 
     /**
-     *  Sets the private fillShape variable.
-     *  If the value of fillShape is true - the box is filled with the current brush color.
+     * Sets the private fillShape variable.
+     * If the value of fillShape is true - the box is filled with the current brush color.
      *
-     *  @param fillShape the value used to set the private fillShape variable.
+     * @param fillShape the value used to set the private fillShape variable.
      */
     public void SetFillShape(bool fillShape) {
         this.fillShape = fillShape;
     }
 
     /**
-     *  Scales this box by the specified factor.
+     * Scales this box by the specified factor.
      *
-     *  @param factor the factor used to scale the box.
+     * @param factor the factor used to scale the box.
      */
     public void ScaleBy(double factor) {
         ScaleBy((float) factor);
     }
 
     /**
-     *  Scales this box by the specified factor.
+     * Scales this box by the specified factor.
      *
-     *  @param factor the factor used to scale the box.
+     * @param factor the factor used to scale the box.
      */
     public void ScaleBy(float factor) {
         this.x *= factor;
@@ -235,11 +235,11 @@ public class Box : IDrawable {
     }
 
     /**
-     *  Draws this box on the specified page.
+     * Draws this box on the specified page.
      *
-     *  @param page the page to draw on.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception
+     * @param page the page to draw on.
+     * @return x and y coordinates of the bottom right corner of this component.
+     * @throws Exception
      */
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
