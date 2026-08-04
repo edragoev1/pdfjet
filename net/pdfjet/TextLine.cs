@@ -40,7 +40,6 @@ public class TextLine : IDrawable {
 
     private String structureType = StructElem.P;
 
-
     /**
      * Constructor for creating text line objects.
      *
@@ -109,10 +108,6 @@ public class TextLine : IDrawable {
         SetLocation(x, y);
     }
 
-    public TextLine SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /**
      * Sets the location where this text line will be drawn on the page.
      *
@@ -124,6 +119,10 @@ public class TextLine : IDrawable {
         this.x = x;
         this.y = y;
         return this;
+    }
+
+    public TextLine SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     /**

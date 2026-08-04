@@ -99,6 +99,12 @@ public class Line : IDrawable {
         SetStartPoint(x, y);
     }
 
+    public Line SetLocation(float x, float y) {
+        this.x1 = x;
+        this.y1 = y;
+        return this;
+    }
+
     /**
      * Sets the x and y coordinates of the start point.
      *

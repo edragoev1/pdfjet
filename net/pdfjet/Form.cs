@@ -38,14 +38,14 @@ public class Form : IDrawable {
         SetLocation(x, y);
     }
 
-    public Form SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     public Form SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
+    }
+
+    public Form SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     public Form SetRowLength(float rowLength) {

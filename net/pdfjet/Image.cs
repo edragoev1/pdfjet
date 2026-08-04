@@ -215,10 +215,6 @@ public class Image : IDrawable {
         SetLocation(x, y);
     }
 
-    public Image SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /**
      * Sets the location of this image on the page to (x, y).
      *
@@ -229,6 +225,10 @@ public class Image : IDrawable {
         this.x = x;
         this.y = y;
         return this;
+    }
+
+    public Image SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     /**

@@ -139,10 +139,12 @@ public class Point : IDrawable {
      *
      * @param x the x coordinate of this point when drawn on the page.
      * @param y the y coordinate of this point when drawn on the page.
+     * @return Point the point.
      */
-    public void SetLocation(float x, float y) {
+    public Point SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**

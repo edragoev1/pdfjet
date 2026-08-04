@@ -59,10 +59,6 @@ public class RadioButton : IDrawable {
         SetLocation(x, y);
     }
 
-    public RadioButton SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /**
      * Set the x,y location on the Page.
      *
@@ -74,6 +70,10 @@ public class RadioButton : IDrawable {
         this.x = x;
         this.y = y;
         return this;
+    }
+
+    public RadioButton SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     /**
