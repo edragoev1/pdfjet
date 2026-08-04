@@ -30,22 +30,22 @@ To build the Swift version and compile and run all examples:
 
 To compile and run specific Java example use the following command:
 
-./run-java.sh 07
+./run-java.sh 01
 
 
 To compile and run specific C# example use one of the following:
 
-./run-dotnet.sh 23
+./run-dotnet.sh 01
 
 
 To compile and run specific Go example:
 
-./run-go.sh 05
+./run-go.sh 01
 
 
 To compile and run specific Swift example:
 
-./run-swift.sh 15
+./run-swift.sh 01
 
 Make sure you install these first:
 sudo apt install libc6-dev
