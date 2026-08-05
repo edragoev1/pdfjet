@@ -1,8 +1,8 @@
 #!/bin/bash
 
-FONT_DIR="../fonts/NotoSansSC/"
-UNICODES_FILE="../data/languages/SC_3500.txt"
-CJK_PUNCTUATION="U+2000-206F,U+3000-303F,U+FF00-FFEF"
+FONT_DIR="fonts/NotoSansSC/"
+UNICODES_FILE="data/languages/SC_3500.txt"
+CJK_PUNCTUATION="U+0000-007F,U+2000-206F,U+3000-303F,U+FF00-FFEF"
 
 # Process each font file
 for font in "$FONT_DIR"/*.ttf; do
