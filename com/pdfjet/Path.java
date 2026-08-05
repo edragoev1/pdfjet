@@ -180,8 +180,10 @@ public class Path implements Drawable {
      * @param y the y coordinate.
      * @return the path.
      */
-    public Path setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
+    public Path setLocation(float x, float y) {
+        xBox += x;
+        yBox += y;
+        return this;
     }
 
     /**
@@ -191,10 +193,8 @@ public class Path implements Drawable {
      * @param y the y coordinate.
      * @return the path.
      */
-    public Path setLocation(float x, float y) {
-        xBox += x;
-        yBox += y;
-        return this;
+    public Path setLocation(double x, double y) {
+        return setLocation((float) x, (float) y);
     }
 
     /**
