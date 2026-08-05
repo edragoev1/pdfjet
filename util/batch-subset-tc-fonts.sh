@@ -1,7 +1,7 @@
 #!/bin/bash
 
-FONT_DIR="fonts/NotoSansSC/"
-UNICODES_FILE="data/languages/SC_3500.txt"
+FONT_DIR="fonts/NotoSansTC/"
+UNICODES_FILE="data/languages/TC_4808.txt"
 CJK_PUNCTUATION="U+0000-007F,U+2000-206F,U+3000-303F,U+FF00-FFEF"
 
 # Process each font file
@@ -12,9 +12,9 @@ for font in "$FONT_DIR"/*.ttf; do
     # Extract filename without path
     filename=$(basename "$font")
     
-    # Insert "-3500" before .ttf extension
+    # Insert "-TC4808" before .ttf extension
     basename_noext="${filename%.ttf}"
-    output="${basename_noext}-SC3500.ttf"
+    output="${basename_noext}-TC4808.ttf"
     
     echo "Processing: $filename → $output"
     
