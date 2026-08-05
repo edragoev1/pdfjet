@@ -154,9 +154,14 @@ public class Chart : IDrawable {
      * @param x the x coordinate of the top left corner of this chart when drawn on the page.
      * @param y the y coordinate of the top left corner of this chart when drawn on the page.
      */
-    public void SetLocation(float x, float y) {
+    public Chart SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
+        return this;
+    }
+
+    public Chart SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
     }
 
     /**

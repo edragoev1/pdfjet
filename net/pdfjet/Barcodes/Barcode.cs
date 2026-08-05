@@ -118,8 +118,10 @@ public class Barcode : IDrawable {
      * @param x1 the x coordinate of the top left corner of the barcode.
      * @param y1 the y coordinate of the top left corner of the barcode.
      */
-    public Barcode SetLocation(double x1, double y1) {
-        return SetLocation((float) x1, (float) y1);
+    public Barcode SetLocation(float x1, float y1) {
+        this.x1 = x1;
+        this.y1 = y1;
+        return (PDFjet.NET.Barcode) this;
     }
 
     /**
@@ -128,10 +130,8 @@ public class Barcode : IDrawable {
      * @param x1 the x coordinate of the top left corner of the barcode.
      * @param y1 the y coordinate of the top left corner of the barcode.
      */
-    public Barcode SetLocation(float x1, float y1) {
-        this.x1 = x1;
-        this.y1 = y1;
-        return (PDFjet.NET.Barcode) this;
+    public Barcode SetLocation(double x1, double y1) {
+        return SetLocation((float) x1, (float) y1);
     }
 
     /**

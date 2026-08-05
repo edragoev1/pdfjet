@@ -101,9 +101,10 @@ namespace PDFjet.NET {
             return this.textContent;
         }
 
-        public void SetLocation(float x, float y) {
+        public TextBlock SetLocation(float x, float y) {
             this.x = x;
             this.y = y;
+            return this;
         }
 
         public void SetSize(float width, float height) {

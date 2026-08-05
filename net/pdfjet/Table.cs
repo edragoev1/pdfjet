@@ -124,9 +124,10 @@ public class Table {
      * @param x the x coordinate of the top left point of the table.
      * @param y the y coordinate of the top left point of the table.
      */
-    public void SetLocation(float x, float y) {
+    public Table SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
+        return this;
     }
 
     /**

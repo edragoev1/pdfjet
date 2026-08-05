@@ -189,9 +189,10 @@ public class TextBox : IDrawable {
      * @param x the x coordinate of the top left corner of the text box.
      * @param y the y coordinate of the top left corner of the text box.
      */
-    public void SetLocation(float x, float y) {
+    public TextBox SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**

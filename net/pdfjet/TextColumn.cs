@@ -112,11 +112,12 @@ public class TextColumn : IDrawable {
      * @param x the x coordinate of the top left corner.
      * @param y the y coordinate of the top left corner.
      */
-    public void SetLocation(float x, float y) {
+    public TextColumn SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         this.x1 = x;
         this.y1 = y;
+        return this;
     }
 
     /**
