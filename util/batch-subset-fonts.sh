@@ -1,7 +1,11 @@
 #!/bin/bash
 
 FONT_DIR="../fonts/NotoSansSC/"
-CJK_PUNCTUATION="U+3000-303F"  # CJK Symbols and Punctuation
+# Combined ranges for fully functional Chinese typography:
+# 1. CJK Symbols and Punctuation (Ideographic comma, stop, brackets)
+# 2. General Punctuation (Dashes, quotes, ellipsis)
+# 3. Halfwidth and Fullwidth Forms (Full-width comma, period, Latin/Cyrillic)
+CJK_PUNCTUATION="U+3000-303F,U+2000-206F,U+FF00-FFEF"
 UNICODES_FILE="../data/languages/SC_3500.txt"
 
 # Process each font file
