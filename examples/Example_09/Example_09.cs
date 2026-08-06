@@ -143,21 +143,20 @@ public class Example_09 {
                     point.SetFillColor(Color.black);
                 }
                 if (point.GetY() > 80f) {
-Console.WriteLine("Yes??");
                     point.SetShape(Point.UP_ARROW);
-                    point.SetFillColor(Color.blue);
+                    point.SetStrokeColor(Color.blue);
                 }
                 if (point.GetText().Equals("France")) {
                     point.SetShape(Point.MULTIPLY);
-                    point.SetFillColor(Color.black);
+                    point.SetStrokeColor(Color.black);
                 }
                 if (point.GetText().Equals("Canada")) {
                     point.SetShape(Point.BOX);
-                    point.SetFillColor(Color.darkolivegreen);
+                    point.SetStrokeColor(Color.darkolivegreen);
                 }
                 if (point.GetText().Equals("United States")) {
                     point.SetShape(Point.STAR);
-                    point.SetFillColor(Color.red);
+                    point.SetStrokeColor(Color.red);
                 }
 
                 points.Add(point);
