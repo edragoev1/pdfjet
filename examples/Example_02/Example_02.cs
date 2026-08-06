@@ -11,23 +11,49 @@ public class Example_02 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_02.pdf", FileMode.Create)));
 
-        Font font1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
-        font1.SetSize(12f);
+        Font f1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
+        f1.SetSize(14f);
 
-        Font font2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
-        font2.SetSize(12f);
+        Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
+        f2.SetSize(14f);
+
+        Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream");
+        // Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
+        f3.SetSize(14f);
+
+        Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular-TC4808.ttf.stream");
+        // Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
+        f4.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBlock textBlock = new TextBlock(font1,
+        TextBlock textBlock = new TextBlock(f1,
                 File.ReadAllText("data/languages/japanese.txt"));
         textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
 
-        textBlock = new TextBlock(font2,
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        textBlock = new TextBlock(f2,
                 File.ReadAllText("data/languages/korean.txt"));
         textBlock.SetLocation(50f, 450f);
+        textBlock.SetWidth(415f);
+        textBlock.DrawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        textBlock = new TextBlock(
+                f3, File.ReadAllText("data/languages/simplified-chinese.txt"));
+        textBlock.SetLocation(50f, 50f);
+        textBlock.SetWidth(415f);
+        textBlock.DrawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        textBlock = new TextBlock(
+                f4, File.ReadAllText("data/languages/traditional-chinese.txt"));
+        textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
 

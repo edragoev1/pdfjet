@@ -12,18 +12,18 @@ public class Example_02 {
                 new BufferedOutputStream(new FileOutputStream("Example_02.pdf")));
 
         Font f1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
-        f1.setSize(12f);
+        f1.setSize(14f);
 
         Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
-        f2.setSize(12f);
+        f2.setSize(14f);
 
         Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream");
         // Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
-        f3.setSize(12f);
+        f3.setSize(14f);
 
         Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular-TC4808.ttf.stream");
         // Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
-        f4.setSize(12f);
+        f4.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -33,9 +33,11 @@ public class Example_02 {
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
 
+        page = new Page(pdf, Letter.PORTRAIT);
+
         textBlock = new TextBlock(
                 f2, Content.ofTextFile("data/languages/korean.txt"));
-        textBlock.setLocation(50f, 450f);
+        textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
 
