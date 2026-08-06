@@ -546,7 +546,7 @@ public class Chart implements Drawable {
         for (List<Point> points : chartData) {
             Point point = points.get(0);
             if (point.drawPath) {
-                page.setPenColor(point.color);
+                page.setPenColor(point.strokeColor);
                 page.setPenWidth(point.strokeWidth);
                 page.setStrokeDashPattern(point.strokePattern);
                 page.drawPath(points, PathOperator.STROKE);
@@ -565,12 +565,12 @@ public class Chart implements Drawable {
                 }
             }
             for (int i = 0; i < points.size(); i++) {
-		point = points.get(i);
+		        point = points.get(i);
                 if (point.getShape() != Point.INVISIBLE) {
                     page.setPenWidth(point.strokeWidth);
                     page.setStrokeDashPattern(point.strokePattern);
-                    page.setPenColor(point.color);
-                    page.setBrushColor(point.color);
+                    page.setPenColor(point.strokeColor);
+                    page.setBrushColor(point.fillColor);
                     page.drawPoint(point);
                 }
             }

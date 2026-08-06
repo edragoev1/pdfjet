@@ -71,7 +71,7 @@ public class Point implements Drawable {
     protected float y;
     protected float r = 2f;
     protected int shape = Point.CIRCLE;
-    protected int color = Color.black;
+    // protected int color = Color.black;
     protected int align = Align.RIGHT;
 
     protected float[] fillColor = null;
@@ -361,26 +361,6 @@ public class Point implements Drawable {
      */
     public int getShape() {
         return shape;
-    }
-
-    /**
-     *  Sets the pen color for this point.
-     *
-     *  @param color the color specified as an integer.
-     *  @return the point.
-     */
-    public Point setColor(int color) {
-        this.color = color;
-        return this;
-    }
-
-    /**
-     *  Returns the point color as an integer.
-     *
-     *  @return the color.
-     */
-    public int getColor() {
-        return this.color;
     }
 
     /**

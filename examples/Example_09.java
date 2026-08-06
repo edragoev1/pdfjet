@@ -48,7 +48,7 @@ final public class Example_09 {
         float y = m * x + b;
         Point p1 = new Point(x, y);
         p1.setDrawPath();
-        p1.setColor(Color.blue);
+        p1.setStrokeColor(Color.blue);
         p1.setShape(Point.INVISIBLE);
 
         x = 1.5f;
@@ -139,23 +139,23 @@ final public class Example_09 {
 
                     if (point.getX() > 1.25f) {
                         point.setShape(Point.RIGHT_ARROW);
-                        point.setColor(Color.black);
+                        point.setStrokeColor(Color.black);
                     }
                     if (point.getY() > 80f) {
                         point.setShape(Point.UP_ARROW);
-                        point.setColor(Color.blue);
+                        point.setStrokeColor(Color.blue);
                     }
                     if (point.getText().equals("France")) {
                         point.setShape(Point.MULTIPLY);
-                        point.setColor(Color.black);
+                        point.setStrokeColor(Color.black);
                     }
                     if (point.getText().equals("Canada")) {
                         point.setShape(Point.BOX);
-                        point.setColor(Color.darkolivegreen);
+                        point.setStrokeColor(Color.darkolivegreen);
                     }
                     if (point.getText().startsWith("United States")) {
                         point.setShape(Point.STAR);
-                        point.setColor(Color.red);
+                        point.setStrokeColor(Color.red);
                     }
 
                     points.add(point);

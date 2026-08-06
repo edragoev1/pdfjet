@@ -138,11 +138,12 @@ public class Example_09 {
                         cols[7].Replace(",", "")) / population * 100);
                 point.SetRadius(2.0);
 
-                if (point.GetX() > 1.25) {
+                if (point.GetX() > 1.25f) {
                     point.SetShape(Point.RIGHT_ARROW);
                     point.SetFillColor(Color.black);
                 }
-                if (point.GetY() > 80) {
+                if (point.GetY() > 80f) {
+Console.WriteLine("Yes??");
                     point.SetShape(Point.UP_ARROW);
                     point.SetFillColor(Color.blue);
                 }

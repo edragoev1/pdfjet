@@ -617,7 +617,7 @@ public class Cell {
                 point.x = (x + w) - this.rightPadding/2;
             }
             point.y = y + h/2;
-            page.setBrushColor(point.getColor());
+            page.setBrushColor(point.getFillColor());
             if (point.getURIAction() != null) {
                 page.addAnnotation(new Annotation(
                         Annotation.Link,
