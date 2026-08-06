@@ -21,6 +21,10 @@ public class Example_02 {
         // Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
         f3.setSize(12f);
 
+        Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular-TC4808.ttf.stream");
+        // Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
+        f4.setSize(12f);
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextBlock textBlock = new TextBlock(
@@ -39,6 +43,14 @@ public class Example_02 {
 
         textBlock = new TextBlock(
                 f3, Content.ofTextFile("data/languages/simplified-chinese.txt"));
+        textBlock.setLocation(50f, 50f);
+        textBlock.setWidth(415f);
+        textBlock.drawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        textBlock = new TextBlock(
+                f4, Content.ofTextFile("data/languages/traditional-chinese.txt"));
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
