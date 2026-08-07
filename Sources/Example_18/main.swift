@@ -51,7 +51,7 @@ public class Example_18 {
                     font.getSize(),
                     footer,
                     (page.getWidth() - font.stringWidth(footer))/2.0,
-                    (page.getHeight() - 5.0))
+                    (page.getHeight() - 3.0*font.getSize()/2.0))
             i += 1
         }
         pdf.addPages(pages)
