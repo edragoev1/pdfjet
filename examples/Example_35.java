@@ -25,7 +25,7 @@ public class Example_35 {
         List<List<Point>> chartData = new ArrayList<List<Point>>();
 
         List<Point> path1 = new ArrayList<Point>();
-        path1.add(new Point(50f, 50f).setDrawPath().setColor(Color.blue));
+        path1.add(new Point(50f, 50f).setDrawPath().setStrokeColor(Color.blue));
         path1.add(new Point(55f, 55f));
         path1.add(new Point(60f, 60f));
         path1.add(new Point(65f, 58f));
@@ -35,7 +35,7 @@ public class Example_35 {
         chartData.add(path1);
 
         List<Point> path2 = new ArrayList<Point>();
-        path2.add(new Point(50f, 30f).setDrawPath().setColor(Color.red));
+        path2.add(new Point(50f, 30f).setDrawPath().setStrokeColor(Color.red));
         path2.add(new Point(55f, 35f));
         path2.add(new Point(60f, 40f));
         path2.add(new Point(65f, 48f));
@@ -45,7 +45,7 @@ public class Example_35 {
         chartData.add(path2);
 
         List<Point> path3 = new ArrayList<Point>();
-        path3.add(new Point(50f, 80f).setDrawPath().setColor(Color.green));
+        path3.add(new Point(50f, 80f).setDrawPath().setStrokeColor(Color.green));
         path3.add(new Point(55f, 70f));
         path3.add(new Point(60f, 60f));
         path3.add(new Point(65f, 55f));

@@ -43,7 +43,7 @@ final public class Example_39 {
         point.setX(0f);
         point.setY(45f);
         point.setShape(Point.INVISIBLE);
-        point.setColor(Color.blue);
+        point.setStrokeColor(Color.blue);
         point.setStrokeWidth(20f);
         point.setText(" Horizontal");
         point.setTextColor(Color.white);
@@ -61,7 +61,7 @@ final public class Example_39 {
         point.setX(0f);
         point.setY(35f);
         point.setShape(Point.INVISIBLE);
-        point.setColor(Color.gold);
+        point.setStrokeColor(Color.gold);
         point.setStrokeWidth(20f);
         point.setText(" Bar");
         point.setTextColor(Color.black);
@@ -79,7 +79,7 @@ final public class Example_39 {
         point.setX(0f);
         point.setY(25f);
         point.setShape(Point.INVISIBLE);
-        point.setColor(Color.green);
+        point.setStrokeColor(Color.green);
         point.setStrokeWidth(20f);
         point.setText(" Chart");
         point.setTextColor(Color.white);
@@ -97,7 +97,7 @@ final public class Example_39 {
         point.setX(0f);
         point.setY(15f);
         point.setShape(Point.INVISIBLE);
-        point.setColor(Color.red);
+        point.setStrokeColor(Color.red);
         point.setStrokeWidth(20f);
         point.setText(" Example");
         point.setTextColor(Color.white);

@@ -996,6 +996,9 @@ final public class PDF {
      * @throws Exception if there is an issue.
      */
     public void addPage(Page page) throws Exception {
+        if (page == null || page.buf == null) {
+            return;
+        }
         pages.add(page);
         if (prevPage != null) {
             addPageContent(prevPage);
