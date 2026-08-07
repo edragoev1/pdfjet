@@ -1003,6 +1003,12 @@ final public class PDF {
         prevPage = page;
     }
 
+    public void addPages(List<Page> pages) throws Exception {
+        for (Page page : pages) {
+            addPage(page);
+        }
+    }
+
     /**
      * Completes the construction of the PDF and writes it to the output stream.
      * The output stream is then automatically closed.

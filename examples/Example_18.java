@@ -15,7 +15,7 @@ public class Example_18 {
                 new BufferedOutputStream(new FileOutputStream("Example_18.pdf")));
 
         Font font = new Font(pdf, IBMPlexSans.Regular);
-        font.setSize(12f);
+        float fontSize = 12f;
 
         List<Page> pages = new ArrayList<Page>();
         Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
@@ -46,22 +46,18 @@ public class Example_18 {
         box.drawOn(page);
         pages.add(page);
 
-        int numOfPages = pages.size();
-        for (int i = 0; i < numOfPages; i++) {
+        for (int i = 0; i < pages.size(); i++) {
             page = pages.get(i);
-            String footer = "Page " + (i + 1) + " of " + numOfPages;
+            String footer = "Page " + (i + 1) + " of " + pages.size();
             page.setBrushColor(Color.black);
             page.drawString(
                     font,
-                    font.getSize(),
+                    fontSize,
                     footer,
                     (page.getWidth() - font.stringWidth(footer))/2f,
-                    (page.getHeight() - 5f));
+                    (page.getHeight() - 3f*fontSize/5f));
         }
-
-        for (int i = 0; i < numOfPages; i++) {
-            pdf.addPage(pages.get(i));
-        }
+        pdf.addPages(pages);
 
         pdf.complete();
     }
