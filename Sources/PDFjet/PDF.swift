@@ -912,6 +912,12 @@ public class PDF {
         prevPage = page
     }
 
+    public func addPages(_ pages: [Page]) {
+        for page in pages {
+            addPage(page)
+        }
+    }
+
     ///
     /// Completes the construction of the PDF and writes it to the output stream.
     /// The output stream is then automatically closed.
