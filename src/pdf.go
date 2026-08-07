@@ -995,6 +995,12 @@ func (pdf *PDF) AddPage(page *Page) {
 	pdf.prevPage = page
 }
 
+func (pdf *PDF) AddPages(pages []*Page) {
+	for _, page := range pages {
+		pdf.AddPage(page)
+	}
+}
+
 // Complete writes the PDF to the bufio.Writer and calls the Flush method.
 func (pdf *PDF) Complete() {
 	if pdf.prevPage != nil {

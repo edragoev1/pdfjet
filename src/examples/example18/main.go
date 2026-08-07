@@ -15,7 +15,7 @@ func Example18() {
 	pdf := pdfjet.NewPDFFile("Example_18.pdf")
 
 	font := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
-	font.SetSize(12.0)
+	fontSize := float32(14.0)
 
 	pages := make([]*pdfjet.Page, 0)
 
@@ -54,13 +54,10 @@ func Example18() {
 			font,
 			nil,
 			footer,
-			(page.GetWidth()-font.StringWidth(font.GetSize(), footer))/2.0,
-			page.GetHeight()-5.0)
+			(page.GetWidth()-font.StringWidth(fontSize, footer))/2.0,
+			page.GetHeight()-3.0*fontSize/2.0)
 	}
-
-	for i := 0; i < len(pages); i++ {
-		pdf.AddPage(pages[i])
-	}
+	pdf.AddPages(pages)
 
 	pdf.Complete()
 }
