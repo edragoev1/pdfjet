@@ -9,7 +9,7 @@ public class Example_18 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_18.pdf", append: false)!)
 
-        let font = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+        let font = try Font(pdf, IBMPlexSans.Regular)
         font.setSize(14.0)
 
         var pages = [Page]()
