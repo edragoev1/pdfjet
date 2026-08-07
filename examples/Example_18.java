@@ -15,7 +15,7 @@ public class Example_18 {
                 new BufferedOutputStream(new FileOutputStream("Example_18.pdf")));
 
         Font font = new Font(pdf, IBMPlexSans.Regular);
-        float fontSize = 12f;
+        float fontSize = 14f;
 
         List<Page> pages = new ArrayList<Page>();
         Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
@@ -54,8 +54,8 @@ public class Example_18 {
                     font,
                     fontSize,
                     footer,
-                    (page.getWidth() - font.stringWidth(footer))/2f,
-                    (page.getHeight() - 3f*fontSize/5f));
+                    (page.getWidth() - font.stringWidth(fontSize, footer))/2f,
+                    (page.getHeight() - 3f*fontSize/2f));
         }
         pdf.addPages(pages);
 

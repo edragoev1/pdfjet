@@ -14,7 +14,7 @@ public class Example_18 {
                 new FileStream("Example_18.pdf", FileMode.Create)));
 
         Font font = new Font(pdf, IBMPlexSans.Regular);
-        float fontSize = 12f;
+        float fontSize = 14f;
 
         List<Page> pages = new List<Page>();
         Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
@@ -53,7 +53,7 @@ public class Example_18 {
                     font,
                     fontSize,
                     footer,
-                    (page.GetWidth() - font.StringWidth(footer))/2f,
+                    (page.GetWidth() - font.StringWidth(fontSize, footer))/2f,
                     (page.GetHeight() - 3f*fontSize/2f));
         }
         pdf.AddPages(pages);
