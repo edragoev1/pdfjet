@@ -980,6 +980,12 @@ public class PDF {
         prevPage = page;
     }
 
+    public void AddPages(List<Page> pages) {
+        foreach (Page page in pages) {
+            AddPage(page);
+        }
+    }
+
     /**
      * Completes the construction of the PDF and writes it to the output stream.
      * The output stream is then automatically closed.

@@ -45,22 +45,18 @@ public class Example_18 {
         box.DrawOn(page);
         pages.Add(page);
 
-        int numOfPages = pages.Count;
-        for (int i = 0; i < numOfPages; i++) {
+        for (int i = 0; i < pages.Count; i++) {
             page = pages[i];
-            String footer = "Page " + (i + 1) + " of " + numOfPages;
+            String footer = "Page " + (i + 1) + " of " + pages.Count;
             page.SetBrushColor(Color.black);
             page.DrawString(
                     font,
                     fontSize,
                     footer,
                     (page.GetWidth() - font.StringWidth(footer))/2f,
-                    (page.GetHeight() - 5f));
+                    (page.GetHeight() - 3f*fontSize/2f));
         }
-
-        for (int i = 0; i < numOfPages; i++) {
-            pdf.AddPage(pages[i]);
-        }
+        pdf.AddPages(pages);
 
         pdf.Complete();
     }
