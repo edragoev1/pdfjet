@@ -12,7 +12,7 @@ import (
 func Example22() {
 	pdf := pdfjet.NewPDFFile("Example_22.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
 
 	dest1 := "dest#1"
 	dest2 := "dest#2"

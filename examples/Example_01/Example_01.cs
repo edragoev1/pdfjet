@@ -15,8 +15,8 @@ public class Example_01 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
 
         // Load font for the PDF (IBMPlexSans Regular)
-        // Font font = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
-        Font font = new Font(pdf, IBMPlexSans.Regular);
+        Font font = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream");
+        // Font font = new Font(pdf, IBMPlexSans.Regular);
         font.SetSize(12f);
 
         // Create a new page with Portrait orientation

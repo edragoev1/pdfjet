@@ -12,7 +12,7 @@ public class Example_22 {
             new BufferedOutputStream(new FileOutputStream("Example_22.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
 
-        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine text = new TextLine(f1, "Page #1 -> Go to Destination #3.");

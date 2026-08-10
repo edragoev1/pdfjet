@@ -13,7 +13,7 @@ public class Example_48 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
 
         Font f1 = new Font(pdf, new FileStream(
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
                 FileMode.Open,
                 FileAccess.Read), Font.STREAM);
 

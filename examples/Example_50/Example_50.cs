@@ -24,13 +24,13 @@ public class Example_50 {
         image.ScaleBy(0.40f);
 
         Font f1 = new Font(objects,
-                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream",
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);
         float f1Size =12f;
 
         Font f2 = new Font(objects,
-                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf.stream",
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Bold.otf.stream",
                         FileMode.Open,
                         FileAccess.Read), Font.STREAM);
         float f2Size = 12f;

@@ -15,7 +15,7 @@ import (
 func Example37(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_37.pdf")
 	objects := pdf.Read(content.OfBinaryFile(fileName))
-	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream")
+	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
 	if err != nil {
 		log.Fatal(err)
 	}
