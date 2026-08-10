@@ -21,7 +21,7 @@ public class Example_07 {
         pdf.setTitle("PDF/A-3B compliant PDF");
 
         // The following code is faster and consumes less memory:
-        Font f1 = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream");
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, A4.LANDSCAPE);
 
