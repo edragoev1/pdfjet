@@ -19,12 +19,12 @@ public class Example_02 {
         Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
         f2.SetSize(14f);
 
+        // Font f3 = new Font(pdf, IBMPlexSansSC.Regular);
         Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream");
-        // Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
         f3.SetSize(14f);
 
+        // Font f4 = new Font(pdf, IBMPlexSansTC.Regular);
         Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular-TC4808.ttf.stream");
-        // Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
         f4.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
