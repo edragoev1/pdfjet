@@ -14,11 +14,11 @@ public class Example_15 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("PDF/UA compliant PDF");
 
-        Font f1 = new Font(pdf, NotoSans.Bold);
-        Font f2 = new Font(pdf, NotoSans.Regular);
-        Font f3 = new Font(pdf, NotoSans.Regular);
-        Font f4 = new Font(pdf, NotoSans.Bold);
-        Font f5 = new Font(pdf, NotoSans.Regular);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        Font f3 = new Font(pdf, IBMPlexSans.Regular);
+        Font f4 = new Font(pdf, IBMPlexSans.Bold);
+        Font f5 = new Font(pdf, IBMPlexSans.Regular);
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
         List<Cell> row = null;
