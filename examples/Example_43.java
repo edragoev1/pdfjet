@@ -19,12 +19,10 @@ public class Example_43 {
         // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
         // String fileName = "data/Electric_Vehicle_Population_5_Lines.csv";
 
-        // Font f1 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf.stream");
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
         // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f1.setSize(10f);
 
-        // Font f2 = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.stream");
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
         // Font f2 = new Font(pdf, CoreFont.HELVETICA);
         f2.setSize(9f);

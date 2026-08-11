@@ -16,7 +16,7 @@ public class Example_19 {
 
         // Font f2 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
         // Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf.stream");
+        Font f2 = new Font(pdf, IBMPlexSansTC.Regular);
         f2.setSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
