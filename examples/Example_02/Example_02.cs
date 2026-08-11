@@ -11,7 +11,8 @@ public class Example_02 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_02.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
+        // Font f1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
+        Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.SetSize(14f);
 
         Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
@@ -37,7 +38,7 @@ public class Example_02 {
 
         textBlock = new TextBlock(f2,
                 File.ReadAllText("data/languages/korean.txt"));
-        textBlock.SetLocation(50f, 450f);
+        textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
 
