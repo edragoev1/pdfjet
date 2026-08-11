@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -22,7 +23,7 @@ func Example20() {
 
 	pdf.AddResourceObjects(objects)
 
-	font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+	font1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	font1.SetSize(18.0)
 
 	pages := pdf.GetPageObjects(objects)

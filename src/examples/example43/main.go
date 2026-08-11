@@ -18,11 +18,9 @@ func Example43() {
 	fileName := "data/Electric_Vehicle_Population_Data.csv"
 	// fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
 
-	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf.stream")
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	f1.SetSize(10.0)
 
-	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2.SetSize(9.0)
 

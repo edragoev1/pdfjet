@@ -5,6 +5,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
 )
@@ -14,7 +15,7 @@ import (
 func Example18() {
 	pdf := pdfjet.NewPDFFile("Example_18.pdf")
 
-	font := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	fontSize := float32(14.0)
 
 	pages := make([]*pdfjet.Page, 0)

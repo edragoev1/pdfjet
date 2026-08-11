@@ -18,9 +18,6 @@ func Example01() {
 
 	// Load font and set size
 	font1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	// font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansTTF/IBMPlexSans-Regular.ttf.stream")
-	// font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
-	// font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
 	font1.SetSize(12.0)
 
 	// Create a new page in portrait orientation

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/content"
 )
@@ -15,7 +16,7 @@ import (
 func Example37(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_37.pdf")
 	objects := pdf.Read(content.OfBinaryFile(fileName))
-	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+	file1, err := os.Open(IBMPlexSans.Regular)
 	if err != nil {
 		log.Fatal(err)
 	}

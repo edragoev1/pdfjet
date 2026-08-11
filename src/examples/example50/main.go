@@ -8,6 +8,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/imagetype"
@@ -23,7 +24,7 @@ func Example50(fileName string) {
 	}
 	objects := pdf.Read(buf)
 
-	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+	file1, err := os.Open(IBMPlexSans.Regular)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +33,7 @@ func Example50(fileName string) {
 	font1 := pdfjet.NewFontStream2(&objects, reader)
 	font1.SetSize(12.0)
 
-	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf.stream")
+	file2, err := os.Open(IBMPlexSans.Bold)
 	if err != nil {
 		log.Fatal(err)
 	}
