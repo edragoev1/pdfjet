@@ -12,7 +12,8 @@ public class Example_02 {
                 new BufferedOutputStream(new FileOutputStream("Example_02.pdf")));
 
         // Font f1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
-        Font f1 = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream");
+        // Font f1 = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream");
+        Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.setSize(14f);
 
         // Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
