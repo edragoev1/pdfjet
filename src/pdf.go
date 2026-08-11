@@ -988,7 +988,7 @@ func (pdf *PDF) addOCProperties() {
 
 // AddPage adds page to the PDF.
 func (pdf *PDF) AddPage(page *Page) {
-	if page == nil || page.buf == nil {
+	if page == nil {
 		return
 	}
 	pdf.pages = append(pdf.pages, page)

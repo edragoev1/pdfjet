@@ -4,6 +4,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/content"
@@ -16,10 +17,10 @@ func Example01() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 
 	// Load font and set size
-	// font1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	font1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	// font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansTTF/IBMPlexSans-Regular.ttf.stream")
 	// font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
-	font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+	// font1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
 	font1.SetSize(12.0)
 
 	// Create a new page in portrait orientation
