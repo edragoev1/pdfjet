@@ -25,6 +25,7 @@ class Example_37 {
 
         Font f1 = new Font(objects,
                 new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
+                // new FileStream(IBMPlexSans.Regular,
                 FileMode.Open,
                 FileAccess.Read), Font.STREAM);
         f1.SetSize(72f);
@@ -37,7 +38,7 @@ class Example_37 {
         foreach (PDFobj pageObj in pages) {
             GraphicsState gs = new GraphicsState();
             gs.SetAlphaStroking(0.75f);         // Set alpha for stroking operations
-            gs.SetAlphaNonStroking(0.75f);      // Set alpha for nonstroking operations
+            gs.SetAlphaNonStroking(0.75f);      // Set alpha for non-stroking operations
             pageObj.SetGraphicsState(gs, objects);
 
             Page page = new Page(pdf, pageObj);
