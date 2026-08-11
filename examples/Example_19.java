@@ -11,11 +11,9 @@ public class Example_19 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_19.pdf")));
 
-        Font f1 = new Font(pdf, NotoSans.Regular);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(10f);
 
-        // Font f2 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
-        // Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
         Font f2 = new Font(pdf, IBMPlexSansTC.Regular);
         f2.setSize(10f);
 
@@ -50,13 +48,7 @@ public class Example_19 {
         textBox.setLocation(x2, xy[1] + 10f);
         textBox.setWidth(w2);
         textBox.setBorders(true);
-        textBox.drawOn(page);
-
-        TextBlock textBlock = new TextBlock(f2, Content.ofTextFile("data/chinese.txt"));
-        textBlock.setLocation(x1, 570f);
-        textBlock.setWidth(350f);
-        textBlock.setBorderColor(Color.blue);
-        xy = textBlock.drawOn(page);
+        xy = textBox.drawOn(page);
 
         Box box = new Box();
         box.setLocation(xy[0], xy[1]);
