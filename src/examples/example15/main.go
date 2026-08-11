@@ -11,7 +11,8 @@ import (
 func Example15() {
 	pdf := pdfjet.NewPDFFile("Example_15.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf.stream")
 	f1.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
