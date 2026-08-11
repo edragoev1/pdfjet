@@ -12,22 +12,19 @@ public class Example_02 {
                 new BufferedOutputStream(new FileOutputStream("Example_02.pdf")));
 
         // Font f1 = new Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream");
-        // Font f1 = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream");
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.setSize(14f);
 
         // Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
-        // Font f2 = new Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream");
         Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
         f2.setSize(14f);
 
         // Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream");
-        // Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream");
-        Font f3 = new Font(pdf, "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf.stream");
+        Font f3 = new Font(pdf, IBMPlexSansSC.Regular);
         f3.setSize(14f);
 
-        Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular-TC4808.ttf.stream");
-        // Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
+        // Font f4 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular-TC4808.ttf.stream");
+        Font f4 = new Font(pdf, IBMPlexSansTC.Regular);
         f4.setSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

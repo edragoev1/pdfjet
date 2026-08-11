@@ -14,7 +14,7 @@ class Example_37 {
 
         Font f1 = new Font(
                 objects,
-                new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
+                new FileInputStream(IBMPlexSans.Regular),
                 Font.STREAM);
         f1.setSize(72f);
 
@@ -26,7 +26,7 @@ class Example_37 {
         for (PDFobj pageObj : pages) {
             GraphicsState gs = new GraphicsState();
             gs.setAlphaStroking(0.75f);         // Stroking alpha
-            gs.setAlphaNonStroking(0.75f);      // Nonstroking alpha
+            gs.setAlphaNonStroking(0.75f);      // Non-stroking alpha
             pageObj.setGraphicsState(gs, objects);
 
             Page page = new Page(pdf, pageObj);
