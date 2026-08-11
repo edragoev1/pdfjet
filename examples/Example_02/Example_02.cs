@@ -15,7 +15,8 @@ public class Example_02 {
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.SetSize(14f);
 
-        Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
+        // Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
+        Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
         f2.SetSize(14f);
 
         Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream");

@@ -17,7 +17,8 @@ public class Example_02 {
         f1.setSize(14f);
 
         // Font f2 = new Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream");
-        Font f2 = new Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream");
+        // Font f2 = new Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream");
+        Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
         f2.setSize(14f);
 
         // Font f3 = new Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream");
