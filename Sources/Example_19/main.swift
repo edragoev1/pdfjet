@@ -12,7 +12,7 @@ public class Example_19 {
         let f1 = try Font(pdf, NotoSans.Regular)
         f1.setSize(10.0)
 
-        let f2 = try Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+        let f2 = try Font(pdf, IBMPlexSansTC.Regular)
         f2.setSize(10.0)
 
         let page = Page(pdf, Letter.PORTRAIT)

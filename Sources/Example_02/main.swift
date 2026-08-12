@@ -9,16 +9,16 @@ public class Example_02 {
         let stream = OutputStream(toFileAtPath: "Example_02.pdf", append: false)
         let pdf = PDF(stream!)
 
-        let f1 = try Font(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream")
+        let f1 = try Font(pdf, IBMPlexSansJP.Regular)
         f1.setSize(14.0)
 
-        let f2 = try Font(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream")
+        let f2 = try Font(pdf, IBMPlexSansKR.Regular)
         f2.setSize(14.0)
 
-        let f3 = try Font(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream")
+        let f3 = try Font(pdf, IBMPlexSansSC.Regular)
         f3.setSize(14.0)
 
-        let f4 = try Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+        let f4 = try Font(pdf, IBMPlexSansTC.Regular)
         f4.setSize(14.0)
 
         var page = Page(pdf, Letter.PORTRAIT)

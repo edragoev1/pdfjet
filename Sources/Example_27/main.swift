@@ -9,15 +9,15 @@ public class Example_27 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_27.pdf", append: false)!)
 
         // Thai font
-        let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
+        let f1 = try Font(pdf, IBMPlexSansThai.Regular)
         f1.setSize(12.0)
 
         // Hebrew font
-        let f2 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
+        let f2 = try Font(pdf, IBMPlexSansHebrew.Regular)
         f2.setSize(12.0)
 
         // Arabic font
-        let f3 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
+        let f3 = try Font(pdf, IBMPlexSansArabic.Regular)
         f3.setSize(12.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
