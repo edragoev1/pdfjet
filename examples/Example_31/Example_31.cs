@@ -12,8 +12,7 @@ public class Example_31 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_31.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf,
-                "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream");
+        Font f1 = new Font(pdf, IBMPlexSansDevanagari.Regular);
         f1.SetSize(15f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
