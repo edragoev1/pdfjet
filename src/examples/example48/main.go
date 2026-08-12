@@ -4,13 +4,14 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example48 -- TODO:
 func Example48() {
 	pdf := pdfjet.NewPDFFile("Example_48.pdf")
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
