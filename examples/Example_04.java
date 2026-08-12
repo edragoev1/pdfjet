@@ -18,11 +18,9 @@ import com.pdfjet.*;
  * @see CJKFont
  */
 public class Example_04 {
-
     public Example_04() throws Exception {
         // Create a new PDF document
-        PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("Example_04.pdf")));
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_04.pdf")));
 
         Font f0 = new Font(pdf, CoreFont.COURIER);
         f0.setSize(14f);

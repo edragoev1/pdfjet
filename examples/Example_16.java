@@ -13,10 +13,9 @@ public class Example_16 {
             new BufferedOutputStream(new FileOutputStream("Example_16.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         // Font f1 = new Font(pdf, SourceSerif4.Regular);
         // Font f1 = new Font(pdf, NotoSans.Regular);
-
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(15f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

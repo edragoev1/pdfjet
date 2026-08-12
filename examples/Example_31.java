@@ -11,8 +11,7 @@ public class Example_31 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_31.pdf")));
 
-        Font f1 = new Font(pdf,
-                "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream");
+        Font f1 = new Font(pdf, IBMPlexSansDevanagari.Regular);
         f1.setSize(15f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
