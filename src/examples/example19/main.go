@@ -4,7 +4,8 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/NotoSans"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansTC"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
@@ -14,10 +15,10 @@ import (
 func Example19() {
 	pdf := pdfjet.NewPDFFile("Example_19.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, NotoSans.Regular)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansTC.Regular)
 	f2.SetSize(10.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

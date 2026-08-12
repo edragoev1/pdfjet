@@ -4,6 +4,9 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansArabic"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansHebrew"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansThai"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
@@ -14,15 +17,15 @@ func Example27() {
 	pdf := pdfjet.NewPDFFile("Example_27.pdf")
 
 	// Thai font
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
 	f1.SetSize(12.0)
 
 	// Hebrew font
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
 	f2.SetSize(12.0)
 
 	// Arabic font
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
 	f3.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

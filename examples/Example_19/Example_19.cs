@@ -12,10 +12,10 @@ public class Example_19 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_19.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, NotoSans.Regular);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(10f);
 
-        Font f2 = new Font(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream");
+        Font f2 = new Font(pdf, IBMPlexSansTC.Regular);
         f2.SetSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

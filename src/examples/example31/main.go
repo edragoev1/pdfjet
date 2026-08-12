@@ -4,6 +4,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansDevanagari"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
@@ -18,8 +19,7 @@ func Example31() {
 	pdf.SetKeywords("Hello World This is a test")
 	pdf.SetCreator("Application Name")
 
-	f1 := pdfjet.NewFontFromFile(
-		pdf, "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansDevanagari.Regular)
 	f1.SetSize(15.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
