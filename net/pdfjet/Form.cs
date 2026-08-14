@@ -144,15 +144,24 @@ public class Form : IDrawable {
                             .SetAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
                             .SetLocation(2f + this.x + field.x, this.y + yField)
                             .DrawOn(page);
-                    if (page != null && i == (field.values.Length - 1)) {
-                        new Line(x, y + yField + font.GetDescent(),
-                                x + rowWidth, y + yField + font.GetDescent()).SetWidth(0.2f).DrawOn(page);
-                        new Line(x + field.x, y + yField + font.GetDescent() - (field.values.Length-1)*rowHeight,
-                                x + field.x, y + yField + font.GetDescent()).SetWidth(0.2f).DrawOn(page);
-                    }
+                        if (i > 0) {
+                            Line vLine = new Line(
+                                    x + field.x,
+                                    y + yField - font.GetAscent(),
+                                    x + field.x,
+                                    y + yField + font.GetDescent());
+                            vLine.SetWidth(0.2f).DrawOn(page);
+                        }
                 }
                 yField += rowHeight;
             }
+
+            Line line = new Line(
+                    x,
+                    y + yField + f2.GetDescent(valueFontSize) - rowHeight,
+                    x + rowWidth,
+                    y + yField + f2.GetDescent(valueFontSize) - rowHeight);
+            line.SetWidth(0.2f).DrawOn(page);
         }
 
         return new float[] { x + rowWidth, y + yField };
