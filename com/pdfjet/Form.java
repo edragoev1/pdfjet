@@ -221,7 +221,7 @@ public class Form implements Drawable {
                             .setTextColor(color)
                             .setAltDescription((i == 0) ?
                                     field.altDescription[i] : (field.altDescription[i] + ","))
-                            .setLocation(2f + this.x + field.x, this.y + yField)
+                            .setLocation(3f + this.x + field.x, this.y + yField)
                             .drawOn(page);
                     if (i > 0) {
                         Line vLine = new Line(
