@@ -21,7 +21,7 @@ public class Form : IDrawable {
     private float labelFontSize = 8f;
     private float valueFontSize = 10f;
     private int numberOfRows;
-    private float rowLength = 500f;
+    private float rowWidth = 500f;
     private float rowHeight = 12f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0f, 0f, 1f};
@@ -48,8 +48,8 @@ public class Form : IDrawable {
         return SetLocation((float) x, (float) y);
     }
 
-    public Form SetRowLength(float rowLength) {
-        this.rowLength = rowLength;
+    public Form SetRowLength(float rowWidth) {
+        this.rowWidth = rowWidth;
         return this;
     }
 
@@ -98,7 +98,7 @@ public class Form : IDrawable {
     public float[] DrawOn(Page page) {
         foreach (Field field in fields) {
             if (field.format) {
-                field.values = Format(field.values[0], field.values[1], this.f2, this.rowLength);
+                field.values = Format(field.values[0], field.values[1], this.f2, this.rowWidth);
                 field.altDescription = new String[field.values.Length];
                 field.actualText = new String[field.values.Length];
                 for (int i = 0; i < field.values.Length; i++) {
@@ -119,7 +119,7 @@ public class Form : IDrawable {
         Box box = new Box();
         box.SetLocation(x, y);
         box.SetLineWidth(0.2f);
-        box.SetSize(rowLength, boxHeight);
+        box.SetSize(rowWidth, boxHeight);
         if (page != null) {
             box.DrawOn(page);
         }
@@ -146,7 +146,7 @@ public class Form : IDrawable {
                             .DrawOn(page);
                     if (page != null && i == (field.values.Length - 1)) {
                         new Line(x, y + yField + font.GetDescent(),
-                                x + rowLength, y + yField + font.GetDescent()).SetWidth(0.2f).DrawOn(page);
+                                x + rowWidth, y + yField + font.GetDescent()).SetWidth(0.2f).DrawOn(page);
                         new Line(x + field.x, y + yField + font.GetDescent() - (field.values.Length-1)*rowHeight,
                                 x + field.x, y + yField + font.GetDescent()).SetWidth(0.2f).DrawOn(page);
                     }
@@ -155,7 +155,7 @@ public class Form : IDrawable {
             }
         }
 
-        return new float[] { x + rowLength, y + yField };
+        return new float[] { x + rowWidth, y + yField };
     }
 
     public static String[] Format(

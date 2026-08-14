@@ -20,7 +20,7 @@ public class Form implements Drawable {
     private Font f2;
     private float valueFontSize = 10f;
     private int numberOfRows;
-    private float rowLength = 500f;
+    private float rowWidth = 500f;
     private float rowHeight = 12f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0f, 0f, 1f};
@@ -81,11 +81,11 @@ public class Form implements Drawable {
     /**
      * Sets the row length
      *
-     * @param rowLength the row length
+     * @param rowWidth the row length
      * @return this form
      */
-    public Form setRowLength(float rowLength) {
-        this.rowLength = rowLength;
+    public Form setRowLength(float rowWidth) {
+        this.rowWidth = rowWidth;
         return this;
     }
 
@@ -176,7 +176,7 @@ public class Form implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         for (Field field : fields) {
             if (field.format) {
-                field.values = format(field.values[0], field.values[1], this.f2, this.rowLength);
+                field.values = format(field.values[0], field.values[1], this.f2, this.rowWidth);
                 field.altDescription = new String[field.values.length];
                 field.actualText = new String[field.values.length];
                 for (int i = 0; i < field.values.length; i++) {
@@ -197,7 +197,7 @@ public class Form implements Drawable {
         Box box = new Box();
         box.setLocation(x, y);
         box.setLineWidth(0.2f);
-        box.setSize(rowLength, boxHeight);
+        box.setSize(rowWidth, boxHeight);
         if (page != null) {
             box.drawOn(page);
         }
@@ -225,7 +225,7 @@ public class Form implements Drawable {
                             .drawOn(page);
                     if (page != null && i == (field.values.length - 1)) {
                         new Line(x, y + yField + font.getDescent(),
-                                x + rowLength, y + yField + font.getDescent()).setWidth(0.2f).drawOn(page);
+                                x + rowWidth, y + yField + font.getDescent()).setWidth(0.2f).drawOn(page);
                         new Line(x + field.x, y + yField + font.getDescent() - (field.values.length-1)*rowHeight,
                                 x + field.x, y + yField + font.getDescent()).setWidth(0.2f).drawOn(page);
                     }
@@ -234,7 +234,7 @@ public class Form implements Drawable {
             }
         }
 
-        return new float[] { x + rowLength, y + boxHeight };
+        return new float[] { x + rowWidth, y + boxHeight };
     }
 
     /**
