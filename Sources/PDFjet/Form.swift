@@ -141,6 +141,7 @@ public class Form : Drawable {
                             .setFontSize(fontSize)
                             .setTextColor(color)
                             .setAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
+			                .setLocation(2.0 + self.x + field.x, self.y + yField)
                             .drawOn(page)
                     if i == (field.values.count - 1) {
                         Line(0.0, 0.0, rowLength, 0.0).drawOn(page)

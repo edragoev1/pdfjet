@@ -119,6 +119,7 @@ func (form *Form) DrawOn(page *Page) []float32 {
 	boxHeight := form.rowHeight * float32(form.numberOfRows)
 	box := NewBox()
 	box.SetLocation(form.x, form.y)
+	box.SetLineWidth(0.2)
 	box.SetSize(form.rowWidth, boxHeight)
 	box.DrawOn(page)
 
@@ -152,12 +153,12 @@ func (form *Form) DrawOn(page *Page) []float32 {
 				altDescription = field.altDescription[i] + ","
 				actualText = field.actualText[i] + ","
 			}
-
 			textLine := NewTextLine(font, field.values[i])
 			textLine.SetFontSize(fontSize)
 			textLine.SetTextColor(textColor)
 			textLine.SetAltDescription(altDescription)
 			textLine.SetActualText(actualText)
+			textLine.SetLocation(2.0+form.x+field.x, form.y+yField)
 			textLine.DrawOn(page)
 
 			if i == len(field.values)-1 {

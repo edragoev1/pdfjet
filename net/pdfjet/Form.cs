@@ -142,7 +142,7 @@ public class Form : IDrawable {
                             .SetFontSize(fontSize)
                             .SetTextColor(color)
                             .SetAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
-                            .SetLocation(2f + x + field.x, y + yField)
+                            .SetLocation(2f + this.x + field.x, this.y + yField)
                             .DrawOn(page);
                     if (page != null && i == (field.values.Length - 1)) {
                         new Line(x, y + yField + font.GetDescent(),

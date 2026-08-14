@@ -15,9 +15,6 @@ func Example42() {
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	f1.SetSize(10.0)
-	f2.SetSize(8.0)
-
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 
 	var width float32 = 500.0
@@ -43,7 +40,7 @@ func Example42() {
 	form.SetLabelFontSize(8.0)
 	form.SetValueFont(f2)
 	form.SetValueFontSize(10.0)
-	form.SetLocation(70.0, 90.0)
+	form.SetLocation(50.0, 50.0)
 	form.SetRowWidth(width)
 	form.SetRowHeight(height)
 	form.DrawOn(page)

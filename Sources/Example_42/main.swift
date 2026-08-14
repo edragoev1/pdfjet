@@ -36,7 +36,7 @@ public class Example_42 {
                 .setLabelFontSize(8.0)
                 .setValueFont(f2)
                 .setValueFontSize(10.0)
-                .setLocation(70.0, 90.0)
+                .setLocation(50.0, 50.0)
                 .setRowLength(w)
                 .setRowHeight(h)
                 .drawOn(page)
