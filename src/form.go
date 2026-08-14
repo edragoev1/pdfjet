@@ -189,7 +189,7 @@ func (form *Form) format(title, text string, font *Font, width float32) []string
 	original := strings.Fields(text)
 	lines := make([]string, 0)
 	var buf strings.Builder
-	for i := 0; i < len(original); i++ {
+	for i := range original {
 		line := original[i]
 		if font.StringWidth(font.size, line) < width {
 			lines = append(lines, line)
@@ -223,7 +223,7 @@ func (form *Form) format(title, text string, font *Font, width float32) []string
 	count := len(lines)
 	data := make([]string, count+1)
 	data[0] = title
-	for i := 0; i < count; i++ {
+	for i := range count {
 		data[i+1] = lines[i]
 	}
 
