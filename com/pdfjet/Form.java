@@ -223,17 +223,24 @@ public class Form implements Drawable {
                                     field.altDescription[i] : (field.altDescription[i] + ","))
                             .setLocation(2f + this.x + field.x, this.y + yField)
                             .drawOn(page);
-                    if (page != null && i == (field.values.length - 1)) {
-                        new Line(x, y + yField + font.getDescent(),
-                                x + rowWidth, y + yField + font.getDescent()).setWidth(0.2f).drawOn(page);
-                        if (field.x != 0.0) {
-                            new Line(x + field.x, y + yField + font.getDescent() - (field.values.length-1)*rowHeight,
-                                    x + field.x, y + yField + font.getDescent()).setWidth(0.2f).drawOn(page);
-                        }
+                    if (i > 0) {
+                        Line vLine = new Line(
+                                x + field.x,
+                                y + yField - font.getAscent(),
+                                x + field.x,
+                                y + yField + font.getDescent());
+                        vLine.setWidth(0.2f).drawOn(page);
                     }
                 }
                 yField += rowHeight;
             }
+
+            Line line = new Line(
+                    x,
+                    y + yField + f2.getDescent(valueFontSize) - rowHeight,
+                    x + rowWidth,
+                    y + yField + f2.getDescent(valueFontSize) - rowHeight);
+            line.setWidth(0.2f).drawOn(page);
         }
 
         return new float[] { x + rowWidth, y + boxHeight };

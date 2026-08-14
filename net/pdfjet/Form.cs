@@ -144,14 +144,14 @@ public class Form : IDrawable {
                             .SetAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
                             .SetLocation(2f + this.x + field.x, this.y + yField)
                             .DrawOn(page);
-                        if (i > 0) {
-                            Line vLine = new Line(
-                                    x + field.x,
-                                    y + yField - font.GetAscent(),
-                                    x + field.x,
-                                    y + yField + font.GetDescent());
-                            vLine.SetWidth(0.2f).DrawOn(page);
-                        }
+                    if (i > 0) {
+                        Line vLine = new Line(
+                                x + field.x,
+                                y + yField - font.GetAscent(),
+                                x + field.x,
+                                y + yField + font.GetDescent());
+                        vLine.SetWidth(0.2f).DrawOn(page);
+                    }
                 }
                 yField += rowHeight;
             }
