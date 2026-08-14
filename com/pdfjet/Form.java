@@ -196,6 +196,7 @@ public class Form implements Drawable {
         float boxHeight = rowHeight*numberOfRows + f2.getDescent();
         Box box = new Box();
         box.setLocation(x, y);
+        box.setLineWidth(0.2f);
         box.setSize(rowLength, boxHeight);
         if (page != null) {
             box.drawOn(page);
@@ -224,9 +225,9 @@ public class Form implements Drawable {
                             .drawOn(page);
                     if (page != null && i == (field.values.length - 1)) {
                         new Line(x, y + yField + font.getDescent(),
-                                x + rowLength, y + yField + font.getDescent()).drawOn(page);
+                                x + rowLength, y + yField + font.getDescent()).setWidth(0.2f).drawOn(page);
                         new Line(x + field.x, y + yField + font.getDescent() - (field.values.length-1)*rowHeight,
-                                x + field.x, y + yField + font.getDescent()).drawOn(page);
+                                x + field.x, y + yField + font.getDescent()).setWidth(0.2f).drawOn(page);
                     }
                 }
                 yField += rowHeight;

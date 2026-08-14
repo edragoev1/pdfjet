@@ -118,6 +118,7 @@ public class Form : IDrawable {
         float boxHeight = rowHeight*numberOfRows + f2.GetDescent();
         Box box = new Box();
         box.SetLocation(x, y);
+        box.SetLineWidth(0.2f);
         box.SetSize(rowLength, boxHeight);
         if (page != null) {
             box.DrawOn(page);
@@ -145,9 +146,9 @@ public class Form : IDrawable {
                             .DrawOn(page);
                     if (page != null && i == (field.values.Length - 1)) {
                         new Line(x, y + yField + font.GetDescent(),
-                                x + rowLength, y + yField + font.GetDescent()).DrawOn(page);
+                                x + rowLength, y + yField + font.GetDescent()).SetWidth(0.2f).DrawOn(page);
                         new Line(x + field.x, y + yField + font.GetDescent() - (field.values.Length-1)*rowHeight,
-                                x + field.x, y + yField + font.GetDescent()).DrawOn(page);
+                                x + field.x, y + yField + font.GetDescent()).SetWidth(0.2f).DrawOn(page);
                     }
                 }
                 yField += rowHeight;
