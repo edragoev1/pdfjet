@@ -33,7 +33,7 @@ func Example42() {
 	fields = append(fields, pdfjet.NewField(0.0, []string{"Telephone Number", "(416) 331-2245"}, false))
 	fields = append(fields, pdfjet.NewField(width/4, []string{"Fax (if applicable)", "(416) 124-9879"}, false))
 	fields = append(fields, pdfjet.NewField(width/2, []string{"Email", "jsmith12345@gmail.ca"}, false))
-	fields = append(fields, pdfjet.NewField(0.0, []string{"Other Information", "", ""}, false))
+	fields = append(fields, pdfjet.NewField(0.0, []string{"Other Information", "Hello", "World"}, false))
 
 	form := pdfjet.NewForm(fields)
 	form.SetLabelFont(f1)
