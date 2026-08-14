@@ -19,9 +19,7 @@ public class Form implements Drawable {
     private float labelFontSize = 8f;
     private Font f2;
     private float valueFontSize = 10f;
-    private int numberOfRows;
-    private float rowWidth = 500f;
-    private float rowHeight = 12f;
+    private float formWidth = 500f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0f, 0f, 1f};
 
@@ -79,24 +77,13 @@ public class Form implements Drawable {
     }
 
     /**
-     * Sets the row length
+     * Sets the form width
      *
-     * @param rowWidth the row length
+     * @param formWidth the form width
      * @return this form
      */
-    public Form setRowLength(float rowWidth) {
-        this.rowWidth = rowWidth;
-        return this;
-    }
-
-    /**
-     * Sets the row height
-     *
-     * @param rowHeight the row height
-     * @return this form
-     */
-    public Form setRowHeight(float rowHeight) {
-        this.rowHeight = rowHeight;
+    public Form setFormWidth(float formWidth) {
+        this.formWidth = formWidth;
         return this;
     }
 
@@ -174,128 +161,64 @@ public class Form implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        for (Field field : fields) {
-            if (field.format) {
-                field.values = format(field.values[0], field.values[1], this.f2, this.rowWidth);
-                field.altDescription = new String[field.values.length];
-                field.actualText = new String[field.values.length];
-                for (int i = 0; i < field.values.length; i++) {
-                    field.altDescription[i] = field.values[i];
-                    field.actualText[i] = field.values[i];
-                }
-            }
-            if (field.x == 0f) {
-                numberOfRows += field.values.length;
-            }
-        }
-
-        if (numberOfRows == 0) {
-            return new float[] { x, y };
-        }
-
-        float boxHeight = rowHeight*numberOfRows + f2.getDescent();
-        Box box = new Box();
-        box.setLocation(x, y);
-        box.setLineWidth(0.2f);
-        box.setSize(rowWidth, boxHeight);
         if (page != null) {
-            box.drawOn(page);
+            // TODO:
         }
 
+        float lineWidth = 0.2f;
         float yField = 0f;
-        int rowSpan = 1;
-        float yRow = 0;
-        for (Field field : fields) {
+        float xOffset = 3f;
+        for (int i = 0; i < fields.size(); i++) {
+            Field field = fields.get(i);
             if (field.x == 0f) {
-                yRow += rowSpan*rowHeight;
-                rowSpan = field.values.length;
-            }
-            yField = yRow;
-            for (int i = 0; i < field.values.length; i++) {
-                if (page != null) {
-                    Font font = (i == 0) ? f1 : f2;
-                    float fontSize = (i == 0) ? labelFontSize : valueFontSize;
-                    float[] color = (i == 0) ? labelColor : valueColor;
-                    new TextLine(font, field.values[i])
-                            .setFontSize(fontSize)
-                            .setTextColor(color)
-                            .setAltDescription((i == 0) ?
-                                    field.altDescription[i] : (field.altDescription[i] + ","))
-                            .setLocation(3f + this.x + field.x, this.y + yField)
-                            .drawOn(page);
+                if (!field.label.equals("")) {
                     if (i > 0) {
-                        Line vLine = new Line(
-                                x + field.x,
-                                y + yField - font.getAscent(),
-                                x + field.x,
-                                y + yField + font.getDescent());
-                        vLine.setWidth(0.2f).drawOn(page);
+                        Line hLine = new Line(
+                                x,
+                                y + yField,
+                                x + formWidth,
+                                y + yField);
+                        hLine.setWidth(lineWidth).drawOn(page);
                     }
+                    yField += f1.getAscent(labelFontSize) + 5f*f1.getDescent(labelFontSize);
                 }
-                yField += rowHeight;
+                yField += f2.getAscent(valueFontSize) + f2.getDescent(valueFontSize);
             }
 
-            Line line = new Line(
-                    x,
-                    y + yField + f2.getDescent(valueFontSize) - rowHeight,
-                    x + rowWidth,
-                    y + yField + f2.getDescent(valueFontSize) - rowHeight);
-            line.setWidth(0.2f).drawOn(page);
-        }
-
-        return new float[] { x + rowWidth, y + boxHeight };
-    }
-
-    /**
-     * Formats the form
-     *
-     * @param title the form title
-     * @param text the form text
-     * @param font the form font
-     * @param width the width of the form
-     * @return the form
-     */
-    public static String[] format(String title, String text, Font font, float width) {
-        String[] original = text.split("\\r?\\n", -1);
-        List<String> lines = new ArrayList<String>();
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < original.length; i++) {
-            String line = original[i];
-            if (font.stringWidth(line) < width) {
-                lines.add(line);
-                continue;
+            if (!field.label.equals("")) {
+                float yOffset = 2*f1.getDescent(labelFontSize) +
+                        f2.getAscent(valueFontSize) + f2.getDescent(valueFontSize);
+                new TextLine(f1, field.label)
+                        .setFontSize(labelFontSize)
+                        .setTextColor(labelColor)
+                        .setLocation(
+                                x + field.x + xOffset,
+                                y + yField - yOffset).drawOn(page);
             }
 
-            buf.setLength(0);
-            for (int j = 0; j < line.length(); j++) {
-                buf.append(line.charAt(j));
-                if (font.stringWidth(buf.toString()) > (width - font.stringWidth("   "))) {
-                    while (j > 0 && line.charAt(j) != ' ') {
-                        j -= 1;
-                    }
-                    String str = line.substring(0, j).trim();
-                    lines.add(str);
-                    buf.setLength(0);
-                    while (j < line.length() && line.charAt(j) == ' ') {
-                        j += 1;
-                    }
-                    line = line.substring(j);
-                    j = 0;
-                }
-            }
+            new TextLine(f2, field.value)
+                    .setFontSize(valueFontSize)
+                    .setTextColor(valueColor)
+                    .setLocation(xOffset + x + field.x, y + yField - f2.getDescent(valueFontSize))
+                    .drawOn(page);
 
-            if (!line.equals("")) {
-                lines.add(line);
+            if (field.x != 0f) {
+                Line vLine = new Line(
+                        x + field.x,
+                        y + yField - (f2.getAscent(valueFontSize) + f2.getDescent(valueFontSize)),
+                        x + field.x,
+                        y + yField);
+                vLine.setWidth(0.2f).drawOn(page);
             }
         }
 
-        int count = lines.size();
-        String[] data = new String[1 + count];
-        data[0] = title;
-        for (int i = 0; i < count; i++) {
-            data[i + 1] = lines.get(i);
-        }
+        Rect rect = new Rect();
+        rect.setLocation(x, y);
+        rect.setBorderWidth(lineWidth);
+        rect.setBorderColor(Color.black);
+        rect.setSize(formWidth, yField);
+        rect.drawOn(page);
 
-        return data;
+        return new float[] { x + formWidth, y + yField };
     }
 }   // End of Form.java

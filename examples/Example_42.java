@@ -23,19 +23,20 @@ public class Example_42 {
         float h = 15f;
 
         List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field(   0f, new String[] {"Company", "Smart Widgets Construction Inc."}));
-        fields.add(new Field(   0f, new String[] {"Street Number", "120"}));
-        fields.add(new Field(  w/8, new String[] {"Street Name", "Oak"}));
-        fields.add(new Field(5*w/8, new String[] {"Street Type", "Street"}));
-        fields.add(new Field(6*w/8, new String[] {"Direction", "West"}));
-        fields.add(new Field(7*w/8, new String[] {"Suite/Floor/Apt.", "8W"}));
-        fields.add(new Field(   0f, new String[] {"City/Town", "Toronto"}));
-        fields.add(new Field(  w/2, new String[] {"Province", "Ontario"}));
-        fields.add(new Field(7*w/8, new String[] {"Postal Code", "M5M 2N2"}));
-        fields.add(new Field(   0f, new String[] {"Telephone Number", "(416) 331-2245"}));
-        fields.add(new Field(  w/4, new String[] {"Fax (if applicable)", "(416) 124-9879"}));
-        fields.add(new Field(  w/2, new String[] {"Email","jsmith12345@gmail.ca"}));
-        fields.add(new Field(   0f, new String[] {"Other Information", "Hello", "World"}));
+        fields.add(new Field(   0f, "Company", "Smart Widgets Construction Inc."));
+        fields.add(new Field(   0f, "Street Number", "120"));
+        fields.add(new Field(  w/8, "Street Name", "Oak"));
+        fields.add(new Field(5*w/8, "Street Type", "Street"));
+        fields.add(new Field(6*w/8, "Direction", "West"));
+        fields.add(new Field(7*w/8, "Suite/Floor/Apt.", "8W"));
+        fields.add(new Field(   0f, "City/Town", "Toronto"));
+        fields.add(new Field(  w/2, "Province", "Ontario"));
+        fields.add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
+        fields.add(new Field(   0f, "Telephone Number", "(416) 331-2245"));
+        fields.add(new Field(  w/4, "Fax (if applicable)", "(416) 124-9879"));
+        fields.add(new Field(  w/2, "Email","jsmith12345@gmail.ca"));
+        fields.add(new Field(   0f, "Other Information", "Hello, World!"));
+        fields.add(new Field(   0f, "", "This is a test."));
 
         float[] xy = (new Form(fields)
                 .setLabelFont(f1)
@@ -43,8 +44,7 @@ public class Example_42 {
                 .setValueFont(f2)
                 .setValueFontSize(10f)
                 .setLocation(50f, 50f)
-                .setRowLength(w)
-                .setRowHeight(h)
+                .setFormWidth(w)
                 .drawOn(page));
 
         pdf.complete();
