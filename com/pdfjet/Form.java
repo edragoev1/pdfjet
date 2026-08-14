@@ -208,7 +208,7 @@ public class Form implements Drawable {
                         y + yField - (f2.getAscent(valueFontSize) + f2.getDescent(valueFontSize)),
                         x + field.x,
                         y + yField);
-                vLine.setWidth(0.2f).drawOn(page);
+                vLine.setWidth(lineWidth).drawOn(page);
             }
         }
 
