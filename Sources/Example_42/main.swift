@@ -40,12 +40,7 @@ public class Example_42 {
                 .setRowLength(w)
                 .setRowHeight(h)
                 .drawOn(page)
-/*
-        var box = Box()
-        box.setLocation(xy[0], xy[1])
-        box.setSize(20.0, 20.0)
-        box.drawOn(page)
-*/
+
         pdf.complete()
     }
 }   // End of Example_42.swift
