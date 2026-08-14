@@ -8,7 +8,7 @@ public class Example_31 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_31.pdf", append: false)!)
 
-        let f1 = try Font(pdf, "fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf.stream")
+        let f1 = try Font(pdf, IBMPlexSansDevanagari.Regular)
         f1.setSize(15.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
