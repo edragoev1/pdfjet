@@ -193,7 +193,7 @@ public class Form implements Drawable {
             return new float[] { x, y };
         }
 
-        float boxHeight = rowHeight*numberOfRows;
+        float boxHeight = rowHeight*numberOfRows + f2.getDescent();
         Box box = new Box();
         box.setLocation(x, y);
         box.setSize(rowLength, boxHeight);

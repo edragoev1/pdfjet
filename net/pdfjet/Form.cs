@@ -115,6 +115,14 @@ public class Form : IDrawable {
             return new float[] { x, y };
         }
 
+        float boxHeight = rowHeight*numberOfRows + f2.GetDescent();
+        Box box = new Box();
+        box.SetLocation(x, y);
+        box.SetSize(rowLength, boxHeight);
+        if (page != null) {
+            box.DrawOn(page);
+        }
+
         float yField = 0f;
         int rowSpan = 1;
         float yRow = 0;

@@ -35,7 +35,7 @@ public class Example_42 {
         fields.add(new Field(   0f, new String[] {"Telephone Number", "(416) 331-2245"}));
         fields.add(new Field(  w/4, new String[] {"Fax (if applicable)", "(416) 124-9879"}));
         fields.add(new Field(  w/2, new String[] {"Email","jsmith12345@gmail.ca"}));
-        fields.add(new Field(   0f, new String[] {"Other Information","", ""}));
+        fields.add(new Field(   0f, new String[] {"Other Information", "Hello", "World"}));
 
         float[] xy = (new Form(fields)
                 .setLabelFont(f1)
