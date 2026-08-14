@@ -75,7 +75,7 @@ func (form *Form) SetValueFont(f2 *Font) *Form {
 	return form
 }
 
-// SetValueFontSize sets the font size for value value text.
+// SetValueFontSize sets the font size for value text.
 func (form *Form) SetValueFontSize(valueFontSize float32) *Form {
 	form.valueFontSize = valueFontSize
 	return form
@@ -120,7 +120,7 @@ func (form *Form) DrawOn(page *Page) []float32 {
 	box := NewBox()
 	box.SetLocation(form.x, form.y)
 	box.SetLineWidth(0.2)
-	box.SetSize(form.rowWidth, boxHeight)
+	box.SetSize(form.rowWidth, boxHeight+form.f2.GetDescent(form.valueFontSize))
 	box.DrawOn(page)
 
 	var yField float32
@@ -162,12 +162,18 @@ func (form *Form) DrawOn(page *Page) []float32 {
 			textLine.DrawOn(page)
 
 			if i == len(field.values)-1 {
-				line := NewLine(0.0, 0.0, form.rowWidth, 0.0)
+				line := NewLine(
+					form.x,
+					form.y+yField+font.GetDescent(form.valueFontSize),
+					form.x+form.rowWidth,
+					form.y+yField+font.GetDescent(form.valueFontSize)).SetWidth(0.2)
 				line.DrawOn(page)
-				if field.x != 0.0 {
-					line = NewLine(0.0, -(float32(len(field.values)-1) * form.rowHeight), 0.0, 0.0)
-					line.DrawOn(page)
-				}
+				line = NewLine(
+					form.x+field.x,
+					form.y+yField+font.GetDescent(form.valueFontSize)-(float32(len(field.values))-1)*form.rowHeight,
+					form.x+field.x,
+					form.y+yField+font.GetDescent(form.valueFontSize)).SetWidth(0.2)
+				line.DrawOn(page)
 			}
 			yField += form.rowHeight
 
