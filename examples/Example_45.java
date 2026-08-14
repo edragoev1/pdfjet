@@ -9,72 +9,43 @@ import com.pdfjet.*;
  */
 public class Example_45 {
     public Example_45() throws Exception {
+
         PDF pdf = new PDF(
-            new BufferedOutputStream(new FileOutputStream("Example_45.pdf")));
-        pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setLanguage("en-US");
+                new BufferedOutputStream(
+                        new FileOutputStream("Example_45.pdf")));
 
-        Font f1 = new Font(pdf, SourceSerif4.Regular);
-        f1.setSize(14f);
-
-        Font f2 = new Font(pdf, SourceSerif4.Italic);
-        f2.setSize(14f);
-
-        Font f3 = new Font(pdf, JetBrainsMono.Regular);
-        f3.setSize(10f);
+        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        float w = 530f;
+        float w = 500f;
         float h = 15f;
 
         List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field(   0f, new String[] {"Company", "Smart Widget Designs"}));
-        fields.add(new Field(   0f, new String[] {"Street Number", "120"}));
-        fields.add(new Field(  w/8, new String[] {"Street Name", "Oak"}));
-        fields.add(new Field(5*w/8, new String[] {"Street Type", "Street"}));
-        fields.add(new Field(6*w/8, new String[] {"Direction", "West"}));
-        fields.add(new Field(7*w/8, new String[] {"Suite/Floor/Apt.", "8W"})
-                .setAltDescription("Suite/Floor/Apartment")
-                .setActualText("Suite/Floor/Apartment"));
-        fields.add(new Field(   0f, new String[] {"City/Town", "Toronto"}));
-        fields.add(new Field(  w/2, new String[] {"Province", "Ontario"}));
-        fields.add(new Field(7*w/8, new String[] {"Postal Code", "M5M 2N2"}));
-        fields.add(new Field(   0f, new String[] {"Telephone Number", "(416) 331-2245"}));
-        fields.add(new Field(  w/4, new String[] {"Fax (if applicable)", "(416) 124-9879"}));
-        fields.add(new Field(  w/2, new String[] {"Email","jsmith12345@gmail.ca"}));
-        fields.add(new Field(   0f, new String[] {
-                "Other Information","We don't work on weekends.", "Please send us an Email."}));
+        fields.add(new Field(   0f, "Company", "Smart Widgets Construction Inc."));
+        fields.add(new Field(   0f, "Street Number", "120"));
+        fields.add(new Field(  w/8, "Street Name", "Oak"));
+        fields.add(new Field(5*w/8, "Street Type", "Street"));
+        fields.add(new Field(6*w/8, "Direction", "West"));
+        fields.add(new Field(7*w/8, "Suite/Floor/Apt.", "8W"));
+        fields.add(new Field(   0f, "City/Town", "Toronto"));
+        fields.add(new Field(  w/2, "Province", "Ontario"));
+        fields.add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
+        fields.add(new Field(   0f, "Telephone Number", "(416) 331-2245"));
+        fields.add(new Field(  w/4, "Fax (if applicable)", "(416) 124-9879"));
+        fields.add(new Field(  w/2, "Email","jsmith12345@gmail.ca"));
+        fields.add(new Field(   0f, "Other Information", "Hello, World!"));
+        fields.add(new Field(   0f, "", "This is a test."));
 
-        new Form(fields)
+        float[] xy = (new Form(fields)
                 .setLabelFont(f1)
-                .setLabelFontSize(7f)
+                .setLabelFontSize(8f)
                 .setValueFont(f2)
-                .setValueFontSize(9f)
+                .setValueFontSize(10f)
                 .setLocation(50f, 50f)
-                .setRowLength(w)
-                .setRowHeight(h)
-                .drawOn(page);
-
-        Map<String, Integer> colors = new HashMap<String, Integer>();
-        colors.put("new", Color.red);
-        colors.put("ArrayList", Color.blue);
-        colors.put("List", Color.blue);
-        colors.put("String", Color.blue);
-        colors.put("Field", Color.blue);
-        colors.put("Form", Color.blue);
-        colors.put("Smart", Color.green);
-        colors.put("Widget", Color.green);
-        colors.put("Designs", Color.green);
-
-        float x = 50;
-        float y = 280;
-        float dy = f3.getBodyHeight();
-        List<String> lines = Text.readLines("data/languages/english.txt");
-        for (String line : lines) {
-            page.drawString(f3, f3.getSize(), line, x, y, new float[] {0.25f, 0.25f, 0.25f}, colors);
-            y += dy;
-        }
+                .setFormWidth(w)
+                .drawOn(page));
 
         pdf.complete();
     }
