@@ -18,7 +18,7 @@ public class Form : Drawable {
     private var f2: Font?
     private var valueFontSize: Float = 10.0
     private var numberOfRows = 0
-    private var rowLength: Float = 500.0
+    private var rowWidth: Float = 500.0
     private var rowHeight: Float = 12.0
     private var labelColor: [Float] = [0.0, 0.0, 0.0]
     private var valueColor: [Float] = [0.0, 0.0, 1.0]
@@ -39,8 +39,8 @@ public class Form : Drawable {
     }
 
     @discardableResult
-    public func setRowLength(_ rowLength: Float) -> Form {
-        self.rowLength = rowLength
+    public func setRowLength(_ rowWidth: Float) -> Form {
+        self.rowWidth = rowWidth
         return self
     }
 
@@ -97,7 +97,7 @@ public class Form : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         for field in fields {
             if field.format {
-                field.values = format(field.values[0], field.values[1], self.f2!, self.rowLength)
+                field.values = format(field.values[0], field.values[1], self.f2!, self.rowWidth)
                 field.actualText  = [String]()
                 field.altDescription = [String]()
                 for value in field.values {
@@ -117,7 +117,7 @@ public class Form : Drawable {
         let boxHeight = rowHeight * Float(numberOfRows)
         let box = Box()
                 .setLocation(self.x, self.y)
-                .setSize(rowLength, boxHeight)
+                .setSize(rowWidth, boxHeight)
         if page != nil {
             box.drawOn(page)
         }
@@ -144,7 +144,7 @@ public class Form : Drawable {
 			                .setLocation(2.0 + self.x + field.x, self.y + yField)
                             .drawOn(page)
                     if i == (field.values.count - 1) {
-                        Line(0.0, 0.0, rowLength, 0.0).drawOn(page)
+                        Line(0.0, 0.0, rowWidth, 0.0).drawOn(page)
                         if field.x != 0.0 {
                             Line(0.0, -Float(field.values.count - 1) * rowHeight, 0.0, 0.0).drawOn(page)
                         }
@@ -154,7 +154,7 @@ public class Form : Drawable {
             }
         }
 
-        return [self.x + rowLength, self.y + boxHeight]
+        return [self.x + rowWidth, self.y + boxHeight]
     }
 
     public func format(
