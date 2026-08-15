@@ -174,8 +174,8 @@ public class Form : IDrawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] DrawOn(Page page) {
-        if (page != null) {
-            // TODO:
+        if (page == null) {
+            throw new ArgumentNullException(nameof(page), "Page cannot be null");
         }
 
         float yField = 0f;

@@ -91,7 +91,7 @@ public class Form implements Drawable {
     /**
      * Sets the line width
      *
-     * @param lineWidth the form width
+     * @param lineWidth the line width
      * @return this form
      */
     public Form setLineWidth(float lineWidth) {
@@ -173,8 +173,8 @@ public class Form implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        if (page != null) {
-            // TODO:
+        if (page == null) {
+            throw new NullPointerException("Page cannot be null");
         }
 
         float yField = 0f;
