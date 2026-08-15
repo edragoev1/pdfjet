@@ -43,6 +43,7 @@ public class Example_42 {
                 .SetValueFontSize(10f)
                 .SetLocation(50f, 50f)
                 .SetFormWidth(w)
+                .SetLineWidth(0.2f)
                 .DrawOn(page));
 
 	    Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
