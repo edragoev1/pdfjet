@@ -34,7 +34,8 @@ public class Example_42 {
         fields.add(new Field(   0f, "Telephone #", "(416) 331-2245"));
         fields.add(new Field(2*w/8, "Fax #", "(416) 124-9879"));
         fields.add(new Field(4*w/8, "Email","jsmith12345@gmail.ca"));
-        fields.add(new Field(   0f, "Other Information", "Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"));
+        fields.add(new Field(   0f, "Other Information",
+            "Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"));
         fields.add(new Field(   0f, "", "enabling remote control and predictive maintenance."));
 
         float[] xy = (new Form(fields)

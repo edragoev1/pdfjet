@@ -23,7 +23,7 @@ public class Form : IDrawable {
     private float formWidth = 500f;
     private float lineWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
-    private float[] valueColor = new float[] {0f, 0f, 1f};
+    private float[] valueColor = new float[] {0.33f, 0.33f, 0.66f};
 
     /**
      * Creates a Form object
@@ -192,7 +192,7 @@ public class Form : IDrawable {
                                 y + yField);
                         hLine.SetWidth(lineWidth).DrawOn(page);
                     }
-                    yField += f1.GetAscent(labelFontSize) + 4f*f1.GetDescent(labelFontSize);
+                    yField += f1.GetAscent(labelFontSize) + 3f*f1.GetDescent(labelFontSize);
                 }
                 yField += f2.GetAscent(valueFontSize) + f2.GetDescent(valueFontSize);
             }
@@ -215,9 +215,11 @@ public class Form : IDrawable {
                     .DrawOn(page);
 
             if (field.x != 0f) {
+                float rowHeight = f1.GetAscent(labelFontSize) + 3f*f1.GetDescent(labelFontSize);
+                rowHeight += f2.GetAscent(valueFontSize) + f2.GetDescent(valueFontSize);
                 Line vLine = new Line(
                         x + field.x,
-                        y + yField - (f2.GetAscent(valueFontSize) + f2.GetDescent(valueFontSize)),
+                        (y + yField) - rowHeight,
                         x + field.x,
                         y + yField);
                 vLine.SetWidth(lineWidth).DrawOn(page);

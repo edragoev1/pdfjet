@@ -13,16 +13,16 @@ public class Example_42 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_42.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         float w = 500f;
 
         List<Field> fields = new List<Field>();
-        fields.Add(new Field(   0f, "Company", "Smart Widgets Construction Inc."));
-        fields.Add(new Field(   0f, "Street Number", "120"));
+        fields.Add(new Field(   0f, "Company", "Smart Widgets Inc."));
+        fields.Add(new Field(   0f, "Street #", "120"));
         fields.Add(new Field(  w/8, "Street Name", "Oak"));
         fields.Add(new Field(4*w/8, "Street Type", "Street"));
         fields.Add(new Field(5*w/8, "Direction", "West"));
@@ -30,17 +30,18 @@ public class Example_42 {
         fields.Add(new Field(   0f, "City/Town", "Toronto"));
         fields.Add(new Field(4*w/8, "Province", "Ontario"));
         fields.Add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
-        fields.Add(new Field(   0f, "Telephone Number", "(416) 331-2245"));
-        fields.Add(new Field(2*w/8, "Fax (if applicable)", "(416) 124-9879"));
+        fields.Add(new Field(   0f, "Telephone #", "(416) 331-2245"));
+        fields.Add(new Field(2*w/8, "Fax #", "(416) 124-9879"));
         fields.Add(new Field(4*w/8, "Email","jsmith12345@gmail.ca"));
-        fields.Add(new Field(   0f, "Other Information", "We don't work on weekends."));
-        fields.Add(new Field(   0f, "", "Please send us an Email."));
+        fields.Add(new Field(   0f, "Other Information",
+            "Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"));
+        fields.Add(new Field(   0f, "", "enabling remote control and predictive maintenance."));
 
         float[] xy = (new Form(fields)
                 .SetLabelFont(f1)
-                .SetLabelFontSize(8f)
+                .SetLabelFontSize(9f)
                 .SetValueFont(f2)
-                .SetValueFontSize(10f)
+                .SetValueFontSize(9f)
                 .SetLocation(50f, 50f)
                 .SetFormWidth(w)
                 .SetLineWidth(0.2f)
