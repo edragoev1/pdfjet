@@ -28,11 +28,11 @@ public class Example_42 {
         fields.Add(new Field(5*w/8, "Direction", "West"));
         fields.Add(new Field(6*w/8, "Suite/Floor/Apartment", "8W"));
         fields.Add(new Field(   0f, "City/Town", "Toronto"));
-        fields.Add(new Field(  w/2, "Province", "Ontario"));
+        fields.Add(new Field(4*w/8, "Province", "Ontario"));
         fields.Add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
         fields.Add(new Field(   0f, "Telephone Number", "(416) 331-2245"));
-        fields.Add(new Field(  w/4, "Fax (if applicable)", "(416) 124-9879"));
-        fields.Add(new Field(  w/2, "Email","jsmith12345@gmail.ca"));
+        fields.Add(new Field(2*w/8, "Fax (if applicable)", "(416) 124-9879"));
+        fields.Add(new Field(4*w/8, "Email","jsmith12345@gmail.ca"));
         fields.Add(new Field(   0f, "Other Information", "We don't work on weekends."));
         fields.Add(new Field(   0f, "", "Please send us an Email."));
 
