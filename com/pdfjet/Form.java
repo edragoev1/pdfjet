@@ -180,7 +180,7 @@ public class Form implements Drawable {
                                 y + yField);
                         hLine.setWidth(lineWidth).drawOn(page);
                     }
-                    yField += f1.getAscent(labelFontSize) + 5f*f1.getDescent(labelFontSize);
+                    yField += f1.getAscent(labelFontSize) + 4f*f1.getDescent(labelFontSize);
                 }
                 yField += f2.getAscent(valueFontSize) + f2.getDescent(valueFontSize);
             }
