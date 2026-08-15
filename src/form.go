@@ -18,20 +18,20 @@ type Form struct {
 	x             float32
 	y             float32
 	f1, f2        *Font
-	labelFontSize float32 // = 9f
-	valueFontSize float32 // = 9f
-	formWidth     float32 // = 500f
-	lineWidth     float32 // = 0f
-	labelColor    int32   // = Color.black
-	valueColor    int32
+	labelFontSize float32    // = 9f
+	valueFontSize float32    // = 9f
+	formWidth     float32    // = 500f
+	lineWidth     float32    // = 0f
+	labelColor    [3]float32 // = Color.black
+	valueColor    [3]float32
 }
 
 // NewForm constructs new form object.
 func NewForm(fields []*Field) *Form {
 	form := new(Form)
 	form.fields = fields
-	form.labelColor = color.Black
-	form.valueColor = 0x333366
+	form.labelColor = [3]float32{0.0, 0.0, 0.0}
+	form.valueColor = [3]float32{0.33, 0.33, 0.66}
 	return form
 }
 
@@ -80,13 +80,19 @@ func (form *Form) SetValueFontSize(valueFontSize float32) *Form {
 
 // SetLabelColor sets the color for the label.
 func (form *Form) SetLabelColor(labelColor int32) *Form {
-	form.labelColor = labelColor
+	r := float32((labelColor>>16)&0xff) / 255.0
+	g := float32((labelColor>>8)&0xff) / 255.0
+	b := float32((labelColor)&0xff) / 255.0
+	form.valueColor = [3]float32{r, g, b}
 	return form
 }
 
 // SetValueColor sets the color for the value string.
 func (form *Form) SetValueColor(valueColor int32) *Form {
-	form.valueColor = valueColor
+	r := float32((valueColor>>16)&0xff) / 255.0
+	g := float32((valueColor>>8)&0xff) / 255.0
+	b := float32((valueColor)&0xff) / 255.0
+	form.valueColor = [3]float32{r, g, b}
 	return form
 }
 
@@ -121,13 +127,13 @@ func (form *Form) DrawOn(page *Page) []float32 {
 				form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 			textLine := NewTextLine(form.f1, field.label)
 			textLine.SetFontSize(form.labelFontSize)
-			textLine.SetTextColor(form.labelColor)
+			textLine.SetTextColorRGB(form.labelColor)
 			textLine.SetLocation(form.x+field.x+xOffset, form.y+yField-yOffset).DrawOn(page)
 		}
 
 		textLine := NewTextLine(form.f2, field.value)
 		textLine.SetFontSize(form.valueFontSize)
-		textLine.SetTextColor(form.valueColor)
+		textLine.SetTextColorRGB(form.valueColor)
 		textLine.SetLocation(xOffset+form.x+field.x, form.y+yField-form.f2.GetDescent(form.valueFontSize))
 		textLine.DrawOn(page)
 
