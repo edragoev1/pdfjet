@@ -12,7 +12,7 @@ import (
 )
 
 // Form describes form object.
-// Please see Example_45
+// Please see Example_42
 type Form struct {
 	fields        []*Field
 	x             float32
