@@ -16,9 +16,9 @@ public class Form implements Drawable {
     private float x;
     private float y;
     private Font f1;
-    private float labelFontSize = 8f;
+    private float labelFontSize = 9f;
     private Font f2;
-    private float valueFontSize = 10f;
+    private float valueFontSize = 9f;
     private float formWidth = 500f;
     private float lineWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};

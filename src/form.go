@@ -18,12 +18,12 @@ type Form struct {
 	x             float32
 	y             float32
 	f1, f2        *Font
-	labelFontSize float32 // = 8f
-	valueFontSize float32 // = 10f
+	labelFontSize float32 // = 9f
+	valueFontSize float32 // = 9f
 	formWidth     float32 // = 500f
 	lineWidth     float32 // = 0f
 	labelColor    int32   // = Color.black
-	valueColor    int32   // = Color.blue
+	valueColor    int32
 }
 
 // NewForm constructs new form object.
@@ -31,7 +31,7 @@ func NewForm(fields []*Field) *Form {
 	form := new(Form)
 	form.fields = fields
 	form.labelColor = color.Black
-	form.valueColor = color.Blue
+	form.valueColor = 0x333366
 	return form
 }
 
@@ -111,7 +111,7 @@ func (form *Form) DrawOn(page *Page) []float32 {
 						form.y+yField)
 					hLine.SetWidth(form.lineWidth).DrawOn(page)
 				}
-				yField += form.f1.GetAscent(form.labelFontSize) + 4.0*form.f1.GetDescent(form.labelFontSize)
+				yField += form.f1.GetAscent(form.labelFontSize) + 3.0*form.f1.GetDescent(form.labelFontSize)
 			}
 			yField += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 		}
@@ -132,6 +132,8 @@ func (form *Form) DrawOn(page *Page) []float32 {
 		textLine.DrawOn(page)
 
 		if field.x != 0.0 {
+			rowHeight := form.f1.GetAscent(form.labelFontSize) + 3.0*form.f1.GetDescent(form.labelFontSize)
+			rowHeight += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 			vLine := NewLine(
 				form.x+field.x,
 				form.y+yField-(form.f2.GetAscent(form.valueFontSize)+form.f2.GetDescent(form.valueFontSize)),
