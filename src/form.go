@@ -21,6 +21,7 @@ type Form struct {
 	labelFontSize float32 // = 8f
 	valueFontSize float32 // = 10f
 	formWidth     float32 // = 500f
+	lineWidth     float32 // = 0f
 	labelColor    int32   // = Color.black
 	valueColor    int32   // = Color.blue
 }
@@ -41,9 +42,15 @@ func (form *Form) SetLocation(x, y float32) *Form {
 	return form
 }
 
-// SetFormWidth sets the row width.
+// SetFormWidth sets the form width.
 func (form *Form) SetFormWidth(formWidth float32) *Form {
 	form.formWidth = formWidth
+	return form
+}
+
+// SetLineWidth sets the line width.
+func (form *Form) SetLineWidth(lineWidth float32) *Form {
+	form.lineWidth = lineWidth
 	return form
 }
 
@@ -87,8 +94,10 @@ func (form *Form) SetValueColor(valueColor int32) *Form {
 // @param page the page to draw form on.
 // @return x and y coordinates of the bottom right corner of form component.
 func (form *Form) DrawOn(page *Page) []float32 {
+	if page == nil {
+		return []float32{} // TODO:
+	}
 
-	lineWidth := float32(0.2)
 	yField := float32(0.0)
 	xOffset := float32(3.0)
 	for i, field := range form.fields {
@@ -100,7 +109,7 @@ func (form *Form) DrawOn(page *Page) []float32 {
 						form.y+yField,
 						form.x+form.formWidth,
 						form.y+yField)
-					hLine.SetWidth(lineWidth).DrawOn(page)
+					hLine.SetWidth(form.lineWidth).DrawOn(page)
 				}
 				yField += form.f1.GetAscent(form.labelFontSize) + 4.0*form.f1.GetDescent(form.labelFontSize)
 			}
@@ -128,12 +137,12 @@ func (form *Form) DrawOn(page *Page) []float32 {
 				form.y+yField-(form.f2.GetAscent(form.valueFontSize)+form.f2.GetDescent(form.valueFontSize)),
 				form.x+field.x,
 				form.y+yField)
-			vLine.SetWidth(lineWidth).DrawOn(page)
+			vLine.SetWidth(form.lineWidth).DrawOn(page)
 		}
 	}
 
 	rect := NewRect(form.x, form.y, form.formWidth, yField)
-	rect.SetBorderWidth(lineWidth)
+	rect.SetBorderWidth(form.lineWidth)
 	rect.SetBorderColor(color.Black)
 	rect.DrawOn(page)
 

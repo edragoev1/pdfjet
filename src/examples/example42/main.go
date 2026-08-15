@@ -43,6 +43,7 @@ func Example42() {
 	form.SetValueFontSize(10.0)
 	form.SetLocation(50.0, 50.0)
 	form.SetFormWidth(w)
+	form.SetLineWidth(0.2)
 	xy := form.DrawOn(page)
 
 	rect := pdfjet.NewRect(xy[0], xy[1], 10.0, 10.0)
