@@ -17,204 +17,210 @@ public class Form : IDrawable {
     private float x;
     private float y;
     private Font f1;
-    private Font f2;
     private float labelFontSize = 8f;
+    private Font f2;
     private float valueFontSize = 10f;
-    private int numberOfRows;
-    private float rowWidth = 500f;
-    private float rowHeight = 12f;
+    private float formWidth = 500f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0f, 0f, 1f};
 
+    /**
+     * Creates a Form object
+     *
+     * @param fields the fields contained in this form
+     */
     public Form(List<Field> fields) {
         this.fields = fields;
     }
 
-    public void SetPosition(double x, double y) {
-        SetLocation((float) x, (float) y);
-    }
-
+    /**
+     * Sets the position of this form on the page
+     *
+     * @param x the horizontal position
+     * @param y the vertical position
+     */
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
 
+    /**
+     * Sets the position of this form on the page
+     *
+     * @param x the horizontal position
+     * @param y the vertical position
+     */
+    public void SetPosition(double x, double y) {
+        SetLocation(x, y);
+    }
+
+    /**
+     * Sets the location of this form on the page
+     *
+     * @param x the horizontal location
+     * @param y the vertical locations
+     * @return the form
+     */
     public Form SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
+    /**
+     * Sets the location of this form on the page
+     *
+     * @param x the horizontal location
+     * @param y the vertical locations
+     * @return the form
+     */
     public Form SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
 
-    public Form SetRowLength(float rowWidth) {
-        this.rowWidth = rowWidth;
+    /**
+     * Sets the form width
+     *
+     * @param formWidth the form width
+     * @return this form
+     */
+    public Form SetFormWidth(float formWidth) {
+        this.formWidth = formWidth;
         return this;
     }
 
-    public Form SetRowHeight(float rowHeight) {
-        this.rowHeight = rowHeight;
-        return this;
-    }
-
+    /**
+     * Sets the font for the label
+     *
+     * @param f1 the font
+     * @return this form
+     */
     public Form SetLabelFont(Font f1) {
         this.f1 = f1;
         return this;
     }
 
+    /**
+     * Sets the size for the label font
+     *
+     * @param labelFontSize the label font size
+     * @return the form
+     */
     public Form SetLabelFontSize(float labelFontSize) {
         this.labelFontSize = labelFontSize;
         return this;
     }
 
+    /**
+     * Sets the font for the value
+     *
+     * @param f2 the value font
+     * @return the form
+     */
     public Form SetValueFont(Font f2) {
         this.f2 = f2;
         return this;
     }
 
+    /**
+     * Sets the size for the value font
+     *
+     * @param valueFontSize the font size
+     * @return the form
+     */
     public Form SetValueFontSize(float valueFontSize) {
         this.valueFontSize = valueFontSize;
         return this;
     }
 
+    /**
+     * Sets the label color
+     *
+     * @param labelColor the label color
+     * @return the form
+     */
     public Form SetLabelColor(float[] labelColor) {
         this.labelColor = labelColor;
         return this;
     }
 
+    /**
+     * Sets the color for the value
+     *
+     * @param valueColor the value color
+     * @return the form
+     */
     public Form SetValueColor(float[] valueColor) {
         this.valueColor = valueColor;
         return this;
     }
 
     /**
-     * Draws this form on the specified page.
+     *  Draws this Form on the specified page.
      *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
+     *  @param page the page to draw this form on.
+     *  @return x and y coordinates of the bottom right corner of this component.
+     *  @throws Exception  If an input or output exception occurred
      */
     public float[] DrawOn(Page page) {
-        foreach (Field field in fields) {
-            if (field.format) {
-                field.values = Format(field.values[0], field.values[1], this.f2, this.rowWidth);
-                field.altDescription = new String[field.values.Length];
-                field.actualText = new String[field.values.Length];
-                for (int i = 0; i < field.values.Length; i++) {
-                    field.altDescription[i] = field.values[i];
-                    field.actualText[i] = field.values[i];
-                }
-            }
-            if (field.x == 0f) {
-                numberOfRows += field.values.Length;
-            }
-        }
-
-        if (numberOfRows == 0) {
-            return new float[] { x, y };
-        }
-
-        float boxHeight = rowHeight*numberOfRows + f2.GetDescent();
-        Box box = new Box();
-        box.SetLocation(x, y);
-        box.SetLineWidth(0.2f);
-        box.SetSize(rowWidth, boxHeight);
         if (page != null) {
-            box.DrawOn(page);
+            // TODO:
         }
 
+        float lineWidth = 0.2f;
         float yField = 0f;
-        int rowSpan = 1;
-        float yRow = 0;
-        foreach (Field field in fields) {
+        float xOffset = 3f;
+        for (int i = 0; i < fields.Count; i++) {
+            Field field = fields[i];
             if (field.x == 0f) {
-                yRow += rowSpan*rowHeight;
-                rowSpan = field.values.Length;
-            }
-            yField = yRow;
-            for (int i = 0; i < field.values.Length; i++) {
-                if (page != null) {
-                    Font font = (i == 0) ? f1 : f2;
-                    float fontSize = (i == 0) ? labelFontSize : valueFontSize;
-                    float[] color = (i == 0) ? labelColor : valueColor;
-                    new TextLine(font, field.values[i])
-                            .SetFontSize(fontSize)
-                            .SetTextColor(color)
-                            .SetAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
-                            .SetLocation(2f + this.x + field.x, this.y + yField)
-                            .DrawOn(page);
+                if (!field.label.Equals("")) {
                     if (i > 0) {
-                        Line vLine = new Line(
-                                x + field.x,
-                                y + yField - font.GetAscent(),
-                                x + field.x,
-                                y + yField + font.GetDescent());
-                        vLine.SetWidth(0.2f).DrawOn(page);
+                        Line hLine = new Line(
+                                x,
+                                y + yField,
+                                x + formWidth,
+                                y + yField);
+                        hLine.SetWidth(lineWidth).DrawOn(page);
                     }
+                    yField += f1.GetAscent(labelFontSize) + 4f*f1.GetDescent(labelFontSize);
                 }
-                yField += rowHeight;
+                yField += f2.GetAscent(valueFontSize) + f2.GetDescent(valueFontSize);
             }
 
-            Line line = new Line(
-                    x,
-                    y + yField + f2.GetDescent(valueFontSize) - rowHeight,
-                    x + rowWidth,
-                    y + yField + f2.GetDescent(valueFontSize) - rowHeight);
-            line.SetWidth(0.2f).DrawOn(page);
-        }
-
-        return new float[] { x + rowWidth, y + yField };
-    }
-
-    public static String[] Format(
-            String title, String text, Font font, float width) {
-        String[] original = text.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
-        if (original[original.Length - 1].Equals("")) {
-            String[] truncated = new String[original.Length - 1];
-            Array.Copy(original , truncated , truncated.Length);
-            original = truncated;
-        }
-
-        List<String> lines = new List<String>();
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < original.Length; i++) {
-            String line = original[i];
-            if (font.StringWidth(line) < width) {
-                lines.Add(line);
-                continue;
+            if (!field.label.Equals("")) {
+                float yOffset = 2*f1.GetDescent(labelFontSize) +
+                        f2.GetAscent(valueFontSize) + f2.GetDescent(valueFontSize);
+                new TextLine(f1, field.label)
+                        .SetFontSize(labelFontSize)
+                        .SetTextColor(labelColor)
+                        .SetLocation(
+                                x + field.x + xOffset,
+                                y + yField - yOffset).DrawOn(page);
             }
 
-            buf.Length = 0;
-            for (int j = 0; j < line.Length; j++) {
-                buf.Append(line[j]);
-                if (font.StringWidth(buf.ToString()) > (width - font.StringWidth("   "))) {
-                    while (j > 0 && line[j] != ' ') {
-                        j -= 1;
-                    }
-                    String str = line.Substring(0, j).TrimEnd();
-                    lines.Add(str);
-                    buf.Length = 0;
-                    while (j < line.Length && line[j] == ' ') {
-                        j += 1;
-                    }
-                    line = line.Substring(j);
-                    j = 0;
-                }
-            }
-            if (!line.Equals("")) {
-                lines.Add(line);
+            new TextLine(f2, field.value)
+                    .SetFontSize(valueFontSize)
+                    .SetTextColor(valueColor)
+                    .SetLocation(xOffset + x + field.x, y + yField - f2.GetDescent(valueFontSize))
+                    .DrawOn(page);
+
+            if (field.x != 0f) {
+                Line vLine = new Line(
+                        x + field.x,
+                        y + yField - (f2.GetAscent(valueFontSize) + f2.GetDescent(valueFontSize)),
+                        x + field.x,
+                        y + yField);
+                vLine.SetWidth(lineWidth).DrawOn(page);
             }
         }
 
-        int count = lines.Count;
-        String[] data = new String[1 + count];
-        data[0] = title;
-        for (int i = 0; i < count; i++) {
-            data[i + 1] = lines[i];
-        }
+        Rect rect = new Rect();
+        rect.SetLocation(x, y);
+        rect.SetBorderWidth(lineWidth);
+        rect.SetBorderColor(Color.black);
+        rect.SetSize(formWidth, yField);
+        rect.DrawOn(page);
 
-        return data;
+        return [ x + formWidth, y + yField ];
     }
 }   // End of Form.cs
 }   // End of namespace PDFjet.NET

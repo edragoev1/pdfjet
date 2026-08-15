@@ -11,37 +11,21 @@ using System;
  */
 namespace PDFjet.NET {
 public class Field {
-    internal float x;
-    internal String[] values;
-    internal String[] altDescription;
-    internal String[] actualText;
-    internal bool format;
+    protected internal float x;
+    protected internal String label;
+    protected internal String value;
 
-    public Field(float x, String[] values) : this(x, values, false) {
-    }
-
-    public Field(float x, String[] values, bool format) {
+    /**
+     * Creates a Field class that will be used in a Form class
+     *
+     * @param x the horizontal position within the Form
+     * @param label the field label
+     * @param value the field value
+     */
+    public Field(float x, String label, String value) {
         this.x = x;
-        this.values = values;
-        this.format = format;
-        if (values != null) {
-            altDescription = new String[values.Length];
-            actualText     = new String[values.Length];
-            for (int i = 0; i < values.Length; i++) {
-                this.altDescription[i] = values[i];
-                this.actualText[i]     = values[i];
-            }
-        }
+        this.label = label;
+        this.value = value;
     }
-
-    public Field SetAltDescription(String altDescription) {
-        this.altDescription[0] = altDescription;
-        return this;
-    }
-
-    public Field SetActualText(String actualText) {
-        this.actualText[0] = actualText;
-        return this;
-    }
-}   // End of Field.cs
+}
 }   // End of namespace PDFjet.NET

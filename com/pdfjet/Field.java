@@ -15,7 +15,7 @@ public class Field {
     String value;
 
     /**
-     * Creates a Field that will be used in a Form
+     * Creates a Field class that will be used in a Form class
      *
      * @param x the horizontal position within the Form
      * @param label the field label

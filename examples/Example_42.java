@@ -20,7 +20,6 @@ public class Example_42 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         float w = 500f;
-        float h = 15f;
 
         List<Field> fields = new ArrayList<Field>();
         fields.add(new Field(   0f, "Company", "Smart Widgets Construction Inc."));
