@@ -45,6 +45,11 @@ public class Example_42 {
                 .SetFormWidth(w)
                 .DrawOn(page));
 
+	    Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
+	    rect.SetBorderWidth(0.2f);
+	    rect.SetBorderColor(Color.blue);
+	    rect.DrawOn(page);
+
         pdf.Complete();
     }
 

@@ -46,6 +46,11 @@ public class Example_42 {
                 .setFormWidth(w)
                 .drawOn(page));
 
+	    Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
+	    rect.setBorderWidth(0.2f);
+	    rect.setBorderColor(Color.blue);
+	    rect.drawOn(page);
+
         pdf.complete();
     }
 
