@@ -5,6 +5,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
@@ -42,7 +43,12 @@ func Example42() {
 	form.SetValueFontSize(10.0)
 	form.SetLocation(50.0, 50.0)
 	form.SetFormWidth(w)
-	form.DrawOn(page)
+	xy := form.DrawOn(page)
+
+	rect := pdfjet.NewRect(xy[0], xy[1], 10.0, 10.0)
+	rect.SetBorderWidth(0.2)
+	rect.SetBorderColor(color.Blue)
+	rect.DrawOn(page)
 
 	pdf.Complete()
 }
