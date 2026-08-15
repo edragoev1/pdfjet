@@ -14,19 +14,16 @@ public class Example_42 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_42.pdf")));
 
-//         Font f1 = new Font(pdf, CoreFont.HELVETICA);
-//         Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        Font f2 = new Font(pdf, IBMPlexSans.Bold);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        float w = 500f;
+        float w = 500f; // The width of the form
 
         List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field(   0f, "Company", "Smart Widgets Construction Inc."));
-        fields.add(new Field(   0f, "Street Number", "120"));
+        fields.add(new Field(   0f, "Company", "Smart Widgets Inc."));
+        fields.add(new Field(   0f, "Street #", "120"));
         fields.add(new Field(  w/8, "Street Name", "Oak"));
         fields.add(new Field(4*w/8, "Street Type", "Street"));
         fields.add(new Field(5*w/8, "Direction", "West"));
@@ -34,11 +31,11 @@ public class Example_42 {
         fields.add(new Field(   0f, "City/Town", "Toronto"));
         fields.add(new Field(4*w/8, "Province", "Ontario"));
         fields.add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
-        fields.add(new Field(   0f, "Telephone Number", "(416) 331-2245"));
-        fields.add(new Field(2*w/8, "Fax (if applicable)", "(416) 124-9879"));
+        fields.add(new Field(   0f, "Telephone #", "(416) 331-2245"));
+        fields.add(new Field(2*w/8, "Fax #", "(416) 124-9879"));
         fields.add(new Field(4*w/8, "Email","jsmith12345@gmail.ca"));
-        fields.add(new Field(   0f, "Other Information", "We don't work on weekends."));
-        fields.add(new Field(   0f, "", "Please send us an Email."));
+        fields.add(new Field(   0f, "Other Information", "Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"));
+        fields.add(new Field(   0f, "", "enabling remote control and predictive maintenance."));
 
         float[] xy = (new Form(fields)
                 .setLabelFont(f1)
