@@ -20,7 +20,7 @@ public class Form : Drawable {
     private var formWidth: Float = 500.0
     private var lineWidth: Float = 0.0
     private var labelColor: [Float] = [0.0, 0.0, 0.0]
-    private var valueColor: [Float] = [0.0, 0.0, 1.0]
+    private var valueColor: [Float] = [0.33, 0.33, 0.66]
 
     public init(_ fields: [Field]) {
         self.fields = fields
@@ -113,7 +113,7 @@ public class Form : Drawable {
                                 y + yField)
                         hLine.setWidth(lineWidth).drawOn(page)
                     }
-                    yField += f1!.getAscent(labelFontSize) + 4.0*f1!.getDescent(labelFontSize)
+                    yField += f1!.getAscent(labelFontSize) + 3.0*f1!.getDescent(labelFontSize)
                 }
                 yField += f2!.getAscent(valueFontSize) + f2!.getDescent(valueFontSize)
             }
@@ -136,9 +136,11 @@ public class Form : Drawable {
                     .drawOn(page)
 
             if field.x != 0.0 {
+                var rowHeight = f1!.getAscent(labelFontSize) + 3.0*f1!.getDescent(labelFontSize)
+                rowHeight += f2!.getAscent(valueFontSize) + f2!.getDescent(valueFontSize)
                 let vLine = Line(
                         x + field.x,
-                        y + yField - (f2!.getAscent(valueFontSize) + f2!.getDescent(valueFontSize)),
+                        (y + yField) - rowHeight,
                         x + field.x,
                         y + yField)
                 vLine.setWidth(lineWidth).drawOn(page)
