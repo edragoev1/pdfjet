@@ -4,95 +4,45 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
-	"github.com/edragoev1/pdfjet/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
 // Example45 -- TODO:
 func Example45() {
-	pdf := pdfjet.NewPDFFile("Example_45.pdf")
-	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetLanguage("en-US")
-	pdf.SetTitle("Hello, World!")
+	pdf := pdfjet.NewPDFFile("Example_42.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	f1.SetSize(14.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
-	f2.SetSize(14.0)
-
-	f3 := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
-	f3.SetSize(10.0)
+	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 
-	var width float32 = 530.0
-	var height float32 = 15.0
+	var w float32 = 500.0
 
 	fields := make([]*pdfjet.Field, 0)
-	fields = append(fields, pdfjet.NewField(
-		0.0, []string{"Company", "Smart Widget Designs"}, false))
-	fields = append(fields, pdfjet.NewField(
-		0.0, []string{"Street Number", "120"}, false))
-	fields = append(fields, pdfjet.NewField(
-		width/8, []string{"Street Name", "Oak"}, false))
-	fields = append(fields, pdfjet.NewField(
-		5*width/8, []string{"Street Type", "Street"}, false))
-	fields = append(fields, pdfjet.NewField(
-		6*width/8, []string{"Direction", "West"}, false))
-	fields = append(fields, pdfjet.NewField(
-		7*width/8, []string{"Suite/Floor/Apt.", "8W"}, false).SetAltDescription(
-		"Suite/Floor/Apartment").SetActualText("Suite/Floor/Apartment"))
-	fields = append(fields, pdfjet.NewField(
-		0.0, []string{"City/Town", "Toronto"}, false))
-	fields = append(fields, pdfjet.NewField(
-		width/2, []string{"Province", "Ontario"}, false))
-	fields = append(fields, pdfjet.NewField(
-		7*width/8, []string{"Postal Code", "M5M 2N2"}, false))
-	fields = append(fields, pdfjet.NewField(
-		0.0, []string{"Telephone Number", "(416) 331-2245"}, false))
-	fields = append(fields, pdfjet.NewField(
-		width/4, []string{"Fax (if applicable)", "(416) 124-9879"}, false))
-	fields = append(fields, pdfjet.NewField(
-		width/2, []string{"Email", "jsmith12345@gmail.ca"}, false))
-	fields = append(fields, pdfjet.NewField(
-		0.0, []string{"Other Information",
-			"We don't work on weekends.", "Please send us an Email."}, false))
+	fields = append(fields, pdfjet.NewField(0.0, "Company", "Smart Widgets Construction Inc."))
+	fields = append(fields, pdfjet.NewField(0.0, "Street Number", "120"))
+	fields = append(fields, pdfjet.NewField(1*w/8, "Street Name", "Oak"))
+	fields = append(fields, pdfjet.NewField(4*w/8, "Street Type", "Street"))
+	fields = append(fields, pdfjet.NewField(5*w/8, "Direction", "West"))
+	fields = append(fields, pdfjet.NewField(6*w/8, "Suite/Floor/Apt.", "8W"))
+	fields = append(fields, pdfjet.NewField(0.0, "City/Town", "Toronto"))
+	fields = append(fields, pdfjet.NewField(4*w/8, "Province", "Ontario"))
+	fields = append(fields, pdfjet.NewField(7*w/8, "Postal Code", "M5M 2N2"))
+	fields = append(fields, pdfjet.NewField(0.0, "Telephone Number", "(416) 331-2245"))
+	fields = append(fields, pdfjet.NewField(2*w/8, "Fax (if applicable)", "(416) 124-9879"))
+	fields = append(fields, pdfjet.NewField(4*w/8, "Email", "jsmith12345@gmail.ca"))
+	fields = append(fields, pdfjet.NewField(0.0, "Other Information", "We don't work on weekends."))
+	fields = append(fields, pdfjet.NewField(0.0, "", "Please send us an Email."))
 
 	form := pdfjet.NewForm(fields)
 	form.SetLabelFont(f1)
-	form.SetLabelFontSize(7.0)
+	form.SetLabelFontSize(8.0)
 	form.SetValueFont(f2)
-	form.SetValueFontSize(9.0)
+	form.SetValueFontSize(10.0)
 	form.SetLocation(50.0, 50.0)
-	form.SetRowWidth(width)
-	form.SetRowHeight(height)
+	form.SetFormWidth(w)
 	form.DrawOn(page)
-
-	colors := make(map[string]int32)
-	colors["float32"] = color.Red
-	colors["false"] = color.Red
-	colors["ArrayList"] = color.Blue
-	colors["List"] = color.Blue
-	colors["String"] = color.Blue
-	colors["Field"] = color.Blue
-	colors["NewField"] = color.Blue
-	colors["NewForm"] = color.Blue
-	colors["Smart"] = color.Green
-	colors["Widget"] = color.Green
-	colors["Designs"] = color.Green
-
-	var x float32 = 50.0
-	var y float32 = 280.0
-	leading := f3.GetBodyHeight(f3.GetSize())
-	lines := pdfjet.ReadTextLines("data/languages/english.txt")
-	for _, line := range lines {
-		page.DrawStringUsingColorMap(f3, f3, f3.GetSize(), line, x, y, [3]float32{0.0, 0.0, 0.0}, colors)
-		y += leading
-	}
 
 	pdf.Complete()
 }
@@ -100,5 +50,5 @@ func Example45() {
 func main() {
 	start := time.Now()
 	Example45()
-	pdfjet.PrintDuration("Example_45", time.Since(start))
+	pdfjet.PrintDuration("Example_42", time.Since(start))
 }
