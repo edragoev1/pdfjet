@@ -18,6 +18,7 @@ public class Form : Drawable {
     private var f2: Font?
     private var valueFontSize: Float = 10.0
     private var formWidth: Float = 500.0
+    private var lineWidth: Float = 0.0
     private var labelColor: [Float] = [0.0, 0.0, 0.0]
     private var valueColor: [Float] = [0.0, 0.0, 1.0]
 
@@ -39,6 +40,12 @@ public class Form : Drawable {
     @discardableResult
     public func setFormWidth(_ formWidth: Float) -> Form {
         self.formWidth = formWidth
+        return self
+    }
+
+    @discardableResult
+    public func setLineWidth(_ lineWidth: Float) -> Form {
+        self.lineWidth = lineWidth
         return self
     }
 
@@ -87,11 +94,11 @@ public class Form : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if page != nil {
-            // TODO:
+        if page == nil {
+            print("[ERROR] drawOn called with nil page")
+            return []
         }
 
-        let lineWidth: Float = 0.2
         var yField: Float = 0.0
         let xOffset: Float = 3.0
         for i in 0..<fields.count {

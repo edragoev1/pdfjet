@@ -38,6 +38,7 @@ public class Example_42 {
                 .setValueFontSize(10.0)
                 .setLocation(50.0, 50.0)
                 .setFormWidth(w)
+                .setLineWidth(0.2)
                 .drawOn(page)
 
 	    let rect = Rect(xy[0], xy[1], 10.0, 10.0)
