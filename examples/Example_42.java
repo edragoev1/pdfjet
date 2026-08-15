@@ -14,8 +14,11 @@ public class Example_42 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_42.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+//         Font f1 = new Font(pdf, CoreFont.HELVETICA);
+//         Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.Bold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -39,7 +42,7 @@ public class Example_42 {
 
         float[] xy = (new Form(fields)
                 .setLabelFont(f1)
-                .setLabelFontSize(8f)
+                .setLabelFontSize(9f)
                 .setValueFont(f2)
                 .setValueFontSize(10f)
                 .setLocation(50f, 50f)

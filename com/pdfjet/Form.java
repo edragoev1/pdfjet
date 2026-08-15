@@ -22,7 +22,7 @@ public class Form implements Drawable {
     private float formWidth = 500f;
     private float lineWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
-    private float[] valueColor = new float[] {0f, 0f, 1f};
+    private float[] valueColor = new float[] {0.3373f, 0.3490f, 0.6941f};
 
     /**
      * Creates a Form object
@@ -191,7 +191,7 @@ public class Form implements Drawable {
                                 y + yField);
                         hLine.setWidth(lineWidth).drawOn(page);
                     }
-                    yField += f1.getAscent(labelFontSize) + 4f*f1.getDescent(labelFontSize);
+                    yField += f1.getAscent(labelFontSize) + 3f*f1.getDescent(labelFontSize);
                 }
                 yField += f2.getAscent(valueFontSize) + f2.getDescent(valueFontSize);
             }
