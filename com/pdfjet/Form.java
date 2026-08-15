@@ -20,6 +20,7 @@ public class Form implements Drawable {
     private Font f2;
     private float valueFontSize = 10f;
     private float formWidth = 500f;
+    private float lineWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0f, 0f, 1f};
 
@@ -84,6 +85,17 @@ public class Form implements Drawable {
      */
     public Form setFormWidth(float formWidth) {
         this.formWidth = formWidth;
+        return this;
+    }
+
+    /**
+     * Sets the line width
+     *
+     * @param lineWidth the form width
+     * @return this form
+     */
+    public Form setLineWidth(float lineWidth) {
+        this.lineWidth = lineWidth;
         return this;
     }
 
@@ -165,7 +177,6 @@ public class Form implements Drawable {
             // TODO:
         }
 
-        float lineWidth = 0.2f;
         float yField = 0f;
         float xOffset = 3f;
         for (int i = 0; i < fields.size(); i++) {

@@ -44,6 +44,7 @@ public class Example_42 {
                 .setValueFontSize(10f)
                 .setLocation(50f, 50f)
                 .setFormWidth(w)
+                .setLineWidth(0.2f)
                 .drawOn(page));
 
 	    Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
