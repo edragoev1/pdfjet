@@ -78,21 +78,23 @@ func (form *Form) SetValueFontSize(valueFontSize float32) *Form {
 	return form
 }
 
+// parseColor converts an int32 color value (0xRRGGBB) to RGB floats in range 0.0-1.0.
+func parseColor(color int32) [3]float32 {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32(color&0xff) / 255.0
+	return [3]float32{r, g, b}
+}
+
 // SetLabelColor sets the color for the label.
 func (form *Form) SetLabelColor(labelColor int32) *Form {
-	r := float32((labelColor>>16)&0xff) / 255.0
-	g := float32((labelColor>>8)&0xff) / 255.0
-	b := float32((labelColor)&0xff) / 255.0
-	form.valueColor = [3]float32{r, g, b}
+	form.labelColor = parseColor(labelColor)
 	return form
 }
 
 // SetValueColor sets the color for the value string.
 func (form *Form) SetValueColor(valueColor int32) *Form {
-	r := float32((valueColor>>16)&0xff) / 255.0
-	g := float32((valueColor>>8)&0xff) / 255.0
-	b := float32((valueColor)&0xff) / 255.0
-	form.valueColor = [3]float32{r, g, b}
+	form.valueColor = parseColor(valueColor)
 	return form
 }
 
