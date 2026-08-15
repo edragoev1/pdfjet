@@ -98,6 +98,18 @@ func (form *Form) SetValueColor(valueColor int32) *Form {
 	return form
 }
 
+// SetLabelColorRGB sets the color for the label using RGB float values (0.0-1.0).
+func (form *Form) SetLabelColorRGB(color [3]float32) *Form {
+	form.labelColor = color
+	return form
+}
+
+// SetValueColorRGB sets the color for the value string using RGB float values (0.0-1.0).
+func (form *Form) SetValueColorRGB(color [3]float32) *Form {
+	form.valueColor = color
+	return form
+}
+
 // DrawOn draws the form on the specified page.
 // @param page the page to draw form on.
 // @return x and y coordinates of the bottom right corner of form component.
