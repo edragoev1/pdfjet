@@ -156,7 +156,7 @@ func (form *Form) DrawOn(page *Page) []float32 {
 			rowHeight += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 			vLine := NewLine(
 				form.x+field.x,
-				form.y+yField-(form.f2.GetAscent(form.valueFontSize)+form.f2.GetDescent(form.valueFontSize)),
+				(form.y+yField)-rowHeight,
 				form.x+field.x,
 				form.y+yField)
 			vLine.SetWidth(form.lineWidth).DrawOn(page)
