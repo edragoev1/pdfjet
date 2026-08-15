@@ -8,8 +8,6 @@ package pdfjet
  */
 
 import (
-	"strings"
-
 	"github.com/edragoev1/pdfjet/src/color"
 )
 
@@ -22,9 +20,7 @@ type Form struct {
 	f1, f2        *Font
 	labelFontSize float32 // = 8f
 	valueFontSize float32 // = 10f
-	numberOfRows  int
-	rowWidth      float32 // = 500f
-	rowHeight     float32 // = 12f
+	formWidth     float32 // = 500f
 	labelColor    int32   // = Color.black
 	valueColor    int32   // = Color.blue
 }
@@ -45,15 +41,9 @@ func (form *Form) SetLocation(x, y float32) *Form {
 	return form
 }
 
-// SetRowWidth sets the row width.
-func (form *Form) SetRowWidth(rowWidth float32) *Form {
-	form.rowWidth = rowWidth
-	return form
-}
-
-// SetRowHeight sets the height of the rows.
-func (form *Form) SetRowHeight(rowHeight float32) *Form {
-	form.rowHeight = rowHeight
+// SetFormWidth sets the row width.
+func (form *Form) SetFormWidth(formWidth float32) *Form {
+	form.formWidth = formWidth
 	return form
 }
 
@@ -97,135 +87,55 @@ func (form *Form) SetValueColor(valueColor int32) *Form {
 // @param page the page to draw form on.
 // @return x and y coordinates of the bottom right corner of form component.
 func (form *Form) DrawOn(page *Page) []float32 {
-	for _, field := range form.fields {
-		if field.format {
-			field.values = form.format(field.values[0], field.values[1], form.f2, form.rowWidth)
-			field.altDescription = make([]string, 0)
-			field.actualText = make([]string, 0)
-			for _, value := range field.values {
-				field.altDescription = append(field.altDescription, value)
-				field.actualText = append(field.actualText, value)
-			}
-		}
+
+	lineWidth := float32(0.2)
+	yField := float32(0.0)
+	xOffset := float32(3.0)
+	for i, field := range form.fields {
 		if field.x == 0.0 {
-			form.numberOfRows += len(field.values)
-		}
-	}
-
-	if form.numberOfRows == 0 {
-		return []float32{form.x, form.y}
-	}
-
-	boxHeight := form.rowHeight * float32(form.numberOfRows)
-	box := NewBox()
-	box.SetLocation(form.x, form.y)
-	box.SetLineWidth(0.2)
-	box.SetSize(form.rowWidth, boxHeight+form.f2.GetDescent(form.valueFontSize))
-	box.DrawOn(page)
-
-	var yField float32
-	var yRow float32
-	rowSpan := 1
-	for _, field := range form.fields {
-		if field.x == 0.0 {
-			yRow += float32(rowSpan) * form.rowHeight
-			rowSpan = len(field.values)
-		}
-		yField = yRow
-
-		var font *Font
-		var fontSize float32
-		var textColor int32
-		var altDescription string
-		var actualText string
-		i := 0
-		for i < len(field.values) {
-			if i == 0 {
-				font = form.f1
-				fontSize = form.labelFontSize
-				textColor = form.labelColor
-				altDescription = field.altDescription[i]
-				actualText = field.actualText[i]
-			} else {
-				font = form.f2
-				fontSize = form.valueFontSize
-				textColor = form.valueColor
-				altDescription = field.altDescription[i] + ","
-				actualText = field.actualText[i] + ","
-			}
-			textLine := NewTextLine(font, field.values[i])
-			textLine.SetFontSize(fontSize)
-			textLine.SetTextColor(textColor)
-			textLine.SetAltDescription(altDescription)
-			textLine.SetActualText(actualText)
-			textLine.SetLocation(2.0+form.x+field.x, form.y+yField)
-			textLine.DrawOn(page)
-
-			if i == len(field.values)-1 {
-				line := NewLine(
-					form.x,
-					form.y+yField+font.GetDescent(form.valueFontSize),
-					form.x+form.rowWidth,
-					form.y+yField+font.GetDescent(form.valueFontSize)).SetWidth(0.2)
-				line.DrawOn(page)
-				line = NewLine(
-					form.x+field.x,
-					form.y+yField+font.GetDescent(form.valueFontSize)-(float32(len(field.values))-1)*form.rowHeight,
-					form.x+field.x,
-					form.y+yField+font.GetDescent(form.valueFontSize)).SetWidth(0.2)
-				line.DrawOn(page)
-			}
-			yField += form.rowHeight
-
-			i++
-		}
-	}
-
-	return []float32{form.x + form.rowWidth, form.y + boxHeight}
-}
-
-// format formats the form text.
-func (form *Form) format(title, text string, font *Font, width float32) []string {
-	original := strings.Fields(text)
-	lines := make([]string, 0)
-	var buf strings.Builder
-	for i := range original {
-		line := original[i]
-		if font.StringWidth(font.size, line) < width {
-			lines = append(lines, line)
-			continue
-		}
-		buf.Reset()
-
-		runes := []rune(line)
-		for j := 0; j < len(runes); j++ {
-			buf.WriteRune(runes[j])
-			if font.StringWidth(font.size, buf.String()) > (width - font.StringWidth(font.size, "   ")) {
-				for j > 0 && runes[j] != ' ' {
-					j--
+			if field.label != "" {
+				if i > 0 {
+					hLine := NewLine(
+						form.x,
+						form.y+yField,
+						form.x+form.formWidth,
+						form.y+yField)
+					hLine.SetWidth(lineWidth).DrawOn(page)
 				}
-				str := strings.TrimSpace(line[0:j])
-				lines = append(lines, str)
-				buf.Reset()
-				for j < len(runes) && runes[j] == ' ' {
-					j++
-				}
-				line = line[j:]
-				j = 0
+				yField += form.f1.GetAscent(form.labelFontSize) + 4.0*form.f1.GetDescent(form.labelFontSize)
 			}
+			yField += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 		}
 
-		if line != "" {
-			lines = append(lines, line)
+		if field.label != "" {
+			yOffset := 2*form.f1.GetDescent(form.labelFontSize) +
+				form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
+			textLine := NewTextLine(form.f1, field.label)
+			textLine.SetFontSize(form.labelFontSize)
+			textLine.SetTextColor(form.labelColor)
+			textLine.SetLocation(form.x+field.x+xOffset, form.y+yField-yOffset).DrawOn(page)
+		}
+
+		textLine := NewTextLine(form.f2, field.value)
+		textLine.SetFontSize(form.valueFontSize)
+		textLine.SetTextColor(form.valueColor)
+		textLine.SetLocation(xOffset+form.x+field.x, form.y+yField-form.f2.GetDescent(form.valueFontSize))
+		textLine.DrawOn(page)
+
+		if field.x != 0.0 {
+			vLine := NewLine(
+				form.x+field.x,
+				form.y+yField-(form.f2.GetAscent(form.valueFontSize)+form.f2.GetDescent(form.valueFontSize)),
+				form.x+field.x,
+				form.y+yField)
+			vLine.SetWidth(lineWidth).DrawOn(page)
 		}
 	}
 
-	count := len(lines)
-	data := make([]string, count+1)
-	data[0] = title
-	for i := range count {
-		data[i+1] = lines[i]
-	}
+	rect := NewRect(form.x, form.y, form.formWidth, yField)
+	rect.SetBorderWidth(lineWidth)
+	rect.SetBorderColor(color.Black)
+	rect.DrawOn(page)
 
-	return data
+	return []float32{form.x + form.formWidth, form.y + yField}
 }
