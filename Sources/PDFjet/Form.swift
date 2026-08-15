@@ -17,9 +17,7 @@ public class Form : Drawable {
     private var labelFontSize: Float = 8.0
     private var f2: Font?
     private var valueFontSize: Float = 10.0
-    private var numberOfRows = 0
-    private var rowWidth: Float = 500.0
-    private var rowHeight: Float = 12.0
+    private var formWidth: Float = 500.0
     private var labelColor: [Float] = [0.0, 0.0, 0.0]
     private var valueColor: [Float] = [0.0, 0.0, 1.0]
 
@@ -39,14 +37,8 @@ public class Form : Drawable {
     }
 
     @discardableResult
-    public func setRowLength(_ rowWidth: Float) -> Form {
-        self.rowWidth = rowWidth
-        return self
-    }
-
-    @discardableResult
-    public func setRowHeight(_ rowHeight: Float) -> Form {
-        self.rowHeight = rowHeight
+    public func setFormWidth(_ formWidth: Float) -> Form {
+        self.formWidth = formWidth
         return self
     }
 
@@ -95,109 +87,64 @@ public class Form : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        for field in fields {
-            if field.format {
-                field.values = format(field.values[0], field.values[1], self.f2!, self.rowWidth)
-                field.actualText  = [String]()
-                field.altDescription = [String]()
-                for value in field.values {
-                    field.actualText.append(value)
-                    field.altDescription.append(value)
-                }
-            }
-            if field.x == 0.0 {
-                numberOfRows += field.values.count
-            }
-        }
-
-        if numberOfRows == 0 {
-            return [self.x, self.y]
-        }
-
-        let boxHeight = rowHeight * Float(numberOfRows)
-        let box = Box()
-                .setLocation(self.x, self.y)
-                .setSize(rowWidth, boxHeight)
         if page != nil {
-            box.drawOn(page)
+            // TODO:
         }
 
+        let lineWidth: Float = 0.2
         var yField: Float = 0.0
-        var rowSpan = 1
-        var yRow: Float = 0
-        for field in fields {
+        let xOffset: Float = 3.0
+        for i in 0..<fields.count {
+            let field = fields[i]
             if field.x == 0.0 {
-                yRow += Float(rowSpan) * rowHeight
-                rowSpan = field.values.count
-            }
-            yField = Float(yRow)
-
-            for i in 0..<field.values.count {
-                if page != nil {
-                    let font: Font = (i == 0) ? f1! : f2!
-                    let fontSize: Float = (i == 0) ? labelFontSize : valueFontSize
-                    let color = (i == 0) ? labelColor : valueColor
-                    TextLine(font, field.values[i])
-                            .setFontSize(fontSize)
-                            .setTextColor(color)
-                            .setAltDescription((i == 0) ? field.altDescription[i] : (field.altDescription[i] + ","))
-			                .setLocation(2.0 + self.x + field.x, self.y + yField)
-                            .drawOn(page)
-                    if i == (field.values.count - 1) {
-                        Line(0.0, 0.0, rowWidth, 0.0).drawOn(page)
-                        if field.x != 0.0 {
-                            Line(0.0, -Float(field.values.count - 1) * rowHeight, 0.0, 0.0).drawOn(page)
-                        }
+                if field.label != "" {
+                    if i > 0 {
+                        let hLine = Line(
+                                x,
+                                y + yField,
+                                x + formWidth,
+                                y + yField)
+                        hLine.setWidth(lineWidth).drawOn(page)
                     }
+                    yField += f1!.getAscent(labelFontSize) + 4.0*f1!.getDescent(labelFontSize)
                 }
-                yField += rowHeight
+                yField += f2!.getAscent(valueFontSize) + f2!.getDescent(valueFontSize)
+            }
+
+            if field.label != "" {
+                let yOffset = 2*f1!.getDescent(labelFontSize) +
+                        f2!.getAscent(valueFontSize) + f2!.getDescent(valueFontSize)
+                TextLine(f1!, field.label)
+                        .setFontSize(labelFontSize)
+                        .setTextColor(labelColor)
+                        .setLocation(
+                                x + field.x + xOffset,
+                                y + yField - yOffset).drawOn(page)
+            }
+
+            TextLine(f2!, field.value)
+                    .setFontSize(valueFontSize)
+                    .setTextColor(valueColor)
+                    .setLocation(xOffset + x + field.x, y + yField - f2!.getDescent(valueFontSize))
+                    .drawOn(page)
+
+            if field.x != 0.0 {
+                let vLine = Line(
+                        x + field.x,
+                        y + yField - (f2!.getAscent(valueFontSize) + f2!.getDescent(valueFontSize)),
+                        x + field.x,
+                        y + yField)
+                vLine.setWidth(lineWidth).drawOn(page)
             }
         }
 
-        return [self.x + rowWidth, self.y + boxHeight]
-    }
+        let rect = Rect()
+        rect.setLocation(x, y)
+        rect.setBorderWidth(lineWidth)
+        rect.setBorderColor(Color.black)
+        rect.setSize(formWidth, yField)
+        rect.drawOn(page)
 
-    public func format(
-            _ title: String,
-            _ text: String,
-            _ font: Font,
-            _ width: Float) -> [String] {
-
-        let original = text.components(separatedBy: "\n")
-        var lines = [String]()
-        for line1 in original {
-            let line = line1.trim()
-            if font.stringWidth(line) < width {
-                lines.append(line)
-            } else {
-                var buffer = String()
-                let characters = Array(line)
-                var j = 0
-                while j < characters.count {
-                    buffer.append(characters[j])
-                    if font.stringWidth(buffer) > (width - font.stringWidth("   ")) {
-                        if (characters[j] == " ") {
-                            while j > 0 && characters[j] != " " {
-                                j += 1
-                            }
-                        } else {
-                            while j > 0 && characters[j] != " " {
-                                j -= 1
-                                buffer.removeLast()
-                            }
-                        }
-                        lines.append(buffer)
-                        buffer.removeAll()
-                    }
-                    j += 1
-                }
-                if !buffer.isEmpty {
-                    lines.append(buffer)
-                }
-            }
-        }
-        lines.insert(title, at: 0)
-
-        return lines
+        return [ x + formWidth, y + yField ]
     }
 }   // End of Form.swift
