@@ -95,7 +95,7 @@ func (form *Form) SetValueColor(valueColor int32) *Form {
 // @return x and y coordinates of the bottom right corner of form component.
 func (form *Form) DrawOn(page *Page) []float32 {
 	if page == nil {
-		return []float32{} // TODO:
+		return []float32{}
 	}
 
 	yField := float32(0.0)
