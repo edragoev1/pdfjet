@@ -31,7 +31,7 @@ public class Example_42 {
         fields.append(Field(  0.0, "Other Information", "We don't work on weekends."))
         fields.append(Field(  0.0, "", "Please send us an Email."))
 
-        Form(fields)
+        let xy = Form(fields)
                 .setLabelFont(f1)
                 .setLabelFontSize(8.0)
                 .setValueFont(f2)
@@ -39,6 +39,11 @@ public class Example_42 {
                 .setLocation(50.0, 50.0)
                 .setFormWidth(w)
                 .drawOn(page)
+
+	    let rect = Rect(xy[0], xy[1], 10.0, 10.0)
+	    rect.setBorderWidth(0.2)
+	    rect.setBorderColor(Color.blue)
+	    rect.drawOn(page)
 
         pdf.complete()
     }
