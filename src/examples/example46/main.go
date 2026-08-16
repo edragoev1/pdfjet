@@ -29,8 +29,6 @@ func Example46() {
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	// f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	// Test OTF with CFF outlines!
-	// f1 := NewFont(pdf, "data/SourceSansPro-Regular.otf")
 	f1.SetSize(36.0)
 
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")

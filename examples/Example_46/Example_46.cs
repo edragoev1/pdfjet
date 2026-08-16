@@ -30,8 +30,6 @@ public class Example_46 {
 
         // Font f1 = new Font(pdf, CoreFont.HELVETICA);
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        // Test OTF with CFF outlines!
-        // Font f1 = new Font(pdf, "data/SourceSansPro-Regular.otf");
         f1.SetSize(36f);
 
         Image image = new Image(pdf, "images/ee-map.png");
