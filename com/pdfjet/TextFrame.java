@@ -127,6 +127,7 @@ public class TextFrame implements Drawable {
             beginParagraphPoints.add(new float[] {xText, yText});
             while (true) {
                 textLine = drawLineOnPage(textLine, page);
+                // TODO:
                 if (textLine.getText().equals("")) {
                     break;
                 }
