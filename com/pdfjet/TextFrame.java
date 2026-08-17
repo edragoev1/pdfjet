@@ -118,7 +118,6 @@ public class TextFrame implements Drawable {
     }
 
     public float[] drawOn(Page page) throws Exception {
-        // float xText = x;
         float yText = y + font.getAscent(fontSize);
         while (lines.size() > 0) {
             // The lines are reversed so we can efficiently remove the first one:
@@ -138,7 +137,6 @@ public class TextFrame implements Drawable {
                     return new float[] {this.x + this.w, this.y + this.h};
                 }
             }
-            // xText = x;
             yText += leading;
         }
         drawBorder(page);
