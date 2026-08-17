@@ -25,8 +25,8 @@ public class Example_47 {
 
         float x = 50f;
         float y = 50f;
-        float width = 230f;
-        float height = 500f;
+        float w = 230f;
+        float h = 500f;
 
         Page page = null;
         TextFrame frame = new TextFrame(paragraphs);
@@ -34,26 +34,26 @@ public class Example_47 {
             page = new Page(pdf, Letter.LANDSCAPE);
 
             frame.setLocation(x, y);
-            frame.setWidth(width);
-            frame.setHeight(height);
-            frame.setBorder(true);
+            frame.setWidth(w);
+            frame.setHeight(h);
+            // frame.setBorder(true);
             frame.drawOn(page);
 
             if (frame.isNotEmpty()) {
                 x += 250f;
                 frame.setLocation(x, y);
-                frame.setWidth(width);
-                frame.setHeight(height);
-                frame.setBorder(false);
+                frame.setWidth(w);
+                frame.setHeight(h);
+                // frame.setBorder(false);
                 frame.drawOn(page);
             }
 
             if (frame.isNotEmpty()) {
                 x += 250f;
                 frame.setLocation(x, y);
-                frame.setWidth(width);
-                frame.setHeight(height);
-                frame.setBorder(true);
+                frame.setWidth(w);
+                frame.setHeight(h);
+                // frame.setBorder(true);
                 frame.drawOn(page);
             }
 
