@@ -31,7 +31,7 @@ public class TextFrame implements Drawable {
         this.fallbackFont = lines.get(0).getFallbackFont();
         this.fontSize = font.size;
         this.leading = font.getBodyHeight(fontSize);
-        this.paragraphLeading = 2*leading;
+        this.paragraphLeading = leading;
         this.beginParagraphPoints = new ArrayList<float[]>();
         if (fallbackFont != null && (fallbackFont.getBodyHeight(fontSize) > this.leading)) {
             this.leading = fallbackFont.getBodyHeight(fontSize);
@@ -124,14 +124,13 @@ public class TextFrame implements Drawable {
             // The lines are reversed so we can efficiently remove the first one:
             TextLine textLine = lines.remove(lines.size() - 1);
             textLine.setLocation(xText, yText);
-            beginParagraphPoints.add(new float[] {xText, yText});
+            // beginParagraphPoints.add(new float[] {xText, yText});
             while (true) {
                 textLine = drawLineOnPage(textLine, page);
-                // TODO:
+                yText = textLine.advance(leading);
                 if (textLine.getText().equals("")) {
                     break;
                 }
-                yText = textLine.advance(leading);
                 if (yText + font.getDescent(fontSize) >= (y + h)) {
                     // The text lines are reversed so we can efficiently add new lines:
                     lines.add(textLine);
@@ -148,8 +147,9 @@ public class TextFrame implements Drawable {
 
     private void drawBorder(Page page) throws Exception {
         if (page != null && border) {
-            Rect box = new Rect(x, y, w, h);
-            box.drawOn(page);
+            Rect rect = new Rect(x, y, w, h);
+            rect.setBorderColor(Color.blue);
+            rect.drawOn(page);
         }
     }
 
