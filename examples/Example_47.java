@@ -16,58 +16,49 @@ public class Example_47 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);
 
-        Image image1 = new Image(pdf, "images/AU-map.png");
-        image1.scaleBy(0.50f);
-
-        Image image2 = new Image(pdf, "images/HU-map.png");
-        image2.scaleBy(0.50f);
-
-        Page page = new Page(pdf, Letter.PORTRAIT);
-
-        image1.setLocation(20f, 20f);
-        image1.drawOn(page);
-
-        image2.setLocation(
-                page.getWidth() - (image2.getWidth() + 20f),
-                page.getHeight() - (image2.getHeight() + 20f));
-        image2.drawOn(page);
-
         List<TextLine> paragraphs = new ArrayList<TextLine>();
-        String contents = Content.ofTextFile("data/austria_hungary.txt");
+        String contents = Content.ofTextFile("data/dostoevsky.txt");
         String[] textLines = contents.split("\\n\\n");
         for (String textLine : textLines) {
             paragraphs.add(new TextLine(f1, textLine));
         }
 
-        float xPos = 20f;
-        float yPos = 250f;
+        float x = 50f;
+        float y = 50f;
+        float width = 175f;
+        float height = 500f;
 
-        float width = 180f;
-        float height = 315f;
-
+        Page page = null;
         TextFrame frame = new TextFrame(paragraphs);
-        frame.setLocation(xPos, yPos);
-        frame.setWidth(width);
-        frame.setHeight(height);
-        frame.setBorder(true);
-        frame.drawOn(page);
+        while (frame.isNotEmpty()) {
+            page = new Page(pdf, Letter.LANDSCAPE);
 
-        xPos += 200f;
-        if (frame.isNotEmpty()) {
-            frame.setLocation(xPos, yPos);
-            frame.setWidth(width);
-            frame.setHeight(height);
-            frame.setBorder(false);
-            frame.drawOn(page);
-        }
-
-        xPos += 200f;
-        if (frame.isNotEmpty()) {
-            frame.setLocation(xPos, yPos);
+            frame.setLocation(x, y);
             frame.setWidth(width);
             frame.setHeight(height);
             frame.setBorder(true);
             frame.drawOn(page);
+
+            if (frame.isNotEmpty()) {
+                x += 200f;
+                frame.setLocation(x, y);
+                frame.setWidth(width);
+                frame.setHeight(height);
+                frame.setBorder(false);
+                frame.drawOn(page);
+            }
+
+            if (frame.isNotEmpty()) {
+                x += 200f;
+                frame.setLocation(x, y);
+                frame.setWidth(width);
+                frame.setHeight(height);
+                frame.setBorder(true);
+                frame.drawOn(page);
+            }
+
+            x = 50f;
+            y = 50f;
         }
 
         pdf.complete();

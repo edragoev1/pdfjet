@@ -16,27 +16,24 @@ public class Example_47 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(12f);
 
-        Image image1 = new Image(pdf, "images/AU-map.png");
-        image1.ScaleBy(0.50f);
-
-        Image image2 = new Image(pdf, "images/HU-map.png");
-        image2.ScaleBy(0.50f);
+//        Image image1 = new Image(pdf, "images/AU-map.png");
+//        image1.ScaleBy(0.50f);
+//
+//        Image image2 = new Image(pdf, "images/HU-map.png");
+//        image2.ScaleBy(0.50f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        image1.SetLocation(20f, 20f);
-        image1.DrawOn(page);
-
-        image2.SetLocation(
-                page.GetWidth() - (image2.GetWidth() + 20f),
-                page.GetHeight() - (image2.GetHeight() + 20f));
-        image2.DrawOn(page);
-
-        List<TextLine> paragraphs = new List<TextLine>();
+//        image1.SetLocation(20f, 20f);
+//        image1.DrawOn(page);
+//
+//        image2.SetLocation(
+//                page.GetWidth() - (image2.GetWidth() + 20f),
+//                page.GetHeight() - (image2.GetHeight() + 20f));
+//        image2.DrawOn(page);
 
         StringBuilder buf = new StringBuilder();
         StreamReader reader = new StreamReader("data/austria_hungary.txt");
-
         String text = null;
         while ((text = reader.ReadLine()) != null) {
             buf.Append(text);
@@ -44,6 +41,7 @@ public class Example_47 {
         }
         reader.Close();
 
+        List<TextLine> paragraphs = new List<TextLine>();
         String[] textLines = Regex.Split(buf.ToString(), "\n\n");
         foreach (String textLine in textLines) {
             paragraphs.Add(new TextLine(f1, textLine));
