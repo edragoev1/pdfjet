@@ -25,7 +25,7 @@ public class Example_47 {
 
         float x = 50f;
         float y = 50f;
-        float width = 175f;
+        float width = 230f;
         float height = 500f;
 
         Page page = null;
@@ -40,7 +40,7 @@ public class Example_47 {
             frame.drawOn(page);
 
             if (frame.isNotEmpty()) {
-                x += 200f;
+                x += 250f;
                 frame.setLocation(x, y);
                 frame.setWidth(width);
                 frame.setHeight(height);
@@ -49,7 +49,7 @@ public class Example_47 {
             }
 
             if (frame.isNotEmpty()) {
-                x += 200f;
+                x += 250f;
                 frame.setLocation(x, y);
                 frame.setWidth(width);
                 frame.setHeight(height);
