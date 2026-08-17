@@ -16,9 +16,6 @@ public class Example_47 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Italic);
-        f2.setSize(12f);
-
         Image image1 = new Image(pdf, "images/AU-map.png");
         image1.scaleBy(0.50f);
 

@@ -17,9 +17,6 @@ func Example47() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(12.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
-	f2.SetSize(12.0)
-
 	image1 := pdfjet.NewImageFromFile(pdf, "images/AU-map.png")
 	image1.ScaleBy(0.50)
 

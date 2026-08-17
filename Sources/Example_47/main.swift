@@ -11,9 +11,6 @@ public class Example_47 {
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(12.0)
 
-        let f2 = try Font(pdf, IBMPlexSans.Italic)
-        f2.setSize(12.0)
-
         let image1 = try Image(pdf, "images/AU-map.png")
         let image2 = try Image(pdf, "images/HU-map.png")
 
