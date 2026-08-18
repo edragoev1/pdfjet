@@ -71,17 +71,9 @@ func (tf *TextFrame) SetLocation(x, y float32) *TextFrame {
 	return tf
 }
 
-func (tf *TextFrame) SetLocationDouble(x, y float64) *TextFrame {
-	return tf.SetLocation(float32(x), float32(y))
-}
-
 func (tf *TextFrame) SetWidth(w float32) *TextFrame {
 	tf.w = w
 	return tf
-}
-
-func (tf *TextFrame) SetWidthDouble(w float64) *TextFrame {
-	return tf.SetWidth(float32(w))
 }
 
 func (tf *TextFrame) SetHeight(h float32) *TextFrame {
@@ -89,8 +81,8 @@ func (tf *TextFrame) SetHeight(h float32) *TextFrame {
 	return tf
 }
 
-func (tf *TextFrame) SetHeightDouble(h float64) *TextFrame {
-	return tf.SetHeight(float32(h))
+func (tf *TextFrame) GetWidth() float32 {
+	return tf.w
 }
 
 func (tf *TextFrame) GetHeight() float32 {
