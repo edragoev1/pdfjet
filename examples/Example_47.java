@@ -25,29 +25,29 @@ public class Example_47 {
         float h = 500f;
 
         Page page = null;
-        TextFrame frame = new TextFrame(f1, paragraphs);
-        while (frame.isNotEmpty()) {
+        TextFrame textFrame = new TextFrame(f1, paragraphs);
+        while (textFrame.hasMoreText()) {
             page = new Page(pdf, Letter.LANDSCAPE);
 
-            frame.setLocation(x, y);
-            frame.setWidth(w);
-            frame.setHeight(h);
-            frame.drawOn(page);
+            textFrame.setLocation(x, y);
+            textFrame.setWidth(w);
+            textFrame.setHeight(h);
+            textFrame.drawOn(page);
 
-            if (frame.isNotEmpty()) {
+            if (textFrame.hasMoreText()) {
                 x += 250f;
-                frame.setLocation(x, y);
-                frame.setWidth(w);
-                frame.setHeight(h);
-                frame.drawOn(page);
+                textFrame.setLocation(x, y);
+                textFrame.setWidth(w);
+                textFrame.setHeight(h);
+                textFrame.drawOn(page);
             }
 
-            if (frame.isNotEmpty()) {
+            if (textFrame.hasMoreText()) {
                 x += 250f;
-                frame.setLocation(x, y);
-                frame.setWidth(w);
-                frame.setHeight(h);
-                frame.drawOn(page);
+                textFrame.setLocation(x, y);
+                textFrame.setWidth(w);
+                textFrame.setHeight(h);
+                textFrame.drawOn(page);
             }
 
             x = 50f;

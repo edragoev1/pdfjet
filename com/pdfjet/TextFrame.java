@@ -131,7 +131,7 @@ public class TextFrame implements Drawable {
         }
     }
 
-    public boolean isNotEmpty() {
+    public boolean hasMoreText() {
         return paragraphs.size() > 0;
     }
 }   // End of TextFrame.java
