@@ -15,9 +15,9 @@ func Example47() {
 	pdf := pdfjet.NewPDFFile("Example_47.pdf")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(12.0)
+	f1.SetSize(14.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Landscape)
 
 	paragraphs := make([]*pdfjet.TextLine, 0)
 	contents := content.OfTextFile("data/dostoevsky.txt")
@@ -26,11 +26,10 @@ func Example47() {
 		paragraphs = append(paragraphs, pdfjet.NewTextLine(f1, textLine))
 	}
 
-	xPos := float32(20.0)
-	yPos := float32(250.0)
-
-	width := float32(180.0)
-	height := float32(315.0)
+	xPos := float32(50.0)
+	yPos := float32(50.0)
+	width := float32(220.0)
+	height := float32(500.0)
 
 	frame := pdfjet.NewTextFrame(paragraphs)
 	frame.SetLocation(xPos, yPos)
@@ -39,8 +38,8 @@ func Example47() {
 	frame.SetDrawBorder(true)
 	frame.DrawOn(page)
 
-	xPos += 200.0
 	if frame.IsNotEmpty() {
+		xPos += 250.0
 		frame.SetLocation(xPos, yPos)
 		frame.SetWidth(width)
 		frame.SetHeight(height)
@@ -48,8 +47,8 @@ func Example47() {
 		frame.DrawOn(page)
 	}
 
-	xPos += 200.0
 	if frame.IsNotEmpty() {
+		xPos += 250.0
 		frame.SetLocation(xPos, yPos)
 		frame.SetWidth(width)
 		frame.SetHeight(height)
