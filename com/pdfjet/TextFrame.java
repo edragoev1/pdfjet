@@ -12,15 +12,13 @@ import java.util.*;
  * Please see Example_47
  */
 public class TextFrame implements Drawable {
-    private List<String> list;
     private Font f1 = null;
-    private Font f2 = null;
+    private List<String> list;
     private float x;
     private float y;
     private float w;
     private float h;
     private float leading;
-    private float paragraphLeading;
     private boolean border;
     private List<List<String>> paragraphs;
     // private final List<float[]> beginParagraphPoints;
@@ -86,7 +84,6 @@ public class TextFrame implements Drawable {
         this.border = border;
     }
 
-    // Do the check for reaching the bottom of the page immediately!
     public float[] drawOn(Page page) throws Exception {
         float yText = y + f1.getAscent();
         while (paragraphs.size() > 0) {
@@ -94,21 +91,23 @@ public class TextFrame implements Drawable {
             StringBuilder sb = new StringBuilder();
             String token = null;
             while (tokens.size() > 0) {
-                token = tokens.remove(tokens.size() - 1);
-                if (f1.stringWidth(sb.toString() + token) < this.w) {
-                    sb.append(token);
-                    sb.append(Single.space);
-                } else {
-                    if (yText + f1.getDescent() < (y + h)) {
+                if (yText + f1.getDescent() < (y + h)) {
+                    token = tokens.remove(tokens.size() - 1);
+                    if (f1.stringWidth(sb.toString() + token) < this.w) {
+                        sb.append(token);
+                        sb.append(Single.space);
+                    } else {
                         TextLine textLine = new TextLine(f1, sb.toString().trim());
                         textLine.setLocation(x, yText);
                         textLine.drawOn(page);
                         sb.setLength(0);
                         tokens.add(token);
                         yText += leading;
-                    } else {
-                        return new float[] {this.x + this.w, this.y + this.h};
                     }
+                } else {
+                    paragraphs.add(tokens);
+                    drawBorder(page);
+                    return new float[] {this.x + this.w, this.y + this.h};
                 }
             }
             if (!sb.toString().trim().equals("")) {
@@ -120,6 +119,7 @@ public class TextFrame implements Drawable {
                     tokens.add(token);
                     yText += leading;
                 } else {
+                    paragraphs.add(tokens);
                     drawBorder(page);
                     return new float[] {this.x + this.w, this.y + this.h};
                 }
