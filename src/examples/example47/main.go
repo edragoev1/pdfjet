@@ -1,7 +1,7 @@
 package main
 
 import (
-	"strings"
+	"regexp"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -19,41 +19,48 @@ func Example47() {
 
 	page := pdfjet.NewPage(pdf, letter.Landscape)
 
-	paragraphs := make([]*pdfjet.TextLine, 0)
-	contents := content.OfTextFile("data/dostoevsky.txt")
-	textLines := strings.Split(contents, "\n\n")
-	for _, textLine := range textLines {
-		paragraphs = append(paragraphs, pdfjet.NewTextLine(f1, textLine))
-	}
+	text := content.OfTextFile("data/dostoevsky.txt")
+	re := regexp.MustCompile(`\n\n`)
+	splitContent := re.Split(text, -1)
 
-	xPos := float32(50.0)
-	yPos := float32(50.0)
-	width := float32(220.0)
-	height := float32(500.0)
+	// Create slice of paragraphs
+	paragraphs := make([]string, len(splitContent))
+	copy(paragraphs, splitContent)
 
-	frame := pdfjet.NewTextFrame(paragraphs)
-	frame.SetLocation(xPos, yPos)
-	frame.SetWidth(width)
-	frame.SetHeight(height)
-	frame.SetDrawBorder(true)
-	frame.DrawOn(page)
+	x := float32(50)
+	y := float32(50)
+	w := float32(230)
+	h := float32(500)
+	gap := float32(20)
 
-	if frame.IsNotEmpty() {
-		xPos += 250.0
-		frame.SetLocation(xPos, yPos)
-		frame.SetWidth(width)
-		frame.SetHeight(height)
-		frame.SetDrawBorder(false)
-		frame.DrawOn(page)
-	}
+	textFrame := pdfjet.NewTextFrame(f1, paragraphs)
 
-	if frame.IsNotEmpty() {
-		xPos += 250.0
-		frame.SetLocation(xPos, yPos)
-		frame.SetWidth(width)
-		frame.SetHeight(height)
-		frame.SetDrawBorder(true)
-		frame.DrawOn(page)
+	for textFrame.HasMoreText() {
+		page = pdfjet.NewPage(pdf, letter.Landscape)
+
+		textFrame.SetLocation(x, y)
+		textFrame.SetWidth(w)
+		textFrame.SetHeight(h)
+		textFrame.DrawOn(page)
+
+		if textFrame.HasMoreText() {
+			x += w + gap
+			textFrame.SetLocation(x, y)
+			textFrame.SetWidth(w)
+			textFrame.SetHeight(h)
+			textFrame.DrawOn(page)
+		}
+
+		if textFrame.HasMoreText() {
+			x += w + gap
+			textFrame.SetLocation(x, y)
+			textFrame.SetWidth(w)
+			textFrame.SetHeight(h)
+			textFrame.DrawOn(page)
+		}
+
+		x = 50
+		y = 50
 	}
 
 	pdf.Complete()
