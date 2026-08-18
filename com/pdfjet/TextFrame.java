@@ -21,7 +21,6 @@ public class TextFrame implements Drawable {
     private float leading;
     private boolean border;
     private List<List<String>> paragraphs;
-    // private final List<float[]> beginParagraphPoints;
 
     public TextFrame(Font f1, List<String> list) {
         this.f1 = f1;
@@ -68,10 +67,6 @@ public class TextFrame implements Drawable {
         return this.h;
     }
 
-//     public List<float[]> getBeginParagraphPoints() {
-//         return this.beginParagraphPoints;
-//     }
-
     public void setPosition(float x, float y) {
         setLocation(x, y);
     }
@@ -85,9 +80,14 @@ public class TextFrame implements Drawable {
     }
 
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            throw new NullPointerException("Page cannot be null");
+        }
+
         float yText = y + f1.getAscent();
         while (paragraphs.size() > 0) {
             List<String> tokens = paragraphs.remove(paragraphs.size() - 1);
+            TextLine textLine = null;
             StringBuilder sb = new StringBuilder();
             String token = null;
             while (tokens.size() > 0) {
@@ -97,7 +97,7 @@ public class TextFrame implements Drawable {
                         sb.append(token);
                         sb.append(Single.space);
                     } else {
-                        TextLine textLine = new TextLine(f1, sb.toString().trim());
+                        textLine = new TextLine(f1, sb.toString().trim());
                         textLine.setLocation(x, yText);
                         textLine.drawOn(page);
                         sb.setLength(0);
@@ -112,7 +112,7 @@ public class TextFrame implements Drawable {
             }
             if (!sb.toString().trim().equals("")) {
                 if (yText + f1.getDescent() < (y + h)) {
-                    TextLine textLine = new TextLine(f1, sb.toString().trim());
+                    textLine = new TextLine(f1, sb.toString().trim());
                     textLine.setLocation(x, yText);
                     textLine.drawOn(page);
                     sb.setLength(0);
@@ -132,7 +132,7 @@ public class TextFrame implements Drawable {
     }
 
     private void drawBorder(Page page) throws Exception {
-        if (page != null && border) {
+        if (border) {
             Rect rect = new Rect(x, y, w, h);
             rect.setBorderColor(Color.blue);
             rect.drawOn(page);
