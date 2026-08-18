@@ -12,7 +12,7 @@ import java.util.*;
  * Please see Example_47
  */
 public class TextFrame implements Drawable {
-    private List<TextLine> lines;
+    private List<TextLine> paragraphs;
     private final Font font;
     private final Font fallbackFont;
     private float fontSize;
@@ -25,10 +25,10 @@ public class TextFrame implements Drawable {
     private boolean border;
     private final List<float[]> beginParagraphPoints;
 
-    public TextFrame(List<TextLine> lines) {
-        this.lines = lines;
-        this.font = lines.get(0).getFont();
-        this.fallbackFont = lines.get(0).getFallbackFont();
+    public TextFrame(List<TextLine> paragraphs) {
+        this.paragraphs = paragraphs;
+        this.font = paragraphs.get(0).getFont();
+        this.fallbackFont = paragraphs.get(0).getFallbackFont();
         this.fontSize = font.size;
         this.leading = font.getBodyHeight(fontSize);
         this.paragraphLeading = leading;
@@ -36,7 +36,7 @@ public class TextFrame implements Drawable {
         if (fallbackFont != null && (fallbackFont.getBodyHeight(fontSize) > this.leading)) {
             this.leading = fallbackFont.getBodyHeight(fontSize);
         }
-        Collections.reverse(this.lines);
+        Collections.reverse(this.paragraphs);
     }
 
     public TextFrame setLocation(float x, float y) {
@@ -89,12 +89,12 @@ public class TextFrame implements Drawable {
         return setParagraphLeading((float) paragraphLeading);
     }
 
-    public void setParagraphs(List<TextLine> lines) {
-        this.lines = lines;
+    public void setParagraphs(List<TextLine> paragraphs) {
+        this.paragraphs = paragraphs;
     }
 
     public List<TextLine> getParagraphs() {
-        return this.lines;
+        return this.paragraphs;
     }
 
     public List<float[]> getBeginParagraphPoints() {
@@ -119,15 +119,15 @@ public class TextFrame implements Drawable {
 
     public float[] drawOn(Page page) throws Exception {
         float yText = y + font.getAscent(fontSize);
-        while (lines.size() > 0) {
-            TextLine textLine = lines.remove(lines.size() - 1);
+        while (paragraphs.size() > 0) {
+            TextLine textLine = paragraphs.remove(paragraphs.size() - 1);
             textLine.setLocation(x, yText);
             // beginParagraphPoints.add(new float[] {xText, yText});
             while (true) {
                 textLine = drawLineOnPage(textLine, page);
                 yText = textLine.advance(leading);
                 if (yText + font.getDescent(fontSize) >= (y + h)) {
-                    lines.add(textLine);
+                    paragraphs.add(textLine);
                     drawBorder(page);
                     return new float[] {this.x + this.w, this.y + this.h};
                 }
@@ -171,6 +171,6 @@ public class TextFrame implements Drawable {
     }
 
     public boolean isNotEmpty() {
-        return lines.size() > 0;
+        return paragraphs.size() > 0;
     }
 }   // End of TextFrame.java
