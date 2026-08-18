@@ -30,7 +30,13 @@ public class TextFrame implements Drawable {
         Collections.reverse(this.list);
         paragraphs = new ArrayList<List<String>>();
         for (String text : this.list) {
-            List<String> tokens = new ArrayList<>(Arrays.asList(text.split("\\s+")));
+            String[] split = text.trim().split("\\s+");
+            List<String> tokens = new ArrayList<>();
+            for (String token : split) {
+                if (!token.isEmpty()) { // Filter empty tokens
+                    tokens.add(token);
+                }
+            }
             Collections.reverse(tokens);
             paragraphs.add(tokens);
         }
