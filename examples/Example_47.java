@@ -32,7 +32,6 @@ public class Example_47 {
             frame.setLocation(x, y);
             frame.setWidth(w);
             frame.setHeight(h);
-            frame.setBorder(true);
             frame.drawOn(page);
 
             if (frame.isNotEmpty()) {
