@@ -111,18 +111,10 @@ public class TextFrame implements Drawable {
                 }
             }
             if (!sb.toString().trim().equals("")) {
-                if (yText + f1.getDescent() < (y + h)) {
-                    textLine = new TextLine(f1, sb.toString().trim());
-                    textLine.setLocation(x, yText);
-                    textLine.drawOn(page);
-                    sb.setLength(0);
-                    tokens.add(token);
-                    yText += leading;
-                } else {
-                    paragraphs.add(tokens);
-                    drawBorder(page);
-                    return new float[] {this.x + this.w, this.y + this.h};
-                }
+                textLine = new TextLine(f1, sb.toString().trim());
+                textLine.setLocation(x, yText);
+                textLine.drawOn(page);
+                yText += leading;
             }
             yText += leading;
         }
