@@ -12,8 +12,7 @@ import java.util.*;
  * Please see Example_47
  */
 public class TextFrame implements Drawable {
-    private Font f1 = null;
-    private List<String> list;
+    private Font f1;
     private float x;
     private float y;
     private float w;
@@ -23,13 +22,13 @@ public class TextFrame implements Drawable {
     private int borderColor = Color.blue;
     private List<List<String>> paragraphs;
 
-    public TextFrame(Font f1, List<String> list) {
+    public TextFrame(Font f1, List<String> inputList) {
         this.f1 = f1;
-        this.list = new ArrayList<>(list);
         this.leading = f1.getAscent() + f1.getDescent();
-        Collections.reverse(this.list);
+        List<String> list = new ArrayList<>(inputList);
+        Collections.reverse(list);
         paragraphs = new ArrayList<List<String>>();
-        for (String text : this.list) {
+        for (String text : list) {
             String[] split = text.trim().split("\\s+");
             List<String> tokens = new ArrayList<>();
             for (String token : split) {

@@ -13,8 +13,7 @@ namespace PDFjet.NET {
  * Please see Example_47
  */
 public class TextFrame : IDrawable {
-    private Font f1 = null;
-    private List<string> list;
+    private Font f1;
     private float x;
     private float y;
     private float w;
@@ -24,13 +23,13 @@ public class TextFrame : IDrawable {
     private int borderColor = Color.blue;
     private List<List<string>> paragraphs;
 
-    public TextFrame(Font f1, List<string> list) {
+    public TextFrame(Font f1, List<string> inputList) {
         this.f1 = f1;
-        this.list = new List<string>(list);
         this.leading = f1.GetAscent() + f1.GetDescent();
-        this.list.Reverse();
+        List<string> list = new List<string>(inputList);
+        list.Reverse();
         paragraphs = new List<List<string>>();
-        foreach (string text in this.list) {
+        foreach (string text in list) {
             String[] split = Regex.Split(text.Trim(), "\\s+");
             List<string> tokens = new List<string>();
             foreach (string token in split) {
