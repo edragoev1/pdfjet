@@ -1,5 +1,3 @@
-package qrcode
-
 /**
  * errorcorrectlevel.go
  *
@@ -16,6 +14,8 @@ package qrcode
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
+
+package qrcode
 
 // QRCode error correction levels.
 const (

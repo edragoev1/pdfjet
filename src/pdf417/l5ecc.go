@@ -1,11 +1,11 @@
-package pdf417
-
 /**
  * l5ecc.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package pdf417
 
 // l5ECCTable holds the Reed‑Solomon coefficients for error‑correction level 5.
 // It is an internal implementation detail of the PDF417 encoder, so the name

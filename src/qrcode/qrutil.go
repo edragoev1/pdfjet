@@ -1,5 +1,3 @@
-package qrcode
-
 /**
  * qrutil.go
  *
@@ -16,6 +14,8 @@ package qrcode
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
+
+package qrcode
 
 import (
 	"log"

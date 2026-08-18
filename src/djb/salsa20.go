@@ -1,5 +1,3 @@
-package djb
-
 /**
  * The Salsa20 encryption function was designed and originally implemented
  * by Daniel J. Bernstein:
@@ -10,6 +8,8 @@ package djb
  * The following Java implementation encrypts the system time and returns
  * the first 32 characters of the hash.
  */
+
+package djb
 
 import (
 	"strings"

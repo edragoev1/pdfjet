@@ -1,5 +1,3 @@
-package qrcode
-
 /**
  * maskpattern.go
  *
@@ -16,6 +14,8 @@ package qrcode
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
+
+package qrcode
 
 // QRCode patterns
 const (

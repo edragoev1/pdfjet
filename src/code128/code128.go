@@ -1,11 +1,11 @@
-package code128
-
 /**
  * code128.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package code128
 
 // TABLE for the Code 128 table.
 var TABLE = []int{

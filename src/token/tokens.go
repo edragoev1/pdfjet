@@ -1,11 +1,11 @@
-package token
-
 /**
  * token.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package token
 
 // PDF structure tokens as byte arrays.
 // WARNING: These are shared, mutable byte slices. Treat as READ-ONLY - DO NOT MODIFY!

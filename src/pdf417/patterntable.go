@@ -1,11 +1,11 @@
-package pdf417
-
 /**
  * patternTable.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package pdf417
 
 // patternTable is the static PDF‑417 pattern lookup.
 // It is kept private so callers can’t modify it accidentally.

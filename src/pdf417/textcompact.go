@@ -1,11 +1,11 @@
-package pdf417
-
 /**
  * textcompact.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package pdf417
 
 // textCompact maps an ASCII value (0‑127) to the PDF417 “compact text”
 // encoding.  Each entry contains:

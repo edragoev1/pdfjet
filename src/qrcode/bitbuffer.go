@@ -1,5 +1,3 @@
-package qrcode
-
 /**
  * bitbuffer.go
  *
@@ -16,6 +14,8 @@ package qrcode
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
+
+package qrcode
 
 // BitBuffer describes the BitBuffer structure.
 type BitBuffer struct {
