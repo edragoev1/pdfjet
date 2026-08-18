@@ -1,11 +1,11 @@
-package pdfjet
-
 /**
  * drawable.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package pdfjet
 
 // Drawable is interface that is required for components that can be drawn on a PDF page as part of Optional Content Group.
 // @author Mark Paxton, Evgeni Dragoev

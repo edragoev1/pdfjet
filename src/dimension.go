@@ -1,11 +1,11 @@
-package pdfjet
-
 /**
  * dimension.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package pdfjet
 
 // Dimension encapsulates the width and height of a component.
 type Dimension struct {

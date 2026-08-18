@@ -1,5 +1,3 @@
-package pdfjet
-
 /**
  * JPGImage.go
  *
@@ -38,6 +36,8 @@ package pdfjet
  * commercial products, provided that all warranty or liability claims are
  * assumed by the product vendor.
  */
+
+package pdfjet
 
 import (
 	"io"

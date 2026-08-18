@@ -1,5 +1,3 @@
-package pdfjet
-
 /**
  * optionalcontentgroup.go
  *
@@ -9,6 +7,8 @@ package pdfjet
  * Original author: Mark Paxton
  * Modified and adapted for use in PDFjet by Evgeni Dragoev
  */
+
+package pdfjet
 
 import (
 	"encoding/hex"

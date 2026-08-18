@@ -1,11 +1,11 @@
-package pdfjet
-
 /**
  * title.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package pdfjet
 
 // Title is used to create title objects that have prefix and text.
 // Please see Example_51 and Example_52

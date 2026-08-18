@@ -1,11 +1,11 @@
-package pdfjet
-
 /**
  * pathop.go
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
+package pdfjet
 
 // PathOp is used to create path objects.
 // The path objects may consist of lines, splines or both.
