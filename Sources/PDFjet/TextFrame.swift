@@ -21,7 +21,7 @@ public class TextFrame : Drawable {
     private var borderColor: Int32 = Color.blue
     private var paragraphs: [[String]]
 
-    public init(f1: Font, inputList: [String]) {
+    public init(_ f1: Font, _ inputList: [String]) {
         self.f1 = f1
         self.leading = f1.getAscent() + f1.getDescent()
         var list = inputList

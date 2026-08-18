@@ -9,46 +9,39 @@ public class Example_47 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_47.pdf", append: false)!)
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(12.0)
+        f1.setSize(14.0)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        let page = Page(pdf, Letter.LANDSCAPE)
 
-        var paragraphs = [TextLine]()
-        let str = try String(contentsOfFile: "data/dostoevsky.txt", encoding: .utf8)
-        let lines = str.components(separatedBy: "\n\n")
-        for line in lines {
-            paragraphs.append(TextLine(f1, String(line)))
+        let paragraphs = try String(
+                contentsOfFile: "data/dostoevsky.txt", encoding: .utf8).components(separatedBy: "\n\n")
+
+        var x: Float = 50.0
+        let y: Float = 50.0
+        let w: Float = 230.0
+        let h: Float = 500.0
+        let gap: Float = 20.0
+
+        let frame = TextFrame(f1, paragraphs)
+        frame.setLocation(x, y)
+        frame.setWidth(w)
+        frame.setHeight(h)
+        _ = frame.drawOn(page)
+
+        if (frame.hasMoreText()) {
+            x += w + gap
+            frame.setLocation(x, y)
+            frame.setWidth(w)
+            frame.setHeight(h)
+            _ = frame.drawOn(page)
         }
 
-        var xPos: Float = 20.0
-        let yPos: Float = 250.0
-
-        let width: Float = 180.0
-        let height: Float = 315.0
-
-        let frame = TextFrame(paragraphs)
-        frame.setLocation(xPos, yPos)
-        frame.setWidth(width)
-        frame.setHeight(height)
-        frame.setDrawBorder(true)
-        frame.drawOn(page)
-
-        xPos += 200.0
-        if (frame.isNotEmpty()) {
-            frame.setLocation(xPos, yPos)
-            frame.setWidth(width)
-            frame.setHeight(height)
-            frame.setDrawBorder(false)
-            frame.drawOn(page)
-        }
-
-        xPos += 200.0
-        if (frame.isNotEmpty()) {
-            frame.setLocation(xPos, yPos)
-            frame.setWidth(width)
-            frame.setHeight(height)
-            frame.setDrawBorder(true)
-            frame.drawOn(page)
+        if (frame.hasMoreText()) {
+            x += w + gap
+            frame.setLocation(x, y)
+            frame.setWidth(w)
+            frame.setHeight(h)
+            _ = frame.drawOn(page)
         }
 
         pdf.complete()
