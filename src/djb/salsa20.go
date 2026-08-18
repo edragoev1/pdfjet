@@ -1,13 +1,11 @@
-/**
- * The Salsa20 encryption function was designed and originally implemented
- * by Daniel J. Bernstein:
- *
- * http://cr.yp.to/salsa20.html
- * http://cr.yp.to/snuffle/ip.pdf
- *
- * The following Java implementation encrypts the system time and returns
- * the first 32 characters of the hash.
- */
+// The Salsa20 encryption function was designed and originally implemented
+// by Daniel J. Bernstein:
+//
+// http://cr.yp.to/salsa20.html
+// http://cr.yp.to/snuffle/ip.pdf
+//
+// The following Java implementation encrypts the system time and returns
+// the first 32 characters of the hash.
 
 package djb
 
