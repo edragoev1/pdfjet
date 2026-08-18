@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Diagnostics;
 
 using PDFjet.NET;
@@ -17,9 +18,9 @@ public class Example_47 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(14f);
 
-        string content = Content.OfTextFile("data/dostoevsky.txt");
-        string[] splitContent = content.Split(new[] { "\n\n" }, StringSplitOptions.None);
-        List<string> paragraphs = new List<string>(splitContent);
+        // Use Regex.Split to match Java's split("\\n\\n") regex behavior
+        List<string> paragraphs = new List<string>(
+                Regex.Split(Content.OfTextFile("data/dostoevsky.txt"), "\\n\\n"));
 
         float x = 50f;
         float y = 50f;
