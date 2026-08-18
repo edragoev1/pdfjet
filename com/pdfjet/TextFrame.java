@@ -70,32 +70,6 @@ public class TextFrame implements Drawable {
         return this.h;
     }
 
-//     public TextFrame setLeading(float leading) {
-//         this.leading = leading;
-//         return this;
-//     }
-
-//     public TextFrame setLeading(double leading) {
-//         return setLeading((float) leading);
-//     }
-//
-//     public TextFrame setParagraphLeading(float paragraphLeading) {
-//         this.paragraphLeading = paragraphLeading;
-//         return this;
-//     }
-//
-//     public TextFrame setParagraphLeading(double paragraphLeading) {
-//         return setParagraphLeading((float) paragraphLeading);
-//     }
-
-//     public void setParagraphs(List<String> paragraphs) {
-//         this.paragraphs = paragraphs;
-//     }
-//
-//     public List<String> getParagraphs() {
-//         return this.paragraphs;
-//     }
-
 //     public List<float[]> getBeginParagraphPoints() {
 //         return this.beginParagraphPoints;
 //     }
@@ -112,12 +86,7 @@ public class TextFrame implements Drawable {
         this.border = border;
     }
 
-//     public void SetFontSize(float fontSize) {
-//         this.fontSize = fontSize;
-//     }
-
-// TODO: Create the complete structure before the drawOn method!!!!
-// Do the check for reaching the bottom of the page immediately!!
+    // Do the check for reaching the bottom of the page immediately!
     public float[] drawOn(Page page) throws Exception {
         float yText = y + f1.getAscent();
         while (paragraphs.size() > 0) {
