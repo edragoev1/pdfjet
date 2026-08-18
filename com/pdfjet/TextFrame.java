@@ -20,6 +20,7 @@ public class TextFrame implements Drawable {
     private float h;
     private float leading;
     private boolean border;
+    private int borderColor = Color.blue;
     private List<List<String>> paragraphs;
 
     public TextFrame(Font f1, List<String> list) {
@@ -75,6 +76,10 @@ public class TextFrame implements Drawable {
         this.border = border;
     }
 
+    public void setBorderColor(int borderColor) {
+        this.borderColor = borderColor;
+    }
+
     public float[] drawOn(Page page) throws Exception {
         if (page == null) {
             throw new NullPointerException("Page cannot be null");
@@ -122,7 +127,7 @@ public class TextFrame implements Drawable {
     private void drawBorder(Page page) throws Exception {
         if (border) {
             Rect rect = new Rect(x, y, w, h);
-            rect.setBorderColor(Color.blue);
+            rect.setBorderColor(borderColor);
             rect.drawOn(page);
         }
     }
