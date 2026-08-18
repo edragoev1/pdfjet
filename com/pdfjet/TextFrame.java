@@ -75,10 +75,6 @@ public class TextFrame implements Drawable {
         this.border = border;
     }
 
-    public void setDrawBorder(boolean border) {
-        this.border = border;
-    }
-
     public float[] drawOn(Page page) throws Exception {
         if (page == null) {
             throw new NullPointerException("Page cannot be null");
