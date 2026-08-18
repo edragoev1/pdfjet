@@ -1,9 +1,7 @@
-/**
- * bmpimage.go
- *
- * Copyright (c) 2026 Jonas Krogsböll
- * Licensed under the MIT License. See LICENSE file in the project root.
- */
+// bmpimage.go
+//
+// Copyright (c) 2026 Jonas Krogsböll
+// Licensed under the MIT License. See LICENSE file in the project root.
 
 package pdfjet
 

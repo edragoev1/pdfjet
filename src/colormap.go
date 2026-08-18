@@ -1,11 +1,9 @@
-package pdfjet
+// colormap.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
 
-/**
- * colormap.go
- *
- * Copyright (c) 2026 PDFjet Software
- * Licensed under the MIT License. See LICENSE file in the project root.
- */
+package pdfjet
 
 // NewColorMap Please see:
 // https://www.w3.org/TR/css-color-3/#svg-color
