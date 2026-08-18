@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace PDFjet.NET {
 /**
@@ -30,7 +31,7 @@ public class TextFrame : IDrawable {
         this.list.Reverse();
         paragraphs = new List<List<string>>();
         foreach (string text in this.list) {
-            string[] split = text.Trim().Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+            String[] split = Regex.Split(text.Trim(), "\\s+");
             List<string> tokens = new List<string>();
             foreach (string token in split) {
                 if (!string.IsNullOrEmpty(token)) { // Filter empty tokens
