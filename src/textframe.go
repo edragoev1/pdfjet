@@ -18,7 +18,6 @@ import (
 // TextFrame Please see Example_47
 type TextFrame struct {
 	f1          *Font
-	list        []string
 	x           float32
 	y           float32
 	w           float32
@@ -29,27 +28,26 @@ type TextFrame struct {
 	paragraphs  [][]string
 }
 
-func NewTextFrame(f1 *Font, list []string) *TextFrame {
+func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 	// Clone the input list
-	copiedList := make([]string, len(list))
-	copy(copiedList, list)
+	list := make([]string, len(inputList))
+	copy(list, inputList)
 
 	tf := &TextFrame{
 		f1:          f1,
-		list:        copiedList,
 		leading:     f1.GetAscent(f1.GetSize()) + f1.GetDescent(f1.GetSize()),
 		borderColor: color.Blue,
 		paragraphs:  make([][]string, 0),
 	}
 
 	// Reverse the list (like Java's Collections.reverse)
-	for i, j := 0, len(tf.list)-1; i < j; i, j = i+1, j-1 {
-		tf.list[i], tf.list[j] = tf.list[j], tf.list[i]
+	for i, j := 0, len(list)-1; i < j; i, j = i+1, j-1 {
+		list[i], list[j] = list[j], list[i]
 	}
 
 	// Tokenize paragraphs
 	re := regexp.MustCompile(`\s+`)
-	for _, text := range tf.list {
+	for _, text := range list {
 		split := re.Split(strings.TrimSpace(text), -1)
 		tokens := make([]string, 0)
 		for _, token := range split {
