@@ -120,21 +120,19 @@ public class TextFrame implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         float yText = y + font.getAscent(fontSize);
         while (lines.size() > 0) {
-            // The lines are reversed so we can efficiently remove the first one:
             TextLine textLine = lines.remove(lines.size() - 1);
             textLine.setLocation(x, yText);
             // beginParagraphPoints.add(new float[] {xText, yText});
             while (true) {
                 textLine = drawLineOnPage(textLine, page);
                 yText = textLine.advance(leading);
-                if (textLine.getText().equals("")) {
-                    break;
-                }
                 if (yText + font.getDescent(fontSize) >= (y + h)) {
-                    // The text lines are reversed so we can efficiently add new lines:
                     lines.add(textLine);
                     drawBorder(page);
                     return new float[] {this.x + this.w, this.y + this.h};
+                }
+                if (textLine.text.trim().equals("")) {
+                    break;
                 }
             }
             yText += leading;
