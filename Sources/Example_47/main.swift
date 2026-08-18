@@ -11,23 +11,10 @@ public class Example_47 {
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(12.0)
 
-        let image1 = try Image(pdf, "images/AU-map.png")
-        let image2 = try Image(pdf, "images/HU-map.png")
-
         let page = Page(pdf, Letter.PORTRAIT)
 
-        image1.scaleBy(0.5)
-        image1.setLocation(20.0, 20.0)
-        image1.drawOn(page)
-
-        image2.scaleBy(0.5)
-        image2.setLocation(
-                page.getWidth() - (image2.getWidth() + 20.0),
-                page.getHeight() - (image2.getHeight() + 20.0))
-        image2.drawOn(page)
-
         var paragraphs = [TextLine]()
-        let str = try String(contentsOfFile: "data/austria_hungary.txt", encoding: .utf8)
+        let str = try String(contentsOfFile: "data/dostoevsky.txt", encoding: .utf8)
         let lines = str.components(separatedBy: "\n\n")
         for line in lines {
             paragraphs.append(TextLine(f1, String(line)))
