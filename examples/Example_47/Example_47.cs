@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
+
 using PDFjet.NET;
 
 /**
@@ -12,82 +12,60 @@ public class Example_47 {
     public Example_47() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_47.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(12f);
+        f1.SetSize(14f);
 
-//        Image image1 = new Image(pdf, "images/AU-map.png");
-//        image1.ScaleBy(0.50f);
-//
-//        Image image2 = new Image(pdf, "images/HU-map.png");
-//        image2.ScaleBy(0.50f);
+        string content = Content.OfTextFile("data/dostoevsky.txt");
+        string[] splitContent = content.Split(new[] { "\n\n" }, StringSplitOptions.None);
+        List<string> paragraphs = new List<string>(splitContent);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        float x = 50f;
+        float y = 50f;
+        float w = 230f;
+        float h = 500f;
+        float gap = 20f;
 
-//        image1.SetLocation(20f, 20f);
-//        image1.DrawOn(page);
-//
-//        image2.SetLocation(
-//                page.GetWidth() - (image2.GetWidth() + 20f),
-//                page.GetHeight() - (image2.GetHeight() + 20f));
-//        image2.DrawOn(page);
+        Page page = null;
+        TextFrame textFrame = new TextFrame(f1, paragraphs);
+        while (textFrame.HasMoreText()) {
+            page = new Page(pdf, Letter.LANDSCAPE);
 
-        StringBuilder buf = new StringBuilder();
-        StreamReader reader = new StreamReader("data/austria_hungary.txt");
-        String text = null;
-        while ((text = reader.ReadLine()) != null) {
-            buf.Append(text);
-            buf.Append("\n");
-        }
-        reader.Close();
+            textFrame.SetLocation(x, y);
+            textFrame.SetWidth(w);
+            textFrame.SetHeight(h);
+            textFrame.DrawOn(page);
 
-        List<TextLine> paragraphs = new List<TextLine>();
-        String[] textLines = Regex.Split(buf.ToString(), "\n\n");
-        foreach (String textLine in textLines) {
-            paragraphs.Add(new TextLine(f1, textLine));
-        }
+            if (textFrame.HasMoreText()) {
+                x += w + gap;
+                textFrame.SetLocation(x, y);
+                textFrame.SetWidth(w);
+                textFrame.SetHeight(h);
+                textFrame.DrawOn(page);
+            }
 
-        float xPos = 20f;
-        float yPos = 250f;
+            if (textFrame.HasMoreText()) {
+                x += w + gap;
+                textFrame.SetLocation(x, y);
+                textFrame.SetWidth(w);
+                textFrame.SetHeight(h);
+                textFrame.DrawOn(page);
+            }
 
-        float width = 180f;
-        float height = 315f;
-
-        TextFrame frame = new TextFrame(paragraphs);
-        frame.SetLocation(xPos, yPos);
-        frame.SetWidth(width);
-        frame.SetHeight(height);
-        frame.SetDrawBorder(true);
-        frame.DrawOn(page);
-
-        xPos += 200f;
-        if (frame.IsNotEmpty()) {
-            frame.SetLocation(xPos, yPos);
-            frame.SetWidth(width);
-            frame.SetHeight(height);
-            frame.SetDrawBorder(false);
-            frame.DrawOn(page);
-        }
-
-        xPos += 200f;
-        if (frame.IsNotEmpty()) {
-            frame.SetLocation(xPos, yPos);
-            frame.SetWidth(width);
-            frame.SetHeight(height);
-            frame.SetDrawBorder(true);
-            frame.DrawOn(page);
+            x = 50f;
+            y = 50f;
         }
 
         pdf.Complete();
     }
 
     public static void Main(String[] args) {
-        System.Diagnostics.Stopwatch sw =
-                System.Diagnostics.Stopwatch.StartNew();
+        Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_47();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
         TextUtils.PrintDuration("Example_47", time0, time1);
     }
-} // End of Example_47.cs
+}   // End of Example_47.cs
