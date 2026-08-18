@@ -1,11 +1,9 @@
-package pdfjet
+// bidi.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
 
-/**
- * bidi.go
- *
- * Copyright (c) 2026 PDFjet Software
- * Licensed under the MIT License. See LICENSE file in the project root.
- */
+package pdfjet
 
 /**
  * Provides BIDI processing for Arabic and Hebrew.
