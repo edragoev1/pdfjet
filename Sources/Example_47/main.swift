@@ -11,37 +11,43 @@ public class Example_47 {
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(14.0)
 
-        let page = Page(pdf, Letter.LANDSCAPE)
-
         let paragraphs = try String(
                 contentsOfFile: "data/dostoevsky.txt", encoding: .utf8).components(separatedBy: "\n\n")
 
         var x: Float = 50.0
-        let y: Float = 50.0
+        var y: Float = 50.0
         let w: Float = 230.0
         let h: Float = 500.0
         let gap: Float = 20.0
 
-        let frame = TextFrame(f1, paragraphs)
-        frame.setLocation(x, y)
-        frame.setWidth(w)
-        frame.setHeight(h)
-        _ = frame.drawOn(page)
+        var page: Page? = nil
+        let textFrame = TextFrame(f1, paragraphs)
+        while textFrame.hasMoreText() {
+            page = Page(pdf, Letter.LANDSCAPE)
 
-        if (frame.hasMoreText()) {
-            x += w + gap
-            frame.setLocation(x, y)
-            frame.setWidth(w)
-            frame.setHeight(h)
-            _ = frame.drawOn(page)
-        }
+            textFrame.setLocation(x, y)
+            textFrame.setWidth(w)
+            textFrame.setHeight(h)
+            _ = textFrame.drawOn(page)
 
-        if (frame.hasMoreText()) {
-            x += w + gap
-            frame.setLocation(x, y)
-            frame.setWidth(w)
-            frame.setHeight(h)
-            _ = frame.drawOn(page)
+            if (textFrame.hasMoreText()) {
+                x += w + gap
+                textFrame.setLocation(x, y)
+                textFrame.setWidth(w)
+                textFrame.setHeight(h)
+                _ = textFrame.drawOn(page)
+            }
+
+            if (textFrame.hasMoreText()) {
+                x += w + gap
+                textFrame.setLocation(x, y)
+                textFrame.setWidth(w)
+                textFrame.setHeight(h)
+                _ = textFrame.drawOn(page)
+            }
+
+            x = 50.0
+            y = 50.0
         }
 
         pdf.complete()
