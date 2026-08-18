@@ -4,37 +4,42 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+
 import Foundation
 
-///
-/// Please see Example_47
-///
+/**
+ * TextFrame Please see Example_47
+ */
 public class TextFrame : Drawable {
-    private var lines: Array<TextLine>?
-    private var font: Font?
-    private var fallbackFont: Font?
-    private var fontSize: Float = 0.0
-    private var x: Float = 0.0
-    private var y: Float = 0.0
-    private var w: Float = 0.0
-    private var h: Float = 0.0
-    private var leading: Float = 0.0
-    private var paragraphLeading: Float = 0.0
-    private var beginParagraphPoints: [[Float]]?
-    private var border = false
+    private var f1: Font
+    private var x: Float?
+    private var y: Float?
+    private var w: Float?
+    private var h: Float?
+    private var leading: Float
+    private var border: Bool = false
+    private var borderColor: Int32 = Color.blue
+    private var paragraphs: [[String]]
 
-    public init(_ lines: Array<TextLine>) {
-        self.lines = lines
-        self.font = lines[0].getFont()
-        self.fallbackFont = lines[0].getFallbackFont()
-        self.fontSize = font!.size
-        self.leading = font!.getBodyHeight(self.fontSize)
-        self.paragraphLeading = 2*leading
-        self.beginParagraphPoints = [[Float]]()
-        if fallbackFont != nil && (fallbackFont!.getBodyHeight() > self.leading) {
-            self.leading = fallbackFont!.getBodyHeight()
+    public init(f1: Font, inputList: [String]) {
+        self.f1 = f1
+        self.leading = f1.getAscent() + f1.getDescent()
+        var list = inputList
+        list = list.reversed()
+
+        self.paragraphs = [[String]]()
+        for text in list {
+            let split = text.trimmingCharacters(
+                    in: .whitespaces).components(separatedBy: .whitespacesAndNewlines)
+            var tokens = [String]()
+            for token in split {
+                if !token.isEmpty { // Filter empty tokens
+                    tokens.append(token)
+                }
+            }
+            tokens = tokens.reversed()
+            paragraphs.append(tokens)
         }
-        self.lines!.reverse()
     }
 
     @discardableResult
@@ -42,6 +47,10 @@ public class TextFrame : Drawable {
         self.x = x
         self.y = y
         return self
+    }
+
+    public func setPosition(_ x: Float, _ y: Float) {
+        setLocation(x, y)
     }
 
     @discardableResult
@@ -56,105 +65,77 @@ public class TextFrame : Drawable {
         return self
     }
 
-    @discardableResult
-    public func setLeading(_ leading: Float) -> TextFrame {
-        self.leading = leading
-        return self
+    public func getWidth() -> Float {
+        return self.w!
     }
 
-    @discardableResult
-    public func setParagraphLeading(_ paragraphLeading: Float) -> TextFrame {
-        self.paragraphLeading = paragraphLeading
-        return self
-    }
-
-    public func setParagraphs(_ lines: Array<TextLine>) {
-        self.lines = lines
-    }
-
-    public func getParagraphs() -> Array<TextLine>? {
-        return self.lines
-    }
-
-    @discardableResult
-    public func getBeginParagraphPoints() -> [[Float]]? {
-        return self.beginParagraphPoints
-    }
-
-    public func setPosition(_ x: Float, _ y: Float) {
-        setLocation(x, y)
+    public func getHeight() -> Float {
+        return self.h!
     }
 
     public func setBorder(_ border: Bool) {
         self.border = border
     }
 
-    public func setDrawBorder(_ border: Bool) {
-        self.border = border
+    public func setBorderColor(_ borderColor: Int32) {
+        self.borderColor = borderColor
     }
 
-    public func setFontSize(_ fontSize: Float) {
-        self.fontSize = fontSize
-    }
-
-    @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        var xText = self.x
-        var yText = self.y + self.font!.ascent
-        while lines!.count > 0 {
-            // The lines are reversed so we can efficiently remove the first one:
-            var textLine = lines!.removeLast()
-            textLine.setLocation(xText, yText)
-            beginParagraphPoints!.append([xText, yText])
-            while true {
-                textLine = drawLineOnPage(textLine, page)
-                if textLine.getText() == "" {
-                    break
-                }
-                yText = textLine.advance(leading)
-                if yText + font!.descent >= (self.y + self.h) {
-                    // The lines are reversed so we can efficiently add new one:
-                    lines!.append(textLine)
+        if page == nil {
+            // throw NSError(domain: "PDFjet", code: 1, userInfo: [NSLocalizedDescriptionKey: "Page cannot be null"])
+        }
+
+        var yText = self.y! + f1.getAscent()
+        while paragraphs.count > 0 {
+            var tokens = paragraphs.removeLast()
+            var textLine: TextLine?
+            var sb = ""
+            var token: String?
+
+            while tokens.count > 0 {
+                if yText + f1.getDescent() < (self.y! + self.h!) {
+                    token = tokens.removeLast()
+                    if f1.stringWidth(sb + (token ?? "")) < self.w! {
+                        sb.append(token ?? "")
+                        sb.append(" ") // Single.space equivalent
+                    } else {
+                        textLine = TextLine(f1, sb.trimmingCharacters(in: .whitespaces))
+                        textLine!.setLocation(self.x!, yText)
+                        textLine!.drawOn(page)
+                        sb = ""
+                        tokens.append(token!)
+                        yText += leading
+                    }
+                } else {
+                    paragraphs.append(tokens)
                     drawBorder(page!)
-                    return [x + w, y + h]
+                    return [self.x! + self.w!, self.y! + self.h!]
                 }
             }
-            xText = x
-            yText += paragraphLeading
-        }
-        drawBorder(page!)
-        return [x + w, y + h]
-    }
 
-    private func drawBorder(_ page: Page?) {
-        if page != nil && border {
-            let box = Rect(x, y, w, h)
-            box.drawOn(page)
-        }
-    }
-
-    private func drawLineOnPage(_ textLine: TextLine, _ page: Page?) -> TextLine {
-        var sb1 = String()
-        var sb2 = String()
-        let tokens = textLine.text!.components(separatedBy: .whitespaces)
-        var testForFit = true
-        for token in tokens {
-            if testForFit && textLine.getStringWidth(sb1 + token) < self.w {
-                sb1.append(token + Single.space)
-            } else {
-                testForFit = false
-                sb2.append(token + Single.space)
+            if !sb.trimmingCharacters(in: .whitespaces).isEmpty {
+                textLine = TextLine(f1, sb.trimmingCharacters(in: .whitespaces))
+                textLine!.setLocation(self.x!, yText)
+                textLine!.drawOn(page!)
+                yText += leading
             }
+            yText += leading
         }
-        textLine.setText(sb1.trim())
-        if page != nil {
-            textLine.drawOn(page!)
-        }
-        textLine.setText(sb2.trim())
-        return textLine
+
+        drawBorder(page!)
+        return [self.x! + self.w!, self.y! + self.h!]
     }
 
-    public func isNotEmpty() -> Bool {
-        return lines!.count > 0
+    private func drawBorder(_ page: Page) {
+        if border {
+            let rect = Rect(self.x!, self.y!, self.w!, self.h!)
+            rect.setBorderColor(borderColor)
+            rect.drawOn(page)
+        }
     }
-}   // End of TextFrame.swift
+
+    public func hasMoreText() -> Bool {
+        return paragraphs.count > 0
+    }
+}
