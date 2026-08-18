@@ -24,7 +24,7 @@ public class TextFrame implements Drawable {
 
     public TextFrame(Font f1, List<String> list) {
         this.f1 = f1;
-        this.list = list;
+        this.list = new ArrayList<>(list);
         this.leading = f1.getAscent() + f1.getDescent();
         Collections.reverse(this.list);
         paragraphs = new ArrayList<List<String>>();
