@@ -5,40 +5,41 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
+namespace PDFjet.NET {
 /**
  * Please see Example_47
  */
-namespace PDFjet.NET {
 public class TextFrame : IDrawable {
-    private List<TextLine> paragraphs;
-    private Font font;
-    private Font fallbackFont;
-    private float fontSize;
+    private Font f1 = null;
+    private List<string> list;
     private float x;
     private float y;
     private float w;
     private float h;
     private float leading;
-    private float paragraphLeading;
-    private List<float[]> beginParagraphPoints;
     private bool border;
+    private int borderColor = Color.blue;
+    private List<List<string>> paragraphs;
 
-    public TextFrame(List<TextLine> paragraphs) {
-        this.paragraphs = new List<TextLine>(paragraphs);
-        this.font = paragraphs[0].font;
-        this.fallbackFont = paragraphs[0].fallbackFont;
-        this.fontSize = font.size;
-        this.leading = font.GetBodyHeight(fontSize);
-        this.paragraphLeading = 2*leading;
-        this.beginParagraphPoints = new List<float[]>();
-        if (fallbackFont != null && (fallbackFont.GetBodyHeight(fontSize) > this.leading)) {
-            this.leading = fallbackFont.GetBodyHeight(fontSize);
+    public TextFrame(Font f1, List<string> list) {
+        this.f1 = f1;
+        this.list = new List<string>(list);
+        this.leading = f1.GetAscent() + f1.GetDescent();
+        this.list.Reverse();
+        paragraphs = new List<List<string>>();
+        foreach (string text in this.list) {
+            string[] split = text.Trim().Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+            List<string> tokens = new List<string>();
+            foreach (string token in split) {
+                if (!string.IsNullOrEmpty(token)) { // Filter empty tokens
+                    tokens.Add(token);
+                }
+            }
+            tokens.Reverse();
+            paragraphs.Add(tokens);
         }
-        this.paragraphs.Reverse();
     }
 
     public TextFrame SetLocation(float x, float y) {
@@ -48,7 +49,7 @@ public class TextFrame : IDrawable {
     }
 
     public TextFrame SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
+        return SetLocation((float)x, (float)y);
     }
 
     public TextFrame SetWidth(float w) {
@@ -57,7 +58,7 @@ public class TextFrame : IDrawable {
     }
 
     public TextFrame SetWidth(double w) {
-        return SetWidth((float) w);
+        return SetWidth((float)w);
     }
 
     public TextFrame SetHeight(float h) {
@@ -66,37 +67,11 @@ public class TextFrame : IDrawable {
     }
 
     public TextFrame SetHeight(double h) {
-        return SetHeight((float) h);
+        return SetHeight((float)h);
     }
 
-    public TextFrame SetLeading(float leading) {
-        this.leading = leading;
-        return this;
-    }
-
-    public TextFrame SetLeading(double leading) {
-        return SetLeading((float) leading);
-    }
-
-    public TextFrame SetParagraphLeading(float paragraphLeading) {
-        this.paragraphLeading = paragraphLeading;
-        return this;
-    }
-
-    public TextFrame SetParagraphLeading(double paragraphLeading) {
-        return SetParagraphLeading((float) paragraphLeading);
-    }
-
-    public void SetParagraphs(List<TextLine> paragraphs) {
-        this.paragraphs = paragraphs;
-    }
-
-    public List<TextLine> GetParagraphs() {
-        return this.paragraphs;
-    }
-
-    public List<float[]> GetBeginParagraphPoints() {
-        return this.beginParagraphPoints;
+    public float GetHeight() {
+        return this.h;
     }
 
     public void SetPosition(float x, float y) {
@@ -107,72 +82,65 @@ public class TextFrame : IDrawable {
         this.border = border;
     }
 
-    public void SetDrawBorder(bool border) {
-        this.border = border;
-    }
-
-    public void SetFontSize(float fontSize) {
-        this.fontSize = fontSize;
+    public void SetBorderColor(int borderColor) {
+        this.borderColor = borderColor;
     }
 
     public float[] DrawOn(Page page) {
-        float xText = x;
-        float yText = y + font.GetAscent(fontSize);
+        if (page == null) {
+            throw new NullReferenceException("Page cannot be null");
+        }
+
+        float yText = y + f1.GetAscent();
         while (paragraphs.Count > 0) {
-            // The paragraphs are reversed so we can efficiently remove the first one:
-            TextLine textLine = paragraphs[paragraphs.Count - 1];
+            List<string> tokens = paragraphs[paragraphs.Count - 1];
             paragraphs.RemoveAt(paragraphs.Count - 1);
-            textLine.SetLocation(xText, yText);
-            beginParagraphPoints.Add(new float[] {xText, yText});
-            while (true) {
-                textLine = DrawLineOnPage(textLine, page);
-                if (textLine.GetText().Equals("")) {
-                    break;
-                }
-                yText = textLine.Advance(leading);
-                if (yText + font.GetDescent(fontSize) >= (y + h)) {
-                    // The paragraphs are reversed so we can efficiently add new first paragraph:
-                    paragraphs.Add(textLine);
+            TextLine textLine = null;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            string token = null;
+            while (tokens.Count > 0) {
+                if (yText + f1.GetDescent() < (y + h)) {
+                    token = tokens[tokens.Count - 1];
+                    tokens.RemoveAt(tokens.Count - 1);
+                    if (f1.StringWidth(sb.ToString() + token) < this.w) {
+                        sb.Append(token);
+                        sb.Append(Single.space);
+                    } else {
+                        textLine = new TextLine(f1, sb.ToString().Trim());
+                        textLine.SetLocation(x, yText);
+                        textLine.DrawOn(page);
+                        sb.Clear();
+                        tokens.Add(token);
+                        yText += leading;
+                    }
+                } else {
+                    paragraphs.Add(tokens);
                     DrawBorder(page);
-                    return new float[] {x + w, y + h};
+                    return new float[] { this.x + this.w, this.y + this.h };
                 }
             }
-            xText = x;
-            yText += paragraphLeading;
+            if (!string.IsNullOrWhiteSpace(sb.ToString())) {
+                textLine = new TextLine(f1, sb.ToString().Trim());
+                textLine.SetLocation(x, yText);
+                textLine.DrawOn(page);
+                yText += leading;
+            }
+            yText += leading;
         }
+
         DrawBorder(page);
-        return new float[] {x + w, y + h};
+        return new float[] { this.x + this.w, this.y + this.h };
     }
 
     private void DrawBorder(Page page) {
-        if (page != null && border) {
-            (new Rect(x, y, w, h)).DrawOn(page);
+        if (border) {
+            Rect rect = new Rect(x, y, w, h);
+            rect.SetBorderColor(borderColor);
+            rect.DrawOn(page);
         }
     }
 
-    private TextLine DrawLineOnPage(TextLine textLine, Page page) {
-        StringBuilder sb1 = new StringBuilder();
-        StringBuilder sb2 = new StringBuilder();
-        String[] tokens = Regex.Split(textLine.GetText(), @"\s+");
-        bool testForFit = true;
-        foreach (String token in tokens) {
-            if (testForFit && textLine.GetStringWidth(sb1.ToString() + token) < this.w) {
-                sb1.Append(token + Single.space);
-            } else {
-                testForFit = false;
-                sb2.Append(token + Single.space);
-            }
-        }
-        textLine.SetText(sb1.ToString().Trim());
-        if (page != null) {
-            textLine.DrawOn(page);
-        }
-
-        textLine.SetText(sb2.ToString().Trim());
-        return textLine;
-    }
-
-    public bool IsNotEmpty() {
+    public bool HasMoreText() {
         return paragraphs.Count > 0;
     }
 }   // End of TextFrame.cs
