@@ -17,8 +17,6 @@ func Example47() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(14.0)
 
-	page := pdfjet.NewPage(pdf, letter.Landscape)
-
 	text := content.OfTextFile("data/dostoevsky.txt")
 	re := regexp.MustCompile(`\n\n`)
 	splitContent := re.Split(text, -1)
@@ -35,20 +33,16 @@ func Example47() {
 
 	textFrame := pdfjet.NewTextFrame(f1, paragraphs)
 
+	var page *pdfjet.Page
 	for textFrame.HasMoreText() {
 		page = pdfjet.NewPage(pdf, letter.Landscape)
 
 		textFrame.SetLocation(x, y)
 		textFrame.SetWidth(w)
 		textFrame.SetHeight(h)
-		textFrame.DrawOn(page)
-
-		if textFrame.HasMoreText() {
-			x += w + gap
-			textFrame.SetLocation(x, y)
-			textFrame.SetWidth(w)
-			textFrame.SetHeight(h)
-			textFrame.DrawOn(page)
+		_, err := textFrame.DrawOn(page)
+		if err != nil {
+			return
 		}
 
 		if textFrame.HasMoreText() {
@@ -56,7 +50,21 @@ func Example47() {
 			textFrame.SetLocation(x, y)
 			textFrame.SetWidth(w)
 			textFrame.SetHeight(h)
-			textFrame.DrawOn(page)
+			_, err := textFrame.DrawOn(page)
+			if err != nil {
+				return
+			}
+		}
+
+		if textFrame.HasMoreText() {
+			x += w + gap
+			textFrame.SetLocation(x, y)
+			textFrame.SetWidth(w)
+			textFrame.SetHeight(h)
+			_, err := textFrame.DrawOn(page)
+			if err != nil {
+				return
+			}
 		}
 
 		x = 50
