@@ -146,6 +146,7 @@ public class TextFrame implements Drawable {
                     textLine.setLocation(x, yText);
                     textLine.drawOn(page);
                     sb.setLength(0);
+                    tokens.add(token);
                     yText += leading;
                 }
             }
