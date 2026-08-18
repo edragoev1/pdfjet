@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/single"
 )
 
 // TextFrame Please see Example_47
@@ -122,7 +123,7 @@ func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
 
 				if tf.f1.StringWidth(tf.f1.GetSize(), sb.String()+token) < tf.w {
 					sb.WriteString(token)
-					sb.WriteString(" ") // Single.space equivalent
+					sb.WriteString(single.Space)
 				} else {
 					textLine = NewTextLine(tf.f1, strings.TrimSpace(sb.String()))
 					textLine.SetLocation(tf.x, yText)
