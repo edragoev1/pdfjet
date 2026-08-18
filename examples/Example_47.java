@@ -16,12 +16,8 @@ public class Example_47 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);
 
-        List<TextLine> paragraphs = new ArrayList<TextLine>();
-        String contents = Content.ofTextFile("data/dostoevsky.txt");
-        String[] textLines = contents.split("\\n\\n");
-        for (String textLine : textLines) {
-            paragraphs.add(new TextLine(f1, textLine));
-        }
+        List<String> paragraphs = new ArrayList<>(
+                Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\\n\\n")));
 
         float x = 50f;
         float y = 50f;
@@ -29,7 +25,7 @@ public class Example_47 {
         float h = 500f;
 
         Page page = null;
-        TextFrame frame = new TextFrame(paragraphs);
+        TextFrame frame = new TextFrame(f1, paragraphs);
         while (frame.isNotEmpty()) {
             page = new Page(pdf, Letter.LANDSCAPE);
 

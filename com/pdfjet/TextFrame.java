@@ -12,9 +12,9 @@ import java.util.*;
  * Please see Example_47
  */
 public class TextFrame implements Drawable {
-    private List<TextLine> paragraphs;
-    private final Font font;
-    private final Font fallbackFont;
+    private List<String> paragraphs;
+    private Font f1 = null;
+    private Font f2 = null;
     private float fontSize;
     private float x;
     private float y;
@@ -23,19 +23,23 @@ public class TextFrame implements Drawable {
     private float leading;
     private float paragraphLeading;
     private boolean border;
-    private final List<float[]> beginParagraphPoints;
+//    private final List<float[]> beginParagraphPoints;
 
-    public TextFrame(List<TextLine> paragraphs) {
+    public TextFrame(Font f1, List<String> paragraphs) {
+        this.f1 = f1;
         this.paragraphs = paragraphs;
-        this.font = paragraphs.get(0).getFont();
-        this.fallbackFont = paragraphs.get(0).getFallbackFont();
-        this.fontSize = font.size;
-        this.leading = font.getBodyHeight(fontSize);
-        this.paragraphLeading = leading;
-        this.beginParagraphPoints = new ArrayList<float[]>();
-        if (fallbackFont != null && (fallbackFont.getBodyHeight(fontSize) > this.leading)) {
-            this.leading = fallbackFont.getBodyHeight(fontSize);
-        }
+//         this.font = paragraphs.get(0).getFont();
+//         this.fallbackFont = paragraphs.get(0).getFallbackFont();
+//         this.fontSize = font.size;
+//         this.leading = font.getBodyHeight(fontSize);
+//        this.paragraphLeading = leading;
+//        this.beginParagraphPoints = new ArrayList<float[]>();
+//         if (f2 != null && (f2.getBodyHeight(fontSize) > this.leading)) {
+//             this.leading = f2.getBodyHeight(fontSize);
+//         }
+
+        // this.leading = f1.getBodyHeight(fontSize);   // TODO!!!!
+        this.leading = f1.getAscent() + f1.getDescent();
         Collections.reverse(this.paragraphs);
     }
 
@@ -89,17 +93,17 @@ public class TextFrame implements Drawable {
         return setParagraphLeading((float) paragraphLeading);
     }
 
-    public void setParagraphs(List<TextLine> paragraphs) {
+    public void setParagraphs(List<String> paragraphs) {
         this.paragraphs = paragraphs;
     }
 
-    public List<TextLine> getParagraphs() {
+    public List<String> getParagraphs() {
         return this.paragraphs;
     }
 
-    public List<float[]> getBeginParagraphPoints() {
-        return this.beginParagraphPoints;
-    }
+//     public List<float[]> getBeginParagraphPoints() {
+//         return this.beginParagraphPoints;
+//     }
 
     public void setPosition(float x, float y) {
         setLocation(x, y);
@@ -118,25 +122,42 @@ public class TextFrame implements Drawable {
     }
 
     public float[] drawOn(Page page) throws Exception {
-        float yText = y + font.getAscent(fontSize);
+        float yText = y + f1.getAscent();
         while (paragraphs.size() > 0) {
-            TextLine textLine = paragraphs.remove(paragraphs.size() - 1);
-            textLine.setLocation(x, yText);
-            // beginParagraphPoints.add(new float[] {xText, yText});
-            while (true) {
-                textLine = drawLineOnPage(textLine, page);
-                yText = textLine.advance(leading);
-                if (yText + font.getDescent(fontSize) >= (y + h)) {
-                    paragraphs.add(textLine);
-                    drawBorder(page);
-                    return new float[] {this.x + this.w, this.y + this.h};
-                }
-                if (textLine.text.trim().equals("")) {
-                    break;
+            String text = paragraphs.remove(paragraphs.size() - 1);
+
+            List<String> tokens = new ArrayList<>(Arrays.asList(text.split("\\s+")));
+            Collections.reverse(tokens);
+
+            StringBuilder sb = new StringBuilder();
+            while (tokens.size() > 0) {
+                String token = tokens.remove(tokens.size() - 1);
+                if (f1.stringWidth(sb.toString() + token) < this.w) {
+                    sb.append(token);
+                    sb.append(Single.space);
+                } else {
+                    yText += leading;
+                    if (yText + f1.getDescent() > (y + h)) {
+                        tokens.add(token);
+                        drawBorder(page);
+                        return new float[] {this.x + this.w, this.y + this.h};
+                    }
+                    TextLine textLine = new TextLine(f1, sb.toString().trim());
+                    textLine.setLocation(x, yText);
+                    textLine.drawOn(page);
+                    sb.setLength(0);
                 }
             }
+            if (!sb.toString().trim().equals("")) {
+                yText += leading;
+                TextLine textLine = new TextLine(f1, sb.toString().trim());
+                textLine.setLocation(x, yText);
+                textLine.drawOn(page);
+            }
+
             yText += leading;
         }
+
         drawBorder(page);
         return new float[] {this.x + this.w, this.y + this.h};
     }
@@ -147,27 +168,6 @@ public class TextFrame implements Drawable {
             rect.setBorderColor(Color.blue);
             rect.drawOn(page);
         }
-    }
-
-    private TextLine drawLineOnPage(TextLine textLine, Page page) throws Exception {
-        StringBuilder sb1 = new StringBuilder();
-        StringBuilder sb2 = new StringBuilder();
-        String[] tokens = textLine.getText().split("\\s+");
-        boolean testForFit = true;
-        for (String token : tokens) {
-            if (testForFit && textLine.getStringWidth(sb1.toString() + token) < this.w) {
-                sb1.append(token).append(Single.space);
-            } else {
-                testForFit = false;
-                sb2.append(token).append(Single.space);
-            }
-        }
-        textLine.setText(sb1.toString().trim());
-        if (page != null) {
-            textLine.drawOn(page);
-        }
-        textLine.setText(sb2.toString().trim());
-        return textLine;
     }
 
     public boolean isNotEmpty() {
