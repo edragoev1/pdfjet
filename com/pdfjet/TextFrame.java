@@ -121,6 +121,8 @@ public class TextFrame implements Drawable {
         this.fontSize = fontSize;
     }
 
+// TODO: Create the complete structure before the drawOn method!!!!
+// Do the check for reaching the bottom of the page immediately!!
     public float[] drawOn(Page page) throws Exception {
         float yText = y + f1.getAscent();
         while (paragraphs.size() > 0) {
@@ -128,6 +130,7 @@ public class TextFrame implements Drawable {
 
             List<String> tokens = new ArrayList<>(Arrays.asList(text.split("\\s+")));
             Collections.reverse(tokens);
+            List<String> temp = new ArrayList<>();
 
             StringBuilder sb = new StringBuilder();
             String token = null;
@@ -136,31 +139,34 @@ public class TextFrame implements Drawable {
                 if (f1.stringWidth(sb.toString() + token) < this.w) {
                     sb.append(token);
                     sb.append(Single.space);
+                    temp.add(token);
                 } else {
-                    if (yText + f1.getDescent() > (y + h)) {
-                        tokens.add(token);
-                        drawBorder(page);
+                    if (yText + f1.getDescent() < (y + h)) {
+                        TextLine textLine = new TextLine(f1, sb.toString().trim());
+                        textLine.setLocation(x, yText);
+                        textLine.drawOn(page);
+                        sb.setLength(0);
+                        temp.clear();
+                        temp.add(token);
+                        yText += leading;
+                    } else {
+                        tokens.addAll(temp);
                         return new float[] {this.x + this.w, this.y + this.h};
                     }
+                }
+            }
+            if (!sb.toString().trim().equals("")) {
+                if (yText + f1.getDescent() < (y + h)) {
                     TextLine textLine = new TextLine(f1, sb.toString().trim());
                     textLine.setLocation(x, yText);
                     textLine.drawOn(page);
                     sb.setLength(0);
-                    tokens.add(token);
                     yText += leading;
-                }
-            }
-            if (!sb.toString().trim().equals("")) {
-                if (yText + f1.getDescent() > (y + h)) {
-                    tokens.add(token);
-                    drawBorder(page);
+                } else {
+                    tokens.addAll(temp);
                     return new float[] {this.x + this.w, this.y + this.h};
                 }
-                TextLine textLine = new TextLine(f1, sb.toString().trim());
-                textLine.setLocation(x, yText);
-                textLine.drawOn(page);
             }
-
             yText += leading;
         }
 
