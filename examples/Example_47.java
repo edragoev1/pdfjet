@@ -23,6 +23,7 @@ public class Example_47 {
         float y = 50f;
         float w = 230f;
         float h = 500f;
+        float gap = 20f;
 
         Page page = null;
         TextFrame textFrame = new TextFrame(f1, paragraphs);
@@ -35,7 +36,7 @@ public class Example_47 {
             textFrame.drawOn(page);
 
             if (textFrame.hasMoreText()) {
-                x += 250f;
+                x += w + gap;
                 textFrame.setLocation(x, y);
                 textFrame.setWidth(w);
                 textFrame.setHeight(h);
@@ -43,7 +44,7 @@ public class Example_47 {
             }
 
             if (textFrame.hasMoreText()) {
-                x += 250f;
+                x += w + gap;
                 textFrame.setLocation(x, y);
                 textFrame.setWidth(w);
                 textFrame.setHeight(h);
