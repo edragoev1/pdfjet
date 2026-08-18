@@ -14,7 +14,7 @@ public class Example_47 {
         pdf.setCompliance(Compliance.PDF_UA_1);
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(12f);
+        f1.setSize(14f);
 
         List<String> paragraphs = new ArrayList<>(
                 Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\\n\\n")));

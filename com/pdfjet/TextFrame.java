@@ -130,13 +130,13 @@ public class TextFrame implements Drawable {
             Collections.reverse(tokens);
 
             StringBuilder sb = new StringBuilder();
+            String token = null;
             while (tokens.size() > 0) {
-                String token = tokens.remove(tokens.size() - 1);
+                token = tokens.remove(tokens.size() - 1);
                 if (f1.stringWidth(sb.toString() + token) < this.w) {
                     sb.append(token);
                     sb.append(Single.space);
                 } else {
-                    yText += leading;
                     if (yText + f1.getDescent() > (y + h)) {
                         tokens.add(token);
                         drawBorder(page);
@@ -146,10 +146,15 @@ public class TextFrame implements Drawable {
                     textLine.setLocation(x, yText);
                     textLine.drawOn(page);
                     sb.setLength(0);
+                    yText += leading;
                 }
             }
             if (!sb.toString().trim().equals("")) {
-                yText += leading;
+                if (yText + f1.getDescent() > (y + h)) {
+                    tokens.add(token);
+                    drawBorder(page);
+                    return new float[] {this.x + this.w, this.y + this.h};
+                }
                 TextLine textLine = new TextLine(f1, sb.toString().trim());
                 textLine.setLocation(x, yText);
                 textLine.drawOn(page);
