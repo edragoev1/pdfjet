@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
@@ -12,7 +13,6 @@ import (
 // Example43 demonstrates creating a PDF with a big table
 func Example43() {
 	pdf := pdfjet.NewPDFFile("Example_43.pdf")
-	// pdf.SetCompliance(compliance.PDF_UA_1)
 
 	// Used for performance testing. Results in 2000+ pages PDF.
 	fileName := "data/Electric_Vehicle_Population_Data.csv"
@@ -25,11 +25,19 @@ func Example43() {
 	f2.SetSize(9.0)
 
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
-	table.SetNumberOfColumns(9)       // The order of the
-	table.SetTableData(fileName, ",") // these statements
-	table.SetLocation(0.0, 0.0)       // is
-	table.SetBottomMargin(20.0)       // very
-	table.Complete()                  // important!
+	table.SetNumberOfColumns(9)              // The order of the
+	err := table.SetTableData(fileName, ",") // these statements
+	if err != nil {
+		log.Printf("Failed to load table data: %v", err)
+		return
+	}
+	table.SetLocation(0.0, 0.0) // is
+	table.SetBottomMargin(20.0) // very
+	err = table.Complete()      // important!
+	if err != nil {
+		log.Printf("Failed to render table: %v", err)
+		return
+	}
 
 	pages := table.GetPages()
 	for i, page := range pages {
