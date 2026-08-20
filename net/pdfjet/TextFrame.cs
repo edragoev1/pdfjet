@@ -86,6 +86,18 @@ public class TextFrame : IDrawable {
         this.borderColor = borderColor;
     }
 
+    public bool HasMoreText() {
+        return paragraphs.Count > 0;
+    }
+
+    private void DrawBorder(Page page) {
+        if (border) {
+            Rect rect = new Rect(x, y, w, h);
+            rect.SetBorderColor(borderColor);
+            rect.DrawOn(page);
+        }
+    }
+
     public float[] DrawOn(Page page) {
         if (page == null) {
             throw new NullReferenceException("Page cannot be null");
@@ -130,18 +142,6 @@ public class TextFrame : IDrawable {
 
         DrawBorder(page);
         return new float[] { this.x + this.w, this.y + this.h };
-    }
-
-    private void DrawBorder(Page page) {
-        if (border) {
-            Rect rect = new Rect(x, y, w, h);
-            rect.SetBorderColor(borderColor);
-            rect.DrawOn(page);
-        }
-    }
-
-    public bool HasMoreText() {
-        return paragraphs.Count > 0;
     }
 }   // End of TextFrame.cs
 }   // End of namespace PDFjet.NET
