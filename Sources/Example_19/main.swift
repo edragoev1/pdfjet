@@ -40,7 +40,7 @@ public class Example_19 {
         image2.scaleBy(0.1)
         image2.drawOn(page)
 
-        textBlock = TextBlock(f1, try Content.ofTextFile("data/latin.txt"))
+        textBlock = TextBlock(f1, try Content.ofTextFile("data/physics.txt"))
         textBlock.setWidth(w2)
         textBlock.setLocation(x2, xy[1] + 10.0)
         textBlock.setBorderColor(Color.black)

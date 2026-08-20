@@ -44,7 +44,7 @@ public class Example_19 {
         image2.drawOn(page);
 
         textBox = new TextBox(f1);
-        textBox.setText(Content.ofTextFile("data/latin.txt"));
+        textBox.setText(Content.ofTextFile("data/physics.txt"));
         textBox.setLocation(x2, xy[1] + 10f);
         textBox.setWidth(w2);
         textBox.setBorders(true);

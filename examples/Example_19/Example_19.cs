@@ -45,7 +45,7 @@ public class Example_19 {
         image2.DrawOn(page);
 
         textBox = new TextBox(f1);
-        textBox.SetText(Content.OfTextFile("data/latin.txt"));
+        textBox.SetText(Content.OfTextFile("data/physics.txt"));
         textBox.SetLocation(x2, xy[1] + 10f);
         textBox.SetWidth(w2);
         textBox.SetBorders(true);

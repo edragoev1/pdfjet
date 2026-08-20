@@ -48,7 +48,7 @@ func Example19() {
 	image2.ScaleBy(0.1)
 	image2.DrawOn(page)
 
-	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/latin.txt"))
+	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/physics.txt"))
 	textBlock.SetLocation(x2, xy[1]+10.0)
 	textBlock.SetWidth(w2)
 	textBlock.SetBorderColor(color.Black)
