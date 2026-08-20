@@ -94,8 +94,8 @@ public class TextFrame : Drawable {
     }
 
     public func drawOn(_ page: Page?) -> [Float] {
-        if page == nil {
-            // throw NSError(domain: "PDFjet", code: 1, userInfo: [NSLocalizedDescriptionKey: "Page cannot be null"])
+        guard let page = page else {
+            return [0.0, 0.0]
         }
 
         var yText = self.y! + f1.getAscent()
@@ -121,7 +121,7 @@ public class TextFrame : Drawable {
                     }
                 } else {
                     paragraphs.append(tokens)
-                    drawBorder(page!)
+                    drawBorder(page)
                     return [self.x! + self.w!, self.y! + self.h!]
                 }
             }
@@ -129,13 +129,13 @@ public class TextFrame : Drawable {
             if !sb.trimmingCharacters(in: .whitespaces).isEmpty {
                 textLine = TextLine(f1, sb.trimmingCharacters(in: .whitespaces))
                 textLine!.setLocation(self.x!, yText)
-                textLine!.drawOn(page!)
+                textLine!.drawOn(page)
                 yText += leading
             }
             yText += leading
         }
 
-        drawBorder(page!)
+        drawBorder(page)
         return [self.x! + self.w!, self.y! + self.h!]
     }
 }
