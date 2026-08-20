@@ -85,6 +85,18 @@ public class TextFrame implements Drawable {
         this.borderColor = borderColor;
     }
 
+    public boolean hasMoreText() {
+        return paragraphs.size() > 0;
+    }
+
+    private void drawBorder(Page page) throws Exception {
+        if (border) {
+            Rect rect = new Rect(x, y, w, h);
+            rect.setBorderColor(borderColor);
+            rect.drawOn(page);
+        }
+    }
+
     public float[] drawOn(Page page) throws Exception {
         if (page == null) {
             throw new NullPointerException("Page cannot be null");
@@ -127,17 +139,5 @@ public class TextFrame implements Drawable {
 
         drawBorder(page);
         return new float[] {this.x + this.w, this.y + this.h};
-    }
-
-    private void drawBorder(Page page) throws Exception {
-        if (border) {
-            Rect rect = new Rect(x, y, w, h);
-            rect.setBorderColor(borderColor);
-            rect.drawOn(page);
-        }
-    }
-
-    public boolean hasMoreText() {
-        return paragraphs.size() > 0;
     }
 }   // End of TextFrame.java
