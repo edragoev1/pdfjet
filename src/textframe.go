@@ -100,6 +100,18 @@ func (tf *TextFrame) SetBorderColor(borderColor int32) {
 	tf.borderColor = borderColor
 }
 
+func (tf *TextFrame) HasMoreText() bool {
+	return len(tf.paragraphs) > 0
+}
+
+func (tf *TextFrame) drawBorder(page *Page) {
+	if tf.border {
+		rect := NewRect(tf.x, tf.y, tf.w, tf.h)
+		rect.SetBorderColor(tf.borderColor)
+		rect.DrawOn(page)
+	}
+}
+
 func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
 	if page == nil {
 		return nil, fmt.Errorf("page cannot be nil")
@@ -148,16 +160,4 @@ func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
 
 	tf.drawBorder(page)
 	return []float32{tf.x + tf.w, tf.y + tf.h}, nil
-}
-
-func (tf *TextFrame) drawBorder(page *Page) {
-	if tf.border {
-		rect := NewRect(tf.x, tf.y, tf.w, tf.h)
-		rect.SetBorderColor(tf.borderColor)
-		rect.DrawOn(page)
-	}
-}
-
-func (tf *TextFrame) HasMoreText() bool {
-	return len(tf.paragraphs) > 0
 }
