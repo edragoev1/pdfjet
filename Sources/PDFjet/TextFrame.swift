@@ -81,6 +81,18 @@ public class TextFrame : Drawable {
         self.borderColor = borderColor
     }
 
+    public func hasMoreText() -> Bool {
+        return paragraphs.count > 0
+    }
+
+    private func drawBorder(_ page: Page) {
+        if border {
+            let rect = Rect(self.x!, self.y!, self.w!, self.h!)
+            rect.setBorderColor(borderColor)
+            rect.drawOn(page)
+        }
+    }
+
     public func drawOn(_ page: Page?) -> [Float] {
         if page == nil {
             // throw NSError(domain: "PDFjet", code: 1, userInfo: [NSLocalizedDescriptionKey: "Page cannot be null"])
@@ -125,17 +137,5 @@ public class TextFrame : Drawable {
 
         drawBorder(page!)
         return [self.x! + self.w!, self.y! + self.h!]
-    }
-
-    private func drawBorder(_ page: Page) {
-        if border {
-            let rect = Rect(self.x!, self.y!, self.w!, self.h!)
-            rect.setBorderColor(borderColor)
-            rect.drawOn(page)
-        }
-    }
-
-    public func hasMoreText() -> Bool {
-        return paragraphs.count > 0
     }
 }
