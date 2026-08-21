@@ -1616,7 +1616,7 @@ public class Page {
         buffer.append(hexadecimal.digits[index + 1])
     }
 
-    private static let HEX: [UInt8] = [
+    public static let HEX: [UInt8] = [
         UInt8(ascii: "0"), UInt8(ascii: "1"), UInt8(ascii: "2"), UInt8(ascii: "3"),
         UInt8(ascii: "4"), UInt8(ascii: "5"), UInt8(ascii: "6"), UInt8(ascii: "7"),
         UInt8(ascii: "8"), UInt8(ascii: "9"), UInt8(ascii: "A"), UInt8(ascii: "B"),
