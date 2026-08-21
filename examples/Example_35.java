@@ -1,4 +1,4 @@
-package com.example;
+package examples;
 
 import java.util.*;
 import java.io.*;
@@ -11,9 +11,8 @@ import com.pdfjet.*;
  * Example_35.java
  */
 public class Example_35 {
-    public Example_35() throws IOException {
-        PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("Example_35.pdf")));
+    public Example_35() throws Exception {
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_35.pdf")));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
