@@ -207,9 +207,9 @@ public class Stamp implements Drawable {
         return this;
     }
 
-//     public Stamp drawText(TextParameters parameters) {
-//         return drawText(parameters.font, parameters.fontSize, parameters.x, parameters.y, parameters.text);
-//     }
+    public Stamp drawText(TextParameters parameters) {
+        return drawText(parameters.font, parameters.fontSize, parameters.x, parameters.y, parameters.text);
+    }
 
     public Stamp drawText(Font font, float fontSize, float x, float y, String text) {
         append("BT\n");
