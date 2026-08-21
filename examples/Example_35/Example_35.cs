@@ -39,8 +39,7 @@ public class Example_35 {
             .LineTo(400f, 0f)
             .LineTo(400f, 400f)
             .LineTo(0f, 400f)
-            .FillPath()
-            .ClosePath();
+            .CloseFillAndStrokePath();
 
         // Draw Rectangle
         stamp.SetStrokeColor(Color.blue)

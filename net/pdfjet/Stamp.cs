@@ -175,6 +175,11 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    public Stamp CloseFillAndStrokePath() {
+        Append("b\n");
+        return this;
+    }
+
     // TODO:
     public Stamp Rectangle() {
         return this;
@@ -338,6 +343,12 @@ public class Stamp : IDrawable {
                     LineTo(point.x, point.y);
                 }
             }
+        }
+        // Catch unflushed control point
+        if (controlPoint != '\0') {
+            throw new Exception(
+                "Path ends with unconsumed control point(s). " +
+                "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.");
         }
         Append(pathOperator);
         Append('\n');
