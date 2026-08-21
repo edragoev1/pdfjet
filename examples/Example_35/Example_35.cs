@@ -75,7 +75,7 @@ public class Example_35 {
         TextLine title = new TextLine(f1, "Container");
         title.SetLocation(150f, 20f);
         container.Add(title);
-/*
+
         // Nested container #1
         Container nested1 = new Container(200f, 200f);
         nested1.SetLocation(0f, 0f);
@@ -108,12 +108,9 @@ public class Example_35 {
         container.Add(nested2);
 
         container.SetRotationClockwise(45);
-*/
-
         // Draw the entire hierarchy on the page
         container.DrawOn(page);
 
-/*
         var container5 = new Container(200f, 20f);
         var rect5 = new Rect(0f, 0f, 200f, 20f);
         container5.Add(rect5);
@@ -132,7 +129,7 @@ public class Example_35 {
 
         container5.SetRotation(-90);
         container5.DrawOn(page);
-*/
+
         pdf.Complete();
     }
 
