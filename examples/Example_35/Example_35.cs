@@ -20,26 +20,6 @@ public class Example_35 {
         Font f2 = new Font(pdf, IBMPlexSans.Bold);
         f2.SetSize(14f);
 
-/*
-        Rect rect = new Rect(0f, 0f, 300f, 300f);
-        rect.SetLocation(0f, 0f);
-        rect.SetBorderColor(Color.blue);
-        rect.SetBorderWidth(2f);
-
-        TextLine text = new TextLine(f1, "Yahoo!");
-        text.SetLocation(25f, 25f);
-        text.SetFontSize(16f);
-        text.SetTextColor(Color.blue);
-
-        Container c = new Container(300f, 300f);
-        c.SetLocation(75f, 75f);
-        c.Add(rect);
-        c.Add(text);
-        // c.SetScaleFactor(0.5f);
-        c.SetRotateDegreesCCW(45);
-        c.DrawOn(page);
-*/
-
         // Base container
         Container container = new Container(400f, 400f);
         container.SetLocation(100f, 100f);
@@ -66,14 +46,6 @@ public class Example_35 {
         stamp.SetStrokeColor(Color.blue)
             .SetStrokeWidth(1f)
             .DrawRect(10f, 10f, 380f, 380f);
-
-//        stamp.Rectangle()
-//            .Location(10f, 10f)
-//            .Size(380f, 380f)
-//            .FillColor(Color.lightblue)
-//            .StrokeColor(Color.blue)
-//            .StrokeWidth(1f)
-//            .Draw();
 
         // Fill Rectangle
         stamp.SetFillColor(Color.green).FillRect(10f, 10f, 20f, 20f);
@@ -104,7 +76,7 @@ public class Example_35 {
         TextLine title = new TextLine(f1, "Container");
         title.SetLocation(150f, 20f);
         container.Add(title);
-
+/*
         // Nested container #1
         Container nested1 = new Container(200f, 200f);
         nested1.SetLocation(0f, 0f);
@@ -137,10 +109,12 @@ public class Example_35 {
         container.Add(nested2);
 
         container.SetRotationClockwise(45);
+*/
+
         // Draw the entire hierarchy on the page
         container.DrawOn(page);
 
-
+/*
         var container5 = new Container(200f, 20f);
         var rect5 = new Rect(0f, 0f, 200f, 20f);
         container5.Add(rect5);
@@ -159,7 +133,7 @@ public class Example_35 {
 
         container5.SetRotation(-90);
         container5.DrawOn(page);
-
+*/
         pdf.Complete();
     }
 
