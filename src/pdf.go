@@ -35,6 +35,7 @@ type PDF struct {
 	destinations              map[string]*Destination
 	groups                    []*OptionalContentGroup
 	states                    map[string]int
+	stamps                    []*Stamp
 	metadataObjNumber         int
 	outputIntentObjNumber     int
 	compliance                int
@@ -117,6 +118,7 @@ func NewPDF(w *bufio.Writer) *PDF {
 	pdf.createDate = time.Now().Format(time.RFC3339)[0:19]
 
 	pdf.states = make(map[string]int)
+	pdf.stamps = make([]*Stamp, 0)
 
 	pdf.appendString("%PDF-1.7\n")
 	pdf.appendString("%")

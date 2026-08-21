@@ -311,7 +311,7 @@ func (s *Stamp) Complete() {
 	s.pdf.appendByteArray(s.buf.Bytes())
 	s.pdf.appendByteArray(token.EndStream)
 	s.pdf.endobj()
-	// s.pdf.Stamps = append(s.pdf.Stamps, s)   // TODO
+	s.pdf.stamps = append(s.pdf.stamps, s)
 	s.objNumber = s.pdf.getObjNumber()
 }
 
