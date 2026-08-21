@@ -763,18 +763,18 @@ func (page *Page) DrawPath(path []*Point, pathOperator string) {
 	}
 	point := path[0]
 	page.MoveTo(point.x, point.y)
-	var controlPoint = ""
+	var controlPoint byte = 0
 	for i := 1; i < len(path); i++ {
 		point = path[i]
-		if point.controlPoint != "" {
+		if point.controlPoint != 0 {
 			controlPoint = point.controlPoint
 			page.appendPoint(point)
 		} else {
-			if controlPoint != "" {
+			if controlPoint != 0 {
 				page.appendPoint(point)
-				page.appendString(controlPoint)
+				page.appendByte(controlPoint)
 				page.appendString("\n")
-				controlPoint = ""
+				controlPoint = 0
 			} else {
 				page.LineTo(point.x, point.y)
 			}
@@ -784,7 +784,7 @@ func (page *Page) DrawPath(path []*Point, pathOperator string) {
 	page.appendString("\n")
 }
 
-// DrawCircle sdraws a circle on the page.
+// DrawCircle draws a circle on the page.
 //
 // The outline of the circle is drawn using the current penColor color.
 //

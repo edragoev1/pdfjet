@@ -28,19 +28,16 @@ type Point struct {
 	hasStrokeColor bool
 	strokePattern  string
 	pathOperator   string
-
-	controlPoint string
-	drawPath     bool
-
-	text          string
-	textColor     [3]float32
-	hasTextColor  bool
-	textDirection int
-	uri, key      string
-
-	lineWidth   float32
-	linePattern string
-	fillShape   bool
+	controlPoint   byte
+	drawPath       bool
+	text           string
+	textColor      [3]float32
+	hasTextColor   bool
+	textDirection  int
+	uri, key       string
+	lineWidth      float32
+	linePattern    string
+	fillShape      bool
 }
 
 // NewPoint constructor for creating point objects.
@@ -48,7 +45,7 @@ type Point struct {
 // @param y the y coordinate of this point when drawn on the page.
 func NewPoint(x, y float32) *Point {
 	point := new(Point)
-	point.controlPoint = ""
+	point.controlPoint = 0
 	point.x = x
 	point.y = y
 	point.r = 2.0
@@ -68,7 +65,7 @@ func NewPoint(x, y float32) *Point {
 // @param y the y coordinate of this point.
 func NewControlPointC(x, y float32) *Point {
 	point := NewPoint(x, y)
-	point.controlPoint = "c"
+	point.controlPoint = 'c'
 	return point
 }
 
@@ -77,7 +74,7 @@ func NewControlPointC(x, y float32) *Point {
 // @param y the y coordinate of this point.
 func NewControlPointV(x, y float32) *Point {
 	point := NewPoint(x, y)
-	point.controlPoint = "v"
+	point.controlPoint = 'v'
 	return point
 }
 
@@ -86,7 +83,7 @@ func NewControlPointV(x, y float32) *Point {
 // @param y the y coordinate of this point.
 func NewControlPointY(x, y float32) *Point {
 	point := NewPoint(x, y)
-	point.controlPoint = "y"
+	point.controlPoint = 'y'
 	return point
 }
 
