@@ -175,6 +175,11 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    public Stamp closeFillAndStrokePath() {
+        append("b\n");
+        return this;
+    }
+
     // TODO:
     public Stamp rectangle() {
         return this;
