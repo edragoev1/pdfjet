@@ -1425,23 +1425,23 @@ public class Page {
 
         // Starting point
         points.Add(new Point(x + w - r1, y));
-        points.Add(new Point(x + w - r1 + m4*r1, y, Point.CONTROL_POINT));
-        points.Add(new Point(x + w, y + r2 - m4*r2, Point.CONTROL_POINT));
+        points.Add(new Point(x + w - r1 + m4*r1, y, Point.ControlPointC));
+        points.Add(new Point(x + w, y + r2 - m4*r2, Point.ControlPointC));
         points.Add(new Point(x + w, y + r2));
 
         points.Add(new Point(x + w, y + h - r2));
-        points.Add(new Point(x + w, y + h - r2 + m4*r2, Point.CONTROL_POINT));
-        points.Add(new Point(x + w - m4*r1, y + h, Point.CONTROL_POINT));
+        points.Add(new Point(x + w, y + h - r2 + m4*r2, Point.ControlPointC));
+        points.Add(new Point(x + w - m4*r1, y + h, Point.ControlPointC));
         points.Add(new Point(x + w - r1, y + h));
 
         points.Add(new Point(x + r1, y + h));
-        points.Add(new Point(x + r1 - m4*r1, y + h, Point.CONTROL_POINT));
-        points.Add(new Point(x, y + h - m4*r2, Point.CONTROL_POINT));
+        points.Add(new Point(x + r1 - m4*r1, y + h, Point.ControlPointC));
+        points.Add(new Point(x, y + h - m4*r2, Point.ControlPointC));
         points.Add(new Point(x, y + h - r2));
 
         points.Add(new Point(x, y + r2));
-        points.Add(new Point(x, y + r2 - m4*r2, Point.CONTROL_POINT));
-        points.Add(new Point(x + m4*r1, y, Point.CONTROL_POINT));
+        points.Add(new Point(x, y + r2 - m4*r2, Point.ControlPointC));
+        points.Add(new Point(x + m4*r1, y, Point.ControlPointC));
         points.Add(new Point(x + r1, y));
         points.Add(new Point(x + w - r1, y));
 
