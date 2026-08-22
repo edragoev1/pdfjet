@@ -16,6 +16,7 @@ public class PDF {
     var destinations = [String : Destination]()
     var groups = [OptionalContentGroup]()
     var states = [String : Int]()
+    var stamps = [Stamp]()
     var compliance = Compliance.PDF_17
     var toc: Bookmark?
     var importedFonts = [String]()
@@ -328,7 +329,7 @@ public class PDF {
             }
             append(Token.endDictionary)
         }
-        if images.count > 0 {
+        if images.count > 0 || stamps.count > 0 {
             append("/XObject\n")
             append(Token.beginDictionary)
             for image in images {
@@ -336,6 +337,13 @@ public class PDF {
                 append(image.objNumber!)
                 append(Token.space)
                 append(image.objNumber!)
+                append(Token.objRef)
+            }
+            for stamp in stamps {
+                append("/Fm")
+                append(stamp.objNumber!)
+                append(Token.space)
+                append(stamp.objNumber!)
                 append(Token.objRef)
             }
             append(Token.endDictionary)
