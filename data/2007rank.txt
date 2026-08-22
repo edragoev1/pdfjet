@@ -119,18 +119,18 @@ Rank    Country 	    Population 	        Date of Information
 118 	Norway 	            4,627,926 	    July 2007 est.
 119 	Singapore 	        4,553,009 	    July 2007 est.
 120 	Bosnia and Herzegovina 	         4,552,198 	 July 2007 est.
-121 	Croatia 	        4,493,312 	 July 2007 est.
+121 	Croatia 	                    4,493,312 	 July 2007 est.
 122 	United Arab Emirates 	         4,444,011 	 July 2007 est.
-123 	Central African Republic 	         4,369,038 	 July 2007 est.
-124 	Moldova 	         4,320,490 	 July 2007 est.
-125 	Costa Rica 	         4,133,884 	 July 2007 est.
-126 	New Zealand 	         4,115,771 	 July 2007 est.
-127 	Ireland 	         4,109,086 	 July 2007 est.
-128 	Puerto Rico 	         3,944,259 	 July 2007 est.
-129 	Lebanon 	         3,925,502 	 July 2007 est.
+123 	Central African Republic        4,369,038 	 July 2007 est.
+124 	Moldova 	                    4,320,490 	 July 2007 est.
+125 	Costa Rica 	                    4,133,884 	 July 2007 est.
+126 	New Zealand 	                4,115,771 	 July 2007 est.
+127 	Ireland 	                    4,109,086 	 July 2007 est.
+128 	Puerto Rico 	                3,944,259 	 July 2007 est.
+129 	Lebanon 	                    3,925,502 	 July 2007 est.
 130 	Congo, Republic of the 	         3,800,610 	 July 2007 est.
-131 	Albania 	         3,600,523 	 July 2007 est.
-132 	Lithuania 	         3,575,439 	 July 2007 est.
+131 	Albania 	                    3,600,523 	 July 2007 est.
+132 	Lithuania 	                    3,575,439 	 July 2007 est.
 133 	Uruguay 	         3,460,607 	 July 2007 est.
 134 	Mauritania 	         3,270,065 	 July 2007 est.
 135 	Panama 	         3,242,173 	 July 2007 est.
@@ -140,27 +140,27 @@ Rank    Country 	    Population 	        Date of Information
 139 	Mongolia 	         2,951,786 	 July 2007 est.
 140 	Jamaica 	         2,780,132 	 July 2007 est.
 141 	West Bank 	         2,535,927 	 July 2004 est.
-142 	Kuwait 	         2,505,559 	 July 2007 est.
-143 	Bhutan 	         2,327,849 	 July 2007 est.
-144 	Latvia 	         2,259,810 	 July 2007 est.
-145 	Lesotho 	         2,125,262 	 July 2007 est.
-146 	Macedonia 	         2,055,915 	 July 2007 est.
-147 	Namibia 	         2,055,080 	 July 2007 est.
-148 	Slovenia 	         2,009,245 	 July 2007 est.
-149 	Botswana 	         1,815,508 	 July 2007 est.
-150 	Gambia, The 	         1,688,359 	 July 2007 est.
-151 	Gaza Strip 	         1,482,405 	 July 2007 est.
-152 	Guinea-Bissau 	         1,472,780 	 July 2007 est.
-153 	Gabon 	         1,454,867 	 July 2007 est.
+142 	Kuwait 	                    2,505,559 	 July 2007 est.
+143 	Bhutan 	                    2,327,849 	 July 2007 est.
+144 	Latvia 	                    2,259,810 	 July 2007 est.
+145 	Lesotho 	                2,125,262 	 July 2007 est.
+146 	Macedonia 	                2,055,915 	 July 2007 est.
+147 	Namibia 	                2,055,080 	 July 2007 est.
+148 	Slovenia 	                2,009,245 	 July 2007 est.
+149 	Botswana 	                1,815,508 	 July 2007 est.
+150 	Gambia, The 	            1,688,359 	 July 2007 est.
+151 	Gaza Strip 	                1,482,405 	 July 2007 est.
+152 	Guinea-Bissau 	            1,472,780 	 July 2007 est.
+153 	Gabon 	                    1,454,867 	 July 2007 est.
 154 	Estonia 	         1,315,912 	 July 2007 est.
 155 	Mauritius 	         1,250,882 	 July 2007 est.
 156 	Swaziland 	         1,133,066 	 July 2007 est.
 157 	East Timor 	         1,084,971 	 July 2007 est.
 158 	Trinidad and Tobago 	         1,056,608 	 July 2007 est.
-159 	Fiji 	          918,675 	 July 2007 est.
-160 	Qatar 	          907,229 	 July 2007 est.
-161 	Cyprus 	          788,457 	 July 2007 est.
-162 	Guyana 	          769,095 	 July 2007 est.
+159 	Fiji 	                        918,675 	 July 2007 est.
+160 	Qatar 	                        907,229 	 July 2007 est.
+161 	Cyprus 	                        788,457 	 July 2007 est.
+162 	Guyana 	                        769,095 	 July 2007 est.
 163 	Comoros 	          711,417 	 July 2007 est.
 164 	Bahrain 	          708,573 	 July 2007 est.
 165 	Montenegro 	          684,736 	 July 2007 est.
