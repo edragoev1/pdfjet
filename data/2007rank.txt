@@ -2,29 +2,29 @@ Rank    Country 	    Population 	        Date of Information
 1 	    World 	        6,602,224,175       July 2007 est.
 2 	    China 	        1,321,851,888 	    July 2007 est.
 3 	    India 	        1,129,866,154 	    July 2007 est.
-4 	    European Union  460,827,146 	    July 2007 est.
-5 	    United States 	301,139,947 	    July 2007 est.
-6 	    Indonesia 	    234,693,997 	    July 2007 est.
-7 	    Brazil 	        190,010,647 	    July 2007 est.
-8 	    Pakistan 	    164,741,924 	    July 2007 est.
-9 	    Bangladesh 	    150,448,339 	    July 2007 est.
-10 	    Russia 	        141,377,752 	    July 2007 est.
-11 	    Nigeria 	    135,031,164 	    July 2007 est.
-12 	    Japan 	       127,433,494 	 July 2007 est.
-13 	    Mexico 	       108,700,891 	 July 2007 est.
-14 	    Philippines 	        91,077,287 	 July 2007 est.
-15 	    Vietnam 	        85,262,356 	 July 2007 est.
-16 	    Germany 	        82,400,996 	 July 2007 est.
-17 	    Egypt 	        80,335,036 	 July 2007 est.
-18 	    Ethiopia 	        76,511,887 	 July 2007 est.
-19 	    Turkey 	        71,158,647 	 July 2007 est.
-20 	    Congo, Democratic Republic of the 	        65,751,512 	 July 2007 est.
-21 	    Iran 	        65,397,521 	 July 2007 est.
-22 	    Thailand 	        65,068,149 	 July 2007 est.
-23 	    France 	        63,713,926 	 July 2007 est.
-24 	    United Kingdom 	        60,776,238 	 July 2007 est.
-25 	    Italy 	        58,147,733 	 July 2007 est.
-26 	    Korea, South 	        49,044,790 	 July 2007 est.
+4 	    European Union    460,827,146 	    July 2007 est.
+5 	    United States 	  301,139,947 	    July 2007 est.
+6 	    Indonesia 	      234,693,997 	    July 2007 est.
+7 	    Brazil 	          190,010,647 	    July 2007 est.
+8 	    Pakistan 	      164,741,924 	    July 2007 est.
+9 	    Bangladesh 	      150,448,339 	    July 2007 est.
+10 	    Russia 	          141,377,752 	    July 2007 est.
+11 	    Nigeria 	      135,031,164 	    July 2007 est.
+12 	    Japan 	          127,433,494 	    July 2007 est.
+13 	    Mexico 	          108,700,891 	    July 2007 est.
+14 	    Philippines 	   91,077,287 	    July 2007 est.
+15 	    Vietnam 	       85,262,356 	    July 2007 est.
+16 	    Germany 	       82,400,996 	    July 2007 est.
+17 	    Egypt 	           80,335,036 	    July 2007 est.
+18 	    Ethiopia 	       76,511,887 	    July 2007 est.
+19 	    Turkey 	           71,158,647 	    July 2007 est.
+20 	    Congo, DR          65,751,512 	    July 2007 est.
+21 	    Iran 	           65,397,521 	    July 2007 est.
+22 	    Thailand 	       65,068,149 	    July 2007 est.
+23 	    France 	           63,713,926 	    July 2007 est.
+24 	    United Kingdom 	   60,776,238 	    July 2007 est.
+25 	    Italy 	           58,147,733 	    July 2007 est.
+26 	    Korea, South 	   49,044,790 	    July 2007 est.
 27 	    Burma 	        47,373,958 	 July 2007 est.
 28 	    Ukraine 	        46,299,862 	 July 2007 est.
 29 	    Colombia 	        44,379,598 	 July 2007 est.
@@ -234,5 +234,3 @@ Rank    Country 	    Population 	        Date of Information
 233 	Holy See (Vatican City) 	             821 	 July 2007 est.
 234 	Cocos (Keeling) Islands 	             596 	 July 2007 est.
 235     Pitcairn Islands 	              48 	 July 2007 est.
-
-        This file was last updated on 17 April, 2007
