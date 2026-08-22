@@ -297,7 +297,7 @@ public class Stamp {
         pdf.append(Token.endStream)
         pdf.endobj()
 
-        // pdf.stamps.append(self)  // TODO:
+        pdf.stamps.append(self)
         objNumber = pdf.getObjNumber()
     }
 
