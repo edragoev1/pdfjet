@@ -56,7 +56,7 @@ func Example35() {
 
 	// Draw path ...
 	stamp.SetFillColor(color.LightBlue).
-		SetStrokeColor(pdfjet.color.Red).
+		SetStrokeColor(color.Red).
 		SetStrokeWidth(4.0).
 		MoveTo(0.0, 0.0).
 		LineTo(400.0, 0.0).
@@ -145,11 +145,11 @@ func Example35() {
 	container5.Add(rect5)
 
 	rect6 := pdfjet.NewRect(0.0, 0.0, 10.0, 10.0)
-	rect6.SetFillColor(pdfjet.ColorBlue)
+	rect6.SetFillColor(color.Blue)
 	container5.Add(rect6)
 
 	rect7 := pdfjet.NewRect(190.0, 10.0, 10.0, 10.0)
-	rect7.SetBorderColor(pdfjet.ColorRed)
+	rect7.SetBorderColor(color.Red)
 	rect7.SetBorderWidth(2.0)
 	container5.Add(rect7)
 
