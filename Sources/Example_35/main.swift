@@ -120,7 +120,7 @@ public class Example_35 {
 
         container.setRotationClockwise(45)
         // Draw the entire hierarchy on the page
-        container.drawOn(page)
+        _ = container.drawOn(page)
 
         // Additional container demonstration
         let container5 = Container(200.0, 20.0)
@@ -137,10 +137,10 @@ public class Example_35 {
         container5.add(rect7)
 
         container5.setLocation(50.0, 600.0)
-        container5.drawOn(page)
+        _ = container5.drawOn(page)
 
         container5.setRotation(-90)
-        container5.drawOn(page)
+        _ = container5.drawOn(page)
 
         pdf.complete()
     }
