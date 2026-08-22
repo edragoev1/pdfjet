@@ -1,5 +1,4 @@
-||Electricity -|Electricity -|Telephones -|Telephones -|Internet|Internet
-Country|Population|production(kWh)|consumption(kWh)|main lines in use|mobile cellular|hosts|users
+Country|Population|Electricity Production (kWh)|Electricity Consumption (kWh)|Telephones Main Lines|Telephones Mobile Cellular|Internet Hosts|Internet Users
 World|6,602,224,175|17,400,000,000,000|16,330,000,000,000|1,263,367,600|2,168,433,600||1,018,057,389
 China|1,321,851,888|2,500,000,000,000|2,494,000,000,000|350,433,000|437,480,000|232,780|123,000,000
 India|1,129,866,154|630,600,000,000|587,900,000,000|49,750,000|69,193,000|1,543,000|60,000,000
