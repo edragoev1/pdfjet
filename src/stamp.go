@@ -207,10 +207,10 @@ func (s *Stamp) FillRect(x, y, w, h float32) *Stamp {
 	return s
 }
 
-// DrawTextFromParams draws text using TextParameters
-//func (s *Stamp) DrawTextFromParams(params *TextParameters) *Stamp {
-//	return s.DrawText(params.Font, params.FontSize, params.X, params.Y, params.Text)
-//}
+// DrawTextUsingParams draws text using the TextParameters data.
+func (s *Stamp) DrawTextUsingParams(params *TextParameters) *Stamp {
+	return s.drawText(params.font, params.fontSize, params.x, params.y, params.text)
+}
 
 // DrawText draws text on the stamp
 func (s *Stamp) drawText(font *Font, fontSize, x, y float32, text string) *Stamp {

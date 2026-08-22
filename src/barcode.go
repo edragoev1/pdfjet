@@ -140,7 +140,7 @@ func (barcode *Barcode) SetFont(font *Font) {
 }
 
 // DrawOn draws this barcode on the specified page.
-func (barcode *Barcode) DrawOn(page *Page) []float32 {
+func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 	switch barcode.barcodeType {
 	case Upc:
 		return barcode.drawCodeUPC(page, barcode.x1, barcode.y1)
@@ -151,11 +151,11 @@ func (barcode *Barcode) DrawOn(page *Page) []float32 {
 	default:
 		log.Println("Unsupported Barcode Type.")
 	}
-	return []float32{0.0, 0.0}
+	return [2]float32{0.0, 0.0}
 }
 
 // drawOnPageAtLocation draws this barcode on the specified page at the specified location.
-func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) []float32 {
+func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) [2]float32 {
 	switch barcode.barcodeType {
 	case Upc:
 		return barcode.drawCodeUPC(page, x1, y1)
@@ -166,10 +166,10 @@ func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) []float
 	default:
 		log.Println("Unsupported Barcode Type.")
 	}
-	return []float32{0.0, 0.0}
+	return [2]float32{0.0, 0.0}
 }
 
-func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) []float32 {
+func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 	x := x1
 	y := y1
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
@@ -221,7 +221,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) []float32 {
 	}
 	x = barcode.drawEGuard(page, x, y, barcode.m1, h+8)
 
-	xy := []float32{x, y}
+	xy := [2]float32{x, y}
 	if barcode.font != nil {
 		label := string(barcode.text[0]) +
 			"  " +
@@ -282,7 +282,7 @@ func (barcode *Barcode) drawBar(page *Page, x, y, m1, h float32) {
 	}
 }
 
-func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
+func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 	x := x1
 	y := y1
 
@@ -346,7 +346,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
 		}
 	}
 
-	xy := []float32{x, y}
+	xy := [2]float32{x, y}
 	if barcode.font != nil {
 		if barcode.direction == LeftToRight {
 			text := NewTextLine(barcode.font, barcode.text)
@@ -355,7 +355,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
 				y1+h+barcode.font.bodyHeight)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0])))
-			return []float32{xy[0], xy[1] + barcode.font.descent}
+			return [2]float32{xy[0], xy[1] + barcode.font.descent}
 		} else if barcode.direction == TopToBottom {
 			text := NewTextLine(barcode.font, barcode.text)
 			text.SetLocation(
@@ -370,8 +370,8 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) []float32 {
 	return xy
 }
 
-func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) []float32 {
-	xy := []float32{0.0, 0.0}
+func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
+	xy := [2]float32{0.0, 0.0}
 
 	barcode.text = "*" + barcode.text + "*"
 	x := x1

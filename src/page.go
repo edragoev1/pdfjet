@@ -1415,12 +1415,12 @@ func (page *Page) Transform(values []float32) {
 }
 
 // AddHeader adds header to this page.
-func (page *Page) AddHeader(textLine *TextLine) []float32 {
+func (page *Page) AddHeader(textLine *TextLine) [2]float32 {
 	return page.AddHeaderOffsetBy(textLine, 1.5*textLine.font.ascent)
 }
 
 // AddHeaderOffsetBy adds header to this page offset by the specified value.
-func (page *Page) AddHeaderOffsetBy(textLine *TextLine, offset float32) []float32 {
+func (page *Page) AddHeaderOffsetBy(textLine *TextLine, offset float32) [2]float32 {
 	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, offset)
 	xy := textLine.DrawOn(page)
 	xy[1] += textLine.font.descent
@@ -1428,12 +1428,12 @@ func (page *Page) AddHeaderOffsetBy(textLine *TextLine, offset float32) []float3
 }
 
 // AddFooter adds footer to this page.
-func (page *Page) AddFooter(textLine *TextLine) []float32 {
+func (page *Page) AddFooter(textLine *TextLine) [2]float32 {
 	return page.AddFooterOffsetBy(textLine, textLine.font.ascent)
 }
 
 // AddFooterOffsetBy adds footer to this page offset by the specified value.
-func (page *Page) AddFooterOffsetBy(textLine *TextLine, offset float32) []float32 {
+func (page *Page) AddFooterOffsetBy(textLine *TextLine, offset float32) [2]float32 {
 	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, page.GetHeight()-offset)
 	return textLine.DrawOn(page)
 }

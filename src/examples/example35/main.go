@@ -71,11 +71,11 @@ func Example35() {
 		SetFontSize(14.0).
 		SetTextLocation(25.0, 25.0).
 		SetText("Hello, World!")
-	stamp.DrawText(params)
+	stamp.DrawTextUsingParams(params)
 
 	// Change some parameters and draw the text again
 	params.SetFont(f2).SetTextLocation(25.0, 50.0)
-	stamp.SetFillColor(color.DarkGreen).DrawText(params)
+	stamp.SetFillColor(color.DarkGreen).DrawTextUsingParams(params)
 
 	// Complete the stamp
 	stamp.Complete()
