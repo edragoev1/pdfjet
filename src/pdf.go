@@ -367,7 +367,7 @@ func (pdf *PDF) addResourcesObject() int {
 		}
 		pdf.appendByteArray(token.EndDictionary)
 	}
-	if len(pdf.images) > 0 {
+	if len(pdf.images) > 0 || len(pdf.stamps) > 0 {
 		pdf.appendString("/XObject\n")
 		pdf.appendByteArray(token.BeginDictionary)
 		for _, image := range pdf.images {
@@ -375,6 +375,13 @@ func (pdf *PDF) addResourcesObject() int {
 			pdf.appendInteger(image.objNumber)
 			pdf.appendString(" ")
 			pdf.appendInteger(image.objNumber)
+			pdf.appendString(" 0 R\n")
+		}
+		for _, stamp := range pdf.stamps {
+			pdf.appendString("/Fm")
+			pdf.appendInteger(stamp.objNumber)
+			pdf.appendString(" ")
+			pdf.appendInteger(stamp.objNumber)
 			pdf.appendString(" 0 R\n")
 		}
 		pdf.appendByteArray(token.EndDictionary)
