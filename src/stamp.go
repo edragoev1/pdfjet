@@ -70,8 +70,8 @@ func (s *Stamp) AppendString(str string) {
 	s.buf.Write([]byte(str))
 }
 
-// SetFillColor sets fill color from RGB array
-func (s *Stamp) SetFillColor(rgbColor []float32) *Stamp {
+// SetFillColorRGB sets fill color from RGB array
+func (s *Stamp) SetFillColorRGB(rgbColor []float32) *Stamp {
 	s.AppendFloat(rgbColor[0])
 	s.AppendString(" ")
 	s.AppendFloat(rgbColor[1])
@@ -82,23 +82,16 @@ func (s *Stamp) SetFillColor(rgbColor []float32) *Stamp {
 	return s
 }
 
-// SetFillColorInt sets fill color from integer (RGBA format)
-func (s *Stamp) SetFillColorInt(color int) *Stamp {
+// SetFillColor sets fill color from integer (RGBA format)
+func (s *Stamp) SetFillColor(color int) *Stamp {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32(color&0xff) / 255.0
-	s.AppendFloat(r)
-	s.AppendString(" ")
-	s.AppendFloat(g)
-	s.AppendString(" ")
-	s.AppendFloat(b)
-	s.AppendString(" rg\n")
-	s.fillColor = []float32{r, g, b}
-	return s
+	return s.SetFillColorRGB([]float32{r, g, b})
 }
 
-// SetStrokeColor sets stroke color from RGB array
-func (s *Stamp) SetStrokeColor(rgbColor []float32) *Stamp {
+// SetStrokeColorRGB sets stroke color from RGB array
+func (s *Stamp) SetStrokeColorRGB(rgbColor []float32) *Stamp {
 	s.AppendFloat(rgbColor[0])
 	s.AppendString(" ")
 	s.AppendFloat(rgbColor[1])
@@ -109,19 +102,12 @@ func (s *Stamp) SetStrokeColor(rgbColor []float32) *Stamp {
 	return s
 }
 
-// SetStrokeColorInt sets stroke color from integer (RGBA format)
-func (s *Stamp) SetStrokeColorInt(color int) *Stamp {
+// SetStrokeColor sets stroke color from integer (RGBA format)
+func (s *Stamp) SetStrokeColor(color int) *Stamp {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32(color&0xff) / 255.0
-	s.AppendFloat(r)
-	s.AppendString(" ")
-	s.AppendFloat(g)
-	s.AppendString(" ")
-	s.AppendFloat(b)
-	s.AppendString(" RG\n")
-	s.fillColor = []float32{r, g, b}
-	return s
+	return s.SetStrokeColorRGB([]float32{r, g, b})
 }
 
 // SetStrokeWidth sets the stroke width
