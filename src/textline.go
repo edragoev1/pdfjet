@@ -92,6 +92,15 @@ func (textLine *TextLine) SetLocation(x, y float32) *TextLine {
 	return textLine
 }
 
+// SetPosition sets the location where this text line will be drawn on the page.
+// @param x the x coordinate of the text line.
+// @param y the y coordinate of the text line.
+// @return this TextLine.
+func (textLine *TextLine) SetPosition(x, y float32) {
+	textLine.x = x
+	textLine.y = y
+}
+
 // SetFont sets the font to use for this text line.
 // @param font the font to use.
 // @return this TextLine.
@@ -378,9 +387,9 @@ func (textLine *TextLine) GetColorMap() map[string]int32 {
 // DrawOn draws this text line on the specified page if the draw parameter is true.
 // @param page the page to draw this text line on.
 // @param draw if draw is false - no action is performed.
-func (textLine *TextLine) DrawOn(page *Page) []float32 {
+func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if page == nil || textLine.text == "" {
-		return []float32{textLine.x, textLine.y}
+		return [2]float32{textLine.x, textLine.y}
 	}
 
 	page.SetTextDirection(textLine.degrees)
@@ -456,7 +465,7 @@ func (textLine *TextLine) DrawOn(page *Page) []float32 {
 		float64(textLine.y+textLine.verticalOffset),
 		float64(textLine.y+textLine.verticalOffset)-float64(length)*math.Sin(radians))
 
-	return []float32{float32(xMax), float32(yMax)}
+	return [2]float32{float32(xMax), float32(yMax)}
 }
 
 func (textLine *TextLine) advance(leading float32) float32 {

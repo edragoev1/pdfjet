@@ -213,7 +213,7 @@ func (s *Stamp) FillRect(x, y, w, h float32) *Stamp {
 //}
 
 // DrawText draws text on the stamp
-func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp {
+func (s *Stamp) drawText(font *Font, fontSize, x, y float32, text string) *Stamp {
 	s.AppendString("BT\n")
 	s.AppendString("/F")
 	s.AppendFloat(float32(font.objNumber))
@@ -225,7 +225,7 @@ func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp
 	s.AppendFloat(s.height - y)
 	s.AppendString(" Td\n")
 	s.AppendString("<")
-	s.drawText(font, text)
+	s.DrawText(font, text)
 	s.AppendString("> Tj\n")
 	s.AppendString("ET\n")
 	return s
@@ -301,8 +301,8 @@ func (s *Stamp) Complete() {
 	s.objNumber = s.pdf.getObjNumber()
 }
 
-// drawText draws encoded text characters
-func (s *Stamp) drawText(font *Font, str string) {
+// DrawText draws encoded text characters
+func (s *Stamp) DrawText(font *Font, str string) {
 	for _, codePoint := range str {
 		if codePoint == 0xFEFF { // Skip the BOM
 			continue

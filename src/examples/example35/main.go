@@ -8,8 +8,6 @@
 package main
 
 import (
-	"bufio"
-	"os"
 	"time"
 
 	"github.com/edragoev1/pdfjet/src"
@@ -21,13 +19,7 @@ import (
 // Example35 demonstrates stamp and container usage
 func Example35() {
 	// Create PDF output
-	file, err := os.Create("Example_35.pdf")
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	pdf := pdfjet.NewPDF(bufio.NewWriter(file))
+	pdf := pdfjet.NewPDFFile("Example_18.pdf")
 
 	// Create page
 	page := pdfjet.NewPage(pdf, letter.Portrait)
