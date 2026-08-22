@@ -86,14 +86,12 @@ func Example35() {
 	stamp.SetFillColor(color.DarkGreen).DrawText(params)
 
 	// Complete the stamp
-	if err := stamp.Complete(); err != nil {
-		return err
-	}
+	stamp.Complete()
 
 	// Draw stamp on page at original location
 	stamp.SetLocation(50.0, 50.0).DrawOn(page)
 
-	// Rotate the stamp counter clockwise and draw it again
+	// Rotate the stamp clockwise and draw it again
 	stamp.Rotate(15).DrawOn(page)
 
 	// Rotate the stamp clockwise and draw it again
