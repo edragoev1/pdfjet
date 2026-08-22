@@ -86,6 +86,13 @@ public class Rect : Drawable {
         self.fillColor = fillColor
     }
 
+    public func setFillColor(_ color: Int32) {
+        let r = Float(((color >> 16) & 0xff))/255.0
+        let g = Float(((color >>  8) & 0xff))/255.0
+        let b = Float(((color)       & 0xff))/255.0
+        self.fillColor = [r, g, b]
+    }
+
     public func setBorderColor(_ color: Int32) {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0

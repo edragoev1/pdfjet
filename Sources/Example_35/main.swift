@@ -8,20 +8,17 @@
 import Foundation
 import PDFjet
 
-///
-/// Example_35.swift
-///
 public class Example_35 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_35.pdf", append: false)!)
 
-        let page = Page(pdf, Letter.portrait)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        let f1 = Font(pdf, CoreFont.HelveticaBold)
-        f1.setSize(14.0)
+        Font f1 = Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(14.0);
 
-        let f2 = Font(pdf, CoreFont.Helvetica)
-        f2.setSize(14.0)
+        Font f2 = Font(pdf, IBMPlexSans.Bold);
+        f2.setSize(14.0);
 
         // Base container
         let container = Container(400.0, 400.0)
@@ -38,7 +35,7 @@ public class Example_35 {
         stamp = stamp.withFont(f2)
 
         // Draw path ...
-        stamp = stamp.setFillColor(Color.lightBlue)
+        stamp = stamp.setFillColor(Color.lightblue)
             .setStrokeColor(Color.red)
             .setStrokeWidth(4.0)
             .moveTo(0.0, 0.0)
@@ -66,7 +63,7 @@ public class Example_35 {
 
         // Change some parameters and draw the text again
         parameters = parameters.setFont(f2).setTextLocation(25.0, 50.0)
-        stamp = stamp.setFillColor(Color.darkGreen)
+        stamp = stamp.setFillColor(Color.darkgreen)
         stamp.drawText(parameters)
 
         // Complete the stamp
@@ -142,7 +139,7 @@ public class Example_35 {
         container5.setRotation(-90)
         container5.drawOn(page)
 
-        try pdf.complete()
+        pdf.complete()
     }
 }
 

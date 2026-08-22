@@ -64,7 +64,7 @@ public class Stamp {
     }
 
     @discardableResult
-    public func setFillColor(_ color: Int) -> Stamp {
+    public func setFillColor(_ color: Int32) -> Stamp {
         let r = Float((color >> 16) & 0xff) / 255.0
         let g = Float((color >> 8) & 0xff) / 255.0
         let b = Float(color & 0xff) / 255.0
@@ -93,7 +93,7 @@ public class Stamp {
     }
 
     @discardableResult
-    public func setStrokeColor(_ color: Int) -> Stamp {
+    public func setStrokeColor(_ color: Int32) -> Stamp {
         let r = Float((color >> 16) & 0xff) / 255.0
         let g = Float((color >> 8) & 0xff) / 255.0
         let b = Float(color & 0xff) / 255.0
