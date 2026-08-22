@@ -297,19 +297,36 @@ public class Stamp {
         objNumber = pdf.getObjNumber()
     }
 
+/*
+    private void drawText(Font font, String str) {
+        final int length = str.length();            // number of UTF‑16 code units
+        int i = 0;
+        while (i < length) {
+            int codePoint = str.codePointAt(i);     // full Unicode scalar value
+            i += Character.charCount(codePoint);    // advance 1 or 2 char positions
+            // Skip the Byte Order Mark (U+FEFF)
+            if (codePoint != 0xFEFF) {
+                int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
+                    ? font.unicodeToGID[0x0020]     // Use space fallback if outside the font's supported range
+                    : font.unicodeToGID[codePoint];
+                appendCodePointAsHex(gid);
+            }
+        }
+    }
+*/
+
     private func drawText(_ font: Font, _ str: String) {
-        let utf16Chars = Array(str.utf16)
-        var i = 0
-        while i < utf16Chars.count {
-            let codePoint = utf16Characters[i]
-            i += codePoint > 0xFFFF ? 2 : 1
-            // Skip BOM
+        // Iterate over Unicode scalars (equivalent to Java's codePoint iteration)
+        for scalar in str.unicodeScalars {
+            let codePoint = Int(scalar.value)
+            // Skip the Byte Order Mark (U+FEFF)
             if codePoint != 0xFEFF {
                 let gid: Int
+                // Map code point to glyph ID, fall back to space if out of range
                 if codePoint < font.firstChar || codePoint > font.lastChar {
                     gid = font.unicodeToGID[0x0020] // Space fallback
                 } else {
-                    gid = font.unicodeToGID[Int(codePoint)]
+                    gid = font.unicodeToGID[codePoint]
                 }
                 appendCodePointAsHex(gid)
             }
@@ -411,5 +428,9 @@ public class Stamp {
 
     private func append(_ str: String) {
         self.buf.append(contentsOf: str.utf8)
+    }
+
+    private func append(_ value: UInt16) {
+        self.buf.append(contentsOf: value)
     }
 }
