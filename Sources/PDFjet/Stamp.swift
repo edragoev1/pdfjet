@@ -297,24 +297,6 @@ public class Stamp {
         objNumber = pdf.getObjNumber()
     }
 
-/*
-    private void drawText(Font font, String str) {
-        final int length = str.length();            // number of UTF‑16 code units
-        int i = 0;
-        while (i < length) {
-            int codePoint = str.codePointAt(i);     // full Unicode scalar value
-            i += Character.charCount(codePoint);    // advance 1 or 2 char positions
-            // Skip the Byte Order Mark (U+FEFF)
-            if (codePoint != 0xFEFF) {
-                int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
-                    ? font.unicodeToGID[0x0020]     // Use space fallback if outside the font's supported range
-                    : font.unicodeToGID[codePoint];
-                appendCodePointAsHex(gid);
-            }
-        }
-    }
-*/
-
     private func drawText(_ font: Font, _ str: String) {
         // Iterate over Unicode scalars (equivalent to Java's codePoint iteration)
         for scalar in str.unicodeScalars {
