@@ -298,20 +298,19 @@ public class Stamp {
     }
 
     private func drawText(_ font: Font, _ str: String) {
-        // Iterate over Unicode scalars (equivalent to Java's codePoint iteration)
         for scalar in str.unicodeScalars {
             let codePoint = Int(scalar.value)
-            // Skip the Byte Order Mark (U+FEFF)
-            if codePoint != 0xFEFF {
-                let gid: Int
-                // Map code point to glyph ID, fall back to space if out of range
-                if codePoint < font.firstChar || codePoint > font.lastChar {
-                    gid = font.unicodeToGID[0x0020] // Space fallback
-                } else {
-                    gid = font.unicodeToGID[codePoint]
-                }
-                appendCodePointAsHex(gid)
+
+            // Skip BOM
+            if codePoint == 0xFEFF { continue }
+
+            let gid: Int
+            if codePoint < font.firstChar || codePoint > font.lastChar {
+                gid = font.unicodeToGID[0x0020] // Space fallback
+            } else {
+                gid = font.unicodeToGID[codePoint]
             }
+            appendCodePointAsHex(gid)
         }
     }
 
@@ -412,7 +411,7 @@ public class Stamp {
         self.buf.append(contentsOf: str.utf8)
     }
 
-    private func append(_ value: UInt16) {
-        self.buf.append(contentsOf: value)
-    }
+//     private func append(_ value: UInt16) {
+//         self.buf.append(contentsOf: value)
+//     }
 }
