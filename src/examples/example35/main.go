@@ -19,7 +19,7 @@ import (
 // Example35 demonstrates stamp and container usage
 func Example35() {
 	// Create PDF output
-	pdf := pdfjet.NewPDFFile("Example_18.pdf")
+	pdf := pdfjet.NewPDFFile("Example_35.pdf")
 
 	// Create page
 	page := pdfjet.NewPage(pdf, letter.Portrait)
