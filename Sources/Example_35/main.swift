@@ -9,16 +9,19 @@ import Foundation
 import PDFjet
 
 public class Example_35 {
+    var f1: Font
+    var f2: Font
+
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_35.pdf", append: false)!)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        Font f1 = Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(14.0);
+        f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(14.0)
 
-        Font f2 = Font(pdf, IBMPlexSans.Bold);
-        f2.setSize(14.0);
+        f2 = try Font(pdf, IBMPlexSans.Bold)
+        f2.setSize(14.0)
 
         // Base container
         let container = Container(400.0, 400.0)
