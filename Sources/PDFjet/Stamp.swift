@@ -207,12 +207,16 @@ public class Stamp {
 
     @discardableResult
     public func drawText(_ parameters: TextParameters) -> Stamp {
+        guard let font = parameters.font, let text = parameters.text else {
+            return self
+        }
+
         return drawText(
-            parameters.font!,
+            font,
             parameters.fontSize,
             parameters.x,
             parameters.y,
-            parameters.text!
+            text
         )
     }
 
@@ -329,19 +333,19 @@ public class Stamp {
 
         var point = path[0]
         moveTo(point.x, point.y)
-        var controlPoint: UInt16 = 0
+        var controlPoint: String = ""
 
         for i in 1..<path.count {
             point = path[i]
-            if point.controlPoint != 0 {
+            if !point.controlPoint.isEmpty {
                 controlPoint = point.controlPoint
                 append(point)
             } else {
-                if controlPoint != 0 {
+                if !controlPoint.isEmpty {
                     append(point)
                     append(controlPoint)
                     append("\n")
-                    controlPoint = 0
+                    controlPoint = ""
                 } else {
                     lineTo(point.x, point.y)
                 }
@@ -385,7 +389,7 @@ public class Stamp {
         let radians = Double(rotateDegrees) * .pi / 180.0
         let cos = Float(cos(radians))
         let sin = Float(sin(radians))
-        page.append("\(cos) \(sin) \(-sin) \(cos) 0 0 cm\n")
+        page.append(String(format: "%.3f %.3f %.3f %.3f 0 0 cm\n", cos, sin, -sin, cos))
 
         // 2. MOVE: move center to origin
         page.append("1 0 0 1 ")
@@ -411,7 +415,8 @@ public class Stamp {
         self.buf.append(contentsOf: str.utf8)
     }
 
-//     private func append(_ value: UInt16) {
-//         self.buf.append(contentsOf: value)
-//     }
+    private func append(_ value: UInt16) {
+        // Convert UInt16 to its string representation
+        self.buf.append(contentsOf: String(value).utf8)
+    }
 }

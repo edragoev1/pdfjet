@@ -281,7 +281,7 @@ public class Page {
             var activeFont = font
             var buf = String()
             for scalar in str!.unicodeScalars {
-                if activeFont.unicodeToGID![Int(scalar.value)] == 0 {
+                if activeFont.unicodeToGID[Int(scalar.value)] == 0 {
                     drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
                     x += activeFont.stringWidth(buf)
                     buf = ""
@@ -438,9 +438,9 @@ public class Page {
                 if scalar.value != 0xFEFF {     // BOM
                     if scalar < Unicode.Scalar(font.firstChar)! ||
                             scalar > Unicode.Scalar(font.lastChar)! {
-                        Page.appendCodePointAsHex(font.unicodeToGID![0x0020], &self.buf)
+                        Page.appendCodePointAsHex(font.unicodeToGID[0x0020], &self.buf)
                     } else {
-                        Page.appendCodePointAsHex(font.unicodeToGID![Int(scalar.value)], &self.buf)
+                        Page.appendCodePointAsHex(font.unicodeToGID[Int(scalar.value)], &self.buf)
                     }
                 }
             }

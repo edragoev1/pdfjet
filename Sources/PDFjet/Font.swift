@@ -35,8 +35,8 @@ public class Font {
     var capHeight: Int16 = 0
     var fontUnderlinePosition: Int16 = 0
     var fontUnderlineThickness: Int16 = 0
-    var advanceWidth: [UInt16]?
-    var unicodeToGID: [Int]?
+    var advanceWidth: [UInt16] = []
+    var unicodeToGID: [Int] = []
     var cff: Bool = false
     var compressedSize: Int?
     var uncompressedSize: Int?
@@ -360,10 +360,10 @@ public class Font {
         } else {
             for scalar in scalars {
                 let c1 = Int(scalar.value)
-                if unicodeToGID![c1] < advanceWidth!.count {
-                    width += Int(advanceWidth![unicodeToGID![c1]])
+                if unicodeToGID[c1] < advanceWidth.count {
+                    width += Int(advanceWidth[unicodeToGID[c1]])
                 } else {
-                    width += Int(advanceWidth![0])
+                    width += Int(advanceWidth[0])
                 }
             }
         }
@@ -451,9 +451,9 @@ public class Font {
         for scalar in str.unicodeScalars {
             let c1 = Int(scalar.value)
             if c1 < firstChar || c1 > lastChar {
-                w -= Float(advanceWidth![0])
+                w -= Float(advanceWidth[0])
             } else {
-                w -= Float(advanceWidth![unicodeToGID![c1]])
+                w -= Float(advanceWidth[unicodeToGID[c1]])
             }
             if w < 0 {
                 break
@@ -534,7 +534,7 @@ public class Font {
         var activeFont = self
         var buf = String()
         for scalar in str!.unicodeScalars {
-            if activeFont.unicodeToGID![Int(scalar.value)] == 0 {
+            if activeFont.unicodeToGID[Int(scalar.value)] == 0 {
                 width += activeFont.stringWidth(fontSize, buf)
                 buf = ""
                 // Switch the active font

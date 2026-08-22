@@ -186,7 +186,7 @@ class FontStream2 {
         var list = [String]()
         var buf = String()
         for cid in 0...0xffff {
-            let gid = font.unicodeToGID![cid]
+            let gid = font.unicodeToGID[cid]
             if gid > 0 {
                 buf.append("<")
                 buf.append(toHexString(gid))
@@ -251,13 +251,13 @@ class FontStream2 {
             k = Float(1000.0) / Float(font.unitsPerEm)
         }
         obj.dict.append("/DW")
-        obj.dict.append(String(round(k * Float(font.advanceWidth![0]))))
+        obj.dict.append(String(round(k * Float(font.advanceWidth[0]))))
         obj.dict.append("/W")
         obj.dict.append("[")
         obj.dict.append("0")
         obj.dict.append("[")
-        for i in 0..<font.advanceWidth!.count {
-            obj.dict.append(String(round(k * Float(font.advanceWidth![i]))))
+        for i in 0..<font.advanceWidth.count {
+            obj.dict.append(String(round(k * Float(font.advanceWidth[i]))))
         }
         obj.dict.append("]")
         obj.dict.append("]")

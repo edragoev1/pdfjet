@@ -162,7 +162,7 @@ class FontStream1 {
         var list = Array<String>()
         var buf = String()
         for cid in 0...0xffff {
-            let gid = font.unicodeToGID![cid]
+            let gid = font.unicodeToGID[cid]
             if gid > 0 {
                 buf.append("<")
                 buf.append(toHexString(Int32(gid)))
@@ -227,12 +227,12 @@ class FontStream1 {
             k = Float(1000.0) / Float(font.unitsPerEm)
         }
         pdf.append("/DW ")
-        pdf.append(Int32(round(k * Float(font.advanceWidth![0]))))
+        pdf.append(Int32(round(k * Float(font.advanceWidth[0]))))
         pdf.append(Token.newline)
         var buffer = String()
         pdf.append("/W [0[\n")
-        for i in 0..<font.advanceWidth!.count {
-            buffer.append(String(UInt16(round(k * Float(font.advanceWidth![i])))))
+        for i in 0..<font.advanceWidth.count {
+            buffer.append(String(UInt16(round(k * Float(font.advanceWidth[i])))))
             buffer.append(" ")
         }
         pdf.append(buffer)
@@ -361,13 +361,13 @@ class FontStream1 {
         len = Int(getInt32(inflated, &offset))
         font.advanceWidth = [UInt16](repeating: 0, count: len)
         for i in 0..<len {
-            font.advanceWidth![i] = getUInt16(inflated, &offset)
+            font.advanceWidth[i] = getUInt16(inflated, &offset)
         }
 
         len = Int(getInt32(inflated, &offset))
         font.unicodeToGID = [Int](repeating: 0, count: len)
         for i in 0..<len {
-            font.unicodeToGID![i] = getInt(inflated, &offset)
+            font.unicodeToGID[i] = getInt(inflated, &offset)
         }
 
         let flag = UnicodeScalar(try getInt8(stream))

@@ -19,7 +19,7 @@ class OpenTypeFont {
         font.bBoxLLy = otf.bBoxLLy!
         font.bBoxURx = otf.bBoxURx!
         font.bBoxURy = otf.bBoxURy!
-        font.advanceWidth = otf.advanceWidth!
+        font.advanceWidth = otf.advanceWidth ?? []
         font.unicodeToGID = otf.unicodeToGID
         font.fontAscent = otf.ascent!
         font.fontDescent = otf.descent!
@@ -245,11 +245,11 @@ class OpenTypeFont {
             k = Float(1000.0) / Float(font.unitsPerEm)
         }
         pdf.append("/DW ")
-        pdf.append(Int32(round(k * Float(font.advanceWidth![0]))))
+        pdf.append(Int32(round(k * Float(font.advanceWidth[0]))))
         pdf.append(Token.newline)
         pdf.append("/W [0[\n")
-        for i in 0..<font.advanceWidth!.count {
-            pdf.append(Int32(round(k * Float(font.advanceWidth![i]))))
+        for i in 0..<font.advanceWidth.count {
+            pdf.append(Int32(round(k * Float(font.advanceWidth[i]))))
             pdf.append(Token.space)
         }
         pdf.append("]]\n")
