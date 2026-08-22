@@ -304,9 +304,7 @@ public class Stamp {
     private func drawText(_ font: Font, _ str: String) {
         for scalar in str.unicodeScalars {
             let codePoint = Int(scalar.value)
-
-            // Skip BOM
-            if codePoint == 0xFEFF { continue }
+            if codePoint == 0xFEFF { continue } // Skip BOM
 
             let gid: Int
             if codePoint < font.firstChar || codePoint > font.lastChar {

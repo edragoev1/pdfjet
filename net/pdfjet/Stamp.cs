@@ -305,12 +305,12 @@ public class Stamp : IDrawable {
     private void DrawText(Font font, string str) {
         foreach (char c in str) {
             int codePoint = c;
-            if (codePoint != 0xFEFF) {          // Skip BOM
-                int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
-                    ? font.unicodeToGID[0x0020] // Use space fallback if outside the font's supported range
-                    : font.unicodeToGID[codePoint];
-                AppendCodePointAsHex(gid);
-            }
+            if (codePoint == 0xFEFF) { continue; }  // Skip the BOM
+
+            int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
+                ? font.unicodeToGID[0x0020]         // Space fallback
+                : font.unicodeToGID[codePoint];
+            AppendCodePointAsHex(gid);
         }
     }
 

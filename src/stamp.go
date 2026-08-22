@@ -318,15 +318,17 @@ func (s *Stamp) Complete() {
 // drawText draws encoded text characters
 func (s *Stamp) drawText(font *Font, str string) {
 	for _, codePoint := range str {
-		if codePoint != 0xFEFF {
-			var gid int
-			if codePoint < font.firstChar || codePoint > font.lastChar {
-				gid = font.unicodeToGID[0x0020]
-			} else {
-				gid = font.unicodeToGID[codePoint]
-			}
-			s.appendCodePointAsHex(gid)
+		if codePoint == 0xFEFF { // Skip the BOM
+			continue
 		}
+
+		var gid int
+		if codePoint < font.firstChar || codePoint > font.lastChar {
+			gid = font.unicodeToGID[0x0020]
+		} else {
+			gid = font.unicodeToGID[codePoint]
+		}
+		s.appendCodePointAsHex(gid)
 	}
 }
 

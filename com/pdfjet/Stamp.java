@@ -314,13 +314,13 @@ public class Stamp implements Drawable {
         while (i < length) {
             int codePoint = str.codePointAt(i);     // full Unicode scalar value
             i += Character.charCount(codePoint);    // advance 1 or 2 char positions
-            // Skip the Byte Order Mark (U+FEFF)
-            if (codePoint != 0xFEFF) {
-                int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
-                    ? font.unicodeToGID[0x0020]     // Use space fallback if outside the font's supported range
-                    : font.unicodeToGID[codePoint];
-                appendCodePointAsHex(gid);
-            }
+
+            if (codePoint == 0xFEFF) { continue; }  // Skip the BOM
+
+            int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
+                ? font.unicodeToGID[0x0020]         // Use space fallback
+                : font.unicodeToGID[codePoint];
+            appendCodePointAsHex(gid);
         }
     }
 
