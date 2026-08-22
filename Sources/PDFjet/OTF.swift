@@ -23,7 +23,7 @@ class OTF {
     var bBoxURy: Int16?
     var ascent: Int16?
     var descent: Int16?
-    var advanceWidth: [UInt16]?
+    var advanceWidth: [UInt16] = []
     var firstChar: Int?
     var lastChar: Int?
     var capHeight: Int16?
@@ -260,8 +260,8 @@ class OTF {
 
     private func hmtx(_ table: FontTable) {
         self.index = table.offset!
-        for i in 0..<advanceWidth!.count {
-            advanceWidth![i] = readUInt16()
+        for i in 0..<advanceWidth.count {
+            advanceWidth[i] = readUInt16()
             index += 2
         }
     }

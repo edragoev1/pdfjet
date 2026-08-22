@@ -19,7 +19,7 @@ class OpenTypeFont {
         font.bBoxLLy = otf.bBoxLLy!
         font.bBoxURx = otf.bBoxURx!
         font.bBoxURy = otf.bBoxURy!
-        font.advanceWidth = otf.advanceWidth ?? []
+        font.advanceWidth = otf.advanceWidth
         font.unicodeToGID = otf.unicodeToGID
         font.fontAscent = otf.ascent!
         font.fontDescent = otf.descent!
