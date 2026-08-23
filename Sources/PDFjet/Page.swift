@@ -844,7 +844,7 @@ public class Page {
             _ path: [Point],
             _ pathOperator: PathOperator) {
         if path.count < 2 {
-            // Swift.print("The Path object must contain at least 2 points")
+            fatalError("The Path object must contain at least 2 points")
         }
         var point = path[0]
         moveTo(point.x, point.y)
@@ -1098,8 +1098,8 @@ public class Page {
         if mode >= 0 && mode <= 7 {
             self.renderingMode = mode
         } else {
-            // TODO:
-            Swift.print("Invalid text rendering mode: \(mode)")
+            throw NSError(domain: "PDFjet", code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "Invalid text rendering mode: \(mode)"])
         }
     }
 
