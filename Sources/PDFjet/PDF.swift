@@ -595,11 +595,11 @@ public class PDF {
     private func setDestinationObjNumbers() {
         var numberOfAnnotations = 0
         for page in pages {
-            numberOfAnnotations += page.annots!.count
+            numberOfAnnotations += page.annots.count
         }
         for i in 0..<pages.count {
             let page = pages[i]
-            for destination in page.destinations! {
+            for destination in page.destinations {
                 destination.pageObjNumber = getObjNumber() + numberOfAnnotations + i + 1
                 destinations[destination.name!] = destination
             }
@@ -650,9 +650,9 @@ public class PDF {
                 buffer.append(" 0 R ")
             }
             buffer.append("]\n")
-            if page.annots!.count > 0 {
+            if page.annots.count > 0 {
                 buffer.append("/Annots [ ")
-                for annot in page.annots! {
+                for annot in page.annots {
                     buffer.append(String(annot.objNumber))
                     buffer.append(" 0 R ")
                 }
@@ -862,8 +862,8 @@ public class PDF {
         }
 
         for page in self.pages {
-            if page.annots!.count > 0 {
-                for annotation in page.annots! {
+            if page.annots.count > 0 {
+                for annotation in page.annots {
                     addAnnotationObject(annotation, -1)
                 }
             }

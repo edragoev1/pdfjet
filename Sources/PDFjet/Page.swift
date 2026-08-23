@@ -26,8 +26,8 @@ public class Page {
     internal var width: Float = 0.0
     internal var height: Float = 0.0
     internal var contents = [Int]()
-    internal var annots: [Annotation]?
-    internal var destinations: [Destination]?
+    internal var annots: [Annotation] = []
+    internal var destinations: [Destination] = []
     internal var structures = [StructElem]()
     internal var buf = [UInt8]()
 
@@ -53,7 +53,6 @@ public class Page {
     private var lineJoinStyle = JoinStyle.MITER
     private var linePattern: String = "[] 0"
     private var font: Font?
-    private var savedStates = [State]()
     private var mcid = 0
     private let hexadecimal = Hexadecimal()
 
@@ -181,7 +180,7 @@ public class Page {
             _ xPosition: Float,
             _ yPosition: Float) -> Destination {
         let dest = Destination(name, xPosition, height - yPosition)
-        destinations!.append(dest)
+        destinations.append(dest)
         return dest
     }
 
@@ -198,7 +197,7 @@ public class Page {
             _ name: String,
             _ yPosition: Float) -> Destination {
         let dest = Destination(name, height - yPosition)
-        destinations!.append(dest)
+        destinations.append(dest)
         return dest
     }
 
@@ -952,7 +951,7 @@ public class Page {
             _ r2: Float,
             _ pathOperator: PathOperator) {
         // The best 4-spline magic number
-        let m4: Float = 0.551784
+        let m4: Float = 0.55228
 
         // Starting point
         moveTo(x, y - r2)
@@ -1524,7 +1523,7 @@ public class Page {
     func addAnnotation(_ annotation: Annotation) {
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
-        self.annots!.append(annotation)
+        self.annots.append(annotation)
         if pdf.compliance == Compliance.PDF_UA_1 {
             let element = StructElem()
             element.structure = StructElem.Link
