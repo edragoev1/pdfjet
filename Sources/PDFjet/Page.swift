@@ -1072,19 +1072,16 @@ public class Page {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
             } else if p.shape == Point.STAR {
-                let angle = Float.pi / 10.0
-                let sin18 = Float(sin(angle))
-                let cos18 = Float(cos(angle))
-                let a = p.r * cos18
-                let b = p.r * sin18
-                let c = 2 * a * sin18
-                let d = 2 * a * cos18 - p.r
                 list = [Point]()
-                list.append(Point(p.x, p.y - p.r))
-                list.append(Point(p.x + c, p.y + d))
-                list.append(Point(p.x - a, p.y - b))
-                list.append(Point(p.x + a, p.y - b))
-                list.append(Point(p.x - c, p.y + d))
+                for i in 0..<10 {
+                    let theta = Double(i) * 36.0 * (Double.pi / 180.0)
+                    let radius = (i % 2 == 0)
+                    ? Double(p.r) * 1.147
+                    : Double(p.r) * 0.38196 * 1.147
+                    let x = p.x + Float(radius * sin(theta))
+                    let y = p.y - Float(radius * cos(theta))  // minus because y grows down
+                    list.append(Point(x, y))
+                }
                 if p.fillShape {
                     drawPath(list, PathOperator.fill)
                 } else {
