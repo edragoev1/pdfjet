@@ -143,7 +143,6 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent)
 	bt.page.StrokePath()
 	bt.page.SetPenColorRGB(original)
-	bt.page.SetPenWidth(0.0)
 	bt.page.SetBrushColor(color.Black)
 
 	for i := 0; i < bt.numberOfColumns; i++ {

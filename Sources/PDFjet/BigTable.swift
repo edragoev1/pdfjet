@@ -110,7 +110,6 @@ public class BigTable {
         page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent)
         page!.strokePath()
         page!.setPenColor(original)
-        page!.setPenWidth(0.0)
         page!.setBrushColor(Color.black)
 
         for i in 0..<numberOfColumns {
