@@ -89,7 +89,7 @@ public class BigTable {
         }
 
         drawFieldsAndLine(fields: fields, font: f2)
-        self.yText += f2.ascent + f2.descent
+        self.yText += f2.descent + f2.ascent
         if self.yText > (page!.height - self.bottomMargin) {
             drawTheVerticalLines()
             startNewPage = true
@@ -178,54 +178,30 @@ public class BigTable {
         self.alignment = [Alignment](repeating: Alignment.LEFT, count: numberOfColumns)
 
         var rowNumber = 0
-        let file = try FileHandle(forReadingFrom: URL(fileURLWithPath: fileName))
-        defer { file.closeFile() }
-
-        var buffer = Data()
-
-        while true {
-            let chunk = file.readData(ofLength: 8192)
-            if chunk.isEmpty { break }
-            buffer.append(chunk)
-
-            while let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
-                let lineData = buffer.prefix(upTo: nl)
-                buffer.removeSubrange(0...nl)
-                if !buffer.isEmpty && buffer.last == UInt8(ascii: "\r") {
-                    buffer.removeLast()
-                }
-
-                guard let line = String(data: lineData, encoding: .utf8) else { continue }
-                let fields = line.components(separatedBy: delimiter)
-                if fields.count < numberOfColumns { continue }
-
-                if rowNumber == 0 {
-                    for i in 0..<numberOfColumns {
-                        headerFields[i] = fields[i]
-                    }
-                }
-                if rowNumber == 1 {
-                    for i in 0..<numberOfColumns {
-                        alignment[i] = getAlignment(fields[i])
-                    }
-                }
-                for i in 0..<numberOfColumns {
-                    let field = fields[i]
-                    let width = f1.stringWidth(field) + 2 * padding
-                    if width > widths[i] {
-                        widths[i] = width
-                    }
-                }
-                rowNumber += 1
+        try enumerateFileLines(fileName) { line in
+            let fields = line.components(separatedBy: self.delimiter)
+            if fields.count < self.numberOfColumns {
+                return
             }
-        }
 
-        // Last line without newline
-        if !buffer.isEmpty, let line = String(data: buffer, encoding: .utf8) {
-            let fields = line.components(separatedBy: delimiter)
-            if fields.count >= numberOfColumns {
-                // Process last line if needed
+            if rowNumber == 0 {
+                for i in 0..<self.numberOfColumns {
+                    self.headerFields[i] = fields[i]
+                }
             }
+            if rowNumber == 1 {
+                for i in 0..<self.numberOfColumns {
+                    self.alignment[i] = self.getAlignment(fields[i])
+                }
+            }
+            for i in 0..<self.numberOfColumns {
+                let field = fields[i]
+                let width = self.f1.stringWidth(field) + 2 * self.padding
+                if width > self.widths[i] {
+                    self.widths[i] = width
+                }
+            }
+            rowNumber += 1
         }
 
         vertLines[0] = 0.0
@@ -238,44 +214,49 @@ public class BigTable {
 
     public func complete() throws {
         var skipHeader = true
-        let file = try FileHandle(forReadingFrom: URL(fileURLWithPath: self.fileName))
-        defer { file.closeFile() }
-
-        var buffer = Data()
-
-        while true {
-            let chunk = file.readData(ofLength: 8192)
-            if chunk.isEmpty { break }
-            buffer.append(chunk)
-
-            while let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
-                let lineData = buffer.prefix(upTo: nl)
-                buffer.removeSubrange(0...nl)
-                if !buffer.isEmpty && buffer.last == UInt8(ascii: "\r") {
-                    buffer.removeLast()
-                }
-
-                guard let line = String(data: lineData, encoding: .utf8) else { continue }
-                let fields = line.components(separatedBy: delimiter)
-                if fields.count < numberOfColumns { continue }
-
-                if skipHeader {
-                    skipHeader = false
-                    continue
-                }
-
-                try? drawTextAndLine(fields: fields, font: f2)
+        try enumerateFileLines(self.fileName) { line in
+            let fields = line.components(separatedBy: self.delimiter)
+            if fields.count < self.numberOfColumns {
+                return
             }
-        }
 
-        // Last line without newline
-        if !buffer.isEmpty, !skipHeader, let line = String(data: buffer, encoding: .utf8) {
-            let fields = line.components(separatedBy: delimiter)
-            if fields.count >= numberOfColumns {
-                try? drawTextAndLine(fields: fields, font: f2)
+            if skipHeader {
+                skipHeader = false
+                return
             }
+
+            try? self.drawTextAndLine(fields: fields, font: self.f2)
         }
 
         drawTheVerticalLines()
+    }
+}
+
+private func enumerateFileLines(_ fileName: String, _ handler: (String) -> Void) throws {
+    let file = try FileHandle(forReadingFrom: URL(fileURLWithPath: fileName))
+    defer { file.closeFile() }
+
+    var buffer = Data()
+
+    while true {
+        let chunk = file.readData(ofLength: 8192)
+        if chunk.isEmpty { break }
+        buffer.append(chunk)
+
+        while let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
+            let lineData = buffer.prefix(upTo: nl)
+            buffer.removeSubrange(0...nl)
+            if !buffer.isEmpty && buffer.last == UInt8(ascii: "\r") {
+                buffer.removeLast()
+            }
+
+            guard let line = String(data: lineData, encoding: .utf8) else { continue }
+            handler(line)
+        }
+    }
+
+    // Last line without newline
+    if !buffer.isEmpty, let line = String(data: buffer, encoding: .utf8) {
+        handler(line)
     }
 }
