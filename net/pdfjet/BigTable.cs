@@ -101,13 +101,13 @@ namespace PDFjet.NET {
                 this.highlightRow = true;
             }
 
+        // Draw the line above the text.
             float[] original = page.GetPenColor();
             page.SetPenColor(penColor);
             page.MoveTo(vertLines[0], this.yText - font.ascent);
             page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
             page.StrokePath();
             page.SetPenColor(original);
-            page.SetPenWidth(0f);
             page.SetBrushColor(Color.black);
 
             for (int i = 0; i < this.numberOfColumns; i++) {

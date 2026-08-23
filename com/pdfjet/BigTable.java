@@ -224,34 +224,34 @@ public class BigTable {
         this.alignment = new Alignment[this.numberOfColumns];
 
         int rowNumber = 0;
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            String[] fields = line.split(this.delimiter);
-            if (fields.length < this.numberOfColumns) {
-                continue;
-            }
+        try (BufferedReader reader = new BufferedReader(new FileReader(this.fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(this.delimiter);
+                if (fields.length < this.numberOfColumns) {
+                    continue;
+                }
 
-            if (rowNumber == 0) {
+                if (rowNumber == 0) {
+                    for (int i = 0; i < this.numberOfColumns; i++) {
+                        headerFields[i] = fields[i];
+                    }
+                }
+                if (rowNumber == 1) {    // Determine alignment from first data row
+                    for (int i = 0; i < this.numberOfColumns; i++) {
+                        alignment[i] = getAlignment(fields[i]);
+                    }
+                }
                 for (int i = 0; i < this.numberOfColumns; i++) {
-                    headerFields[i] = fields[i];
+                    String field = fields[i];
+                    float width = f1.stringWidth(field) + 2*this.padding;
+                    if (width > widths[i]) {
+                        this.widths[i] = width;
+                    }
                 }
+                rowNumber++;
             }
-            if (rowNumber == 1) {    // Determine alignment from first data row
-                for (int i = 0; i < this.numberOfColumns; i++) {
-                    alignment[i] = getAlignment(fields[i]);
-                }
-            }
-            for (int i = 0; i < this.numberOfColumns; i++) {
-                String field = fields[i];
-                float width = f1.stringWidth(field) + 2*this.padding;
-                if (width > widths[i]) {
-                    this.widths[i] = width;
-                }
-            }
-            rowNumber++;
         }
-        reader.close();
 
       	// Precompute vertical line positions
         this.vertLines[0] = 0.0f;
