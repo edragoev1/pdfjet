@@ -40,8 +40,6 @@ public class Page {
 
     private float[] brushColor = {0f, 0f, 0f};
     private float[] penColor = {0f, 0f, 0f};
-    private float[] penCMYK = {0f, 0f, 0f, 1f};
-    private float[] brushCMYK = {0f, 0f, 0f, 1f};
 
     private float[] tmx = {1f, 0f, 0f, 1f};
     private byte[] tm0;
@@ -764,7 +762,6 @@ public class Page {
      * @param k the black component is float value from 0.0f to 1.0f.
      */
     public void SetBrushColorCMYK(float c, float m, float y, float k) {
-        this.brushCMYK = new float[] {c, m, y, k};
         Append(c);
         Append(' ');
         Append(m);
@@ -785,7 +782,6 @@ public class Page {
      * @param k the black component is float value from 0.0f to 1.0f.
      */
     public void SetPenColorCMYK(float c, float m, float y, float k) {
-        this.penCMYK = new float[] {c, m, y, k};
         Append(c);
         Append(' ');
         Append(m);
