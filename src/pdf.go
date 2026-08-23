@@ -264,11 +264,8 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 
 	if !fontMetadataObject {
 		// Add the recommended 2000 bytes padding
-		for i := 0; i < 20; i++ {
-			for j := 0; j < 10; j++ {
-				sb.WriteString("          ")
-			}
-			sb.WriteString("\n")
+		for range 20 {
+			sb.WriteString(strings.Repeat("          ", 10) + "\n")
 		}
 	}
 

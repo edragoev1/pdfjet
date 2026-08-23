@@ -261,7 +261,7 @@ final public class PDF {
 
         sb.append("</rdf:RDF>\n");
         sb.append("</x:xmpmeta>\n");
-        sb.append("<?xpacket end=\"r\"?>");
+        sb.append("<?xpacket end=\"w\"?>");
 
         byte[] xml = sb.toString().getBytes(StandardCharsets.UTF_8);
 
@@ -651,6 +651,12 @@ final public class PDF {
             append(Token.SPACE);
             append(page.height);
             append("]\n");
+
+            if (page.rotateDegrees != 0f) {
+                append("/Rotate ");
+                append(page.rotateDegrees);
+                append("\n");
+            }
 
             if (page.cropBox != null) {
                 addPageBox("CropBox", page, page.cropBox);
