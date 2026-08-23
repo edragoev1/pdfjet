@@ -263,10 +263,9 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	}
 
 	if !fontMetadataObject {
-		// Add the recommended 2000 bytes padding
-		for range 20 {
-			sb.WriteString(strings.Repeat("          ", 10) + "\n")
-		}
+		// Add the recommended 2000 bytes padding. 20 lines, 100 bytes each.
+		line := strings.Repeat(" ", 100) + "\n"
+		sb.WriteString(strings.Repeat(line, 20))
 	}
 
 	sb.WriteString("</rdf:RDF>\n")
