@@ -31,7 +31,6 @@ public class BigTable {
     private String delimiter;
     private int numberOfColumns;    // Total column count
     private boolean startNewPage = true;
-    private List<String[]> cachedLines = new ArrayList<String[]>(); // Cache parsed rows
 
     /**
      * Creates a table and sets the fonts and page size.
@@ -233,8 +232,6 @@ public class BigTable {
                 continue;
             }
 
-            cachedLines.add(fields);
-
             if (rowNumber == 0) {
                 for (int i = 0; i < this.numberOfColumns; i++) {
                     headerFields[i] = fields[i];
@@ -266,8 +263,15 @@ public class BigTable {
     }
 
     public void complete() throws Exception {
-        for (String[] fields : cachedLines) {
-            drawTextAndLine(fields);
+        try (BufferedReader reader = new BufferedReader(new FileReader(this.fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(this.delimiter);
+                if (fields.length < this.numberOfColumns) {
+                    continue;
+                }
+                this.drawTextAndLine(fields);
+            }
         }
         drawTheVerticalLines();
     }
