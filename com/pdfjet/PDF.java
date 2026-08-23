@@ -51,7 +51,7 @@ final public class PDF {
     private final List<String> importedFonts = new ArrayList<String>();
     private String extGState = "";
     private Page prevPage = null;
-    private boolean contentStreamsCompression = false;
+    private boolean contentStreamsCompression = true;
 
     static final Logger LOG = Logger.getLogger(PDF.class.getName());
 
