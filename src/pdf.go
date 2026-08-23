@@ -411,7 +411,7 @@ func (pdf *PDF) addResourcesObject() int {
 	return pdf.getObjNumber()
 }
 
-func (pdf *PDF) addPagesObject() int {
+func (pdf *PDF) addPagesObject() {
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Pages\n")
@@ -429,7 +429,6 @@ func (pdf *PDF) addPagesObject() int {
 	pdf.appendByte('\n')
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.endobj()
-	return pdf.getObjNumber()
 }
 
 func (pdf *PDF) addStructTreeRootObject() int {
@@ -911,11 +910,11 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		}
 	}
 
-	if index != 0 {
+	if index != -1 {
 		pdf.appendString("/StructParent ")
 		pdf.appendInteger(index)
-		index++
 		pdf.appendString("\n")
+		index++
 	}
 	pdf.appendString(">>\n")
 	pdf.endobj()
