@@ -404,7 +404,7 @@ final public class PDF {
         return getObjNumber();
     }
 
-    private int addPagesObject() throws Exception {
+    private void addPagesObject() throws Exception {
         newobj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Pages\n");
@@ -422,7 +422,6 @@ final public class PDF {
         append(Token.NEWLINE);
         append(Token.END_DICTIONARY);
         endobj();
-        return getObjNumber();
     }
 
     private int addStructTreeRootObject() throws Exception {

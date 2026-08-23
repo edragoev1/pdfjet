@@ -388,7 +388,7 @@ public class PDF {
         return GetObjNumber();
     }
 
-    private int AddPagesObject() {
+    private void AddPagesObject() {
         NewObj();
         Append(Token.BeginDictionary);
         Append("/Type /Pages\n");
@@ -407,7 +407,6 @@ public class PDF {
         Append(Token.Newline);
         Append(Token.EndDictionary);
         EndObj();
-        return GetObjNumber();
     }
 
     private int AddStructTreeRootObject() {
