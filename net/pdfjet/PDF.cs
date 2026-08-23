@@ -615,6 +615,7 @@ public class PDF {
     private void AddAllPages(int resObjNumber) {
         SetDestinationObjNumbers();
         AddAnnotDictionaries();
+
         // Calculate the object number of the Pages object
         pagesObjNumber = GetObjNumber() + pages.Count + 1;
 
@@ -1001,7 +1002,7 @@ public class PDF {
 
         if (pagesObjNumber == 0) {
             AddAllPages(AddResourcesObject());
-            pagesObjNumber = AddPagesObject();
+            AddPagesObject();
         }
 
         int structTreeRootObjNumber = 0;
