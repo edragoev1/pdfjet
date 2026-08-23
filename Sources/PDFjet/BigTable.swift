@@ -29,6 +29,7 @@ public class BigTable {
     private var delimiter: String = ""
     private var numberOfColumns: Int = 0
     private var startNewPage: Bool = true
+    private var cachedLines: [[String]] = []  // Cache parsed rows
 
     public init(_ pdf: PDF, _ f1: Font, _ f2: Font, _ pageSize: [Float]) {
         self.pdf = pdf
@@ -180,11 +181,16 @@ public class BigTable {
         var rowNumber = 0
         let reader = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
         let lines = reader.components(separatedBy: .newlines)
+
         for line in lines {
             let fields = line.components(separatedBy: delimiter)
             if fields.count < numberOfColumns {
                 continue
             }
+
+            // Cache this row
+            cachedLines.append(fields)
+
             if rowNumber == 0 {
                 for i in 0..<numberOfColumns {
                     headerFields[i] = fields[i]
@@ -214,10 +220,7 @@ public class BigTable {
     }
 
     public func complete() throws {
-        let reader = try String(contentsOfFile: fileName, encoding: .utf8)
-        let lines = reader.components(separatedBy: .newlines)
-        for line in lines {
-            let fields = line.components(separatedBy: delimiter)
+        for fields in cachedLines {
             if fields.count < numberOfColumns {
                 continue
             }
