@@ -50,7 +50,7 @@ public class Page {
     private var lineCapStyle = CapStyle.BUTT
     private var lineJoinStyle = JoinStyle.MITER
     private var linePattern: String = "[] 0"
-    private var font: Font?
+    // private var font: Font?
     private var mcid = 0
     private let hexadecimal = Hexadecimal()
 
