@@ -42,7 +42,7 @@ public class PDF {
     private var uuid: String = Salsa20().getID()
     private var prevPage: Page?
     var structElements = [StructElem]()
-    private var contentStreamsCompression = false
+    private var contentStreamsCompression = true
 
     // The OCG type that will be stored in the list/array.
     struct OCG {
@@ -108,7 +108,7 @@ public class PDF {
 
         let date = Date()
         let dateFormatter1 = DateFormatter()
-        dateFormatter1.dateFormat = "yyyy-MM-dd'T'hh:mm:ss"
+        dateFormatter1.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         self.createDate = dateFormatter1.string(from: date)
 
         append("%PDF-1.7\n")
@@ -378,8 +378,7 @@ public class PDF {
         return getObjNumber()
     }
 
-    @discardableResult
-    private func addPagesObject() -> Int {
+    private func addPagesObject() {
         newobj()
         append(Token.beginDictionary)
         append("/Type /Pages\n")
@@ -397,7 +396,6 @@ public class PDF {
         append(Token.newline)
         append(Token.endDictionary)
         endobj()
-        return getObjNumber()
     }
 
     private func addStructTreeRootObject() -> Int {
