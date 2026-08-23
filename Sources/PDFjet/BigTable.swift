@@ -29,7 +29,6 @@ public class BigTable {
     private var delimiter: String = ""
     private var numberOfColumns: Int = 0
     private var startNewPage: Bool = true
-    private var cachedLines: [[String]] = []  // Cache parsed rows
 
     public init(_ pdf: PDF, _ f1: Font, _ f2: Font, _ pageSize: [Float]) {
         self.pdf = pdf
@@ -179,33 +178,28 @@ public class BigTable {
         self.alignment = [Alignment](repeating: Alignment.LEFT, count: numberOfColumns)
 
         var rowNumber = 0
-        let reader = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
-        let lines = reader.components(separatedBy: .newlines)
-
-        for line in lines {
-            let fields = line.components(separatedBy: delimiter)
-            if fields.count < numberOfColumns {
-                continue
+        let content = try String(contentsOfFile: fileName, encoding: .utf8)
+        content.enumerateLines { line, _ in
+            let fields = line.components(separatedBy: self.delimiter)
+            if fields.count < self.numberOfColumns {
+                return
             }
 
-            // Cache this row
-            cachedLines.append(fields)
-
             if rowNumber == 0 {
-                for i in 0..<numberOfColumns {
-                    headerFields[i] = fields[i]
+                for i in 0..<self.numberOfColumns {
+                    self.headerFields[i] = fields[i]
                 }
             }
             if rowNumber == 1 {
-                for i in 0..<numberOfColumns {
-                    alignment[i] = getAlignment(fields[i])
+                for i in 0..<self.numberOfColumns {
+                    self.alignment[i] = self.getAlignment(fields[i])
                 }
             }
-            for i in 0..<numberOfColumns {
+            for i in 0..<self.numberOfColumns {
                 let field = fields[i]
-                let width = f1.stringWidth(field) + 2 * self.padding
-                if width > widths[i] {
-                    widths[i] = width
+                let width = self.f1.stringWidth(field) + 2 * self.padding
+                if width > self.widths[i] {
+                    self.widths[i] = width
                 }
             }
             rowNumber += 1
@@ -220,12 +214,22 @@ public class BigTable {
     }
 
     public func complete() throws {
-        for fields in cachedLines {
-            if fields.count < numberOfColumns {
-                continue
+        var skipHeader = true
+        let content = try String(contentsOfFile: self.fileName, encoding: .utf8)
+        content.enumerateLines { line, _ in
+            let fields = line.components(separatedBy: self.delimiter)
+            if fields.count < self.numberOfColumns {
+                return
             }
-            try drawTextAndLine(fields: fields, font: f2)
+
+            if skipHeader {
+                skipHeader = false
+                return
+            }
+
+            try? self.drawTextAndLine(fields: fields, font: self.f2)
         }
+
         drawTheVerticalLines()
     }
 }
