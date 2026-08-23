@@ -44,8 +44,6 @@ public class Page {
 
     private var penColor: [Float] = [0.0, 0.0, 0.0]
     private var brushColor: [Float] = [0.0, 0.0, 0.0]
-    private var penCMYK: [Float] = [0.0, 0.0, 0.0, 1.0]
-    private var brushCMYK: [Float] = [0.0, 0.0, 0.0, 1.0]
 
     private var penWidth: Float = 0.5
 

@@ -37,8 +37,6 @@ final public class Page {
 
     private float[] brushColor = {0f, 0f, 0f};
     private float[] penColor = {0f, 0f, 0f};
-    private float[] penCMYK = {0f, 0f, 0f, 1f};
-    private float[] brushCMYK = {0f, 0f, 0f, 1f};
 
     private float[] tmx = new float[] {1f, 0f, 0f, 1f};
     private byte[] tm0;   // Used for caching tm values
