@@ -50,6 +50,8 @@ final public class Page {
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
     private String strokePattern = "[] 0";
 
+    protected float rotateDegrees = 0f;
+
     protected final List<Integer> contents = new ArrayList<Integer>();
     protected final List<Annotation> annots = new ArrayList<Annotation>();
     protected final List<Destination> destinations= new ArrayList<Destination>();
@@ -1833,6 +1835,15 @@ final public class Page {
                 (this.height - (float) (offset * Math.sin(angle))));
         watermark.setTextDirection((int) (angle * (180.0 / Math.PI)));
         watermark.drawOn(this);
+    }
+
+    public void rotateBy(double rotateDegrees) {
+        if (rotateDegrees == 0 ||
+            rotateDegrees == 90 ||
+            rotateDegrees == 180 ||
+            rotateDegrees == 270) {
+            this.rotateDegrees = (float) rotateDegrees;
+        }
     }
 
     public void invertYAxis() {
