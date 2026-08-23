@@ -1,7 +1,9 @@
+//
 // bigtable.go
 //
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
+//
 
 package pdfjet
 
@@ -27,7 +29,7 @@ type BigTable struct {
 	page            *Page
 	widths          []float32
 	headerFields    []string
-	alignment       map[int]alignment.Alignment
+	alignment       []alignment.Alignment
 	vertLines       []float32
 	bottomMargin    float32
 	padding         float32
@@ -56,6 +58,7 @@ func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize [2]float32) *BigTable {
 		highlightColor: 0xF0F0F0,
 		penColor:       0xB0B0B0,
 		startNewPage:   true,
+		alignment:      make([]alignment.Alignment, 0),
 	}
 }
 
@@ -165,7 +168,6 @@ func (bt *BigTable) highlightRow(page *Page, font *Font, color int32) {
 }
 
 func (bt *BigTable) drawTheVerticalLines() {
-	// bt.page.AddArtifactBMC()
 	original := bt.page.GetPenColorRGB()
 	bt.page.SetPenColor(bt.penColor)
 	for i := 0; i <= bt.numberOfColumns; i++ {
@@ -179,7 +181,6 @@ func (bt *BigTable) drawTheVerticalLines() {
 	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-bt.f2.ascent)
 	bt.page.StrokePath()
 	bt.page.SetPenColorRGB(original)
-	// bt.page.AddEMC()
 }
 
 func (bt *BigTable) getAlignment(str string) alignment.Alignment {
@@ -206,7 +207,7 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) error {
 	bt.vertLines = make([]float32, bt.numberOfColumns+1)
 	bt.headerFields = make([]string, bt.numberOfColumns)
 	bt.widths = make([]float32, bt.numberOfColumns)
-	bt.alignment = make(map[int]alignment.Alignment)
+	bt.alignment = make([]alignment.Alignment, bt.numberOfColumns)
 
 	file, err := os.Open(fileName)
 	if err != nil {
