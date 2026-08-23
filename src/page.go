@@ -49,8 +49,6 @@ type Page struct {
 
 	penColor   [3]float32
 	brushColor [3]float32
-	penCMYK    [4]float32
-	brushCMYK  [4]float32
 
 	tmx [4]float32
 	tm0 []byte
