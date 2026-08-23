@@ -6,6 +6,10 @@
  */
 import Foundation
 
+struct PDFjetError: Error {
+    let message: String
+}
+
 ///
 /// Used to create PDF page objects.
 ///
@@ -1098,8 +1102,7 @@ public class Page {
         if mode >= 0 && mode <= 7 {
             self.renderingMode = mode
         } else {
-            throw NSError(domain: "PDFjet", code: -1,
-                          userInfo: [NSLocalizedDescriptionKey: "Invalid text rendering mode: \(mode)"])
+            throw PDFjetError(message: "Invalid text rendering mode: \(mode)")
         }
     }
 
