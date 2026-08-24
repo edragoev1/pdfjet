@@ -7,11 +7,15 @@
 import Foundation
 
 public class Slice {
-    var angle: Float
-    var color: Int32
+    public var angle: Float = 0.0
+    public var color: Int32 = 0
+    public var text: String = ""
+    public var tooltip: String = ""
 
-    public init(_ percent: Float32, _ color: Int32) {
-        self.angle = percent*3.6
+    public init(_ angle: Float, _ color: Int32, _ text: String, _ tooltip: String) {
+        self.angle = angle
         self.color = color
+        self.text = text
+        self.tooltip = tooltip
     }
 }
