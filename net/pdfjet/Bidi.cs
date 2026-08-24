@@ -1,10 +1,3 @@
-/**
- * Bidi.cs
- *
- * Copyright (c) 2026 PDFjet Software
- * Licensed under the MIT License. See LICENSE file in the project root.
- */
-
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -64,12 +57,9 @@ namespace PDFjet.NET {
             0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
         };
 
-        private static bool IsArabicLetter(int ch)
-        {
-            for (int i = 0; i < forms.Length; i += 5)
-            {
-                if (ch == forms[i])
-                {
+        private static bool IsArabicLetter(int ch) {
+            for (int i = 0; i < forms.Length; i += 5) {
+                if (ch == forms[i]) {
                     return true;
                 }
             }
@@ -82,12 +72,11 @@ namespace PDFjet.NET {
         /// determining joining context, and kept attached to its base
         /// letter during visual reordering.
         /// </summary>
-        private static bool IsTransparent(int ch)
-        {
+        private static bool IsTransparent(int ch) {
             UnicodeCategory cat = CharUnicodeInfo.GetUnicodeCategory(ch);
             return cat == UnicodeCategory.NonSpacingMark    // Mn
-                || cat == UnicodeCategory.EnclosingMark      // Me
-                || cat == UnicodeCategory.Format;            // Cf
+                || cat == UnicodeCategory.EnclosingMark     // Me
+                || cat == UnicodeCategory.Format;           // Cf
         }
 
         /// <summary>
@@ -96,8 +85,7 @@ namespace PDFjet.NET {
         /// </summary>
         /// <param name="str">The input string.</param>
         /// <returns>The reordered string.</returns>
-        public static string ReorderVisually(string str)
-        {
+        public static string ReorderVisually(string str) {
             // Work with code points so that supplementary characters are
             // handled correctly (mirrors Swift's Character iteration).
             int[] input = StringToCodePoints(str);
@@ -109,48 +97,36 @@ namespace PDFjet.NET {
             for (int j = 0; j < input.Length; j++) {
                 int ch = input[j];
 
-                if (ch == 0x200E)            // LRM
-                {
+                if (ch == 0x200E) {                 // LRM
                     rightToLeft = false;
                     continue;
                 }
-                if (ch == 0x200F || ch == 0x061C)   // RLM / ALM
-                {
+                if (ch == 0x200F || ch == 0x061C) { // RLM / ALM
                     rightToLeft = true;
                     continue;
                 }
 
                 int? m = Mirrored(ch);
-                if (IsArabic(ch) || IsHebrew(ch) || m.HasValue)
-                {
+                if (IsArabic(ch) || IsHebrew(ch) || m.HasValue) {
                     rightToLeft = true;
-                    if (buf2.Length > 0)
-                    {
+                    if (buf2.Length > 0) {
                         buf1.Append(Process(buf2.ToString()));
                         buf2.Length = 0;
                     }
                     buf1.AppendCodePoint(m.HasValue ? m.Value : ch);
-                }
-                else if (IsAlphaNumeric(ch))
-                {
+                } else if (IsAlphaNumeric(ch)) {
                     rightToLeft = false;
                     buf2.AppendCodePoint(ch);
-                }
-                else
-                {
-                    if (rightToLeft)
-                    {
+                } else {
+                    if (rightToLeft) {
                         buf1.AppendCodePoint(ch);
-                    }
-                    else
-                    {
+                    } else {
                         buf2.AppendCodePoint(ch);
                     }
                 }
             }
 
-            if (buf2.Length > 0)
-            {
+            if (buf2.Length > 0) {
                 buf1.Append(Process(buf2.ToString()));
             }
 
@@ -160,14 +136,12 @@ namespace PDFjet.NET {
 
             StringBuilder buf3 = new StringBuilder();
             int i = n - 1;
-            while (i >= 0)
-            {
+            while (i >= 0) {
                 int ch = chars[i];
 
                 // If this is a transparent character (diacritic) with no
                 // base letter to its right (in buf1 order), emit as-is.
-                if (IsTransparent(ch))
-                {
+                if (IsTransparent(ch)) {
                     buf3.AppendCodePoint(ch);
                     i--;
                     continue;
@@ -175,24 +149,19 @@ namespace PDFjet.NET {
 
                 int diacriticCount = 0;
                 int d = i - 1;
-                while (d >= 0)
-                {
-                    if (!IsTransparent(chars[d]))
-                    {
+                while (d >= 0) {
+                    if (!IsTransparent(chars[d])) {
                         break;
                     }
                     diacriticCount++;
                     d--;
                 }
 
-                if (IsArabicLetter(ch))
-                {
+                if (IsArabicLetter(ch)) {
                     // Find previous non-transparent character (skip diacritics)
                     int prevIdx = d;
-                    while (prevIdx >= 0)
-                    {
-                        if (!IsTransparent(chars[prevIdx]))
-                        {
+                    while (prevIdx >= 0) {
+                        if (!IsTransparent(chars[prevIdx])) {
                             break;
                         }
                         prevIdx--;
@@ -201,20 +170,16 @@ namespace PDFjet.NET {
 
                     // Find next non-transparent character (skip diacritics)
                     int nextIdx = i + 1;
-                    while (nextIdx < n)
-                    {
-                        if (!IsTransparent(chars[nextIdx]))
-                        {
+                    while (nextIdx < n) {
+                        if (!IsTransparent(chars[nextIdx])) {
                             break;
                         }
                         nextIdx++;
                     }
                     int nextCh = nextIdx < n ? chars[nextIdx] : 0x0000;
 
-                    for (int j = 0; j < forms.Length; j += 5)
-                    {
-                        if (ch == forms[j])
-                        {
+                    for (int j = 0; j < forms.Length; j += 5) {
+                        if (ch == forms[j]) {
                             bool canJoinPrev = JoinsBackward(ch);
                             bool canJoinNext = JoinsForward(ch);
                             bool prevJoins   = JoinsForward(prevCh);
@@ -223,28 +188,19 @@ namespace PDFjet.NET {
                             bool joinsOnLeft  = canJoinPrev && prevJoins;
                             bool joinsOnRight = canJoinNext && nextJoins;
 
-                            if (!joinsOnLeft && !joinsOnRight)
-                            {
+                            if (!joinsOnLeft && !joinsOnRight) {
                                 buf3.AppendCodePoint(forms[j + 1]);
-                            }
-                            else if (joinsOnLeft && !joinsOnRight)
-                            {
+                            } else if (joinsOnLeft && !joinsOnRight) {
                                 buf3.AppendCodePoint(forms[j + 2]);
-                            }
-                            else if (joinsOnLeft && joinsOnRight)
-                            {
+                            } else if (joinsOnLeft && joinsOnRight) {
                                 buf3.AppendCodePoint(forms[j + 3]);
-                            }
-                            else if (!joinsOnLeft && joinsOnRight)
-                            {
+                            } else if (!joinsOnLeft && joinsOnRight) {
                                 buf3.AppendCodePoint(forms[j + 4]);
                             }
                             break;
                         }
                     }
-                }
-                else
-                {
+                } else {
                     buf3.AppendCodePoint(ch);
                 }
 
@@ -259,25 +215,22 @@ namespace PDFjet.NET {
             return buf3.ToString();
         }
 
-        public static bool IsArabic(int ch)
-        {
+        public static bool IsArabic(int ch) {
             return ch >= 0x0600 && ch <= 0x06FF;
         }
 
-        private static bool IsHebrew(int ch)
-        {
+        private static bool IsHebrew(int ch) {
             return ch >= 0x0590 && ch <= 0x05FF;
         }
 
-        private static bool IsAlphaNumeric(int ch)
-        {
+        private static bool IsAlphaNumeric(int ch) {
             UnicodeCategory cat = CharUnicodeInfo.GetUnicodeCategory(ch);
             return cat == UnicodeCategory.DecimalDigitNumber    // Nd
-                || cat == UnicodeCategory.UppercaseLetter        // Lu
-                || cat == UnicodeCategory.LowercaseLetter        // Ll
-                || cat == UnicodeCategory.TitlecaseLetter        // Lt
-                || cat == UnicodeCategory.ModifierLetter         // Lm
-                || cat == UnicodeCategory.OtherLetter;           // Lo
+                || cat == UnicodeCategory.UppercaseLetter       // Lu
+                || cat == UnicodeCategory.LowercaseLetter       // Ll
+                || cat == UnicodeCategory.TitlecaseLetter       // Lt
+                || cat == UnicodeCategory.ModifierLetter        // Lm
+                || cat == UnicodeCategory.OtherLetter;          // Lo
         }
 
         /// <summary>
@@ -285,10 +238,8 @@ namespace PDFjet.NET {
         /// or <c>null</c> if the character is not mirrored.
         /// Data source: Unicode BidiMirroring.txt.
         /// </summary>
-        private static int? Mirrored(int ch)
-        {
-            switch (ch)
-            {
+        private static int? Mirrored(int ch) {
+            switch (ch) {
                 case '(':  return ')';
                 case ')':  return '(';
                 case '[':  return ']';
@@ -350,8 +301,7 @@ namespace PDFjet.NET {
         private static readonly HashSet<int> DUAL_JOINING;
         private static readonly HashSet<int> RIGHT_JOINING;
 
-        static Bidi()
-        {
+        static Bidi() {
             DUAL_JOINING = new HashSet<int> {
                 0x0628, // BEH
                 0x062A, // TEH
@@ -399,23 +349,18 @@ namespace PDFjet.NET {
             };
         }
 
-        public static bool JoinsForward(int ch)
-        {
-            if (ch == 0x0640)
-            {
+        public static bool JoinsForward(int ch) {
+            if (ch == 0x0640) {
                 return true;   // TATWEEL — joins both sides
             }
             return DUAL_JOINING.Contains(ch);
         }
 
-        public static bool JoinsBackward(int ch)
-        {
-            if (ch == 0x0640)
-            {
+        public static bool JoinsBackward(int ch) {
+            if (ch == 0x0640) {
                 return true;
             }
-            if (JoinsForward(ch))
-            {
+            if (JoinsForward(ch)) {
                 return true;
             }
             return RIGHT_JOINING.Contains(ch);
@@ -429,8 +374,7 @@ namespace PDFjet.NET {
         /// re-appends them at the back, so that e.g. trailing punctuation stays
         /// visually at the end.
         /// </summary>
-        private static string Process(string buf)
-        {
+        private static string Process(string buf) {
             string buf1 = ReverseCodePoints(buf);
             StringBuilder buf2 = new StringBuilder();
             StringBuilder buf3 = new StringBuilder();
@@ -450,8 +394,7 @@ namespace PDFjet.NET {
             // If the entire input was separators (loop never hit break),
             // buf3 is empty but buf2 holds the reversed separators.
             // Return them so they aren't silently dropped.
-            if (buf3.Length == 0)
-            {
+            if (buf3.Length == 0) {
                 return ReverseCodePoints(buf2.ToString());
             }
             return buf3.ToString();
@@ -460,12 +403,10 @@ namespace PDFjet.NET {
         /// <summary>
         /// Reverses a string at the code-point level (not UTF-16 unit level).
         /// </summary>
-        private static string ReverseCodePoints(string s)
-        {
+        private static string ReverseCodePoints(string s) {
             int[] cps = StringToCodePoints(s);
             StringBuilder sb = new StringBuilder(cps.Length);
-            for (int i = cps.Length - 1; i >= 0; i--)
-            {
+            for (int i = cps.Length - 1; i >= 0; i--) {
                 sb.AppendCodePoint(cps[i]);
             }
             return sb.ToString();
@@ -476,16 +417,14 @@ namespace PDFjet.NET {
         /// <summary>
         /// Converts a string to an array of Unicode code points.
         /// </summary>
-        private static int[] StringToCodePoints(string s)
-        {
-            if (string.IsNullOrEmpty(s))
-            {
+        private static int[] StringToCodePoints(string s) {
+            if (string.IsNullOrEmpty(s)) {
                 return new int[0];
             }
             int[] result = new int[s.Length];
             int idx = 0;
-            for (int i = 0; i < s.Length; )
-            {
+            int i = 0;
+            while (i < s.Length) {
                 result[idx++] = char.ConvertToUtf32(s, i);
                 i += char.IsSurrogatePair(s, i) ? 2 : 1;
             }
@@ -497,12 +436,10 @@ namespace PDFjet.NET {
         /// <summary>
         /// Converts an array of code points to a string.
         /// </summary>
-        private static string CodePointsToString(int[] cps, int offset, int count)
-        {
+        private static string CodePointsToString(int[] cps, int offset, int count) {
             StringBuilder sb = new StringBuilder(count);
             int end = offset + count;
-            for (int i = offset; i < end; i++)
-            {
+            for (int i = offset; i < end; i++) {
                 sb.AppendCodePoint(cps[i]);
             }
             return sb.ToString();
@@ -513,13 +450,11 @@ namespace PDFjet.NET {
     /// Extension methods for StringBuilder to support code-point appends,
     /// matching Java's StringBuilder.appendCodePoint().
     /// </summary>
-    internal static class StringBuilderExtensions
-    {
+    internal static class StringBuilderExtensions {
         /// <summary>
         /// Appends a Unicode code point to the StringBuilder.
         /// </summary>
-        public static void AppendCodePoint(this StringBuilder sb, int codePoint)
-        {
+        public static void AppendCodePoint(this StringBuilder sb, int codePoint) {
             sb.Append(char.ConvertFromUtf32(codePoint));
         }
     }
