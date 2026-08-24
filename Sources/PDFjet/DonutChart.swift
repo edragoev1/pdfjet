@@ -131,10 +131,6 @@ public class DonutChart {
         }
         page.fillPath()
 
-        // White border between slices
-        page.setPenColor(Color.white)
-        page.strokePath()
-
         return a2
     }
 
