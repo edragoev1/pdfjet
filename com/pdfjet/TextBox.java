@@ -492,9 +492,10 @@ public class TextBox implements Drawable {
      * @param alignment the alignment code.
      *                  Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
      */
-    public void setTextAlignment(int alignment) {
+    public TextBox setTextAlignment(int alignment) {
         this.properties &= 0x00CFFFFF;
         this.properties |= (alignment & 0x00300000);
+        return this;
     }
 
     /**
@@ -903,7 +904,8 @@ public class TextBox implements Drawable {
         this.uri = uri;
     }
 
-    public void setTextDirection(Direction textDirection) {
+    public TextBox setTextDirection(Direction textDirection) {
         this.textDirection = textDirection;
+        return this;
     }
 } // End of TextBox.java
