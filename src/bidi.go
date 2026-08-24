@@ -8,7 +8,6 @@ package pdfjet
 import (
 	"strings"
 	"unicode"
-	"unicode/utf8"
 )
 
 // forms holds the Arabic contextual letter forms.
@@ -449,7 +448,7 @@ func processLTR(buf string) string {
 	return buf3.String()
 }
 
-// reverseRunes reverses a string at the rune (code-point) level.
+// reverseRunesBidi reverses a string at the rune (code-point) level.
 func reverseRunesBidi(s string) string {
 	cps := []rune(s)
 	out := make([]rune, len(cps))
@@ -458,8 +457,3 @@ func reverseRunesBidi(s string) string {
 	}
 	return string(out)
 }
-
-// Ensure utf8 package is referenced (used implicitly by []rune conversions
-// and WriteRune; the import prevents "imported and not used" in edge cases
-// where the compiler needs explicit verification).
-var _ = utf8.RuneError
