@@ -46,6 +46,11 @@ public class Bidi {
         "\u{0622}","\u{FE81}","\u{FE82}","\u{0622}","\u{0622}",
         "\u{0629}","\u{FE93}","\u{FE94}","\u{0629}","\u{0629}",
         "\u{0649}","\u{FEEF}","\u{FEF0}","\u{0649}","\u{0649}",
+        "\u{0621}","\u{FE80}","\u{0621}","\u{0621}","\u{0621}",   // HAMZA (non-joining, isolated only)
+        "\u{0624}","\u{FE85}","\u{FE86}","\u{0624}","\u{0624}",   // WAW WITH HAMZA (R)
+        "\u{0625}","\u{FE87}","\u{FE88}","\u{0625}","\u{0625}",   // ALEF WITH HAMZA BELOW (R)
+        "\u{0626}","\u{FE89}","\u{FE8A}","\u{FE8C}","\u{FE8B}",   // YEH WITH HAMZA (D — has all 4 forms)
+        "\u{0627}","\u{FE8D}","\u{FE8E}","\u{0627}","\u{0627}",   // ALEF (R)
     ]
 
     private static func isArabicLetter(_ ch: Character) -> Bool {
@@ -265,6 +270,7 @@ public class Bidi {
             0x0646, // NOON
             0x0647, // HEH
             0x064A, // YEH
+            0x0626, // YEH WITH HAMZA (Dual_Joining)
         ]
 
         return dualJoining.contains(value)
