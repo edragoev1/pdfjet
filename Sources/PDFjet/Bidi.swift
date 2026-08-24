@@ -222,16 +222,13 @@ public class Bidi {
 
     private static func isAlphaNumeric(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
-        if scalar >= "0" && scalar <= "9" {
-            return true
-        }
-        if scalar >= "a" && scalar <= "z" {
-            return true
-        }
-        if scalar >= "A" && scalar <= "Z" {
-            return true
-        }
-        return false
+        let cat = scalar.properties.generalCategory
+        return cat == .decimalNumber     // Nd
+            || cat == .uppercaseLetter   // Lu
+            || cat == .lowercaseLetter   // Ll
+            || cat == .titlecaseLetter   // Lt
+            || cat == .modifierLetter    // Lm
+            || cat == .otherLetter       // Lo
     }
 
     public static func joinsForward(_ ch: Character) -> Bool {
