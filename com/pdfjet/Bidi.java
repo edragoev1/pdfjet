@@ -111,13 +111,13 @@ public class Bidi {
                 continue;
             }
 
+           Integer m = mirrored(ch);
             if (isArabic(ch) || isHebrew(ch) || mirrored(ch) != null) {
                 rightToLeft = true;
                 if (buf2.length() > 0) {
                     buf1.append(process(buf2.toString()));
                     buf2.setLength(0);
                 }
-                Integer m = mirrored(ch);
                 buf1.appendCodePoint(m != null ? m : ch);
             } else if (isAlphaNumeric(ch)) {
                 rightToLeft = false;
