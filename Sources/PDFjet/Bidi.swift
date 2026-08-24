@@ -84,7 +84,7 @@ public class Bidi {
     public static func reorderVisually(_ str: String) -> String {
         var buf1 = String()
         var buf2 = String()
-        var rightToLeft: Bool = true
+        var rightToLeft: Bool = false
         for i in 0..<str.count {
             let ch = str[str.index(str.startIndex, offsetBy: i)]
             if ch == "\u{200E}" {
