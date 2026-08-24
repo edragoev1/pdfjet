@@ -6,13 +6,17 @@
 package pdfjet
 
 type Slice struct {
-	angle float32
-	color int32
+	angle   float32
+	color   int32
+	text    string
+	tooltip string
 }
 
-func NewSlice(percent float32, color int32) *Slice {
+func NewSlice(angle float32, color int32, text string, tooltip string) *Slice {
 	slice := new(Slice)
-	slice.angle = percent * 3.6
+	slice.angle = angle
 	slice.color = color
+	slice.text = text
+	slice.tooltip = tooltip
 	return slice
 }
