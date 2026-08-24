@@ -15,7 +15,9 @@ public class Example_25 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(12.0)
         let f2 = try Font(pdf, IBMPlexSans.Bold)
+        f2.setSize(10.0)
 
         let chart = DonutChart(f1, f2, true)           // true = full donut (with hole)
         chart.setLocation(300.0, 400.0)

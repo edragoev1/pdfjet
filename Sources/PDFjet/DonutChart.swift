@@ -133,7 +133,6 @@ public class DonutChart {
 
         // White border between slices
         page.setPenColor(Color.white)
-        page.setPenWidth(1.0)
         page.strokePath()
 
         return a2
@@ -154,23 +153,25 @@ public class DonutChart {
         let r3 = r1 + 15.0
         let p2 = getPoint(xc, yc, r3, midAngle)
 
-        // Draw the first segment: edge → elbow
+        // Draw the pointer line: edge → elbow → horizontal end
         page.setPenColor(Color.black)
-        page.drawLine(p1[0], p1[1], p2[0], p2[1])
+        page.setPenWidth(1.0)
+        page.moveTo(p1[0], p1[1])
+        page.lineTo(p2[0], p2[1])
 
         if f1 != nil && !text.isEmpty {
             let textWidth = f1!.stringWidth(text)
             let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
 
-            // Horizontal line length = text width + small padding
             let padding: Float = 4.0
             let lineLength = textWidth + padding
 
             let xEnd: Float = onRightSide ? p2[0] + lineLength : p2[0] - lineLength
             let yEnd: Float = p2[1]
 
-            // Draw the horizontal segment
-            page.drawLine(p2[0], p2[1], xEnd, yEnd)
+            // Continue the path to the horizontal end
+            page.lineTo(xEnd, yEnd)
+            page.strokePath()
 
             // Draw the label text just above the horizontal line
             let label = TextLine(f1!, text)
@@ -182,10 +183,11 @@ public class DonutChart {
             }
             label.drawOn(page)
         } else {
-            // No text — just draw a short horizontal stub
+            // No text — short horizontal stub
             let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
             let xEnd: Float = onRightSide ? p2[0] + 20.0 : p2[0] - 20.0
-            page.drawLine(p2[0], p2[1], xEnd, p2[1])
+            page.lineTo(xEnd, p2[1])
+            page.strokePath()
         }
     }
 
