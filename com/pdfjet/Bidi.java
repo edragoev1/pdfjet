@@ -152,15 +152,13 @@ public class Bidi {
                 continue;
             }
 
-            // Collect trailing diacritics that follow this base letter
-            // in chars (at indices i-1, i-2, ... while transparent).
-            int[] diacritics = new int[0];
+            int diacriticCount = 0;
             int d = i - 1;
             while (d >= 0) {
                 if (!isTransparent(chars[d])) {
                     break;
                 }
-                diacritics = appendInt(diacritics, chars[d]);
+                diacriticCount++;
                 d--;
             }
 
@@ -212,8 +210,8 @@ public class Bidi {
             }
 
             // Emit diacritics in their original order
-            for (int k = diacritics.length - 1; k >= 0; k--) {
-                buf3.appendCodePoint(diacritics[k]);
+            for (int k = 0; k < diacriticCount; k++) {
+                buf3.appendCodePoint(chars[i - 1 - k]);
             }
 
             i = d;
