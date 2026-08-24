@@ -130,28 +130,26 @@ private static let forms: [Character] = [
                 let nextCh = (i < (buf1.count - 1)) ? buf1[buf1.index(buf1.startIndex, offsetBy: i + 1)] : "\u{0000}"
                 for j in stride(from: 0, to: forms.count, by: 5) {
                     if ch == forms[j] {
-//                         if (!isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
-//                             buf3.append(forms[j + 1])   // Isolated
-//                         } else if (isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
-//                             buf3.append(forms[j + 2])   // End
-//                         } else if (isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
-//                             buf3.append(forms[j + 3])   // Middle
-//                         } else if (!isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
-//                             buf3.append(forms[j + 4])   // Beginning
-//                         }
+                        // A connection on a side requires BOTH letters to participate:
+                        // - Left connection: this letter must join backward (canJoinPrev)
+                        //   AND the previous letter must join forward (prevJoins)
+                        // - Right connection: this letter must join forward (canJoinNext)
+                        //   AND the next letter must join backward (nextJoins)
+                        let canJoinPrev = joinsBackward(ch)
+                        let canJoinNext = joinsForward(ch)
+                        let prevJoins = joinsForward(prevCh)
+                        let nextJoins = joinsBackward(nextCh)
 
-                        // prevCh is the character before this one in logical order (i-1)
-                        // nextCh is the character after this one in logical order (i+1)
-                        let prevJoins = joinsForward(prevCh)   // prev joins forward INTO this letter
-                        let nextJoins = joinsBackward(nextCh)  // next joins backward INTO this letter
+                        let joinsOnLeft  = canJoinPrev && prevJoins
+                        let joinsOnRight = canJoinNext && nextJoins
 
-                        if (!prevJoins && !nextJoins) {
+                        if (!joinsOnLeft && !joinsOnRight) {
                             buf3.append(forms[j + 1])   // Isolated
-                        } else if (prevJoins && !nextJoins) {
+                        } else if (joinsOnLeft && !joinsOnRight) {
                             buf3.append(forms[j + 2])   // End (Final)
-                        } else if (prevJoins && nextJoins) {
+                        } else if (joinsOnLeft && joinsOnRight) {
                             buf3.append(forms[j + 3])   // Middle (Medial)
-                        } else if (!prevJoins && nextJoins) {
+                        } else if (!joinsOnLeft && joinsOnRight) {
                             buf3.append(forms[j + 4])   // Beginning (Initial)
                         }
                     }
@@ -267,7 +265,6 @@ private static let forms: [Character] = [
             0x0631, // REH
             0x0632, // REH WITH DOT ABOVE (ZAIN)
             0x0648, // WAW
-            0x0649, // ALEF MAKSURA (DOTLESS YEH) — R in Unicode
         ]
 
         return rightJoining.contains(value)
