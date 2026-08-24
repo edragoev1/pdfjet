@@ -314,6 +314,12 @@ public class Bidi {
             buf3.append(String(buf2.reversed()))
             break
         }
+        // If the entire input was separators (loop never hit break),
+        // buf3 is empty but buf2 holds the reversed separators.
+        // Return them so they aren't silently dropped.
+        if buf3.isEmpty {
+            return String(buf2.reversed())
+        }
         return buf3
     }
 }
