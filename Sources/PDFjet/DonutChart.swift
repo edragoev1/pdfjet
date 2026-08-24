@@ -136,15 +136,40 @@ public class DonutChart {
 
     private func drawLinePointer(
             _ page: Page,
-            _ perColor: Int32,
+            _ text: String,
             _ xc: Float, _ yc: Float,
-            _ r1: Float, _ r2: Float,   // r1 > r2
-            _ a1: Float, _ a2: Float) { // a1 > a2
+            _ r1: Float,
+            _ a1: Float, _ a2: Float) {
+        let midAngle = (a1 + a2) / 2.0 - 90.0
+
+        // Point on the outer edge of the donut
+        let p1 = getPoint(xc, yc, r1, midAngle)
+
+        // Elbow point — 15pt beyond the outer edge
+        let r3 = r1 + 15.0
+        let p2 = getPoint(xc, yc, r3, midAngle)
+
+        // Horizontal extension — 20pt left or right
+        let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
+        let xEnd: Float = onRightSide ? p2[0] + 20.0 : p2[0] - 20.0
+        let yEnd: Float = p2[1]
+
+        // Draw the pointer line: edge → elbow → horizontal end
         page.setPenColor(Color.black)
-        let angle1 = a1 - 90.0
-        let angle2 = a2 - 90.0
-        if (angle2 - angle1) <= 90.0 {
-            page.drawLine(xc, yc, 500.0, 500.0)
+        page.drawLine(p1[0], p1[1], p2[0], p2[1])
+        page.drawLine(p2[0], p2[1], xEnd, yEnd)
+
+        // Draw the label text
+        if f1 != nil && !text.isEmpty {
+            let label = TextLine(f1!, text)
+            label.setColor(Color.black)
+            let textWidth = f1!.stringWidth(text)
+            if onRightSide {
+                label.setLocation(xEnd + 2.0, yEnd - f1!.getAscent() / 2.0)
+            } else {
+                label.setLocation(xEnd - textWidth - 2.0, yEnd - f1!.getAscent() / 2.0)
+            }
+            label.drawOn(page)
         }
     }
 
@@ -156,13 +181,12 @@ public class DonutChart {
                     xc, yc,
                     r1, r2,
                     angle, angle + slice.angle)
-/*
+
             drawLinePointer(
-                    page, slice.color,
+                    page, slice.text,
                     xc, yc,
-                    r1, r2,
-                    angle, angle + slice.angle)
-*/
+                    r1,
+                    angle - slice.angle, angle)
         }
     }
 }   // End of DonutChart.swift
