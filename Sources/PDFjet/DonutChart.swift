@@ -171,11 +171,9 @@ public class DonutChart {
             let label = TextLine(f1!, text)
             label.setColor(Color.black)
             if onRightSide {
-                // Right side: text starts at elbow, reads left-to-right
-                label.setLocation(p2[0] + 2.0, yEnd - f1!.getAscent())
+                label.setLocation(p2[0] + 2.0, yEnd - f1!.getAscent() / 3.0)
             } else {
-                // Left side: text starts at the line's left tip
-                label.setLocation(xEnd + 2.0, yEnd - f1!.getAscent())
+                label.setLocation(xEnd + 2.0, yEnd - f1!.getAscent() / 3.0)
             }
             label.drawOn(page)
         } else {
