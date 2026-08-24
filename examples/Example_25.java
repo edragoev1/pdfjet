@@ -1,102 +1,51 @@
 package examples;
 
 import java.io.*;
+import java.util.zip.CheckedOutputStream;
+import java.util.zip.CRC32;
 import com.pdfjet.*;
 
 /**
  * Example_25.java
  */
 public class Example_25 {
-    public Example_25() throws Exception {
-        PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_25.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f3 = new Font(pdf, CoreFont.HELVETICA);
-        Font f4 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f5 = new Font(pdf, CoreFont.HELVETICA);
-        Font f6 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+    public Example_25() throws Exception {
+        FileOutputStream fos = new FileOutputStream("Example_25.pdf");
+        BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+        PDF pdf = new PDF(bos);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        CompositeTextLine composite = new CompositeTextLine(50f, 50f);
-        composite.setFontSize(14f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(12.0f);
+        Font f2 = new Font(pdf, IBMPlexSans.Bold);
+        f2.setSize(10.0f);
 
-        TextLine text1 = new TextLine(f1, "C");
-        TextLine text2 = new TextLine(f2, "6");
-        TextLine text3 = new TextLine(f3, "H");
-        TextLine text4 = new TextLine(f4, "12");
-        TextLine text5 = new TextLine(f5, "O");
-        TextLine text6 = new TextLine(f6, "6");
+        DonutChart chart = new DonutChart(f1, f2, true);       // true = full donut (with hole)
+        chart.setLocation(300.0f, 400.0f);
+        chart.setR1AndR2(200.0f, 120.0f);
 
-        text1.setTextColor(Color.dodgerblue);
-        text3.setTextColor(Color.dodgerblue);
-        text5.setTextColor(Color.dodgerblue);
-
-        text2.setTextEffect(Effect.SUBSCRIPT);
-        text4.setTextEffect(Effect.SUBSCRIPT);
-        text6.setTextEffect(Effect.SUBSCRIPT);
-
-        composite.addComponent(text1);
-        composite.addComponent(text2);
-        composite.addComponent(text3);
-        composite.addComponent(text4);
-        composite.addComponent(text5);
-        composite.addComponent(text6);
-
-        float[] xy = composite.drawOn(page);
-
-        Box box = new Box();
-        box.setLocation(xy[0], xy[1]);
-        box.setSize(20f, 20f);
-        box.drawOn(page);
-
-        CompositeTextLine composite2 = new CompositeTextLine(50f, 100f);
-        composite2.setFontSize(14f);
-
-        text1 = new TextLine(f1, "SO");
-        text2 = new TextLine(f2, "4");
-        text3 = new TextLine(f4, "2-"); // Use bold font here
-
-        text2.setTextEffect(Effect.SUBSCRIPT);
-        text3.setTextEffect(Effect.SUPERSCRIPT);
-
-        composite2.addComponent(text1);
-        composite2.addComponent(text2);
-        composite2.addComponent(text3);
-
-        composite2.drawOn(page);
-        composite2.setLocation(100f, 150f);
-        composite2.drawOn(page);
-
-        float[] yy = composite2.getMinMax();
-        Line line1 = new Line(50f, yy[0], 200f, yy[0]);
-        Line line2 = new Line(50f, yy[1], 200f, yy[1]);
-        line1.drawOn(page);
-        line2.drawOn(page);
-
-        DonutChart chart = new DonutChart(f1, f2, false);
-        chart.setLocation(300f, 300f);
-        chart.setR1AndR2(200f, 100f);
-        chart.addSlice(new Slice(10f, Color.red));
-        chart.addSlice(new Slice(20f, Color.green));
-        chart.addSlice(new Slice(30f, Color.blue));
-        chart.addSlice(new Slice(40f, Color.peachpuff));
-/* For testing!
-        chart.addSlice(new Slice(75f, Color.red));
-        chart.addSlice(new Slice(25f, Color.blue));
-*/
+        chart.addSlice(new Slice(90.0f,  0xC1121F, "Apples",   ""));   // deep red
+        chart.addSlice(new Slice(72.0f,  0x1D3557, "Oranges",  ""));   // navy blue
+        chart.addSlice(new Slice(108.0f, 0x1A7468, "Bananas",  ""));   // dark teal
+        chart.addSlice(new Slice(54.0f,  0xD97706, "Grapes",   ""));   // burnt orange
+        chart.addSlice(new Slice(36.0f,  0xCAAA2F, "Lemons",   ""));   // dark gold
         chart.drawOn(page);
 
         pdf.complete();
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         long time0 = System.currentTimeMillis();
-        new Example_25();
+        try {
+            new Example_25();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         long time1 = System.currentTimeMillis();
         TextUtils.printDuration("Example_25", time0, time1);
     }
+
 }   // End of Example_25.java
