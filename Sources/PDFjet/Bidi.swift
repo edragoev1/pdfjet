@@ -150,21 +150,24 @@ private static let forms: [Character] = [
     }
 
     public static func isArabic(_ ch: Character) -> Bool {
-        return (ch >= "\u{0600}" && ch <= "\u{06FF}")
+        guard let scalar = ch.unicodeScalars.first else { return false }
+        return (scalar >= "\u{0600}" && scalar <= "\u{06FF}")
     }
 
     private static func isHebrew(_ ch: Character) -> Bool {
-        return (ch >= "\u{0591}" && ch <= "\u{05F4}")
+        guard let scalar = ch.unicodeScalars.first else { return false }
+        return (scalar >= "\u{0590}" && scalar <= "\u{05FF}")
     }
 
     private static func isAlphaNumeric(_ ch: Character) -> Bool {
-        if ch >= "0" && ch <= "9" {
+        guard let scalar = ch.unicodeScalars.first else { return false }
+        if scalar >= "0" && scalar <= "9" {
             return true
         }
-        if ch >= "a" && ch <= "z" {
+        if scalar >= "a" && scalar <= "z" {
             return true
         }
-        if ch >= "A" && ch <= "Z" {
+        if scalar >= "A" && scalar <= "Z" {
             return true
         }
         return false
