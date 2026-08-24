@@ -79,12 +79,11 @@ namespace PDFjet.NET {
         }
 
         private float DrawSlice(
-            Page page,
-            int fillColor,
-            float xc, float yc,
-            float r1, float r2,                  // r1 > r2
-            float a1, float a2)                  // a1 > a2
-        {
+                Page page,
+                int fillColor,
+                float xc, float yc,
+                float r1, float r2,         // r1 > r2
+                float a1, float a2) {       // a1 > a2
             page.SetBrushColor(fillColor);
 
             float angle1 = a1 - 90.0f;
@@ -137,12 +136,11 @@ namespace PDFjet.NET {
         }
 
         private void DrawLinePointer(
-            Page page,
-            string text,
-            float xc, float yc,
-            float r1,
-            float a1, float a2)
-        {
+                Page page,
+                string text,
+                float xc, float yc,
+                float r1,
+                float a1, float a2) {
             float midAngle = (a1 + a2) / 2.0f - 90.0f;
 
             // Point on the outer edge of the donut
