@@ -900,8 +900,9 @@ public class TextBox implements Drawable {
      *
      * @param uri the URI
      */
-    public void setURIAction(String uri) {
+    public TextBox setURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     public TextBox setTextDirection(Direction textDirection) {

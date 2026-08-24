@@ -395,6 +395,24 @@ public class TextBox : IDrawable {
         return textColor;
     }
 
+    public TextBox SetLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    public String GetLanguage() {
+        return this.language;
+    }
+
+    public TextBox SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    public String GetAltDescription() {
+        return altDescription;
+    }
+
     public void SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
     }
@@ -868,8 +886,9 @@ public class TextBox : IDrawable {
         return this;
     }
 
-    public void SetTextDirection(Direction textDirection) {
+    public TextBox SetTextDirection(Direction textDirection) {
         this.textDirection = textDirection;
+        return this;
     }
 }   // End of TextBox.cs
 }   // End of namespace PDFjet.NET
