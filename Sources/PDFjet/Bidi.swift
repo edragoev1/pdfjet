@@ -130,14 +130,29 @@ private static let forms: [Character] = [
                 let nextCh = (i < (buf1.count - 1)) ? buf1[buf1.index(buf1.startIndex, offsetBy: i + 1)] : "\u{0000}"
                 for j in stride(from: 0, to: forms.count, by: 5) {
                     if ch == forms[j] {
-                        if (!isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
+//                         if (!isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
+//                             buf3.append(forms[j + 1])   // Isolated
+//                         } else if (isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
+//                             buf3.append(forms[j + 2])   // End
+//                         } else if (isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
+//                             buf3.append(forms[j + 3])   // Middle
+//                         } else if (!isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
+//                             buf3.append(forms[j + 4])   // Beginning
+//                         }
+
+                        // prevCh is the character before this one in logical order (i-1)
+                        // nextCh is the character after this one in logical order (i+1)
+                        let prevJoins = joinsForward(prevCh)   // prev joins forward INTO this letter
+                        let nextJoins = joinsBackward(nextCh)  // next joins backward INTO this letter
+
+                        if (!prevJoins && !nextJoins) {
                             buf3.append(forms[j + 1])   // Isolated
-                        } else if (isArabicLetter(prevCh) && !isArabicLetter(nextCh)) {
-                            buf3.append(forms[j + 2])   // End
-                        } else if (isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
-                            buf3.append(forms[j + 3])   // Middle
-                        } else if (!isArabicLetter(prevCh) && isArabicLetter(nextCh)) {
-                            buf3.append(forms[j + 4])   // Beginning
+                        } else if (prevJoins && !nextJoins) {
+                            buf3.append(forms[j + 2])   // End (Final)
+                        } else if (prevJoins && nextJoins) {
+                            buf3.append(forms[j + 3])   // Middle (Medial)
+                        } else if (!prevJoins && nextJoins) {
+                            buf3.append(forms[j + 4])   // Beginning (Initial)
                         }
                     }
                 }
@@ -171,6 +186,91 @@ private static let forms: [Character] = [
             return true
         }
         return false
+    }
+
+    /// Returns true if the character joins with the *following* letter
+    /// (i.e., the next letter should take a non-isolated form).
+    /// Joining types D (Dual) and C (Join_Causing) join forward.
+    /// R (Right) only joins backward, so it does NOT join forward.
+    public static func joinsForward(_ ch: Character) -> Bool {
+        guard let scalar = ch.unicodeScalars.first else { return false }
+        let value = scalar.value
+
+        // TATWEEL (Join_Causing) — joins both sides
+        if value == 0x0640 { return true }
+
+        // Dual_Joining letters — join both sides
+        // Listed by joining group from ArabicShaping.txt:
+        // BEH, DOTLESS BEH WITH 2 DOTS ABOVE, DOTLESS BEH WITH 3 DOTS ABOVE,
+        // HAH variants, SEEN variants, SAD variants, TAH variants, AIN variants,
+        // KEHEH variants, FARSI YEH variants, FEH, QAF, KAF, LAM, MEEM, NOON,
+        // HEH, DOTLESS YEH, YEH, YEH WITH HAMZA
+        let dualJoining: Set<UInt32> = [
+            0x0628, // BEH
+            0x062A, // DOTLESS BEH WITH 2 DOTS ABOVE (TEH)
+            0x062B, // DOTLESS BEH WITH 3 DOTS ABOVE (THEH)
+            0x062C, // HAH WITH DOT BELOW (JEEM)
+            0x062D, // HAH
+            0x062E, // HAH WITH DOT ABOVE (KHAH)
+            0x0633, // SEEN
+            0x0634, // SEEN WITH 3 DOTS ABOVE (SHEEN)
+            0x0635, // SAD
+            0x0636, // SAD WITH DOT ABOVE (DAD)
+            0x0637, // TAH
+            0x0638, // TAH WITH DOT ABOVE (ZAH)
+            0x0639, // AIN
+            0x063A, // AIN WITH DOT ABOVE (GHAIN)
+            0x063B, // KEHEH WITH 2 DOTS ABOVE
+            0x063C, // KEHEH WITH 3 DOTS BELOW
+            0x063D, // FARSI YEH WITH INVERTED V ABOVE
+            0x063E, // FARSI YEH WITH 2 DOTS ABOVE
+            0x063F, // FARSI YEH WITH 3 DOTS ABOVE
+            0x0641, // FEH
+            0x0642, // QAF
+            0x0643, // KAF
+            0x0644, // LAM
+            0x0645, // MEEM
+            0x0646, // NOON
+            0x0647, // HEH
+            0x0649, // DOTLESS YEH (ALEF MAKSURA — actually R, see note below)
+            0x064A, // YEH
+            0x0626, // DOTLESS YEH WITH HAMZA ABOVE (YEH WITH HAMZA)
+        ]
+
+        return dualJoining.contains(value)
+    }
+
+    /// Returns true if the character joins with the *preceding* letter
+    /// (i.e., the previous letter should take a non-isolated form).
+    /// Joining types D (Dual), C (Join_Causing), and R (Right) all join backward.
+    public static func joinsBackward(_ ch: Character) -> Bool {
+        guard let scalar = ch.unicodeScalars.first else { return false }
+        let value = scalar.value
+
+        // TATWEEL (Join_Causing) — joins both sides
+        if value == 0x0640 { return true }
+
+        // All Dual_Joining letters also join backward
+        if joinsForward(ch) { return true }
+
+        // Right_Joining letters — join backward only
+        // ALEF variants, WAW variants, DAL variants, REH variants, TEH MARBUTA
+        let rightJoining: Set<UInt32> = [
+            0x0622, // ALEF WITH MADDA ABOVE
+            0x0623, // ALEF WITH HAMZA ABOVE
+            0x0624, // WAW WITH HAMZA ABOVE
+            0x0625, // ALEF WITH HAMZA BELOW
+            0x0627, // ALEF
+            0x0629, // TEH MARBUTA
+            0x062F, // DAL
+            0x0630, // DAL WITH DOT ABOVE (THAL)
+            0x0631, // REH
+            0x0632, // REH WITH DOT ABOVE (ZAIN)
+            0x0648, // WAW
+            0x0649, // ALEF MAKSURA (DOTLESS YEH) — R in Unicode
+        ]
+
+        return rightJoining.contains(value)
     }
 
     private static func process(_ buf: String) -> String {
