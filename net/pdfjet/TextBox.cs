@@ -513,7 +513,7 @@ public class TextBox : IDrawable {
     }
 
     /**
-     * Sets the srikeout flag.
+     * Sets the strikeout flag.
      * In the flag is true - draw strikeout line through the text.
      *
      * @param strikeout the strikeout flag.
