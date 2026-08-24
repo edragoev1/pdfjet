@@ -185,14 +185,17 @@ public class DonutChart {
     }
 
     public func drawOn(_ page: Page) {
+        if slices == nil || slices!.isEmpty {
+            return
+        }
+        let innerR: Float = isDonutChart ? r2 : 0.0
         var angle: Float = 0.0
         for slice in slices! {
             angle = drawSlice(
                     page, slice.color,
                     xc, yc,
-                    r1, r2,
+                    r1, innerR,
                     angle, angle + slice.angle)
-
             drawLinePointer(
                     page, slice.text,
                     xc, yc,
