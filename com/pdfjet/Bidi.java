@@ -112,7 +112,7 @@ public class Bidi {
             }
 
            Integer m = mirrored(ch);
-            if (isArabic(ch) || isHebrew(ch) || mirrored(ch) != null) {
+            if (isArabic(ch) || isHebrew(ch) || m != null) {
                 rightToLeft = true;
                 if (buf2.length() > 0) {
                     buf1.append(process(buf2.toString()));
@@ -413,13 +413,5 @@ public class Bidi {
             sb.appendCodePoint(cps[i]);
         }
         return sb.toString();
-    }
-
-    /** Appends {@code value} to the end of {@code array}, growing it. */
-    private static int[] appendInt(int[] array, int value) {
-        int[] result = new int[array.length + 1];
-        System.arraycopy(array, 0, result, 0, array.length);
-        result[array.length] = value;
-        return result;
     }
 }
