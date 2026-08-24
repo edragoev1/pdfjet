@@ -4,6 +4,9 @@ import PDFjet
 /**
  * Example_25.swift
  */
+import Foundation
+import PDFjet
+
 public class Example_25 {
     public init() throws {
         let stream = OutputStream(toFileAtPath: "Example_25.pdf", append: false)
@@ -14,15 +17,15 @@ public class Example_25 {
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.Bold)
 
-        let chart = DonutChart(f1, f2, false)
-        chart.setLocation(300.0, 300.0)
-        chart.setR1AndR2(200.0, 100.0)
-        chart.addSlice(Slice(10.0, Color.red, "", ""))
-        chart.addSlice(Slice(20.0, Color.green, "", ""))
-        chart.addSlice(Slice(30.0, Color.blue, "", ""))
-        chart.addSlice(Slice(40.0, Color.peachpuff, "", ""))
-        chart.addSlice(Slice(75.0, Color.red, "", ""))
-        chart.addSlice(Slice(25.0, Color.blue, "", ""))
+        let chart = DonutChart(f1, f2, true)           // true = full donut (with hole)
+        chart.setLocation(300.0, 400.0)
+        chart.setR1AndR2(200.0, 120.0)
+
+        chart.addSlice(Slice(90.0,  Color.red,       "Apples",   ""))
+        chart.addSlice(Slice(72.0,  Color.blue,      "Oranges",  ""))
+        chart.addSlice(Slice(108.0, Color.green,     "Bananas",  ""))
+        chart.addSlice(Slice(54.0,  Color.orange,    "Grapes",   ""))
+        chart.addSlice(Slice(36.0,  Color.yellow,    "Lemons",   ""))
         chart.drawOn(page)
 
         pdf.complete()
