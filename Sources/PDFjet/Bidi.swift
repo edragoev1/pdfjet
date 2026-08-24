@@ -236,6 +236,60 @@ public class Bidi {
             || cat == .otherLetter       // Lo
     }
 
+    /// Returns true if the character has the Unicode Bidi_Mirrored property
+    /// and should trigger RTL directionality. Covers all common bracket and
+    /// quotation mark pairs from Unicode BidiMirroring.txt.
+    private static func isMirrored(_ ch: Character) -> Bool {
+        return mirrorMap[ch] != nil
+    }
+
+    /// Returns the mirror image of a bidirectionally mirrored character,
+    /// or the character itself if it is not mirrored.
+    /// Data source: Unicode BidiMirroring.txt (Unicode 17.0.0).
+    private static func mirror(_ ch: Character) -> Character {
+        return mirrorMap[ch] ?? ch
+    }
+
+    /// Maps each mirrored character to its mirror image.
+    /// Includes all common bracket/quote pairs from BidiMirroring.txt.
+    /// Keys that are not in this map are not considered mirrored.
+    private static let mirrorMap: [Character: Character] = [
+        // Basic ASCII brackets
+        "(": ")",    ")": "(",    // U+0028 / U+0029  parentheses
+        "[": "]",    "]": "[",    // U+005B / U+005D  square brackets
+        "{": "}",    "}": "{",    // U+007B / U+007D  curly brackets
+        "<": ">",    ">": "<",    // U+003C / U+003E  less/greater-than
+        // Guillemets
+        "«": "»",    "»": "«",    // U+00AB / U+00BB  double angle quotes
+        "\u{2039}": "\u{203A}",  "\u{203A}": "\u{2039}",  // single angle quotes
+        // Superscript / subscript parentheses
+        "\u{207D}": "\u{207E}",  "\u{207E}": "\u{207D}",
+        "\u{208D}": "\u{208E}",  "\u{208E}": "\u{208D}",
+        // Ceiling / floor
+        "\u{2308}": "\u{2309}",  "\u{2309}": "\u{2308}",
+        "\u{230A}": "\u{230B}",  "\u{230B}": "\u{230A}",
+        // Angle brackets
+        "\u{2329}": "\u{232A}",  "\u{232A}": "\u{2329}",
+        // Fullwidth variants
+        "\u{FF08}": "\u{FF09}",  "\u{FF09}": "\u{FF08}",
+        "\u{FF1C}": "\u{FF1E}",  "\u{FF1E}": "\u{FF1C}",
+        "\u{FF3B}": "\u{FF3D}",  "\u{FF3D}": "\u{FF3B}",
+        "\u{FF5B}": "\u{FF5D}",  "\u{FF5D}": "\u{FF5B}",
+        // Small variants
+        "\u{FE59}": "\u{FE5A}",  "\u{FE5A}": "\u{FE59}",
+        "\u{FE5B}": "\u{FE5C}",  "\u{FE5C}": "\u{FE5B}",
+        "\u{FE5D}": "\u{FE5E}",  "\u{FE5E}": "\u{FE5D}",
+        "\u{FE64}": "\u{FE65}",  "\u{FE65}": "\u{FE64}",
+        // CJK brackets
+        "\u{3008}": "\u{3009}",  "\u{3009}": "\u{3008}",
+        "\u{300A}": "\u{300B}",  "\u{300B}": "\u{300A}",
+        "\u{3010}": "\u{3011}",  "\u{3011}": "\u{3010}",
+        "\u{3014}": "\u{3015}",  "\u{3015}": "\u{3014}",
+        "\u{3016}": "\u{3017}",  "\u{3017}": "\u{3016}",
+        "\u{3018}": "\u{3019}",  "\u{3019}": "\u{3018}",
+        "\u{301A}": "\u{301B}",  "\u{301B}": "\u{301A}",
+    ]
+
     public static func joinsForward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
         let value = scalar.value
