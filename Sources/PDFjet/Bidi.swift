@@ -12,42 +12,41 @@ import Foundation
  * Please see Example_27.
  */
 public class Bidi {
-/*
- * General,Isolated,End,Middle,Beginning
- */
-private static let forms: [Character] = [
-"\u{0623}","\u{FE83}","\u{FE84}","\u{0623}","\u{0623}",
-"\u{0628}","\u{FE8F}","\u{FE90}","\u{FE92}","\u{FE91}",
-"\u{062A}","\u{FE95}","\u{FE96}","\u{FE98}","\u{FE97}",
-"\u{062B}","\u{FE99}","\u{FE9A}","\u{FE9C}","\u{FE9B}",
-"\u{062C}","\u{FE9D}","\u{FE9E}","\u{FEA0}","\u{FE9F}",
-"\u{062D}","\u{FEA1}","\u{FEA2}","\u{FEA4}","\u{FEA3}",
-"\u{062E}","\u{FEA5}","\u{FEA6}","\u{FEA8}","\u{FEA7}",
-"\u{062F}","\u{FEA9}","\u{FEAA}","\u{062F}","\u{062F}",
-"\u{0630}","\u{FEAB}","\u{FEAC}","\u{0630}","\u{0630}",
-"\u{0631}","\u{FEAD}","\u{FEAE}","\u{0631}","\u{0631}",
-"\u{0632}","\u{FEAF}","\u{FEB0}","\u{0632}","\u{0632}",
-"\u{0633}","\u{FEB1}","\u{FEB2}","\u{FEB4}","\u{FEB3}",
-"\u{0634}","\u{FEB5}","\u{FEB6}","\u{FEB8}","\u{FEB7}",
-"\u{0635}","\u{FEB9}","\u{FEBA}","\u{FEBC}","\u{FEBB}",
-"\u{0636}","\u{FEBD}","\u{FEBE}","\u{FEC0}","\u{FEBF}",
-"\u{0637}","\u{FEC1}","\u{FEC2}","\u{FEC4}","\u{FEC3}",
-"\u{0638}","\u{FEC5}","\u{FEC6}","\u{FEC8}","\u{FEC7}",
-"\u{0639}","\u{FEC9}","\u{FECA}","\u{FECC}","\u{FECB}",
-"\u{063A}","\u{FECD}","\u{FECE}","\u{FED0}","\u{FECF}",
-"\u{0641}","\u{FED1}","\u{FED2}","\u{FED4}","\u{FED3}",
-"\u{0642}","\u{FED5}","\u{FED6}","\u{FED8}","\u{FED7}",
-"\u{0643}","\u{FED9}","\u{FEDA}","\u{FEDC}","\u{FEDB}",
-"\u{0644}","\u{FEDD}","\u{FEDE}","\u{FEE0}","\u{FEDF}",
-"\u{0645}","\u{FEE1}","\u{FEE2}","\u{FEE4}","\u{FEE3}",
-"\u{0646}","\u{FEE5}","\u{FEE6}","\u{FEE8}","\u{FEE7}",
-"\u{0647}","\u{FEE9}","\u{FEEA}","\u{FEEC}","\u{FEEB}",
-"\u{0648}","\u{FEED}","\u{FEEE}","\u{0648}","\u{0648}",
-"\u{064A}","\u{FEF1}","\u{FEF2}","\u{FEF4}","\u{FEF3}",
-"\u{0622}","\u{FE81}","\u{FE82}","\u{0622}","\u{0622}",
-"\u{0629}","\u{FE93}","\u{FE94}","\u{0629}","\u{0629}",
-"\u{0649}","\u{FEEF}","\u{FEF0}","\u{0649}","\u{0649}",
-]
+
+    /* General,Isolated,End,Middle,Beginning */
+    private static let forms: [Character] = [
+        "\u{0623}","\u{FE83}","\u{FE84}","\u{0623}","\u{0623}",
+        "\u{0628}","\u{FE8F}","\u{FE90}","\u{FE92}","\u{FE91}",
+        "\u{062A}","\u{FE95}","\u{FE96}","\u{FE98}","\u{FE97}",
+        "\u{062B}","\u{FE99}","\u{FE9A}","\u{FE9C}","\u{FE9B}",
+        "\u{062C}","\u{FE9D}","\u{FE9E}","\u{FEA0}","\u{FE9F}",
+        "\u{062D}","\u{FEA1}","\u{FEA2}","\u{FEA4}","\u{FEA3}",
+        "\u{062E}","\u{FEA5}","\u{FEA6}","\u{FEA8}","\u{FEA7}",
+        "\u{062F}","\u{FEA9}","\u{FEAA}","\u{062F}","\u{062F}",
+        "\u{0630}","\u{FEAB}","\u{FEAC}","\u{0630}","\u{0630}",
+        "\u{0631}","\u{FEAD}","\u{FEAE}","\u{0631}","\u{0631}",
+        "\u{0632}","\u{FEAF}","\u{FEB0}","\u{0632}","\u{0632}",
+        "\u{0633}","\u{FEB1}","\u{FEB2}","\u{FEB4}","\u{FEB3}",
+        "\u{0634}","\u{FEB5}","\u{FEB6}","\u{FEB8}","\u{FEB7}",
+        "\u{0635}","\u{FEB9}","\u{FEBA}","\u{FEBC}","\u{FEBB}",
+        "\u{0636}","\u{FEBD}","\u{FEBE}","\u{FEC0}","\u{FEBF}",
+        "\u{0637}","\u{FEC1}","\u{FEC2}","\u{FEC4}","\u{FEC3}",
+        "\u{0638}","\u{FEC5}","\u{FEC6}","\u{FEC8}","\u{FEC7}",
+        "\u{0639}","\u{FEC9}","\u{FECA}","\u{FECC}","\u{FECB}",
+        "\u{063A}","\u{FECD}","\u{FECE}","\u{FED0}","\u{FECF}",
+        "\u{0641}","\u{FED1}","\u{FED2}","\u{FED4}","\u{FED3}",
+        "\u{0642}","\u{FED5}","\u{FED6}","\u{FED8}","\u{FED7}",
+        "\u{0643}","\u{FED9}","\u{FEDA}","\u{FEDC}","\u{FEDB}",
+        "\u{0644}","\u{FEDD}","\u{FEDE}","\u{FEE0}","\u{FEDF}",
+        "\u{0645}","\u{FEE1}","\u{FEE2}","\u{FEE4}","\u{FEE3}",
+        "\u{0646}","\u{FEE5}","\u{FEE6}","\u{FEE8}","\u{FEE7}",
+        "\u{0647}","\u{FEE9}","\u{FEEA}","\u{FEEC}","\u{FEEB}",
+        "\u{0648}","\u{FEED}","\u{FEEE}","\u{0648}","\u{0648}",
+        "\u{064A}","\u{FEF1}","\u{FEF2}","\u{FEF4}","\u{FEF3}",
+        "\u{0622}","\u{FE81}","\u{FE82}","\u{0622}","\u{0622}",
+        "\u{0629}","\u{FE93}","\u{FE94}","\u{0629}","\u{0629}",
+        "\u{0649}","\u{FEEF}","\u{FEF0}","\u{0649}","\u{0649}",
+    ]
 
     private static func isArabicLetter(_ ch: Character) -> Bool {
         for i in stride(from: 0, to: forms.count, by: 5) {
@@ -56,6 +55,18 @@ private static let forms: [Character] = [
             }
         }
         return false
+    }
+
+    /// Returns true if the character is a Transparent joining type
+    /// (combining mark / diacritic) that should be skipped when
+    /// determining joining context, and kept attached to its base
+    /// letter during visual reordering.
+    private static func isTransparent(_ ch: Character) -> Bool {
+        guard let scalar = ch.unicodeScalars.first else { return false }
+        let cat = scalar.properties.generalCategory
+        return cat == .nonspacingMark
+            || cat == .enclosingMark
+            || cat == .format
     }
 
     /**
@@ -72,13 +83,10 @@ private static let forms: [Character] = [
         for i in 0..<str.count {
             let ch = str[str.index(str.startIndex, offsetBy: i)]
             if ch == "\u{200E}" {
-                // LRM  U+200E  LEFT-TO-RIGHT MARK  Left-to-right zero-width character
                 rightToLeft = false
                 continue
             }
             if ch == "\u{200F}" || ch == "\u{061C}" {
-                // RLM  U+200F  RIGHT-TO-LEFT MARK  Right-to-left zero-width non-Arabic character
-                // ALM  U+061C  ARABIC LETTER MARK  Right-to-left zero-width Arabic character
                 rightToLeft = true
                 continue
             }
@@ -121,20 +129,53 @@ private static let forms: [Character] = [
         if buf2.count > 0 {
             buf1.append(process(buf2))
         }
+
+        // Convert to array for O(1) indexing (fixes Bug #5)
+        let chars = Array(buf1)
+        let n = chars.count
+
         var buf3 = String()
-        var i: Int = buf1.count - 1
+        var i: Int = n - 1
         while i >= 0 {
-            let ch = buf1[buf1.index(buf1.startIndex, offsetBy: i)]
+            let ch = chars[i]
+
+            // If this is a transparent character (diacritic) with no
+            // base letter to its right (in buf1 order), emit as-is.
+            if isTransparent(ch) {
+                buf3.append(ch)
+                i -= 1
+                continue
+            }
+
+            // Collect trailing diacritics that follow this base letter
+            // in chars (at indices i-1, i-2, ... while transparent).
+            var diacritics: [Character] = []
+            var d = i - 1
+            while d >= 0 {
+                if !isTransparent(chars[d]) { break }
+                diacritics.append(chars[d])
+                d -= 1
+            }
+
             if isArabicLetter(ch) {
-                let prevCh = (i > 0) ? buf1[buf1.index(buf1.startIndex, offsetBy: i - 1)] : "\u{0000}"
-                let nextCh = (i < (buf1.count - 1)) ? buf1[buf1.index(buf1.startIndex, offsetBy: i + 1)] : "\u{0000}"
+                // Find previous non-transparent character (skip diacritics)
+                var prevIdx = d
+                while prevIdx >= 0 {
+                    if !isTransparent(chars[prevIdx]) { break }
+                    prevIdx -= 1
+                }
+                let prevCh: Character = prevIdx >= 0 ? chars[prevIdx] : "\u{0000}"
+
+                // Find next non-transparent character (skip diacritics)
+                var nextIdx = i + 1
+                while nextIdx < n {
+                    if !isTransparent(chars[nextIdx]) { break }
+                    nextIdx += 1
+                }
+                let nextCh: Character = nextIdx < n ? chars[nextIdx] : "\u{0000}"
+
                 for j in stride(from: 0, to: forms.count, by: 5) {
                     if ch == forms[j] {
-                        // A connection on a side requires BOTH letters to participate:
-                        // - Left connection: this letter must join backward (canJoinPrev)
-                        //   AND the previous letter must join forward (prevJoins)
-                        // - Right connection: this letter must join forward (canJoinNext)
-                        //   AND the next letter must join backward (nextJoins)
                         let canJoinPrev = joinsBackward(ch)
                         let canJoinNext = joinsForward(ch)
                         let prevJoins = joinsForward(prevCh)
@@ -144,20 +185,27 @@ private static let forms: [Character] = [
                         let joinsOnRight = canJoinNext && nextJoins
 
                         if (!joinsOnLeft && !joinsOnRight) {
-                            buf3.append(forms[j + 1])   // Isolated
+                            buf3.append(forms[j + 1])
                         } else if (joinsOnLeft && !joinsOnRight) {
-                            buf3.append(forms[j + 2])   // End (Final)
+                            buf3.append(forms[j + 2])
                         } else if (joinsOnLeft && joinsOnRight) {
-                            buf3.append(forms[j + 3])   // Middle (Medial)
+                            buf3.append(forms[j + 3])
                         } else if (!joinsOnLeft && joinsOnRight) {
-                            buf3.append(forms[j + 4])   // Beginning (Initial)
+                            buf3.append(forms[j + 4])
                         }
+                        break
                     }
                 }
             } else {
                 buf3.append(ch)
             }
-            i -= 1
+
+            // Emit diacritics in their original order
+            for dc in diacritics.reversed() {
+                buf3.append(dc)
+            }
+
+            i = d
         }
         return buf3
     }
@@ -186,38 +234,27 @@ private static let forms: [Character] = [
         return false
     }
 
-    /// Returns true if the character joins with the *following* letter
-    /// (i.e., the next letter should take a non-isolated form).
-    /// Joining types D (Dual) and C (Join_Causing) join forward.
-    /// R (Right) only joins backward, so it does NOT join forward.
     public static func joinsForward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
         let value = scalar.value
 
-        // TATWEEL (Join_Causing) — joins both sides
         if value == 0x0640 { return true }
 
-        // Dual_Joining letters — join both sides
-        // Listed by joining group from ArabicShaping.txt:
-        // BEH, DOTLESS BEH WITH 2 DOTS ABOVE, DOTLESS BEH WITH 3 DOTS ABOVE,
-        // HAH variants, SEEN variants, SAD variants, TAH variants, AIN variants,
-        // KEHEH variants, FARSI YEH variants, FEH, QAF, KAF, LAM, MEEM, NOON,
-        // HEH, DOTLESS YEH, YEH, YEH WITH HAMZA
         let dualJoining: Set<UInt32> = [
             0x0628, // BEH
-            0x062A, // DOTLESS BEH WITH 2 DOTS ABOVE (TEH)
-            0x062B, // DOTLESS BEH WITH 3 DOTS ABOVE (THEH)
-            0x062C, // HAH WITH DOT BELOW (JEEM)
+            0x062A, // TEH
+            0x062B, // THEH
+            0x062C, // JEEM
             0x062D, // HAH
-            0x062E, // HAH WITH DOT ABOVE (KHAH)
+            0x062E, // KHAH
             0x0633, // SEEN
-            0x0634, // SEEN WITH 3 DOTS ABOVE (SHEEN)
+            0x0634, // SHEEN
             0x0635, // SAD
-            0x0636, // SAD WITH DOT ABOVE (DAD)
+            0x0636, // DAD
             0x0637, // TAH
-            0x0638, // TAH WITH DOT ABOVE (ZAH)
+            0x0638, // ZAH
             0x0639, // AIN
-            0x063A, // AIN WITH DOT ABOVE (GHAIN)
+            0x063A, // GHAIN
             0x063B, // KEHEH WITH 2 DOTS ABOVE
             0x063C, // KEHEH WITH 3 DOTS BELOW
             0x063D, // FARSI YEH WITH INVERTED V ABOVE
@@ -236,21 +273,14 @@ private static let forms: [Character] = [
         return dualJoining.contains(value)
     }
 
-    /// Returns true if the character joins with the *preceding* letter
-    /// (i.e., the previous letter should take a non-isolated form).
-    /// Joining types D (Dual), C (Join_Causing), and R (Right) all join backward.
     public static func joinsBackward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
         let value = scalar.value
 
-        // TATWEEL (Join_Causing) — joins both sides
         if value == 0x0640 { return true }
 
-        // All Dual_Joining letters also join backward
         if joinsForward(ch) { return true }
 
-        // Right_Joining letters — join backward only
-        // ALEF variants, WAW variants, DAL variants, REH variants, TEH MARBUTA
         let rightJoining: Set<UInt32> = [
             0x0622, // ALEF WITH MADDA ABOVE
             0x0623, // ALEF WITH HAMZA ABOVE
@@ -259,33 +289,14 @@ private static let forms: [Character] = [
             0x0627, // ALEF
             0x0629, // TEH MARBUTA
             0x062F, // DAL
-            0x0630, // DAL WITH DOT ABOVE (THAL)
+            0x0630, // THAL
             0x0631, // REH
-            0x0632, // REH WITH DOT ABOVE (ZAIN)
+            0x0632, // ZAIN
             0x0648, // WAW
-            0x0649, // DOTLESS YEH (ALEF MAKSURA — actually R, see note below)
+            0x0649, // ALEF MAKSURA (DOTLESS YEH)
         ]
 
         return rightJoining.contains(value)
-    }
-
-    /// Returns true if the character is a Transparent joining type
-    /// (combining mark / diacritic) that should be skipped when
-    /// determining joining context, and kept attached to its base
-    /// letter during visual reordering.
-    ///
-    /// Per Unicode ArabicShaping.txt, any code point of General_Category
-    /// Mn, Me, or Cf that is not explicitly assigned a joining type is
-    /// Transparent. We use the scalar's general category for a robust
-    /// check that covers all current and future combining marks.
-    private static func isTransparent(_ ch: Character) -> Bool {
-        // Check every scalar in the grapheme cluster — if the first
-        // scalar is a combining mark, the whole character is transparent.
-        guard let scalar = ch.unicodeScalars.first else { return false }
-        let cat = scalar.properties.generalCategory
-        return cat == .nonspacingMark        // Mn
-            || cat == .enclosingMark         // Me
-            || cat == .format                // Cf
     }
 
     private static func process(_ buf: String) -> String {
