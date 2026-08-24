@@ -46,11 +46,11 @@ public class Bidi {
         "\u{0622}","\u{FE81}","\u{FE82}","\u{0622}","\u{0622}",
         "\u{0629}","\u{FE93}","\u{FE94}","\u{0629}","\u{0629}",
         "\u{0649}","\u{FEEF}","\u{FEF0}","\u{0649}","\u{0649}",
-        "\u{0621}","\u{FE80}","\u{0621}","\u{0621}","\u{0621}",   // HAMZA (non-joining, isolated only)
-        "\u{0624}","\u{FE85}","\u{FE86}","\u{0624}","\u{0624}",   // WAW WITH HAMZA (R)
-        "\u{0625}","\u{FE87}","\u{FE88}","\u{0625}","\u{0625}",   // ALEF WITH HAMZA BELOW (R)
-        "\u{0626}","\u{FE89}","\u{FE8A}","\u{FE8C}","\u{FE8B}",   // YEH WITH HAMZA (D — has all 4 forms)
-        "\u{0627}","\u{FE8D}","\u{FE8E}","\u{0627}","\u{0627}",   // ALEF (R)
+        "\u{0621}","\u{FE80}","\u{0621}","\u{0621}","\u{0621}",
+        "\u{0624}","\u{FE85}","\u{FE86}","\u{0624}","\u{0624}",
+        "\u{0625}","\u{FE87}","\u{FE88}","\u{0625}","\u{0625}",
+        "\u{0626}","\u{FE89}","\u{FE8A}","\u{FE8C}","\u{FE8B}",
+        "\u{0627}","\u{FE8D}","\u{FE8E}","\u{0627}","\u{0627}",
     ]
 
     private static func isArabicLetter(_ ch: Character) -> Bool {
@@ -267,7 +267,8 @@ public class Bidi {
         case "\u{3009}": return "\u{3008}"
         case "\u{300A}": return "\u{300B}"   // CJK 《 》
         case "\u{300B}": return "\u{300A}"
-        case "\u{3010}": return "\u{3011}"   // CJK        case "\u{3011}": return "\u{3010}"
+        case "\u{3010}": return "\u{3011}"   // CJK BLACK LENTICULAR BRACKET
+        case "\u{3011}": return "\u{3010}"
         case "\u{3014}": return "\u{3015}"   // CJK 〔 〕
         case "\u{3015}": return "\u{3014}"
         case "\u{3016}": return "\u{3017}"   // CJK 〖 〗
