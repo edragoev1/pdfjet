@@ -258,8 +258,9 @@ public class TextBox implements Drawable {
      *
      * @param height the specified height.
      */
-    public void setHeight(double height) {
+    public TextBox setHeight(double height) {
         this.height = (float) height;
+        return this;
     }
 
     /**
@@ -267,8 +268,9 @@ public class TextBox implements Drawable {
      *
      * @param height the specified height.
      */
-    public void setHeight(float height) {
+    public TextBox setHeight(float height) {
         this.height = height;
+        return this;
     }
 
     /**
@@ -285,8 +287,9 @@ public class TextBox implements Drawable {
      *
      * @param margin the margin between the text and the box
      */
-    public void setMargin(double margin) {
+    public TextBox setMargin(double margin) {
         this.margin = (float) margin;
+        return this;
     }
 
     /**
@@ -294,8 +297,9 @@ public class TextBox implements Drawable {
      *
      * @param margin the margin between the text and the box
      */
-    public void setMargin(float margin) {
+    public TextBox setMargin(float margin) {
         this.margin = margin;
+        return this;
     }
 
     /**
