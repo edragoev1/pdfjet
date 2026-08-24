@@ -230,9 +230,7 @@ private static let forms: [Character] = [
             0x0645, // MEEM
             0x0646, // NOON
             0x0647, // HEH
-            0x0649, // DOTLESS YEH (ALEF MAKSURA — actually R, see note below)
             0x064A, // YEH
-            0x0626, // DOTLESS YEH WITH HAMZA ABOVE (YEH WITH HAMZA)
         ]
 
         return dualJoining.contains(value)
@@ -265,9 +263,29 @@ private static let forms: [Character] = [
             0x0631, // REH
             0x0632, // REH WITH DOT ABOVE (ZAIN)
             0x0648, // WAW
+            0x0649, // DOTLESS YEH (ALEF MAKSURA — actually R, see note below)
         ]
 
         return rightJoining.contains(value)
+    }
+
+    /// Returns true if the character is a Transparent joining type
+    /// (combining mark / diacritic) that should be skipped when
+    /// determining joining context, and kept attached to its base
+    /// letter during visual reordering.
+    ///
+    /// Per Unicode ArabicShaping.txt, any code point of General_Category
+    /// Mn, Me, or Cf that is not explicitly assigned a joining type is
+    /// Transparent. We use the scalar's general category for a robust
+    /// check that covers all current and future combining marks.
+    private static func isTransparent(_ ch: Character) -> Bool {
+        // Check every scalar in the grapheme cluster — if the first
+        // scalar is a combining mark, the whole character is transparent.
+        guard let scalar = ch.unicodeScalars.first else { return false }
+        let cat = scalar.properties.generalCategory
+        return cat == .nonspacingMark        // Mn
+            || cat == .enclosingMark         // Me
+            || cat == .format                // Cf
     }
 
     private static func process(_ buf: String) -> String {
