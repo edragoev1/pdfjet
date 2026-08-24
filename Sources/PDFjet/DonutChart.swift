@@ -202,11 +202,11 @@ public class DonutChart {
                     r1,
                     angle - slice.angle, angle)
             // In drawOn, after drawSlice and drawLinePointer:
-            if f2 != nil {
+            if f2 != nil && slice.angle >= 15.0 {
                 let pct = Int(slice.angle / 360.0 * 100.0)
                 let label = TextLine(f2!, "\(pct)%")
                 label.setColor(Color.white)
-                let midAngle = (angle - slice.angle + angle) / 2.0 - 90.0
+                let midAngle = angle - slice.angle / 2.0 - 90.0
                 let midR = (r1 + innerR) / 2.0
                 let pos = getPoint(xc, yc, midR, midAngle)
                 label.setLocation(
