@@ -149,27 +149,40 @@ public class DonutChart {
         let r3 = r1 + 15.0
         let p2 = getPoint(xc, yc, r3, midAngle)
 
-        // Horizontal extension — 20pt left or right
-        let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
-        let xEnd: Float = onRightSide ? p2[0] + 20.0 : p2[0] - 20.0
-        let yEnd: Float = p2[1]
-
-        // Draw the pointer line: edge → elbow → horizontal end
+        // Draw the first segment: edge → elbow
         page.setPenColor(Color.black)
         page.drawLine(p1[0], p1[1], p2[0], p2[1])
-        page.drawLine(p2[0], p2[1], xEnd, yEnd)
 
-        // Draw the label text
         if f1 != nil && !text.isEmpty {
+            let textWidth = f1!.stringWidth(text)
+            let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
+
+            // Horizontal line length = text width + small padding
+            let padding: Float = 4.0
+            let lineLength = textWidth + padding
+
+            let xEnd: Float = onRightSide ? p2[0] + lineLength : p2[0] - lineLength
+            let yEnd: Float = p2[1]
+
+            // Draw the horizontal segment
+            page.drawLine(p2[0], p2[1], xEnd, yEnd)
+
+            // Draw the label text just above the horizontal line
             let label = TextLine(f1!, text)
             label.setColor(Color.black)
-            let textWidth = f1!.stringWidth(text)
             if onRightSide {
-                label.setLocation(xEnd + 2.0, yEnd - f1!.getAscent() / 2.0)
+                // Right side: text starts at elbow, reads left-to-right
+                label.setLocation(p2[0] + 2.0, yEnd - f1!.getAscent())
             } else {
-                label.setLocation(xEnd - textWidth - 2.0, yEnd - f1!.getAscent() / 2.0)
+                // Left side: text starts at the line's left tip
+                label.setLocation(xEnd + 2.0, yEnd - f1!.getAscent())
             }
             label.drawOn(page)
+        } else {
+            // No text — just draw a short horizontal stub
+            let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
+            let xEnd: Float = onRightSide ? p2[0] + 20.0 : p2[0] - 20.0
+            page.drawLine(p2[0], p2[1], xEnd, p2[1])
         }
     }
 
