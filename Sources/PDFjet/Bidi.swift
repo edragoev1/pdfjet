@@ -97,29 +97,13 @@ public class Bidi {
             }
             if isArabic(ch) ||
                     isHebrew(ch) ||
-                    ch == "«" || ch == "»" ||
-                    ch == "(" || ch == ")" ||
-                    ch == "[" || ch == "]" {
+                    mirrored(ch) != nil {
                 rightToLeft = true
                 if buf2.count > 0 {
                     buf1.append(process(buf2))
                     buf2 = ""
                 }
-                if ch == "«" {
-                    buf1.append("»")
-                } else if ch == "»" {
-                    buf1.append("«")
-                } else if ch == "(" {
-                    buf1.append(")")
-                } else if ch == ")" {
-                    buf1.append("(")
-                } else if ch == "[" {
-                    buf1.append("]")
-                } else if ch == "]" {
-                    buf1.append("[")
-                } else {
-                    buf1.append(ch)
-                }
+                buf1.append(mirrored(ch) ?? ch)
             } else if isAlphaNumeric(ch) {
                 rightToLeft = false
                 buf2.append(ch)
@@ -236,59 +220,65 @@ public class Bidi {
             || cat == .otherLetter       // Lo
     }
 
-    /// Returns true if the character has the Unicode Bidi_Mirrored property
-    /// and should trigger RTL directionality. Covers all common bracket and
-    /// quotation mark pairs from Unicode BidiMirroring.txt.
-    private static func isMirrored(_ ch: Character) -> Bool {
-        return mirrorMap[ch] != nil
-    }
-
     /// Returns the mirror image of a bidirectionally mirrored character,
-    /// or the character itself if it is not mirrored.
-    /// Data source: Unicode BidiMirroring.txt (Unicode 17.0.0).
-    private static func mirror(_ ch: Character) -> Character {
-        return mirrorMap[ch] ?? ch
+    /// or nil if the character is not mirrored.
+    /// Data source: Unicode BidiMirroring.txt.
+    private static func mirrored(_ ch: Character) -> Character? {
+        switch ch {
+        case "(":  return ")"
+        case ")":  return "("
+        case "[":  return "]"
+        case "]":  return "["
+        case "{":  return "}"
+        case "}":  return "{"
+        case "<":  return ">"
+        case ">":  return "<"
+        case "«":  return "»"
+        case "»":  return "«"
+        case "\u{2039}": return "\u{203A}"   // ‹ ›  single angle quotes
+        case "\u{203A}": return "\u{2039}"
+        case "\u{207D}": return "\u{207E}"   // superscript ( )
+        case "\u{207E}": return "\u{207D}"
+        case "\u{208D}": return "\u{208E}"   // subscript ( )
+        case "\u{208E}": return "\u{208D}"
+        case "\u{2308}": return "\u{2309}"   // ⌈ ⌉  left/right ceiling
+        case "\u{2309}": return "\u{2308}"
+        case "\u{230A}": return "\u{230B}"   // ⌊ ⌋  left/right floor
+        case "\u{230B}": return "\u{230A}"
+        case "\u{2329}": return "\u{232A}"   // ⟨ ⟩  angle brackets
+        case "\u{232A}": return "\u{2329}"
+        case "\u{FF08}": return "\u{FF09}"   // fullwidth ( )
+        case "\u{FF09}": return "\u{FF08}"
+        case "\u{FF1C}": return "\u{FF1E}"   // fullwidth < >
+        case "\u{FF1E}": return "\u{FF1C}"
+        case "\u{FF3B}": return "\u{FF3D}"   // fullwidth [ ]
+        case "\u{FF3D}": return "\u{FF3B}"
+        case "\u{FF5B}": return "\u{FF5D}"   // fullwidth { }
+        case "\u{FF5D}": return "\u{FF5B}"
+        case "\u{FE59}": return "\u{FE5A}"   // small ( )
+        case "\u{FE5A}": return "\u{FE59}"
+        case "\u{FE5B}": return "\u{FE5C}"   // small { }
+        case "\u{FE5C}": return "\u{FE5B}"
+        case "\u{FE5D}": return "\u{FE5E}"   // small tortoise shell
+        case "\u{FE5E}": return "\u{FE5D}"
+        case "\u{FE64}": return "\u{FE65}"   // small < >
+        case "\u{FE65}": return "\u{FE64}"
+        case "\u{3008}": return "\u{3009}"   // CJK 〈 〉
+        case "\u{3009}": return "\u{3008}"
+        case "\u{300A}": return "\u{300B}"   // CJK 《 》
+        case "\u{300B}": return "\u{300A}"
+        case "\u{3010}": return "\u{3011}"   // CJK        case "\u{3011}": return "\u{3010}"
+        case "\u{3014}": return "\u{3015}"   // CJK 〔 〕
+        case "\u{3015}": return "\u{3014}"
+        case "\u{3016}": return "\u{3017}"   // CJK 〖 〗
+        case "\u{3017}": return "\u{3016}"
+        case "\u{3018}": return "\u{3019}"   // CJK 〘 〙
+        case "\u{3019}": return "\u{3018}"
+        case "\u{301A}": return "\u{301B}"   // CJK 〚 〛
+        case "\u{301B}": return "\u{301A}"
+        default:   return nil
+        }
     }
-
-    /// Maps each mirrored character to its mirror image.
-    /// Includes all common bracket/quote pairs from BidiMirroring.txt.
-    /// Keys that are not in this map are not considered mirrored.
-    private static let mirrorMap: [Character: Character] = [
-        // Basic ASCII brackets
-        "(": ")",    ")": "(",    // U+0028 / U+0029  parentheses
-        "[": "]",    "]": "[",    // U+005B / U+005D  square brackets
-        "{": "}",    "}": "{",    // U+007B / U+007D  curly brackets
-        "<": ">",    ">": "<",    // U+003C / U+003E  less/greater-than
-        // Guillemets
-        "«": "»",    "»": "«",    // U+00AB / U+00BB  double angle quotes
-        "\u{2039}": "\u{203A}",  "\u{203A}": "\u{2039}",  // single angle quotes
-        // Superscript / subscript parentheses
-        "\u{207D}": "\u{207E}",  "\u{207E}": "\u{207D}",
-        "\u{208D}": "\u{208E}",  "\u{208E}": "\u{208D}",
-        // Ceiling / floor
-        "\u{2308}": "\u{2309}",  "\u{2309}": "\u{2308}",
-        "\u{230A}": "\u{230B}",  "\u{230B}": "\u{230A}",
-        // Angle brackets
-        "\u{2329}": "\u{232A}",  "\u{232A}": "\u{2329}",
-        // Fullwidth variants
-        "\u{FF08}": "\u{FF09}",  "\u{FF09}": "\u{FF08}",
-        "\u{FF1C}": "\u{FF1E}",  "\u{FF1E}": "\u{FF1C}",
-        "\u{FF3B}": "\u{FF3D}",  "\u{FF3D}": "\u{FF3B}",
-        "\u{FF5B}": "\u{FF5D}",  "\u{FF5D}": "\u{FF5B}",
-        // Small variants
-        "\u{FE59}": "\u{FE5A}",  "\u{FE5A}": "\u{FE59}",
-        "\u{FE5B}": "\u{FE5C}",  "\u{FE5C}": "\u{FE5B}",
-        "\u{FE5D}": "\u{FE5E}",  "\u{FE5E}": "\u{FE5D}",
-        "\u{FE64}": "\u{FE65}",  "\u{FE65}": "\u{FE64}",
-        // CJK brackets
-        "\u{3008}": "\u{3009}",  "\u{3009}": "\u{3008}",
-        "\u{300A}": "\u{300B}",  "\u{300B}": "\u{300A}",
-        "\u{3010}": "\u{3011}",  "\u{3011}": "\u{3010}",
-        "\u{3014}": "\u{3015}",  "\u{3015}": "\u{3014}",
-        "\u{3016}": "\u{3017}",  "\u{3017}": "\u{3016}",
-        "\u{3018}": "\u{3019}",  "\u{3019}": "\u{3018}",
-        "\u{301A}": "\u{301B}",  "\u{301B}": "\u{301A}",
-    ]
 
     public static func joinsForward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
