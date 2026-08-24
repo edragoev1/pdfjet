@@ -21,11 +21,11 @@ public class Example_25 {
         chart.setLocation(300.0, 400.0)
         chart.setR1AndR2(200.0, 120.0)
 
-        chart.addSlice(Slice(90.0,  Color.red,       "Apples",   ""))
-        chart.addSlice(Slice(72.0,  Color.blue,      "Oranges",  ""))
-        chart.addSlice(Slice(108.0, Color.green,     "Bananas",  ""))
-        chart.addSlice(Slice(54.0,  Color.orange,    "Grapes",   ""))
-        chart.addSlice(Slice(36.0,  Color.yellow,    "Lemons",   ""))
+        chart.addSlice(Slice(90.0,  0xE63946,  "Apples",   ""))   // vivid red
+        chart.addSlice(Slice(72.0,  0x457B9D,  "Oranges",  ""))   // steel blue
+        chart.addSlice(Slice(108.0, 0x2A9D8F,  "Bananas",  ""))   // teal green
+        chart.addSlice(Slice(54.0,  0xF4A261,  "Grapes",   ""))   // warm orange
+        chart.addSlice(Slice(36.0,  0xE9C46A,  "Lemons",   ""))   // golden yellow
         chart.drawOn(page)
 
         pdf.complete()
