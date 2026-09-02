@@ -16,11 +16,10 @@ import (
 // we are talking about the coordinates of the center of the point.
 // Please see Example_05.
 type Point struct {
-	x, y  float32
-	r     float32
-	shape int
-	align int
-
+	x, y           float32
+	r              float32
+	shape          int
+	align          int
 	fillColor      [3]float32
 	hasFillColor   bool
 	strokeWidth    float32
@@ -348,13 +347,18 @@ func (point *Point) DrawOn(page *Page) [3]float32 {
 	} else if point.hasFillColor == true && point.hasStrokeColor == false {
 		page.SetBrushColorRGB(point.fillColor)
 		point.pathOperator = pathoperator.Fill
-	} else if point.hasFillColor == false && point.hasStrokeColor != true {
+	} else if point.hasFillColor == false && point.hasStrokeColor == true {
 		page.SetPenColorRGB(point.strokeColor)
 		page.SetPenWidth(point.strokeWidth)
 		point.pathOperator = pathoperator.CloseAndStroke
 	}
+
 	page.DrawPoint(point)
 	page.appendString("Q\n")
 
 	return [3]float32{point.x + point.r, point.y + point.r}
+}
+
+func (point *Point) SetStrokeWidth(strokeWidth float32) {
+	point.strokeWidth = strokeWidth
 }

@@ -238,13 +238,13 @@ func (chart *Chart) DrawOn(page *Page) {
 	// Defensive copy so the user's data is never mutated
 	plotData := make([][]*Point, len(chart.chartData))
 	for i, original := range chart.chartData {
-		copy := make([]*Point, len(original))
+		pointCopy := make([]*Point, len(original))
 		for j, p := range original {
 			// Create a shallow copy of the Point
 			copyPoint := *p
-			copy[j] = &copyPoint
+			pointCopy[j] = &copyPoint
 		}
-		plotData[i] = copy
+		plotData[i] = pointCopy
 	}
 
 	// Translate the point coordinates (on the copies)
@@ -566,13 +566,16 @@ func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *Round {
 
 func (chart *Chart) mean(points []*Point) []float32 {
 	_mean := make([]float32, 2)
-	for i := 0; i < len(points); i++ {
-		point := points[i]
+	n := float32(len(points))
+
+	for _, point := range points {
 		_mean[0] += point.x
 		_mean[1] += point.y
 	}
-	_mean[0] /= float32(len(points))
-	_mean[1] /= float32(len(points))
+
+	_mean[0] /= n
+	_mean[1] /= n
+
 	return _mean
 }
 
