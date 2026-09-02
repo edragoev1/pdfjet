@@ -253,12 +253,40 @@ public class Chart : IDrawable {
         this.xyChart = xyChart;
     }
 
+    public void SetChartBorderWidth(float width) {
+        this.chartBorderWidth = width;
+    }
+
+    public void SetInnerBorderWidth(float width) {
+        this.innerBorderWidth = width;
+    }
+
+    public void SetHGridLineWidth(float width) {
+        this.hGridLineWidth = width;
+    }
+
+    public void SetVGridLineWidth(float width) {
+        this.vGridLineWidth = width;
+    }
+
+    public void SetHGridLinePattern(String pattern) {
+        this.hGridLinePattern = pattern;
+    }
+
+    public void SetVGridLinePattern(String pattern) {
+        this.vGridLinePattern = pattern;
+    }
+
     /**
      * Draws this chart on the specified page.
      *
      * @param page the page to draw this chart on.
      */
     public float[] DrawOn(Page page) {
+        if (chartData == null || chartData.Count == 0) {
+            return new float[] { this.x1 + this.w, this.y1 + this.h };
+        }
+
         page.Append("q\n"); // Save the graphics state
 
         nf.SetMinimumFractionDigits(minFractionDigits);
@@ -277,6 +305,9 @@ public class Chart : IDrawable {
         SetYAxisMinAndMaxChartValues();
         RoundXAxisMinAndMaxValues();
         RoundYAxisMinAndMaxValues();
+
+        if (xMax == xMin) { xMax = xMin + 1f; }
+        if (yMax == yMin) { yMax = yMin + 1f; }
 
         // Draw chart title
         page.DrawString(
@@ -316,9 +347,20 @@ public class Chart : IDrawable {
             DrawYAxisLabels(page);
         }
 
-        // Translate the point coordinates
+        // Create a defensive copy so DrawOn() never mutates the user's data
+        List<List<Point>> plotData = new List<List<Point>>(chartData.Count);
         for (int i = 0; i < chartData.Count; i++) {
-            List<Point> points = chartData[i];
+            List<Point> original = chartData[i];
+            List<Point> copy = new List<Point>(original.Count);
+            for (int j = 0; j < original.Count; j++) {
+                copy.Add(new Point(original[j]));
+            }
+            plotData.Add(copy);
+        }
+
+        // Translate the point coordinates (on the copies)
+        for (int i = 0; i < plotData.Count; i++) {
+            List<Point> points = plotData[i];
             for (int j = 0; j < points.Count; j++) {
                 Point point = points[j];
                 if (xyChart) {
@@ -350,26 +392,27 @@ public class Chart : IDrawable {
             }
         }
 
-        DrawPathsAndPoints(page, chartData);
+        DrawPathsAndPoints(page, plotData);
 
         // Draw the Y axis title
         page.SetBrushColor(Color.black);
         page.SetTextDirection(90);
         page.DrawString(
-                f1,
+                f2,
                 fontSize,
                 yAxisTitle,
-                x1 + f1.GetBodyHeight(f1.GetSize()),
-                y8 - ((y8 - y5) - f1.StringWidth(yAxisTitle)) / 2);
+                x1 + f2.GetBodyHeight(f2.GetSize()),
+                y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2);
 
         // Draw the X axis title
         page.SetTextDirection(0);
+        page.SetBrushColor(Color.black);
         page.DrawString(
-                f1,
+                f2,
                 fontSize,
                 xAxisTitle,
-                x5 + ((x6 - x5) - f1.StringWidth(xAxisTitle)) / 2,
-                y4 - f1.GetBodyHeight(f1.GetSize()) / 2);
+                x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2,
+                y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
         page.SetDefaultStrokeWidth();
         page.SetDefaultStrokePattern();
@@ -530,7 +573,7 @@ public class Chart : IDrawable {
                 }
             }
             for (int i = 0; i < points.Count; i++) {
-		        point = points[i];
+                        point = points[i];
                 if (point.GetShape() != Point.INVISIBLE) {
                     page.SetPenWidth(point.strokeWidth);
                     page.SetStrokeDashPattern(point.strokePattern);
@@ -543,55 +586,46 @@ public class Chart : IDrawable {
     }
 
     private Round RoundMaxAndMinValues(float maxValue, float minValue) {
-        int maxExponent = (int) Math.Floor(Math.Log(maxValue) / Math.Log(10));
-        maxValue *= (float) Math.Pow(10, -maxExponent);
+        // Work with the span (range) instead of just maxValue.
+        // This handles negative values, zero crossings, and all-positive ranges.
+        float span = maxValue - minValue;
+        if (span <= 0f) { span = 1f; }  // guard against flat data
 
-        if      (maxValue > 9.00f) { maxValue = 10.0f; }
-        else if (maxValue > 8.00f) { maxValue = 9.00f; }
-        else if (maxValue > 7.00f) { maxValue = 8.00f; }
-        else if (maxValue > 6.00f) { maxValue = 7.00f; }
-        else if (maxValue > 5.00f) { maxValue = 6.00f; }
-        else if (maxValue > 4.00f) { maxValue = 5.00f; }
-        else if (maxValue > 3.50f) { maxValue = 4.00f; }
-        else if (maxValue > 3.00f) { maxValue = 3.50f; }
-        else if (maxValue > 2.50f) { maxValue = 3.00f; }
-        else if (maxValue > 2.00f) { maxValue = 2.50f; }
-        else if (maxValue > 1.75f) { maxValue = 2.00f; }
-        else if (maxValue > 1.50f) { maxValue = 1.75f; }
-        else if (maxValue > 1.25f) { maxValue = 1.50f; }
-        else if (maxValue > 1.00f) { maxValue = 1.25f; }
-        else                       { maxValue = 1.00f; }
+        int exponent = (int) Math.Floor(Math.Log(span) / Math.Log(10));
+        float normalizedSpan = span * (float) Math.Pow(10, -exponent);
+
+        // Snap the normalized span up to a "nice" value
+        // and pick a grid line count that gives clean step sizes.
+        float niceSpan;
+        int numOfGridLines;
+
+        if      (normalizedSpan > 9.00f) { niceSpan = 10.0f; numOfGridLines = 10; }
+        else if (normalizedSpan > 8.00f) { niceSpan =  9.00f; numOfGridLines =  9; }
+        else if (normalizedSpan > 7.00f) { niceSpan =  8.00f; numOfGridLines =  8; }
+        else if (normalizedSpan > 6.00f) { niceSpan =  7.00f; numOfGridLines =  7; }
+        else if (normalizedSpan > 5.00f) { niceSpan =  6.00f; numOfGridLines =  6; }
+        else if (normalizedSpan > 4.00f) { niceSpan =  5.00f; numOfGridLines =  5; }
+        else if (normalizedSpan > 3.50f) { niceSpan =  4.00f; numOfGridLines =  8; }
+        else if (normalizedSpan > 3.00f) { niceSpan =  3.50f; numOfGridLines =  7; }
+        else if (normalizedSpan > 2.50f) { niceSpan =  3.00f; numOfGridLines =  6; }
+        else if (normalizedSpan > 2.00f) { niceSpan =  2.50f; numOfGridLines =  5; }
+        else if (normalizedSpan > 1.75f) { niceSpan =  2.00f; numOfGridLines =  8; }
+        else if (normalizedSpan > 1.50f) { niceSpan =  1.75f; numOfGridLines =  7; }
+        else if (normalizedSpan > 1.25f) { niceSpan =  1.50f; numOfGridLines =  6; }
+        else if (normalizedSpan > 1.00f) { niceSpan =  1.25f; numOfGridLines =  5; }
+        else                             { niceSpan =  1.00f; numOfGridLines = 10; }
+
+        // Scale back to the original magnitude
+        float step = niceSpan * (float) Math.Pow(10, exponent) / numOfGridLines;
 
         Round round = new Round();
 
-        if      (maxValue == 10.0f) { round.numOfGridLines = 10; }
-        else if (maxValue == 9.00f) { round.numOfGridLines =  9; }
-        else if (maxValue == 8.00f) { round.numOfGridLines =  8; }
-        else if (maxValue == 7.00f) { round.numOfGridLines =  7; }
-        else if (maxValue == 6.00f) { round.numOfGridLines =  6; }
-        else if (maxValue == 5.00f) { round.numOfGridLines =  5; }
-        else if (maxValue == 4.00f) { round.numOfGridLines =  8; }
-        else if (maxValue == 3.50f) { round.numOfGridLines =  7; }
-        else if (maxValue == 3.00f) { round.numOfGridLines =  6; }
-        else if (maxValue == 2.50f) { round.numOfGridLines =  5; }
-        else if (maxValue == 2.00f) { round.numOfGridLines =  8; }
-        else if (maxValue == 1.75f) { round.numOfGridLines =  7; }
-        else if (maxValue == 1.50f) { round.numOfGridLines =  6; }
-        else if (maxValue == 1.25f) { round.numOfGridLines =  5; }
-        else if (maxValue == 1.00f) { round.numOfGridLines = 10; }
+        // Round max UP and min DOWN to the nearest step multiple
+        round.maxValue = (float) Math.Ceiling(maxValue / step) * step;
+        round.minValue = (float) Math.Floor(minValue / step) * step;
 
-        round.maxValue = maxValue * ((float) Math.Pow(10, maxExponent));
-        float step = round.maxValue / round.numOfGridLines;
-        float temp = round.maxValue;
-        round.numOfGridLines = 0;
-        while (true) {
-            round.numOfGridLines++;
-            temp -= step;
-            if (temp <= minValue) {
-                round.minValue = temp;
-                break;
-            }
-        }
+        // Recount grid lines based on the actual rounded range
+        round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
 
         return round;
     }
@@ -603,8 +637,8 @@ public class Chart : IDrawable {
             _mean[0] += point.x;
             _mean[1] += point.y;
         }
-        _mean[0] /= points.Count - 1;
-        _mean[1] /= points.Count - 1;
+        _mean[0] /= points.Count;
+        _mean[1] /= points.Count;
         return _mean;
     }
 
