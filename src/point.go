@@ -87,6 +87,16 @@ func NewControlPointY(x, y float32) *Point {
 	return point
 }
 
+// Copy returns a new Point with the same properties as this point.
+// Because all Point fields are value types, the returned copy is
+// fully independent of the original — modifying it will not affect
+// the original point and vice versa.
+// @return a copy of this point.
+func (point *Point) Copy() *Point {
+	cp := *point
+	return &cp
+}
+
 // SetLocation sets the location (x, y) of this point.
 // @param x the x coordinate of this point when drawn on the page.
 // @param y the y coordinate of this point when drawn on the page.
