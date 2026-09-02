@@ -95,6 +95,35 @@ public class Point implements Drawable {
     }
 
     /**
+     *  Copy constructor. Creates a deep copy of the specified point,
+     *  including all visual properties, URI action, and text attributes.
+     *
+     *  @param point the point to copy.
+     */
+    public Point(Point point) {
+        this.x = point.x;
+        this.y = point.y;
+        this.r = point.r;
+        this.shape = point.shape;
+        this.align = point.align;
+        this.fillColor = point.fillColor != null
+                ? new float[] {point.fillColor[0], point.fillColor[1], point.fillColor[2]}
+                : null;
+        this.strokeWidth = point.strokeWidth;
+        this.strokeColor = point.strokeColor != null
+                ? new float[] {point.strokeColor[0], point.strokeColor[1], point.strokeColor[2]}
+                : null;
+        this.strokePattern = point.strokePattern;
+        this.pathOperator = point.pathOperator;
+        this.controlPoint = point.controlPoint;
+        this.drawPath = point.drawPath;
+        this.text = point.text;
+        this.textColor = point.textColor;
+        this.textDirection = point.textDirection;
+        this.uri = point.uri;
+    }
+
+    /**
      *  Constructor for creating point objects.
      *
      *  @param x the x coordinate of this point when drawn on the page.

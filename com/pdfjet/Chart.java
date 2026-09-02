@@ -287,6 +287,11 @@ public class Chart implements Drawable {
      *  @param page the page to draw this chart on.
      */
     public float[] drawOn(Page page) throws Exception {
+        // Add at the top of drawOn(), after line 301
+        if (chartData == null || chartData.isEmpty()) {
+            return new float[] { this.x1 + this.w, this.y1 + this.h };
+        }
+
         nf.setMinimumFractionDigits(minFractionDigits);
         nf.setMaximumFractionDigits(maxFractionDigits);
 
@@ -345,15 +350,25 @@ public class Chart implements Drawable {
             drawYAxisLabels(page);
         }
 
-        // Translate the point coordinates
+        // Create a defensive copy so drawOn() never mutates the user's data
+        List<List<Point>> plotData = new ArrayList<List<Point>>(chartData.size());
         for (int i = 0; i < chartData.size(); i++) {
-            List<Point> points = chartData.get(i);
-            for (int j = 0; j < points.size(); j++) {
-                Point point = points.get(j);
+            List<Point> original = chartData.get(i);
+            List<Point> copy = new ArrayList<Point>(original.size());
+            for (Point p : original) {
+                copy.add(new Point(p));   // uses the new copy constructor
+            }
+            plotData.add(copy);
+        }
+
+        // Translate the COPIES from data space to page space
+        for (int i = 0; i < plotData.size(); i++) {
+            List<Point> points = plotData.get(i);
+            for (Point point : points) {
                 if (xyChart) {
                     point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-                    point.strokeWidth *= (x6 - x5) / w;
+                    point.setStrokeWidth(point.getStrokeWidth() * (x6 - x5) / w);
                 } else {
                     point.x = x5 + point.x * (x6 - x5) / w;
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
@@ -379,12 +394,12 @@ public class Chart implements Drawable {
             }
         }
 
-        drawPathsAndPoints(page, chartData);
+        // Draw using the copies
+        drawPathsAndPoints(page, plotData);
 
         // Draw the Y axis title
         page.setBrushColor(Color.black);
         page.setTextDirection(90);
-
         page.drawString(
                 f1,
                 fontSize,
@@ -394,8 +409,7 @@ public class Chart implements Drawable {
 
         // Draw the X axis title
         page.setTextDirection(0);
-
-        page.setBrushColor(Color.white);
+        page.setBrushColor(Color.black);
         page.drawString(
                 f1,
                 fontSize,
@@ -638,8 +652,8 @@ public class Chart implements Drawable {
             _mean[0] += point.x;
             _mean[1] += point.y;
         }
-        _mean[0] /= points.size() - 1;
-        _mean[1] /= points.size() - 1;
+        _mean[0] /= points.size();
+        _mean[1] /= points.size();
         return _mean;
     }
 
@@ -655,7 +669,6 @@ public class Chart implements Drawable {
 
     /**
      * devsq() returns the sum of squares of deviations.
-     *
      */
     private float devsq(List<Point> points) {
         float _devsq = 0f;
