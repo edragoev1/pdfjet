@@ -864,7 +864,6 @@ func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator string) {
 // @param p the point.
 func (page *Page) DrawPoint(p *Point) {
 	if p.shape != shape.Invisible {
-		page.SetPenWidth(p.strokeWidth)
 		list := []*Point{}
 		switch p.shape {
 		case shape.Circle:
