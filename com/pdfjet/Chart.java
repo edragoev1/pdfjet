@@ -309,6 +309,9 @@ public class Chart implements Drawable {
         roundXAxisMinAndMaxValues();
         roundYAxisMinAndMaxValues();
 
+        if (xMax == xMin) { xMax = xMin + 1f; }
+        if (yMax == yMin) { yMax = yMin + 1f; }
+
         // Draw chart title
         page.drawString(
                 f1,
