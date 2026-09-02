@@ -91,8 +91,7 @@ func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font
 	tableData := make([][]*pdfjet.Cell, 0)
 	points := chart.GetData()[0]
 
-	for i := 0; i < len(points); i++ {
-		point := points[i]
+	for _, point := range points {
 		if point.GetShape() != shape.Circle {
 			tableRow := make([]*pdfjet.Cell, 0)
 
@@ -193,20 +192,16 @@ func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
 		if point.GetX() > 1.25 {
 			point.SetShape(shape.RightArrow)
 			point.SetStrokeColor(color.Black)
-		}
-		if point.GetY() > 80.0 {
+		} else if point.GetY() > 80.0 {
 			point.SetShape(shape.UpArrow)
 			point.SetStrokeColor(color.Blue)
-		}
-		if point.GetText() == "France" {
+		} else if point.GetText() == "France" {
 			point.SetShape(shape.Multiply)
 			point.SetStrokeColor(color.Black)
-		}
-		if point.GetText() == "Canada" {
+		} else if point.GetText() == "Canada" {
 			point.SetShape(shape.Box)
 			point.SetStrokeColor(color.DarkOliveGreen)
-		}
-		if strings.HasPrefix(point.GetText(), "United States") {
+		} else if strings.HasPrefix(point.GetText(), "United States") {
 			point.SetShape(shape.Star)
 			point.SetStrokeColor(color.Red)
 		}

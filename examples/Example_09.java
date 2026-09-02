@@ -141,20 +141,16 @@ final public class Example_09 {
                     if (point.getX() > 1.25f) {
                         point.setShape(Point.RIGHT_ARROW);
                         point.setStrokeColor(Color.black);
-                    }
-                    if (point.getY() > 80f) {
+                    } else if (point.getY() > 80f) {
                         point.setShape(Point.UP_ARROW);
                         point.setStrokeColor(Color.blue);
-                    }
-                    if (point.getText().equals("France")) {
+                    } else if (point.getText().equals("France")) {
                         point.setShape(Point.MULTIPLY);
                         point.setStrokeColor(Color.black);
-                    }
-                    if (point.getText().equals("Canada")) {
+                    } else if (point.getText().equals("Canada")) {
                         point.setShape(Point.BOX);
                         point.setStrokeColor(Color.darkolivegreen);
-                    }
-                    if (point.getText().startsWith("United States")) {
+                    } else if (point.getText().startsWith("United States")) {
                         point.setShape(Point.STAR);
                         point.setStrokeColor(Color.red);
                     }
