@@ -2,41 +2,27 @@
  * Chart.cs
  *
  * Copyright (c) 2026 PDFjet Software
- * Licensed under the MIT License. See LICENSE file in the project root.
+ * Licensed under the MIT License.
  */
 using System;
 using System.Collections.Generic;
 
 /**
- * Used to create XY chart objects and draw them on a page.
- *
- * Please see Example_09.
+ * XY chart renderer for PDF pages. See Example_09.
  */
 namespace PDFjet.NET {
 public class Chart : IDrawable {
     private float w = 300f;
     private float h = 200f;
 
-    private float x1;
-    private float y1;
-    private float x2;
-    private float y2;
-    private float x3;
-    private float y3;
-    private float x4;
-    private float y4;
-    private float x5;
-    private float y5;
-    private float x6;
-    private float y6;
-    private float x7;
-    private float y7;
-    private float x8;
-    private float y8;
+    // Outer chart rectangle (x1,y1 = top-left, clockwise)
+    private float x1, y1, x2, y2, x3, y3, x4, y4;
+    // Inner plot area (x5,y5 = top-left, clockwise)
+    private float x5, y5, x6, y6, x7, y7, x8, y8;
 
+    // Data axis ranges (auto-computed if grid lines == 0)
     private float xMax = System.Single.MinValue;
     private float xMin = System.Single.MaxValue;
-
     private float yMax = System.Single.MinValue;
     private float yMin = System.Single.MaxValue;
 
@@ -50,21 +36,23 @@ public class Chart : IDrawable {
     private bool drawXAxisLabels = true;
     private bool drawYAxisLabels = true;
 
-    private bool xyChart = true;
+    private bool xyChart = true;  // true = XY scatter, false = category mode
 
+    // Grid line styling (width 0 = invisible, pattern default = dotted)
     private float hGridLineWidth = 0f;
     private float vGridLineWidth = 0f;
-
     private String hGridLinePattern = "[1 1] 0";
     private String vGridLinePattern = "[1 1] 0";
 
     private float chartBorderWidth = 0f;
     private float innerBorderWidth = 0f;
 
+    // Label number formatting
     private NumberFormat nf = null;
     private int minFractionDigits = 2;
     private int maxFractionDigits = 2;
 
+    // f1 = chart title font, f2 = axis title/label font
     private Font f1 = null;
     private Font f2 = null;
     private float fontSize = 8f;
@@ -72,10 +60,10 @@ public class Chart : IDrawable {
     private List<List<Point>> chartData = null;
 
     /**
-     * Create a XY chart object.
+     * Creates an XY chart.
      *
-     * @param f1 the font used for the chart title.
-     * @param f2 the font used for the X and Y axis titles.
+     * @param f1 font for the chart title.
+     * @param f2 font for axis titles and labels.
      */
     public Chart(Font f1, Font f2) {
         this.f1 = f1;
@@ -83,196 +71,153 @@ public class Chart : IDrawable {
         nf = NumberFormat.GetInstance();
     }
 
-    /**
-     * Sets the title of the chart.
-     *
-     * @param title the title text.
-     */
+    /** Sets the chart title. */
     public void SetTitle(String title) {
         this.title = title;
     }
 
-    /**
-     * Sets the title for the X axis.
-     *
-     * @param title the X axis title.
-     */
+    /** Sets the X axis title. */
     public void SetXAxisTitle(String title) {
         this.xAxisTitle = title;
     }
 
-    /**
-     * Sets the title for the Y axis.
-     *
-     * @param title the Y axis title.
-     */
+    /** Sets the Y axis title. */
     public void SetYAxisTitle(String title) {
         this.yAxisTitle = title;
     }
 
-    /**
-     * Sets the data that will be used to draw this chart.
-     *
-     * @param chartData the data.
-     */
+    /** Sets the chart data (list of series, each a list of points). */
     public void SetData(List<List<Point>> chartData) {
         this.chartData = chartData;
     }
 
-    /**
-     * Returns the chart data.
-     *
-     * @return the chart data.
-     */
+    /** Returns the chart data. */
     public List<List<Point>> GetData() {
         return chartData;
     }
 
-    /**
-     * Sets the position of this chart on the page.
-     *
-     * @param x the x coordinate of the top left corner of this chart when drawn on the page.
-     * @param y the y coordinate of the top left corner of this chart when drawn on the page.
-     */
+    /** Sets the top-left position of this chart on the page. */
     public void SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
     }
 
-    /**
-     * Sets the position of this chart on the page.
-     *
-     * @param x the x coordinate of the top left corner of this chart when drawn on the page.
-     * @param y the y coordinate of the top left corner of this chart when drawn on the page.
-     */
+    /** Sets the top-left position of this chart on the page. */
     public void SetPosition(float x, float y) {
         SetLocation(x, y);
     }
 
-    /**
-     * Sets the location of this chart on the page.
-     *
-     * @param x the x coordinate of the top left corner of this chart when drawn on the page.
-     * @param y the y coordinate of the top left corner of this chart when drawn on the page.
-     */
+    /** Sets the top-left position. Returns this for chaining. */
     public Chart SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
     }
 
+    /** Sets the top-left position. Returns this for chaining. */
     public Chart SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
 
-    /**
-     * Sets the size of this chart.
-     *
-     * @param w the width of this chart.
-     * @param h the height of this chart.
-     */
+    /** Sets the chart dimensions. */
     public void SetSize(double w, double h) {
         SetSize((float) w, (float) h);
     }
 
-    /**
-     * Sets the size of this chart.
-     *
-     * @param w the width of this chart.
-     * @param h the height of this chart.
-     */
+    /** Sets the chart dimensions. */
     public void SetSize(float w, float h) {
         this.w = w;
         this.h = h;
     }
 
+    /** Sets the font size for axis labels. */
     public void SetFontSize(float fontSize) {
         this.fontSize = fontSize;
     }
 
-    /**
-     * Sets the minimum number of fractions digits do display for the X and Y axis labels.
-     *
-     * @param minFractionDigits the minimum number of fraction digits.
-     */
+    /** Sets minimum decimal places for axis labels. */
     public void SetMinimumFractionDigits(int minFractionDigits) {
         this.minFractionDigits = minFractionDigits;
     }
 
-    /**
-     * Sets the maximum number of fractions digits do display for the X and Y axis labels.
-     *
-     * @param maxFractionDigits the maximum number of fraction digits.
-     */
+    /** Sets maximum decimal places for axis labels. */
     public void SetMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
     }
 
     /**
-     * Calculates the Slope of a trend line given a list of points.
-     * See Example_09.
+     * Calculates the slope of a trend line (OLS). See Example_09.
      *
-     * @param points the list of points.
-     * @return the Slope float value.
+     * @param points the data points.
+     * @return the slope.
      */
     public float Slope(List<Point> points) {
         return (Covar(points) / Devsq(points) * (points.Count - 1));
     }
 
     /**
-     * Calculates the Intercept of a trend line given a list of points.
-     * See Example_09.
+     * Calculates the intercept of a trend line (OLS). See Example_09.
      *
-     * @param points the list of points.
-     * @return the Intercept float value.
+     * @param points the data points.
+     * @param slope the pre-computed slope.
+     * @return the intercept.
      */
     public float Intercept(List<Point> points, double slope) {
         return Intercept(points, (float) slope);
     }
 
     /**
-     * Calculates the Intercept of a trend line given a list of points.
-     * See Example_09.
+     * Calculates the intercept of a trend line (OLS). See Example_09.
      *
-     * @param points the list of points.
-     * @return the Intercept float value.
+     * @param points the data points.
+     * @param slope the pre-computed slope.
+     * @return the intercept.
      */
     public float Intercept(List<Point> points, float slope) {
         float[] _mean = Mean(points);
         return (_mean[1] - slope * _mean[0]);
     }
 
+    /** Toggles drawing of X axis labels. */
     public void SetDrawXAxisLabels(bool drawXAxisLabels) {
         this.drawXAxisLabels = drawXAxisLabels;
     }
 
+    /** Toggles drawing of Y axis labels. */
     public void SetDrawYAxisLabels(bool drawYAxisLabels) {
         this.drawYAxisLabels = drawYAxisLabels;
     }
 
+    /** Sets XY scatter mode (true) or category mode (false). */
     public void SetXYChart(bool xyChart) {
         this.xyChart = xyChart;
     }
 
+    /** Sets the outer chart border width (0 = invisible). */
     public void SetChartBorderWidth(float width) {
         this.chartBorderWidth = width;
     }
 
+    /** Sets the inner plot area border width (0 = invisible). */
     public void SetInnerBorderWidth(float width) {
         this.innerBorderWidth = width;
     }
 
+    /** Sets the horizontal grid line width (0 = invisible). */
     public void SetHGridLineWidth(float width) {
         this.hGridLineWidth = width;
     }
 
+    /** Sets the vertical grid line width (0 = invisible). */
     public void SetVGridLineWidth(float width) {
         this.vGridLineWidth = width;
     }
 
+    /** Sets the horizontal grid line dash pattern (e.g. "[1 1] 0"). */
     public void SetHGridLinePattern(String pattern) {
         this.hGridLinePattern = pattern;
     }
 
+    /** Sets the vertical grid line dash pattern (e.g. "[1 1] 0"). */
     public void SetVGridLinePattern(String pattern) {
         this.vGridLinePattern = pattern;
     }
@@ -280,36 +225,38 @@ public class Chart : IDrawable {
     /**
      * Draws this chart on the specified page.
      *
-     * @param page the page to draw this chart on.
+     * @param page the page to draw on.
+     * @return the bottom-right corner coordinates [x, y].
      */
     public float[] DrawOn(Page page) {
         if (chartData == null || chartData.Count == 0) {
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
 
-        page.Append("q\n"); // Save the graphics state
+        page.Append("q\n"); // Save graphics state
 
         nf.SetMinimumFractionDigits(minFractionDigits);
         nf.SetMaximumFractionDigits(maxFractionDigits);
 
+        // Compute outer rectangle corners
         x2 = x1 + w;
         y2 = y1;
-
         x3 = x2;
         y3 = y1 + h;
-
         x4 = x1;
         y4 = y3;
 
+        // Compute and round axis ranges
         SetXAxisMinAndMaxChartValues();
         SetYAxisMinAndMaxChartValues();
         RoundXAxisMinAndMaxValues();
         RoundYAxisMinAndMaxValues();
 
+        // Guard against flat data (all same X or Y)
         if (xMax == xMin) { xMax = xMin + 1f; }
         if (yMax == yMin) { yMax = yMin + 1f; }
 
-        // Draw chart title
+        // Draw chart title (centered, top)
         page.DrawString(
                 f1,
                 fontSize,
@@ -317,6 +264,7 @@ public class Chart : IDrawable {
                 x1 + ((w - f1.StringWidth(title)) / 2),
                 y1 + 1.5f * f1.GetBodyHeight(f1.GetSize()));
 
+        // Compute margins and inner plot area
         float topMargin = 2.5f * f1.GetBodyHeight(f1.GetSize());
         float leftMargin = GetLongestAxisYLabelWidth() + 2f * f2.GetBodyHeight(f2.GetSize());
         float rightMargin = 2f * f2.GetBodyHeight(f2.GetSize());
@@ -324,13 +272,10 @@ public class Chart : IDrawable {
 
         x5 = x1 + leftMargin;
         y5 = y1 + topMargin;
-
         x6 = x2 - rightMargin;
         y6 = y5;
-
         x7 = x6;
         y7 = y3 - bottomMargin;
-
         x8 = x5;
         y8 = y7;
 
@@ -347,7 +292,7 @@ public class Chart : IDrawable {
             DrawYAxisLabels(page);
         }
 
-        // Create a defensive copy so DrawOn() never mutates the user's data
+        // Defensive copy so the user's data is never mutated
         List<List<Point>> plotData = new List<List<Point>>(chartData.Count);
         for (int i = 0; i < chartData.Count; i++) {
             List<Point> original = chartData[i];
@@ -358,7 +303,7 @@ public class Chart : IDrawable {
             plotData.Add(copy);
         }
 
-        // Translate the point coordinates (on the copies)
+        // Translate data coordinates to page coordinates (on the copies)
         for (int i = 0; i < plotData.Count; i++) {
             List<Point> points = plotData[i];
             for (int j = 0; j < points.Count; j++) {
@@ -394,7 +339,7 @@ public class Chart : IDrawable {
 
         DrawPathsAndPoints(page, plotData);
 
-        // Draw the Y axis title
+        // Draw Y axis title (rotated 90 degrees)
         page.SetBrushColor(Color.black);
         page.SetTextDirection(90);
         page.DrawString(
@@ -404,7 +349,7 @@ public class Chart : IDrawable {
                 x1 + f2.GetBodyHeight(f2.GetSize()),
                 y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2);
 
-        // Draw the X axis title
+        // Draw X axis title
         page.SetTextDirection(0);
         page.SetBrushColor(Color.black);
         page.DrawString(
@@ -418,11 +363,12 @@ public class Chart : IDrawable {
         page.SetDefaultStrokePattern();
         page.SetPenColor(Color.black);
 
-        page.Append("Q\n"); // Restore the graphics state
+        page.Append("Q\n"); // Restore graphics state
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};
     }
 
+    /** Returns the width of the widest Y axis label (for left margin). */
     private float GetLongestAxisYLabelWidth() {
         float minLabelWidth =
                 f2.StringWidth(nf.Format(yMin) + "0");
@@ -434,6 +380,7 @@ public class Chart : IDrawable {
         return minLabelWidth;
     }
 
+    /** Scans all data points to find X axis min/max (skipped if manual). */
     private void SetXAxisMinAndMaxChartValues() {
         if (xAxisGridLines != 0) {
             return;
@@ -450,6 +397,7 @@ public class Chart : IDrawable {
         }
     }
 
+    /** Scans all data points to find Y axis min/max (skipped if manual). */
     private void SetYAxisMinAndMaxChartValues() {
         if (yAxisGridLines != 0) {
             return;
@@ -466,6 +414,7 @@ public class Chart : IDrawable {
         }
     }
 
+    /** Rounds X axis range to "nice" values and sets grid line count. */
     private void RoundXAxisMinAndMaxValues() {
         Round round = RoundMaxAndMinValues(xMax, xMin);
         xMax = round.maxValue;
@@ -473,6 +422,7 @@ public class Chart : IDrawable {
         xAxisGridLines = round.numOfGridLines;
     }
 
+    /** Rounds Y axis range to "nice" values and sets grid line count. */
     private void RoundYAxisMinAndMaxValues() {
         Round round = RoundMaxAndMinValues(yMax, yMin);
         yMax = round.maxValue;
@@ -480,6 +430,7 @@ public class Chart : IDrawable {
         yAxisGridLines = round.numOfGridLines;
     }
 
+    /** Draws the outer chart border. */
     private void DrawChartBorder(Page page) {
         page.SetPenWidth(chartBorderWidth);
         page.SetPenColor(Color.black);
@@ -490,6 +441,7 @@ public class Chart : IDrawable {
         page.ClosePath();
     }
 
+    /** Draws the inner plot area border. */
     private void DrawInnerBorder(Page page) {
         page.SetPenWidth(innerBorderWidth);
         page.SetPenColor(Color.black);
@@ -500,6 +452,7 @@ public class Chart : IDrawable {
         page.ClosePath();
     }
 
+    /** Draws horizontal grid lines across the plot area. */
     private void DrawHorizontalGridLines(Page page) {
         page.SetPenWidth(hGridLineWidth);
         page.SetPenColor(Color.black);
@@ -513,6 +466,7 @@ public class Chart : IDrawable {
         }
     }
 
+    /** Draws vertical grid lines across the plot area. */
     private void DrawVerticalGridLines(Page page) {
         page.SetPenWidth(vGridLineWidth);
         page.SetPenColor(Color.black);
@@ -526,6 +480,7 @@ public class Chart : IDrawable {
         }
     }
 
+    /** Draws X axis labels (one per grid line interval). */
     private void DrawXAxisLabels(Page page) {
         float x = x5;
         float y = y8 + f2.GetBodyHeight(f2.GetSize());
@@ -538,6 +493,7 @@ public class Chart : IDrawable {
         }
     }
 
+    /** Draws Y axis labels (one per grid line interval). */
     private void DrawYAxisLabels(Page page) {
         float x = x5 - GetLongestAxisYLabelWidth();
         float y = y8 + f2.GetAscent(fontSize) / 3;
@@ -550,6 +506,7 @@ public class Chart : IDrawable {
         }
     }
 
+    /** Draws connecting paths, point markers, and point text. */
     private void DrawPathsAndPoints(
             Page page, List<List<Point>> chartData) {
         foreach (List<Point> points in chartData) {
@@ -585,17 +542,19 @@ public class Chart : IDrawable {
         }
     }
 
+    /**
+     * Rounds axis range to "nice" values for clean grid lines.
+     * Uses the span (max - min) to support negative values and
+     * zero crossings. Rounds max up and min down to step multiples.
+     */
     private Round RoundMaxAndMinValues(float maxValue, float minValue) {
-        // Work with the span (range) instead of just maxValue.
-        // This handles negative values, zero crossings, and all-positive ranges.
         float span = maxValue - minValue;
         if (span <= 0f) { span = 1f; }  // guard against flat data
 
         int exponent = (int) Math.Floor(Math.Log(span) / Math.Log(10));
         float normalizedSpan = span * (float) Math.Pow(10, -exponent);
 
-        // Snap the normalized span up to a "nice" value
-        // and pick a grid line count that gives clean step sizes.
+        // Snap span up to a "nice" value with paired grid line count
         float niceSpan;
         int numOfGridLines;
 
@@ -615,21 +574,20 @@ public class Chart : IDrawable {
         else if (normalizedSpan > 1.00f) { niceSpan =  1.25f; numOfGridLines =  5; }
         else                             { niceSpan =  1.00f; numOfGridLines = 10; }
 
-        // Scale back to the original magnitude
         float step = niceSpan * (float) Math.Pow(10, exponent) / numOfGridLines;
 
         Round round = new Round();
 
-        // Round max UP and min DOWN to the nearest step multiple
+        // Round max up, min down to nearest step multiple
         round.maxValue = (float) Math.Ceiling(maxValue / step) * step;
         round.minValue = (float) Math.Floor(minValue / step) * step;
 
-        // Recount grid lines based on the actual rounded range
         round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
 
         return round;
     }
 
+    /** Returns [mean_x, mean_y] for the given points. */
     private float[] Mean(List<Point> points) {
         float[] _mean = new float[2];
         for (int i = 0; i < points.Count; i++) {
@@ -642,6 +600,7 @@ public class Chart : IDrawable {
         return _mean;
     }
 
+    /** Returns the covariance of x and y. */
     private float Covar(List<Point> points) {
         float covariance = 0f;
         float[] _mean = Mean(points);
@@ -652,9 +611,7 @@ public class Chart : IDrawable {
         return (covariance / (points.Count - 1));
     }
 
-    /**
-     * Devsq() returns the sum of squares of deviations.
-     */
+    /** Returns the sum of squared deviations of x from mean_x. */
     private float Devsq(List<Point> points) {
         float _devsq = 0f;
         float[] _mean = Mean(points);
@@ -666,11 +623,8 @@ public class Chart : IDrawable {
     }
 
     /**
-     * Sets xMin and xMax for the X axis and the number of X grid lines.
-     *
-     * @param xMin for the X axis.
-     * @param xMax for the X axis.
-     * @param xAxisGridLines the number of X axis grid lines.
+     * Manually sets X axis range and grid line count.
+     * Skips auto-computation when grid lines > 0.
      */
     public void SetXAxisMinMax(float xMin, float xMax, int xAxisGridLines) {
         this.xMin = xMin;
@@ -679,16 +633,13 @@ public class Chart : IDrawable {
     }
 
     /**
-     * Sets yMin and yMax for the Y axis and the number of Y grid lines.
-     *
-     * @param yMin for the Y axis.
-     * @param yMax for the Y axis.
-     * @param yAxisGridLines the number of Y axis grid lines.
+     * Manually sets Y axis range and grid line count.
+     * Skips auto-computation when grid lines > 0.
      */
     public void SetYAxisMinMax(float yMin, float yMax, int yAxisGridLines) {
         this.yMin = yMin;
         this.yMax = yMax;
         this.yAxisGridLines = yAxisGridLines;
     }
-}   // End of Chart.cs
-}   // End of namespace PDFjet.NET
+}
+}
