@@ -47,6 +47,32 @@ type Chart struct {
 	maxFractionDigits              int
 }
 
+// RoundingRule defines a rounding threshold and its corresponding output values
+type RoundingRule struct {
+	threshold      float32
+	roundedValue   float32
+	numOfGridLines int
+}
+
+// roundingRules defines the thresholds and corresponding rounded values and grid lines
+var roundingRules = []RoundingRule{
+	{9.00, 10.0, 10},
+	{8.00, 9.0, 9},
+	{7.00, 8.0, 8},
+	{6.00, 7.0, 7},
+	{5.00, 6.0, 6},
+	{4.00, 5.0, 5},
+	{3.50, 4.0, 8},
+	{3.00, 3.5, 7},
+	{2.50, 3.0, 6},
+	{2.00, 2.5, 5},
+	{1.75, 2.0, 8},
+	{1.50, 1.75, 7},
+	{1.25, 1.50, 6},
+	{1.00, 1.25, 5},
+	{0.00, 1.0, 10}, // Default for values <= 1.00
+}
+
 // NewChart creates XY chart objects.
 // @param f1 the font used for the chart title.
 // @param f2 the font used for the X and Y axis titles.
@@ -136,27 +162,27 @@ func (chart *Chart) Intercept(points []*Point, slope float32) float32 {
 	return _mean[1] - slope*_mean[0]
 }
 
-// SetDrawXAxisLines -- TODO:
+// SetDrawXAxisLines sets whether to draw horizontal grid lines on the chart.
 func (chart *Chart) SetDrawXAxisLines(drawXAxisLines bool) {
 	chart.drawXAxisLines = drawXAxisLines
 }
 
-// SetDrawYAxisLines -- TODO:
+// SetDrawYAxisLines sets whether to draw vertical grid lines on the chart.
 func (chart *Chart) SetDrawYAxisLines(drawYAxisLines bool) {
 	chart.drawYAxisLines = drawYAxisLines
 }
 
-// SetDrawXAxisLabels -- TODO:
+// SetDrawXAxisLabels sets whether to draw X axis labels on the chart.
 func (chart *Chart) SetDrawXAxisLabels(drawXAxisLabels bool) {
 	chart.drawXAxisLabels = drawXAxisLabels
 }
 
-// SetDrawYAxisLabels -- TODO:
+// SetDrawYAxisLabels sets whether to draw Y axis labels on the chart.
 func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) {
 	chart.drawYAxisLabels = drawYAxisLabels
 }
 
-// SetXYChart -- TODO:
+// SetXYChart sets whether this is an XY chart (true) or a bar chart (false).
 func (chart *Chart) SetXYChart(xyChart bool) {
 	chart.xyChart = xyChart
 }
@@ -286,12 +312,18 @@ func (chart *Chart) DrawOn(page *Page) {
 }
 
 func (chart *Chart) getLongestAxisYLabelWidth() float32 {
-	minLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf("%.2f", chart.yMin)+"0")
-	maxLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf("%.2f", chart.yMax)+"0")
+	format := chart.formatString()
+	minLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf(format, chart.yMin)+"0")
+	maxLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf(format, chart.yMax)+"0")
 	if maxLabelWidth > minLabelWidth {
 		return maxLabelWidth
 	}
 	return minLabelWidth
+}
+
+// formatString returns the format string based on min/max fraction digits
+func (chart *Chart) formatString() string {
+	return fmt.Sprintf("%%.%df", chart.maxFractionDigits)
 }
 
 func (chart *Chart) setXAxisMinAndMaxChartValues() {
@@ -394,12 +426,13 @@ func (chart *Chart) drawVerticalGridLines(page *Page) {
 
 // DrawXAxisLabels draws the X axis labels.
 func (chart *Chart) DrawXAxisLabels(page *Page) {
+	format := chart.formatString()
 	x := chart.x5
 	y := chart.y8 + chart.f2.bodyHeight
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
-		label := fmt.Sprintf("%.2f", chart.xMin+((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
+		label := fmt.Sprintf(format, chart.xMin+((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
 		page.drawString(
 			chart.f2, chart.f2.size, label, x-(chart.f2.StringWidth(chart.f2.size, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += step
@@ -408,12 +441,13 @@ func (chart *Chart) DrawXAxisLabels(page *Page) {
 
 // DrawYAxisLabels draws the Y axis labels.
 func (chart *Chart) DrawYAxisLabels(page *Page) {
+	format := chart.formatString()
 	x := chart.x5 - chart.getLongestAxisYLabelWidth()
 	y := chart.y8 + chart.f2.ascent/3
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.yAxisGridLines + 1); i++ {
-		label := fmt.Sprintf("%.2f", chart.yMin+((chart.yMax-chart.yMin)/float32(chart.yAxisGridLines))*float32(i))
+		label := fmt.Sprintf(format, chart.yMin+((chart.yMax-chart.yMin)/float32(chart.yAxisGridLines))*float32(i))
 		page.drawString(chart.f2, chart.f2.size, label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 		y -= step
 	}
@@ -453,76 +487,27 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 	}
 }
 
+// roundMaxAndMinValues rounds the max and min values according to predefined rounding rules.
+// This function normalizes the max value to a range [1, 10), applies rounding rules from the
+// lookup table, and then rescales back to the original magnitude.
 func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *Round {
+	// Calculate the exponent (order of magnitude)
 	maxExponent := int(math.Floor(math.Log(float64(maxValue))) / float64(math.Log(10)))
+	// Normalize maxValue to [1, 10) range
 	maxValue *= float32(math.Pow(10, float64(-maxExponent)))
 
-	if maxValue > 9.00 {
-		maxValue = 10.0
-	} else if maxValue > 8.00 {
-		maxValue = 9.00
-	} else if maxValue > 7.00 {
-		maxValue = 8.00
-	} else if maxValue > 6.00 {
-		maxValue = 7.00
-	} else if maxValue > 5.00 {
-		maxValue = 6.00
-	} else if maxValue > 4.00 {
-		maxValue = 5.00
-	} else if maxValue > 3.50 {
-		maxValue = 4.00
-	} else if maxValue > 3.00 {
-		maxValue = 3.50
-	} else if maxValue > 2.50 {
-		maxValue = 3.00
-	} else if maxValue > 2.00 {
-		maxValue = 2.50
-	} else if maxValue > 1.75 {
-		maxValue = 2.00
-	} else if maxValue > 1.50 {
-		maxValue = 1.75
-	} else if maxValue > 1.25 {
-		maxValue = 1.50
-	} else if maxValue > 1.00 {
-		maxValue = 1.25
-	} else {
-		maxValue = 1.00
-	}
-
+	// Apply rounding rules using lookup table
 	round := NewRound()
 
-	if maxValue == 10.0 {
-		round.numOfGridLines = 10
-	} else if maxValue == 9.00 {
-		round.numOfGridLines = 9
-	} else if maxValue == 8.00 {
-		round.numOfGridLines = 8
-	} else if maxValue == 7.00 {
-		round.numOfGridLines = 7
-	} else if maxValue == 6.00 {
-		round.numOfGridLines = 6
-	} else if maxValue == 5.00 {
-		round.numOfGridLines = 5
-	} else if maxValue == 4.00 {
-		round.numOfGridLines = 8
-	} else if maxValue == 3.50 {
-		round.numOfGridLines = 7
-	} else if maxValue == 3.00 {
-		round.numOfGridLines = 6
-	} else if maxValue == 2.50 {
-		round.numOfGridLines = 5
-	} else if maxValue == 2.00 {
-		round.numOfGridLines = 8
-	} else if maxValue == 1.75 {
-		round.numOfGridLines = 7
-	} else if maxValue == 1.50 {
-		round.numOfGridLines = 6
-	} else if maxValue == 1.25 {
-		round.numOfGridLines = 5
-	} else if maxValue == 1.00 {
-		round.numOfGridLines = 10
+	for _, rule := range roundingRules {
+		if maxValue > rule.threshold {
+			maxValue = rule.roundedValue
+			round.numOfGridLines = rule.numOfGridLines
+			break
+		}
 	}
 
+	// Rescale back to original magnitude
 	round.maxValue = maxValue * float32(math.Pow(float64(10), float64(maxExponent)))
 	step := round.maxValue / float32(round.numOfGridLines)
 	temp := round.maxValue
