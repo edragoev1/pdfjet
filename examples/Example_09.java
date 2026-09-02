@@ -135,6 +135,7 @@ final public class Example_09 {
                     point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
                     point.setX((float) (Double.valueOf(cols[5].replace(",", "")) / population));
                     point.setY((float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
+
                     point.setRadius(2f);
 
                     if (point.getX() > 1.25f) {
