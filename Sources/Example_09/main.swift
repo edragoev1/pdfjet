@@ -178,20 +178,16 @@ public func getData(
             if point.getX() > 1.25 {
                 point.setShape(Point.RIGHT_ARROW)
                 point.setStrokeColor(Color.black)
-            }
-            if point.getY() > 80.0 {
+            } else if point.getY() > 80.0 {
                 point.setShape(Point.UP_ARROW)
                 point.setStrokeColor(Color.blue)
-            }
-            if point.getText() == "France" {
+            } else if point.getText() == "France" {
                 point.setShape(Point.MULTIPLY)
                 point.setStrokeColor(Color.black)
-            }
-            if point.getText() == "Canada" {
+            } else if point.getText() == "Canada" {
                 point.setShape(Point.BOX)
                 point.setStrokeColor(Color.darkolivegreen)
-            }
-            if point.getText() == "United States" {
+            } else if point.getText() == "United States" {
                 point.setShape(Point.STAR)
                 point.setStrokeColor(Color.red)
             }
