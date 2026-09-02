@@ -281,6 +281,30 @@ public class Chart implements Drawable {
         this.xyChart = xyChart;
     }
 
+    public void setChartBorderWidth(float width) {
+        this.chartBorderWidth = width;
+    }
+
+    public void setInnerBorderWidth(float width) {
+        this.innerBorderWidth = width;
+    }
+
+    public void setHGridLineWidth(float width) {
+        this.hGridLineWidth = width;
+    }
+
+    public void setVGridLineWidth(float width) {
+        this.vGridLineWidth = width;
+    }
+
+    public void setHGridLinePattern(String pattern) {
+        this.hGridLinePattern = pattern;
+    }
+
+    public void setVGridLinePattern(String pattern) {
+        this.vGridLinePattern = pattern;
+    }
+
     /**
      *  Draws this chart on the specified page.
      *
@@ -404,21 +428,21 @@ public class Chart implements Drawable {
         page.setBrushColor(Color.black);
         page.setTextDirection(90);
         page.drawString(
-                f1,
+                f2,
                 fontSize,
                 yAxisTitle,
-                x1 + f1.bodyHeight,
-                y8 - ((y8 - y5) - f1.stringWidth(yAxisTitle)) / 2);
+                x1 + f2.bodyHeight,
+                y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2);
 
         // Draw the X axis title
         page.setTextDirection(0);
         page.setBrushColor(Color.black);
         page.drawString(
-                f1,
+                f2,
                 fontSize,
                 xAxisTitle,
-                x5 + ((x6 - x5) - f1.stringWidth(xAxisTitle)) / 2,
-                y4 - f1.bodyHeight / 2);
+                x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2,
+                y4 - f2.bodyHeight / 2);
 
         page.setDefaultLineWidth();
         page.setDefaultLinePattern();
@@ -595,55 +619,46 @@ public class Chart implements Drawable {
     }
 
     private Round roundMaxAndMinValues(float maxValue, float minValue) {
-        int maxExponent = (int) Math.floor(Math.log(maxValue) / Math.log(10));
-        maxValue *= (float) Math.pow(10, -maxExponent);
+        // Work with the span (range) instead of just maxValue.
+        // This handles negative values, zero crossings, and all-positive ranges.
+        float span = maxValue - minValue;
+        if (span <= 0f) { span = 1f; }  // guard against flat data
 
-        if      (maxValue > 9.00f) { maxValue = 10.0f; }
-        else if (maxValue > 8.00f) { maxValue = 9.00f; }
-        else if (maxValue > 7.00f) { maxValue = 8.00f; }
-        else if (maxValue > 6.00f) { maxValue = 7.00f; }
-        else if (maxValue > 5.00f) { maxValue = 6.00f; }
-        else if (maxValue > 4.00f) { maxValue = 5.00f; }
-        else if (maxValue > 3.50f) { maxValue = 4.00f; }
-        else if (maxValue > 3.00f) { maxValue = 3.50f; }
-        else if (maxValue > 2.50f) { maxValue = 3.00f; }
-        else if (maxValue > 2.00f) { maxValue = 2.50f; }
-        else if (maxValue > 1.75f) { maxValue = 2.00f; }
-        else if (maxValue > 1.50f) { maxValue = 1.75f; }
-        else if (maxValue > 1.25f) { maxValue = 1.50f; }
-        else if (maxValue > 1.00f) { maxValue = 1.25f; }
-        else                       { maxValue = 1.00f; }
+        int exponent = (int) Math.floor(Math.log(span) / Math.log(10));
+        float normalizedSpan = span * (float) Math.pow(10, -exponent);
+
+        // Snap the normalized span up to a "nice" value
+        // and pick a grid line count that gives clean step sizes.
+        float niceSpan;
+        int numOfGridLines;
+
+        if      (normalizedSpan > 9.00f) { niceSpan = 10.0f; numOfGridLines = 10; }
+        else if (normalizedSpan > 8.00f) { niceSpan =  9.00f; numOfGridLines =  9; }
+        else if (normalizedSpan > 7.00f) { niceSpan =  8.00f; numOfGridLines =  8; }
+        else if (normalizedSpan > 6.00f) { niceSpan =  7.00f; numOfGridLines =  7; }
+        else if (normalizedSpan > 5.00f) { niceSpan =  6.00f; numOfGridLines =  6; }
+        else if (normalizedSpan > 4.00f) { niceSpan =  5.00f; numOfGridLines =  5; }
+        else if (normalizedSpan > 3.50f) { niceSpan =  4.00f; numOfGridLines =  8; }
+        else if (normalizedSpan > 3.00f) { niceSpan =  3.50f; numOfGridLines =  7; }
+        else if (normalizedSpan > 2.50f) { niceSpan =  3.00f; numOfGridLines =  6; }
+        else if (normalizedSpan > 2.00f) { niceSpan =  2.50f; numOfGridLines =  5; }
+        else if (normalizedSpan > 1.75f) { niceSpan =  2.00f; numOfGridLines =  8; }
+        else if (normalizedSpan > 1.50f) { niceSpan =  1.75f; numOfGridLines =  7; }
+        else if (normalizedSpan > 1.25f) { niceSpan =  1.50f; numOfGridLines =  6; }
+        else if (normalizedSpan > 1.00f) { niceSpan =  1.25f; numOfGridLines =  5; }
+        else                             { niceSpan =  1.00f; numOfGridLines = 10; }
+
+        // Scale back to the original magnitude
+        float step = niceSpan * (float) Math.pow(10, exponent) / numOfGridLines;
 
         Round round = new Round();
 
-        if      (maxValue == 10.0f) { round.numOfGridLines = 10; }
-        else if (maxValue == 9.00f) { round.numOfGridLines =  9; }
-        else if (maxValue == 8.00f) { round.numOfGridLines =  8; }
-        else if (maxValue == 7.00f) { round.numOfGridLines =  7; }
-        else if (maxValue == 6.00f) { round.numOfGridLines =  6; }
-        else if (maxValue == 5.00f) { round.numOfGridLines =  5; }
-        else if (maxValue == 4.00f) { round.numOfGridLines =  8; }
-        else if (maxValue == 3.50f) { round.numOfGridLines =  7; }
-        else if (maxValue == 3.00f) { round.numOfGridLines =  6; }
-        else if (maxValue == 2.50f) { round.numOfGridLines =  5; }
-        else if (maxValue == 2.00f) { round.numOfGridLines =  8; }
-        else if (maxValue == 1.75f) { round.numOfGridLines =  7; }
-        else if (maxValue == 1.50f) { round.numOfGridLines =  6; }
-        else if (maxValue == 1.25f) { round.numOfGridLines =  5; }
-        else if (maxValue == 1.00f) { round.numOfGridLines = 10; }
+        // Round max UP and min DOWN to the nearest step multiple
+        round.maxValue = (float) Math.ceil(maxValue / step) * step;
+        round.minValue = (float) Math.floor(minValue / step) * step;
 
-        round.maxValue = maxValue * ((float) Math.pow(10, maxExponent));
-        float step = round.maxValue / round.numOfGridLines;
-        float temp = round.maxValue;
-        round.numOfGridLines = 0;
-        while (true) {
-            round.numOfGridLines++;
-            temp -= step;
-            if (temp <= minValue) {
-                round.minValue = temp;
-                break;
-            }
-        }
+        // Recount grid lines based on the actual rounded range
+        round.numOfGridLines = Math.round((round.maxValue - round.minValue) / step);
 
         return round;
     }
