@@ -189,7 +189,6 @@ func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
 		point.SetY(float32(internet / population * 100))
 
 		point.SetRadius(2.0)
-		point.SetStrokeWidth(1.0)
 
 		if point.GetX() > 1.25 {
 			point.SetShape(shape.RightArrow)
