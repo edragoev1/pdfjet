@@ -47,32 +47,6 @@ type Chart struct {
 	maxFractionDigits              int
 }
 
-// RoundingRule defines a rounding threshold and its corresponding output values
-type RoundingRule struct {
-	threshold      float32
-	roundedValue   float32
-	numOfGridLines int
-}
-
-// roundingRules defines the thresholds and corresponding rounded values and grid lines
-var roundingRules = []RoundingRule{
-	{9.00, 10.0, 10},
-	{8.00, 9.0, 9},
-	{7.00, 8.0, 8},
-	{6.00, 7.0, 7},
-	{5.00, 6.0, 6},
-	{4.00, 5.0, 5},
-	{3.50, 4.0, 8},
-	{3.00, 3.5, 7},
-	{2.50, 3.0, 6},
-	{2.00, 2.5, 5},
-	{1.75, 2.0, 8},
-	{1.50, 1.75, 7},
-	{1.25, 1.50, 6},
-	{1.00, 1.25, 5},
-	{0.00, 1.0, 10}, // Default for values <= 1.00
-}
-
 // NewChart creates XY chart objects.
 // @param f1 the font used for the chart title.
 // @param f2 the font used for the X and Y axis titles.
@@ -182,7 +156,7 @@ func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) {
 	chart.drawYAxisLabels = drawYAxisLabels
 }
 
-// SetXYChart sets whether this is an XY chart (true) or a bar chart (false).
+// SetXYChart sets whether this is an XY chart (true) or a category chart (false).
 func (chart *Chart) SetXYChart(xyChart bool) {
 	chart.xyChart = xyChart
 }
@@ -190,6 +164,11 @@ func (chart *Chart) SetXYChart(xyChart bool) {
 // DrawOn draws chart on the specified page.
 // @param page the page to draw chart on.
 func (chart *Chart) DrawOn(page *Page) {
+	// Guard against null or empty data
+	if chart.chartData == nil || len(chart.chartData) == 0 {
+		return
+	}
+
 	chart.x2 = chart.x1 + chart.w
 	chart.y2 = chart.y1
 
@@ -203,6 +182,14 @@ func (chart *Chart) DrawOn(page *Page) {
 	chart.setYAxisMinAndMaxChartValues()
 	chart.roundXAxisMinAndMaxValues()
 	chart.roundYAxisMinAndMaxValues()
+
+	// Guard against flat data (all same X or Y)
+	if chart.xMax == chart.xMin {
+		chart.xMax = chart.xMin + 1.0
+	}
+	if chart.yMax == chart.yMin {
+		chart.yMax = chart.yMin + 1.0
+	}
 
 	// Draw chart title
 	page.drawString(
@@ -248,8 +235,20 @@ func (chart *Chart) DrawOn(page *Page) {
 		chart.DrawYAxisLabels(page)
 	}
 
-	// Translate the point coordinates
-	for _, points := range chart.chartData {
+	// Defensive copy so the user's data is never mutated
+	plotData := make([][]*Point, len(chart.chartData))
+	for i, original := range chart.chartData {
+		copy := make([]*Point, len(original))
+		for j, p := range original {
+			// Create a shallow copy of the Point
+			copyPoint := *p
+			copy[j] = &copyPoint
+		}
+		plotData[i] = copy
+	}
+
+	// Translate the point coordinates (on the copies)
+	for _, points := range plotData {
 		for _, point := range points {
 			if chart.xyChart {
 				point.x = chart.x5 + (point.x-chart.xMin)*(chart.x6-chart.x5)/(chart.xMax-chart.xMin)
@@ -281,7 +280,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		}
 	}
 
-	chart.drawPathsAndPoints(page, chart.chartData)
+	chart.drawPathsAndPoints(page, plotData)
 
 	// Draw the Y axis title
 	page.SetBrushColor(color.Black)
@@ -311,6 +310,10 @@ func (chart *Chart) DrawOn(page *Page) {
 	page.SetPenColor(color.Black)
 }
 
+func (chart *Chart) formatString() string {
+	return fmt.Sprintf("%%.%df", chart.maxFractionDigits)
+}
+
 func (chart *Chart) getLongestAxisYLabelWidth() float32 {
 	format := chart.formatString()
 	minLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf(format, chart.yMin)+"0")
@@ -319,11 +322,6 @@ func (chart *Chart) getLongestAxisYLabelWidth() float32 {
 		return maxLabelWidth
 	}
 	return minLabelWidth
-}
-
-// formatString returns the format string based on min/max fraction digits
-func (chart *Chart) formatString() string {
-	return fmt.Sprintf("%%.%df", chart.maxFractionDigits)
 }
 
 func (chart *Chart) setXAxisMinAndMaxChartValues() {
@@ -487,46 +485,88 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 	}
 }
 
-// roundMaxAndMinValues rounds the max and min values according to predefined rounding rules.
-// This function normalizes the max value to a range [1, 10), applies rounding rules from the
-// lookup table, and then rescales back to the original magnitude.
+// roundMaxAndMinValues rounds the axis range to "nice" values for clean grid lines.
+// Uses the span (max - min) to support negative values and zero crossings.
+// Rounds max up and min down to step multiples, then recomputes grid lines
+// to ensure they match the final rounded range.
 func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *Round {
-	// Calculate the exponent (order of magnitude)
-	maxExponent := int(math.Floor(math.Log(float64(maxValue))) / float64(math.Log(10)))
-	// Normalize maxValue to [1, 10) range
-	maxValue *= float32(math.Pow(10, float64(-maxExponent)))
+	span := maxValue - minValue
+	if span <= 0 {
+		span = 1.0 // Guard against flat data
+	}
 
-	// Apply rounding rules using lookup table
+	exponent := int(math.Floor(math.Log(float64(span)) / math.Log(10)))
+	normalizedSpan := span * float32(math.Pow(10, float64(-exponent)))
+
+	// Snap span up to a "nice" value with paired grid line count
+	var niceSpan float32
+	var numOfGridLines int
+
+	if normalizedSpan > 9.00 {
+		niceSpan = 10.0
+		numOfGridLines = 10
+	} else if normalizedSpan > 8.00 {
+		niceSpan = 9.00
+		numOfGridLines = 9
+	} else if normalizedSpan > 7.00 {
+		niceSpan = 8.00
+		numOfGridLines = 8
+	} else if normalizedSpan > 6.00 {
+		niceSpan = 7.00
+		numOfGridLines = 7
+	} else if normalizedSpan > 5.00 {
+		niceSpan = 6.00
+		numOfGridLines = 6
+	} else if normalizedSpan > 4.00 {
+		niceSpan = 5.00
+		numOfGridLines = 5
+	} else if normalizedSpan > 3.50 {
+		niceSpan = 4.00
+		numOfGridLines = 8
+	} else if normalizedSpan > 3.00 {
+		niceSpan = 3.50
+		numOfGridLines = 7
+	} else if normalizedSpan > 2.50 {
+		niceSpan = 3.00
+		numOfGridLines = 6
+	} else if normalizedSpan > 2.00 {
+		niceSpan = 2.50
+		numOfGridLines = 5
+	} else if normalizedSpan > 1.75 {
+		niceSpan = 2.00
+		numOfGridLines = 8
+	} else if normalizedSpan > 1.50 {
+		niceSpan = 1.75
+		numOfGridLines = 7
+	} else if normalizedSpan > 1.25 {
+		niceSpan = 1.50
+		numOfGridLines = 6
+	} else if normalizedSpan > 1.00 {
+		niceSpan = 1.25
+		numOfGridLines = 5
+	} else {
+		niceSpan = 1.00
+		numOfGridLines = 10
+	}
+
+	// Scale back to original magnitude and compute step
+	step := niceSpan * float32(math.Pow(10, float64(exponent))) / float32(numOfGridLines)
+
 	round := NewRound()
 
-	for _, rule := range roundingRules {
-		if maxValue > rule.threshold {
-			maxValue = rule.roundedValue
-			round.numOfGridLines = rule.numOfGridLines
-			break
-		}
-	}
+	// Round max up, min down to nearest step multiple
+	round.maxValue = float32(math.Ceil(float64(maxValue/step))) * step
+	round.minValue = float32(math.Floor(float64(minValue/step))) * step
 
-	// Rescale back to original magnitude
-	round.maxValue = maxValue * float32(math.Pow(float64(10), float64(maxExponent)))
-	step := round.maxValue / float32(round.numOfGridLines)
-	temp := round.maxValue
-	round.numOfGridLines = 0
-	for {
-		round.numOfGridLines++
-		temp -= step
-		if temp <= minValue {
-			round.minValue = temp
-			break
-		}
-	}
+	// Recount grid lines from actual rounded range
+	round.numOfGridLines = int(math.Round(float64((round.maxValue - round.minValue) / step)))
 
 	return round
 }
 
 func (chart *Chart) mean(points []*Point) []float32 {
 	_mean := make([]float32, 2)
-	for i := range points {
+	for i := 0; i < len(points); i++ {
 		point := points[i]
 		_mean[0] += point.x
 		_mean[1] += point.y
