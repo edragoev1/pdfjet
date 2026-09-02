@@ -541,13 +541,13 @@ func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *Round {
 
 func (chart *Chart) mean(points []*Point) []float32 {
 	_mean := make([]float32, 2)
-	for i := 0; i < len(points); i++ {
+	for i := range points {
 		point := points[i]
 		_mean[0] += point.x
 		_mean[1] += point.y
 	}
-	_mean[0] /= float32(len(points) - 1)
-	_mean[1] /= float32(len(points) - 1)
+	_mean[0] /= float32(len(points))
+	_mean[1] /= float32(len(points))
 	return _mean
 }
 
