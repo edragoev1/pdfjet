@@ -24,10 +24,10 @@ type AES256 struct{}
 // Returns: The encrypted 32-byte File Encryption Key.
 func (a *AES256) EncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error) {
 	if fileEncryptionKey == nil || len(fileEncryptionKey) != 32 {
-		return nil, errors.New("File Encryption Key must be 32 bytes long")
+		return nil, errors.New("file Encryption Key must be 32 bytes long")
 	}
 	if key == nil || len(key) != 32 {
-		return nil, errors.New("The encryption key must be 32 bytes long")
+		return nil, errors.New("the encryption key must be 32 bytes long")
 	}
 
 	// Create AES cipher
@@ -55,7 +55,7 @@ func (a *AES256) EncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error
 // Returns: A byte array containing the IV prepended to the AES-256-CBC encrypted data.
 func (a *AES256) Encrypt(data, key []byte) ([]byte, error) {
 	if key == nil || len(key) != 32 {
-		return nil, errors.New("The encryption key must be 32 bytes long")
+		return nil, errors.New("the encryption key must be 32 bytes long")
 	}
 
 	// Create AES cipher
@@ -91,7 +91,7 @@ func (a *AES256) Encrypt(data, key []byte) ([]byte, error) {
 // Returns: The encrypted data.
 func (a *AES256) EncryptECB(data, key []byte) ([]byte, error) {
 	if key == nil || len(key) != 32 {
-		return nil, errors.New("The encryption key must be 32 bytes long")
+		return nil, errors.New("the encryption key must be 32 bytes long")
 	}
 
 	// Create AES cipher
@@ -102,7 +102,7 @@ func (a *AES256) EncryptECB(data, key []byte) ([]byte, error) {
 
 	// ECB mode requires that data length is a multiple of block size
 	if len(data)%aes.BlockSize != 0 {
-		return nil, errors.New("Data length must be a multiple of the block size for ECB mode")
+		return nil, errors.New("data length must be a multiple of the block size for ECB mode")
 	}
 
 	// Encrypt each block separately (ECB mode)
@@ -124,18 +124,18 @@ func pkcs7Pad(data []byte, blockSize int) []byte {
 	return append(data, padText...)
 }
 
-// Helper function for backward compatibility - static method style
+// EncryptWithZeroIV helper function for backward compatibility - static method style
 func EncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error) {
-	aes := &AES256{}
-	return aes.EncryptWithZeroIV(fileEncryptionKey, key)
+	aes256 := &AES256{}
+	return aes256.EncryptWithZeroIV(fileEncryptionKey, key)
 }
 
 func Encrypt(data, key []byte) ([]byte, error) {
-	aes := &AES256{}
-	return aes.Encrypt(data, key)
+	aes256 := &AES256{}
+	return aes256.Encrypt(data, key)
 }
 
 func EncryptECB(data, key []byte) ([]byte, error) {
-	aes := &AES256{}
-	return aes.EncryptECB(data, key)
+	aes256 := &AES256{}
+	return aes256.EncryptECB(data, key)
 }
