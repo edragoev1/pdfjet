@@ -473,9 +473,9 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 		}
 		for _, point := range points {
 			if point.GetShape() != shape.Invisible {
+				page.SetPenColorRGB(point.strokeColor)
 				page.SetPenWidth(point.strokeWidth)
 				page.SetStrokeDashPattern(point.strokePattern)
-				page.SetPenColorRGB(point.strokeColor)
 				page.SetBrushColorRGB(point.fillColor)
 				page.DrawPoint(point)
 			}

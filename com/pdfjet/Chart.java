@@ -563,10 +563,10 @@ public class Chart implements Drawable {
             }
             for (Point point : points) {
                 if (point.getShape() != Point.INVISIBLE) {
+                    page.setPenColor(point.strokeColor);
                     page.setPenWidth(point.strokeWidth);
                     page.setStrokeDashPattern(point.strokePattern);
                     page.setBrushColor(point.fillColor);
-                    page.setPenColor(point.strokeColor);
                     page.drawPoint(point);
                 }
             }

@@ -528,10 +528,10 @@ public class Chart : IDrawable {
             }
             foreach (Point point in points) {
                 if (point.GetShape() != Point.INVISIBLE) {
+                    page.SetPenColor(point.strokeColor);
                     page.SetPenWidth(point.strokeWidth);
                     page.SetStrokeDashPattern(point.strokePattern);
                     page.SetBrushColor(point.fillColor);
-                    page.SetPenColor(point.strokeColor);
                     page.DrawPoint(point);
                 }
             }

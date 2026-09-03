@@ -163,7 +163,6 @@ public func getData(
 
         if population != nil && x != nil && y != nil {
             let point = Point()
-            point.setRadius(2.0)
             point.setText(country_name)
             point.setX(x! / population!)
             point.setY((y! / population!) * Float(100.0))
@@ -174,6 +173,9 @@ public func getData(
             country_name = country_name.replacingOccurrences(of: "(", with: "_")
             country_name = country_name.replacingOccurrences(of: ")", with: "_")
             point.setURIAction("http://pdfjet.com/country/\(country_name).txt")
+
+            point.setRadius(2.0)
+            point.setStrokeColor(Color.gray)
 
             if point.getX() > 1.25 {
                 point.setShape(Point.RIGHT_ARROW)

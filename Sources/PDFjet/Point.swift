@@ -49,7 +49,7 @@ public class Point : Drawable {
     var drawPath = false
 
     private var text: String?
-    private var textColor: [Float] = [0.0, 0.0, 0.0]
+    private var textColor: [Float]?
     private var textDirection: Int = 0
     private var uri: String?
 
@@ -409,7 +409,7 @@ public class Point : Drawable {
     /// - Returns: the text color.
     ///
     public func getTextColor() -> [Float] {
-        return self.textColor
+        return self.textColor!
     }
 
     ///

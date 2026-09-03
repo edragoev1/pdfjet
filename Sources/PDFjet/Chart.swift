@@ -492,33 +492,31 @@ public class Chart : Drawable {
             _ page: Page, _ chartData: [[Point]]) {
         for points in chartData {
             if points.count > 0 {
-                let point = points[0]
-                if point.drawPath {
-                    if let strokeColor = point.strokeColor {
-                        page.setPenColor(strokeColor)
-                    }
-                    page.setPenWidth(point.strokeWidth)
-                    page.setStrokeDashPattern(point.strokePattern)
+                let p0 = points[0]
+                if p0.drawPath {
+                    page.setPenColor(p0.strokeColor)
+                    page.setPenWidth(p0.strokeWidth)
+                    page.setStrokeDashPattern(p0.strokePattern)
                     page.drawPath(points, PathOperator.stroke)
-                    if point.getText() != nil {
-                        page.setBrushColor(point.getTextColor())
-                        page.setTextDirection(point.getTextDirection())
+                    if p0.getText() != nil {
+                        page.setBrushColor(p0.getTextColor())
+                        page.setTextDirection(p0.getTextDirection())
                         page.drawString(
                             f2!,
                             f2!.getSize(),
-                            point.getText(),
-                            point.x + 1.5*f2!.descent,
-                            point.y + f2!.getSize()/3.0,
-                            point.getTextColor(),
+                            p0.getText(),
+                            p0.x + 1.5*f2!.descent,
+                            p0.y + f2!.getSize()/3.0,
+                            p0.getTextColor(),
                             nil)
                     }
                 }
                 for point in points {
                     if point.getShape() != Point.INVISIBLE {
+                        page.setPenColor(point.strokeColor)
                         page.setPenWidth(point.strokeWidth)
                         page.setStrokeDashPattern(point.strokePattern)
                         page.setBrushColor(point.fillColor)
-                        page.setPenColor(point.strokeColor)
                         page.drawPoint(point)
                     }
                 }
