@@ -375,7 +375,8 @@ final public class Image implements Drawable {
 
         x += xBox;
         y += yBox;
-        page.append("q\n");
+
+        page.saveGraphicsState();
 
         if (degrees == 0) {
             page.append(w);
@@ -441,7 +442,8 @@ final public class Image implements Drawable {
         page.append("/Im");
         page.append(objNumber);
         page.append(" Do\n");
-        page.append("Q\n");
+
+        page.restoreGraphicsState();
 
         page.addEMC();
 

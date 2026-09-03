@@ -572,7 +572,7 @@ public class Point implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.append("q\n");
+        page.saveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.setBrushColor(fillColor);
             page.setPenColor(strokeColor);
@@ -587,7 +587,7 @@ public class Point implements Drawable {
             this.pathOperator = PathOperator.CLOSE_AND_STROKE;
         }
         page.drawPoint(this);
-        page.append("Q\n");
+        page.restoreGraphicsState();
 
         return new float[] {x + r, y + r};
     }

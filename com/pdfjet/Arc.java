@@ -261,7 +261,7 @@ public class Arc implements Drawable {
         }
 
         page.addBMC(StructElem.P, language, actualText, altDescription);
-        page.append("q\n");
+        page.saveGraphicsState();
         float centerX = cx;
         float centerY = page.height - cy;
         page.rotateAroundCenter(centerX, centerY, rotateDegrees);
@@ -292,7 +292,7 @@ public class Arc implements Drawable {
             page.setPenColor(Color.black);
             page.append("S\n");
         }
-        page.append("Q\n");
+        page.restoreGraphicsState();
         page.addEMC();
         return arcPoints;
     }

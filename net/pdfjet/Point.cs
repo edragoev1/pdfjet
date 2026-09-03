@@ -513,7 +513,7 @@ public class Point : IDrawable {
      * @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.Append("q\n");
+        page.SaveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.SetBrushColor(fillColor);
             page.SetPenColor(strokeColor);
@@ -528,7 +528,7 @@ public class Point : IDrawable {
             this.pathOperator = PathOperator.CloseAndStroke;
         }
         page.DrawPoint(this);
-        page.Append("Q\n");
+        page.RestoreGraphicsState();
 
         return new float[] {x + r, y + r};
     }

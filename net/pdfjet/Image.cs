@@ -341,14 +341,16 @@ public class Image : IDrawable {
         if (!String.IsNullOrEmpty(actualText) && !String.IsNullOrEmpty(altDescription)) {
             page.AddBMC(StructElem.P, language, actualText, altDescription);
         }
-        page.Append("q\n");
+
+        page.SaveGraphicsState();
 
         page.ScaleAndRotate(x, y, w, h, degrees);
         page.Append("/Im");
         page.Append(objNumber);
         page.Append(" Do\n");
 
-        page.Append("Q\n");
+        page.RestoreGraphicsState();
+
         if (!String.IsNullOrEmpty(actualText) && !String.IsNullOrEmpty(altDescription)) {
             page.AddEMC();
         }

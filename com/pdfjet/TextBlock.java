@@ -315,7 +315,7 @@ public class TextBlock {
             };
         }
 
-        page.append("q\n");
+        page.saveGraphicsState();
         page.setPenWidth(this.borderWidth);
         if (textAlignment == Alignment.RIGHT) {
             rightAlignText(textLines);
@@ -354,7 +354,7 @@ public class TextBlock {
             this.textColor,
             keywordHighlightColors);
         page.addEMC();
-        page.append("Q\n");
+        page.restoreGraphicsState();
 
         return new float[] {
             this.x + this.width,

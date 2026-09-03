@@ -157,7 +157,7 @@ public class Container : IDrawable {
     /// <returns>An array containing the bottom-right position of the container.</returns>
     /// <exception cref="Exception">Thrown if drawing fails.</exception>
     public float[] DrawOn(Page page) {
-        page.Append("q\n"); // Save the graphics state
+        page.SaveGraphicsState();
 
         // 1) Translate container to its final position on the page
         //    This is logically the last transformation, but in PDF it’s applied first
@@ -234,7 +234,7 @@ public class Container : IDrawable {
             element.DrawOn(page);
         }
 
-        page.Append("Q\n"); // Restore the graphics state
+        page.RestoreGraphicsState();
 
         // Return bottom-right position of container
         return new float[] { this.x + width, this.y + height };

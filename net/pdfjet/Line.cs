@@ -298,13 +298,13 @@ public class Line : IDrawable {
      * @throws Exception
      */
     public float[] DrawOn(Page page) {
-        page.Append("q\n");
+        page.SaveGraphicsState();
         page.SetPenColor(color);
         page.SetPenWidth(width);
         page.SetLineCapStyle(capStyle);
         page.SetStrokeDashPattern(pattern);
         page.DrawLine(x1, y1, x2, y2);
-        page.Append("Q\n");
+        page.RestoreGraphicsState();
 
         float xMax = Math.Max(x1, x2);
         float yMax = Math.Max(y1, y2);

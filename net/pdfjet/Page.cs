@@ -118,7 +118,7 @@ public class Page {
         this.tm1 = FastFloat.ToByteArray(tmx[1]);
         this.tm2 = FastFloat.ToByteArray(tmx[2]);
         this.tm3 = FastFloat.ToByteArray(tmx[3]);
-        Append("q\n");
+        SaveGraphicsState();    // Why do we need this?
         if (pageObj.gsNumber != -1) {
             Append("/GS");
             Append(pageObj.gsNumber + 1);
@@ -127,7 +127,7 @@ public class Page {
     }
 
     public void Complete(List<PDFobj> objects) {
-        Append("Q\n");
+        RestoreGraphicsState();
         pageObj.AddContent(GetContent(), objects);
     }
 
@@ -1680,7 +1680,7 @@ public class Page {
 
     internal void BeginTransform(
             float x, float y, float xScale, float yScale) {
-        Append("q\n");
+        SaveGraphicsState();
 
         Append(xScale);
         Append(" 0 0 ");
@@ -1702,7 +1702,7 @@ public class Page {
     }
 
     internal void EndTransform() {
-        Append("Q\n");
+        RestoreGraphicsState();
     }
 
     public void DrawContents(

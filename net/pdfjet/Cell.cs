@@ -704,7 +704,7 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        page.Append("q\n");
+        page.SaveGraphicsState();
         page.SetPenColor(strokeColor);
         if (GetTextAlignment() == Align.RIGHT) {
             if (compositeTextLine == null) {
@@ -767,7 +767,7 @@ public class Cell {
         } else {
             throw new Exception("Invalid Text Alignment!");
         }
-        page.Append("Q\n");
+        page.RestoreGraphicsState();
 
         if (uri != null) {
             float w = (compositeTextLine != null) ?

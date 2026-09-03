@@ -262,7 +262,9 @@ public class Arc : IDrawable {
         }
 
         page.AddBMC(StructElem.P, language, actualText, altDescription);
-        page.Append("q\n");
+
+        page.SaveGraphicsState();
+
         float centerX = cx;
         float centerY = page.height - cy;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
@@ -293,7 +295,9 @@ public class Arc : IDrawable {
             page.SetPenColor(Color.black);
             page.Append("S\n");
         }
-        page.Append("Q\n");
+
+        page.RestoreGraphicsState();
+
         page.AddEMC();
         return arcPoints;
     }

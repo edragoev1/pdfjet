@@ -312,7 +312,8 @@ public class Path : IDrawable {
             page.AddBMC(StructElem.FIGURE, this.language, this.actualText, this.altDescription);
         }
 
-        page.Append("q\n");
+        page.SaveGraphicsState();
+
         float centerX = x + w/2;
         float centerY = (page.height - y) - h/2;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
@@ -332,7 +333,8 @@ public class Path : IDrawable {
             page.SetPenWidth(strokeWidth);
             page.DrawPath(points, PathOperator.FillAndStroke);
         }
-        page.Append("Q\n");
+
+        page.RestoreGraphicsState();
 
         if (actualText != null && altDescription != null) {
             page.AddEMC();

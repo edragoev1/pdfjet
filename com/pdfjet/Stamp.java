@@ -367,7 +367,7 @@ public class Stamp implements Drawable {
 
     public float[] drawOn(Page page) {
         // page.addBMC(StructElem.Figure, language, actualText, altDescription);
-        page.append("q\n"); // Save the graphics state
+        page.saveGraphicsState();
 
         float drawX = this.x;
         float drawY = (page.height - this.height) - this.y;
@@ -411,7 +411,7 @@ public class Stamp implements Drawable {
         page.append(objNumber);
         page.append(" Do\n");
 
-        page.append("Q\n"); // Restore the graphics state
+        page.restoreGraphicsState();
         // page.addEMC();
 
         return new float[] { this.x + width, this.y + height };

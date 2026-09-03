@@ -147,8 +147,9 @@ public class Rect  : IDrawable {
             return new float[] {x + w, y + h};
         }
 
+        page.SaveGraphicsState();
+
         const float k = 0.55228f;
-        page.Append("q\n");
         if (this.r == 0.0f) {
             if (fillColor != null) {
                 page.SetBrushColor(this.fillColor);
@@ -214,7 +215,8 @@ public class Rect  : IDrawable {
                 page.Append("S\n");
             }
         }
-        page.Append("Q\n");
+
+        page.RestoreGraphicsState();
 
         if (this.uri != null || this.key != null) {
             page.AddAnnotation(new Annotation(

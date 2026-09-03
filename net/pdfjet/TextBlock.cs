@@ -336,7 +336,7 @@ namespace PDFjet.NET {
                 };
             }
 
-            page.Append("q\n");
+            page.SaveGraphicsState();
             page.SetPenWidth(this.borderWidth);
             if (textAlignment == Alignment.RIGHT) {
                 RightAlignText(textLines);
@@ -375,7 +375,7 @@ namespace PDFjet.NET {
                 this.textColor,
                 this.keywordHighlightColors);
             page.AddEMC();
-            page.Append("Q\n");
+            page.RestoreGraphicsState();
 
             return new float[] {
                 this.x + this.width,

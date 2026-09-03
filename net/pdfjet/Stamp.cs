@@ -363,7 +363,7 @@ public class Stamp : IDrawable {
 
     public float[] DrawOn(Page page) {
         // page.AddBMC(StructElem.Figure, language, actualText, altDescription);
-        page.Append("q\n"); // Save the graphics state
+        page.SaveGraphicsState();
 
         float drawX = this.x;
         float drawY = (page.height - this.height) - this.y;
@@ -407,7 +407,7 @@ public class Stamp : IDrawable {
         page.Append(objNumber);
         page.Append(" Do\n");
 
-        page.Append("Q\n"); // Restore the graphics state
+        page.RestoreGraphicsState();
         // page.AddEMC();
 
         return new float[] { this.x + width, this.y + height };

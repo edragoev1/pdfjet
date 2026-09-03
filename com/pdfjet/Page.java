@@ -128,7 +128,7 @@ final public class Page {
         tm1 = FastFloat.toByteArray(tmx[1]);
         tm2 = FastFloat.toByteArray(tmx[2]);
         tm3 = FastFloat.toByteArray(tmx[3]);
-        this.append("q\n");
+        this.saveGraphicsState();
         if (pageObj.gsNumber != -1) {
             append("/GS");
             append(pageObj.gsNumber + 1);
@@ -194,7 +194,7 @@ final public class Page {
      * @param objects list of the page objects.
      */
     public void complete(List<PDFobj> objects) {
-        append("Q\n");
+        restoreGraphicsState();
         pageObj.addContent(getContent(), objects);
     }
 
@@ -1774,7 +1774,7 @@ final public class Page {
 
     private void beginTransform(
             float x, float y, float xScale, float yScale) {
-        append("q\n");
+        saveGraphicsState();
 
         append(xScale);
         append(" 0 0 ");
@@ -1796,7 +1796,7 @@ final public class Page {
     }
 
     private void endTransform() {
-        append("Q\n");
+        restoreGraphicsState();
     }
 
     public void drawContents(

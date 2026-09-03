@@ -209,7 +209,7 @@ public class Rect implements Drawable {
         }
 
         final float k = 0.55228f;
-        page.append("q\n");
+        page.saveGraphicsState();
         if (this.r == 0.0f) {
             if (this.fillColor != null) {
                 page.moveTo(this.x, this.y);
@@ -275,7 +275,7 @@ public class Rect implements Drawable {
                 page.append("S\n");
             }
         }
-        page.append("Q\n");
+        page.restoreGraphicsState();
 
         if (this.uri != null || this.key != null) {
 // TODO:

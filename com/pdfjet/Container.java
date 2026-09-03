@@ -167,7 +167,7 @@ public class Container implements Drawable {
      * @throws Exception if drawing fails
      */
     public float[] drawOn(Page page) throws Exception {
-        page.append("q\n"); // Save the graphics state
+        page.saveGraphicsState();
 
         page.append("1 0 0 1 ");
         page.append(this.x);
@@ -234,7 +234,7 @@ public class Container implements Drawable {
             element.drawOn(page);
         }
 
-        page.append("Q\n"); // Restore the graphics state
+        page.restoreGraphicsState();
 
         return new float[] { this.x + width, this.y + height };
     }
