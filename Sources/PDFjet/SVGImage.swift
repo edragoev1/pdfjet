@@ -25,14 +25,29 @@ public class SVGImage {
     var actualText: String = Single.space
     var altDescription: String = Single.space
 
+    // Built once per process; avoids reflecting over ColorMap on every
+    // color attribute parsed.
+    private static let colorCache: [String: Int32] = {
+        var cache: [String: Int32] = [:]
+        let mirror = Mirror(reflecting: ColorMap())
+        for child in mirror.children {
+            if let label = child.label, let value = child.value as? Int32 {
+                cache[label] = value
+            }
+        }
+        return cache
+    }()
+
     /**
      * Used to embed SVG images in the PDF document.
      *
-     * @param stream the input stream.
-     * @throws Exception  if exception occurred.
+     * @param fileAtPath the path to the SVG file.
      */
-    public convenience init(fileAtPath: String) {
-        self.init(stream: InputStream(fileAtPath: fileAtPath)!)
+    public convenience init?(fileAtPath: String) {
+        guard let fileStream = InputStream(fileAtPath: fileAtPath) else {
+            return nil  // cannot open file
+        }
+        self.init(stream: fileStream)
     }
 
     /**
@@ -102,33 +117,37 @@ public class SVGImage {
             } else if token && scalar == UnicodeScalar("\"") {
                 token = false
                 if param == "width" {
-                    w = Float(buf)!
+                    if let value = Float(buf) {
+                        w = value
+                    }
                 } else if param == "height" {
-                    h = Float(buf)!
+                    if let value = Float(buf) {
+                        h = value
+                    }
                 } else if param == "viewBox" {
                     viewBox = buf
                 } else if param == "data" {
-                    path!.data = buf
+                    path?.data = buf
                 } else if param == "fill" {
                     let fillColor = getColor(buf)
                     if header {
                         self.fill = fillColor
                     } else {
-                        path!.fill = fillColor
+                        path?.fill = fillColor
                     }
                 } else if param == "stroke" {
                     let strokeColor = getColor(buf)
                     if header {
                         self.stroke = strokeColor
                     } else {
-                        path!.stroke = strokeColor
+                        path?.stroke = strokeColor
                     }
                 } else if param == "stroke-width" {
-                    let strokeWidth = Float(buf)!
+                    let strokeWidth = Float(buf) ?? 0.0
                     if (header) {
                         self.strokeWidth = strokeWidth
                     } else {
-                        path!.strokeWidth = strokeWidth
+                        path?.strokeWidth = strokeWidth
                     }
                 }
                 buf = ""
@@ -145,15 +164,30 @@ public class SVGImage {
     func processPaths(_ paths: [SVGPath]) {
         var box: [Float] = Array(repeating: 0.0, count: 4)
         if viewBox != nil {
-            let list = viewBox!.trim().components(separatedBy: .whitespaces)
-            box[0] = Float(list[0])!
-            box[1] = Float(list[1])!
-            box[2] = Float(list[2])!
-            box[3] = Float(list[3])!
+            let list = viewBox!.trim()
+                .components(separatedBy: .whitespaces)
+                .filter { !$0.isEmpty }
+            guard list.count == 4 else {
+                return
+            }
+            guard let bx0 = Float(list[0]),
+                  let bx1 = Float(list[1]),
+                  let bx2 = Float(list[2]),
+                  let bx3 = Float(list[3]) else {
+                return
+            }
+            guard bx2 != 0.0, bx3 != 0.0 else {
+                return  // degenerate viewBox: division would produce NaN
+            }
+            box[0] = bx0
+            box[1] = bx1
+            box[2] = bx2
+            box[3] = bx3
         }
         for path in paths {
-            path.operations = SVG.getOperations(path.data!)
-            path.operations = SVG.toPDF(path.operations!)
+            guard let data = path.data else { continue }
+            path.operations = SVG.getOperations(data)
+            path.operations = SVG.toPDF(path.operations ?? [])
             if viewBox != nil {
                 for op in path.operations! {
                     op.x = (op.x - box[0]) * w / box[2]
@@ -171,7 +205,10 @@ public class SVGImage {
         if colorName.hasPrefix("#") {
             if colorName.count == 7 {
                 let index = colorName.index(colorName.startIndex, offsetBy: 1)
-                return Int32(colorName[index...], radix: 16)!
+                guard let value = Int32(colorName[index...], radix: 16) else {
+                    return Color.transparent
+                }
+                return value
             } else if colorName.count == 4 {
                 let index1 = colorName.index(colorName.startIndex, offsetBy: 1)
                 let index2 = colorName.index(colorName.startIndex, offsetBy: 2)
@@ -180,19 +217,15 @@ public class SVGImage {
                 let str2 = colorName[index2..<index3]
                 let str3 = colorName[index3...]
                 let str = String(str1 + str1 + str2 + str2 + str3 + str3)
-                return Int32(str, radix: 16)!
+                if let value = Int32(str, radix: 16) {
+                    return value
+                }
+                return Color.transparent
             } else {
                 return Color.transparent
             }
         }
-        var color = Color.transparent
-        let mirror = Mirror(reflecting: ColorMap())
-        mirror.children.forEach { child in
-            if child.label! == colorName {
-                color = child.value as! Int32
-            }
-        }
-        return color
+        return SVGImage.colorCache[colorName] ?? Color.transparent
     }
 
     /**
@@ -208,8 +241,14 @@ public class SVGImage {
     }
 
     public func scaleBy(_ factor: Float) {
-        for path in paths! {
-            for op in path.operations! {
+        guard let paths = paths else {
+            return
+        }
+        for path in paths {
+            guard let operations = path.operations else {
+                continue
+            }
+            for op in operations {
                 op.x1 *= factor
                 op.y1 *= factor
                 op.x2 *= factor
@@ -251,8 +290,12 @@ public class SVGImage {
         page.setPenColor(strokeColor)
         page.setPenWidth(strokeWidth)
 
+        guard let operations = path.operations else {
+            return
+        }
+
         if fillColor != Color.transparent {
-            for op in path.operations! {
+            for op in operations {
                 if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
                 } else if op.cmd == "L" {
@@ -269,7 +312,7 @@ public class SVGImage {
         }
 
         if strokeColor != Color.transparent {
-            for op in path.operations! {
+            for op in operations {
                 if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
                 } else if op.cmd == "L" {
@@ -289,7 +332,7 @@ public class SVGImage {
     @discardableResult
     public func drawOn(_ page: Page) -> [Float] {
         page.addBMC(StructElem.P, language, actualText, altDescription)
-        for path in paths! {
+        for path in paths ?? [] {
             drawPath(path, page)
         }
         page.addEMC()
