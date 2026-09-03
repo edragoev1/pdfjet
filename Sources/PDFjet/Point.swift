@@ -43,9 +43,6 @@ public class Point : Drawable {
     var strokeColor: [Float]?
     var strokePattern = "[] 0"
     var pathOperator = PathOperator.closeAndStroke
-
-    var lineWidth: Float = 0.0
-    var linePattern: String = "[] 0"
     var fillShape = false
 
     var controlPoint: String = ""
@@ -286,8 +283,8 @@ public class Point : Drawable {
     /// - Parameter lineWidth the line width.
     ///
     @discardableResult
-    public func setLineWidth(_ lineWidth: Float) -> Point {
-        self.lineWidth = lineWidth
+    public func setStrokeWidth(_ strokeWidth: Float) -> Point {
+        self.strokeWidth = strokeWidth
         return self
     }
 
@@ -296,8 +293,8 @@ public class Point : Drawable {
     ///
     /// - Returns: the width of the lines used to draw this point.
     ///
-    public func getLineWidth() -> Float {
-        return self.lineWidth
+    public func getStrokeWidth() -> Float {
+        return self.strokeWidth
     }
 
     ///
@@ -324,8 +321,8 @@ public class Point : Drawable {
     /// - Parameter linePattern the line dash pattern.
     ///
     @discardableResult
-    public func setLinePattern(_ linePattern: String) -> Point {
-        self.linePattern = linePattern
+    public func setStrokePattern(_ strokePattern: String) -> Point {
+        self.strokePattern = strokePattern
         return self
     }
 
@@ -334,8 +331,8 @@ public class Point : Drawable {
     ///
     /// - Returns: the line dash pattern.
     ///
-    public func getLinePattern() -> String {
-        return self.linePattern
+    public func getStrokePattern() -> String {
+        return self.strokePattern
     }
 
     ///
@@ -465,24 +462,21 @@ public class Point : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         page!.saveGraphicsState()
-
         if fillColor != nil && strokeColor != nil {
             page!.setBrushColor(fillColor)
             page!.setPenColor(strokeColor)
-            page!.setPenWidth(strokeWidth)
+            page!.setPenWidth(strokeWidth)  // Use strokeWidth
             self.pathOperator = PathOperator.fillAndStroke
         } else if fillColor != nil && strokeColor == nil {
             page!.setBrushColor(fillColor)
             self.pathOperator = PathOperator.fill
         } else if fillColor == nil && strokeColor != nil {
             page!.setPenColor(strokeColor)
-            page!.setPenWidth(strokeWidth)
+            page!.setPenWidth(strokeWidth)  // Use strokeWidth
             self.pathOperator = PathOperator.closeAndStroke
         }
         page!.drawPoint(self)
-
         page!.restoreGraphicsState()
-
         return [self.x + self.r, self.y + self.r]
     }
 }   // End of Point.swift

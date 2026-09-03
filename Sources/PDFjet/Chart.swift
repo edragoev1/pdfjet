@@ -284,7 +284,7 @@ public class Chart : Drawable {
                 if xyChart {
                     point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin)
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
-                    point.lineWidth *= (x6 - x5) / w
+                    point.strokeWidth *= (x6 - x5) / w
                 } else {
                     point.x = x5 + point.x * (x6 - x5) / w
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
@@ -494,9 +494,11 @@ public class Chart : Drawable {
             if points.count > 0 {
                 let point = points[0]
                 if point.drawPath {
-                    page.setPenColor(point.strokeColor)
-                    page.setPenWidth(point.lineWidth)
-                    page.setStrokeDashPattern(point.linePattern)
+                    if let strokeColor = point.strokeColor {
+                        page.setPenColor(strokeColor)
+                    }
+                    page.setPenWidth(point.strokeWidth)
+                    page.setStrokeDashPattern(point.strokePattern)
                     page.drawPath(points, PathOperator.stroke)
                     if point.getText() != nil {
                         page.setBrushColor(point.getTextColor())
@@ -513,13 +515,13 @@ public class Chart : Drawable {
                 }
                 for point in points {
                     if point.getShape() != Point.INVISIBLE {
-                        page.setPenWidth(point.lineWidth)
-                        page.setStrokeDashPattern(point.linePattern)
-                        if point.strokeColor != nil {
-                            page.setPenColor(point.strokeColor)
+                        page.setPenWidth(point.strokeWidth)
+                        page.setStrokeDashPattern(point.strokePattern)
+                        if let strokeColor = point.strokeColor {
+                            page.setPenColor(strokeColor)
                         }
-                        if point.fillColor != nil {
-                            page.setBrushColor(point.fillColor)
+                        if let fillColor = point.fillColor {
+                            page.setBrushColor(fillColor)
                         }
                         page.drawPoint(point)
                     }
