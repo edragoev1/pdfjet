@@ -6,9 +6,10 @@
 package pdfjet
 
 import (
-	"bufio"
+	"bytes"
+	"encoding/xml"
+	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -31,145 +32,156 @@ type SVGImage struct {
 	structureType  string
 }
 
-func NewSVGImageFromFile(filePath string) *SVGImage {
-	file, err := os.Open(filePath)
+// NewSVGImageFromFile reads and parses an SVG image from a file.
+// The file is fully read before parsing, so no file handle lifecycle is involved.
+func NewSVGImageFromFile(filePath string) (*SVGImage, error) {
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("reading SVG %q: %w", filePath, err)
 	}
-	defer file.Close()
-	reader := bufio.NewReader(file)
-	return NewSVGImage(reader)
+	return NewSVGImage(bytes.NewReader(data))
 }
 
-// NewSVGImage Used to embed SVG images in the PDF document.
-// @param stream the input stream.
-func NewSVGImage(reader io.Reader) *SVGImage {
+// NewSVGImage parses an SVG image from a reader, for embedding in a PDF document.
+// Only the attributes of the <svg> and <path> elements are interpreted:
+// width, height, viewBox, fill, stroke, stroke-width, and d.
+func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
 	colorMap := NewColorMap()
 	image.paths = make([]*SVGPath, 0)
-	var path *SVGPath
-	buffer, err := io.ReadAll(reader)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var builder = strings.Builder{}
-	var token = false
-	var header = false
-	var param string
-	for _, ch := range buffer {
-		if strings.HasSuffix(builder.String(), "<svg") {
-			header = true
-			builder.Reset()
-		} else if ch == '>' {
-			header = false
-			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), " width=") {
-			token = true
-			param = "width"
-			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), " height=") {
-			token = true
-			param = "height"
-			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), " viewBox=") {
-			token = true
-			param = "viewBox"
-			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), " d=") {
-			token = true
-			if path != nil {
-				image.paths = append(image.paths, path)
-			}
-			path = NewSVGPath()
-			token = true
-			param = "data"
-			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), " fill=") {
-			token = true
-			param = "fill"
-			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), " stroke=") {
-			token = true
-			param = "stroke"
-			builder.Reset()
-		} else if !token && strings.HasSuffix(builder.String(), " stroke-width=") {
-			token = true
-			param = "stroke-width"
-			builder.Reset()
-		} else if token && ch == '"' {
-			token = false
-			if param == "width" {
-				width, err := strconv.ParseFloat(builder.String(), 32)
-				if err == nil {
-					image.w = float32(width)
-				} else {
-					log.Fatal(err)
-				}
-			} else if param == "height" {
-				height, err := strconv.ParseFloat(builder.String(), 32)
-				if err == nil {
-					image.h = float32(height)
-				} else {
-					log.Fatal(err)
-				}
-			} else if param == "viewBox" {
-				image.viewBox = builder.String()
-			} else if param == "data" {
-				path.data = builder.String()
-			} else if param == "fill" {
-				var fillColor = getColor(colorMap, builder.String())
-				if header {
-					image.fill = fillColor
-				} else {
-					path.fill = fillColor
-				}
-			} else if param == "stroke" {
-				var strokeColor = getColor(colorMap, builder.String())
-				if header {
-					image.stroke = strokeColor
-				} else {
-					path.stroke = strokeColor
-				}
-			} else if param == "stroke-width" {
-				strokeWidth, err := strconv.ParseFloat(builder.String(), 32)
-				if err == nil {
-					if header {
-						image.strokeWidth = float32(strokeWidth)
-					} else {
-						path.strokeWidth = float32(strokeWidth)
+
+	decoder := xml.NewDecoder(reader)
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("parsing SVG: %w", err)
+		}
+
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+
+		switch start.Name.Local {
+		case "svg":
+			for _, attr := range start.Attr {
+				switch attr.Name.Local {
+				case "width":
+					w, err := parseDim(attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid SVG width: %w", err)
 					}
-				} else {
-					if header {
-						image.strokeWidth = 0.0
-					} else {
-						path.strokeWidth = 0.0
+					image.w = w
+				case "height":
+					h, err := parseDim(attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid SVG height: %w", err)
 					}
+					image.h = h
+				case "viewBox":
+					image.viewBox = attr.Value
+				case "fill":
+					c, err := getColor(colorMap, attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid SVG fill: %w", err)
+					}
+					image.fill = c
+				case "stroke":
+					c, err := getColor(colorMap, attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid SVG stroke: %w", err)
+					}
+					image.stroke = c
+				case "stroke-width":
+					sw, err := parseFloatLenient(attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid SVG stroke-width: %w", err)
+					}
+					image.strokeWidth = sw
 				}
 			}
-			builder.Reset()
-		} else {
-			builder.WriteByte(ch)
+
+		case "path":
+			path := NewSVGPath()
+			for _, attr := range start.Attr {
+				switch attr.Name.Local {
+				case "d":
+					path.data = attr.Value
+				case "fill":
+					c, err := getColor(colorMap, attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid path fill: %w", err)
+					}
+					path.fill = c
+				case "stroke":
+					c, err := getColor(colorMap, attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid path stroke: %w", err)
+					}
+					path.stroke = c
+				case "stroke-width":
+					sw, err := parseFloatLenient(attr.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid path stroke-width: %w", err)
+					}
+					path.strokeWidth = sw
+				}
+			}
+			image.paths = append(image.paths, path)
 		}
 	}
-	if path != nil {
-		image.paths = append(image.paths, path)
+
+	if err := image.processPaths(image.paths); err != nil {
+		return nil, err
 	}
-	image.processPaths(image.paths)
-	return image
+	return image, nil
 }
 
-func (image *SVGImage) processPaths(paths []*SVGPath) {
-	box := make([]float32, 4)
+// parseDim parses an SVG dimension value such as "100".
+func parseDim(value string) (float32, error) {
+	v, err := strconv.ParseFloat(strings.TrimSpace(value), 32)
+	if err != nil {
+		return 0, fmt.Errorf("%q: %w", value, err)
+	}
+	return float32(v), nil
+}
+
+// parseFloatLenient parses a numeric attribute value, treating an empty
+// value as 0 — consistent with how an omitted attribute is handled.
+func parseFloatLenient(value string) (float32, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0.0, nil
+	}
+	v, err := strconv.ParseFloat(value, 32)
+	if err != nil {
+		return 0.0, fmt.Errorf("%q: %w", value, err)
+	}
+	return float32(v), nil
+}
+
+func (image *SVGImage) processPaths(paths []*SVGPath) error {
+	var box [4]float32
 	if image.viewBox != "" {
 		list := strings.Fields(strings.TrimSpace(image.viewBox))
+		if len(list) != 4 {
+			return fmt.Errorf("invalid viewBox %q: expected 4 values, got %d", image.viewBox, len(list))
+		}
 		for i := range box {
 			val, err := strconv.ParseFloat(list[i], 32)
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("invalid viewBox %q: %w", image.viewBox, err)
 			}
 			box[i] = float32(val)
 		}
+		if box[2] == 0 || box[3] == 0 {
+			return fmt.Errorf("degenerate viewBox %q: zero width or height", image.viewBox)
+		}
 	}
+
 	svg := NewSVG()
 	for _, path := range paths {
 		path.operations = svg.GetOperations(path.data)
@@ -185,35 +197,37 @@ func (image *SVGImage) processPaths(paths []*SVGPath) {
 			}
 		}
 	}
+	return nil
 }
 
-func getColor(colorMap map[string]int32, colorName string) int32 {
+func getColor(colorMap map[string]int32, colorName string) (int32, error) {
 	if strings.HasPrefix(colorName, "#") {
-		if len(colorName) == 7 {
-			colorInt64, err := strconv.ParseInt(colorName[1:], 16, 32)
+		hex := colorName[1:]
+		switch len(hex) {
+		case 6:
+			value, err := strconv.ParseInt(hex, 16, 32)
 			if err != nil {
-				log.Fatal(err)
+				return 0, fmt.Errorf("invalid color %q: %w", colorName, err)
 			}
-			return int32(colorInt64)
-		} else if len(colorName) == 4 {
-			str := string([]byte{
-				colorName[1], colorName[1],
-				colorName[2], colorName[2],
-				colorName[3], colorName[3],
+			return int32(value), nil
+		case 3:
+			expanded := string([]byte{
+				hex[0], hex[0],
+				hex[1], hex[1],
+				hex[2], hex[2],
 			})
-			colorInt64, err := strconv.ParseInt(str, 16, 32)
+			value, err := strconv.ParseInt(expanded, 16, 32)
 			if err != nil {
-				log.Fatal(err)
+				return 0, fmt.Errorf("invalid color %q: %w", colorName, err)
 			}
-			return int32(colorInt64)
+			return int32(value), nil
 		}
-		return color.Transparent
+		return int32(color.Transparent), nil
 	}
-	value, ok := colorMap[colorName]
-	if ok {
-		return value
+	if value, ok := colorMap[colorName]; ok {
+		return value, nil
 	}
-	return int32(color.Transparent)
+	return int32(color.Transparent), nil
 }
 
 func (image *SVGImage) ScaleBy(factor float32) {
