@@ -20,7 +20,7 @@ import (
 )
 
 // Example09 creates an XY chart with world communications data.
-func Example09() error {
+func Example09() {
 	pdf := pdfjet.NewPDFFile("Example_09.pdf")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
@@ -34,8 +34,8 @@ func Example09() error {
 	chart := pdfjet.NewChart(f1, f2)
 	chartData, err := getData("data/world-communications.txt", "|")
 	if err != nil {
-		return err
 	}
+
 	chart.SetData(chartData)
 	chart.SetLocation(70.0, 50.0)
 	chart.SetSize(500.0, 300.0)
@@ -48,12 +48,8 @@ func Example09() error {
 	f1.SetSize(7.0)
 	f2.SetSize(7.0)
 	err = addTableToChart(page, chart, f1, f2)
-	if err != nil {
-		return err
-	}
 
 	pdf.Complete()
-	return nil
 }
 
 // addTrendLine calculates and adds a trend line to the chart.
@@ -219,9 +215,6 @@ func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
 
 func main() {
 	start := time.Now()
-	err := Example09()
-	if err != nil {
-		panic(err)
-	}
+	Example09()
 	pdfjet.PrintDuration("Example_09", time.Since(start))
 }
