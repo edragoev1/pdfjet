@@ -507,7 +507,6 @@ public class Chart : IDrawable {
     private void DrawPathsAndPoints(
             Page page, List<List<Point>> chartData) {
         foreach (List<Point> points in chartData) {
-            page.SaveGraphicsState();
             Point p0 = points[0];
             if (p0.drawPath) {
                 page.SetPenColor(p0.strokeColor);
@@ -536,7 +535,6 @@ public class Chart : IDrawable {
                     page.DrawPoint(point);
                 }
             }
-            page.RestoreGraphicsState();
         }
     }
 

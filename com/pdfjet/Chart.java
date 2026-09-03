@@ -541,7 +541,6 @@ public class Chart implements Drawable {
     private void drawPathsAndPoints(
             Page page, List<List<Point>> chartData) throws Exception {
         for (List<Point> points : chartData) {
-            page.saveGraphicsState();
             Point p0 = points.get(0);
             if (p0.drawPath) {
                 page.setPenColor(p0.strokeColor);
@@ -571,7 +570,6 @@ public class Chart implements Drawable {
                     page.drawPoint(point);
                 }
             }
-            page.restoreGraphicsState();
         }
     }
 
