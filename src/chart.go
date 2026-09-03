@@ -253,7 +253,7 @@ func (chart *Chart) DrawOn(page *Page) {
 			if chart.xyChart {
 				point.x = chart.x5 + (point.x-chart.xMin)*(chart.x6-chart.x5)/(chart.xMax-chart.xMin)
 				point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
-				point.lineWidth *= (chart.x6 - chart.x5) / chart.w
+				point.strokeWidth *= (chart.x6 - chart.x5) / chart.w
 			} else {
 				point.x = chart.x5 + point.x*(chart.x6-chart.x5)/chart.w
 				point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)

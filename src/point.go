@@ -34,8 +34,6 @@ type Point struct {
 	hasTextColor   bool
 	textDirection  int
 	uri, key       string
-	lineWidth      float32
-	linePattern    string
 	fillShape      bool
 }
 
@@ -54,8 +52,6 @@ func NewPoint(x, y float32) *Point {
 	point.strokeWidth = 1.0
 	point.strokePattern = "[] 0"
 	point.pathOperator = "s" // CLOSE_AND_STROKE
-	point.lineWidth = 0.0
-	point.linePattern = "[] 0"
 	return point
 }
 
@@ -218,51 +214,6 @@ func (point *Point) GetStrokeColor() [3]float32 {
 	return point.strokeColor
 }
 
-// SetLineWidth sets the width of the lines of this point.
-// @param lineWidth the line width.
-func (point *Point) SetLineWidth(lineWidth float32) *Point {
-	point.lineWidth = lineWidth
-	return point
-}
-
-// GetLineWidth returns the width of the lines used to draw this point.
-// @return the width of the lines used to draw this point.
-func (point *Point) GetLineWidth() float32 {
-	return point.lineWidth
-}
-
-// SetLinePattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
-// It is specified by a dash array and a dash phase.
-// The elements of the dash array are positive numbers that specify the lengths of
-// alternating dashes and gaps.
-// The dash phase specifies the distance into the dash pattern at which to start the dash.
-// The elements of both the dash array and the dash phase are expressed in user space units.
-// <pre>
-// Examples of line dash patterns:
-//
-//	"[Array] Phase"     Appearance          Description
-//	_______________     _________________   ____________________________________
-//
-//	"[] 0"              -----------------   Solid line
-//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//
-// </pre>
-//
-// @param linePattern the line dash pattern.
-func (point *Point) SetLinePattern(linePattern string) {
-	point.linePattern = linePattern
-}
-
-// GetLinePattern returns the line dash pattern.
-// @return the line dash pattern.
-func (point *Point) GetLinePattern() string {
-	return point.linePattern
-}
-
 // SetDrawPath sets this point as the start of a path that will be drawn on the chart.
 func (point *Point) SetDrawPath() *Point {
 	point.drawPath = true
@@ -352,7 +303,6 @@ func (point *Point) DrawOn(page *Page) [3]float32 {
 		page.SetPenWidth(point.strokeWidth)
 		point.pathOperator = pathoperator.CloseAndStroke
 	}
-
 	page.DrawPoint(point)
 	page.appendString("Q\n")
 
