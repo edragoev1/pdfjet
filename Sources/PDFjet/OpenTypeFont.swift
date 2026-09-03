@@ -78,7 +78,6 @@ class OpenTypeFont {
             pdf.append("/Subtype /CIDFontType0C\n")
         }
         pdf.append("/Filter /FlateDecode\n")
-        // pdf.append("/Filter /LZWDecode\n")
 
         pdf.append("/Length ")
         pdf.append(otf.dos.count)      // The compressed size

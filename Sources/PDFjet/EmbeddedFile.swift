@@ -39,7 +39,6 @@ public class EmbeddedFile {
         if compress == Compress.YES {
             var buf2 = [UInt8]()
             FlateEncode(&buf2, buf)
-            // LZWEncode(&buf2, buf)
             buf = buf2
         }
 
@@ -48,7 +47,6 @@ public class EmbeddedFile {
         pdf.append("/Type /EmbeddedFile\n")
         if compress == Compress.NO {
             pdf.append("/Filter /FlateDecode\n")
-            // pdf.append("/Filter /LZWDecode\n")
         }
         pdf.append(Token.length)
         pdf.append(buf.count)

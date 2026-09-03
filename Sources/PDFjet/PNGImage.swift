@@ -129,7 +129,6 @@ public class PNGImage {
             }
         }
 
-        // LZWEncode(&deflatedImageData, image!)
         FlateEncode(&deflatedImageData, image!)
     }
 
@@ -309,7 +308,6 @@ public class PNGImage {
             j += 3
             k += 1
         }
-        // LZWEncode(&deflatedAlphaData, alpha)
         FlateEncode(&deflatedAlphaData, alpha)
         return idata
     }
@@ -346,7 +344,6 @@ public class PNGImage {
         }
         applyFilters(&filters, &image, self.w!, self.h!, 3)
         if tRNS != nil {
-            // LZWEncode(&deflatedAlphaData, alpha!)
             FlateEncode(&deflatedAlphaData, alpha!)
         }
         return image

@@ -89,10 +89,8 @@ class OTF {
 
         if cff {
             let bufSlice = Array(buf[cffOff!..<(cffOff! + cffLen!)])
-            // LZWEncode(&dos, bufSlice)
             FlateEncode(&dos, bufSlice)
         } else {
-            // LZWEncode(&dos, buf)
             FlateEncode(&dos, buf)
         }
     }
