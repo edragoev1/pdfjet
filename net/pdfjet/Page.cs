@@ -1466,16 +1466,6 @@ public class Page {
         ClipPath();
     }
 
-    [Obsolete("This method is deprecated. Use SaveGraphicsState() instead.")]
-    public void Save() {
-        SaveGraphicsState();
-    }
-
-    [Obsolete("This method is deprecated. Use RestoreGraphicsState() instead.")]
-    public void Restore() {
-        RestoreGraphicsState();
-    }
-
     /**
      * Saves the graphics state. Please see Example_31.
      */

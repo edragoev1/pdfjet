@@ -1473,16 +1473,6 @@ final public class Page {
         clipPath();
     }
 
-    @Deprecated
-    public void save() {
-        saveGraphicsState();
-    }
-
-    @Deprecated
-    public void restore() {
-        restoreGraphicsState();
-    }
-
     /**
      * Saves the graphics state. Please see Example_31.
      */
