@@ -142,7 +142,7 @@ public class Example_09 {
 
                 if (point.GetX() > 1.25f) {
                     point.SetShape(Point.RIGHT_ARROW);
-                    point.SetFillColor(Color.black);
+                    point.SetStrokeColor(Color.black);
                 } else if (point.GetY() > 80f) {
                     point.SetShape(Point.UP_ARROW);
                     point.SetStrokeColor(Color.blue);
