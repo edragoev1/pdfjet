@@ -184,6 +184,7 @@ func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
 		point.SetY(float32(internet / population * 100))
 
 		point.SetRadius(2.0)
+		point.SetStrokeColor(color.Gray)
 
 		if point.GetX() > 1.25 {
 			point.SetShape(shape.RightArrow)
@@ -193,10 +194,10 @@ func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
 			point.SetStrokeColor(color.Blue)
 		} else if point.GetText() == "France" {
 			point.SetShape(shape.Multiply)
-			point.SetStrokeColor(color.Black)
+			point.SetStrokeColor(color.Green)
 		} else if point.GetText() == "Canada" {
 			point.SetShape(shape.Box)
-			point.SetStrokeColor(color.DarkOliveGreen)
+			point.SetStrokeColor(color.Orange)
 		} else if strings.HasPrefix(point.GetText(), "United States") {
 			point.SetShape(shape.Star)
 			point.SetStrokeColor(color.Red)
