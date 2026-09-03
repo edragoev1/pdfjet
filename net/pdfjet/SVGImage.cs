@@ -8,8 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Xml;
 
 /**
  * Used to embed SVG images in the PDF document.
@@ -35,121 +34,112 @@ public class SVGImage {
     /**
      * Used to embed SVG images in the PDF document.
      *
-     * @param fontPath the path to the SVG file.
+     * @param svgPath the path to the SVG file.
      */
-    public SVGImage(String fontPath) : this(
-        new FileStream(fontPath, FileMode.Open, FileAccess.Read)) {
+    public SVGImage(String svgPath) : this(
+        new FileStream(svgPath, FileMode.Open, FileAccess.Read)) {
     }
 
     /**
      * Used to embed SVG images in the PDF document.
      *
      * @param stream the input stream.
-     * @throws Exception  if exception occurred.
      */
     public SVGImage(Stream stream) {
         paths = new List<SVGPath>();
-        SVGPath path = null;
-        StringBuilder buf = new StringBuilder();
-        bool token = false;
-        String param = null;
-        bool header = false;
-        byte[] buffer = Content.GetFromStream(stream);
-        foreach (byte ch in buffer) {
-            String str = buf.ToString();
-            if (StringEndsWith(str, "<svg")) {
-                header = true;
-                buf.Length = 0;
-            } else if (header && ch == '>') {
-                header = false;
-                buf.Length = 0;
-            } else if (!token && StringEndsWith(str, " width=")) {
-                token = true;
-                param = "width";
-                buf.Length = 0;
-            } else if (!token && StringEndsWith(str, " height=")) {
-                token = true;
-                param = "height";
-                buf.Length = 0;
-            } else if (!token && StringEndsWith(str, " viewBox=")) {
-                token = true;
-                param = "viewBox";
-                buf.Length = 0;
-            } else if (!token && StringEndsWith(str, " d=")) {
-                token = true;
-                if (path != null) {
-                    paths.Add(path);
+
+        XmlReaderSettings settings = new XmlReaderSettings();
+        // Disable DTD and external entity processing to prevent XXE attacks.
+        settings.DtdProcessing = DtdProcessing.Ignore;
+        settings.XmlResolver = null;
+
+        XmlReader reader = XmlReader.Create(stream, settings);
+        try {
+            while (reader.Read()) {
+                if (!reader.IsStartElement()) {
+                    continue;
                 }
-                path = new SVGPath();
-                param = "data";
-                buf.Length = 0;
-            } else if (!token && StringEndsWith(str, " fill=")) {
-                token = true;
-                param = "fill";
-                buf.Length = 0;
-            } else if (!token && StringEndsWith(str, " stroke=")) {
-                token = true;
-                param = "stroke";
-                buf.Length = 0;
-            } else if (!token && StringEndsWith(str, " stroke-width=")) {
-                token = true;
-                param = "stroke-width";
-                buf.Length = 0;
-            } else if (token && ch == '\"') {
-                token = false;
-                if (param.Equals("width")) {
-                    this.w = float.Parse(str);
-                } else if (param.Equals("height")) {
-                    this.h = float.Parse(str);
-                } else if (param.Equals("viewBox")) {
-                    this.viewBox = str;
-                } else if (param.Equals("data")) {
-                    path.data = str;
-                } else if (param.Equals("fill")) {
-                    int fillColor = getColor(str);
-                    if (header) {
-                        this.fill = fillColor;
-                    } else {
-                        path.fill = fillColor;
-                    }
-                } else if (param.Equals("stroke")) {
-                    int strokeColor = getColor(str);
-                    if (header) {
-                        this.stroke = strokeColor;
-                    } else {
-                        path.stroke = strokeColor;
-                    }
-                } else if (param.Equals("stroke-width")) {
-                    try {
-                        float strokeWidth = float.Parse(str);
-                        if (header) {
-                            this.strokeWidth = strokeWidth;
-                        } else {
-                            path.strokeWidth = strokeWidth;
-                        }
-                    } catch (Exception) {
-                        path.strokeWidth = 0f;
-                    }
+                String localName = reader.LocalName;
+                if (localName.Equals("svg")) {
+                    ReadSVGAttributes(reader);
+                } else if (localName.Equals("path")) {
+                    ReadPathAttributes(reader);
                 }
-                buf.Length = 0;
-            } else {
-                buf.Append((char) ch);
+            }
+        } finally {
+            // Close only the reader we created. The caller remains
+            // responsible for the underlying stream.
+            reader.Close();
+        }
+
+        ProcessPaths(paths);
+    }
+
+    private void ReadSVGAttributes(XmlReader reader) {
+        while (reader.MoveToNextAttribute()) {
+            String name = reader.LocalName;
+            String value = reader.Value;
+            if (name.Equals("width")) {
+                try {
+                    this.w = float.Parse(value, CultureInfo.InvariantCulture);
+                } catch (Exception) {
+                    this.w = 0f;
+                }
+            } else if (name.Equals("height")) {
+                try {
+                    this.h = float.Parse(value, CultureInfo.InvariantCulture);
+                } catch (Exception) {
+                    this.h = 0f;
+                }
+            } else if (name.Equals("viewBox")) {
+                this.viewBox = value;
+            } else if (name.Equals("fill")) {
+                this.fill = getColor(value);
+            } else if (name.Equals("stroke")) {
+                this.stroke = getColor(value);
+            } else if (name.Equals("stroke-width")) {
+                try {
+                    this.strokeWidth = float.Parse(value, CultureInfo.InvariantCulture);
+                } catch (Exception) {
+                    this.strokeWidth = 0f;
+                }
             }
         }
-        if (path != null) {
-            paths.Add(path);
+        reader.MoveToElement();
+    }
+
+    private void ReadPathAttributes(XmlReader reader) {
+        SVGPath path = new SVGPath();
+        while (reader.MoveToNextAttribute()) {
+            String name = reader.LocalName;
+            String value = reader.Value;
+            if (name.Equals("d")) {
+                path.data = value;
+            } else if (name.Equals("fill")) {
+                path.fill = getColor(value);
+            } else if (name.Equals("stroke")) {
+                path.stroke = getColor(value);
+            } else if (name.Equals("stroke-width")) {
+                try {
+                    path.strokeWidth = float.Parse(value, CultureInfo.InvariantCulture);
+                } catch (Exception) {
+                    path.strokeWidth = 0f;
+                }
+            }
         }
-        ProcessPaths(paths);
+        reader.MoveToElement();
+        paths.Add(path);
     }
 
     private void ProcessPaths(List<SVGPath> paths) {
         float[] box = new float[4];
         if (viewBox != null) {
-            String[] list = Regex.Split(viewBox.Trim(), "\\s+");
-            box[0] = float.Parse(list[0]);
-            box[1] = float.Parse(list[1]);
-            box[2] = float.Parse(list[2]);
-            box[3] = float.Parse(list[3]);
+            String[] list = viewBox.Trim().Split(default(char[]),
+                    StringSplitOptions.RemoveEmptyEntries);
+            box[0] = float.Parse(list[0], CultureInfo.InvariantCulture);
+            box[1] = float.Parse(list[1], CultureInfo.InvariantCulture);
+            box[2] = float.Parse(list[2], CultureInfo.InvariantCulture);
+            box[3] = float.Parse(list[3], CultureInfo.InvariantCulture);
         }
         foreach (SVGPath path in paths) {
             path.operations = SVG.GetOperations(path.data);
@@ -191,13 +181,9 @@ public class SVGImage {
         return color;
     }
 
-    /**
-     *  Sets the location of this SVG on the page.
-     *
-     *  @param x the x coordinate of the top left corner of this box when drawn on the page.
-     *  @param y the y coordinate of the top left corner of this box when drawn on the page.
-     *  @return this SVGImage object.
-     */
+    // SetLocation, ScaleBy, getWidth, getHeight, drawPath, DrawOn
+    // — unchanged from the original file.
+
     public SVGImage SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
@@ -310,30 +296,6 @@ public class SVGImage {
                     altDescription));
         }
         return new float[] {x + w, y + h};
-    }
-
-    // This method is around 8 times faster than the
-    // "string".EndsWith(...) method in Mono!
-    // .NET's performance is not affected by this code.
-    private bool StringEndsWith(String str1, String str2) {
-        if (str2.Length == 0) {
-            return true;
-        }
-        if (str1.Length < str2.Length) {
-            return false;
-        }
-        int i = str1.Length - 1;
-        int j = str2.Length - 1;
-        while (j >= 0) {
-            char ch1 = str1[i];
-            char ch2 = str2[j];
-            if (ch1 != ch2) {
-                return false;
-            }
-            i--;
-            j--;
-        }
-        return true;
     }
 }   // End of SVGImage.cs
 }   // End of PDFjet.NET namespace
