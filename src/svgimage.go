@@ -301,8 +301,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 
 func (image *SVGImage) DrawOn(page *Page) []float32 {
 	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
-	for i := 0; i < len(image.paths); i++ {
-		path := image.paths[i]
+	for _, path := range image.paths {
 		image.drawPath(path, page)
 	}
 	page.AddEMC()
