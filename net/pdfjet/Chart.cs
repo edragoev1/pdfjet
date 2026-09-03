@@ -510,35 +510,36 @@ public class Chart : IDrawable {
     private void DrawPathsAndPoints(
             Page page, List<List<Point>> chartData) {
         foreach (List<Point> points in chartData) {
-            Point point = points[0];
-            if (point.drawPath) {
-                page.SetPenColor(point.strokeColor);
-                page.SetPenWidth(point.strokeWidth);
-                page.SetStrokeDashPattern(point.strokePattern);
+            page.SaveGraphicsState();
+            Point p0 = points[0];
+            if (p0.drawPath) {
+                page.SetPenColor(p0.strokeColor);
+                page.SetPenWidth(p0.strokeWidth);
+                page.SetStrokeDashPattern(p0.strokePattern);
                 page.DrawPath(points, PathOperator.Stroke);
-                if (point.GetText() != null) {
-                    page.SetTextDirection(point.GetTextDirection());
+                if (p0.GetText() != null) {
+                    page.SetTextDirection(p0.GetTextDirection());
                     page.DrawString(
-                        f2,
-                        null,
-                        fontSize,
-                        point.GetText(),
-                        point.x + 1.5f*f2.GetDescent(),
-                        point.y + fontSize/3f,
-                        point.GetTextColor(),
-                        null);
+                            f2,
+                            null,
+                            fontSize,
+                            p0.GetText(),
+                            p0.x + 1.5f*f2.GetDescent(),
+                            p0.y + fontSize/3f,
+                            p0.GetTextColor(),
+                            null);
                 }
             }
-            for (int i = 0; i < points.Count; i++) {
-                        point = points[i];
+            foreach (Point point in points) {
                 if (point.GetShape() != Point.INVISIBLE) {
                     page.SetPenWidth(point.strokeWidth);
                     page.SetStrokeDashPattern(point.strokePattern);
-                    page.SetPenColor(point.strokeColor);
                     page.SetBrushColor(point.fillColor);
+                    page.SetPenColor(point.strokeColor);
                     page.DrawPoint(point);
                 }
             }
+            page.RestoreGraphicsState();
         }
     }
 

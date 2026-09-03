@@ -136,7 +136,9 @@ public class Example_09 {
                         cols[5].Replace(",", "")) / population);
                 point.SetY(Double.Parse(
                         cols[7].Replace(",", "")) / population * 100);
+
                 point.SetRadius(2.0);
+                point.SetStrokeColor(Color.gray);
 
                 if (point.GetX() > 1.25f) {
                     point.SetShape(Point.RIGHT_ARROW);
@@ -146,10 +148,10 @@ public class Example_09 {
                     point.SetStrokeColor(Color.blue);
                 } else if (point.GetText().Equals("France")) {
                     point.SetShape(Point.MULTIPLY);
-                    point.SetStrokeColor(Color.black);
+                    point.SetStrokeColor(Color.green);
                 } else if (point.GetText().Equals("Canada")) {
                     point.SetShape(Point.BOX);
-                    point.SetStrokeColor(Color.darkolivegreen);
+                    point.SetStrokeColor(Color.orange);
                 } else if (point.GetText().Equals("United States")) {
                     point.SetShape(Point.STAR);
                     point.SetStrokeColor(Color.red);

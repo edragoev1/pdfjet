@@ -137,6 +137,7 @@ final public class Example_09 {
                     point.setY((float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
 
                     point.setRadius(2f);
+                    point.setStrokeColor(Color.gray);
 
                     if (point.getX() > 1.25f) {
                         point.setShape(Point.RIGHT_ARROW);
@@ -146,10 +147,10 @@ final public class Example_09 {
                         point.setStrokeColor(Color.blue);
                     } else if (point.getText().equals("France")) {
                         point.setShape(Point.MULTIPLY);
-                        point.setStrokeColor(Color.black);
+                        point.setStrokeColor(Color.green);
                     } else if (point.getText().equals("Canada")) {
                         point.setShape(Point.BOX);
-                        point.setStrokeColor(Color.darkolivegreen);
+                        point.setStrokeColor(Color.orange);
                     } else if (point.getText().startsWith("United States")) {
                         point.setShape(Point.STAR);
                         point.setStrokeColor(Color.red);

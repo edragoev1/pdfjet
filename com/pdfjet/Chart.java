@@ -324,8 +324,7 @@ public class Chart implements Drawable {
 
         // Defensive copy so the user's data is never mutated
         List<List<Point>> plotData = new ArrayList<List<Point>>(chartData.size());
-        for (int i = 0; i < chartData.size(); i++) {
-            List<Point> original = chartData.get(i);
+        for (List<Point> original : chartData) {
             List<Point> copy = new ArrayList<Point>(original.size());
             for (Point p : original) {
                 copy.add(new Point(p));
@@ -334,8 +333,7 @@ public class Chart implements Drawable {
         }
 
         // Translate data coordinates to page coordinates (on the copies)
-        for (int i = 0; i < plotData.size(); i++) {
-            List<Point> points = plotData.get(i);
+        for (List<Point> points : plotData) {
             for (Point point : points) {
                 if (xyChart) {
                     point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
@@ -543,36 +541,37 @@ public class Chart implements Drawable {
     private void drawPathsAndPoints(
             Page page, List<List<Point>> chartData) throws Exception {
         for (List<Point> points : chartData) {
-            Point point = points.get(0);
-            if (point.drawPath) {
-                page.setPenColor(point.strokeColor);
-                page.setPenWidth(point.strokeWidth);
-                page.setStrokeDashPattern(point.strokePattern);
+            page.saveGraphicsState();
+            Point p0 = points.get(0);
+            if (p0.drawPath) {
+                page.setPenColor(p0.strokeColor);
+                page.setPenWidth(p0.strokeWidth);
+                page.setStrokeDashPattern(p0.strokePattern);
                 page.drawPath(points, PathOperator.STROKE);
-                if (point.getText() != null) {
-                    page.setBrushColor(point.getTextColor());
-                    page.setTextDirection(point.getTextDirection());
+                if (p0.getText() != null) {
+                    page.setBrushColor(p0.getTextColor());
+                    page.setTextDirection(p0.getTextDirection());
                     page.drawString(
-                        f2,
-                        null,
-                        fontSize,
-                        point.getText(),
-                        point.x + 1.5f*f2.getDescent(),
-                        point.y + fontSize/3f,
-                        point.getTextColor(),
-                        null);
+                            f2,
+                            null,
+                            fontSize,
+                            p0.getText(),
+                            p0.x + 1.5f*f2.getDescent(),
+                            p0.y + fontSize/3f,
+                            p0.getTextColor(),
+                            null);
                 }
             }
-            for (int i = 0; i < points.size(); i++) {
-                        point = points.get(i);
+            for (Point point : points) {
                 if (point.getShape() != Point.INVISIBLE) {
                     page.setPenWidth(point.strokeWidth);
                     page.setStrokeDashPattern(point.strokePattern);
-                    page.setPenColor(point.strokeColor);
                     page.setBrushColor(point.fillColor);
+                    page.setPenColor(point.strokeColor);
                     page.drawPoint(point);
                 }
             }
+            page.restoreGraphicsState();
         }
     }
 
