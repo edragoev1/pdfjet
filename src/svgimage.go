@@ -56,8 +56,7 @@ func NewSVGImage(reader io.Reader) *SVGImage {
 	var token = false
 	var header = false
 	var param string
-	for i := 0; i < len(buffer); i++ {
-		ch := buffer[i]
+	for _, ch := range buffer {
 		if strings.HasSuffix(builder.String(), "<svg") {
 			header = true
 			builder.Reset()
@@ -163,7 +162,7 @@ func (image *SVGImage) processPaths(paths []*SVGPath) {
 	box := make([]float32, 4)
 	if image.viewBox != "" {
 		list := strings.Fields(strings.TrimSpace(image.viewBox))
-		for i := 0; i < len(box); i++ {
+		for i := range box {
 			val, err := strconv.ParseFloat(list[i], 32)
 			if err != nil {
 				log.Fatal(err)
@@ -191,25 +190,24 @@ func (image *SVGImage) processPaths(paths []*SVGPath) {
 func getColor(colorMap map[string]int32, colorName string) int32 {
 	if strings.HasPrefix(colorName, "#") {
 		if len(colorName) == 7 {
-			color, err := strconv.ParseInt(colorName[1:], 16, 32)
+			colorInt64, err := strconv.ParseInt(colorName[1:], 16, 32)
 			if err != nil {
 				log.Fatal(err)
 			}
-			return int32(color)
+			return int32(colorInt64)
 		} else if len(colorName) == 4 {
 			str := string([]byte{
 				colorName[1], colorName[1],
 				colorName[2], colorName[2],
 				colorName[3], colorName[3],
 			})
-			color, err := strconv.ParseInt(str, 16, 32)
+			colorInt64, err := strconv.ParseInt(str, 16, 32)
 			if err != nil {
 				log.Fatal(err)
 			}
-			return int32(color)
-		} else {
-			return color.Transparent
+			return int32(colorInt64)
 		}
+		return color.Transparent
 	}
 	value, ok := colorMap[colorName]
 	if ok {
@@ -268,8 +266,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 	page.SetPenWidth(strokeWidth)
 
 	if fillColor != color.Transparent {
-		for i := 0; i < len(path.operations); i++ {
-			op := path.operations[i]
+		for _, op := range path.operations {
 			if op.cmd == 'M' {
 				page.MoveTo(op.x+image.x, op.y+image.y)
 			} else if op.cmd == 'L' {
@@ -285,8 +282,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 	}
 
 	if strokeColor != color.Transparent {
-		for i := 0; i < len(path.operations); i++ {
-			op := path.operations[i]
+		for _, op := range path.operations {
 			if op.cmd == 'M' {
 				page.MoveTo(op.x+image.x, op.y+image.y)
 			} else if op.cmd == 'L' {
