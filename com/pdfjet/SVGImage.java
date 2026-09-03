@@ -10,6 +10,11 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
 /**
  * Used to embed SVG images in the PDF document.
  */
@@ -55,97 +60,92 @@ public class SVGImage {
     public SVGImage(InputStream stream) throws Exception {
         colorMap = new ColorMap();
         paths = new ArrayList<SVGPath>();
-        SVGPath path = null;
-        StringBuilder buf = new StringBuilder();
-        boolean token = false;
-        String param = null;
-        boolean header = false;
-        int ch;
-        while ((ch = stream.read()) != -1) {
-            if (buf.toString().endsWith("<svg")) {
-                header = true;
-                buf.setLength(0);
-            } else if (header && ch == '>') {
-                header = false;
-                buf.setLength(0);
-            } else if (!token && buf.toString().endsWith(" width=")) {
-                token = true;
-                param = "width";
-                buf.setLength(0);
-            } else if (!token && buf.toString().endsWith(" height=")) {
-                token = true;
-                param = "height";
-                buf.setLength(0);
-            } else if (!token && buf.toString().endsWith(" viewBox=")) {
-                token = true;
-                param = "viewBox";
-                buf.setLength(0);
-            } else if (!token && buf.toString().endsWith(" d=")) {
-                token = true;
-                if (path != null) {
-                    paths.add(path);
+
+        XMLInputFactory factory = XMLInputFactory.newFactory();
+        // Disable DTD and external entity processing to prevent XXE attacks.
+        factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+        factory.setProperty(
+                "javax.xml.stream.isSupportingExternalEntities", Boolean.FALSE);
+
+        XMLStreamReader reader = factory.createXMLStreamReader(stream, "UTF-8");
+        try {
+            while (reader.hasNext()) {
+                int event = reader.next();
+                if (event != XMLStreamConstants.START_ELEMENT) {
+                    continue;
                 }
-                path = new SVGPath();
-                param = "data";
-                buf.setLength(0);
-            } else if (!token && buf.toString().endsWith(" fill=")) {
-                token = true;
-                param = "fill";
-                buf.setLength(0);
-            } else if (!token && buf.toString().endsWith(" stroke=")) {
-                token = true;
-                param = "stroke";
-                buf.setLength(0);
-            } else if (!token && buf.toString().endsWith(" stroke-width=")) {
-                token = true;
-                param = "stroke-width";
-                buf.setLength(0);
-            } else if (token && ch == '\"') {
-                token = false;
-                if (param.equals("width")) {
-                    this.w = Float.parseFloat(buf.toString());
-                } else if (param.equals("height")) {
-                    this.h = Float.parseFloat(buf.toString());
-                } else if (param.equals("viewBox")) {
-                    this.viewBox = buf.toString();
-                } else if (param.equals("data")) {
-                    path.data = buf.toString();
-                } else if (param.equals("fill")) {
-                    int fillColor = colorMap.getColor(buf.toString());
-                    if (header) {
-                        this.fill = fillColor;
-                    } else {
-                        path.fill = fillColor;
-                    }
-                } else if (param.equals("stroke")) {
-                    int strokeColor = colorMap.getColor(buf.toString());
-                    if (header) {
-                        this.stroke = strokeColor;
-                    } else {
-                        path.stroke = strokeColor;
-                    }
-                } else if (param.equals("stroke-width")) {
-                    try {
-                        float strokeWidth = Float.parseFloat(buf.toString());
-                        if (header) {
-                            this.strokeWidth = strokeWidth;
-                        } else {
-                            path.strokeWidth = strokeWidth;
-                        }
-                    } catch (Exception e) {
-                        path.strokeWidth = 0f;
-                    }
+                String localName = reader.getLocalName();
+                if (localName.equals("svg")) {
+                    readSVGAttributes(reader);
+                } else if (localName.equals("path")) {
+                    readPathAttributes(reader);
                 }
-                buf.setLength(0);
-            } else {
-                buf.append((char) ch);
+            }
+        } catch (XMLStreamException e) {
+            throw new Exception("Failed to parse SVG: " + e.getMessage(), e);
+        } finally {
+            try {
+                reader.close();
+            } catch (XMLStreamException e) {
+                // Nothing actionable here.
             }
         }
-        if (path != null) {
-            paths.add(path);
-        }
-        stream.close();
+
         processPaths(paths);
+    }
+
+    private void readSVGAttributes(XMLStreamReader reader) {
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            String name = reader.getAttributeLocalName(i);
+            String value = reader.getAttributeValue(i);
+            if (name.equals("width")) {
+                try {
+                    this.w = Float.parseFloat(value);
+                } catch (NumberFormatException e) {
+                    this.w = 0f;
+                }
+            } else if (name.equals("height")) {
+                try {
+                    this.h = Float.parseFloat(value);
+                } catch (NumberFormatException e) {
+                    this.h = 0f;
+                }
+            } else if (name.equals("viewBox")) {
+                this.viewBox = value;
+            } else if (name.equals("fill")) {
+                this.fill = colorMap.getColor(value);
+            } else if (name.equals("stroke")) {
+                this.stroke = colorMap.getColor(value);
+            } else if (name.equals("stroke-width")) {
+                try {
+                    this.strokeWidth = Float.parseFloat(value);
+                } catch (NumberFormatException e) {
+                    this.strokeWidth = 0f;
+                }
+            }
+        }
+    }
+
+    private void readPathAttributes(XMLStreamReader reader) {
+        SVGPath path = new SVGPath();
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            String name = reader.getAttributeLocalName(i);
+            String value = reader.getAttributeValue(i);
+            if (name.equals("d")) {
+                path.data = value;
+            } else if (name.equals("fill")) {
+                path.fill = colorMap.getColor(value);
+            } else if (name.equals("stroke")) {
+                path.stroke = colorMap.getColor(value);
+            } else if (name.equals("stroke-width")) {
+                try {
+                    path.strokeWidth = Float.parseFloat(value);
+                } catch (NumberFormatException e) {
+                    path.strokeWidth = 0f;
+                }
+            }
+        }
+        paths.add(path);
     }
 
     private void processPaths(List<SVGPath> paths) {
