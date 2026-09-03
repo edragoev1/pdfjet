@@ -514,7 +514,6 @@ public class Page {
     //     to the output stream (e.g., for a PDF or graphics context).
     func setPenColor(_ rgbColor: [Float]?) {
         if rgbColor == nil {
-            print("Warning: RGB color is null. Ignoring request.")
             return // Early exit if null
         }
 
@@ -582,7 +581,6 @@ public class Page {
     //     to the output stream (e.g., for a PDF or graphics context).
     func setBrushColor(_ rgbColor: [Float]?) {
         if rgbColor == nil {
-            print("Warning: RGB color is null. Ignoring request.")
             return // Early exit if null
         }
 

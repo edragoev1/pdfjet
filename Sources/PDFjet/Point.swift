@@ -278,9 +278,9 @@ public class Point : Drawable {
     }
 
     ///
-    /// Sets the width of the lines of this point.
+    /// Sets the stroke width.
     ///
-    /// - Parameter lineWidth the line width.
+    /// - Parameter strokeWidth the stroke width.
     ///
     @discardableResult
     public func setStrokeWidth(_ strokeWidth: Float) -> Point {
@@ -318,7 +318,7 @@ public class Point : Drawable {
     ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
     /// </pre>
     ///
-    /// - Parameter linePattern the line dash pattern.
+    /// - Parameter strokePattern the line dash pattern.
     ///
     @discardableResult
     public func setStrokePattern(_ strokePattern: String) -> Point {

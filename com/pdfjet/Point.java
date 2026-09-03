@@ -71,7 +71,6 @@ public class Point implements Drawable {
     protected float y;
     protected float r = 2f;
     protected int shape = Point.CIRCLE;
-    // protected int color = Color.black;
     protected int align = Align.RIGHT;
 
     protected float[] fillColor = null;
@@ -327,10 +326,6 @@ public class Point implements Drawable {
     public void setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
     }
-
-//     public void setStrokeWidth(float strokeWidth) {
-//         this.strokeWidth = strokeWidth;
-//     }
 
     public float[] getFillColor() {
         return this.fillColor;

@@ -183,10 +183,10 @@ public func getData(
                 point.setStrokeColor(Color.blue)
             } else if point.getText() == "France" {
                 point.setShape(Point.MULTIPLY)
-                point.setStrokeColor(Color.black)
+                point.setStrokeColor(Color.green)
             } else if point.getText() == "Canada" {
                 point.setShape(Point.BOX)
-                point.setStrokeColor(Color.darkolivegreen)
+                point.setStrokeColor(Color.orange)
             } else if point.getText() == "United States" {
                 point.setShape(Point.STAR)
                 point.setStrokeColor(Color.red)

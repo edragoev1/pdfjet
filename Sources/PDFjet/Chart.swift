@@ -517,12 +517,8 @@ public class Chart : Drawable {
                     if point.getShape() != Point.INVISIBLE {
                         page.setPenWidth(point.strokeWidth)
                         page.setStrokeDashPattern(point.strokePattern)
-                        if let strokeColor = point.strokeColor {
-                            page.setPenColor(strokeColor)
-                        }
-                        if let fillColor = point.fillColor {
-                            page.setBrushColor(fillColor)
-                        }
+                        page.setBrushColor(point.fillColor)
+                        page.setPenColor(point.strokeColor)
                         page.drawPoint(point)
                     }
                 }
