@@ -47,6 +47,10 @@ public class SVGImage {
         guard let fileStream = InputStream(fileAtPath: fileAtPath) else {
             return nil  // cannot open file
         }
+        // This constructor owns the stream it created, so it closes it
+        // once reading is done. (Deferred until after self.init returns,
+        // since reading happens inside the designated initializer.)
+        defer { fileStream.close() }
         self.init(stream: fileStream)
     }
 
@@ -59,6 +63,8 @@ public class SVGImage {
     public init(stream: InputStream) {
         paths = [SVGPath]()
         var path: SVGPath?
+        // The caller retains ownership of the stream — we read from it
+        // but do not close it, consistent with the Java and .NET editions.
         stream.open()
         var scalars = [UnicodeScalar]()
         var buffer = [UInt8](repeating: 0, count: 1)
@@ -69,7 +75,6 @@ public class SVGImage {
             }
             scalars.append(UnicodeScalar(buffer[0]))
         }
-        stream.close()
 
         var buf = String()
         var token = false
@@ -96,8 +101,8 @@ public class SVGImage {
                 buf = ""
             } else if !token && buf.hasSuffix(" d=") {
                 token = true
-                if path != nil {
-                    paths!.append(path!)
+                if let pending = path {
+                    paths?.append(pending)
                 }
                 path = SVGPath()
                 param = "data"
@@ -155,16 +160,16 @@ public class SVGImage {
                 buf.append(String(scalar))
             }
         }
-        if path != nil {
-            paths!.append(path!)
+        if let last = path {
+            paths?.append(last)
         }
-        processPaths(paths!)
+        processPaths(paths ?? [])
     }
 
     func processPaths(_ paths: [SVGPath]) {
         var box: [Float] = Array(repeating: 0.0, count: 4)
-        if viewBox != nil {
-            let list = viewBox!.trim()
+        if let viewBox = viewBox {
+            let list = viewBox.trim()
                 .components(separatedBy: .whitespaces)
                 .filter { !$0.isEmpty }
             guard list.count == 4 else {
@@ -189,7 +194,7 @@ public class SVGImage {
             path.operations = SVG.getOperations(data)
             path.operations = SVG.toPDF(path.operations ?? [])
             if viewBox != nil {
-                for op in path.operations! {
+                for op in path.operations ?? [] {
                     op.x = (op.x - box[0]) * w / box[2]
                     op.y = (op.y - box[1]) * h / box[3]
                     op.x1 = (op.x1 - box[0]) * w / box[2]
@@ -233,11 +238,13 @@ public class SVGImage {
      *
      *  @param x the x coordinate of the top left corner of this box when drawn on the page.
      *  @param y the y coordinate of the top left corner of this box when drawn on the page.
-     *  @return this SVG object.
+     *  @return this SVG object, to allow method chaining.
      */
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> SVGImage {
         self.x = x
         self.y = y
+        return self
     }
 
     public func scaleBy(_ factor: Float) {
