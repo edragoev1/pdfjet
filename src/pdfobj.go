@@ -66,7 +66,6 @@ func (obj *PDFobj) SetStreamAndData(buf []byte, length int) {
 		obj.data = decompressor.Inflate(obj.stream)
 	} else {
 		// Assume no compression for now.
-		// In the future we may handle LZW compression ...
 		obj.data = obj.stream
 	}
 }

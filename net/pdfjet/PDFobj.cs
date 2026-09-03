@@ -51,7 +51,6 @@ public class PDFobj {
                 this.data = Decompressor.inflate(stream);
             } else {
                 // Assume no compression for now.
-                // In the future we may handle LZW decompression ...
                 this.data = stream;
             }
         }
