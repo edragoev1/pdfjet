@@ -256,7 +256,8 @@ public class TextBlock : Drawable {
             return [width, max(height, Float(textLines.count) * leading + 2 * textPadding)]
         }
 
-        page!.append("q\n")
+        page!.saveGraphicsState()
+
         page!.setPenWidth(self.borderWidth)
 //         if textAlignment == Alignment.RIGHT {
 //             // rightAlignText(textLines)    // TODO:
@@ -296,7 +297,7 @@ public class TextBlock : Drawable {
             highlightColors)
         // page!.addEMC()
 
-        page!.append("Q\n")
+        page!.restoreGraphicsState()
 
         return [x + width, max(y + height, y + Float(textLines.count) * leading + 2 * textPadding)]
     }

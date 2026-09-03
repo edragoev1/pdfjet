@@ -331,7 +331,9 @@ public class Image : Drawable {
         if yBox != nil {
             y += yBox!
         }
-        page!.append("q\n")
+
+        page!.saveGraphicsState()
+
         if degrees == 0 {
             page!.append(w!)
             page!.append(Token.space)
@@ -396,7 +398,9 @@ public class Image : Drawable {
         page!.append("/Im")
         page!.append(objNumber!)
         page!.append(" Do\n")
-        page!.append("Q\n")
+
+        page!.restoreGraphicsState()
+
         page!.addEMC()
 
         if uri != nil || key != nil {
@@ -561,7 +565,6 @@ public class Image : Drawable {
         obj.dict.append("/Subtype")
         obj.dict.append("/Image")
         obj.dict.append("/Filter")
-        // obj.dict.append("/LZWDecode")
         obj.dict.append("/FlateDecode")
         obj.dict.append("/Width")
         obj.dict.append(String(Int(w!)))

@@ -152,7 +152,7 @@ public class Container: Drawable {
     /// - Parameter page: The `Page` to draw on.
     /// - Returns: An array containing the bottom-right position of the container.
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.append("q\n") // Save the graphics state
+        page!.saveGraphicsState()
 
         page!.append("1 0 0 1 ")
         page!.append(self.x)
@@ -218,7 +218,7 @@ public class Container: Drawable {
             element.drawOn(page)
         }
 
-        page!.append("Q\n") // Restore the graphics state
+        page!.restoreGraphicsState()
 
         return [self.x + width, self.y + height]
     }

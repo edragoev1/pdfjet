@@ -364,7 +364,7 @@ public class Stamp {
     @discardableResult
     public func drawOn(_ page: Page) -> [Float] {
         // Save graphics state
-        page.append("q\n")
+        page.saveGraphicsState()
 
         let drawX = self.x
         let drawY = (page.height - self.height) - self.y
@@ -400,7 +400,7 @@ public class Stamp {
         page.append("/Fm\(objNumber ?? 0) Do\n")
 
         // Restore graphics state
-        page.append("Q\n")
+        page.restoreGraphicsState()
 
         return [self.x + width, self.y + height]
     }

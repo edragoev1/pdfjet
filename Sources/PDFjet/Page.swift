@@ -100,12 +100,17 @@ public class Page {
         self.tm2 = FastFloat.toByteArray(tmx[2])
         self.tm3 = FastFloat.toByteArray(tmx[3])
         self.pageObj = removeComments(self.pageObj!)
-        append("q\n")
+        saveGraphicsState()
         if pageObj.gsNumber != -1 {
             append("/GS")
             append(pageObj.gsNumber + 1)
             append(" gs\n")
         }
+    }
+
+    public func complete(_ objects: inout [PDFobj]) {
+        restoreGraphicsState()
+        pageObj!.addContent(&self.buf, &objects)
     }
 
     private func removeComments(_ obj: PDFobj) -> PDFobj {
@@ -156,11 +161,6 @@ public class Page {
 
     public func addResource(_ font: Font, _ objects: inout [PDFobj]) {
         pageObj!.addResource(font, &objects)
-    }
-
-    public func complete(_ objects: inout [PDFobj]) {
-        append("Q\n")
-        pageObj!.addContent(&self.buf, &objects)
     }
 
     public func getContent() -> [UInt8] {
@@ -1538,7 +1538,7 @@ public class Page {
             _ y: Float,
             _ xScale: Float,
             _ yScale: Float) {
-        append("q\n")
+        saveGraphicsState()
 
         append(xScale)
         append(" 0 0 ")
@@ -1560,7 +1560,7 @@ public class Page {
     }
 
     func endTransform() {
-        append("Q\n")
+        restoreGraphicsState()
     }
 
     public func drawContents(

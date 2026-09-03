@@ -464,7 +464,8 @@ public class Point : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.append("q\n")
+        page!.saveGraphicsState()
+
         if fillColor != nil && strokeColor != nil {
             page!.setBrushColor(fillColor)
             page!.setPenColor(strokeColor)
@@ -479,7 +480,8 @@ public class Point : Drawable {
             self.pathOperator = PathOperator.closeAndStroke
         }
         page!.drawPoint(self)
-        page!.append("Q\n")
+
+        page!.restoreGraphicsState()
 
         return [self.x + self.r, self.y + self.r]
     }
