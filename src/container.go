@@ -159,7 +159,7 @@ func RotateAroundCenter(point, center []float32, degrees float64) []float32 {
 // Returns a slice containing the bottom-right position of the container.
 // Returns an error if drawing fails.
 func (c *Container) DrawOn(page *Page) [2]float32 {
-	page.appendString("q\n") // Save the graphics state
+	page.SaveGraphicsState()
 
 	// 1) Translate container to its final position
 	page.appendString("1 0 0 1 ")
@@ -234,7 +234,7 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 		element.DrawOn(page)
 	}
 
-	page.appendString("Q\n") // Restore graphics state
+	page.RestoreGraphicsState()
 
 	// Return bottom-right position of container
 	return [2]float32{c.X + c.Width, c.Y + c.Height}

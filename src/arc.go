@@ -179,7 +179,9 @@ func (arc *Arc) DrawOn(page *Page) []float32 {
 	}
 
 	page.AddBMC("P", arc.language, arc.actualText, arc.altDescription)
-	page.appendString("q\n")
+
+	page.SaveGraphicsState()
+
 	centerX := arc.cx
 	centerY := page.height - arc.cy
 
@@ -213,7 +215,8 @@ func (arc *Arc) DrawOn(page *Page) []float32 {
 		page.SetPenColor(color.Black)
 		page.appendString("S\n")
 	}
-	page.appendString("Q\n")
+
+	page.RestoreGraphicsState()
 	page.AddEMC()
 
 	return arcPoints

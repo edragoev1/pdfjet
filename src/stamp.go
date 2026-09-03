@@ -372,7 +372,7 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 
 // DrawOn draws the stamp on a page
 func (s *Stamp) DrawOn(page *Page) []float32 {
-	page.appendString("q\n")
+	page.SaveGraphicsState()
 
 	drawX := s.x
 	drawY := (page.height - s.height) - s.y
@@ -416,7 +416,7 @@ func (s *Stamp) DrawOn(page *Page) []float32 {
 	page.appendFloat32(float32(s.objNumber))
 	page.appendString(" Do\n")
 
-	page.appendString("Q\n")
+	page.RestoreGraphicsState()
 
 	return []float32{s.x + s.width, s.y + s.height}
 }

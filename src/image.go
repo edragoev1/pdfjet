@@ -321,7 +321,8 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 	image.x += image.xBox
 	image.y += image.yBox
-	page.appendString("q\n")
+
+	page.SaveGraphicsState()
 
 	switch image.degrees {
 	case 0:
@@ -388,7 +389,8 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 	page.appendString("/Im")
 	page.appendInteger(image.objNumber)
 	page.appendString(" Do\n")
-	page.appendString("Q\n")
+
+	page.RestoreGraphicsState()
 
 	page.AddEMC()
 

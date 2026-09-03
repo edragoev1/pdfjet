@@ -135,13 +135,19 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
 	page.tm2 = fastfloat.ToByteArray(page.tmx[2])
 	page.tm3 = fastfloat.ToByteArray(page.tmx[3])
-	page.appendString("q\n")
+	page.SaveGraphicsState()
 	if pageObj.gsNumber != 0 {
 		page.appendString("/GS")
 		page.appendInteger(pageObj.gsNumber + 1)
 		page.appendString(" gs\n")
 	}
 	return page
+}
+
+// Complete completes adding content to the existing PDF.
+func (page *Page) Complete(objects *[]*PDFobj) {
+	page.RestoreGraphicsState()
+	page.pageObj.addContent(page.getContent(), objects)
 }
 
 // removeComments removes object dictionary comments.
@@ -179,12 +185,6 @@ func (page *Page) AddImageResource(image *Image, objects *[]*PDFobj) {
 // AddFontResource adds font to the PDF objects.
 func (page *Page) AddFontResource(font *Font, objects *[]*PDFobj) {
 	page.pageObj.AddFontResource(font, objects)
-}
-
-// Complete completes adding content to the existing PDF.
-func (page *Page) Complete(objects *[]*PDFobj) {
-	page.appendString("Q\n")
-	page.pageObj.addContent(page.getContent(), objects)
 }
 
 func (page *Page) getContent() []byte {
@@ -1314,7 +1314,7 @@ func (page *Page) AddAnnotation(annotation *Annotation) {
 }
 
 func (page *Page) beginTransform(x, y, xScale, yScale float32) {
-	page.appendString("q\n")
+	page.SaveGraphicsState()
 
 	page.appendFloat32(xScale)
 	page.appendString(" 0 0 ")
@@ -1336,7 +1336,7 @@ func (page *Page) beginTransform(x, y, xScale, yScale float32) {
 }
 
 func (page *Page) endTransform() {
-	page.appendString("Q\n")
+	page.RestoreGraphicsState()
 }
 
 // DrawContents draws the contents on the page.

@@ -289,7 +289,8 @@ func (point *Point) GetAlignment() int {
 // @param page the page to draw this point on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (point *Point) DrawOn(page *Page) [3]float32 {
-	page.appendString("q\n")
+	page.SaveGraphicsState()
+
 	if point.hasFillColor == true && point.hasStrokeColor == true {
 		page.SetBrushColorRGB(point.fillColor)
 		page.SetPenColorRGB(point.strokeColor)
@@ -304,7 +305,8 @@ func (point *Point) DrawOn(page *Page) [3]float32 {
 		point.pathOperator = pathoperator.CloseAndStroke
 	}
 	page.DrawPoint(point)
-	page.appendString("Q\n")
+
+	page.RestoreGraphicsState()
 
 	return [3]float32{point.x + point.r, point.y + point.r}
 }

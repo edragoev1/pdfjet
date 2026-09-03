@@ -353,7 +353,8 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		}
 	}
 
-	page.appendString("q\n")
+	page.SaveGraphicsState()
+
 	page.SetPenWidth(textBlock.borderWidth)
 	switch textBlock.textAlignment {
 	case alignment.Right:
@@ -391,7 +392,8 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		textBlock.textColor,
 		textBlock.keywordHighlightColors)
 	page.AddEMC()
-	page.appendString("Q\n")
+
+	page.RestoreGraphicsState()
 
 	// You can uncomment and adapt if required.
 	//if textBlock.textdirection == LEFT_TO_RIGHT &&
