@@ -229,11 +229,10 @@ public class Chart : IDrawable {
      * @return the bottom-right corner coordinates [x, y].
      */
     public float[] DrawOn(Page page) {
+        // Guard against null or empty data
         if (chartData == null || chartData.Count == 0) {
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
-
-        page.Append("q\n"); // Save graphics state
 
         nf.SetMinimumFractionDigits(minFractionDigits);
         nf.SetMaximumFractionDigits(maxFractionDigits);
@@ -362,8 +361,6 @@ public class Chart : IDrawable {
         page.SetDefaultStrokeWidth();
         page.SetDefaultStrokePattern();
         page.SetPenColor(Color.black);
-
-        page.Append("Q\n"); // Restore graphics state
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};
     }

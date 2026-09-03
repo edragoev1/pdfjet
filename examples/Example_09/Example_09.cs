@@ -48,7 +48,7 @@ public class Example_09 {
         double y = m * x + b;
         Point p1 = new Point(x, y);
         p1.SetDrawPath();
-        p1.SetFillColor(Color.blue);
+        p1.SetStrokeColor(Color.blue);
         p1.SetShape(Point.INVISIBLE);
 
         x = 1.5;

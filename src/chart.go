@@ -452,23 +452,22 @@ func (chart *Chart) DrawYAxisLabels(page *Page) {
 }
 
 func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
-	for i := range chartData {
-		points := chartData[i]
-		point := points[0]
-		if point.drawPath {
-			page.SetPenColorRGB(point.strokeColor)
-			page.SetPenWidth(point.strokeWidth)
-			page.SetStrokeDashPattern(point.strokePattern)
+	for _, points := range chartData {
+		p0 := points[0]
+		if p0.drawPath {
+			page.SetPenColorRGB(p0.strokeColor)
+			page.SetPenWidth(p0.strokeWidth)
+			page.SetStrokeDashPattern(p0.strokePattern)
 			page.DrawPath(points, pathoperator.Stroke)
-			if point.GetText() != "" {
-				page.SetTextDirection(point.GetTextDirection())
+			if p0.GetText() != "" {
+				page.SetTextDirection(p0.GetTextDirection())
 				page.drawString(
 					chart.f2,
 					chart.f2.size,
-					point.text,
-					point.x+1.5*chart.f2.descent,
-					point.y+chart.f2.size/3.0,
-					point.textColor,
+					p0.text,
+					p0.x+1.5*chart.f2.descent,
+					p0.y+chart.f2.size/3.0,
+					p0.textColor,
 					nil)
 			}
 		}
