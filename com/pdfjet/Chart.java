@@ -77,6 +77,18 @@ public class Chart implements Drawable {
 
     private List<List<Point>> chartData = null;
 
+    private static final int[] DEFAULT_PALETTE = {
+        Color.blue,
+        Color.red,
+        Color.green,
+        Color.orange,
+        Color.purple,
+        Color.cyan,
+        Color.magenta,
+        Color.olive
+    };
+    private boolean autoColors = true;
+
     /**
      *  Creates an XY chart.
      *
@@ -250,6 +262,10 @@ public class Chart implements Drawable {
         this.vGridLinePattern = pattern;
     }
 
+    public void setAutoColors(boolean autoColors) {
+        this.autoColors = autoColors;
+    }
+
     /**
      *  Draws this chart on the specified page.
      *
@@ -340,7 +356,13 @@ public class Chart implements Drawable {
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                     point.setStrokeWidth(point.getStrokeWidth() * (x6 - x5) / w);
                 } else {
-                    point.x = x5 + point.x * (x6 - x5) / w;
+                    // point.x = x5 + point.x * (x6 - x5) / w;
+                    // point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
+
+                    // Count unique categories or use point.x as category index
+                    int numCategories = chartData.size(); // or a dedicated count
+                    float categoryWidth = (x6 - x5) / numCategories;
+                    point.x = x5 + (point.x / w) * (x6 - x5); // Scale based on x range
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                 }
                 if (point.getURIAction() != null) {
@@ -537,12 +559,23 @@ public class Chart implements Drawable {
         }
     }
 
+    public float[] toFloatArray(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        return new float[] {r, g, b};
+    }
+
     /** Draws connecting paths, point markers, and point text. */
     private void drawPathsAndPoints(
             Page page, List<List<Point>> chartData) throws Exception {
         for (List<Point> points : chartData) {
             Point p0 = points.get(0);
             if (p0.drawPath) {
+                if (autoColors && p0.strokeColor == null) {
+                    int index = chartData.indexOf(points) % DEFAULT_PALETTE.length;
+                    p0.strokeColor = toFloatArray(DEFAULT_PALETTE[index]);
+                }
                 page.setPenColor(p0.strokeColor);
                 page.setPenWidth(p0.strokeWidth);
                 page.setStrokeDashPattern(p0.strokeDashPattern);
