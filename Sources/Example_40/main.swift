@@ -40,7 +40,7 @@ public class Example_40 {
         var x: Float = 10.0
         let dx1: Float = 16.0
         let dx2: Float = 26.0
-        
+
         addVerticalBar(&chartData, x, w, 45.0, Color.green, " January", Color.white)
         x += dx1
         addVerticalBar(&chartData, x, w, 75.0, Color.red, " January", Color.white)
@@ -108,6 +108,7 @@ public class Example_40 {
         point.setY(0.0)
         point.setShape(Point.INVISIBLE)
         point.setStrokeWidth(w)
+        point.setStrokeColor(color)
         point.setText(text)
         point.setTextColor(textColor)
         point.setTextDirection(90)
