@@ -773,7 +773,7 @@ final public class Page {
     /**
      * Sets the default line dash pattern - solid line.
      */
-    public void setDefaultLinePattern() {
+    public void setDefaultStrokeDashPattern() {
         append("[] 0");
         append(" d\n");
     }

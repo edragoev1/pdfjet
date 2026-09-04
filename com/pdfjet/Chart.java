@@ -389,7 +389,7 @@ public class Chart implements Drawable {
 
         // Restore default pen/brush state
         page.setDefaultLineWidth();
-        page.setDefaultLinePattern();
+        page.setDefaultStrokeDashPattern();
         page.setPenColor(Color.black);
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};
