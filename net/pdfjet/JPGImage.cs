@@ -88,11 +88,11 @@ class JPGImage {
         return this.data;
     }
 
-    private void ReadJPGImage(System.IO.Stream stream) {
-        char ch1 = (char) stream.ReadByte();
-        char ch2 = (char) stream.ReadByte();
-        if (ch1 != 0x00FF || ch2 != 0x00D8) {
-            throw new Exception("Error: Invalid JPEG header.");
+    private void ReadJPGImage(Stream stream) {
+        int b1 = stream.ReadByte();
+        int b2 = stream.ReadByte();
+        if (b1 != 0x00FF || b2 != 0x00D8) {
+            throw new IOException("Error: Invalid JPEG header.");
         }
 
         bool foundSOFn = false;
@@ -116,12 +116,16 @@ class JPGImage {
                 case M_SOF14:   // Differential progressive, arithmetic
                 case M_SOF15:   // Differential lossless, arithmetic
                 // Skip 3 bytes to get to the image height and width
-                stream.ReadByte();
-                stream.ReadByte();
-                stream.ReadByte();
+                ReadByte(stream);
+                ReadByte(stream);
+                ReadByte(stream);
                 height = GetUInt16(stream);
                 width = GetUInt16(stream);
-                colorComponents = stream.ReadByte();
+                colorComponents = ReadByte(stream);
+                if (width <= 0 || height <= 0 ||
+                    (colorComponents != 1 && colorComponents != 3 && colorComponents != 4)) {
+                    throw new IOException("Invalid JPEG dimensions or component count.");
+                }
                 foundSOFn = true;
                 break;
 
@@ -136,34 +140,27 @@ class JPGImage {
         }
     }
 
-    private int GetUInt16(System.IO.Stream stream) {
-        return stream.ReadByte() << 8 | stream.ReadByte();
+    private int ReadByte(Stream stream) {
+        int b = stream.ReadByte();
+        if (b < 0) {
+            throw new IOException("Unexpected end of JPEG data.");
+        }
+        return b;
     }
 
-    // Find the next JPEG marker and return its marker code.
-    // We expect at least one FF byte, possibly more if the compressor
-    // used FFs to pad the file.
-    // There could also be non-FF garbage between markers. The treatment
-    // of such garbage is unspecified; we choose to skip over it but
-    // emit a warning msg.
-    // NB: this routine must not be used after seeing SOS marker, since
-    // it will not deal correctly with FF/00 sequences in the compressed
-    // image data...
-    private char NextMarker(System.IO.Stream stream) {
-        // Find 0xFF byte; count and skip any non-FFs.
-        char ch = (char) stream.ReadByte();
-        if (ch != 0x00FF) {
-            throw new Exception("0xFF byte expected.");
-        }
+    private int GetUInt16(Stream stream) {
+        return (ReadByte(stream) << 8) | ReadByte(stream);
+    }
 
-        // Get marker code byte, swallowing any duplicate FF bytes.
-        // Extra FFs are legal as pad bytes, so don't count them in discarded_bytes.
+    // Skip any non-marker bytes and duplicate FF padding, then return the marker code.
+    // NB: not valid after the SOS marker (doesn't handle FF/00 in compressed data).
+    private char NextMarker(Stream stream) {
+        while (ReadByte(stream) != 0x00FF) { /* skip garbage */ }
+        int ch;
         do {
-            ch = (char) stream.ReadByte();
-        }
-        while (ch == 0x00FF);
-
-        return ch;
+            ch = ReadByte(stream);
+        } while (ch == 0x00FF);
+        return (char) ch;
     }
 
     // Most types of marker are followed by a variable-length parameter
@@ -172,19 +169,13 @@ class JPGImage {
     // Note that we MUST skip the parameter segment explicitly in order
     // not to be fooled by 0xFF bytes that might appear within the
     // parameter segment such bytes do NOT introduce new markers.
-    private void SkipVariable(System.IO.Stream stream) {
-        // Get the marker parameter length count
+    private void SkipVariable(Stream stream) {
         int length = GetUInt16(stream);
         if (length < 2) {
-            // Length includes itself, so must be at least 2
-            throw new Exception();
+            throw new IOException("Invalid marker segment length.");
         }
-        length -= 2;
-
-        // Skip over the remaining bytes
-        while (length > 0) {
-            stream.ReadByte();
-            length--;
+        for (int i = 0; i < length - 2; i++) {
+            ReadByte(stream);   // throws on EOF
         }
     }
 }   // End of JPGImage.cs
