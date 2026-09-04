@@ -356,13 +356,10 @@ public class Chart implements Drawable {
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                     point.setStrokeWidth(point.getStrokeWidth() * (x6 - x5) / w);
                 } else {
-                    // point.x = x5 + point.x * (x6 - x5) / w;
-                    // point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-
                     // Count unique categories or use point.x as category index
-                    int numCategories = chartData.size(); // or a dedicated count
+                    int numCategories = chartData.size();
                     float categoryWidth = (x6 - x5) / numCategories;
-                    point.x = x5 + (point.x / w) * (x6 - x5); // Scale based on x range
+                    point.x = x5 + (point.x / w) * (x6 - x5);
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                 }
                 if (point.getURIAction() != null) {
