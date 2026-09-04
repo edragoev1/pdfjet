@@ -83,7 +83,7 @@ public class Example_52 {
         p.setShape(Point.INVISIBLE);              // line only, no markers
         p.setStrokeColor(0xd94f00);
         p.setStrokeWidth(0.6f);
-        p.setStrokePattern("[4 2] 0");        // dashed trend line
+        p.setStrokeDashPattern("[4 2] 0");        // dashed trend line
         return p;
     }
 

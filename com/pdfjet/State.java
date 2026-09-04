@@ -12,7 +12,7 @@ class State {
     private float penWidth;
     private CapStyle lineCapStyle;
     private JoinStyle lineJoinStyle;
-    private String strokePattern;
+    private String strokeDashPattern;
 
     public State(
             float[] brushColor,
@@ -20,13 +20,13 @@ class State {
             float penWidth,
             CapStyle lineCapStyle,
             JoinStyle lineJoinStyle,
-            String strokePattern) {
+            String strokeDashPattern) {
         this.brushColor = new float[] { brushColor[0], brushColor[1], brushColor[2] }; // TODO: Is this needed?
         this.penColor = new float[] { penColor[0], penColor[1], penColor[2] };         // Creating new objects?
         this.penWidth = penWidth;
         this.lineCapStyle = lineCapStyle;
         this.lineJoinStyle = lineJoinStyle;
-        this.strokePattern = strokePattern;
+        this.strokeDashPattern = strokeDashPattern;
     }
 
     public float[] getBrushColor() {
@@ -49,8 +49,8 @@ class State {
         return lineJoinStyle;
     }
 
-    public String getStrokePattern() {
-        return strokePattern;
+    public String getStrokeDashPattern() {
+        return strokeDashPattern;
     }
 }   // End of State.java
 

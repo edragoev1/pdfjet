@@ -36,7 +36,7 @@ public class Cell {
     protected float[] textColor = new float[] {0f, 0f, 0f};
     protected float strokeWidth;
     protected float[] strokeColor;
-    protected String strokePattern = "[] 0";    // Solid
+    protected String strokeDashPattern = "[] 0";    // Solid
 
     protected int colspan = 1;
 

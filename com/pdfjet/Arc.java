@@ -21,7 +21,7 @@ public class Arc implements Drawable {
     private float[] fillColor;
     private float[] strokeColor = new float[] {0f, 0f, 0f};   // Black color
     private float strokeWidth = 0f;
-    private String strokePattern = "[] 0";
+    private String strokeDashPattern = "[] 0";
 
     private String language = null;
     private String actualText = Single.space;
@@ -104,8 +104,8 @@ public class Arc implements Drawable {
      * @param pattern the line dash pattern.
      * @return this Arc object.
      */
-    public Arc setStrokePattern(String pattern) {
-        this.strokePattern = pattern;
+    public Arc setStrokeDashPattern(String strokeDashPattern) {
+        this.strokeDashPattern = strokeDashPattern;
         return this;
     }
 
@@ -272,8 +272,8 @@ public class Arc implements Drawable {
                 ry,
                 startAngle,
                 sweepDegrees);
-        if (strokeColor != null && strokePattern != null) {
-            page.setStrokeDashPattern(strokePattern);
+        if (strokeColor != null && strokeDashPattern != null) {
+            page.setStrokeDashPattern(strokeDashPattern);
         }
         if (fillColor != null && strokeColor != null) {
             page.setBrushColor(fillColor);

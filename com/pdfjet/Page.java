@@ -48,7 +48,7 @@ final public class Page {
 
     private CapStyle lineCapStyle = CapStyle.BUTT;
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
-    private String strokePattern = "[] 0";
+    private String strokeDashPattern = "[] 0";
 
     protected float rotateDegrees = 0f;
 
@@ -762,11 +762,11 @@ final public class Page {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     * @param pattern the line dash pattern.
+     * @param strokeDashPattern the line dash pattern.
      */
-    public void setStrokeDashPattern(String pattern) {
-        this.strokePattern = pattern;
-        append(pattern);
+    public void setStrokeDashPattern(String strokeDashPattern) {
+        this.strokeDashPattern = strokeDashPattern;
+        append(strokeDashPattern);
         append(" d\n");
     }
 

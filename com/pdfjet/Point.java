@@ -76,7 +76,7 @@ public class Point implements Drawable {
     protected float[] fillColor = null;
     protected float strokeWidth = 1f;
     protected float[] strokeColor = null;
-    protected String strokePattern = "[] 0";
+    protected String strokeDashPattern = "[] 0";
     protected String pathOperator = PathOperator.CLOSE_AND_STROKE;
 
     protected char controlPoint = '\0';
@@ -112,7 +112,7 @@ public class Point implements Drawable {
         this.strokeColor = point.strokeColor != null
                 ? new float[] {point.strokeColor[0], point.strokeColor[1], point.strokeColor[2]}
                 : null;
-        this.strokePattern = point.strokePattern;
+        this.strokeDashPattern = point.strokeDashPattern;
         this.pathOperator = point.pathOperator;
         this.controlPoint = point.controlPoint;
         this.drawPath = point.drawPath;
@@ -436,10 +436,10 @@ public class Point implements Drawable {
      *      "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      *  </pre>
      *
-     *  @param strokePattern the line dash pattern.
+     *  @param strokeDashPattern the line dash pattern.
      */
-    public void setStrokePattern(String strokePattern) {
-        this.strokePattern = strokePattern;
+    public void setStrokeDashPattern(String strokeDashPattern) {
+        this.strokeDashPattern = strokeDashPattern;
     }
 
     /**
@@ -447,8 +447,8 @@ public class Point implements Drawable {
      *
      *  @return the line dash pattern.
      */
-    public String getStrokePattern() {
-        return strokePattern;
+    public String getStrokeDashPattern() {
+        return strokeDashPattern;
     }
 
     public void setPathOperator(String pathOperator) {
