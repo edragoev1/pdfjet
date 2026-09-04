@@ -306,7 +306,7 @@ func (chart *Chart) DrawOn(page *Page) {
 		nil)
 
 	page.SetDefaultLineWidth()
-	page.SetDefaultLinePattern()
+	page.SetDefaultStrokeDashPattern()
 	page.SetPenColor(color.Black)
 }
 

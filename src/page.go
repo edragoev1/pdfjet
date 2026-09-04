@@ -58,11 +58,11 @@ type Page struct {
 	tm2 []byte
 	tm3 []byte
 
-	penWidth      float32
-	lineCapStyle  int
-	lineJoinStyle int
-	linePattern   string
-	savedHeight   float32
+	penWidth          float32
+	lineCapStyle      int
+	lineJoinStyle     int
+	strokeDashPattern string
+	savedHeight       float32
 
 	contents     []int
 	annots       []*Annotation
@@ -109,7 +109,7 @@ func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
 	page.contents = []int{}
 	page.width = pageSize[0]
 	page.height = pageSize[1]
-	page.linePattern = "[] 0"
+	page.strokeDashPattern = "[] 0"
 	page.savedHeight = math.MaxFloat32
 	page.penWidth = 0.5
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
@@ -634,19 +634,19 @@ func (page *Page) SetDefaultLineWidth() {
 //
 // </pre>
 //
-// @param pattern the line dash pattern.
-func (page *Page) SetStrokeDashPattern(pattern string) {
-	if page.linePattern != pattern {
-		page.linePattern = pattern
-		page.appendString(page.linePattern)
+// @param strokeDashPattern the line dash pattern.
+func (page *Page) SetStrokeDashPattern(strokeDashPattern string) {
+	if page.strokeDashPattern != strokeDashPattern {
+		page.strokeDashPattern = strokeDashPattern
+		page.appendString(page.strokeDashPattern)
 		page.appendString(" d\n")
 	}
 }
 
-// SetDefaultLinePattern sets the default line dash pattern - solid line.
-func (page *Page) SetDefaultLinePattern() {
-	page.linePattern = "[] 0"
-	page.appendString(page.linePattern)
+// SetDefaultStrokeDashPattern sets the default line dash pattern - solid line.
+func (page *Page) SetDefaultStrokeDashPattern() {
+	page.strokeDashPattern = "[] 0"
+	page.appendString(page.strokeDashPattern)
 	page.appendString(" d\n")
 }
 
