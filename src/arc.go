@@ -14,20 +14,20 @@ import (
  */
 
 type Arc struct {
-	cx, cy, rx, ry float32
-	startAngle     float32
-	sweepDegrees   float32
-	rotateDegrees  float32
-	fillColor      [3]float32
-	hasFillColor   bool
-	strokeColor    [3]float32
-	hasStrokeColor bool
-	strokeWidth    float32
-	strokePattern  string // = "[] 0";
-	language       string
-	actualText     string // = Single.space;
-	altDescription string // = Single.space;
-	line           *Line
+	cx, cy, rx, ry    float32
+	startAngle        float32
+	sweepDegrees      float32
+	rotateDegrees     float32
+	fillColor         [3]float32
+	hasFillColor      bool
+	strokeColor       [3]float32
+	hasStrokeColor    bool
+	strokeWidth       float32
+	strokeDashPattern string // = "[] 0";
+	language          string
+	actualText        string // = Single.space;
+	altDescription    string // = Single.space;
+	line              *Line
 }
 
 func (arc *Arc) SetPosition(cx, cy float32) {
@@ -75,8 +75,8 @@ func (arc *Arc) SetSweepDegreesCCW(sweepDegrees float32) *Arc {
 	return arc
 }
 
-func (arc *Arc) SetStrokePattern(pattern string) *Arc {
-	arc.strokePattern = pattern
+func (arc *Arc) SetStrokeDashPattern(strokeDashPattern string) *Arc {
+	arc.strokeDashPattern = strokeDashPattern
 	return arc
 }
 
@@ -194,8 +194,8 @@ func (arc *Arc) DrawOn(page *Page) []float32 {
 		arc.startAngle,
 		arc.sweepDegrees)
 
-	if arc.hasStrokeColor == true && arc.strokePattern != "" {
-		page.SetStrokeDashPattern(arc.strokePattern)
+	if arc.hasStrokeColor == true && arc.strokeDashPattern != "" {
+		page.SetStrokeDashPattern(arc.strokeDashPattern)
 	}
 
 	if arc.hasFillColor == true && arc.hasStrokeColor == true {

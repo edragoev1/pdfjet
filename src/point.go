@@ -16,25 +16,25 @@ import (
 // we are talking about the coordinates of the center of the point.
 // Please see Example_05.
 type Point struct {
-	x, y           float32
-	r              float32
-	shape          int
-	align          int
-	fillColor      [3]float32
-	hasFillColor   bool
-	strokeWidth    float32
-	strokeColor    [3]float32
-	hasStrokeColor bool
-	strokePattern  string
-	pathOperator   string
-	controlPoint   byte
-	drawPath       bool
-	text           string
-	textColor      [3]float32
-	hasTextColor   bool
-	textDirection  int
-	uri, key       string
-	fillShape      bool
+	x, y              float32
+	r                 float32
+	shape             int
+	align             int
+	fillColor         [3]float32
+	hasFillColor      bool
+	strokeWidth       float32
+	strokeColor       [3]float32
+	hasStrokeColor    bool
+	strokeDashPattern string
+	pathOperator      string
+	controlPoint      byte
+	drawPath          bool
+	text              string
+	textColor         [3]float32
+	hasTextColor      bool
+	textDirection     int
+	uri, key          string
+	fillShape         bool
 }
 
 // NewPoint constructor for creating point objects.
@@ -50,7 +50,7 @@ func NewPoint(x, y float32) *Point {
 	point.textColor = [3]float32{0, 0, 0}
 	point.align = alignment.Right
 	point.strokeWidth = 1.0
-	point.strokePattern = "[] 0"
+	point.strokeDashPattern = "[] 0"
 	point.pathOperator = "s" // CLOSE_AND_STROKE
 	return point
 }

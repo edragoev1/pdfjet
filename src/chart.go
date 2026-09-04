@@ -457,7 +457,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 		if p0.drawPath {
 			page.SetPenColorRGB(p0.strokeColor)
 			page.SetPenWidth(p0.strokeWidth)
-			page.SetStrokeDashPattern(p0.strokePattern)
+			page.SetStrokeDashPattern(p0.strokeDashPattern)
 			page.DrawPath(points, pathoperator.Stroke)
 			if p0.GetText() != "" {
 				page.SetTextDirection(p0.GetTextDirection())
@@ -475,7 +475,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			if point.GetShape() != shape.Invisible {
 				page.SetPenColorRGB(point.strokeColor)
 				page.SetPenWidth(point.strokeWidth)
-				page.SetStrokeDashPattern(point.strokePattern)
+				page.SetStrokeDashPattern(point.strokeDashPattern)
 				page.SetBrushColorRGB(point.fillColor)
 				page.DrawPoint(point)
 			}
