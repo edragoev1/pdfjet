@@ -68,31 +68,31 @@ class JPGImage {
         readJPGImage(new ByteArrayInputStream(data));
     }
 
-    protected int getWidth() {
+    int getWidth() {
         return this.width;
     }
 
-    protected int getHeight() {
+    int getHeight() {
         return this.height;
     }
 
-    protected long getFileSize() {
+    long getFileSize() {
         return this.data.length;
     }
 
-    protected int getColorComponents() {
+    int getColorComponents() {
         return this.colorComponents;
     }
 
-    protected byte[] getData() {
+    byte[] getData() {
         return this.data;
     }
 
-    private void readJPGImage(InputStream is) throws Exception {
+    private void readJPGImage(InputStream is) throws IOException {
         char ch1 = (char) is.read();
         char ch2 = (char) is.read();
         if (ch1 != 0x00FF || ch2 != 0x00D8) {
-            throw new Exception("Error: Invalid JPEG header.");
+            throw new IOException("Error: Invalid JPEG header.");
         }
 
         boolean foundSOFn = false;
@@ -152,15 +152,8 @@ class JPGImage {
         return (readByte(is) << 8) | readByte(is);
     }
 
-    // Find the next JPEG marker and return its marker code.
-    // We expect at least one FF byte, possibly more if the compressor
-    // used FFs to pad the file.
-    // There could also be non-FF garbage between markers. The treatment
-    // of such garbage is unspecified; we choose to skip over it but
-    // emit a warning msg.
-    // NB: this routine must not be used after seeing SOS marker, since
-    // it will not deal correctly with FF/00 sequences in the compressed
-    // image data...
+    // Skip any non-marker bytes and duplicate FF padding, then return the marker code.
+    // NB: not valid after the SOS marker (doesn't handle FF/00 in compressed data).
     private char nextMarker(InputStream is) throws IOException {
         while (readByte(is) != 0x00FF) { /* skip garbage */ }
         int ch;
