@@ -1,4 +1,4 @@
-// JPGImage.go
+// jpgimage.go
 //
 // The authors make NO WARRANTY or representation, either express or implied,
 // with respect to this software, its quality, accuracy, merchantability, or
@@ -38,8 +38,8 @@
 package pdfjet
 
 import (
+	"errors"
 	"io"
-	"log"
 
 	"github.com/edragoev1/pdfjet/src/content"
 )
@@ -71,7 +71,7 @@ const (
 )
 
 // NewJPGImage is the constructor.
-func NewJPGImage(reader io.Reader) *JPGImage {
+func NewJPGImage(reader io.Reader) (*JPGImage, error) {
 	image := new(JPGImage)
 	image.data = content.GetFromReader(reader)
 	return image.readJPGImage(image.data)
@@ -102,98 +102,141 @@ func (image *JPGImage) GetData() []byte {
 	return image.data
 }
 
-func (image *JPGImage) readJPGImage(buffer []byte) *JPGImage {
-	if buffer[image.index] != 0xFF || buffer[image.index+1] != 0xD8 {
-		log.Fatal("Error: Invalid JPEG header.")
+func (image *JPGImage) readJPGImage(buffer []byte) (*JPGImage, error) {
+	if len(buffer) < 2 || buffer[0] != 0xFF || buffer[1] != 0xD8 {
+		return nil, errors.New("Error: Invalid JPEG header.")
 	}
+	image.index = 2
 
-	image.index += 2
 	for {
-		ch := image.nextMarker(buffer)
+		ch, err := image.nextMarker(buffer)
+		if err != nil {
+			return nil, err
+		}
+
 		// Note that marker codes 0xC4, 0xC8, 0xCC are not,
 		// and must not be treated as SOFn. C4 in particular
 		// is actually DHT.
-		if ch == mSOF0 || // Baseline
-			ch == mSOF1 || // Extended sequential, Huffman
-			ch == mSOF2 || // Progressive, Huffman
-			ch == mSOF3 || // Lossless, Huffman
-			ch == mSOF5 || // Differential sequential, Huffman
-			ch == mSOF6 || // Differential progressive, Huffman
-			ch == mSOF7 || // Differential lossless, Huffman
-			ch == mSOF9 || // Extended sequential, arithmetic
-			ch == mSOF10 || // Progressive, arithmetic
-			ch == mSOF11 || // Lossless, arithmetic
-			ch == mSOF13 || // Differential sequential, arithmetic
-			ch == mSOF14 || // Differential progressive, arithmetic
-			ch == mSOF15 { // Differential lossless, arithmetic
+		switch ch {
+		case mSOF0, // Baseline
+			mSOF1,  // Extended sequential, Huffman
+			mSOF2,  // Progressive, Huffman
+			mSOF3,  // Lossless, Huffman
+			mSOF5,  // Differential sequential, Huffman
+			mSOF6,  // Differential progressive, Huffman
+			mSOF7,  // Differential lossless, Huffman
+			mSOF9,  // Extended sequential, arithmetic
+			mSOF10, // Progressive, arithmetic
+			mSOF11, // Lossless, arithmetic
+			mSOF13, // Differential sequential, arithmetic
+			mSOF14, // Differential progressive, arithmetic
+			mSOF15: // Differential lossless, arithmetic
+
 			// Skip 3 bytes to get to the image height and width
 			image.index += 3
-			image.height = image.getUint16(buffer)
-			image.index += 2
-			image.width = image.getUint16(buffer)
-			image.index += 2
-			image.colorComponents = buffer[image.index]
-			break
-		} else {
-			image.skipVariable(buffer)
+			height, err := image.getUint16(buffer)
+			if err != nil {
+				return nil, err
+			}
+			image.height = height
+			width, err := image.getUint16(buffer)
+			if err != nil {
+				return nil, err
+			}
+			image.width = width
+			colorComponents, err := image.getByte(buffer)
+			if err != nil {
+				return nil, err
+			}
+			image.colorComponents = colorComponents
+
+			if width == 0 || height == 0 ||
+				(colorComponents != 1 && colorComponents != 3 && colorComponents != 4) {
+				return nil, errors.New("Error: Invalid JPEG dimensions or component count.")
+			}
+
+			return image, nil
+
+		default:
+			if err := image.skipVariable(buffer); err != nil {
+				return nil, err
+			}
 		}
 	}
-
-	return image
 }
 
-// Find the next JPEG marker and return its marker code.
-// We expect at least one FF byte, possibly more if the compressor
-// used FFs to pad the file.
-// There could also be non-FF garbage between markers. The treatment
-// of such garbage is unspecified; we choose to skip over it but
-// emit a warning msg.
-// NB: this routine must not be used after seeing SOS marker, since
-// it will not deal correctly with FF/00 sequences in the compressed
-// image data...
-func (image *JPGImage) nextMarker(buffer []byte) uint8 {
-	// Find 0xFF byte; count and skip any non-FFs.
-	ch := buffer[image.index]
+// getByte reads one byte, advancing the index.
+// It returns io.ErrUnexpectedEOF if the buffer is exhausted.
+func (image *JPGImage) getByte(buffer []byte) (uint8, error) {
+	if image.index >= len(buffer) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	b := buffer[image.index]
 	image.index++
-	if ch != 0xFF {
-		log.Fatal("0xFF byte expected.")
-	}
-
-	// Get marker code byte, swallowing any duplicate FF bytes.
-	// Extra FFs are legal as pad bytes, so don't count them in discardedBytes.
-	for {
-		ch = buffer[image.index]
-		image.index++
-		if ch != 0xFF {
-			break
-		}
-	}
-	return ch
+	return b, nil
 }
 
-// Most types of marker are followed by a variable-length parameter
-// segment. This routine skips over the parameters for any marker we
-// don't otherwise want to process.
+// getUint16 reads two bytes as a big-endian unsigned integer,
+// advancing the index by two.
+func (image *JPGImage) getUint16(buffer []byte) (uint16, error) {
+	b1, err := image.getByte(buffer)
+	if err != nil {
+		return 0, err
+	}
+	b2, err := image.getByte(buffer)
+	if err != nil {
+		return 0, err
+	}
+	return uint16(b1)<<8 | uint16(b2), nil
+}
+
+// nextMarker finds the next JPEG marker and returns its marker code.
+// Non-FF garbage between markers is skipped over. Duplicate FF bytes
+// are legal padding and are swallowed.
+// NB: this routine must not be used after the SOS marker, since it
+// does not deal correctly with FF/00 sequences in compressed data.
+func (image *JPGImage) nextMarker(buffer []byte) (uint8, error) {
+	// Find 0xFF byte; skip any non-FF garbage.
+	ch, err := image.getByte(buffer)
+	if err != nil {
+		return 0, err
+	}
+	for ch != 0xFF {
+		if ch, err = image.getByte(buffer); err != nil {
+			return 0, err
+		}
+	}
+
+	// Get the marker code byte, swallowing any duplicate FF bytes.
+	// Extra FFs are legal as pad bytes.
+	for {
+		if ch, err = image.getByte(buffer); err != nil || ch != 0xFF {
+			return ch, err
+		}
+	}
+}
+
+// skipVariable skips over the parameter segment of any marker
+// we don't otherwise want to process.
 // Note that we MUST skip the parameter segment explicitly in order
 // not to be fooled by 0xFF bytes that might appear within the
-// parameter segment such bytes do NOT introduce new markers.
-func (image *JPGImage) skipVariable(buffer []byte) {
-	// Get the marker parameter length
-	length := image.getUint16(buffer)
-	image.index += 2
-
-	if length < 2 {
-		log.Fatal("Length includes itself, so must be at least 2.")
+// parameter segment - such bytes do NOT introduce new markers.
+func (image *JPGImage) skipVariable(buffer []byte) error {
+	// Get the marker parameter length count
+	length, err := image.getUint16(buffer)
+	if err != nil {
+		return err
 	}
-	length -= 2
+	if length < 2 {
+		// Length includes itself, so must be at least 2
+		return errors.New("Error: Length includes itself, so must be at least 2.")
+	}
 
 	// Skip over the remaining bytes
-	for length > 0 {
-		image.index++
-		length--
+	for i := uint16(2); i < length; i++ {
+		if _, err := image.getByte(buffer); err != nil {
+			return err
+		}
 	}
-}
-
-func (image *JPGImage) getUint16(buffer []byte) uint16 {
-	return uint16(buffer[image.index])<<8 | uint16(buffer[image.index+1])
+	return nil
 }

@@ -79,7 +79,7 @@ func NewImage(pdf *PDF, reader io.Reader, imageType int) *Image {
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg := NewJPGImage(reader)
+		jpg, _ := NewJPGImage(reader)
 		data := jpg.GetData()
 		image.w = jpg.GetWidth()
 		image.h = jpg.GetHeight()
@@ -124,7 +124,7 @@ func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType int) *Image {
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg := NewJPGImage(reader)
+		jpg, _ := NewJPGImage(reader)
 		data := jpg.GetData()
 		image.w = jpg.GetWidth()
 		image.h = jpg.GetHeight()
