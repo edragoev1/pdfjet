@@ -172,19 +172,13 @@ class JPGImage {
     // Note that we MUST skip the parameter segment explicitly in order
     // not to be fooled by 0xFF bytes that might appear within the
     // parameter segment such bytes do NOT introduce new markers.
-    private void skipVariable(InputStream is) throws Exception {
-        // Get the marker parameter length count
+    private void skipVariable(InputStream is) throws IOException {
         int length = getUInt16(is);
         if (length < 2) {
-            // Length includes itself, so must be at least 2
-            throw new Exception();
+            throw new IOException("Invalid marker segment length.");
         }
-        length -= 2;
-
-        // Skip over the remaining bytes
-        while (length > 0) {
-            is.read();
-            length--;
+        for (int i = 0; i < length - 2; i++) {
+            readByte(is);   // throws on EOF
         }
     }
 }   // End of JPGImage.java
