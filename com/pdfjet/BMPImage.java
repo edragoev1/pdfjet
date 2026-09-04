@@ -213,7 +213,14 @@ class BMPImage {
 
     private byte[] getBytes(java.io.InputStream inputStream, int length) throws Exception {
         byte[] buf = new byte[length];
-        inputStream.read(buf, 0, buf.length);
+        int totalRead = 0;
+        while (totalRead < length) {
+            int read = inputStream.read(buf, totalRead, length - totalRead);
+            if (read < 0) {
+                throw new Exception("Unexpected end of stream: expected " + length + " bytes");
+            }
+            totalRead += read;
+        }
         return buf;
     }
 
