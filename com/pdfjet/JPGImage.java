@@ -116,12 +116,16 @@ class JPGImage {
                 case M_SOF14:   // Differential progressive, arithmetic
                 case M_SOF15:   // Differential lossless, arithmetic
                 // Skip 3 bytes to get to the image height and width
-                is.read();
-                is.read();
-                is.read();
+                readByte(is);
+                readByte(is);
+                readByte(is);
                 height = getUInt16(is);
                 width = getUInt16(is);
-                colorComponents = is.read();
+                colorComponents = readByte(is);
+                if (width <= 0 || height <= 0 ||
+                    (colorComponents != 1 && colorComponents != 3 && colorComponents != 4)) {
+                    throw new IOException("Invalid JPEG dimensions or component count.");
+                }
                 foundSOFn = true;
                 break;
 
