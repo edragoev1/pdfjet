@@ -252,8 +252,6 @@ public class Barcode implements Drawable {
             return drawCode128(page, x1, y1);
         } else if (barcodeType == Barcode.CODE_39) {
             return drawCode39(page, x1, y1);
-        } else if (barcodeType == Barcode.EAN_13) {
-            return drawCodeEAN13(page, x1, y1);
         } else {
             throw new Exception("Unsupported Barcode Type.");
         }
