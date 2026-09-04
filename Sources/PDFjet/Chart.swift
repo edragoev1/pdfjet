@@ -335,7 +335,7 @@ public class Chart : Drawable {
                     y4 - f1!.bodyHeight / 2)
 
             page!.setDefaultLineWidth()
-            page!.setDefaultLinePattern()
+            page!.setDefaultStrokeDashPattern()
             page!.setPenColor(Color.black)
         }
 
@@ -496,7 +496,7 @@ public class Chart : Drawable {
                 if p0.drawPath {
                     page.setPenColor(p0.strokeColor)
                     page.setPenWidth(p0.strokeWidth)
-                    page.setStrokeDashPattern(p0.strokePattern)
+                    page.setStrokeDashPattern(p0.strokeDashPattern)
                     page.drawPath(points, PathOperator.stroke)
                     if p0.getText() != nil {
                         page.setBrushColor(p0.getTextColor())
@@ -515,7 +515,7 @@ public class Chart : Drawable {
                     if point.getShape() != Point.INVISIBLE {
                         page.setPenColor(point.strokeColor)
                         page.setPenWidth(point.strokeWidth)
-                        page.setStrokeDashPattern(point.strokePattern)
+                        page.setStrokeDashPattern(point.strokeDashPattern)
                         page.setBrushColor(point.fillColor)
                         page.drawPoint(point)
                     }

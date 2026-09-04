@@ -41,7 +41,7 @@ public class Point : Drawable {
     var fillColor: [Float]?
     var strokeWidth: Float = 1.0
     var strokeColor: [Float]?
-    var strokePattern = "[] 0"
+    var strokeDashPattern = "[] 0"
     var pathOperator = PathOperator.closeAndStroke
     var fillShape = false
 
@@ -318,11 +318,11 @@ public class Point : Drawable {
     ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
     /// </pre>
     ///
-    /// - Parameter strokePattern the line dash pattern.
+    /// - Parameter strokeDashPattern the line dash pattern.
     ///
     @discardableResult
-    public func setStrokePattern(_ strokePattern: String) -> Point {
-        self.strokePattern = strokePattern
+    public func setStrokeDashPattern(_ strokeDashPattern: String) -> Point {
+        self.strokeDashPattern = strokeDashPattern
         return self
     }
 
@@ -331,8 +331,8 @@ public class Point : Drawable {
     ///
     /// - Returns: the line dash pattern.
     ///
-    public func getStrokePattern() -> String {
-        return self.strokePattern
+    public func getStrokeDashPattern() -> String {
+        return self.strokeDashPattern
     }
 
     ///

@@ -53,8 +53,7 @@ public class Page {
 
     private var lineCapStyle = CapStyle.BUTT
     private var lineJoinStyle = JoinStyle.MITER
-    private var linePattern: String = "[] 0"
-    // private var font: Font?
+    private var strokeDashPattern: String = "[] 0"
     private var mcid = 0
     private let hexadecimal = Hexadecimal()
 
@@ -684,9 +683,9 @@ public class Page {
     /// - Parameter pattern the line dash pattern.
     ///
     public func setStrokeDashPattern(_ pattern: String) {
-        if pattern != linePattern {
-            self.linePattern = pattern
-            append(self.linePattern)
+        if self.strokeDashPattern != pattern {
+            self.strokeDashPattern = pattern
+            append(self.strokeDashPattern)
             append(" d\n")
         }
     }
@@ -694,10 +693,10 @@ public class Page {
     ///
     /// Sets the default line dash pattern - solid line.
     ///
-    public func setDefaultLinePattern() {
-        if self.linePattern != "[] 0" {
-            self.linePattern = "[] 0"
-            append(self.linePattern)
+    public func setDefaultStrokeDashPattern() {
+        if self.strokeDashPattern != "[] 0" {
+            self.strokeDashPattern = "[] 0"
+            append(self.strokeDashPattern)
             append(" d\n")
         }
     }
