@@ -44,6 +44,8 @@ public class Chart : Drawable {
     private var xAxisTitle = ""
     private var yAxisTitle = ""
 
+    private var drawXAxisLines = true
+    private var drawYAxisLines = true
     private var drawXAxisLabels = true
     private var drawYAxisLabels = true
 
@@ -198,6 +200,16 @@ public class Chart : Drawable {
         return (_mean[1] - slope * _mean[0])
     }
 
+    /** Toggles drawing of horizontal grid lines. */
+    public func setDrawXAxisLines(_ drawXAxisLines: Bool) {
+        self.drawXAxisLines = drawXAxisLines
+    }
+
+    /** Toggles drawing of vertical grid lines. */
+    public func setDrawYAxisLines(_ drawYAxisLines: Bool) {
+        self.drawYAxisLines = drawYAxisLines
+    }
+
     public func setDrawXAxisLabels(_ drawXAxisLabels: Bool) {
         self.drawXAxisLabels = drawXAxisLabels
     }
@@ -268,8 +280,13 @@ public class Chart : Drawable {
         if page != nil {
             drawChartBorder(page!)
             drawInnerBorder(page!)
-            drawHorizontalGridLines(page!)
-            drawVerticalGridLines(page!)
+
+            if drawXAxisLines {
+                drawHorizontalGridLines(page!)
+            }
+            if drawYAxisLines {
+                drawVerticalGridLines(page!)
+            }
             if drawXAxisLabels {
                 drawXAxisLabels(page!)
             }
