@@ -109,7 +109,7 @@ public class PNGImage {
         } else {
             // Color Image
             if (pLTE == null) {
-                // Trucolor Image
+                // True color Image
                 if (bitDepth == 16) {
                     image = getImageColorType2BitDepth16(inflatedImageData);
                 } else {
