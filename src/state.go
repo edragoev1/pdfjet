@@ -7,12 +7,12 @@ package pdfjet
 
 // State describes the collection of drawing parameters.
 type State struct {
-	pen           [3]float32
-	brush         [3]float32
-	penWidth      float32
-	lineCapStyle  int
-	lineJoinStyle int
-	linePattern   string
+	pen               [3]float32
+	brush             [3]float32
+	penWidth          float32
+	lineCapStyle      int
+	lineJoinStyle     int
+	strokeDashPattern string
 }
 
 // NewState constructs state objects.
@@ -22,14 +22,14 @@ func NewState(
 	penWidth float32,
 	lineCapStyle int,
 	lineJoinStyle int,
-	linePattern string) *State {
+	strokeDashPattern string) *State {
 	state := new(State)
 	state.pen = [3]float32{pen[0], pen[1], pen[2]}
 	state.brush = [3]float32{brush[0], brush[1], brush[2]}
 	state.penWidth = penWidth
 	state.lineCapStyle = lineCapStyle
 	state.lineJoinStyle = lineJoinStyle
-	state.linePattern = linePattern
+	state.strokeDashPattern = strokeDashPattern
 	return state
 }
 
@@ -58,7 +58,7 @@ func (state *State) GetLineJoinStyle() int {
 	return state.lineJoinStyle
 }
 
-// GetLinePattern returns the line pattern.
-func (state *State) GetLinePattern() string {
-	return state.linePattern
+// GetStrokeDashPattern returns the line pattern.
+func (state *State) GetStrokeDashPattern() string {
+	return state.strokeDashPattern
 }
