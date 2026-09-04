@@ -136,8 +136,16 @@ class JPGImage {
         }
     }
 
-    private int getUInt16(InputStream is) throws Exception {
-        return is.read() << 8 | is.read();
+    private int readByte(InputStream is) throws IOException {
+        int b = is.read();
+        if (b < 0) {
+            throw new IOException("Unexpected end of JPEG data.");
+        }
+        return b;
+    }
+
+    private int getUInt16(InputStream is) throws IOException {
+        return (readByte(is) << 8) | readByte(is);
     }
 
     // Find the next JPEG marker and return its marker code.
@@ -149,20 +157,13 @@ class JPGImage {
     // NB: this routine must not be used after seeing SOS marker, since
     // it will not deal correctly with FF/00 sequences in the compressed
     // image data...
-    private char nextMarker(InputStream is) throws Exception {
-        // Find 0xFF byte; count and skip any non-FFs.
-        char ch = (char) is.read();
-        if (ch != 0x00FF) {
-            throw new Exception("0xFF byte expected.");
-        }
-
-        // Get marker code byte, swallowing any duplicate FF bytes.
-        // Extra FFs are legal as pad bytes, so don't count them in discarded_bytes.
+    private char nextMarker(InputStream is) throws IOException {
+        while (readByte(is) != 0x00FF) { /* skip garbage */ }
+        int ch;
         do {
-            ch = (char) is.read();
+            ch = readByte(is);
         } while (ch == 0x00FF);
-
-        return ch;
+        return (char) ch;
     }
 
     // Most types of marker are followed by a variable-length parameter
