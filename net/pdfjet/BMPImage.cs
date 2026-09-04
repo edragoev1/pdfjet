@@ -236,13 +236,13 @@ class BMPImage {
     private int ReadSignedInt(System.IO.Stream inputStream) {
         byte[] buf = GetBytes(inputStream, 4);
         long val = 0L;
-        val |= (long)(buf[3] & 0xff);
+        val |= (uint) buf[ 3 ] & 0xff;
         val <<= 8;
-        val |= (long)(buf[2] & 0xff);
+        val |= (uint) buf[ 2 ] & 0xff;
         val <<= 8;
-        val |= (long)(buf[1] & 0xff);
+        val |= (uint) buf[ 1 ] & 0xff;
         val <<= 8;
-        val |= (long)(buf[0] & 0xff);
+        val |= (uint) buf[ 0 ] & 0xff;
         return (int)val;
     }
 
