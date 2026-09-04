@@ -587,8 +587,9 @@ public class Chart : Drawable {
             _mean[0] += point.x
             _mean[1] += point.y
         }
-        _mean[0] /= Float(points.count)
-        _mean[1] /= Float(points.count)
+        let n = Float(points.count)
+        _mean[0] /= n
+        _mean[1] /= n
         return _mean
     }
 
