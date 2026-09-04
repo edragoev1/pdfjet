@@ -83,7 +83,7 @@ public class Chart implements Drawable {
         Color.green,
         Color.orange,
         Color.purple,
-        Color.cyan,
+        Color.darkcyan,
         Color.magenta,
         Color.olive
     };
