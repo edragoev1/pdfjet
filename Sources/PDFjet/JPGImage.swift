@@ -59,13 +59,13 @@ class JPGImage {
 
     var width: UInt16 = 0
     var height: UInt16 = 0
-    var colorComponents: UInt16 = 0
+    var colorComponents: UInt8 = 0
     var data: [UInt8]
     var index = 0
 
     public init(_ stream: InputStream) throws {
         self.data = try Content.getFromStream(stream)
-        processImage(&data)
+        try processImage(&data)
     }
 
     func getWidth() -> UInt16 {
@@ -80,7 +80,7 @@ class JPGImage {
         return Int64(self.data.count)
     }
 
-    func getColorComponents() -> UInt16 {
+    func getColorComponents() -> UInt8 {
         return self.colorComponents
     }
 
@@ -88,14 +88,14 @@ class JPGImage {
         return self.data
     }
 
-    private func processImage(_ buffer: inout [UInt8]) {
-        if buffer[0] != UInt8(0xFF) || buffer[1] != UInt8(0xD8) {
-            Swift.print("Error: Invalid JPEG header.")
+    private func processImage(_ buffer: inout [UInt8]) throws {
+        if buffer.count < 2 || buffer[0] != 0xFF || buffer[1] != 0xD8 {
+            throw JPGImageError.invalidJPEGHeader
         }
-
         index += 2
+
         while true {
-            let ch = nextMarker(&buffer)
+            let ch = try nextMarker(&buffer)
             // Note that marker codes 0xC4, 0xC8, 0xCC are not,
             // and must not be treated as SOFn. C4 in particular
             // is actually DHT.
@@ -114,45 +114,58 @@ class JPGImage {
                     ch == M_SOF15 {     // Differential lossless, arithmetic
                 // Skip 3 bytes to get to the image height and width
                 index += 3
-                height = getUInt16(&buffer)
-                index += 2
-                width = getUInt16(&buffer)
-                index += 2
-                colorComponents = UInt16(buffer[index])
+                height = try getUInt16(&buffer)
+                width = try getUInt16(&buffer)
+                colorComponents = try readByte(&buffer)
+
+                if width == 0 || height == 0 ||
+                        (colorComponents != 1 && colorComponents != 3 && colorComponents != 4) {
+                    throw JPGImageError.invalidDimensionsOrComponentCount
+                }
                 break
             } else {
-                skipVariable(&buffer)
+                try skipVariable(&buffer)
             }
         }
     }
 
-    private func getUInt16(_ buffer: inout [UInt8]) -> UInt16 {
-        return UInt16(buffer[index]) << 8 | UInt16(buffer[index + 1])
+    /// Reads one byte, advancing the index.
+    /// Throws if the buffer is exhausted.
+    private func readByte(_ buffer: inout [UInt8]) throws -> UInt8 {
+        guard index < buffer.count else {
+            throw JPGImageError.unexpectedEndOfJPEGData
+        }
+        let b = buffer[index]
+        index += 1
+        return b
+    }
+
+    /// Reads two bytes as a big-endian unsigned integer,
+    /// advancing the index by two.
+    private func getUInt16(_ buffer: inout [UInt8]) throws -> UInt16 {
+        let b1 = try readByte(&buffer)
+        let b2 = try readByte(&buffer)
+        return UInt16(b1) << 8 | UInt16(b2)
     }
 
     // Find the next JPEG marker and return its marker code.
-    // We expect at least one FF byte, possibly more if the compressor
-    // used FFs to pad the file.
-    // There could also be non-FF garbage between markers. The treatment
-    // of such garbage is unspecified; we choose to skip over it but
-    // emit a warning msg.
-    // NB: this routine must not be used after seeing SOS marker, since
-    // it will not deal correctly with FF/00 sequences in the compressed
-    // image data...
-    private func nextMarker(_ buffer: inout [UInt8]) -> UInt8 {
-        // Find 0xFF byte; count and skip any non-FFs.
-        var ch = buffer[index]
-        index += 1
-        if ch != UInt8(0xFF) {
-            Swift.print("0xFF byte expected.")
+    // Non-FF garbage between markers is skipped over.
+    // Duplicate FF bytes are legal padding and are swallowed.
+    // NB: this routine must not be used after seeing SOS marker,
+    // since it will not deal correctly with FF/00 sequences in the
+    // compressed image data...
+    private func nextMarker(_ buffer: inout [UInt8]) throws -> UInt8 {
+        // Find 0xFF byte; skip any non-FF garbage.
+        var ch = try readByte(&buffer)
+        while ch != 0xFF {
+            ch = try readByte(&buffer)
         }
 
-        // Get marker code byte, swallowing any duplicate FF bytes.
-        // Extra FFs are legal as pad bytes, so don't count them in discarded_bytes.
+        // Get the marker code byte, swallowing any duplicate FF bytes.
+        // Extra FFs are legal as pad bytes.
         repeat {
-            ch = buffer[index]
-            index += 1
-        } while ch == UInt8(0xFF)
+            ch = try readByte(&buffer)
+        } while ch == 0xFF
 
         return ch
     }
@@ -163,20 +176,27 @@ class JPGImage {
     // Note that we MUST skip the parameter segment explicitly in order
     // not to be fooled by 0xFF bytes that might appear within the
     // parameter segment such bytes do NOT introduce new markers.
-    private func skipVariable(_ buffer: inout [UInt8]) {
+    private func skipVariable(_ buffer: inout [UInt8]) throws {
         // Get the marker parameter length count
-        var length = getUInt16(&buffer)
-        index += 2
+        let length = try getUInt16(&buffer)
         if length < 2 {
             // Length includes itself, so must be at least 2
-            Swift.print("Error: length must be at least 2.")
+            throw JPGImageError.invalidSegmentLength
         }
-        length -= 2
 
         // Skip over the remaining bytes
-        while length > 0 {
-            index += 1
-            length -= 1
+        for _ in 2..<length {
+            _ = try readByte(&buffer)   // throws on EOF
         }
     }
+}
+
+///
+/// Errors that can occur while parsing a JPEG image.
+///
+enum JPGImageError: Error {
+    case invalidJPEGHeader
+    case unexpectedEndOfJPEGData
+    case invalidDimensionsOrComponentCount
+    case invalidSegmentLength
 }   // End of JPGImage.swift
