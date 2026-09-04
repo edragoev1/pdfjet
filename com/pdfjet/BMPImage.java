@@ -199,16 +199,7 @@ class BMPImage {
             palette[i] = getBytes(is, 4);
         }
     }
-/*
-    private void skipNBytes(java.io.InputStream inputStream, int n) {
-        try {
-            getBytes(inputStream, n);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-*/
+
     private void skipNBytes(java.io.InputStream inputStream, int n) throws Exception {
         long skipped = 0;
         while (skipped < n) {
