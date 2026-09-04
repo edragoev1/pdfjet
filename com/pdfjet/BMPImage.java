@@ -70,7 +70,6 @@ class BMPImage {
         } else {
             throw new Exception("BMP data could not be parsed!");
         }
-
     }
 
     private void parseData(java.io.InputStream is) throws Exception {
@@ -200,13 +199,24 @@ class BMPImage {
             palette[i] = getBytes(is, 4);
         }
     }
-
+/*
     private void skipNBytes(java.io.InputStream inputStream, int n) {
         try {
             getBytes(inputStream, n);
         }
         catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+*/
+    private void skipNBytes(java.io.InputStream inputStream, int n) throws Exception {
+        long skipped = 0;
+        while (skipped < n) {
+            long result = inputStream.skip(n - skipped);
+            if (result <= 0) {
+                throw new Exception("Failed to skip " + n + " bytes");
+            }
+            skipped += result;
         }
     }
 
