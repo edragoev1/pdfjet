@@ -33,7 +33,7 @@ public class Cell {
     var textColor: [Float] = [0.0, 0.0, 0.0]
     var strokeWidth: Float = 0.0
     var strokeColor: [Float] = [0.0, 0.0, 0.0]
-    var strokePattern: String = "[] 0"  // Solid
+    var strokeDashPattern: String = "[] 0"  // Solid
 
     // Cell properties
     // Colspan:
