@@ -555,8 +555,8 @@ public class Chart implements Drawable {
                             null,
                             fontSize,
                             p0.getText(),
-                            p0.x + 1.5f*f2.getDescent(),
-                            p0.y + fontSize/3f,
+                            p0.x + (p0.strokeWidth - f2.getAscent())/2f,
+                            p0.y,
                             p0.getTextColor(),
                             null);
                 }
@@ -623,8 +623,7 @@ public class Chart implements Drawable {
     /** Returns [mean_x, mean_y] for the given points. */
     private float[] mean(List<Point> points) {
         float[] _mean = new float[2];
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
+        for (Point point : points) {
             _mean[0] += point.x;
             _mean[1] += point.y;
         }

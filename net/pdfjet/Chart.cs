@@ -520,8 +520,8 @@ public class Chart : IDrawable {
                             null,
                             fontSize,
                             p0.GetText(),
-                            p0.x + 1.5f*f2.GetDescent(),
-                            p0.y + fontSize/3f,
+                            p0.x + (p0.strokeWidth - f2.GetAscent())/2f,
+                            p0.y,
                             p0.GetTextColor(),
                             null);
                 }
@@ -586,8 +586,7 @@ public class Chart : IDrawable {
     /** Returns [mean_x, mean_y] for the given points. */
     private float[] Mean(List<Point> points) {
         float[] _mean = new float[2];
-        for (int i = 0; i < points.Count; i++) {
-            Point point = points[i];
+        foreach (Point point in points) {
             _mean[0] += point.x;
             _mean[1] += point.y;
         }

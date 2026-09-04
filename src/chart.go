@@ -465,8 +465,8 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 					chart.f2,
 					chart.f2.size,
 					p0.text,
-					p0.x+1.5*chart.f2.descent,
-					p0.y+chart.f2.size/3.0,
+					p0.x+(p0.strokeWidth-chart.f2.ascent)/2.0,
+					p0.y,
 					p0.textColor,
 					nil)
 			}

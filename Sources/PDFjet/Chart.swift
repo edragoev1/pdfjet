@@ -505,8 +505,8 @@ public class Chart : Drawable {
                             f2!,
                             f2!.getSize(),
                             p0.getText(),
-                            p0.x + 1.5*f2!.descent,
-                            p0.y + f2!.getSize()/3.0,
+                            p0.x + (p0.strokeWidth - f2!.getAscent())/2.0,
+                            p0.y,
                             p0.getTextColor(),
                             nil)
                     }
@@ -587,8 +587,8 @@ public class Chart : Drawable {
             _mean[0] += point.x
             _mean[1] += point.y
         }
-        _mean[0] /= Float(points.count - 1)
-        _mean[1] /= Float(points.count - 1)
+        _mean[0] /= Float(points.count)
+        _mean[1] /= Float(points.count)
         return _mean
     }
 
