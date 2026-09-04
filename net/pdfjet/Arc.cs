@@ -22,7 +22,7 @@ public class Arc : IDrawable {
     private float[] fillColor;
     private float[] strokeColor = new float[] {0f, 0f, 0f};   // Black color
     private float strokeWidth = 0f;
-    private String strokePattern = "[] 0";
+    private String strokeDashPattern = "[] 0";
 
     private String language = null;
     private String actualText = Single.space;
@@ -102,11 +102,11 @@ public class Arc : IDrawable {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     * @param pattern the line dash pattern.
+     * @param strokeDashPattern the stroke dash pattern.
      * @return this Arc object.
      */
-    public Arc SetStrokePattern(String pattern) {
-        this.strokePattern = pattern;
+    public Arc SetStrokeDashPattern(String strokeDashPattern) {
+        this.strokeDashPattern = strokeDashPattern;
         return this;
     }
 
@@ -275,8 +275,8 @@ public class Arc : IDrawable {
                 ry,
                 startAngle,
                 sweepDegrees);
-        if (strokeColor != null && strokePattern != null) {
-            page.SetStrokeDashPattern(strokePattern);
+        if (strokeColor != null && strokeDashPattern != null) {
+            page.SetStrokeDashPattern(strokeDashPattern);
         }
         if (fillColor != null && strokeColor != null) {
             page.SetBrushColor(fillColor);

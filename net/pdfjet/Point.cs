@@ -46,7 +46,7 @@ public class Point : IDrawable {
     internal float[] fillColor = null;
     internal float strokeWidth = 1f;
     internal float[] strokeColor = null;
-    internal string strokePattern = "[] 0";
+    internal string strokeDashPattern = "[] 0";
     internal string pathOperator = PathOperator.CloseAndStroke;
 
     internal Alignment alignment = Alignment.RIGHT;
@@ -127,7 +127,7 @@ public class Point : IDrawable {
         this.strokeColor = point.strokeColor != null
                 ? new float[] {point.strokeColor[0], point.strokeColor[1], point.strokeColor[2]}
                 : null;
-        this.strokePattern = point.strokePattern;
+        this.strokeDashPattern = point.strokeDashPattern;
         this.pathOperator = point.pathOperator;
         this.controlPoint = point.controlPoint;
         this.drawPath = point.drawPath;
@@ -372,10 +372,10 @@ public class Point : IDrawable {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     * @param pattern the line dash pattern.
+     * @param strokeDashPattern the stroke dash pattern.
      */
-    public void SetStrokePattern(String pattern) {
-        this.strokePattern = pattern;
+    public void SetStrokeDashPattern(String strokeDashPattern) {
+        this.strokeDashPattern = strokeDashPattern;
     }
 
     /**
@@ -383,8 +383,8 @@ public class Point : IDrawable {
      *
      * @return the dash pattern.
      */
-    public String GetStrokePattern() {
-        return strokePattern;
+    public String GetStrokeDashPattern() {
+        return strokeDashPattern;
     }
 
     public void SetPathOperator(string pathOperator) {

@@ -22,7 +22,7 @@ public class Path : IDrawable {
     private float[] fillColor;
     private float[] strokeColor;
     private float strokeWidth = 0.6f;   // !! DO NOT REMOVE OR LOWER THIS VALUE !!
-    private String strokePattern = "[] 0";
+    private String strokeDashPattern = "[] 0";
     private CapStyle lineCapStyle = CapStyle.BUTT;
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
     private float rotateDegrees = 0f;
@@ -140,10 +140,10 @@ public class Path : IDrawable {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     * @param pattern the line dash pattern.
+     * @param strokeDashPattern the stroke dash pattern.
      */
-    public void SetStrokePattern(String pattern) {
-        this.strokePattern = pattern;
+    public void SetStrokeDashPattern(String strokeDashPattern) {
+        this.strokeDashPattern = strokeDashPattern;
     }
 
     /**
@@ -317,8 +317,8 @@ public class Path : IDrawable {
         float centerX = x + w/2;
         float centerY = (page.height - y) - h/2;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
-        if (strokeColor != null && strokePattern != null) {
-            page.SetStrokeDashPattern(strokePattern);
+        if (strokeColor != null && strokeDashPattern != null) {
+            page.SetStrokeDashPattern(strokeDashPattern);
         }
         if (fillColor != null && strokeColor == null) {
             page.SetBrushColor(fillColor);

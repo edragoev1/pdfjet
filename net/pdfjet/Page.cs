@@ -51,7 +51,7 @@ public class Page {
 
     internal CapStyle lineCapStyle = CapStyle.BUTT;
     internal JoinStyle lineJoinStyle = JoinStyle.MITER;
-    internal String strokePattern = "[] 0";
+    internal String strokeDashPattern = "[] 0";
 
     internal float rotateDegrees = 0f;
 
@@ -321,8 +321,8 @@ public class Page {
         return height;
     }
 
-    public String GetStrokePattern() {
-        return this.strokePattern;
+    public String GetStrokeDashPattern() {
+        return this.strokeDashPattern;
     }
 
     /**
@@ -821,18 +821,18 @@ public class Page {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     * @param pattern the line dash pattern.
+     * @param strokeDashPattern the stroke dash pattern.
      */
-    public void SetStrokeDashPattern(String pattern) {
-        this.strokePattern = pattern;
-        Append(pattern);
+    public void SetStrokeDashPattern(String strokeDashPattern) {
+        this.strokeDashPattern = strokeDashPattern;
+        Append(strokeDashPattern);
         Append(" d\n");
     }
 
     /**
      * Sets the default stroke pattern to be solid line or curve.
      */
-    public void SetDefaultStrokePattern() {
+    public void SetDefaultStrokeDashPattern() {
         Append("[] 0");
         Append(" d\n");
     }

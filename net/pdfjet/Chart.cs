@@ -359,7 +359,7 @@ public class Chart : IDrawable {
                 y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
         page.SetDefaultStrokeWidth();
-        page.SetDefaultStrokePattern();
+        page.SetDefaultStrokeDashPattern();
         page.SetPenColor(Color.black);
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};
@@ -511,7 +511,7 @@ public class Chart : IDrawable {
             if (p0.drawPath) {
                 page.SetPenColor(p0.strokeColor);
                 page.SetPenWidth(p0.strokeWidth);
-                page.SetStrokeDashPattern(p0.strokePattern);
+                page.SetStrokeDashPattern(p0.strokeDashPattern);
                 page.DrawPath(points, PathOperator.Stroke);
                 if (p0.GetText() != null) {
                     page.SetTextDirection(p0.GetTextDirection());
@@ -530,7 +530,7 @@ public class Chart : IDrawable {
                 if (point.GetShape() != Point.INVISIBLE) {
                     page.SetPenColor(point.strokeColor);
                     page.SetPenWidth(point.strokeWidth);
-                    page.SetStrokeDashPattern(point.strokePattern);
+                    page.SetStrokeDashPattern(point.strokeDashPattern);
                     page.SetBrushColor(point.fillColor);
                     page.DrawPoint(point);
                 }

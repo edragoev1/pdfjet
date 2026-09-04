@@ -35,7 +35,7 @@ public class Cell {
     internal float[] textColor = new float[] {0f, 0f, 0f};
     internal float strokeWidth;
     internal float[] strokeColor;
-    internal String strokePattern = "[] 0";    // Solid
+    internal String strokeDashPattern = "[] 0";    // Solid
 
     internal int colspan = 1;
 
