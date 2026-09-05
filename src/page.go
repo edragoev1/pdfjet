@@ -1495,7 +1495,7 @@ func (page *Page) DrawTextLine(font *Font, str string, x float32, y float32) {
 }
 
 func (page *Page) appendInteger(value int) {
-	page.buf = strconv.AppendInt(page.buf, int64(value), 10)
+	page.buf = append(page.buf, []byte(strconv.Itoa(value))...)
 }
 
 func (page *Page) appendFloat32(value float32) {
