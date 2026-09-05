@@ -322,10 +322,10 @@ func (page *Page) drawASCIIString(font *Font, text string) {
 	runes := []rune(text)
 	for i, c1 := range runes {
 		if c1 < font.firstChar || c1 > font.lastChar {
-			page.appendString(fmt.Sprintf("%02X", 0x20))
+			page.appendByteAsHex(0x20)
 			continue
 		}
-		page.appendString(fmt.Sprintf("%02X", c1))
+		page.appendByteAsHex(byte(c1))
 		if font.isCoreFont && font.kernPairs && i < (len(runes)-1) {
 			c1 -= 32
 			c2 := runes[i+1]
@@ -377,6 +377,10 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 var hexDigits = [16]byte{
 	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 	'A', 'B', 'C', 'D', 'E', 'F',
+}
+
+func (page *Page) appendByteAsHex(b byte) {
+	page.buf = append(page.buf, hexDigits[(b>>4)&0xF], hexDigits[b&0xF])
 }
 
 func (page *Page) appendCodePointAsHex(codePoint int) {
@@ -1491,7 +1495,7 @@ func (page *Page) DrawTextLine(font *Font, str string, x float32, y float32) {
 }
 
 func (page *Page) appendInteger(value int) {
-	page.buf = append(page.buf, []byte(strconv.Itoa(value))...)
+	page.buf = strconv.AppendInt(page.buf, int64(value), 10)
 }
 
 func (page *Page) appendFloat32(value float32) {
@@ -1499,7 +1503,7 @@ func (page *Page) appendFloat32(value float32) {
 }
 
 func (page *Page) appendString(s1 string) {
-	page.buf = append(page.buf, []byte(s1)...)
+	page.buf = append(page.buf, s1...)
 }
 
 func (page *Page) appendByte(b byte) {
