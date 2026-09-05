@@ -10,20 +10,21 @@ import java.io.*;
 import java.util.zip.*;
 
 class Compressor {
-    static byte[] deflate(byte[] data) {
+    private static final Deflater DEFLATER = new Deflater();
+
+    static synchronized byte[] deflate(byte[] data) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
-        Deflater deflater = new Deflater();
         try {
-            deflater.setInput(data);
-            deflater.finish();
+            DEFLATER.setInput(data);
+            DEFLATER.finish();
             byte[] buf = new byte[4096];
-            while (!deflater.finished()) {
-                int count = deflater.deflate(buf);
-                bos.write(buf, 0, count);
+            while (!DEFLATER.finished()) {
+                bos.write(buf, 0, DEFLATER.deflate(buf));
             }
         } finally {
-            deflater.end();   // releases native memory even on error
+            DEFLATER.reset();
         }
         return bos.toByteArray();
     }
 }
+
