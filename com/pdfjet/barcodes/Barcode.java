@@ -280,6 +280,7 @@ public class Barcode implements Drawable {
         String fullText = text + Integer.toString(checkDigit);
 
         x = drawEGuard(page, x, y, m1, h + 8);
+        float xGroup1Start = x;
         for (int i = 0; i < 6; i++) {
             int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
@@ -290,9 +291,18 @@ public class Barcode implements Drawable {
                 }
                 x += n*m1;
             }
+            if (i == 0) {
+                xGroup1Start = x;   // Start of the 2nd-6th digit bars (digit 0 is drawn outside)
+            }
         }
+        float xLeftGroupEnd = x;
         x = drawMGuard(page, x, y, m1, h + 8);
+        float xRightGroupStart = x;
+        float xGroup2End = 0f;
         for (int i = 6; i < 12; i++) {
+            if (i == 11) {
+                xGroup2End = x;     // End of the 7th-11th digit bars (digit 11 is drawn outside)
+            }
             int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
             for (int j = 0; j < 4; j++) {
@@ -307,32 +317,43 @@ public class Barcode implements Drawable {
 
         float[] xy = new float[] {x, y};
         if (font != null) {
-            String label =
-                    fullText.charAt(0) +
-                    "  " +
-                    fullText.charAt(1) +
-                    fullText.charAt(2) +
-                    fullText.charAt(3) +
-                    fullText.charAt(4) +
-                    fullText.charAt(5) +
-                    "   " +
-                    fullText.charAt(6) +
-                    fullText.charAt(7) +
-                    fullText.charAt(8) +
-                    fullText.charAt(9) +
-                    fullText.charAt(10) +
-                    "  " +
-                    fullText.charAt(11);
+            // Standard UPC-A layout: the leading (number system) digit and
+            // the trailing check digit are printed in the quiet zones
+            // outside the guard bars, not centered under them together with
+            // the rest of the label. The two groups of 5 digits are each
+            // centered under their own bar section.
+            String firstDigit = String.valueOf(fullText.charAt(0));
+            String group1 = fullText.substring(1, 6);
+            String group2 = fullText.substring(6, 11);
+            String lastDigit = String.valueOf(fullText.charAt(11));
+
             float fontSize = font.getSize();
             font.setSize(10f);
+            float yText = y1 + h + font.getBodyHeight();
+            float gap = font.stringWidth(" ");
 
-            TextLine textLine = new TextLine(font, label);
-            textLine.setLocation(
-                    x1 + ((x - x1) - font.stringWidth(label))/2,
-                    y1 + h + font.getBodyHeight());
-            xy = textLine.drawOn(page);
-            xy[0] = Math.max(x, xy[0]);
-            xy[1] = Math.max(y, xy[1]);
+            TextLine firstDigitLine = new TextLine(font, firstDigit);
+            firstDigitLine.setLocation(x1 - gap - font.stringWidth(firstDigit), yText);
+            firstDigitLine.drawOn(page);
+
+            TextLine group1Line = new TextLine(font, group1);
+            group1Line.setLocation(
+                    xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font.stringWidth(group1))/2,
+                    yText);
+            group1Line.drawOn(page);
+
+            TextLine group2Line = new TextLine(font, group2);
+            group2Line.setLocation(
+                    xRightGroupStart + ((xGroup2End - xRightGroupStart) - font.stringWidth(group2))/2,
+                    yText);
+            group2Line.drawOn(page);
+
+            TextLine lastDigitLine = new TextLine(font, lastDigit);
+            lastDigitLine.setLocation(x + gap, yText);
+            float[] xyLast = lastDigitLine.drawOn(page);
+
+            xy[0] = Math.max(x, xyLast[0]);
+            xy[1] = Math.max(y, xyLast[1]);
 
             font.setSize(fontSize);
             return new float[] {xy[0], xy[1] + font.getDescent()};

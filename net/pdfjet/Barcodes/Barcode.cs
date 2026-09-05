@@ -275,6 +275,7 @@ public class Barcode : IDrawable {
         String fullText = text + checkDigit.ToString();
 
         x = DrawEGuard(page, x, y, m1, h + 8);
+        float xGroup1Start = x;
         for (int i = 0; i < 6; i++) {
             int digit = fullText[i] - '0';
             String str = lCode[digit];
@@ -285,9 +286,18 @@ public class Barcode : IDrawable {
                 }
                 x += n*m1;
             }
+            if (i == 0) {
+                xGroup1Start = x;   // Start of the 2nd-6th digit bars (digit 0 is drawn outside)
+            }
         }
+        float xLeftGroupEnd = x;
         x = DrawMGuard(page, x, y, m1, h + 8);
+        float xRightGroupStart = x;
+        float xGroup2End = 0f;
         for (int i = 6; i < 12; i++) {
+            if (i == 11) {
+                xGroup2End = x;     // End of the 7th-11th digit bars (digit 11 is drawn outside)
+            }
             int digit = fullText[i] - '0';
             String str = lCode[digit];
             for (int j = 0; j < 4; j++) {
@@ -302,32 +312,43 @@ public class Barcode : IDrawable {
 
         float[] xy = new float[] {x, y};
         if (font != null) {
-            String label =
-                    fullText[0] +
-                    "  " +
-                    fullText[1] +
-                    fullText[2] +
-                    fullText[3] +
-                    fullText[4] +
-                    fullText[5] +
-                    "   " +
-                    fullText[6] +
-                    fullText[7] +
-                    fullText[8] +
-                    fullText[9] +
-                    fullText[10] +
-                    "  " +
-                    fullText[11];
+            // Standard UPC-A layout: the leading (number system) digit and
+            // the trailing check digit are printed in the quiet zones
+            // outside the guard bars, not centered under them together with
+            // the rest of the label. The two groups of 5 digits are each
+            // centered under their own bar section.
+            String firstDigit = fullText.Substring(0, 1);
+            String group1 = fullText.Substring(1, 5);
+            String group2 = fullText.Substring(6, 5);
+            String lastDigit = fullText.Substring(11, 1);
+
             float fontSize = font.GetSize();
             font.SetSize(10f);
+            float yText = y1 + h + font.GetBodyHeight(font.GetSize());
+            float gap = font.StringWidth(" ");
 
-            TextLine textLine = new TextLine(font, label);
-            textLine.SetLocation(
-                    x1 + ((x - x1) - font.StringWidth(label))/2,
-                    y1 + h + font.GetBodyHeight(font.GetSize()));
-            xy = textLine.DrawOn(page);
-            xy[0] = Math.Max(x, xy[0]);
-            xy[1] = Math.Max(y, xy[1]);
+            TextLine firstDigitLine = new TextLine(font, firstDigit);
+            firstDigitLine.SetLocation(x1 - gap - font.StringWidth(firstDigit), yText);
+            firstDigitLine.DrawOn(page);
+
+            TextLine group1Line = new TextLine(font, group1);
+            group1Line.SetLocation(
+                    xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font.StringWidth(group1))/2,
+                    yText);
+            group1Line.DrawOn(page);
+
+            TextLine group2Line = new TextLine(font, group2);
+            group2Line.SetLocation(
+                    xRightGroupStart + ((xGroup2End - xRightGroupStart) - font.StringWidth(group2))/2,
+                    yText);
+            group2Line.DrawOn(page);
+
+            TextLine lastDigitLine = new TextLine(font, lastDigit);
+            lastDigitLine.SetLocation(x + gap, yText);
+            float[] xyLast = lastDigitLine.DrawOn(page);
+
+            xy[0] = Math.Max(x, xyLast[0]);
+            xy[1] = Math.Max(y, xyLast[1]);
 
             font.SetSize(fontSize);
             return new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())};
