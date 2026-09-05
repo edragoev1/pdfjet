@@ -242,13 +242,25 @@ class OTF {
                 var gid = 0
                 var offset = idRangeOffset[seg]
                 if offset == 0 {
-                    gid = (idDelta[seg] + ch) % 65536
+                    // Per spec this is unsigned 16-bit modulo arithmetic.
+                    // idDelta is read as unsigned here (Int(readUInt16())), so
+                    // the sum is always non-negative and % 65536 already gives
+                    // the right answer, but use & 0xFFFF to spell out the
+                    // intended unsigned-16-bit wraparound explicitly (matches
+                    // the other language ports and doesn't rely on that
+                    // coincidence).
+                    gid = (idDelta[seg] + ch) & 0xFFFF
                 } else {
                     offset /= 2
                     offset -= segCount - seg
                     gid = glyphIdArray[offset + (ch - startCount[seg])]
                     if gid != 0 {
-                        gid += idDelta[seg] % 65536
+                        // idDelta[seg] % 65536 alone is a no-op (idDelta is
+                        // already < 65536) and never wraps the actual sum, so
+                        // a large gid + idDelta could overflow past the valid
+                        // 16-bit glyph ID range uncorrected. Wrap the *sum*
+                        // instead.
+                        gid = (gid + idDelta[seg]) & 0xFFFF
                     }
                 }
                 unicodeToGID[ch] = gid
