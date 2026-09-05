@@ -356,9 +356,6 @@ public class Chart implements Drawable {
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                     point.setStrokeWidth(point.getStrokeWidth() * (x6 - x5) / w);
                 } else {
-                    // Count unique categories or use point.x as category index
-                    int numCategories = chartData.size();
-                    float categoryWidth = (x6 - x5) / numCategories;
                     point.x = x5 + (point.x / w) * (x6 - x5);
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                 }
@@ -566,11 +563,12 @@ public class Chart implements Drawable {
     /** Draws connecting paths, point markers, and point text. */
     private void drawPathsAndPoints(
             Page page, List<List<Point>> chartData) throws Exception {
+        int seriesIndex = 0;
         for (List<Point> points : chartData) {
             Point p0 = points.get(0);
             if (p0.drawPath) {
                 if (autoColors && p0.strokeColor == null) {
-                    int index = chartData.indexOf(points) % DEFAULT_PALETTE.length;
+                    int index = seriesIndex % DEFAULT_PALETTE.length;
                     p0.strokeColor = toFloatArray(DEFAULT_PALETTE[index]);
                 }
                 page.setPenColor(p0.strokeColor);
@@ -600,6 +598,7 @@ public class Chart implements Drawable {
                     page.drawPoint(point);
                 }
             }
+            seriesIndex++;
         }
     }
 
