@@ -104,20 +104,26 @@ internal class FlateEncode {
         }
     }
 
-    private func addAdler32(
-            _ output: inout [UInt8], _ input: [UInt8]) {
-        // Calculate the Adler-32 checksum
+    private func addAdler32(_ output: inout [UInt8], _ input: [UInt8]) {
         let prime: UInt32 = 65521
         var s1: UInt32 = 1
         var s2: UInt32 = 0
-        for i in 0..<input.count {
-            s1 = (s1 &+ UInt32(input[i])) % prime
-            s2 = (s2 &+ s1) % prime
+        var i = 0
+        while i < input.count {
+            var chunk = min(5552, input.count - i)
+            while chunk > 0 {
+                s1 &+= UInt32(input[i])
+                s2 &+= s1
+                i += 1
+                chunk -= 1
+            }
+            s1 %= prime
+            s2 %= prime
         }
         let adler = (s2 &<< 16) &+ s1
-        output.append(UInt8((adler >> 24) & 0xFF))
-        output.append(UInt8((adler >> 16) & 0xFF))
-        output.append(UInt8((adler >>  8) & 0xFF))
-        output.append(UInt8((adler >>  0) & 0xFF))
+        output.append(contentsOf: [
+            UInt8((adler >> 24) & 0xFF), UInt8((adler >> 16) & 0xFF),
+            UInt8((adler >>  8) & 0xFF), UInt8(adler & 0xFF)
+        ])
     }
 }
