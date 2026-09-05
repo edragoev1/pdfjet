@@ -13,17 +13,17 @@ class Compressor {
     static byte[] deflate(byte[] data) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
         Deflater deflater = new Deflater();
-        // deflater.setLevel(Deflater.BEST_COMPRESSION);
-        // deflater.setLevel(Deflater.BEST_SPEED);
-        deflater.setInput(data);
-        // End compression with the current contents of the input buffer.
-        deflater.finish();
-        byte[] buf = new byte[4096];
-        while (!deflater.finished()) {
-            int count = deflater.deflate(buf);
-            bos.write(buf, 0, count);
+        try {
+            deflater.setInput(data);
+            deflater.finish();
+            byte[] buf = new byte[4096];
+            while (!deflater.finished()) {
+                int count = deflater.deflate(buf);
+                bos.write(buf, 0, count);
+            }
+        } finally {
+            deflater.end();   // releases native memory even on error
         }
-        deflater.end();
         return bos.toByteArray();
     }
 }
