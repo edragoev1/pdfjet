@@ -10,7 +10,7 @@ internal class FlateEncode {
     private var bitBuffer: UInt32 = 0
     private var bitsInBuffer: UInt8 = 0
     private let MASK: UInt32 = 0xFFFF
-    private var hashtable: [Int]
+    private var hashtable: [Int32]
 
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
@@ -19,7 +19,7 @@ internal class FlateEncode {
         let flateLiteral = FlateLiteral.shared
 
         let BUFSIZE = MASK + 1  // 2^16 bytes
-        hashtable = [Int](repeating: -1, count: Int(BUFSIZE))
+        hashtable = [Int32](repeating: -1, count: Int(BUFSIZE))
         writeCode(&output, UInt32(0x9C78), 16)      // FLG | CMF
         writeCode(&output, UInt32(0x03), 3)         // BTYPE | BFINAL
         var i = 0
@@ -67,7 +67,7 @@ internal class FlateEncode {
     private func getMatchIndex(
             _ input: [UInt8],
             _ i: Int,
-            _ hashtable: inout [Int]) -> Int {
+            _ hashtable: inout [Int32]) -> Int {
         // FNV-1a inline hash routines
         var hash: UInt64 = 0xcbf29ce484222325
         let prime: UInt64 = 0x100000001b3
@@ -79,8 +79,8 @@ internal class FlateEncode {
         hash = hash &* prime
         // Perform xor-folding operation
         let index = Int(((hash >> 30) ^ hash) & UInt64(MASK))
-        let j = hashtable[index]
-        hashtable[index] = i
+        let j = Int(hashtable[index])
+        hashtable[index] = Int32(i)
         if j != -1 &&
                 i - j <= 32768 &&
                 input[j] == input[i] &&
