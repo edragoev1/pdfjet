@@ -9,17 +9,11 @@ using System.IO.Compression;
 
 namespace PDFjet.NET {
 class Decompressor {
-    internal static byte[] inflate(byte[] data) {
-        MemoryStream outStream = new MemoryStream();
-        MemoryStream inStream = new MemoryStream(data, 2, data.Length - 6);
-        DeflateStream dsStream = new DeflateStream(
-                inStream, CompressionMode.Decompress, true);
-        byte[] buf = new byte[4096];
-        int count;
-        while ((count = dsStream.Read(buf, 0, buf.Length)) > 0) {
-            outStream.Write(buf, 0, count);
-        }
-        dsStream.Dispose();
+    internal static byte[] Inflate(byte[] data) {
+        using var outStream = new MemoryStream();
+        using var inStream = new MemoryStream(data);
+        using var zlib = new ZLibStream(inStream, CompressionMode.Decompress);
+        zlib.CopyTo(outStream);
         return outStream.ToArray();
     }
 }   // End of Decompressor.cs

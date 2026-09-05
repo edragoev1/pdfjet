@@ -48,7 +48,7 @@ public class PDFobj {
             this.stream = new byte[length];
             Array.Copy(buf, streamOffset, stream, 0, length);
             if (GetValue("/Filter").Equals("/FlateDecode")) {
-                this.data = Decompressor.inflate(stream);
+                this.data = Decompressor.Inflate(stream);
             } else {
                 // Assume no compression for now.
                 this.data = stream;

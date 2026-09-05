@@ -317,7 +317,7 @@ class FontStream1 {
 
         byte[] buf = new byte[GetInt32(inputStream)];
         ReadFully(inputStream, buf);
-        MemoryStream stream = new MemoryStream(Decompressor.inflate(buf));
+        MemoryStream stream = new MemoryStream(Decompressor.Inflate(buf));
 
         font.unitsPerEm = GetInt32(stream);
         font.bBoxLLx = GetInt32(stream);

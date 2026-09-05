@@ -90,7 +90,7 @@ public class PNGImage {
             }
         }
 
-        byte[] inflatedImageData = Decompressor.inflate(iDAT);
+        byte[] inflatedImageData = Decompressor.Inflate(iDAT);
         byte[] imageData;
         if (colorType == 0) {
             // Grayscale Image
