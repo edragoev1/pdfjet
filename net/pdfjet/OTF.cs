@@ -154,7 +154,10 @@ public class OTF {
                 }
             }
         }
-        fontInfo = (winFontInfo != null) ? winFontInfo.ToString() : macFontInfo.ToString();
+        // winFontInfo is a StringBuilder reference, so it is never null here -
+        // check whether it actually collected any Windows-platform records
+        // instead, so Macintosh-only fonts still get their font info.
+        fontInfo = (winFontInfo.Length > 0) ? winFontInfo.ToString() : macFontInfo.ToString();
     }
 
     private void Cmap(FontTable table) {
@@ -219,13 +222,21 @@ public class OTF {
                 int gid;
                 int offset = idRangeOffset[seg];
                 if (offset == 0) {
-                    gid = (idDelta[seg] + ch) % 65536;
+                    // Per spec this is unsigned 16-bit modulo arithmetic.
+                    // C#'s % returns a negative result for a negative
+                    // dividend (idDelta can legitimately be negative), so
+                    // use & 0xFFFF instead to match the spec exactly.
+                    gid = (idDelta[seg] + ch) & 0xFFFF;
                 } else {
                     offset /= 2;
                     offset -= segCount - seg;
                     gid = glyphIdArray[offset + (ch - startCount[seg])];
                     if (gid != 0) {
-                        gid += idDelta[seg] % 65536;
+                        // Same as above: wrap the *sum* to unsigned 16 bits,
+                        // not idDelta on its own (which is already in range
+                        // and left the actual overflow/negative case
+                        // unhandled).
+                        gid = (gid + idDelta[seg]) & 0xFFFF;
                     }
                 }
                 unicodeToGID[ch] = gid;
