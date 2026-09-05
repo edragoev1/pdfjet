@@ -24,7 +24,7 @@ public class Example_08 {
         Image image = new Image(pdf, "images/TeslaX.png");
         image.SetScaleFactor(0.20f);
 
-        Barcode barcode = new Barcode(Barcode.CODE128, "Hello, World!");
+        Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
         barcode.SetModuleLength(0.75f);
 	    // Comment out the line below if you don't want to print the text underneath the barcode.
         barcode.SetFont(f1);

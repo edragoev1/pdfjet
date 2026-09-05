@@ -16,42 +16,49 @@ public class Example_11 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Barcode code = new Barcode(Barcode.CODE128, "Hellö, World!");
+        Barcode code = new Barcode(Barcode.CODE_128, "Hellö, World!");
         code.SetLocation(170f, 70f);
         code.SetModuleLength(0.75f);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new Barcode(Barcode.CODE128, "G86513JVW0C");
+        code = new Barcode(Barcode.CODE_128, "G86513JVW0C");
         code.SetLocation(170f, 170f);
         code.SetModuleLength(0.75f);
         code.SetDirection(Barcode.TOP_TO_BOTTOM);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new Barcode(Barcode.CODE39, "WIKIPEDIA");
+        code = new Barcode(Barcode.CODE_39, "WIKIPEDIA");
         code.SetLocation(270f, 370f);
         code.SetModuleLength(0.75f);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new Barcode(Barcode.CODE39, "CODE39");
+        code = new Barcode(Barcode.CODE_39, "CODE39");
         code.SetLocation(400f, 70f);
         code.SetModuleLength(0.75f);
         code.SetDirection(Barcode.TOP_TO_BOTTOM);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new Barcode(Barcode.CODE39, "CODE39");
+        code = new Barcode(Barcode.CODE_39, "CODE39");
         code.SetLocation(450f, 70f);
         code.SetModuleLength(0.75f);
         code.SetDirection(Barcode.BOTTOM_TO_TOP);
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new Barcode(Barcode.UPC, "712345678904");
-        code.SetLocation(450f, 270f);
-        code.SetModuleLength(0.75f);
+        code = new Barcode(Barcode.UPC_A, "51234567890"); // TODO: Do not allow more than 11 digits!!!
+        code.SetLocation(450f, 250f);
+        code.SetModuleLength(1.0f);
+        code.SetDirection(Barcode.BOTTOM_TO_TOP);
+        code.SetFont(f1);
+        code.DrawOn(page);
+
+        code = new Barcode(Barcode.EAN_13, "051234567890");   // EAN-13 without the check digit which we calculate!!
+        code.SetLocation(450f, 450f);
+        code.SetModuleLength(1.0f);
         code.SetDirection(Barcode.BOTTOM_TO_TOP);
         code.SetFont(f1);
         code.DrawOn(page);

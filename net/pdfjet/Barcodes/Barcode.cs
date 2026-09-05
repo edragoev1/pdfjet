@@ -10,14 +10,19 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /**
- * Used to create one dimensional barcodes - UPC, Code 39 and Code 128.
+ * Used to create one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
  *
  * Please see Example_11.
  */
 public class Barcode : IDrawable {
-    public static readonly int UPC = 0;
-    public static readonly int CODE128 = 1;
-    public static readonly int CODE39 = 2;
+    /** Specifies EAN13 barcode */
+    public static readonly int EAN_13 = 0;
+    /** Specifies UPC barcode */
+    public static readonly int UPC_A = 1;
+    /** Specifies CODE128 barcode */
+    public static readonly int CODE_128 = 2;
+    /** Specifies CODE39 barcode */
+    public static readonly int CODE_39 = 3;
 
     public static readonly int LEFT_TO_RIGHT = 0;
     public static readonly int TOP_TO_BOTTOM = 1;
@@ -31,20 +36,38 @@ public class Barcode : IDrawable {
     private float barHeightFactor = 50.0f;
     private int direction = LEFT_TO_RIGHT;
     private Font font = null;
-    private float fontSize = 12f;
 
-    private int[] tableA = {3211,2221,2122,1411,1132,1231,1114,1312,1213,3112};
+    private String[] lCode = {
+        "3211","2221","2122","1411","1132",
+        "1231","1114","1312","1213","3112"};
+    private String[] gCode = new String[10];
+    private String[] lgMap = {
+        "LLLLLL", "LLGLGG", "LLGGLG", "LLGGGL", "LGLLGG",
+        "LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"};
+
     private Dictionary<Char, String> tableB = new Dictionary<Char, String>();
 
     /**
      * The constructor.
      *
-     * @param type the type of the barcode.
+     * @param barcodeType the type of the barcode.
      * @param text the content string of the barcode.
      */
     public Barcode(int barcodeType, String text) {
         this.barcodeType = barcodeType;
         this.text = text;
+
+        if (barcodeType == Barcode.UPC_A && text.Length > 11) {
+            throw new Exception("UPC-A barcodes can have maximum of 11 digits!");
+        } else if (barcodeType == Barcode.EAN_13 && text.Length > 12) {
+            throw new Exception("EAN-13 barcodes can have maximum of 12 digits!");
+        }
+
+        for (int i = 0; i < 10; i++) {
+            char[] chars = lCode[i].ToCharArray();
+            Array.Reverse(chars);
+            gCode[i] = new String(chars);
+        }
 
         tableB.Add( '*', "bWbwBwBwb" );
         tableB.Add( '-', "bWbwbwBwB" );
@@ -194,10 +217,6 @@ public class Barcode : IDrawable {
         this.font = font;
     }
 
-    public void SetFontSize(float fontSize) {
-        this.fontSize = fontSize;
-    }
-
     /**
      * Draws this barcode on the specified page.
      *
@@ -206,11 +225,13 @@ public class Barcode : IDrawable {
      * @throws Exception
      */
     public float[] DrawOn(Page page) {
-        if (barcodeType == Barcode.UPC) {
+        if (barcodeType == Barcode.EAN_13) {
+            return DrawCodeEAN13(page, x1, y1);
+        } else if (barcodeType == Barcode.UPC_A) {
             return DrawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE128) {
+        } else if (barcodeType == Barcode.CODE_128) {
             return DrawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE39) {
+        } else if (barcodeType == Barcode.CODE_39) {
             return DrawCode39(page, x1, y1);
         } else {
             throw new Exception("Unsupported Barcode Type.");
@@ -218,11 +239,13 @@ public class Barcode : IDrawable {
     }
 
     internal float[] DrawOnPageAtLocation(Page page, float x1, float y1) {
-        if (barcodeType == Barcode.UPC) {
+        if (barcodeType == Barcode.EAN_13) {
+            return DrawCodeEAN13(page, x1, y1);
+        } else if (barcodeType == Barcode.UPC_A) {
             return DrawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE128) {
+        } else if (barcodeType == Barcode.CODE_128) {
             return DrawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE39) {
+        } else if (barcodeType == Barcode.CODE_39) {
             return DrawCode39(page, x1, y1);
         } else {
             throw new Exception("Unsupported Barcode Type.");
@@ -234,32 +257,29 @@ public class Barcode : IDrawable {
         float y = y1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
-        // Calculate the check digit:
-        // 1. Add the digits in the odd-numbered positions (first, third, fifth, etc.)
-        // together and multiply by three.
-        // 2. Add the digits in the even-numbered positions (second, fourth, sixth, etc.)
-        // to the result.
-        // 3. Subtract the result modulo 10 from ten.
-        // 4. The answer modulo 10 is the check digit.
         int sum = 0;
-        for (int i = 0; i < 11; i += 2) {
-            sum += text[i] - 48;
+        for (int i = 0; i < 11; i += 2) {   // even digits
+            sum += (text[i] - '0') * 3;
         }
-        sum *= 3;
-        for (int i = 1; i < 11; i += 2) {
-            sum += text[i] - 48;
+        for (int i = 1; i < 11; i += 2) {   // odd digits
+            sum += (text[i] - '0');
         }
-        int reminder = sum % 10;
-        int checkDigit = (10 - reminder) % 10;
-        text += checkDigit.ToString();
+        int checkDigit = 0;
+        int remainder = sum % 10;
+        if (remainder > 0) {
+            checkDigit = (10 - remainder);
+        }
+        // Use a local variable instead of mutating the text field - DrawOn()
+        // must be safe to call more than once on the same Barcode instance
+        // (e.g. drawing the same barcode on several pages).
+        String fullText = text + checkDigit.ToString();
 
         x = DrawEGuard(page, x, y, m1, h + 8);
         for (int i = 0; i < 6; i++) {
-            int digit = text[i] - 0x30;
-            // page.DrawString(digit.ToString(), x + 1, y + h + 12);
-            String symbol = tableA[digit].ToString();
-            for (int j = 0; j < symbol.Length; j++) {
-                int n = symbol[j] - 0x30;
+            int digit = fullText[i] - '0';
+            String str = lCode[digit];
+            for (int j = 0; j < 4; j++) {
+                int n = str[j] - '0';
                 if (j%2 != 0) {
                     DrawVertBar(page, x, y, n*m1, h);
                 }
@@ -268,11 +288,10 @@ public class Barcode : IDrawable {
         }
         x = DrawMGuard(page, x, y, m1, h + 8);
         for (int i = 6; i < 12; i++) {
-            int digit = text[i] - 0x30;
-            // page.DrawString(digit.ToString(), x + 1, y + h + 12);
-            String symbol = tableA[digit].ToString();
-            for (int j = 0; j < symbol.Length; j++) {
-                int n = symbol[j] - 0x30;
+            int digit = fullText[i] - '0';
+            String str = lCode[digit];
+            for (int j = 0; j < 4; j++) {
+                int n = str[j] - '0';
                 if (j%2 == 0) {
                     DrawVertBar(page, x, y, n*m1, h);
                 }
@@ -284,34 +303,34 @@ public class Barcode : IDrawable {
         float[] xy = new float[] {x, y};
         if (font != null) {
             String label =
-                    text[0] +
+                    fullText[0] +
                     "  " +
-                    text[1] +
-                    text[2] +
-                    text[3] +
-                    text[4] +
-                    text[5] +
+                    fullText[1] +
+                    fullText[2] +
+                    fullText[3] +
+                    fullText[4] +
+                    fullText[5] +
                     "   " +
-                    text[6] +
-                    text[7] +
-                    text[8] +
-                    text[9] +
-                    text[10] +
+                    fullText[6] +
+                    fullText[7] +
+                    fullText[8] +
+                    fullText[9] +
+                    fullText[10] +
                     "  " +
-                    text[11];
+                    fullText[11];
             float fontSize = font.GetSize();
             font.SetSize(10f);
 
             TextLine textLine = new TextLine(font, label);
             textLine.SetLocation(
                     x1 + ((x - x1) - font.StringWidth(label))/2,
-                    y1 + h + font.GetBodyHeight(fontSize));
+                    y1 + h + font.GetBodyHeight(font.GetSize()));
             xy = textLine.DrawOn(page);
             xy[0] = Math.Max(x, xy[0]);
             xy[1] = Math.Max(y, xy[1]);
 
             font.SetSize(fontSize);
-            return new float[] {xy[0], xy[1] + font.GetDescent(fontSize)};
+            return new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())};
         }
 
         return new float[] {xy[0], xy[1]};
@@ -325,8 +344,10 @@ public class Barcode : IDrawable {
             float h) {
         if (page != null) {
             // 101
+            page.AddArtifactBMC();
             DrawBar(page, x + (0.5f * m1), y, m1, h);
             DrawBar(page, x + (2.5f * m1), y, m1, h);
+            page.AddEMC();
         }
         return (x + (3.0f * m1));
     }
@@ -339,8 +360,10 @@ public class Barcode : IDrawable {
             float h) {
         if (page != null) {
             // 01010
+            page.AddArtifactBMC();
             DrawBar(page, x + (1.5f * m1), y, m1, h);
             DrawBar(page, x + (3.5f * m1), y, m1, h);
+            page.AddEMC();
         }
         return (x + (5.0f * m1));
     }
@@ -362,6 +385,7 @@ public class Barcode : IDrawable {
     private float[] DrawCode128(Page page, float x1, float y1) {
         float x = x1;
         float y = y1;
+
         float w = m1;
         float h = m1;
 
@@ -374,6 +398,16 @@ public class Barcode : IDrawable {
         List<Int32> list = new List<Int32>();
         for (int i = 0; i < text.Length; i++) {
             char symchar = text[i];
+            // Some characters need two codewords (SHIFT/FNC_4 + value), so
+            // checking list.Count == 48 only *after* adding them could skip
+            // right over 48 (e.g. 47 -> 49) and never trip again, silently
+            // encoding an unbounded number of characters past the documented
+            // limit. Check before adding instead, so the cap always holds.
+            int codewordsNeeded = (symchar < 32 || (symchar >= 128 && symchar < 256)) ? 2 : 1;
+            if (list.Count + codewordsNeeded > 48) {
+                // Maximum number of data characters is 48
+                break;
+            }
             if (symchar < 32) {
                 list.Add(GS1_128.SHIFT);
                 list.Add(symchar + 64);
@@ -385,10 +419,6 @@ public class Barcode : IDrawable {
             } else {
                 // list.Add(31);            // '?'
                 list.Add(256);              // This will generate an exception.
-            }
-            if (list.Count == 48) {
-                // Maximum number of data characters is 48
-                break;
             }
         }
 
@@ -430,14 +460,14 @@ public class Barcode : IDrawable {
                 TextLine textLine = new TextLine(font, text);
                 textLine.SetLocation(
                         x1 + ((x - x1) - font.StringWidth(text))/2,
-                        y1 + h + font.GetBodyHeight(fontSize));
+                        y1 + h + font.GetBodyHeight(font.GetSize()));
                 xy = textLine.DrawOn(page);
                 xy[0] = Math.Max(x, xy[0]);
-                return new float[] {xy[0], xy[1] + font.GetDescent(fontSize)};
+                return new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())};
             } else if (direction == TOP_TO_BOTTOM) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.SetLocation(
-                        x + w + font.GetBodyHeight(fontSize),
+                        x + w + font.GetBodyHeight(font.GetSize()),
                         y - ((y - y1) - font.StringWidth(text))/2);
                 textLine.SetTextDirection(90);
                 xy = textLine.DrawOn(page);
@@ -449,7 +479,10 @@ public class Barcode : IDrawable {
     }
 
     private float[] DrawCode39(Page page, float x1, float y1) {
-        text = "*" + text + "*";
+        // Use a local variable instead of mutating the text field - DrawOn()
+        // must be safe to call more than once on the same Barcode instance
+        // (e.g. drawing the same barcode on several pages).
+        String fullText = "*" + text + "*";
 
         float x = x1;
         float y = y1;
@@ -459,10 +492,10 @@ public class Barcode : IDrawable {
         float[] xy = new float[] {0f, 0f};
 
         if (direction == LEFT_TO_RIGHT) {
-            for (int i = 0; i < text.Length; i++) {
-                String code = tableB[text[i]];
+            for (int i = 0; i < fullText.Length; i++) {
+                String code = tableB[fullText[i]];
                 if ( code == null ) {
-                    throw new Exception("The input string '" + text +
+                    throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
 
@@ -485,18 +518,18 @@ public class Barcode : IDrawable {
             }
 
             if (font != null) {
-                TextLine textLine = new TextLine(font, text);
+                TextLine textLine = new TextLine(font, fullText);
                 textLine.SetLocation(
-                        x1 + ((x - x1) - font.StringWidth(text))/2,
-                        y1 + h + font.GetBodyHeight(fontSize));
+                        x1 + ((x - x1) - font.StringWidth(fullText))/2,
+                        y1 + h + font.GetBodyHeight(font.GetSize()));
                 xy = textLine.DrawOn(page);
                 xy[0] = Math.Max(x, xy[0]);
             }
         } else if (direction == TOP_TO_BOTTOM) {
-            for (int i = 0; i < text.Length; i++) {
-                String code = tableB[text[i]];
+            for (int i = 0; i < fullText.Length; i++) {
+                String code = tableB[fullText[i]];
                 if ( code == null ) {
-                    throw new Exception("The input string '" + text +
+                    throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
 
@@ -518,10 +551,10 @@ public class Barcode : IDrawable {
             }
 
             if (font != null) {
-                TextLine textLine = new TextLine(font, text);
+                TextLine textLine = new TextLine(font, fullText);
                 textLine.SetLocation(
-                        x - font.GetBodyHeight(fontSize),
-                        y1 + ((y - y1) - font.StringWidth(text))/2);
+                        x - font.GetBodyHeight(font.GetSize()),
+                        y1 + ((y - y1) - font.StringWidth(fullText))/2);
                 textLine.SetTextDirection(270);
                 xy = textLine.DrawOn(page);
                 xy[0] = Math.Max(x, xy[0]) + w;
@@ -531,10 +564,10 @@ public class Barcode : IDrawable {
         } else if (direction == BOTTOM_TO_TOP) {
             float height = 0.0f;
 
-            for (int i = 0; i < text.Length; i++) {
-                String code = tableB[text[i]];
+            for (int i = 0; i < fullText.Length; i++) {
+                String code = tableB[fullText[i]];
                 if ( code == null ) {
-                    throw new Exception("The input string '" + text +
+                    throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
 
@@ -550,8 +583,8 @@ public class Barcode : IDrawable {
             }
 
             y += height - m1;
-            for (int i = 0; i < text.Length; i++) {
-                String code = tableB[text[i]];
+            for (int i = 0; i < fullText.Length; i++) {
+                String code = tableB[fullText[i]];
 
                 for (int j = 0; j < 9; j++) {
                     char ch = code[j];
@@ -574,15 +607,111 @@ public class Barcode : IDrawable {
             if (font != null) {
                 y = y1 + ( height - m1);
 
-                TextLine textLine = new TextLine(font, text);
+                TextLine textLine = new TextLine(font, fullText);
                 textLine.SetLocation(
                         x + w + font.GetBodyHeight(font.GetSize()),
-                        y - ((y - y1) - font.StringWidth(text))/2);
+                        y - ((y - y1) - font.StringWidth(fullText))/2);
                 textLine.SetTextDirection(90);
                 xy = textLine.DrawOn(page);
                 xy[1] = Math.Max(y, xy[1]);
                 return new float[] {xy[0], xy[1] + font.GetDescent()};
             }
+        }
+
+        return new float[] {xy[0], xy[1]};
+    }
+
+    private float[] DrawCodeEAN13(Page page, float x1, float y1) {
+        float x = x1;
+        float y = y1;
+        float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
+
+        int sum = 0;
+        for (int i = 0; i < 12; i += 2) {
+            sum += (text[i] - 0x30);
+        }
+        for (int i = 1; i < 12; i += 2) {
+            sum += (text[i] - 0x30) * 3;
+        }
+        int checkDigit = 0;
+        int remainder = sum % 10;
+        if (remainder > 0) {
+            checkDigit = (10 - remainder);
+        }
+        // Use a local variable instead of mutating the text field - DrawOn()
+        // must be safe to call more than once on the same Barcode instance
+        // (e.g. drawing the same barcode on several pages).
+        String fullText = text + checkDigit.ToString();
+
+        x = DrawEGuard(page, x, y, m1, h + 8);
+        String group1 = lgMap[fullText[0] - '0'];
+        for (int i = 1; i < 7; i++) {
+            int digit = fullText[i] - '0';
+            String str = gCode[digit];
+            if (group1[i - 1] == 'L') {
+                str = lCode[digit];
+            }
+            int n = str[0] - '0';
+            x += n*m1;
+            n = str[1] - '0';
+            DrawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+            n = str[2] - '0';
+            x += n*m1;
+            n = str[3] - '0';
+            DrawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+        }
+        x = DrawMGuard(page, x, y, m1, h + 8);
+        for (int i = 7; i < 13; i++) {
+            int digit = fullText[i] - '0';
+            String str = lCode[digit];
+            int n = str[0] - '0';
+            DrawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+            n = str[1] - '0';
+            x += n*m1;
+            n = str[2] - '0';
+            DrawVertBar(page, x, y, n*m1, h);
+            x += n*m1;
+            n = str[3] - '0';
+            x += n*m1;
+        }
+        x = DrawEGuard(page, x, y, m1, h + 8);
+
+        float[] xy = new float[] {x, y};
+
+        if (font != null) {     // TODO:
+            String label =
+                    fullText[0] +
+                    " " +
+                    fullText[1] +
+                    fullText[2] +
+                    fullText[3] +
+                    fullText[4] +
+                    fullText[5] +
+                    fullText[6] +
+                    "    " +
+                    fullText[7] +
+                    fullText[8] +
+                    fullText[9] +
+                    fullText[10] +
+                    fullText[11] +
+                    fullText[12];
+            float fontSize = font.GetSize();
+            font.SetSize(10f);
+
+            TextLine textLine = new TextLine(font, label);
+            textLine.SetLocation(
+                    x1 + ((x - x1) - font.StringWidth(label))/2,
+                    y1 + h + font.GetBodyHeight(font.GetSize()));
+            xy = textLine.DrawOn(page);
+            xy[0] = Math.Max(x, xy[0]);
+            xy[1] = Math.Max(y, xy[1]);
+
+            font.SetSize(fontSize);
+
+            return new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())};
         }
 
         return new float[] {xy[0], xy[1]};
@@ -595,10 +724,12 @@ public class Barcode : IDrawable {
             float m1,   // Module length
             float h) {
         if (page != null) {
+            page.AddArtifactBMC();
             page.SetPenWidth(m1);
             page.MoveTo(x + m1/2, y);
             page.LineTo(x + m1/2, y + h);
             page.StrokePath();
+            page.AddEMC();
         }
     }
 
@@ -609,10 +740,12 @@ public class Barcode : IDrawable {
             float m1,   // Module length
             float w) {
         if (page != null) {
+            page.AddArtifactBMC();
             page.SetPenWidth(m1);
             page.MoveTo(x, y + m1/2);
             page.LineTo(x + w, y + m1/2);
             page.StrokePath();
+            page.AddEMC();
         }
     }
 
@@ -623,18 +756,24 @@ public class Barcode : IDrawable {
             float m1,   // Module length
             float w) {
         if (page != null) {
+            page.AddArtifactBMC();
             page.SetPenWidth(m1);
             page.MoveTo(x, y - m1/2);
             page.LineTo(x + w, y - m1/2);
             page.StrokePath();
+            page.AddEMC();
         }
     }
 
+    /**
+     * Returns the height of this barcode.
+     * @return the height of this barcode.
+     */
     public float GetHeight() {
         if (font == null) {
             return m1 * barHeightFactor;
         }
-        return m1 * barHeightFactor + font.GetBodyHeight(fontSize);
+        return m1 * barHeightFactor + font.GetBodyHeight(font.GetSize());
     }
 }   // End of Barcode.cs
 }   // End of namespace PDFjet.NET
