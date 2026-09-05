@@ -63,7 +63,7 @@ func (obj *PDFobj) SetStreamAndData(buf []byte, length int) {
 		obj.stream[i] = buf[obj.streamOffset+i]
 	}
 	if obj.getValue("/Filter") == "/FlateDecode" {
-		obj.data = decompressor.Inflate(obj.stream)
+		obj.data, _ = decompressor.Inflate(obj.stream)
 	} else {
 		// Assume no compression for now.
 		obj.data = obj.stream

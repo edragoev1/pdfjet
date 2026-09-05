@@ -305,7 +305,7 @@ func getFontData(font *Font, reader io.Reader) {
 	buf := make([]byte, length)
 	io.ReadFull(reader, buf)
 
-	inflated := decompressor.Inflate(buf)
+	inflated, _ := decompressor.Inflate(buf)
 	r2 := bytes.NewReader(inflated)
 
 	font.unitsPerEm = int(getInt32(r2))

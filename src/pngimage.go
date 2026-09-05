@@ -98,7 +98,7 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 	}
 
 	// Decompress the IDAT chunk data.
-	inflatedIDAT := decompressor.Inflate(image.iDAT)
+	inflatedIDAT, _ := decompressor.Inflate(image.iDAT)
 
 	var imageData []byte
 	switch image.colorType {

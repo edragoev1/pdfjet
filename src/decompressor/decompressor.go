@@ -8,21 +8,28 @@ package decompressor
 import (
 	"bytes"
 	"compress/zlib"
+	"fmt"
 	"io"
-	"log"
 )
 
-// Inflate inflates the input data.
-func Inflate(buf []byte) []byte {
+// Inflate decompresses zlib-compressed data (RFC 1950).
+// Returns an error if the data is not valid zlib format.
+func Inflate(buf []byte) (result []byte, err error) {
+	reader, err := zlib.NewReader(bytes.NewReader(buf))
+	if err != nil {
+		return nil, fmt.Errorf("invalid zlib data: %w", err)
+	}
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close reader: %w", closeErr)
+		}
+	}()
+
 	var inflated bytes.Buffer
-	reader, err := zlib.NewReader(bytes.NewBuffer(buf))
-	if err != nil {
-		log.Fatal(err)
+	inflated.Grow(len(buf))
+	if _, err := io.Copy(&inflated, reader); err != nil {
+		return nil, fmt.Errorf("decompression failed: %w", err)
 	}
-	_, err = io.Copy(&inflated, reader)
-	if err != nil {
-		log.Fatal(err)
-	}
-	reader.Close()
-	return inflated.Bytes()
+
+	return inflated.Bytes(), nil
 }
