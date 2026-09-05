@@ -482,14 +482,20 @@ final public class Page {
         append("ET\n");
     }
 
+    private void appendByteAsHex(int b) {
+        hexBuf2[0] = HEX[(b >> 4) & 0xF];
+        hexBuf2[1] = HEX[b & 0xF];
+        buf.write(hexBuf2, 0, 2);
+    }
+
     private void drawASCIIString(Font font, String str) {
         for (int i = 0; i < str.length(); i++) {
             int c1 = str.charAt(i);
             if (c1 < font.firstChar || c1 > font.lastChar) {
-                append(String.format("%02X", 0x20));
+                appendByteAsHex(0x20);
                 continue;
             }
-            append(String.format("%02X", c1));
+            appendByteAsHex(c1);
             if (font.isCoreFont && font.kernPairs && i < (str.length() - 1)) {
                 c1 -= 32;
                 int c2 = str.charAt(i + 1);
@@ -512,8 +518,15 @@ final public class Page {
         if (str == null || str.isEmpty()) {
             return;
         }
+        // A plain loop over codePointAt()/charCount() is equivalent to
+        // str.codePoints().forEach(...) - including surrogate-pair handling -
+        // but avoids the Stream/Spliterator/lambda dispatch overhead on what
+        // is often the hottest per-character loop in the library.
+        int length = str.length();
         if (font.isCJK) {
-            str.codePoints().forEach(cp -> {
+            for (int i = 0; i < length; ) {
+                int cp = str.codePointAt(i);
+                i += Character.charCount(cp);
                 if (cp != 0xFEFF) {     // BOM
                     if (cp < font.firstChar || cp > font.lastChar) {
                         appendCodePointAsHex(0x0020);
@@ -521,9 +534,11 @@ final public class Page {
                         appendCodePointAsHex(cp);
                     }
                 }
-            });
+            }
         } else {
-            str.codePoints().forEach(cp -> {
+            for (int i = 0; i < length; ) {
+                int cp = str.codePointAt(i);
+                i += Character.charCount(cp);
                 if (cp != 0xFEFF) {     //BOM
                     if (cp < font.firstChar || cp > font.lastChar) {
                         appendCodePointAsHex(font.unicodeToGID[0x0020]);
@@ -531,7 +546,7 @@ final public class Page {
                         appendCodePointAsHex(font.unicodeToGID[cp]);
                     }
                 }
-            });
+            }
         }
     }
 
@@ -1620,22 +1635,33 @@ final public class Page {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'A', 'B', 'C', 'D', 'E', 'F'
     };
+    // Reusable scratch buffers for appendCodePointAsHex()/appendByteAsHex() -
+    // avoid allocating a new small array on every character drawn.
+    private final byte[] hexBuf2 = new byte[2];
+    private final byte[] hexBuf4 = new byte[4];
+    private final byte[] hexBuf6 = new byte[6];
     private void appendCodePointAsHex(int codePoint) {
+        // Batch the hex digits into a local array and write it with a single
+        // buf.write(byte[]) call. ByteArrayOutputStream.write(int) is
+        // synchronized and re-checks/grows capacity on every call, so writing
+        // one digit at a time meant 4-6 synchronized calls per character.
         if (codePoint <= 0xFFFF) {
             // Basic Multilingual Plane (BMP) character
-            buf.write(HEX[(codePoint >> 12) & 0xF]);
-            buf.write(HEX[(codePoint >> 8)  & 0xF]);
-            buf.write(HEX[(codePoint >> 4)  & 0xF]);
-            buf.write(HEX[(codePoint)       & 0xF]);
+            hexBuf4[0] = HEX[(codePoint >> 12) & 0xF];
+            hexBuf4[1] = HEX[(codePoint >> 8)  & 0xF];
+            hexBuf4[2] = HEX[(codePoint >> 4)  & 0xF];
+            hexBuf4[3] = HEX[(codePoint)       & 0xF];
+            buf.write(hexBuf4, 0, 4);
         } else {
             // Supplementary character (needs surrogate pair in UTF-16)
             // Write as 6 hex digits (max Unicode code point is 0x10FFFF)
-            buf.write(HEX[(codePoint >> 20) & 0xF]);
-            buf.write(HEX[(codePoint >> 16) & 0xF]);
-            buf.write(HEX[(codePoint >> 12) & 0xF]);
-            buf.write(HEX[(codePoint >> 8)  & 0xF]);
-            buf.write(HEX[(codePoint >> 4)  & 0xF]);
-            buf.write(HEX[(codePoint)       & 0xF]);
+            hexBuf6[0] = HEX[(codePoint >> 20) & 0xF];
+            hexBuf6[1] = HEX[(codePoint >> 16) & 0xF];
+            hexBuf6[2] = HEX[(codePoint >> 12) & 0xF];
+            hexBuf6[3] = HEX[(codePoint >> 8)  & 0xF];
+            hexBuf6[4] = HEX[(codePoint >> 4)  & 0xF];
+            hexBuf6[5] = HEX[(codePoint)       & 0xF];
+            buf.write(hexBuf6, 0, 6);
         }
     }
 
