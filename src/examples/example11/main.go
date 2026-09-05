@@ -15,43 +15,50 @@ func Example11() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	barcode := pdfjet.NewBarcode(pdfjet.CODE128, "Hellö, World!")
+	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "Hellö, World!")
 	barcode.SetLocation(170.0, 70.0)
 	barcode.SetModuleLength(0.75)
 	barcode.SetFont(f1)
 	barcode.DrawOn(page)
 
-	barcode = pdfjet.NewBarcode(pdfjet.CODE128, "G86513JVW0C")
+	barcode = pdfjet.NewBarcode(pdfjet.CODE_128, "G86513JVW0C")
 	barcode.SetLocation(170.0, 170.0)
 	barcode.SetModuleLength(0.75)
 	barcode.SetDirection(pdfjet.TopToBottom)
 	barcode.SetFont(f1)
 	barcode.DrawOn(page)
 
-	barcode = pdfjet.NewBarcode(pdfjet.CODE39, "WIKIPEDIA")
+	barcode = pdfjet.NewBarcode(pdfjet.CODE_39, "WIKIPEDIA")
 	barcode.SetLocation(270.0, 370.0)
 	barcode.SetModuleLength(0.75)
 	barcode.SetFont(f1)
 	barcode.DrawOn(page)
 
-	barcode = pdfjet.NewBarcode(pdfjet.CODE39, "CODE39")
+	barcode = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
 	barcode.SetLocation(400.0, 70.0)
 	barcode.SetModuleLength(0.75)
 	barcode.SetDirection(pdfjet.TopToBottom)
 	barcode.SetFont(f1)
 	barcode.DrawOn(page)
 
-	barcode = pdfjet.NewBarcode(pdfjet.CODE39, "CODE39")
+	barcode = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
 	barcode.SetLocation(450.0, 70.0)
 	barcode.SetModuleLength(0.75)
 	barcode.SetDirection(pdfjet.BottomToTop)
 	barcode.SetFont(f1)
 	barcode.DrawOn(page)
 
-	barcode = pdfjet.NewBarcode(pdfjet.Upc, "712345678904")
-	barcode.SetLocation(450.0, 270.0)
-	barcode.SetModuleLength(0.75)
-	barcode.SetDirection(pdfjet.TopToBottom)
+	barcode = pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890") // TODO: Do not allow more than 11 digits!!!
+	barcode.SetLocation(450.0, 250.0)
+	barcode.SetModuleLength(1.0)
+	barcode.SetDirection(pdfjet.BottomToTop)
+	barcode.SetFont(f1)
+	barcode.DrawOn(page)
+
+	barcode = pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890") // EAN-13 without the check digit which we calculate!!
+	barcode.SetLocation(450.0, 450.0)
+	barcode.SetModuleLength(1.0)
+	barcode.SetDirection(pdfjet.BottomToTop)
 	barcode.SetFont(f1)
 	barcode.DrawOn(page)
 

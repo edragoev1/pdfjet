@@ -25,7 +25,7 @@ func Example08() {
 	image := pdfjet.NewImageFromFile(pdf, "images/TeslaX.png")
 	image.ScaleBy(0.20)
 
-	barcode := pdfjet.NewBarcode(pdfjet.CODE128, "Hello, World!")
+	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "Hello, World!")
 	barcode.SetModuleLength(0.75)
 	// Comment out the line below if you don't want to print the text underneath the barcode.
 	barcode.SetFont(f1)

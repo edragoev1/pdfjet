@@ -14,7 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/code128"
 )
 
-// Barcode describes one dimensional barcodes - UPC, Code 39 and Code 128.
+// Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
 // Please see Example_11.
 type Barcode struct {
 	barcodeType     int
@@ -25,18 +25,21 @@ type Barcode struct {
 	barHeightFactor float32
 	direction       int
 	font            *Font
-	tableA          []int
+	lCode           []string
+	gCode           []string
+	lgMap           []string
 	tableB          map[byte]string
 }
 
-// Constants
+// Constants for the barcode type.
 const (
-	Upc = iota
-	CODE128
-	CODE39
+	EAN_13 = iota
+	UPC_A
+	CODE_128
+	CODE_39
 )
 
-// Constants
+// Constants for the writing direction.
 const (
 	LeftToRight = iota
 	TopToBottom
@@ -44,8 +47,8 @@ const (
 )
 
 // NewBarcode constructs barcode objects.
-// @param type the type of the barcode.
-// @param str the content string of the barcode.
+// @param barcodeType the type of the barcode.
+// @param text the content string of the barcode.
 func NewBarcode(barcodeType int, text string) *Barcode {
 	barcode := new(Barcode)
 	barcode.barcodeType = barcodeType
@@ -55,7 +58,23 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 	barcode.m1 = 0.75 // Module length
 	barcode.barHeightFactor = 50.0
 	barcode.direction = LeftToRight
-	barcode.tableA = []int{3211, 2221, 2122, 1411, 1132, 1231, 1114, 1312, 1213, 3112}
+
+	if barcodeType == UPC_A && len(text) > 11 {
+		log.Fatal("UPC-A barcodes can have maximum of 11 digits!")
+	} else if barcodeType == EAN_13 && len(text) > 12 {
+		log.Fatal("EAN-13 barcodes can have maximum of 12 digits!")
+	}
+
+	barcode.lCode = []string{
+		"3211", "2221", "2122", "1411", "1132",
+		"1231", "1114", "1312", "1213", "3112"}
+	barcode.gCode = make([]string, 10)
+	for i := 0; i < 10; i++ {
+		barcode.gCode[i] = reverseString(barcode.lCode[i])
+	}
+	barcode.lgMap = []string{
+		"LLLLLL", "LLGLGG", "LLGGLG", "LLGGGL", "LGLLGG",
+		"LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"}
 
 	barcode.tableB = make(map[byte]string)
 	barcode.tableB['*'] = "bWbwBwBwb"
@@ -106,6 +125,15 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 	return barcode
 }
 
+// reverseString returns str with its bytes in reverse order (ASCII digits only, used for gCode).
+func reverseString(str string) string {
+	b := []byte(str)
+	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
+		b[i], b[j] = b[j], b[i]
+	}
+	return string(b)
+}
+
 // SetLocation sets the location where this barcode will be drawn on the page.
 // @param x1 the x coordinate of the top left corner of the barcode.
 // @param y1 the y coordinate of the top left corner of the barcode.
@@ -142,11 +170,13 @@ func (barcode *Barcode) SetFont(font *Font) {
 // DrawOn draws this barcode on the specified page.
 func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 	switch barcode.barcodeType {
-	case Upc:
+	case EAN_13:
+		return barcode.drawCodeEAN13(page, barcode.x1, barcode.y1)
+	case UPC_A:
 		return barcode.drawCodeUPC(page, barcode.x1, barcode.y1)
-	case CODE128:
+	case CODE_128:
 		return barcode.drawCode128(page, barcode.x1, barcode.y1)
-	case CODE39:
+	case CODE_39:
 		return barcode.drawCode39(page, barcode.x1, barcode.y1)
 	default:
 		log.Println("Unsupported Barcode Type.")
@@ -157,11 +187,13 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 // drawOnPageAtLocation draws this barcode on the specified page at the specified location.
 func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) [2]float32 {
 	switch barcode.barcodeType {
-	case Upc:
+	case EAN_13:
+		return barcode.drawCodeEAN13(page, x1, y1)
+	case UPC_A:
 		return barcode.drawCodeUPC(page, x1, y1)
-	case CODE128:
+	case CODE_128:
 		return barcode.drawCode128(page, x1, y1)
-	case CODE39:
+	case CODE_39:
 		return barcode.drawCode39(page, x1, y1)
 	default:
 		log.Println("Unsupported Barcode Type.")
@@ -191,28 +223,39 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 	}
 	reminder := sum % 10
 	checkDigit := (10 - reminder) % 10
-	barcode.text += strconv.Itoa(checkDigit)
+	// Use a local variable instead of mutating the text field - DrawOn()
+	// must be safe to call more than once on the same Barcode instance
+	// (e.g. drawing the same barcode on several pages).
+	fullText := barcode.text + strconv.Itoa(checkDigit)
 
 	x = barcode.drawEGuard(page, x, y, barcode.m1, h+8)
+	xGroup1Start := x
 	for i := 0; i < 6; i++ {
-		digit := barcode.text[i] - 0x30
-		// page.drawString(Integer.toString(digit), x + 1, y + h + 12)
-		symbol := strconv.Itoa(barcode.tableA[digit])
-		for j := 0; j < len(symbol); j++ {
-			n := symbol[j] - 0x30
+		digit := fullText[i] - 0x30
+		str := barcode.lCode[digit]
+		for j := 0; j < len(str); j++ {
+			n := str[j] - 0x30
 			if j%2 != 0 {
 				barcode.drawVertBar(page, x, y, float32(n)*barcode.m1, h)
 			}
 			x += float32(n) * barcode.m1
 		}
+		if i == 0 {
+			xGroup1Start = x // Start of the 2nd-6th digit bars (digit 0 is drawn outside)
+		}
 	}
+	xLeftGroupEnd := x
 	x = barcode.drawMGuard(page, x, y, barcode.m1, h+8)
+	xRightGroupStart := x
+	var xGroup2End float32
 	for i := 6; i < 12; i++ {
-		digit := barcode.text[i] - 0x30
-		// page.drawString(Integer.toString(digit), x + 1, y + h + 12)
-		symbol := strconv.Itoa(barcode.tableA[digit])
-		for j := 0; j < len(symbol); j++ {
-			n := symbol[j] - 0x30
+		if i == 11 {
+			xGroup2End = x // End of the 7th-11th digit bars (digit 11 is drawn outside)
+		}
+		digit := fullText[i] - 0x30
+		str := barcode.lCode[digit]
+		for j := 0; j < len(str); j++ {
+			n := str[j] - 0x30
 			if j%2 == 0 {
 				barcode.drawVertBar(page, x, y, float32(n)*barcode.m1, h)
 			}
@@ -223,33 +266,46 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 
 	xy := [2]float32{x, y}
 	if barcode.font != nil {
-		label := string(barcode.text[0]) +
-			"  " +
-			string(barcode.text[1]) +
-			string(barcode.text[2]) +
-			string(barcode.text[3]) +
-			string(barcode.text[4]) +
-			string(barcode.text[5]) +
-			"   " +
-			string(barcode.text[6]) +
-			string(barcode.text[7]) +
-			string(barcode.text[8]) +
-			string(barcode.text[9]) +
-			string(barcode.text[10]) +
-			"  " +
-			string(barcode.text[11])
+		// Standard UPC-A layout: the leading (number system) digit and the
+		// trailing check digit are printed in the quiet zones outside the
+		// guard bars, not centered under them together with the rest of
+		// the label. The two groups of 5 digits are each centered under
+		// their own bar section.
+		firstDigit := fullText[0:1]
+		group1 := fullText[1:6]
+		group2 := fullText[6:11]
+		lastDigit := fullText[11:12]
+
 		fontSize := barcode.font.GetSize()
 		barcode.font.SetSize(10)
+		yText := barcode.y1 + h + barcode.font.GetBodyHeight(barcode.font.GetSize())
+		gap := barcode.font.StringWidth(barcode.font.size, " ")
 
-		textLine := NewTextLine(barcode.font, label)
-		textLine.SetLocation(
-			barcode.x1+((x-barcode.x1)-barcode.font.StringWidth(barcode.font.size, label))/2,
-			barcode.y1+h+barcode.font.GetBodyHeight(barcode.font.GetSize()))
-		xy = textLine.DrawOn(page)
-		xy[0] = float32(math.Max(float64(x), float64(xy[0])))
-		xy[1] = float32(math.Max(float64(y), float64(xy[1])))
+		firstDigitLine := NewTextLine(barcode.font, firstDigit)
+		firstDigitLine.SetLocation(barcode.x1-gap-barcode.font.StringWidth(barcode.font.size, firstDigit), yText)
+		firstDigitLine.DrawOn(page)
+
+		group1Line := NewTextLine(barcode.font, group1)
+		group1Line.SetLocation(
+			xGroup1Start+((xLeftGroupEnd-xGroup1Start)-barcode.font.StringWidth(barcode.font.size, group1))/2,
+			yText)
+		group1Line.DrawOn(page)
+
+		group2Line := NewTextLine(barcode.font, group2)
+		group2Line.SetLocation(
+			xRightGroupStart+((xGroup2End-xRightGroupStart)-barcode.font.StringWidth(barcode.font.size, group2))/2,
+			yText)
+		group2Line.DrawOn(page)
+
+		lastDigitLine := NewTextLine(barcode.font, lastDigit)
+		lastDigitLine.SetLocation(x+gap, yText)
+		xyLast := lastDigitLine.DrawOn(page)
+
+		xy[0] = float32(math.Max(float64(x), float64(xyLast[0])))
+		xy[1] = float32(math.Max(float64(y), float64(xyLast[1])))
 
 		barcode.font.SetSize(fontSize)
+		return [2]float32{xy[0], xy[1] + barcode.font.GetDescent(barcode.font.GetSize())}
 	}
 
 	return xy
@@ -258,8 +314,10 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 func (barcode *Barcode) drawEGuard(page *Page, x, y, m1, h float32) float32 {
 	if page != nil {
 		// 101
+		page.AddArtifactBMC()
 		barcode.drawBar(page, x+(0.5*m1), y, m1, h)
 		barcode.drawBar(page, x+(2.5*m1), y, m1, h)
+		page.AddEMC()
 	}
 	return x + (3.0 * m1)
 }
@@ -267,8 +325,10 @@ func (barcode *Barcode) drawEGuard(page *Page, x, y, m1, h float32) float32 {
 func (barcode *Barcode) drawMGuard(page *Page, x, y, m1, h float32) float32 {
 	if page != nil {
 		// 01010
+		page.AddArtifactBMC()
 		barcode.drawBar(page, x+(1.5*m1), y, m1, h)
 		barcode.drawBar(page, x+(3.5*m1), y, m1, h)
+		page.AddEMC()
 	}
 	return x + (5.0 * m1)
 }
@@ -297,6 +357,19 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 
 	list := make([]rune, 0)
 	for _, symchar := range barcode.text {
+		// Some characters need two codewords (SHIFT/FNC_4 + value), so
+		// checking len(list) == 48 only *after* adding them could skip
+		// right over 48 (e.g. 47 -> 49) and never trip again, silently
+		// encoding an unbounded number of characters past the documented
+		// limit. Check before adding instead, so the cap always holds.
+		codewordsNeeded := 1
+		if symchar < 32 || (symchar >= 128 && symchar < 256) {
+			codewordsNeeded = 2
+		}
+		if len(list)+codewordsNeeded > 48 {
+			// Maximum number of data characters is 48
+			break
+		}
 		if symchar < 32 {
 			list = append(list, rune(code128.Shift))
 			list = append(list, symchar+64)
@@ -308,10 +381,6 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 		} else {
 			// list = append(list, rune(31))    // '?'
 			list = append(list, rune(256)) // This will generate an exception.
-		}
-		if len(list) == 48 {
-			// Maximum number of data characters is 48
-			break
 		}
 	}
 
@@ -371,18 +440,22 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 }
 
 func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
+	// Use a local variable instead of mutating the text field - DrawOn()
+	// must be safe to call more than once on the same Barcode instance
+	// (e.g. drawing the same barcode on several pages).
+	fullText := "*" + barcode.text + "*"
+
 	xy := [2]float32{0.0, 0.0}
 
-	barcode.text = "*" + barcode.text + "*"
 	x := x1
 	y := y1
 	w := barcode.m1 * barcode.barHeightFactor // Barcode width when drawn vertically
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
 	if barcode.direction == LeftToRight {
-		for i := 0; i < len(barcode.text); i++ {
-			code := barcode.tableB[barcode.text[i]]
+		for i := 0; i < len(fullText); i++ {
+			code := barcode.tableB[fullText[i]]
 			if code == "" {
-				log.Fatal("The input string '" + barcode.text +
+				log.Fatal("The input string '" + fullText +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
 			for _, ch := range code {
@@ -402,18 +475,18 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		}
 
 		if barcode.font != nil {
-			text := NewTextLine(barcode.font, barcode.text)
+			text := NewTextLine(barcode.font, fullText)
 			text.SetLocation(
-				barcode.x1+((x-barcode.x1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2,
+				barcode.x1+((x-barcode.x1)-barcode.font.StringWidth(barcode.font.size, fullText))/2,
 				barcode.y1+h+barcode.font.bodyHeight)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0])))
 		}
 	} else if barcode.direction == TopToBottom {
-		for i := 0; i < len(barcode.text); i++ {
-			code := barcode.tableB[barcode.text[i]]
+		for i := 0; i < len(fullText); i++ {
+			code := barcode.tableB[fullText[i]]
 			if code == "" {
-				log.Fatal("The input string '" + barcode.text +
+				log.Fatal("The input string '" + fullText +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
 			for _, ch := range code {
@@ -433,10 +506,10 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		}
 
 		if barcode.font != nil {
-			text := NewTextLine(barcode.font, barcode.text)
+			text := NewTextLine(barcode.font, fullText)
 			text.SetLocation(
 				x-barcode.font.bodyHeight,
-				barcode.y1+((y-barcode.y1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2)
+				barcode.y1+((y-barcode.y1)-barcode.font.StringWidth(barcode.font.size, fullText))/2)
 			text.SetTextDirection(270)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0]))) + w
@@ -444,10 +517,10 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		}
 	} else if barcode.direction == BottomToTop {
 		var height float32
-		for i := 0; i < len(barcode.text); i++ {
-			code := barcode.tableB[barcode.text[i]]
+		for i := 0; i < len(fullText); i++ {
+			code := barcode.tableB[fullText[i]]
 			if code == "" {
-				log.Fatal("The input string '" + barcode.text +
+				log.Fatal("The input string '" + fullText +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
 			for _, ch := range code {
@@ -461,8 +534,8 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		}
 		y += height - barcode.m1
 
-		for i := 0; i < len(barcode.text); i++ {
-			code := barcode.tableB[barcode.text[i]]
+		for i := 0; i < len(fullText); i++ {
+			code := barcode.tableB[fullText[i]]
 			for _, ch := range code {
 				if ch == 'w' {
 					y -= barcode.m1
@@ -481,14 +554,114 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 
 		if barcode.font != nil {
 			y = barcode.y1 + (height - barcode.m1)
-			text := NewTextLine(barcode.font, barcode.text)
+			text := NewTextLine(barcode.font, fullText)
 			text.SetLocation(
 				x+w+barcode.font.bodyHeight,
-				y-((y-barcode.y1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2)
+				y-((y-barcode.y1)-barcode.font.StringWidth(barcode.font.size, fullText))/2)
 			text.SetTextDirection(90)
 			xy = text.DrawOn(page)
 			xy[1] = float32(math.Max(float64(y), float64(xy[1])))
+			return [2]float32{xy[0], xy[1] + barcode.font.descent}
 		}
+	}
+
+	return xy
+}
+
+func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
+	x := x1
+	y := y1
+	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+
+	sum := 0
+	for i := 0; i < 12; i += 2 {
+		sum += int(barcode.text[i]) - 0x30
+	}
+	for i := 1; i < 12; i += 2 {
+		sum += (int(barcode.text[i]) - 0x30) * 3
+	}
+	checkDigit := 0
+	remainder := sum % 10
+	if remainder > 0 {
+		checkDigit = 10 - remainder
+	}
+	// Use a local variable instead of mutating the text field - DrawOn()
+	// must be safe to call more than once on the same Barcode instance
+	// (e.g. drawing the same barcode on several pages).
+	fullText := barcode.text + strconv.Itoa(checkDigit)
+
+	x = barcode.drawEGuard(page, x, y, barcode.m1, h+8)
+	xLeftGroupStart := x
+	group1 := barcode.lgMap[fullText[0]-'0']
+	for i := 1; i < 7; i++ {
+		digit := fullText[i] - '0'
+		str := barcode.gCode[digit]
+		if group1[i-1] == 'L' {
+			str = barcode.lCode[digit]
+		}
+		for j := 0; j < len(str); j++ {
+			n := str[j] - '0'
+			if j%2 != 0 {
+				barcode.drawVertBar(page, x, y, float32(n)*barcode.m1, h)
+			}
+			x += float32(n) * barcode.m1
+		}
+	}
+	xLeftGroupEnd := x
+	x = barcode.drawMGuard(page, x, y, barcode.m1, h+8)
+	xRightGroupStart := x
+	for i := 7; i < 13; i++ {
+		digit := fullText[i] - '0'
+		str := barcode.lCode[digit]
+		for j := 0; j < len(str); j++ {
+			n := str[j] - '0'
+			if j%2 == 0 {
+				barcode.drawVertBar(page, x, y, float32(n)*barcode.m1, h)
+			}
+			x += float32(n) * barcode.m1
+		}
+	}
+	xRightGroupEnd := x
+	x = barcode.drawEGuard(page, x, y, barcode.m1, h+8)
+
+	xy := [2]float32{x, y}
+	if barcode.font != nil {
+		// Standard EAN-13 layout: the leading (number system) digit sits
+		// in the quiet zone to the left of the start guard bars, not
+		// centered under them together with the rest of the label. The
+		// two groups of 6 digits are each centered under their own bar
+		// section (left group / right group), not under the barcode as
+		// a whole.
+		firstDigit := fullText[0:1]
+		leftGroup := fullText[1:7]
+		rightGroup := fullText[7:13]
+
+		fontSize := barcode.font.GetSize()
+		barcode.font.SetSize(10)
+		yText := barcode.y1 + h + barcode.font.GetBodyHeight(barcode.font.GetSize())
+		gap := barcode.font.StringWidth(barcode.font.size, " ")
+
+		firstDigitLine := NewTextLine(barcode.font, firstDigit)
+		firstDigitLine.SetLocation(barcode.x1-gap-barcode.font.StringWidth(barcode.font.size, firstDigit), yText)
+		firstDigitLine.DrawOn(page)
+
+		leftGroupLine := NewTextLine(barcode.font, leftGroup)
+		leftGroupLine.SetLocation(
+			xLeftGroupStart+((xLeftGroupEnd-xLeftGroupStart)-barcode.font.StringWidth(barcode.font.size, leftGroup))/2,
+			yText)
+		leftGroupLine.DrawOn(page)
+
+		rightGroupLine := NewTextLine(barcode.font, rightGroup)
+		rightGroupLine.SetLocation(
+			xRightGroupStart+((xRightGroupEnd-xRightGroupStart)-barcode.font.StringWidth(barcode.font.size, rightGroup))/2,
+			yText)
+		xyRight := rightGroupLine.DrawOn(page)
+
+		xy[0] = float32(math.Max(float64(x), float64(xyRight[0])))
+		xy[1] = float32(math.Max(float64(y), float64(xyRight[1])))
+
+		barcode.font.SetSize(fontSize)
+		return [2]float32{xy[0], xy[1] + barcode.font.GetDescent(barcode.font.GetSize())}
 	}
 
 	return xy
@@ -496,32 +669,38 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 
 func (barcode *Barcode) drawVertBar(page *Page, x, y, m1, h float32) {
 	if page != nil {
+		page.AddArtifactBMC()
 		page.SetPenWidth(m1)
 		page.MoveTo(x+m1/2, y)
 		page.LineTo(x+m1/2, y+h)
 		page.StrokePath()
+		page.AddEMC()
 	}
 }
 
 func (barcode *Barcode) drawHorzBar(page *Page, x, y, m1, w float32) {
 	if page != nil {
+		page.AddArtifactBMC()
 		page.SetPenWidth(m1)
 		page.MoveTo(x, y+m1/2)
 		page.LineTo(x+w, y+m1/2)
 		page.StrokePath()
+		page.AddEMC()
 	}
 }
 
 func (barcode *Barcode) drawHorzBar2(page *Page, x, y, m1, w float32) {
 	if page != nil {
+		page.AddArtifactBMC()
 		page.SetPenWidth(m1)
 		page.MoveTo(x, y-m1/2)
 		page.LineTo(x+w, y-m1/2)
 		page.StrokePath()
+		page.AddEMC()
 	}
 }
 
-// GetHeight -- TODO:
+// GetHeight returns the height of this barcode.
 func (barcode *Barcode) GetHeight() float32 {
 	if barcode.font == nil {
 		return barcode.m1 * barcode.barHeightFactor
