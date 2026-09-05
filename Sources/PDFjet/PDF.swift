@@ -27,7 +27,7 @@ public class PDF {
     private var outputIntentObjNumber = 0
     private var os: BufferedOutputStream?
     private var objOffset = [Int]()
-    private var producer = "PDFjet v8.5.0"
+    private var producer = "PDFjet v8.6.0"
     private var title: String?
     private var author: String?
     private var subject: String?

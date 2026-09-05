@@ -108,7 +108,7 @@ func NewPDF(w *bufio.Writer) *PDF {
 	pdf := new(PDF)
 	pdf.contentStreamsCompression = true
 	pdf.writer = w
-	pdf.producer = "PDFjet v8.5.0"
+	pdf.producer = "PDFjet v8.6.0"
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)

@@ -34,7 +34,7 @@ public class PDF {
     private String uuid = (new Salsa20()).GetID();
     private Stream os = null;
     private readonly List<Int32> objOffset = new List<Int32>(); // Required by the xref section
-    private String producer = "PDFjet v8.5.0";
+    private String producer = "PDFjet v8.6.0";
     private String title;
     private String author;
     private String subject;

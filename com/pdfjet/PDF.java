@@ -35,7 +35,7 @@ final public class PDF {
     private final Map<String, Destination> destinations = new HashMap<String, Destination>();
     private OutputStream os = null;
     private final List<Integer> objOffset = new ArrayList<Integer>();
-    private final String producer = "PDFjet v8.5.0";
+    private final String producer = "PDFjet v8.6.0";
     private String title;
     private String author;
     private String subject;
