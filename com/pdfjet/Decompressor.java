@@ -13,13 +13,19 @@ class Decompressor {
     static byte[] inflate(byte[] data) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
         Inflater inflater = new Inflater();
-        inflater.setInput(data);
-        byte[] buf = new byte[4096];
-        while (!inflater.finished()) {
-            int count = inflater.inflate(buf);
-            bos.write(buf, 0, count);
+        try {
+            inflater.setInput(data);
+            byte[] buf = new byte[4096];
+            while (!inflater.finished()) {
+                int count = inflater.inflate(buf);
+                if (count == 0 && inflater.needsInput()) {
+                    throw new DataFormatException("Truncated or invalid Flate stream");
+                }
+                bos.write(buf, 0, count);
+            }
+        } finally {
+            inflater.end();
         }
-        inflater.end();
         return bos.toByteArray();
     }
 }
