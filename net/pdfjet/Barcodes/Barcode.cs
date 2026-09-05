@@ -644,6 +644,7 @@ public class Barcode : IDrawable {
         String fullText = text + checkDigit.ToString();
 
         x = DrawEGuard(page, x, y, m1, h + 8);
+        float xLeftGroupStart = x;
         String group1 = lgMap[fullText[0] - '0'];
         for (int i = 1; i < 7; i++) {
             int digit = fullText[i] - '0';
@@ -662,7 +663,9 @@ public class Barcode : IDrawable {
             DrawVertBar(page, x, y, n*m1, h);
             x += n*m1;
         }
+        float xLeftGroupEnd = x;
         x = DrawMGuard(page, x, y, m1, h + 8);
+        float xRightGroupStart = x;
         for (int i = 7; i < 13; i++) {
             int digit = fullText[i] - '0';
             String str = lCode[digit];
@@ -677,37 +680,45 @@ public class Barcode : IDrawable {
             n = str[3] - '0';
             x += n*m1;
         }
+        float xRightGroupEnd = x;
         x = DrawEGuard(page, x, y, m1, h + 8);
 
         float[] xy = new float[] {x, y};
 
-        if (font != null) {     // TODO:
-            String label =
-                    fullText[0] +
-                    " " +
-                    fullText[1] +
-                    fullText[2] +
-                    fullText[3] +
-                    fullText[4] +
-                    fullText[5] +
-                    fullText[6] +
-                    "    " +
-                    fullText[7] +
-                    fullText[8] +
-                    fullText[9] +
-                    fullText[10] +
-                    fullText[11] +
-                    fullText[12];
+        if (font != null) {
+            // Standard EAN-13 layout: the leading (number system) digit sits
+            // in the quiet zone to the left of the start guard bars, not
+            // centered under them together with the rest of the label. The
+            // two groups of 6 digits are each centered under their own bar
+            // section (left group / right group), not under the barcode as
+            // a whole.
+            String firstDigit = fullText.Substring(0, 1);
+            String leftGroup = fullText.Substring(1, 6);
+            String rightGroup = fullText.Substring(7, 6);
+
             float fontSize = font.GetSize();
             font.SetSize(10f);
+            float yText = y1 + h + font.GetBodyHeight(font.GetSize());
+            float gap = font.StringWidth(" ");
 
-            TextLine textLine = new TextLine(font, label);
-            textLine.SetLocation(
-                    x1 + ((x - x1) - font.StringWidth(label))/2,
-                    y1 + h + font.GetBodyHeight(font.GetSize()));
-            xy = textLine.DrawOn(page);
-            xy[0] = Math.Max(x, xy[0]);
-            xy[1] = Math.Max(y, xy[1]);
+            TextLine firstDigitLine = new TextLine(font, firstDigit);
+            firstDigitLine.SetLocation(x1 - gap - font.StringWidth(firstDigit), yText);
+            firstDigitLine.DrawOn(page);
+
+            TextLine leftGroupLine = new TextLine(font, leftGroup);
+            leftGroupLine.SetLocation(
+                    xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font.StringWidth(leftGroup))/2,
+                    yText);
+            leftGroupLine.DrawOn(page);
+
+            TextLine rightGroupLine = new TextLine(font, rightGroup);
+            rightGroupLine.SetLocation(
+                    xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font.StringWidth(rightGroup))/2,
+                    yText);
+            float[] xyRight = rightGroupLine.DrawOn(page);
+
+            xy[0] = Math.Max(x, xyRight[0]);
+            xy[1] = Math.Max(y, xyRight[1]);
 
             font.SetSize(fontSize);
 

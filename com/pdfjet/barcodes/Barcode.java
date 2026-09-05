@@ -639,6 +639,7 @@ public class Barcode implements Drawable {
         String fullText = text + Integer.toString(checkDigit);
 
         x = drawEGuard(page, x, y, m1, h + 8);
+        float xLeftGroupStart = x;
         String group1 = lgMap[fullText.charAt(0) - '0'];
         for (int i = 1; i < 7; i++) {
             int digit = fullText.charAt(i) - '0';
@@ -657,7 +658,9 @@ public class Barcode implements Drawable {
             drawVertBar(page, x, y, n*m1, h);
             x += n*m1;
         }
+        float xLeftGroupEnd = x;
         x = drawMGuard(page, x, y, m1, h + 8);
+        float xRightGroupStart = x;
         for (int i = 7; i < 13; i++) {
             int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
@@ -672,37 +675,45 @@ public class Barcode implements Drawable {
             n = str.charAt(3) - '0';
             x += n*m1;
         }
+        float xRightGroupEnd = x;
         x = drawEGuard(page, x, y, m1, h + 8);
 
         float[] xy = new float[] {x, y};
 
-        if (font != null) {     // TODO:
-            String label =
-                    fullText.charAt(0) +
-                    " " +
-                    fullText.charAt(1) +
-                    fullText.charAt(2) +
-                    fullText.charAt(3) +
-                    fullText.charAt(4) +
-                    fullText.charAt(5) +
-                    fullText.charAt(6) +
-                    "    " +
-                    fullText.charAt(7) +
-                    fullText.charAt(8) +
-                    fullText.charAt(9) +
-                    fullText.charAt(10) +
-                    fullText.charAt(11) +
-                    fullText.charAt(12);
+        if (font != null) {
+            // Standard EAN-13 layout: the leading (number system) digit sits
+            // in the quiet zone to the left of the start guard bars, not
+            // centered under them together with the rest of the label. The
+            // two groups of 6 digits are each centered under their own bar
+            // section (left group / right group), not under the barcode as
+            // a whole.
+            String firstDigit = String.valueOf(fullText.charAt(0));
+            String leftGroup = fullText.substring(1, 7);
+            String rightGroup = fullText.substring(7, 13);
+
             float fontSize = font.getSize();
             font.setSize(10f);
+            float yText = y1 + h + font.getBodyHeight();
+            float gap = font.stringWidth(" ");
 
-            TextLine textLine = new TextLine(font, label);
-            textLine.setLocation(
-                    x1 + ((x - x1) - font.stringWidth(label))/2,
-                    y1 + h + font.getBodyHeight());
-            xy = textLine.drawOn(page);
-            xy[0] = Math.max(x, xy[0]);
-            xy[1] = Math.max(y, xy[1]);
+            TextLine firstDigitLine = new TextLine(font, firstDigit);
+            firstDigitLine.setLocation(x1 - gap - font.stringWidth(firstDigit), yText);
+            firstDigitLine.drawOn(page);
+
+            TextLine leftGroupLine = new TextLine(font, leftGroup);
+            leftGroupLine.setLocation(
+                    xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font.stringWidth(leftGroup))/2,
+                    yText);
+            leftGroupLine.drawOn(page);
+
+            TextLine rightGroupLine = new TextLine(font, rightGroup);
+            rightGroupLine.setLocation(
+                    xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font.stringWidth(rightGroup))/2,
+                    yText);
+            float[] xyRight = rightGroupLine.drawOn(page);
+
+            xy[0] = Math.max(x, xyRight[0]);
+            xy[1] = Math.max(y, xyRight[1]);
 
             font.setSize(fontSize);
 
