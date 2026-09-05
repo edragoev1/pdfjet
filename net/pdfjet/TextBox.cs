@@ -650,6 +650,17 @@ public class TextBox : IDrawable {
         } else {
             textAreaWidth = height - 2*margin;
         }
+        // Font.StringWidth(fallbackFont, str) is an exact per-character sum
+        // whenever the primary font is not a core font - only the core fonts
+        // apply kerning between adjacent characters, so their width is not
+        // simply the sum of their parts. For the common case (an embedded
+        // TrueType/CJK font) this lets the loops below track the wrapped
+        // line's width incrementally - adding one token/character's width at
+        // a time - instead of re-measuring the whole accumulated line on
+        // every token, which made wrapping a long paragraph an O(n^2)
+        // operation. Core fonts keep the original exact re-measurement so
+        // kerning is still accounted for correctly.
+        bool additive = !font.isCoreFont;
         String[] lines = text.Split(new String[] {"\r\n", "\n"}, StringSplitOptions.None);
         foreach (String line in lines) {
             if (font.StringWidth(fallbackFont, line) <= textAreaWidth) {
@@ -657,13 +668,20 @@ public class TextBox : IDrawable {
             } else {
                 if (textIsCJK(line)) {
                     StringBuilder sb = new StringBuilder();
+                    float sbWidth = 0f;
                     foreach (char ch in line.ToCharArray()) {
-                        if (font.StringWidth(fallbackFont, sb.ToString() + ch) <= textAreaWidth) {
+                        float chWidth = additive ? font.StringWidth(fallbackFont, ch.ToString()) : 0f;
+                        float width = additive ? sbWidth + chWidth : font.StringWidth(fallbackFont, sb.ToString() + ch);
+                        if (width <= textAreaWidth) {
                             sb.Append(ch);
+                            sbWidth = width;
                         } else {
-                            list.Add(sb.ToString());
+                            if (sb.Length > 0) {  // Don't emit an empty line
+                                list.Add(sb.ToString());
+                            }
                             sb.Length = 0;
                             sb.Append(ch);
+                            sbWidth = chWidth;
                         }
                     }
                     if (sb.Length > 0) {
@@ -671,14 +689,27 @@ public class TextBox : IDrawable {
                     }
                 } else {
                     StringBuilder sb = new StringBuilder();
+                    float sbWidth = 0f;
+                    float spaceWidth = additive ? font.StringWidth(fallbackFont, " ") : 0f;
                     String[] tokens = System.Text.RegularExpressions.Regex.Split(line, @"\s+");
                     foreach (String token in tokens) {
-                        if (font.StringWidth(fallbackFont, sb.ToString() + token) <= textAreaWidth) {
-                            sb.Append(token + " ");
+                        float tokenWidth = additive ? font.StringWidth(fallbackFont, token) : 0f;
+                        float width;
+                        if (additive) {
+                            width = sb.Length == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
                         } else {
-                            list.Add(sb.ToString().Trim());
+                            width = font.StringWidth(fallbackFont, sb.ToString() + token);
+                        }
+                        if (width <= textAreaWidth) {
+                            sb.Append(token + " ");
+                            sbWidth = width;
+                        } else {
+                            if (sb.Length > 0) {  // Don't emit an empty line
+                                list.Add(sb.ToString().Trim());
+                            }
                             sb.Length = 0;
                             sb.Append(token + " ");
+                            sbWidth = tokenWidth;
                         }
                     }
                     if (sb.ToString().Trim().Length > 0) {
