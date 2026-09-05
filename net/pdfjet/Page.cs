@@ -515,15 +515,21 @@ public class Page {
         Append("ET\n");
     }
 
+    private void AppendByteAsHex(int b) {
+        hexBuf2[0] = HEX[(b >> 4) & 0xF];
+        hexBuf2[1] = HEX[b & 0xF];
+        buf.Write(hexBuf2, 0, 2);
+    }
+
     private void DrawASCIIString(Font font, String str) {
         int len = str.Length;
         for (int i = 0; i < len; i++) {
             int c1 = str[i];
             if (c1 < font.firstChar || c1 > font.lastChar) {
-                Append(0x20.ToString("X2"));
+                AppendByteAsHex(0x20);
                 continue;
             }
-            Append(c1.ToString("X2"));
+            AppendByteAsHex(c1);
             if (font.isCoreFont && font.kernPairs && i < (str.Length - 1)) {
                 c1 -= 32;
                 int c2 = str[i + 1];
@@ -1551,22 +1557,31 @@ public class Page {
         (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
         (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F'
     };
+    // Reusable scratch buffers for AppendCodePointAsHex()/AppendByteAsHex() -
+    // avoid allocating a new small array on every character drawn, and batch
+    // the digits into a single buf.Write(byte[]) call instead of several
+    // buf.WriteByte() calls (each re-checks/grows MemoryStream capacity).
+    private readonly byte[] hexBuf2 = new byte[2];
+    private readonly byte[] hexBuf4 = new byte[4];
+    private readonly byte[] hexBuf6 = new byte[6];
     internal void AppendCodePointAsHex(int codePoint) {
         if (codePoint <= 0xFFFF) {
             // Basic Multilingual Plane (BMP) character
-            buf.WriteByte(HEX[(codePoint >> 12) & 0xF]);
-            buf.WriteByte(HEX[(codePoint >> 8)  & 0xF]);
-            buf.WriteByte(HEX[(codePoint >> 4)  & 0xF]);
-            buf.WriteByte(HEX[(codePoint)       & 0xF]);
+            hexBuf4[0] = HEX[(codePoint >> 12) & 0xF];
+            hexBuf4[1] = HEX[(codePoint >> 8)  & 0xF];
+            hexBuf4[2] = HEX[(codePoint >> 4)  & 0xF];
+            hexBuf4[3] = HEX[(codePoint)       & 0xF];
+            buf.Write(hexBuf4, 0, 4);
         } else {
             // Supplementary character (needs surrogate pair in UTF-16)
             // Write as 6 hex digits (max Unicode code point is 0x10FFFF)
-            buf.WriteByte(HEX[(codePoint >> 20) & 0xF]);
-            buf.WriteByte(HEX[(codePoint >> 16) & 0xF]);
-            buf.WriteByte(HEX[(codePoint >> 12) & 0xF]);
-            buf.WriteByte(HEX[(codePoint >> 8)  & 0xF]);
-            buf.WriteByte(HEX[(codePoint >> 4)  & 0xF]);
-            buf.WriteByte(HEX[(codePoint)       & 0xF]);
+            hexBuf6[0] = HEX[(codePoint >> 20) & 0xF];
+            hexBuf6[1] = HEX[(codePoint >> 16) & 0xF];
+            hexBuf6[2] = HEX[(codePoint >> 12) & 0xF];
+            hexBuf6[3] = HEX[(codePoint >> 8)  & 0xF];
+            hexBuf6[4] = HEX[(codePoint >> 4)  & 0xF];
+            hexBuf6[5] = HEX[(codePoint)       & 0xF];
+            buf.Write(hexBuf6, 0, 6);
         }
     }
 

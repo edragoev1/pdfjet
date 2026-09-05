@@ -178,7 +178,11 @@ namespace PDFjet.NET {
             using (StreamReader reader = new StreamReader(fileName)) {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
-                    string[] fields = line.Split(new string[] { this.delimiter }, StringSplitOptions.None);
+                    // Split(string, StringSplitOptions) takes the single-separator
+                    // fast path. Split(string[], StringSplitOptions) always takes
+                    // the "any of several separators" path (MakeSeparatorListAny),
+                    // which is significantly slower even with a one-element array.
+                    string[] fields = line.Split(this.delimiter, StringSplitOptions.None);
                     if (fields.Length < this.numberOfColumns) {
                         continue;
                     }
@@ -215,7 +219,7 @@ namespace PDFjet.NET {
             using (StreamReader reader = new StreamReader(this.fileName)) {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
-                    string[] fields = line.Split(new string[] { this.delimiter }, StringSplitOptions.None);
+                    string[] fields = line.Split(this.delimiter, StringSplitOptions.None);
                     if (fields.Length < this.numberOfColumns) {
                         continue;
                     }
