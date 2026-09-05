@@ -668,6 +668,17 @@ public class TextBox implements Drawable {
         } else {
             textAreaWidth = height - 2*margin;
         }
+        // Font.stringWidth(fallbackFont, str) is an exact per-character sum
+        // whenever the primary font is not a core font - only the core fonts
+        // apply kerning between adjacent characters, so their width is not
+        // simply the sum of their parts. For the common case (an embedded
+        // TrueType/CJK font) this lets the loops below track the wrapped
+        // line's width incrementally - adding one token/character's width at
+        // a time - instead of re-measuring the whole accumulated line on
+        // every token, which made wrapping a long paragraph an O(n^2)
+        // operation. Core fonts keep the original exact re-measurement so
+        // kerning is still accounted for correctly.
+        boolean additive = !font.isCoreFont;
         String[] lines = text.split("\\r?\\n", -1);
         for (String line : lines) {
             if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
@@ -675,13 +686,20 @@ public class TextBox implements Drawable {
             } else {
                 if (textIsCJK(line)) {
                     StringBuilder sb = new StringBuilder();
+                    float sbWidth = 0f;
                     for (char ch : line.toCharArray()) {
-                        if (font.stringWidth(fallbackFont, sb.toString() + ch) <= textAreaWidth) {
+                        float chWidth = additive ? font.stringWidth(fallbackFont, String.valueOf(ch)) : 0f;
+                        float width = additive ? sbWidth + chWidth : font.stringWidth(fallbackFont, sb.toString() + ch);
+                        if (width <= textAreaWidth) {
                             sb.append(ch);
+                            sbWidth = width;
                         } else {
-                            list.add(sb.toString());
+                            if (sb.length() > 0) {  // Don't emit an empty line
+                                list.add(sb.toString());
+                            }
                             sb.setLength(0);
                             sb.append(ch);
+                            sbWidth = chWidth;
                         }
                     }
                     if (sb.length() > 0) {
@@ -689,14 +707,27 @@ public class TextBox implements Drawable {
                     }
                 } else {
                     StringBuilder sb = new StringBuilder();
+                    float sbWidth = 0f;
+                    float spaceWidth = additive ? font.stringWidth(fallbackFont, " ") : 0f;
                     String[] tokens = line.split("\\s+");
                     for (String token : tokens) {
-                        if (font.stringWidth(fallbackFont, sb.toString() + token) <= textAreaWidth) {
-                            sb.append(token + " ");
+                        float tokenWidth = additive ? font.stringWidth(fallbackFont, token) : 0f;
+                        float width;
+                        if (additive) {
+                            width = sb.length() == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
                         } else {
-                            list.add(sb.toString().trim());
+                            width = font.stringWidth(fallbackFont, sb.toString() + token);
+                        }
+                        if (width <= textAreaWidth) {
+                            sb.append(token + " ");
+                            sbWidth = width;
+                        } else {
+                            if (sb.length() > 0) {  // Don't emit an empty line
+                                list.add(sb.toString().trim());
+                            }
                             sb.setLength(0);
                             sb.append(token + " ");
+                            sbWidth = tokenWidth;
                         }
                     }
                     if (sb.toString().trim().length() > 0) {
