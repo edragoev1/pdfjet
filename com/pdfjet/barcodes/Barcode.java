@@ -274,11 +274,14 @@ public class Barcode implements Drawable {
         if (remainder > 0) {
             checkDigit = (10 - remainder);
         }
-        text += Integer.toString(checkDigit);
+        // Use a local variable instead of mutating the text field - drawOn()
+        // must be safe to call more than once on the same Barcode instance
+        // (e.g. drawing the same barcode on several pages).
+        String fullText = text + Integer.toString(checkDigit);
 
         x = drawEGuard(page, x, y, m1, h + 8);
         for (int i = 0; i < 6; i++) {
-            int digit = text.charAt(i) - '0';
+            int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
             for (int j = 0; j < 4; j++) {
                 int n = str.charAt(j) - '0';
@@ -290,7 +293,7 @@ public class Barcode implements Drawable {
         }
         x = drawMGuard(page, x, y, m1, h + 8);
         for (int i = 6; i < 12; i++) {
-            int digit = text.charAt(i) - '0';
+            int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
             for (int j = 0; j < 4; j++) {
                 int n = str.charAt(j) - '0';
@@ -305,21 +308,21 @@ public class Barcode implements Drawable {
         float[] xy = new float[] {x, y};
         if (font != null) {
             String label =
-                    text.charAt(0) +
+                    fullText.charAt(0) +
                     "  " +
-                    text.charAt(1) +
-                    text.charAt(2) +
-                    text.charAt(3) +
-                    text.charAt(4) +
-                    text.charAt(5) +
+                    fullText.charAt(1) +
+                    fullText.charAt(2) +
+                    fullText.charAt(3) +
+                    fullText.charAt(4) +
+                    fullText.charAt(5) +
                     "   " +
-                    text.charAt(6) +
-                    text.charAt(7) +
-                    text.charAt(8) +
-                    text.charAt(9) +
-                    text.charAt(10) +
+                    fullText.charAt(6) +
+                    fullText.charAt(7) +
+                    fullText.charAt(8) +
+                    fullText.charAt(9) +
+                    fullText.charAt(10) +
                     "  " +
-                    text.charAt(11);
+                    fullText.charAt(11);
             float fontSize = font.getSize();
             font.setSize(10f);
 
@@ -400,6 +403,16 @@ public class Barcode implements Drawable {
         List<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < text.length(); i++) {
             char symchar = text.charAt(i);
+            // Some characters need two codewords (SHIFT/FNC_4 + value), so
+            // checking list.size() == 48 only *after* adding them could skip
+            // right over 48 (e.g. 47 -> 49) and never trip again, silently
+            // encoding an unbounded number of characters past the documented
+            // limit. Check before adding instead, so the cap always holds.
+            int codewordsNeeded = (symchar < 32 || (symchar >= 128 && symchar < 256)) ? 2 : 1;
+            if (list.size() + codewordsNeeded > 48) {
+                // Maximum number of data characters is 48
+                break;
+            }
             if (symchar < 32) {
                 list.add(GS1_128.SHIFT);
                 list.add(symchar + 64);
@@ -411,10 +424,6 @@ public class Barcode implements Drawable {
             } else {
                 // list.add(31);            // '?'
                 list.add(256);              // This will generate an exception.
-            }
-            if (list.size() == 48) {
-                // Maximum number of data characters is 48
-                break;
             }
         }
 
@@ -475,7 +484,10 @@ public class Barcode implements Drawable {
     }
 
     private float[] drawCode39(Page page, float x1, float y1) throws Exception {
-        text = "*" + text + "*";
+        // Use a local variable instead of mutating the text field - drawOn()
+        // must be safe to call more than once on the same Barcode instance
+        // (e.g. drawing the same barcode on several pages).
+        String fullText = "*" + text + "*";
         float x = x1;
         float y = y1;
         float w = m1 * barHeightFactor; // Barcode width when drawn vertically
@@ -483,10 +495,10 @@ public class Barcode implements Drawable {
 
         float[] xy = new float[] {0f, 0f};
         if (direction == LEFT_TO_RIGHT) {
-            for (int i = 0; i < text.length(); i++) {
-                String code = tableB.get(text.charAt(i));
+            for (int i = 0; i < fullText.length(); i++) {
+                String code = tableB.get(fullText.charAt(i));
                 if (code == null) {
-                    throw new Exception("The input string '" + text +
+                    throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
                 for (int j = 0; j < 9; j++) {
@@ -507,18 +519,18 @@ public class Barcode implements Drawable {
             }
 
             if (font != null) {
-                TextLine textLine = new TextLine(font, text);
+                TextLine textLine = new TextLine(font, fullText);
                 textLine.setLocation(
-                        x1 + ((x - x1) - font.stringWidth(text))/2,
+                        x1 + ((x - x1) - font.stringWidth(fullText))/2,
                         y1 + h + font.getBodyHeight());
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]);
             }
         } else if (direction == TOP_TO_BOTTOM) {
-            for (int i = 0; i < text.length(); i++) {
-                String code = tableB.get(text.charAt(i));
+            for (int i = 0; i < fullText.length(); i++) {
+                String code = tableB.get(fullText.charAt(i));
                 if (code == null) {
-                    throw new Exception("The input string '" + text +
+                    throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
                 for (int j = 0; j < 9; j++) {
@@ -539,10 +551,10 @@ public class Barcode implements Drawable {
             }
 
             if (font != null) {
-                TextLine textLine = new TextLine(font, text);
+                TextLine textLine = new TextLine(font, fullText);
                 textLine.setLocation(
                         x - font.getBodyHeight(),
-                        y1 + ((y - y1) - font.stringWidth(text))/2);
+                        y1 + ((y - y1) - font.stringWidth(fullText))/2);
                 textLine.setTextDirection(270);
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]) + w;
@@ -551,10 +563,10 @@ public class Barcode implements Drawable {
         } else if (direction == BOTTOM_TO_TOP) {
             float height = 0.0f;
 
-            for (int i = 0; i < text.length(); i++) {
-                String code = tableB.get(text.charAt(i));
+            for (int i = 0; i < fullText.length(); i++) {
+                String code = tableB.get(fullText.charAt(i));
                 if (code == null) {
-                    throw new Exception("The input string '" + text +
+                    throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
                 for (int j = 0; j < 9; j++) {
@@ -569,8 +581,8 @@ public class Barcode implements Drawable {
             }
 
             y += height - m1;
-            for (int i = 0; i < text.length(); i++) {
-                String code = tableB.get(text.charAt(i));
+            for (int i = 0; i < fullText.length(); i++) {
+                String code = tableB.get(fullText.charAt(i));
                 for (int j = 0; j < 9; j++) {
                     char ch = code.charAt(j);
                     if (ch == 'w') {
@@ -590,10 +602,10 @@ public class Barcode implements Drawable {
 
             if (font != null) {
                 y = y1 + (height - m1);
-                TextLine textLine = new TextLine(font, text);
+                TextLine textLine = new TextLine(font, fullText);
                 textLine.setLocation(
                         x + w + font.getBodyHeight(),
-                        y - ((y - y1) - font.stringWidth(text))/2);
+                        y - ((y - y1) - font.stringWidth(fullText))/2);
                 textLine.setTextDirection(90);
                 xy = textLine.drawOn(page);
                 xy[1] = Math.max(y, xy[1]);
@@ -621,12 +633,15 @@ public class Barcode implements Drawable {
         if (remainder > 0) {
             checkDigit = (10 - remainder);
         }
-        text += Integer.toString(checkDigit);
+        // Use a local variable instead of mutating the text field - drawOn()
+        // must be safe to call more than once on the same Barcode instance
+        // (e.g. drawing the same barcode on several pages).
+        String fullText = text + Integer.toString(checkDigit);
 
         x = drawEGuard(page, x, y, m1, h + 8);
-        String group1 = lgMap[text.charAt(0) - '0'];
+        String group1 = lgMap[fullText.charAt(0) - '0'];
         for (int i = 1; i < 7; i++) {
-            int digit = text.charAt(i) - '0';
+            int digit = fullText.charAt(i) - '0';
             String str = gCode[digit];
             if (group1.charAt(i - 1) == 'L') {
                 str = lCode[digit];
@@ -644,7 +659,7 @@ public class Barcode implements Drawable {
         }
         x = drawMGuard(page, x, y, m1, h + 8);
         for (int i = 7; i < 13; i++) {
-            int digit = text.charAt(i) - '0';
+            int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
             int n = str.charAt(0) - '0';
             drawVertBar(page, x, y, n*m1, h);
@@ -663,21 +678,21 @@ public class Barcode implements Drawable {
 
         if (font != null) {     // TODO:
             String label =
-                    text.charAt(0) +
+                    fullText.charAt(0) +
                     " " +
-                    text.charAt(1) +
-                    text.charAt(2) +
-                    text.charAt(3) +
-                    text.charAt(4) +
-                    text.charAt(5) +
-                    text.charAt(6) +
+                    fullText.charAt(1) +
+                    fullText.charAt(2) +
+                    fullText.charAt(3) +
+                    fullText.charAt(4) +
+                    fullText.charAt(5) +
+                    fullText.charAt(6) +
                     "    " +
-                    text.charAt(7) +
-                    text.charAt(8) +
-                    text.charAt(9) +
-                    text.charAt(10) +
-                    text.charAt(11) +
-                    text.charAt(12);
+                    fullText.charAt(7) +
+                    fullText.charAt(8) +
+                    fullText.charAt(9) +
+                    fullText.charAt(10) +
+                    fullText.charAt(11) +
+                    fullText.charAt(12);
             float fontSize = font.getSize();
             font.setSize(10f);
 
