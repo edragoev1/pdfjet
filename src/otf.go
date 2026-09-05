@@ -178,7 +178,10 @@ func getNameTable(otf *OTF, table *FontTable) {
 			if nameID == 6 {
 				otf.fontName = string(buffer)
 			} else {
-				macFontInfo.WriteString(otf.fontName)
+				// This record's own decoded text, not otf.fontName (which
+				// may not even be set yet - name records aren't guaranteed
+				// to arrive in nameID order).
+				macFontInfo.WriteString(string(buffer))
 				macFontInfo.WriteString("\n")
 			}
 		} else if platformID == 3 && encodingID == 1 && languageID == 0x409 {
@@ -264,13 +267,24 @@ func getCmapTable(otf *OTF, table *FontTable) {
 			gid := 0
 			offset := int(idRangeOffset[seg])
 			if offset == 0 {
-				gid = (int(idDelta[seg]) + int(ch)) % 65536
+				// Per spec this is unsigned 16-bit modulo arithmetic.
+				// idDelta is read as unsigned here (readUint16), so the sum
+				// is always non-negative and % 65536 already gives the
+				// right answer, but use & 0xFFFF to spell out the intended
+				// unsigned-16-bit wraparound explicitly (matches the other
+				// language ports and doesn't rely on that coincidence).
+				gid = (int(idDelta[seg]) + int(ch)) & 0xFFFF
 			} else {
 				offset /= 2
 				offset -= segCount - seg
 				gid = int(glyphIDArray[offset+(int(ch)-int(startCount[seg]))])
 				if gid != 0 {
-					gid += int(idDelta[seg]) % 65536
+					// idDelta[seg] % 65536 alone is a no-op (idDelta is
+					// already < 65536) and never wraps the actual sum, so a
+					// large gid + idDelta could overflow past the valid
+					// 16-bit glyph ID range uncorrected. Wrap the *sum*
+					// instead.
+					gid = (gid + int(idDelta[seg])) & 0xFFFF
 				}
 			}
 			otf.unicodeToGID[ch] = gid
