@@ -11,42 +11,49 @@ public class Example_11 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        var code = Barcode(Barcode.CODE128, "Hellö, World!")
+        var code = Barcode(Barcode.CODE_128, "Hellö, World!")
         code.setLocation(170.0, 70.0)
         code.setModuleLength(0.75)
         code.setFont(f1)
         code.drawOn(page)
 
-        code = Barcode(Barcode.CODE128, "G86513JVW0C")
+        code = Barcode(Barcode.CODE_128, "G86513JVW0C")
         code.setLocation(170.0, 170.0)
         code.setModuleLength(0.75)
         code.setDirection(Barcode.TOP_TO_BOTTOM)
         code.setFont(f1)
         code.drawOn(page)
 
-        code = Barcode(Barcode.CODE39, "WIKIPEDIA")
+        code = Barcode(Barcode.CODE_39, "WIKIPEDIA")
         code.setLocation(270.0, 370.0)
         code.setModuleLength(0.75)
         code.setFont(f1)
         code.drawOn(page)
 
-        code = Barcode(Barcode.CODE39, "CODE39")
+        code = Barcode(Barcode.CODE_39, "CODE39")
         code.setLocation(400.0, 70.0)
         code.setModuleLength(0.75)
         code.setDirection(Barcode.TOP_TO_BOTTOM)
         code.setFont(f1)
         code.drawOn(page)
 
-        code = Barcode(Barcode.CODE39, "CODE39")
+        code = Barcode(Barcode.CODE_39, "CODE39")
         code.setLocation(450.0, 70.0)
         code.setModuleLength(0.75)
         code.setDirection(Barcode.BOTTOM_TO_TOP)
         code.setFont(f1)
         code.drawOn(page)
 
-        code = Barcode(Barcode.UPC, "712345678904")
-        code.setLocation(450.0, 270.0)
-        code.setModuleLength(0.75)
+        code = Barcode(Barcode.UPC_A, "51234567890") // TODO: Do not allow more than 11 digits!!!
+        code.setLocation(450.0, 250.0)
+        code.setModuleLength(1.0)
+        code.setDirection(Barcode.BOTTOM_TO_TOP)
+        code.setFont(f1)
+        code.drawOn(page)
+
+        code = Barcode(Barcode.EAN_13, "051234567890") // EAN-13 without the check digit which we calculate!!
+        code.setLocation(450.0, 450.0)
+        code.setModuleLength(1.0)
         code.setDirection(Barcode.BOTTOM_TO_TOP)
         code.setFont(f1)
         code.drawOn(page)

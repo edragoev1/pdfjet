@@ -20,7 +20,7 @@ public class Example_08 {
         let image = try Image(pdf, "images/TeslaX.png")
         image.scaleBy(0.20)
 
-        let barcode = Barcode(Barcode.CODE128, "Hello, World!")
+        let barcode = Barcode(Barcode.CODE_128, "Hello, World!")
         barcode.setModuleLength(0.75)
 	    // Comment out the line below if you don't want to print the text underneath the barcode.
         barcode.setFont(f1)
