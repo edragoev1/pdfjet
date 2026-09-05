@@ -6,7 +6,12 @@
  */
 import Foundation
 
-final internal class FlateDistance {
+// The Huffman codes for the fixed distance alphabet are constant (defined by
+// RFC 1951), so a single shared instance is computed once and reused for
+// every FlateEncode call instead of being rebuilt from scratch each time.
+// This table alone has 32768 entries (one per possible match distance), so
+// rebuilding it per call was by far the most expensive part of FlateEncode.
+final internal class FlateDistance: @unchecked Sendable {
     //     Extra            Extra                Extra
     // Code Bits  Dist  Code Bits    Dist    Code Bits  Distance
     // ---- ----  ----  ---- ----  ------    ---- ----  --------
@@ -30,10 +35,12 @@ final internal class FlateDistance {
             3,  3,  4,  4,  5,  5,  6,  6,
             7,  7,  8,  8,  9,  9, 10, 10,
             11,11, 12, 12, 13, 13]
+    static let shared = FlateDistance()
+
     var codes = [UInt32]()
     var nBits = [UInt8]()
 
-    internal init() {
+    private init() {
         var code = 0
         while code <= 29 {
             let reversed = FlateUtils.reverse(UInt32(code), length: 5)

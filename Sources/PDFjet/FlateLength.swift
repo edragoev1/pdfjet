@@ -6,7 +6,10 @@
  */
 import Foundation
 
-internal class FlateLength {
+// The Huffman codes for the fixed length alphabet are constant (defined by
+// RFC 1951), so a single shared instance is computed once and reused for
+// every FlateEncode call instead of being rebuilt from scratch each time.
+internal final class FlateLength: @unchecked Sendable {
     //      Extra               Extra               Extra
     // Code Bits Length(s) Code Bits Lengths   Code Bits Length(s)
     // ---- ---- ------     ---- ---- -------   ---- ---- -------
@@ -30,6 +33,8 @@ internal class FlateLength {
     //   280 - 285     8          11000000 through
     //                            11000101
 
+    static let shared = FlateLength()
+
     let ebits1 = [
             0, 0, 0, 0,
             0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
@@ -38,7 +43,7 @@ internal class FlateLength {
     var codes = [UInt32]()
     var nBits = [UInt8]()
 
-    internal init() {
+    private init() {
         var code: UInt32 = 0b0000001
         for extra in ebits1 {
             let reversed = UInt32(FlateUtils.reverse(code, length: 7))

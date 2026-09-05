@@ -6,7 +6,10 @@
  */
 import Foundation
 
-internal class FlateLiteral {
+// The Huffman codes for the fixed literal alphabet are constant (defined by
+// RFC 1951), so a single shared instance is computed once and reused for
+// every FlateEncode call instead of being rebuilt from scratch each time.
+internal final class FlateLiteral: @unchecked Sendable {
     //  Huffman codes for the literal alphabet:
     //  ==========================================
     //  Literal      nBits       Codes
@@ -16,10 +19,12 @@ internal class FlateLiteral {
     //  144 - 255     9          110010000 through
     //                           111111111
 
+    static let shared = FlateLiteral()
+
     var codes = [UInt32]()
     var nBits = [UInt8]()
 
-    internal init() {
+    private init() {
         var code: UInt32 = 0b00110000
         var i = 0
         while i < 144 {

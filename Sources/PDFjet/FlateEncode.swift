@@ -14,9 +14,9 @@ internal class FlateEncode {
 
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
-        let flateLength = FlateLength()
-        let flateDistance = FlateDistance()
-        let flateLiteral = FlateLiteral()
+        let flateLength = FlateLength.shared
+        let flateDistance = FlateDistance.shared
+        let flateLiteral = FlateLiteral.shared
 
         let BUFSIZE = MASK + 1  // 2^16 bytes
         hashtable = [Int](repeating: -1, count: Int(BUFSIZE))
