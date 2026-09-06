@@ -10,7 +10,7 @@ import (
 
 // Example45 -- TODO:
 func Example45() {
-	pdf := pdfjet.NewPDFFile("Example_42.pdf")
+	pdf := pdfjet.NewPDFFile("Example_45.pdf")
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
@@ -50,5 +50,5 @@ func Example45() {
 func main() {
 	start := time.Now()
 	Example45()
-	pdfjet.PrintDuration("Example_42", time.Since(start))
+	pdfjet.PrintDuration("Example_45", time.Since(start))
 }
