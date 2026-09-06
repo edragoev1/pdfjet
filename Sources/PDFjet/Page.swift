@@ -1493,6 +1493,7 @@ public class Page {
             element.actualText = actualText
             element.altDescription = altDescription
             structures.append(element)
+            pdf.structElements.append(element)
             append("/")
             append(structure)
             append(" <</MCID ")
@@ -1527,6 +1528,7 @@ public class Page {
             element.altDescription = annotation.altDescription
             element.annotation = annotation
             self.structures.append(element)
+            pdf.structElements.append(element)
         }
     }
 

@@ -364,9 +364,9 @@ public class PDF {
         // String state = "/CA 0.5 /ca 0.5"
         if states.count > 0 {
             append("/ExtGState <<\n")
-            for state in states.keys {
+            for (state, number) in states.sorted(by: { $0.value < $1.value }) {
                 append("/GS")
-                append(states[state]!)
+                append(number)
                 append(" <<")
                 append(state)
                 append(Token.endDictionary)
@@ -437,53 +437,50 @@ public class PDF {
     private func addStructElementObjects() {
         var structTreeRootObjNumber = getObjNumber() + 1
         structTreeRootObjNumber += self.structElements.count
-        var buffer = String()
         for element in self.structElements {
-            // newobj()
-            objOffset.append(byteCount)
-            buffer.append(String(objOffset.count))
-            buffer.append(" 0 obj\n")
-
+            newobj()
             element.objNumber = getObjNumber()
-            buffer.append("<<\n/Type /StructElem /S /")
-            buffer.append(element.structure!)
-            buffer.append("\n/P ")
-            buffer.append(String(structTreeRootObjNumber + 2))
-            buffer.append(" 0 R /Pg ")
-            buffer.append(String(element.pageObjNumber!))
-            buffer.append(" 0 R\n")
+            append("<<\n/Type /StructElem /S /")
+            append(element.structure!)
+            append("\n/P ")
+            append(structTreeRootObjNumber + 2)  // Use the document struct as parent!
+            append(" 0 R /Pg ")
+            // A detached page is never added to pages, so its elements never
+            // get an object number. Fall back to 0 rather than trapping, which
+            // is what the other ports do.
+            append(element.pageObjNumber ?? 0)
+            append(Token.objRef)
 
             if element.annotation != nil {
-                buffer.append("/K <</Type /OBJR /Obj ")
-                buffer.append(String(element.annotation!.objNumber))
-                buffer.append(" 0 R>>\n")
+                append("/K <</Type /OBJR /Obj ")
+                append(element.annotation!.objNumber)
+                append(" 0 R>>\n")
             } else {
-                buffer.append("/K ")
-                buffer.append(String(element.mcid))
-                buffer.append("\n")
+                append("/K ")
+                append(element.mcid)
+                append("\n")
             }
 
-            var language = element.language
-            if language == nil {
-                language = self.language
+            if let actualText = element.actualText, !actualText.isEmpty,
+                    let altDescription = element.altDescription, !altDescription.isEmpty {
+                let language = element.language ?? self.language
+
+                append("/Lang <")
+                append(toHex(language))
+                append(">\n")
+
+                append("/ActualText <")
+                append(toHex(actualText))
+                append(">\n")
+
+                append("/Alt <")
+                append(toHex(altDescription))
+                append(">\n")
             }
-
-            buffer.append("/Lang <")
-            buffer.append(toHex(language))
-            buffer.append(">\n")
-
-            buffer.append("/Alt <")
-            buffer.append(toHex(element.altDescription!))
-            buffer.append(">\n")
-
-            buffer.append("/ActualText <")
-            buffer.append(toHex(element.actualText!))
-            buffer.append(">\n")
 
             append(">>\n")
-            buffer.append("endobj\n")
+            endobj()
         }
-        append(buffer)
     }
 
     private func addNumsParentTree() {
@@ -495,6 +492,22 @@ public class PDF {
 
         buffer.append("<<\n")
         buffer.append("/Nums [\n")
+        // The keys must be listed in increasing order, so the page entries -
+        // whose keys are the /StructParents values 0 .. pages.count-1 - come
+        // first. Each value is the array of struct elements of that page,
+        // indexed by the MCID they were marked with.
+        for (i, page) in pages.enumerated() {
+            buffer.append(String(i))
+            buffer.append(" [")
+            for element in page.structures where element.annotation == nil {
+                buffer.append(" ")
+                buffer.append(String(element.objNumber!))
+                buffer.append(" 0 R")
+            }
+            buffer.append("]\n")
+        }
+        // The annotations follow, keyed by the /StructParent values handed out
+        // by addAnnotDictionaries(), which continue where the pages left off.
         var index = pages.count
         for element in self.structElements {
             if element.annotation != nil {
@@ -1585,7 +1598,7 @@ public class PDF {
 
     private func isPageObject(_ object: PDFobj) -> Bool {
         var isPage = false
-        for i in 0..<object.dict.count {
+        for i in 0..<max(object.dict.count - 1, 0) {
             if object.dict[i] == "/Type" &&
                     object.dict[i + 1] == "/Page" {
                 isPage = true
@@ -1631,7 +1644,7 @@ public class PDF {
             _ objects: inout [PDFobj]) -> [PDFobj] {
         var fonts = [PDFobj]()
         let dict = resources.getDict()
-        for i in 0..<dict.count {
+        for i in 0..<max(dict.count - 3, 0) {
             if dict[i] == "/Font" {
                 if dict[i + 2] != ">>" {
                     let token = dict[i + 3]
@@ -1644,15 +1657,12 @@ public class PDF {
             return fonts
         }
 
-        var i = 4
-        while true {
-            if dict[i] == "/Font" {
-                i += 2
-                break
-            }
+        var i = 0
+        while i < dict.count && dict[i] != "/Font" {
             i += 1
         }
-        while dict[i] != ">>" {
+        i += 2  // Skip over "/Font" and the "<<" that follows it.
+        while i < dict.count && dict[i] != ">>" {
             importedFonts.append(dict[i])
             i += 1
         }
@@ -1665,7 +1675,7 @@ public class PDF {
             _ objects: inout [PDFobj]) -> [PDFobj] {
         var descendantFonts = [PDFobj]()
         let dict = font.getDict()
-        for i in 0..<dict.count {
+        for i in 0..<max(dict.count - 2, 0) {
             if dict[i] == "/DescendantFonts" {
                 let token = dict[i + 2]
                 if token != "]" {
@@ -1682,7 +1692,7 @@ public class PDF {
             _ object: PDFobj,
             _ objects: inout [PDFobj]) -> PDFobj? {
         let dict = object.getDict()
-        for i in 0..<dict.count {
+        for i in 0..<max(dict.count - 1, 0) {
             if dict[i] == name {
                 let token = dict[i  + 1]
                 return objects[Int(token)! - 1]
@@ -1771,7 +1781,7 @@ public class PDF {
                     append(obj.stream!)
                     append(Token.endStream)
                 }
-                if token! != "endobj" {
+                if token == nil || token! != "endobj" {
                     append(Token.endObj)
                 }
             }
