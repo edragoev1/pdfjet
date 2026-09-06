@@ -6,12 +6,11 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSansTC"
-	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example19 show how to use the TextBlock class.
+// Example19 draws images and line-wrapped text boxes in two columns.
 func Example19() {
 	pdf := pdfjet.NewPDFFile("Example_19.pdf")
 
@@ -22,7 +21,6 @@ func Example19() {
 	f2.SetSize(10.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
-
 	// Columns x coordinates
 	x1 := float32(50.0)
 	y1 := float32(50.0)
@@ -32,33 +30,28 @@ func Example19() {
 	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 	image2 := pdfjet.NewImageFromFile(pdf, "images/spain-admin.jpg")
 
-	// Draw the first image and text:
+	// Draw the first image
 	image1.SetLocation(x1, y1)
 	image1.ScaleBy(0.3)
-	xy := image1.DrawOn(page)
+	image1.DrawOn(page)
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/calculus-short.txt"))
-	textBlock.SetLocation(x2, y1)
-	textBlock.SetWidth(w2)
-	textBlock.SetBorderColor(color.Black)
-	xy = textBlock.DrawOn(page)
+	textBox := pdfjet.NewTextBoxWithText(f1, content.OfTextFile("data/calculus-short.txt"))
+	textBox.SetLocation(x2, y1)
+	textBox.SetWidth(w2)
+	textBox.SetBorders(true)
+	xy := textBox.DrawOn(page)
 
-	// Draw the second row image and text:
+	// Draw the second image
 	image2.SetLocation(x1, xy[1]+10.0)
 	image2.ScaleBy(0.1)
 	image2.DrawOn(page)
 
-	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/physics.txt"))
-	textBlock.SetLocation(x2, xy[1]+10.0)
-	textBlock.SetWidth(w2)
-	textBlock.SetBorderColor(color.Black)
-	xy = textBlock.DrawOn(page)
-
-	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/chinese.txt"))
-	textBlock.SetLocation(x1, 570.0)
-	textBlock.SetWidth(350.0)
-	textBlock.SetBorderColor(color.Blue)
-	xy = textBlock.DrawOn(page)
+	textBox = pdfjet.NewTextBox(f1)
+	textBox.SetText(content.OfTextFile("data/physics.txt"))
+	textBox.SetLocation(x2, xy[1]+10.0)
+	textBox.SetWidth(w2)
+	textBox.SetBorders(true)
+	xy = textBox.DrawOn(page)
 
 	box := pdfjet.NewBox()
 	box.SetLocation(xy[0], xy[1])
