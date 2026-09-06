@@ -344,6 +344,17 @@ func (font *Font) GetHeight() float32 {
 }
 
 // GetBodyHeight returns the height of the body of the font.
+// GetUnderlineThickness returns the underline thickness at the specified font size.
+func (font *Font) GetUnderlineThickness(fontSize float32) float32 {
+	return float32(font.fontUnderlineThickness) * fontSize / float32(font.unitsPerEm)
+}
+
+// GetUnderlinePosition returns the underline position at the specified font size.
+func (font *Font) GetUnderlinePosition(fontSize float32) float32 {
+	return -(float32(font.fontUnderlinePosition) * fontSize / float32(font.unitsPerEm)) +
+		font.GetUnderlineThickness(fontSize)/2.0
+}
+
 func (font *Font) GetBodyHeight(fontSize float32) float32 {
 	return font.GetAscent(fontSize) + font.GetDescent(fontSize)
 }
