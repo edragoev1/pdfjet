@@ -421,6 +421,15 @@ public class Font {
         return getAscent(fontSize) + getDescent(fontSize)
     }
 
+    public func getUnderlineThickness(_ fontSize: Float) -> Float {
+        return Float(fontUnderlineThickness) * fontSize / Float(unitsPerEm)
+    }
+
+    public func getUnderlinePosition(_ fontSize: Float) -> Float {
+        return -(Float(fontUnderlinePosition) * fontSize / Float(unitsPerEm))
+                + getUnderlineThickness(fontSize) / 2.0
+    }
+
     public func getUnderlineThickness() -> Int16 {
         return self.fontUnderlineThickness
     }
