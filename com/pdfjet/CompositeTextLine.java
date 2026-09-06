@@ -143,21 +143,23 @@ public class CompositeTextLine implements Drawable {
     public void addComponent(TextLine component) {
         if (component.getTextEffect() == Effect.SUPERSCRIPT) {
             if (fontSize > 0f) {
-                component.font.setSize(fontSize * superscriptSizeFactor);
+                // Set it on the TextLine: drawOn uses the line's own font size,
+                // so mutating the shared Font here would have no effect.
+                component.setFontSize(fontSize * superscriptSizeFactor);
             }
             component.setLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition);
         } else if (component.getTextEffect() == Effect.SUBSCRIPT) {
             if (fontSize > 0f) {
-                component.font.setSize(fontSize * subscriptSizeFactor);
+                component.setFontSize(fontSize * subscriptSizeFactor);
             }
             component.setLocation(
                     current[X],
                     current[Y] + fontSize * subscriptPosition);
         } else {
             if (fontSize > 0f) {
-                component.getFont().setSize(fontSize);
+                component.setFontSize(fontSize);
             }
             component.setLocation(current[X], current[Y]);
         }

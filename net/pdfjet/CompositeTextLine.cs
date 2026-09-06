@@ -287,13 +287,13 @@ public class CompositeTextLine : IDrawable {
             if (textLine.GetTextEffect() == Effect.SUPERSCRIPT) {
                 textLine.SetLocation(
                         textLineX,
-                        textLineY - textLine.font.GetSize());
+                        textLineY - fontSize*superscriptPosition);
                 textLine.SetFontSize(fontSize*superscriptSizeFactor);
             } else if (textLine.GetTextEffect() == Effect.SUBSCRIPT) {
                 textLine.SetLocation(
                         textLineX,
-                        textLineY + textLine.font.GetDescent());
-                textLine.SetFontSize(fontSize*superscriptSizeFactor);
+                        textLineY + fontSize*subscriptPosition);
+                textLine.SetFontSize(fontSize*subscriptSizeFactor);
             } else {
                 textLine.SetLocation(textLineX, textLineY);
             }
