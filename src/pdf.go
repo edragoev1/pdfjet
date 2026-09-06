@@ -835,6 +835,27 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(">\n")
 		}
 	} else if annot.annotationType == AnnotationLink {
+		// PDF/UA requires a link to carry an alternate description in its
+		// Contents key.
+		description := annot.contents
+		if description == "" {
+			description = annot.altDescription
+		}
+		if description == "" {
+			description = annot.uri
+		}
+		if description == "" {
+			description = annot.key
+		}
+		if description != "" {
+			bytes := []byte(description)
+			if pdf.encryption != nil {
+				bytes, _ = encryption.Encrypt(bytes, pdf.encryption.GetKey())
+			}
+			pdf.appendString("/Contents <")
+			pdf.appendString(hex.EncodeToString(bytes))
+			pdf.appendString(">\n")
+		}
 		if annot.uri != "" {
 			pdf.appendString("/F 4\n")
 			pdf.appendString("/A <<\n")

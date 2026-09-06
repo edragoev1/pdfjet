@@ -13,9 +13,9 @@ final public class Example_34 {
                 new BufferedOutputStream(new FileOutputStream("Example_34.pdf")));
         pdf.setCompliance(Compliance.PDF_A_1B);
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
 
         f1.setSize(7f);
         f2.setSize(7f);

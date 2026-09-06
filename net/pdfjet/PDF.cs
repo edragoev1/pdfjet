@@ -821,6 +821,19 @@ public class PDF {
                 Append(">\n");
             }
         } else if (annot.annotationType.Equals(Annotation.Link)) {
+            // PDF/UA requires a link to carry an alternate description in its
+            // Contents key.
+            String description = (annot.contents != null)
+                    ? annot.contents : annot.altDescription;
+            if (!String.IsNullOrEmpty(description)) {
+                byte[] bytes = Encoding.UTF8.GetBytes(description);
+                if (encryption != null) {
+                    bytes = AES256.Encrypt(bytes, encryption.GetKey());
+                }
+                Append("/Contents <");
+                Append(Util.ToHexString(bytes));
+                Append(">\n");
+            }
             if (annot.uri != null) {
                 Append("/F 4\n");
                 Append("/A <<\n");

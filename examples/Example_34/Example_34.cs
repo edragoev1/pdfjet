@@ -13,13 +13,13 @@ public class Example_34 {
                 new FileStream("Example_34.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_A_1B);
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(7f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.SetSize(7f);
 
-        Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
+        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
         f3.SetSize(7f);
 
         Table table = new Table();

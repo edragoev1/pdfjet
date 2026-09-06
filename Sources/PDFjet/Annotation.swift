@@ -85,8 +85,11 @@ class Annotation {
         self.language = language
 
         // Match Java ternary logic: (actualText == null) ? uri : actualText
-        self.actualText = actualText ?? uri
-        self.altDescription = altDescription ?? uri
+        // A link created from a destination name has no uri to fall back on,
+        // so use the name itself rather than leaving the link undescribed.
+        let fallback = uri ?? key
+        self.actualText = actualText ?? fallback
+        self.altDescription = altDescription ?? fallback
 
         self.fileAttachment = nil // Will be set externally if needed
     }

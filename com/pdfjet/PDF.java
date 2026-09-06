@@ -839,6 +839,19 @@ final public class PDF {
                 append(">\n");
             }
         } else if (annot.annotationType.equals(Annotation.Link)) {
+            // PDF/UA requires a link to carry an alternate description in its
+            // Contents key.
+            String description = (annot.contents != null)
+                    ? annot.contents : annot.altDescription;
+            if (description != null && !description.isEmpty()) {
+                byte[] bytes = description.getBytes(StandardCharsets.UTF_8);
+                if (encryption != null) {
+                    bytes = AES256.encrypt(bytes, encryption.getKey());
+                }
+                append("/Contents <");
+                append(Util.toHexString(bytes));
+                append(">\n");
+            }
             if (annot.uri != null) {
                 append("/F 4\n");
                 append("/A <<\n");

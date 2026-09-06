@@ -770,6 +770,14 @@ public class PDF {
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Link {
+            // PDF/UA requires a link to carry an alternate description in its
+            // Contents key.
+            if let description = annot.contents ?? annot.altDescription,
+                    !description.isEmpty {
+                append("/Contents <")
+                append(toHex(description))
+                append(">\n")
+            }
             if let uri = annot.uri {
                 append("/F 4\n")
                 append("/A <<\n")

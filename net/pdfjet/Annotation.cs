@@ -77,8 +77,11 @@ internal class Annotation {
         this.uri = uri;
         this.key = key;
         this.language = language;
-        this.actualText = (actualText == null) ? uri : actualText;
-        this.altDescription = (altDescription == null) ? uri : altDescription;
+        // A link created from a destination name has no uri to fall back on,
+        // so use the name itself rather than leaving the link undescribed.
+        String fallback = (uri != null) ? uri : key;
+        this.actualText = (actualText == null) ? fallback : actualText;
+        this.altDescription = (altDescription == null) ? fallback : altDescription;
     }
 }
 }   // End of namespace PDFjet.NET
