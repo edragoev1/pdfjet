@@ -24,7 +24,7 @@ final public class PDF {
     List<Font> fonts = new ArrayList<Font>();
     List<Image> images = new ArrayList<Image>();
     List<OptionalContentGroup> groups = new ArrayList<OptionalContentGroup>();
-    Map<String, Integer> states = new HashMap<String, Integer>();
+    Map<String, Integer> states = new LinkedHashMap<String, Integer>();
     List<Stamp> stamps = new ArrayList<Stamp>();
     List<StructElem> structElements = new ArrayList<StructElem>();
     Encryption encryption = null;
@@ -42,7 +42,7 @@ final public class PDF {
     private String keywords;
     private String creator;
     private String createDate;      // XMP metadata
-    private Integer byteCount = (Integer) 0;
+    private int byteCount = 0;
     private int pagesObjNumber = 0;
     private String pageLayout = null;
     private String pageMode = null;
@@ -163,7 +163,7 @@ final public class PDF {
             sb.append("<xmpRights:UsageTerms>\n");
             sb.append("<rdf:Alt>\n");
             sb.append("<rdf:li xml:lang=\"x-default\">\n");
-            sb.append(notice.getBytes(StandardCharsets.UTF_8));
+            sb.append(notice);
             sb.append("</rdf:li>\n");
             sb.append("</rdf:Alt>\n");
             sb.append("</xmpRights:UsageTerms>\n");
@@ -264,6 +264,9 @@ final public class PDF {
         sb.append("<?xpacket end=\"w\"?>");
 
         byte[] xml = sb.toString().getBytes(StandardCharsets.UTF_8);
+        if (encryption != null) {
+            xml = AES256.encrypt(xml, encryption.getKey());
+        }
 
         // This is the metadata object
         newobj();
@@ -283,18 +286,23 @@ final public class PDF {
     }
 
     private int addOutputIntentObject() throws Exception {
+        byte[] profile = ICCBlackScaled.profile;
+        if (encryption != null) {
+            profile = AES256.encrypt(profile, encryption.getKey());
+        }
+
         newobj();
         append(Token.BEGIN_DICTIONARY);
         append("/N 3\n");
 
         append("/Length ");
-        append(ICCBlackScaled.profile.length);
+        append(profile.length);
         append(Token.NEWLINE);
 
         append("/Filter /FlateDecode\n");
         append(Token.END_DICTIONARY);
         append(Token.STREAM);
-        append(ICCBlackScaled.profile, 0, ICCBlackScaled.profile.length);
+        append(profile, 0, profile.length);
         append(Token.END_STREAM);
         endobj();
 
@@ -390,11 +398,11 @@ final public class PDF {
         // String state = "/CA 0.5 /ca 0.5";
         if (states.size() > 0) {
             append("/ExtGState <<\n");
-            for (String state : states.keySet()) {
+            for (Map.Entry<String, Integer> entry : states.entrySet()) {
                 append("/GS");
-                append(states.get(state));
+                append(entry.getValue());
                 append(" <<");
-                append(state);
+                append(entry.getKey());
                 append(Token.END_DICTIONARY);
             }
             append(Token.END_DICTIONARY);
@@ -522,10 +530,28 @@ final public class PDF {
         newobj();
         append(Token.BEGIN_DICTIONARY);
         append("/Nums [\n");
-        for (int i = 0; i < this.structElements.size(); i++) {
-            StructElem element = this.structElements.get(i);
+        // The keys must be listed in increasing order, so the page entries -
+        // whose keys are the /StructParents values 0 .. pages.size()-1 - come
+        // first. Each value is the array of struct elements of that page,
+        // indexed by the MCID they were marked with.
+        for (int i = 0; i < pages.size(); i++) {
+            append(i);
+            append(" [");
+            for (StructElem element : pages.get(i).structures) {
+                if (element.annotation == null) {
+                    append(Token.SPACE);
+                    append(element.objNumber);
+                    append(" 0 R");
+                }
+            }
+            append("]\n");
+        }
+        // The annotations follow, keyed by the /StructParent values handed out
+        // by addAnnotDictionaries(), which continue where the pages left off.
+        int structParent = pages.size();
+        for (StructElem element : this.structElements) {
             if (element.annotation != null) {
-                append(i);
+                append(structParent++);
                 append(Token.SPACE);
                 append(element.objNumber);
                 append(Token.OBJ_REF);
@@ -746,7 +772,6 @@ final public class PDF {
             append(buf);
             append(Token.END_STREAM);
             endobj();
-            page.buf = null;    // Release the page content memory!
             page.contents.add(getObjNumber());
         }
     }
@@ -1709,7 +1734,7 @@ final public class PDF {
     }
 
     private boolean isPageObject(PDFobj obj) {
-        for (int i = 0; i < obj.dict.size(); i++) {
+        for (int i = 0; i < obj.dict.size() - 1; i++) {
             if (obj.dict.get(i).equals("/Type") &&
                     obj.dict.get(i + 1).equals("/Page")) {
                 return true;
@@ -1751,7 +1776,7 @@ final public class PDF {
         List<PDFobj> fonts = new ArrayList<PDFobj>();
 
         List<String> dict = resources.getDict();
-        for (int i = 0; i < dict.size(); i++) {
+        for (int i = 0; i < dict.size() - 3; i++) {
             if (dict.get(i).equals("/Font")) {
                 if (!dict.get(i + 2).equals(">>")) {
                     String token = dict.get(i + 3);
@@ -1764,15 +1789,12 @@ final public class PDF {
             return null;
         }
 
-        int i = 4;
-        while (true) {
-            if (dict.get(i).equals("/Font")) {
-                i += 2;
-                break;
-            }
+        int i = 0;
+        while (i < dict.size() && !dict.get(i).equals("/Font")) {
             i += 1;
         }
-        while (!dict.get(i).equals(">>")) {
+        i += 2;     // Skip over "/Font" and the "<<" that follows it.
+        while (i < dict.size() && !dict.get(i).equals(">>")) {
             importedFonts.add(dict.get(i));
             i += 1;
         }
@@ -1783,7 +1805,7 @@ final public class PDF {
     private List<PDFobj> getDescendantFonts(PDFobj font, List<PDFobj> objects) {
         List<PDFobj> descendantFonts = new ArrayList<PDFobj>();
         List<String> dict = font.getDict();
-        for (int i = 0; i < dict.size(); i++) {
+        for (int i = 0; i < dict.size() - 2; i++) {
             if (dict.get(i).equals("/DescendantFonts")) {
                 String token = dict.get(i + 2);
                 if (!token.equals("]")) {
@@ -1796,7 +1818,7 @@ final public class PDF {
 
     private PDFobj getObject(String name, PDFobj obj, List<PDFobj> objects) {
         List<String> dict = obj.getDict();
-        for (int i = 0; i < dict.size(); i++) {
+        for (int i = 0; i < dict.size() - 1; i++) {
             if (dict.get(i).equals(name)) {
                 String token = dict.get(i + 1);
                 return objects.get(Integer.parseInt(token) - 1);
@@ -1903,7 +1925,7 @@ final public class PDF {
                     append(obj.stream, 0, obj.stream.length);
                     append(Token.END_STREAM);
                 }
-                if (!token.equals("endobj")) {
+                if (token == null || !token.equals("endobj")) {
                     append(Token.END_OBJ);
                 }
             }

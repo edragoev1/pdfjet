@@ -245,6 +245,9 @@ public class PDF {
         sb.Append("<?xpacket end=\"w\"?>");
 
         byte[] xml = (new System.Text.UTF8Encoding()).GetBytes(sb.ToString());
+        if (encryption != null) {
+            xml = AES256.Encrypt(xml, encryption.GetKey());
+        }
 
         // This is the metadata object
         NewObj();
@@ -264,18 +267,23 @@ public class PDF {
     }
 
     private int AddOutputIntentObject() {
+        byte[] profile = ICCBlackScaled.profile;
+        if (encryption != null) {
+            profile = AES256.Encrypt(profile, encryption.GetKey());
+        }
+
         NewObj();
         Append(Token.BeginDictionary);
         Append("/N 3\n");
 
         Append("/Length ");
-        Append(ICCBlackScaled.profile.Length);
+        Append(profile.Length);
         Append("\n");
 
         Append("/Filter /FlateDecode\n");
         Append(Token.EndDictionary);
         Append(Token.Stream);
-        Append(ICCBlackScaled.profile, 0, ICCBlackScaled.profile.Length);
+        Append(profile, 0, profile.Length);
         Append(Token.EndStream);
         EndObj();
 
@@ -374,11 +382,17 @@ public class PDF {
         // String state = "/CA 0.5 /ca 0.5";
         if (states.Count > 0) {
             Append("/ExtGState <<\n");
-            foreach (String state in states.Keys) {
+            List<KeyValuePair<String, Int32>> entries =
+                    new List<KeyValuePair<String, Int32>>(states);
+            entries.Sort(delegate(KeyValuePair<String, Int32> e1,
+                    KeyValuePair<String, Int32> e2) {
+                return e1.Value.CompareTo(e2.Value);
+            });
+            foreach (KeyValuePair<String, Int32> entry in entries) {
                 Append("/GS");
-                Append(states[state]);
+                Append(entry.Value);
                 Append(" <<");
-                Append(state);
+                Append(entry.Key);
                 Append(Token.EndDictionary);
             }
             Append(Token.EndDictionary);
@@ -506,10 +520,28 @@ public class PDF {
         NewObj();
         Append(Token.BeginDictionary);
         Append("/Nums [\n");
-        for (int i = 0; i < this.structElements.Count; i++) {
-            StructElem element = this.structElements[i];
+        // The keys must be listed in increasing order, so the page entries -
+        // whose keys are the /StructParents values 0 .. pages.Count-1 - come
+        // first. Each value is the array of struct elements of that page,
+        // indexed by the MCID they were marked with.
+        for (int i = 0; i < pages.Count; i++) {
+            Append(i);
+            Append(" [");
+            foreach (StructElem element in pages[i].structures) {
+                if (element.annotation == null) {
+                    Append(Token.Space);
+                    Append(element.objNumber);
+                    Append(" 0 R");
+                }
+            }
+            Append("]\n");
+        }
+        // The annotations follow, keyed by the /StructParent values handed out
+        // by AddAnnotDictionaries(), which continue where the pages left off.
+        int structParent = pages.Count;
+        foreach (StructElem element in this.structElements) {
             if (element.annotation != null) {
-                Append(i);
+                Append(structParent++);
                 Append(Token.Space);
                 Append(element.objNumber);
                 Append(Token.ObjRef);
@@ -1602,7 +1634,7 @@ public class PDF {
 
     private bool IsPageObject(PDFobj obj) {
         bool isPage = false;
-        for (int i = 0; i < obj.dict.Count; i++) {
+        for (int i = 0; i < obj.dict.Count - 1; i++) {
             if (obj.dict[i].Equals("/Type") &&
                     obj.dict[i + 1].Equals("/Page")) {
                 isPage = true;
@@ -1646,7 +1678,7 @@ public class PDF {
 
         List<String> dict = resources.GetDict();
         int i = 0;
-        for (; i < dict.Count; i++) {
+        for (; i < dict.Count - 3; i++) {
             if (dict[i].Equals("/Font")) {
                 if (!dict[i + 2].Equals(">>")) {
                     String token = dict[i + 3];
@@ -1659,15 +1691,12 @@ public class PDF {
             return null;
         }
 
-        i = 4;
-        while (true) {
-            if (dict[i].Equals("/Font")) {
-                i += 2;
-                break;
-            }
+        i = 0;
+        while (i < dict.Count && !dict[i].Equals("/Font")) {
             i += 1;
         }
-        while (!dict[i].Equals(">>")) {
+        i += 2;     // Skip over "/Font" and the "<<" that follows it.
+        while (i < dict.Count && !dict[i].Equals(">>")) {
             importedFonts.Add(dict[i]);
             i += 1;
         }
@@ -1678,7 +1707,7 @@ public class PDF {
     private List<PDFobj> GetDescendantFonts(PDFobj font, List<PDFobj> objects) {
         List<PDFobj> descendantFonts = new List<PDFobj>();
         List<String> dict = font.GetDict();
-        for (int i = 0; i < dict.Count; i++) {
+        for (int i = 0; i < dict.Count - 2; i++) {
             if (dict[i].Equals("/DescendantFonts")) {
                 String token = dict[i + 2];
                 if (!token.Equals("]")) {
@@ -1691,7 +1720,7 @@ public class PDF {
 
     private PDFobj GetObject(String name, PDFobj obj, List<PDFobj> objects) {
         List<String> dict = obj.GetDict();
-        for (int i = 0; i < dict.Count; i++) {
+        for (int i = 0; i < dict.Count - 1; i++) {
             if (dict[i].Equals(name)) {
                 String token = dict[i + 1];
                 return objects[Int32.Parse(token) - 1];
@@ -1785,7 +1814,7 @@ public class PDF {
                     Append(obj.stream, 0, obj.stream.Length);
                     Append(Token.EndStream);
                 }
-                if (!token.Equals("endobj")) {
+                if (token == null || !token.Equals("endobj")) {
                     Append(Token.EndObj);
                 }
             }

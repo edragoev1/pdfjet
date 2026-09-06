@@ -273,6 +273,9 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	sb.WriteString("<?xpacket end=\"w\"?>")
 
 	xml := []byte(sb.String())
+	if pdf.encryption != nil {
+		xml, _ = encryption.Encrypt(xml, pdf.encryption.GetKey())
+	}
 	// This is the metadata object
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)
@@ -291,18 +294,23 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 }
 
 func (pdf *PDF) addOutputIntentObject() int {
+	profile := ICCBlackScaledProfile
+	if pdf.encryption != nil {
+		profile, _ = encryption.Encrypt(profile, pdf.encryption.GetKey())
+	}
+
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/N 3\n")
 
 	pdf.appendByteArray(token.Length)
-	pdf.appendInteger(len(ICCBlackScaledProfile))
+	pdf.appendInteger(len(profile))
 	pdf.appendByte(token.Newline)
 
 	pdf.appendString("/Filter /FlateDecode\n")
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.appendByteArray(token.Stream)
-	pdf.appendByteArray(ICCBlackScaledProfile)
+	pdf.appendByteArray(profile)
 	pdf.appendByteArray(token.EndStream)
 	pdf.endobj()
 
@@ -397,9 +405,16 @@ func (pdf *PDF) addResourcesObject() int {
 	// String state = "/CA 0.5 /ca 0.5"
 	if len(pdf.states) > 0 {
 		pdf.appendString("/ExtGState <<\n")
-		for key, value := range pdf.states {
+		keys := make([]string, 0, len(pdf.states))
+		for key := range pdf.states {
+			keys = append(keys, key)
+		}
+		sort.Slice(keys, func(i, j int) bool {
+			return pdf.states[keys[i]] < pdf.states[keys[j]]
+		})
+		for _, key := range keys {
 			pdf.appendString("/GS")
-			pdf.appendInteger(value)
+			pdf.appendInteger(pdf.states[key])
 			pdf.appendString(" <<")
 			pdf.appendString(key)
 			pdf.appendByteArray(token.EndDictionary)
@@ -526,9 +541,29 @@ func (pdf *PDF) addNumsParentTree() {
 	pdf.newobj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Nums [\n")
-	for i, element := range pdf.structElements {
+	// The keys must be listed in increasing order, so the page entries - whose
+	// keys are the /StructParents values 0 .. len(pdf.pages)-1 - come first.
+	// Each value is the array of struct elements of that page, indexed by the
+	// MCID they were marked with.
+	for i, page := range pdf.pages {
+		pdf.appendInteger(i)
+		pdf.appendString(" [")
+		for _, element := range page.structures {
+			if element.annotation == nil {
+				pdf.appendString(" ")
+				pdf.appendInteger(element.objNumber)
+				pdf.appendString(" 0 R")
+			}
+		}
+		pdf.appendString("]\n")
+	}
+	// The annotations follow, keyed by the /StructParent values handed out by
+	// addAnnotDictionaries, which continue where the pages left off.
+	structParent := len(pdf.pages)
+	for _, element := range pdf.structElements {
 		if element.annotation != nil {
-			pdf.appendInteger(i)
+			pdf.appendInteger(structParent)
+			structParent++
 			pdf.appendString(" ")
 			pdf.appendInteger(element.objNumber)
 			pdf.appendString(" 0 R\n")
@@ -727,14 +762,13 @@ func (pdf *PDF) addPageContent(page *Page) {
 		pdf.newobj()
 		pdf.appendString("<<\n")
 		pdf.appendString("/Length ")
-		pdf.appendInteger(len(page.buf))
+		pdf.appendInteger(len(buf))
 		pdf.appendString("\n")
 		pdf.appendString(">>\n")
 		pdf.appendString("stream\n")
 		pdf.appendByteArray(buf)
 		pdf.appendString("\nendstream\n")
 		pdf.endobj()
-		page.buf = nil // Release the page content memory!
 		page.contents = append(page.contents, pdf.getObjNumber())
 	}
 }
@@ -1667,7 +1701,7 @@ func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFo
 func isPageObject(obj *PDFobj) bool {
 	isPage := false
 	for i, token1 := range obj.dict {
-		if token1 == "/Type" && obj.dict[i+1] == "/Page" {
+		if token1 == "/Type" && i+1 < len(obj.dict) && obj.dict[i+1] == "/Page" {
 			isPage = true
 		}
 	}
@@ -1709,7 +1743,7 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 
 	dict := resources.GetDict()
 	for i, token1 := range dict {
-		if token1 == "/Font" {
+		if token1 == "/Font" && i+3 < len(dict) {
 			if dict[i+2] != ">>" {
 				token1 := dict[i+3]
 				objNumber, err := strconv.Atoi(token1)
@@ -1726,15 +1760,12 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 		return nil
 	}
 
-	i := 4
-	for {
-		if dict[i] == "/Font" {
-			i += 2
-			break
-		}
+	i := 0
+	for i < len(dict) && dict[i] != "/Font" {
 		i++
 	}
-	for dict[i] != ">>" {
+	i += 2 // Skip over "/Font" and the "<<" that follows it.
+	for i < len(dict) && dict[i] != ">>" {
 		pdf.importedFonts = append(pdf.importedFonts, dict[i])
 		i++
 	}
@@ -1746,13 +1777,13 @@ func (pdf *PDF) getDescendantFonts(font *PDFobj, objects []*PDFobj) []*PDFobj {
 	descendantFonts := make([]*PDFobj, 0)
 	dict := font.GetDict()
 	for i, token1 := range dict {
-		if token1 == "/DescendantFonts" {
+		if token1 == "/DescendantFonts" && i+2 < len(dict) {
 			token1 = dict[i+2]
-			objNumber, err := strconv.Atoi(token1)
-			if err != nil {
-				log.Fatal(err)
-			} else {
-				if token1 != "]" {
+			if token1 != "]" {
+				objNumber, err := strconv.Atoi(token1)
+				if err != nil {
+					log.Fatal(err)
+				} else {
 					descendantFonts = append(descendantFonts, objects[objNumber-1])
 				}
 			}
@@ -1764,7 +1795,7 @@ func (pdf *PDF) getDescendantFonts(font *PDFobj, objects []*PDFobj) []*PDFobj {
 func (pdf *PDF) getObjectFromObjects(name string, obj *PDFobj, objects []*PDFobj) *PDFobj {
 	dict := obj.GetDict()
 	for i, token1 := range dict {
-		if token1 == name {
+		if token1 == name && i+1 < len(dict) {
 			token1 = dict[i+1]
 			objNumber, err := strconv.Atoi(token1)
 			if err != nil {

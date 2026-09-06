@@ -59,7 +59,7 @@ class FontStream2 {
         sb.append("<xmpRights:UsageTerms>\n");
         sb.append("<rdf:Alt>\n");
         sb.append("<rdf:li xml:lang=\"x-default\">\n");
-        sb.append(font.info.getBytes(StandardCharsets.UTF_8));
+        sb.append(font.info);
         sb.append("</rdf:li>\n");
         sb.append("</rdf:Alt>\n");
         sb.append("</xmpRights:UsageTerms>\n");

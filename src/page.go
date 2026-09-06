@@ -67,6 +67,7 @@ type Page struct {
 	contents     []int
 	annots       []*Annotation
 	destinations []*Destination
+	structures   []*StructElem
 
 	mcid int
 }
@@ -1262,7 +1263,7 @@ func (page *Page) drawColoredString(font *Font, str string, brush [3]float32, co
 }
 
 func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
-	for _, element := range page.pdf.structElements {
+	for _, element := range page.structures {
 		element.pageObjNumber = pageObjNumber
 	}
 }
@@ -1277,6 +1278,7 @@ func (page *Page) AddBMC(structure, language, actualText, altDescription string)
 		element.actualText = actualText
 		element.altDescription = altDescription
 		page.pdf.structElements = append(page.pdf.structElements, element)
+		page.structures = append(page.structures, element)
 
 		page.appendString("/")
 		page.appendString(structure)
@@ -1314,6 +1316,7 @@ func (page *Page) AddAnnotation(annotation *Annotation) {
 		element.altDescription = annotation.altDescription
 		element.annotation = annotation
 		page.pdf.structElements = append(page.pdf.structElements, element)
+		page.structures = append(page.structures, element)
 	}
 }
 

@@ -56,7 +56,7 @@ class FontStream2 {
         sb.Append("<xmpRights:UsageTerms>\n");
         sb.Append("<rdf:Alt>\n");
         sb.Append("<rdf:li xml:lang=\"x-default\">\n");
-        sb.Append(Encoding.UTF8.GetBytes(font.info));
+        sb.Append(font.info);
         sb.Append("</rdf:li>\n");
         sb.Append("</rdf:Alt>\n");
         sb.Append("</xmpRights:UsageTerms>\n");

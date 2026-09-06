@@ -58,6 +58,7 @@ public class Page {
     internal readonly List<Int32> contents;
     internal readonly List<Annotation> annots;
     internal readonly List<Destination> destinations;
+    internal readonly List<StructElem> structures;
 
     private int mcid;
 
@@ -96,6 +97,7 @@ public class Page {
         this.contents = new List<Int32>();
         this.annots = new List<Annotation>();
         this.destinations = new List<Destination>();
+        this.structures = new List<StructElem>();
         this.width = pageSize[0];
         this.height = pageSize[1];
         this.buf = new MemoryStream(8192);
@@ -110,6 +112,7 @@ public class Page {
 
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
+        this.structures = new List<StructElem>();
         this.pageObj = RemoveComments(pageObj);
         this.width = pageObj.GetPageSize()[0];
         this.height = pageObj.GetPageSize()[1];
@@ -1632,7 +1635,7 @@ public class Page {
     }
 
     internal void SetStructElementsPageObjNumber(int pageObjNumber) {
-        foreach (StructElem element in pdf.structElements) {
+        foreach (StructElem element in structures) {
             element.pageObjNumber = pageObjNumber;
         }
     }
@@ -1658,6 +1661,7 @@ public class Page {
                 element.actualText = actualText;
                 element.altDescription = altDescription;
                 pdf.structElements.Add(element);
+                this.structures.Add(element);
 
                 Append("/");
                 Append(structure);
@@ -1875,6 +1879,7 @@ public class Page {
             element.altDescription = annotation.altDescription;
             element.annotation = annotation;
             pdf.structElements.Add(element);
+            this.structures.Add(element);
         }
     }
 

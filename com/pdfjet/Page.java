@@ -55,6 +55,7 @@ final public class Page {
     protected final List<Integer> contents = new ArrayList<Integer>();
     protected final List<Annotation> annots = new ArrayList<Annotation>();
     protected final List<Destination> destinations= new ArrayList<Destination>();
+    protected final List<StructElem> structures = new ArrayList<StructElem>();
 
     private int mcid = 0;
 
@@ -1711,7 +1712,7 @@ final public class Page {
     }
 
     void setStructElementsPageObjNumber(int pageObjNumber) {
-        for (StructElem element : pdf.structElements) {
+        for (StructElem element : structures) {
             element.pageObjNumber = pageObjNumber;
         }
     }
@@ -1751,6 +1752,7 @@ final public class Page {
             element.actualText = actualText;
             element.altDescription = altDescription;
             pdf.structElements.add(element);
+            this.structures.add(element);
 
             append("/");
             append(structure);
@@ -1785,6 +1787,7 @@ final public class Page {
             element.altDescription = annotation.altDescription;
             element.annotation = annotation;
             pdf.structElements.add(element);
+            this.structures.add(element);
         }
     }
 
