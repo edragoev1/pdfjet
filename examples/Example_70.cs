@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using PDFjet.NET;
 
 /**
- * Example_46.cs
+ * Example_30.cs
  */
-public class Example_46 {
-    public Example_46() {
+public class Example_30 {
+    public Example_30() {
         PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_46.pdf", FileMode.Create)));
+                new FileStream("Example_30.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
@@ -74,9 +74,9 @@ public class Example_46 {
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_46();
+        new Example_30();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        TextUtils.PrintDuration("Example_46", time0, time1);
+        TextUtils.PrintDuration("Example_30", time0, time1);
     }
-}   // End of Example_46.cs
+}   // End of Example_30.cs
