@@ -823,8 +823,16 @@ public class PDF {
         } else if (annot.annotationType.Equals(Annotation.Link)) {
             // PDF/UA requires a link to carry an alternate description in its
             // Contents key.
-            String description = (annot.contents != null)
-                    ? annot.contents : annot.altDescription;
+            String description = annot.contents;
+            if (String.IsNullOrEmpty(description)) {
+                description = annot.altDescription;
+            }
+            if (String.IsNullOrEmpty(description)) {
+                description = annot.uri;
+            }
+            if (String.IsNullOrEmpty(description)) {
+                description = annot.key;
+            }
             if (!String.IsNullOrEmpty(description)) {
                 byte[] bytes = Encoding.UTF8.GetBytes(description);
                 if (encryption != null) {
@@ -973,12 +981,16 @@ public class PDF {
         foreach (StructElem element in this.structElements) {
             if (element.annotation != null) {
                 index = AddAnnotationObject(element.annotation, index);
+                element.annotation.structParentWritten = true;
             }
         }
 
         foreach (Page page in pages) {
-            if (page.annots.Count > 0) {
-                foreach (Annotation annotation in page.annots) {
+            foreach (Annotation annotation in page.annots) {
+                // Skip the annotations that were already written above -
+                // writing them twice would leave the page referencing a copy
+                // that has no /StructParent key.
+                if (!annotation.structParentWritten) {
                     AddAnnotationObject(annotation, -1);
                 }
             }

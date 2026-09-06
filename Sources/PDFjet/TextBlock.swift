@@ -285,7 +285,7 @@ public class TextBlock : Drawable {
             rect.drawOn(page)
         }
 
-        // page!.addBMC(StructElem.P, language, textContent, null)
+        page!.addBMC(StructElem.P, language, textContent, "")
         page!.drawTextBlock(
             font,
             fontSize,
@@ -295,7 +295,7 @@ public class TextBlock : Drawable {
             leading,
             textColor,
             highlightColors)
-        // page!.addEMC()
+        page!.addEMC()
 
         page!.restoreGraphicsState()
 

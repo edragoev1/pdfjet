@@ -34,6 +34,8 @@ class Annotation {
     String actualText = null;
     String altDescription = null;
     FileAttachment fileAttachment = null;
+    // Set once the annotation has been written with a /StructParent key.
+    boolean structParentWritten = false;
 
     /**
      *  This class is used to create annotation objects.

@@ -711,9 +711,9 @@ public class Cell {
         if (GetTextAlignment() == Align.RIGHT) {
             if (compositeTextLine == null) {
                 xText = (x + cellW) - (font.StringWidth(text) + this.rightPadding);
-                // page.AddBMC(StructElem.P, Single.space, Single.space);
+                page.AddBMC(StructElem.P, text, text);
                 page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                // page.AddEMC();
+                page.AddEMC();
                 if (GetUnderline()) {
                     UnderlineText(page, font, text, xText, yText);
                 }
@@ -723,17 +723,17 @@ public class Cell {
             } else {
                 xText = (x + cellW) - (compositeTextLine.GetWidth() + this.rightPadding);
                 compositeTextLine.SetLocation(xText, yText);
-                // page.AddBMC(StructElem.P, Single.space, Single.space);
+                page.AddBMC(StructElem.P, text, text);
                 compositeTextLine.DrawOn(page);
-                // page.AddEMC();
+                page.AddEMC();
             }
         } else if (GetTextAlignment() == Align.CENTER) {
             if (compositeTextLine == null) {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font.StringWidth(text)) / 2);
-                // page.AddBMC(StructElem.P, Single.space, Single.space);
+                page.AddBMC(StructElem.P, text, text);
                 page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                // page.AddEMC();
+                page.AddEMC();
                 if (GetUnderline()) {
                     UnderlineText(page, font, text, xText, yText);
                 }
@@ -744,16 +744,16 @@ public class Cell {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - compositeTextLine.GetWidth()) / 2);
                 compositeTextLine.SetLocation(xText, yText);
-                // page.AddBMC(StructElem.P, Single.space, Single.space);
+                page.AddBMC(StructElem.P, text, text);
                 compositeTextLine.DrawOn(page);
-                // page.AddEMC();
+                page.AddEMC();
             }
         } else if (GetTextAlignment() == Align.LEFT) {
             xText = x + this.leftPadding;
             if (compositeTextLine == null) {
-                // page.AddBMC(StructElem.P, Single.space, Single.space);
+                page.AddBMC(StructElem.P, text, text);
                 page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                // page.AddEMC();
+                page.AddEMC();
                 if (GetUnderline()) {
                     UnderlineText(page, font, text, xText, yText);
                 }
@@ -762,9 +762,9 @@ public class Cell {
                 }
             } else {
                 compositeTextLine.SetLocation(xText, yText);
-                // page.AddBMC(StructElem.P, Single.space, Single.space);
+                page.AddBMC(StructElem.P, text, text);
                 compositeTextLine.DrawOn(page);
-                // page.AddEMC();
+                page.AddEMC();
             }
         } else {
             throw new Exception("Invalid Text Alignment!");
@@ -795,22 +795,22 @@ public class Cell {
 
     private void UnderlineText(
             Page page, Font font, String text, float x, float y) {
-        // page.AddBMC(StructElem.P, Single.space, Single.space);
+        page.AddBMC(StructElem.P, "underline", "underline");
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y + font.GetDescent());
         page.LineTo(x + font.StringWidth(text), y + font.GetDescent(fontSize));
         page.StrokePath();
-        // page.AddEMC();
+        page.AddEMC();
     }
 
     private void StrikeoutText(
             Page page, Font font, String text, float x, float y) {
-        // page.AddBMC(StructElem.P, Single.space, Single.space);
+        page.AddBMC(StructElem.P, "strike out", "strike out");
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y - font.GetAscent()/3f);
         page.LineTo(x + font.StringWidth(text), y - font.GetAscent(fontSize)/3f);
         page.StrokePath();
-        // page.AddEMC();
+        page.AddEMC();
     }
 
     public TextBox GetTextBox() {

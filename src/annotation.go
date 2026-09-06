@@ -29,4 +29,6 @@ type Annotation struct {
 	actualText     string
 	altDescription string
 	fileAttachment *FileAttachment // Assuming FileAttachment type exists elsewhere
+	// Set once the annotation has been written with a /StructParent key.
+	structParentWritten bool
 }

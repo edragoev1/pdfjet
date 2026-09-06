@@ -772,8 +772,17 @@ public class PDF {
         } else if annot.annotationType == Annotation.Link {
             // PDF/UA requires a link to carry an alternate description in its
             // Contents key.
-            if let description = annot.contents ?? annot.altDescription,
-                    !description.isEmpty {
+            var description = annot.contents
+            if description == nil || description!.isEmpty {
+                description = annot.altDescription
+            }
+            if description == nil || description!.isEmpty {
+                description = annot.uri
+            }
+            if description == nil || description!.isEmpty {
+                description = annot.key
+            }
+            if let description = description, !description.isEmpty {
                 append("/Contents <")
                 append(toHex(description))
                 append(">\n")
@@ -890,12 +899,16 @@ public class PDF {
         for element in self.structElements {
             if element.annotation != nil {
                 index = addAnnotationObject(element.annotation!, index)
+                element.annotation!.structParentWritten = true
             }
         }
 
         for page in self.pages {
-            if page.annots.count > 0 {
-                for annotation in page.annots {
+            for annotation in page.annots {
+                // Skip the annotations that were already written above -
+                // writing them twice would leave the page referencing a copy
+                // that has no /StructParent key.
+                if !annotation.structParentWritten {
                     addAnnotationObject(annotation, -1)
                 }
             }

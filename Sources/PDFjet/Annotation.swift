@@ -35,6 +35,8 @@ class Annotation {
     var actualText: String?
     var altDescription: String?
     var fileAttachment: FileAttachment?
+    // Set once the annotation has been written with a /StructParent key.
+    var structParentWritten = false
 
     /// Creates an annotation object.
     /// - Parameters:

@@ -996,12 +996,16 @@ func (pdf *PDF) addAnnotDictionaries() {
 	for _, element := range pdf.structElements {
 		if element.annotation != nil {
 			index = pdf.addAnnotationObject(element.annotation, index)
+			element.annotation.structParentWritten = true
 		}
 	}
 
 	for _, page := range pdf.pages {
-		if len(page.annots) > 0 {
-			for _, annot := range page.annots {
+		for _, annot := range page.annots {
+			// Skip the annotations that were already written above - writing
+			// them twice would leave the page referencing a copy that has no
+			// /StructParent key.
+			if !annot.structParentWritten {
 				pdf.addAnnotationObject(annot, -1)
 			}
 		}

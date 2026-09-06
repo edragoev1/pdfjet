@@ -22,6 +22,10 @@ public class Line : IDrawable {
     private String pattern = "[] 0";
     private CapStyle capStyle = CapStyle.BUTT;
 
+    private String language = null;
+    private String altDescription = Single.space;
+    private String actualText = Single.space;
+
     /**
      * The default constructor.
      */
@@ -282,6 +286,28 @@ public class Line : IDrawable {
      * @param factor the factor used to scale the line.
      * @return this Line object.
      */
+    /**
+     * Sets the alternate description of this line.
+     *
+     * @param altDescription the alternate description of the line.
+     * @return this Line.
+     */
+    public Line SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /**
+     * Sets the actual text for this line.
+     *
+     * @param actualText the actual text for the line.
+     * @return this Line.
+     */
+    public Line SetActualText(String actualText) {
+        this.actualText = actualText;
+        return this;
+    }
+
     public Line ScaleBy(float factor) {
         this.x1 *= factor;
         this.x2 *= factor;
@@ -298,6 +324,7 @@ public class Line : IDrawable {
      * @throws Exception
      */
     public float[] DrawOn(Page page) {
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
         page.SaveGraphicsState();
         page.SetPenColor(color);
         page.SetPenWidth(width);
@@ -305,6 +332,7 @@ public class Line : IDrawable {
         page.SetStrokeDashPattern(pattern);
         page.DrawLine(x1, y1, x2, y2);
         page.RestoreGraphicsState();
+        page.AddEMC();
 
         float xMax = Math.Max(x1, x2);
         float yMax = Math.Max(y1, y2);

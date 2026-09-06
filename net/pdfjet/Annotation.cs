@@ -35,6 +35,8 @@ internal class Annotation {
     internal String actualText = null;
     internal String altDescription = null;
     internal FileAttachment fileAttachment = null;
+    // Set once the annotation has been written with a /StructParent key.
+    internal bool structParentWritten = false;
 
     /**
      * This class is used to create annotation objects.

@@ -726,8 +726,8 @@ public class Cell {
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency
-                    "",     // Title
-                    "",     // Contents
+                    nil,    // Title
+                    nil,    // Contents
                     uri,
                     nil,
                     nil,
