@@ -179,6 +179,10 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	sb.WriteString("endcodespacerange\n")
 
 	list := make([]string, 0)
+	// A character the font does not contain is drawn with the .notdef glyph.
+	// PDF/UA requires every glyph to map to Unicode, so map it to the
+	// replacement character.
+	list = append(list, "<0000> <FFFD>\n")
 	var buf strings.Builder
 	for cid := 0; cid <= 0xffff; cid++ {
 		gid := font.unicodeToGID[cid]

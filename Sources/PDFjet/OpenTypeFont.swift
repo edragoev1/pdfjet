@@ -174,6 +174,10 @@ class OpenTypeFont {
         sb.append("endcodespacerange\n")
 
         var list = [String]()
+        // A character the font does not contain is drawn with the .notdef
+        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
+        // the replacement character.
+        list.append("<0000> <FFFD>\n")
         var buf = String()
         for cid in 0...0xffff {
             let gid = otf.unicodeToGID[cid]

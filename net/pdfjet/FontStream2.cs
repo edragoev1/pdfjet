@@ -172,6 +172,10 @@ class FontStream2 {
         sb.Append("endcodespacerange\n");
 
         List<String> list = new List<String>();
+        // A character the font does not contain is drawn with the .notdef
+        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
+        // the replacement character.
+        list.Add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
