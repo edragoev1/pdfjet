@@ -5,9 +5,9 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example03 -- TODO:
@@ -23,7 +23,7 @@ func Example03() {
 	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaOblique())
 	f3.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	paragraphs := make([]*pdfjet.Paragraph, 0)
 
@@ -44,6 +44,18 @@ func Example03() {
 	text.SetWidth(500.0)
 	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
+
+	paragraphNumber := 1
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			paragraphNumber = 1
+		} else {
+			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
+			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
+			textLine.DrawOn(page)
+			paragraphNumber++
+		}
+	}
 
 	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	colorMap := make(map[string]int32)
@@ -68,12 +80,9 @@ func Example03() {
 	text.SetLocation(70.0, 150.0)
 	text.SetWidth(500.0)
 	text.SetBorderColor(color.Blue)
-	xy := text.DrawOn(page)
+	text.DrawOn(page)
 
-	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
-	rect.DrawOn(page)
-
-	paragraphNumber := 1
+	paragraphNumber = 1
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {
 			paragraphNumber = 1

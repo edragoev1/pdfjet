@@ -1,101 +1,85 @@
 package main
 
 import (
+	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
-	"github.com/edragoev1/pdfjet/src/SourceSerif4"
+	"github.com/edragoev1/pdfjet/src/a4"
+	"github.com/edragoev1/pdfjet/src/alignment"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/letter"
+	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
-// Example14 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example14 draws a table and sets the borders of the individual cells.
 func Example14() {
 	pdf := pdfjet.NewPDFFile("Example_14.pdf")
 
-	font1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	font2 := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
+	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	f1.SetSize(7.0)
 
-	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f2.SetSize(7.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait)
 
-	// flag := pdfjet.NewBoxAt(85.0, 85.0, 64.0, 32.0)
+	table := pdfjet.NewTable()
+	tableData := make([][]*pdfjet.Cell, 0)
+	for i := 0; i < 5; i++ {
+		row := make([]*pdfjet.Cell, 0)
+		for j := 0; j < 5; j++ {
+			var cell *pdfjet.Cell
+			if i == 0 {
+				cell = pdfjet.NewCell(f1, "")
+			} else {
+				cell = pdfjet.NewCell(f2, "")
+			}
+			cell.SetTopBorder(false)
+			cell.SetBottomBorder(false)
+			cell.SetLeftBorder(false)
+			cell.SetRightBorder(false)
 
-	path := pdfjet.NewPath()
+			cell.SetTopPadding(10.0)
+			cell.SetBottomPadding(10.0)
+			cell.SetLeftPadding(10.0)
+			cell.SetRightPadding(10.0)
 
-	path.Add(pdfjet.NewPoint(13.0, 0.0))
-	path.Add(pdfjet.NewPoint(15.5, 4.5))
+			cell.SetText("Hello " + strconv.Itoa(i) + " " + strconv.Itoa(j))
+			if i == 0 {
+				cell.SetTopBorder(true)
+				cell.SetUnderline(true)
+				cell.SetUnderline(false)
+			}
+			if i == 4 {
+				cell.SetBottomBorder(true)
+			}
+			if j == 0 {
+				cell.SetLeftBorder(true)
+			}
+			if j == 4 {
+				cell.SetRightBorder(true)
+			}
 
-	path.Add(pdfjet.NewPoint(18.0, 3.5))
-	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
-	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
-	path.Add(pdfjet.NewPoint(20.5, 7.5))
+			if i == 2 && j == 2 {
+				cell.SetTopBorder(true)
+				cell.SetBottomBorder(true)
+				cell.SetLeftBorder(true)
+				cell.SetRightBorder(true)
 
-	path.Add(pdfjet.NewPoint(21.0, 9.5))
-	path.Add(pdfjet.NewPoint(25.0, 9.0))
-	path.Add(pdfjet.NewPoint(24.0, 13.0))
-	path.Add(pdfjet.NewPoint(25.5, 14.0))
-	path.Add(pdfjet.NewPoint(19.0, 19.0))
-	path.Add(pdfjet.NewPoint(20.0, 21.5))
-	path.Add(pdfjet.NewPoint(13.5, 20.5))
-	path.Add(pdfjet.NewPoint(13.5, 27.0))
-	path.Add(pdfjet.NewPoint(12.5, 27.0))
-	path.Add(pdfjet.NewPoint(12.5, 20.5))
-	path.Add(pdfjet.NewPoint(6.0, 21.5))
-	path.Add(pdfjet.NewPoint(7.0, 19.0))
-	path.Add(pdfjet.NewPoint(0.5, 14.0))
-	path.Add(pdfjet.NewPoint(2.0, 13.0))
-	path.Add(pdfjet.NewPoint(1.0, 9.0))
-	path.Add(pdfjet.NewPoint(5.0, 9.5))
+				cell.SetColSpan(3)
+				cell.SetBackgroundColor(color.DarkSeaGreen)
+				cell.SetLineWidth(1.0)
+				cell.SetTextAlignment(alignment.Right)
+			}
 
-	path.Add(pdfjet.NewPoint(5.5, 7.5))
-	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
-	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
-	path.Add(pdfjet.NewPoint(8.0, 3.5))
-
-	path.Add(pdfjet.NewPoint(10.5, 4.5))
-	path.SetClosePath(true)
-	path.SetColor(color.Red)
-	path.SetFillShape(true)
-
-	path.DrawOn(page)
-
-	path.ScaleBy(15.0)
-	path.SetFillShape(false)
-	path.DrawOn(page)
-
-	font1.SetSize(24.0)
-	textField := pdfjet.NewTextLine(font1, "Hello, World!")
-	textField.SetLocation(300.0, 300.0)
-	textField.SetTextColor(color.BlanchedAlmond)
-	textField.DrawOn(page)
-
-	font2.SetSize(24.0)
-	textField2 := pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 400.0)
-	textField2.SetTextColor(color.Blue)
-	textField2.SetStrikeout(true)
-	textField2.SetUnderline(true)
-	textField2.DrawOn(page)
-
-	font2.SetSize(14.0)
-	textField2 = pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 500.0)
-	textField2.SetTextColor(color.Blue)
-	textField2.DrawOn(page)
-
-	font2.SetSize(24.0)
-	textField2 = pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 600.0)
-	textField2.SetTextColor(color.Blue)
-	textField2.DrawOn(page)
-
-	image.SetLocation(100.0, 500.0)
-	image.ScaleBy(0.5)
-	image.DrawOn(page)
+			row = append(row, cell)
+		}
+		tableData = append(tableData, row)
+	}
+	table.SetData(tableData, pdfjet.TableWith0HeaderRows)
+	table.SetCellBordersWidth(0.2)
+	table.SetLocation(70.0, 30.0)
+	table.DrawOn(page)
 
 	pdf.Complete()
 }

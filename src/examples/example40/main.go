@@ -87,9 +87,9 @@ func GetData() [][]*pdfjet.Point {
 	x += dx1
 	AddVerticalBar(&chartData, x, w, 73.0, color.Red, " August", color.White)
 	x += dx2
-	AddVerticalBar(&chartData, x, w, 31.0, color.Green, " Septemeber", color.White)
+	AddVerticalBar(&chartData, x, w, 31.0, color.Green, " September", color.White)
 	x += dx1
-	AddVerticalBar(&chartData, x, w, 73.0, color.Red, " Septemeber", color.White)
+	AddVerticalBar(&chartData, x, w, 73.0, color.Red, " September", color.White)
 	x += dx2
 	AddVerticalBar(&chartData, x, w, 31.0, color.Green, " October", color.White)
 	x += dx1

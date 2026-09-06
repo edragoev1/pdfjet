@@ -13,7 +13,8 @@ import (
 func Example26() {
 	pdf := pdfjet.NewPDFFile("Example_26.pdf")
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	f1.SetSize(10.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
@@ -30,14 +31,14 @@ func Example26() {
 	checkBox = pdfjet.NewCheckBox(f1, "World!")
 	checkBox.SetLocation(x, y)
 	checkBox.SetCheckmark(color.Blue)
-	// checkBox.SetURIAction("http://pdfjet.com")
+	checkBox.SetURIAction("http://pdfjet.com")
 	checkBox.Check(mark.Check)
 	checkBox.DrawOn(page)
 
 	y += 30.0
 	checkBox = pdfjet.NewCheckBox(f1, "This is a test.")
 	checkBox.SetLocation(x, y)
-	// checkBox.SetURIAction("http://pdfjet.com")
+	checkBox.SetURIAction("http://pdfjet.com")
 	checkBox.DrawOn(page)
 
 	y += 30.0
@@ -48,7 +49,7 @@ func Example26() {
 
 	radioButton = pdfjet.NewRadioButton(f1, "Yes")
 	radioButton.SetLocation(x+100.0, 50.0)
-	// radioButton.SetURIAction("http://pdfjet.com")
+	radioButton.SetURIAction("http://pdfjet.com")
 	radioButton.SelectButton(true)
 	xy := radioButton.DrawOn(page)
 
@@ -56,11 +57,11 @@ func Example26() {
 	radioButton.SetLocation(xy[0], 50.0)
 	xy = radioButton.DrawOn(page)
 
-	radioButton = pdfjet.NewRadioButton(f1, "Hello")
-	radioButton.SetLocation(xy[0], 50.0)
-	// radioButton.SetCheckmark(Color.blue)
-	radioButton.SelectButton(true)
-	xy = radioButton.DrawOn(page)
+	checkBox = pdfjet.NewCheckBox(f1, "Hello")
+	checkBox.SetLocation(xy[0], 50.0)
+	checkBox.SetCheckmark(color.Blue)
+	checkBox.Check(mark.X)
+	xy = checkBox.DrawOn(page)
 
 	checkBox = pdfjet.NewCheckBox(f1, "Yahoo")
 	checkBox.SetLocation(xy[0], 50.0)

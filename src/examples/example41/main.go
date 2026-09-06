@@ -45,6 +45,18 @@ func Example41() {
 	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
 
+	paragraphNumber := 1
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			paragraphNumber = 1
+		} else {
+			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
+			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
+			textLine.DrawOn(page)
+			paragraphNumber++
+		}
+	}
+
 	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	colorMap := make(map[string]int32)
 	colorMap["Physics"] = color.Red
@@ -68,12 +80,9 @@ func Example41() {
 	text.SetLocation(70.0, 150.0)
 	text.SetWidth(500.0)
 	text.SetBorderColor(color.Blue)
-	xy := text.DrawOn(page)
+	text.DrawOn(page)
 
-	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
-	rect.DrawOn(page)
-
-	paragraphNumber := 1
+	paragraphNumber = 1
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {
 			paragraphNumber = 1

@@ -5,8 +5,8 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
-	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example32 -- TODO:
@@ -22,7 +22,7 @@ func Example32() {
 	colors["void"] = color.Green
 	grayColor := [3]float32{0.2, 0.2, 0.2}
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 	x := float32(50.0)
 	y := float32(50.0)
 	leading := font.GetBodyHeight(font.GetSize())
@@ -31,7 +31,7 @@ func Example32() {
 		page.DrawStringUsingColorMap(font, font, font.GetSize(), line, x, y, grayColor, colors)
 		y += leading
 		if y > (page.GetHeight() - 20.0) {
-			page = pdfjet.NewPage(pdf, a4.Portrait)
+			page = pdfjet.NewPage(pdf, letter.Portrait)
 			y = 50.0
 		}
 	}

@@ -25,7 +25,7 @@ func Example37(fileName string) {
 	font1.SetSize(72.0)
 
 	text := pdfjet.NewTextLine(font1, "This is a test!")
-	text.SetLocation(50.0, 350.0)
+	text.SetLocation(150.0, 350.0)
 	text.SetTextColor(color.Peru)
 
 	pages := pdf.GetPageObjects(objects)
@@ -38,7 +38,7 @@ func Example37(fileName string) {
 		page := pdfjet.NewPageFromObject(pdf, pageObj)
 		page.AddFontResource(font1, &objects)
 		page.SetBrushColor(color.Blue)
-		page.DrawString(font1, nil, "Hello, World!", 50.0, 200.0)
+		// page.DrawString(font1, nil, "Hello, World!", 50.0, 200.0)
 		text.DrawOn(page)
 
 		page.Complete(&objects) // The graphics stack is unwinded automatically

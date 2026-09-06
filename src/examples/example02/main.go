@@ -4,6 +4,10 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansJP"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansKR"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansSC"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSansTC"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -19,17 +23,17 @@ func Example02() {
 	pdf := pdfjet.NewPDFFile("Example_02.pdf")
 
 	// Load Japanese font from file and set its size to 12 points
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansJP/NotoSansJP-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular)
 	f1.SetSize(14.0)
 
 	// Load Korean font from file and set its size to 12 points
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansKR/NotoSansKR-Regular.ttf.stream")
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansKR.Regular)
 	f2.SetSize(14.0)
 
-	f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream")
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansSC.Regular)
 	f3.SetSize(14.0)
 
-	f4 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansTC/NotoSansTC-Regular.ttf.stream")
+	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSansTC.Regular)
 	f4.SetSize(14.0)
 
 	// Create a new page in portrait Letter size

@@ -1,101 +1,125 @@
 package main
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
-	"github.com/edragoev1/pdfjet/src/SourceSerif4"
+	"github.com/edragoev1/pdfjet/src/alignment"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example13 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example13 draws a table that spans multiple pages.
 func Example13() {
 	pdf := pdfjet.NewPDFFile("Example_13.pdf")
 
-	font1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	font2 := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
+	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	f1.SetSize(7.0)
 
-	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f2.SetSize(7.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	tableData := make([][]*pdfjet.Cell, 0)
+	lines := pdfjet.ReadTextLines("data/winter-2009.txt")
+	for _, line := range lines {
+		row := make([]*pdfjet.Cell, 0)
+		for _, column := range strings.Split(line, "|") {
+			row = append(row, pdfjet.NewCell(f2, column))
+		}
+		tableData = append(tableData, row)
+	}
 
-	path := pdfjet.NewPath()
+	table := pdfjet.NewTable()
+	table.SetData(tableData, pdfjet.TableWith2HeaderRows)
+	table.SetLocation(100.0, 50.0)
+	table.SetBottomMargin(10.0)
 
-	path.Add(pdfjet.NewPoint(13.0, 0.0))
-	path.Add(pdfjet.NewPoint(15.5, 4.5))
+	table.SetFontInRow(0, f1)
+	table.SetFontInRow(1, f1)
 
-	path.Add(pdfjet.NewPoint(18.0, 3.5))
-	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
-	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
-	path.Add(pdfjet.NewPoint(20.5, 7.5))
+	table.SetColumnWidths()
+	table.RemoveLineBetweenRows(0, 1)
 
-	path.Add(pdfjet.NewPoint(21.0, 9.5))
-	path.Add(pdfjet.NewPoint(25.0, 9.0))
-	path.Add(pdfjet.NewPoint(24.0, 13.0))
-	path.Add(pdfjet.NewPoint(25.5, 14.0))
-	path.Add(pdfjet.NewPoint(19.0, 19.0))
-	path.Add(pdfjet.NewPoint(20.0, 21.5))
-	path.Add(pdfjet.NewPoint(13.5, 20.5))
-	path.Add(pdfjet.NewPoint(13.5, 27.0))
-	path.Add(pdfjet.NewPoint(12.5, 27.0))
-	path.Add(pdfjet.NewPoint(12.5, 20.5))
-	path.Add(pdfjet.NewPoint(6.0, 21.5))
-	path.Add(pdfjet.NewPoint(7.0, 19.0))
-	path.Add(pdfjet.NewPoint(0.5, 14.0))
-	path.Add(pdfjet.NewPoint(2.0, 13.0))
-	path.Add(pdfjet.NewPoint(1.0, 9.0))
-	path.Add(pdfjet.NewPoint(5.0, 9.5))
+	cell := table.GetCellAt(1, 1)
+	cell.SetTopBorder(true)
 
-	path.Add(pdfjet.NewPoint(5.5, 7.5))
-	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
-	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
-	path.Add(pdfjet.NewPoint(8.0, 3.5))
+	cell = table.GetCellAt(1, 2)
+	cell.SetTopBorder(true)
 
-	path.Add(pdfjet.NewPoint(10.5, 4.5))
-	path.SetClosePath(true)
-	path.SetColor(color.Red)
-	path.SetFillShape(true)
+	cell = table.GetCellAt(0, 1)
+	cell.SetColSpan(2)
+	cell.SetTextAlignment(alignment.Center)
 
-	path.DrawOn(page)
+	column := table.GetColumnAtIndex(7)
+	for _, cell := range column {
+		cell.SetTextAlignment(alignment.Center)
+	}
 
-	path.ScaleBy(15.0)
-	path.SetFillShape(false)
-	path.DrawOn(page)
+	column = table.GetColumnAtIndex(4)
+	for i := 2; i < len(column); i++ {
+		cell := column[i]
+		cell.SetTextAlignment(alignment.Center)
+		if n, err := strconv.Atoi(cell.GetText()); err == nil && n > 40 {
+			cell.SetBackgroundColor(color.DarkSeaGreen)
+		} else {
+			cell.SetBackgroundColor(color.Yellow)
+		}
+	}
 
-	font1.SetSize(24.0)
-	textField := pdfjet.NewTextLine(font1, "Hello, World!")
-	textField.SetLocation(300.0, 300.0)
-	textField.SetTextColor(color.BlanchedAlmond)
-	textField.DrawOn(page)
+	column = table.GetColumnAtIndex(2)
+	for i := 2; i < len(column); i++ {
+		cell := column[i]
+		if cell.GetText() == "Smith" {
+			cell.SetUnderline(true)
+		}
+		if cell.GetText() == "Bowden" {
+			cell.SetStrikeout(true)
+		}
+	}
 
-	font2.SetSize(24.0)
-	textField2 := pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 400.0)
-	textField2.SetTextColor(color.Blue)
-	textField2.SetStrikeout(true)
-	textField2.SetUnderline(true)
-	textField2.DrawOn(page)
+	column = table.GetColumnAtIndex(2)
+	for i := 2; i < len(column); i++ {
+		cell := column[i]
+		if cell.GetText() == "Bowden" {
+			cell.SetStrikeout(false)
+		}
+	}
 
-	font2.SetSize(14.0)
-	textField2 = pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 500.0)
-	textField2.SetTextColor(color.Blue)
-	textField2.DrawOn(page)
+	setBgColorForRow(table, 0, color.LightGray)
+	setBgColorForRow(table, 1, color.LightGray)
 
-	font2.SetSize(24.0)
-	textField2 = pdfjet.NewTextLine(font2, "This is great!")
-	textField2.SetLocation(400.0, 600.0)
-	textField2.SetTextColor(color.Blue)
-	textField2.DrawOn(page)
+	table.SetColumnWidth(3, 10.0)
+	blankOutColumn(table, 3)
 
-	image.SetLocation(100.0, 500.0)
-	image.ScaleBy(0.5)
-	image.DrawOn(page)
+	table.SetColumnWidth(8, 10.0)
+	blankOutColumn(table, 8)
+
+	pages := make([]*pdfjet.Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait)
+	for i, page := range pages {
+		page.AddFooter(pdfjet.NewTextLine(f1,
+			"Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))
+		pdf.AddPage(page)
+	}
 
 	pdf.Complete()
+}
+
+func blankOutColumn(table *pdfjet.Table, index int) {
+	for _, cell := range table.GetColumnAtIndex(index) {
+		cell.SetBackgroundColor(color.White)
+		cell.SetTopBorder(false)
+		cell.SetBottomBorder(false)
+	}
+}
+
+func setBgColorForRow(table *pdfjet.Table, index int, color int32) {
+	for _, cell := range table.GetRowAtIndex(index) {
+		cell.SetBackgroundColor(color)
+	}
 }
 
 func main() {
