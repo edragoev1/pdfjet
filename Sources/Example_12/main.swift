@@ -20,7 +20,7 @@ public class Example_12 {
         barcode.setLocation(100.0, 60.0)
         barcode.drawOn(page)
 
-        let textLine = TextLine(font, "PDF417 barcode containing the program that created it.")
+        let textLine = TextLine(font, "PDF417 barcode containing the contents of data/Example_12.java")
         textLine.setLocation(100.0, 40.0)
         textLine.drawOn(page)
 

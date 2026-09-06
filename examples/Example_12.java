@@ -32,7 +32,7 @@ public class Example_12 {
         barcode.drawOn(page);
 
         TextLine text = new TextLine(font,
-                "PDF417 barcode containing the program that created it.");
+                "PDF417 barcode containing the contents of data/Example_12.java");
         text.setLocation(100f, 40f);
         text.drawOn(page);
 

@@ -24,7 +24,7 @@ public class Example_12 {
         barcode.SetLocation(100f, 60f);
         barcode.DrawOn(page);
 
-        TextLine text = new TextLine(f1, "PDF417 barcode containing the program that created it.");
+        TextLine text = new TextLine(f1, "PDF417 barcode containing the contents of data/Example_12.java");
         text.SetLocation(100f, 40f);
         text.DrawOn(page);
 

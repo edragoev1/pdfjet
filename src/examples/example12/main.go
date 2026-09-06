@@ -29,7 +29,7 @@ func Example12() {
 	barcode.DrawOn(page)
 
 	textLine := pdfjet.NewTextLine(font,
-		"PDF417 barcode containing the program that created it.")
+		"PDF417 barcode containing the contents of data/Example_12.java")
 	textLine.SetLocation(100.0, 40.0)
 	textLine.DrawOn(page)
 
