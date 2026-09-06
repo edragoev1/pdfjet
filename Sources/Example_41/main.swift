@@ -40,6 +40,18 @@ public class Example_41 {
         text.setBorderColor(Color.blue)
         text.drawOn(page)
 
+        var paragraphNumber: Int = 1
+        for p in paragraphs {
+            if p.startsWith("**") {
+                paragraphNumber = 1
+            } else {
+                TextLine(f2, String(paragraphNumber) + ".")
+                        .setLocation(p.xText! - 15.0, p.yText!)
+                        .drawOn(page)
+                paragraphNumber += 1
+            }
+        }
+
         paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
         var colorMap = [String: Int32]()
         colorMap["Physics"] = Color.red
@@ -66,7 +78,7 @@ public class Example_41 {
         text.setBorderColor(Color.blue)
         text.drawOn(page)
 
-        var paragraphNumber: Int = 1
+        paragraphNumber = 1
         for p in paragraphs {
             if p.startsWith("**") {
                 paragraphNumber = 1

@@ -50,7 +50,6 @@ let package = Package(
         .executableTarget(name: "Example_43", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_44", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_45", dependencies: ["PDFjet"]),
-        .executableTarget(name: "Example_46", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_47", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_48", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_49", dependencies: ["PDFjet"]),

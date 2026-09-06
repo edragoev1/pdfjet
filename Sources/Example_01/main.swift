@@ -24,7 +24,7 @@ public class Example_01 {
         textBlock.setLocation(50, 50)   // Set the position for the English text
         textBlock.setWidth(473)         // Set width of the text block
         textBlock.setTextPadding(10)    // Set padding around the text
-        textBlock.setBorderColor(Color.black)
+        textBlock.setBorderColor(Color.blue)
         var xy = textBlock.drawOn(page) // Draw the English text on the page and get coordinates
 
         // Draw a blue rectangle around the English text block
@@ -38,6 +38,7 @@ public class Example_01 {
         let textBlock2 = TextBlock(font, greekText)
         textBlock2.setLocation(50, xy[1] + 30)  // Set location below the previous text
         textBlock2.setWidth(473)                // Set width for Greek text block
+        textBlock2.setTextPadding(10)           // Set padding around the Greek text
         xy = textBlock2.drawOn(page)            // Draw Greek text and update coordinates
 
         // Read Bulgarian text from a file and draw it with a blue border and rounded corners

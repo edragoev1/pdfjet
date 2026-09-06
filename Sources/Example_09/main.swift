@@ -56,14 +56,14 @@ public class Example_09 {
         chart.setTitle("World View - Communications")
         chart.setXAxisTitle("Cell phones per capita")
         chart.setYAxisTitle("Internet users % of the population")
-        // addTrendLine(chart)
+        addTrendLine(chart)
         // chart.setXAxisMinMax(0.0, 100.0, 10)
         // chart.setYAxisMinMax(0.0, 100.0, 10)
         chart.drawOn(page)
 
-        // f1.setSize(7.0)
-        // f2.setSize(7.0)
-        // try addTableToChart(page, chart, f1, f2)
+        f1.setSize(7.0)
+        f2.setSize(7.0)
+        try addTableToChart(page, chart, f1, f2)
         pdf.complete()
     }
 }
@@ -106,7 +106,6 @@ public func addTableToChart(
             var tableRow = [Cell]()
 
             point.setRadius(2.0)
-            point.setFillShape(true)
             point.setAlignment(Align.LEFT)
 
             var cell = Cell(f2, "")

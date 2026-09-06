@@ -24,7 +24,7 @@ public class Example_37 {
         f1.setSize(72.0)
 
         let line = TextLine(f1, "This is a test!")
-        line.setLocation(50.0, 350.0)
+        line.setLocation(150.0, 350.0)
         line.setColor(Color.peru)
 
         let pages = pdf.getPageObjects(from: objects)
@@ -37,7 +37,7 @@ public class Example_37 {
             let page = Page(pdf, pageObj)
             page.addResource(f1, &objects)
             page.setBrushColor(Color.blue)
-            page.drawString(f1, "Hello, World!", 50.0, 200.0)
+            // page.drawString(f1, "Hello, World!", 50.0, 200.0)
             line.drawOn(page)
             page.complete(&objects) // The graphics stack is unwinded automatically
         }
