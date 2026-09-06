@@ -19,9 +19,10 @@ public class Cell {
     var barcode: Barcode?
     var textBlock: TextBlock?
     var textColumn: TextColumn?
+    var textBox: TextBox?
     var point: Point?
     var compositeTextLine: CompositeTextLine?
-    var width: Float = 50.0
+    var width: Float = 75.0
     var topPadding: Float = 2.0
     var bottomPadding: Float = 2.0
     var leftPadding: Float = 2.0
@@ -207,6 +208,39 @@ public class Cell {
         }
     }
 
+    ///
+    /// Sets the text column that this cell holds.
+    ///
+    @discardableResult
+    public func setTextColumn(_ textColumn: TextColumn) -> Cell {
+        self.textColumn = textColumn
+        self.width = textColumn.getWidth() + self.leftPadding + self.rightPadding
+        return self
+    }
+
+    ///
+    /// Returns the text column that this cell holds.
+    ///
+    public func getTextColumn() -> TextColumn? {
+        return self.textColumn
+    }
+
+    ///
+    /// Sets the text box that this cell holds.
+    ///
+    @discardableResult
+    public func setTextBox(_ textBox: TextBox) -> Cell {
+        self.textBox = textBox
+        return self
+    }
+
+    ///
+    /// Returns the text box that this cell holds.
+    ///
+    public func getTextBox() -> TextBox? {
+        return self.textBox
+    }
+
     /**
      * Returns the cell width.
      *
@@ -279,7 +313,12 @@ public class Cell {
      */
     public func getHeight(_ width: Float) -> Float {
         var cellHeight = Float(0.0)
-        if textBlock != nil {
+        if textBox != nil {
+            textBox!.setWidth(width)
+            cellHeight = (textBox!.drawOn(nil)[1] - textBox!.y) + topPadding + bottomPadding
+        } else if textColumn != nil {
+            cellHeight = (textColumn!.drawOn(nil)[1] - textColumn!.y) + topPadding + bottomPadding
+        } else if textBlock != nil {
             textBlock!.setWidth(width)
             cellHeight = (textBlock!.drawOn(nil)[1] - textBlock!.y) + topPadding + bottomPadding
         } else if image != nil {
@@ -529,6 +568,13 @@ public class Cell {
 
         if text != nil && text != "" {
             drawText(page, x, y, w, h)
+        } else if textBox != nil {
+            textBox!.setLocation(x + leftPadding, y + topPadding)
+            textBox!.setWidth(w - (leftPadding + rightPadding))
+            textBox!.drawOn(page)
+        } else if textColumn != nil {
+            textColumn!.setPosition(x + leftPadding, y + topPadding)
+            textColumn!.drawOn(page)
         } else if textBlock != nil {
             textBlock!.setLocation(x + leftPadding, y + topPadding)
             textBlock!.setWidth(w - (leftPadding + rightPadding))

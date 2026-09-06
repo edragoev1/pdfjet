@@ -294,6 +294,13 @@ func (textLine *TextLine) GetTextDirection() int {
 // @return this TextLine.
 func (textLine *TextLine) SetTextEffect(textEffect int) *TextLine {
 	textLine.textEffect = textEffect
+	if textEffect == effect.Normal {
+		textLine.verticalOffset = 0.0
+	} else if textEffect == effect.Superscript {
+		textLine.verticalOffset = -textLine.font.GetBodyHeight(textLine.fontSize) / 2.0
+	} else if textEffect == effect.Subscript {
+		textLine.verticalOffset = textLine.font.GetBodyHeight(textLine.fontSize) / 3.0
+	}
 	return textLine
 }
 

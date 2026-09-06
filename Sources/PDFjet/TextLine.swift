@@ -406,6 +406,13 @@ public class TextLine : Drawable {
     @discardableResult
     public func setTextEffect(_ textEffect: Int) -> TextLine {
         self.textEffect = textEffect
+        if textEffect == Effect.NORMAL {
+            verticalOffset = 0.0
+        } else if textEffect == Effect.SUPERSCRIPT {
+            verticalOffset = -font!.getBodyHeight(self.fontSize)/2.0
+        } else if textEffect == Effect.SUBSCRIPT {
+            verticalOffset = font!.getBodyHeight(self.fontSize)/3.0
+        }
         return self
     }
 

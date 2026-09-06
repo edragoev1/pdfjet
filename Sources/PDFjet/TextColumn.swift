@@ -16,7 +16,7 @@ public class TextColumn : Drawable {
     var rotate = 0
 
     private var x: Float = 0.0      // This variable is set in the beginning and only reset after the drawOn
-    private var y: Float = 0.0      // This variable is set in the beginning and only reset after the drawOn
+    var y: Float = 0.0              // This variable is set in the beginning and only reset after the drawOn
     private var w: Float = 0.0
     private var h: Float = 0.0
     private var x1: Float = 0.0
@@ -104,6 +104,13 @@ public class TextColumn : Drawable {
     ///
     public func setWidth(_ w: Float) {
         self.w = w
+    }
+
+    ///
+    /// Returns the width of this text column.
+    ///
+    public func getWidth() -> Float {
+        return self.w
     }
 
     ///

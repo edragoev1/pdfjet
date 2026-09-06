@@ -115,21 +115,23 @@ func (composite *CompositeTextLine) GetSubscriptPosition() float32 {
 func (composite *CompositeTextLine) AddComponent(textLine *TextLine) {
 	if textLine.GetTextEffect() == effect.Superscript {
 		if composite.fontSize > 0.0 {
-			textLine.GetFont().SetSize(composite.fontSize * composite.superscriptSizeFactor)
+			// Set it on the TextLine: DrawOn uses the line's own font size, so
+			// resizing the shared Font here would have no effect.
+			textLine.SetFontSize(composite.fontSize * composite.superscriptSizeFactor)
 		}
 		textLine.SetLocation(
 			composite.current[composite.X],
 			composite.current[composite.Y]-composite.fontSize*composite.superscriptPosition)
 	} else if textLine.GetTextEffect() == effect.Subscript {
 		if composite.fontSize > 0.0 {
-			textLine.GetFont().SetSize(composite.fontSize * composite.subscriptSizeFactor)
+			textLine.SetFontSize(composite.fontSize * composite.subscriptSizeFactor)
 		}
 		textLine.SetLocation(
 			composite.current[composite.X],
 			composite.current[composite.Y]+composite.fontSize*composite.subscriptPosition)
 	} else {
 		if composite.fontSize > 0.0 {
-			textLine.GetFont().SetSize(composite.fontSize)
+			textLine.SetFontSize(composite.fontSize)
 		}
 		textLine.SetLocation(composite.current[composite.X], composite.current[composite.Y])
 	}
