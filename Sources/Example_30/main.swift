@@ -34,12 +34,13 @@ public class Example_30 {
         group.setPrintable(false)
         group.drawOn(page)
 
-        let textBox = TextBlock(font, "Blue Layer Text")
-        textBox.setLocation(350.0, 130.0)
+        let textBox = TextBox(font)
+        textBox.setText("Blue Layer Text")
+        textBox.setLocation(10.0, 130.0)
 
         var line = Line()
-        line.setPointA(350.0, 150.0)
-        line.setPointB(550.0, 150.0)
+        line.setPointA(300.0, 150.0)
+        line.setPointB(500.0, 150.0)
         line.setWidth(2.0)
         line.setColor(Color.blue)
 
