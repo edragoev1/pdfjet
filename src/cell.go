@@ -445,11 +445,14 @@ func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 }
 
 func (cell *Cell) drawBackground(page *Page, x, y, wCell, hCell float32) {
+	page.AddArtifactBMC()
 	page.SetBrushColorRGB(cell.background)
 	page.FillRect(x, y+cell.lineWidth/2, wCell, hCell)
+	page.AddEMC()
 }
 
 func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
+	page.AddArtifactBMC()
 	page.SetPenColorRGB(cell.pen)
 	page.SetPenWidth(cell.lineWidth)
 	qWidth := cell.lineWidth / 4.0
@@ -473,6 +476,7 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 		page.LineTo(x+cellW, y+cellH+qWidth)
 		page.StrokePath()
 	}
+	page.AddEMC()
 }
 
 // DrawText draws the cell text.
@@ -493,8 +497,10 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 	page.SetPenColorRGB(cell.pen)
 	if cell.GetTextAlignment() == alignment.Left {
 		xText = x + cell.leftPadding
+		page.AddBMC("P", "", cell.text, cell.text)
 		page.DrawStringUsingColorMap(
 			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
+		page.AddEMC()
 		if cell.underline {
 			cell.UnderlineText(page, cell.font, cell.text, xText, yText)
 		}
@@ -503,8 +509,10 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		}
 	} else if cell.GetTextAlignment() == alignment.Right {
 		xText = (x + wCell) - (cell.font.StringWidth(cell.font.size, cell.text) + cell.rightPadding)
+		page.AddBMC("P", "", cell.text, cell.text)
 		page.DrawStringUsingColorMap(
 			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
+		page.AddEMC()
 		if cell.underline {
 			cell.UnderlineText(page, cell.font, cell.text, xText, yText)
 		}
@@ -514,8 +522,10 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 	} else if cell.GetTextAlignment() == alignment.Center {
 		xText = x + cell.leftPadding +
 			(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.font.StringWidth(cell.font.size, cell.text)) / 2)
+		page.AddBMC("P", "", cell.text, cell.text)
 		page.DrawStringUsingColorMap(
 			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
+		page.AddEMC()
 		if cell.underline {
 			cell.UnderlineText(page, cell.font, cell.text, xText, yText)
 		}

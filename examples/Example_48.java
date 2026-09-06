@@ -11,6 +11,7 @@ public class Example_48 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_48.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("The structure of a PDF file");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(14f);

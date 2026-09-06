@@ -12,6 +12,7 @@ public class Example_12 {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_12.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("PDF417 barcode example");
 
         // Font font = new Font(pdf, CoreFont.HELVETICA);
         Font font = new Font(pdf, IBMPlexSans.Regular);

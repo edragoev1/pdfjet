@@ -11,6 +11,7 @@ public class Example_22 {
         PDF pdf = new PDF(new BufferedStream(
             new FileStream("Example_22.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Internal links and destinations");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
 

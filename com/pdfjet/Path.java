@@ -233,6 +233,8 @@ public class Path implements Drawable {
             point.y += yBox;
         }
 
+        // A path carries no text, so it is decorative content.
+        page.addArtifactBMC();
         if (fillShape) {
             page.setBrushColor(color);
             page.drawPath(points, PathOperator.FILL);
@@ -248,6 +250,7 @@ public class Path implements Drawable {
                 page.drawPath(points, PathOperator.STROKE);
             }
         }
+        page.addEMC();
 
         float xMax = 0f;
         float yMax = 0f;

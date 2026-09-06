@@ -310,6 +310,9 @@ public class Path : IDrawable {
 
         if (actualText != null && altDescription != null) {
             page.AddBMC(StructElem.FIGURE, this.language, this.actualText, this.altDescription);
+        } else {
+            // An undescribed path is decorative content.
+            page.AddArtifactBMC();
         }
 
         page.SaveGraphicsState();
@@ -335,10 +338,7 @@ public class Path : IDrawable {
         }
 
         page.RestoreGraphicsState();
-
-        if (actualText != null && altDescription != null) {
-            page.AddEMC();
-        }
+        page.AddEMC();
 
         if (uri != null || key != null) {
             page.AddAnnotation(new Annotation(

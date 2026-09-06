@@ -209,6 +209,8 @@ public class Rect implements Drawable {
         }
 
         final float k = 0.55228f;
+        // A rectangle carries no text, so it is decorative content.
+        page.addArtifactBMC();
         page.saveGraphicsState();
         if (this.r == 0.0f) {
             if (this.fillColor != null) {
@@ -276,6 +278,7 @@ public class Rect implements Drawable {
             }
         }
         page.restoreGraphicsState();
+        page.addEMC();
 
         if (this.uri != null || this.key != null) {
 // TODO:

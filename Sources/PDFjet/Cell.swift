@@ -593,8 +593,10 @@ public class Cell {
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
+        page.addArtifactBMC()
         page.setBrushColor(backgroundColor)
         page.fillRect(x, y + strokeWidth/2, cellW, cellH)
+        page.addEMC()
     }
 
     private func drawBorders(
@@ -603,6 +605,7 @@ public class Cell {
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
+        page.addArtifactBMC()
         page.setPenColor(strokeColor)
         page.setPenWidth(strokeWidth)
         let qWidth: Float = strokeWidth / 4.0
@@ -626,6 +629,7 @@ public class Cell {
             page.lineTo(x + cellW, y + cellH + qWidth)
             page.strokePath()
         }
+        page.addEMC()
     }
 
     private func drawText(

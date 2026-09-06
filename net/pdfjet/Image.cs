@@ -340,6 +340,9 @@ public class Image : IDrawable {
     public float[] DrawOn(Page page) {
         if (!String.IsNullOrEmpty(actualText) && !String.IsNullOrEmpty(altDescription)) {
             page.AddBMC(StructElem.P, language, actualText, altDescription);
+        } else {
+            // An image the caller did not describe is decorative content.
+            page.AddArtifactBMC();
         }
 
         page.SaveGraphicsState();
@@ -350,10 +353,7 @@ public class Image : IDrawable {
         page.Append(" Do\n");
 
         page.RestoreGraphicsState();
-
-        if (!String.IsNullOrEmpty(actualText) && !String.IsNullOrEmpty(altDescription)) {
-            page.AddEMC();
-        }
+        page.AddEMC();
 
         if (uri != null || key != null) {
             if (!String.IsNullOrEmpty(actualText) && !String.IsNullOrEmpty(altDescription)) {

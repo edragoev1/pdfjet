@@ -11,6 +11,7 @@ public class Example_22 {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_22.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Internal links and destinations");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
 

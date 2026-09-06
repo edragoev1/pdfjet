@@ -139,6 +139,8 @@ func (path *Path) DrawOn(page *Page) []float32 {
 		point.y += path.yBox
 	}
 
+	// A path carries no text, so it is decorative content.
+	page.AddArtifactBMC()
 	if path.fillShape {
 		page.SetBrushColor(path.color)
 		page.DrawPath(path.points, pathoperator.Fill)
@@ -154,6 +156,7 @@ func (path *Path) DrawOn(page *Page) []float32 {
 			page.DrawPath(path.points, pathoperator.Stroke)
 		}
 	}
+	page.AddEMC()
 
 	var xMax float32 = 0.0
 	var yMax float32 = 0.0

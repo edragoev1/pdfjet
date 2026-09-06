@@ -14,6 +14,7 @@ public class Example_47 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_47.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Text flowing through columns");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(14f);

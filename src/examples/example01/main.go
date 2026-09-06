@@ -15,6 +15,7 @@ import (
 func Example01() {
 	pdf := pdfjet.NewPDFFile("Example_01.pdf")
 	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Multilingual text blocks")
 
 	// Load font and set size
 	font1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)

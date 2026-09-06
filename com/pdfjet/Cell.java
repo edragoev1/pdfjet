@@ -646,8 +646,10 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
+        page.addArtifactBMC();
         page.setBrushColor(backgroundColor);
         page.fillRect(x, y + lineWidth/2, cellW, cellH);
+        page.addEMC();
     }
 
     private void drawBorders(
@@ -656,6 +658,7 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
+        page.addArtifactBMC();
         page.setPenColor(strokeColor);
         page.setPenWidth(lineWidth);
         float qWidth = lineWidth / 4;
@@ -679,6 +682,7 @@ public class Cell {
             page.lineTo(x + cellW, y + cellH + qWidth);
             page.strokePath();
         }
+        page.addEMC();
     }
 
     private void drawText(

@@ -12,6 +12,7 @@ public class Example_16 {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_16.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Text block with highlighted keywords");
 
         // Font f1 = new Font(pdf, SourceSerif4.Regular);
         // Font f1 = new Font(pdf, NotoSans.Regular);

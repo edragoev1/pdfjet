@@ -147,6 +147,8 @@ public class Rect  : IDrawable {
             return new float[] {x + w, y + h};
         }
 
+        // A rectangle carries no text, so it is decorative content.
+        page.AddArtifactBMC();
         page.SaveGraphicsState();
 
         const float k = 0.55228f;
@@ -217,6 +219,7 @@ public class Rect  : IDrawable {
         }
 
         page.RestoreGraphicsState();
+        page.AddEMC();
 
         if (this.uri != null || this.key != null) {
             page.AddAnnotation(new Annotation(

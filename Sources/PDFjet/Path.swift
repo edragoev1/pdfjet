@@ -184,6 +184,8 @@ public class Path : Drawable {
             point.y += yBox
         }
 
+        // A path carries no text, so it is decorative content.
+        page!.addArtifactBMC()
         if fillShape {
             page!.setBrushColor(self.color)
             page!.drawPath(points!, PathOperator.fill)
@@ -199,6 +201,7 @@ public class Path : Drawable {
                 page!.drawPath(points!, PathOperator.stroke)
             }
         }
+        page!.addEMC()
 
         var xMax: Float = 0.0
         var yMax: Float = 0.0

@@ -12,6 +12,7 @@ public class Example_49 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_49.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Paragraphs with mixed text styles");
 
         Font f1 = new Font(pdf, SourceSerif4.Regular);
         f1.setSize(14f);

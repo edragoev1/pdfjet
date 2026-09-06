@@ -649,8 +649,10 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
+        page.AddArtifactBMC();
         page.SetBrushColor(backgroundColor);
         page.FillRect(x, y + lineWidth/2, cellW, cellH);
+        page.AddEMC();
     }
 
     private void DrawBorders(

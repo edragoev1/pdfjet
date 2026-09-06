@@ -196,6 +196,9 @@ public class Rect : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         let k: Float = 0.5517
 
+        // A rectangle carries no text, so it is decorative content.
+        page!.addArtifactBMC()
+
 //         page!.addBMC(
 //                 self.structureType,
 //                 self.language,
@@ -248,7 +251,7 @@ public class Rect : Drawable {
 
             page!.drawPath(points, PathOperator.stroke)
         }
-//        page!.addEMC()
+        page!.addEMC()
 
 //         if self.uri != nil || self.key != nil {
 //             page!.addAnnotation(Annotation(
