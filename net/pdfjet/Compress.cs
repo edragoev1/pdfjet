@@ -5,14 +5,7 @@ namespace PDFjet.NET {
     /// Enum used to specify compression.
     /// </summary>
     public enum Compress {
-        /// <summary>
-        /// Compress
-        /// </summary>
         YES,
-
-        /// <summary>
-        /// Do not compress
-        /// </summary>
         NO
     }
 }

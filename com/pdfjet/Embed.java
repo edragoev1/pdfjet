@@ -6,7 +6,6 @@
  */
 package com.pdfjet;
 
-/** Used to specify if TrueType or OpenType font should be embedded in the PDF document. */
 public enum Embed {
     YES,
     NO;
