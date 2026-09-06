@@ -7,14 +7,15 @@ import PDFjet
 public class Example_34 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_34.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_A_1B)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(7.0)
 
-        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
         f2.setSize(7.0)
 
-        let f3 = Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
+        let f3 = try Font(pdf, IBMPlexSans.BoldItalic)
         f3.setSize(7.0)
 
         let table = Table()

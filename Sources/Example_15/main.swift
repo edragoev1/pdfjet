@@ -7,12 +7,14 @@ import PDFjet
 public class Example_15 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_15.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("PDF/UA compliant PDF")
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        let f2 = Font(pdf, CoreFont.HELVETICA)
-        let f3 = Font(pdf, CoreFont.HELVETICA)
-        let f4 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        let f5 = Font(pdf, CoreFont.HELVETICA)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
+        let f3 = try Font(pdf, IBMPlexSans.Regular)
+        let f4 = try Font(pdf, IBMPlexSans.Bold)
+        let f5 = try Font(pdf, IBMPlexSans.Regular)
 
         var tableData = [[Cell]]()
         var row = [Cell]()

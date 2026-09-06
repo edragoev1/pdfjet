@@ -5,12 +5,15 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example48 -- TODO:
 func Example48() {
 	pdf := pdfjet.NewPDFFile("Example_48.pdf")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("The structure of a PDF file")
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

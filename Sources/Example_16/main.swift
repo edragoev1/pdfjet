@@ -7,6 +7,8 @@ import PDFjet
 public class Example_16 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_16.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Text block with highlighted keywords")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
 

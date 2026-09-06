@@ -6,11 +6,8 @@ import PDFjet
  */
 public class Example_07 {
     public init() throws {
-        // let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_A_1B)
-        // pdf.setTitle("PDF/A-1B compliant PDF")
-
-        let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_UA_1)
-        pdf.setTitle("PDF/UA compliant PDF")
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_A_3B)
+        pdf.setTitle("PDF/A-3B compliant PDF")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
 

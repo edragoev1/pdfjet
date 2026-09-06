@@ -8,6 +8,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -15,6 +16,8 @@ import (
 // and curve segments. Every curve segment must have exactly 2 control points.
 func Example16() {
 	pdf := pdfjet.NewPDFFile("Example_16.pdf")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Text block with highlighted keywords")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 

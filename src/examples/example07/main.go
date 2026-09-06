@@ -13,8 +13,8 @@ import (
 // Example07 -- TODO:
 func Example07(mode string) {
 	pdf := pdfjet.NewPDFFile("Example_07.pdf")
-	pdf.SetCompliance(compliance.PDF_A_1B)
-	pdf.SetTitle("PDF/A-1B compliant PDF")
+	pdf.SetCompliance(compliance.PDF_A_3B)
+	pdf.SetTitle("PDF/A-3B compliant PDF")
 
 	var f1 = pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	page := pdfjet.NewPage(pdf, a4.Landscape)

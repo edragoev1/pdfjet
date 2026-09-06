@@ -7,6 +7,8 @@ import PDFjet
 public class Example_49 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_49.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Paragraphs with mixed text styles")
 
         let f1 = try Font(pdf, SourceSerif4.Regular)
         f1.setSize(14.0)

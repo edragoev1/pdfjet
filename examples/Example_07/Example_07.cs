@@ -11,14 +11,8 @@ public class Example_07 {
     public Example_07(String fontType) {
         PDF pdf = new PDF(
             new BufferedStream(new FileStream("Example_07.pdf", FileMode.Create)));
-        pdf.SetCompliance(Compliance.PDF_A_1B);
-        pdf.SetTitle("PDF/A-1B compliant PDF");
-/*
-        PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_07.pdf", FileMode.Create)),
-                Compliance.PDF_UA);
-        pdf.SetTitle("PDF/UA compliant PDF");
-*/
+        pdf.SetCompliance(Compliance.PDF_A_3B);
+        pdf.SetTitle("PDF/A-3B compliant PDF");
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, A4.LANDSCAPE);

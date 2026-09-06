@@ -6,6 +6,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -13,6 +14,8 @@ import (
 // Example47 -- TODO:
 func Example47() {
 	pdf := pdfjet.NewPDFFile("Example_47.pdf")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Text flowing through columns")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(14.0)

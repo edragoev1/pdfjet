@@ -5,7 +5,9 @@ import PDFjet
 public class Example_12 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_12.pdf", append: false)!)
-        let font = Font(pdf, CoreFont.HELVETICA)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("PDF417 barcode example")
+        let font = try Font(pdf, IBMPlexSans.Regular)
         let page = Page(pdf, Letter.PORTRAIT)
 
         let lines = try Text.readLines("data/Example_12.java")

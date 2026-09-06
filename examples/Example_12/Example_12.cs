@@ -9,7 +9,9 @@ using PDFjet.NET;
 public class Example_12 {
     public Example_12() {
         PDF pdf = new PDF(new FileStream("Example_12.pdf", FileMode.Create));
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("PDF417 barcode example");
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Page page = new Page(pdf, A4.PORTRAIT);
 
         List<String> lines = Text.ReadLines("data/Example_12.java");

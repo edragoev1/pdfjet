@@ -7,7 +7,9 @@ import PDFjet
 public class Example_22 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_22.pdf", append: false)!)
-        let f1 = Font(pdf, CoreFont.HELVETICA)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Internal links and destinations")
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
 
         var page = Page(pdf, Letter.PORTRAIT)
 

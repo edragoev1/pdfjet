@@ -10,6 +10,8 @@ public class Example_48 {
         let stream = OutputStream(toFileAtPath: "Example_48.pdf", append: false)
 
         let pdf = PDF(stream!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("The structure of a PDF file")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
 

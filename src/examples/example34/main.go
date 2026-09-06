@@ -9,9 +9,10 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/alignment"
 	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 	"github.com/edragoev1/pdfjet/src/shape"
 )
@@ -19,14 +20,15 @@ import (
 // Example34 -- TODO:
 func Example34() {
 	pdf := pdfjet.NewPDFFile("Example_34.pdf")
+	pdf.SetCompliance(compliance.PDF_A_1B)
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(7.0)
 
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2.SetSize(7.0)
 
-	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBoldOblique())
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
 	f3.SetSize(7.0)
 
 	table := pdfjet.NewTable()

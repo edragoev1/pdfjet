@@ -4,16 +4,19 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/compliance"
 )
 
 // Example49 -- TODO:
 func Example49() {
 	pdf := pdfjet.NewPDFFile("Example_49.pdf")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Paragraphs with mixed text styles")
 	image1 := pdfjet.NewImageFromFile(pdf, "images/photoshop.jpg")
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
 	f1.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)

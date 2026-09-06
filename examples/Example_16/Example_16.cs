@@ -11,6 +11,8 @@ public class Example_16 {
     public Example_16() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_16.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Text block with highlighted keywords");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(15f);

@@ -11,12 +11,14 @@ public class Example_15 {
     public Example_15() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_15.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("PDF/UA compliant PDF");
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        Font f3 = new Font(pdf, CoreFont.HELVETICA);
-        Font f4 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f5 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        Font f3 = new Font(pdf, IBMPlexSans.Regular);
+        Font f4 = new Font(pdf, IBMPlexSans.Bold);
+        Font f5 = new Font(pdf, IBMPlexSans.Regular);
 
         List<List<Cell>> tableData = new List<List<Cell>>();
         List<Cell> row = null;

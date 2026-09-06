@@ -6,12 +6,15 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example22 ...
 func Example22() {
 	pdf := pdfjet.NewPDFFile("Example_22.pdf")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Internal links and destinations")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 

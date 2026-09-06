@@ -8,6 +8,8 @@ public class Example_01 {
         // Create an output stream to write the PDF to a file
         let stream = OutputStream(toFileAtPath: "Example_01.pdf", append: false)
         let pdf = PDF(stream!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Document containing English, Greek and Bulgarian text blocks.")
 
         // Load the font (IBMPlexSans Regular) for use in the document
         let font = try Font(pdf, IBMPlexSans.Regular)
