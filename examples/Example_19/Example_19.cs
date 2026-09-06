@@ -51,12 +51,6 @@ public class Example_19 {
         textBox.SetBorders(true);
         xy = textBox.DrawOn(page);
 
-        TextBlock textBlock = new TextBlock(f2, Content.OfTextFile("data/chinese.txt"));
-        textBlock.SetLocation(x1, 570f);
-        textBlock.SetWidth(350f);
-        textBlock.SetBorderColor(Color.blue);
-        xy = textBlock.DrawOn(page);
-
         Box box = new Box();
         box.SetLocation(xy[0], xy[1]);
         box.SetSize(20f, 20f);

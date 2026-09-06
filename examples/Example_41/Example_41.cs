@@ -44,8 +44,19 @@ public class Example_41 {
         text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 
-        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         int paragraphNumber = 1;
+        foreach (Paragraph p in paragraphs) {
+            if (p.StartsWith("**")) {
+                paragraphNumber = 1;
+            } else {
+                new TextLine(f2, paragraphNumber.ToString() + ".")
+                        .SetLocation(p.xText - 15f, p.yText)
+                        .DrawOn(page);
+                paragraphNumber++;
+            }
+        }
+
+        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         Dictionary<String, int> colorMap = new Dictionary<String, int>();
         colorMap["Physics"] = Color.red;
         colorMap["physics"] = Color.red;

@@ -52,9 +52,9 @@ public class Example_15 {
 
                 if (i == 0 || j == 0) {
                     cell.SetCompositeTextLine(composite);
-                    cell.SetTextColor(Color.deepskyblue);
+                    cell.SetBackgroundColor(Color.deepskyblue);
                 } else {
-                    cell.SetTextColor(Color.dodgerblue);
+                    cell.SetBackgroundColor(Color.dodgerblue);
                 }
                 cell.SetStrokeColor(Color.lightgray);
                 cell.SetTextColor(Color.black);

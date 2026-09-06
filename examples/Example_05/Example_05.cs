@@ -31,10 +31,12 @@ public class Example_05 {
         text.DrawOn(page);
 
         f1.SetKernPairs(true);
+        text = new TextLine(f1, "WAVE AWAY");
         text.SetLocation(70f, 70f);
         text.DrawOn(page);
 
         f1.SetKernPairs(false);
+        text = new TextLine(f1, "WAVE AWAY");
         text.SetLocation(70f, 90f);
         text.DrawOn(page);
 

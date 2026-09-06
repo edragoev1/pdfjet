@@ -14,10 +14,10 @@ public class Example_49 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Paragraphs with mixed text styles");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f1 = new Font(pdf, SourceSerif4.Regular);
         f1.SetSize(14f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Italic);
+        Font f2 = new Font(pdf, SourceSerif4.Italic);
         f2.SetSize(16f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -29,7 +29,7 @@ public class Example_49 {
                 .Add(new TextLine(f1, "r").SetTextColor(Color.green))
                 .Add(new TextLine(f1, "l").SetTextColor(Color.blue))
                 .Add(new TextLine(f1, "d").SetTextColor(Color.black))
-                .Add(new TextLine(f1, "$").SetVerticalOffset(f1.GetAscent() - f2.GetAscent()))
+                .Add(new TextLine(f1, "$").SetVerticalOffset(1f))
                 .Add(new TextLine(f2, "29.95").SetTextColor(Color.blue))
                 .SetAlignment(Align.RIGHT);
 

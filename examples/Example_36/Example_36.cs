@@ -4,63 +4,40 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_36.cs - Demonstrates creation and placement of Form XObjects.
- * A Form XObject is a reusable graphics object that can be drawn multiple times
- * on different pages or locations with a single definition.
+ * Example_36.cs
  */
 public class Example_36 {
     public Example_36() {
-        // Initialize PDF document with buffered streaming for performance
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_36.pdf", FileMode.Create)));
 
-        Font font = new Font(pdf, IBMPlexSans.Regular);
+        Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Image image1 = new Image(pdf, "images/ee-map.png");
+        Image image2 = new Image(pdf, "images/spain-admin.jpg");
 
-        // Create a new page
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        // Base container
-        Container container = new Container(150f, 150f);
-        container.SetLocation(50f, 50f);
+        TextLine text = new TextLine(f1, "The map below is an embedded PNG image");
+        text.SetLocation(90f, 30f);
+        float[] xy1 = text.DrawOn(page1);
 
-        // Add a rectangle to container
-        Rect rect = new Rect(0f, 0f, 150f, 150f);
-        rect.SetBorderColor(Color.blue);
-        rect.SetBorderWidth(2f);
-        container.Add(rect);
+        image1.SetLocation(90f, xy1[1] + 10f);
+        image1.ScaleBy(0.3f);
+        image1.DrawOn(page1);
 
-        // Add a line to container
-        Line line = new Line(0f, 0f, 75f, 75f);
-        line.SetLineWidth(2f);
-        container.Add(line);
+        Page page2 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        // Add a text line to container
-        TextLine textLine = new TextLine(font, "Hello");
-        textLine.SetFontSize(16f);
-        textLine.SetLocation(20f, 20f);
-        container.Add(textLine);
+        text.SetText("This page was created after the second one but it was drawn first!");
+        text.SetLocation(90f, 30f);
+        float[] xy7 = text.DrawOn(page2);
 
-        // Add another text line to container
-        textLine = new TextLine(font, "World");
-        textLine.SetFontSize(16f);
-        textLine.SetLocation(40f, 40f);
-        textLine.SetTextColor(Color.blue);
-        container.Add(textLine);
+        image2.SetLocation(90f, xy7[1] + 10f);
+        image2.ScaleBy(0.1f);
+        image2.DrawOn(page2);
 
-        float[] pointXY = container.DrawOn(page);
+        pdf.AddPage(page2);
+        pdf.AddPage(page1);
 
-        container.SetLocation(pointXY[0], pointXY[1]);
-        pointXY = container.DrawOn(page);
-
-        container.SetLocation(pointXY[0], pointXY[1]);
-        container.SetRotationClockwise(45);
-        pointXY = container.DrawOn(page);
-
-        container.SetLocation(pointXY[0] - 300f, pointXY[1]);
-        container.SetRotationCounterClockwise(45);
-        container.DrawOn(page);
-
-        // Finalize the PDF document
         pdf.Complete();
     }
 

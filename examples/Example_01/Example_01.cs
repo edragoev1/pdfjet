@@ -13,7 +13,7 @@ public class Example_01 {
         // Initialize PDF object with the file stream
         PDF pdf = new PDF(new BufferedStream(fs));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Multilingual text blocks");
+        pdf.SetTitle("Document containing English, Greek and Bulgarian text blocks.");
 
         // Load font for the PDF (IBMPlexSans Regular)
         Font font = new Font(pdf, IBMPlexSans.Regular);
@@ -31,10 +31,9 @@ public class Example_01 {
         TextBlock textBlock = new TextBlock(font,
                 Content.OfTextFile("data/languages/english.txt"));
         textBlock.SetLocation(50f, 50f);
-        textBlock.SetWidth(430f);
-        textBlock.SetFontSize(12f);
+        textBlock.SetWidth(473f);
         textBlock.SetTextPadding(10f);
-        textBlock.SetBorderColor(Color.black);
+        textBlock.SetBorderColor(Color.blue);
         textBlock.SetKeywordHighlightColors(map);
         float[] xy = textBlock.DrawOn(page);  // Draw the text and get coordinates
 
@@ -47,9 +46,8 @@ public class Example_01 {
         textBlock = new TextBlock(font,
                 Content.OfTextFile("data/languages/greek.txt"));
         textBlock.SetLocation(50f, xy[1] + 30f);
-        textBlock.SetWidth(430f);
-        textBlock.SetFontSize(12f);
-        textBlock.SetBorderColor(Color.transparent);  // No border for Greek text
+        textBlock.SetWidth(473f);
+        textBlock.SetTextPadding(10f);
         xy = textBlock.DrawOn(page);  // Draw the Greek text and update coordinates
 
         // Add Bulgarian text from a file with a blue border and rounded corners
