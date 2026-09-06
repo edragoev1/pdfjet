@@ -162,7 +162,7 @@ public class RadioButton implements Drawable {
         if (uri != null) {
             page.setBrushColor(Color.blue);
         }
-// TODO:        page.drawString(font, label, x + 3*r1, y + font.ascent);
+        page.drawString(font, font.getSize(), label, x + 3*r1, y + font.getAscent());
         page.setPenWidth(0f);
         page.setBrushColor(Color.black);
 

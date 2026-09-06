@@ -126,14 +126,12 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 	}
 
 	var buf strings.Builder
-	for i, token := range tokens {
-		if i > 0 {
-			token = single.Space + tokens[i]
-		}
+	for _, token := range tokens {
 		lineWidth := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, buf.String())
-		tokenWidth := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, token)
+		tokenWidth := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, token+single.Space)
 		if (lineWidth + tokenWidth) < (text.x1+text.width)-text.xText {
 			buf.WriteString(token)
+			buf.WriteString(single.Space)
 		} else {
 			if page != nil {
 				textLine2 := NewTextLine(textLine.font, buf.String())
@@ -150,7 +148,8 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 			text.xText = text.x1
 			text.yText += text.leading
 			buf.Reset()
-			buf.WriteString(tokens[i])
+			buf.WriteString(token)
+			buf.WriteString(single.Space)
 		}
 	}
 	if page != nil {
