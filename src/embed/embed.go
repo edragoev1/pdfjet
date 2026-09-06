@@ -6,7 +6,6 @@
 package embed
 
 // Used to specify if TrueType or OpenType font should be embedded in the PDF document.
-// See the Font class for more details.
 const (
 	Yes = true
 	No  = false
