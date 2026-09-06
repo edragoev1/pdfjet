@@ -6,7 +6,6 @@ package com.pdfjet;
 public enum Compress {
     /** Compress */
     YES,
-
     /** Do not compress */
     NO
 }
