@@ -28,7 +28,7 @@ func getErrorCorrectPolynomial(errorCorrectLength int) *Polynomial {
 	for i := 0; i < errorCorrectLength; i++ {
 		buf2 := make([]int, 2)
 		buf2[0] = 1
-		buf2[1] = NewQRMath().gexp(i)
+		buf2[1] = gexp(i)
 		polynomial = polynomial.multiply(NewPolynomial(buf2, 0))
 	}
 	return polynomial

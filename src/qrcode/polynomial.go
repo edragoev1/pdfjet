@@ -47,9 +47,7 @@ func (polynomial *Polynomial) multiply(e *Polynomial) *Polynomial {
 	num := make([]int, polynomial.getLength()+e.getLength()-1)
 	for i := 0; i < polynomial.getLength(); i++ {
 		for j := 0; j < e.getLength(); j++ {
-			num[i+j] ^=
-				NewQRMath().gexp(NewQRMath().glog(polynomial.get(i)) +
-					NewQRMath().glog(e.get(j)))
+			num[i+j] ^= gexp(glog(polynomial.get(i)) + glog(e.get(j)))
 		}
 	}
 	return NewPolynomial(num, 0)
@@ -59,13 +57,13 @@ func (polynomial *Polynomial) mod(e *Polynomial) *Polynomial {
 	if polynomial.getLength()-e.getLength() < 0 {
 		return polynomial
 	}
-	ratio := NewQRMath().glog(polynomial.get(0)) - NewQRMath().glog(e.get(0))
+	ratio := glog(polynomial.get(0)) - glog(e.get(0))
 	num := make([]int, polynomial.getLength())
 	for i := 0; i < polynomial.getLength(); i++ {
 		num[i] = polynomial.get(i)
 	}
 	for i := 0; i < e.getLength(); i++ {
-		num[i] ^= NewQRMath().gexp(NewQRMath().glog(e.get(i)) + ratio)
+		num[i] ^= gexp(glog(e.get(i)) + ratio)
 	}
 	return NewPolynomial(num, 0).mod(e)
 }

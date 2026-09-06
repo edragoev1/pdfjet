@@ -17,45 +17,43 @@ package qrcode
 
 import "log"
 
-// QRMath describes the QRMath structure.
-type QRMath struct {
-	expTable [256]int
-	logTable [256]int
-}
+// expTable and logTable are built once, when the package is loaded,
+// and shared by every glog/gexp call. They used to be recomputed by
+// NewQRMath() on every single invocation, which made encoding a QR
+// Code dramatically slower than necessary.
+var expTable [256]int
+var logTable [256]int
 
-// NewQRMath constructs QRMath object.
-func NewQRMath() *QRMath {
-	qrmath := new(QRMath)
+func init() {
 	for i := 0; i < 8; i++ {
-		qrmath.expTable[i] = 1 << i
+		expTable[i] = 1 << i
 	}
 	for i := 8; i < 256; i++ {
-		qrmath.expTable[i] = qrmath.expTable[i-4] ^
-			qrmath.expTable[i-5] ^
-			qrmath.expTable[i-6] ^
-			qrmath.expTable[i-8]
+		expTable[i] = expTable[i-4] ^
+			expTable[i-5] ^
+			expTable[i-6] ^
+			expTable[i-8]
 	}
 	for i := 0; i < 255; i++ {
-		qrmath.logTable[qrmath.expTable[i]] = i
+		logTable[expTable[i]] = i
 	}
-	return qrmath
 }
 
-// Glog returns the log value.
-func (qrmath *QRMath) glog(index int) int {
+// glog returns the log value.
+func glog(index int) int {
 	if index < 1 {
 		log.Fatal("The index value must be between 0 and 255.")
 	}
-	return qrmath.logTable[index]
+	return logTable[index]
 }
 
-// Gexp returns the exp value.
-func (qrmath *QRMath) gexp(n int) int {
+// gexp returns the exp value.
+func gexp(n int) int {
 	for n < 0 {
 		n += 255
 	}
 	for n >= 256 {
 		n -= 255
 	}
-	return qrmath.expTable[n]
+	return expTable[n]
 }
