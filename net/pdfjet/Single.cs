@@ -6,9 +6,6 @@
  */
 using System;
 
-/**
- * Please see Example_45
- */
 namespace PDFjet.NET {
 public class Single {
     public const String space = " ";
