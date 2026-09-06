@@ -16,8 +16,7 @@ func Example12() {
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	// lines := pdfjet.ReadTextLines("src/examples/example12/main.go")
-	lines := pdfjet.ReadTextLines("examples/Example_12.java")
+	lines := pdfjet.ReadTextLines("data/Example_12.java")
 	var buf strings.Builder
 	for _, line := range lines {
 		buf.WriteString(line)

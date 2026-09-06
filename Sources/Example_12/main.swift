@@ -8,7 +8,7 @@ public class Example_12 {
         let font = Font(pdf, CoreFont.HELVETICA)
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let lines = try Text.readLines("Sources/Example_12/main.swift")
+        let lines = try Text.readLines("data/Example_12.java")
         var buf = String()
         for line in lines {
             buf.append(line)

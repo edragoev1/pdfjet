@@ -12,7 +12,7 @@ public class Example_12 {
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
         Page page = new Page(pdf, A4.PORTRAIT);
 
-        List<String> lines = Text.ReadLines("examples/Example_12/Example_12.cs");
+        List<String> lines = Text.ReadLines("data/Example_12.java");
         StringBuilder buf = new StringBuilder();
         foreach (String line in lines) {
             buf.Append(line);
