@@ -36,6 +36,11 @@ public class Example_13 {
         let table = Table()
         table.setData(tableData, Table.WITH_2_HEADER_ROWS)
         table.setLocation(100.0, 50.0)
+        table.setBottomMargin(10.0)
+
+        table.setFontInRow(0, f1)
+        table.setFontInRow(1, f1)
+
         setFontForRow(table, 0, f1)
         setFontForRow(table, 1, f1)
         table.setColumnWidths()

@@ -58,19 +58,15 @@ public class Example_15 {
 
         let table = Table()
         table.setData(tableData, Table.WITH_2_HEADER_ROWS)
-        table.setCellBordersWidth(0.2)
+        table.setBottomMargin(15.0)
         table.setLocation(70.0, 30.0)
         table.setColumnWidths()
+
         var pages = [Page]()
-        let xy = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        table.drawOn(pdf, &pages, A4.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
-            if i == pages.count - 1 {
-                let textLine = TextLine(f2, "xy coordinate of table")
-                textLine.setLocation(xy[0] + table.getWidth(), xy[1])
-                textLine.drawOn(page)
-            }
-            try page.addFooter(TextLine(f2, "Page \(i + 1) of \(pages.count)"))
+            try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
         }
 

@@ -51,7 +51,6 @@ public class Example_34 {
 
         table.setData(tableData, Table.WITH_2_HEADER_ROWS)
         table.setBottomMargin(15.0)
-        table.setCellBordersWidth(0.2)
         table.setLocation(70.0, 30.0)
         table.setTextColorInRow(6, Color.blue)
         table.setTextColorInRow(39, Color.red)
@@ -59,6 +58,7 @@ public class Example_34 {
         table.removeLineBetweenRows(0, 1)
         table.setColumnWidths()
         table.setColumnWidth(0, 50.0)
+        table.setColumnWidth(3, 80.0)
         table.rightAlignNumbers()
 
         var pages = [Page]()

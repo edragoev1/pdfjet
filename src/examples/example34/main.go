@@ -66,14 +66,15 @@ func Example34() {
 	tableData[6][3].SetPoint(p1)
 
 	table.SetData(tableData, pdfjet.TableWith2HeaderRows)
-	table.SetCellBordersWidth(0.0)
+	table.SetBottomMargin(15.0)
 	table.SetLocation(70.0, 30.0)
-	//table.SetTextColorInRow(6, color.Blue)	// TODO
-	//table.SetTextColorInRow(39, color.Red)
+	table.SetTextColorInRow(6, [3]float32{0.0, 0.0, 1.0})  // Blue
+	table.SetTextColorInRow(39, [3]float32{1.0, 0.0, 0.0}) // Red
 	table.SetFontInRow(26, f3)
 	table.RemoveLineBetweenRows(0, 1)
 	table.SetColumnWidths()
 	table.SetColumnWidth(0, 50.0)
+	table.SetColumnWidth(3, 80.0)
 	table.RightAlignNumbers()
 
 	pages := make([]*pdfjet.Page, 0)
@@ -81,7 +82,6 @@ func Example34() {
 	for i := 0; i < len(pages); i++ {
 		page := pages[i]
 		textLine := pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages)))
-		page.AddHeader(textLine)
 		page.AddFooter(textLine)
 		pdf.AddPage(page)
 	}
