@@ -1678,29 +1678,31 @@ public class PDF {
 
         List<String> dict = resources.GetDict();
         int i = 0;
-        for (; i < dict.Count - 3; i++) {
-            if (dict[i].Equals("/Font")) {
-                if (!dict[i + 2].Equals(">>")) {
-                    String token = dict[i + 3];
-                    fonts.Add(objects[Int32.Parse(token) - 1]);
+        while (i < dict.Count && !dict[i].Equals("/Font")) {
+            i += 1;
+        }
+        i += 2;     // Skip over "/Font" and the "<<" that follows it.
+
+        // The sub-dictionary holds one "/Name <number> 0 R" entry per font.
+        // Every one of them is re-emitted in the resources object, so every
+        // one of them has to be collected here - taking only the first left
+        // the rest of the references dangling.
+        while (i < dict.Count && !dict[i].Equals(">>")) {
+            String token = dict[i];
+            importedFonts.Add(token);
+            if (token.StartsWith("/") && (i + 3) < dict.Count
+                    && dict[i + 3].Equals("R")) {
+                int number = Int32.Parse(dict[i + 1]);
+                if (number > 0 && number <= objects.Count) {
+                    fonts.Add(objects[number - 1]);
                 }
             }
+            i += 1;
         }
 
         if (fonts.Count == 0) {
             return null;
         }
-
-        i = 0;
-        while (i < dict.Count && !dict[i].Equals("/Font")) {
-            i += 1;
-        }
-        i += 2;     // Skip over "/Font" and the "<<" that follows it.
-        while (i < dict.Count && !dict[i].Equals(">>")) {
-            importedFonts.Add(dict[i]);
-            i += 1;
-        }
-
         return fonts;
     }
 

@@ -1742,34 +1742,33 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 	fonts := make([]*PDFobj, 0)
 
 	dict := resources.GetDict()
-	for i, token1 := range dict {
-		if token1 == "/Font" && i+3 < len(dict) {
-			if dict[i+2] != ">>" {
-				token1 := dict[i+3]
-				objNumber, err := strconv.Atoi(token1)
-				if err != nil {
-					log.Fatal(err)
-				} else {
-					fonts = append(fonts, objects[objNumber-1])
-				}
-			}
-		}
-	}
-
-	if len(fonts) == 0 {
-		return nil
-	}
-
 	i := 0
 	for i < len(dict) && dict[i] != "/Font" {
 		i++
 	}
 	i += 2 // Skip over "/Font" and the "<<" that follows it.
+
+	// The sub-dictionary holds one "/Name <number> 0 R" entry per font. Every
+	// one of them is re-emitted in the resources object, so every one of them
+	// has to be collected here - taking only the first left the rest of the
+	// references dangling.
 	for i < len(dict) && dict[i] != ">>" {
-		pdf.importedFonts = append(pdf.importedFonts, dict[i])
+		token1 := dict[i]
+		pdf.importedFonts = append(pdf.importedFonts, token1)
+		if strings.HasPrefix(token1, "/") && i+3 < len(dict) && dict[i+3] == "R" {
+			objNumber, err := strconv.Atoi(dict[i+1])
+			if err != nil {
+				log.Fatal(err)
+			} else if objNumber > 0 && objNumber <= len(objects) {
+				fonts = append(fonts, objects[objNumber-1])
+			}
+		}
 		i++
 	}
 
+	if len(fonts) == 0 {
+		return nil
+	}
 	return fonts
 }
 

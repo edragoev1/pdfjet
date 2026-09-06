@@ -1776,29 +1776,32 @@ final public class PDF {
         List<PDFobj> fonts = new ArrayList<PDFobj>();
 
         List<String> dict = resources.getDict();
-        for (int i = 0; i < dict.size() - 3; i++) {
-            if (dict.get(i).equals("/Font")) {
-                if (!dict.get(i + 2).equals(">>")) {
-                    String token = dict.get(i + 3);
-                    fonts.add(objects.get(Integer.parseInt(token) - 1));
-                }
-            }
-        }
-
-        if (fonts.isEmpty()) {
-            return null;
-        }
-
         int i = 0;
         while (i < dict.size() && !dict.get(i).equals("/Font")) {
             i += 1;
         }
         i += 2;     // Skip over "/Font" and the "<<" that follows it.
+
+        // The sub-dictionary holds one "/Name <number> 0 R" entry per font.
+        // Every one of them is re-emitted in the resources object, so every
+        // one of them has to be collected here - taking only the first left
+        // the rest of the references dangling.
         while (i < dict.size() && !dict.get(i).equals(">>")) {
-            importedFonts.add(dict.get(i));
+            String token = dict.get(i);
+            importedFonts.add(token);
+            if (token.startsWith("/") && (i + 3) < dict.size()
+                    && dict.get(i + 3).equals("R")) {
+                int number = Integer.parseInt(dict.get(i + 1));
+                if (number > 0 && number <= objects.size()) {
+                    fonts.add(objects.get(number - 1));
+                }
+            }
             i += 1;
         }
 
+        if (fonts.isEmpty()) {
+            return null;
+        }
         return fonts;
     }
 

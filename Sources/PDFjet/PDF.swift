@@ -1644,26 +1644,23 @@ public class PDF {
             _ objects: inout [PDFobj]) -> [PDFobj] {
         var fonts = [PDFobj]()
         let dict = resources.getDict()
-        for i in 0..<max(dict.count - 3, 0) {
-            if dict[i] == "/Font" {
-                if dict[i + 2] != ">>" {
-                    let token = dict[i + 3]
-                    fonts.append(objects[Int(token)! - 1])
-                }
-            }
-        }
-
-        if fonts.count == 0 {
-            return fonts
-        }
-
         var i = 0
         while i < dict.count && dict[i] != "/Font" {
             i += 1
         }
         i += 2  // Skip over "/Font" and the "<<" that follows it.
+
+        // The sub-dictionary holds one "/Name <number> 0 R" entry per font.
+        // Every one of them is re-emitted in the resources object, so every
+        // one of them has to be collected here - taking only the first left
+        // the rest of the references dangling.
         while i < dict.count && dict[i] != ">>" {
-            importedFonts.append(dict[i])
+            let token = dict[i]
+            importedFonts.append(token)
+            if token.hasPrefix("/") && (i + 3) < dict.count && dict[i + 3] == "R",
+                    let number = Int(dict[i + 1]), number > 0, number <= objects.count {
+                fonts.append(objects[number - 1])
+            }
             i += 1
         }
 
