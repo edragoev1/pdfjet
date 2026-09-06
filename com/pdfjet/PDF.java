@@ -151,6 +151,21 @@ final public class PDF {
         return objOffset.size();
     }
 
+    /**
+     * Records the offset of an object that carries its own number, growing the
+     * table with placeholders for any number that has no object yet.
+     */
+    private void setObjOffset(int number, int offset) {
+        if (number <= 0) {          // No number of its own - just append.
+            objOffset.add(offset);
+            return;
+        }
+        while (objOffset.size() < number) {
+            objOffset.add(0);
+        }
+        objOffset.set(number - 1, offset);
+    }
+
     int addMetadataObject(String notice, boolean fontMetadataObject) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
@@ -1090,6 +1105,10 @@ final public class PDF {
         append('\n');
         append("0000000000 65535 f \n");
         for (int offset : objOffset) {
+            if (offset == 0) {      // A number that no object was written for.
+                append("0000000000 65535 f \n");
+                continue;
+            }
             String str = Integer.toString(offset);
             for (int i = 0; i < 10 - str.length(); i++) {
                 append('0');
@@ -1761,9 +1780,12 @@ final public class PDF {
                     }
                     buf.append(token);
                     if (level > 0) {
-                        buf.append(Token.SPACE);
+                        // Token.SPACE and Token.NEWLINE are bytes, and appending
+                        // a byte to a StringBuilder writes its number, not the
+                        // character. The other ports already use literals here.
+                        buf.append(' ');
                     } else {
-                        buf.append(Token.NEWLINE);
+                        buf.append('\n');
                     }
                 }
                 break;
@@ -1788,14 +1810,27 @@ final public class PDF {
         // the rest of the references dangling.
         while (i < dict.size() && !dict.get(i).equals(">>")) {
             String token = dict.get(i);
-            importedFonts.add(token);
             if (token.startsWith("/") && (i + 3) < dict.size()
                     && dict.get(i + 3).equals("R")) {
+                // Pages can carry separate resource dictionaries that name the
+                // same fonts. They are merged into one /Font dictionary here,
+                // so a name that is already present must not be added twice.
+                if (importedFonts.contains(token)) {
+                    i += 4;
+                    continue;
+                }
+                importedFonts.add(token);
+                importedFonts.add(dict.get(i + 1));
+                importedFonts.add(dict.get(i + 2));
+                importedFonts.add(dict.get(i + 3));
                 int number = Integer.parseInt(dict.get(i + 1));
                 if (number > 0 && number <= objects.size()) {
                     fonts.add(objects.get(number - 1));
                 }
+                i += 4;
+                continue;
             }
+            importedFonts.add(token);
             i += 1;
         }
 
@@ -1831,6 +1866,25 @@ final public class PDF {
     }
 
     /**
+     * Collects the font descriptor of the given font, together with whichever
+     * embedded font program it carries.
+     */
+    private void addFontDescriptor(
+            PDFobj font, List<PDFobj> objects, List<PDFobj> resources) {
+        PDFobj descriptor = getObject("/FontDescriptor", font, objects);
+        if (descriptor == null) {
+            return;
+        }
+        resources.add(descriptor);
+        for (String key : new String[] {"/FontFile", "/FontFile2", "/FontFile3"}) {
+            PDFobj fontFile = getObject(key, descriptor, objects);
+            if (fontFile != null) {
+                resources.add(fontFile);
+            }
+        }
+    }
+
+    /**
      * Adds the specified objects to the PDF.
      *
      * @param objects the objects.
@@ -1850,17 +1904,13 @@ final public class PDF {
                     if (obj != null) {
                         resources.add(obj);
                     }
+                    // A simple font carries its descriptor directly; only a
+                    // composite one puts it on the descendant.
+                    addFontDescriptor(font, objects, resources);
                     List<PDFobj> descendantFonts = getDescendantFonts(font, objects);
                     for (PDFobj descendantFont : descendantFonts) {
                         resources.add(descendantFont);
-                        obj = getObject("/FontDescriptor", descendantFont, objects);
-                        if (obj != null) {
-                            resources.add(obj);
-                            obj = getObject("/FontFile2", obj, objects);
-                            if (obj != null) {
-                                resources.add(obj);
-                            }
-                        }
+                        addFontDescriptor(descendantFont, objects, resources);
                     }
                 }
             }
@@ -1880,7 +1930,7 @@ final public class PDF {
         for (PDFobj obj : objects) {
             if (obj.offset == 0) {
                 // Create new object.
-                objOffset.add(byteCount);
+                setObjOffset(obj.number, byteCount);
                 append(obj.number);
                 append(Token.NEW_OBJ);
                 if (obj.dict != null) {
@@ -1902,7 +1952,7 @@ final public class PDF {
                 }
                 append("endobj\n");
             } else {
-                objOffset.add(byteCount);
+                setObjOffset(obj.number, byteCount);
                 // Uncomment to see the format of the objects.
                 // System.out.println(obj.dict);
                 boolean link = false;

@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"log"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -162,6 +163,19 @@ func (pdf *PDF) endobj() {
 
 func (pdf *PDF) getObjNumber() int {
 	return len(pdf.objOffsets)
+}
+
+// setObjOffset records the offset of an object that carries its own number,
+// growing the table with placeholders for any number that has no object yet.
+func (pdf *PDF) setObjOffset(number, offset int) {
+	if number <= 0 { // No number of its own - just append.
+		pdf.objOffsets = append(pdf.objOffsets, offset)
+		return
+	}
+	for len(pdf.objOffsets) < number {
+		pdf.objOffsets = append(pdf.objOffsets, 0)
+	}
+	pdf.objOffsets[number-1] = offset
 }
 
 func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
@@ -1082,6 +1096,10 @@ func (pdf *PDF) Complete() {
 	pdf.appendString("\n")
 	pdf.appendString("0000000000 65535 f \n")
 	for _, offset := range pdf.objOffsets {
+		if offset == 0 { // A number that no object was written for.
+			pdf.appendString("0000000000 65535 f \n")
+			continue
+		}
 		str := strconv.Itoa(offset)
 		for i := 0; i < 10-len(str); i++ {
 			pdf.appendString("0")
@@ -1754,15 +1772,26 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 	// references dangling.
 	for i < len(dict) && dict[i] != ">>" {
 		token1 := dict[i]
-		pdf.importedFonts = append(pdf.importedFonts, token1)
 		if strings.HasPrefix(token1, "/") && i+3 < len(dict) && dict[i+3] == "R" {
+			// Pages can carry separate resource dictionaries that name the same
+			// fonts. They are merged into one /Font dictionary here, so a name
+			// that is already present must not be added twice.
+			if slices.Contains(pdf.importedFonts, token1) {
+				i += 4
+				continue
+			}
+			pdf.importedFonts = append(pdf.importedFonts,
+				token1, dict[i+1], dict[i+2], dict[i+3])
 			objNumber, err := strconv.Atoi(dict[i+1])
 			if err != nil {
 				log.Fatal(err)
 			} else if objNumber > 0 && objNumber <= len(objects) {
 				fonts = append(fonts, objects[objNumber-1])
 			}
+			i += 4
+			continue
 		}
+		pdf.importedFonts = append(pdf.importedFonts, token1)
 		i++
 	}
 
@@ -1808,6 +1837,24 @@ func (pdf *PDF) getObjectFromObjects(name string, obj *PDFobj, objects []*PDFobj
 }
 
 // AddResourceObjects adds the resource objects to the PDF.
+// addFontDescriptor collects the font descriptor of the given font, together
+// with whichever embedded font program it carries.
+func (pdf *PDF) addFontDescriptor(
+	font *PDFobj, objects []*PDFobj, resources []*PDFobj) []*PDFobj {
+	descriptor := pdf.getObjectFromObjects("/FontDescriptor", font, objects)
+	if descriptor == nil {
+		return resources
+	}
+	resources = append(resources, descriptor)
+	for _, key := range []string{"/FontFile", "/FontFile2", "/FontFile3"} {
+		fontFile := pdf.getObjectFromObjects(key, descriptor, objects)
+		if fontFile != nil {
+			resources = append(resources, fontFile)
+		}
+	}
+	return resources
+}
+
 func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	resources := make([]*PDFobj, 0)
 
@@ -1821,17 +1868,13 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 			if obj != nil {
 				resources = append(resources, obj)
 			}
+			// A simple font carries its descriptor directly; only a composite
+			// one puts it on the descendant.
+			resources = pdf.addFontDescriptor(font, objects, resources)
 			descendantFonts := pdf.getDescendantFonts(font, objects)
 			for _, descendantFont := range descendantFonts {
 				resources = append(resources, descendantFont)
-				obj = pdf.getObjectFromObjects("/FontDescriptor", descendantFont, objects)
-				if obj != nil {
-					resources = append(resources, obj)
-					obj = pdf.getObjectFromObjects("/FontFile2", obj, objects)
-					if obj != nil {
-						resources = append(resources, obj)
-					}
-				}
+				resources = pdf.addFontDescriptor(descendantFont, objects, resources)
 			}
 		}
 		pdf.extGState = pdf.getExtGState(resObj)
@@ -1847,7 +1890,7 @@ func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
 	for _, obj := range *objects {
 		if obj.offset == 0 {
 			// Create new object.
-			pdf.objOffsets = append(pdf.objOffsets, pdf.byteCount)
+			pdf.setObjOffset(obj.number, pdf.byteCount)
 			pdf.appendInteger(obj.number)
 			pdf.appendString(" 0 obj\n")
 			if obj.dict != nil {
@@ -1868,7 +1911,7 @@ func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
 			}
 			pdf.appendString("endobj\n")
 		} else {
-			pdf.objOffsets = append(pdf.objOffsets, pdf.byteCount)
+			pdf.setObjOffset(obj.number, pdf.byteCount)
 			// Uncomment to see the format of the objects.
 			// log.Println(obj.dict)
 			var link = false

@@ -139,6 +139,19 @@ public class PDF {
         return objOffset.count
     }
 
+    /// Records the offset of an object that carries its own number, growing the
+    /// table with placeholders for any number that has no object yet.
+    private func setObjOffset(_ number: Int, _ offset: Int) {
+        if number <= 0 {    // No number of its own - just append.
+            objOffset.append(offset)
+            return
+        }
+        while objOffset.count < number {
+            objOffset.append(0)
+        }
+        objOffset[number - 1] = offset
+    }
+
     func addMetadataObject(_ notice: String, _ fontMetadataObject: Bool) -> Int {
         var sb = String()
         sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
@@ -986,6 +999,10 @@ public class PDF {
         append("0000000000 65535 f \n")
         var buffer = String()
         for offset in objOffset {
+            if offset == 0 {    // A number that no object was written for.
+                buffer.append("0000000000 65535 f \n")
+                continue
+            }
             let str = String(offset)
             for _ in 0..<(10 - str.count) {
                 buffer.append("0")
@@ -1656,11 +1673,25 @@ public class PDF {
         // the rest of the references dangling.
         while i < dict.count && dict[i] != ">>" {
             let token = dict[i]
-            importedFonts.append(token)
-            if token.hasPrefix("/") && (i + 3) < dict.count && dict[i + 3] == "R",
-                    let number = Int(dict[i + 1]), number > 0, number <= objects.count {
-                fonts.append(objects[number - 1])
+            if token.hasPrefix("/") && (i + 3) < dict.count && dict[i + 3] == "R" {
+                // Pages can carry separate resource dictionaries that name the
+                // same fonts. They are merged into one /Font dictionary here,
+                // so a name that is already present must not be added twice.
+                if importedFonts.contains(token) {
+                    i += 4
+                    continue
+                }
+                importedFonts.append(token)
+                importedFonts.append(dict[i + 1])
+                importedFonts.append(dict[i + 2])
+                importedFonts.append(dict[i + 3])
+                if let number = Int(dict[i + 1]), number > 0, number <= objects.count {
+                    fonts.append(objects[number - 1])
+                }
+                i += 4
+                continue
             }
+            importedFonts.append(token)
             i += 1
         }
 
@@ -1698,6 +1729,23 @@ public class PDF {
         return nil
     }
 
+    /// Collects the font descriptor of the given font, together with whichever
+    /// embedded font program it carries.
+    private func addFontDescriptor(
+            _ font: PDFobj,
+            _ objects: inout [PDFobj],
+            _ resources: inout [PDFobj]) {
+        guard let descriptor = getObject("/FontDescriptor", font, &objects) else {
+            return
+        }
+        resources.append(descriptor)
+        for key in ["/FontFile", "/FontFile2", "/FontFile3"] {
+            if let fontFile = getObject(key, descriptor, &objects) {
+                resources.append(fontFile)
+            }
+        }
+    }
+
     public func addResourceObjects(_ objects: inout [PDFobj]) {
         var resources = [PDFobj]()
         let pages = getPageObjects(from: objects)
@@ -1709,15 +1757,13 @@ public class PDF {
                 if let obj = getObject("/ToUnicode", font, &objects) {
                     resources.append(obj)
                 }
+                // A simple font carries its descriptor directly; only a
+                // composite one puts it on the descendant.
+                addFontDescriptor(font, &objects, &resources)
                 let descendantFonts = getDescendantFonts(font, &objects)
                 for descendantFont in descendantFonts {
                     resources.append(descendantFont)
-                    if let obj = getObject("/FontDescriptor", descendantFont, &objects) {
-                        resources.append(obj)
-                        if let obj = getObject("/FontFile2", obj, &objects) {
-                            resources.append(obj)
-                        }
-                    }
+                    addFontDescriptor(descendantFont, &objects, &resources)
                 }
             }
             extGState = getExtGState(resObj)
@@ -1729,7 +1775,7 @@ public class PDF {
     private func addObjectsToPDF(_ objects: inout [PDFobj]) {
         for obj in objects {
             if obj.offset == 0 {
-                objOffset.append(byteCount)
+                setObjOffset(obj.number, byteCount)
                 append(obj.number)
                 append(" 0 obj\n")
                 if !obj.dict.isEmpty {
@@ -1751,7 +1797,7 @@ public class PDF {
                 }
                 append(Token.endObj)
             } else {
-                objOffset.append(byteCount)
+                setObjOffset(obj.number, byteCount)
                 var link = false
                 let n = obj.dict.count
 

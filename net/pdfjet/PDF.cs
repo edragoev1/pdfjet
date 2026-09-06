@@ -132,6 +132,21 @@ public class PDF {
         return objOffset.Count;
     }
 
+    /**
+     * Records the offset of an object that carries its own number, growing the
+     * table with placeholders for any number that has no object yet.
+     */
+    private void SetObjOffset(int number, int offset) {
+        if (number <= 0) {          // No number of its own - just append.
+            objOffset.Add(offset);
+            return;
+        }
+        while (objOffset.Count < number) {
+            objOffset.Add(0);
+        }
+        objOffset[number - 1] = offset;
+    }
+
     internal int AddMetadataObject(String notice, bool fontMetadataObject) {
         StringBuilder sb = new StringBuilder();
         sb.Append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
@@ -1065,6 +1080,10 @@ public class PDF {
 
         Append("0000000000 65535 f \n");
         foreach (int offset in objOffset) {
+            if (offset == 0) {      // A number that no object was written for.
+                Append("0000000000 65535 f \n");
+                continue;
+            }
             String str = offset.ToString();
             for (int i = 0; i < 10 - str.Length; i++) {
                 Append('0');
@@ -1689,14 +1708,27 @@ public class PDF {
         // the rest of the references dangling.
         while (i < dict.Count && !dict[i].Equals(">>")) {
             String token = dict[i];
-            importedFonts.Add(token);
             if (token.StartsWith("/") && (i + 3) < dict.Count
                     && dict[i + 3].Equals("R")) {
+                // Pages can carry separate resource dictionaries that name the
+                // same fonts. They are merged into one /Font dictionary here,
+                // so a name that is already present must not be added twice.
+                if (importedFonts.Contains(token)) {
+                    i += 4;
+                    continue;
+                }
+                importedFonts.Add(token);
+                importedFonts.Add(dict[i + 1]);
+                importedFonts.Add(dict[i + 2]);
+                importedFonts.Add(dict[i + 3]);
                 int number = Int32.Parse(dict[i + 1]);
                 if (number > 0 && number <= objects.Count) {
                     fonts.Add(objects[number - 1]);
                 }
+                i += 4;
+                continue;
             }
+            importedFonts.Add(token);
             i += 1;
         }
 
@@ -1731,6 +1763,25 @@ public class PDF {
         return null;
     }
 
+    /**
+     * Collects the font descriptor of the given font, together with whichever
+     * embedded font program it carries.
+     */
+    private void AddFontDescriptor(
+            PDFobj font, List<PDFobj> objects, List<PDFobj> resources) {
+        PDFobj descriptor = GetObject("/FontDescriptor", font, objects);
+        if (descriptor == null) {
+            return;
+        }
+        resources.Add(descriptor);
+        foreach (String key in new String[] {"/FontFile", "/FontFile2", "/FontFile3"}) {
+            PDFobj fontFile = GetObject(key, descriptor, objects);
+            if (fontFile != null) {
+                resources.Add(fontFile);
+            }
+        }
+    }
+
     public void AddResourceObjects(List<PDFobj> objects) {
         List<PDFobj> resources = new List<PDFobj>();
         List<PDFobj> pages = GetPageObjects(objects);
@@ -1744,17 +1795,13 @@ public class PDF {
                     if (obj != null) {
                         resources.Add(obj);
                     }
+                    // A simple font carries its descriptor directly; only a
+                    // composite one puts it on the descendant.
+                    AddFontDescriptor(font, objects, resources);
                     List<PDFobj> descendantFonts = GetDescendantFonts(font, objects);
                     foreach (PDFobj descendantFont in descendantFonts) {
                         resources.Add(descendantFont);
-                        obj = GetObject("/FontDescriptor", descendantFont, objects);
-                        if (obj != null) {
-                            resources.Add(obj);
-                            obj = GetObject("/FontFile2", obj, objects);
-                            if (obj != null) {
-                                resources.Add(obj);
-                            }
-                        }
+                        AddFontDescriptor(descendantFont, objects, resources);
                     }
                 }
             }
@@ -1770,7 +1817,7 @@ public class PDF {
         foreach (PDFobj obj in objects) {
             if (obj.offset == 0) {
                 // Create new object.
-                objOffset.Add(byteCount);
+                SetObjOffset(obj.number, byteCount);
                 Append(obj.number);
                 Append(Token.NewObj);
                 if (obj.dict != null) {
@@ -1792,7 +1839,7 @@ public class PDF {
                 }
                 Append(Token.EndObj);
             } else {
-                objOffset.Add(byteCount);
+                SetObjOffset(obj.number, byteCount);
                 bool link = false;
                 int n = obj.dict.Count;
                 String token = null;
