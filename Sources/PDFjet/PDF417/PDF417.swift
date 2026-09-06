@@ -304,9 +304,11 @@ public class PDF417 : Drawable {
             _ y: Float,
             _ w: Float,    // Bar width
             _ h: Float) {
+        page.addArtifactBMC()
         page.setPenWidth(w)
         page.moveTo(x + w/2, y)
         page.lineTo(x + w/2, y + h)
         page.strokePath()
+        page.addEMC()
     }
 }   // End of PDF417.swift

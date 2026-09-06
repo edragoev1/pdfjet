@@ -64,7 +64,7 @@ public class TextBox : IDrawable {
     // bits 24 to 31
     private uint properties = 0x00000001;
     private String language = "en-US";
-    private String altDescription = null;
+    private String altDescription = "";
     private String uri = null;
     private String key = null;
     private String uriLanguage = null;
@@ -755,7 +755,9 @@ public class TextBox : IDrawable {
             if (page != null) {
                 if (fillColor != null) {
                     page.SetBrushColor(fillColor);
+                    page.AddArtifactBMC();
                     page.FillRect(x, y, width, height);
+                    page.AddEMC();
                 }
                 page.SetPenColor(this.strokeColor);
                 page.SetBrushColor(this.textColor);
@@ -802,7 +804,9 @@ public class TextBox : IDrawable {
             if (page != null) {
                 if (fillColor != null) {
                     page.SetBrushColor(fillColor);
+                    page.AddArtifactBMC();
                     page.FillRect(x, y, width, (lines.Length * leading - spacing) + 2*margin);
+                    page.AddEMC();
                 }
                 page.SetBrushColor(this.textColor);
                 page.SetPenColor(this.strokeColor);

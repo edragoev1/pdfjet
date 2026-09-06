@@ -279,8 +279,10 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) []float32 {
 }
 
 func (barcode *PDF417) drawBar(page *pdfjet.Page, x, y, w, h float32) {
+	page.AddArtifactBMC()
 	page.SetPenWidth(w)
 	page.MoveTo(x+w/2, y)
 	page.LineTo(x+w/2, y+h)
 	page.StrokePath()
+	page.AddEMC()
 }

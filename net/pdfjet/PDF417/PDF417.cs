@@ -311,10 +311,12 @@ public class PDF417 : IDrawable {
             float y,
             float w,    // Bar width
             float h) {
+        page.AddArtifactBMC();
         page.SetPenWidth(w);
         page.MoveTo(x + w/2, y);
         page.LineTo(x + w/2, y + h);
         page.StrokePath();
+        page.AddEMC();
     }
 }   // End of PDF417.cs
 }   // End of namespace PDFjet.NET
