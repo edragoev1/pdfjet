@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -306,31 +305,52 @@ func getFontData(font *Font, reader io.Reader) {
 	io.ReadFull(reader, buf)
 
 	inflated, _ := decompressor.Inflate(buf)
-	r2 := bytes.NewReader(inflated)
 
-	font.unitsPerEm = int(getInt32(r2))
-	font.bBoxLLx = int16(getInt32(r2))
-	font.bBoxLLy = int16(getInt32(r2))
-	font.bBoxURx = int16(getInt32(r2))
-	font.bBoxURy = int16(getInt32(r2))
-	font.fontAscent = int16(getInt32(r2))
-	font.fontDescent = int16(getInt32(r2))
-	font.firstChar = getInt32(r2)
-	font.lastChar = getInt32(r2)
-	font.capHeight = int16(getInt32(r2))
-	font.fontUnderlinePosition = int16(getInt32(r2))
-	font.fontUnderlineThickness = int16(getInt32(r2))
-
-	length = int(getUint32(r2))
-	font.advanceWidth = make([]uint16, length)
-	for i := 0; i < length; i++ {
-		font.advanceWidth[i] = getUint16(r2)
+	// unicodeToGID and advanceWidth can each hold up to 0xFFFF entries for
+	// a large CJK font, so reading them one uint16 at a time through a
+	// bytes.Reader -- and the io.Reader interface indirection that goes
+	// with it -- was showing up as real cost. inflated is already a plain
+	// []byte in memory, so read straight out of it with a running offset.
+	pos := 0
+	readInt32 := func() int32 {
+		v := int32(inflated[pos])<<24 | int32(inflated[pos+1])<<16 | int32(inflated[pos+2])<<8 | int32(inflated[pos+3])
+		pos += 4
+		return v
+	}
+	readUint32 := func() uint32 {
+		v := uint32(inflated[pos])<<24 | uint32(inflated[pos+1])<<16 | uint32(inflated[pos+2])<<8 | uint32(inflated[pos+3])
+		pos += 4
+		return v
+	}
+	readUint16 := func() uint16 {
+		v := uint16(inflated[pos])<<8 | uint16(inflated[pos+1])
+		pos += 2
+		return v
 	}
 
-	length = int(getUint32(r2))
+	font.unitsPerEm = int(readInt32())
+	font.bBoxLLx = int16(readInt32())
+	font.bBoxLLy = int16(readInt32())
+	font.bBoxURx = int16(readInt32())
+	font.bBoxURy = int16(readInt32())
+	font.fontAscent = int16(readInt32())
+	font.fontDescent = int16(readInt32())
+	font.firstChar = readInt32()
+	font.lastChar = readInt32()
+	font.capHeight = int16(readInt32())
+	font.fontUnderlinePosition = int16(readInt32())
+	font.fontUnderlineThickness = int16(readInt32())
+
+	length = int(readUint32())
+	font.advanceWidth = make([]uint16, length)
+	for i := 0; i < length; i++ {
+		font.advanceWidth[i] = readUint16()
+	}
+
+	length = int(readUint32())
 	font.unicodeToGID = make([]int, length)
 	for i := 0; i < length; i++ {
-		font.unicodeToGID[i] = int(getUint16(r2))
+		font.unicodeToGID[i] = int(readUint16())
 	}
 
 	font.cff = false

@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -58,8 +57,19 @@ func getInt32(r io.Reader) int32 {
 	return int32(buf[0])<<24 | int32(buf[1])<<16 | int32(buf[2])<<8 | int32(buf[3])
 }
 
+// toHexString formats code as 4 uppercase hex digits, zero-padded.
+// Callers only ever pass 16-bit CIDs/GIDs (0 - 0xFFFF).
+// This used to go through fmt.Sprintf("%04X", code), which is fine
+// for occasional use but far too slow when called tens of thousands
+// of times while building a CJK font's ToUnicode CMap.
 func toHexString(code int) string {
-	return fmt.Sprintf("%04X", code)
+	b := [4]byte{
+		hexDigits[(code>>12)&0xF],
+		hexDigits[(code>>8)&0xF],
+		hexDigits[(code>>4)&0xF],
+		hexDigits[code&0xF],
+	}
+	return string(b[:])
 }
 
 func skipNBytes(reader io.Reader, n int) {
