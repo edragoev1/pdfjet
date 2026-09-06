@@ -2,11 +2,11 @@ import Foundation
 import PDFjet
 
 /**
- * Example_30.swift
+ * Example_46.swift
  */
-public class Example_30 {
+public class Example_46 {
     public init() throws {
-        let pdf = PDF(OutputStream(toFileAtPath: "Example_30.pdf", append: false)!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_46.pdf", append: false)!)
 
         let font = Font(pdf, CoreFont.HELVETICA)
 
@@ -65,9 +65,9 @@ public class Example_30 {
 
         pdf.complete()
     }
-}   // End of Example_30.swift
+}   // End of Example_46.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = try Example_30()
+_ = try Example_46()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-TextUtils.printDuration("Example_30", time0, time1)
+TextUtils.printDuration("Example_46", time0, time1)
