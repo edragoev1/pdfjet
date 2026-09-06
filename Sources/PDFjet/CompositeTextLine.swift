@@ -151,21 +151,23 @@ public class CompositeTextLine : Drawable {
     public func addComponent(_ component: TextLine) {
         if component.getTextEffect() == Effect.SUPERSCRIPT {
             if fontSize > 0 {
-                component.getFont().setSize(fontSize * superscriptSizeFactor)
+                // Set it on the TextLine: drawOn uses the line's own font size,
+                // so resizing the shared Font here would have no effect.
+                component.setFontSize(fontSize * superscriptSizeFactor)
             }
             component.setLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition)
         } else if component.getTextEffect() == Effect.SUBSCRIPT {
             if fontSize > 0 {
-                component.getFont().setSize(fontSize * subscriptSizeFactor)
+                component.setFontSize(fontSize * subscriptSizeFactor)
             }
             component.setLocation(
                     current[X],
                     current[Y] + fontSize * subscriptPosition)
         } else {
             if fontSize > 0 {
-                component.getFont().setSize(fontSize)
+                component.setFontSize(fontSize)
             }
             component.setLocation(current[X], current[Y])
         }

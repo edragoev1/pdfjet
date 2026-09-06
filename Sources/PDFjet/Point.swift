@@ -246,7 +246,9 @@ public class Point : Drawable {
     /// - Returns: the color.
     ///
     public func getFillColor() -> [Float] {
-        return self.fillColor!
+        // The fill colour is optional - Java returns the unset value here
+        // rather than failing, so fall back to black instead of unwrapping nil.
+        return self.fillColor ?? [0.0, 0.0, 0.0]
     }
 
     @discardableResult

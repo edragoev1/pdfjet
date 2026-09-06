@@ -130,11 +130,13 @@ public class Text : Drawable {
 
         var buf = String()
         for i in 0..<tokens.count {
-            let token = (i == 0) ? tokens[i] : (Single.space + tokens[i])
+            let token = tokens[i]
             let lineWidth = textLine.font!.stringWidth(textLine.fallbackFont, buf)
-            let tokenWidth = textLine.font!.stringWidth(textLine.fallbackFont, token)
+            let tokenWidth = textLine.font!.stringWidth(
+                    textLine.fallbackFont, token + Single.space)
             if (lineWidth + tokenWidth) < (self.x1 + self.width) - self.xText {
                 buf.append(token)
+                buf.append(Single.space)
             } else {
                 if page != nil {
                     TextLine(textLine.font!, buf)
@@ -151,7 +153,8 @@ public class Text : Drawable {
                 xText = x1
                 yText += leading
                 buf = ""
-                buf.append(tokens[i])
+                buf.append(token)
+                buf.append(Single.space)
             }
         }
         if page != nil {
