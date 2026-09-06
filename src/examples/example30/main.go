@@ -4,67 +4,56 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/compress"
+	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/encryption"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example30 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example30 -- TODO:
 func Example30() {
 	pdf := pdfjet.NewPDFFile("Example_30.pdf")
 
-	// font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	passwords := encryption.NewPasswords()
+	passwords.SetPasswords("hello", "world")
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/map407.png")
-	image1.SetLocation(10.0, 100.0)
+	permissions := encryption.NewPermissions()
+	permissions.SetPermissions(
+		encryption.Print| // Set both to allow the user to print
+			encryption.PrintHighQuality| // this document with high quality
+			// encryption.ModifyContents|
+			// encryption.CopyContents|
+			encryption.AssembleDocument, true)
 
-	image2 := pdfjet.NewImageFromFile(pdf, "images/qrcode.png")
-	image2.SetLocation(10.0, 100.0)
+	pdf.SetEncryption(pdfjet.NewEncryption(pdf, passwords, permissions))
 
-	// Create the first page after all the resources have been added to the PDF.
+	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	// f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(36.0)
+
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
+
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	textLine := pdfjet.NewTextLine(f1, "© OpenStreetMap contributors")
-	textLine.SetLocation(10.0, 655.0)
-	xy := textLine.DrawOn(page)
-
-	uri := "http://www.openstreetmap.org/copyright"
-	textLine = pdfjet.NewTextLine(f1, "http://www.openstreetmap.org/copyright")
-	textLine.SetURIAction(uri)
-	textLine.SetLocation(10.0, xy[1]+f1.GetHeight())
+	textLine := pdfjet.NewTextLine(f1, "Hello, World!")
+	textLine.SetLocation(100.0, 100.0)
 	textLine.DrawOn(page)
 
-	group := pdfjet.NewOptionalContentGroup(pdf, "map")
-	group.Add(image1)
-	group.SetVisible(true)
-	group.SetPrintable(true)
-	group.DrawOn(page)
+	image.SetLocation(100, 150)
+	image.ScaleBy(0.5)
+	image.DrawOn(page)
 
-	textBox := pdfjet.NewTextBox(f1)
-	textBox.SetText("Blue Layer Text")
-	textBox.SetLocation(10.0, 130.0)
-
-	line := pdfjet.NewLine(300.0, 150.0, 500.0, 150.0)
-	line.SetWidth(2.0)
-	line.SetColor(color.Blue)
-
-	group = pdfjet.NewOptionalContentGroup(pdf, "Blue Line")
-	group.Add(textBox)
-	group.Add(line)
-	group.SetVisible(true)
-	group.DrawOn(page)
-
-	line = pdfjet.NewLine(350.0, 160.0, 550.0, 160.0)
-	line.SetWidth(2.0)
-	line.SetColor(color.Red)
-
-	group = pdfjet.NewOptionalContentGroup(pdf, "barcode")
-	group.Add(image2)
-	group.Add(line)
-	group.SetPrintable(true)
-	group.DrawOn(page)
+	// File attachment functionality
+	attachment := pdfjet.NewFileAttachment(pdf, file1)
+	attachment.SetLocation(100.0, 550.0)
+	attachment.SetIconPushPin()
+	attachment.SetIconSize(24.0)
+	attachment.SetTitle("Attached File: " + file1.GetFileName())
+	attachment.SetDescription(
+		"Right mouse click on the icon to save the attached file.")
+	attachment.DrawOn(page)
 
 	pdf.Complete()
 }
@@ -72,5 +61,5 @@ func Example30() {
 func main() {
 	start := time.Now()
 	Example30()
-	pdfjet.PrintDuration("Example_30", time.Since(start))
+	pdfjet.PrintDuration("Example_46", time.Since(start))
 }
