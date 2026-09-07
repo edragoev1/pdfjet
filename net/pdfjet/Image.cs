@@ -25,10 +25,13 @@ public class Image : IDrawable {
     internal String uri;
     internal String key;
 
-    private float degrees = 0;
+    private float xBox;
+    private float yBox;
+    private int degrees = 0;
+    private bool flipUpsideDown = false;
     private String language = null;
-    private String altDescription = null;
-    private String actualText = null;
+    private String actualText = Single.space;
+    private String altDescription = Single.space;
 
     /**
      * Convenience constructor for the Image class.
@@ -253,14 +256,16 @@ public class Image : IDrawable {
         return this.SetScaleFactor(factor, factor);
     }
 
-    public Image SetRotateFactor(float degrees) {
-        this.degrees = -degrees;
-        return this;
-    }
-
-    public Image RotateBy(float degrees) {
-        this.degrees = -degrees;
-        return this;
+    /**
+     * Sets the image rotation to the specified number of degrees.
+     *
+     * @param degrees the number of degrees.
+     */
+    public void RotateClockwise(int degrees) {
+        if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
+            throw new Exception("The rotation angle must be 0, 90, 180 or 270");
+        }
+        this.degrees = degrees;
     }
 
     /**
@@ -280,15 +285,35 @@ public class Image : IDrawable {
         return SetScaleFactor(widthFactor, heightFactor);
     }
 
-//    public Image ResizeWidth(float width) {
-//        float factor = width / GetWidth();
-//        return this.ScaleBy(factor, factor);
-//    }
-//
-//    public Image ResizeHeight(float height) {
-//        float factor = height / GetHeight();
-//        return this.ScaleBy(factor, factor);
-//    }
+    /**
+     * Resizes the image to the specified width.
+     *
+     * @param width the specified width.
+     */
+    public Image ResizeWidth(float width) {
+        float factor = width / GetWidth();
+        return this.ScaleBy(factor, factor);
+    }
+
+    /**
+     * Resizes the image to the specified height.
+     *
+     * @param height the specified height.
+     */
+    public Image ResizeHeight(float height) {
+        float factor = height / GetHeight();
+        return this.ScaleBy(factor, factor);
+    }
+
+    /**
+     * Places this image in the specified box.
+     *
+     * @param box the specified box.
+     */
+    public void PlaceIn(Box box) {
+        xBox = box.x;
+        yBox = box.y;
+    }
 
     /**
      * Sets the URI for the "click box" action.
@@ -338,26 +363,84 @@ public class Image : IDrawable {
      * @throws Exception
      */
     public float[] DrawOn(Page page) {
-        if (!String.IsNullOrEmpty(actualText) && !String.IsNullOrEmpty(altDescription)) {
-            page.AddBMC(StructElem.P, language, actualText, altDescription);
-        } else {
-            // An image the caller did not describe is decorative content.
-            page.AddArtifactBMC();
-        }
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
+
+        x += xBox;
+        y += yBox;
 
         page.SaveGraphicsState();
 
-        page.ScaleAndRotate(x, y, w, h, degrees);
+        if (degrees == 0) {
+            page.Append(w);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(h);
+            page.Append(' ');
+            page.Append(x);
+            page.Append(' ');
+            page.Append(page.height - (y + h));
+            page.Append(" cm\n");
+        } else if (degrees == 90) {
+            page.Append(h);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(w);
+            page.Append(' ');
+            page.Append(x);
+            page.Append(' ');
+            page.Append(page.height - y);
+            page.Append(" cm\n");
+            page.Append("0 -1 1 0 0 0 cm\n");
+        } else if (degrees == 180) {
+            page.Append(w);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(h);
+            page.Append(' ');
+            page.Append(x + w);
+            page.Append(' ');
+            page.Append(page.height - y);
+            page.Append(" cm\n");
+            page.Append("-1 0 0 -1 0 0 cm\n");
+        } else if (degrees == 270) {
+            page.Append(h);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(0f);
+            page.Append(' ');
+            page.Append(w);
+            page.Append(' ');
+            page.Append(x + h);
+            page.Append(' ');
+            page.Append(page.height - (y + w));
+            page.Append(" cm\n");
+            page.Append("0 1 -1 0 0 0 cm\n");
+        }
+
+        if (flipUpsideDown) {
+            page.Append("1 0 0 -1 0 0 cm\n");
+        }
+
         page.Append("/Im");
         page.Append(objNumber);
         page.Append(" Do\n");
 
         page.RestoreGraphicsState();
+
         page.AddEMC();
 
         if (uri != null || key != null) {
-            if (!String.IsNullOrEmpty(actualText) && !String.IsNullOrEmpty(altDescription)) {
-                page.AddAnnotation(new Annotation(
+            page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     x,
                     y,
@@ -373,7 +456,6 @@ public class Image : IDrawable {
                     language,
                     actualText,
                     altDescription));
-            }
         }
 
         return new float[] {x + w, y + h};
@@ -397,6 +479,29 @@ public class Image : IDrawable {
      */
     public float GetHeight() {
         return this.h;
+    }
+
+    /**
+     * Resizes the image to fit the page.
+     *
+     * @param page the PDF page
+     * @param keepAspectRatio flag
+     */
+    public void ResizeToFit(Page page, bool keepAspectRatio) {
+        if (keepAspectRatio) {
+            this.ScaleBy(Math.Min((page.width - x)/w, (page.height - y)/h));
+        } else {
+            this.ScaleBy((page.width - x)/w, (page.height - y)/h);
+        }
+    }
+
+    /**
+     * Flips this image upside down.
+     *
+     * @param flipUpsideDown flag
+     */
+    public void FlipUpsideDown(bool flipUpsideDown) {
+        this.flipUpsideDown = flipUpsideDown;
     }
 
     private void AddSoftMask(

@@ -14,47 +14,48 @@ public class Example_16 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Text block with highlighted keywords");
 
+        // Font f1 = new Font(pdf, SourceSerif4.Regular);
+        // Font f1 = new Font(pdf, NotoSans.Regular);
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(15f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
-        colors["Lorem"] = Color.blue;
-        colors["ipsum"] = Color.red;
-        colors["dolor"] = Color.green;
-        colors["ullamcorper"] = Color.gray;
+        colors["Everyone"] = Color.red;
+        colors["pay"] = Color.green;
+        colors["freedom"] = Color.blue;
 
-        page.SaveGraphicsState();
+        // page.SaveGraphicsState();
 
         GraphicsState gs = new GraphicsState();
-        gs.SetAlphaStroking(0.5f);      // Set alpha for stroking operations
-        gs.SetAlphaNonStroking(0.5f);   // Set alpha for nonstroking operations
+        gs.SetAlphaStroking(0.5f);                  // Stroking alpha
+        gs.SetAlphaNonStroking(0.5f);               // Non-Stroking alpha
         page.SetGraphicsState(gs);
-/*
-        f1.SetSize(72f);
-        TextLine text = new TextLine(f1, "Hello, World");
-        text.SetLocation(50f, 300f);
-        text.DrawOn(page);
-*/
-        TextBox textBox = new TextBox(f1, Content.OfTextFile("data/languages/english.txt"));
+
+        String englishText = Content.OfTextFile("data/languages/english.txt");
+        // f1.SetSize(14f);
+        TextBox textBox = new TextBox(f1, englishText);
+        // textBox.SetLocation(50f, 50f);
+        // textBox.SetLocation(50f, 100f);
         textBox.SetLocation(100f, 50f);
         textBox.SetWidth(400f);
         // If no height is specified the height will be calculated based on the text.
         textBox.SetHeight(450f);
-        textBox.SetWidth(400f);
-        textBox.SetTextDirection(Direction.LEFT_TO_RIGHT);
+        // textBox.SetTextDirection(Direction.LEFT_TO_RIGHT);
         // textBox.SetTextDirection(Direction.BOTTOM_TO_TOP);
         // textBox.SetTextDirection(Direction.TOP_TO_BOTTOM);
+
         textBox.SetVerticalAlignment(Align.TOP);
         // textBox.SetVerticalAlignment(Align.BOTTOM);
         // textBox.SetVerticalAlignment(Align.CENTER);
-        // If no height is specified the height will be calculated based on the text.
-        // textBox.SetTextColor(Color.whitesmoke);
-        textBox.SetTextColor(Color.black);
-        // textBox.SetTextColors(colors);
+
+        // textBox.SetTextAlignment(Align.CENTER);
+        // textBox.SetHeight(400f);
+
+        textBox.SetBackgroundColor(Color.whitesmoke);
+        textBox.SetTextColors(colors);
         textBox.SetBorders(true);
-        textBox.SetBorder(Border.ALL);
         float[] xy = textBox.DrawOn(page);
 
         page.SetGraphicsState(new GraphicsState()); // Reset GS

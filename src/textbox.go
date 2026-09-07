@@ -198,15 +198,15 @@ func colorToRGB(color int32) [3]float32 {
 	return [3]float32{r, g, b}
 }
 
-// SetBgColor sets the background color of this text box.
-func (textBox *TextBox) SetBgColor(color int32) {
+// SetBackgroundColor sets the background color of this text box.
+func (textBox *TextBox) SetBackgroundColor(color int32) {
 	rgb := colorToRGB(color)
 	textBox.fillColor = &rgb
 }
 
 // SetFillColor sets the background color of this text box.
 func (textBox *TextBox) SetFillColor(color int32) {
-	textBox.SetBgColor(color)
+	textBox.SetBackgroundColor(color)
 }
 
 // SetTextColor sets the text color of this text box.

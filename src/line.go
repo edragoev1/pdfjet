@@ -10,6 +10,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // Line is used to create line objects.
@@ -198,12 +199,14 @@ func (line *Line) ScaleBy(factor float32) *Line {
 // @return x and y coordinates of the bottom right corner of this component.
 // @throws Exception
 func (line *Line) DrawOn(page *Page) [2]float32 {
+	page.AddBMC(structtype.P, line.language, line.actualText, line.altDescription)
+	page.SaveGraphicsState()
 	page.SetPenColor(line.color)
 	page.SetPenWidth(line.width)
 	page.SetLineCapStyle(line.capStyle)
 	page.SetStrokeDashPattern(line.pattern)
-	page.AddBMC("Span", line.language, line.actualText, line.altDescription)
 	page.DrawLine(line.x1, line.y1, line.x2, line.y2)
+	page.RestoreGraphicsState()
 	page.AddEMC()
 
 	xMax := math.Max(float64(line.x1), float64(line.x2))

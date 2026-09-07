@@ -202,12 +202,12 @@ public class Rect : Drawable {
 
         if self.r == 0.0 {
             if fillColor != nil {
-                page!.setBrushColor(self.fillColor)
                 page!.moveTo(self.x, self.y)
                 page!.lineTo(self.x + self.width, self.y)
                 page!.lineTo(self.x + self.width, self.y + self.height)
                 page!.lineTo(self.x, self.y + self.height)
                 page!.lineTo(self.x, self.y)
+                page!.setBrushColor(self.fillColor)
                 page!.fillPath()
             }
             if borderColor != nil {
@@ -217,13 +217,23 @@ public class Rect : Drawable {
                 page!.lineTo(self.x, self.y + self.height)
                 page!.setPenColor(self.borderColor)
                 page!.setPenWidth(self.borderWidth)
-                // page!.setStrokeDashPattern(self.borderPattern) // TODO
+                page!.setStrokeDashPattern(self.borderPattern)
                 page!.closePath()
             }
         } else {
-            page!.setPenWidth(self.borderWidth)
-            page!.setPenColor(self.borderColor)
-            page!.setStrokeDashPattern(self.borderPattern)
+            // The pen and brush must be set before the path is painted,
+            // otherwise the rounded rectangle is drawn with whatever state
+            // the page happened to be left in.
+            if borderColor != nil {
+                page!.setStrokeDashPattern(self.borderPattern)
+            }
+            if fillColor != nil {
+                page!.setBrushColor(self.fillColor)
+            }
+            if borderColor != nil {
+                page!.setPenWidth(self.borderWidth)
+                page!.setPenColor(self.borderColor)
+            }
 
             var points: [Point] = []
             points.append(Point(self.x + self.r, self.y))
@@ -244,7 +254,13 @@ public class Rect : Drawable {
             points.append(Point((self.x + self.r) - self.r * k, self.y, Point.controlPointC))
             points.append(Point(self.x + self.r, self.y))
 
-            page!.drawPath(points, PathOperator.stroke)
+            if fillColor != nil && borderColor == nil {
+                page!.drawPath(points, PathOperator.fill)
+            } else if fillColor == nil && borderColor != nil {
+                page!.drawPath(points, PathOperator.stroke)
+            } else if fillColor != nil && borderColor != nil {
+                page!.drawPath(points, PathOperator.fillAndStroke)
+            }
         }
         page!.restoreGraphicsState()
         page!.addEMC()

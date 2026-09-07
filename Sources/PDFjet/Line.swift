@@ -249,12 +249,14 @@ public class Line : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        page!.addBMC(StructElem.P, language, actualText, altDescription)
+        page!.saveGraphicsState()
         page!.setPenColor(color)
         page!.setPenWidth(width)
         page!.setLineCapStyle(capStyle)
         page!.setStrokeDashPattern(pattern)
-        page!.addBMC(StructElem.P, language, actualText, altDescription)
         page!.drawLine(x1, y1, x2, y2)
+        page!.restoreGraphicsState()
         page!.addEMC()
 
         let xMax = Float(max(x1, x2))

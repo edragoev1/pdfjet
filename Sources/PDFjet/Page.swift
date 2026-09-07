@@ -683,22 +683,18 @@ public class Page {
     /// - Parameter pattern the line dash pattern.
     ///
     public func setStrokeDashPattern(_ pattern: String) {
-        if self.strokeDashPattern != pattern {
-            self.strokeDashPattern = pattern
-            append(self.strokeDashPattern)
-            append(" d\n")
-        }
+        self.strokeDashPattern = pattern
+        append(self.strokeDashPattern)
+        append(" d\n")
     }
 
     ///
     /// Sets the default line dash pattern - solid line.
     ///
     public func setDefaultStrokeDashPattern() {
-        if self.strokeDashPattern != "[] 0" {
-            self.strokeDashPattern = "[] 0"
-            append(self.strokeDashPattern)
-            append(" d\n")
-        }
+        self.strokeDashPattern = "[] 0"
+        append(self.strokeDashPattern)
+        append(" d\n")
     }
 
     ///

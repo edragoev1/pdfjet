@@ -760,7 +760,7 @@ public class TextBox : IDrawable {
                     page.AddEMC();
                 }
                 page.SetPenColor(this.strokeColor);
-                page.SetBrushColor(this.textColor);
+                page.SetBrushColor(this.fillColor);
                 page.SetPenWidth(this.font.GetUnderlineThickness(fontSize));
             }
             float xText = x + margin;

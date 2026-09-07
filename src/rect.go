@@ -205,12 +205,12 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 	if rect.cornerRadius == 0.0 {
 		if rect.hasFillColor {
-			page.SetBrushColorRGB(rect.fillColor)
 			page.MoveTo(rect.x, rect.y)
 			page.LineTo(rect.x+rect.width, rect.y)
 			page.LineTo(rect.x+rect.width, rect.y+rect.height)
 			page.LineTo(rect.x, rect.y+rect.height)
 			page.LineTo(rect.x, rect.y)
+			page.SetBrushColorRGB(rect.fillColor)
 			page.FillPath()
 		}
 		if rect.hasBorderColor {
@@ -224,9 +224,19 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 			page.ClosePath()
 		}
 	} else {
-		page.SetPenWidth(rect.borderWidth)
-		page.SetPenColorRGB(rect.borderColor)
-		page.SetStrokeDashPattern(rect.borderPattern)
+		// The pen and brush must be set before the path is painted,
+		// otherwise the rounded rectangle is drawn with whatever state
+		// the page happened to be left in.
+		if rect.hasBorderColor {
+			page.SetStrokeDashPattern(rect.borderPattern)
+		}
+		if rect.hasFillColor {
+			page.SetBrushColorRGB(rect.fillColor)
+		}
+		if rect.hasBorderColor {
+			page.SetPenWidth(rect.borderWidth)
+			page.SetPenColorRGB(rect.borderColor)
+		}
 
 		points := make([]*Point, 0)
 		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
@@ -247,7 +257,13 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 		points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y))
 		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
 
-		page.DrawPath(points, pathoperator.Stroke)
+		if rect.hasFillColor && !rect.hasBorderColor {
+			page.DrawPath(points, pathoperator.Fill)
+		} else if !rect.hasFillColor && rect.hasBorderColor {
+			page.DrawPath(points, pathoperator.Stroke)
+		} else if rect.hasFillColor && rect.hasBorderColor {
+			page.DrawPath(points, pathoperator.FillAndStroke)
+		}
 	}
 	page.RestoreGraphicsState()
 	page.AddEMC()

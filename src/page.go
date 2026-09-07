@@ -648,11 +648,9 @@ func (page *Page) SetDefaultLineWidth() {
 //
 // @param strokeDashPattern the line dash pattern.
 func (page *Page) SetStrokeDashPattern(strokeDashPattern string) {
-	if page.strokeDashPattern != strokeDashPattern {
-		page.strokeDashPattern = strokeDashPattern
-		page.appendString(page.strokeDashPattern)
-		page.appendString(" d\n")
-	}
+	page.strokeDashPattern = strokeDashPattern
+	page.appendString(page.strokeDashPattern)
+	page.appendString(" d\n")
 }
 
 // SetDefaultStrokeDashPattern sets the default line dash pattern - solid line.

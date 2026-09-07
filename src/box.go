@@ -170,25 +170,24 @@ func (box *Box) DrawOn(page *Page) []float32 {
 	const k float32 = 0.5517
 
 	page.AddBMC(box.structureType, box.language, box.actualText, box.altDescription)
+	page.SetPenWidth(box.width)
+	page.SetStrokeDashPattern(box.pattern)
+	if box.fillShape {
+		page.SetBrushColor(box.color)
+	} else {
+		page.SetPenColor(box.color)
+	}
 	if box.r == 0.0 {
 		page.MoveTo(box.x, box.y)
 		page.LineTo(box.x+box.w, box.y)
 		page.LineTo(box.x+box.w, box.y+box.h)
 		page.LineTo(box.x, box.y+box.h)
 		if box.fillShape {
-			page.SetBrushColor(box.color)
 			page.FillPath()
 		} else {
-			page.SetPenWidth(box.width)
-			page.SetPenColor(box.color)
-			page.SetStrokeDashPattern(box.pattern)
 			page.ClosePath()
 		}
 	} else {
-		page.SetPenWidth(box.width)
-		page.SetPenColor(box.color)
-		page.SetStrokeDashPattern(box.pattern)
-
 		points := make([]*Point, 0)
 		points = append(points, NewPoint(box.x+box.r, box.y))
 		points = append(points, NewPoint((box.x+box.w)-box.r, box.y))
@@ -231,5 +230,5 @@ func (box *Box) DrawOn(page *Page) []float32 {
 			altDescription: box.altDescription,
 		})
 	}
-	return []float32{box.x + box.w, box.y + box.h}
+	return []float32{box.x + box.w, box.y + box.h + box.width}
 }

@@ -154,12 +154,12 @@ public class Rect  : IDrawable {
         const float k = 0.55228f;
         if (this.r == 0.0f) {
             if (fillColor != null) {
-                page.SetBrushColor(this.fillColor);
                 page.MoveTo(this.x, this.y);
                 page.LineTo(this.x + this.w, this.y);
                 page.LineTo(this.x + this.w, this.y + this.h);
                 page.LineTo(this.x, this.y + this.h);
                 page.LineTo(this.x, this.y);
+                page.SetBrushColor(this.fillColor);
                 page.FillPath();
             }
             if (borderColor != null) {
