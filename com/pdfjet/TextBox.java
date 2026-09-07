@@ -1,4 +1,4 @@
-/**
+/*
  * TextBox.java
  *
  * Copyright (c) 2026 PDFjet Software

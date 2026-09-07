@@ -1,4 +1,4 @@
-/**
+/*
  * JPGImage.java
  *
  * The authors make NO WARRANTY or representation, either express or implied,

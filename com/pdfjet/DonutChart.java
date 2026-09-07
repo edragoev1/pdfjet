@@ -1,6 +1,6 @@
 package com.pdfjet;
 
-/**
+/*
  * DonutChart.java
  *
  * Copyright (c) 2026 PDFjet Software
