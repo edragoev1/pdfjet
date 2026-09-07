@@ -29,7 +29,7 @@ public class Example_10 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         image1.SetLocation(90f, 35f);
-        image1.SetScaleFactor(0.75f);
+        image1.ScaleBy(0.75f);
         image1.DrawOn(page);
 
         int rotate = 0;
@@ -118,16 +118,19 @@ public class Example_10 {
         }
 
         float columnWidth = 470f;
+        // Java's setSize(w, h) is deprecated in the C# port.
         column.SetWidth(columnWidth);
         column.SetHeight(100f);
         float[] xy = column.DrawOn(page);
 
-        Line line = new Line(
-                xy[0] - columnWidth,
-                xy[1],
-                xy[0],
-                xy[1]);
-        line.DrawOn(page);
+        if (rotate == 0) {
+            Line line = new Line(
+                    xy[0],
+                    xy[1],
+                    xy[0] + columnWidth,
+                    xy[1]);
+            line.DrawOn(page);
+        }
 
         pdf.Complete();
     }

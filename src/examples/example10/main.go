@@ -11,10 +11,11 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
+// Example10 shows how to lay out paragraphs in a text column.
 func Example10() {
 	pdf := pdfjet.NewPDFFile("Example_10.pdf")
 
-	image := pdfjet.NewImageFromFile(pdf, "images/sz-map.png")
+	image1 := pdfjet.NewImageFromFile(pdf, "images/sz-map.png")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
@@ -30,13 +31,13 @@ func Example10() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	image.SetLocation(90.0, 35.0)
-	image.ScaleBy(0.75)
-	image.DrawOn(page)
+	image1.SetLocation(90.0, 35.0)
+	image1.ScaleBy(0.75)
+	image1.DrawOn(page)
 
 	rotate := 0
-	// int rotate := 90
-	// int rotate := 270
+	// rotate := 90
+	// rotate := 270
 	column := pdfjet.NewTextColumn(rotate)
 	column.SetLineSpacing(1.3)      // 1.3 x font height
 	column.SetParagraphSpacing(1.0) // 1.0 x line spacing
@@ -123,12 +124,14 @@ func Example10() {
 	column.SetSize(columnWidth, 100.0)
 	xy := column.DrawOn(page)
 
-	line := pdfjet.NewLine(
-		xy[0],
-		xy[1],
-		xy[0]+columnWidth,
-		xy[1])
-	line.DrawOn(page)
+	if rotate == 0 {
+		line := pdfjet.NewLine(
+			xy[0],
+			xy[1],
+			xy[0]+columnWidth,
+			xy[1])
+		line.DrawOn(page)
+	}
 
 	pdf.Complete()
 }

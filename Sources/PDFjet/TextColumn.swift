@@ -114,6 +114,13 @@ public class TextColumn : Drawable {
     }
 
     ///
+    /// Returns the height of this text column.
+    ///
+    public func getHeight() -> Float {
+        return self.h
+    }
+
+    ///
     /// Sets the text alignment.
     ///
     /// @param alignment the specified alignment code.
@@ -168,6 +175,9 @@ public class TextColumn : Drawable {
         }
         // Restore the original location
         setLocation(self.x, self.y)
+        if self.getHeight() > xy[1] {
+            xy[1] = self.getHeight()
+        }
         return xy
     }
 

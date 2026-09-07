@@ -28,7 +28,6 @@ public class TextColumn : IDrawable {
     private float paragraphSpacing = 1.0f;
     private List<Paragraph> paragraphs;
     private bool lineBetweenParagraphs = false;
-    private float fixedHeight;
 
     /**
      * Create a text column object.
@@ -161,18 +160,7 @@ public class TextColumn : IDrawable {
     }
 
     public float GetHeight() {
-        if (fixedHeight > 0f) {
-            return fixedHeight;
-        }
         return this.h;
-    }
-
-    public void SetFixedHeight(float fixedHeight) {
-        this.fixedHeight = fixedHeight;
-    }
-
-    public float GetFixedHeight() {
-        return this.fixedHeight;
     }
 
     /**
@@ -229,8 +217,8 @@ public class TextColumn : IDrawable {
         }
         // Restore the original location
         SetLocation(this.x, this.y);
-        if (fixedHeight > 0f) {
-            xy[1] = y + fixedHeight;
+        if (this.GetHeight() > xy[1]) {
+            xy[1] = this.GetHeight();
         }
         return xy;
     }
@@ -316,7 +304,7 @@ public class TextColumn : IDrawable {
             x1 -= paragraphSpacing;
             y1 = y;
         }
-        return new float[] {x1 + this.w, y1};
+        return new float[] {x1, y1};
     }
 
     private float[] DrawLineOfText(Page page, List<TextLine> list) {

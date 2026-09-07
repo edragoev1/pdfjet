@@ -28,10 +28,12 @@ public class Example_10 {
         image1.scaleBy(0.75)
         image1.drawOn(page)
 
-        let rotate = 0  // degrees
+        let rotate = 0
+        // let rotate = 90
+        // let rotate = 270
         let column = TextColumn(rotate)
-        column.setLineSpacing(1.3)
-        column.setParagraphSpacing(1.0)
+        column.setLineSpacing(1.3)      // 1.3 x font height
+        column.setParagraphSpacing(1.0) // 1.0 x line spacing
 
         let p1 = Paragraph()
         p1.setAlignment(Align.CENTER)
@@ -67,7 +69,7 @@ public class Example_10 {
         buf.append("organizations but retains a strong commitment to neutrality.")
 
         text = TextLine(f1, buf)
-        text.setColor(Color.red)
+        text.setTextColor(Color.red)
         p3.add(text)
 
         let p4 = Paragraph()
@@ -94,7 +96,7 @@ public class Example_10 {
 
         text = TextLine(f4,
                 "Even so, unemployment has remained at less than half the EU average.")
-        text.setColor(Color.blue)
+        text.setTextColor(Color.blue)
         p5.add(text)
 
         column.addParagraph(p1)
@@ -105,18 +107,23 @@ public class Example_10 {
 
         if rotate == 0 {
             column.setLocation(90.0, 300.0)
+        } else if rotate == 90 {
+            column.setLocation(90.0, 780.0)
+        } else if rotate == 270 {
+            column.setLocation(550.0, 310.0)
         }
-        // else if rotate == 90 {
-        //     column.setLocation(90.0, 780.0)
-        // } else if rotate == 270 {
-        //     column.setLocation(550.0, 310.0)
-        // }
 
         let columnWidth: Float = 470.0
         column.setSize(columnWidth, 100.0)
         let xy = column.drawOn(page)
+
         if rotate == 0 {
-            Line(xy[0], xy[1], xy[0] + columnWidth, xy[1]).drawOn(page)
+            let line = Line(
+                    xy[0],
+                    xy[1],
+                    xy[0] + columnWidth,
+                    xy[1])
+            line.drawOn(page)
         }
 
         pdf.complete()

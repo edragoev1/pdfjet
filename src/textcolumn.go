@@ -88,6 +88,16 @@ func (textColumn *TextColumn) SetWidth(w float32) {
 	textColumn.w = w
 }
 
+// GetWidth returns the width of this text column.
+func (textColumn *TextColumn) GetWidth() float32 {
+	return textColumn.w
+}
+
+// GetHeight returns the height of this text column.
+func (textColumn *TextColumn) GetHeight() float32 {
+	return textColumn.h
+}
+
 // SetAlignment sets the text alignment.
 // Supported values: align.Left, align.Right, align.Center and align.Justify
 func (textColumn *TextColumn) SetAlignment(alignment int) {
@@ -125,6 +135,9 @@ func (textColumn *TextColumn) DrawOn(page *Page) []float32 {
 	}
 	// Restore the original location
 	textColumn.SetLocation(textColumn.x, textColumn.y)
+	if textColumn.GetHeight() > xy[1] {
+		xy[1] = textColumn.GetHeight()
+	}
 	return xy
 }
 

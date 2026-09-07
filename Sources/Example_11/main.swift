@@ -8,6 +8,7 @@ public class Example_11 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_11.pdf", append: false)!)
         let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(12.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 

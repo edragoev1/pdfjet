@@ -14,8 +14,11 @@ internal static class FastFloat {
             return new byte[] { (byte)'-', (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y' };
         }
 
-        // Round to 2 decimal places
-        float rounded = ((float)System.Math.Round(value * 100)) / 100f;
+        // Round to 2 decimal places.
+        // Java's Math.round is floor(x + 0.5); System.Math.Round rounds a
+        // midpoint to the nearest even number, so it would write 172.62 where
+        // the other ports write 172.63.
+        float rounded = ((float)System.Math.Floor(value * 100 + 0.5f)) / 100f;
 
         bool negative = rounded < 0;
         if (negative) {
