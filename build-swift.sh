@@ -2,7 +2,7 @@ rm -rf .build
 
 for i in $(seq 1 50);
 do
-    # The Swift port has no encryption support, so there is no Example_46.
+    # The Swift port has no Example_30.
     if [ $i -eq 30 ]; then
         continue
     fi

@@ -1,12 +1,22 @@
 @echo off
 
-:: Remove .class files from the specified directories
+:: Remove the .class files from the output directories
 del /f /q out\production\com\pdfjet\*.class
-del /f /q out\production\com\pdfjet\font\*.class
+del /f /q out\production\com\pdfjet\fonts\*.class
 del /f /q out\production\examples\*.class
 
-:: Compile all Java files in com/pdfjet
-javac -O -encoding utf-8 -Xlint com\pdfjet\*.java com\pdfjet\font\*.java -d out\production
+:: Create the output directory if it doesn't exist
+if not exist "out\production" mkdir "out\production"
+
+:: Compile the PDFjet library
+javac -O -encoding utf-8 -Xlint ^
+    com\pdfjet\*.java ^
+    com\pdfjet\barcodes\*.java ^
+    com\pdfjet\pdf417\*.java ^
+    com\pdfjet\qrcode\*.java ^
+    com\pdfjet\fonts\*.java ^
+    com\pdfjet\encryption\*.java ^
+    -d out\production
 
 :: Create the JAR file
 jar cf PDFjet.jar -C out\production .

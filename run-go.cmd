@@ -4,15 +4,15 @@ REM Windows batch script equivalent
 REM Check if argument is provided
 if "%1"=="" (
     echo Please provide an example number:
-    echo run-go.bat 33
+    echo run-go.cmd 33
     exit /b 1
 )
 
 REM Very important!!
-REM call clean.bat
+call clean.cmd
 
 cd src
-go build -o ../Example_%1.exe examples/example%1/main.go
+go build -o ..\Example_%1.exe examples\example%1\main.go
 cd ..
 
 Example_%1.exe

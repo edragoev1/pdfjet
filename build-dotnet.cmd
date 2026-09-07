@@ -1,12 +1,12 @@
 @echo off
 REM Very important!!
-rmdir /s /q bin
-rmdir /s /q obj
+rmdir /s /q bin 2>nul
+rmdir /s /q obj 2>nul
 
 REM Build the PDFjet library project
 dotnet build PDFjet.csproj -c release
 
-REM Build Example_01 to Example_50 in parallel
+REM Build Example_01 to Example_50
 for /L %%i in (1,1,50) do (
     REM Check if the example number is less than 10
     if %%i lss 10 (

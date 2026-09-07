@@ -6,8 +6,8 @@ if "%1"=="" (
 )
 
 REM Very important!!
-rmdir /s /q bin
-rmdir /s /q obj
+rmdir /s /q bin 2>nul
+rmdir /s /q obj 2>nul
 
 REM Build the PDFjet library
 dotnet build PDFjet.csproj -c release
