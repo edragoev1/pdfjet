@@ -2,10 +2,11 @@
 
 # List of JDKs and their priorities
 declare -A jdks=(
-  ["/opt/jdk8u462-b08"]=1008
-  ["/opt/jdk-11.0.28+6"]=1011
-  ["/opt/jdk-17.0.16+8"]=1017
-  ["/opt/jdk-21.0.8+9"]=1021
+  ["/opt/jdk8u504-b01"]=1008
+  ["/opt/jdk-11.0.32.1+1"]=1011
+  ["/opt/jdk-17.0.20.1+1"]=1017
+  ["/opt/jdk-21.0.12.1+1"]=1021
+  ["/opt/jdk-25.0.4.1+1"]=1025
 )
 
 # Tools to register

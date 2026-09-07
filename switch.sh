@@ -12,38 +12,46 @@ echo "1) Java 8"
 echo "2) Java 11"
 echo "3) Java 17"
 echo "4) Java 21"
+echo "5) Java 25"
 
-read -p "Enter your choice (1/2/3/4): " choice
+read -p "Enter your choice (1/2/3/4/5): " choice
 
 # Set the Java version based on the user's input
 case $choice in
     1)
         echo "Switching to Java 8..."
-        sudo update-alternatives --set java /opt/jdk8u462-b08/bin/java
-        sudo update-alternatives --set javac /opt/jdk8u462-b08/bin/javac
-        sudo update-alternatives --set jar /opt/jdk8u462-b08/bin/jar
-        sudo update-alternatives --set javadoc /opt/jdk8u462-b08/bin/javadoc
+        sudo update-alternatives --set java /opt/jdk8u504-b01/bin/java
+        sudo update-alternatives --set javac /opt/jdk8u504-b01/bin/javac
+        sudo update-alternatives --set jar /opt/jdk8u504-b01/bin/jar
+        sudo update-alternatives --set javadoc /opt/jdk8u504-b01/bin/javadoc
         ;;
     2)
         echo "Switching to Java 11..."
-        sudo update-alternatives --set java /opt/jdk-11.0.28+6/bin/java
-        sudo update-alternatives --set javac /opt/jdk-11.0.28+6/bin/javac
-        sudo update-alternatives --set jar /opt/jdk-11.0.28+6/bin/jar
-        sudo update-alternatives --set javadoc /opt/jdk-11.0.28+6/bin/javadoc
+        sudo update-alternatives --set java /opt/jdk-11.0.32.1+1/bin/java
+        sudo update-alternatives --set javac /opt/jdk-11.0.32.1+1/bin/javac
+        sudo update-alternatives --set jar /opt/jdk-11.0.32.1+1/bin/jar
+        sudo update-alternatives --set javadoc /opt/jdk-11.0.32.1+1/bin/javadoc
         ;;
     3)
         echo "Switching to Java 17..."
-        sudo update-alternatives --set java /opt/jdk-17.0.16+8/bin/java
-        sudo update-alternatives --set javac /opt/jdk-17.0.16+8/bin/javac
-        sudo update-alternatives --set jar /opt/jdk-17.0.16+8/bin/jar
-        sudo update-alternatives --set javadoc /opt/jdk-17.0.16+8/bin/javadoc
+        sudo update-alternatives --set java /opt/jdk-17.0.20.1+1/bin/java
+        sudo update-alternatives --set javac /opt/jdk-17.0.20.1+1/bin/javac
+        sudo update-alternatives --set jar /opt/jdk-17.0.20.1+1/bin/jar
+        sudo update-alternatives --set javadoc /opt/jdk-17.0.20.1+1/bin/javadoc
         ;;
     4)
         echo "Switching to Java 21..."
-        sudo update-alternatives --set java /opt/jdk-21.0.8+9/bin/java
-        sudo update-alternatives --set javac /opt/jdk-21.0.8+9/bin/javac
-        sudo update-alternatives --set jar /opt/jdk-21.0.8+9/bin/jar
-        sudo update-alternatives --set javadoc /opt/jdk-21.0.8+9/bin/javadoc
+        sudo update-alternatives --set java /opt/jdk-21.0.12.1+1/bin/java
+        sudo update-alternatives --set javac /opt/jdk-21.0.12.1+1/bin/javac
+        sudo update-alternatives --set jar /opt/jdk-21.0.12.1+1/bin/jar
+        sudo update-alternatives --set javadoc /opt/jdk-21.0.12.1+1/bin/javadoc
+        ;;
+    5)
+        echo "Switching to Java 25..."
+        sudo update-alternatives --set java /opt/jdk-25.0.4.1+1/bin/java
+        sudo update-alternatives --set javac /opt/jdk-25.0.4.1+1/bin/javac
+        sudo update-alternatives --set jar /opt/jdk-25.0.4.1+1/bin/jar
+        sudo update-alternatives --set javadoc /opt/jdk-25.0.4.1+1/bin/javadoc
         ;;
     *)
         echo "Invalid choice. Please run the script again and choose a valid option."

@@ -6,7 +6,7 @@
  */
 package com.pdfjet;
 
-public class Ellipse extends Arc {
+public final class Ellipse extends Arc {
     /**
      * The default constructor.
      */
