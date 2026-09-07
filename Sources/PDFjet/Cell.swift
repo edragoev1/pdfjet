@@ -33,7 +33,7 @@ public class Cell {
     var hasBackground: Bool = false
     var textColor: [Float] = [0.0, 0.0, 0.0]
     var strokeWidth: Float = 0.0
-    var strokeColor: [Float] = [0.0, 0.0, 0.0]
+    var strokeColor: [Float]?
     var strokeDashPattern: String = "[] 0"  // Solid
 
     // Cell properties
@@ -56,10 +56,12 @@ public class Cell {
     private var uri: String?
     private var valign = Align.TOP
 
+    // Java's Cell defaults its properties to 0x00050001 - only the top and
+    // left borders are on.
     internal var topBorder: Bool = true
-    internal var bottomBorder: Bool = true
+    internal var bottomBorder: Bool = false
     internal var leftBorder: Bool = true
-    internal var rightBorder: Bool = true
+    internal var rightBorder: Bool = false
 
     private var underline: Bool
     private var strikeout: Bool
@@ -387,11 +389,11 @@ public class Cell {
         self.strokeColor = [r, g, b]
     }
 
-    public func setStrokeColor(_ rgbColor: [Float]) {
+    public func setStrokeColor(_ rgbColor: [Float]?) {
         self.strokeColor = rgbColor
     }
 
-    public func getStrokeColor() -> [Float] {
+    public func getStrokeColor() -> [Float]? {
         return self.strokeColor
     }
 

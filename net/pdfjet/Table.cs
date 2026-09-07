@@ -396,6 +396,10 @@ public class Table {
         return column;
     }
 
+    public List<Cell> GetColumnAtIndex(int index) {
+        return GetColumn(index);
+    }
+
     /**
      * Draws this table on the specified page.
      *
@@ -443,7 +447,7 @@ public class Table {
                     w += row[j++].GetWidth();
                 }
                 if (page != null) {
-                    page.SetBrushColor(cell.GetFillColor());
+                    page.SetBrushColor(cell.GetBrushColor());
                     if (i == (numOfHeaderRows - 1)) {
                         cell.SetBorder(Border.BOTTOM, true);
                     }
@@ -476,7 +480,7 @@ public class Table {
                     w += row[i++].GetWidth();
                 }
                 if (page != null) {
-                    page.SetBrushColor(cell.GetFillColor());
+                    page.SetBrushColor(cell.GetBrushColor());
                     cell.DrawOn(page, x, y, w, h);
                 }
                 x += w;

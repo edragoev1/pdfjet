@@ -35,13 +35,14 @@ public class Example_14 {
                 } else {
                     cell = new Cell(f2);
                 }
+                cell.SetBorders(false);
+
                 // WITH:
                 cell.SetTopPadding(10f);
                 cell.SetBottomPadding(10f);
                 cell.SetLeftPadding(10f);
                 cell.SetRightPadding(10f);
 
-                cell.SetBorders(false);
                 cell.SetText("Hello " + i + " " + j);
                 if (i == 0) {
                     cell.SetBorder(Border.TOP, true);
@@ -64,7 +65,7 @@ public class Example_14 {
                     cell.SetBorder(Border.RIGHT, true);
 
                     cell.SetColSpan(3);
-                    cell.SetTextColor(Color.darkseagreen);
+                    cell.SetBackgroundColor(Color.darkseagreen);
                     cell.SetLineWidth(1f);
                     cell.SetTextAlignment(Align.RIGHT);
                 }

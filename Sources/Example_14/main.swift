@@ -53,7 +53,11 @@ public class Example_14 {
                 }
 
                 if i == 2 && j == 2 {
-                    cell!.setAllBorders(true)
+                    cell!.setTopBorder(true)
+                    cell!.setBottomBorder(true)
+                    cell!.setLeftBorder(true)
+                    cell!.setRightBorder(true)
+
                     cell!.setColSpan(3)
                     cell!.setBackgroundColor(Color.darkseagreen)
                     cell!.setLineWidth(1.0)

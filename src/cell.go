@@ -33,6 +33,7 @@ type Cell struct {
 
 	background    [3]float32
 	hasBackground bool
+	hasPenColor   bool
 	pen           [3]float32
 	textColor     [3]float32
 
@@ -64,9 +65,10 @@ func NewCell(font *Font, text string) *Cell {
 	cell.leftPadding = 2.0
 	cell.rightPadding = 2.0
 	cell.lineWidth = 0.0
-	//cell.background = color.White		// TODO:
-	//cell.pen = color.Black
-	//cell.brush = color.Black
+	// Java's Cell defaults its properties to 0x00050001 - only the top and
+	// left borders are on.
+	cell.topBorder = true
+	cell.leftBorder = true
 	cell.textAlignment = alignment.Left
 	cell.valign = alignment.Top
 	return cell
@@ -291,9 +293,16 @@ func (cell *Cell) GetBgColor() [3]float32 {
 }
 
 // SetPenColor sets the penColor color.
-// @param color the color specified as 0xRRGGBB integer.
 func (cell *Cell) SetPenColor(color [3]float32) {
 	cell.pen = color
+	cell.hasPenColor = true
+}
+
+// SetStrokeColor sets the color of the cell borders.
+// @param color the color specified as 0xRRGGBB integer.
+func (cell *Cell) SetStrokeColor(color int32) {
+	cell.pen = colorToRGB(color)
+	cell.hasPenColor = true
 }
 
 // GetPenColor returns the penColor color.
@@ -301,9 +310,15 @@ func (cell *Cell) GetPenColor() [3]float32 {
 	return cell.pen
 }
 
-// SetTextColor sets the text color.
-func (cell *Cell) SetTextColor(textColor [3]float32) {
+// SetTextColorRGB sets the text color.
+func (cell *Cell) SetTextColorRGB(textColor [3]float32) {
 	cell.textColor = textColor
+}
+
+// SetTextColor sets the text color.
+// @param color the color specified as 0xRRGGBB integer.
+func (cell *Cell) SetTextColor(color int32) {
+	cell.textColor = colorToRGB(color)
 }
 
 // GetTextColor returns the text color.
@@ -497,7 +512,9 @@ func (cell *Cell) drawBackground(page *Page, x, y, wCell, hCell float32) {
 
 func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
-	page.SetPenColorRGB(cell.pen)
+	if cell.hasPenColor {
+		page.SetPenColorRGB(cell.pen)
+	}
 	page.SetPenWidth(cell.lineWidth)
 	qWidth := cell.lineWidth / 4.0
 	if cell.topBorder {
@@ -538,7 +555,9 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		log.Fatal("Invalid vertical text alignment option.")
 	}
 
-	page.SetPenColorRGB(cell.pen)
+	if cell.hasPenColor {
+		page.SetPenColorRGB(cell.pen)
+	}
 	if cell.GetTextAlignment() == alignment.Left {
 		xText = x + cell.leftPadding
 		if cell.compositeTextLine != nil {

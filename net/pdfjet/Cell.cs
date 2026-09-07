@@ -366,6 +366,10 @@ public class Cell {
         return this.backgroundColor;
     }
 
+    public float[] GetBrushColor() {
+        return this.textColor;
+    }
+
     public float[] GetBackgroundColor() {
         return this.backgroundColor;
     }
@@ -662,8 +666,8 @@ public class Cell {
             float cellW,
             float cellH) {
         page.AddArtifactBMC();
-        page.SetPenWidth(lineWidth);
         page.SetPenColor(strokeColor);
+        page.SetPenWidth(lineWidth);
         float qWidth = lineWidth / 4;
         if (GetBorder(Border.TOP)) {
             page.MoveTo(x - qWidth, y);
@@ -706,7 +710,6 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        page.SaveGraphicsState();
         page.SetPenColor(strokeColor);
         if (GetTextAlignment() == Align.RIGHT) {
             if (compositeTextLine == null) {
@@ -769,7 +772,6 @@ public class Cell {
         } else {
             throw new Exception("Invalid Text Alignment!");
         }
-        page.RestoreGraphicsState();
 
         if (uri != null) {
             float w = (compositeTextLine != null) ?

@@ -22,13 +22,8 @@ public class Example_13 {
             let line = line1.trimmingCharacters(in: .newlines)
             var row = [Cell]()
             let columns = line.components(separatedBy: "|")
-            for i in 0..<columns.count {
-                let cell = Cell(f2, String(columns[i]))
-                cell.setTopPadding(2.0)
-                cell.setBottomPadding(2.0)
-                cell.setLeftPadding(2.0)
-                cell.setRightPadding(2.0)
-                row.append(cell)
+            for column in columns {
+                row.append(Cell(f2, String(column)))
             }
             tableData.append(row)
         }
@@ -41,8 +36,6 @@ public class Example_13 {
         table.setFontInRow(0, f1)
         table.setFontInRow(1, f1)
 
-        setFontForRow(table, 0, f1)
-        setFontForRow(table, 1, f1)
         table.setColumnWidths()
         table.removeLineBetweenRows(0, 1)
 
@@ -66,10 +59,12 @@ public class Example_13 {
         for i in 2..<column.count {
             cell = column[i]
             cell.setTextAlignment(Align.CENTER)
-            if Int(cell.getText()!)! > 40 {
-                cell.setBackgroundColor(Color.darkseagreen)
-            } else {
-                cell.setBackgroundColor(Color.yellow)
+            if let value = Int(cell.getText()!) {
+                if value > 40 {
+                    cell.setBackgroundColor(Color.darkseagreen)
+                } else {
+                    cell.setBackgroundColor(Color.yellow)
+                }
             }
         }
 
@@ -131,16 +126,7 @@ public class Example_13 {
         }
     }
 
-    public func setFontForRow(
-            _ table: Table,
-            _ index: Int,
-            _ font: Font) {
-        let row = table.getRowAtIndex(index)
-        for cell in row {
-            cell.setFont(font)
-        }
-    }   // End of Example_13.swift
-}
+}   // End of Example_13.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_13()

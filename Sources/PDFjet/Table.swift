@@ -572,7 +572,7 @@ public class Table {
     // Sets the right border on all cells in the last column.
     private func setRightBorderOnLastColumn() {
         for row in tableData {
-            if row[0].getLeftBorder() {
+            if row[0].getLeftBorder() == false {
                 return
             }
         }
@@ -671,7 +671,11 @@ public class Table {
                     cell2.setLeftPadding(cell.getLeftPadding())
                     cell2.setRightPadding(cell.getRightPadding())
                     cell2.setStrokeWidth(cell.getStrokeWidth())
-                    cell2.setBackgroundColor(cell.getBackgroundColor())
+                    // Java copies a null background across as null, which
+                    // leaves the new cell without one.
+                    if cell.hasBackground {
+                        cell2.setBackgroundColor(cell.getBackgroundColor())
+                    }
                     cell2.setStrokeColor(cell.getStrokeColor())
                     cell2.setTextColor(cell.getTextColor())
                     cell2.setProperties(cell.getProperties())

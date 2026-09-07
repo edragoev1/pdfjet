@@ -198,7 +198,7 @@ func (table *Table) SetTextColorInColumn(index int, color int32) {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
-			cell.SetTextColor(textColor)
+			cell.SetTextColorRGB(textColor)
 			if cell.textBlock != nil {
 				cell.textBlock.SetTextColorRGB(textColor)
 			}
@@ -229,7 +229,7 @@ func (table *Table) SetTextColorInRow(index int, color int32) {
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
-			cell.SetTextColor(textColor)
+			cell.SetTextColorRGB(textColor)
 			if cell.textBlock != nil {
 				cell.textBlock.SetTextColorRGB(textColor)
 			}
@@ -593,9 +593,15 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				cell2.SetLeftPadding(cell.GetLeftPadding())
 				cell2.SetRightPadding(cell.GetRightPadding())
 				cell2.SetLineWidth(cell.GetLineWidth())
-				cell2.SetBgColorRGB(cell.GetBgColor())
-				cell2.SetPenColor(cell.GetPenColor())
-				cell2.SetTextColor(cell.GetTextColor())
+				// Java copies a null background and a null pen color across as
+				// null, which leaves the new cell without either.
+				if cell.hasBackground {
+					cell2.SetBgColorRGB(cell.GetBgColor())
+				}
+				if cell.hasPenColor {
+					cell2.SetPenColor(cell.GetPenColor())
+				}
+				cell2.SetTextColorRGB(cell.GetTextColor())
 				cell2.SetTopBorder(cell.GetTopBorder())
 				cell2.SetBottomBorder(cell.GetBottomBorder())
 				cell2.SetLeftBorder(cell.GetLeftBorder())

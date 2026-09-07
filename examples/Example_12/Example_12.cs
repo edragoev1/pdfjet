@@ -5,14 +5,17 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using PDFjet.NET;
 
-// Example_12.cs
+/**
+ * Example_12.cs
+ */
 public class Example_12 {
     public Example_12() {
-        PDF pdf = new PDF(new FileStream("Example_12.pdf", FileMode.Create));
+        PDF pdf = new PDF(new BufferedStream(
+                new FileStream("Example_12.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("PDF417 barcode example");
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        Page page = new Page(pdf, A4.PORTRAIT);
+        Font font = new Font(pdf, IBMPlexSans.Regular);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
         List<String> lines = Text.ReadLines("data/Example_12.java");
         StringBuilder buf = new StringBuilder();
@@ -26,7 +29,8 @@ public class Example_12 {
         barcode.SetLocation(100f, 60f);
         barcode.DrawOn(page);
 
-        TextLine text = new TextLine(f1, "PDF417 barcode containing the contents of data/Example_12.java");
+        TextLine text = new TextLine(font,
+                "PDF417 barcode containing the contents of data/Example_12.java");
         text.SetLocation(100f, 40f);
         text.DrawOn(page);
 

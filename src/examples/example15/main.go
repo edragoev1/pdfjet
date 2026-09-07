@@ -60,8 +60,8 @@ func Example15() {
 			} else {
 				cell.SetBackgroundColor(color.DodgerBlue)
 			}
-			cell.SetPenColor([3]float32{0.83, 0.83, 0.83}) // Light gray
-			cell.SetTextColor([3]float32{0.0, 0.0, 0.0})   // Black
+			cell.SetStrokeColor(color.LightGray)
+			cell.SetTextColor(color.Black)
 			row = append(row, cell)
 		}
 		tableData = append(tableData, row)

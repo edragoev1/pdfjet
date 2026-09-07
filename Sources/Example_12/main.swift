@@ -1,7 +1,9 @@
 import Foundation
 import PDFjet
 
-// Example_12.swift
+/**
+ * Example_12.swift
+ */
 public class Example_12 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_12.pdf", append: false)!)
