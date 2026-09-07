@@ -12,7 +12,7 @@ public class Example_05 {
                 new FileStream("Example_05.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.SetSize(12f);
+        f1.SetItalic(true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -40,7 +40,7 @@ public class Example_05 {
         text.SetLocation(70f, 90f);
         text.DrawOn(page);
 
-        f1.SetSize(8.0f);
+        f1.SetSize(8f);
         text = new TextLine(f1, "-- font.setKernPairs(false);");
         text.SetLocation(150f, 50f);
         text.DrawOn(page);
@@ -53,9 +53,9 @@ public class Example_05 {
         Point point = new Point(300f, 300f);
         point.SetShape(Point.CIRCLE);
         point.SetFillColor(Color.blue);
-        point.SetRadius(37.0);
+        point.SetRadius(37f);
         point.DrawOn(page);
-        point.SetRadius(25.0);
+        point.SetRadius(25f);
         point.SetFillColor(Color.white);
         point.DrawOn(page);
 

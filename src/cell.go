@@ -462,38 +462,30 @@ func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 	}
 
 	cell.drawBorders(page, x, y, w, h)
-	//if cell.point != nil {
-	//	switch cell.point.align {
-	//	case align.Left:
-	//		cell.point.x = x + 2*cell.point.r
-	//	case align.Right:
-	//		cell.point.x = (x + w) - cell.rightPadding/2
-	//	}
-	//	cell.point.y = y + h/2
-	//	page.SetBrushColor(cell.point.GetColor())
-	//
-	//	if cell.point.uri != nil {
-	//		page.AddAnnotation(&Annotation{	// TODO:
-	//			annotationType: AnnotationLink,
-	//			cell.point.uri,
-	//			nil,
-	//			x1: cell.point.x-cell.point.r,
-	//			y1: cell.point.y-cell.point.r,
-	//			x2: cell.point.x+cell.point.r,
-	//			y2: cell.point.y+cell.point.r,
-	//			vertices: nil,
-	//			"",
-	//			"",
-	//			"",
-	//			"",
-	//			"",
-	//			"",
-	//			"",
-	//		})
-	//	}
-	//
-	//	page.DrawPoint(cell.point)
-	//}
+	if cell.point != nil {
+		switch cell.point.align {
+		case alignment.Left:
+			cell.point.x = x + 2*cell.point.r
+		case alignment.Right:
+			cell.point.x = (x + w) - cell.rightPadding/2
+		}
+		cell.point.y = y + h/2
+		if cell.point.hasFillColor {
+			page.SetBrushColorRGB(cell.point.fillColor)
+		}
+		if cell.point.uri != "" {
+			page.AddAnnotation(&Annotation{
+				annotationType: AnnotationLink,
+				x1:             cell.point.x - cell.point.r,
+				y1:             cell.point.y - cell.point.r,
+				x2:             cell.point.x + cell.point.r,
+				y2:             cell.point.y + cell.point.r,
+				vertices:       nil,
+				uri:            cell.point.uri,
+			})
+		}
+		page.DrawPoint(cell.point)
+	}
 }
 
 func (cell *Cell) drawBackground(page *Page, x, y, wCell, hCell float32) {

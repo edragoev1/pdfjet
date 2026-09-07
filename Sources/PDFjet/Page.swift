@@ -988,33 +988,21 @@ public class Page {
         if p.shape != Point.INVISIBLE  {
             var list: [Point]
             if p.shape == Point.CIRCLE {
-                if p.fillShape {
-                    drawCircle(p.x, p.y, p.r, PathOperator.fill)
-                } else {
-                    drawCircle(p.x, p.y, p.r, PathOperator.stroke)
-                }
+                drawCircle(p.x, p.y, p.r, p.getPathOperator())
             } else if p.shape == Point.DIAMOND {
                 list = [Point]()
-                list.append(Point(p.x, p.y - p.r))
-                list.append(Point(p.x + p.r, p.y))
-                list.append(Point(p.x, p.y + p.r))
-                list.append(Point(p.x - p.r, p.y))
-                if p.fillShape {
-                    drawPath(list, PathOperator.fill)
-                } else {
-                    drawPath(list, PathOperator.closeAndStroke)
-                }
+                list.append(Point(p.x, p.y - p.r*1.2))
+                list.append(Point(p.x + p.r*1.2, p.y))
+                list.append(Point(p.x, p.y + p.r*1.2))
+                list.append(Point(p.x - p.r*1.2, p.y))
+                drawPath(list, p.getPathOperator())
             } else if p.shape == Point.BOX {
                 list = [Point]()
-                list.append(Point(p.x - p.r, p.y - p.r))
-                list.append(Point(p.x + p.r, p.y - p.r))
-                list.append(Point(p.x + p.r, p.y + p.r))
-                list.append(Point(p.x - p.r, p.y + p.r))
-                if p.fillShape {
-                    drawPath(list, PathOperator.fill)
-                } else {
-                    drawPath(list, PathOperator.closeAndStroke)
-                }
+                list.append(Point(p.x - p.r*0.886, p.y - p.r*0.886))
+                list.append(Point(p.x + p.r*0.886, p.y - p.r*0.886))
+                list.append(Point(p.x + p.r*0.886, p.y + p.r*0.886))
+                list.append(Point(p.x - p.r*0.886, p.y + p.r*0.886))
+                drawPath(list, p.getPathOperator())
             } else if p.shape == Point.PLUS {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
@@ -1023,41 +1011,29 @@ public class Page {
                 list.append(Point(p.x, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y + p.r))
-                if p.fillShape {
-                    drawPath(list, PathOperator.fill)
-                } else {
-                    drawPath(list, PathOperator.closeAndStroke)
-                }
+                list.append(Point(p.x, p.y - p.r))
+                drawPath(list, p.getPathOperator())
             } else if p.shape == Point.DOWN_ARROW {
                 list = [Point]()
                 list.append(Point(p.x - p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y - p.r))
                 list.append(Point(p.x, p.y + p.r))
-                if p.fillShape {
-                    drawPath(list, PathOperator.fill)
-                } else {
-                    drawPath(list, PathOperator.closeAndStroke)
-                }
+                list.append(Point(p.x - p.r, p.y - p.r))
+                drawPath(list, p.getPathOperator())
             } else if p.shape == Point.LEFT_ARROW {
                 list = [Point]()
                 list.append(Point(p.x + p.r, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y))
                 list.append(Point(p.x + p.r, p.y - p.r))
-                if p.fillShape {
-                    drawPath(list, PathOperator.fill)
-                } else {
-                    drawPath(list, PathOperator.closeAndStroke)
-                }
+                list.append(Point(p.x + p.r, p.y + p.r))
+                drawPath(list, p.getPathOperator())
             } else if p.shape == Point.RIGHT_ARROW {
                 list = [Point]()
                 list.append(Point(p.x - p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y))
                 list.append(Point(p.x - p.r, p.y + p.r))
-                if p.fillShape {
-                    drawPath(list, PathOperator.fill)
-                } else {
-                    drawPath(list, PathOperator.closeAndStroke)
-                }
+                list.append(Point(p.x - p.r, p.y - p.r))
+                drawPath(list, p.getPathOperator())
             } else if p.shape == Point.H_DASH {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
             } else if p.shape == Point.V_DASH {
@@ -1081,11 +1057,7 @@ public class Page {
                     let y = p.y - Float(radius * cos(theta))  // minus because y grows down
                     list.append(Point(x, y))
                 }
-                if p.fillShape {
-                    drawPath(list, PathOperator.fill)
-                } else {
-                    drawPath(list, PathOperator.closeAndStroke)
-                }
+                drawPath(list, p.getPathOperator())
             }
         }
     }

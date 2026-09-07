@@ -13,7 +13,8 @@ public class Example_05 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        var text = TextLine(f1).setLocation(300.0, 300.0)
+        var text = TextLine(f1)
+        text.setLocation(300.0, 300.0)
         var i = 0
         while i < 360 {
             text.setTextDirection(i)
@@ -44,7 +45,6 @@ public class Example_05 {
         text.drawOn(page)
         text.setLocation(150.0, 90.0)
         text.drawOn(page)
-
         text = TextLine(f1, "-- font.setKernPairs(true);")
         text.setLocation(150.0, 70.0)
         text.drawOn(page)

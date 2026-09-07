@@ -56,12 +56,11 @@ func Example05() {
 
 	point := pdfjet.NewPoint(300.0, 300.0)
 	point.SetShape(shape.Circle)
-	point.SetFillShape(true)
 	point.SetFillColor(color.Blue)
 	point.SetRadius(37.0)
 	point.DrawOn(page)
 	point.SetRadius(25.0)
-	point.SetTextColor(color.White)
+	point.SetFillColor(color.White)
 	point.DrawOn(page)
 
 	arc := new(pdfjet.Arc)

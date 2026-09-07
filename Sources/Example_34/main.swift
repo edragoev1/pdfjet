@@ -10,12 +10,11 @@ public class Example_34 {
         pdf.setCompliance(Compliance.PDF_A_1B)
 
         let f1 = try Font(pdf, IBMPlexSans.Bold)
-        f1.setSize(7.0)
-
         let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(7.0)
-
         let f3 = try Font(pdf, IBMPlexSans.BoldItalic)
+
+        f1.setSize(7.0)
+        f2.setSize(7.0)
         f3.setSize(7.0)
 
         let table = Table()
@@ -25,8 +24,7 @@ public class Example_34 {
         var p1 = Point()
         p1.setShape(Point.CIRCLE)
         p1.setRadius(2.0)
-        p1.setFillShape(true)
-        p1.setFillColor(Color.darkolivegreen)
+        p1.setStrokeColor(Color.darkolivegreen)
         p1.setAlignment(Align.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/India")
         tableData[4][3].setPoint(p1)
@@ -34,8 +32,7 @@ public class Example_34 {
         p1 = Point()
         p1.setShape(Point.DIAMOND)
         p1.setRadius(2.5)
-        p1.setFillShape(true)
-        p1.setFillColor(Color.blue)
+        p1.setStrokeColor(Color.blue)
         p1.setAlignment(Align.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
         tableData[5][3].setPoint(p1)
@@ -43,8 +40,7 @@ public class Example_34 {
         p1 = Point()
         p1.setShape(Point.STAR)
         p1.setRadius(3.0)
-        p1.setFillShape(true)
-        p1.setFillColor(Color.red)
+        p1.setStrokeColor(Color.red)
         p1.setAlignment(Align.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
         tableData[6][3].setPoint(p1)
@@ -70,21 +66,6 @@ public class Example_34 {
         }
 
         pdf.complete()
-    }
-
-    private func appendMissingCells(_ tableData: [[Cell]], _ f2: Font) {
-        let firstRow = tableData[0]
-        let numOfColumns = firstRow.count
-        for i in 0..<tableData.count {
-            var dataRow = tableData[i]
-            let dataRowColumns = dataRow.count
-            if dataRowColumns < numOfColumns {
-                for _ in 0..<(numOfColumns - dataRowColumns) {
-                    dataRow.append(Cell(f2, ""))
-                }
-                dataRow[dataRowColumns - 1].setColSpan(UInt32(numOfColumns - dataRowColumns) + 1)
-            }
-        }
     }
 
     public func getData(
@@ -136,8 +117,24 @@ public class Example_34 {
 
             currentRow += 1
         }
-        appendMissingCells(tableData, f2)
+        appendMissingCells(&tableData, f2)
         return tableData
+    }
+
+    private func appendMissingCells(_ tableData: inout [[Cell]], _ f2: Font) {
+        let firstRow = tableData[0]
+        let numOfColumns = firstRow.count
+        for i in 0..<tableData.count {
+            var dataRow = tableData[i]
+            let dataRowColumns = dataRow.count
+            if dataRowColumns < numOfColumns {
+                for _ in 0..<(numOfColumns - dataRowColumns) {
+                    dataRow.append(Cell(f2, ""))
+                }
+                tableData[i] = dataRow
+                dataRow[dataRowColumns - 1].setColSpan(UInt32(numOfColumns - dataRowColumns) + 1)
+            }
+        }
     }
 }   // End of Example_34.swift
 

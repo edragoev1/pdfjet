@@ -34,7 +34,6 @@ type Point struct {
 	hasTextColor      bool
 	textDirection     int
 	uri, key          string
-	fillShape         bool
 }
 
 // NewPoint constructor for creating point objects.
@@ -166,18 +165,6 @@ func (point *Point) SetShape(shape int) *Point {
 // @return the shape code value.
 func (point *Point) GetShape() int {
 	return point.shape
-}
-
-// SetFillShape sets the private fillShape variable.
-// @param fillShape if true - fill the point with the specified brushColor color.
-func (point *Point) SetFillShape(fillShape bool) {
-	point.fillShape = fillShape
-}
-
-// GetFillShape returns the value of the fillShape private variable.
-// @return the value of the private fillShape variable.
-func (point *Point) GetFillShape() bool {
-	return point.fillShape
 }
 
 // SetFillColor sets the penColor color for this point.

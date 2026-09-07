@@ -876,34 +876,22 @@ func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator string) {
 // @param p the point.
 func (page *Page) DrawPoint(p *Point) {
 	if p.shape != shape.Invisible {
-		list := []*Point{}
+		var list []*Point
 		switch p.shape {
 		case shape.Circle:
-			if p.fillShape {
-				page.FillCircle(p.x, p.y, p.r)
-			} else {
-				page.DrawCircle(p.x, p.y, p.r)
-			}
+			page.drawEllipse(p.x, p.y, p.r, p.r, p.pathOperator)
 		case shape.Diamond:
-			list = append(list, NewPoint(p.x, p.y-p.r))
-			list = append(list, NewPoint(p.x+p.r, p.y))
-			list = append(list, NewPoint(p.x, p.y+p.r))
-			list = append(list, NewPoint(p.x-p.r, p.y))
-			if p.fillShape {
-				page.DrawPath(list, pathoperator.Fill)
-			} else {
-				page.DrawPath(list, pathoperator.CloseAndStroke)
-			}
+			list = append(list, NewPoint(p.x, p.y-p.r*1.2))
+			list = append(list, NewPoint(p.x+p.r*1.2, p.y))
+			list = append(list, NewPoint(p.x, p.y+p.r*1.2))
+			list = append(list, NewPoint(p.x-p.r*1.2, p.y))
+			page.DrawPath(list, p.pathOperator)
 		case shape.Box:
-			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
-			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
-			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
-			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
-			if p.fillShape {
-				page.DrawPath(list, pathoperator.Fill)
-			} else {
-				page.DrawPath(list, pathoperator.CloseAndStroke)
-			}
+			list = append(list, NewPoint(p.x-p.r*0.886, p.y-p.r*0.886))
+			list = append(list, NewPoint(p.x+p.r*0.886, p.y-p.r*0.886))
+			list = append(list, NewPoint(p.x+p.r*0.886, p.y+p.r*0.886))
+			list = append(list, NewPoint(p.x-p.r*0.886, p.y+p.r*0.886))
+			page.DrawPath(list, p.pathOperator)
 		case shape.Plus:
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
 			page.DrawLine(p.x, p.y-p.r, p.x, p.y+p.r)
@@ -911,38 +899,26 @@ func (page *Page) DrawPoint(p *Point) {
 			list = append(list, NewPoint(p.x, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
-			if p.fillShape {
-				page.DrawPath(list, pathoperator.Fill)
-			} else {
-				page.DrawPath(list, pathoperator.CloseAndStroke)
-			}
+			list = append(list, NewPoint(p.x, p.y-p.r))
+			page.DrawPath(list, p.pathOperator)
 		case shape.DownArrow:
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x, p.y+p.r))
-			if p.fillShape {
-				page.DrawPath(list, pathoperator.Fill)
-			} else {
-				page.DrawPath(list, pathoperator.CloseAndStroke)
-			}
+			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
+			page.DrawPath(list, p.pathOperator)
 		case shape.LeftArrow:
 			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y))
 			list = append(list, NewPoint(p.x+p.r, p.y-p.r))
-			if p.fillShape {
-				page.DrawPath(list, pathoperator.Fill)
-			} else {
-				page.DrawPath(list, pathoperator.CloseAndStroke)
-			}
+			list = append(list, NewPoint(p.x+p.r, p.y+p.r))
+			page.DrawPath(list, p.pathOperator)
 		case shape.RightArrow:
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			list = append(list, NewPoint(p.x+p.r, p.y))
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
-			if p.fillShape {
-				page.DrawPath(list, pathoperator.Fill)
-			} else {
-				page.DrawPath(list, pathoperator.CloseAndStroke)
-			}
+			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
+			page.DrawPath(list, p.pathOperator)
 		case shape.HDash:
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
 		case shape.VDash:
@@ -956,25 +932,17 @@ func (page *Page) DrawPoint(p *Point) {
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
 			page.DrawLine(p.x, p.y-p.r, p.x, p.y+p.r)
 		case shape.Star:
-			angle := math.Pi / 10
-			sin18 := float32(math.Sin(angle))
-			cos18 := float32(math.Cos(angle))
-			a := p.r * cos18
-			b := p.r * sin18
-			c := 2 * a * sin18
-			d := 2*a*cos18 - p.r
-			list = append(list, NewPoint(p.x, p.y-p.r))
-			list = append(list, NewPoint(p.x+c, p.y+d))
-			list = append(list, NewPoint(p.x-a, p.y-b))
-			list = append(list, NewPoint(p.x+a, p.y-b))
-			list = append(list, NewPoint(p.x-c, p.y+d))
-			if p.fillShape {
-				page.DrawPath(list, pathoperator.Fill)
-			} else {
-				page.DrawPath(list, pathoperator.CloseAndStroke)
+			for i := 0; i < 10; i++ {
+				theta := float64(i) * 36.0 * (math.Pi / 180.0)
+				radius := float64(p.r) * 1.147
+				if i%2 != 0 {
+					radius = float64(p.r) * 0.38196 * 1.147
+				}
+				x := float64(p.x) + radius*math.Sin(theta)
+				y := float64(p.y) - radius*math.Cos(theta) // minus because y grows down
+				list = append(list, NewPoint(float32(x), float32(y)))
 			}
-		default:
-			panic("unhandled default case")
+			page.DrawPath(list, p.pathOperator)
 		}
 	}
 }

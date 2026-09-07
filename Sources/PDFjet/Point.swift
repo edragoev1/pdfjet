@@ -43,7 +43,6 @@ public class Point : Drawable {
     var strokeColor: [Float]?
     var strokeDashPattern = "[] 0"
     var pathOperator = PathOperator.closeAndStroke
-    var fillShape = false
 
     var controlPoint: String = ""
     var drawPath = false
@@ -194,26 +193,6 @@ public class Point : Drawable {
     ///
     public func getShape() -> Int {
         return self.shape
-    }
-
-    ///
-    /// Sets the private fillShape variable.
-    ///
-    /// - Parameter fillShape if true - fill the point with the specified brush color.
-    ///
-    @discardableResult
-    public func setFillShape(_ fillShape: Bool) -> Point {
-        self.fillShape = fillShape
-        return self
-    }
-
-    ///
-    /// Returns the value of the fillShape private variable.
-    ///
-    /// - Returns: the value of the private fillShape variable.
-    ///
-    public func getFillShape() -> Bool {
-        return self.fillShape
     }
 
     ///
@@ -452,6 +431,24 @@ public class Point : Drawable {
     ///
     public func getAlignment() -> UInt32 {
         return self.align
+    }
+
+    ///
+    /// Sets the path operator used to paint this point.
+    ///
+    /// - Parameter pathOperator the path painting operator.
+    ///
+    public func setPathOperator(_ pathOperator: PathOperator) {
+        self.pathOperator = pathOperator
+    }
+
+    ///
+    /// Returns the path operator used to paint this point.
+    ///
+    /// - Returns: the path painting operator.
+    ///
+    public func getPathOperator() -> PathOperator {
+        return self.pathOperator
     }
 
     ///
