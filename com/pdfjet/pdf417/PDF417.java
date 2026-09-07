@@ -1,4 +1,4 @@
-/**
+/*
  * PDF417.java
  *
  * Copyright (c) 2026 PDFjet Software

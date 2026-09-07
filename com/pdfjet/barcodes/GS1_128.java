@@ -1,4 +1,4 @@
-/**
+/*
  * GS1_128.java
  *
  * Copyright (c) 2026 PDFjet Software
