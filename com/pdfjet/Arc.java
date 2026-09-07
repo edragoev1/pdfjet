@@ -66,17 +66,17 @@ public class Arc implements Drawable {
         return this;
     }
 
-    public Arc setStartAngle(float angle) {
+    public final Arc setStartAngle(float angle) {
         this.startAngle = angle;
         return this;
     }
 
-    public Arc setSweepDegreesCW(float sweepDegrees) {
+    public final Arc setSweepDegreesCW(float sweepDegrees) {
         this.sweepDegrees = sweepDegrees;
         return this;
     }
 
-    public Arc setSweepDegreesCCW(float sweepDegrees) {
+    public final Arc setSweepDegreesCCW(float sweepDegrees) {
         this.sweepDegrees = -sweepDegrees;
         return this;
     }
