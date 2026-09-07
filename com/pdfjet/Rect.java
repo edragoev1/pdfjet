@@ -233,6 +233,20 @@ public class Rect implements Drawable {
                 page.closePath();
             }
         } else {
+            // The pen and brush must be set before the path is painted,
+            // otherwise the rounded rectangle is drawn with whatever state
+            // the page happened to be left in.
+            if (borderColor != null && borderPattern != null) {
+                page.setStrokeDashPattern(borderPattern);
+            }
+            if (fillColor != null) {
+                page.setBrushColor(fillColor);
+            }
+            if (borderColor != null) {
+                page.setPenWidth(borderWidth);
+                page.setPenColor(borderColor);
+            }
+
             List<Point> points = new ArrayList<Point>();
             points.add(new Point((this.x + this.r), this.y));
             points.add(new Point((this.x + this.w) - this.r, this.y));
@@ -258,23 +272,6 @@ public class Rect implements Drawable {
                 page.drawPath(points, PathOperator.STROKE);
             } else if (fillColor != null && borderColor != null) {
                 page.drawPath(points, PathOperator.FILL_AND_STROKE);
-            }
-
-            if (borderColor != null && borderPattern != null) {
-                page.setStrokeDashPattern(borderPattern);
-            }
-            if (fillColor != null && borderColor != null) {
-                page.setBrushColor(fillColor);
-                page.setPenWidth(borderWidth);
-                page.setPenColor(borderColor);
-                page.append("B\n");
-            } else if (fillColor != null && borderColor == null) {
-                page.setBrushColor(fillColor);
-                page.append("f\n");
-            } else if (fillColor == null && borderColor != null) {
-                page.setPenWidth(borderWidth);
-                page.setPenColor(borderColor);
-                page.append("S\n");
             }
         }
         page.restoreGraphicsState();

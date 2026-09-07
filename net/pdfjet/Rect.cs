@@ -173,6 +173,20 @@ public class Rect  : IDrawable {
                 page.ClosePath();
             }
         } else {
+            // The pen and brush must be set before the path is painted,
+            // otherwise the rounded rectangle is drawn with whatever state
+            // the page happened to be left in.
+            if (borderColor != null && borderPattern != null) {
+                page.SetStrokeDashPattern(borderPattern);
+            }
+            if (fillColor != null) {
+                page.SetBrushColor(fillColor);
+            }
+            if (borderColor != null) {
+                page.SetPenWidth(borderWidth);
+                page.SetPenColor(borderColor);
+            }
+
             List<Point> points = new List<Point> {
                 new Point((this.x + this.r), this.y),
                 new Point((this.x + this.w) - this.r, this.y),
@@ -198,23 +212,6 @@ public class Rect  : IDrawable {
                 page.DrawPath(points, PathOperator.Stroke);
             } else if (fillColor != null && borderColor != null) {
                 page.DrawPath(points, PathOperator.FillAndStroke);
-            }
-
-            if (borderColor != null && borderPattern != null) {
-                page.SetStrokeDashPattern(borderPattern);
-            }
-            if (fillColor != null && borderColor != null) {
-                page.SetBrushColor(fillColor);
-                page.SetPenWidth(borderWidth);
-                page.SetPenColor(borderColor);
-                page.Append("B\n");
-            } else if (fillColor != null && borderColor == null) {
-                page.SetBrushColor(fillColor);
-                page.Append("f\n");
-            } else if (fillColor == null && borderColor != null) {
-                page.SetPenWidth(borderWidth);
-                page.SetPenColor(borderColor);
-                page.Append("S\n");
             }
         }
 

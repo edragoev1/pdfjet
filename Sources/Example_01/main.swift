@@ -17,6 +17,11 @@ public class Example_01 {
         // Create a new page with Portrait orientation
         let page = Page(pdf, Letter.PORTRAIT)
 
+        var map = [String: Int32]()
+        map["Everyone"] = Color.darkred
+        map["Pay"] = Color.darkgreen
+        map["Freedom"] = Color.blue
+
         // Read English text from a file
         let englishText = try String(
                 contentsOfFile: "data/languages/english.txt", encoding: .utf8)
@@ -25,6 +30,7 @@ public class Example_01 {
         textBlock.setWidth(473)         // Set width of the text block
         textBlock.setTextPadding(10)    // Set padding around the text
         textBlock.setBorderColor(Color.blue)
+        textBlock.setKeywordHighlightColors(map)
         var xy = textBlock.drawOn(page) // Draw the English text on the page and get coordinates
 
         // Draw a blue rectangle around the English text block
@@ -50,6 +56,7 @@ public class Example_01 {
         textBlock3.setTextPadding(10)           // Set padding around the Bulgarian text
         textBlock3.setBorderColor(Color.blue)   // Blue border for the Bulgarian text
         textBlock3.setBorderCornerRadius(10)    // Set rounded corners for the border
+        textBlock3.setUnderline(true)           // Underline the Bulgarian text
         textBlock3.drawOn(page)                 // Draw the Bulgarian text
 
         // Finalize the PDF creation

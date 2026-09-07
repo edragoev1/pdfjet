@@ -15,7 +15,7 @@ public class Rect : Drawable {
 
     private var fillColor: [Float]?
     private var borderColor: [Float]?
-    private var borderWidth: Float = 0.5
+    private var borderWidth: Float = 0.0
     private var borderPattern: String = "[] 0"
 
     private var uri: String?
@@ -194,16 +194,11 @@ public class Rect : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        let k: Float = 0.5517
+        let k: Float = 0.55228
 
         // A rectangle carries no text, so it is decorative content.
         page!.addArtifactBMC()
-
-//         page!.addBMC(
-//                 self.structureType,
-//                 self.language,
-//                 self.actualText,
-//                 self.altDescription)
+        page!.saveGraphicsState()
 
         if self.r == 0.0 {
             if fillColor != nil {
@@ -251,6 +246,7 @@ public class Rect : Drawable {
 
             page!.drawPath(points, PathOperator.stroke)
         }
+        page!.restoreGraphicsState()
         page!.addEMC()
 
 //         if self.uri != nil || self.key != nil {

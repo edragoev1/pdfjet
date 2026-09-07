@@ -198,9 +198,11 @@ func (rect *Rect) ScaleBy(factor float32) {
 // @param page the page to draw this rect on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (rect *Rect) DrawOn(page *Page) [2]float32 {
-	const k float32 = 0.5517
+	const k float32 = 0.55228
 
-	page.AddBMC(rect.structureType, rect.language, rect.actualText, rect.altDescription)
+	// A rectangle carries no text, so it is decorative content.
+	page.AddArtifactBMC()
+	page.SaveGraphicsState()
 	if rect.cornerRadius == 0.0 {
 		if rect.hasFillColor {
 			page.SetBrushColorRGB(rect.fillColor)
@@ -247,6 +249,7 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 
 		page.DrawPath(points, pathoperator.Stroke)
 	}
+	page.RestoreGraphicsState()
 	page.AddEMC()
 
 	if rect.uri != "" || rect.key != "" {

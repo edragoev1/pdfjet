@@ -313,6 +313,18 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 	return textLines
 }
 
+// SetUnderline underlines the text of this text block.
+// @param underline the underline flag.
+func (textBlock *TextBlock) SetUnderline(underline bool) {
+	textBlock.underline = underline
+}
+
+func (textBlock *TextBlock) underlineText(textLines []*TextLine) {
+	for _, textLine := range textLines {
+		textLine.underline = true
+	}
+}
+
 func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 	for _, textLine := range textLines {
 		textLine.xOffset = textBlock.width -
@@ -362,6 +374,9 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	case alignment.Center:
 		textBlock.centerText(textLines)
 	default:
+	}
+	if textBlock.underline {
+		textBlock.underlineText(textLines)
 	}
 
 	if textBlock.hasBorderColor || textBlock.hasFillColor {

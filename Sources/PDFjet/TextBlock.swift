@@ -167,6 +167,19 @@ public class TextBlock : Drawable {
         self.highlightColors = highlightColors
     }
 
+    ///
+    /// Sets the colors used to highlight the specified keywords.
+    ///
+    /// - Parameter map: the keyword to color map.
+    ///
+    public func setKeywordHighlightColors(_ map: [String: Int32]) {
+        var colors = [String: Int32]()
+        for (key, value) in map {
+            colors[key.lowercased()] = value
+        }
+        self.highlightColors = colors
+    }
+
     public func setLineSpacing(_ lineSpacing: Float) {
         self.lineSpacing = lineSpacing
     }
@@ -246,6 +259,33 @@ public class TextBlock : Drawable {
         self.textDirection = direction
     }
 
+    ///
+    /// Underlines the text of this text block.
+    ///
+    /// - Parameter underline: the underline flag.
+    ///
+    public func setUnderline(_ underline: Bool) {
+        self.underline = underline
+    }
+
+    private func rightAlignText(_ textLines: [TextLine]) {
+        for textLine in textLines {
+            textLine.xOffset = self.width - font.stringWidth(textLine.text)
+        }
+    }
+
+    private func centerText(_ textLines: [TextLine]) {
+        for textLine in textLines {
+            textLine.xOffset = (self.width - font.stringWidth(textLine.text)) / 2.0
+        }
+    }
+
+    private func underlineText(_ textLines: [TextLine]) {
+        for textLine in textLines {
+            textLine.underline = true
+        }
+    }
+
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let ascent = font.getAscent(fontSize)
@@ -259,14 +299,14 @@ public class TextBlock : Drawable {
         page!.saveGraphicsState()
 
         page!.setPenWidth(self.borderWidth)
-//         if textAlignment == Alignment.RIGHT {
-//             // rightAlignText(textLines)    // TODO:
-//         } else if textAlignment == Alignment.CENTER {
-//             // centerText(textLines)
-//         }
-//         if underline {
-//             // underlineText(textLines)
-//         }
+        if textAlignment == Alignment.RIGHT {
+            rightAlignText(textLines)
+        } else if textAlignment == Alignment.CENTER {
+            centerText(textLines)
+        }
+        if underline {
+            underlineText(textLines)
+        }
 
         if self.borderColor != nil || self.fillColor != nil {
             let rect = Rect(

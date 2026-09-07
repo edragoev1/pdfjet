@@ -15,7 +15,7 @@ import (
 func Example01() {
 	pdf := pdfjet.NewPDFFile("Example_01.pdf")
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Multilingual text blocks")
+	pdf.SetTitle("Document containing English, Greek and Bulgarian text blocks.")
 
 	// Load font and set size
 	font1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
@@ -35,6 +35,7 @@ func Example01() {
 	textBlock.SetLocation(50, 50)
 	textBlock.SetWidth(473) // Why 473f? To match the Google Fonts samples.
 	textBlock.SetTextPadding(10)
+	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetKeywordHighlightColors(colorMap)
 	xy := textBlock.DrawOn(page)
 
@@ -47,7 +48,7 @@ func Example01() {
 	textBlock = pdfjet.NewTextBlock(font1,
 		content.OfTextFile("data/languages/greek.txt"))
 	textBlock.SetLocation(50.0, xy[1]+30.0)
-	textBlock.SetWidth(430.0)
+	textBlock.SetWidth(473.0)
 	textBlock.SetTextPadding(10.0)
 	xy = textBlock.DrawOn(page)
 
@@ -59,6 +60,7 @@ func Example01() {
 	textBlock.SetTextPadding(10.0)
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetBorderCornerRadius(10.0)
+	textBlock.SetUnderline(true)
 	textBlock.DrawOn(page)
 
 	// Complete the PDF file
