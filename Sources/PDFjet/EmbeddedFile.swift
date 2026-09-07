@@ -26,7 +26,11 @@ public class EmbeddedFile {
                 fileName += String(scalar)
             }
         }
-        try self.init(pdf, fileName, InputStream(fileAtPath: filePath)!, compress)
+        guard let stream = InputStream(fileAtPath: filePath),
+                FileManager.default.fileExists(atPath: filePath) else {
+            throw EmbeddedFileError.fileNotFound(filePath)
+        }
+        try self.init(pdf, fileName, stream, compress)
     }
 
     public init(
@@ -45,7 +49,7 @@ public class EmbeddedFile {
         pdf.newobj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /EmbeddedFile\n")
-        if compress == Compress.NO {
+        if compress == Compress.YES {
             pdf.append("/Filter /FlateDecode\n")
         }
         pdf.append(Token.length)
@@ -60,9 +64,9 @@ public class EmbeddedFile {
         pdf.newobj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Filespec\n")
-        pdf.append("/F (")
-        pdf.append(fileName)
-        pdf.append(")\n")
+        pdf.append("/F <")
+        pdf.append(Array(fileName.utf8).map { String(format: "%02x", $0) }.joined())
+        pdf.append(">\n")
         pdf.append("/EF <</F ")
         pdf.append(pdf.getObjNumber() - 1)
         pdf.append(" 0 R>>\n")
@@ -76,3 +80,7 @@ public class EmbeddedFile {
         return self.fileName!
     }
 }   // End of EmbeddedFile.swift
+
+enum EmbeddedFileError: Error {
+    case fileNotFound(String)
+}

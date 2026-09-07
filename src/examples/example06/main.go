@@ -10,13 +10,14 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
+// Example06 shows how to attach files and annotations to a page.
 func Example06() {
 	pdf := pdfjet.NewPDFFile("Example_06.pdf")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
 	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
-	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "examples/Example_02/Example_02.cs", compress.Yes)
+	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", compress.Yes)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 

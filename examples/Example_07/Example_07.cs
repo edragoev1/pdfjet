@@ -8,11 +8,13 @@ using PDFjet.NET;
  * Example_07.cs
  */
 public class Example_07 {
-    public Example_07(String fontType) {
+    public Example_07() {
         PDF pdf = new PDF(
-            new BufferedStream(new FileStream("Example_07.pdf", FileMode.Create)));
-        pdf.SetCompliance(Compliance.PDF_A_3B);
+                new BufferedStream(new FileStream("Example_07.pdf", FileMode.Create)),
+                Compliance.PDF_A_3B);
         pdf.SetTitle("PDF/A-3B compliant PDF");
+
+        // The following code is faster and consumes less memory:
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, A4.LANDSCAPE);
@@ -61,6 +63,7 @@ public class Example_07 {
 
         page = new Page(pdf, A4.LANDSCAPE);
         textLine.SetText("Hello, World!");
+        textLine.SetUnderline(true);
         textLine.SetLocation(xPos, 34f);
         textLine.DrawOn(page);
 
@@ -70,7 +73,7 @@ public class Example_07 {
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_07("stream");
+        new Example_07();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
         TextUtils.PrintDuration("Example_07", time0, time1);

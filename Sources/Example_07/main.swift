@@ -20,7 +20,7 @@ public class Example_07 {
         let xPos: Float = 20.0
         var yPos: Float = 20.0
 
-        let textLine = TextLine(f1).setLocation(xPos, yPos)
+        let textLine = TextLine(f1)
 
         var buffer = String()
         var j = 0

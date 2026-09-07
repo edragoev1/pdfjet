@@ -10,8 +10,8 @@ import (
 	"github.com/edragoev1/pdfjet/src/compliance"
 )
 
-// Example07 -- TODO:
-func Example07(mode string) {
+// Example07 shows how to create a PDF/A-3B compliant document.
+func Example07() {
 	pdf := pdfjet.NewPDFFile("Example_07.pdf")
 	pdf.SetCompliance(compliance.PDF_A_3B)
 	pdf.SetTitle("PDF/A-3B compliant PDF")
@@ -72,6 +72,6 @@ func Example07(mode string) {
 
 func main() {
 	start := time.Now()
-	Example07("stream")
+	Example07()
 	pdfjet.PrintDuration("Example_07", time.Since(start))
 }

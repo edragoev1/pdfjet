@@ -85,7 +85,17 @@ public class PDF {
     // Root
     // xref table
     // Trailer
-    public PDF(Stream os) {
+    public PDF(Stream os) : this(os, Compliance.PDF_1_7) {
+    }
+
+    /**
+     * Creates a PDF document with the specified compliance level.
+     *
+     * @param os the associated output stream.
+     * @param compliance must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B
+     */
+    public PDF(Stream os, Compliance compliance) {
+        this.compliance = compliance;
         SetOutputStream(os);
     }
 
