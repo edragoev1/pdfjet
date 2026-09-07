@@ -1,4 +1,4 @@
-/**
+/*
  * Letter.java
  *
  * Copyright (c) 2026 PDFjet Software
