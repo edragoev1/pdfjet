@@ -285,16 +285,15 @@ public class Table {
      * @param color the color specified as an integer.
      */
     public void setTextColorInColumn(int index, int color) {
-// TODO:
-//         for (List<Cell> row : tableData) {
-//             if (index < row.size()) {
-//                 Cell cell = row.get(index);
-//                 cell.setBrushColor(color);
-//                 if (cell.textBox != null) {
-//                     cell.textBox.setBrushColor(color);
-//                 }
-//             }
-//         }
+        for (List<Cell> row : tableData) {
+            if (index < row.size()) {
+                Cell cell = row.get(index);
+                cell.setTextColor(color);
+                if (cell.textBox != null) {
+                    cell.textBox.setTextColor(color);
+                }
+            }
+        }
     }
 
     /**
@@ -322,16 +321,15 @@ public class Table {
      * @param color the color specified as an integer.
      */
     public void setTextColorInRow(int index, int color) {
-// TODO:
-//         if (index < tableData.size()) {
-//             List<Cell> row = tableData.get(index);
-//             for (Cell cell : row) {
-//                 cell.setBrushColor(color);
-//                 if (cell.textBox != null) {
-//                     cell.textBox.setFillColor(color);
-//                 }
-//             }
-//        }
+        if (index < tableData.size()) {
+            List<Cell> row = tableData.get(index);
+            for (Cell cell : row) {
+                cell.setTextColor(color);
+                if (cell.textBox != null) {
+                    cell.textBox.setTextColor(color);
+                }
+            }
+        }
     }
 
     /**
@@ -594,7 +592,7 @@ public class Table {
     public void setCellBordersColor(int color) {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
-// TODO:                cell.setPenColor(color);
+                cell.setStrokeColor(color);
             }
         }
     }
@@ -715,9 +713,10 @@ public class Table {
                     cell2.setLeftPadding(cell.leftPadding);
                     cell2.setRightPadding(cell.rightPadding);
                     cell2.setLineWidth(cell.lineWidth);
-// TODO:                    cell2.setBgColor(cell.getBgColor());
-// TODO:                    cell2.setPenColor(cell.getPenColor());
-                    cell2.setBrushColor(cell.getBrushColor());
+                    cell2.setBackgroundColor(cell.getBackgroundColor());
+                    cell2.setStrokeWidth(cell.getStrokeWidth());
+                    cell2.setStrokeColor(cell.getStrokeColor());
+                    cell2.setTextColor(cell.getTextColor());
                     cell2.setProperties(cell.getProperties());
                     cell2.setVerTextAlignment(cell.getVerTextAlignment());
                     cell2.setTopPadding(0f);

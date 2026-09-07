@@ -34,6 +34,7 @@ public class Path : IDrawable {
     private String altDescription = null;
 
     private bool closePath = false;
+    private bool fillShape = false;
 
     /**
      * The default constructor.
@@ -144,6 +145,86 @@ public class Path : IDrawable {
      */
     public void SetStrokeDashPattern(String strokeDashPattern) {
         this.strokeDashPattern = strokeDashPattern;
+    }
+
+    /**
+     * Sets the pen color used to draw this path.
+     * The same color is used as the brush color when the shape is filled.
+     *
+     * @param color the color specified as an integer.
+     */
+    public void SetColor(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        SetColor(new float[] {r, g, b});
+    }
+
+    /**
+     * Sets the pen color used to draw this path.
+     *
+     * @param rgbColor the color as an RGB array.
+     */
+    public void SetColor(float[] rgbColor) {
+        this.strokeColor = rgbColor;
+        this.fillColor = rgbColor;
+    }
+
+    /**
+     * Sets the width of the line used to draw this path.
+     *
+     * @param width the line width.
+     */
+    public void SetWidth(double width) {
+        SetWidth((float) width);
+    }
+
+    /**
+     * Sets the width of the line used to draw this path.
+     *
+     * @param width the line width.
+     */
+    public void SetWidth(float width) {
+        this.strokeWidth = width;
+    }
+
+    /**
+     * Sets the dash pattern of the line used to draw this path.
+     *
+     * @param pattern the dash pattern, e.g. "[3] 0".
+     */
+    public void SetPattern(String pattern) {
+        this.strokeDashPattern = pattern;
+    }
+
+    /**
+     * Sets whether this path is filled with the current color.
+     *
+     * @param fillShape true to fill the shape, false to stroke its outline.
+     */
+    public void SetFillShape(bool fillShape) {
+        this.fillShape = fillShape;
+    }
+
+    /**
+     * Scales all the points of this path by the specified factor.
+     *
+     * @param factor the scale factor.
+     */
+    public void ScaleBy(double factor) {
+        ScaleBy((float) factor);
+    }
+
+    /**
+     * Scales all the points of this path by the specified factor.
+     *
+     * @param factor the scale factor.
+     */
+    public void ScaleBy(float factor) {
+        foreach (Point point in points) {
+            point.x *= factor;
+            point.y *= factor;
+        }
     }
 
     /**
@@ -262,7 +343,16 @@ public class Path : IDrawable {
     }
 
     public void SetClosePath() {
-        closePath = true;
+        this.closePath = true;
+    }
+
+    /**
+     * Sets whether this path is closed before it is stroked.
+     *
+     * @param closePath true to close the path.
+     */
+    public void SetClosePath(bool closePath) {
+        this.closePath = closePath;
     }
 
     public int GetPointCount() {
@@ -285,10 +375,6 @@ public class Path : IDrawable {
      * @throws Exception
      */
     public float[] DrawOn(Page page) {
-        if (closePath == true) {
-            this.Add(new Point(this.points[0].x, this.points[0].y));
-        }
-
         foreach (Point point in points) {
             point.x += this.x;
             point.y += this.y;
@@ -320,25 +406,38 @@ public class Path : IDrawable {
         float centerX = x + w/2;
         float centerY = (page.height - y) - h/2;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
-        if (strokeColor != null && strokeDashPattern != null) {
-            page.SetStrokeDashPattern(strokeDashPattern);
-        }
-        if (fillColor != null && strokeColor == null) {
+        if (fillShape) {
             page.SetBrushColor(fillColor);
             page.DrawPath(points, PathOperator.Fill);
-        } else if (fillColor == null && strokeColor != null) {
-            page.SetPenColor(strokeColor);
-            page.SetPenWidth(strokeWidth);
-            page.DrawPath(points, PathOperator.Stroke);
-        } else if (fillColor != null && strokeColor != null) {
-            page.SetBrushColor(fillColor);
-            page.SetPenColor(strokeColor);
-            page.SetPenWidth(strokeWidth);
-            page.DrawPath(points, PathOperator.FillAndStroke);
+        } else {
+            if (strokeColor != null && strokeDashPattern != null) {
+                page.SetStrokeDashPattern(strokeDashPattern);
+            }
+            page.SetLineCapStyle(lineCapStyle);
+            page.SetLineJoinStyle(lineJoinStyle);
+            if (fillColor != null && strokeColor == null) {
+                page.SetBrushColor(fillColor);
+                page.DrawPath(points, PathOperator.Fill);
+            } else if (fillColor == null && strokeColor != null) {
+                page.SetPenColor(strokeColor);
+                page.SetPenWidth(strokeWidth);
+                page.DrawPath(points,
+                        closePath ? PathOperator.CloseAndStroke : PathOperator.Stroke);
+            } else if (fillColor != null && strokeColor != null) {
+                page.SetBrushColor(fillColor);
+                page.SetPenColor(strokeColor);
+                page.SetPenWidth(strokeWidth);
+                page.DrawPath(points, PathOperator.FillAndStroke);
+            }
         }
 
         page.RestoreGraphicsState();
         page.AddEMC();
+
+        foreach (Point point in points) {
+            point.x -= this.x;
+            point.y -= this.y;
+        }
 
         if (uri != null || key != null) {
             page.AddAnnotation(new Annotation(

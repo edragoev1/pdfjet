@@ -24,42 +24,40 @@ public class Example_46 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine textLine = new TextLine(f2, "© OpenStreetMap contributors");
-        textLine.SetFontSize(10f);
         textLine.SetLocation(10f, 655f);
-        float[] pointXY = textLine.DrawOn(page);
+        float[] xy = textLine.DrawOn(page);
 
         textLine = new TextLine(f2, "http://www.openstreetmap.org/copyright");
-        textLine.SetFontSize(10f);
         textLine.SetURIAction("http://www.openstreetmap.org/copyright");
-        textLine.SetLocation(10f, pointXY[1] + f2.GetBodyHeight(10f));
+        textLine.SetLocation(10f, xy[1] + f2.GetHeight());
         textLine.DrawOn(page);
 
-        OptionalContentGroup group = new OptionalContentGroup(pdf, "Open Street Map");
+        OptionalContentGroup group = new OptionalContentGroup(pdf, "Map");
         group.Add(image1);
         group.SetVisible(true);
-        group.SetPrintable(false);
+        group.SetPrintable(true);
         group.DrawOn(page);
 
         TextBox textBox = new TextBox(f1);
-        textLine.SetFontSize(16f);
+        // textBox.SetFontSize(16f);
         textBox.SetText("Blue Layer Text");
-        textBox.SetLocation(350f, 130f);
+        textBox.SetLocation(10f, 130f);
 
         Line line = new Line();
-        line.SetPointA(350f, 150f);
-        line.SetPointB(550f, 150f);
+        line.SetPointA(300f, 150f);
+        line.SetPointB(500f, 150f);
         line.SetWidth(2f);
         line.SetColor(Color.blue);
 
-        group = new OptionalContentGroup(pdf, "Blue Layer");
+        group = new OptionalContentGroup(pdf, "Blue Line");
         group.Add(textBox);
         group.Add(line);
         group.SetVisible(true);
         group.DrawOn(page);
 
         line = new Line();
-        line.SetPointA(350f, 160f);
-        line.SetPointB(550f, 160f);
+        line.SetPointA(300f, 160f);
+        line.SetPointB(500f, 160f);
         line.SetWidth(2f);
         line.SetColor(Color.red);
 

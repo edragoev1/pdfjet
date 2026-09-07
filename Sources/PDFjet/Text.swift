@@ -19,7 +19,7 @@ public class Text : Drawable {
     private var xText: Float = 0.0
     private var yText: Float = 0.0
     private var leading: Float = 0.0
-    private var paragraphLeading: Float = 0.0
+    private var paragraphLeading: Float = 24.0
     private var borderColor: [Float]?
     private var borderWidth: Float = 0.5
     private var borderPattern: String = "[] 0"
@@ -29,7 +29,6 @@ public class Text : Drawable {
         self.font = paragraphs[0].lines![0].getFont()
         self.fallbackFont = paragraphs[0].lines![0].getFallbackFont()
         self.leading = font!.getBodyHeight()
-        self.paragraphLeading = 2*leading
     }
 
     public func setPosition(_ x: Float, _ y: Float) {
@@ -101,7 +100,10 @@ public class Text : Drawable {
             self.yText += self.paragraphLeading
         }
 
-        let height = ((self.yText - paragraphLeading) - self.y1) + font!.descent
+        let lastParagraph = paragraphs![paragraphs!.count - 1]
+        let lastTextLine = lastParagraph.getTextLines()[lastParagraph.getTextLines().count - 1]
+        let height = ((self.yText - paragraphLeading) - self.y1) +
+                lastTextLine.font!.getDescent(lastTextLine.fontSize)
         if self.borderColor != nil {
             let rect = Rect(x1, y1, self.width, height)
             rect.setBorderColor(self.borderColor)
@@ -142,7 +144,7 @@ public class Text : Drawable {
                     TextLine(textLine.font!, buf)
                             .setFallbackFont(textLine.getFallbackFont())
                             .setFontSize(textLine.getFontSize())
-                            .setLocation(xText, yText + textLine.getVerticalOffset())
+                            .setLocation(xText, yText)
                             .setTextColor(textLine.getTextColor())
                             .setColorMap(textLine.getColorMap())
                             .setUnderline(textLine.getUnderline())
@@ -151,7 +153,7 @@ public class Text : Drawable {
                             .drawOn(page)
                 }
                 xText = x1
-                yText += leading
+                yText += textLine.getHeight()
                 buf = ""
                 buf.append(token)
                 buf.append(Single.space)
@@ -161,7 +163,7 @@ public class Text : Drawable {
             TextLine(textLine.font!, buf)
                     .setFallbackFont(textLine.getFallbackFont())
                     .setFontSize(textLine.getFontSize())
-                    .setLocation(xText, yText + textLine.getVerticalOffset())
+                    .setLocation(xText, yText)
                     .setTextColor(textLine.getTextColor())
                     .setColorMap(textLine.getColorMap())
                     .setUnderline(textLine.getUnderline())

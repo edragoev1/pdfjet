@@ -75,9 +75,8 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		fields := strings.Split(line, delimiterRegex)
 		for _, field := range fields {
 			if lineNumber == 0 {
-				cell := NewCell(f1, "")
-				textBlock := NewTextBlock(f1, field)
-				cell.SetTextBlock(textBlock)
+				cell := NewCell(f1, field)
+				// cell.SetTextBlock(NewTextBlock(f1, field))
 				row = append(row, cell)
 			} else {
 				row = append(row, NewCell(f2, field))
@@ -598,6 +597,9 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				cell2.SetBottomBorder(cell.GetBottomBorder())
 				cell2.SetLeftBorder(cell.GetLeftBorder())
 				cell2.SetRightBorder(cell.GetRightBorder())
+				// Java copies these across with Cell.setProperties()
+				cell2.SetColSpan(cell.GetColSpan())
+				cell2.SetTextAlignment(cell.GetTextAlignment())
 				cell2.SetVerTextAlignment(cell.GetVerTextAlignment())
 				cell2.SetTopPadding(0.0)
 				cell2.SetTopBorder(false)

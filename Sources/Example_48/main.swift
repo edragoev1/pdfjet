@@ -14,6 +14,7 @@ public class Example_48 {
         pdf.setTitle("The structure of a PDF file")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(14.0)
 
         var page = Page(pdf, Letter.PORTRAIT)
 

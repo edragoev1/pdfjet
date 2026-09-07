@@ -308,6 +308,33 @@ public class Cell {
     }
 
     /**
+     * Returns the stroke color.
+     *
+     * @return the stroke color.
+     */
+    public float[] getStrokeColor() {
+        return this.strokeColor;
+    }
+
+    /**
+     * Sets the stroke width.
+     *
+     * @param strokeWidth the stroke width.
+     */
+    public void setStrokeWidth(float strokeWidth) {
+        this.strokeWidth = strokeWidth;
+    }
+
+    /**
+     * Returns the stroke width.
+     *
+     * @return the stroke width.
+     */
+    public float getStrokeWidth() {
+        return this.strokeWidth;
+    }
+
+    /**
      * Returns the cell height.
      *
      * @param width the cell width.
@@ -369,7 +396,7 @@ public class Cell {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, b, b};
+        this.textColor = new float[] {r, g, b};
     }
 
     public void setTextColor(float[] textColor) {
@@ -397,7 +424,16 @@ public class Cell {
     }
 
     public void setBackgroundColor(float[] color) {
-        this.backgroundColor = backgroundColor;
+        this.backgroundColor = color;
+    }
+
+    /**
+     * Returns the background color.
+     *
+     * @return the background color.
+     */
+    public float[] getBackgroundColor() {
+        return this.backgroundColor;
     }
 
     protected void setProperties(int properties) {

@@ -225,7 +225,7 @@ public class Example_38 {
         cell.setRightBorder(true)
         cell.setTextAlignment(Align.CENTER)
         cell.setBackgroundColor(Color.lightblue)
-        cell.setLineWidth(0.5)
+        cell.setLineWidth(1.0)
         return cell
     }
 }   // End of Example_38.swift

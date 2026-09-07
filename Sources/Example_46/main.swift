@@ -8,7 +8,8 @@ public class Example_46 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_46.pdf", append: false)!)
 
-        let font = Font(pdf, CoreFont.HELVETICA)
+        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f2 = Font(pdf, CoreFont.HELVETICA)
 
         let image1 = try Image(pdf, "images/map407.png")
         image1.setLocation(10.0, 100.0)
@@ -18,23 +19,23 @@ public class Example_46 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        var textLine = TextLine(font)
-        textLine.setText("© OpenStreetMap contributors")
+        var textLine = TextLine(f2, "© OpenStreetMap contributors")
         textLine.setLocation(10.0, 655.0)
         let xy = textLine.drawOn(page)
 
-        textLine = TextLine(font, "http://www.openstreetmap.org/copyright")
+        textLine = TextLine(f2, "http://www.openstreetmap.org/copyright")
         textLine.setURIAction("http://www.openstreetmap.org/copyright")
-        textLine.setLocation(10.0, xy[1] + font.getBodyHeight())
+        textLine.setLocation(10.0, xy[1] + f2.getHeight())
         textLine.drawOn(page)
 
-        var group = OptionalContentGroup(pdf, "Open Source Map")
+        var group = OptionalContentGroup(pdf, "Map")
         group.add(image1)
         group.setVisible(true)
-        group.setPrintable(false)
+        group.setPrintable(true)
         group.drawOn(page)
 
-        let textBox = TextBox(font)
+        let textBox = TextBox(f1)
+        // textBox.setFontSize(16.0)
         textBox.setText("Blue Layer Text")
         textBox.setLocation(10.0, 130.0)
 
@@ -44,23 +45,21 @@ public class Example_46 {
         line.setWidth(2.0)
         line.setColor(Color.blue)
 
-        group = OptionalContentGroup(pdf, "Blue Layer")
+        group = OptionalContentGroup(pdf, "Blue Line")
         group.add(textBox)
         group.add(line)
         group.setVisible(true)
         group.drawOn(page)
 
         line = Line()
-        line.setPointA(350.0, 160.0)
-        line.setPointB(550.0, 160.0)
+        line.setPointA(300.0, 160.0)
+        line.setPointB(500.0, 160.0)
         line.setWidth(2.0)
         line.setColor(Color.red)
-        line.drawOn(page)
 
         group = OptionalContentGroup(pdf, "Barcode")
         group.add(image2)
         group.add(line)
-        group.setPrintable(true)
         group.drawOn(page)
 
         pdf.complete()

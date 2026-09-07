@@ -20,8 +20,8 @@ public class Example_44 {
         let column = TextColumn(rotate)
         column.setLocation(70.0, 70.0)
         column.setWidth(500.0)
-        column.setLineSpacing(1.3)
-        column.setParagraphSpacing(1.0)
+        column.setLineSpacing(1.5)      // 1.5 x font height
+        column.setParagraphSpacing(0.5) // 0.5 x line spacing
 
         let p1 = Paragraph()
         p1.add(TextLine(f1,

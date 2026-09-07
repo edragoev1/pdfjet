@@ -33,6 +33,8 @@ public class Chart : IDrawable {
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
+    private bool drawXAxisLines = true;
+    private bool drawYAxisLines = true;
     private bool drawXAxisLabels = true;
     private bool drawYAxisLabels = true;
 
@@ -58,6 +60,18 @@ public class Chart : IDrawable {
     private float fontSize = 8f;
 
     private List<List<Point>> chartData = null;
+
+    private static readonly int[] DEFAULT_PALETTE = {
+        Color.blue,
+        Color.red,
+        Color.green,
+        Color.orange,
+        Color.purple,
+        Color.darkcyan,
+        Color.magenta,
+        Color.olive
+    };
+    private bool autoColors = true;
 
     /**
      * Creates an XY chart.
@@ -178,6 +192,16 @@ public class Chart : IDrawable {
     }
 
     /** Toggles drawing of X axis labels. */
+    /** Toggles drawing of horizontal grid lines. */
+    public void SetDrawXAxisLines(bool drawXAxisLines) {
+        this.drawXAxisLines = drawXAxisLines;
+    }
+
+    /** Toggles drawing of vertical grid lines. */
+    public void SetDrawYAxisLines(bool drawYAxisLines) {
+        this.drawYAxisLines = drawYAxisLines;
+    }
+
     public void SetDrawXAxisLabels(bool drawXAxisLabels) {
         this.drawXAxisLabels = drawXAxisLabels;
     }
@@ -281,8 +305,12 @@ public class Chart : IDrawable {
         DrawChartBorder(page);
         DrawInnerBorder(page);
 
-        DrawHorizontalGridLines(page);
-        DrawVerticalGridLines(page);
+        if (drawXAxisLines) {
+            DrawHorizontalGridLines(page);
+        }
+        if (drawYAxisLines) {
+            DrawVerticalGridLines(page);
+        }
 
         if (drawXAxisLabels) {
             DrawXAxisLabels(page);
@@ -503,17 +531,34 @@ public class Chart : IDrawable {
         }
     }
 
+    public void SetAutoColors(bool autoColors) {
+        this.autoColors = autoColors;
+    }
+
+    public float[] ToFloatArray(int color) {
+        float r = ((color >> 16) & 0xff)/255f;
+        float g = ((color >>  8) & 0xff)/255f;
+        float b = ((color)       & 0xff)/255f;
+        return new float[] {r, g, b};
+    }
+
     /** Draws connecting paths, point markers, and point text. */
     private void DrawPathsAndPoints(
             Page page, List<List<Point>> chartData) {
+        int seriesIndex = 0;
         foreach (List<Point> points in chartData) {
             Point p0 = points[0];
             if (p0.drawPath) {
+                if (autoColors && p0.strokeColor == null) {
+                    int index = seriesIndex % DEFAULT_PALETTE.Length;
+                    p0.strokeColor = ToFloatArray(DEFAULT_PALETTE[index]);
+                }
                 page.SetPenColor(p0.strokeColor);
                 page.SetPenWidth(p0.strokeWidth);
                 page.SetStrokeDashPattern(p0.strokeDashPattern);
                 page.DrawPath(points, PathOperator.Stroke);
                 if (p0.GetText() != null) {
+                    page.SetBrushColor(p0.GetTextColor());
                     page.SetTextDirection(p0.GetTextDirection());
                     page.DrawString(
                             f2,
@@ -535,6 +580,7 @@ public class Chart : IDrawable {
                     page.DrawPoint(point);
                 }
             }
+            seriesIndex++;
         }
     }
 

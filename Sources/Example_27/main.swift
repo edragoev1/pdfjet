@@ -33,6 +33,7 @@ public class Example_27 {
         var y: Float = xy[1] + 55.0
 
         var str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
+        y += 20.0
         str = Bidi.reorderVisually(str)
         var textLine = TextLine(f2, str)
         textLine.setLocation(x - f2.stringWidth(str), y)
@@ -67,6 +68,7 @@ public class Example_27 {
         textLine.drawOn(page)
 
         y += 65.0
+        y += 20.0
         str = Bidi.reorderVisually(
                 "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
         textLine = TextLine(f3, str)

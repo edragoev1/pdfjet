@@ -42,6 +42,7 @@ func Example27() {
 	y := xy[1] + 55.0
 
 	str := "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
+	y += 20.0
 	str = pdfjet.ReorderVisually(str)
 	textLine := pdfjet.NewTextLine(f2, str)
 	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
@@ -76,6 +77,7 @@ func Example27() {
 	textLine.DrawOn(page)
 
 	y += 65.0
+	y += 20.0
 	str = pdfjet.ReorderVisually(
 		"قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
 	textLine = pdfjet.NewTextLine(f3, str)

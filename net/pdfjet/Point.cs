@@ -30,6 +30,7 @@ public class Point : IDrawable {
     public static readonly int RIGHT_ARROW = 12;
 
     // For the c operator we have both control points
+    public static readonly char CONTROL_POINT = 'c';
     public static readonly char ControlPointC = 'c';
 
     // For the v operator, the first control point shall coincide with initial point of the curve.

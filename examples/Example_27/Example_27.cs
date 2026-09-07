@@ -13,15 +13,18 @@ public class Example_27 {
                 new FileStream("Example_27.pdf", FileMode.Create)));
 
         // Thai font
-        Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
+        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
+        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
         f1.SetSize(12f);
 
         // Hebrew font
-        Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream");
+        // Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream");
+        Font f2 = new Font(pdf, IBMPlexSansHebrew.Regular);
         f2.SetSize(12f);
 
         // Arabic font
-        Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream");
+        // Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream");
+        Font f3 = new Font(pdf, IBMPlexSansArabic.Regular);
         f3.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

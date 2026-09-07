@@ -5,6 +5,7 @@ public class Example_43 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_43.pdf", append: false)!)
         // pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Electric Vehicle Population Data")    // Required for PDF/UA !
 
         // Used for performance testing. Results in 2000+ pages PDF.
         let fileName = "data/Electric_Vehicle_Population_Data.csv"

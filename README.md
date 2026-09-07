@@ -50,3 +50,13 @@ To compile and run specific Swift example:
 Make sure you install these first:
 sudo apt install libc6-dev
 sudo apt install gcc
+```
+
+## Port differences
+
+The Java, C# and Go ports all support encrypted PDF files. The Swift port does
+not: it has no `Encryption`, `Passwords`, `Permissions`, `UserAccess`, `AES128`
+or `AES256`, because Swift has no AES-CBC implementation in its standard library
+on Linux (swift-crypto only ships AES-GCM), and this library deliberately has no
+dependencies on external packages. `Example_30` demonstrates encryption, so it
+exists for Java, C# and Go but not for Swift; `build-swift.sh` skips it.

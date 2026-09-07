@@ -34,7 +34,7 @@ public class Example_42 {
 
         let xy = Form(fields)
                 .setLabelFont(f1)
-                .setLabelFontSize(8.0)
+                .setLabelFontSize(9.0)
                 .setValueFont(f2)
                 .setValueFontSize(10.0)
                 .setLocation(50.0, 50.0)

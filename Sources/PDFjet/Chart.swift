@@ -66,9 +66,21 @@ public class Chart : Drawable {
 
     private var f1: Font?
     private var f2: Font?
-    private var fontSize: Float = 12.0
+    private var fontSize: Float = 8.0
 
     public var chartData: [[Point]]?
+
+    private static let DEFAULT_PALETTE = [
+        Color.blue,
+        Color.red,
+        Color.green,
+        Color.orange,
+        Color.purple,
+        Color.darkcyan,
+        Color.magenta,
+        Color.olive
+    ]
+    private var autoColors = true
 
     /**
      * Create a XY chart object.
@@ -210,6 +222,53 @@ public class Chart : Drawable {
         self.drawYAxisLines = drawYAxisLines
     }
 
+    /// Sets the font size used for the axis labels and point text.
+    public func setFontSize(_ fontSize: Float) {
+        self.fontSize = fontSize
+    }
+
+    /// Sets the width of the chart border.
+    public func setChartBorderWidth(_ width: Float) {
+        self.chartBorderWidth = width
+    }
+
+    /// Sets the width of the inner border.
+    public func setInnerBorderWidth(_ width: Float) {
+        self.innerBorderWidth = width
+    }
+
+    /// Sets the width of the horizontal grid lines.
+    public func setHGridLineWidth(_ width: Float) {
+        self.hGridLineWidth = width
+    }
+
+    /// Sets the width of the vertical grid lines.
+    public func setVGridLineWidth(_ width: Float) {
+        self.vGridLineWidth = width
+    }
+
+    /// Sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
+    public func setHGridLinePattern(_ pattern: String) {
+        self.hGridLinePattern = pattern
+    }
+
+    /// Sets the vertical grid line dash pattern, e.g. "[1 1] 0".
+    public func setVGridLinePattern(_ pattern: String) {
+        self.vGridLinePattern = pattern
+    }
+
+    /// Toggles the automatic stroke colors for the data series.
+    public func setAutoColors(_ autoColors: Bool) {
+        self.autoColors = autoColors
+    }
+
+    public func toFloatArray(_ color: Int32) -> [Float] {
+        let r = Float((color >> 16) & 0xff)/255.0
+        let g = Float((color >>  8) & 0xff)/255.0
+        let b = Float((color)       & 0xff)/255.0
+        return [r, g, b]
+    }
+
     public func setDrawXAxisLabels(_ drawXAxisLabels: Bool) {
         self.drawXAxisLabels = drawXAxisLabels
     }
@@ -254,7 +313,7 @@ public class Chart : Drawable {
         if page != nil {
             page!.drawString(
                     f1!,
-                    f1!.getSize(),
+                    fontSize,
                     title,
                     x1 + ((w - f1!.stringWidth(title)) / 2),
                     y1 + 1.5 * f1!.bodyHeight)
@@ -336,20 +395,21 @@ public class Chart : Drawable {
             page!.setBrushColor(Color.black)
             page!.setTextDirection(90)
             page!.drawString(
-                    f1!,
-                    f1!.getSize(),
+                    f2!,
+                    fontSize,
                     yAxisTitle,
-                    x1 + f1!.bodyHeight,
-                    y8 - ((y8 - y5) - f1!.stringWidth(yAxisTitle)) / 2)
+                    x1 + f2!.bodyHeight,
+                    y8 - ((y8 - y5) - f2!.stringWidth(yAxisTitle)) / 2)
 
             // Draw the X axis title
             page!.setTextDirection(0)
+            page!.setBrushColor(Color.black)
             page!.drawString(
-                    f1!,
-                    f1!.getSize(),
+                    f2!,
+                    fontSize,
                     xAxisTitle,
-                    x5 + ((x6 - x5) - f1!.stringWidth(xAxisTitle)) / 2,
-                    y4 - f1!.bodyHeight / 2)
+                    x5 + ((x6 - x5) - f2!.stringWidth(xAxisTitle)) / 2,
+                    y4 - f2!.bodyHeight / 2)
 
             page!.setDefaultLineWidth()
             page!.setDefaultStrokeDashPattern()
@@ -406,14 +466,20 @@ public class Chart : Drawable {
     }
 
     private func roundXAxisMinAndMaxValues() {
-        let round = roundMaxAndMinValues(&xMax, &xMin)
+        if xAxisGridLines != 0 {
+            return
+        }
+        let round = roundMaxAndMinValues(xMax, xMin)
         xMax = round.maxValue
         xMin = round.minValue
         xAxisGridLines = round.numOfGridLines
     }
 
     private func roundYAxisMinAndMaxValues() {
-        let round = roundMaxAndMinValues(&yMax, &yMin)
+        if yAxisGridLines != 0 {
+            return
+        }
+        let round = roundMaxAndMinValues(yMax, yMin)
         yMax = round.maxValue
         yMin = round.minValue
         yAxisGridLines = round.numOfGridLines
@@ -467,7 +533,7 @@ public class Chart : Drawable {
 
     private func drawXAxisLabels(_ page: Page) {
         var x = x5
-        let y = y8 + f2!.bodyHeight
+        let y = y8 + f2!.getBodyHeight(f2!.getSize())
         let step = (x6 - x5) / Float(xAxisGridLines)
         page.setBrushColor(Color.black)
         var i = 0
@@ -476,7 +542,7 @@ public class Chart : Drawable {
                     xMin + ((xMax - xMin) / Float(xAxisGridLines)) * Float(i)))!
             page.drawString(
                     f2!,
-                    f2!.getSize(),
+                    fontSize,
                     label,
                     x - (f2!.stringWidth(label) / 2),
                     y)
@@ -496,7 +562,7 @@ public class Chart : Drawable {
                     yMin + ((yMax - yMin) / Float(yAxisGridLines)) * Float(i)))!
             page.drawString(
                     f2!,
-                    f2!.getSize(),
+                    fontSize,
                     label,
                     x,
                     y)
@@ -507,10 +573,15 @@ public class Chart : Drawable {
 
     private func drawPathsAndPoints(
             _ page: Page, _ chartData: [[Point]]) {
+        var seriesIndex = 0
         for points in chartData {
             if points.count > 0 {
                 let p0 = points[0]
                 if p0.drawPath {
+                    if autoColors && p0.strokeColor == nil {
+                        let index = seriesIndex % Chart.DEFAULT_PALETTE.count
+                        p0.strokeColor = toFloatArray(Chart.DEFAULT_PALETTE[index])
+                    }
                     page.setPenColor(p0.strokeColor)
                     page.setPenWidth(p0.strokeWidth)
                     page.setStrokeDashPattern(p0.strokeDashPattern)
@@ -520,7 +591,7 @@ public class Chart : Drawable {
                         page.setTextDirection(p0.getTextDirection())
                         page.drawString(
                             f2!,
-                            f2!.getSize(),
+                            fontSize,
                             p0.getText(),
                             p0.x + (p0.strokeWidth - f2!.getAscent())/2.0,
                             p0.y,
@@ -538,62 +609,53 @@ public class Chart : Drawable {
                     }
                 }
             }
+            seriesIndex += 1
         }
     }
 
-    private func roundMaxAndMinValues(
-            _ maxValue: inout Float,
-            _ minValue: inout Float)-> Round {
+    ///
+    /// Rounds the axis range to "nice" values for clean grid lines.
+    /// Uses the span (max - min) to support negative values and
+    /// zero crossings. Rounds max up and min down to step multiples.
+    ///
+    private func roundMaxAndMinValues(_ maxValue: Float, _ minValue: Float) -> Round {
+        var span = maxValue - minValue
+        if span <= 0.0 { span = 1.0 }   // guard against flat data
 
-        let maxExponent = Int(floor(log(maxValue) / log(10)))
-        maxValue *= Float(pow(Double(10), Double(-maxExponent)))
+        let exponent = Int(floor(log(Double(span)) / log(10.0)))
+        let normalizedSpan = span * Float(pow(10.0, Double(-exponent)))
 
-        if      maxValue > 9.00 { maxValue = 10.0 }
-        else if maxValue > 8.00 { maxValue = 9.00 }
-        else if maxValue > 7.00 { maxValue = 8.00 }
-        else if maxValue > 6.00 { maxValue = 7.00 }
-        else if maxValue > 5.00 { maxValue = 6.00 }
-        else if maxValue > 4.00 { maxValue = 5.00 }
-        else if maxValue > 3.50 { maxValue = 4.00 }
-        else if maxValue > 3.00 { maxValue = 3.50 }
-        else if maxValue > 2.50 { maxValue = 3.00 }
-        else if maxValue > 2.00 { maxValue = 2.50 }
-        else if maxValue > 1.75 { maxValue = 2.00 }
-        else if maxValue > 1.50 { maxValue = 1.75 }
-        else if maxValue > 1.25 { maxValue = 1.50 }
-        else if maxValue > 1.00 { maxValue = 1.25 }
-        else                    { maxValue = 1.00 }
+        // Snap span up to a "nice" value with paired grid line count
+        var niceSpan: Float
+        var numOfGridLines: Int
+
+        if      normalizedSpan > 9.00 { niceSpan = 10.0; numOfGridLines = 10 }
+        else if normalizedSpan > 8.00 { niceSpan =  9.00; numOfGridLines =  9 }
+        else if normalizedSpan > 7.00 { niceSpan =  8.00; numOfGridLines =  8 }
+        else if normalizedSpan > 6.00 { niceSpan =  7.00; numOfGridLines =  7 }
+        else if normalizedSpan > 5.00 { niceSpan =  6.00; numOfGridLines =  6 }
+        else if normalizedSpan > 4.00 { niceSpan =  5.00; numOfGridLines =  5 }
+        else if normalizedSpan > 3.50 { niceSpan =  4.00; numOfGridLines =  8 }
+        else if normalizedSpan > 3.00 { niceSpan =  3.50; numOfGridLines =  7 }
+        else if normalizedSpan > 2.50 { niceSpan =  3.00; numOfGridLines =  6 }
+        else if normalizedSpan > 2.00 { niceSpan =  2.50; numOfGridLines =  5 }
+        else if normalizedSpan > 1.75 { niceSpan =  2.00; numOfGridLines =  8 }
+        else if normalizedSpan > 1.50 { niceSpan =  1.75; numOfGridLines =  7 }
+        else if normalizedSpan > 1.25 { niceSpan =  1.50; numOfGridLines =  6 }
+        else if normalizedSpan > 1.00 { niceSpan =  1.25; numOfGridLines =  5 }
+        else                          { niceSpan =  1.00; numOfGridLines = 10 }
+
+        // Scale back to original magnitude and compute step
+        let step = niceSpan * Float(pow(10.0, Double(exponent))) / Float(numOfGridLines)
 
         let round = Round()
 
-        if      maxValue == 10.0 { round.numOfGridLines = 10 }
-        else if maxValue == 9.00 { round.numOfGridLines =  9 }
-        else if maxValue == 8.00 { round.numOfGridLines =  8 }
-        else if maxValue == 7.00 { round.numOfGridLines =  7 }
-        else if maxValue == 6.00 { round.numOfGridLines =  6 }
-        else if maxValue == 5.00 { round.numOfGridLines =  5 }
-        else if maxValue == 4.00 { round.numOfGridLines =  8 }
-        else if maxValue == 3.50 { round.numOfGridLines =  7 }
-        else if maxValue == 3.00 { round.numOfGridLines =  6 }
-        else if maxValue == 2.50 { round.numOfGridLines =  5 }
-        else if maxValue == 2.00 { round.numOfGridLines =  8 }
-        else if maxValue == 1.75 { round.numOfGridLines =  7 }
-        else if maxValue == 1.50 { round.numOfGridLines =  6 }
-        else if maxValue == 1.25 { round.numOfGridLines =  5 }
-        else if maxValue == 1.00 { round.numOfGridLines = 10 }
+        // Round max up, min down to nearest step multiple
+        round.maxValue = ceil(maxValue / step) * step
+        round.minValue = floor(minValue / step) * step
 
-        round.maxValue = maxValue * (Float(pow(Double(10), Double(maxExponent))))
-        let step = Float(round.maxValue) / Float(round.numOfGridLines)
-        var temp = round.maxValue
-        round.numOfGridLines = 0
-        while true {
-            round.numOfGridLines += 1
-            temp -= step
-            if temp <= minValue {
-                round.minValue = temp
-                break
-            }
-        }
+        // Recount grid lines from actual rounded range
+        round.numOfGridLines = Int(((round.maxValue - round.minValue) / step).rounded())
 
         return round
     }

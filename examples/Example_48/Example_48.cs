@@ -17,6 +17,7 @@ public class Example_48 {
                 IBMPlexSans.Regular,
                 FileMode.Open,
                 FileAccess.Read), Font.STREAM);
+        f1.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

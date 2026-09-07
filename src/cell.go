@@ -110,6 +110,7 @@ func (cell *Cell) GetText() string {
 // SetImage sets the image inside this cell.
 func (cell *Cell) SetImage(image *Image) {
 	cell.image = image
+	cell.text = ""
 }
 
 // GetImage returns the cell image.
@@ -120,6 +121,7 @@ func (cell *Cell) GetImage() *Image {
 // SetBarcode sets the barcode for this cell.
 func (cell *Cell) SetBarcode(barcode *Barcode) {
 	cell.barcode = barcode
+	cell.text = ""
 }
 
 func (cell *Cell) GetBarcode() *Barcode {

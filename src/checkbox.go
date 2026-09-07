@@ -9,6 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/mark"
 	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // CheckBox creates a CheckBox, which can be set checked or unchecked.
@@ -21,6 +22,7 @@ type CheckBox struct {
 	checkWidth     float32
 	mark           int
 	font           *Font
+	fontSize       float32
 	label          string
 	uri, key       string
 	language       string
@@ -34,6 +36,7 @@ func NewCheckBox(font *Font, label string) *CheckBox {
 	checkBox.boxColor = color.Black
 	checkBox.checkColor = color.Black
 	checkBox.font = font
+	checkBox.fontSize = 12.0
 	checkBox.label = label
 	checkBox.altDescription = single.Space
 	checkBox.actualText = single.Space
@@ -44,7 +47,7 @@ func NewCheckBox(font *Font, label string) *CheckBox {
 // @param fontSize the fontSize to use.
 // @return the CheckBox.
 func (checkBox *CheckBox) SetFontSize(fontSize float32) *CheckBox {
-	checkBox.font.SetSize(fontSize)
+	checkBox.fontSize = fontSize
 	return checkBox
 }
 
@@ -127,18 +130,18 @@ func XMarkCheckBox(page *Page, x, y, size float32) {
 //
 // @param page the Page where the CheckBox is to be drawn.
 func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
-	page.AddBMC("Span", checkBox.language, checkBox.actualText, checkBox.altDescription)
+	page.AddBMC(structtype.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
 
 	checkBox.w = checkBox.font.ascent
 	checkBox.h = checkBox.w
 	checkBox.penWidth = checkBox.w / 15
 	checkBox.checkWidth = checkBox.w / 5
 
-	yBox := checkBox.y - checkBox.font.ascent
+	yBox := checkBox.y
 	page.SetPenWidth(checkBox.penWidth)
 	page.SetPenColor(checkBox.boxColor)
 	page.SetStrokeDashPattern("[] 0")
-	page.DrawRect(checkBox.x, yBox, checkBox.w, checkBox.h)
+	page.DrawRect(checkBox.x+checkBox.penWidth, yBox+checkBox.penWidth, checkBox.w, checkBox.h)
 
 	if checkBox.mark == mark.Check || checkBox.mark == mark.X {
 		page.SetPenWidth(checkBox.checkWidth)
@@ -146,16 +149,21 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 		switch checkBox.mark {
 		case mark.Check:
 			// Draw check mark
-			page.MoveTo(checkBox.x+checkBox.checkWidth, yBox+checkBox.h/2)
-			page.LineTo(checkBox.x+checkBox.w/6+checkBox.checkWidth, (yBox+checkBox.h)-4.0*checkBox.checkWidth/3.0)
-			page.LineTo((checkBox.x+checkBox.w)-checkBox.checkWidth, yBox+checkBox.checkWidth)
+			page.MoveTo(checkBox.x+checkBox.checkWidth+checkBox.penWidth, yBox+checkBox.h/2+checkBox.penWidth)
+			page.LineTo((checkBox.x+checkBox.w/6+checkBox.checkWidth)+checkBox.penWidth,
+				((yBox+checkBox.h)-4.0*checkBox.checkWidth/3.0)+checkBox.penWidth)
+			page.LineTo((checkBox.x+checkBox.w)-checkBox.checkWidth+checkBox.penWidth,
+				yBox+checkBox.checkWidth+checkBox.penWidth)
 			page.StrokePath()
 		case mark.X:
 			// Draw 'X' mark
-			page.MoveTo(checkBox.x+checkBox.checkWidth, yBox+checkBox.checkWidth)
-			page.LineTo((checkBox.x+checkBox.w)-checkBox.checkWidth, (yBox+checkBox.h)-checkBox.checkWidth)
-			page.MoveTo((checkBox.x+checkBox.w)-checkBox.checkWidth, yBox+checkBox.checkWidth)
-			page.LineTo(checkBox.x+checkBox.checkWidth, (yBox+checkBox.h)-checkBox.checkWidth)
+			page.MoveTo(checkBox.x+checkBox.checkWidth+checkBox.penWidth, yBox+checkBox.checkWidth+checkBox.penWidth)
+			page.LineTo((checkBox.x+checkBox.w)-checkBox.checkWidth+checkBox.penWidth,
+				((yBox+checkBox.h)-checkBox.checkWidth)+checkBox.penWidth)
+			page.MoveTo((checkBox.x+checkBox.w)-checkBox.checkWidth+checkBox.penWidth,
+				yBox+checkBox.checkWidth+checkBox.penWidth)
+			page.LineTo(checkBox.x+checkBox.checkWidth+checkBox.penWidth,
+				((yBox+checkBox.h)-checkBox.checkWidth)+checkBox.penWidth)
 			page.StrokePath()
 		}
 	}
@@ -163,9 +171,10 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 	if checkBox.uri != "" {
 		page.SetBrushColor(color.Blue)
 	}
-	page.DrawStringUsingColorMap(
-		checkBox.font, checkBox.font, checkBox.font.size,
-		checkBox.label, checkBox.x+3.0*checkBox.w/2.0, checkBox.y, [3]float32{0.0, 0.0, 0.0}, nil)
+	page.drawString(
+		checkBox.font, checkBox.fontSize, checkBox.label,
+		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.ascent,
+		[3]float32{0.0, 0.0, 0.0}, nil)
 	page.SetPenWidth(0.0)
 	page.SetPenColor(color.Black)
 	page.SetBrushColor(color.Black)
@@ -193,6 +202,6 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 
 	return []float32{
 		checkBox.x + 3.0*checkBox.w + checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
-		checkBox.y + checkBox.font.descent,
+		checkBox.y + checkBox.font.bodyHeight,
 	}
 }

@@ -180,23 +180,23 @@ public class CheckBox : Drawable {
         page!.setPenWidth(self.penWidth!)
         page!.setPenColor(self.boxColor)
         page!.setStrokeDashPattern("[] 0")
-        page!.drawRect(self.x, yBox, self.w, self.h)
+        page!.drawRect(self.x + self.penWidth!, yBox + self.penWidth!, self.w, self.h)
 
         if mark == Mark.CHECK || mark == Mark.X {
             page!.setPenWidth(self.checkWidth!)
             page!.setPenColor(self.checkColor)
             if mark == Mark.CHECK {
                 // Draw check mark
-                page!.moveTo(x + checkWidth!, yBox + h/2)
-                page!.lineTo(x + w/6 + checkWidth!, (yBox + h) - 4.0*checkWidth!/3.0)
-                page!.lineTo((x + w) - checkWidth!, yBox + checkWidth!)
+                page!.moveTo(x + checkWidth! + penWidth!, yBox + h/2 + penWidth!)
+                page!.lineTo((x + w/6 + checkWidth!) + penWidth!, ((yBox + h) - 4.0*checkWidth!/3.0) + penWidth!)
+                page!.lineTo(((x + w) - checkWidth!) + penWidth!, (yBox + checkWidth!) + penWidth!)
                 page!.strokePath()
             } else if mark == Mark.X {
                 // Draw 'X' mark
-                page!.moveTo(self.x + checkWidth!, yBox + checkWidth!)
-                page!.lineTo((self.x + self.w) - checkWidth!, (yBox + self.h) - checkWidth!)
-                page!.moveTo((self.x + self.w) - checkWidth!, yBox + checkWidth!)
-                page!.lineTo(self.x + checkWidth!, (yBox + h) - checkWidth!)
+                page!.moveTo(x + checkWidth! + penWidth!, yBox + checkWidth! + penWidth!)
+                page!.lineTo(((x + w) - checkWidth!) + penWidth!, ((yBox + h) - checkWidth!) + penWidth!)
+                page!.moveTo(((x + w) - checkWidth!) + penWidth!, (yBox + checkWidth!) + penWidth!)
+                page!.lineTo((x + checkWidth!) + penWidth!, ((yBox + h) - checkWidth!) + penWidth!)
                 page!.strokePath()
             }
         }

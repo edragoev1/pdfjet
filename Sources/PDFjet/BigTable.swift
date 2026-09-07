@@ -212,21 +212,13 @@ public class BigTable {
     }
 
     public func complete() throws {
-        var skipHeader = true
         try enumerateFileLines(self.fileName) { line in
             let fields = line.components(separatedBy: self.delimiter)
             if fields.count < self.numberOfColumns {
                 return
             }
-
-            if skipHeader {
-                skipHeader = false
-                return
-            }
-
             try? self.drawTextAndLine(fields: fields, font: self.f2)
         }
-
         drawTheVerticalLines()
     }
 }
@@ -243,10 +235,10 @@ private func enumerateFileLines(_ fileName: String, _ handler: (String) -> Void)
         buffer.append(chunk)
 
         while let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
-            let lineData = buffer.prefix(upTo: nl)
+            var lineData = buffer.prefix(upTo: nl)
             buffer.removeSubrange(0...nl)
-            if !buffer.isEmpty && buffer.last == UInt8(ascii: "\r") {
-                buffer.removeLast()
+            if lineData.last == UInt8(ascii: "\r") {
+                lineData = lineData.dropLast()
             }
 
             guard let line = String(data: lineData, encoding: .utf8) else { continue }

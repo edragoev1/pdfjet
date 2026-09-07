@@ -11,6 +11,7 @@ import (
 	"math"
 
 	"github.com/edragoev1/pdfjet/src/effect"
+	"github.com/edragoev1/pdfjet/src/single"
 	"github.com/edragoev1/pdfjet/src/structtype"
 )
 
@@ -24,10 +25,9 @@ type TextLine struct {
 	xOffset            float32
 	underline          bool
 	strikeout          bool
-	underlineTTS       string
-	strikeoutTTS       string
 	degrees            int
 	color              [3]float32
+	lineColor          [3]float32
 	colorMap           map[string]int32
 	textEffect         int
 	verticalOffset     float32
@@ -51,8 +51,6 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.fontSize = font.size
 	textLine.text = text
 	textLine.isLastToken = false
-	textLine.underlineTTS = "underline"
-	textLine.strikeoutTTS = "strikeout"
 	textLine.color = [3]float32{0.0, 0.0, 0.0}
 	textLine.colorMap = make(map[string]int32)
 	textLine.textEffect = effect.Normal
@@ -151,13 +149,12 @@ func (textLine *TextLine) GetFallbackFont() *Font {
 	return textLine.fallbackFont
 }
 
-//// SetColor sets the color for this text line.
-//// @param color the color is specified as an integer.
-//// @return this TextLine.
-//func (textLine *TextLine) SetColor(color int32) *TextLine {
-//	textLine.color = color
-//	return textLine
-//}
+// SetColor sets the color for this text line.
+// @param color the color is specified as an integer.
+// @return this TextLine.
+func (textLine *TextLine) SetColor(color int32) *TextLine {
+	return textLine.SetTextColor(color)
+}
 
 func (textLine *TextLine) SetTextColor(color int32) *TextLine {
 	r := float32((color>>16)&0xff) / 255.0
@@ -170,6 +167,30 @@ func (textLine *TextLine) SetTextColor(color int32) *TextLine {
 func (textLine *TextLine) SetTextColorRGB(color [3]float32) *TextLine {
 	textLine.color = color
 	return textLine
+}
+
+// SetLineColor sets the color of the underline and strikeout lines.
+// @param color the color is specified as an integer.
+// @return this TextLine.
+func (textLine *TextLine) SetLineColor(color int32) *TextLine {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32((color)&0xff) / 255.0
+	textLine.lineColor = [3]float32{r, g, b}
+	return textLine
+}
+
+// SetLineColorRGB sets the color of the underline and strikeout lines.
+// @param color the color as an RGB array.
+// @return this TextLine.
+func (textLine *TextLine) SetLineColorRGB(color [3]float32) *TextLine {
+	textLine.lineColor = color
+	return textLine
+}
+
+// GetLineColor returns the color of the underline and strikeout lines.
+func (textLine *TextLine) GetLineColor() [3]float32 {
+	return textLine.lineColor
 }
 
 // SetColorRGB sets the penColor color.
@@ -403,7 +424,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	page.SetTextDirection(textLine.degrees)
 	page.SetBrushColorRGB(textLine.color)
-	page.AddBMC(textLine.structureType, textLine.language, textLine.actualText, textLine.altDescription)
+	page.AddBMC(textLine.structureType, textLine.language, textLine.text, textLine.altDescription)
 	page.DrawStringUsingColorMap(
 		textLine.font,
 		textLine.fallbackFont,
@@ -417,14 +438,18 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	radians := math.Pi * float64(textLine.degrees) / 180.0
 	if textLine.underline {
-		page.SetPenWidth(textLine.font.underlineThickness)
-		page.SetPenColorRGB(textLine.color)
+		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
+		page.SetPenColorRGB(textLine.lineColor)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
-		xAdjust := textLine.font.underlinePosition * float32(math.Sin(radians))
-		yAdjust := textLine.font.underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
+		if textLine.isLastToken {
+			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
+		}
+		underlinePosition := textLine.font.GetUnderlinePosition(textLine.fontSize)
+		xAdjust := underlinePosition * float32(math.Sin(radians))
+		yAdjust := underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC(textLine.structureType, textLine.language, textLine.underlineTTS, textLine.underlineTTS)
+		page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Underlined text: "+textLine.text)
 		page.MoveTo(textLine.x+xAdjust, textLine.y+yAdjust)
 		page.LineTo(x2+xAdjust, y2+yAdjust)
 		page.StrokePath()
@@ -432,14 +457,18 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	}
 
 	if textLine.strikeout {
-		page.SetPenWidth(textLine.font.underlineThickness)
-		page.SetPenColorRGB(textLine.color)
+		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
+		page.SetPenColorRGB(textLine.lineColor)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
-		xAdjust := (textLine.font.bodyHeight / 4.0) * float32(math.Sin(radians))
-		yAdjust := (textLine.font.bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
+		if textLine.isLastToken {
+			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
+		}
+		bodyHeight := textLine.font.GetBodyHeight(textLine.fontSize)
+		xAdjust := (bodyHeight / 4.0) * float32(math.Sin(radians))
+		yAdjust := (bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC(textLine.structureType, textLine.language, textLine.strikeoutTTS, textLine.strikeoutTTS)
+		page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Strikethrough text: "+textLine.text)
 		page.MoveTo(textLine.x-xAdjust, textLine.y-yAdjust)
 		page.LineTo(x2-xAdjust, y2-yAdjust)
 		page.StrokePath()

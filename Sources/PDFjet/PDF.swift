@@ -1858,34 +1858,14 @@ public class PDF {
         guard let str = str, !str.isEmpty else {
             return ""
         }
-
+        // Java hex encodes the UTF-8 bytes of the string, so a character
+        // outside ASCII must be written as its UTF-8 byte sequence - not as
+        // its code point - or a PDF reader decodes it as the wrong character.
         var result: [UInt8] = []
-        for scalar in str.unicodeScalars {
-            let codePoint = scalar.value
-            if codePoint != 0xFEFF { // Skip BOM
-                if codePoint <= 0xFF {
-                    // BMP character (2 hex digits)
-                    result.append(HEX[Int((codePoint >> 4)  & 0xF)])
-                    result.append(HEX[Int(codePoint         & 0xF)])
-                } else if codePoint <= 0xFFFF {
-                    // BMP character (4 hex digits)
-                    result.append(HEX[Int((codePoint >> 12) & 0xF)])
-                    result.append(HEX[Int((codePoint >> 8)  & 0xF)])
-                    result.append(HEX[Int((codePoint >> 4)  & 0xF)])
-                    result.append(HEX[Int(codePoint         & 0xF)])
-                } else {
-                    // Supplementary character (6 hex digits)
-                    result.append(HEX[Int((codePoint >> 20) & 0xF)])
-                    result.append(HEX[Int((codePoint >> 16) & 0xF)])
-                    result.append(HEX[Int((codePoint >> 12) & 0xF)])
-                    result.append(HEX[Int((codePoint >> 8)  & 0xF)])
-                    result.append(HEX[Int((codePoint >> 4)  & 0xF)])
-                    result.append(HEX[Int(codePoint         & 0xF)])
-                }
-            }
+        for byte in Array(str.utf8) {
+            result.append(HEX[Int((byte >> 4) & 0xF)])
+            result.append(HEX[Int(byte        & 0xF)])
         }
-
-        // Convert the result to a String from UInt8 array
         return String(decoding: result, as: UTF8.self)
     }
 

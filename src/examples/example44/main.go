@@ -4,11 +4,11 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example44 -- TODO:
+// Example44 draws a text column that contains English and Chinese paragraphs.
 func Example44() {
 	pdf := pdfjet.NewPDFFile("Example_44.pdf")
 
@@ -18,14 +18,14 @@ func Example44() {
 	f2 := pdfjet.NewCJKFont(pdf, "STHeitiSC-Light")
 	f2.SetSize(12.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	rotate := 0
 	column := pdfjet.NewTextColumn(rotate)
 	column.SetLocation(70.0, 70.0)
 	column.SetWidth(500.0)
-	column.SetLineSpacing(1.3)
-	column.SetParagraphSpacing(1.0)
+	column.SetLineSpacing(1.5)      // 1.5 x font height
+	column.SetParagraphSpacing(0.5) // 0.5 x line spacing
 
 	p1 := pdfjet.NewParagraph()
 	p1.Add(pdfjet.NewTextLine(f1, "The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."))

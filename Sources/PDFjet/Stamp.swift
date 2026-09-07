@@ -385,9 +385,16 @@ public class Stamp {
 
         // 3. ROTATE: rotate around origin
         let radians = Double(rotateDegrees) * .pi / 180.0
-        let cos = Float(cos(radians))
-        let sin = Float(sin(radians))
-        page.append(String(format: "%.3f %.3f %.3f %.3f 0 0 cm\n", cos, sin, -sin, cos))
+        let cosine = Float(cos(radians))
+        let sine = Float(sin(radians))
+        page.append(cosine)
+        page.append(" ")
+        page.append(sine)
+        page.append(" ")
+        page.append(-sine)
+        page.append(" ")
+        page.append(cosine)
+        page.append(" 0 0 cm\n")
 
         // 2. MOVE: move center to origin
         page.append("1 0 0 1 ")

@@ -46,8 +46,11 @@ public class Table {
         var delimiterRegex: String?
         var numberOfFields = 0
         var lineNumber = 0
-        let lines = (try String(contentsOfFile:
+        var lines = (try String(contentsOfFile:
                 fileName, encoding: .utf8)).components(separatedBy: "\n")
+        if lines.last == "" {
+            lines.removeLast()          // Ignore the trailing end-of-line marker
+        }
         for line in lines {
             if lineNumber == 0 {
                 delimiterRegex = getDelimiterRegex(line)

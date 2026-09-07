@@ -118,7 +118,7 @@ public class Example_50 {
         page.drawString(f1, "Jones", x + Float(258.0), y)
 
         // Social Insurance number of spouse
-        // page.drawString(f1, stripSpacesAndDashes("192-760-427"), x + Float(422.0), y, dx)
+        page.drawString(f1, stripSpacesAndDashes("192-760-427"), x + Float(437.0), y, dx)
 
         // Spouse or common-law partner's address
         page.drawString(f1, "12 Smithfield Drive", x, Float(554.0))

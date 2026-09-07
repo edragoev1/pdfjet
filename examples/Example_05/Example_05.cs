@@ -41,12 +41,12 @@ public class Example_05 {
         text.DrawOn(page);
 
         f1.SetSize(8.0f);
-        text = new TextLine(f1, "-- font.SetKernPairs(false);");
+        text = new TextLine(f1, "-- font.setKernPairs(false);");
         text.SetLocation(150f, 50f);
         text.DrawOn(page);
         text.SetLocation(150f, 90f);
         text.DrawOn(page);
-        text = new TextLine(f1, "-- font.SetKernPairs(true);");
+        text = new TextLine(f1, "-- font.setKernPairs(true);");
         text.SetLocation(150f, 70f);
         text.DrawOn(page);
 

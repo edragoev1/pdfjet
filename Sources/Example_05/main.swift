@@ -13,9 +13,6 @@ public class Example_05 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-      	_ = page.drawArc(500, 100, 100, 50, 90, 270)
-       	// (new Line(xy[0], xy[1], xy[0], xy[1] + 50f)).DrawOn(page)
-
         var text = TextLine(f1).setLocation(300.0, 300.0)
         var i = 0
         while i < 360 {
@@ -52,28 +49,40 @@ public class Example_05 {
         text.setLocation(150.0, 70.0)
         text.drawOn(page)
 
-        Point(300.0, 300.0)
-                .setShape(Point.CIRCLE)
-                .setFillShape(true)
-                .setFillColor(Color.blue)
-                .setRadius(37.0)
+        let point = Point(300.0, 300.0)
+        _ = point.setShape(Point.CIRCLE)
+        _ = point.setFillColor(Color.blue)
+        _ = point.setRadius(37.0)
+        point.drawOn(page)
+        _ = point.setRadius(25.0)
+        _ = point.setFillColor(Color.white)
+        point.drawOn(page)
+
+        _ = Arc()
+                .setCenterXY(300.0, 600.0)
+                .setRadiusX(75.0)
+                .setRadiusY(75.0)
+                .setStartAngle(0.0)
+                .setSweepDegreesCW(270.0)
+                // .setSweepDegreesCCW(270.0)
+                // .setScaleFactor(2.0)
+                // .setRotateDegreesCW(90.0)
+                // .setRotateDegreesCCW(90.0)
+                .setStrokeWidth(5.0)
+                .setStrokeColor(Color.blue)
                 .drawOn(page)
 
-        Point(300.0, 300.0)
-                .setShape(Point.CIRCLE)
-                .setFillShape(true)
-                .setFillColor(Color.white)
-                .setRadius(25.0)
+        Ellipse()
+                .setCenterXY(300.0, 720.0)
+                .setRadiusX(100.0)
+                .setRadiusY(50.0)
+                .setFillColor(Color.azure)
+                .setStrokeWidth(1.5)
+                .setStrokeColor(Color.blue)
+                .setScaleFactor(0.5)
+                .setRotateDegreesCW(45.0)
+                // .setRotateDegreesCCW(45.0)
                 .drawOn(page)
-
-        page.setPenWidth(1.0)
-        page.drawEllipse(300.0, 600.0, 100.0, 50.0)
-
-        f1.setSize(14.0)
-        let unicode = "\u{20AC}\u{0020}\u{201A}\u{0192}\u{201E}\u{2026}\u{2020}\u{2021}\u{02C6}\u{2030}\u{0160}"
-        text = TextLine(f1, unicode)
-        text.setLocation(100.0, 700.0)
-        text.drawOn(page)
 
         pdf.complete()
     }

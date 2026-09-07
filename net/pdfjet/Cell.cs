@@ -326,9 +326,9 @@ public class Cell {
         } else if (barcode != null) {
             cellHeight = barcode.GetHeight() + topPadding + bottomPadding;
         } else if (text != null) {
-            float fontHeight = font.GetBodyHeight(fontSize);
-            if (fallbackFont != null && fallbackFont.GetBodyHeight(fontSize) > fontHeight) {
-                fontHeight = fallbackFont.GetBodyHeight(fontSize);
+            float fontHeight = font.GetHeight();
+            if (fallbackFont != null && fallbackFont.GetHeight() > fontHeight) {
+                fontHeight = fallbackFont.GetHeight();
             }
             cellHeight = fontHeight + topPadding + bottomPadding;
         }

@@ -17,7 +17,6 @@ public class RadioButton : Drawable {
     private var r2: Float = 0.0
     private var penWidth: Float = 0.0
     private var font: Font
-    private var fontSize: Float = 12.0
     private var label: String = ""
     private var uri: String?
 
@@ -137,7 +136,7 @@ public class RadioButton : Drawable {
         if self.uri != nil {
             page!.setBrushColor(Color.blue)
         }
-        page!.drawString(font, fontSize, label, x + 3*r1, y + font.ascent)
+        page!.drawString(font, font.getSize(), label, x + 3*r1, y + font.ascent)
         page!.setPenWidth(0.0)
         page!.setBrushColor(Color.black)
 

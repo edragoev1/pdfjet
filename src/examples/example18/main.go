@@ -51,9 +51,9 @@ func Example18() {
 		page := pages[i]
 		footer := "Page " + fmt.Sprint(i+1) + " of " + fmt.Sprint(len(pages))
 		page.SetBrushColor(color.Black)
-		page.DrawString(
+		page.DrawStringUsingFontSize(
 			font,
-			nil,
+			fontSize,
 			footer,
 			(page.GetWidth()-font.StringWidth(fontSize, footer))/2.0,
 			page.GetHeight()-3.0*fontSize/2.0)

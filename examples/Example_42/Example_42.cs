@@ -41,7 +41,7 @@ public class Example_42 {
                 .SetLabelFont(f1)
                 .SetLabelFontSize(9f)
                 .SetValueFont(f2)
-                .SetValueFontSize(9f)
+                .SetValueFontSize(10f)
                 .SetLocation(50f, 50f)
                 .SetFormWidth(w)
                 .SetLineWidth(0.2f)

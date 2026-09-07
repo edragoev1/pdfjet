@@ -33,7 +33,7 @@ func NewText(paragraphs []*Paragraph) *Text {
 	text.font = paragraphs[0].lines[0].GetFont()
 	text.fallbackFont = paragraphs[0].lines[0].GetFallbackFont()
 	text.leading = text.font.ascent + text.font.descent
-	text.paragraphLeading = 2 * text.leading
+	text.paragraphLeading = 24.0
 	text.borderColor = [3]float32{0.0, 0.0, 0.0}
 	text.borderWidth = 0.5
 	text.borderPattern = "[] 0"
@@ -102,7 +102,10 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
 		text.yText += text.paragraphLeading
 	}
 
-	height := ((text.yText - text.paragraphLeading) - text.y1) + text.font.descent
+	lastParagraph := text.paragraphs[len(text.paragraphs)-1]
+	lastTextLine := lastParagraph.GetTextLines()[len(lastParagraph.GetTextLines())-1]
+	height := ((text.yText - text.paragraphLeading) - text.y1) +
+		lastTextLine.font.GetDescent(lastTextLine.fontSize)
 	if text.hasBorder {
 		rect := NewRect(text.x1, text.y1, text.width, height)
 		rect.SetBorderColorRGB(text.borderColor)
@@ -137,7 +140,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 				textLine2 := NewTextLine(textLine.font, buf.String())
 				textLine2.SetFallbackFont(textLine.GetFallbackFont())
 				textLine2.SetFontSize(textLine.GetFontSize())
-				textLine2.SetLocation(text.xText, text.yText+textLine.GetVerticalOffset())
+				textLine2.SetLocation(text.xText, text.yText)
 				textLine2.SetTextColorRGB(textLine.GetTextColor())
 				textLine2.SetColorMap(textLine.GetColorMap())
 				textLine2.SetUnderline(textLine.GetUnderline())
@@ -146,7 +149,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 				textLine2.DrawOn(page)
 			}
 			text.xText = text.x1
-			text.yText += text.leading
+			text.yText += textLine.GetHeight()
 			buf.Reset()
 			buf.WriteString(token)
 			buf.WriteString(single.Space)
@@ -156,7 +159,7 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 		textLine2 := NewTextLine(textLine.font, buf.String())
 		textLine2.SetFallbackFont(textLine.GetFallbackFont())
 		textLine2.SetFontSize(textLine.GetFontSize())
-		textLine2.SetLocation(text.xText, text.yText+textLine.GetVerticalOffset())
+		textLine2.SetLocation(text.xText, text.yText)
 		textLine2.SetTextColorRGB(textLine.GetTextColor())
 		textLine2.SetColorMap(textLine.GetColorMap())
 		textLine2.SetUnderline(textLine.GetUnderline())

@@ -45,7 +45,7 @@ public class TextLine : Drawable {
 
     private var textColor: [Float] = [0.0, 0.0, 0.0]
     private var lineColor: [Float] = [0.0, 0.0, 0.0]
-    private var colorMap: [String: Int32]
+    private var colorMap: [String: Int32]?
 
     ///
     /// Constructor for creating text line objects.
@@ -56,7 +56,6 @@ public class TextLine : Drawable {
         self.font = font
         self.fallbackFont = font
         self.fontSize = font.size
-        self.colorMap = [String: Int32]()
     }
 
     ///
@@ -71,7 +70,6 @@ public class TextLine : Drawable {
         self.fontSize = font.size
         self.text = text
         self.altDescription = text
-        self.colorMap = [String: Int32]()
     }
 
     ///
@@ -506,12 +504,12 @@ public class TextLine : Drawable {
     }
 
     @discardableResult
-    public func setColorMap(_ colorMap: [String: Int32]) -> TextLine {
+    public func setColorMap(_ colorMap: [String: Int32]?) -> TextLine {
         self.colorMap = colorMap
         return self
     }
 
-    public func getColorMap() -> [String: Int32] {
+    public func getColorMap() -> [String: Int32]? {
         return self.colorMap
     }
 

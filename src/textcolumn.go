@@ -36,10 +36,10 @@ type TextColumn struct {
 func NewTextColumn(rotateByDegrees int) *TextColumn {
 	textColumn := new(TextColumn)
 	textColumn.alignment = alignment.Left
-	textColumn.lineSpacing = 1.3
+	textColumn.lineSpacing = 1.0
 	textColumn.paragraphSpacing = 1.0
 	textColumn.rotate = rotateByDegrees
-	textColumn.lineBetweenParagraphs = true
+	textColumn.lineBetweenParagraphs = false
 	if rotateByDegrees != 0 && rotateByDegrees != 90 && rotateByDegrees != 270 {
 		log.Fatal("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
 	}
@@ -180,7 +180,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 	textColumn.drawNonJustifiedLine(page, list)
 
 	if textColumn.lineBetweenParagraphs {
-		return textColumn.moveToNextLine(lineHeight)
+		textColumn.moveToNextLine(lineHeight)
 	}
 
 	return textColumn.moveToNextParagraph(lineHeight * textColumn.paragraphSpacing)

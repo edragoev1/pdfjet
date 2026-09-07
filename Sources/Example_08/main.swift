@@ -38,7 +38,7 @@ public class Example_08 {
         table.setColumnWidth(5, table.getColumnWidth(5) + 10.0)
         table.rightAlignNumbers()
 
-        table.setLocation(35.0, 35.0)
+        table.setLocation(30.0, 30.0)
         // table.setFirstPageTopMargin(150.0)
         table.setBottomMargin(15.0)
         table.setTextColorInRow(12, Color.blue)

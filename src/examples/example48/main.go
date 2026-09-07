@@ -15,6 +15,7 @@ func Example48() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("The structure of a PDF file")
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(14.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 

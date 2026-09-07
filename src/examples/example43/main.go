@@ -13,6 +13,8 @@ import (
 // Example43 demonstrates creating a PDF with a big table
 func Example43() {
 	pdf := pdfjet.NewPDFFile("Example_43.pdf")
+	// pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
 
 	// Used for performance testing. Results in 2000+ pages PDF.
 	fileName := "data/Electric_Vehicle_Population_Data.csv"

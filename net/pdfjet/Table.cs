@@ -71,8 +71,8 @@ public class Table {
             String[] fields = line.Split(delimiterRegex);
             foreach (String field in fields) {
                 if (lineNumber == 0) {
-                    Cell cell = new Cell(f1);
-                    cell.SetTextBox(new TextBox(f1, field));
+                    Cell cell = new Cell(f1, field);
+                    // cell.SetTextBox(new TextBox(f1, field));
                     row.Add(cell);
                 } else {
                     row.Add(new Cell(f2, field));
@@ -396,26 +396,6 @@ public class Table {
         return column;
     }
 
-    private void AppendMissingCells(List<List<Cell>> tableData) {
-        float lineWidth = tableData[0][0].GetLineWidth();
-        int numOfColumns = 0;
-        foreach (List<Cell> row in tableData) {
-            if (row.Count > numOfColumns) {
-                numOfColumns = row.Count;
-            }
-        }
-        foreach (List<Cell> row in tableData) {
-            int rowCount = row.Count;
-            if (rowCount < numOfColumns) {
-                for (int i = 0; i < (numOfColumns - rowCount); i++) {
-                    Cell cell = new Cell(f2, "");
-                    cell.SetLineWidth(lineWidth);
-                    row.Add(cell);
-                }
-            }
-        }
-    }
-
     /**
      * Draws this table on the specified page.
      *
@@ -423,7 +403,6 @@ public class Table {
      * @return Point the point on the page where to draw the next component.
      */
     public float[] DrawOn(Page page) {
-        AppendMissingCells(tableData);
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
 	    SetBottomBorderOnLastRow();
@@ -432,7 +411,6 @@ public class Table {
     }
 
     public float[] DrawOn(PDF pdf, List<Page> pages, float[] pageSize) {
-        AppendMissingCells(tableData);
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
 	    SetBottomBorderOnLastRow();
@@ -704,6 +682,7 @@ public class Table {
                     cell2.SetLeftPadding(cell.leftPadding);
                     cell2.SetRightPadding(cell.rightPadding);
 
+                    cell2.SetBackgroundColor(cell.GetBackgroundColor());
                     cell2.SetTextColor(cell.GetTextColor());
                     cell2.SetStrokeWidth(cell.GetStrokeWidth());
                     cell2.SetStrokeColor(cell.GetStrokeColor());

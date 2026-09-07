@@ -13,24 +13,26 @@ public class Example_40 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_40.pdf", FileMode.Create)));
 
+        Page page = new Page(pdf, Letter.PORTRAIT);
+
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f1.SetItalic(true);
-        f1.SetSize(8f);
+        f1.SetSize(10f);
 
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         f2.SetItalic(true);
         f2.SetSize(8f);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-
         Chart chart = new Chart(f1, f2);
+        chart.SetData(GetData());
         chart.SetLocation(70f, 50f);
         chart.SetSize(500f, 300f);
         chart.SetTitle("Vertical Bar Chart Example");
         chart.SetXAxisTitle("Bar Chart");
         chart.SetYAxisTitle("Vertical");
-        chart.SetData(GetData());
+        chart.SetDrawYAxisLines(false);
         chart.SetDrawXAxisLabels(false);
+        chart.SetXYChart(false);
         chart.DrawOn(page);
 
         pdf.Complete();

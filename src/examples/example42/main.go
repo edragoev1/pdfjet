@@ -41,7 +41,7 @@ func Example42() {
 	form.SetLabelFont(f1)
 	form.SetLabelFontSize(9.0)
 	form.SetValueFont(f2)
-	form.SetValueFontSize(9.0)
+	form.SetValueFontSize(10.0)
 	form.SetLocation(50.0, 50.0)
 	form.SetFormWidth(w)
 	form.SetLineWidth(0.2)

@@ -18,7 +18,6 @@ public class RadioButton : IDrawable {
     private float r2;
     private float penWidth;
     private Font font = null;
-    private float fontSize = 12f;
     private String label = "";
     private String uri = null;
     private String language = null;
@@ -40,7 +39,7 @@ public class RadioButton : IDrawable {
      * @return this RadioButton.
      */
     public RadioButton SetFontSize(float fontSize) {
-        this.fontSize = fontSize;
+        this.font.SetSize(fontSize);
         return this;
     }
 
@@ -135,31 +134,20 @@ public class RadioButton : IDrawable {
         this.penWidth = r1/10;
 
         float yBox = y;
-        // page.SetLinePattern("[] 0");
-        var circle = new Ellipse();
-        circle.SetCenterXY(x + r1 + penWidth, yBox + r1 + penWidth);
-        circle.SetRadiusX(r1);
-        circle.SetRadiusY(r1);
-        circle.SetStrokeWidth(1f);
-        circle.SetStrokeColor(Color.black);
-        circle.DrawOn(page);
-
-//        x + r1 + penWidth,
-//            yBox + r1 + penWidth,
-//            r1,
-//            r1,
-//            Color.black,
-//            1f,
-//            Color.black);
+        page.SetPenWidth(1f);
+        page.SetPenColor(Color.black);
+        page.SetStrokeDashPattern("[] 0");
+        page.SetBrushColor(Color.black);
+        page.DrawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r1);
 
         if (this.selected) {
-            // page.DrawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2, Color.black, 1f, Color.black);
+            page.DrawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2, PathOperator.Fill);
         }
 
         if (uri != null) {
             page.SetBrushColor(Color.blue);
         }
-        page.DrawString(font, fontSize, label, x + 3*r1, y + font.GetAscent(fontSize));
+        page.DrawString(font, font.GetSize(), label, x + 3*r1, y + font.GetAscent());
         page.SetPenWidth(0f);
         page.SetBrushColor(Color.black);
 
@@ -171,7 +159,7 @@ public class RadioButton : IDrawable {
                     x + 3*r1,
                     y,
                     x + 3*r1 + font.StringWidth(label),
-                    y + font.GetBodyHeight(fontSize),
+                    y + font.GetBodyHeight(),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -184,7 +172,7 @@ public class RadioButton : IDrawable {
                     altDescription));
         }
 
-        return new float[] { x + 6*r1 + font.StringWidth(label), y + font.GetBodyHeight(fontSize) };
+        return new float[] { x + 6*r1 + font.StringWidth(label), y + font.GetBodyHeight() };
     }
 }   // End of RadioButton.cs
 }   // End of namespace PDFjet.NET

@@ -234,7 +234,7 @@ func getCell(
 	cell.SetRightBorder(true)
 	cell.SetTextAlignment(alignment.Center)
 	cell.SetBackgroundColor(color.LightBlue)
-	cell.SetLineWidth(0.5)
+	cell.SetLineWidth(1.0)
 	return cell
 }
 

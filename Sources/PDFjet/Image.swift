@@ -240,8 +240,8 @@ public class Image : Drawable {
     ///
     @discardableResult
     public func scaleBy(_ widthFactor: Float, _ heightFactor: Float) -> Image {
-        self.w! = (self.w! * widthFactor).rounded()
-        self.h! = (self.h! * heightFactor).rounded()
+        self.w! *= widthFactor
+        self.h! *= heightFactor
         return self
     }
 

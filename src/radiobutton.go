@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // RadioButton is used to create radio button, which can be set selected or unselected.
@@ -87,29 +88,34 @@ func (radioButton *RadioButton) SetActualText(actualText string) *RadioButton {
 // @param page the Page where the RadioButton is to be drawn.
 // @return x and y coordinates of the bottom right corner of this component.
 func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
-	page.AddBMC("Span", radioButton.language, radioButton.actualText, radioButton.altDescription)
+	page.AddBMC(structtype.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
 
 	radioButton.r1 = radioButton.font.GetAscent(radioButton.font.GetSize()) / 2
 	radioButton.r2 = radioButton.r1 / 2
 	radioButton.penWidth = radioButton.r1 / 10
 
-	yBox := radioButton.y - radioButton.font.GetAscent(radioButton.font.size)
+	yBox := radioButton.y
 	page.SetPenWidth(1.0)
 	page.SetPenColor(color.Black)
 	page.SetStrokeDashPattern("[] 0")
 	page.SetBrushColor(color.Black)
-	page.DrawCircle(radioButton.x+radioButton.r1, yBox+radioButton.r1, radioButton.r1)
+	page.DrawCircle(
+		radioButton.x+radioButton.r1+radioButton.penWidth,
+		yBox+radioButton.r1+radioButton.penWidth, radioButton.r1)
 
 	if radioButton.selected {
-		page.FillCircle(radioButton.x+radioButton.r1, yBox+radioButton.r1, radioButton.r2)
+		page.FillCircle(
+			radioButton.x+radioButton.r1+radioButton.penWidth,
+			yBox+radioButton.r1+radioButton.penWidth, radioButton.r2)
 	}
 
 	if radioButton.uri != "" {
 		page.SetBrushColor(color.Blue)
 	}
-	page.DrawStringUsingColorMap(
-		radioButton.font, radioButton.font, radioButton.font.size, radioButton.label,
-		radioButton.x+3*radioButton.r1, radioButton.y, [3]float32{0.0, 0.0, 0.0}, nil)
+	page.drawString(
+		radioButton.font, radioButton.font.GetSize(), radioButton.label,
+		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.ascent,
+		[3]float32{0.0, 0.0, 0.0}, nil)
 	page.SetPenWidth(0.0)
 	page.SetBrushColor(color.Black)
 
@@ -137,5 +143,5 @@ func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
 
 	return []float32{
 		radioButton.x + 6*radioButton.r1 + radioButton.font.StringWidth(radioButton.font.size, radioButton.label),
-		radioButton.y - radioButton.font.GetDescent(radioButton.font.size)}
+		radioButton.y + radioButton.font.bodyHeight}
 }

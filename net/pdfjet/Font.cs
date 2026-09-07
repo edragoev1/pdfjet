@@ -380,6 +380,24 @@ public class Font {
         return GetAscent(fontSize) + GetDescent(fontSize);
     }
 
+    /**
+     * Returns the height of the body of this font.
+     *
+     * @return the height of the body of the font.
+     */
+    public float GetBodyHeight() {
+        return bodyHeight;
+    }
+
+    /**
+     * Returns the height of this font.
+     *
+     * @return the height of the font.
+     */
+    public float GetHeight() {
+        return ascent + descent;
+    }
+
     public float GetUnderlineThickness(float fontSize) {
         return (fontUnderlineThickness * fontSize / unitsPerEm);
     }

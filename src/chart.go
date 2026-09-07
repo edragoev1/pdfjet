@@ -45,6 +45,20 @@ type Chart struct {
 	innerBorderWidth               float32
 	minFractionDigits              int
 	maxFractionDigits              int
+	fontSize                       float32
+	autoColors                     bool
+}
+
+// defaultPalette holds the stroke colors used when autoColors is enabled.
+var defaultPalette = [...]int32{
+	color.Blue,
+	color.Red,
+	color.Green,
+	color.Orange,
+	color.Purple,
+	color.DarkCyan,
+	color.Magenta,
+	color.Olive,
 }
 
 // NewChart creates XY chart objects.
@@ -73,6 +87,8 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.innerBorderWidth = 0.0
 	chart.minFractionDigits = 2
 	chart.maxFractionDigits = 2
+	chart.fontSize = 8.0
+	chart.autoColors = true
 	return chart
 }
 
@@ -146,6 +162,59 @@ func (chart *Chart) SetDrawYAxisLines(drawYAxisLines bool) {
 	chart.drawYAxisLines = drawYAxisLines
 }
 
+// SetFontSize sets the font size used for the axis labels and point text.
+func (chart *Chart) SetFontSize(fontSize float32) {
+	chart.fontSize = fontSize
+}
+
+// SetChartBorderWidth sets the width of the chart border.
+func (chart *Chart) SetChartBorderWidth(width float32) {
+	chart.chartBorderWidth = width
+}
+
+// SetInnerBorderWidth sets the width of the inner border.
+func (chart *Chart) SetInnerBorderWidth(width float32) {
+	chart.innerBorderWidth = width
+}
+
+// SetHGridLineWidth sets the width of the horizontal grid lines.
+func (chart *Chart) SetHGridLineWidth(width float32) {
+	chart.hGridLineWidth = width
+}
+
+// SetVGridLineWidth sets the width of the vertical grid lines.
+func (chart *Chart) SetVGridLineWidth(width float32) {
+	chart.vGridLineWidth = width
+}
+
+// SetHGridLinePattern sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
+func (chart *Chart) SetHGridLinePattern(pattern string) {
+	chart.hGridLinePattern = pattern
+}
+
+// SetVGridLinePattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
+func (chart *Chart) SetVGridLinePattern(pattern string) {
+	chart.vGridLinePattern = pattern
+}
+
+// SetAutoColors toggles the automatic stroke colors for the data series.
+func (chart *Chart) SetAutoColors(autoColors bool) {
+	chart.autoColors = autoColors
+}
+
+// ToFloatArray converts an RGB color to the float array used internally.
+func (chart *Chart) ToFloatArray(color int32) [3]float32 {
+	r := float32((color>>16)&0xff) / 255.0
+	g := float32((color>>8)&0xff) / 255.0
+	b := float32(color&0xff) / 255.0
+	return [3]float32{r, g, b}
+}
+
+// SetPosition sets the position of this chart on the page.
+func (chart *Chart) SetPosition(x, y float32) {
+	chart.SetLocation(x, y)
+}
+
 // SetDrawXAxisLabels sets whether to draw X axis labels on the chart.
 func (chart *Chart) SetDrawXAxisLabels(drawXAxisLabels bool) {
 	chart.drawXAxisLabels = drawXAxisLabels
@@ -194,7 +263,7 @@ func (chart *Chart) DrawOn(page *Page) {
 	// Draw chart title
 	page.drawString(
 		chart.f1,
-		chart.f1.size,
+		chart.fontSize,
 		chart.title,
 		chart.x1+((chart.w-chart.f1.StringWidth(chart.f1.size, chart.title))/2),
 		chart.y1+1.5*chart.f1.bodyHeight,
@@ -286,22 +355,23 @@ func (chart *Chart) DrawOn(page *Page) {
 	page.SetBrushColor(color.Black)
 	page.SetTextDirection(90)
 	page.drawString(
-		chart.f1,
-		chart.f1.size,
+		chart.f2,
+		chart.fontSize,
 		chart.yAxisTitle,
-		chart.x1+chart.f1.bodyHeight,
-		chart.y8-((chart.y8-chart.y5)-chart.f1.StringWidth(chart.f1.size, chart.yAxisTitle))/2,
+		chart.x1+chart.f2.bodyHeight,
+		chart.y8-((chart.y8-chart.y5)-chart.f2.StringWidth(chart.f2.size, chart.yAxisTitle))/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
 	// Draw the X axis title
 	page.SetTextDirection(0)
+	page.SetBrushColor(color.Black)
 	page.drawString(
-		chart.f1,
-		chart.f1.size,
+		chart.f2,
+		chart.fontSize,
 		chart.xAxisTitle,
-		chart.x5+((chart.x6-chart.x5)-chart.f1.StringWidth(chart.f1.size, chart.xAxisTitle))/2,
-		chart.y4-chart.f1.bodyHeight/2,
+		chart.x5+((chart.x6-chart.x5)-chart.f2.StringWidth(chart.f2.size, chart.xAxisTitle))/2,
+		chart.y4-chart.f2.bodyHeight/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
@@ -426,13 +496,13 @@ func (chart *Chart) drawVerticalGridLines(page *Page) {
 func (chart *Chart) DrawXAxisLabels(page *Page) {
 	format := chart.formatString()
 	x := chart.x5
-	y := chart.y8 + chart.f2.bodyHeight
+	y := chart.y8 + chart.f2.GetBodyHeight(chart.f2.GetSize())
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
 		label := fmt.Sprintf(format, chart.xMin+((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
 		page.drawString(
-			chart.f2, chart.f2.size, label, x-(chart.f2.StringWidth(chart.f2.size, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
+			chart.f2, chart.fontSize, label, x-(chart.f2.StringWidth(chart.f2.size, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += step
 	}
 }
@@ -446,24 +516,30 @@ func (chart *Chart) DrawYAxisLabels(page *Page) {
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.yAxisGridLines + 1); i++ {
 		label := fmt.Sprintf(format, chart.yMin+((chart.yMax-chart.yMin)/float32(chart.yAxisGridLines))*float32(i))
-		page.drawString(chart.f2, chart.f2.size, label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
+		page.drawString(chart.f2, chart.fontSize, label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 		y -= step
 	}
 }
 
 func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
+	seriesIndex := 0
 	for _, points := range chartData {
 		p0 := points[0]
 		if p0.drawPath {
+			if chart.autoColors && p0.strokeColor == [3]float32{} {
+				index := seriesIndex % len(defaultPalette)
+				p0.strokeColor = chart.ToFloatArray(defaultPalette[index])
+			}
 			page.SetPenColorRGB(p0.strokeColor)
 			page.SetPenWidth(p0.strokeWidth)
 			page.SetStrokeDashPattern(p0.strokeDashPattern)
 			page.DrawPath(points, pathoperator.Stroke)
 			if p0.GetText() != "" {
+				page.SetBrushColorRGB(p0.GetTextColor())
 				page.SetTextDirection(p0.GetTextDirection())
 				page.drawString(
 					chart.f2,
-					chart.f2.size,
+					chart.fontSize,
 					p0.text,
 					p0.x+(p0.strokeWidth-chart.f2.ascent)/2.0,
 					p0.y,
@@ -480,6 +556,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 				page.DrawPoint(point)
 			}
 		}
+		seriesIndex++
 	}
 }
 

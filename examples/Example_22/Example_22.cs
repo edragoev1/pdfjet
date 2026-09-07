@@ -48,6 +48,12 @@ public class Example_22 {
         text.SetLocation(90f, 200f);
         text.DrawOn(page);
 
+        // Create a box with invisible borders
+        Box box = new Box(20f, 20f, 20f, 20f);
+        box.SetColor(Color.white);
+        box.SetGoToAction("dest#1");
+        box.DrawOn(page);
+
         // Create an up arrow and place it in the box
         PDFjet.NET.Path path = new PDFjet.NET.Path();
         path.Add(new Point(10f,  1f));
@@ -57,14 +63,13 @@ public class Example_22 {
         path.Add(new Point( 7f, 19f));
         path.Add(new Point( 7f,  9f));
         path.Add(new Point( 3f,  9f));
-        path.SetFillColor(Color.oldgloryblue);
-        path.SetLocation(20f, 20f);
-        path.SetGoToAction("dest#1");
+        path.SetClosePath(true);
+        path.SetColor(Color.oldgloryblue);
+        path.SetColor(Color.deepskyblue);
+        path.SetFillShape(true);
         path.DrawOn(page);
 
-        FileStream fis = new FileStream(
-                "images/up-arrow.png", FileMode.Open, FileAccess.Read);
-        Image image = new Image(pdf, fis, ImageType.PNG);
+        Image image = new Image(pdf, "images/up-arrow.png");
         image.SetLocation(40f, 40f);
         image.SetGoToAction("dest#1");
         image.DrawOn(page);

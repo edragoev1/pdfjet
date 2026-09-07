@@ -4,8 +4,6 @@ import PDFjet
 /**
  * Example_25.swift
  */
-import Foundation
-import PDFjet
 
 public class Example_25 {
     public init() throws {

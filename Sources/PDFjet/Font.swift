@@ -413,6 +413,15 @@ public class Font {
     }
 
     ///
+    /// Returns the height of this font.
+    ///
+    /// @return the height of the font.
+    ///
+    public func getHeight() -> Float {
+        return self.ascent + self.descent
+    }
+
+    ///
     /// Returns the height of the body of the font.
     ///
     /// @return float the height of the body of the font.

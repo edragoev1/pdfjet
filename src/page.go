@@ -224,6 +224,13 @@ func (page *Page) DrawString(font1 *Font, font2 *Font, text string, x, y float32
 	page.DrawStringUsingColorMap(font1, font2, font1.size, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 }
 
+// DrawStringUsingFontSize draws a string using the specified font and font size
+// at the x, y location. The baseline of the leftmost character is at (x, y).
+func (page *Page) DrawStringUsingFontSize(
+	font *Font, fontSize float32, text string, x, y float32) {
+	page.drawString(font, fontSize, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
+}
+
 // DrawStringUsingColorMap draws the text given by the specified string,
 // using the specified main font and the current brushColor color.
 // If the main font is missing some glyphs - the fallback font is used.

@@ -1127,7 +1127,27 @@ public class Page {
         DrawArc(x, y, rx, ry, 0f, 360f);
     }
 
-    internal void DrawCircle(float x, float y, float r, string pathOperator) {
+    /**
+     * Draws a circle on the page.
+     * The outline of the circle is drawn using the current pen color.
+     *
+     * @param x the x coordinate of the center of the circle to be drawn.
+     * @param y the y coordinate of the center of the circle to be drawn.
+     * @param r the radius of the circle to be drawn.
+     */
+    public void DrawCircle(float x, float y, float r) {
+        DrawEllipse(x, y, r, r, PathOperator.Stroke);
+    }
+
+    /**
+     * Draws the specified circle on the page and fills it with the current brush color.
+     *
+     * @param x the x coordinate of the center of the circle to be drawn.
+     * @param y the y coordinate of the center of the circle to be drawn.
+     * @param r the radius of the circle to be drawn.
+     * @param pathOperator must be PathOperator.Stroke, PathOperator.CloseAndStroke or PathOperator.Fill.
+     */
+    public void DrawCircle(float x, float y, float r, string pathOperator) {
         DrawEllipse(x, y, r, r, pathOperator);
     }
 
