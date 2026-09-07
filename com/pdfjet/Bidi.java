@@ -3,7 +3,7 @@ package com.pdfjet;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
+/*
  * Bidi.java
  *
  * Copyright (c) 2026 PDFjet Software
