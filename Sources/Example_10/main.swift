@@ -107,11 +107,11 @@ public class Example_10 {
 
         if rotate == 0 {
             column.setLocation(90.0, 300.0)
-        } else if rotate == 90 {
+        } /* else if rotate == 90 {
             column.setLocation(90.0, 780.0)
         } else if rotate == 270 {
             column.setLocation(550.0, 310.0)
-        }
+        } */
 
         let columnWidth: Float = 470.0
         column.setSize(columnWidth, 100.0)
