@@ -27,7 +27,7 @@ public class Example_09 {
         chart.SetTitle("World View - Communications");
         chart.SetXAxisTitle("Cell phones per capita");
         chart.SetYAxisTitle("Internet users % of the population");
-        addTrendLine(chart);
+        AddTrendLine(chart);
         chart.DrawOn(page);
 
         f1.SetSize(7f);
@@ -37,7 +37,7 @@ public class Example_09 {
         pdf.Complete();
     }
 
-    public void addTrendLine(Chart chart) {
+    public void AddTrendLine(Chart chart) {
         List<Point> points = chart.GetData()[0];
 
         double m = chart.Slope(points);
@@ -54,8 +54,8 @@ public class Example_09 {
         x = 1.5;
         y = m * x + b;
         Point p2 = new Point(x, y);
-        p2.SetFillColor(Color.blue);
         p2.SetShape(Point.INVISIBLE);
+
         trendline.Add(p1);
         trendline.Add(p2);
 
@@ -73,11 +73,12 @@ public class Example_09 {
                 List<Cell> tableRow = new List<Cell>();
 
                 point.SetRadius(2f);
-                // point.SetFillShape(true);
                 point.SetAlignment(Align.LEFT);
 
                 Cell cell = new Cell(f2);
                 cell.SetPoint(point);
+                cell.SetText("");
+
                 tableRow.Add(cell);
 
                 cell = new Cell(f1);
@@ -152,7 +153,7 @@ public class Example_09 {
                 } else if (point.GetText().Equals("Canada")) {
                     point.SetShape(Point.BOX);
                     point.SetStrokeColor(Color.orange);
-                } else if (point.GetText().Equals("United States")) {
+                } else if (point.GetText().StartsWith("United States")) {
                     point.SetShape(Point.STAR);
                     point.SetStrokeColor(Color.red);
                 }

@@ -22,7 +22,7 @@ public class Example_08 {
         f3.SetSize(7f);
 
         Image image = new Image(pdf, "images/TeslaX.png");
-        image.SetScaleFactor(0.20f);
+        image.ScaleBy(0.20f);
 
         Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
         barcode.SetModuleLength(0.75f);

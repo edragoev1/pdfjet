@@ -1,11 +1,8 @@
-// main.go
-//
-// Example_09: XY Chart with trend line and data table
-
 package main
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -32,11 +29,7 @@ func Example09() {
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	chart := pdfjet.NewChart(f1, f2)
-	chartData, err := getData("data/world-communications.txt", "|")
-	if err != nil {
-	}
-
-	chart.SetData(chartData)
+	chart.SetData(getData("data/world-communications.txt", "|"))
 	chart.SetLocation(70.0, 50.0)
 	chart.SetSize(500.0, 300.0)
 	chart.SetTitle("World View - Communications")
@@ -47,7 +40,7 @@ func Example09() {
 
 	f1.SetSize(7.0)
 	f2.SetSize(7.0)
-	err = addTableToChart(page, chart, f1, f2)
+	addTableToChart(page, chart, f1, f2)
 
 	pdf.Complete()
 }
@@ -82,7 +75,7 @@ func addTrendLine(chart *pdfjet.Chart) {
 }
 
 // addTableToChart creates and draws a table of the chart data.
-func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font) error {
+func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font) {
 	table := pdfjet.NewTable()
 	tableData := make([][]*pdfjet.Cell, 0)
 	points := chart.GetData()[0]
@@ -114,19 +107,17 @@ func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font
 	table.SetLocation(70.0, 360.0)
 	table.SetColumnWidth(0, 9.0)
 	table.DrawOn(page)
-
-	return nil
 }
 
 // getData reads chart data from a file.
 // format: country|population|...|cellphones|...|internet
-func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
+func getData(fileName, delimiter string) [][]*pdfjet.Point {
 	chartData := make([][]*pdfjet.Point, 0)
 	points := make([]*pdfjet.Point, 0)
 
 	file, err := os.Open(fileName)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 	defer file.Close()
 
@@ -140,7 +131,7 @@ func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
 		} else if delimiter == "\t" {
 			cols = strings.Split(line, "\t")
 		} else {
-			return nil, nil
+			log.Fatal("Only pipes and tabs can be used as delimiters")
 		}
 
 		point := pdfjet.NewPoint(0, 0)
@@ -207,11 +198,11 @@ func getData(fileName, delimiter string) ([][]*pdfjet.Point, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
 	chartData = append(chartData, points)
-	return chartData, nil
+	return chartData
 }
 
 func main() {

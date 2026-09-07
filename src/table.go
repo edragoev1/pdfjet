@@ -193,13 +193,14 @@ func (table *Table) SetTextAlignInColumn(index, alignment int) {
 // SetTextColorInColumn sets the color of the text in the specified column.
 // @param index the index of the specified column.
 // @param color the color specified as an integer.
-func (table *Table) SetTextColorInColumn(index int, color [3]float32) {
+func (table *Table) SetTextColorInColumn(index int, color int32) {
+	textColor := colorToRGB(color)
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
-			cell.SetTextColor(color)
+			cell.SetTextColor(textColor)
 			if cell.textBlock != nil {
-				cell.textBlock.SetTextColorRGB(color)
+				cell.textBlock.SetTextColorRGB(textColor)
 			}
 		}
 	}
@@ -223,13 +224,14 @@ func (table *Table) SetFontInColumn(index int, font *Font) {
 // SetTextColorInRow sets the color of the text in the specified row.
 // @param index the index of the specified row.
 // @param color the color specified as an integer.
-func (table *Table) SetTextColorInRow(index int, color [3]float32) {
+func (table *Table) SetTextColorInRow(index int, color int32) {
+	textColor := colorToRGB(color)
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
-			cell.SetTextColor(color)
+			cell.SetTextColor(textColor)
 			if cell.textBlock != nil {
-				cell.textBlock.SetTextColorRGB(color)
+				cell.textBlock.SetTextColorRGB(textColor)
 			}
 		}
 	}
@@ -467,10 +469,11 @@ func (table *Table) SetCellBorders(border bool) {
 
 // SetCellBordersColor sets the color of the cell borders.
 // @param color the color of the cell borders.
-func (table *Table) SetCellBordersColor(color [3]float32) {
+func (table *Table) SetCellBordersColor(color int32) {
+	penColor := colorToRGB(color)
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetPenColor(color)
+			cell.SetPenColor(penColor)
 		}
 	}
 }

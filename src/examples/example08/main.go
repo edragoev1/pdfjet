@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
@@ -46,15 +47,15 @@ func Example08() {
 	table.SetLocation(30.0, 30.0)
 	// table.SetFirstPageTopMargin(150.0)
 	table.SetBottomMargin(15.0)
-	table.SetTextColorInRow(12, [3]float32{0.0, 0.0, 1.0}) // Blue
-	table.SetTextColorInRow(13, [3]float32{1.0, 0.0, 0.0}) // Red
+	table.SetTextColorInRow(12, color.Blue)
+	table.SetTextColorInRow(13, color.Red)
 	table.SetFontInRow(14, f3)
 
 	pages := make([]*pdfjet.Page, 0)
 	table.DrawOnPages(pdf, &pages, letter.Portrait)
 	for i := 0; i < len(pages); i++ {
 		page := pages[i]
-		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+1)+" of "+fmt.Sprint(len(pages))))
+		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))
 		pdf.AddPage(page)
 	}
 
