@@ -649,7 +649,7 @@ public class TextBox : IDrawable {
         } else {
             textAreaWidth = height - 2*margin;
         }
-        // Font.StringWidth(fallbackFont, str) is an exact per-character sum
+        // Font.StringWidth(fallbackFont, fontSize, str) is an exact per-character sum
         // whenever the primary font is not a core font - only the core fonts
         // apply kerning between adjacent characters, so their width is not
         // simply the sum of their parts. For the common case (an embedded
@@ -662,15 +662,15 @@ public class TextBox : IDrawable {
         bool additive = !font.isCoreFont;
         String[] lines = text.Split(new String[] {"\r\n", "\n"}, StringSplitOptions.None);
         foreach (String line in lines) {
-            if (font.StringWidth(fallbackFont, line) <= textAreaWidth) {
+            if (font.StringWidth(fallbackFont, fontSize, line) <= textAreaWidth) {
                 list.Add(line);
             } else {
                 if (textIsCJK(line)) {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
                     foreach (char ch in line.ToCharArray()) {
-                        float chWidth = additive ? font.StringWidth(fallbackFont, ch.ToString()) : 0f;
-                        float width = additive ? sbWidth + chWidth : font.StringWidth(fallbackFont, sb.ToString() + ch);
+                        float chWidth = additive ? font.StringWidth(fallbackFont, fontSize, ch.ToString()) : 0f;
+                        float width = additive ? sbWidth + chWidth : font.StringWidth(fallbackFont, fontSize, sb.ToString() + ch);
                         if (width <= textAreaWidth) {
                             sb.Append(ch);
                             sbWidth = width;
@@ -689,15 +689,15 @@ public class TextBox : IDrawable {
                 } else {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
-                    float spaceWidth = additive ? font.StringWidth(fallbackFont, " ") : 0f;
+                    float spaceWidth = additive ? font.StringWidth(fallbackFont, fontSize, " ") : 0f;
                     String[] tokens = System.Text.RegularExpressions.Regex.Split(line, @"\s+");
                     foreach (String token in tokens) {
-                        float tokenWidth = additive ? font.StringWidth(fallbackFont, token) : 0f;
+                        float tokenWidth = additive ? font.StringWidth(fallbackFont, fontSize, token) : 0f;
                         float width;
                         if (additive) {
                             width = sb.Length == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
                         } else {
-                            width = font.StringWidth(fallbackFont, sb.ToString() + token);
+                            width = font.StringWidth(fallbackFont, fontSize, sb.ToString() + token);
                         }
                         if (width <= textAreaWidth) {
                             sb.Append(token + " ");
@@ -782,9 +782,9 @@ public class TextBox : IDrawable {
                     if (GetTextAlignment() == Align.LEFT) {
                         xText = x + margin;
                     } else if (GetTextAlignment() == Align.RIGHT) {
-                        xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
+                        xText = (x + width) - (font.StringWidth(fallbackFont, fontSize, line) + margin);
                     } else if (GetTextAlignment() == Align.CENTER) {
-                        xText = x + (width - font.StringWidth(fallbackFont, line))/2;
+                        xText = x + (width - font.StringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {
                     xText = y + margin;
@@ -818,9 +818,9 @@ public class TextBox : IDrawable {
                     if (GetTextAlignment() == Align.LEFT) {
                         xText = x + margin;
                     } else if (GetTextAlignment() == Align.RIGHT) {
-                        xText = (x + width) - (font.StringWidth(fallbackFont, line) + margin);
+                        xText = (x + width) - (font.StringWidth(fallbackFont, fontSize, line) + margin);
                     } else if (GetTextAlignment() == Align.CENTER) {
-                        xText = x + (width - font.StringWidth(fallbackFont, line))/2;
+                        xText = x + (width - font.StringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {
                     xText = x + margin;
@@ -891,7 +891,7 @@ public class TextBox : IDrawable {
         }
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
-            float lineLength = font.StringWidth(fallbackFont, text);
+            float lineLength = font.StringWidth(fallbackFont, fontSize, text);
             if (GetUnderline()) {
                 page.AddArtifactBMC();
                 page.MoveTo(xText, yText + font.GetUnderlinePosition(fontSize));

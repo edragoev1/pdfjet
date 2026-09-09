@@ -409,7 +409,7 @@ public class TextBox : Drawable {
         let additive = !font.isCoreFont
         let lines = (text ?? "").components(separatedBy: CharacterSet.newlines)
         for line in lines {
-            if font.stringWidth(fallbackFont, line) <= textAreaWidth {
+            if font.stringWidth(fallbackFont, fontSize, line) <= textAreaWidth {
                 list.append(line)
             } else {
                 if textIsCJK(line) {
@@ -417,9 +417,9 @@ public class TextBox : Drawable {
                     var sbWidth: Float = 0.0
                     for ch in line {
                         let chWidth = additive ?
-                                font.stringWidth(fallbackFont, String(ch)) : 0.0
+                                font.stringWidth(fallbackFont, fontSize, String(ch)) : 0.0
                         let lineWidth = additive ? sbWidth + chWidth :
-                                font.stringWidth(fallbackFont, sb + String(ch))
+                                font.stringWidth(fallbackFont, fontSize, sb + String(ch))
                         if lineWidth <= textAreaWidth {
                             sb.append(ch)
                             sbWidth = lineWidth
@@ -438,18 +438,18 @@ public class TextBox : Drawable {
                     var sb = String()
                     var sbWidth: Float = 0.0
                     let spaceWidth = additive ?
-                            font.stringWidth(fallbackFont, Single.space) : 0.0
+                            font.stringWidth(fallbackFont, fontSize, Single.space) : 0.0
                     let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
                     for token in tokens {
                         let tokenText = String(token)
                         let tokenWidth = additive ?
-                                font.stringWidth(fallbackFont, tokenText) : 0.0
+                                font.stringWidth(fallbackFont, fontSize, tokenText) : 0.0
                         var lineWidth: Float
                         if additive {
                             lineWidth = sb.isEmpty ?
                                     tokenWidth : sbWidth + spaceWidth + tokenWidth
                         } else {
-                            lineWidth = font.stringWidth(fallbackFont, sb + tokenText)
+                            lineWidth = font.stringWidth(fallbackFont, fontSize, sb + tokenText)
                         }
                         if lineWidth <= textAreaWidth {
                             sb.append(tokenText)
@@ -534,9 +534,9 @@ public class TextBox : Drawable {
                         xText = x + margin
                     } else if getTextAlignment() == Align.RIGHT {
                         xText = (x + width) -
-                                (font.stringWidth(fallbackFont, line) + margin)
+                                (font.stringWidth(fallbackFont, fontSize, line) + margin)
                     } else if getTextAlignment() == Align.CENTER {
-                        xText = x + (width - font.stringWidth(fallbackFont, line))/2
+                        xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2
                     }
                 } else {
                     xText = y + margin
@@ -572,9 +572,9 @@ public class TextBox : Drawable {
                         xText = x + margin
                     } else if getTextAlignment() == Align.RIGHT {
                         xText = (x + width) -
-                                (font.stringWidth(fallbackFont, line) + margin)
+                                (font.stringWidth(fallbackFont, fontSize, line) + margin)
                     } else if getTextAlignment() == Align.CENTER {
-                        xText = x + (width - font.stringWidth(fallbackFont, line))/2
+                        xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2
                     }
                 } else {
                     xText = x + margin
@@ -647,7 +647,7 @@ public class TextBox : Drawable {
         }
 
         if textDirection == Direction.LEFT_TO_RIGHT {
-            let lineLength = font.stringWidth(fallbackFont, text)
+            let lineLength = font.stringWidth(fallbackFont, fontSize, text)
             if getUnderline() {
                 page.addArtifactBMC()
                 page.moveTo(xText, yText + font.getUnderlinePosition(fontSize))

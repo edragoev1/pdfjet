@@ -668,7 +668,7 @@ public class TextBox implements Drawable {
         } else {
             textAreaWidth = height - 2*margin;
         }
-        // Font.stringWidth(fallbackFont, str) is an exact per-character sum
+        // Font.stringWidth(fallbackFont, fontSize, str) is an exact per-character sum
         // whenever the primary font is not a core font - only the core fonts
         // apply kerning between adjacent characters, so their width is not
         // simply the sum of their parts. For the common case (an embedded
@@ -681,15 +681,15 @@ public class TextBox implements Drawable {
         boolean additive = !font.isCoreFont;
         String[] lines = text.split("\\r?\\n", -1);
         for (String line : lines) {
-            if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
+            if (font.stringWidth(fallbackFont, fontSize, line) <= textAreaWidth) {
                 list.add(line);
             } else {
                 if (textIsCJK(line)) {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
                     for (char ch : line.toCharArray()) {
-                        float chWidth = additive ? font.stringWidth(fallbackFont, String.valueOf(ch)) : 0f;
-                        float width = additive ? sbWidth + chWidth : font.stringWidth(fallbackFont, sb.toString() + ch);
+                        float chWidth = additive ? font.stringWidth(fallbackFont, fontSize, String.valueOf(ch)) : 0f;
+                        float width = additive ? sbWidth + chWidth : font.stringWidth(fallbackFont, fontSize, sb.toString() + ch);
                         if (width <= textAreaWidth) {
                             sb.append(ch);
                             sbWidth = width;
@@ -708,15 +708,15 @@ public class TextBox implements Drawable {
                 } else {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
-                    float spaceWidth = additive ? font.stringWidth(fallbackFont, " ") : 0f;
+                    float spaceWidth = additive ? font.stringWidth(fallbackFont, fontSize, " ") : 0f;
                     String[] tokens = line.split("\\s+");
                     for (String token : tokens) {
-                        float tokenWidth = additive ? font.stringWidth(fallbackFont, token) : 0f;
+                        float tokenWidth = additive ? font.stringWidth(fallbackFont, fontSize, token) : 0f;
                         float width;
                         if (additive) {
                             width = sb.length() == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
                         } else {
-                            width = font.stringWidth(fallbackFont, sb.toString() + token);
+                            width = font.stringWidth(fallbackFont, fontSize, sb.toString() + token);
                         }
                         if (width <= textAreaWidth) {
                             sb.append(token + " ");
@@ -799,9 +799,9 @@ public class TextBox implements Drawable {
                     if (getTextAlignment() == Align.LEFT) {
                         xText = x + margin;
                     } else if (getTextAlignment() == Align.RIGHT) {
-                        xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
+                        xText = (x + width) - (font.stringWidth(fallbackFont, fontSize, line) + margin);
                     } else if (getTextAlignment() == Align.CENTER) {
-                        xText = x + (width - font.stringWidth(fallbackFont, line))/2;
+                        xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {
                     xText = y + margin;
@@ -835,9 +835,9 @@ public class TextBox implements Drawable {
                     if (getTextAlignment() == Align.LEFT) {
                         xText = x + margin;
                     } else if (getTextAlignment() == Align.RIGHT) {
-                        xText = (x + width) - (font.stringWidth(fallbackFont, line) + margin);
+                        xText = (x + width) - (font.stringWidth(fallbackFont, fontSize, line) + margin);
                     } else if (getTextAlignment() == Align.CENTER) {
-                        xText = x + (width - font.stringWidth(fallbackFont, line))/2;
+                        xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {
                     xText = x + margin;
@@ -908,7 +908,7 @@ public class TextBox implements Drawable {
         }
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
-            float lineLength = font.stringWidth(fallbackFont, text);
+            float lineLength = font.stringWidth(fallbackFont, fontSize, text);
             if (getUnderline()) {
                 page.addArtifactBMC();
                 page.moveTo(xText, yText + font.getUnderlinePosition(fontSize));
