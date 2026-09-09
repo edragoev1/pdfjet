@@ -33,7 +33,7 @@ public class Example_42 {
         fields.add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
         fields.add(new Field(   0f, "Telephone #", "(416) 331-2245"));
         fields.add(new Field(2*w/8, "Fax #", "(416) 124-9879"));
-        fields.add(new Field(4*w/8, "Email","jsmith12345@gmail.ca"));
+        fields.add(new Field(4*w/8, "Email", "jsmith12345@gmail.ca"));
         fields.add(new Field(   0f, "Other Information",
             "Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"));
         fields.add(new Field(   0f, "", "enabling remote control and predictive maintenance."));
@@ -48,10 +48,10 @@ public class Example_42 {
                 .setLineWidth(0.2f)
                 .drawOn(page));
 
-	    Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
-	    rect.setBorderWidth(0.2f);
-	    rect.setBorderColor(Color.blue);
-	    rect.drawOn(page);
+        Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
+        rect.setBorderWidth(0.2f);
+        rect.setBorderColor(Color.blue);
+        rect.drawOn(page);
 
         pdf.complete();
     }

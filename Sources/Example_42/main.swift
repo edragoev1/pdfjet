@@ -13,7 +13,7 @@ public class Example_42 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let w: Float = 500.0
+        let w: Float = 500.0 // The width of the form
 
         var fields = [Field]()
         fields.append(Field(  0.0, "Company", "Smart Widgets Inc."))
@@ -24,10 +24,10 @@ public class Example_42 {
         fields.append(Field(6*w/8, "Suite/Floor/Apartment", "8W"))
         fields.append(Field(  0.0, "City/Town", "Toronto"))
         fields.append(Field(4*w/8, "Province", "Ontario"))
-        fields.append(Field(7*w/8, "Postal Code", "M5M 2N2"));
+        fields.append(Field(7*w/8, "Postal Code", "M5M 2N2"))
         fields.append(Field(  0.0, "Telephone #", "(416) 331-2245"))
         fields.append(Field(2*w/8, "Fax #", "(416) 124-9879"))
-        fields.append(Field(4*w/8, "Email","jsmith12345@gmail.ca"))
+        fields.append(Field(4*w/8, "Email", "jsmith12345@gmail.ca"))
         fields.append(Field(  0.0, "Other Information",
             "Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"))
         fields.append(Field(  0.0, "", "enabling remote control and predictive maintenance."))
@@ -42,10 +42,10 @@ public class Example_42 {
                 .setLineWidth(0.2)
                 .drawOn(page)
 
-	    let rect = Rect(xy[0], xy[1], 10.0, 10.0)
-	    rect.setBorderWidth(0.2)
-	    rect.setBorderColor(Color.blue)
-	    rect.drawOn(page)
+        let rect = Rect(xy[0], xy[1], 10.0, 10.0)
+        rect.setBorderWidth(0.2)
+        rect.setBorderColor(Color.blue)
+        rect.drawOn(page)
 
         pdf.complete()
     }

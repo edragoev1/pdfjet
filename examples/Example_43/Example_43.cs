@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
+/**
+ * Example_43.cs
+ */
 public class Example_43 {
     public Example_43() {
         PDF pdf = new PDF(
@@ -46,4 +49,4 @@ public class Example_43 {
         sw.Stop();
         TextUtils.PrintDuration("Example_43", time0, time1);
     }
-}
+}   // End of Example_43.cs

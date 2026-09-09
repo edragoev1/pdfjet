@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example43 demonstrates creating a PDF with a big table
+// Example43 draws a very large table across thousands of pages.
 func Example43() {
 	pdf := pdfjet.NewPDFFile("Example_43.pdf")
 	// pdf.SetCompliance(compliance.PDF_UA_1)

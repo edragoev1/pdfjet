@@ -14,7 +14,7 @@ public class Example_43 {
         // pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("Electric Vehicle Population Data");   // Required for PDF/UA !
 
-	    // Used for performance testing. Results in 2000+ pages PDF.
+        // Used for performance testing. Results in 2000+ pages PDF.
         String fileName = "data/Electric_Vehicle_Population_Data.csv";
         // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
         // String fileName = "data/Electric_Vehicle_Population_5_Lines.csv";
@@ -28,8 +28,8 @@ public class Example_43 {
         f2.setSize(9f);
 
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
-	    table.setNumberOfColumns(9);        // The order of the
-	    table.setTableData(fileName, ",");  // these statements
+        table.setNumberOfColumns(9);        // The order of the
+        table.setTableData(fileName, ",");  // these statements
         table.setLocation(0f, 0f);          // is
         table.setBottomMargin(20f);         // very
         table.complete();                   // important!
@@ -50,4 +50,4 @@ public class Example_43 {
         long time1 = System.currentTimeMillis();
         TextUtils.printDuration("Example_43", time0, time1);
     }
-}
+}   // End of Example_43.java

@@ -5,8 +5,8 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example42 uses the Form and Field classes to create a form.
@@ -16,9 +16,9 @@ func Example42() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	var w float32 = 500.0
+	var w float32 = 500.0 // The width of the form
 
 	fields := make([]*pdfjet.Field, 0)
 	fields = append(fields, pdfjet.NewField(0.0, "Company", "Smart Widgets Inc."))
@@ -37,15 +37,15 @@ func Example42() {
 		"Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"))
 	fields = append(fields, pdfjet.NewField(0.0, "", "enabling remote control and predictive maintenance."))
 
-	form := pdfjet.NewForm(fields)
-	form.SetLabelFont(f1)
-	form.SetLabelFontSize(9.0)
-	form.SetValueFont(f2)
-	form.SetValueFontSize(10.0)
-	form.SetLocation(50.0, 50.0)
-	form.SetFormWidth(w)
-	form.SetLineWidth(0.2)
-	xy := form.DrawOn(page)
+	xy := pdfjet.NewForm(fields).
+		SetLabelFont(f1).
+		SetLabelFontSize(9.0).
+		SetValueFont(f2).
+		SetValueFontSize(10.0).
+		SetLocation(50.0, 50.0).
+		SetFormWidth(w).
+		SetLineWidth(0.2).
+		DrawOn(page)
 
 	rect := pdfjet.NewRect(xy[0], xy[1], 10.0, 10.0)
 	rect.SetBorderWidth(0.2)

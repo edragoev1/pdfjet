@@ -6,7 +6,7 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_42.java
+ * Example_42.cs
  */
 public class Example_42 {
     public Example_42() {
@@ -18,7 +18,7 @@ public class Example_42 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        float w = 500f;
+        float w = 500f; // The width of the form
 
         List<Field> fields = new List<Field>();
         fields.Add(new Field(   0f, "Company", "Smart Widgets Inc."));
@@ -32,7 +32,7 @@ public class Example_42 {
         fields.Add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
         fields.Add(new Field(   0f, "Telephone #", "(416) 331-2245"));
         fields.Add(new Field(2*w/8, "Fax #", "(416) 124-9879"));
-        fields.Add(new Field(4*w/8, "Email","jsmith12345@gmail.ca"));
+        fields.Add(new Field(4*w/8, "Email", "jsmith12345@gmail.ca"));
         fields.Add(new Field(   0f, "Other Information",
             "Smart Widgets Inc. designs intelligent IoT widgets that connect everyday appliances to cloud ecosystems,"));
         fields.Add(new Field(   0f, "", "enabling remote control and predictive maintenance."));
@@ -47,10 +47,10 @@ public class Example_42 {
                 .SetLineWidth(0.2f)
                 .DrawOn(page));
 
-	    Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
-	    rect.SetBorderWidth(0.2f);
-	    rect.SetBorderColor(Color.blue);
-	    rect.DrawOn(page);
+        Rect rect = new Rect(xy[0], xy[1], 10f, 10f);
+        rect.SetBorderWidth(0.2f);
+        rect.SetBorderColor(Color.blue);
+        rect.DrawOn(page);
 
         pdf.Complete();
     }
