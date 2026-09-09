@@ -1,26 +1,19 @@
-//
-// Example_35.swift
-//
-// Copyright (c) 2026 PDFjet Software
-// Licensed under the MIT License. See LICENSE file in the project root.
-//
-
 import Foundation
 import PDFjet
 
+/**
+ * Example_35.swift
+ */
 public class Example_35 {
-    var f1: Font
-    var f2: Font
-
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_35.pdf", append: false)!)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(14.0)
 
-        f2 = try Font(pdf, IBMPlexSans.Bold)
+        let f2 = try Font(pdf, IBMPlexSans.Bold)
         f2.setSize(14.0)
 
         // Base container
@@ -32,13 +25,10 @@ public class Example_35 {
         rect.setFillColor(Color.gray)
         container.add(rect)
 
-        var stamp = Stamp(pdf)
-        stamp = stamp.withSize(400.0, 400.0)
-        stamp = stamp.withFont(f1)
-        stamp = stamp.withFont(f2)
+        let stamp = Stamp(pdf).withSize(400.0, 400.0).withFont(f1).withFont(f2)
 
         // Draw path ...
-        stamp = stamp.setFillColor(Color.lightblue)
+        stamp.setFillColor(Color.lightblue)
             .setStrokeColor(Color.red)
             .setStrokeWidth(4.0)
             .moveTo(0.0, 0.0)
@@ -48,33 +38,28 @@ public class Example_35 {
             .closeFillAndStrokePath()
 
         // Draw Rectangle
-        stamp = stamp.setStrokeColor(Color.blue)
+        stamp.setStrokeColor(Color.blue)
             .setStrokeWidth(1.0)
             .drawRect(10.0, 10.0, 380.0, 380.0)
 
         // Fill Rectangle
-        stamp = stamp.setFillColor(Color.green)
-            .fillRect(10.0, 10.0, 20.0, 20.0)
+        stamp.setFillColor(Color.green).fillRect(10.0, 10.0, 20.0, 20.0)
 
         // Draw some text
-        var parameters = TextParameters()
-        parameters = parameters.setFont(f1)
-        parameters = parameters.setFontSize(14.0)
-        parameters = parameters.setTextLocation(25.0, 25.0)
-        parameters = parameters.setText("Hello, World!")
+        let parameters = TextParameters()
+            .setFont(f1)
+            .setFontSize(14.0)
+            .setTextLocation(25.0, 25.0)
+            .setText("Hello, World!")
         stamp.drawText(parameters)
 
         // Change some parameters and draw the text again
-        parameters = parameters.setFont(f2).setTextLocation(25.0, 50.0)
-        stamp = stamp.setFillColor(Color.darkgreen)
-        stamp.drawText(parameters)
+        parameters.setFont(f2).setTextLocation(25.0, 50.0)
+        stamp.setFillColor(Color.darkgreen).drawText(parameters)
 
-        // Complete the stamp
-        try stamp.complete()
+        try stamp.complete()    // The stamp is complete!
 
-        // Draw stamp on page at original location
-        stamp = stamp.setLocation(50.0, 50.0)
-        stamp.drawOn(page)
+        stamp.setLocation(50.0, 50.0).drawOn(page)
 
         // Rotate the stamp counter clockwise and draw it again
         stamp.rotate(15).drawOn(page)
@@ -122,7 +107,6 @@ public class Example_35 {
         // Draw the entire hierarchy on the page
         _ = container.drawOn(page)
 
-        // Additional container demonstration
         let container5 = Container(200.0, 20.0)
         let rect5 = Rect(0.0, 0.0, 200.0, 20.0)
         container5.add(rect5)
@@ -144,7 +128,7 @@ public class Example_35 {
 
         pdf.complete()
     }
-}
+}   // End of Example_35.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_35()

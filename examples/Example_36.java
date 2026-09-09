@@ -24,7 +24,7 @@ public class Example_36 {
 
         image1.setLocation(90f, xy1[1] + 10f);
         image1.scaleBy(0.3f);
-        float[] xy2 = image1.drawOn(page1);
+        image1.drawOn(page1);
 
         Page page2 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 

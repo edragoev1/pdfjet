@@ -1,30 +1,20 @@
-//
-// Example_35.go
-//
-// Copyright (c) 2026 PDFjet Software
-// Licensed under the MIT License. See LICENSE file in the project root.
-//
-
 package main
 
 import (
 	"time"
 
-	"github.com/edragoev1/pdfjet/src"
+	pdfjet "github.com/edragoev1/pdfjet/src"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example35 demonstrates stamp and container usage
+// Example35 draws a stamp and a hierarchy of nested containers.
 func Example35() {
-	// Create PDF output
 	pdf := pdfjet.NewPDFFile("Example_35.pdf")
 
-	// Create page
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	// Load fonts
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(14.0)
 
@@ -40,7 +30,6 @@ func Example35() {
 	rect.SetFillColor(color.Gray)
 	container.Add(rect)
 
-	// Create stamp
 	stamp := pdfjet.NewStamp(pdf).
 		WithSize(400.0, 400.0).
 		WithFont(f1).
@@ -77,13 +66,11 @@ func Example35() {
 	params.SetFont(f2).SetTextLocation(25.0, 50.0)
 	stamp.SetFillColor(color.DarkGreen).DrawTextUsingParams(params)
 
-	// Complete the stamp
-	stamp.Complete()
+	stamp.Complete() // The stamp is complete!
 
-	// Draw stamp on page at original location
 	stamp.SetLocation(50.0, 50.0).DrawOn(page)
 
-	// Rotate the stamp clockwise and draw it again
+	// Rotate the stamp counter clockwise and draw it again
 	stamp.Rotate(15).DrawOn(page)
 
 	// Rotate the stamp clockwise and draw it again
@@ -129,7 +116,6 @@ func Example35() {
 	// Draw the entire hierarchy on the page
 	container.DrawOn(page)
 
-	// Additional container demonstration
 	container5 := pdfjet.NewContainer(200.0, 20.0)
 	rect5 := pdfjet.NewRect(0.0, 0.0, 200.0, 20.0)
 	container5.Add(rect5)

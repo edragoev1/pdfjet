@@ -12,10 +12,9 @@ import (
 func Example36() {
 	pdf := pdfjet.NewPDFFile("Example_36.pdf")
 
+	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 	image2 := pdfjet.NewImageFromFile(pdf, "images/spain-admin.jpg")
-
-	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
 	page1 := pdfjet.NewPageDetached(pdf, a4.Portrait)
 
