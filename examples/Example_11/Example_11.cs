@@ -49,7 +49,7 @@ public class Example_11 {
         code.SetFont(f1);
         code.DrawOn(page);
 
-        code = new Barcode(Barcode.UPC_A, "51234567890"); // TODO: Do not allow more than 11 digits!!!
+        code = new Barcode(Barcode.UPC_A, "51234567890");     // UPC-A without the check digit which we calculate!!
         code.SetLocation(450f, 250f);
         code.SetModuleLength(1.0f);
         code.SetDirection(Barcode.BOTTOM_TO_TOP);

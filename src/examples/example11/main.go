@@ -49,7 +49,7 @@ func Example11() {
 	code.SetFont(f1)
 	code.DrawOn(page)
 
-	code = pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890") // TODO: Do not allow more than 11 digits!!!
+	code = pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890") // UPC-A without the check digit which we calculate!!
 	code.SetLocation(450.0, 250.0)
 	code.SetModuleLength(1.0)
 	code.SetDirection(pdfjet.BottomToTop)

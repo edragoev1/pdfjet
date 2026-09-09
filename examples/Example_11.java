@@ -50,7 +50,7 @@ public class Example_11 {
         code.setFont(f1);
         code.drawOn(page);
 
-        code = new Barcode(Barcode.UPC_A, "51234567890"); // TODO: Do not allow more than 11 digits!!!
+        code = new Barcode(Barcode.UPC_A, "51234567890");     // UPC-A without the check digit which we calculate!!
         code.setLocation(450f, 250f);
         code.setModuleLength(1.0);
         code.setDirection(Barcode.BOTTOM_TO_TOP);
