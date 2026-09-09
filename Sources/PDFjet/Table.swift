@@ -768,7 +768,7 @@ public class Table {
                     buf.append(" ")
                 }
                 for scalar in token.unicodeScalars {
-                    if cell.font!.stringWidth(cell.fallbackFont, (buf + " " + String(scalar)).trim()) > cellWidth {
+                    if cell.font!.stringWidth(cell.fallbackFont, buf + String(scalar)) > cellWidth {
                         numOfVerCells += 1
                         buf = ""
                     }

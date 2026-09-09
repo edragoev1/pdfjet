@@ -812,7 +812,7 @@ public class Table {
                     buf.append(" ");
                 }
                 for (int k = 0; k < token.length(); k++) {
-                    if (cell.font.stringWidth(cell.fallbackFont, (buf.toString() + " " + token.charAt(k)).trim()) > cellWidth) {
+                    if (cell.font.stringWidth(cell.fallbackFont, buf.toString() + token.charAt(k)) > cellWidth) {
                         numOfVerCells++;
                         buf.setLength(0);
                     }

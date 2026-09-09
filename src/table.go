@@ -651,7 +651,7 @@ func (table *Table) wrapAroundCellText() {
 					}
 					for _, ch := range token {
 						if cell.font.StringWidthFB(cell.fallbackFont,
-							cell.font.size, strings.TrimSpace(buf.String()+" "+string(ch))) > cellWidth {
+							cell.font.size, buf.String()+string(ch)) > cellWidth {
 							tableData2[i+n][j].SetText(buf.String())
 							buf.Reset()
 							n++
@@ -693,7 +693,7 @@ func getNumVerCells(row []*Cell, index int) int {
 			}
 			for _, ch := range token {
 				if cell.font.StringWidthFB(cell.fallbackFont,
-					cell.font.size, strings.TrimSpace(buf.String()+" "+string(ch))) > cellWidth {
+					cell.font.size, buf.String()+string(ch)) > cellWidth {
 					numOfVerCells++
 					buf.Reset()
 				}

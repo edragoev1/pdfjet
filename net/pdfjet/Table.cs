@@ -780,7 +780,7 @@ public class Table {
                     buf.Append(" ");
                 }
                 foreach (char ch in token) {
-                    if (cell.font.StringWidth(cell.fallbackFont, (buf.ToString() + " " + ch).Trim()) > cellWidth) {
+                    if (cell.font.StringWidth(cell.fallbackFont, buf.ToString() + ch) > cellWidth) {
                         numOfVerCells++;
                         buf.Length = 0;
                     }
