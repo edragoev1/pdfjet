@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -35,6 +34,7 @@ type PDFobj struct {
 func NewPDFobj() *PDFobj {
 	obj := new(PDFobj)
 	obj.dict = make([]string, 0)
+	obj.gsNumber = -1
 	return obj
 }
 
@@ -560,22 +560,22 @@ func getMaxGSNumber(obj *PDFobj) int {
 
 // SetGraphicsState sets the graphics state.
 func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
-	var obj2 *PDFobj
+	var resources *PDFobj
 	index := -1
 	for i, token := range obj.dict {
 		if token == "/Resources" {
 			token2 := obj.dict[i+1]
 			if token2 == "<<" {
-				obj2 = obj
+				resources = obj
 				index = i + 2
 			} else {
 				index2, err := strconv.Atoi(token2)
 				if err != nil {
 					log.Fatal(err)
 				}
-				obj2 = (*objects)[index2-1]
-				for j := 0; j < len(obj2.dict); j++ {
-					if obj2.dict[j] == "<<" {
+				resources = (*objects)[index2-1]
+				for j := 0; j < len(resources.dict); j++ {
+					if resources.dict[j] == "<<" {
 						index = j + 1
 						break
 					}
@@ -584,17 +584,17 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 			break
 		}
 	}
-	if index == -1 {
+	if resources == nil || index == -1 {
 		return
 	}
-	gsNumber := getMaxGSNumber(obj)
-	if gsNumber == 0 { // No existing ExtGState dictionary
-		obj.dict = insertStringAt(obj.dict, "/ExtGState", index) // Add ExtGState dictionary
+	obj.gsNumber = getMaxGSNumber(resources)
+	if obj.gsNumber == 0 { // No existing ExtGState dictionary
+		resources.dict = insertStringAt(resources.dict, "/ExtGState", index) // Add ExtGState dictionary
 		index++
-		obj.dict = insertStringAt(obj.dict, "<<", index)
+		resources.dict = insertStringAt(resources.dict, "<<", index)
 	} else {
-		for index < len(obj.dict) {
-			token := obj.dict[index]
+		for index < len(resources.dict) {
+			token := resources.dict[index]
 			if token == "/ExtGState" {
 				index++
 				break
@@ -603,26 +603,32 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 		}
 	}
 	index++
-	obj.dict = insertStringAt(obj.dict, "/GS"+strconv.Itoa(gsNumber+1), index)
+	resources.dict = insertStringAt(resources.dict, "/GS"+strconv.Itoa(obj.gsNumber+1), index)
 	index++
-	obj.dict = insertStringAt(obj.dict, "<<", index)
+	resources.dict = insertStringAt(resources.dict, "<<", index)
 	index++
-	obj.dict = insertStringAt(obj.dict, "/CA", index)
+	resources.dict = insertStringAt(resources.dict, "/CA", index)
 	index++
-	obj.dict = insertStringAt(obj.dict, fmt.Sprintf("%f", gs.GetAlphaStroking()), index)
+	resources.dict = insertStringAt(resources.dict, formatFloat32(gs.GetAlphaStroking()), index)
 	index++
-	obj.dict = insertStringAt(obj.dict, "/ca", index)
+	resources.dict = insertStringAt(resources.dict, "/ca", index)
 	index++
-	obj.dict = insertStringAt(obj.dict, fmt.Sprintf("%f", gs.GetAlphaNonStroking()), index)
+	resources.dict = insertStringAt(resources.dict, formatFloat32(gs.GetAlphaNonStroking()), index)
 	index++
-	obj.dict = insertStringAt(obj.dict, ">>", index)
-	if gsNumber == 0 {
+	resources.dict = insertStringAt(resources.dict, ">>", index)
+	if obj.gsNumber == 0 {
 		index++
-		obj.dict = insertStringAt(obj.dict, ">>", index)
+		resources.dict = insertStringAt(resources.dict, ">>", index)
 	}
 
 	var buf strings.Builder
 	buf.WriteString("q\n")
-	buf.WriteString("/GS" + strconv.Itoa(gsNumber+1) + " gs\n")
+	buf.WriteString("/GS" + strconv.Itoa(obj.gsNumber+1) + " gs\n")
 	obj.addPrefixContent([]byte(buf.String()), objects)
+}
+
+// formatFloat32 formats a float the way the Java and .NET editions do,
+// with the shortest representation that round-trips - "0.75", not "0.750000".
+func formatFloat32(value float32) string {
+	return strconv.FormatFloat(float64(value), 'g', -1, 32)
 }

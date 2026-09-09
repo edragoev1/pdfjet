@@ -23,22 +23,23 @@ public class Example_37 {
                 true)
         f1.setSize(72.0)
 
-        let line = TextLine(f1, "This is a test!")
-        line.setLocation(150.0, 350.0)
-        line.setColor(Color.peru)
+        let text = TextLine(f1, "This is a test!")
+        text.setLocation(150.0, 350.0)
+        text.setTextColor(Color.peru)
 
         let pages = pdf.getPageObjects(from: objects)
         for pageObj in pages {
-            // let gs = GraphicsState()
-            // gs.setAlphaStroking(0.75)           // Stroking alpha
-            // gs.setAlphaNonStroking(0.75)        // Nonstroking alpha
-            // pageObj.setGraphicsState(gs, &objects)
+            let gs = GraphicsState()
+            gs.setAlphaStroking(0.75)       // Stroking alpha
+            gs.setAlphaNonStroking(0.75)    // Non-stroking alpha
+            pageObj.setGraphicsState(gs, &objects)
 
             let page = Page(pdf, pageObj)
             page.addResource(f1, &objects)
             page.setBrushColor(Color.blue)
             // page.drawString(f1, "Hello, World!", 50.0, 200.0)
-            line.drawOn(page)
+            text.drawOn(page)
+
             page.complete(&objects) // The graphics stack is unwinded automatically
         }
         pdf.addObjects(&objects)

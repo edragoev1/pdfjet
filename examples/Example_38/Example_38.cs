@@ -16,12 +16,11 @@ public class Example_38 {
 
         PDF pdf = new PDF(bos);
 
-        Font f1 = new Font(pdf, CoreFont.COURIER_BOLD);
         font = new Font(pdf, CoreFont.COURIER);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
-        Table table = new Table(f1, font);
+        Table table = new Table();
         table.SetData(CreateTableData());
         table.SetBottomMargin(10f);
         table.SetLocation(50f, 50f);
@@ -241,9 +240,8 @@ public class Example_38 {
         cell.SetText(text);
         cell.SetBorder(Border.TOP, topBorder);
         cell.SetBorder(Border.BOTTOM, bottomBorder);
-        cell.SetBackgroundColor(Color.lightblue);
         cell.SetTextAlignment(Align.CENTER);
-        cell.SetTextColor(Color.black);
+        cell.SetBackgroundColor(Color.lightblue);
         cell.SetLineWidth(1f);
         return cell;
     }

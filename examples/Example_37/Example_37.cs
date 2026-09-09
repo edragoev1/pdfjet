@@ -29,23 +29,22 @@ class Example_37 {
                 FileAccess.Read), Font.STREAM);
         f1.SetSize(72f);
 
-        TextLine line = new TextLine(f1, "This is a test!");
-        line.SetLocation(150f, 350f);
-        line.SetTextColor(Color.peru);
+        TextLine text = new TextLine(f1, "This is a test!");
+        text.SetLocation(150f, 350f);
+        text.SetTextColor(Color.peru);
 
         List<PDFobj> pages = pdf.GetPageObjects(objects);
         foreach (PDFobj pageObj in pages) {
             GraphicsState gs = new GraphicsState();
-            gs.SetAlphaStroking(0.75f);         // Set alpha for stroking operations
-            gs.SetAlphaNonStroking(0.75f);      // Set alpha for non-stroking operations
+            gs.SetAlphaStroking(0.75f);         // Stroking alpha
+            gs.SetAlphaNonStroking(0.75f);      // Non-stroking alpha
             pageObj.SetGraphicsState(gs, objects);
 
             Page page = new Page(pdf, pageObj);
             page.AddResource(f1, objects);
             page.SetBrushColor(Color.blue);
             // page.DrawString(f1, "Hello, World!", 50f, 200f);
-
-            line.DrawOn(page);
+            text.DrawOn(page);
 
             page.Complete(objects); // The graphics stack is unwinded automatically
         }

@@ -32,7 +32,7 @@ func Example37(fileName string) {
 	for _, pageObj := range pages {
 		gs := pdfjet.NewGraphicsState()
 		gs.SetAlphaStroking(0.75)    // Stroking alpha
-		gs.SetAlphaNonStroking(0.75) // Nonstroking alpha
+		gs.SetAlphaNonStroking(0.75) // Non-stroking alpha
 		pageObj.SetGraphicsState(gs, &objects)
 
 		page := pdfjet.NewPageFromObject(pdf, pageObj)

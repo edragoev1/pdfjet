@@ -10,18 +10,17 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
+// Example38 draws a table of cells that span multiple rows and columns.
 func Example38() {
 	pdf := pdfjet.NewPDFFile("Example_38.pdf")
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 
 	page := pdfjet.NewPage(pdf, letter.Landscape)
-	page.SetBrushColor(color.Black)
-	page.FillRect(100, 100, 100, 100)
 
 	table := pdfjet.NewTable()
 	table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)
-	table.SetLocation(50.0, 50.0)
 	table.SetBottomMargin(10.0)
+	table.SetLocation(50.0, 50.0)
 	table.DrawOn(page)
 
 	pdf.Complete()
@@ -230,8 +229,6 @@ func getCell(
 	cell.SetWidth(50.0)
 	cell.SetTopBorder(topBorder)
 	cell.SetBottomBorder(bottomBorder)
-	cell.SetLeftBorder(true)
-	cell.SetRightBorder(true)
 	cell.SetTextAlignment(alignment.Center)
 	cell.SetBackgroundColor(color.LightBlue)
 	cell.SetLineWidth(1.0)

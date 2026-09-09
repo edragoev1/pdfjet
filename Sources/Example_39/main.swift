@@ -9,12 +9,12 @@ public class Example_39 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_39.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        f1.setSize(10.0)
         f1.setItalic(true)
+        f1.setSize(10.0)
 
         let f2 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        f2.setSize(8.0)
         f2.setItalic(true)
+        f2.setSize(8.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 

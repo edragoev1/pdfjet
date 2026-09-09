@@ -221,8 +221,6 @@ public class Example_38 {
         cell.setText(text)
         cell.setTopBorder(topBorder)
         cell.setBottomBorder(bottomBorder)
-        cell.setLeftBorder(true)
-        cell.setRightBorder(true)
         cell.setTextAlignment(Align.CENTER)
         cell.setBackgroundColor(Color.lightblue)
         cell.setLineWidth(1.0)

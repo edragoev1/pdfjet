@@ -137,7 +137,7 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.tm2 = fastfloat.ToByteArray(page.tmx[2])
 	page.tm3 = fastfloat.ToByteArray(page.tmx[3])
 	page.SaveGraphicsState()
-	if pageObj.gsNumber != 0 {
+	if pageObj.gsNumber != -1 {
 		page.appendString("/GS")
 		page.appendInteger(pageObj.gsNumber + 1)
 		page.appendString(" gs\n")
