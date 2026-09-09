@@ -54,8 +54,8 @@ public class Barcode : Drawable {
 
         if barcodeType == Barcode.UPC_A && (text.count != 11 || !Barcode.hasOnlyDigits(text)) {
             fatalError("UPC-A barcodes must have exactly 11 digits!")
-        } else if barcodeType == Barcode.EAN_13 && text.count > 12 {
-            fatalError("EAN-13 barcodes can have maximum of 12 digits!")
+        } else if barcodeType == Barcode.EAN_13 && (text.count != 12 || !Barcode.hasOnlyDigits(text)) {
+            fatalError("EAN-13 barcodes must have exactly 12 digits!")
         }
 
         for code in lCode {

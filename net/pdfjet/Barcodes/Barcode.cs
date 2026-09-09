@@ -59,8 +59,8 @@ public class Barcode : IDrawable {
 
         if (barcodeType == Barcode.UPC_A && (text.Length != 11 || !HasOnlyDigits(text))) {
             throw new Exception("UPC-A barcodes must have exactly 11 digits!");
-        } else if (barcodeType == Barcode.EAN_13 && text.Length > 12) {
-            throw new Exception("EAN-13 barcodes can have maximum of 12 digits!");
+        } else if (barcodeType == Barcode.EAN_13 && (text.Length != 12 || !HasOnlyDigits(text))) {
+            throw new Exception("EAN-13 barcodes must have exactly 12 digits!");
         }
 
         for (int i = 0; i < 10; i++) {

@@ -62,8 +62,8 @@ public class Barcode implements Drawable {
 
         if (barcodeType == Barcode.UPC_A && (text.length() != 11 || !hasOnlyDigits(text))) {
             throw new Exception("UPC-A barcodes must have exactly 11 digits!");
-        } else if (barcodeType == Barcode.EAN_13 && text.length() > 12) {
-            throw new Exception("EAN-13 barcodes can have maximum of 12 digits!");
+        } else if (barcodeType == Barcode.EAN_13 && (text.length() != 12 || !hasOnlyDigits(text))) {
+            throw new Exception("EAN-13 barcodes must have exactly 12 digits!");
         }
 
         StringBuilder sb = new StringBuilder();

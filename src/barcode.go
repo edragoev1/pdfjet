@@ -61,8 +61,8 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 
 	if barcodeType == UPC_A && (len(text) != 11 || !hasOnlyDigits(text)) {
 		log.Fatal("UPC-A barcodes must have exactly 11 digits!")
-	} else if barcodeType == EAN_13 && len(text) > 12 {
-		log.Fatal("EAN-13 barcodes can have maximum of 12 digits!")
+	} else if barcodeType == EAN_13 && (len(text) != 12 || !hasOnlyDigits(text)) {
+		log.Fatal("EAN-13 barcodes must have exactly 12 digits!")
 	}
 
 	barcode.lCode = []string{
