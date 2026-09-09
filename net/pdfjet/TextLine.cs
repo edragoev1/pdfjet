@@ -278,8 +278,8 @@ public class TextLine : IDrawable {
      *
      * @return the width.
      */
-    public float GetStringWidth(String text) {      // TODO: Check TextFrame.cs
-        return font.StringWidth(fallbackFont, text);
+    public float GetStringWidth(String text) {
+        return font.StringWidth(fallbackFont, this.fontSize, text);
     }
 
     /**
@@ -546,12 +546,12 @@ public class TextLine : IDrawable {
         }
 
         if (uri != null || key != null) {
-            page.AddAnnotation(new Annotation(              // TODO: Check this code!
+            page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     x,
-                    (y + verticalOffset) - font.GetAscent(),
+                    (y + verticalOffset) - font.GetAscent(fontSize),
                     x + font.StringWidth(fallbackFont, fontSize, text),
-                    (y + verticalOffset) + font.GetDescent(),
+                    (y + verticalOffset) + font.GetDescent(fontSize),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -565,7 +565,7 @@ public class TextLine : IDrawable {
         }
         page.SetTextDirection(0);
 
-        float len = font.StringWidth(fallbackFont, text);   // TODO: Check this code!
+        float len = font.StringWidth(fallbackFont, fontSize, text);
         double xMax = Math.Max((double) x, x + len*Math.Cos(radians));
         double yMax = Math.Max((double) (y + verticalOffset), (y + verticalOffset) - len*Math.Sin(radians));
 

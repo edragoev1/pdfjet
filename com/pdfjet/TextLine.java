@@ -300,7 +300,7 @@ public class TextLine implements Drawable {
      * @return the width.
      */
     public float getStringWidth(String text) {
-        return font.stringWidth(fallbackFont, text);
+        return font.stringWidth(fallbackFont, this.fontSize, text);
     }
 
     /**
@@ -561,12 +561,12 @@ public class TextLine implements Drawable {
         }
 
         if (uri != null || key != null) {
-            page.addAnnotation(new Annotation(              // TODO: Check this code!
+            page.addAnnotation(new Annotation(
                     Annotation.Link,
                     x,
-                    (y + verticalOffset) - font.getAscent(),
+                    (y + verticalOffset) - font.getAscent(fontSize),
                     x + font.stringWidth(fallbackFont, fontSize, text),
-                    (y + verticalOffset) + font.getDescent(),
+                    (y + verticalOffset) + font.getDescent(fontSize),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -580,7 +580,7 @@ public class TextLine implements Drawable {
         }
         page.setTextDirection(0);
 
-        float len = font.stringWidth(fallbackFont, text);   // TODO: Check this code!
+        float len = font.stringWidth(fallbackFont, fontSize, text);
         double xMax = Math.max(x, x + len*Math.cos(radians));
         double yMax = Math.max(y + verticalOffset, ((y + verticalOffset) - len) * Math.sin(radians));
 

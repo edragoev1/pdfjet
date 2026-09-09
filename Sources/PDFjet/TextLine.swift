@@ -276,7 +276,7 @@ public class TextLine : Drawable {
     /// - Returns: the width.
     ///
     public func getStringWidth(_ text: String) -> Float {
-        return font!.stringWidth(fallbackFont, text)
+        return font!.stringWidth(fallbackFont, fontSize, text)
     }
 
     ///
@@ -576,9 +576,9 @@ public class TextLine : Drawable {
             page!.addAnnotation(Annotation(
                     Annotation.Link,
                     self.x,
-                    (self.y + verticalOffset) - font!.ascent,
+                    (self.y + verticalOffset) - font!.getAscent(fontSize),
                     self.x + font!.stringWidth(fallbackFont, fontSize, text!),
-                    (self.y  + verticalOffset) + font!.descent,
+                    (self.y  + verticalOffset) + font!.getDescent(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency
@@ -592,7 +592,7 @@ public class TextLine : Drawable {
         }
         page!.setTextDirection(0)
 
-        let len = font!.stringWidth(fallbackFont, text!)   // TODO: Check this code!
+        let len = font!.stringWidth(fallbackFont, fontSize, text!)
         let xMax = max(x, x + len*Float(cos(radians)))
         let yMax = max(y + verticalOffset, (y + verticalOffset) - len*Float(sin(radians)))
 

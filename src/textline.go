@@ -227,7 +227,7 @@ func (textLine *TextLine) GetWidth() float32 {
 // GetStringWidth returns the width of this TextLine.
 // @return the width.
 func (textLine *TextLine) GetStringWidth(text string) float32 {
-	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, text)
+	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, text)
 }
 
 // GetHeight returns the height of this TextLine.
@@ -478,9 +478,9 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		page.AddAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             textLine.x,
-			y1:             (textLine.y + textLine.verticalOffset) - textLine.font.ascent,
+			y1:             (textLine.y + textLine.verticalOffset) - textLine.font.GetAscent(textLine.fontSize),
 			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
-			y2:             (textLine.y + textLine.verticalOffset) + textLine.font.descent,
+			y2:             (textLine.y + textLine.verticalOffset) + textLine.font.GetDescent(textLine.fontSize),
 			vertices:       nil,
 			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
@@ -496,7 +496,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	page.SetTextDirection(0)
 
-	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, textLine.text)
+	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
 	yMax := math.Max(
 		float64(textLine.y+textLine.verticalOffset),
