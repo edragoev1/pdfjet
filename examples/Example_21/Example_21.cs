@@ -16,7 +16,7 @@ public class Example_21 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f1,
-                "QR codes encoded with Low, Medium, High and Very High error correction level - C#");
+                "QR codes encoded with Low, Medium, High and Very High error correction level");
         text.SetLocation(100.0f, 30.0f);
         text.DrawOn(page);
 

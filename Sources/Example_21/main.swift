@@ -12,7 +12,7 @@ public class Example_21 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         let text = TextLine(font,
-                "QR codes encoded with Low, Medium, High and Very High error correction level - Swift")
+                "QR codes encoded with Low, Medium, High and Very High error correction level")
         text.setLocation(100.0, 30.0)
         text.drawOn(page)
 

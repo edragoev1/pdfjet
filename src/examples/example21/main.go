@@ -17,7 +17,7 @@ func Example21() {
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	textLine := pdfjet.NewTextLine(font,
-		"QR codes encoded with Low, Medium, High and Very High error correction level - Go")
+		"QR codes encoded with Low, Medium, High and Very High error correction level")
 	textLine.SetLocation(100.0, 30.0)
 	textLine.DrawOn(page)
 
