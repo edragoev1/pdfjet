@@ -1,17 +1,18 @@
 import Foundation
 import PDFjet
 
-///
-/// Example_21.swift
-///
+/**
+ * Example_21.swift
+ */
 public class Example_21 {
     public init() {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_21.pdf", append: false)!)
-        let font = Font(pdf, CoreFont.HELVETICA)
+
+        let f1 = Font(pdf, CoreFont.HELVETICA)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let text = TextLine(font,
+        let text = TextLine(f1,
                 "QR codes encoded with Low, Medium, High and Very High error correction level")
         text.setLocation(100.0, 30.0)
         text.drawOn(page)

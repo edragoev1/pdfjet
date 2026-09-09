@@ -39,12 +39,12 @@ func Example20() {
     yScale := float32(0.5)
 
     page.DrawContents(
-        content.GetData(),
-        height,
-        x,
-        y,
-        xScale,
-        yScale)
+            content.GetData(),
+            height,
+            x,
+            y,
+            xScale,
+            yScale)
 
     page.SetPenColor(color.DarkBlue)
     page.SetPenWidth(0.0)
@@ -52,16 +52,16 @@ func Example20() {
 
     path := pdfjet.NewPath()
 
-    path.Add(pdfjet.NewPoint(13.0, 0.0))
-    path.Add(pdfjet.NewPoint(15.5, 4.5))
+    path.Add(pdfjet.NewPoint(13.0,  0.0))
+    path.Add(pdfjet.NewPoint(15.5,  4.5))
 
-    path.Add(pdfjet.NewPoint(18.0, 3.5))
+    path.Add(pdfjet.NewPoint(18.0,  3.5))
     path.Add(pdfjet.NewControlPointC(15.5, 13.5))
     path.Add(pdfjet.NewControlPointC(15.5, 13.5))
-    path.Add(pdfjet.NewPoint(20.5, 7.5))
+    path.Add(pdfjet.NewPoint(20.5,  7.5))
 
-    path.Add(pdfjet.NewPoint(21.0, 9.5))
-    path.Add(pdfjet.NewPoint(25.0, 9.0))
+    path.Add(pdfjet.NewPoint(21.0,  9.5))
+    path.Add(pdfjet.NewPoint(25.0,  9.0))
     path.Add(pdfjet.NewPoint(24.0, 13.0))
     path.Add(pdfjet.NewPoint(25.5, 14.0))
     path.Add(pdfjet.NewPoint(19.0, 19.0))
@@ -70,19 +70,19 @@ func Example20() {
     path.Add(pdfjet.NewPoint(13.5, 27.0))
     path.Add(pdfjet.NewPoint(12.5, 27.0))
     path.Add(pdfjet.NewPoint(12.5, 20.5))
-    path.Add(pdfjet.NewPoint(6.0, 21.5))
-    path.Add(pdfjet.NewPoint(7.0, 19.0))
-    path.Add(pdfjet.NewPoint(0.5, 14.0))
-    path.Add(pdfjet.NewPoint(2.0, 13.0))
-    path.Add(pdfjet.NewPoint(1.0, 9.0))
-    path.Add(pdfjet.NewPoint(5.0, 9.5))
+    path.Add(pdfjet.NewPoint( 6.0, 21.5))
+    path.Add(pdfjet.NewPoint( 7.0, 19.0))
+    path.Add(pdfjet.NewPoint( 0.5, 14.0))
+    path.Add(pdfjet.NewPoint( 2.0, 13.0))
+    path.Add(pdfjet.NewPoint( 1.0,  9.0))
+    path.Add(pdfjet.NewPoint( 5.0,  9.5))
 
-    path.Add(pdfjet.NewPoint(5.5, 7.5))
+    path.Add(pdfjet.NewPoint( 5.5,  7.5))
     path.Add(pdfjet.NewControlPointC(10.5, 13.5))
     path.Add(pdfjet.NewControlPointC(10.5, 13.5))
-    path.Add(pdfjet.NewPoint(8.0, 3.5))
+    path.Add(pdfjet.NewPoint( 8.0,  3.5))
 
-    path.Add(pdfjet.NewPoint(10.5, 4.5))
+    path.Add(pdfjet.NewPoint(10.5,  4.5))
     path.SetClosePath(true)
     path.SetColor(color.Red)
     // path.SetFillShape(true)
@@ -98,8 +98,8 @@ func Example20() {
     line.DrawOn(page)
 
     qr := qrcode.NewQRCode(
-        "https://kazuhikoarase.github.io",
-        qrcode.ErrorCorrectLevelL) // Low
+            "https://kazuhikoarase.github.io",
+            qrcode.ErrorCorrectLevelL) // Low
     qr.SetModuleLength(3.0)
     qr.SetLocation(50.0, 200.0)
     qr.DrawOn(page)

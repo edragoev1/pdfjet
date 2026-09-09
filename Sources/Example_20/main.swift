@@ -8,8 +8,10 @@ import PDFjet
 public class Example_20 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_20.pdf", append: false)!)
+
         var objects = try pdf.read(
                 from: InputStream(fileAtPath: "data/testPDFs/PDFjetLogo.pdf")!)
+
         pdf.addResourceObjects(&objects)
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
@@ -17,6 +19,7 @@ public class Example_20 {
 
         let pages = pdf.getPageObjects(from: objects)
         let content = pages[0].getContentObject(&objects)!
+
         var page = Page(pdf, Letter.PORTRAIT)
 
         let height: Float = 105.0   // The logo height in points.
