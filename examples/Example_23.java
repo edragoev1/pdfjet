@@ -111,6 +111,6 @@ public class Example_23 {
         long time0 = System.currentTimeMillis();
         new Example_23();
         long time1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_73", time0, time1);
+        TextUtils.printDuration("Example_23", time0, time1);
     }
 }   // End of Example_23.java

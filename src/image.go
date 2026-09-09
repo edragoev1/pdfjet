@@ -18,6 +18,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/encryption"
 	"github.com/edragoev1/pdfjet/src/imagetype"
 	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // Image describes an image object.
@@ -317,7 +318,7 @@ func (image *Image) SetActualText(actualText string) *Image {
 // @param page the page to draw this image on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
-	page.AddBMC("Span", image.language, image.actualText, image.altDescription)
+	page.AddBMC(structtype.P, image.language, image.actualText, image.altDescription)
 
 	image.x += image.xBox
 	image.y += image.yBox

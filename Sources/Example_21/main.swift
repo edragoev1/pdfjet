@@ -21,8 +21,8 @@ public class Example_21 {
         var qr = QRCode(
                 "https://kazuhikoarase.github.io/qrcode-generator/js/demo",
                 ErrorCorrectLevel.L)    // Low
-        qr.setLocation(100.0, 100.0)
         qr.setModuleLength(3.0)
+        qr.setLocation(100.0, 100.0)
         // qr.setColor(Color.blue)
         qr.drawOn(page)
 
@@ -46,12 +46,7 @@ public class Example_21 {
         qr.setLocation(400.0, 400.0)
         qr.setModuleLength(3.0)
         qr.drawOn(page)
-/*
-        let box = Box()
-        box.setLocation(xy[0], xy[1])
-        box.setSize(20.0, 20.0)
-        box.drawOn(page)
-*/
+
         pdf.complete()
     }
 }   // End of Example_21.swift

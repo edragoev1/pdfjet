@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Text;
-using System.Reflection;
 using PDFjet.NET;
 
 /**
@@ -37,6 +35,7 @@ public class Example_23 {
         textBlock.SetTextColor(Color.black);
         float[] xy = textBlock.DrawOn(page);
 
+        // Text on the left
         TextLine ascentText = new TextLine(f2, "Ascent");
         ascentText.SetFontSize(18f);
         ascentText.SetLocation(x1 - 85f, y1 + 40f);
@@ -44,9 +43,10 @@ public class Example_23 {
 
         TextLine descentText = new TextLine(f2, "Descent");
         descentText.SetFontSize(18f);
-        descentText.SetLocation(x1 - 85f, y1 + f1.GetAscent(f1.GetSize()) + 15f);
+        descentText.SetLocation(x1 - 85f, y1 + f1.GetAscent() + 15f);
         descentText.DrawOn(page);
 
+        // Line beside the text ascent
         Line blueLine = new Line(
             x1 - 10f,
             y1,
@@ -56,34 +56,35 @@ public class Example_23 {
         blueLine.SetWidth(3f);
         blueLine.DrawOn(page);
 
+        // Line beside the text descent
         Line redLine = new Line(
                 x1 - 10f,
-                y1 + f1.GetAscent(f1.GetSize()),
+                y1 + f1.GetAscent(),
                 x1 - 10f,
-                y1 + f1.GetBodyHeight(f1.GetSize()));
+                y1 + f1.GetAscent() + f1.GetDescent());
         redLine.SetColor(Color.red);
         redLine.SetWidth(3f);
         redLine.DrawOn(page);
 
         Line baseLine = new Line(
                 x1,
-                y1 + f1.GetAscent(f1.GetSize()),
+                y1 + f1.GetAscent(),
                 xy[0],
-                y1 + f1.GetAscent(f1.GetSize()));
+                y1 + f1.GetAscent());
         baseLine.DrawOn(page);
 
         Line descentLine = new Line(
                 x1,
-                y1 + f1.GetBodyHeight(f1.GetSize()),
+                y1 + (f1.GetAscent() + f1.GetDescent()),
                 xy[0],
-                y1 + f1.GetBodyHeight(f1.GetSize()));
+                y1 + (f1.GetAscent() + f1.GetDescent()));
         descentLine.DrawOn(page);
 
         Line ascentLine = new Line(
                 x1,
-                y1 + f1.GetBodyHeight(f1.GetSize()) + f1.GetAscent(f1.GetSize()),
+                y1 + f1.GetBodyHeight() + f1.GetAscent(),
                 xy[0],
-                y1 + f1.GetBodyHeight(f1.GetSize()) + f1.GetAscent(f1.GetSize()));
+                y1 + f1.GetBodyHeight() + f1.GetAscent());
         ascentLine.DrawOn(page);
 
         Point p1 = new Point(x1, y1);
@@ -94,8 +95,8 @@ public class Example_23 {
         p2.SetRadius(5f);
         p2.DrawOn(page);
 
+        f2.SetSize(24f);
         TextLine textLine3 = new TextLine(f2, "(x2, y2)");
-        textLine3.SetFontSize(24f);
         textLine3.SetLocation(xy[0] - 80f, xy[1] + 30f);
         textLine3.DrawOn(page);
 

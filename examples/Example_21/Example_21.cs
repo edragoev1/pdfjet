@@ -1,17 +1,15 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-
 using PDFjet.NET;
 
 /**
  * Example_21.cs
  */
 public class Example_21 {
-
     public Example_21() {
-
-        PDF pdf = new PDF(new FileStream("Example_21.pdf", FileMode.Create));
+        PDF pdf = new PDF(new BufferedStream(
+                new FileStream("Example_21.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
 
@@ -56,7 +54,6 @@ public class Example_21 {
         pdf.Complete();
     }
 
-
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
@@ -65,5 +62,4 @@ public class Example_21 {
         sw.Stop();
         TextUtils.PrintDuration("Example_21", time0, time1);
     }
-
 }   // End of Example_21.cs

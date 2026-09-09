@@ -49,6 +49,7 @@ func Example23() {
 	descentText.SetLocation(x1-85.0, y1+f1.GetAscent(f1.GetSize())+15.0)
 	descentText.DrawOn(page)
 
+	// Line beside the text ascent
 	blueLine := pdfjet.NewLine(
 		x1-10.0,
 		y1,
@@ -58,6 +59,7 @@ func Example23() {
 	blueLine.SetWidth(3.0)
 	blueLine.DrawOn(page)
 
+	// Line beside the text descent
 	redLine := pdfjet.NewLine(
 		x1-10.0,
 		y1+f1.GetAscent(f1.GetSize()),

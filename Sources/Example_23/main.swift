@@ -43,6 +43,7 @@ public class Example_23 {
         descentText.setLocation(x1 - 85.0, y1 + f1.getAscent() + 15.0)
         descentText.drawOn(page)
 
+        // Line beside the text ascent
         let blueLine = Line(
             x1 - 10.0,
             y1,
@@ -52,6 +53,7 @@ public class Example_23 {
         blueLine.setWidth(3.0)
         blueLine.drawOn(page)
 
+        // Line beside the text descent
         let redLine = Line(
             x1 - 10.0,
             y1 + f1.getAscent(),
@@ -61,19 +63,19 @@ public class Example_23 {
         redLine.setWidth(3.0)
         redLine.drawOn(page)
 
-        let textLine1 = Line(
+        let baseLine = Line(
                 x1,
                 y1 + f1.getAscent(),
                 xy[0],
                 y1 + f1.getAscent())
-        textLine1.drawOn(page)
+        baseLine.drawOn(page)
 
-        let descentLine1 = Line(
+        let descentLine = Line(
                 x1,
-                y1 + f1.getAscent() + f1.getDescent(),
+                y1 + (f1.getAscent() + f1.getDescent()),
                 xy[0],
-                y1 + f1.getAscent() + f1.getDescent())
-        descentLine1.drawOn(page)
+                y1 + (f1.getAscent() + f1.getDescent()))
+        descentLine.drawOn(page)
 
         let ascentLine = Line(
                 x1,
@@ -90,8 +92,8 @@ public class Example_23 {
         p2.setRadius(5.0)
         p2.drawOn(page)
 
+        f2.setSize(24.0)
         let textLine3 = TextLine(f2, "(x2, y2)")
-        textLine3.setFontSize(24.0)
         textLine3.setLocation(xy[0] - 80.0, xy[1] + 30.0)
         textLine3.drawOn(page)
 
