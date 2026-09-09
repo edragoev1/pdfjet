@@ -71,7 +71,7 @@ class FontStream2 {
         sb.append("</rdf:Description>\n")
         sb.append("</rdf:RDF>\n")
         sb.append("</x:xmpmeta>\n")
-        sb.append("<?xpacket end=\"w\"?>")
+        sb.append("<?xpacket end=\"r\"?>")
 
         var xml = Array(sb.utf8)
 

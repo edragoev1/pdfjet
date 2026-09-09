@@ -63,7 +63,7 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
     sb.WriteString("</rdf:Description>\n")
     sb.WriteString("</rdf:RDF>\n")
     sb.WriteString("</x:xmpmeta>\n")
-    sb.WriteString("<?xpacket end=\"w\"?>")
+    sb.WriteString("<?xpacket end=\"r\"?>")
 
     xml := []byte(sb.String())
 

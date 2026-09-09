@@ -63,7 +63,7 @@ class FontStream2 {
         sb.Append("</rdf:Description>\n");
         sb.Append("</rdf:RDF>\n");
         sb.Append("</x:xmpmeta>\n");
-        sb.Append("<?xpacket end=\"w\"?>");
+        sb.Append("<?xpacket end=\"r\"?>");
 
         byte[] xml = (new System.Text.UTF8Encoding()).GetBytes(sb.ToString());
 

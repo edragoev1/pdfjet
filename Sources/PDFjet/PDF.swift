@@ -1267,16 +1267,23 @@ public class PDF {
         while !done && offset < len {
             let c2 = buf[offset]
             offset += 1
+            if c1 == 0x5C {             // "\\" - the previous byte escapes this one
+                token.append(c2)
+                c1 = c2
+                continue
+            }
             if c2 == 0x28 {             // "("
                 if p1 == 0 {
                     done = process(&obj, &token, buf, offset)
                 }
                 if !done {
                     token.append(c2)
+                    c1 = c2
                     p1 += 1
                 }
             } else if c2 == 0x29 {      // ")"
                 token.append(c2)
+                c1 = c2
                 p1 -= 1
                 if p1 == 0 {
                     done = process(&obj, &token, buf, offset)
@@ -1300,7 +1307,11 @@ public class PDF {
             } else if c2 == 0x3C ||     // "<"
                     c2 == 0x3E ||       // ">"
                     c2 == 0x25 {        // "%"
-                if c2 != c1 {
+                if p1 > 0 {
+                    // Inside a string these are ordinary characters.
+                    token.append(c2)
+                    c1 = c2
+                } else if c2 != c1 {
                     done = process(&obj, &token, buf, offset)
                     if !done {
                         token.append(c2)
@@ -1317,24 +1328,28 @@ public class PDF {
                     c2 == 0x5D ||       // "]"
                     c2 == 0x7B ||       // "{"
                     c2 == 0x7D {        // "}"
-                done = process(&obj, &token, buf, offset)
-                if !done {
-                    if c2 == 0x5B {
-                        obj.dict.append("[")
-                    } else if c2 == 0x5D {
-                        obj.dict.append("]")
-                    } else if c2 == 0x7B {
-                        obj.dict.append("{")
-                    } else if c2 == 0x7D {
-                        obj.dict.append("}")
-                    }
+                if p1 > 0 {
+                    // Inside a string these are ordinary characters.
+                    token.append(c2)
                     c1 = c2
+                } else {
+                    done = process(&obj, &token, buf, offset)
+                    if !done {
+                        if c2 == 0x5B {
+                            obj.dict.append("[")
+                        } else if c2 == 0x5D {
+                            obj.dict.append("]")
+                        } else if c2 == 0x7B {
+                            obj.dict.append("{")
+                        } else if c2 == 0x7D {
+                            obj.dict.append("}")
+                        }
+                        c1 = c2
+                    }
                 }
             } else {
                 token.append(c2)
-                if p1 == 0 {
-                    c1 = c2
-                }
+                c1 = c2
             }
         }
 
@@ -1829,7 +1844,7 @@ public class PDF {
                     buffer.append(token!)
                     if token!.hasPrefix("(http:") {
                         link = true
-                    } else if token!.hasSuffix(")") {
+                    } else if link && token!.hasSuffix(")") {
                         link = false
                     }
                     if i < (n - 1) {
