@@ -1,9 +1,10 @@
 import Foundation
 import PDFjet
 
-///
-/// Example_28.swift shows how to use the NotoSansSymbols font.
-///
+/**
+ * Example_28.swift
+ * Example that shows how to use the NotoSansSymbols font.
+ */
 public class Example_28 {
     public init() throws {
         let stream = OutputStream(toFileAtPath: "Example_28.pdf", append: false)!
@@ -57,13 +58,10 @@ public class Example_28 {
     private func drawLineOfText(
             _ page: Page, _ f1: Font, _ x: Float, _ y: Float, _ c1: Int, _ c2: Int) {
         var buf = String()
-        var i = c1
-        while i <= c2 {
+        for i in c1...c2 {
             buf.append(Character(UnicodeScalar(i)!))
-            i += 1
         }
-        let text = TextLine(f1)
-        text.setText(buf)
+        let text = TextLine(f1, buf)
         text.setLocation(x, y)
         text.drawOn(page)
     }

@@ -37,7 +37,7 @@ public class Example_29 {
         row[1].SetTextColumn(column);
         tableData.Add(row);
 
-        Table table = new Table(font, font);
+        Table table = new Table();
         table.SetData(tableData);
         table.SetLocation(50f, 50f);
         table.DrawOn(page);

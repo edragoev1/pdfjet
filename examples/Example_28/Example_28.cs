@@ -64,8 +64,7 @@ public class Example_28 {
         for (int i = c1; i <= c2; i++) {
             buf.Append((char) i);
         }
-        TextLine text = new TextLine(f1);
-        text.SetText(buf.ToString());
+        TextLine text = new TextLine(f1, buf.ToString());
         text.SetLocation(x, y);
         text.DrawOn(page);
     }

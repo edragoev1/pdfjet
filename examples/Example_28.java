@@ -63,8 +63,7 @@ public class Example_28 {
         for (int i = c1; i <= c2; i++) {
             buf.append((char) i);
         }
-        TextLine text = new TextLine(f1);
-        text.setText(buf.toString());
+        TextLine text = new TextLine(f1, buf.toString());
         text.setLocation(x, y);
         text.drawOn(page);
     }

@@ -37,7 +37,7 @@ public class Example_29 {
         row.get(1).setTextColumn(column);
         tableData.add(row);
 
-        Table table = new Table(font, font);
+        Table table = new Table();
         table.setData(tableData);
         table.setLocation(50f, 50f);
         table.drawOn(page);
