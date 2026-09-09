@@ -9,9 +9,10 @@ import (
 	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/letter"
+	"github.com/edragoev1/pdfjet/src/qrcode"
 )
 
-// Example20 -- TODO:
+// Example20 reads a logo in PDF format and draws it on a new PDF document.
 func Example20() {
 	pdf := pdfjet.NewPDFFile("Example_20.pdf")
 
@@ -23,8 +24,8 @@ func Example20() {
 
 	pdf.AddResourceObjects(objects)
 
-	font1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	font1.SetSize(18.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(18.0)
 
 	pages := pdf.GetPageObjects(objects)
 	content := pages[0].GetContentObject(objects)
@@ -92,15 +93,17 @@ func Example20() {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait)
 
-	line := pdfjet.NewTextLine(font1, "Hello, World!")
+	line := pdfjet.NewTextLine(f1, "Hello, World!")
 	line.SetLocation(50.0, 50.0)
 	line.DrawOn(page)
-	/*
-		qr := dproject.NewQRCode("https://kazuhikoarase.github.io", errorcorrectlevel.L) // Low
-		qr.SetModuleLength(3.0)
-		qr.SetLocation(50.0, 200.0)
-		qr.DrawOn(page)
-	*/
+
+	qr := qrcode.NewQRCode(
+		"https://kazuhikoarase.github.io",
+		qrcode.ErrorCorrectLevelL) // Low
+	qr.SetModuleLength(3.0)
+	qr.SetLocation(50.0, 200.0)
+	qr.DrawOn(page)
+
 	pdf.Complete()
 }
 

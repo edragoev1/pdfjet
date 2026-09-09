@@ -10,7 +10,7 @@ public class Example_18 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_18.pdf", append: false)!)
 
         let font = try Font(pdf, IBMPlexSans.Regular)
-        font.setSize(14.0)
+        let fontSize: Float = 14.0
 
         var pages = [Page]()
         var page = Page(pdf, A4.PORTRAIT, Page.DETACHED)
@@ -41,18 +41,16 @@ public class Example_18 {
         box.drawOn(page)
         pages.append(page)
 
-        var i = 0
-        while i < pages.count {
+        for i in 0..<pages.count {
             page = pages[i]
             let footer = "Page " + String(i + 1) + " of " + String(pages.count)
             page.setBrushColor(Color.black)
             page.drawString(
                     font,
-                    font.getSize(),
+                    fontSize,
                     footer,
-                    (page.getWidth() - font.stringWidth(footer))/2.0,
-                    (page.getHeight() - 3.0*font.getSize()/2.0))
-            i += 1
+                    (page.getWidth() - font.stringWidth(fontSize, footer))/2.0,
+                    (page.getHeight() - 3.0*fontSize/2.0))
         }
         pdf.addPages(pages)
 

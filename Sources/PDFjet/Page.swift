@@ -719,11 +719,9 @@ public class Page {
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     ///
     public func setLineCapStyle(_ style: CapStyle) {
-        if self.lineCapStyle != style {
-            self.lineCapStyle = style
-            append(self.lineCapStyle.rawValue)
-            append(" J\n")
-        }
+        self.lineCapStyle = style
+        append(self.lineCapStyle.rawValue)
+        append(" J\n")
     }
 
     ///
@@ -732,11 +730,9 @@ public class Page {
     /// - Parameter style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
     ///
     public func setLineJoinStyle(_ style: JoinStyle) {
-        if self.lineJoinStyle != style {
-            self.lineJoinStyle = style
-            append(self.lineJoinStyle.rawValue)
-            append(" j\n")
-        }
+        self.lineJoinStyle = style
+        append(self.lineJoinStyle.rawValue)
+        append(" j\n")
     }
 
     ///
@@ -1096,10 +1092,10 @@ public class Page {
             let cosOfAngle = Float(cos(Float(degrees) * (Float.pi / 180.0)))
             self.tmx = [cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle]
         }
-        self.tm0 = Array(String(format: pdf.floatFormat, tmx[0]).utf8)
-        self.tm1 = Array(String(format: pdf.floatFormat, tmx[1]).utf8)
-        self.tm2 = Array(String(format: pdf.floatFormat, tmx[2]).utf8)
-        self.tm3 = Array(String(format: pdf.floatFormat, tmx[3]).utf8)
+        self.tm0 = FastFloat.toByteArray(tmx[0])
+        self.tm1 = FastFloat.toByteArray(tmx[1])
+        self.tm2 = FastFloat.toByteArray(tmx[2])
+        self.tm3 = FastFloat.toByteArray(tmx[3])
     }
 
     ///

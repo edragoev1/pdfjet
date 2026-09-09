@@ -3,6 +3,7 @@ import PDFjet
 
 /**
  * Example_20.swift
+ * Reading a logo in PDF format and drawing it on a new PDF document.
  */
 public class Example_20 {
     public init() throws {
@@ -11,7 +12,8 @@ public class Example_20 {
                 from: InputStream(fileAtPath: "data/testPDFs/PDFjetLogo.pdf")!)
         pdf.addResourceObjects(&objects)
 
-        let f1 = try Font(pdf, IBMPlexSans.Regular).setSize(18.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(18.0)
 
         let pages = pdf.getPageObjects(from: objects)
         let content = pages[0].getContentObject(&objects)!

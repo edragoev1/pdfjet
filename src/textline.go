@@ -52,7 +52,6 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.text = text
 	textLine.isLastToken = false
 	textLine.color = [3]float32{0.0, 0.0, 0.0}
-	textLine.colorMap = make(map[string]int32)
 	textLine.textEffect = effect.Normal
 	textLine.verticalOffset = 0.0
 	textLine.altDescription = text

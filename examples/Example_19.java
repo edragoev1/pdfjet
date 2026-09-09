@@ -5,6 +5,7 @@ import com.pdfjet.*;
 
 /**
  * Example_19.java
+ * Using the TextBox component.
  */
 public class Example_19 {
     public Example_19() throws Exception {

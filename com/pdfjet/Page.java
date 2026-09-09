@@ -825,6 +825,7 @@ final public class Page {
      * Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
      */
     public void setLineCapStyle(CapStyle style) {
+        lineCapStyle = style;
         append(lineCapStyle.ordinal());
         append(" J\n");
     }
@@ -835,6 +836,7 @@ final public class Page {
      * @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
      */
     public void setLineJoinStyle(JoinStyle style) {
+        lineJoinStyle = style;
         append(lineJoinStyle.ordinal());
         append(" j\n");
     }

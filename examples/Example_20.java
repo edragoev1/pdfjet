@@ -6,6 +6,7 @@ import com.pdfjet.*;
 
 /**
  * Example_20.java
+ * Reading a logo in PDF format and drawing it on a new PDF document.
  */
 class Example_20 {
     public Example_20() throws Exception {

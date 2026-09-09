@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example19 draws images and line-wrapped text boxes in two columns.
+// Example19 uses the TextBox component.
 func Example19() {
 	pdf := pdfjet.NewPDFFile("Example_19.pdf")
 

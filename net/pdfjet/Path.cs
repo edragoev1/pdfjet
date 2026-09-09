@@ -15,26 +15,16 @@ using System.Collections.Generic;
  */
 namespace PDFjet.NET {
 public class Path : IDrawable {
+    private int color = Color.black;
+    private float width = 0f;
+    private String pattern = "[] 0";
+    private bool fillShape = false;
+    private bool closePath = false;
     private List<Point> points = null;
-    private float x;
-    private float y;
-
-    private float[] fillColor;
-    private float[] strokeColor;
-    private float strokeWidth = 0.6f;   // !! DO NOT REMOVE OR LOWER THIS VALUE !!
-    private String strokeDashPattern = "[] 0";
+    private float xBox;
+    private float yBox;
     private CapStyle lineCapStyle = CapStyle.BUTT;
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
-    private float rotateDegrees = 0f;
-
-    private String uri = null;
-    private String key = null;
-    private String language = "en-US";
-    private String actualText = null;
-    private String altDescription = null;
-
-    private bool closePath = false;
-    private bool fillShape = false;
 
     /**
      * The default constructor.
@@ -50,72 +40,6 @@ public class Path : IDrawable {
      */
     public void Add(Point point) {
         points.Add(point);
-    }
-
-    public Path SetLocation(float x, float y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-
-    public Path SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
-    public void SetPosition(double x, double y) {
-        SetLocation((float) x, (float) y);
-    }
-
-    public void SetPosition(float x, float y) {
-        SetLocation(x, y);
-    }
-
-    /**
-     * Sets the pen color that will be used to draw this path.
-     *
-     * @param color the color is specified as an integer.
-     */
-    public void SetFillColor(int color) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        SetFillColor(r, g, b);
-    }
-
-    public void SetFillColor(float r, float g, float b) {
-        this.fillColor = new float[] {r, g, b};
-    }
-
-    public void SetFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
-    }
-
-    public void SetStrokeColor(int color) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        SetStrokeColor(r, g, b);
-    }
-
-    public void SetStrokeColor(float r, float g, float b) {
-        this.strokeColor = new float[] {r, g, b};
-    }
-
-    public void SetStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
-    }
-
-    /**
-     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
-     *
-     * @param width the pen width.
-     */
-    public void SetStrokeWidth(double width) {
-        this.strokeWidth = (float) width;
-    }
-
-    public void SetStrokeWidth(float width) {
-        this.strokeWidth = width;
     }
 
     /**
@@ -141,90 +65,55 @@ public class Path : IDrawable {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     * @param strokeDashPattern the stroke dash pattern.
-     */
-    public void SetStrokeDashPattern(String strokeDashPattern) {
-        this.strokeDashPattern = strokeDashPattern;
-    }
-
-    /**
-     * Sets the pen color used to draw this path.
-     * The same color is used as the brush color when the shape is filled.
-     *
-     * @param color the color specified as an integer.
-     */
-    public void SetColor(int color) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        SetColor(new float[] {r, g, b});
-    }
-
-    /**
-     * Sets the pen color used to draw this path.
-     *
-     * @param rgbColor the color as an RGB array.
-     */
-    public void SetColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
-        this.fillColor = rgbColor;
-    }
-
-    /**
-     * Sets the width of the line used to draw this path.
-     *
-     * @param width the line width.
-     */
-    public void SetWidth(double width) {
-        SetWidth((float) width);
-    }
-
-    /**
-     * Sets the width of the line used to draw this path.
-     *
-     * @param width the line width.
-     */
-    public void SetWidth(float width) {
-        this.strokeWidth = width;
-    }
-
-    /**
-     * Sets the dash pattern of the line used to draw this path.
-     *
-     * @param pattern the dash pattern, e.g. "[3] 0".
+     *  @param pattern the line dash pattern.
      */
     public void SetPattern(String pattern) {
-        this.strokeDashPattern = pattern;
+        this.pattern = pattern;
     }
 
     /**
-     * Sets whether this path is filled with the current color.
+     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
      *
-     * @param fillShape true to fill the shape, false to stroke its outline.
+     * @param width the pen width.
+     */
+    public void SetWidth(double width) {
+        this.width = (float) width;
+    }
+
+    /**
+     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
+     *
+     * @param width the pen width.
+     */
+    public void SetWidth(float width) {
+        this.width = width;
+    }
+
+    /**
+     * Sets the pen color that will be used to draw this path.
+     *
+     * @param color the color is specified as an integer.
+     */
+    public void SetColor(int color) {
+        this.color = color;
+    }
+
+    /**
+     * Sets the closePath variable.
+     *
+     * @param closePath if closePath is true a line will be draw between the first and last point of this path.
+     */
+    public void SetClosePath(bool closePath) {
+        this.closePath = closePath;
+    }
+
+    /**
+     * Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
+     *
+     * @param fillShape the fillShape flag.
      */
     public void SetFillShape(bool fillShape) {
         this.fillShape = fillShape;
-    }
-
-    /**
-     * Scales all the points of this path by the specified factor.
-     *
-     * @param factor the scale factor.
-     */
-    public void ScaleBy(double factor) {
-        ScaleBy((float) factor);
-    }
-
-    /**
-     * Scales all the points of this path by the specified factor.
-     *
-     * @param factor the scale factor.
-     */
-    public void ScaleBy(float factor) {
-        foreach (Point point in points) {
-            point.x *= factor;
-            point.y *= factor;
-        }
     }
 
     /**
@@ -264,201 +153,115 @@ public class Path : IDrawable {
         return this.lineJoinStyle;
     }
 
-    public void SetRotation(double degrees) {
-        this.rotateDegrees = (float) degrees;
-    }
-
-    public void SetRotationClockwise(double degrees) {
-        this.rotateDegrees = (float) -degrees;
-    }
-
-    public void SetRotationCounterClockwise(double degrees) {
-        this.rotateDegrees = (float) degrees;
+    /**
+     * Sets the path position.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     */
+    public void SetPosition(double x, double y) {
+        SetLocation((float) x, (float) y);
     }
 
     /**
-     * Sets the URI for the "click box" action.
+     * Sets the path position.
      *
-     * @param uri the URI
+     * @param x the x coordinate.
+     * @param y the y coordinate.
      */
-    public void SetURIAction(String uri) {
-        this.uri = uri;
+    public void SetPosition(float x, float y) {
+        SetLocation(x, y);
     }
 
     /**
-     * Sets the destination key for the action.
+     * Sets the path location.
      *
-     * @param key the destination name.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return the path.
      */
-    public void SetGoToAction(String key) {
-        this.key = key;
-    }
-
-    public void SetLanguage(String language) {
-        this.language = language;
-    }
-
-    /**
-     * Sets the actual text for this path.
-     *
-     * @param actualText the actual text for the path.
-     * @return this Path.
-     */
-    public void SetActualText(String actualText) {
-        this.actualText = actualText;
-    }
-
-    /**
-     * Sets the alternate description of this path.
-     *
-     * @param altDescription the alternate description of the path.
-     * @return this Path.
-     */
-    public void SetAltDescription(String altDescription) {
-        this.altDescription = altDescription;
-    }
-
-    /**
-     * Scales the path using the specified factor.
-     *
-     * @param factor the specified factor.
-     */
-    public Path SetScaleFactor(double factor) {
-        SetScaleFactor((float) factor);
+    public Path SetLocation(float x, float y) {
+        xBox += x;
+        yBox += y;
         return this;
     }
 
     /**
-     * Scales the path using the specified factor.
+     * Sets the path location.
      *
-     * @param factor the specified factor.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return the path.
      */
-    public Path SetScaleFactor(float factor) {
+    public Path SetLocation(double x, double y) {
+        return SetLocation((float) x, (float) y);
+    }
+
+    /**
+     *  Scales the path using the specified factor.
+     *
+     *  @param factor the specified factor.
+     */
+    public void ScaleBy(double factor) {
+        ScaleBy((float) factor);
+    }
+
+    /**
+     *  Scales the path using the specified factor.
+     *
+     *  @param factor the specified factor.
+     */
+    public void ScaleBy(float factor) {
         for (int i = 0; i < points.Count; i++) {
             Point point = points[i];
             point.x *= factor;
             point.y *= factor;
         }
-        return this;
-    }
-
-    public void SetClosePath() {
-        this.closePath = true;
     }
 
     /**
-     * Sets whether this path is closed before it is stroked.
+     *  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
      *
-     * @param closePath true to close the path.
-     */
-    public void SetClosePath(bool closePath) {
-        this.closePath = closePath;
-    }
-
-    public int GetPointCount() {
-        return points.Count;
-    }
-
-    public Point GetLastPoint() {
-        if (points.Count > 0) {
-            return points[points.Count - 1];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Draws this path on the page using the current selected color, pen width, line pattern and line join style.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
+     *  @param page the page to draw this path on.
+     *  @return x and y coordinates of the bottom right corner of this component.
      */
     public float[] DrawOn(Page page) {
-        foreach (Point point in points) {
-            point.x += this.x;
-            point.y += this.y;
+        for (int i = 0; i < points.Count; i++) {
+            Point point = points[i];
+            point.x += xBox;
+            point.y += yBox;
         }
 
-        float x = float.MaxValue;
-        float y = float.MaxValue;
-        float xMax = 0f;
-        float yMax = 0f;
-        foreach (Point point in points) {
-            if (point.x < x) { x = point.x; }
-            if (point.y < y) { y = point.y; }
-
-            if (point.x > xMax) { xMax = point.x; }
-            if (point.y > yMax) { yMax = point.y; }
-        }
-        float w = xMax - x;
-        float h = yMax - y;
-
-        if (actualText != null && altDescription != null) {
-            page.AddBMC(StructElem.FIGURE, this.language, this.actualText, this.altDescription);
-        } else {
-            // An undescribed path is decorative content.
-            page.AddArtifactBMC();
-        }
-
-        page.SaveGraphicsState();
-
-        float centerX = x + w/2;
-        float centerY = (page.height - y) - h/2;
-        page.RotateAroundCenter(centerX, centerY, rotateDegrees);
+        // A path carries no text, so it is decorative content.
+        page.AddArtifactBMC();
         if (fillShape) {
-            page.SetBrushColor(fillColor);
+            page.SetBrushColor(color);
             page.DrawPath(points, PathOperator.Fill);
         } else {
-            if (strokeColor != null && strokeDashPattern != null) {
-                page.SetStrokeDashPattern(strokeDashPattern);
-            }
+            page.SetPenWidth(width);
+            page.SetPenColor(color);
+            page.SetStrokeDashPattern(pattern);
             page.SetLineCapStyle(lineCapStyle);
             page.SetLineJoinStyle(lineJoinStyle);
-            if (fillColor != null && strokeColor == null) {
-                page.SetBrushColor(fillColor);
-                page.DrawPath(points, PathOperator.Fill);
-            } else if (fillColor == null && strokeColor != null) {
-                page.SetPenColor(strokeColor);
-                page.SetPenWidth(strokeWidth);
-                page.DrawPath(points,
-                        closePath ? PathOperator.CloseAndStroke : PathOperator.Stroke);
-            } else if (fillColor != null && strokeColor != null) {
-                page.SetBrushColor(fillColor);
-                page.SetPenColor(strokeColor);
-                page.SetPenWidth(strokeWidth);
-                page.DrawPath(points, PathOperator.FillAndStroke);
+            if (closePath) {
+                page.DrawPath(points, PathOperator.CloseAndStroke);
+            } else {
+                page.DrawPath(points, PathOperator.Stroke);
             }
         }
-
-        page.RestoreGraphicsState();
         page.AddEMC();
 
-        foreach (Point point in points) {
-            point.x -= this.x;
-            point.y -= this.y;
-        }
-
-        if (uri != null || key != null) {
-            page.AddAnnotation(new Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + w,
-                    y + h,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Transparency
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription));
+        float xMax = 0f;
+        float yMax = 0f;
+        for (int i = 0; i < points.Count; i++) {
+            Point point = points[i];
+            if (point.x > xMax) { xMax = point.x; }
+            if (point.y > yMax) { yMax = point.y; }
+            point.x -= xBox;
+            point.y -= yBox;
         }
 
         return new float[] {xMax, yMax};
     }
+}
 }   // End of Path.cs
-}   // End of namespace PDFjet.NET

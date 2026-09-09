@@ -3,6 +3,7 @@ import PDFjet
 
 /**
  * Example_19.swift
+ * Using the TextBox component.
  */
 public class Example_19 {
     public init() throws {

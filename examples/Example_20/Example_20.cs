@@ -6,8 +6,7 @@ using PDFjet.NET;
 
 /**
  * Example_20.cs
- *
- * This example shows how to use existing logo saved as PDF file in new PDF document.
+ * Reading a logo in PDF format and drawing it on a new PDF document.
  */
 class Example_20 {
     public Example_20() {

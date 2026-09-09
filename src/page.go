@@ -674,21 +674,17 @@ func (page *Page) GetPenWidth() float32 {
 // SetLineCapStyle sets the current line cap style.
 // Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
 func (page *Page) SetLineCapStyle(style int) {
-	if page.lineCapStyle != style {
-		page.lineCapStyle = style
-		page.appendInteger(page.lineCapStyle)
-		page.appendString(" J\n")
-	}
+	page.lineCapStyle = style
+	page.appendInteger(page.lineCapStyle)
+	page.appendString(" J\n")
 }
 
 // SetLineJoinStyle sets the line join style.
 // Supported values: Join.MITER, Join.ROUND and Join.BEVEL
 func (page *Page) SetLineJoinStyle(style int) {
-	if page.lineJoinStyle != style {
-		page.lineJoinStyle = style
-		page.appendInteger(page.lineJoinStyle)
-		page.appendString(" j\n")
-	}
+	page.lineJoinStyle = style
+	page.appendInteger(page.lineJoinStyle)
+	page.appendString(" j\n")
 }
 
 // MoveTo moves the penColor to the point with coordinates (x, y) on the page.
