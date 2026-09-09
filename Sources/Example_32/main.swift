@@ -1,14 +1,10 @@
 import Foundation
 import PDFjet
 
-///
-/// Example_32.java
-///
+/**
+ * Example_32.swift
+ */
 public class Example_32 {
-    private var x: Float = 50.0
-    private var y: Float = 50.0
-    private var leading: Float = 10.0
-
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_32.pdf", append: false)!)
         let font = try Font(pdf, JetBrainsMono.Regular)

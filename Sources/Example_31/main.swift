@@ -13,15 +13,14 @@ public class Example_31 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let str = try String(contentsOfFile: "data/languages/marathi.txt", encoding: .utf8)
-
-        let textBlock = TextBlock(f1, str)
-        textBlock.setWidth(500.0)
+        let textBlock = TextBlock(
+                f1, try Content.ofTextFile("data/languages/marathi.txt"))
         textBlock.setLocation(50.0, 50.0)
-        textBlock.setBorderColor(Color.blue)
+        textBlock.setWidth(500.0)
         textBlock.drawOn(page)
 
-        let textLine = TextLine(f1, "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?")
+        let str = "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?"
+        let textLine = TextLine(f1, str)
         textLine.setLocation(50.0, 175.0)
         textLine.drawOn(page)
 

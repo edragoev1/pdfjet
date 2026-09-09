@@ -20,8 +20,6 @@ public class Example_31 {
                 f1, Content.ofTextFile("data/languages/marathi.txt"));
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(500f);
-//         textBlock.setBorder(Border.LEFT);
-//         textBlock.setBorder(Border.RIGHT);
         textBlock.drawOn(page);
 
         String str = "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?";

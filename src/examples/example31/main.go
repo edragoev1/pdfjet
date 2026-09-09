@@ -13,11 +13,6 @@ import (
 // Example31 draws Devanagari text and fills rectangles through a transparent graphics state.
 func Example31() {
 	pdf := pdfjet.NewPDFFile("Example_31.pdf")
-	pdf.SetTitle("Hello")
-	pdf.SetAuthor("Eugene")
-	pdf.SetSubject("Example")
-	pdf.SetKeywords("Hello World This is a test")
-	pdf.SetCreator("Application Name")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansDevanagari.Regular)
 	f1.SetSize(15.0)
@@ -25,10 +20,8 @@ func Example31() {
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/marathi.txt"))
-	textBlock.SetLocation(500.0, 300.0)
 	textBlock.SetLocation(50.0, 50.0)
-	//textBlock.SetBorder(border.Left)
-	//textBlock.SetBorder(border.Right)
+	textBlock.SetWidth(500.0)
 	textBlock.DrawOn(page)
 
 	str := "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?"

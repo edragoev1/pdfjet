@@ -18,14 +18,14 @@ public class Example_32 {
 
         Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
         colors["new"] = Color.red;
-        colors["class"] =  Color.blue;
+        colors["class"] = Color.blue;
         colors["void"] = Color.green;
         float[] grayColor = new float[] {0.2f, 0.2f, 0.2f};
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         float x = 50f;
         float y = 50f;
-        float leading = font.GetBodyHeight(font.GetSize());
+        float leading = font.GetBodyHeight();
         List<String> lines = Text.ReadLines("examples/Example_02.java");
         foreach (String line in lines) {
             page.DrawString(font, font.GetSize(), line, x, y, grayColor, colors);

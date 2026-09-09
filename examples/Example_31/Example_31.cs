@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Text;
 using System.Diagnostics;
 using PDFjet.NET;
 
@@ -17,11 +16,11 @@ public class Example_31 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBox textBox = new TextBox(f1, Content.OfTextFile("data/languages/marathi.txt"), 500f, 300f);
-        textBox.SetLocation(50f, 50f);
-        textBox.SetBorder(Border.LEFT);
-        textBox.SetBorder(Border.RIGHT);
-        textBox.DrawOn(page);
+        TextBlock textBlock = new TextBlock(
+                f1, Content.OfTextFile("data/languages/marathi.txt"));
+        textBlock.SetLocation(50f, 50f);
+        textBlock.SetWidth(500f);
+        textBlock.DrawOn(page);
 
         String str = "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?";
         TextLine textLine = new TextLine(f1, str);
