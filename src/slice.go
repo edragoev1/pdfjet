@@ -6,17 +6,17 @@
 package pdfjet
 
 type Slice struct {
-    angle   float32
-    color   int32
-    text    string
-    tooltip string
+	angle   float32
+	color   int32
+	text    string
+	tooltip string
 }
 
 func NewSlice(angle float32, color int32, text string, tooltip string) *Slice {
-    slice := new(Slice)
-    slice.angle = angle
-    slice.color = color
-    slice.text = text
-    slice.tooltip = tooltip
-    return slice
+	slice := new(Slice)
+	slice.angle = angle
+	slice.color = color
+	slice.text = text
+	slice.tooltip = tooltip
+	return slice
 }

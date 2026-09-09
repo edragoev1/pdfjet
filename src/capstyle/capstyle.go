@@ -8,7 +8,7 @@ package capstyle
 // Constants used to specify the cap style of a line.
 // See the Line class for more information.
 const (
-    Butt = iota
-    Round
-    ProjectingSquare
+	Butt = iota
+	Round
+	ProjectingSquare
 )

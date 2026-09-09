@@ -1,15 +1,15 @@
 package main
 
 import (
-    "log"
-    "os"
-    "strings"
-    "time"
+	"log"
+	"os"
+	"strings"
+	"time"
 
-    pdfjet "github.com/edragoev1/pdfjet/src"
-    "github.com/edragoev1/pdfjet/src/cjkfont"
-    "github.com/edragoev1/pdfjet/src/corefont"
-    "github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/cjkfont"
+	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example04 demonstrates the creation of a PDF document with text in various CJK
@@ -23,67 +23,67 @@ import (
 //
 // See: pdfjet.NewCJKFont
 func Example04() {
-    pdf := pdfjet.NewPDFFile("Example_04.pdf")
+	pdf := pdfjet.NewPDFFile("Example_04.pdf")
 
-    f0 := pdfjet.NewCoreFont(pdf, corefont.Courier())
-    f0.SetSize(14.0)
+	f0 := pdfjet.NewCoreFont(pdf, corefont.Courier())
+	f0.SetSize(14.0)
 
-    // Chinese (Traditional) font
-    // Uses Adobe's Ming Standard Light font (明體)
-    f1 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMingStdLight)
-    f1.SetSize(14.0)
+	// Chinese (Traditional) font
+	// Uses Adobe's Ming Standard Light font (明體)
+	f1 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMingStdLight)
+	f1.SetSize(14.0)
 
-    // Chinese (Simplified) font
-    // Uses Adobe's Heiti SC Light font (黑体-简)
-    f2 := pdfjet.NewCJKFont(pdf, cjkfont.STHeitiSCLight)
-    f2.SetSize(14.0)
+	// Chinese (Simplified) font
+	// Uses Adobe's Heiti SC Light font (黑体-简)
+	f2 := pdfjet.NewCJKFont(pdf, cjkfont.STHeitiSCLight)
+	f2.SetSize(14.0)
 
-    // Japanese font
-    // Uses Kozuka Mincho Pro VI Regular font (小塚明朝)
-    f3 := pdfjet.NewCJKFont(pdf, cjkfont.KozMinProVIRegular)
-    f3.SetSize(14.0)
+	// Japanese font
+	// Uses Kozuka Mincho Pro VI Regular font (小塚明朝)
+	f3 := pdfjet.NewCJKFont(pdf, cjkfont.KozMinProVIRegular)
+	f3.SetSize(14.0)
 
-    // Korean font
-    // Uses Adobe's Myungjo Standard Medium font (명조체)
-    f4 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMyungjoStdMedium)
-    f4.SetSize(14.0)
+	// Korean font
+	// Uses Adobe's Myungjo Standard Medium font (명조체)
+	f4 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMyungjoStdMedium)
+	f4.SetSize(14.0)
 
-    page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-    var xPos float32 = 100.0
-    var yPos float32
-    yPos = 100.0
+	var xPos float32 = 100.0
+	var yPos float32
+	yPos = 100.0
 
-    content, err := os.ReadFile("data/happy-new-year.txt")
-    if err != nil {
-        log.Fatal(err)
-    }
-    strContent := string(content)
-    lines := strings.Split(strContent, "\n")
-    text := pdfjet.NewTextLine(f0, "")
-    for _, line := range lines {
-        text.SetText(line)
-        text.SetLocation(xPos, yPos)
-        text.DrawOn(page)
-        if strings.Contains(line, "Traditional") {
-            text.SetFont(f2)
-        } else if strings.Contains(line, "Simplified") {
-            text.SetFont(f2)
-        } else if strings.Contains(line, "Japanese") {
-            text.SetFont(f3)
-        } else if strings.Contains(line, "Korean") {
-            text.SetFont(f4)
-        } else {
-            text.SetFont(f0)
-        }
-        yPos += 25.0
-    }
+	content, err := os.ReadFile("data/happy-new-year.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	strContent := string(content)
+	lines := strings.Split(strContent, "\n")
+	text := pdfjet.NewTextLine(f0, "")
+	for _, line := range lines {
+		text.SetText(line)
+		text.SetLocation(xPos, yPos)
+		text.DrawOn(page)
+		if strings.Contains(line, "Traditional") {
+			text.SetFont(f2)
+		} else if strings.Contains(line, "Simplified") {
+			text.SetFont(f2)
+		} else if strings.Contains(line, "Japanese") {
+			text.SetFont(f3)
+		} else if strings.Contains(line, "Korean") {
+			text.SetFont(f4)
+		} else {
+			text.SetFont(f0)
+		}
+		yPos += 25.0
+	}
 
-    pdf.Complete()
+	pdf.Complete()
 }
 
 func main() {
-    start := time.Now()
-    Example04()
-    pdfjet.PrintDuration("Example_04", time.Since(start))
+	start := time.Now()
+	Example04()
+	pdfjet.PrintDuration("Example_04", time.Since(start))
 }

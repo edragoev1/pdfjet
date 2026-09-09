@@ -9,7 +9,7 @@ package imagetype
 // Supported types: imagetype.JPG, imagetype.PNG and imagetype.BMP
 // See the Image class for more information.
 const (
-    JPG = iota
-    PNG
-    BMP
+	JPG = iota
+	PNG
+	BMP
 )

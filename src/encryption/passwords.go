@@ -8,27 +8,27 @@ package encryption
 // Passwords holds user and owner password information for PDF encryption.
 // This version uses exported fields for more idiomatic Go access.
 type Passwords struct {
-    UserPassword  string
-    OwnerPassword string
+	UserPassword  string
+	OwnerPassword string
 }
 
 // NewPasswords creates a new instance of Passwords.
 func NewPasswords() *Passwords {
-    return &Passwords{}
+	return &Passwords{}
 }
 
 // SetPasswords sets both user and owner passwords at once.
 func (p *Passwords) SetPasswords(userPassword, ownerPassword string) {
-    p.UserPassword = userPassword
-    p.OwnerPassword = ownerPassword
+	p.UserPassword = userPassword
+	p.OwnerPassword = ownerPassword
 }
 
 // SetUserPassword sets the user password.
 func (p *Passwords) SetUserPassword(userPassword string) {
-    p.UserPassword = userPassword
+	p.UserPassword = userPassword
 }
 
 // SetOwnerPassword sets the owner password.
 func (p *Passwords) SetOwnerPassword(ownerPassword string) {
-    p.OwnerPassword = ownerPassword
+	p.OwnerPassword = ownerPassword
 }

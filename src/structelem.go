@@ -7,22 +7,22 @@ package pdfjet
 
 // StructElem is used to create PDF structure element objects.
 type StructElem struct {
-    objNumber      int
-    structure      string
-    pageObjNumber  int
-    mcid           int
-    language       string
-    actualText     string
-    altDescription string
-    annotation     *Annotation
+	objNumber      int
+	structure      string
+	pageObjNumber  int
+	mcid           int
+	language       string
+	actualText     string
+	altDescription string
+	annotation     *Annotation
 }
 
 // NewStructElem constructor
 func NewStructElem() *StructElem {
-    structElem := new(StructElem)
-    return structElem
+	structElem := new(StructElem)
+	return structElem
 }
 
 func (structElem *StructElem) GetPageObjNumber() int {
-    return structElem.pageObjNumber
+	return structElem.pageObjNumber
 }

@@ -8,7 +8,7 @@ package joinstyle
 // Used to specify the join style when joining two lines.
 // See the Page and Line classes for more details.
 const (
-    Miter = iota
-    Round
-    Bevel
+	Miter = iota
+	Round
+	Bevel
 )

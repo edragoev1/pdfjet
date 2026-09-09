@@ -1,67 +1,67 @@
 package main
 
 import (
-    "time"
+	"time"
 
-    pdfjet "github.com/edragoev1/pdfjet/src"
-    "github.com/edragoev1/pdfjet/src/IBMPlexSans"
-    "github.com/edragoev1/pdfjet/src/compress"
-    "github.com/edragoev1/pdfjet/src/encryption"
-    "github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/compress"
+	"github.com/edragoev1/pdfjet/src/encryption"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example30 encrypts the PDF and attaches embedded files to a page.
 func Example30() {
-    pdf := pdfjet.NewPDFFile("Example_30.pdf")
-    // pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf := pdfjet.NewPDFFile("Example_30.pdf")
+	// pdf.SetCompliance(compliance.PDF_UA_1)
 
-    passwords := encryption.NewPasswords()
-    passwords.SetUserPassword("hello")
-    passwords.SetOwnerPassword("world")
+	passwords := encryption.NewPasswords()
+	passwords.SetUserPassword("hello")
+	passwords.SetOwnerPassword("world")
 
-    permissions := encryption.NewPermissions()
-    permissions.SetPermissions(
-        encryption.Print| // Set both to allow the user to print
-            encryption.PrintHighQuality| // this document with high quality
-            // encryption.ModifyContents|
-            // encryption.CopyContents|
-            encryption.AssembleDocument, true)
+	permissions := encryption.NewPermissions()
+	permissions.SetPermissions(
+		encryption.Print| // Set both to allow the user to print
+			encryption.PrintHighQuality| // this document with high quality
+			// encryption.ModifyContents|
+			// encryption.CopyContents|
+			encryption.AssembleDocument, true)
 
-    pdf.SetEncryption(pdfjet.NewEncryption(pdf, passwords, permissions))
+	pdf.SetEncryption(pdfjet.NewEncryption(pdf, passwords, permissions))
 
-    // f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-    f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-    f1.SetSize(36.0)
+	// f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(36.0)
 
-    image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
-    file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
 
-    page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-    textLine := pdfjet.NewTextLine(f1, "Hello, World!")
-    textLine.SetLocation(100.0, 100.0)
-    textLine.DrawOn(page)
+	textLine := pdfjet.NewTextLine(f1, "Hello, World!")
+	textLine.SetLocation(100.0, 100.0)
+	textLine.DrawOn(page)
 
-    image.SetLocation(100, 150)
-    image.ScaleBy(0.5)
-    image.DrawOn(page)
+	image.SetLocation(100, 150)
+	image.ScaleBy(0.5)
+	image.DrawOn(page)
 
-    // File attachment functionality
-    attachment := pdfjet.NewFileAttachment(pdf, file1)
-    attachment.SetLocation(100.0, 550.0)
-    attachment.SetIconPushPin()
-    attachment.SetIconSize(24.0)
-    attachment.SetTitle("Attached File: " + file1.GetFileName())
-    attachment.SetDescription(
-        "Right mouse click on the icon to save the attached file.")
-    attachment.DrawOn(page)
+	// File attachment functionality
+	attachment := pdfjet.NewFileAttachment(pdf, file1)
+	attachment.SetLocation(100.0, 550.0)
+	attachment.SetIconPushPin()
+	attachment.SetIconSize(24.0)
+	attachment.SetTitle("Attached File: " + file1.GetFileName())
+	attachment.SetDescription(
+		"Right mouse click on the icon to save the attached file.")
+	attachment.DrawOn(page)
 
-    pdf.Complete()
+	pdf.Complete()
 }
 
 func main() {
-    start := time.Now()
-    Example30()
-    pdfjet.PrintDuration("Example_30", time.Since(start))
+	start := time.Now()
+	Example30()
+	pdfjet.PrintDuration("Example_30", time.Since(start))
 }

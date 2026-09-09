@@ -6,27 +6,27 @@
 package pdfjet
 
 import (
-    "math"
+	"math"
 
-    "github.com/edragoev1/pdfjet/src/color"
-    "github.com/edragoev1/pdfjet/src/single"
-    "github.com/edragoev1/pdfjet/src/structtype"
+	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // Line is used to create line objects.
 // Please see Example_01 and Example_02
 type Line struct {
-    x1             float32
-    y1             float32
-    x2             float32
-    y2             float32
-    color          int32
-    width          float32
-    pattern        string
-    capStyle       int
-    language       string
-    altDescription string
-    actualText     string
+	x1             float32
+	y1             float32
+	x2             float32
+	y2             float32
+	color          int32
+	width          float32
+	pattern        string
+	capStyle       int
+	language       string
+	altDescription string
+	actualText     string
 }
 
 // NewLine is the constructor used to create a line objects.
@@ -36,17 +36,17 @@ type Line struct {
 // @param x2 the x coordinate of the end point.
 // @param y2 the y coordinate of the end point.
 func NewLine(x1, y1, x2, y2 float32) *Line {
-    line := new(Line)
-    line.x1 = x1
-    line.y1 = y1
-    line.x2 = x2
-    line.y2 = y2
-    line.color = color.Black
-    line.width = 0.0
-    line.pattern = "[] 0"
-    line.actualText = single.Space
-    line.altDescription = single.Space
-    return line
+	line := new(Line)
+	line.x1 = x1
+	line.y1 = y1
+	line.x2 = x2
+	line.y2 = y2
+	line.color = color.Black
+	line.width = 0.0
+	line.pattern = "[] 0"
+	line.actualText = single.Space
+	line.altDescription = single.Space
+	return line
 }
 
 // SetPattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
@@ -58,22 +58,22 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 // <pre>
 // Examples of line dash patterns:
 //
-//      "[Array] Phase"     Appearance          Description
-//      _______________     _________________   ____________________________________
+//	    "[Array] Phase"     Appearance          Description
+//	    _______________     _________________   ____________________________________
 //
-//      "[] 0"              -----------------   Solid line
-//      "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//      "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//      "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//      "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//      "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//  </pre>
+//	    "[] 0"              -----------------   Solid line
+//	    "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//	    "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//	    "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//	    "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//	    "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//	</pre>
 //
-//  @param pattern the line dash pattern.
-//  @return this Line object.
+//	@param pattern the line dash pattern.
+//	@return this Line object.
 func (line *Line) SetPattern(pattern string) *Line {
-    line.pattern = pattern
-    return line
+	line.pattern = pattern
+	return line
 }
 
 // SetStartPoint sets the x and y coordinates of the start point.
@@ -81,15 +81,15 @@ func (line *Line) SetPattern(pattern string) *Line {
 // @param y the y coordinate of the start point.
 // @return this Line object.
 func (line *Line) SetStartPoint(x, y float32) *Line {
-    line.x1 = x
-    line.y1 = y
-    return line
+	line.x1 = x
+	line.y1 = y
+	return line
 }
 
 // SetPosition sets the start point of this line.
 func (line *Line) SetPosition(x, y float32) {
-    line.x1 = x
-    line.y1 = y
+	line.x1 = x
+	line.y1 = y
 }
 
 // SetPointA sets the x and y coordinates of the start point.
@@ -97,15 +97,15 @@ func (line *Line) SetPosition(x, y float32) {
 // @param y the y coordinate of the start point.
 // @return this Line object.
 func (line *Line) SetPointA(x, y float32) *Line {
-    line.x1 = x
-    line.y1 = y
-    return line
+	line.x1 = x
+	line.y1 = y
+	return line
 }
 
 // GetStartPoint returns the start point of this line.
 // @return Point the point.
 func (line *Line) GetStartPoint() *Point {
-    return NewPoint(line.x1, line.y1)
+	return NewPoint(line.x1, line.y1)
 }
 
 // SetEndPoint sets the x and y coordinates of the end point.
@@ -113,9 +113,9 @@ func (line *Line) GetStartPoint() *Point {
 // @param y the t coordinate of the end point.
 // @return this Line object.
 func (line *Line) SetEndPoint(x, y float32) *Line {
-    line.x2 = x
-    line.y2 = y
-    return line
+	line.x2 = x
+	line.y2 = y
+	return line
 }
 
 // SetPointB sets the x and y coordinates of the end point.
@@ -123,45 +123,45 @@ func (line *Line) SetEndPoint(x, y float32) *Line {
 // @param y the t coordinate of the end point.
 // @return this Line object.
 func (line *Line) SetPointB(x, y float32) *Line {
-    line.x2 = x
-    line.y2 = y
-    return line
+	line.x2 = x
+	line.y2 = y
+	return line
 }
 
 // GetEndPoint returns the end point of this line.
 // @return Point the point.
 func (line *Line) GetEndPoint() *Point {
-    return NewPoint(line.x2, line.y2)
+	return NewPoint(line.x2, line.y2)
 }
 
 // SetWidth sets the width of this line.
 // @param width the width.
 // @return this Line object.
 func (line *Line) SetWidth(width float32) *Line {
-    line.width = width
-    return line
+	line.width = width
+	return line
 }
 
 // SetColor sets the color for this line.
 // @param color the color specified as an integer.
 // @return this Line object.
 func (line *Line) SetColor(color int32) *Line {
-    line.color = color
-    return line
+	line.color = color
+	return line
 }
 
 // SetCapStyle sets the line cap style.
 // @param style the cap style of the current line. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
 // @return this Line object.
 func (line *Line) SetCapStyle(style int) *Line {
-    line.capStyle = style
-    return line
+	line.capStyle = style
+	return line
 }
 
 // GetCapStyle returns the line cap style.
 // @return the cap style.
 func (line *Line) GetCapStyle() int {
-    return line.capStyle
+	return line.capStyle
 }
 
 // SetAltDescription sets the alternate description of this line.
@@ -169,16 +169,16 @@ func (line *Line) GetCapStyle() int {
 // @param altDescription the alternate description of the line.
 // @return this Line.
 func (line *Line) SetAltDescription(altDescription string) *Line {
-    line.altDescription = altDescription
-    return line
+	line.altDescription = altDescription
+	return line
 }
 
 // SetActualText sets the actual text for this line.
 // @param actualText the actual text for the line.
 // @return this Line.
 func (line *Line) SetActualText(actualText string) *Line {
-    line.actualText = actualText
-    return line
+	line.actualText = actualText
+	return line
 }
 
 // ScaleBy scales this line by the specified factor.
@@ -186,11 +186,11 @@ func (line *Line) SetActualText(actualText string) *Line {
 // @param factor the factor used to scale the line.
 // @return this Line object.
 func (line *Line) ScaleBy(factor float32) *Line {
-    line.x1 *= factor
-    line.x2 *= factor
-    line.y1 *= factor
-    line.y2 *= factor
-    return line
+	line.x1 *= factor
+	line.x2 *= factor
+	line.y1 *= factor
+	line.y2 *= factor
+	return line
 }
 
 // DrawOn draws this line on the specified page.
@@ -199,17 +199,17 @@ func (line *Line) ScaleBy(factor float32) *Line {
 // @return x and y coordinates of the bottom right corner of this component.
 // @throws Exception
 func (line *Line) DrawOn(page *Page) [2]float32 {
-    page.AddBMC(structtype.P, line.language, line.actualText, line.altDescription)
-    page.SaveGraphicsState()
-    page.SetPenColor(line.color)
-    page.SetPenWidth(line.width)
-    page.SetLineCapStyle(line.capStyle)
-    page.SetStrokeDashPattern(line.pattern)
-    page.DrawLine(line.x1, line.y1, line.x2, line.y2)
-    page.RestoreGraphicsState()
-    page.AddEMC()
+	page.AddBMC(structtype.P, line.language, line.actualText, line.altDescription)
+	page.SaveGraphicsState()
+	page.SetPenColor(line.color)
+	page.SetPenWidth(line.width)
+	page.SetLineCapStyle(line.capStyle)
+	page.SetStrokeDashPattern(line.pattern)
+	page.DrawLine(line.x1, line.y1, line.x2, line.y2)
+	page.RestoreGraphicsState()
+	page.AddEMC()
 
-    xMax := math.Max(float64(line.x1), float64(line.x2))
-    yMax := math.Max(float64(line.y1), float64(line.y2))
-    return [2]float32{float32(xMax), float32(yMax)}
+	xMax := math.Max(float64(line.x1), float64(line.x2))
+	yMax := math.Max(float64(line.y1), float64(line.y2))
+	return [2]float32{float32(xMax), float32(yMax)}
 }

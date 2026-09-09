@@ -9,7 +9,7 @@ type Direction int
 
 // Used to specify the text writing direction in textblock.go
 const (
-    LeftToRight Direction = iota
-    TopToBottom
-    BottomToTop
+	LeftToRight Direction = iota
+	TopToBottom
+	BottomToTop
 )

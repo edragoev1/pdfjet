@@ -1,58 +1,58 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "time"
+	"fmt"
+	"log"
+	"time"
 
-    pdfjet "github.com/edragoev1/pdfjet/src"
-    "github.com/edragoev1/pdfjet/src/IBMPlexSans"
-    "github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example43 draws a very large table across thousands of pages.
 func Example43() {
-    pdf := pdfjet.NewPDFFile("Example_43.pdf")
-    // pdf.SetCompliance(compliance.PDF_UA_1)
-    pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
+	pdf := pdfjet.NewPDFFile("Example_43.pdf")
+	// pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
 
-    // Used for performance testing. Results in 2000+ pages PDF.
-    fileName := "data/Electric_Vehicle_Population_Data.csv"
-    // fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
+	// Used for performance testing. Results in 2000+ pages PDF.
+	fileName := "data/Electric_Vehicle_Population_Data.csv"
+	// fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
 
-    f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-    f1.SetSize(10.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f1.SetSize(10.0)
 
-    f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-    f2.SetSize(9.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2.SetSize(9.0)
 
-    table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
-    table.SetNumberOfColumns(9)              // The order of the
-    err := table.SetTableData(fileName, ",") // these statements
-    if err != nil {
-        log.Printf("Failed to load table data: %v", err)
-        return
-    }
-    table.SetLocation(0.0, 0.0) // is
-    table.SetBottomMargin(20.0) // very
-    err = table.Complete()      // important!
-    if err != nil {
-        log.Printf("Failed to render table: %v", err)
-        return
-    }
+	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
+	table.SetNumberOfColumns(9)              // The order of the
+	err := table.SetTableData(fileName, ",") // these statements
+	if err != nil {
+		log.Printf("Failed to load table data: %v", err)
+		return
+	}
+	table.SetLocation(0.0, 0.0) // is
+	table.SetBottomMargin(20.0) // very
+	err = table.Complete()      // important!
+	if err != nil {
+		log.Printf("Failed to render table: %v", err)
+		return
+	}
 
-    pages := table.GetPages()
-    for i, page := range pages {
-        footer := pdfjet.NewTextLine(f1, fmt.Sprintf("Page %d of %d", i+1, len(pages)))
-        page.AddFooter(footer)
-        pdf.AddPage(page)
-    }
+	pages := table.GetPages()
+	for i, page := range pages {
+		footer := pdfjet.NewTextLine(f1, fmt.Sprintf("Page %d of %d", i+1, len(pages)))
+		page.AddFooter(footer)
+		pdf.AddPage(page)
+	}
 
-    pdf.Complete()
+	pdf.Complete()
 }
 
 func main() {
-    start := time.Now()
-    Example43()
-    pdfjet.PrintDuration("Example_43", time.Since(start))
+	start := time.Now()
+	Example43()
+	pdfjet.PrintDuration("Example_43", time.Since(start))
 }

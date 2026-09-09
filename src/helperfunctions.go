@@ -6,63 +6,63 @@
 package pdfjet
 
 import (
-    "io"
+	"io"
 )
 
 // insertStringAt inserts the string s1 into a1 at the specified index
 func insertStringAt(a1 []string, s1 string, index int) []string {
-    a2 := make([]string, 0)
-    a2 = append(a2, a1[:index]...)
-    a2 = append(a2, s1)
-    a2 = append(a2, a1[index:]...)
-    return a2
+	a2 := make([]string, 0)
+	a2 = append(a2, a1[:index]...)
+	a2 = append(a2, s1)
+	a2 = append(a2, a1[index:]...)
+	return a2
 }
 
 // insertArrayAt inserts the array a2 into a1 at the specified index
 func insertArrayAt(a1, a2 []string, index int) []string {
-    a3 := make([]string, 0)
-    a3 = append(a3, a1[:index]...)
-    a3 = append(a3, a2...)
-    a3 = append(a3, a1[index:]...)
-    return a3
+	a3 := make([]string, 0)
+	a3 = append(a3, a1[:index]...)
+	a3 = append(a3, a2...)
+	a3 = append(a3, a1[index:]...)
+	return a3
 }
 
 func getUint8(r io.Reader) uint8 {
-    buf := make([]byte, 1)
-    io.ReadFull(r, buf)
-    return buf[0]
+	buf := make([]byte, 1)
+	io.ReadFull(r, buf)
+	return buf[0]
 }
 
 func getUint16(r io.Reader) uint16 {
-    buf := make([]byte, 2)
-    io.ReadFull(r, buf)
-    return uint16(buf[0])<<8 | uint16(buf[1])
+	buf := make([]byte, 2)
+	io.ReadFull(r, buf)
+	return uint16(buf[0])<<8 | uint16(buf[1])
 }
 
 func getUint24(r io.Reader) uint32 {
-    buf := make([]byte, 3)
-    io.ReadFull(r, buf)
-    return uint32(buf[0])<<16 | uint32(buf[1])<<8 | uint32(buf[2])
+	buf := make([]byte, 3)
+	io.ReadFull(r, buf)
+	return uint32(buf[0])<<16 | uint32(buf[1])<<8 | uint32(buf[2])
 }
 
 func getUint32(r io.Reader) uint32 {
-    buf := make([]byte, 4)
-    io.ReadFull(r, buf)
-    return uint32(buf[0])<<24 | uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
+	buf := make([]byte, 4)
+	io.ReadFull(r, buf)
+	return uint32(buf[0])<<24 | uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
 }
 
 func getInt32(r io.Reader) int32 {
-    buf := make([]byte, 4)
-    io.ReadFull(r, buf)
-    return int32(buf[0])<<24 | int32(buf[1])<<16 | int32(buf[2])<<8 | int32(buf[3])
+	buf := make([]byte, 4)
+	io.ReadFull(r, buf)
+	return int32(buf[0])<<24 | int32(buf[1])<<16 | int32(buf[2])<<8 | int32(buf[3])
 }
 
 // Pre-allocated lowercase hex digits. The ToUnicode CMap is written in
 // lowercase, matching Java's Integer.toHexString. This is deliberately not
 // the uppercase hexDigits table used for the page content streams.
 var lowerHexDigits = [16]byte{
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    'a', 'b', 'c', 'd', 'e', 'f',
+	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+	'a', 'b', 'c', 'd', 'e', 'f',
 }
 
 // toHexString formats code as 4 lowercase hex digits, zero-padded.
@@ -71,21 +71,21 @@ var lowerHexDigits = [16]byte{
 // for occasional use but far too slow when called tens of thousands
 // of times while building a CJK font's ToUnicode CMap.
 func toHexString(code int) string {
-    b := [4]byte{
-        lowerHexDigits[(code>>12)&0xF],
-        lowerHexDigits[(code>>8)&0xF],
-        lowerHexDigits[(code>>4)&0xF],
-        lowerHexDigits[code&0xF],
-    }
-    return string(b[:])
+	b := [4]byte{
+		lowerHexDigits[(code>>12)&0xF],
+		lowerHexDigits[(code>>8)&0xF],
+		lowerHexDigits[(code>>4)&0xF],
+		lowerHexDigits[code&0xF],
+	}
+	return string(b[:])
 }
 
 func skipNBytes(reader io.Reader, n int) {
-    getNBytes(reader, n)
+	getNBytes(reader, n)
 }
 
 func getNBytes(r io.Reader, n int) []byte {
-    buf := make([]byte, n)
-    io.ReadFull(r, buf)
-    return buf
+	buf := make([]byte, n)
+	io.ReadFull(r, buf)
+	return buf
 }

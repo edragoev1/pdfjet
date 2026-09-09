@@ -7,8 +7,8 @@ package pdfjet
 
 // Dimension encapsulates the width and height of a component.
 type Dimension struct {
-    w float32
-    h float32
+	w float32
+	h float32
 }
 
 // NewDimension Constructor for creating dimension objects.
@@ -16,18 +16,18 @@ type Dimension struct {
 // @param width the width.
 // @param height the height.
 func NewDimension(width, height float32) *Dimension {
-    dimension := new(Dimension)
-    dimension.w = width
-    dimension.h = height
-    return dimension
+	dimension := new(Dimension)
+	dimension.w = width
+	dimension.h = height
+	return dimension
 }
 
 // GetWidth gets the width of the component.
 func (dimension *Dimension) GetWidth() float32 {
-    return dimension.w
+	return dimension.w
 }
 
 // GetHeight gets the height of the component.
 func (dimension *Dimension) GetHeight() float32 {
-    return dimension.h
+	return dimension.h
 }

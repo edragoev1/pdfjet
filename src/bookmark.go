@@ -6,174 +6,174 @@
 package pdfjet
 
 import (
-    "log"
-    "regexp"
-    "strconv"
-    "strings"
+	"log"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 // Bookmark please see Example_51 and Example_52
 type Bookmark struct {
-    destNumber int
-    page       *Page
-    y          float32
-    key        string
-    title      string
-    parent     *Bookmark
-    prev       *Bookmark
-    next       *Bookmark
-    children   []*Bookmark
-    dest       *Destination
-    objNumber  int
-    prefix     string
+	destNumber int
+	page       *Page
+	y          float32
+	key        string
+	title      string
+	parent     *Bookmark
+	prev       *Bookmark
+	next       *Bookmark
+	children   []*Bookmark
+	dest       *Destination
+	objNumber  int
+	prefix     string
 }
 
 // NewBookmark creates new bookmark.
 func NewBookmark(pdf *PDF) *Bookmark {
-    bookmark := new(Bookmark)
-    pdf.toc = bookmark
-    return bookmark
+	bookmark := new(Bookmark)
+	pdf.toc = bookmark
+	return bookmark
 }
 
 // NewBookmarkAt creates new bookmark at the specified y coordinate.
 func NewBookmarkAt(page *Page, y float32, key, title string) *Bookmark {
-    bookmark := new(Bookmark)
-    bookmark.page = page
-    bookmark.y = y
-    bookmark.key = key
-    bookmark.title = title
-    return bookmark
+	bookmark := new(Bookmark)
+	bookmark.page = page
+	bookmark.y = y
+	bookmark.key = key
+	bookmark.title = title
+	return bookmark
 }
 
 // AddBookmark adds bookmark to the page.
 func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
-    bm := bookmark
-    for bm.parent != nil {
-        bm = bm.GetParent()
-    }
-    key := bm.getNext()
-    whitespace := regexp.MustCompile(`\s+`)
-    bookmark2 := NewBookmarkAt(
-        page,
-        title.textLine.GetDestinationY(),
-        key,
-        whitespace.ReplaceAllString(title.textLine.text, " "))
-    bookmark2.parent = bookmark
-    bookmark2.dest = page.AddDestination(key, title.textLine.GetDestinationY())
-    if bookmark.children == nil {
-        bookmark.children = make([]*Bookmark, 0)
-    } else {
-        bookmark2.prev = bookmark.children[len(bookmark.children)-1]
-        bookmark.children[len(bookmark.children)-1].next = bookmark2
-    }
-    bookmark.children = append(bookmark.children, bookmark2)
-    return bookmark2
+	bm := bookmark
+	for bm.parent != nil {
+		bm = bm.GetParent()
+	}
+	key := bm.getNext()
+	whitespace := regexp.MustCompile(`\s+`)
+	bookmark2 := NewBookmarkAt(
+		page,
+		title.textLine.GetDestinationY(),
+		key,
+		whitespace.ReplaceAllString(title.textLine.text, " "))
+	bookmark2.parent = bookmark
+	bookmark2.dest = page.AddDestination(key, title.textLine.GetDestinationY())
+	if bookmark.children == nil {
+		bookmark.children = make([]*Bookmark, 0)
+	} else {
+		bookmark2.prev = bookmark.children[len(bookmark.children)-1]
+		bookmark.children[len(bookmark.children)-1].next = bookmark2
+	}
+	bookmark.children = append(bookmark.children, bookmark2)
+	return bookmark2
 }
 
 // GetDestKey returns the destination key.
 func (bookmark *Bookmark) GetDestKey() string {
-    return bookmark.key
+	return bookmark.key
 }
 
 // GetTitle returns the title of the bookmark.
 func (bookmark *Bookmark) GetTitle() string {
-    return bookmark.title
+	return bookmark.title
 }
 
 // GetParent returns the parent bookmark.
 func (bookmark *Bookmark) GetParent() *Bookmark {
-    return bookmark.parent
+	return bookmark.parent
 }
 
 // AutoNumber auto numbers the bookmark.
 func (bookmark *Bookmark) AutoNumber(textLine *TextLine) *Bookmark {
-    bm := bookmark.getPrevBookmark()
-    if bm == nil {
-        bm = bookmark.GetParent()
-        if bm.prefix == "" {
-            value := "1"
-            bookmark.prefix = value
-        } else {
-            value := bm.prefix + ".1"
-            bookmark.prefix = value
-        }
-    } else {
-        if bm.prefix == "" {
-            if bm.GetParent().prefix == "" {
-                value := "1"
-                bookmark.prefix = value
-            } else {
-                value := bm.GetParent().prefix + ".1"
-                bookmark.prefix = value
-            }
-        } else {
-            index := strings.LastIndex(bm.prefix, ".")
-            if index == -1 {
-                temp, err := strconv.Atoi(bm.prefix)
-                if err != nil {
-                    log.Fatal(err)
-                }
-                value := strconv.Itoa(temp + 1)
-                bookmark.prefix = value
-            } else {
-                value := (bm.prefix)[:index] + "."
-                temp, err := strconv.Atoi((bm.prefix)[index+1:])
-                if err != nil {
-                    log.Fatal(err)
-                }
-                value += strconv.Itoa(temp + 1)
-                bookmark.prefix = value
-            }
-        }
-    }
-    textLine.SetText(bookmark.prefix)
-    bookmark.title = bookmark.prefix + " " + bookmark.title
-    return bookmark
+	bm := bookmark.getPrevBookmark()
+	if bm == nil {
+		bm = bookmark.GetParent()
+		if bm.prefix == "" {
+			value := "1"
+			bookmark.prefix = value
+		} else {
+			value := bm.prefix + ".1"
+			bookmark.prefix = value
+		}
+	} else {
+		if bm.prefix == "" {
+			if bm.GetParent().prefix == "" {
+				value := "1"
+				bookmark.prefix = value
+			} else {
+				value := bm.GetParent().prefix + ".1"
+				bookmark.prefix = value
+			}
+		} else {
+			index := strings.LastIndex(bm.prefix, ".")
+			if index == -1 {
+				temp, err := strconv.Atoi(bm.prefix)
+				if err != nil {
+					log.Fatal(err)
+				}
+				value := strconv.Itoa(temp + 1)
+				bookmark.prefix = value
+			} else {
+				value := (bm.prefix)[:index] + "."
+				temp, err := strconv.Atoi((bm.prefix)[index+1:])
+				if err != nil {
+					log.Fatal(err)
+				}
+				value += strconv.Itoa(temp + 1)
+				bookmark.prefix = value
+			}
+		}
+	}
+	textLine.SetText(bookmark.prefix)
+	bookmark.title = bookmark.prefix + " " + bookmark.title
+	return bookmark
 }
 
 func (bookmark *Bookmark) toArrayList() []*Bookmark {
-    list := make([]*Bookmark, 0)
-    queue := make([]*Bookmark, 0)
-    objNumber := 0
-    queue = append(queue, bookmark)
-    for len(queue) != 0 {
-        bookmark := queue[0] // Get the first element.
-        queue = queue[1:]    // Remove the first element.
-        bookmark.objNumber = objNumber
-        objNumber++
-        list = append(list, bookmark)
-        if bookmark.getChildren() != nil {
-            queue = append(queue, bookmark.getChildren()...)
-        }
-    }
-    return list
+	list := make([]*Bookmark, 0)
+	queue := make([]*Bookmark, 0)
+	objNumber := 0
+	queue = append(queue, bookmark)
+	for len(queue) != 0 {
+		bookmark := queue[0] // Get the first element.
+		queue = queue[1:]    // Remove the first element.
+		bookmark.objNumber = objNumber
+		objNumber++
+		list = append(list, bookmark)
+		if bookmark.getChildren() != nil {
+			queue = append(queue, bookmark.getChildren()...)
+		}
+	}
+	return list
 }
 
 func (bookmark *Bookmark) getChildren() []*Bookmark {
-    return bookmark.children
+	return bookmark.children
 }
 
 func (bookmark *Bookmark) getPrevBookmark() *Bookmark {
-    return bookmark.prev
+	return bookmark.prev
 }
 
 func (bookmark *Bookmark) getNextBookmark() *Bookmark {
-    return bookmark.next
+	return bookmark.next
 }
 
 func (bookmark *Bookmark) getFirstChild() *Bookmark {
-    return bookmark.children[0]
+	return bookmark.children[0]
 }
 
 func (bookmark *Bookmark) getLastChild() *Bookmark {
-    return bookmark.children[len(bookmark.children)-1]
+	return bookmark.children[len(bookmark.children)-1]
 }
 
 func (bookmark *Bookmark) getDestination() *Destination {
-    return bookmark.dest
+	return bookmark.dest
 }
 
 func (bookmark *Bookmark) getNext() string {
-    bookmark.destNumber++
-    return "dest#" + strconv.Itoa(bookmark.destNumber)
+	bookmark.destNumber++
+	return "dest#" + strconv.Itoa(bookmark.destNumber)
 }

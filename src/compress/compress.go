@@ -6,6 +6,6 @@
 package compress
 
 const (
-    Yes = true
-    No  = false
+	Yes = true
+	No  = false
 )

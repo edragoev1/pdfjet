@@ -17,53 +17,53 @@ package qrcode
 
 // Polynomial describes polynomial structure.
 type Polynomial struct {
-    num []int
+	num []int
 }
 
 // NewPolynomial constructs polynomial object.
 func NewPolynomial(num []int, shift int) *Polynomial {
-    polynomial := new(Polynomial)
-    offset := 0
-    for offset < len(num) && num[offset] == 0 {
-        offset++
-    }
-    polynomial.num = make([]int, len(num)-offset+shift)
-    for i := 0; i < len(num)-offset; i++ {
-        polynomial.num[i] = num[offset+i]
-    }
-    return polynomial
+	polynomial := new(Polynomial)
+	offset := 0
+	for offset < len(num) && num[offset] == 0 {
+		offset++
+	}
+	polynomial.num = make([]int, len(num)-offset+shift)
+	for i := 0; i < len(num)-offset; i++ {
+		polynomial.num[i] = num[offset+i]
+	}
+	return polynomial
 }
 
 func (polynomial *Polynomial) get(index int) int {
-    return polynomial.num[index]
+	return polynomial.num[index]
 }
 
 // getLength returns the length.
 func (polynomial *Polynomial) getLength() int {
-    return len(polynomial.num)
+	return len(polynomial.num)
 }
 
 func (polynomial *Polynomial) multiply(e *Polynomial) *Polynomial {
-    num := make([]int, polynomial.getLength()+e.getLength()-1)
-    for i := 0; i < polynomial.getLength(); i++ {
-        for j := 0; j < e.getLength(); j++ {
-            num[i+j] ^= gexp(glog(polynomial.get(i)) + glog(e.get(j)))
-        }
-    }
-    return NewPolynomial(num, 0)
+	num := make([]int, polynomial.getLength()+e.getLength()-1)
+	for i := 0; i < polynomial.getLength(); i++ {
+		for j := 0; j < e.getLength(); j++ {
+			num[i+j] ^= gexp(glog(polynomial.get(i)) + glog(e.get(j)))
+		}
+	}
+	return NewPolynomial(num, 0)
 }
 
 func (polynomial *Polynomial) mod(e *Polynomial) *Polynomial {
-    if polynomial.getLength()-e.getLength() < 0 {
-        return polynomial
-    }
-    ratio := glog(polynomial.get(0)) - glog(e.get(0))
-    num := make([]int, polynomial.getLength())
-    for i := 0; i < polynomial.getLength(); i++ {
-        num[i] = polynomial.get(i)
-    }
-    for i := 0; i < e.getLength(); i++ {
-        num[i] ^= gexp(glog(e.get(i)) + ratio)
-    }
-    return NewPolynomial(num, 0).mod(e)
+	if polynomial.getLength()-e.getLength() < 0 {
+		return polynomial
+	}
+	ratio := glog(polynomial.get(0)) - glog(e.get(0))
+	num := make([]int, polynomial.getLength())
+	for i := 0; i < polynomial.getLength(); i++ {
+		num[i] = polynomial.get(i)
+	}
+	for i := 0; i < e.getLength(); i++ {
+		num[i] ^= gexp(glog(e.get(i)) + ratio)
+	}
+	return NewPolynomial(num, 0).mod(e)
 }

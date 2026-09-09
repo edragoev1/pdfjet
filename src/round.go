@@ -7,13 +7,13 @@ package pdfjet
 
 // Round is used in the Chart module.
 type Round struct {
-    minValue       float32
-    maxValue       float32
-    numOfGridLines int
+	minValue       float32
+	maxValue       float32
+	numOfGridLines int
 }
 
 // NewRound constructor.
 func NewRound() *Round {
-    round := new(Round)
-    return round
+	round := new(Round)
+	return round
 }

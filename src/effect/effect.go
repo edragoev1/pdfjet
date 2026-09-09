@@ -7,7 +7,7 @@ package effect
 
 // Used to specify the text effects.
 const (
-    Normal = iota
-    Subscript
-    Superscript
+	Normal = iota
+	Subscript
+	Superscript
 )

@@ -1,80 +1,80 @@
 package main
 
 import (
-    "regexp"
-    "time"
+	"regexp"
+	"time"
 
-    pdfjet "github.com/edragoev1/pdfjet/src"
-    "github.com/edragoev1/pdfjet/src/IBMPlexSans"
-    "github.com/edragoev1/pdfjet/src/compliance"
-    "github.com/edragoev1/pdfjet/src/content"
-    "github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/src/compliance"
+	"github.com/edragoev1/pdfjet/src/content"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example47 flows text through columns using the TextFrame class.
 func Example47() {
-    pdf := pdfjet.NewPDFFile("Example_47.pdf")
-    pdf.SetCompliance(compliance.PDF_UA_1)
-    pdf.SetTitle("Text flowing through columns")
+	pdf := pdfjet.NewPDFFile("Example_47.pdf")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Text flowing through columns")
 
-    f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-    f1.SetSize(14.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(14.0)
 
-    // Use regexp.Split to match Java's split("\\n\\n") regex behavior
-    re := regexp.MustCompile(`\n\n`)
-    paragraphs := re.Split(content.OfTextFile("data/dostoevsky.txt"), -1)
+	// Use regexp.Split to match Java's split("\\n\\n") regex behavior
+	re := regexp.MustCompile(`\n\n`)
+	paragraphs := re.Split(content.OfTextFile("data/dostoevsky.txt"), -1)
 
-    x := float32(50.0)
-    y := float32(50.0)
-    w := float32(230.0)
-    h := float32(500.0)
-    gap := float32(20.0)
+	x := float32(50.0)
+	y := float32(50.0)
+	w := float32(230.0)
+	h := float32(500.0)
+	gap := float32(20.0)
 
-    textFrame := pdfjet.NewTextFrame(f1, paragraphs)
+	textFrame := pdfjet.NewTextFrame(f1, paragraphs)
 
-    var page *pdfjet.Page
-    for textFrame.HasMoreText() {
-        page = pdfjet.NewPage(pdf, letter.Landscape)
+	var page *pdfjet.Page
+	for textFrame.HasMoreText() {
+		page = pdfjet.NewPage(pdf, letter.Landscape)
 
-        textFrame.SetLocation(x, y)
-        textFrame.SetWidth(w)
-        textFrame.SetHeight(h)
-        _, err := textFrame.DrawOn(page)
-        if err != nil {
-            return
-        }
+		textFrame.SetLocation(x, y)
+		textFrame.SetWidth(w)
+		textFrame.SetHeight(h)
+		_, err := textFrame.DrawOn(page)
+		if err != nil {
+			return
+		}
 
-        if textFrame.HasMoreText() {
-            x += w + gap
-            textFrame.SetLocation(x, y)
-            textFrame.SetWidth(w)
-            textFrame.SetHeight(h)
-            _, err := textFrame.DrawOn(page)
-            if err != nil {
-                return
-            }
-        }
+		if textFrame.HasMoreText() {
+			x += w + gap
+			textFrame.SetLocation(x, y)
+			textFrame.SetWidth(w)
+			textFrame.SetHeight(h)
+			_, err := textFrame.DrawOn(page)
+			if err != nil {
+				return
+			}
+		}
 
-        if textFrame.HasMoreText() {
-            x += w + gap
-            textFrame.SetLocation(x, y)
-            textFrame.SetWidth(w)
-            textFrame.SetHeight(h)
-            _, err := textFrame.DrawOn(page)
-            if err != nil {
-                return
-            }
-        }
+		if textFrame.HasMoreText() {
+			x += w + gap
+			textFrame.SetLocation(x, y)
+			textFrame.SetWidth(w)
+			textFrame.SetHeight(h)
+			_, err := textFrame.DrawOn(page)
+			if err != nil {
+				return
+			}
+		}
 
-        x = 50.0
-        y = 50.0
-    }
+		x = 50.0
+		y = 50.0
+	}
 
-    pdf.Complete()
+	pdf.Complete()
 }
 
 func main() {
-    start := time.Now()
-    Example47()
-    pdfjet.PrintDuration("Example_47", time.Since(start))
+	start := time.Now()
+	Example47()
+	pdfjet.PrintDuration("Example_47", time.Since(start))
 }
