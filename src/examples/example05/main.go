@@ -63,7 +63,7 @@ func Example05() {
     point.SetFillColor(color.White)
     point.DrawOn(page)
 
-    arc := new(pdfjet.Arc)
+    arc := pdfjet.NewArc()
     arc.SetCenterXY(300.0, 600.0)
     arc.SetRadiusX(75.0)
     arc.SetRadiusY(75.0)

@@ -4,8 +4,8 @@ import (
     "bytes"
     "fmt"
     "math"
-    "strconv"
 
+    "github.com/edragoev1/pdfjet/src/fastfloat"
     "github.com/edragoev1/pdfjet/src/token"
 )
 
@@ -256,11 +256,11 @@ func (s *Stamp) SetRotationCounterClockwise(degrees float64) *Stamp {
 }
 
 func toByteArray(value float32) []byte {
-    return []byte(strconv.FormatFloat(float64(value), 'g', -1, 32))
+    return fastfloat.ToByteArray(value)
 }
 
 func toString(value float32) string {
-    return strconv.FormatFloat(float64(value), 'g', -1, 32)
+    return string(fastfloat.ToByteArray(value))
 }
 
 // Complete finalizes the stamp object

@@ -23,11 +23,19 @@ type Arc struct {
     strokeColor       [3]float32
     hasStrokeColor    bool
     strokeWidth       float32
-    strokeDashPattern string // = "[] 0";
+    strokeDashPattern string
     language          string
     actualText        string // = Single.space;
     altDescription    string // = Single.space;
     line              *Line
+}
+
+// NewArc creates an Arc with a solid stroke dash pattern, as the other
+// three ports do in their Arc field initializers.
+func NewArc() *Arc {
+    arc := new(Arc)
+    arc.strokeDashPattern = "[] 0"
+    return arc
 }
 
 func (arc *Arc) SetPosition(cx, cy float32) {

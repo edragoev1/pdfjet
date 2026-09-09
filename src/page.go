@@ -1103,7 +1103,7 @@ func (page *Page) SetTextFont(font *Font, fontSize float32) {
 // Dominique Andre Gunia <contact@dgunia.de>
 func (page *Page) DrawRectRoundCorners(x, y, w, h, r1, r2 float32, operation string) {
     // The best 4-spline magic number
-    var m4 float32 = 0.551784
+    var m4 float32 = 0.55228
 
     list := []*Point{}
 

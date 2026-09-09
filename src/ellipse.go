@@ -14,6 +14,7 @@ type Ellipse struct {
 // (a complete 360-degree arc representing an ellipse/circle).
 func NewEllipse() *Ellipse {
     ellipse := new(Ellipse)
+    ellipse.Arc = *NewArc()
     ellipse.SetStartAngle(0.0)
     ellipse.SetSweepDegreesCW(360.0)
     return ellipse

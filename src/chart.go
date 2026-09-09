@@ -322,18 +322,19 @@ func (chart *Chart) DrawOn(page *Page) {
             if chart.xyChart {
                 point.x = chart.x5 + (point.x-chart.xMin)*(chart.x6-chart.x5)/(chart.xMax-chart.xMin)
                 point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
-                point.strokeWidth *= (chart.x6 - chart.x5) / chart.w
+                point.strokeWidth = point.strokeWidth * (chart.x6 - chart.x5) / chart.w
             } else {
-                point.x = chart.x5 + point.x*(chart.x6-chart.x5)/chart.w
+                point.x = chart.x5 + (point.x/chart.w)*(chart.x6-chart.x5)
                 point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
             }
-            if point.uri != "" || point.key != "" {
+            if point.uri != "" {
+                // AddAnnotation flips y into PDF space; do not pre-flip here.
                 page.AddAnnotation(&Annotation{
                     annotationType: AnnotationLink,
                     x1:             point.x - point.r,
-                    y1:             page.height - (point.y - point.r),
+                    y1:             point.y - point.r,
                     x2:             point.x + point.r,
-                    y2:             page.height - (point.y + point.r),
+                    y2:             point.y + point.r,
                     vertices:       nil,
                     fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
                     transparency:   0.0,
@@ -530,7 +531,9 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
                 index := seriesIndex % len(defaultPalette)
                 p0.strokeColor = chart.ToFloatArray(defaultPalette[index])
             }
-            page.SetPenColorRGB(p0.strokeColor)
+            if p0.hasStrokeColor {
+                page.SetPenColorRGB(p0.strokeColor)
+            }
             page.SetPenWidth(p0.strokeWidth)
             page.SetStrokeDashPattern(p0.strokeDashPattern)
             page.DrawPath(points, pathoperator.Stroke)
@@ -549,10 +552,17 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
         }
         for _, point := range points {
             if point.GetShape() != shape.Invisible {
-                page.SetPenColorRGB(point.strokeColor)
+                // The other ports pass a null color here and their
+                // setPenColor/setBrushColor return early on it. The has*
+                // flags are this port's stand-in for that null.
+                if point.hasStrokeColor {
+                    page.SetPenColorRGB(point.strokeColor)
+                }
                 page.SetPenWidth(point.strokeWidth)
                 page.SetStrokeDashPattern(point.strokeDashPattern)
-                page.SetBrushColorRGB(point.fillColor)
+                if point.hasFillColor {
+                    page.SetBrushColorRGB(point.fillColor)
+                }
                 page.DrawPoint(point)
             }
         }
