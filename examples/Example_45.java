@@ -20,7 +20,6 @@ public class Example_45 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         float w = 500f;
-        float h = 15f;
 
         List<Field> fields = new ArrayList<Field>();
         fields.add(new Field(   0f, "Company", "Smart Widgets Construction Inc."));
@@ -34,18 +33,18 @@ public class Example_45 {
         fields.add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
         fields.add(new Field(   0f, "Telephone Number", "(416) 331-2245"));
         fields.add(new Field(  w/4, "Fax (if applicable)", "(416) 124-9879"));
-        fields.add(new Field(  w/2, "Email","jsmith12345@gmail.ca"));
+        fields.add(new Field(  w/2, "Email", "jsmith12345@gmail.ca"));
         fields.add(new Field(   0f, "Other Information", "Hello, World!"));
         fields.add(new Field(   0f, "", "This is a test."));
 
-        float[] xy = (new Form(fields)
+        new Form(fields)
                 .setLabelFont(f1)
                 .setLabelFontSize(8f)
                 .setValueFont(f2)
                 .setValueFontSize(10f)
                 .setLocation(50f, 50f)
                 .setFormWidth(w)
-                .drawOn(page));
+                .drawOn(page);
 
         pdf.complete();
     }

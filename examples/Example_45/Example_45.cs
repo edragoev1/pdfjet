@@ -6,7 +6,7 @@ using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_45.java
+ * Example_45.cs
  */
 public class Example_45 {
     public Example_45() {
@@ -32,18 +32,18 @@ public class Example_45 {
         fields.Add(new Field(7*w/8, "Postal Code", "M5M 2N2"));
         fields.Add(new Field(   0f, "Telephone Number", "(416) 331-2245"));
         fields.Add(new Field(  w/4, "Fax (if applicable)", "(416) 124-9879"));
-        fields.Add(new Field(  w/2, "Email","jsmith12345@gmail.ca"));
+        fields.Add(new Field(  w/2, "Email", "jsmith12345@gmail.ca"));
         fields.Add(new Field(   0f, "Other Information", "Hello, World!"));
         fields.Add(new Field(   0f, "", "This is a test."));
 
-        float[] xy = (new Form(fields)
+        new Form(fields)
                 .SetLabelFont(f1)
                 .SetLabelFontSize(8f)
                 .SetValueFont(f2)
                 .SetValueFontSize(10f)
                 .SetLocation(50f, 50f)
                 .SetFormWidth(w)
-                .DrawOn(page));
+                .DrawOn(page);
 
         pdf.Complete();
     }

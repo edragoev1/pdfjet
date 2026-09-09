@@ -8,15 +8,16 @@ public class Example_44 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_44.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA)          // Latin font
+        let f1 = Font(pdf, CoreFont.HELVETICA)
         f1.setSize(12.0)
 
-        let f2 = Font(pdf, CJKFont.ST_HEITI_SC_LIGHT)   // Chinese (Simplified) font
+        // Chinese (Simplified) font
+        let f2 = Font(pdf, CJKFont.ST_HEITI_SC_LIGHT)
         f2.setSize(12.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let rotate = 0 // degrees
+        let rotate = 0
         let column = TextColumn(rotate)
         column.setLocation(70.0, 70.0)
         column.setWidth(500.0)

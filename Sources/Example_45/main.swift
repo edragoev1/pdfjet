@@ -27,7 +27,7 @@ public class Example_45 {
         fields.append(Field(7*w/8, "Postal Code", "M5M 2N2"))
         fields.append(Field(  0.0, "Telephone Number", "(416) 331-2245"))
         fields.append(Field(  w/4, "Fax (if applicable)", "(416) 124-9879"))
-        fields.append(Field(  w/2, "Email","jsmith12345@gmail.ca"))
+        fields.append(Field(  w/2, "Email", "jsmith12345@gmail.ca"))
         fields.append(Field(  0.0, "Other Information", "Hello, World!"))
         fields.append(Field(  0.0, "", "This is a test."))
 

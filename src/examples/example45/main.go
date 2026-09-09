@@ -4,8 +4,8 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example45 uses the Form and Field classes with the core fonts.
@@ -15,7 +15,7 @@ func Example45() {
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	var w float32 = 500.0
 
@@ -35,14 +35,14 @@ func Example45() {
 	fields = append(fields, pdfjet.NewField(0.0, "Other Information", "Hello, World!"))
 	fields = append(fields, pdfjet.NewField(0.0, "", "This is a test."))
 
-	form := pdfjet.NewForm(fields)
-	form.SetLabelFont(f1)
-	form.SetLabelFontSize(8.0)
-	form.SetValueFont(f2)
-	form.SetValueFontSize(10.0)
-	form.SetLocation(50.0, 50.0)
-	form.SetFormWidth(w)
-	form.DrawOn(page)
+	pdfjet.NewForm(fields).
+		SetLabelFont(f1).
+		SetLabelFontSize(8.0).
+		SetValueFont(f2).
+		SetValueFontSize(10.0).
+		SetLocation(50.0, 50.0).
+		SetFormWidth(w).
+		DrawOn(page)
 
 	pdf.Complete()
 }

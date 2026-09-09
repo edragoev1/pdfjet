@@ -12,10 +12,10 @@ public class Example_44 {
                 new FileStream("Example_44.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        f1.SetSize(12f);
+
         // Chinese (Simplified) font
         Font f2 = new Font(pdf, CJKFont.ST_HEITI_SC_LIGHT);
-
-        f1.SetSize(12f);
         f2.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
