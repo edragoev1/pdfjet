@@ -24,21 +24,21 @@ internal static class FastFloat {
         if (negative) {
             rounded = -rounded;
         }
-        
+
         int integerPart = (int)rounded;
         float decimalPart = rounded - integerPart;
         int decimalDigits = (int)(decimalPart * 100 + 0.5f);
-        
+
         // Handle carry-over from rounding
         if (decimalDigits >= 100) {
             decimalDigits -= 100;
             integerPart++;
         }
-        
+
         // Determine if we need decimal places
         bool hasDecimal = decimalDigits > 0;
         int trailingZeros = 0;
-        
+
         if (hasDecimal) {
             // Count trailing zeros
             if (decimalDigits % 10 == 0) {
@@ -49,22 +49,22 @@ internal static class FastFloat {
             }
             hasDecimal = trailingZeros < 2;
         }
-        
+
         // Calculate lengths
         int intDigits = integerPart == 0 ? 1 : (int)System.Math.Log10(integerPart) + 1;
         int totalLength = (negative ? 1 : 0) + intDigits + (hasDecimal ? 1 + (2 - trailingZeros) : 0);
-        
+
         byte[] result = new byte[totalLength];
         int pos = 0;
-        
+
         // Add sign
         if (negative) {
             result[pos++] = (byte)'-';
         }
-        
+
         // Add integer part
         pos = WriteInt(integerPart, result, pos, intDigits);
-        
+
         // Add decimal part if needed
         if (hasDecimal) {
             result[pos++] = (byte)'.';
@@ -75,7 +75,7 @@ internal static class FastFloat {
                 result[pos++] = (byte)('0' + decimalDigits % 10);
             }
         }
-        
+
         return result;
     }
 

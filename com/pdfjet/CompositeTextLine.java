@@ -275,7 +275,7 @@ public class CompositeTextLine implements Drawable {
      *  @return the number of text lines.
      */
     public int getNumberOfTextLines() {
-       return textLines.size();
+        return textLines.size();
     }
 
     /**

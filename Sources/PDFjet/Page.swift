@@ -845,14 +845,14 @@ public class Page {
         for i in 1..<path.count {
             point = path[i]
             if point.controlPoint != "" {
-    			controlPoint = point.controlPoint
+                controlPoint = point.controlPoint
                 append(point)
             } else {
                 if controlPoint != "" {
-    				append(point)
-	    			append(controlPoint)
-    				append("\n")
-	    			controlPoint = ""
+                    append(point)
+                    append(controlPoint)
+                    append("\n")
+                    controlPoint = ""
                 } else {
                     lineTo(point.x, point.y)
                 }

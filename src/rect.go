@@ -6,31 +6,31 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/src/pathoperator"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+    "github.com/edragoev1/pdfjet/src/pathoperator"
+    "github.com/edragoev1/pdfjet/src/single"
+    "github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // Rect is used to create rectangular shapes on a page.
 type Rect struct {
-	x              float32
-	y              float32
-	width          float32
-	height         float32
-	cornerRadius   float32
-	fillColor      [3]float32
-	hasFillColor   bool
-	borderWidth    float32
-	borderColor    [3]float32
-	hasBorderColor bool
-	borderPattern  string
-	fillShape      bool
-	uri            string
-	key            string
-	language       string
-	altDescription string
-	actualText     string
-	structureType  string
+    x              float32
+    y              float32
+    width          float32
+    height         float32
+    cornerRadius   float32
+    fillColor      [3]float32
+    hasFillColor   bool
+    borderWidth    float32
+    borderColor    [3]float32
+    hasBorderColor bool
+    borderPattern  string
+    fillShape      bool
+    uri            string
+    key            string
+    language       string
+    altDescription string
+    actualText     string
+    structureType  string
 }
 
 // NewRect creates new Rect object.
@@ -39,119 +39,119 @@ type Rect struct {
 // @param w the width of this rect.
 // @param h the height of this rect.
 func NewRect(x, y, w, h float32) *Rect {
-	rect := new(Rect)
-	rect.x = x
-	rect.y = y
-	rect.width = w
-	rect.height = h
+    rect := new(Rect)
+    rect.x = x
+    rect.y = y
+    rect.width = w
+    rect.height = h
 
-	rect.borderWidth = 0.0
-	rect.borderPattern = "[] 0"
+    rect.borderWidth = 0.0
+    rect.borderPattern = "[] 0"
 
-	rect.altDescription = single.Space
-	rect.actualText = single.Space
-	rect.structureType = structtype.P
-	return rect
+    rect.altDescription = single.Space
+    rect.actualText = single.Space
+    rect.structureType = structtype.P
+    return rect
 }
 
 // SetLocation sets the location of this rect on the page.
 // @param x the x coordinate of the top left corner of this rect when drawn on the page.
 // @param y the y coordinate of the top left corner of this rect when drawn on the page.
 func (rect *Rect) SetLocation(x, y float32) *Rect {
-	rect.x = x
-	rect.y = y
-	return rect
+    rect.x = x
+    rect.y = y
+    return rect
 }
 
 // SetPosition sets the location of this rect on the page.
 // @param x the x coordinate of the top left corner of this rect when drawn on the page.
 // @param y the y coordinate of the top left corner of this rect when drawn on the page.
 func (rect *Rect) SetPosition(x, y float32) {
-	rect.SetLocation(x, y)
+    rect.SetLocation(x, y)
 }
 
 // SetSize sets the size of this rect.
 // @param w the width of this rect.
 // @param h the height of this rect.
 func (rect *Rect) SetSize(w, h float32) {
-	rect.width = w
-	rect.height = h
+    rect.width = w
+    rect.height = h
 }
 
 func (rect *Rect) SetBorderColor(color int32) {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	rect.SetBorderColorRGB([3]float32{r, g, b})
+    r := float32((color>>16)&0xff) / 255.0
+    g := float32((color>>8)&0xff) / 255.0
+    b := float32((color)&0xff) / 255.0
+    rect.SetBorderColorRGB([3]float32{r, g, b})
 }
 
 // SetBorderColorRGB sets the color for this rectangle.
 // @param color the color specified as an integer.
 func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) {
-	rect.borderColor = borderColor
-	rect.hasBorderColor = true
+    rect.borderColor = borderColor
+    rect.hasBorderColor = true
 }
 
 func (rect *Rect) SetFillColor(color int32) {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	rect.SetFillColorRGB([3]float32{r, g, b})
+    r := float32((color>>16)&0xff) / 255.0
+    g := float32((color>>8)&0xff) / 255.0
+    b := float32((color)&0xff) / 255.0
+    rect.SetFillColorRGB([3]float32{r, g, b})
 }
 
 func (rect *Rect) SetFillColorRGB(fillColor [3]float32) {
-	rect.fillColor = fillColor
-	rect.hasFillColor = true
+    rect.fillColor = fillColor
+    rect.hasFillColor = true
 }
 
 // SetBorderWidth sets the width of this line.
 // @param width the width.
 func (rect *Rect) SetBorderWidth(borderWidth float32) {
-	rect.borderWidth = borderWidth
+    rect.borderWidth = borderWidth
 }
 
 func (rect *Rect) SetBorderPattern(borderPattern string) {
-	rect.borderPattern = borderPattern
+    rect.borderPattern = borderPattern
 }
 
 // SetCornerRadius sets the corner radius.
 // @param width the width.
 func (rect *Rect) SetCornerRadius(cornerRadius float32) {
-	rect.cornerRadius = cornerRadius
+    rect.cornerRadius = cornerRadius
 }
 
 // SetURIAction sets the URI for the "click rect" action.
 // @param uri the URI
 func (rect *Rect) SetURIAction(uri string) {
-	rect.uri = uri
+    rect.uri = uri
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
 func (rect *Rect) SetGoToAction(key string) {
-	rect.key = key
+    rect.key = key
 }
 
 // SetAltDescription sets the alternate description of this rect.
 // @param altDescription the alternate description of the rect.
 // @return this Rect.
 func (rect *Rect) SetAltDescription(altDescription string) *Rect {
-	rect.altDescription = altDescription
-	return rect
+    rect.altDescription = altDescription
+    return rect
 }
 
 // SetActualText sets the actual text for this rect.
 // @param actualText the actual text for the rect.
 // @return this Rect.
 func (rect *Rect) SetActualText(actualText string) *Rect {
-	rect.actualText = actualText
-	return rect
+    rect.actualText = actualText
+    return rect
 }
 
 // SetStructureType sets the type of the structure.
 func (rect *Rect) SetStructureType(structureType string) *Rect {
-	rect.structureType = structureType
-	return rect
+    rect.structureType = structureType
+    return rect
 }
 
 // SetPattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
@@ -163,130 +163,130 @@ func (rect *Rect) SetStructureType(structureType string) *Rect {
 // <pre>
 // Examples of line dash patterns:
 //
-//	"[Array] Phase"     Appearance          Description
-//	_______________     _________________   ____________________________________
+//  "[Array] Phase"     Appearance          Description
+//  _______________     _________________   ____________________________________
 //
-//	"[] 0"              -----------------   Solid line
-//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//  "[] 0"              -----------------   Solid line
+//  "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//  "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//  "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//  "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//  "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
 //
 // </pre>
 //
 // @param pattern the line dash pattern.
 func (rect *Rect) SetPattern(borderPattern string) {
-	rect.borderPattern = borderPattern
+    rect.borderPattern = borderPattern
 }
 
 // SetFillShape sets the private fillShape variable.
 // If the value of fillShape is true - the rect is filled with the current brushColor color.
 // @param fillShape the value used to set the private fillShape variable.
 func (rect *Rect) SetFillShape(fillShape bool) {
-	rect.fillShape = fillShape
+    rect.fillShape = fillShape
 }
 
 // ScaleBy scales this rect by the specified factor.
 // @param factor the factor used to scale the rect.
 func (rect *Rect) ScaleBy(factor float32) {
-	rect.x *= factor
-	rect.y *= factor
+    rect.x *= factor
+    rect.y *= factor
 }
 
 // DrawOn draws this rect on the specified page.
 // @param page the page to draw this rect on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (rect *Rect) DrawOn(page *Page) [2]float32 {
-	const k float32 = 0.55228
+    const k float32 = 0.55228
 
-	// A rectangle carries no text, so it is decorative content.
-	page.AddArtifactBMC()
-	page.SaveGraphicsState()
-	if rect.cornerRadius == 0.0 {
-		if rect.hasFillColor {
-			page.MoveTo(rect.x, rect.y)
-			page.LineTo(rect.x+rect.width, rect.y)
-			page.LineTo(rect.x+rect.width, rect.y+rect.height)
-			page.LineTo(rect.x, rect.y+rect.height)
-			page.LineTo(rect.x, rect.y)
-			page.SetBrushColorRGB(rect.fillColor)
-			page.FillPath()
-		}
-		if rect.hasBorderColor {
-			page.MoveTo(rect.x, rect.y)
-			page.LineTo(rect.x+rect.width, rect.y)
-			page.LineTo(rect.x+rect.width, rect.y+rect.height)
-			page.LineTo(rect.x, rect.y+rect.height)
-			page.SetPenColorRGB(rect.borderColor)
-			page.SetPenWidth(rect.borderWidth)
-			page.SetStrokeDashPattern(rect.borderPattern)
-			page.ClosePath()
-		}
-	} else {
-		// The pen and brush must be set before the path is painted,
-		// otherwise the rounded rectangle is drawn with whatever state
-		// the page happened to be left in.
-		if rect.hasBorderColor {
-			page.SetStrokeDashPattern(rect.borderPattern)
-		}
-		if rect.hasFillColor {
-			page.SetBrushColorRGB(rect.fillColor)
-		}
-		if rect.hasBorderColor {
-			page.SetPenWidth(rect.borderWidth)
-			page.SetPenColorRGB(rect.borderColor)
-		}
+    // A rectangle carries no text, so it is decorative content.
+    page.AddArtifactBMC()
+    page.SaveGraphicsState()
+    if rect.cornerRadius == 0.0 {
+        if rect.hasFillColor {
+            page.MoveTo(rect.x, rect.y)
+            page.LineTo(rect.x+rect.width, rect.y)
+            page.LineTo(rect.x+rect.width, rect.y+rect.height)
+            page.LineTo(rect.x, rect.y+rect.height)
+            page.LineTo(rect.x, rect.y)
+            page.SetBrushColorRGB(rect.fillColor)
+            page.FillPath()
+        }
+        if rect.hasBorderColor {
+            page.MoveTo(rect.x, rect.y)
+            page.LineTo(rect.x+rect.width, rect.y)
+            page.LineTo(rect.x+rect.width, rect.y+rect.height)
+            page.LineTo(rect.x, rect.y+rect.height)
+            page.SetPenColorRGB(rect.borderColor)
+            page.SetPenWidth(rect.borderWidth)
+            page.SetStrokeDashPattern(rect.borderPattern)
+            page.ClosePath()
+        }
+    } else {
+        // The pen and brush must be set before the path is painted,
+        // otherwise the rounded rectangle is drawn with whatever state
+        // the page happened to be left in.
+        if rect.hasBorderColor {
+            page.SetStrokeDashPattern(rect.borderPattern)
+        }
+        if rect.hasFillColor {
+            page.SetBrushColorRGB(rect.fillColor)
+        }
+        if rect.hasBorderColor {
+            page.SetPenWidth(rect.borderWidth)
+            page.SetPenColorRGB(rect.borderColor)
+        }
 
-		points := make([]*Point, 0)
-		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
-		points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y))
-		points = append(points, NewControlPointC((rect.x+rect.width-rect.cornerRadius)+rect.cornerRadius*k, rect.y))
-		points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
-		points = append(points, NewPoint(rect.x+rect.width, rect.y+rect.cornerRadius))
-		points = append(points, NewPoint(rect.x+rect.width, (rect.y+rect.height)-rect.cornerRadius))
-		points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
-		points = append(points, NewControlPointC(((rect.x+rect.width)-rect.cornerRadius)+rect.cornerRadius*k, rect.y+rect.height))
-		points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y+rect.height))
-		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y+rect.height))
-		points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y+rect.height))
-		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
-		points = append(points, NewPoint(rect.x, (rect.y+rect.height)-rect.cornerRadius))
-		points = append(points, NewPoint(rect.x, rect.y+rect.cornerRadius))
-		points = append(points, NewControlPointC(rect.x, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
-		points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y))
-		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
+        points := make([]*Point, 0)
+        points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
+        points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y))
+        points = append(points, NewControlPointC((rect.x+rect.width-rect.cornerRadius)+rect.cornerRadius*k, rect.y))
+        points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
+        points = append(points, NewPoint(rect.x+rect.width, rect.y+rect.cornerRadius))
+        points = append(points, NewPoint(rect.x+rect.width, (rect.y+rect.height)-rect.cornerRadius))
+        points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
+        points = append(points, NewControlPointC(((rect.x+rect.width)-rect.cornerRadius)+rect.cornerRadius*k, rect.y+rect.height))
+        points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y+rect.height))
+        points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y+rect.height))
+        points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y+rect.height))
+        points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
+        points = append(points, NewPoint(rect.x, (rect.y+rect.height)-rect.cornerRadius))
+        points = append(points, NewPoint(rect.x, rect.y+rect.cornerRadius))
+        points = append(points, NewControlPointC(rect.x, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
+        points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y))
+        points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
 
-		if rect.hasFillColor && !rect.hasBorderColor {
-			page.DrawPath(points, pathoperator.Fill)
-		} else if !rect.hasFillColor && rect.hasBorderColor {
-			page.DrawPath(points, pathoperator.Stroke)
-		} else if rect.hasFillColor && rect.hasBorderColor {
-			page.DrawPath(points, pathoperator.FillAndStroke)
-		}
-	}
-	page.RestoreGraphicsState()
-	page.AddEMC()
+        if rect.hasFillColor && !rect.hasBorderColor {
+            page.DrawPath(points, pathoperator.Fill)
+        } else if !rect.hasFillColor && rect.hasBorderColor {
+            page.DrawPath(points, pathoperator.Stroke)
+        } else if rect.hasFillColor && rect.hasBorderColor {
+            page.DrawPath(points, pathoperator.FillAndStroke)
+        }
+    }
+    page.RestoreGraphicsState()
+    page.AddEMC()
 
-	if rect.uri != "" || rect.key != "" {
-		page.AddAnnotation(&Annotation{
-			annotationType: AnnotationLink,
-			x1:             rect.x,
-			y1:             rect.y,
-			x2:             rect.x + rect.width,
-			y2:             rect.y + rect.height,
-			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
-			transparency:   0.0,
-			title:          "",
-			contents:       "",
-			uri:            rect.uri,
-			key:            rect.key, // The destination name
-			language:       rect.language,
-			actualText:     rect.actualText,
-			altDescription: rect.altDescription,
-		})
-	}
+    if rect.uri != "" || rect.key != "" {
+        page.AddAnnotation(&Annotation{
+            annotationType: AnnotationLink,
+            x1:             rect.x,
+            y1:             rect.y,
+            x2:             rect.x + rect.width,
+            y2:             rect.y + rect.height,
+            vertices:       nil,
+            fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+            transparency:   0.0,
+            title:          "",
+            contents:       "",
+            uri:            rect.uri,
+            key:            rect.key, // The destination name
+            language:       rect.language,
+            actualText:     rect.actualText,
+            altDescription: rect.altDescription,
+        })
+    }
 
-	return [2]float32{rect.x + rect.width, rect.y + rect.height}
+    return [2]float32{rect.x + rect.width, rect.y + rect.height}
 }

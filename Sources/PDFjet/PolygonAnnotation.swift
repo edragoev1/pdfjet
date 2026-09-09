@@ -5,7 +5,7 @@ public class PolygonAnnotation: BaseAnnotation {
         super.init()
         self.annotationType = Annotation.Polygon
     }
-    
+
     public func setVertices(_ vertices: [Float]) {
         super.vertices = vertices
     }

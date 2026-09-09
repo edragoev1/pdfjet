@@ -245,7 +245,7 @@ public class CompositeTextLine : Drawable {
      * @return the number of text lines.
      */
     public func getNumberOfTextLines()-> Int {
-       return textLines.count
+        return textLines.count
     }
 
     /**

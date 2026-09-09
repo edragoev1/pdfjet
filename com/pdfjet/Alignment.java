@@ -9,7 +9,7 @@ package com.pdfjet;
 /**
  * Used to specify the text alignment in TextBlock.
  */
- public enum Alignment {
+public enum Alignment {
     LEFT,
     RIGHT,
     CENTER;

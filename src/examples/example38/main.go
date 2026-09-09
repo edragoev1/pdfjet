@@ -1,29 +1,29 @@
 package main
 
 import (
-	"time"
+    "time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/letter"
+    pdfjet "github.com/edragoev1/pdfjet/src"
+    "github.com/edragoev1/pdfjet/src/alignment"
+    "github.com/edragoev1/pdfjet/src/color"
+    "github.com/edragoev1/pdfjet/src/corefont"
+    "github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example38 draws a table of cells that span multiple rows and columns.
 func Example38() {
-	pdf := pdfjet.NewPDFFile("Example_38.pdf")
-	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
+    pdf := pdfjet.NewPDFFile("Example_38.pdf")
+    font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 
-	page := pdfjet.NewPage(pdf, letter.Landscape)
+    page := pdfjet.NewPage(pdf, letter.Landscape)
 
-	table := pdfjet.NewTable()
-	table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)
-	table.SetBottomMargin(10.0)
-	table.SetLocation(50.0, 50.0)
-	table.DrawOn(page)
+    table := pdfjet.NewTable()
+    table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)
+    table.SetBottomMargin(10.0)
+    table.SetLocation(50.0, 50.0)
+    table.DrawOn(page)
 
-	pdf.Complete()
+    pdf.Complete()
 }
 
 /**
@@ -97,146 +97,146 @@ func Example38() {
  * @throws Exception
  */
 func createTableData(font *pdfjet.Font) [][]*pdfjet.Cell {
-	rows := make([][]*pdfjet.Cell, 0)
+    rows := make([][]*pdfjet.Cell, 0)
 
-	for i := 0; i < 10; i++ {
-		row := make([]*pdfjet.Cell, 0)
-		if i == 0 {
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-		} else if i == 1 {
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 5, "5x1", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-		} else if i == 2 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 3, "3x1", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-		} else if i == 3 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 1, "1x2", true, false))
-		} else if i == 4 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 4, "4x4", true, false))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-		} else if i == 5 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-			row = append(row, getCell(font, 4, "^", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-		} else if i == 6 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x4", true, false))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 4, "^", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "^", false, false))
-		} else if i == 7 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 4, "^", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-		} else if i == 8 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-		} else if i == 9 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-		}
-		rows = append(rows, row)
-	}
+    for i := 0; i < 10; i++ {
+        row := make([]*pdfjet.Cell, 0)
+        if i == 0 {
+            row = append(row, getCell(font, 2, "2x2", true, false))
+            row = append(row, getCell(font, 1, "", true, false))
+            row = append(row, getCell(font, 2, "2x1", true, true))
+            row = append(row, getCell(font, 1, "", true, false))
+            row = append(row, getCell(font, 2, "2x1", true, true))
+            row = append(row, getCell(font, 1, "", true, false))
+            row = append(row, getCell(font, 2, "2x1", true, true))
+            row = append(row, getCell(font, 1, "", true, false))
+            row = append(row, getCell(font, 2, "2x1", true, true))
+            row = append(row, getCell(font, 1, "", true, false))
+        } else if i == 1 {
+            row = append(row, getCell(font, 2, "^", false, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 2, "2x2", true, false))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 5, "5x1", true, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 1, "", true, true))
+        } else if i == 2 {
+            row = append(row, getCell(font, 1, "1x2", true, false))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 2, "^", false, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 2, "2x2", true, false))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 3, "3x1", true, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+        } else if i == 3 {
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "1x3", true, false))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 2, "^", false, true))
+            row = append(row, getCell(font, 1, "", true, false))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 2, "2x1", true, true))
+            row = append(row, getCell(font, 1, "", true, false))
+            row = append(row, getCell(font, 1, "1x2", true, false))
+        } else if i == 4 {
+            row = append(row, getCell(font, 1, "1x2", true, false))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "^", false, false))
+            row = append(row, getCell(font, 2, "2x1", true, true))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 4, "4x4", true, false))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 1, "^", false, true))
+        } else if i == 5 {
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "1x3", true, false))
+            row = append(row, getCell(font, 1, "1x3", true, false))
+            row = append(row, getCell(font, 4, "^", false, false))
+            row = append(row, getCell(font, 1, "", false, false))
+            row = append(row, getCell(font, 1, "", false, false))
+            row = append(row, getCell(font, 1, "", false, false))
+            row = append(row, getCell(font, 1, "1x3", true, false))
+        } else if i == 6 {
+            row = append(row, getCell(font, 1, "1x2", true, false))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "1x4", true, false))
+            row = append(row, getCell(font, 1, "^", false, false))
+            row = append(row, getCell(font, 1, "^", false, false))
+            row = append(row, getCell(font, 4, "^", false, false))
+            row = append(row, getCell(font, 1, "", false, false))
+            row = append(row, getCell(font, 1, "", false, false))
+            row = append(row, getCell(font, 1, "", false, false))
+            row = append(row, getCell(font, 1, "^", false, false))
+        } else if i == 7 {
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "^", false, false))
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 4, "^", false, true))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 1, "^", false, true))
+        } else if i == 8 {
+            row = append(row, getCell(font, 1, "1x2", true, false))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "^", false, false))
+            row = append(row, getCell(font, 2, "2x1", true, true))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 2, "2x2", true, false))
+            row = append(row, getCell(font, 1, "", true, true))
+            row = append(row, getCell(font, 1, "1x2", true, false))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+        } else if i == 9 {
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 2, "^", false, true))
+            row = append(row, getCell(font, 1, "", false, true))
+            row = append(row, getCell(font, 1, "^", false, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+            row = append(row, getCell(font, 1, "1x1", true, true))
+        }
+        rows = append(rows, row)
+    }
 
-	return rows
+    return rows
 }
 
 func getCell(
-	font *pdfjet.Font,
-	colSpan int,
-	text string,
-	topBorder bool,
-	bottomBorder bool) *pdfjet.Cell {
-	cell := pdfjet.NewCell(font, text)
-	cell.SetColSpan(colSpan)
-	cell.SetWidth(50.0)
-	cell.SetTopBorder(topBorder)
-	cell.SetBottomBorder(bottomBorder)
-	cell.SetTextAlignment(alignment.Center)
-	cell.SetBackgroundColor(color.LightBlue)
-	cell.SetLineWidth(1.0)
-	return cell
+    font *pdfjet.Font,
+    colSpan int,
+    text string,
+    topBorder bool,
+    bottomBorder bool) *pdfjet.Cell {
+    cell := pdfjet.NewCell(font, text)
+    cell.SetColSpan(colSpan)
+    cell.SetWidth(50.0)
+    cell.SetTopBorder(topBorder)
+    cell.SetBottomBorder(bottomBorder)
+    cell.SetTextAlignment(alignment.Center)
+    cell.SetBackgroundColor(color.LightBlue)
+    cell.SetLineWidth(1.0)
+    return cell
 }
 
 func main() {
-	start := time.Now()
-	Example38()
-	pdfjet.PrintDuration("Example_38", time.Since(start))
+    start := time.Now()
+    Example38()
+    pdfjet.PrintDuration("Example_38", time.Since(start))
 }

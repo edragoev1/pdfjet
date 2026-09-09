@@ -409,7 +409,7 @@ public class Table {
     public float[] DrawOn(Page page) {
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
-	    SetBottomBorderOnLastRow();
+        SetBottomBorderOnLastRow();
         float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
         return xy;
     }
@@ -417,7 +417,7 @@ public class Table {
     public float[] DrawOn(PDF pdf, List<Page> pages, float[] pageSize) {
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
-	    SetBottomBorderOnLastRow();
+        SetBottomBorderOnLastRow();
         float[] xy = null;
         int pageNumber = 1;
         while (HasMoreData()) {

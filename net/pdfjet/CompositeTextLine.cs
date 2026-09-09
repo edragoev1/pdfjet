@@ -194,7 +194,7 @@ public class CompositeTextLine : IDrawable {
      * @return the number of text lines.
      */
     public int Size() {
-       return textLines.Count;
+        return textLines.Count;
     }
 
     /**

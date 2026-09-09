@@ -26,7 +26,7 @@ public class Example_08 {
 
         Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
         barcode.SetModuleLength(0.75f);
-	    // Comment out the line below if you don't want to print the text underneath the barcode.
+        // Comment out the line below if you don't want to print the text underneath the barcode.
         barcode.SetFont(f1);
 
         Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv");

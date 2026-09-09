@@ -25,35 +25,35 @@ var expTable [256]int
 var logTable [256]int
 
 func init() {
-	for i := 0; i < 8; i++ {
-		expTable[i] = 1 << i
-	}
-	for i := 8; i < 256; i++ {
-		expTable[i] = expTable[i-4] ^
-			expTable[i-5] ^
-			expTable[i-6] ^
-			expTable[i-8]
-	}
-	for i := 0; i < 255; i++ {
-		logTable[expTable[i]] = i
-	}
+    for i := 0; i < 8; i++ {
+        expTable[i] = 1 << i
+    }
+    for i := 8; i < 256; i++ {
+        expTable[i] = expTable[i-4] ^
+            expTable[i-5] ^
+            expTable[i-6] ^
+            expTable[i-8]
+    }
+    for i := 0; i < 255; i++ {
+        logTable[expTable[i]] = i
+    }
 }
 
 // glog returns the log value.
 func glog(index int) int {
-	if index < 1 {
-		log.Fatal("The index value must be between 0 and 255.")
-	}
-	return logTable[index]
+    if index < 1 {
+        log.Fatal("The index value must be between 0 and 255.")
+    }
+    return logTable[index]
 }
 
 // gexp returns the exp value.
 func gexp(n int) int {
-	for n < 0 {
-		n += 255
-	}
-	for n >= 256 {
-		n -= 255
-	}
-	return expTable[n]
+    for n < 0 {
+        n += 255
+    }
+    for n >= 256 {
+        n -= 255
+    }
+    return expTable[n]
 }

@@ -253,7 +253,7 @@ public class BigTable {
             }
         }
 
-      	// Precompute vertical line positions
+        // Precompute vertical line positions
         this.vertLines[0] = 0.0f;
         float vertLineX = 0.0f;
         for (int i = 0; i < widths.length; i++) {

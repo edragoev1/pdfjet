@@ -1,46 +1,46 @@
 package main
 
 import (
-	"time"
+    "time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/letter"
+    pdfjet "github.com/edragoev1/pdfjet/src"
+    "github.com/edragoev1/pdfjet/src/JetBrainsMono"
+    "github.com/edragoev1/pdfjet/src/color"
+    "github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example32 draws highlighted source code using the draw string method and a color map.
 func Example32() {
-	pdf := pdfjet.NewPDFFile("Example_32.pdf")
+    pdf := pdfjet.NewPDFFile("Example_32.pdf")
 
-	font := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
-	font.SetSize(10.0)
+    font := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
+    font.SetSize(10.0)
 
-	colors := make(map[string]int32)
-	colors["new"] = color.Red
-	colors["class"] = color.Blue
-	colors["void"] = color.Green
-	grayColor := [3]float32{0.2, 0.2, 0.2}
+    colors := make(map[string]int32)
+    colors["new"] = color.Red
+    colors["class"] = color.Blue
+    colors["void"] = color.Green
+    grayColor := [3]float32{0.2, 0.2, 0.2}
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
-	x := float32(50.0)
-	y := float32(50.0)
-	leading := font.GetBodyHeight(font.GetSize())
-	lines := pdfjet.ReadTextLines("examples/Example_02.java")
-	for _, line := range lines {
-		page.DrawStringUsingColorMap(font, nil, font.GetSize(), line, x, y, grayColor, colors)
-		y += leading
-		if y > (page.GetHeight() - 20.0) {
-			page = pdfjet.NewPage(pdf, letter.Portrait)
-			y = 50.0
-		}
-	}
+    page := pdfjet.NewPage(pdf, letter.Portrait)
+    x := float32(50.0)
+    y := float32(50.0)
+    leading := font.GetBodyHeight(font.GetSize())
+    lines := pdfjet.ReadTextLines("examples/Example_02.java")
+    for _, line := range lines {
+        page.DrawStringUsingColorMap(font, nil, font.GetSize(), line, x, y, grayColor, colors)
+        y += leading
+        if y > (page.GetHeight() - 20.0) {
+            page = pdfjet.NewPage(pdf, letter.Portrait)
+            y = 50.0
+        }
+    }
 
-	pdf.Complete()
+    pdf.Complete()
 }
 
 func main() {
-	start := time.Now()
-	Example32()
-	pdfjet.PrintDuration("Example_32", time.Since(start))
+    start := time.Now()
+    Example32()
+    pdfjet.PrintDuration("Example_32", time.Since(start))
 }

@@ -32,7 +32,7 @@ public class CalendarMonth : IDrawable {
         DateTime dateTime = new DateTime(year, month, 1, calendar);
         dayOfWeek = (int) calendar.GetDayOfWeek(dateTime);
 
-	    foreach (String day in days) {
+        foreach (String day in days) {
             float w = 2*((float) f1.StringWidth(day));
             if (w > dx) {
                 dx = w;
@@ -101,7 +101,7 @@ public class CalendarMonth : IDrawable {
 
                         page.SetPenWidth(1.5f);
                         page.SetPenColor(Color.blue);
-			            page.DrawEllipse(
+                        page.DrawEllipse(
                                 x1 + col*dx + dx/2,
                                 y1 + row*dy + f2.GetBodyHeight(fontSize)/2,
                                 dx/2.5f,

@@ -22,10 +22,10 @@ public class Text : IDrawable {
     private float xText;
     private float yText;
     private float paragraphLeading = 24f;
-	private bool hasBorder = false;
-	private float[] borderColor;
-	private float borderWidth = 0.5f;
-	private String borderPattern = "[] 0";
+    private bool hasBorder = false;
+    private float[] borderColor;
+    private float borderWidth = 0.5f;
+    private String borderPattern = "[] 0";
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -113,7 +113,7 @@ public class Text : IDrawable {
         if (hasBorder) {
             Rect rect = new Rect(x1, y1, width, height);
             rect.SetBorderColor(this.borderColor);
-		    rect.SetBorderWidth(this.borderWidth);
+            rect.SetBorderWidth(this.borderWidth);
             rect.SetBorderPattern(this.borderPattern);
             rect.DrawOn(page);
         }

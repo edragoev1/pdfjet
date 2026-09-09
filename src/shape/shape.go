@@ -7,18 +7,18 @@ package shape
 
 // Constants
 const (
-	Invisible = iota
-	Circle
-	Diamond
-	Box
-	Plus
-	HDash
-	VDash
-	Multiply
-	Star
-	XMark
-	UpArrow
-	DownArrow
-	LeftArrow
-	RightArrow
+    Invisible = iota
+    Circle
+    Diamond
+    Box
+    Plus
+    HDash
+    VDash
+    Multiply
+    Star
+    XMark
+    UpArrow
+    DownArrow
+    LeftArrow
+    RightArrow
 )

@@ -22,7 +22,7 @@ public class Example_08 {
 
         let barcode = Barcode(Barcode.CODE_128, "Hello, World!")
         barcode.setModuleLength(0.75)
-	    // Comment out the line below if you don't want to print the text underneath the barcode.
+        // Comment out the line below if you don't want to print the text underneath the barcode.
         barcode.setFont(f1)
 
         let table = try Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv")

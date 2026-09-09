@@ -661,7 +661,7 @@ final public class Page {
      *              - The next 8 bits represent the green component,
      *              - The least significant 8 bits represent the blue component.
      */
-     public void setPenColor(int color) {
+    public void setPenColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -675,7 +675,7 @@ final public class Page {
      *
      * @param rgbColor An array of three float values for red, green, and blue (0.0f to 1.0f).
      */
-     public void setPenColor(float[] rgbColor) {
+    public void setPenColor(float[] rgbColor) {
         if (rgbColor == null) {
             return; // Early exit if null
         }
@@ -738,7 +738,7 @@ final public class Page {
      * @param y Yellow component (0.0f to 1.0f).
      * @param k Black component (0.0f to 1.0f).
      */
-     public void setPenColorCMYK(float c, float m, float y, float k) {
+    public void setPenColorCMYK(float c, float m, float y, float k) {
         append(c);
         append(' ');
         append(m);
@@ -1005,7 +1005,7 @@ final public class Page {
      * @see Point
      * @see PathOperator
      */
-     public void drawPath(List<Point> path, String pathOperator) throws Exception {
+    public void drawPath(List<Point> path, String pathOperator) throws Exception {
         if (path.size() < 2) {
             throw new Exception("The Path object must contain at least 2 points");
         }

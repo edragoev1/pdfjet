@@ -21,10 +21,10 @@ public class Text implements Drawable {
     private float xText;
     private float yText;
     private float paragraphLeading = 24f;
-	private boolean hasBorder = false;
-	private float[] borderColor;
-	private float borderWidth = 0.5f;
-	private String borderPattern = "[] 0";
+    private boolean hasBorder = false;
+    private float[] borderColor;
+    private float borderWidth = 0.5f;
+    private String borderPattern = "[] 0";
 
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -108,7 +108,7 @@ public class Text implements Drawable {
         if (hasBorder) {
             Rect rect = new Rect(x1, y1, width, height);
             rect.setBorderColor(this.borderColor);
-		    rect.setBorderWidth(this.borderWidth);
+            rect.setBorderWidth(this.borderWidth);
             rect.setBorderPattern(this.borderPattern);
             rect.drawOn(page);
         }

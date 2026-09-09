@@ -1,9 +1,9 @@
 package pdfjet
 
 import (
-	"math"
+    "math"
 
-	"github.com/edragoev1/pdfjet/src/color"
+    "github.com/edragoev1/pdfjet/src/color"
 )
 
 /**
@@ -14,210 +14,210 @@ import (
  */
 
 type Arc struct {
-	cx, cy, rx, ry    float32
-	startAngle        float32
-	sweepDegrees      float32
-	rotateDegrees     float32
-	fillColor         [3]float32
-	hasFillColor      bool
-	strokeColor       [3]float32
-	hasStrokeColor    bool
-	strokeWidth       float32
-	strokeDashPattern string // = "[] 0";
-	language          string
-	actualText        string // = Single.space;
-	altDescription    string // = Single.space;
-	line              *Line
+    cx, cy, rx, ry    float32
+    startAngle        float32
+    sweepDegrees      float32
+    rotateDegrees     float32
+    fillColor         [3]float32
+    hasFillColor      bool
+    strokeColor       [3]float32
+    hasStrokeColor    bool
+    strokeWidth       float32
+    strokeDashPattern string // = "[] 0";
+    language          string
+    actualText        string // = Single.space;
+    altDescription    string // = Single.space;
+    line              *Line
 }
 
 func (arc *Arc) SetPosition(cx, cy float32) {
-	arc.SetCenterXY(cx, cy)
+    arc.SetCenterXY(cx, cy)
 }
 
 func (arc *Arc) SetStartPointToEndOf(line *Line) *Arc {
-	arc.line = line
-	return arc
+    arc.line = line
+    return arc
 }
 func (arc *Arc) SetCenterXY(cx, cy float32) *Arc {
-	arc.cx = cx
-	arc.cy = cy
-	return arc
+    arc.cx = cx
+    arc.cy = cy
+    return arc
 }
 
 func (arc *Arc) SetRadiusX(rx float32) *Arc {
-	arc.rx = rx
-	return arc
+    arc.rx = rx
+    return arc
 }
 
 func (arc *Arc) SetRadiusY(ry float32) *Arc {
-	arc.ry = ry
-	return arc
+    arc.ry = ry
+    return arc
 }
 
 func (arc *Arc) SetRadius(r float32) *Arc {
-	arc.rx = r
-	arc.ry = r
-	return arc
+    arc.rx = r
+    arc.ry = r
+    return arc
 }
 
 func (arc *Arc) SetStartAngle(angle float32) *Arc {
-	arc.startAngle = angle
-	return arc
+    arc.startAngle = angle
+    return arc
 }
 
 func (arc *Arc) SetSweepDegreesCW(sweepDegrees float32) *Arc {
-	arc.sweepDegrees = sweepDegrees
-	return arc
+    arc.sweepDegrees = sweepDegrees
+    return arc
 }
 
 func (arc *Arc) SetSweepDegreesCCW(sweepDegrees float32) *Arc {
-	arc.sweepDegrees = -sweepDegrees
-	return arc
+    arc.sweepDegrees = -sweepDegrees
+    return arc
 }
 
 func (arc *Arc) SetStrokeDashPattern(strokeDashPattern string) *Arc {
-	arc.strokeDashPattern = strokeDashPattern
-	return arc
+    arc.strokeDashPattern = strokeDashPattern
+    return arc
 }
 
 func (arc *Arc) SetStrokeWidth(width float32) *Arc {
-	arc.strokeWidth = width
-	return arc
+    arc.strokeWidth = width
+    return arc
 }
 
 func (arc *Arc) SetStrokeColor(color int32) *Arc {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	arc.SetStrokeColorRGB(r, g, b)
-	return arc
+    r := float32((color>>16)&0xff) / 255.0
+    g := float32((color>>8)&0xff) / 255.0
+    b := float32((color)&0xff) / 255.0
+    arc.SetStrokeColorRGB(r, g, b)
+    return arc
 }
 
 func (arc *Arc) SetStrokeColorRGB(r, g, b float32) *Arc {
-	arc.strokeColor = [3]float32{r, g, b}
-	arc.hasStrokeColor = true
-	return arc
+    arc.strokeColor = [3]float32{r, g, b}
+    arc.hasStrokeColor = true
+    return arc
 }
 
 func (arc *Arc) SetFillColor(color int32) *Arc {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	arc.SetFillColorRGB(r, g, b)
-	return arc
+    r := float32((color>>16)&0xff) / 255.0
+    g := float32((color>>8)&0xff) / 255.0
+    b := float32((color)&0xff) / 255.0
+    arc.SetFillColorRGB(r, g, b)
+    return arc
 }
 
 func (arc *Arc) SetFillColorRGB(r, g, b float32) *Arc {
-	arc.fillColor = [3]float32{r, g, b}
-	arc.hasFillColor = true
-	return arc
+    arc.fillColor = [3]float32{r, g, b}
+    arc.hasFillColor = true
+    return arc
 }
 
 func (arc *Arc) SetFillColorRGBArray(rgbColor [3]float32) *Arc {
-	arc.fillColor = rgbColor
-	return arc
+    arc.fillColor = rgbColor
+    return arc
 }
 
 func (arc *Arc) SetRotateDegreesCW(degrees float32) *Arc {
-	arc.rotateDegrees = -degrees
-	return arc
+    arc.rotateDegrees = -degrees
+    return arc
 }
 
 func (arc *Arc) SetRotateDegreesCWFloat64(degrees float64) *Arc {
-	arc.rotateDegrees = float32(-degrees)
-	return arc
+    arc.rotateDegrees = float32(-degrees)
+    return arc
 }
 
 func (arc *Arc) SetRotateDegreesCCW(degrees float32) *Arc {
-	arc.rotateDegrees = degrees
-	return arc
+    arc.rotateDegrees = degrees
+    return arc
 }
 
 func (arc *Arc) SetRotateDegreesCCWFloat64(degrees float64) *Arc {
-	arc.rotateDegrees = float32(degrees)
-	return arc
+    arc.rotateDegrees = float32(degrees)
+    return arc
 }
 
 func (arc *Arc) SetAltDescription(altDescription string) *Arc {
-	arc.altDescription = altDescription
-	return arc
+    arc.altDescription = altDescription
+    return arc
 }
 
 func (arc *Arc) SetActualText(actualText string) *Arc {
-	arc.actualText = actualText
-	return arc
+    arc.actualText = actualText
+    return arc
 }
 
 func (arc *Arc) SetScaleFactorFloat64(factor float64) *Arc {
-	return arc.SetScaleFactor(float32(factor))
+    return arc.SetScaleFactor(float32(factor))
 }
 
 func (arc *Arc) SetScaleFactor(factor float32) *Arc {
-	arc.rx *= factor
-	arc.ry *= factor
-	return arc
+    arc.rx *= factor
+    arc.ry *= factor
+    return arc
 }
 
 func (arc *Arc) DrawOn(page *Page) []float32 {
-	// If a start point was set, calculate center so arc begins there
-	if arc.line != nil {
-		dx := arc.line.x2 - arc.line.x1
-		dy := arc.line.y2 - arc.line.y1
-		// Normalize and rotate 90° (clockwise perpendicular)
-		invLength := float32(1.0 / math.Sqrt(float64(dx*dx+dy*dy)))
-		nx := -dy * invLength
-		ny := dx * invLength
-		// Adjust direction based on sweep
-		sign := float32(-1.0)
-		if arc.sweepDegrees > 0.0 {
-			sign = float32(1.0)
-		}
-		arc.cx = arc.line.x2 + nx*arc.rx*sign
-		arc.cy = arc.line.y2 + ny*arc.ry*sign
-		arc.startAngle = float32(math.Atan2(
-			float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi))
-	}
+    // If a start point was set, calculate center so arc begins there
+    if arc.line != nil {
+        dx := arc.line.x2 - arc.line.x1
+        dy := arc.line.y2 - arc.line.y1
+        // Normalize and rotate 90° (clockwise perpendicular)
+        invLength := float32(1.0 / math.Sqrt(float64(dx*dx+dy*dy)))
+        nx := -dy * invLength
+        ny := dx * invLength
+        // Adjust direction based on sweep
+        sign := float32(-1.0)
+        if arc.sweepDegrees > 0.0 {
+            sign = float32(1.0)
+        }
+        arc.cx = arc.line.x2 + nx*arc.rx*sign
+        arc.cy = arc.line.y2 + ny*arc.ry*sign
+        arc.startAngle = float32(math.Atan2(
+            float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi))
+    }
 
-	page.AddBMC("P", arc.language, arc.actualText, arc.altDescription)
+    page.AddBMC("P", arc.language, arc.actualText, arc.altDescription)
 
-	page.SaveGraphicsState()
+    page.SaveGraphicsState()
 
-	centerX := arc.cx
-	centerY := page.height - arc.cy
+    centerX := arc.cx
+    centerY := page.height - arc.cy
 
-	page.RotateAroundCenter(centerX, centerY, arc.rotateDegrees)
-	arcPoints := page.DrawArc(
-		arc.cx,
-		arc.cy,
-		arc.rx,
-		arc.ry,
-		arc.startAngle,
-		arc.sweepDegrees)
+    page.RotateAroundCenter(centerX, centerY, arc.rotateDegrees)
+    arcPoints := page.DrawArc(
+        arc.cx,
+        arc.cy,
+        arc.rx,
+        arc.ry,
+        arc.startAngle,
+        arc.sweepDegrees)
 
-	if arc.hasStrokeColor == true && arc.strokeDashPattern != "" {
-		page.SetStrokeDashPattern(arc.strokeDashPattern)
-	}
+    if arc.hasStrokeColor == true && arc.strokeDashPattern != "" {
+        page.SetStrokeDashPattern(arc.strokeDashPattern)
+    }
 
-	if arc.hasFillColor == true && arc.hasStrokeColor == true {
-		page.SetBrushColorRGB(arc.fillColor)
-		page.SetPenWidth(arc.strokeWidth)
-		page.SetPenColorRGB(arc.strokeColor)
-		page.appendString("B\n")
-	} else if arc.hasFillColor == true && arc.hasStrokeColor == false {
-		page.SetBrushColorRGB(arc.fillColor)
-		page.appendString("f\n")
-	} else if arc.hasFillColor == false && arc.hasStrokeColor == true {
-		page.SetPenWidth(arc.strokeWidth)
-		page.SetPenColorRGB(arc.strokeColor)
-		page.appendString("S\n")
-	} else { // Both arc.brushColor == false and arc.strokeColor == false
-		page.SetPenWidth(0.0)
-		page.SetPenColor(color.Black)
-		page.appendString("S\n")
-	}
+    if arc.hasFillColor == true && arc.hasStrokeColor == true {
+        page.SetBrushColorRGB(arc.fillColor)
+        page.SetPenWidth(arc.strokeWidth)
+        page.SetPenColorRGB(arc.strokeColor)
+        page.appendString("B\n")
+    } else if arc.hasFillColor == true && arc.hasStrokeColor == false {
+        page.SetBrushColorRGB(arc.fillColor)
+        page.appendString("f\n")
+    } else if arc.hasFillColor == false && arc.hasStrokeColor == true {
+        page.SetPenWidth(arc.strokeWidth)
+        page.SetPenColorRGB(arc.strokeColor)
+        page.appendString("S\n")
+    } else { // Both arc.brushColor == false and arc.strokeColor == false
+        page.SetPenWidth(0.0)
+        page.SetPenColor(color.Black)
+        page.appendString("S\n")
+    }
 
-	page.RestoreGraphicsState()
-	page.AddEMC()
+    page.RestoreGraphicsState()
+    page.AddEMC()
 
-	return arcPoints
+    return arcPoints
 }

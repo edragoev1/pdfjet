@@ -7,7 +7,7 @@ package mark
 
 // Constants used to specify the check mark in CheckBox.
 const (
-	UnCheck = 0
-	Check   = 1
-	X       = 2
+    UnCheck = 0
+    Check   = 1
+    X       = 2
 )

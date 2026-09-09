@@ -1,54 +1,54 @@
 package main
 
 import (
-	"time"
+    "time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/letter"
+    pdfjet "github.com/edragoev1/pdfjet/src"
+    "github.com/edragoev1/pdfjet/src/corefont"
+    "github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example45 uses the Form and Field classes with the core fonts.
 func Example45() {
-	pdf := pdfjet.NewPDFFile("Example_45.pdf")
+    pdf := pdfjet.NewPDFFile("Example_45.pdf")
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+    f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+    f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+    page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	var w float32 = 500.0
+    var w float32 = 500.0
 
-	fields := make([]*pdfjet.Field, 0)
-	fields = append(fields, pdfjet.NewField(0.0, "Company", "Smart Widgets Construction Inc."))
-	fields = append(fields, pdfjet.NewField(0.0, "Street Number", "120"))
-	fields = append(fields, pdfjet.NewField(w/8, "Street Name", "Oak"))
-	fields = append(fields, pdfjet.NewField(5*w/8, "Street Type", "Street"))
-	fields = append(fields, pdfjet.NewField(6*w/8, "Direction", "West"))
-	fields = append(fields, pdfjet.NewField(7*w/8, "Suite/Floor/Apt.", "8W"))
-	fields = append(fields, pdfjet.NewField(0.0, "City/Town", "Toronto"))
-	fields = append(fields, pdfjet.NewField(w/2, "Province", "Ontario"))
-	fields = append(fields, pdfjet.NewField(7*w/8, "Postal Code", "M5M 2N2"))
-	fields = append(fields, pdfjet.NewField(0.0, "Telephone Number", "(416) 331-2245"))
-	fields = append(fields, pdfjet.NewField(w/4, "Fax (if applicable)", "(416) 124-9879"))
-	fields = append(fields, pdfjet.NewField(w/2, "Email", "jsmith12345@gmail.ca"))
-	fields = append(fields, pdfjet.NewField(0.0, "Other Information", "Hello, World!"))
-	fields = append(fields, pdfjet.NewField(0.0, "", "This is a test."))
+    fields := make([]*pdfjet.Field, 0)
+    fields = append(fields, pdfjet.NewField(0.0, "Company", "Smart Widgets Construction Inc."))
+    fields = append(fields, pdfjet.NewField(0.0, "Street Number", "120"))
+    fields = append(fields, pdfjet.NewField(w/8, "Street Name", "Oak"))
+    fields = append(fields, pdfjet.NewField(5*w/8, "Street Type", "Street"))
+    fields = append(fields, pdfjet.NewField(6*w/8, "Direction", "West"))
+    fields = append(fields, pdfjet.NewField(7*w/8, "Suite/Floor/Apt.", "8W"))
+    fields = append(fields, pdfjet.NewField(0.0, "City/Town", "Toronto"))
+    fields = append(fields, pdfjet.NewField(w/2, "Province", "Ontario"))
+    fields = append(fields, pdfjet.NewField(7*w/8, "Postal Code", "M5M 2N2"))
+    fields = append(fields, pdfjet.NewField(0.0, "Telephone Number", "(416) 331-2245"))
+    fields = append(fields, pdfjet.NewField(w/4, "Fax (if applicable)", "(416) 124-9879"))
+    fields = append(fields, pdfjet.NewField(w/2, "Email", "jsmith12345@gmail.ca"))
+    fields = append(fields, pdfjet.NewField(0.0, "Other Information", "Hello, World!"))
+    fields = append(fields, pdfjet.NewField(0.0, "", "This is a test."))
 
-	pdfjet.NewForm(fields).
-		SetLabelFont(f1).
-		SetLabelFontSize(8.0).
-		SetValueFont(f2).
-		SetValueFontSize(10.0).
-		SetLocation(50.0, 50.0).
-		SetFormWidth(w).
-		DrawOn(page)
+    pdfjet.NewForm(fields).
+        SetLabelFont(f1).
+        SetLabelFontSize(8.0).
+        SetValueFont(f2).
+        SetValueFontSize(10.0).
+        SetLocation(50.0, 50.0).
+        SetFormWidth(w).
+        DrawOn(page)
 
-	pdf.Complete()
+    pdf.Complete()
 }
 
 func main() {
-	start := time.Now()
-	Example45()
-	pdfjet.PrintDuration("Example_45", time.Since(start))
+    start := time.Now()
+    Example45()
+    pdfjet.PrintDuration("Example_45", time.Since(start))
 }

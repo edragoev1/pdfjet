@@ -8,77 +8,77 @@
 package pdfjet
 
 import (
-	"math"
+    "math"
 
-	"github.com/edragoev1/pdfjet/src/effect"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+    "github.com/edragoev1/pdfjet/src/effect"
+    "github.com/edragoev1/pdfjet/src/single"
+    "github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // TextLine is used to create text line objects.
 type TextLine struct {
-	text               string
-	x, y               float32
-	font, fallbackFont *Font
-	fontSize           float32
-	isLastToken        bool
-	xOffset            float32
-	underline          bool
-	strikeout          bool
-	degrees            int
-	color              [3]float32
-	lineColor          [3]float32
-	colorMap           map[string]int32
-	textEffect         int
-	verticalOffset     float32
-	uri, key           string
-	language           string
-	altDescription     string
-	actualText         string
-	uriLanguage        string
-	uriActualText      string
-	uriAltDescription  string
-	structureType      string
+    text               string
+    x, y               float32
+    font, fallbackFont *Font
+    fontSize           float32
+    isLastToken        bool
+    xOffset            float32
+    underline          bool
+    strikeout          bool
+    degrees            int
+    color              [3]float32
+    lineColor          [3]float32
+    colorMap           map[string]int32
+    textEffect         int
+    verticalOffset     float32
+    uri, key           string
+    language           string
+    altDescription     string
+    actualText         string
+    uriLanguage        string
+    uriActualText      string
+    uriAltDescription  string
+    structureType      string
 }
 
 // NewTextLine is constructor for creating text line objects.
 // @param font the font to use.
 // @param text the text.
 func NewTextLine(font *Font, text string) *TextLine {
-	textLine := new(TextLine)
-	textLine.font = font
-	textLine.fallbackFont = font
-	textLine.fontSize = font.size
-	textLine.text = text
-	textLine.isLastToken = false
-	textLine.color = [3]float32{0.0, 0.0, 0.0}
-	textLine.textEffect = effect.Normal
-	textLine.verticalOffset = 0.0
-	textLine.altDescription = text
-	textLine.actualText = text
-	textLine.structureType = structtype.P
-	return textLine
+    textLine := new(TextLine)
+    textLine.font = font
+    textLine.fallbackFont = font
+    textLine.fontSize = font.size
+    textLine.text = text
+    textLine.isLastToken = false
+    textLine.color = [3]float32{0.0, 0.0, 0.0}
+    textLine.textEffect = effect.Normal
+    textLine.verticalOffset = 0.0
+    textLine.altDescription = text
+    textLine.actualText = text
+    textLine.structureType = structtype.P
+    return textLine
 }
 
 // NewEmptyTextLine is constructor for creating empty text line objects.
 // @param font the font to use.
 func NewEmptyTextLine(font *Font) *TextLine {
-	return NewTextLine(font, "")
+    return NewTextLine(font, "")
 }
 
 // SetText sets the text.
 // @param text the text.
 // @return this TextLine.
 func (textLine *TextLine) SetText(text string) *TextLine {
-	textLine.text = text
-	textLine.altDescription = text
-	textLine.actualText = text
-	return textLine
+    textLine.text = text
+    textLine.altDescription = text
+    textLine.actualText = text
+    return textLine
 }
 
 // GetText returns the text.
 func (textLine *TextLine) GetText() string {
-	return textLine.text
+    return textLine.text
 }
 
 // SetLocation sets the location where this text line will be drawn on the page.
@@ -86,9 +86,9 @@ func (textLine *TextLine) GetText() string {
 // @param y the y coordinate of the text line.
 // @return this TextLine.
 func (textLine *TextLine) SetLocation(x, y float32) *TextLine {
-	textLine.x = x
-	textLine.y = y
-	return textLine
+    textLine.x = x
+    textLine.y = y
+    return textLine
 }
 
 // SetPosition sets the location where this text line will be drawn on the page.
@@ -96,173 +96,173 @@ func (textLine *TextLine) SetLocation(x, y float32) *TextLine {
 // @param y the y coordinate of the text line.
 // @return this TextLine.
 func (textLine *TextLine) SetPosition(x, y float32) {
-	textLine.x = x
-	textLine.y = y
+    textLine.x = x
+    textLine.y = y
 }
 
 // SetFont sets the font to use for this text line.
 // @param font the font to use.
 // @return this TextLine.
 func (textLine *TextLine) SetFont(font *Font) *TextLine {
-	textLine.font = font
-	return textLine
+    textLine.font = font
+    return textLine
 }
 
 // GetFont gets the font to use for this text line.
 // @return font the font to use.
 func (textLine *TextLine) GetFont() *Font {
-	return textLine.font
+    return textLine.font
 }
 
 // SetFontSize sets the font size to use for this text line.
 // @param fontSize the fontSize to use.
 // @return this TextLine.
 func (textLine *TextLine) SetFontSize(fontSize float32) *TextLine {
-	textLine.fontSize = fontSize
-	return textLine
+    textLine.fontSize = fontSize
+    return textLine
 }
 
 func (textLine *TextLine) GetFontSize() float32 {
-	return textLine.fontSize
+    return textLine.fontSize
 }
 
 // SetFallbackFont sets the fallback font.
 // @param fallbackFont the fallback font.
 // @return this TextLine.
 func (textLine *TextLine) SetFallbackFont(fallbackFont *Font) *TextLine {
-	textLine.fallbackFont = fallbackFont
-	return textLine
+    textLine.fallbackFont = fallbackFont
+    return textLine
 }
 
 // SetFallbackFontSize sets the fallback font size to use for this text line.
 // @param fallbackFontSize the fallback font size.
 // @return this TextLine.
 func (textLine *TextLine) SetFallbackFontSize(fallbackFontSize float32) *TextLine {
-	textLine.fallbackFont.SetSize(fallbackFontSize)
-	return textLine
+    textLine.fallbackFont.SetSize(fallbackFontSize)
+    return textLine
 }
 
 // GetFallbackFont returns the fallback font.
 // @return the fallback font.
 func (textLine *TextLine) GetFallbackFont() *Font {
-	return textLine.fallbackFont
+    return textLine.fallbackFont
 }
 
 // SetColor sets the color for this text line.
 // @param color the color is specified as an integer.
 // @return this TextLine.
 func (textLine *TextLine) SetColor(color int32) *TextLine {
-	return textLine.SetTextColor(color)
+    return textLine.SetTextColor(color)
 }
 
 func (textLine *TextLine) SetTextColor(color int32) *TextLine {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	textLine.color = [3]float32{r, g, b}
-	return textLine
+    r := float32((color>>16)&0xff) / 255.0
+    g := float32((color>>8)&0xff) / 255.0
+    b := float32((color)&0xff) / 255.0
+    textLine.color = [3]float32{r, g, b}
+    return textLine
 }
 
 func (textLine *TextLine) SetTextColorRGB(color [3]float32) *TextLine {
-	textLine.color = color
-	return textLine
+    textLine.color = color
+    return textLine
 }
 
 // SetLineColor sets the color of the underline and strikeout lines.
 // @param color the color is specified as an integer.
 // @return this TextLine.
 func (textLine *TextLine) SetLineColor(color int32) *TextLine {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	textLine.lineColor = [3]float32{r, g, b}
-	return textLine
+    r := float32((color>>16)&0xff) / 255.0
+    g := float32((color>>8)&0xff) / 255.0
+    b := float32((color)&0xff) / 255.0
+    textLine.lineColor = [3]float32{r, g, b}
+    return textLine
 }
 
 // SetLineColorRGB sets the color of the underline and strikeout lines.
 // @param color the color as an RGB array.
 // @return this TextLine.
 func (textLine *TextLine) SetLineColorRGB(color [3]float32) *TextLine {
-	textLine.lineColor = color
-	return textLine
+    textLine.lineColor = color
+    return textLine
 }
 
 // GetLineColor returns the color of the underline and strikeout lines.
 func (textLine *TextLine) GetLineColor() [3]float32 {
-	return textLine.lineColor
+    return textLine.lineColor
 }
 
 // SetColorRGB sets the penColor color.
 // @param color the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
 // @return this TextLine.
 //func (textLine *TextLine) SetColorRGB(color []int32) *TextLine {
-//	textLine.color = color[0]<<16 | color[1]<<8 | color[2]
-//	return textLine
+//  textLine.color = color[0]<<16 | color[1]<<8 | color[2]
+//  return textLine
 //}
 
 // GetTextColor returns the text line color.
 // @return the text line color.
 func (textLine *TextLine) GetTextColor() [3]float32 {
-	return textLine.color
+    return textLine.color
 }
 
 // GetDestinationX returns the x coordinate of the destination.
 // @return the x coordinate of the destination.
 func (textLine *TextLine) GetDestinationX() float32 {
-	return textLine.x
+    return textLine.x
 }
 
 // GetDestinationY returns the y coordinate of the destination.
 // @return the y coordinate of the destination.
 func (textLine *TextLine) GetDestinationY() float32 {
-	return textLine.y - textLine.font.GetSize()
+    return textLine.y - textLine.font.GetSize()
 }
 
 // GetWidth returns the width of this TextLine.
 // @return the width.
 func (textLine *TextLine) GetWidth() float32 {
-	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+    return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 }
 
 // GetStringWidth returns the width of this TextLine.
 // @return the width.
 func (textLine *TextLine) GetStringWidth(text string) float32 {
-	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, text)
+    return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, text)
 }
 
 // GetHeight returns the height of this TextLine.
 // @return the height.
 func (textLine *TextLine) GetHeight() float32 {
-	// println(textLine.fontSize, textLine.font.GetBodyHeight(textLine.fontSize))
-	return textLine.font.GetBodyHeight(textLine.fontSize)
+    // println(textLine.fontSize, textLine.font.GetBodyHeight(textLine.fontSize))
+    return textLine.font.GetBodyHeight(textLine.fontSize)
 }
 
 // SetURIAction sets the URI for the "click text line" action.
 // @param uri the URI
 // @return this TextLine.
 func (textLine *TextLine) SetURIAction(uri string) *TextLine {
-	textLine.uri = uri
-	return textLine
+    textLine.uri = uri
+    return textLine
 }
 
 // GetURIAction returns the action URI.
 // @return the action URI.
 func (textLine *TextLine) GetURIAction() string {
-	return textLine.uri
+    return textLine.uri
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
 // @return this TextLine.
 func (textLine *TextLine) SetGoToAction(key string) *TextLine {
-	textLine.key = key
-	return textLine
+    textLine.key = key
+    return textLine
 }
 
 // GetGoToAction returns the GoTo action string.
 // @return the GoTo action string.
 func (textLine *TextLine) GetGoToAction() string {
-	return textLine.key
+    return textLine.key
 }
 
 // SetUnderline sets the underline variable.
@@ -270,14 +270,14 @@ func (textLine *TextLine) GetGoToAction() string {
 // @param underline the underline flag.
 // @return this TextLine.
 func (textLine *TextLine) SetUnderline(underline bool) *TextLine {
-	textLine.underline = underline
-	return textLine
+    textLine.underline = underline
+    return textLine
 }
 
 // GetUnderline returns the underline flag.
 // @return the underline flag.
 func (textLine *TextLine) GetUnderline() bool {
-	return textLine.underline
+    return textLine.underline
 }
 
 // SetStrikeout sets the strike variable.
@@ -285,227 +285,227 @@ func (textLine *TextLine) GetUnderline() bool {
 // @param strikeout the strikeout flag.
 // @return this TextLine.
 func (textLine *TextLine) SetStrikeout(strikeout bool) *TextLine {
-	textLine.strikeout = strikeout
-	return textLine
+    textLine.strikeout = strikeout
+    return textLine
 }
 
 // GetStrikeout returns the strikeout flag.
 // @return the strikeout flag.
 func (textLine *TextLine) GetStrikeout() bool {
-	return textLine.strikeout
+    return textLine.strikeout
 }
 
 // SetTextDirection sets the direction in which to draw the text.
 // @param degrees the number of degrees.
 // @return this TextLine.
 func (textLine *TextLine) SetTextDirection(degrees int) *TextLine {
-	textLine.degrees = degrees
-	return textLine
+    textLine.degrees = degrees
+    return textLine
 }
 
 // GetTextDirection returns the text direction.
 // @return the text direction.
 func (textLine *TextLine) GetTextDirection() int {
-	return textLine.degrees
+    return textLine.degrees
 }
 
 // SetTextEffect sets the text effect.
 // @param textEffect Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
 // @return this TextLine.
 func (textLine *TextLine) SetTextEffect(textEffect int) *TextLine {
-	textLine.textEffect = textEffect
-	if textEffect == effect.Normal {
-		textLine.verticalOffset = 0.0
-	} else if textEffect == effect.Superscript {
-		textLine.verticalOffset = -textLine.font.GetBodyHeight(textLine.fontSize) / 2.0
-	} else if textEffect == effect.Subscript {
-		textLine.verticalOffset = textLine.font.GetBodyHeight(textLine.fontSize) / 3.0
-	}
-	return textLine
+    textLine.textEffect = textEffect
+    if textEffect == effect.Normal {
+        textLine.verticalOffset = 0.0
+    } else if textEffect == effect.Superscript {
+        textLine.verticalOffset = -textLine.font.GetBodyHeight(textLine.fontSize) / 2.0
+    } else if textEffect == effect.Subscript {
+        textLine.verticalOffset = textLine.font.GetBodyHeight(textLine.fontSize) / 3.0
+    }
+    return textLine
 }
 
 // GetTextEffect returns the text effect.
 // @return the text effect.
 func (textLine *TextLine) GetTextEffect() int {
-	return textLine.textEffect
+    return textLine.textEffect
 }
 
 // SetVerticalOffset sets the vertical offset of the text.
 // @param verticalOffset the vertical offset.
 // @return this TextLine.
 func (textLine *TextLine) SetVerticalOffset(verticalOffset float32) *TextLine {
-	textLine.verticalOffset = verticalOffset
-	return textLine
+    textLine.verticalOffset = verticalOffset
+    return textLine
 }
 
 // GetVerticalOffset returns the vertical text offset.
 // @return the vertical text offset.
 func (textLine *TextLine) GetVerticalOffset() float32 {
-	return textLine.verticalOffset
+    return textLine.verticalOffset
 }
 
 // SetLanguage sets the language.
 func (textLine *TextLine) SetLanguage(language string) *TextLine {
-	textLine.language = language
-	return textLine
+    textLine.language = language
+    return textLine
 }
 
 // GetLanguage gets the language.
 func (textLine *TextLine) GetLanguage() string {
-	return textLine.language
+    return textLine.language
 }
 
 // SetAltDescription sets the alternate description of this text line.
 // @param altDescription the alternate description of the text line.
 // @return this TextLine.
 func (textLine *TextLine) SetAltDescription(altDescription string) *TextLine {
-	textLine.altDescription = altDescription
-	return textLine
+    textLine.altDescription = altDescription
+    return textLine
 }
 
 // GetAltDescription gets the alternate description of this text line.
 func (textLine *TextLine) GetAltDescription() string {
-	return textLine.altDescription
+    return textLine.altDescription
 }
 
 // SetActualText sets the actual text for this text line.
 // @param actualText the actual text for the text line.
 // @return this TextLine.
 func (textLine *TextLine) SetActualText(actualText string) *TextLine {
-	textLine.actualText = actualText
-	return textLine
+    textLine.actualText = actualText
+    return textLine
 }
 
 // GetActualText gets the actual text.
 func (textLine *TextLine) GetActualText() string {
-	return textLine.actualText
+    return textLine.actualText
 }
 
 // SetURILanguage sets the URI language.
 func (textLine *TextLine) SetURILanguage(uriLanguage string) *TextLine {
-	textLine.uriLanguage = uriLanguage
-	return textLine
+    textLine.uriLanguage = uriLanguage
+    return textLine
 }
 
 // SetURIAltDescription sets the URI alternative description.
 func (textLine *TextLine) SetURIAltDescription(uriAltDescription string) *TextLine {
-	textLine.uriAltDescription = uriAltDescription
-	return textLine
+    textLine.uriAltDescription = uriAltDescription
+    return textLine
 }
 
 // SetURIActualText sets the URI actual text.
 func (textLine *TextLine) SetURIActualText(uriActualText string) *TextLine {
-	textLine.uriActualText = uriActualText
-	return textLine
+    textLine.uriActualText = uriActualText
+    return textLine
 }
 
 // SetStructureType sets the type of the structure.
 func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
-	textLine.structureType = structureType
-	return textLine
+    textLine.structureType = structureType
+    return textLine
 }
 
 func (textLine *TextLine) SetColorMap(colorMap map[string]int32) {
-	textLine.colorMap = colorMap
+    textLine.colorMap = colorMap
 }
 
 func (textLine *TextLine) GetColorMap() map[string]int32 {
-	return textLine.colorMap
+    return textLine.colorMap
 }
 
 // DrawOn draws this text line on the specified page if the draw parameter is true.
 // @param page the page to draw this text line on.
 // @param draw if draw is false - no action is performed.
 func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
-	if page == nil || textLine.text == "" {
-		return [2]float32{textLine.x, textLine.y}
-	}
+    if page == nil || textLine.text == "" {
+        return [2]float32{textLine.x, textLine.y}
+    }
 
-	page.SetTextDirection(textLine.degrees)
-	page.SetBrushColorRGB(textLine.color)
-	page.AddBMC(textLine.structureType, textLine.language, textLine.text, textLine.altDescription)
-	page.DrawStringUsingColorMap(
-		textLine.font,
-		textLine.fallbackFont,
-		textLine.fontSize,
-		textLine.text,
-		textLine.x,
-		textLine.y+textLine.verticalOffset,
-		textLine.color,
-		textLine.colorMap)
-	page.AddEMC()
+    page.SetTextDirection(textLine.degrees)
+    page.SetBrushColorRGB(textLine.color)
+    page.AddBMC(textLine.structureType, textLine.language, textLine.text, textLine.altDescription)
+    page.DrawStringUsingColorMap(
+        textLine.font,
+        textLine.fallbackFont,
+        textLine.fontSize,
+        textLine.text,
+        textLine.x,
+        textLine.y+textLine.verticalOffset,
+        textLine.color,
+        textLine.colorMap)
+    page.AddEMC()
 
-	radians := math.Pi * float64(textLine.degrees) / 180.0
-	if textLine.underline {
-		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
-		page.SetPenColorRGB(textLine.lineColor)
-		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
-		if textLine.isLastToken {
-			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
-		}
-		underlinePosition := textLine.font.GetUnderlinePosition(textLine.fontSize)
-		xAdjust := underlinePosition * float32(math.Sin(radians))
-		yAdjust := underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
-		x2 := textLine.x + lineLength*float32(math.Cos(radians))
-		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Underlined text: "+textLine.text)
-		page.MoveTo(textLine.x+xAdjust, textLine.y+yAdjust)
-		page.LineTo(x2+xAdjust, y2+yAdjust)
-		page.StrokePath()
-		page.AddEMC()
-	}
+    radians := math.Pi * float64(textLine.degrees) / 180.0
+    if textLine.underline {
+        page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
+        page.SetPenColorRGB(textLine.lineColor)
+        lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+        if textLine.isLastToken {
+            lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
+        }
+        underlinePosition := textLine.font.GetUnderlinePosition(textLine.fontSize)
+        xAdjust := underlinePosition * float32(math.Sin(radians))
+        yAdjust := underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
+        x2 := textLine.x + lineLength*float32(math.Cos(radians))
+        y2 := textLine.y - lineLength*float32(math.Sin(radians))
+        page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Underlined text: "+textLine.text)
+        page.MoveTo(textLine.x+xAdjust, textLine.y+yAdjust)
+        page.LineTo(x2+xAdjust, y2+yAdjust)
+        page.StrokePath()
+        page.AddEMC()
+    }
 
-	if textLine.strikeout {
-		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
-		page.SetPenColorRGB(textLine.lineColor)
-		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
-		if textLine.isLastToken {
-			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
-		}
-		bodyHeight := textLine.font.GetBodyHeight(textLine.fontSize)
-		xAdjust := (bodyHeight / 4.0) * float32(math.Sin(radians))
-		yAdjust := (bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
-		x2 := textLine.x + lineLength*float32(math.Cos(radians))
-		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Strikethrough text: "+textLine.text)
-		page.MoveTo(textLine.x-xAdjust, textLine.y-yAdjust)
-		page.LineTo(x2-xAdjust, y2-yAdjust)
-		page.StrokePath()
-		page.AddEMC()
-	}
+    if textLine.strikeout {
+        page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
+        page.SetPenColorRGB(textLine.lineColor)
+        lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+        if textLine.isLastToken {
+            lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
+        }
+        bodyHeight := textLine.font.GetBodyHeight(textLine.fontSize)
+        xAdjust := (bodyHeight / 4.0) * float32(math.Sin(radians))
+        yAdjust := (bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
+        x2 := textLine.x + lineLength*float32(math.Cos(radians))
+        y2 := textLine.y - lineLength*float32(math.Sin(radians))
+        page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Strikethrough text: "+textLine.text)
+        page.MoveTo(textLine.x-xAdjust, textLine.y-yAdjust)
+        page.LineTo(x2-xAdjust, y2-yAdjust)
+        page.StrokePath()
+        page.AddEMC()
+    }
 
-	if textLine.uri != "" || textLine.key != "" {
-		page.AddAnnotation(&Annotation{
-			annotationType: AnnotationLink,
-			x1:             textLine.x,
-			y1:             (textLine.y + textLine.verticalOffset) - textLine.font.GetAscent(textLine.fontSize),
-			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
-			y2:             (textLine.y + textLine.verticalOffset) + textLine.font.GetDescent(textLine.fontSize),
-			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
-			transparency:   0.0,
-			title:          "",
-			contents:       "",
-			uri:            textLine.uri,
-			key:            textLine.key, // The destination name
-			language:       textLine.uriLanguage,
-			actualText:     textLine.uriActualText,
-			altDescription: textLine.uriAltDescription,
-		})
-	}
+    if textLine.uri != "" || textLine.key != "" {
+        page.AddAnnotation(&Annotation{
+            annotationType: AnnotationLink,
+            x1:             textLine.x,
+            y1:             (textLine.y + textLine.verticalOffset) - textLine.font.GetAscent(textLine.fontSize),
+            x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
+            y2:             (textLine.y + textLine.verticalOffset) + textLine.font.GetDescent(textLine.fontSize),
+            vertices:       nil,
+            fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+            transparency:   0.0,
+            title:          "",
+            contents:       "",
+            uri:            textLine.uri,
+            key:            textLine.key, // The destination name
+            language:       textLine.uriLanguage,
+            actualText:     textLine.uriActualText,
+            altDescription: textLine.uriAltDescription,
+        })
+    }
 
-	page.SetTextDirection(0)
+    page.SetTextDirection(0)
 
-	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
-	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
-	yMax := math.Max(
-		float64(textLine.y+textLine.verticalOffset),
-		float64(textLine.y+textLine.verticalOffset)-float64(length)*math.Sin(radians))
+    length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+    xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
+    yMax := math.Max(
+        float64(textLine.y+textLine.verticalOffset),
+        float64(textLine.y+textLine.verticalOffset)-float64(length)*math.Sin(radians))
 
-	return [2]float32{float32(xMax), float32(yMax)}
+    return [2]float32{float32(xMax), float32(yMax)}
 }
 
 func (textLine *TextLine) advance(leading float32) float32 {
-	textLine.y += leading
-	return textLine.y
+    textLine.y += leading
+    return textLine.y
 }

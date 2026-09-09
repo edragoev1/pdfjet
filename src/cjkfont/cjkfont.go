@@ -11,15 +11,15 @@ type Font int
 
 // The Chinese, Japanese and Korean fonts.
 const (
-	// AdobeMingStdLight is Chinese (Traditional) font
-	AdobeMingStdLight Font = iota
+    // AdobeMingStdLight is Chinese (Traditional) font
+    AdobeMingStdLight Font = iota
 
-	// STHeitiSCLight is Chinese (Simplified) font
-	STHeitiSCLight
+    // STHeitiSCLight is Chinese (Simplified) font
+    STHeitiSCLight
 
-	// KozMinProVIRegular is Japanese font
-	KozMinProVIRegular
+    // KozMinProVIRegular is Japanese font
+    KozMinProVIRegular
 
-	// AdobeMyungjoStdMedium is Korean font
-	AdobeMyungjoStdMedium
+    // AdobeMyungjoStdMedium is Korean font
+    AdobeMyungjoStdMedium
 )

@@ -23,7 +23,7 @@ public class Example_34 {
 
         Table table = new Table();
         List<List<Cell>> tableData = GetData(
-        		"data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
+                "data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
 
         Point p1 = new Point();
         p1.SetShape(Point.CIRCLE);
@@ -92,7 +92,7 @@ public class Example_34 {
                 cols = line.Split(new Char[] {'\t'});
             } else {
                 throw new Exception(
-                		"Only pipes and tabs can be used as delimiters");
+                        "Only pipes and tabs can be used as delimiters");
             }
             for (int i = 0; i < cols.Length; i++) {
                 String text = cols[i].Trim();

@@ -7,7 +7,7 @@ package device
 
 // Constants
 const (
-	CMYK = "DeviceCMYK"
-	Gray = "DeviceGray"
-	RGB  = "DeviceRGB"
+    CMYK = "DeviceCMYK"
+    Gray = "DeviceGray"
+    RGB  = "DeviceRGB"
 )

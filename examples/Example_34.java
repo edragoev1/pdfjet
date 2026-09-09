@@ -23,7 +23,7 @@ final public class Example_34 {
 
         Table table = new Table();
         List<List<Cell>> tableData = getData(
-        		"data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
+                "data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
 
         Point p1 = new Point();
         p1.setShape(Point.CIRCLE);

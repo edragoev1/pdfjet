@@ -1,124 +1,124 @@
 package main
 
 import (
-	"time"
+    "time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansArabic"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansHebrew"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansThai"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/content"
-	"github.com/edragoev1/pdfjet/src/letter"
+    pdfjet "github.com/edragoev1/pdfjet/src"
+    "github.com/edragoev1/pdfjet/src/IBMPlexSansArabic"
+    "github.com/edragoev1/pdfjet/src/IBMPlexSansHebrew"
+    "github.com/edragoev1/pdfjet/src/IBMPlexSansThai"
+    "github.com/edragoev1/pdfjet/src/color"
+    "github.com/edragoev1/pdfjet/src/content"
+    "github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example27 draws Thai, Hebrew and Arabic text.
 func Example27() {
-	pdf := pdfjet.NewPDFFile("Example_27.pdf")
+    pdf := pdfjet.NewPDFFile("Example_27.pdf")
 
-	// Thai font
-	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
-	f1.SetSize(12.0)
+    // Thai font
+    // f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
+    f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
+    f1.SetSize(12.0)
 
-	// Hebrew font
-	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
-	f2.SetSize(12.0)
+    // Hebrew font
+    // f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
+    f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
+    f2.SetSize(12.0)
 
-	// Arabic font
-	// f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
-	f3.SetSize(12.0)
+    // Arabic font
+    // f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
+    f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
+    f3.SetSize(12.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+    page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
-	textBlock.SetLocation(30.0, 30.0)
-	textBlock.SetWidth(430.0)
-	textBlock.SetBorderColor(color.Blue)
-	textBlock.SetTextPadding(10.0)
-	xy := textBlock.DrawOn(page)
+    textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
+    textBlock.SetLocation(30.0, 30.0)
+    textBlock.SetWidth(430.0)
+    textBlock.SetBorderColor(color.Blue)
+    textBlock.SetTextPadding(10.0)
+    xy := textBlock.DrawOn(page)
 
-	x := float32(570.0)
-	y := xy[1] + 55.0
+    x := float32(570.0)
+    y := xy[1] + 55.0
 
-	str := "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
-	y += 20.0
-	str = pdfjet.ReorderVisually(str)
-	textLine := pdfjet.NewTextLine(f2, str)
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+    str := "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
+    y += 20.0
+    str = pdfjet.ReorderVisually(str)
+    textLine := pdfjet.NewTextLine(f2, str)
+    textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
+    str = pdfjet.ReorderVisually(str)
+    textLine = pdfjet.NewTextLine(f2, str)
+    textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
+    str = pdfjet.ReorderVisually(str)
+    textLine = pdfjet.NewTextLine(f2, str)
+    textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
+    str = pdfjet.ReorderVisually(str)
+    textLine = pdfjet.NewTextLine(f2, str)
+    textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
+    str = pdfjet.ReorderVisually(str)
+    textLine = pdfjet.NewTextLine(f2, str)
+    textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 65.0
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 65.0
+    y += 20.0
+    str = pdfjet.ReorderVisually(
+        "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
+    textLine = pdfjet.NewTextLine(f3, str)
+    textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = pdfjet.ReorderVisually(
+        "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
+    textLine = pdfjet.NewTextLine(f3, str)
+    textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = pdfjet.ReorderVisually(
+        "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
+    textLine = pdfjet.NewTextLine(f3, str)
+    textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"من بيجو وسيتروين ودونغفينغ.")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = pdfjet.ReorderVisually(
+        "من بيجو وسيتروين ودونغفينغ.")
+    textLine = pdfjet.NewTextLine(f3, str)
+    textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
+    y += 20.0
+    str = pdfjet.ReorderVisually(
+        "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
+    textLine = pdfjet.NewTextLine(f3, str)
+    textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+    textLine.DrawOn(page)
 
-	pdf.Complete()
+    pdf.Complete()
 }
 
 func main() {
-	start := time.Now()
-	Example27()
-	pdfjet.PrintDuration("Example_27", time.Since(start))
+    start := time.Now()
+    Example27()
+    pdfjet.PrintDuration("Example_27", time.Since(start))
 }

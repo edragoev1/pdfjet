@@ -1,212 +1,212 @@
 package main
 
 import (
-	"bufio"
-	"log"
-	"os"
-	"strconv"
-	"strings"
-	"time"
+    "bufio"
+    "log"
+    "os"
+    "strconv"
+    "strings"
+    "time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/letter"
-	"github.com/edragoev1/pdfjet/src/shape"
+    pdfjet "github.com/edragoev1/pdfjet/src"
+    "github.com/edragoev1/pdfjet/src/IBMPlexSans"
+    "github.com/edragoev1/pdfjet/src/alignment"
+    "github.com/edragoev1/pdfjet/src/color"
+    "github.com/edragoev1/pdfjet/src/letter"
+    "github.com/edragoev1/pdfjet/src/shape"
 )
 
 // Example09 creates an XY chart with world communications data.
 func Example09() {
-	pdf := pdfjet.NewPDFFile("Example_09.pdf")
+    pdf := pdfjet.NewPDFFile("Example_09.pdf")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f1.SetSize(8.0)
+    f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+    f1.SetSize(8.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(8.0)
+    f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+    f2.SetSize(8.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+    page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	chart := pdfjet.NewChart(f1, f2)
-	chart.SetData(getData("data/world-communications.txt", "|"))
-	chart.SetLocation(70.0, 50.0)
-	chart.SetSize(500.0, 300.0)
-	chart.SetTitle("World View - Communications")
-	chart.SetXAxisTitle("Cell phones per capita")
-	chart.SetYAxisTitle("Internet users % of the population")
-	addTrendLine(chart)
-	chart.DrawOn(page)
+    chart := pdfjet.NewChart(f1, f2)
+    chart.SetData(getData("data/world-communications.txt", "|"))
+    chart.SetLocation(70.0, 50.0)
+    chart.SetSize(500.0, 300.0)
+    chart.SetTitle("World View - Communications")
+    chart.SetXAxisTitle("Cell phones per capita")
+    chart.SetYAxisTitle("Internet users % of the population")
+    addTrendLine(chart)
+    chart.DrawOn(page)
 
-	f1.SetSize(7.0)
-	f2.SetSize(7.0)
-	addTableToChart(page, chart, f1, f2)
+    f1.SetSize(7.0)
+    f2.SetSize(7.0)
+    addTableToChart(page, chart, f1, f2)
 
-	pdf.Complete()
+    pdf.Complete()
 }
 
 // addTrendLine calculates and adds a trend line to the chart.
 func addTrendLine(chart *pdfjet.Chart) {
-	points := chart.GetData()[0]
+    points := chart.GetData()[0]
 
-	m := chart.Slope(points)
-	b := chart.Intercept(points, m)
+    m := chart.Slope(points)
+    b := chart.Intercept(points, m)
 
-	trendLine := make([]*pdfjet.Point, 0)
+    trendLine := make([]*pdfjet.Point, 0)
 
-	x := 0.0
-	y := m*float32(x) + b
-	p1 := pdfjet.NewPoint(float32(x), y)
-	p1.SetDrawPath()
-	p1.SetStrokeColor(color.Blue)
-	p1.SetShape(shape.Invisible)
+    x := 0.0
+    y := m*float32(x) + b
+    p1 := pdfjet.NewPoint(float32(x), y)
+    p1.SetDrawPath()
+    p1.SetStrokeColor(color.Blue)
+    p1.SetShape(shape.Invisible)
 
-	x = 1.5
-	y = m*float32(x) + b
-	p2 := pdfjet.NewPoint(float32(x), y)
-	p2.SetShape(shape.Invisible)
+    x = 1.5
+    y = m*float32(x) + b
+    p2 := pdfjet.NewPoint(float32(x), y)
+    p2.SetShape(shape.Invisible)
 
-	trendLine = append(trendLine, p1)
-	trendLine = append(trendLine, p2)
+    trendLine = append(trendLine, p1)
+    trendLine = append(trendLine, p2)
 
-	chartData := chart.GetData()
-	chartData = append(chartData, trendLine)
-	chart.SetData(chartData)
+    chartData := chart.GetData()
+    chartData = append(chartData, trendLine)
+    chart.SetData(chartData)
 }
 
 // addTableToChart creates and draws a table of the chart data.
 func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font) {
-	table := pdfjet.NewTable()
-	tableData := make([][]*pdfjet.Cell, 0)
-	points := chart.GetData()[0]
+    table := pdfjet.NewTable()
+    tableData := make([][]*pdfjet.Cell, 0)
+    points := chart.GetData()[0]
 
-	for _, point := range points {
-		if point.GetShape() != shape.Circle {
-			tableRow := make([]*pdfjet.Cell, 0)
+    for _, point := range points {
+        if point.GetShape() != shape.Circle {
+            tableRow := make([]*pdfjet.Cell, 0)
 
-			point.SetRadius(2.0)
-			point.SetAlignment(alignment.Left)
+            point.SetRadius(2.0)
+            point.SetAlignment(alignment.Left)
 
-			cell := pdfjet.NewCell(f2, "")
-			cell.SetPoint(point)
-			tableRow = append(tableRow, cell)
+            cell := pdfjet.NewCell(f2, "")
+            cell.SetPoint(point)
+            tableRow = append(tableRow, cell)
 
-			cell = pdfjet.NewCell(f1, point.GetText())
-			tableRow = append(tableRow, cell)
+            cell = pdfjet.NewCell(f1, point.GetText())
+            tableRow = append(tableRow, cell)
 
-			cell = pdfjet.NewCell(f2, point.GetURIAction())
-			tableRow = append(tableRow, cell)
+            cell = pdfjet.NewCell(f2, point.GetURIAction())
+            tableRow = append(tableRow, cell)
 
-			tableData = append(tableData, tableRow)
-		}
-	}
+            tableData = append(tableData, tableRow)
+        }
+    }
 
-	table.SetData(tableData, 0)
-	table.SetColumnWidths()
-	table.SetCellBordersWidth(0.2)
-	table.SetLocation(70.0, 360.0)
-	table.SetColumnWidth(0, 9.0)
-	table.DrawOn(page)
+    table.SetData(tableData, 0)
+    table.SetColumnWidths()
+    table.SetCellBordersWidth(0.2)
+    table.SetLocation(70.0, 360.0)
+    table.SetColumnWidth(0, 9.0)
+    table.DrawOn(page)
 }
 
 // getData reads chart data from a file.
 // format: country|population|...|cellphones|...|internet
 func getData(fileName, delimiter string) [][]*pdfjet.Point {
-	chartData := make([][]*pdfjet.Point, 0)
-	points := make([]*pdfjet.Point, 0)
+    chartData := make([][]*pdfjet.Point, 0)
+    points := make([]*pdfjet.Point, 0)
 
-	file, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+    file, err := os.Open(fileName)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        line := scanner.Text()
 
-		var cols []string
-		if delimiter == "|" {
-			cols = strings.Split(line, "|")
-		} else if delimiter == "\t" {
-			cols = strings.Split(line, "\t")
-		} else {
-			log.Fatal("Only pipes and tabs can be used as delimiters")
-		}
+        var cols []string
+        if delimiter == "|" {
+            cols = strings.Split(line, "|")
+        } else if delimiter == "\t" {
+            cols = strings.Split(line, "\t")
+        } else {
+            log.Fatal("Only pipes and tabs can be used as delimiters")
+        }
 
-		point := pdfjet.NewPoint(0, 0)
+        point := pdfjet.NewPoint(0, 0)
 
-		if len(cols) < 8 {
-			continue
-		}
+        if len(cols) < 8 {
+            continue
+        }
 
-		populationStr := strings.TrimSpace(cols[1])
-		populationStr = strings.ReplaceAll(populationStr, ",", "")
-		population, err := strconv.ParseFloat(populationStr, 32)
-		if err != nil {
-			continue
-		}
+        populationStr := strings.TrimSpace(cols[1])
+        populationStr = strings.ReplaceAll(populationStr, ",", "")
+        population, err := strconv.ParseFloat(populationStr, 32)
+        if err != nil {
+            continue
+        }
 
-		countryName := strings.TrimSpace(cols[0])
-		point.SetText(countryName)
+        countryName := strings.TrimSpace(cols[0])
+        point.SetText(countryName)
 
-		urlName := countryName
-		urlName = strings.ReplaceAll(urlName, " ", "_")
-		urlName = strings.ReplaceAll(urlName, "'", "_")
-		urlName = strings.ReplaceAll(urlName, ",", "_")
-		urlName = strings.ReplaceAll(urlName, "(", "_")
-		urlName = strings.ReplaceAll(urlName, ")", "_")
-		point.SetURIAction("http://pdfjet.com/country/" + urlName + ".txt")
+        urlName := countryName
+        urlName = strings.ReplaceAll(urlName, " ", "_")
+        urlName = strings.ReplaceAll(urlName, "'", "_")
+        urlName = strings.ReplaceAll(urlName, ",", "_")
+        urlName = strings.ReplaceAll(urlName, "(", "_")
+        urlName = strings.ReplaceAll(urlName, ")", "_")
+        point.SetURIAction("http://pdfjet.com/country/" + urlName + ".txt")
 
-		cellPhonesStr := strings.TrimSpace(cols[5])
-		cellPhonesStr = strings.ReplaceAll(cellPhonesStr, ",", "")
-		cellPhones, err := strconv.ParseFloat(cellPhonesStr, 32)
-		if err != nil {
-			continue
-		}
-		point.SetX(float32(cellPhones / population))
+        cellPhonesStr := strings.TrimSpace(cols[5])
+        cellPhonesStr = strings.ReplaceAll(cellPhonesStr, ",", "")
+        cellPhones, err := strconv.ParseFloat(cellPhonesStr, 32)
+        if err != nil {
+            continue
+        }
+        point.SetX(float32(cellPhones / population))
 
-		internetStr := strings.TrimSpace(cols[7])
-		internetStr = strings.ReplaceAll(internetStr, ",", "")
-		internet, err := strconv.ParseFloat(internetStr, 32)
-		if err != nil {
-			continue
-		}
-		point.SetY(float32(internet / population * 100))
+        internetStr := strings.TrimSpace(cols[7])
+        internetStr = strings.ReplaceAll(internetStr, ",", "")
+        internet, err := strconv.ParseFloat(internetStr, 32)
+        if err != nil {
+            continue
+        }
+        point.SetY(float32(internet / population * 100))
 
-		point.SetRadius(2.0)
-		point.SetStrokeColor(color.Gray)
+        point.SetRadius(2.0)
+        point.SetStrokeColor(color.Gray)
 
-		if point.GetX() > 1.25 {
-			point.SetShape(shape.RightArrow)
-			point.SetStrokeColor(color.Black)
-		} else if point.GetY() > 80.0 {
-			point.SetShape(shape.UpArrow)
-			point.SetStrokeColor(color.Blue)
-		} else if point.GetText() == "France" {
-			point.SetShape(shape.Multiply)
-			point.SetStrokeColor(color.Green)
-		} else if point.GetText() == "Canada" {
-			point.SetShape(shape.Box)
-			point.SetStrokeColor(color.Orange)
-		} else if strings.HasPrefix(point.GetText(), "United States") {
-			point.SetShape(shape.Star)
-			point.SetStrokeColor(color.Red)
-		}
+        if point.GetX() > 1.25 {
+            point.SetShape(shape.RightArrow)
+            point.SetStrokeColor(color.Black)
+        } else if point.GetY() > 80.0 {
+            point.SetShape(shape.UpArrow)
+            point.SetStrokeColor(color.Blue)
+        } else if point.GetText() == "France" {
+            point.SetShape(shape.Multiply)
+            point.SetStrokeColor(color.Green)
+        } else if point.GetText() == "Canada" {
+            point.SetShape(shape.Box)
+            point.SetStrokeColor(color.Orange)
+        } else if strings.HasPrefix(point.GetText(), "United States") {
+            point.SetShape(shape.Star)
+            point.SetStrokeColor(color.Red)
+        }
 
-		points = append(points, point)
-	}
+        points = append(points, point)
+    }
 
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
+    if err := scanner.Err(); err != nil {
+        log.Fatal(err)
+    }
 
-	chartData = append(chartData, points)
-	return chartData
+    chartData = append(chartData, points)
+    return chartData
 }
 
 func main() {
-	start := time.Now()
-	Example09()
-	pdfjet.PrintDuration("Example_09", time.Since(start))
+    start := time.Now()
+    Example09()
+    pdfjet.PrintDuration("Example_09", time.Since(start))
 }

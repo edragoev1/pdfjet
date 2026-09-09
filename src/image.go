@@ -6,67 +6,67 @@
 package pdfjet
 
 import (
-	"bufio"
-	"io"
-	"log"
-	"math"
-	"os"
-	"strconv"
-	"strings"
+    "bufio"
+    "io"
+    "log"
+    "math"
+    "os"
+    "strconv"
+    "strings"
 
-	"github.com/edragoev1/pdfjet/src/device"
-	"github.com/edragoev1/pdfjet/src/encryption"
-	"github.com/edragoev1/pdfjet/src/imagetype"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+    "github.com/edragoev1/pdfjet/src/device"
+    "github.com/edragoev1/pdfjet/src/encryption"
+    "github.com/edragoev1/pdfjet/src/imagetype"
+    "github.com/edragoev1/pdfjet/src/single"
+    "github.com/edragoev1/pdfjet/src/structtype"
 )
 
 // Image describes an image object.
 // The image type can be one of the following:
 //
-//	imagetype.JPG, imagetype.PNG or imagetype.BMP
+//  imagetype.JPG, imagetype.PNG or imagetype.BMP
 //
 // Please see Example_03 and Example_24.
 type Image struct {
-	objNumber      int
-	x              float32 // Position of the image on the page
-	y              float32
-	w              float32 // Image width
-	h              float32 // Image height
-	uri            string
-	key            string
-	xBox           float32
-	yBox           float32
-	degrees        int
-	flipUpsideDown bool
-	language       string
-	altDescription string
-	actualText     string
+    objNumber      int
+    x              float32 // Position of the image on the page
+    y              float32
+    w              float32 // Image width
+    h              float32 // Image height
+    uri            string
+    key            string
+    xBox           float32
+    yBox           float32
+    degrees        int
+    flipUpsideDown bool
+    language       string
+    altDescription string
+    actualText     string
 }
 
 func NewImageFromFile(pdf *PDF, filePath string) *Image {
-	var imageType int
-	if strings.HasSuffix(strings.ToLower(filePath), ".png") {
-		imageType = imagetype.PNG
-	} else if strings.HasSuffix(strings.ToLower(filePath), ".bmp") {
-		imageType = imagetype.BMP
-	} else if strings.HasSuffix(strings.ToLower(filePath), ".jpg") ||
-		strings.HasSuffix(strings.ToLower(filePath), ".jpeg") {
-		imageType = imagetype.JPG
-	} else {
-		log.Fatal("Invalid image file extension.")
-	}
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			// TODO:
-		}
-	}(file)
-	return NewImage(pdf, bufio.NewReader(file), imageType)
+    var imageType int
+    if strings.HasSuffix(strings.ToLower(filePath), ".png") {
+        imageType = imagetype.PNG
+    } else if strings.HasSuffix(strings.ToLower(filePath), ".bmp") {
+        imageType = imagetype.BMP
+    } else if strings.HasSuffix(strings.ToLower(filePath), ".jpg") ||
+        strings.HasSuffix(strings.ToLower(filePath), ".jpeg") {
+        imageType = imagetype.JPG
+    } else {
+        log.Fatal("Invalid image file extension.")
+    }
+    file, err := os.Open(filePath)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer func(file *os.File) {
+        err := file.Close()
+        if err != nil {
+            // TODO:
+        }
+    }(file)
+    return NewImage(pdf, bufio.NewReader(file), imageType)
 }
 
 // NewImage the main constructor for the Image class.
@@ -74,46 +74,46 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 // @param inputStream the input stream to read the image from.
 // @param imageType could be imagetype.JPG, imagetype.PNG or imagetype.BMP
 func NewImage(pdf *PDF, reader io.Reader, imageType int) *Image {
-	image := new(Image)
-	image.altDescription = single.Space
-	image.actualText = single.Space
+    image := new(Image)
+    image.altDescription = single.Space
+    image.actualText = single.Space
 
-	switch imageType {
-	case imagetype.JPG:
-		jpg, _ := NewJPGImage(reader)
-		data := jpg.GetData()
-		image.w = jpg.GetWidth()
-		image.h = jpg.GetHeight()
-		if jpg.GetColorComponents() == 1 {
-			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, 8)
-		} else if jpg.GetColorComponents() == 3 {
-			image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
-		} else if jpg.GetColorComponents() == 4 {
-			image.addImageToPDF(pdf, data, nil, imageType, device.CMYK, 8)
-		}
-	case imagetype.PNG:
-		png := NewPNGImage(reader)
-		data := png.GetData()
-		image.w = png.GetWidth()
-		image.h = png.GetHeight()
-		if png.GetColorType() == 0 {
-			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, png.GetBitDepth())
-		} else {
-			bitDepth := 8
-			if png.GetBitDepth() == 16 {
-				bitDepth = 16
-			}
-			image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
-		}
-	case imagetype.BMP:
-		bmp := NewBMPImage(reader)
-		data := bmp.GetData()
-		image.w = bmp.GetWidth()
-		image.h = bmp.GetHeight()
-		image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
-	}
+    switch imageType {
+    case imagetype.JPG:
+        jpg, _ := NewJPGImage(reader)
+        data := jpg.GetData()
+        image.w = jpg.GetWidth()
+        image.h = jpg.GetHeight()
+        if jpg.GetColorComponents() == 1 {
+            image.addImageToPDF(pdf, data, nil, imageType, device.Gray, 8)
+        } else if jpg.GetColorComponents() == 3 {
+            image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
+        } else if jpg.GetColorComponents() == 4 {
+            image.addImageToPDF(pdf, data, nil, imageType, device.CMYK, 8)
+        }
+    case imagetype.PNG:
+        png := NewPNGImage(reader)
+        data := png.GetData()
+        image.w = png.GetWidth()
+        image.h = png.GetHeight()
+        if png.GetColorType() == 0 {
+            image.addImageToPDF(pdf, data, nil, imageType, device.Gray, png.GetBitDepth())
+        } else {
+            bitDepth := 8
+            if png.GetBitDepth() == 16 {
+                bitDepth = 16
+            }
+            image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
+        }
+    case imagetype.BMP:
+        bmp := NewBMPImage(reader)
+        data := bmp.GetData()
+        image.w = bmp.GetWidth()
+        image.h = bmp.GetHeight()
+        image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
+    }
 
-	return image
+    return image
 }
 
 // NewImage2 adds this image to the existing PDF objects.
@@ -121,110 +121,110 @@ func NewImage(pdf *PDF, reader io.Reader, imageType int) *Image {
 // @param inputStream the input stream to read the image from.
 // @param imageType could be ImageType.JPG, ImageType.PNG or ImageType.BMP
 func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType int) *Image {
-	image := new(Image)
+    image := new(Image)
 
-	switch imageType {
-	case imagetype.JPG:
-		jpg, _ := NewJPGImage(reader)
-		data := jpg.GetData()
-		image.w = jpg.GetWidth()
-		image.h = jpg.GetHeight()
-		if jpg.GetColorComponents() == 1 {
-			image.addImageToObjects(objects, data, nil, imageType, device.Gray, 8)
-		} else if jpg.GetColorComponents() == 3 {
-			image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
-		} else if jpg.GetColorComponents() == 4 {
-			image.addImageToObjects(objects, data, nil, imageType, device.CMYK, 8)
-		}
-	case imagetype.PNG:
-		png := NewPNGImage(reader)
-		data := png.GetData()
-		image.w = png.GetWidth()
-		image.h = png.GetHeight()
-		if png.GetColorType() == 0 {
-			image.addImageToObjects(objects, data, nil, imageType, device.Gray, png.GetBitDepth())
-		} else {
-			bitDepth := 8
-			if png.GetBitDepth() == 16 {
-				bitDepth = 16
-			}
-			image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
-		}
-	case imagetype.BMP:
-		bmp := NewBMPImage(reader)
-		data := bmp.GetData()
-		image.w = bmp.GetWidth()
-		image.h = bmp.GetHeight()
-		image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
-	}
+    switch imageType {
+    case imagetype.JPG:
+        jpg, _ := NewJPGImage(reader)
+        data := jpg.GetData()
+        image.w = jpg.GetWidth()
+        image.h = jpg.GetHeight()
+        if jpg.GetColorComponents() == 1 {
+            image.addImageToObjects(objects, data, nil, imageType, device.Gray, 8)
+        } else if jpg.GetColorComponents() == 3 {
+            image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
+        } else if jpg.GetColorComponents() == 4 {
+            image.addImageToObjects(objects, data, nil, imageType, device.CMYK, 8)
+        }
+    case imagetype.PNG:
+        png := NewPNGImage(reader)
+        data := png.GetData()
+        image.w = png.GetWidth()
+        image.h = png.GetHeight()
+        if png.GetColorType() == 0 {
+            image.addImageToObjects(objects, data, nil, imageType, device.Gray, png.GetBitDepth())
+        } else {
+            bitDepth := 8
+            if png.GetBitDepth() == 16 {
+                bitDepth = 16
+            }
+            image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
+        }
+    case imagetype.BMP:
+        bmp := NewBMPImage(reader)
+        data := bmp.GetData()
+        image.w = bmp.GetWidth()
+        image.h = bmp.GetHeight()
+        image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
+    }
 
-	return image
+    return image
 }
 
 // NewImageFromPDFobj constructs new image from an existing PDF object.
 func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
-	image := new(Image)
-	image.altDescription = single.Space
-	image.actualText = single.Space
+    image := new(Image)
+    image.altDescription = single.Space
+    image.actualText = single.Space
 
-	val, err := strconv.ParseFloat(obj.getValue("/Width"), 32)
-	if err != nil {
-		log.Fatal(err)
-	}
-	image.w = float32(val)
+    val, err := strconv.ParseFloat(obj.getValue("/Width"), 32)
+    if err != nil {
+        log.Fatal(err)
+    }
+    image.w = float32(val)
 
-	val, err = strconv.ParseFloat(obj.getValue("/Height"), 32)
-	if err != nil {
-		log.Fatal(err)
-	}
-	image.h = float32(val)
+    val, err = strconv.ParseFloat(obj.getValue("/Height"), 32)
+    if err != nil {
+        log.Fatal(err)
+    }
+    image.h = float32(val)
 
-	pdf.newobj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Type /XObject\n")
-	pdf.appendString("/Subtype /Image\n")
-	pdf.appendString("/Filter ")
-	pdf.appendString(obj.getValue("/Filter"))
-	pdf.appendString("\n")
-	pdf.appendString("/Width ")
-	pdf.appendFloat32(image.w)
-	pdf.appendString("\n")
-	pdf.appendString("/Height ")
-	pdf.appendFloat32(image.h)
-	pdf.appendString("\n")
-	colorSpace := obj.getValue("/ColorSpace")
-	if colorSpace != "" {
-		pdf.appendString("/ColorSpace ")
-		pdf.appendString(colorSpace)
-		pdf.appendString("\n")
-	}
-	pdf.appendString("/BitsPerComponent ")
-	pdf.appendString(obj.getValue("/BitsPerComponent"))
-	pdf.appendString("\n")
-	decodeParms := obj.getValue("/DecodeParms")
-	if decodeParms != "" {
-		pdf.appendString("/DecodeParms ")
-		pdf.appendString(decodeParms)
-		pdf.appendString("\n")
-	}
-	imageMask := obj.getValue("/ImageMask")
-	if imageMask != "" {
-		pdf.appendString("/ImageMask ")
-		pdf.appendString(imageMask)
-		pdf.appendString("\n")
-	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(obj.stream))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(obj.stream)
-	pdf.appendString("\nendstream\n")
-	pdf.endobj()
-	pdf.images = append(pdf.images, image)
-	image.objNumber = pdf.getObjNumber()
+    pdf.newobj()
+    pdf.appendString("<<\n")
+    pdf.appendString("/Type /XObject\n")
+    pdf.appendString("/Subtype /Image\n")
+    pdf.appendString("/Filter ")
+    pdf.appendString(obj.getValue("/Filter"))
+    pdf.appendString("\n")
+    pdf.appendString("/Width ")
+    pdf.appendFloat32(image.w)
+    pdf.appendString("\n")
+    pdf.appendString("/Height ")
+    pdf.appendFloat32(image.h)
+    pdf.appendString("\n")
+    colorSpace := obj.getValue("/ColorSpace")
+    if colorSpace != "" {
+        pdf.appendString("/ColorSpace ")
+        pdf.appendString(colorSpace)
+        pdf.appendString("\n")
+    }
+    pdf.appendString("/BitsPerComponent ")
+    pdf.appendString(obj.getValue("/BitsPerComponent"))
+    pdf.appendString("\n")
+    decodeParms := obj.getValue("/DecodeParms")
+    if decodeParms != "" {
+        pdf.appendString("/DecodeParms ")
+        pdf.appendString(decodeParms)
+        pdf.appendString("\n")
+    }
+    imageMask := obj.getValue("/ImageMask")
+    if imageMask != "" {
+        pdf.appendString("/ImageMask ")
+        pdf.appendString(imageMask)
+        pdf.appendString("\n")
+    }
+    pdf.appendString("/Length ")
+    pdf.appendInteger(len(obj.stream))
+    pdf.appendString("\n")
+    pdf.appendString(">>\n")
+    pdf.appendString("stream\n")
+    pdf.appendByteArray(obj.stream)
+    pdf.appendString("\nendstream\n")
+    pdf.endobj()
+    pdf.images = append(pdf.images, image)
+    image.objNumber = pdf.getObjNumber()
 
-	return image
+    return image
 }
 
 // SetLocation sets the location of this image on the page to (x, y).
@@ -232,9 +232,9 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 // @param x the x coordinate of the top left corner of the image.
 // @param y the y coordinate of the top left corner of the image.
 func (image *Image) SetLocation(x, y float32) *Image {
-	image.x = x
-	image.y = y
-	return image
+    image.x = x
+    image.y = y
+    return image
 }
 
 // SetPosition sets the location of this image on the page to (x, y).
@@ -242,16 +242,16 @@ func (image *Image) SetLocation(x, y float32) *Image {
 // @param x the x coordinate of the top left corner of the image.
 // @param y the y coordinate of the top left corner of the image.
 func (image *Image) SetPosition(x, y float32) {
-	image.x = x
-	image.y = y
+    image.x = x
+    image.y = y
 }
 
 // ScaleBy scales this image by the specified factor.
 // @param factor the factor used to scale the image.
 func (image *Image) ScaleBy(factor float32) *Image {
-	image.w *= factor
-	image.h *= factor
-	return image
+    image.w *= factor
+    image.h *= factor
+    return image
 }
 
 // ScaleByWidthAndHeight scales this image by the specified width and height factor.
@@ -260,374 +260,374 @@ func (image *Image) ScaleBy(factor float32) *Image {
 // @param widthFactor the factor used to scale the width of the image
 // @param heightFactor the factor used to scale the height of the image
 func (image *Image) ScaleByWidthAndHeight(widthFactor, heightFactor float32) *Image {
-	image.w *= widthFactor
-	image.h *= heightFactor
-	return image
+    image.w *= widthFactor
+    image.h *= heightFactor
+    return image
 }
 
 // ResizeWidth resizes the image to the specified width.
 func (image *Image) ResizeWidth(width float32) *Image {
-	factor := width / image.GetWidth()
-	return image.ScaleByWidthAndHeight(factor, factor)
+    factor := width / image.GetWidth()
+    return image.ScaleByWidthAndHeight(factor, factor)
 }
 
 // ResizeHeight resizes the image to the specified height.
 func (image *Image) ResizeHeight(height float32) *Image {
-	factor := height / image.GetHeight()
-	return image.ScaleByWidthAndHeight(factor, factor)
+    factor := height / image.GetHeight()
+    return image.ScaleByWidthAndHeight(factor, factor)
 }
 
 // SetURIAction sets the URI for the "click box" action.
 // @param uri the URI
 func (image *Image) SetURIAction(uri string) {
-	image.uri = uri
+    image.uri = uri
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
 func (image *Image) SetGoToAction(key string) {
-	image.key = key
+    image.key = key
 }
 
 // RotateClockwise sets the image rotation to the specified number of degrees.
 // @param degrees the number of degrees.
 func (image *Image) RotateClockwise(degrees int) {
-	if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
-		log.Fatal("The rotation angle must be 0, 90, 180 or 270")
-	}
-	image.degrees = degrees
+    if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
+        log.Fatal("The rotation angle must be 0, 90, 180 or 270")
+    }
+    image.degrees = degrees
 }
 
 // SetAltDescription sets the alternate description of this image.
 // @param altDescription the alternate description of the image.
 // @return this Image.
 func (image *Image) SetAltDescription(altDescription string) *Image {
-	image.altDescription = altDescription
-	return image
+    image.altDescription = altDescription
+    return image
 }
 
 // SetActualText sets the actual text for this image.
 // @param actualText the actual text for the image.
 // @return this Image.
 func (image *Image) SetActualText(actualText string) *Image {
-	image.actualText = actualText
-	return image
+    image.actualText = actualText
+    return image
 }
 
 // DrawOn draws this image on the specified page.
 // @param page the page to draw this image on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
-	page.AddBMC(structtype.P, image.language, image.actualText, image.altDescription)
+    page.AddBMC(structtype.P, image.language, image.actualText, image.altDescription)
 
-	image.x += image.xBox
-	image.y += image.yBox
+    image.x += image.xBox
+    image.y += image.yBox
 
-	page.SaveGraphicsState()
+    page.SaveGraphicsState()
 
-	switch image.degrees {
-	case 0:
-		page.appendFloat32(image.w)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(image.h)
-		page.appendString(" ")
-		page.appendFloat32(image.x)
-		page.appendString(" ")
-		page.appendFloat32(page.height - (image.y + image.h))
-		page.appendString(" cm\n")
-	case 90:
-		page.appendFloat32(image.h)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(image.w)
-		page.appendString(" ")
-		page.appendFloat32(image.x)
-		page.appendString(" ")
-		page.appendFloat32(page.height - image.y)
-		page.appendString(" cm\n")
-		page.appendString("0 -1 1 0 0 0 cm\n")
-	case 180:
-		page.appendFloat32(image.w)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(image.h)
-		page.appendString(" ")
-		page.appendFloat32(image.x + image.w)
-		page.appendString(" ")
-		page.appendFloat32(page.height - image.y)
-		page.appendString(" cm\n")
-		page.appendString("-1 0 0 -1 0 0 cm\n")
-	case 270:
-		page.appendFloat32(image.h)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(0.0)
-		page.appendString(" ")
-		page.appendFloat32(image.w)
-		page.appendString(" ")
-		page.appendFloat32(image.x + image.h)
-		page.appendString(" ")
-		page.appendFloat32(page.height - (image.y + image.w))
-		page.appendString(" cm\n")
-		page.appendString("0 1 -1 0 0 0 cm\n")
-	}
+    switch image.degrees {
+    case 0:
+        page.appendFloat32(image.w)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(image.h)
+        page.appendString(" ")
+        page.appendFloat32(image.x)
+        page.appendString(" ")
+        page.appendFloat32(page.height - (image.y + image.h))
+        page.appendString(" cm\n")
+    case 90:
+        page.appendFloat32(image.h)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(image.w)
+        page.appendString(" ")
+        page.appendFloat32(image.x)
+        page.appendString(" ")
+        page.appendFloat32(page.height - image.y)
+        page.appendString(" cm\n")
+        page.appendString("0 -1 1 0 0 0 cm\n")
+    case 180:
+        page.appendFloat32(image.w)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(image.h)
+        page.appendString(" ")
+        page.appendFloat32(image.x + image.w)
+        page.appendString(" ")
+        page.appendFloat32(page.height - image.y)
+        page.appendString(" cm\n")
+        page.appendString("-1 0 0 -1 0 0 cm\n")
+    case 270:
+        page.appendFloat32(image.h)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(0.0)
+        page.appendString(" ")
+        page.appendFloat32(image.w)
+        page.appendString(" ")
+        page.appendFloat32(image.x + image.h)
+        page.appendString(" ")
+        page.appendFloat32(page.height - (image.y + image.w))
+        page.appendString(" cm\n")
+        page.appendString("0 1 -1 0 0 0 cm\n")
+    }
 
-	if image.flipUpsideDown {
-		page.appendString("1 0 0 -1 0 0 cm\n")
-	}
+    if image.flipUpsideDown {
+        page.appendString("1 0 0 -1 0 0 cm\n")
+    }
 
-	page.appendString("/Im")
-	page.appendInteger(image.objNumber)
-	page.appendString(" Do\n")
+    page.appendString("/Im")
+    page.appendInteger(image.objNumber)
+    page.appendString(" Do\n")
 
-	page.RestoreGraphicsState()
+    page.RestoreGraphicsState()
 
-	page.AddEMC()
+    page.AddEMC()
 
-	if image.uri != "" || image.key != "" {
-		page.AddAnnotation(&Annotation{
-			annotationType: AnnotationLink,
-			x1:             image.x,
-			y1:             image.y,
-			x2:             image.x + image.w,
-			y2:             image.y + image.h,
-			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
-			transparency:   0.0,
-			title:          "",
-			contents:       "",
-			uri:            image.uri,
-			key:            image.key, // The destination name
-			language:       image.language,
-			actualText:     image.actualText,
-			altDescription: image.altDescription,
-		})
-	}
+    if image.uri != "" || image.key != "" {
+        page.AddAnnotation(&Annotation{
+            annotationType: AnnotationLink,
+            x1:             image.x,
+            y1:             image.y,
+            x2:             image.x + image.w,
+            y2:             image.y + image.h,
+            vertices:       nil,
+            fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+            transparency:   0.0,
+            title:          "",
+            contents:       "",
+            uri:            image.uri,
+            key:            image.key, // The destination name
+            language:       image.language,
+            actualText:     image.actualText,
+            altDescription: image.altDescription,
+        })
+    }
 
-	return [2]float32{image.x + image.w, image.y + image.h}
+    return [2]float32{image.x + image.w, image.y + image.h}
 }
 
 // GetWidth returns the width of this image when drawn on the page.
 // The scaling is taken into account.
 // @return w - the width of this image.
 func (image *Image) GetWidth() float32 {
-	return image.w
+    return image.w
 }
 
 // GetHeight returns the height of this image when drawn on the page.
 // The scaling is taken into account.
 // @return h - the height of this image.
 func (image *Image) GetHeight() float32 {
-	return image.h
+    return image.h
 }
 
 func (image *Image) addSoftMask(pdf *PDF, data []byte, colorSpace string, bitsPerComponent int) {
-	pdf.newobj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Type /XObject\n")
-	pdf.appendString("/Subtype /Image\n")
-	pdf.appendString("/Filter /FlateDecode\n")
-	pdf.appendString("/Width ")
-	pdf.appendInteger(int(image.w))
-	pdf.appendString("\n")
-	pdf.appendString("/Height ")
-	pdf.appendInteger(int(image.h))
-	pdf.appendString("\n")
-	pdf.appendString("/ColorSpace /")
-	pdf.appendString(colorSpace)
-	pdf.appendString("\n")
-	pdf.appendString("/BitsPerComponent ")
-	pdf.appendInteger(bitsPerComponent)
-	pdf.appendString("\n")
+    pdf.newobj()
+    pdf.appendString("<<\n")
+    pdf.appendString("/Type /XObject\n")
+    pdf.appendString("/Subtype /Image\n")
+    pdf.appendString("/Filter /FlateDecode\n")
+    pdf.appendString("/Width ")
+    pdf.appendInteger(int(image.w))
+    pdf.appendString("\n")
+    pdf.appendString("/Height ")
+    pdf.appendInteger(int(image.h))
+    pdf.appendString("\n")
+    pdf.appendString("/ColorSpace /")
+    pdf.appendString(colorSpace)
+    pdf.appendString("\n")
+    pdf.appendString("/BitsPerComponent ")
+    pdf.appendInteger(bitsPerComponent)
+    pdf.appendString("\n")
 
-	buf := data
-	if pdf.encryption != nil {
-		buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
-	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf)
-	pdf.appendString("\nendstream\n")
-	pdf.endobj()
-	image.objNumber = pdf.getObjNumber()
+    buf := data
+    if pdf.encryption != nil {
+        buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
+    }
+    pdf.appendString("/Length ")
+    pdf.appendInteger(len(buf))
+    pdf.appendString("\n")
+    pdf.appendString(">>\n")
+    pdf.appendString("stream\n")
+    pdf.appendByteArray(buf)
+    pdf.appendString("\nendstream\n")
+    pdf.endobj()
+    image.objNumber = pdf.getObjNumber()
 }
 
 func (image *Image) addImageToPDF(
-	pdf *PDF,
-	data []byte,
-	alpha []byte,
-	imageType int,
-	colorSpace string,
-	bitsPerComponent int) {
-	if alpha != nil {
-		image.addSoftMask(pdf, alpha, device.Gray, bitsPerComponent)
-	}
-	pdf.newobj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Type /XObject\n")
-	pdf.appendString("/Subtype /Image\n")
-	switch imageType {
-	case imagetype.JPG:
-		pdf.appendString("/Filter /DCTDecode\n")
-	case imagetype.PNG, imagetype.BMP:
-		pdf.appendString("/Filter /FlateDecode\n")
-		if alpha != nil {
-			pdf.appendString("/SMask ")
-			pdf.appendInteger(image.objNumber)
-			pdf.appendString(" 0 R\n")
-		}
-	}
-	pdf.appendString("/Width ")
-	pdf.appendInteger(int(image.w))
-	pdf.appendString("\n")
-	pdf.appendString("/Height ")
-	pdf.appendInteger(int(image.h))
-	pdf.appendString("\n")
-	pdf.appendString("/ColorSpace /")
-	pdf.appendString(colorSpace)
-	pdf.appendString("\n")
-	pdf.appendString("/BitsPerComponent ")
-	pdf.appendInteger(bitsPerComponent)
-	pdf.appendString("\n")
-	if colorSpace == device.CMYK {
-		// If the image was created with Photoshop - invert the colors:
-		pdf.appendString("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
-	}
+    pdf *PDF,
+    data []byte,
+    alpha []byte,
+    imageType int,
+    colorSpace string,
+    bitsPerComponent int) {
+    if alpha != nil {
+        image.addSoftMask(pdf, alpha, device.Gray, bitsPerComponent)
+    }
+    pdf.newobj()
+    pdf.appendString("<<\n")
+    pdf.appendString("/Type /XObject\n")
+    pdf.appendString("/Subtype /Image\n")
+    switch imageType {
+    case imagetype.JPG:
+        pdf.appendString("/Filter /DCTDecode\n")
+    case imagetype.PNG, imagetype.BMP:
+        pdf.appendString("/Filter /FlateDecode\n")
+        if alpha != nil {
+            pdf.appendString("/SMask ")
+            pdf.appendInteger(image.objNumber)
+            pdf.appendString(" 0 R\n")
+        }
+    }
+    pdf.appendString("/Width ")
+    pdf.appendInteger(int(image.w))
+    pdf.appendString("\n")
+    pdf.appendString("/Height ")
+    pdf.appendInteger(int(image.h))
+    pdf.appendString("\n")
+    pdf.appendString("/ColorSpace /")
+    pdf.appendString(colorSpace)
+    pdf.appendString("\n")
+    pdf.appendString("/BitsPerComponent ")
+    pdf.appendInteger(bitsPerComponent)
+    pdf.appendString("\n")
+    if colorSpace == device.CMYK {
+        // If the image was created with Photoshop - invert the colors:
+        pdf.appendString("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
+    }
 
-	buf := data
-	if pdf.encryption != nil {
-		buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
-	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf)
-	pdf.appendString("\nendstream\n")
-	pdf.endobj()
-	pdf.images = append(pdf.images, image)
-	image.objNumber = pdf.getObjNumber()
+    buf := data
+    if pdf.encryption != nil {
+        buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
+    }
+    pdf.appendString("/Length ")
+    pdf.appendInteger(len(buf))
+    pdf.appendString("\n")
+    pdf.appendString(">>\n")
+    pdf.appendString("stream\n")
+    pdf.appendByteArray(buf)
+    pdf.appendString("\nendstream\n")
+    pdf.endobj()
+    pdf.images = append(pdf.images, image)
+    image.objNumber = pdf.getObjNumber()
 }
 
 func (image *Image) addSoftMaskToObjects(
-	objects *[]*PDFobj,
-	data []byte,
-	colorSpace string,
-	bitsPerComponent int) {
-	obj := NewPDFobj()
-	obj.dict = append(obj.dict, "<<")
-	obj.dict = append(obj.dict, "/Type")
-	obj.dict = append(obj.dict, "/XObject")
-	obj.dict = append(obj.dict, "/Subtype")
-	obj.dict = append(obj.dict, "/Image")
-	obj.dict = append(obj.dict, "/Filter")
-	obj.dict = append(obj.dict, "/FlateDecode")
-	obj.dict = append(obj.dict, "/Width")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.w)))
-	obj.dict = append(obj.dict, "/Height")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.h)))
-	obj.dict = append(obj.dict, "/ColorSpace")
-	obj.dict = append(obj.dict, "/"+colorSpace)
-	obj.dict = append(obj.dict, "/BitsPerComponent")
-	obj.dict = append(obj.dict, strconv.Itoa(bitsPerComponent))
-	obj.dict = append(obj.dict, "/Length")
-	obj.dict = append(obj.dict, strconv.Itoa(len(data)))
-	obj.dict = append(obj.dict, ">>")
-	obj.SetStream(data)
-	obj.number = len(*objects) + 1
-	*objects = append(*objects, obj)
-	image.objNumber = obj.number
+    objects *[]*PDFobj,
+    data []byte,
+    colorSpace string,
+    bitsPerComponent int) {
+    obj := NewPDFobj()
+    obj.dict = append(obj.dict, "<<")
+    obj.dict = append(obj.dict, "/Type")
+    obj.dict = append(obj.dict, "/XObject")
+    obj.dict = append(obj.dict, "/Subtype")
+    obj.dict = append(obj.dict, "/Image")
+    obj.dict = append(obj.dict, "/Filter")
+    obj.dict = append(obj.dict, "/FlateDecode")
+    obj.dict = append(obj.dict, "/Width")
+    obj.dict = append(obj.dict, strconv.Itoa(int(image.w)))
+    obj.dict = append(obj.dict, "/Height")
+    obj.dict = append(obj.dict, strconv.Itoa(int(image.h)))
+    obj.dict = append(obj.dict, "/ColorSpace")
+    obj.dict = append(obj.dict, "/"+colorSpace)
+    obj.dict = append(obj.dict, "/BitsPerComponent")
+    obj.dict = append(obj.dict, strconv.Itoa(bitsPerComponent))
+    obj.dict = append(obj.dict, "/Length")
+    obj.dict = append(obj.dict, strconv.Itoa(len(data)))
+    obj.dict = append(obj.dict, ">>")
+    obj.SetStream(data)
+    obj.number = len(*objects) + 1
+    *objects = append(*objects, obj)
+    image.objNumber = obj.number
 }
 
 func (image *Image) addImageToObjects(
-	objects *[]*PDFobj,
-	data []byte,
-	alpha []byte,
-	imageType int,
-	colorSpace string,
-	bitsPerComponent int) {
-	if alpha != nil {
-		image.addSoftMaskToObjects(objects, alpha, device.Gray, bitsPerComponent)
-	}
+    objects *[]*PDFobj,
+    data []byte,
+    alpha []byte,
+    imageType int,
+    colorSpace string,
+    bitsPerComponent int) {
+    if alpha != nil {
+        image.addSoftMaskToObjects(objects, alpha, device.Gray, bitsPerComponent)
+    }
 
-	obj := NewPDFobj()
-	obj.dict = append(obj.dict, "<<")
-	obj.dict = append(obj.dict, "/Type")
-	obj.dict = append(obj.dict, "/XObject")
-	obj.dict = append(obj.dict, "/Subtype")
-	obj.dict = append(obj.dict, "/Image")
-	switch imageType {
-	case imagetype.JPG:
-		obj.dict = append(obj.dict, "/Filter")
-		obj.dict = append(obj.dict, "/DCTDecode")
-	case imagetype.PNG, imagetype.BMP:
-		obj.dict = append(obj.dict, "/Filter")
-		obj.dict = append(obj.dict, "/FlateDecode")
-		if alpha != nil {
-			obj.dict = append(obj.dict, "/SMask")
-			obj.dict = append(obj.dict, strconv.Itoa(image.objNumber))
-			obj.dict = append(obj.dict, "0")
-			obj.dict = append(obj.dict, "R")
-		}
-	}
-	obj.dict = append(obj.dict, "/Width")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.w)))
-	obj.dict = append(obj.dict, "/Height")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.h)))
-	obj.dict = append(obj.dict, "/ColorSpace")
-	obj.dict = append(obj.dict, "/"+colorSpace)
-	obj.dict = append(obj.dict, "/BitsPerComponent")
-	obj.dict = append(obj.dict, strconv.Itoa(bitsPerComponent))
-	if colorSpace == device.CMYK {
-		// If the image was created with Photoshop - invert the colors:
-		obj.dict = append(obj.dict, "/Decode")
-		obj.dict = append(obj.dict, "[")
-		obj.dict = append(obj.dict, "1.0")
-		obj.dict = append(obj.dict, "0.0")
-		obj.dict = append(obj.dict, "1.0")
-		obj.dict = append(obj.dict, "0.0")
-		obj.dict = append(obj.dict, "1.0")
-		obj.dict = append(obj.dict, "0.0")
-		obj.dict = append(obj.dict, "1.0")
-		obj.dict = append(obj.dict, "0.0")
-		obj.dict = append(obj.dict, "]")
-	}
-	obj.dict = append(obj.dict, "/Length")
-	obj.dict = append(obj.dict, strconv.Itoa(len(data)))
-	obj.dict = append(obj.dict, ">>")
-	obj.SetStream(data)
-	obj.number = len(*objects) + 1
-	*objects = append(*objects, obj)
-	image.objNumber = obj.number
+    obj := NewPDFobj()
+    obj.dict = append(obj.dict, "<<")
+    obj.dict = append(obj.dict, "/Type")
+    obj.dict = append(obj.dict, "/XObject")
+    obj.dict = append(obj.dict, "/Subtype")
+    obj.dict = append(obj.dict, "/Image")
+    switch imageType {
+    case imagetype.JPG:
+        obj.dict = append(obj.dict, "/Filter")
+        obj.dict = append(obj.dict, "/DCTDecode")
+    case imagetype.PNG, imagetype.BMP:
+        obj.dict = append(obj.dict, "/Filter")
+        obj.dict = append(obj.dict, "/FlateDecode")
+        if alpha != nil {
+            obj.dict = append(obj.dict, "/SMask")
+            obj.dict = append(obj.dict, strconv.Itoa(image.objNumber))
+            obj.dict = append(obj.dict, "0")
+            obj.dict = append(obj.dict, "R")
+        }
+    }
+    obj.dict = append(obj.dict, "/Width")
+    obj.dict = append(obj.dict, strconv.Itoa(int(image.w)))
+    obj.dict = append(obj.dict, "/Height")
+    obj.dict = append(obj.dict, strconv.Itoa(int(image.h)))
+    obj.dict = append(obj.dict, "/ColorSpace")
+    obj.dict = append(obj.dict, "/"+colorSpace)
+    obj.dict = append(obj.dict, "/BitsPerComponent")
+    obj.dict = append(obj.dict, strconv.Itoa(bitsPerComponent))
+    if colorSpace == device.CMYK {
+        // If the image was created with Photoshop - invert the colors:
+        obj.dict = append(obj.dict, "/Decode")
+        obj.dict = append(obj.dict, "[")
+        obj.dict = append(obj.dict, "1.0")
+        obj.dict = append(obj.dict, "0.0")
+        obj.dict = append(obj.dict, "1.0")
+        obj.dict = append(obj.dict, "0.0")
+        obj.dict = append(obj.dict, "1.0")
+        obj.dict = append(obj.dict, "0.0")
+        obj.dict = append(obj.dict, "1.0")
+        obj.dict = append(obj.dict, "0.0")
+        obj.dict = append(obj.dict, "]")
+    }
+    obj.dict = append(obj.dict, "/Length")
+    obj.dict = append(obj.dict, strconv.Itoa(len(data)))
+    obj.dict = append(obj.dict, ">>")
+    obj.SetStream(data)
+    obj.number = len(*objects) + 1
+    *objects = append(*objects, obj)
+    image.objNumber = obj.number
 }
 
 // ResizeToFit resizes an image so it would fit on a page.
 func (image *Image) ResizeToFit(page *Page, keepAspectRatio bool) {
-	if keepAspectRatio {
-		image.ScaleBy(float32(math.Min(
-			float64((page.GetWidth()-image.x)/image.w),
-			float64((page.GetHeight()-image.y)/image.h))))
-	} else {
-		image.ScaleByWidthAndHeight((page.GetWidth()-image.x)/image.w, (page.GetHeight()-image.y)/image.h)
-	}
+    if keepAspectRatio {
+        image.ScaleBy(float32(math.Min(
+            float64((page.GetWidth()-image.x)/image.w),
+            float64((page.GetHeight()-image.y)/image.h))))
+    } else {
+        image.ScaleByWidthAndHeight((page.GetWidth()-image.x)/image.w, (page.GetHeight()-image.y)/image.h)
+    }
 }
 
 // FlipUpsideDown flips the image upside down.
 func (image *Image) FlipUpsideDown(flipUpsideDown bool) {
-	image.flipUpsideDown = flipUpsideDown
+    image.flipUpsideDown = flipUpsideDown
 }

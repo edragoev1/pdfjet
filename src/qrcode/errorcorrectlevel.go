@@ -17,8 +17,8 @@ package qrcode
 
 // QRCode error correction levels.
 const (
-	ErrorCorrectLevelL = 1
-	ErrorCorrectLevelM = 0
-	ErrorCorrectLevelQ = 3
-	ErrorCorrectLevelH = 2
+    ErrorCorrectLevelL = 1
+    ErrorCorrectLevelM = 0
+    ErrorCorrectLevelQ = 3
+    ErrorCorrectLevelH = 2
 )
