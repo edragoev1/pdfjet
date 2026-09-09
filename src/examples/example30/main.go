@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example30 -- TODO:
+// Example30 encrypts the PDF and attaches embedded files to a page.
 func Example30() {
 	pdf := pdfjet.NewPDFFile("Example_30.pdf")
 

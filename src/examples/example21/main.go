@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/qrcode"
 )
 
-// Example21 -- TODO:
+// Example21 uses QR code 2D barcodes.
 func Example21() {
 	pdf := pdfjet.NewPDFFile("Example_21.pdf")
 	font := pdfjet.NewCoreFont(pdf, corefont.Helvetica())

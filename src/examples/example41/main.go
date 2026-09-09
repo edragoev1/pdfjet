@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
-// Example41 -- TODO:
+// Example41 draws paragraphs of styled text with the Text component on A4 paper.
 func Example41() {
 	pdf := pdfjet.NewPDFFile("Example_41.pdf")
 

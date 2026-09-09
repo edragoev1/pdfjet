@@ -12,7 +12,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/content"
 )
 
-// Example37 -- TODO:
+// Example37 opens an existing PDF, adds a font resource and writes on every page.
 func Example37(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_37.pdf")
 	objects := pdf.Read(content.OfBinaryFile(fileName))

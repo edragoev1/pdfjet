@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example03 -- TODO:
+// Example03 draws paragraphs of styled text with the Text component on Letter paper.
 func Example03() {
 	pdf := pdfjet.NewPDFFile("Example_03.pdf")
 

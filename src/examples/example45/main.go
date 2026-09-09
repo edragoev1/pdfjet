@@ -8,7 +8,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
-// Example45 -- TODO:
+// Example45 uses the Form and Field classes with the core fonts.
 func Example45() {
 	pdf := pdfjet.NewPDFFile("Example_45.pdf")
 

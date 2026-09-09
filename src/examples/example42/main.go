@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/color"
 )
 
-// Example42 -- TODO:
+// Example42 uses the Form and Field classes to create a form.
 func Example42() {
 	pdf := pdfjet.NewPDFFile("Example_42.pdf")
 

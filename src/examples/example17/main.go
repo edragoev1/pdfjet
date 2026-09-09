@@ -11,8 +11,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/imagetype"
 )
 
-// Example17 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example17 is a test case for PNG images.
 func Example17() {
 	pdf := pdfjet.NewPDFFile("Example_17.pdf")
 

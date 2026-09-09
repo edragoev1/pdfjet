@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example48 -- TODO:
+// Example48 adds bookmarks to a PDF.
 func Example48() {
 	pdf := pdfjet.NewPDFFile("Example_48.pdf")
 	pdf.SetCompliance(compliance.PDF_UA_1)

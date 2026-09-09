@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example32 -- TODO:
+// Example32 draws highlighted source code using the draw string method and a color map.
 func Example32() {
 	pdf := pdfjet.NewPDFFile("Example_32.pdf")
 

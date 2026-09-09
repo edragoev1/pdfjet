@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example31 -- TODO:
+// Example31 draws Devanagari text and fills rectangles through a transparent graphics state.
 func Example31() {
 	pdf := pdfjet.NewPDFFile("Example_31.pdf")
 	pdf.SetTitle("Hello")

@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example22 ...
+// Example22 adds "Destinations" and "Go To" actions.
 func Example22() {
 	pdf := pdfjet.NewPDFFile("Example_22.pdf")
 	pdf.SetCompliance(compliance.PDF_UA_1)

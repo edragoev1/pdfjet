@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
-// Example39 - TODO
+// Example39 creates a chart with horizontal bars.
 func Example39() {
 	pdf := pdfjet.NewPDFFile("Example_39.pdf")
 

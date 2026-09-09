@@ -12,7 +12,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example27 -- TODO:
+// Example27 draws Thai, Hebrew and Arabic text.
 func Example27() {
 	pdf := pdfjet.NewPDFFile("Example_27.pdf")
 

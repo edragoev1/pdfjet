@@ -11,7 +11,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example47 -- TODO:
+// Example47 flows text through columns using the TextFrame class.
 func Example47() {
 	pdf := pdfjet.NewPDFFile("Example_47.pdf")
 	pdf.SetCompliance(compliance.PDF_UA_1)

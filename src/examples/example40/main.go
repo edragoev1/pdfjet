@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/shape"
 )
 
-// Example40 -- TODO:
+// Example40 creates a chart with vertical bars.
 func Example40() {
 	pdf := pdfjet.NewPDFFile("Example_40.pdf")
 
