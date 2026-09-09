@@ -227,7 +227,7 @@ func (textLine *TextLine) GetWidth() float32 {
 // GetStringWidth returns the width of this TextLine.
 // @return the width.
 func (textLine *TextLine) GetStringWidth(text string) float32 {
-	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, text)
+	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, text)
 }
 
 // GetHeight returns the height of this TextLine.
@@ -496,7 +496,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	page.SetTextDirection(0)
 
-	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.font.size, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
 	yMax := math.Max(
 		float64(textLine.y+textLine.verticalOffset),

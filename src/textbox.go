@@ -425,10 +425,9 @@ func (textBox *TextBox) getTextLines() []string {
 	additive := !textBox.font.isCoreFont
 	font := textBox.font
 	fallbackFont := textBox.fallbackFont
-	fontSize := textBox.fontSize
 	lines := strings.Split(strings.ReplaceAll(textBox.text, "\r\n", "\n"), "\n")
 	for _, line := range lines {
-		if font.StringWidthFB(fallbackFont, fontSize, line) <= textAreaWidth {
+		if font.StringWidthFB(fallbackFont, font.size, line) <= textAreaWidth {
 			list = append(list, line)
 			continue
 		}
@@ -438,13 +437,13 @@ func (textBox *TextBox) getTextLines() []string {
 			for _, ch := range line {
 				var chWidth float32
 				if additive {
-					chWidth = font.StringWidthFB(fallbackFont, fontSize, string(ch))
+					chWidth = font.StringWidthFB(fallbackFont, font.size, string(ch))
 				}
 				var lineWidth float32
 				if additive {
 					lineWidth = bufWidth + chWidth
 				} else {
-					lineWidth = font.StringWidthFB(fallbackFont, fontSize, buf.String()+string(ch))
+					lineWidth = font.StringWidthFB(fallbackFont, font.size, buf.String()+string(ch))
 				}
 				if lineWidth <= textAreaWidth {
 					buf.WriteRune(ch)
@@ -466,12 +465,12 @@ func (textBox *TextBox) getTextLines() []string {
 			var bufWidth float32
 			var spaceWidth float32
 			if additive {
-				spaceWidth = font.StringWidthFB(fallbackFont, fontSize, single.Space)
+				spaceWidth = font.StringWidthFB(fallbackFont, font.size, single.Space)
 			}
 			for _, token := range strings.Fields(line) {
 				var tokenWidth float32
 				if additive {
-					tokenWidth = font.StringWidthFB(fallbackFont, fontSize, token)
+					tokenWidth = font.StringWidthFB(fallbackFont, font.size, token)
 				}
 				var lineWidth float32
 				if additive {
@@ -481,7 +480,7 @@ func (textBox *TextBox) getTextLines() []string {
 						lineWidth = bufWidth + spaceWidth + tokenWidth
 					}
 				} else {
-					lineWidth = font.StringWidthFB(fallbackFont, fontSize, buf.String()+token)
+					lineWidth = font.StringWidthFB(fallbackFont, font.size, buf.String()+token)
 				}
 				if lineWidth <= textAreaWidth {
 					buf.WriteString(token)
@@ -570,10 +569,10 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 					xText = textBox.x + textBox.margin
 				} else if textBox.GetTextAlignment() == alignment.Right {
 					xText = (textBox.x + textBox.width) -
-						(font.StringWidthFB(fallbackFont, fontSize, line) + textBox.margin)
+						(font.StringWidthFB(fallbackFont, font.size, line) + textBox.margin)
 				} else if textBox.GetTextAlignment() == alignment.Center {
 					xText = textBox.x +
-						(textBox.width-font.StringWidthFB(fallbackFont, fontSize, line))/2
+						(textBox.width-font.StringWidthFB(fallbackFont, font.size, line))/2
 				}
 			} else {
 				xText = textBox.y + textBox.margin
@@ -611,10 +610,10 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 					xText = textBox.x + textBox.margin
 				} else if textBox.GetTextAlignment() == alignment.Right {
 					xText = (textBox.x + textBox.width) -
-						(font.StringWidthFB(fallbackFont, fontSize, line) + textBox.margin)
+						(font.StringWidthFB(fallbackFont, font.size, line) + textBox.margin)
 				} else if textBox.GetTextAlignment() == alignment.Center {
 					xText = textBox.x +
-						(textBox.width-font.StringWidthFB(fallbackFont, fontSize, line))/2
+						(textBox.width-font.StringWidthFB(fallbackFont, font.size, line))/2
 				}
 			} else {
 				xText = textBox.x + textBox.margin
@@ -685,7 +684,7 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 	page.AddEMC()
 
 	if textBox.textDirection == direction.LeftToRight {
-		lineLength := font.StringWidthFB(fallbackFont, fontSize, text)
+		lineLength := font.StringWidthFB(fallbackFont, font.size, text)
 		if textBox.GetUnderline() {
 			page.AddArtifactBMC()
 			page.MoveTo(xText, yText+font.GetUnderlinePosition(fontSize))

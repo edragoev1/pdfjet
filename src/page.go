@@ -245,7 +245,7 @@ func (page *Page) DrawStringUsingColorMap(
 		for _, ch := range text {
 			if activeFont.unicodeToGID[ch] == 0 {
 				page.drawString(activeFont, fontSize, buf.String(), x, y, brush, colors)
-				x += activeFont.StringWidth(activeFont.size, buf.String())
+				x += activeFont.StringWidth(fontSize, buf.String())
 				buf.Reset()
 				// Switch the active font
 				if activeFont == font {

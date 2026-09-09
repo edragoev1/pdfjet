@@ -283,7 +283,7 @@ public class Page {
             for scalar in str!.unicodeScalars {
                 if activeFont.unicodeToGID[Int(scalar.value)] == 0 {
                     drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
-                    x += activeFont.stringWidth(buf)
+                    x += activeFont.stringWidth(fontSize, buf)
                     buf = ""
                     // Switch the font
                     if activeFont === font {

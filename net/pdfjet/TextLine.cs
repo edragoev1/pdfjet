@@ -546,12 +546,12 @@ public class TextLine : IDrawable {
         }
 
         if (uri != null || key != null) {
-            page.AddAnnotation(new Annotation(
+            page.AddAnnotation(new Annotation(              // TODO: Check this code!
                     Annotation.Link,
                     x,
-                    (y + verticalOffset) - font.GetAscent(fontSize),
+                    (y + verticalOffset) - font.GetAscent(),
                     x + font.StringWidth(fallbackFont, fontSize, text),
-                    (y + verticalOffset) + font.GetDescent(fontSize),
+                    (y + verticalOffset) + font.GetDescent(),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -565,7 +565,7 @@ public class TextLine : IDrawable {
         }
         page.SetTextDirection(0);
 
-        float len = font.StringWidth(fallbackFont, fontSize, text);
+        float len = font.StringWidth(fallbackFont, text);   // TODO: Check this code!
         double xMax = Math.Max((double) x, x + len*Math.Cos(radians));
         double yMax = Math.Max((double) (y + verticalOffset), (y + verticalOffset) - len*Math.Sin(radians));
 

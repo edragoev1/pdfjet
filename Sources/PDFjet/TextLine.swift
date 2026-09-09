@@ -276,7 +276,7 @@ public class TextLine : Drawable {
     /// - Returns: the width.
     ///
     public func getStringWidth(_ text: String) -> Float {
-        return font!.stringWidth(fallbackFont, fontSize, text)
+        return font!.stringWidth(fallbackFont, text)
     }
 
     ///
@@ -561,8 +561,8 @@ public class TextLine : Drawable {
             if (self.isLastToken) {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
-            let xAdjust = (font!.bodyHeight / 4.0) * Float(sin(radians))
-            let yAdjust = (font!.bodyHeight / 4.0) * Float(cos(radians)) + verticalOffset
+            let xAdjust = (font!.getBodyHeight(fontSize) / 4.0) * Float(sin(radians))
+            let yAdjust = (font!.getBodyHeight(fontSize) / 4.0) * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
             page!.addBMC(structureType, language, text!, "Strikethrough text: " + text!)
@@ -592,7 +592,7 @@ public class TextLine : Drawable {
         }
         page!.setTextDirection(0)
 
-        let len = font!.stringWidth(fallbackFont, fontSize, text!)
+        let len = font!.stringWidth(fallbackFont, text!)   // TODO: Check this code!
         let xMax = max(x, x + len*Float(cos(radians)))
         let yMax = max(y + verticalOffset, (y + verticalOffset) - len*Float(sin(radians)))
 
