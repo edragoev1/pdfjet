@@ -22,53 +22,53 @@ func Example26() {
 	var x float32 = 50.0
 	var y float32 = 50.0
 
-	checkBox := pdfjet.NewCheckBox(f1, "Hello")
-	checkBox.SetLocation(x, y)
-	checkBox.SetCheckmark(color.Blue)
-	checkBox.Check(mark.Check)
-	checkBox.DrawOn(page)
+	pdfjet.NewCheckBox(f1, "Hello").
+		SetLocation(x, y).
+		SetCheckmark(color.Blue).
+		Check(mark.Check).
+		DrawOn(page)
 
 	y += 30.0
-	checkBox = pdfjet.NewCheckBox(f1, "World!")
-	checkBox.SetLocation(x, y)
-	checkBox.SetCheckmark(color.Blue)
-	checkBox.SetURIAction("http://pdfjet.com")
-	checkBox.Check(mark.Check)
-	checkBox.DrawOn(page)
+	pdfjet.NewCheckBox(f1, "World!").
+		SetLocation(x, y).
+		SetCheckmark(color.Blue).
+		SetURIAction("http://pdfjet.com").
+		Check(mark.Check).
+		DrawOn(page)
 
 	y += 30.0
-	checkBox = pdfjet.NewCheckBox(f1, "This is a test.")
-	checkBox.SetLocation(x, y)
-	checkBox.SetURIAction("http://pdfjet.com")
-	checkBox.DrawOn(page)
+	pdfjet.NewCheckBox(f1, "This is a test.").
+		SetLocation(x, y).
+		SetURIAction("http://pdfjet.com").
+		DrawOn(page)
 
 	y += 30.0
-	radioButton := pdfjet.NewRadioButton(f1, "Hello, World!")
-	radioButton.SetLocation(x, y)
-	radioButton.SelectButton(true)
-	radioButton.DrawOn(page)
+	pdfjet.NewRadioButton(f1, "Hello, World!").
+		SetLocation(x, y).
+		SelectButton(true).
+		DrawOn(page)
 
-	radioButton = pdfjet.NewRadioButton(f1, "Yes")
-	radioButton.SetLocation(x+100.0, 50.0)
-	radioButton.SetURIAction("http://pdfjet.com")
-	radioButton.SelectButton(true)
-	xy := radioButton.DrawOn(page)
+	xy := pdfjet.NewRadioButton(f1, "Yes").
+		SetLocation(x+100.0, 50.0).
+		SetURIAction("http://pdfjet.com").
+		SelectButton(true).
+		DrawOn(page)
 
-	radioButton = pdfjet.NewRadioButton(f1, "No")
-	radioButton.SetLocation(xy[0], 50.0)
-	xy = radioButton.DrawOn(page)
+	xy = pdfjet.NewRadioButton(f1, "No").
+		SetLocation(xy[0], 50.0).
+		DrawOn(page)
 
-	checkBox = pdfjet.NewCheckBox(f1, "Hello")
-	checkBox.SetLocation(xy[0], 50.0)
-	checkBox.SetCheckmark(color.Blue)
-	checkBox.Check(mark.X)
-	xy = checkBox.DrawOn(page)
+	xy = pdfjet.NewCheckBox(f1, "Hello").
+		SetLocation(xy[0], 50.0).
+		SetCheckmark(color.Blue).
+		Check(mark.X).
+		DrawOn(page)
 
-	checkBox = pdfjet.NewCheckBox(f1, "Yahoo")
-	checkBox.SetLocation(xy[0], 50.0)
-	checkBox.SetCheckmark(color.Blue)
-	checkBox.Check(mark.Check)
-	xy = checkBox.DrawOn(page)
+	xy = pdfjet.NewCheckBox(f1, "Yahoo").
+		SetLocation(xy[0], 50.0).
+		SetCheckmark(color.Blue).
+		Check(mark.Check).
+		DrawOn(page)
 
 	box := pdfjet.NewBox()
 	box.SetLocation(xy[0], xy[1])

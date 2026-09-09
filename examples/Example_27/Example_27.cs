@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Text;
 using System.Diagnostics;
 using PDFjet.NET;
 
@@ -29,14 +28,13 @@ public class Example_27 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // Thai text from a file
         TextBlock textBlock = new TextBlock(f1,
                 Content.OfTextFile("data/languages/thai.txt"));
         textBlock.SetLocation(30f, 30f);
         textBlock.SetWidth(430f);
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetTextPadding(10f);
-        float[] xy = textBlock.DrawOn(page);  // Draw the text and get coordinates
+        float[] xy = textBlock.DrawOn(page);
 
         float x = 570f;
         float y = xy[1] + 55f;

@@ -17,26 +17,28 @@ func Example27() {
 	pdf := pdfjet.NewPDFFile("Example_27.pdf")
 
 	// Thai font
+	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
 	f1.SetSize(12.0)
 
 	// Hebrew font
+	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
 	f2.SetSize(12.0)
 
 	// Arabic font
+	// f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
 	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
 	f3.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	// Thai text from a file
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
 	textBlock.SetLocation(30.0, 30.0)
 	textBlock.SetWidth(430.0)
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetTextPadding(10.0)
-	xy := textBlock.DrawOn(page) // Draw the text and get coordinates
+	xy := textBlock.DrawOn(page)
 
 	x := float32(570.0)
 	y := xy[1] + 55.0
