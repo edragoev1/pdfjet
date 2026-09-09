@@ -10,8 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
-// Example23 draws the Canadian flag using a Path object that contains both lines
-// and curve segments. Every curve segment must have exactly 2 control points.
+// Example23 shows the ascent, descent and baseline of the text in a TextBlock.
 func Example23() {
 	pdf := pdfjet.NewPDFFile("Example_23.pdf")
 
