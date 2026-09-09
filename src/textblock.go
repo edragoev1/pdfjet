@@ -63,7 +63,6 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 	textBlock.textColor = [3]float32{0.0, 0.0, 0.0}
 	textBlock.textPadding = 0.0
 	textBlock.textAlignment = alignment.Left
-	textBlock.keywordHighlightColors = make(map[string]int32)
 
 	textBlock.borderWidth = 0.5
 	textBlock.borderCornerRadius = 0.0
@@ -251,6 +250,7 @@ func (textBlock *TextBlock) SetURIAction(uri string) *TextBlock {
 }
 
 func (textBlock *TextBlock) SetKeywordHighlightColors(keywordHighlightColors map[string]int32) {
+	textBlock.keywordHighlightColors = make(map[string]int32)
 	for key, value := range keywordHighlightColors {
 		textBlock.keywordHighlightColors[strings.ToLower(key)] = value
 	}
