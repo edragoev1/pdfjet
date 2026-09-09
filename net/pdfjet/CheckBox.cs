@@ -202,7 +202,7 @@ public class CheckBox : IDrawable {
                 page.LineTo((x + w/6 + checkWidth) + penWidth, ((yBox + h) - 4f*checkWidth/3f) + penWidth);
                 page.LineTo(((x + w) - checkWidth) + penWidth, (yBox + checkWidth) + penWidth);
                 page.StrokePath();
-            } else {
+            } else if (mark == Mark.X) {
                 // Draw 'X' mark
                 page.MoveTo(x + checkWidth + penWidth, yBox + checkWidth + penWidth);
                 page.LineTo(((x + w) - checkWidth) + penWidth, ((yBox + h) - checkWidth) + penWidth);
@@ -222,13 +222,13 @@ public class CheckBox : IDrawable {
 
         page.AddEMC();
 
-        if (uri != null) {
+        if (uri != null) {  // TODO: BMC and EMC here!
             page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     x + 3f*w/2f,
                     y,
                     x + 3f*w/2f + font.StringWidth(label),
-                    y + font.GetBodyHeight(fontSize),
+                    y + font.GetBodyHeight(),       // TODO: Use fontSize
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Transparency
@@ -241,7 +241,7 @@ public class CheckBox : IDrawable {
                     altDescription));
         }
 
-        return new float[] { x + 3f*w + font.StringWidth(label), y + font.GetBodyHeight(fontSize) };
+        return new float[] { x + 3f*w + font.StringWidth(label), y + font.GetBodyHeight() };
     }
-}   // End of CheckBox.java
+}   // End of CheckBox.cs
 }   // End of namespace PDFjet.NET

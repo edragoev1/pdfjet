@@ -10,6 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/mark"
 )
 
+// Example26 draws check boxes and radio buttons.
 func Example26() {
 	pdf := pdfjet.NewPDFFile("Example_26.pdf")
 
