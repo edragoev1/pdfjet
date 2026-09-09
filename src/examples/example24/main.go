@@ -8,6 +8,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/letter"
 )
 
+// Example24 draws a JPEG, a PNG and a BMP image.
 func Example24() {
 	pdf := pdfjet.NewPDFFile("Example_24.pdf")
 
@@ -18,7 +19,6 @@ func Example24() {
 	image3 := pdfjet.NewImageFromFile(pdf, "images/rgb24pal.bmp")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
-
 	textLine1 := pdfjet.NewTextLine(font, "This is a JPEG image.")
 	textLine1.SetTextDirection(0)
 	textLine1.SetLocation(50.0, 50.0)

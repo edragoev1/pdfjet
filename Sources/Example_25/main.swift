@@ -4,7 +4,6 @@ import PDFjet
 /**
  * Example_25.swift
  */
-
 public class Example_25 {
     public init() throws {
         let stream = OutputStream(toFileAtPath: "Example_25.pdf", append: false)
@@ -30,7 +29,6 @@ public class Example_25 {
 
         pdf.complete()
     }
-
 }   // End of Example_25.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

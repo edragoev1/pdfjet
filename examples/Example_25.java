@@ -1,20 +1,15 @@
 package examples;
 
 import java.io.*;
-import java.util.zip.CheckedOutputStream;
-import java.util.zip.CRC32;
 import com.pdfjet.*;
 
 /**
  * Example_25.java
  */
 public class Example_25 {
-
     public Example_25() throws Exception {
-        FileOutputStream fos = new FileOutputStream("Example_25.pdf");
-        BufferedOutputStream bos = new BufferedOutputStream(fos);
-
-        PDF pdf = new PDF(bos);
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_25.pdf")));
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -37,15 +32,10 @@ public class Example_25 {
         pdf.complete();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        try {
-            new Example_25();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        new Example_25();
         long time1 = System.currentTimeMillis();
         TextUtils.printDuration("Example_25", time0, time1);
     }
-
 }   // End of Example_25.java
