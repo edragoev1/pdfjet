@@ -59,8 +59,8 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 	barcode.barHeightFactor = 50.0
 	barcode.direction = LeftToRight
 
-	if barcodeType == UPC_A && len(text) > 11 {
-		log.Fatal("UPC-A barcodes can have maximum of 11 digits!")
+	if barcodeType == UPC_A && (len(text) != 11 || !hasOnlyDigits(text)) {
+		log.Fatal("UPC-A barcodes must have exactly 11 digits!")
 	} else if barcodeType == EAN_13 && len(text) > 12 {
 		log.Fatal("EAN-13 barcodes can have maximum of 12 digits!")
 	}
@@ -165,6 +165,15 @@ func (barcode *Barcode) SetDirection(direction int) {
 // @param font the specified font.
 func (barcode *Barcode) SetFont(font *Font) {
 	barcode.font = font
+}
+
+func hasOnlyDigits(text string) bool {
+	for _, ch := range text {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // DrawOn draws this barcode on the specified page.

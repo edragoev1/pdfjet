@@ -52,8 +52,8 @@ public class Barcode : Drawable {
         self.barcodeType = barcodeType
         self.text = text
 
-        if barcodeType == Barcode.UPC_A && text.count > 11 {
-            fatalError("UPC-A barcodes can have maximum of 11 digits!")
+        if barcodeType == Barcode.UPC_A && (text.count != 11 || !Barcode.hasOnlyDigits(text)) {
+            fatalError("UPC-A barcodes must have exactly 11 digits!")
         } else if barcodeType == Barcode.EAN_13 && text.count > 12 {
             fatalError("EAN-13 barcodes can have maximum of 12 digits!")
         }
@@ -181,6 +181,15 @@ public class Barcode : Drawable {
     ///
     public func setFont(_ font: Font) {
         self.font = font
+    }
+
+    private static func hasOnlyDigits(_ text: String) -> Bool {
+        for ch in text.unicodeScalars {
+            if ch < "0" || ch > "9" {
+                return false
+            }
+        }
+        return true
     }
 
     ///

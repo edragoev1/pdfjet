@@ -57,8 +57,8 @@ public class Barcode : IDrawable {
         this.barcodeType = barcodeType;
         this.text = text;
 
-        if (barcodeType == Barcode.UPC_A && text.Length > 11) {
-            throw new Exception("UPC-A barcodes can have maximum of 11 digits!");
+        if (barcodeType == Barcode.UPC_A && (text.Length != 11 || !HasOnlyDigits(text))) {
+            throw new Exception("UPC-A barcodes must have exactly 11 digits!");
         } else if (barcodeType == Barcode.EAN_13 && text.Length > 12) {
             throw new Exception("EAN-13 barcodes can have maximum of 12 digits!");
         }
@@ -215,6 +215,16 @@ public class Barcode : IDrawable {
      */
     public void SetFont(Font font) {
         this.font = font;
+    }
+
+    private static bool HasOnlyDigits(String text) {
+        for (int i = 0; i < text.Length; i++) {
+            char ch = text[i];
+            if (ch < '0' || ch > '9') {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
