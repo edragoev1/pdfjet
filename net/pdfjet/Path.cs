@@ -212,8 +212,7 @@ public class Path : IDrawable {
      *  @param factor the specified factor.
      */
     public void ScaleBy(float factor) {
-        for (int i = 0; i < points.Count; i++) {
-            Point point = points[i];
+        foreach (Point point in points) {
             point.x *= factor;
             point.y *= factor;
         }
@@ -226,8 +225,7 @@ public class Path : IDrawable {
      *  @return x and y coordinates of the bottom right corner of this component.
      */
     public float[] DrawOn(Page page) {
-        for (int i = 0; i < points.Count; i++) {
-            Point point = points[i];
+        foreach (Point point in points) {
             point.x += xBox;
             point.y += yBox;
         }
@@ -253,8 +251,7 @@ public class Path : IDrawable {
 
         float xMax = 0f;
         float yMax = 0f;
-        for (int i = 0; i < points.Count; i++) {
-            Point point = points[i];
+        foreach (Point point in points) {
             if (point.x > xMax) { xMax = point.x; }
             if (point.y > yMax) { yMax = point.y; }
             point.x -= xBox;
