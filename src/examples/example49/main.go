@@ -25,23 +25,23 @@ func Example49() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	paragraph1 := pdfjet.NewParagraph()
-	paragraph1.Add(pdfjet.NewTextLine(f1, "Hello"))
-	paragraph1.Add(pdfjet.NewTextLine(f1, "W").SetTextColor(color.Black))
-	paragraph1.Add(pdfjet.NewTextLine(f1, "o").SetTextColor(color.Red))
-	paragraph1.Add(pdfjet.NewTextLine(f1, "r").SetTextColor(color.Green))
-	paragraph1.Add(pdfjet.NewTextLine(f1, "l").SetTextColor(color.Blue))
-	paragraph1.Add(pdfjet.NewTextLine(f1, "d").SetTextColor(color.Black))
-	paragraph1.Add(pdfjet.NewTextLine(f1, "$").SetVerticalOffset(1.0))
-	paragraph1.Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue))
-	paragraph1.SetAlignment(alignment.Right)
+	paragraph1 := pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f1, "Hello")).
+		Add(pdfjet.NewTextLine(f1, "W").SetTextColor(color.Black)).
+		Add(pdfjet.NewTextLine(f1, "o").SetTextColor(color.Red)).
+		Add(pdfjet.NewTextLine(f1, "r").SetTextColor(color.Green)).
+		Add(pdfjet.NewTextLine(f1, "l").SetTextColor(color.Blue)).
+		Add(pdfjet.NewTextLine(f1, "d").SetTextColor(color.Black)).
+		Add(pdfjet.NewTextLine(f1, "$").SetVerticalOffset(1.0)).
+		Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue)).
+		SetAlignment(alignment.Right)
 
-	paragraph2 := pdfjet.NewParagraph()
-	paragraph2.Add(pdfjet.NewTextLine(f1, "Hello"))
-	paragraph2.Add(pdfjet.NewTextLine(f1, "World"))
-	paragraph2.Add(pdfjet.NewTextLine(f1, "$"))
-	paragraph2.Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue))
-	paragraph2.SetAlignment(alignment.Right)
+	paragraph2 := pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f1, "Hello")).
+		Add(pdfjet.NewTextLine(f1, "World")).
+		Add(pdfjet.NewTextLine(f1, "$")).
+		Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue)).
+		SetAlignment(alignment.Right)
 
 	column := pdfjet.NewTextColumn(0)
 	column.AddParagraph(paragraph1)

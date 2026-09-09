@@ -47,7 +47,6 @@ public class Example_49 {
         column.SetWidth(500f);
         column.DrawOn(page);
 
-
         List<Paragraph> paragraphs = new List<Paragraph>();
         paragraphs.Add(paragraph1);
         paragraphs.Add(paragraph2);

@@ -24,33 +24,33 @@ func Example50(fileName string) {
 	}
 	objects := pdf.Read(buf)
 
-	file1, err := os.Open(IBMPlexSans.Regular)
+	file1, err := os.Open("images/qrcode.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file1.Close()
 	reader := bufio.NewReader(file1)
-	font1 := pdfjet.NewFontStream2(&objects, reader)
-	font1.SetSize(12.0)
+	image1 := pdfjet.NewImage2(&objects, reader, imagetype.PNG)
+	image1.SetLocation(495.0, 65.0)
+	image1.ScaleBy(0.40)
 
-	file2, err := os.Open(IBMPlexSans.Bold)
+	file2, err := os.Open(IBMPlexSans.Regular)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file2.Close()
 	reader = bufio.NewReader(file2)
-	font2 := pdfjet.NewFontStream2(&objects, reader)
-	font2.SetSize(12.0)
+	font1 := pdfjet.NewFontStream2(&objects, reader)
+	font1.SetSize(12.0)
 
-	file3, err := os.Open("images/qrcode.png")
+	file3, err := os.Open(IBMPlexSans.Bold)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file3.Close()
 	reader = bufio.NewReader(file3)
-	image1 := pdfjet.NewImage2(&objects, reader, imagetype.PNG)
-	image1.SetLocation(495.0, 65.0)
-	image1.ScaleBy(0.40)
+	font2 := pdfjet.NewFontStream2(&objects, reader)
+	font2.SetSize(12.0)
 
 	pages := pdf.GetPageObjects(objects)
 	page := pdfjet.NewPageFromObject(pdf, pages[0])
