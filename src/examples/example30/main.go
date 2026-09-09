@@ -4,8 +4,8 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/src/compress"
-	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/encryption"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -13,9 +13,11 @@ import (
 // Example30 encrypts the PDF and attaches embedded files to a page.
 func Example30() {
 	pdf := pdfjet.NewPDFFile("Example_30.pdf")
+	// pdf.SetCompliance(compliance.PDF_UA_1)
 
 	passwords := encryption.NewPasswords()
-	passwords.SetPasswords("hello", "world")
+	passwords.SetUserPassword("hello")
+	passwords.SetOwnerPassword("world")
 
 	permissions := encryption.NewPermissions()
 	permissions.SetPermissions(
@@ -27,8 +29,8 @@ func Example30() {
 
 	pdf.SetEncryption(pdfjet.NewEncryption(pdf, passwords, permissions))
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	// f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	// f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(36.0)
 
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
@@ -61,5 +63,5 @@ func Example30() {
 func main() {
 	start := time.Now()
 	Example30()
-	pdfjet.PrintDuration("Example_46", time.Since(start))
+	pdfjet.PrintDuration("Example_30", time.Since(start))
 }

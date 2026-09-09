@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 using PDFjet.NET;
@@ -23,8 +22,7 @@ public class Example_30 {
             UserAccess.PrintHighQuality |    // this document with high quality
             // UserAccess.ModifyContents |
             // UserAccess.CopyContents |
-            UserAccess.AssembleDocument);
-        // Console.WriteLine(permissions.ToString());
+            UserAccess.AssembleDocument, true);
 
         pdf.SetEncryption(new Encryption(pdf, passwords, permissions));
 

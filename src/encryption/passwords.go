@@ -22,3 +22,13 @@ func (p *Passwords) SetPasswords(userPassword, ownerPassword string) {
 	p.UserPassword = userPassword
 	p.OwnerPassword = ownerPassword
 }
+
+// SetUserPassword sets the user password.
+func (p *Passwords) SetUserPassword(userPassword string) {
+	p.UserPassword = userPassword
+}
+
+// SetOwnerPassword sets the owner password.
+func (p *Passwords) SetOwnerPassword(ownerPassword string) {
+	p.OwnerPassword = ownerPassword
+}
