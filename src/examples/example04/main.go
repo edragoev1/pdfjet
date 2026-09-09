@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/cjkfont"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -29,22 +30,22 @@ func Example04() {
 
 	// Chinese (Traditional) font
 	// Uses Adobe's Ming Standard Light font (明體)
-	f1 := pdfjet.NewCJKFont(pdf, pdfjet.AdobeMingStdLight)
+	f1 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMingStdLight)
 	f1.SetSize(14.0)
 
 	// Chinese (Simplified) font
 	// Uses Adobe's Heiti SC Light font (黑体-简)
-	f2 := pdfjet.NewCJKFont(pdf, pdfjet.STHeitiSCLight)
+	f2 := pdfjet.NewCJKFont(pdf, cjkfont.STHeitiSCLight)
 	f2.SetSize(14.0)
 
 	// Japanese font
 	// Uses Kozuka Mincho Pro VI Regular font (小塚明朝)
-	f3 := pdfjet.NewCJKFont(pdf, pdfjet.KozMinProVIRegular)
+	f3 := pdfjet.NewCJKFont(pdf, cjkfont.KozMinProVIRegular)
 	f3.SetSize(14.0)
 
 	// Korean font
 	// Uses Adobe's Myungjo Standard Medium font (명조체)
-	f4 := pdfjet.NewCJKFont(pdf, pdfjet.AdobeMyungjoStdMedium)
+	f4 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMyungjoStdMedium)
 	f4.SetSize(14.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

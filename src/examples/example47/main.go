@@ -20,19 +20,15 @@ func Example47() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(14.0)
 
-	text := content.OfTextFile("data/dostoevsky.txt")
+	// Use regexp.Split to match Java's split("\\n\\n") regex behavior
 	re := regexp.MustCompile(`\n\n`)
-	splitContent := re.Split(text, -1)
+	paragraphs := re.Split(content.OfTextFile("data/dostoevsky.txt"), -1)
 
-	// Create slice of paragraphs
-	paragraphs := make([]string, len(splitContent))
-	copy(paragraphs, splitContent)
-
-	x := float32(50)
-	y := float32(50)
-	w := float32(230)
-	h := float32(500)
-	gap := float32(20)
+	x := float32(50.0)
+	y := float32(50.0)
+	w := float32(230.0)
+	h := float32(500.0)
+	gap := float32(20.0)
 
 	textFrame := pdfjet.NewTextFrame(f1, paragraphs)
 
@@ -70,8 +66,8 @@ func Example47() {
 			}
 		}
 
-		x = 50
-		y = 50
+		x = 50.0
+		y = 50.0
 	}
 
 	pdf.Complete()

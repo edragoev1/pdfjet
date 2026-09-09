@@ -40,6 +40,7 @@ func Example46() {
 	group.DrawOn(page)
 
 	textBox := pdfjet.NewTextBox(f1)
+	// textBox.SetFontSize(16.0)
 	textBox.SetText("Blue Layer Text")
 	textBox.SetLocation(10.0, 130.0)
 

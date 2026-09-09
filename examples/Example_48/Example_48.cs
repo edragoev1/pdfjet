@@ -13,10 +13,7 @@ public class Example_48 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("The structure of a PDF file");
 
-        Font f1 = new Font(pdf, new FileStream(
-                IBMPlexSans.Regular,
-                FileMode.Open,
-                FileAccess.Read), Font.STREAM);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/edragoev1/pdfjet/src/cjkfont"
 	"github.com/edragoev1/pdfjet/src/corefont"
 )
 
@@ -62,18 +63,6 @@ type Font struct {
 }
 
 const (
-	// AdobeMingStdLight is Chinese (Traditional) font
-	AdobeMingStdLight = "AdobeMingStd-Light"
-
-	// STHeitiSCLight is Chinese (Simplified) font
-	STHeitiSCLight = "STHeitiSC-Light"
-
-	// KozMinProVIRegular is Japanese font
-	KozMinProVIRegular = "KozMinProVI-Regular"
-
-	// AdobeMyungjoStdMedium is Korean font
-	AdobeMyungjoStdMedium = "AdobeMyungjoStd-Medium"
-
 	defaultFontSize float32 = 12.0
 )
 
@@ -159,8 +148,20 @@ func NewCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 // Please see Example_04.
 //
 // @param pdf the PDF to add this font to.
-// @param fontName the font name. Please see Example_04.
-func NewCJKFont(pdf *PDF, fontName string) *Font {
+// @param cjkFont the font. Please see Example_04.
+func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
+	var fontName string
+	switch cjkFont {
+	case cjkfont.AdobeMingStdLight: // Chinese (Traditional) font
+		fontName = "AdobeMingStd-Light"
+	case cjkfont.STHeitiSCLight: // Chinese (Simplified) font
+		fontName = "STHeitiSC-Light"
+	case cjkfont.KozMinProVIRegular: // Japanese font
+		fontName = "KozMinProVI-Regular"
+	case cjkfont.AdobeMyungjoStdMedium: // Korean font
+		fontName = "AdobeMyungjoStd-Medium"
+	}
+
 	font := new(Font)
 	font.isCJK = true
 	font.name = fontName

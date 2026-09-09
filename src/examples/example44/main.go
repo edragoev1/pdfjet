@@ -4,6 +4,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
+	"github.com/edragoev1/pdfjet/src/cjkfont"
 	"github.com/edragoev1/pdfjet/src/corefont"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -16,7 +17,7 @@ func Example44() {
 	f1.SetSize(12.0)
 
 	// Chinese (Simplified) font
-	f2 := pdfjet.NewCJKFont(pdf, pdfjet.STHeitiSCLight)
+	f2 := pdfjet.NewCJKFont(pdf, cjkfont.STHeitiSCLight)
 	f2.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait)

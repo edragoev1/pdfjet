@@ -13,8 +13,8 @@ public class Example_47 {
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(14.0)
 
-        let paragraphs = try String(
-                contentsOfFile: "data/dostoevsky.txt", encoding: .utf8).components(separatedBy: "\n\n")
+        let paragraphs = try Content.ofTextFile(
+                "data/dostoevsky.txt").components(separatedBy: "\n\n")
 
         var x: Float = 50.0
         var y: Float = 50.0
