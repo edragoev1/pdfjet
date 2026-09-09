@@ -6,8 +6,7 @@ import PDFjet
  */
 public class Example_25 {
     public init() throws {
-        let stream = OutputStream(toFileAtPath: "Example_25.pdf", append: false)
-        let pdf = PDF(stream!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_25.pdf", append: false)!)
 
         let page = Page(pdf, Letter.PORTRAIT)
 

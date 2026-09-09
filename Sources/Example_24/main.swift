@@ -6,8 +6,7 @@ import PDFjet
  */
 public class Example_24 {
     public init() throws {
-        let stream = OutputStream(toFileAtPath: "Example_24.pdf", append: false)
-        let pdf = PDF(stream!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_24.pdf", append: false)!)
         let font = Font(pdf, CoreFont.HELVETICA)
 
         let image1 = try Image(pdf, "images/gr-map.jpg")
