@@ -102,7 +102,6 @@ public class Example_34 {
                 } else {
                     cell = new Cell(f2, text);
                 }
-                // WITH:
                 cell.SetTopPadding(2f);
                 cell.SetBottomPadding(2f);
                 cell.SetLeftPadding(2f);

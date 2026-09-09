@@ -8,6 +8,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/a4"
 )
 
+// Example33 draws SVG images on the page.
 func Example33() error {
 	pdf := pdfjet.NewPDFFile("Example_33.pdf")
 

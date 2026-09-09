@@ -48,6 +48,8 @@ func NewSVGImageFromFile(filePath string) (*SVGImage, error) {
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
 	colorMap := NewColorMap()
+	image.fill = color.Transparent
+	image.stroke = color.Transparent
 	image.paths = make([]*SVGPath, 0)
 
 	decoder := xml.NewDecoder(reader)

@@ -16,7 +16,7 @@ public class Example_33 {
         }
         let pdf = PDF(output)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        let page = Page(pdf, A4.PORTRAIT)
 
         var image = try loadSVG("images/svg-test/europe.svg")
         image.setLocation(-150.0, 0.0)
