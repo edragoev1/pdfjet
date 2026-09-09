@@ -177,13 +177,13 @@ public class PDF {
         } else {
             sb.Append("<rdf:Description rdf:about=\"\"\n");
             sb.Append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n");
-            sb.Append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
             sb.Append("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n");
             sb.Append("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n");
             sb.Append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n");
+            sb.Append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n");
             sb.Append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n");
 
-            sb.Append("  <dc:format>application/pdf</dc:format>\n");
+            sb.Append("    <dc:format>application/pdf</dc:format>\n");
             if (compliance == Compliance.PDF_UA_1) {
                 sb.Append("  <pdfuaid:part>1</pdfuaid:part>\n");
             } else if (compliance == Compliance.PDF_A_1A) {

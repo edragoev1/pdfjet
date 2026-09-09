@@ -198,13 +198,13 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
     } else {
         sb.WriteString("<rdf:Description rdf:about=\"\"\n")
         sb.WriteString("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n")
-        sb.WriteString("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n")
         sb.WriteString("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
         sb.WriteString("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n")
         sb.WriteString("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n")
+        sb.WriteString("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n")
         sb.WriteString("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
 
-        sb.WriteString("  <dc:format>application/pdf</dc:format>\n")
+        sb.WriteString("    <dc:format>application/pdf</dc:format>\n")
         if pdf.compliance == compliance.PDF_UA_1 {
             sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
         } else if pdf.compliance == compliance.PDF_A_1A {
@@ -277,8 +277,8 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
     }
 
     if !fontMetadataObject {
-        // Add the recommended 2000 bytes padding. 20 lines × 100 bytes (99 spaces + newline).
-        line := strings.Repeat(" ", 99) + "\n"
+        // Add the recommended 2000 bytes padding
+        line := strings.Repeat(" ", 100) + "\n"
         sb.WriteString(strings.Repeat(line, 20))
     }
 

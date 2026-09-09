@@ -149,8 +149,8 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
         if (line.GetHeight() * textColumn.lineSpacing) > lineHeight {
             lineHeight = line.GetHeight() * textColumn.lineSpacing
         }
-        if line.font.GetAscent(line.GetFontSize()) > maxAscent {
-            maxAscent = line.font.GetAscent(line.GetFontSize())
+        if line.font.GetAscentAt(line.GetFontSize()) > maxAscent {
+            maxAscent = line.font.GetAscentAt(line.GetFontSize())
         }
     }
     if textColumn.rotate == 0 {

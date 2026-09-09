@@ -287,7 +287,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 
         fontSize := barcode.font.GetSize()
         barcode.font.SetSize(10)
-        yText := barcode.y1 + h + barcode.font.GetBodyHeight(barcode.font.GetSize())
+        yText := barcode.y1 + h + barcode.font.GetBodyHeight()
         gap := barcode.font.StringWidth(barcode.font.size, " ")
 
         firstDigitLine := NewTextLine(barcode.font, firstDigit)
@@ -314,7 +314,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
         xy[1] = float32(math.Max(float64(y), float64(xyLast[1])))
 
         barcode.font.SetSize(fontSize)
-        return [2]float32{xy[0], xy[1] + barcode.font.GetDescent(barcode.font.GetSize())}
+        return [2]float32{xy[0], xy[1] + barcode.font.GetDescent()}
     }
 
     return xy
@@ -647,7 +647,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 
         fontSize := barcode.font.GetSize()
         barcode.font.SetSize(10)
-        yText := barcode.y1 + h + barcode.font.GetBodyHeight(barcode.font.GetSize())
+        yText := barcode.y1 + h + barcode.font.GetBodyHeight()
         gap := barcode.font.StringWidth(barcode.font.size, " ")
 
         firstDigitLine := NewTextLine(barcode.font, firstDigit)
@@ -670,7 +670,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
         xy[1] = float32(math.Max(float64(y), float64(xyRight[1])))
 
         barcode.font.SetSize(fontSize)
-        return [2]float32{xy[0], xy[1] + barcode.font.GetDescent(barcode.font.GetSize())}
+        return [2]float32{xy[0], xy[1] + barcode.font.GetDescent()}
     }
 
     return xy

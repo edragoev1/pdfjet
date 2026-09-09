@@ -172,13 +172,13 @@ public class PDF {
         } else {
             sb.append("<rdf:Description rdf:about=\"\"\n")
             sb.append("    xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n")
-            sb.append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n")
             sb.append("    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
             sb.append("    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n")
             sb.append("    xmlns:xapMM=\"http://ns.adobe.com/xap/1.0/mm/\"\n")
+            sb.append("    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n")
             sb.append("    xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n")
 
-            sb.append("  <dc:format>application/pdf</dc:format>\n")
+            sb.append("    <dc:format>application/pdf</dc:format>\n")
             if compliance == Compliance.PDF_UA_1 {
                 sb.append("  <pdfuaid:part>1</pdfuaid:part>\n")
             } else if compliance == Compliance.PDF_A_1A {

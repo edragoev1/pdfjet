@@ -57,17 +57,25 @@ func getInt32(r io.Reader) int32 {
     return int32(buf[0])<<24 | int32(buf[1])<<16 | int32(buf[2])<<8 | int32(buf[3])
 }
 
-// toHexString formats code as 4 uppercase hex digits, zero-padded.
+// Pre-allocated lowercase hex digits. The ToUnicode CMap is written in
+// lowercase, matching Java's Integer.toHexString. This is deliberately not
+// the uppercase hexDigits table used for the page content streams.
+var lowerHexDigits = [16]byte{
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    'a', 'b', 'c', 'd', 'e', 'f',
+}
+
+// toHexString formats code as 4 lowercase hex digits, zero-padded.
 // Callers only ever pass 16-bit CIDs/GIDs (0 - 0xFFFF).
-// This used to go through fmt.Sprintf("%04X", code), which is fine
+// This used to go through fmt.Sprintf("%04x", code), which is fine
 // for occasional use but far too slow when called tens of thousands
 // of times while building a CJK font's ToUnicode CMap.
 func toHexString(code int) string {
     b := [4]byte{
-        hexDigits[(code>>12)&0xF],
-        hexDigits[(code>>8)&0xF],
-        hexDigits[(code>>4)&0xF],
-        hexDigits[code&0xF],
+        lowerHexDigits[(code>>12)&0xF],
+        lowerHexDigits[(code>>8)&0xF],
+        lowerHexDigits[(code>>4)&0xF],
+        lowerHexDigits[code&0xF],
     }
     return string(b[:])
 }

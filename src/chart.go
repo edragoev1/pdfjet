@@ -496,7 +496,7 @@ func (chart *Chart) drawVerticalGridLines(page *Page) {
 func (chart *Chart) DrawXAxisLabels(page *Page) {
     format := chart.formatString()
     x := chart.x5
-    y := chart.y8 + chart.f2.GetBodyHeight(chart.f2.GetSize())
+    y := chart.y8 + chart.f2.GetBodyHeight()
     step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
     page.SetBrushColor(color.Black)
     for i := 0; i < (chart.xAxisGridLines + 1); i++ {

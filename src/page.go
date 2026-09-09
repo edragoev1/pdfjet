@@ -194,9 +194,16 @@ func (page *Page) getContent() []byte {
 
 // AddDestination adds destination to this page.
 // @param name The destination name.
+// @param yPosition The vertical position of the destination on this page.
+func (page *Page) AddDestination(name string, yPosition float32) *Destination {
+    return page.AddDestinationAt(name, 0.0, yPosition)
+}
+
+// AddDestinationAt adds destination to this page.
+// @param name The destination name.
 // @param xPosition The horizontal position of the destination on this page.
 // @param yPosition The vertical position of the destination on this page.
-func (page *Page) AddDestination(name string, xPosition, yPosition float32) *Destination {
+func (page *Page) AddDestinationAt(name string, xPosition, yPosition float32) *Destination {
     dest := NewDestination(name, xPosition, page.height-yPosition)
     page.destinations = append(page.destinations, dest)
     return dest
@@ -1274,6 +1281,7 @@ func (page *Page) AddEMC() {
 
 // AddAnnotation adds annotation to the page.
 func (page *Page) AddAnnotation(annotation *Annotation) {
+    annotation.setDescriptionFallback()
     annotation.y1 = page.height - annotation.y1
     annotation.y2 = page.height - annotation.y2
     page.annots = append(page.annots, annotation)
@@ -1590,7 +1598,7 @@ func (page *Page) drawTextBlock(
     }
     page.appendString("ET\n")
 
-    yLine := y + font.GetBodyHeight(fontSize)
+    yLine := y + font.GetBodyHeightAt(fontSize)
     for _, textLine := range textLines {
         if textLine.underline {
             page.MoveTo(x+textLine.xOffset, yLine)

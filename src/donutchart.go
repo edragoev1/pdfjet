@@ -189,9 +189,9 @@ func (dc *DonutChart) drawLinePointer(
         label := NewTextLine(dc.f1, text)
         label.SetTextColor(color.Black)
         if onRightSide {
-            label.SetLocation(p2[0]+2.0, yEnd-dc.f1.GetAscent(dc.f1.size)/3.0)
+            label.SetLocation(p2[0]+2.0, yEnd-dc.f1.GetAscent()/3.0)
         } else {
-            label.SetLocation(xEnd+2.0, yEnd-dc.f1.GetAscent(dc.f1.size)/3.0)
+            label.SetLocation(xEnd+2.0, yEnd-dc.f1.GetAscent()/3.0)
         }
         label.DrawOn(page)
     } else {
@@ -245,7 +245,7 @@ func (dc *DonutChart) DrawOn(page *Page) error {
             pos := getPoint(dc.xc, dc.yc, midR, midAngle)
             label.SetLocation(
                 pos[0]-dc.f2.StringWidth(dc.f2.size, pctStr)/2.0,
-                pos[1]+dc.f2.GetAscent(dc.f2.size)/3.0,
+                pos[1]+dc.f2.GetAscent()/3.0,
             )
             label.DrawOn(page)
         }

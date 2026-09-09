@@ -129,14 +129,14 @@ func (form *Form) DrawOn(page *Page) []float32 {
                         form.y+yField)
                     hLine.SetWidth(form.lineWidth).DrawOn(page)
                 }
-                yField += form.f1.GetAscent(form.labelFontSize) + 3.0*form.f1.GetDescent(form.labelFontSize)
+                yField += form.f1.GetAscentAt(form.labelFontSize) + 3.0*form.f1.GetDescentAt(form.labelFontSize)
             }
-            yField += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
+            yField += form.f2.GetAscentAt(form.valueFontSize) + form.f2.GetDescentAt(form.valueFontSize)
         }
 
         if field.label != "" {
-            yOffset := 2*form.f1.GetDescent(form.labelFontSize) +
-                form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
+            yOffset := 2*form.f1.GetDescentAt(form.labelFontSize) +
+                form.f2.GetAscentAt(form.valueFontSize) + form.f2.GetDescentAt(form.valueFontSize)
             textLine := NewTextLine(form.f1, field.label)
             textLine.SetFontSize(form.labelFontSize)
             textLine.SetTextColorRGB(form.labelColor)
@@ -146,12 +146,12 @@ func (form *Form) DrawOn(page *Page) []float32 {
         textLine := NewTextLine(form.f2, field.value)
         textLine.SetFontSize(form.valueFontSize)
         textLine.SetTextColorRGB(form.valueColor)
-        textLine.SetLocation(xOffset+form.x+field.x, form.y+yField-form.f2.GetDescent(form.valueFontSize))
+        textLine.SetLocation(xOffset+form.x+field.x, form.y+yField-form.f2.GetDescentAt(form.valueFontSize))
         textLine.DrawOn(page)
 
         if field.x != 0.0 {
-            rowHeight := form.f1.GetAscent(form.labelFontSize) + 3.0*form.f1.GetDescent(form.labelFontSize)
-            rowHeight += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
+            rowHeight := form.f1.GetAscentAt(form.labelFontSize) + 3.0*form.f1.GetDescentAt(form.labelFontSize)
+            rowHeight += form.f2.GetAscentAt(form.valueFontSize) + form.f2.GetDescentAt(form.valueFontSize)
             vLine := NewLine(
                 form.x+field.x,
                 (form.y+yField)-rowHeight,

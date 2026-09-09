@@ -58,10 +58,10 @@ public class Example_23 {
 
         // Line beside the text descent
         Line redLine = new Line(
-                x1 - 10f,
-                y1 + f1.GetAscent(),
-                x1 - 10f,
-                y1 + f1.GetAscent() + f1.GetDescent());
+            x1 - 10f,
+            y1 + f1.GetAscent(),
+            x1 - 10f,
+            y1 + f1.GetAscent() + f1.GetDescent());
         redLine.SetColor(Color.red);
         redLine.SetWidth(3f);
         redLine.DrawOn(page);

@@ -514,7 +514,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
     font := textBox.font
     fallbackFont := textBox.fallbackFont
     fontSize := textBox.fontSize
-    leading := font.GetAscent(fontSize) + font.GetDescent(fontSize) + textBox.spacing
+    leading := font.GetAscentAt(fontSize) + font.GetDescentAt(fontSize) + textBox.spacing
     if textBox.height > 0.0 { // TextBox with fixed height
         if (float32(len(lines))*leading - textBox.spacing) > (textBox.height - 2*textBox.margin) {
             list := make([]string, 0)
@@ -549,20 +549,20 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize))
         }
         xText := textBox.x + textBox.margin
-        yText := textBox.y + textBox.margin + font.GetAscent(fontSize)
+        yText := textBox.y + textBox.margin + font.GetAscentAt(fontSize)
         if textBox.textDirection == direction.LeftToRight {
             if textBox.valign == alignment.Top {
-                yText = textBox.y + textBox.margin + font.GetAscent(fontSize)
+                yText = textBox.y + textBox.margin + font.GetAscentAt(fontSize)
             } else if textBox.valign == alignment.Bottom {
                 yText = (textBox.y + textBox.height) -
                     (float32(len(lines))*leading + textBox.margin)
-                yText += font.GetAscent(fontSize)
+                yText += font.GetAscentAt(fontSize)
             } else if textBox.valign == alignment.Center {
                 yText = textBox.y + (textBox.height-float32(len(lines))*leading)/2
-                yText += font.GetAscent(fontSize)
+                yText += font.GetAscentAt(fontSize)
             }
         } else {
-            yText = textBox.x + textBox.margin + font.GetAscent(fontSize)
+            yText = textBox.x + textBox.margin + font.GetAscentAt(fontSize)
         }
         for _, line := range lines {
             if textBox.textDirection == direction.LeftToRight {
@@ -604,7 +604,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize))
         }
         xText := textBox.x + textBox.margin
-        yText := textBox.y + textBox.margin + font.GetAscent(fontSize)
+        yText := textBox.y + textBox.margin + font.GetAscentAt(fontSize)
         for _, line := range lines {
             if textBox.textDirection == direction.LeftToRight {
                 if textBox.GetTextAlignment() == alignment.Left {
@@ -630,7 +630,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
             }
         }
         textBox.height = ((yText - textBox.y) -
-            (font.GetAscent(fontSize) + textBox.spacing)) + textBox.margin
+            (font.GetAscentAt(fontSize) + textBox.spacing)) + textBox.margin
     }
     if page != nil {
         textBox.drawBorders(page)
@@ -678,7 +678,7 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
         page.SetTextDirection(270)
         page.DrawStringUsingColorMap(
             font, fallbackFont, fontSize, text,
-            (yText+textBox.width)-(textBox.margin+2*font.GetAscent(fontSize)), xText,
+            (yText+textBox.width)-(textBox.margin+2*font.GetAscentAt(fontSize)), xText,
             textBox.textColor, textBox.colors)
     }
 
@@ -695,8 +695,8 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
         }
         if textBox.GetStrikeout() {
             page.AddArtifactBMC()
-            page.MoveTo(xText, yText-(font.GetBodyHeight(fontSize)/4))
-            page.LineTo(xText+lineLength, yText-(font.GetBodyHeight(fontSize)/4))
+            page.MoveTo(xText, yText-(font.GetBodyHeightAt(fontSize)/4))
+            page.LineTo(xText+lineLength, yText-(font.GetBodyHeightAt(fontSize)/4))
             page.StrokePath()
             page.AddEMC()
         }

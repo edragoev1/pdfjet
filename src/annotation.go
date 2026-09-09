@@ -32,3 +32,22 @@ type Annotation struct {
     // Set once the annotation has been written with a /StructParent key.
     structParentWritten bool
 }
+
+// setDescriptionFallback fills in the actual text and the alternative
+// description of an annotation that was created without them. The other ports
+// do this in the Annotation constructor; annotations here are built as struct
+// literals, so Page.AddAnnotation applies it instead.
+// A link created from a destination name has no uri to fall back on,
+// so use the name itself rather than leaving the link undescribed.
+func (annotation *Annotation) setDescriptionFallback() {
+    fallback := annotation.uri
+    if fallback == "" {
+        fallback = annotation.key
+    }
+    if annotation.actualText == "" {
+        annotation.actualText = fallback
+    }
+    if annotation.altDescription == "" {
+        annotation.altDescription = fallback
+    }
+}

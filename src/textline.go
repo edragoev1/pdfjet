@@ -233,8 +233,8 @@ func (textLine *TextLine) GetStringWidth(text string) float32 {
 // GetHeight returns the height of this TextLine.
 // @return the height.
 func (textLine *TextLine) GetHeight() float32 {
-    // println(textLine.fontSize, textLine.font.GetBodyHeight(textLine.fontSize))
-    return textLine.font.GetBodyHeight(textLine.fontSize)
+    // println(textLine.fontSize, textLine.font.GetBodyHeightAt(textLine.fontSize))
+    return textLine.font.GetBodyHeightAt(textLine.fontSize)
 }
 
 // SetURIAction sets the URI for the "click text line" action.
@@ -317,9 +317,9 @@ func (textLine *TextLine) SetTextEffect(textEffect int) *TextLine {
     if textEffect == effect.Normal {
         textLine.verticalOffset = 0.0
     } else if textEffect == effect.Superscript {
-        textLine.verticalOffset = -textLine.font.GetBodyHeight(textLine.fontSize) / 2.0
+        textLine.verticalOffset = -textLine.font.GetBodyHeightAt(textLine.fontSize) / 2.0
     } else if textEffect == effect.Subscript {
-        textLine.verticalOffset = textLine.font.GetBodyHeight(textLine.fontSize) / 3.0
+        textLine.verticalOffset = textLine.font.GetBodyHeightAt(textLine.fontSize) / 3.0
     }
     return textLine
 }
@@ -462,7 +462,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
         if textLine.isLastToken {
             lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
         }
-        bodyHeight := textLine.font.GetBodyHeight(textLine.fontSize)
+        bodyHeight := textLine.font.GetBodyHeightAt(textLine.fontSize)
         xAdjust := (bodyHeight / 4.0) * float32(math.Sin(radians))
         yAdjust := (bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
         x2 := textLine.x + lineLength*float32(math.Cos(radians))
@@ -478,9 +478,9 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
         page.AddAnnotation(&Annotation{
             annotationType: AnnotationLink,
             x1:             textLine.x,
-            y1:             (textLine.y + textLine.verticalOffset) - textLine.font.GetAscent(textLine.fontSize),
+            y1:             (textLine.y + textLine.verticalOffset) - textLine.font.GetAscentAt(textLine.fontSize),
             x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
-            y2:             (textLine.y + textLine.verticalOffset) + textLine.font.GetDescent(textLine.fontSize),
+            y2:             (textLine.y + textLine.verticalOffset) + textLine.font.GetDescentAt(textLine.fontSize),
             vertices:       nil,
             fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
             transparency:   0.0,

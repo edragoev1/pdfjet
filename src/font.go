@@ -325,14 +325,26 @@ func (font *Font) SetKernPairs(kernPairs bool) {
     font.kernPairs = kernPairs
 }
 
-func (font *Font) GetAscent(fontSize float32) float32 {
+// GetAscent returns the ascent of this font at its current size.
+func (font *Font) GetAscent() float32 {
+    return font.ascent
+}
+
+// GetDescent returns the descent of this font at its current size.
+func (font *Font) GetDescent() float32 {
+    return font.descent
+}
+
+// GetAscentAt returns the ascent of this font at the specified font size.
+func (font *Font) GetAscentAt(fontSize float32) float32 {
     if font.isCJK {
         return fontSize
     }
     return float32(font.fontAscent) * fontSize / float32(font.unitsPerEm)
 }
 
-func (font *Font) GetDescent(fontSize float32) float32 {
+// GetDescentAt returns the descent of this font at the specified font size.
+func (font *Font) GetDescentAt(fontSize float32) float32 {
     if font.isCJK {
         return fontSize / 4
     }
@@ -344,7 +356,17 @@ func (font *Font) GetHeight() float32 {
     return font.ascent + font.descent
 }
 
-// GetBodyHeight returns the height of the body of the font.
+// GetBodyHeight returns the height of the body of the font at its current size.
+func (font *Font) GetBodyHeight() float32 {
+    return font.bodyHeight
+}
+
+// GetBodyHeightAt returns the height of the body of the font
+// at the specified font size.
+func (font *Font) GetBodyHeightAt(fontSize float32) float32 {
+    return font.GetAscentAt(fontSize) + font.GetDescentAt(fontSize)
+}
+
 // GetUnderlineThickness returns the underline thickness at the specified font size.
 func (font *Font) GetUnderlineThickness(fontSize float32) float32 {
     return float32(font.fontUnderlineThickness) * fontSize / float32(font.unitsPerEm)
@@ -354,10 +376,6 @@ func (font *Font) GetUnderlineThickness(fontSize float32) float32 {
 func (font *Font) GetUnderlinePosition(fontSize float32) float32 {
     return -(float32(font.fontUnderlinePosition) * fontSize / float32(font.unitsPerEm)) +
         font.GetUnderlineThickness(fontSize)/2.0
-}
-
-func (font *Font) GetBodyHeight(fontSize float32) float32 {
-    return font.GetAscent(fontSize) + font.GetDescent(fontSize)
 }
 
 // GetFitChars returns the number of characters from the specified text string

@@ -9,10 +9,10 @@ public class Example_22 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_22.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Internal links and destinations")
+
         let f1 = try Font(pdf, IBMPlexSans.Regular)
 
         var page = Page(pdf, Letter.PORTRAIT)
-
         var text = TextLine(f1, "Page #1 -> Go to Destination #3.")
         text.setGoToAction("dest#3")
         text.setLocation(90.0, 50.0)
@@ -20,7 +20,6 @@ public class Example_22 {
         text.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
-
         text = TextLine(f1, "Page #2 -> Go to Destination #3.")
         text.setGoToAction("dest#3")
         text.setLocation(90.0, 550.0)
@@ -28,7 +27,6 @@ public class Example_22 {
         text.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
-
         text = TextLine(f1, "Page #3 -> Go to Destination #4.")
         text.setGoToAction("dest#4")
         text.setLocation(90.0, 700.0)
@@ -36,7 +34,6 @@ public class Example_22 {
         text.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
-
         text = TextLine(f1, "Page #4 -> Go to Destination #1.")
         text.setGoToAction("dest#1")
         text.setLocation(90.0, 100.0)

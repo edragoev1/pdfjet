@@ -90,7 +90,7 @@ func (radioButton *RadioButton) SetActualText(actualText string) *RadioButton {
 func (radioButton *RadioButton) DrawOn(page *Page) []float32 {
     page.AddBMC(structtype.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
 
-    radioButton.r1 = radioButton.font.GetAscent(radioButton.font.GetSize()) / 2
+    radioButton.r1 = radioButton.font.GetAscent() / 2
     radioButton.r2 = radioButton.r1 / 2
     radioButton.penWidth = radioButton.r1 / 10
 

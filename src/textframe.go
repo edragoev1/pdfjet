@@ -34,7 +34,7 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 
     tf := &TextFrame{
         f1:          f1,
-        leading:     f1.GetAscent(f1.GetSize()) + f1.GetDescent(f1.GetSize()),
+        leading:     f1.GetAscent() + f1.GetDescent(),
         borderColor: color.Blue,
         paragraphs:  make([][]string, 0),
     }
@@ -117,7 +117,7 @@ func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
         return nil, fmt.Errorf("page cannot be nil")
     }
 
-    yText := tf.y + tf.f1.GetAscent(tf.f1.GetSize())
+    yText := tf.y + tf.f1.GetAscent()
     for len(tf.paragraphs) > 0 {
         tokens := tf.paragraphs[len(tf.paragraphs)-1]
         tf.paragraphs = tf.paragraphs[:len(tf.paragraphs)-1]
@@ -127,7 +127,7 @@ func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
         var token string
 
         for len(tokens) > 0 {
-            if yText+tf.f1.GetDescent(tf.f1.GetSize()) < tf.y+tf.h {
+            if yText+tf.f1.GetDescent() < tf.y+tf.h {
                 token = tokens[len(tokens)-1]
                 tokens = tokens[:len(tokens)-1]
 

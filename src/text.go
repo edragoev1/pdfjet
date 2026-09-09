@@ -96,7 +96,7 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
             text.xText = point[0]
             text.yText = point[1]
             paragraph.x2 = text.xText
-            paragraph.y2 = text.yText + textLine.font.GetDescent(textLine.font.size)
+            paragraph.y2 = text.yText + textLine.font.GetDescent()
         }
         text.xText = text.x1
         text.yText += text.paragraphLeading
@@ -105,7 +105,7 @@ func (text *Text) DrawOn(page *Page) [2]float32 {
     lastParagraph := text.paragraphs[len(text.paragraphs)-1]
     lastTextLine := lastParagraph.GetTextLines()[len(lastParagraph.GetTextLines())-1]
     height := ((text.yText - text.paragraphLeading) - text.y1) +
-        lastTextLine.font.GetDescent(lastTextLine.fontSize)
+        lastTextLine.font.GetDescentAt(lastTextLine.fontSize)
     if text.hasBorder {
         rect := NewRect(text.x1, text.y1, text.width, height)
         rect.SetBorderColorRGB(text.borderColor)
