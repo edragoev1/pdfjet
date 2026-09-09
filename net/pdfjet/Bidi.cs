@@ -94,9 +94,7 @@ namespace PDFjet.NET {
             StringBuilder buf2 = new StringBuilder();
             bool rightToLeft = false;
 
-            for (int j = 0; j < input.Length; j++) {
-                int ch = input[j];
-
+            foreach (int ch in input) {
                 if (ch == 0x200E) {                 // LRM
                     rightToLeft = false;
                     continue;

@@ -45,8 +45,7 @@ public class PNGImage {
         validatePNG(inputStream);
 
         List<Chunk> chunks = processPNG(inputStream);
-        for (int i = 0; i < chunks.size(); i++) {
-            Chunk chunk = chunks.get(i);
+        for (Chunk chunk : chunks) {
             String chunkType = new String(chunk.type);
             if (chunkType.equals("IHDR")) {
                 this.w = toIntValue(chunk.getData(), 0);    // Width

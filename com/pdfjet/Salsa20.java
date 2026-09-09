@@ -123,8 +123,7 @@ The expected output:
     private String bin2hex(int[] binarray) {
         String table = "0123456789abcdef";
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < binarray.length; i++) {
-            int a = binarray[i];
+        for (int a : binarray) {
             buf.append(table.charAt(a>>28 & 0x0000000f));
             buf.append(table.charAt(a>>24 & 0x0000000f));
             buf.append(table.charAt(a>>20 & 0x0000000f));

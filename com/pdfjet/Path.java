@@ -212,8 +212,7 @@ public class Path implements Drawable {
      *  @param factor the specified factor.
      */
     public void scaleBy(float factor) {
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
+        for (Point point : points) {
             point.x *= factor;
             point.y *= factor;
         }
@@ -227,8 +226,7 @@ public class Path implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
+        for (Point point : points) {
             point.x += xBox;
             point.y += yBox;
         }
@@ -254,8 +252,7 @@ public class Path implements Drawable {
 
         float xMax = 0f;
         float yMax = 0f;
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
+        for (Point point : points) {
             if (point.x > xMax) { xMax = point.x; }
             if (point.y > yMax) { yMax = point.y; }
             point.x -= xBox;

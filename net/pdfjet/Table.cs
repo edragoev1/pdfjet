@@ -503,8 +503,7 @@ public class Table {
                 maxCellHeight = cellHeight;
             }
         }
-        for (int i = 0; i < row.Count; i++) {
-            Cell cell = row[i];
+        foreach (Cell cell in row) {
             if (cell.textBlock != null) {
                 cell.textBlock.SetHeight(maxCellHeight - (cell.topPadding + cell.bottomPadding));
             }

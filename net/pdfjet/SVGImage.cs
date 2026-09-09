@@ -235,8 +235,7 @@ public class SVGImage {
         page.SetPenWidth(strokeWidth);
 
         if (fillColor != Color.transparent) {
-            for (int i = 0; i < path.operations.Count; i++) {
-                PathOp op = path.operations[i];
+            foreach (PathOp op in path.operations) {
                 if (op.cmd == 'M') {
                     page.MoveTo(op.x + x, op.y + y);
                 } else if (op.cmd == 'L') {
@@ -253,8 +252,7 @@ public class SVGImage {
         }
 
         if (strokeColor != Color.transparent) {
-            for (int i = 0; i < path.operations.Count; i++) {
-                PathOp op = path.operations[i];
+            foreach (PathOp op in path.operations) {
                 if (op.cmd == 'M') {
                     page.MoveTo(op.x + x, op.y + y);
                 } else if (op.cmd == 'L') {

@@ -152,8 +152,7 @@ namespace PDFjet.NET {
             if (str.StartsWith("(") && str.EndsWith(")")) {
                 str = str.Substring(1, str.Length - 2);
             }
-            for (int i = 0; i < str.Length; i++) {
-                char ch = str[i];
+            foreach (char ch in str) {
                 if (ch != '.' && ch != ',' && ch != '\'') {
                     buf.Append(ch);
                 }

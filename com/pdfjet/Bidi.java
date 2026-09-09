@@ -99,9 +99,7 @@ public class Bidi {
         StringBuilder buf2 = new StringBuilder();
         boolean rightToLeft = false;
 
-        for (int i = 0; i < input.length; i++) {
-            int ch = input[i];
-
+        for (int ch : input) {
             if (ch == 0x200E) {           // LRM
                 rightToLeft = false;
                 continue;

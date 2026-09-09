@@ -45,8 +45,7 @@ namespace PDFjet.NET {
             PathOp op = null;
             StringBuilder buf = new StringBuilder();
             bool token = false;
-            for (int i = 0; i < path.Length; i++) {
-                char ch = path[i];
+            foreach (char ch in path) {
                 if (isCommand(ch)) {                    // open path
                     if (token) {
                         op.args.Add(buf.ToString());

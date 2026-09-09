@@ -246,8 +246,7 @@ public class SVGImage {
         page.setPenWidth(strokeWidth);
 
         if (fillColor != Color.transparent) {
-            for (int i = 0; i < path.operations.size(); i++) {
-                PathOp op = path.operations.get(i);
+            for (PathOp op : path.operations) {
                 if (op.cmd == 'M') {
                     page.moveTo(op.x + x, op.y + y);
                 } else if (op.cmd == 'L') {
@@ -264,8 +263,7 @@ public class SVGImage {
         }
 
         if (strokeColor != Color.transparent) {
-            for (int i = 0; i < path.operations.size(); i++) {
-                PathOp op = path.operations.get(i);
+            for (PathOp op : path.operations) {
                 if (op.cmd == 'M') {
                     page.moveTo(op.x + x, op.y + y);
                 } else if (op.cmd == 'L') {

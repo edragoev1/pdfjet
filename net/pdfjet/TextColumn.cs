@@ -210,8 +210,7 @@ public class TextColumn : IDrawable {
      */
     public float[] DrawOn(Page page) {
         float[] xy = null;
-        for (int i = 0; i < paragraphs.Count; i++) {
-            Paragraph paragraph = paragraphs[i];
+        foreach (Paragraph paragraph in paragraphs) {
             this.alignment = paragraph.alignment;
             xy = DrawParagraphOn(page, paragraph);
         }
@@ -429,8 +428,7 @@ public class TextColumn : IDrawable {
     public void AddChineseParagraph(Font font, String chinese) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < chinese.Length; i++) {
-            char ch = chinese[i];
+        foreach (char ch in chinese) {
             if (font.StringWidth(buf.ToString() + ch) > w) {
                 paragraph = new Paragraph();
                 paragraph.Add(new TextLine(font, buf.ToString()));

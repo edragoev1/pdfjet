@@ -665,8 +665,7 @@ public class Chart implements Drawable {
     private float covar(List<Point> points) {
         float covariance = 0f;
         float[] _mean = mean(points);
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
+        for (Point point : points) {
             covariance += (point.x - _mean[0]) * (point.y - _mean[1]);
         }
         return (covariance / (points.size() - 1));
@@ -676,8 +675,7 @@ public class Chart implements Drawable {
     private float devsq(List<Point> points) {
         float _devsq = 0f;
         float[] _mean = mean(points);
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
+        for (Point point : points) {
             _devsq = _devsq + (float) Math.pow((point.x - _mean[0]), 2);
         }
         return _devsq;

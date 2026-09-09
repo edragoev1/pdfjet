@@ -31,8 +31,7 @@ public class SimpleDateFormat {
             list.Add(now.Minute.ToString());
             list.Add(":");
             list.Add(now.Second.ToString());
-            for (int i = 0; i < list.Count; i++) {
-                String str = list[i];
+            foreach (String str in list) {
                 if (str.Length == 1 && Char.IsDigit(str[0])) {
                     dateAndTime += "0";
                 }

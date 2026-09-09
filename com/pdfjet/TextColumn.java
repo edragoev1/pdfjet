@@ -214,8 +214,7 @@ public class TextColumn implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         float[] xy = null;
-        for (int i = 0; i < paragraphs.size(); i++) {
-            Paragraph paragraph = paragraphs.get(i);
+        for (Paragraph paragraph : paragraphs) {
             this.alignment = paragraph.alignment;
             xy = drawParagraphOn(page, paragraph);
         }

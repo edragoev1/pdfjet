@@ -341,8 +341,7 @@ public class Font {
                 }
             }
         } else {
-            for (int i = 0; i < str.Length; i++) {
-                int c1 = str[i];
+            foreach (int c1 in str) {
                 if (unicodeToGID[c1] < advanceWidth.Length) {
                     width += advanceWidth[unicodeToGID[c1]];
                 } else {
@@ -502,8 +501,7 @@ public class Font {
 
         Font activeFont = this;
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < str.Length; i++) {
-            int ch = str[i];
+        foreach (int ch in str) {
             if (activeFont.unicodeToGID[ch] == 0) {
                 width += activeFont.StringWidth(fontSize, buf.ToString());
                 buf.Length = 0;

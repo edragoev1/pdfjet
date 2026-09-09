@@ -629,8 +629,7 @@ public class TextBox : IDrawable {
         // Katakana Range: 30A0–30FF
         // Hangul Jamo Range: 1100–11FF
         int numOfCJK = 0;
-        for (int i = 0; i < str.Length; i++) {
-            char ch = str[i];
+        foreach (char ch in str) {
             if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
                     (ch >= 0x3040 && ch <= 0x309F) ||
                     (ch >= 0x30A0 && ch <= 0x30FF) ||

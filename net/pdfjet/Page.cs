@@ -397,8 +397,7 @@ public class Page {
         } else {
             Font activeFont = font;
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < str.Length; i++) {
-                int ch = str[i];
+            foreach (int ch in str) {
                 if (activeFont.unicodeToGID[ch] == 0) {
                     DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
                     x += activeFont.StringWidth(fontSize, sb.ToString());
@@ -1640,8 +1639,7 @@ public class Page {
             Dictionary<String, Int32> highlightColors) {
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
-        for (int i = 0; i < str.Length; i++) {
-            char ch = str[i];
+        foreach (char ch in str) {
             if (Char.IsLetterOrDigit(ch)) {
                 DrawWord(font, buf2, color, highlightColors);
                 buf1.Append(ch);

@@ -432,8 +432,7 @@ public class PDF {
         Append(Token.BeginDictionary);
         Append("/Type /Pages\n");
         Append("/Kids [\n");
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
+        foreach (Page page in pages) {
             if (compliance != Compliance.PDF_1_7) {
                 page.SetStructElementsPageObjNumber(page.objNumber);
             }

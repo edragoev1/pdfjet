@@ -321,8 +321,7 @@ public class Chart : IDrawable {
 
         // Defensive copy so the user's data is never mutated
         List<List<Point>> plotData = new List<List<Point>>(chartData.Count);
-        for (int i = 0; i < chartData.Count; i++) {
-            List<Point> original = chartData[i];
+        foreach (List<Point> original in chartData) {
             List<Point> copy = new List<Point>(original.Count);
             for (int j = 0; j < original.Count; j++) {
                 copy.Add(new Point(original[j]));
@@ -331,8 +330,7 @@ public class Chart : IDrawable {
         }
 
         // Translate data coordinates to page coordinates (on the copies)
-        for (int i = 0; i < plotData.Count; i++) {
-            List<Point> points = plotData[i];
+        foreach (List<Point> points in plotData) {
             for (int j = 0; j < points.Count; j++) {
                 Point point = points[j];
                 if (xyChart) {
@@ -645,8 +643,7 @@ public class Chart : IDrawable {
     private float Covar(List<Point> points) {
         float covariance = 0f;
         float[] _mean = Mean(points);
-        for (int i = 0; i < points.Count; i++) {
-            Point point = points[i];
+        foreach (Point point in points) {
             covariance += (point.x - _mean[0]) * (point.y - _mean[1]);
         }
         return (covariance / (points.Count - 1));
@@ -656,8 +653,7 @@ public class Chart : IDrawable {
     private float Devsq(List<Point> points) {
         float _devsq = 0f;
         float[] _mean = Mean(points);
-        for (int i = 0; i < points.Count; i++) {
-            Point point = points[i];
+        foreach (Point point in points) {
             _devsq += (float) Math.Pow((point.x - _mean[0]), 2);
         }
         return _devsq;

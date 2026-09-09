@@ -218,8 +218,7 @@ public class Barcode : IDrawable {
     }
 
     private static bool HasOnlyDigits(String text) {
-        for (int i = 0; i < text.Length; i++) {
-            char ch = text[i];
+        foreach (char ch in text) {
             if (ch < '0' || ch > '9') {
                 return false;
             }
@@ -427,8 +426,7 @@ public class Barcode : IDrawable {
         }
 
         List<Int32> list = new List<Int32>();
-        for (int i = 0; i < text.Length; i++) {
-            char symchar = text[i];
+        foreach (char symchar in text) {
             // Some characters need two codewords (SHIFT/FNC_4 + value), so
             // checking list.Count == 48 only *after* adding them could skip
             // right over 48 (e.g. 47 -> 49) and never trip again, silently

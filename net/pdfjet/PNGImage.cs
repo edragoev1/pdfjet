@@ -42,8 +42,7 @@ public class PNGImage {
         ValidatePNG(inputStream);
 
         List<Chunk> chunks = ProcessPNG(inputStream);
-        for (int i = 0; i < chunks.Count; i++) {
-            Chunk chunk = chunks[i];
+        foreach (Chunk chunk in chunks) {
             String chunkType = System.Text.Encoding.UTF8.GetString(chunk.type);
             if (chunkType.Equals("IHDR")) {
                 this.w = (int) ToUInt32(chunk.GetData(), 0);    // Width

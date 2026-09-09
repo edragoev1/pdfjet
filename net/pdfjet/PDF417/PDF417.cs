@@ -45,8 +45,7 @@ public class PDF417 : IDrawable {
         this.h1 = 3 * w1;
         this.codewords = new int[rows * (cols + 2)];
 
-        for (int i = 0; i < str.Length; i++) {
-            char ch = str[i];
+        foreach (char ch in str) {
             if (ch > 126) {
                 throw new Exception("The string contains unencodable characters.");
             }

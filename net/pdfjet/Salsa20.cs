@@ -124,8 +124,7 @@ The expected output:
         String table = "0123456789abcdef";
         StringBuilder buf = new StringBuilder();
 
-        for (int i = 0; i < binarray.Length; i++) {
-            int a = binarray[i];
+        foreach (int a in binarray) {
             buf.Append(table[a>>28 & 0x0000000f]);
             buf.Append(table[a>>24 & 0x0000000f]);
             buf.Append(table[a>>20 & 0x0000000f]);

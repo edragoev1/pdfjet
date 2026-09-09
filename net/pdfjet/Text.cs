@@ -178,8 +178,7 @@ public class Text : IDrawable {
         // Katakana Range: 30A0–30FF
         // Hangul Jamo Range: 1100–11FF
         int numOfCJK = 0;
-        for (int i = 0; i < str.Length; i++) {
-            char ch = str[i];
+        foreach (char ch in str) {
             if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
                     (ch >= 0x3040 && ch <= 0x309F) ||
                     (ch >= 0x30A0 && ch <= 0x30FF) ||
@@ -193,8 +192,7 @@ public class Text : IDrawable {
     private String[] TokenizeCJK(TextLine textLine, float textWidth) {
         List<String> list = new List<String>();
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < textLine.text.Length; i++) {
-            char ch = textLine.text[i];
+        foreach (char ch in textLine.text) {
             if (textLine.font.StringWidth(textLine.fallbackFont, buf.ToString() + ch) < textWidth) {
                 buf.Append(ch);
             } else {
