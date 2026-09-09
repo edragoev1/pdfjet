@@ -121,6 +121,21 @@ public class Text : IDrawable {
         return new float[] { x1 + width, y1 + height };
     }
 
+    // Splits the text on runs of whitespace, the way Java's
+    // String.split("\s+") does: Regex.Split keeps the empty token that a
+    // trailing run of whitespace produces, and that token draws an extra space.
+    private static String[] SplitOnWhitespace(String text) {
+        String[] tokens = Regex.Split(text, @"\s+");
+        int count = tokens.Length;
+        while (count > 0 && tokens[count - 1].Length == 0) {
+            count -= 1;
+        }
+        if (count < tokens.Length) {
+            Array.Resize(ref tokens, count);
+        }
+        return tokens;
+    }
+
     public float[] DrawTextLine(
             Page page, float x, float y, TextLine textLine) {
         this.xText = x;
@@ -130,7 +145,7 @@ public class Text : IDrawable {
         if (StringIsCJK(textLine.text)) {
             tokens = TokenizeCJK(textLine, this.width);
         } else {
-            tokens = Regex.Split(textLine.text, @"\s+");
+            tokens = SplitOnWhitespace(textLine.text);
         }
 
         StringBuilder buf = new StringBuilder();

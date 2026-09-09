@@ -5,9 +5,9 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/src/letter"
 )
 
 // Example41 draws paragraphs of styled text with the Text component on A4 paper.
@@ -23,7 +23,7 @@ func Example41() {
 	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaOblique())
 	f3.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
 	paragraphs := make([]*pdfjet.Paragraph, 0)
 

@@ -115,6 +115,21 @@ public class Text : Drawable {
         return [self.x1 + self.width, self.y1 + height]
     }
 
+    /// Splits the text on runs of whitespace, the way Java's
+    /// String.split("\s+") does: components(separatedBy:) splits on every
+    /// whitespace character, so a run of them - or a trailing one - yields
+    /// empty tokens, and every empty token draws an extra space.
+    static func splitOnWhitespace(_ text: String) -> [String] {
+        let parts = text.components(separatedBy: .whitespacesAndNewlines)
+        var tokens = [String]()
+        for (index, part) in parts.enumerated() {
+            if index == 0 || !part.isEmpty {
+                tokens.append(part)
+            }
+        }
+        return tokens
+    }
+
     private func drawTextLine(
             _ page: Page?,
             _ x: Float,
@@ -127,7 +142,7 @@ public class Text : Drawable {
         if stringIsCJK(textLine.text!) {
             tokens = tokenizeCJK(textLine, self.width)
         } else {
-            tokens = textLine.text!.components(separatedBy: .whitespaces)
+            tokens = Text.splitOnWhitespace(textLine.text!)
         }
 
         var buf = String()

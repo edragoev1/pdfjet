@@ -101,21 +101,20 @@ public class Example_40 {
             float x,
             float w,
             float h,
-            int fillColor,
+            int color,
             String text,
             int textColor) {
         List<Point> path1 = new List<Point>();
 
         Point point = new Point();
-        point.SetStartOfPath();
+        point.SetDrawPath();
         point.SetX(x);
         point.SetY(0f);
         point.SetShape(Point.INVISIBLE);
-        point.SetStrokeColor(fillColor);
         point.SetStrokeWidth(w);
+        point.SetStrokeColor(color);
         point.SetText(text);
-        // point.SetFontSize(8f);
-        point.SetTextColor(Color.white);
+        point.SetTextColor(textColor);
         point.SetTextDirection(90);
         path1.Add(point);
 
