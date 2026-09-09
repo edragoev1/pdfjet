@@ -215,10 +215,8 @@ public class QRCode : IDrawable {
 
     private void SetupPositionAdjustPattern() {
         int[] pos = {6, 26};    // Magic Numbers
-        for (int i = 0; i < pos.Length; i++) {
-            for (int j = 0; j < pos.Length; j++) {
-                int row = pos[i];
-                int col = pos[j];
+        foreach (int row in pos) {
+            foreach (int col in pos) {
 
                 if (modules[row][col] != null) {
                     continue;
@@ -300,13 +298,13 @@ public class QRCode : IDrawable {
         BitBuffer buffer = new BitBuffer();
         buffer.Put(4, 4);
         buffer.Put(qrData.Length, 8);
-        for (int i = 0; i < qrData.Length; i++) {
-            buffer.Put(qrData[i], 8);
+        foreach (byte b in qrData) {
+            buffer.Put(b, 8);
         }
 
         int totalDataCount = 0;
-        for (int i = 0; i < rsBlocks.Length; i++) {
-            totalDataCount += rsBlocks[i].GetDataCount();
+        foreach (RSBlock rsBlock in rsBlocks) {
+            totalDataCount += rsBlock.GetDataCount();
         }
 
         if (buffer.GetLengthInBits() > totalDataCount * 8) {
@@ -375,8 +373,8 @@ public class QRCode : IDrawable {
         }
 
         int totalCodeCount = 0;
-        for (int i = 0; i < rsBlocks.Length; i++) {
-            totalCodeCount += rsBlocks[i].GetTotalCount();
+        foreach (RSBlock rsBlock in rsBlocks) {
+            totalCodeCount += rsBlock.GetTotalCount();
         }
 
         byte[] data = new byte[totalCodeCount];

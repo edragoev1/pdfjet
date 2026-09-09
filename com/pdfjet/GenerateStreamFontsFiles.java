@@ -54,13 +54,13 @@ public class GenerateStreamFontsFiles {
         writeInt32(otf.underlineThickness, baos);
 
         writeInt32(otf.advanceWidth.length, baos);
-        for (int i = 0; i < otf.advanceWidth.length; i++) {
-            writeInt16(otf.advanceWidth[i], baos);
+        for (int width : otf.advanceWidth) {
+            writeInt16(width, baos);
         }
 
         writeInt32(otf.unicodeToGID.length, baos);
-        for (int i = 0; i < otf.unicodeToGID.length; i++) {
-            writeInt16(otf.unicodeToGID[i], baos);
+        for (int gid : otf.unicodeToGID) {
+            writeInt16(gid, baos);
         }
 
         byte[] buf1 = baos.toByteArray();

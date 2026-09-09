@@ -1959,8 +1959,8 @@ final public class PDF {
                 append(obj.number);
                 append(Token.NEW_OBJ);
                 if (obj.dict != null) {
-                    for (int i = 0; i < obj.dict.size(); i++) {
-                        append(obj.dict.get(i));
+                    for (String token : obj.dict) {
+                        append(token);
                         append(Token.SPACE);
                     }
                 }

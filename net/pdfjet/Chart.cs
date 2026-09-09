@@ -323,16 +323,15 @@ public class Chart : IDrawable {
         List<List<Point>> plotData = new List<List<Point>>(chartData.Count);
         foreach (List<Point> original in chartData) {
             List<Point> copy = new List<Point>(original.Count);
-            for (int j = 0; j < original.Count; j++) {
-                copy.Add(new Point(original[j]));
+            foreach (Point point in original) {
+                copy.Add(new Point(point));
             }
             plotData.Add(copy);
         }
 
         // Translate data coordinates to page coordinates (on the copies)
         foreach (List<Point> points in plotData) {
-            for (int j = 0; j < points.Count; j++) {
-                Point point = points[j];
+            foreach (Point point in points) {
                 if (xyChart) {
                     point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
                     point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);

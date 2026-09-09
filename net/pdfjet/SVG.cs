@@ -120,8 +120,8 @@ namespace PDFjet.NET {
                         lastOp = pathOp;
                     }
                 } else if (op.cmd == 'H' || op.cmd == 'h') {
-                    for (int i = 0; i < op.args.Count; i++) {
-                        float x = float.Parse(op.args[i]);
+                    foreach (String arg in op.args) {
+                        float x = float.Parse(arg);
                         if (op.cmd == 'h' && lastOp != null) {
                             x += lastOp.x;
                         }
@@ -130,8 +130,8 @@ namespace PDFjet.NET {
                         lastOp = pathOp;
                     }
                 } else if (op.cmd == 'V' || op.cmd == 'v') {
-                    for (int i = 0; i < op.args.Count; i++) {
-                        float y = float.Parse(op.args[i]);
+                    foreach (String arg in op.args) {
+                        float y = float.Parse(arg);
                         if (op.cmd == 'v' && lastOp != null) {
                             y += lastOp.y;
                         }

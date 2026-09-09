@@ -244,8 +244,8 @@ class FontStream2 {
         obj.dict.add("[");
         obj.dict.add("0");
         obj.dict.add("[");
-        for (int i = 0; i < font.advanceWidth.length; i++) {
-            obj.dict.add(String.valueOf(Math.round(k * font.advanceWidth[i])));
+        for (int width : font.advanceWidth) {
+            obj.dict.add(String.valueOf(Math.round(k * width)));
         }
         obj.dict.add("]");
         obj.dict.add("]");

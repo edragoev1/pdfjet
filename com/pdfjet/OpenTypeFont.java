@@ -273,8 +273,8 @@ class OpenTypeFont {
         pdf.append('\n');
 
         pdf.append("/W [0[\n");
-        for (int i = 0; i < font.advanceWidth.length; i++) {
-            pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[i])));
+        for (int width : font.advanceWidth) {
+            pdf.append(Math.round(k * Float.valueOf(width)));
             pdf.append(' ');
         }
         pdf.append("]]\n");

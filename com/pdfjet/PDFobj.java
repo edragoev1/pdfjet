@@ -271,8 +271,8 @@ public class PDFobj {
     private void addFontResource(
             PDFobj obj, List<PDFobj> objects, String fontID, int number) {
         boolean fonts = false;
-        for (int i = 0; i < obj.dict.size(); i++) {
-            if (obj.dict.get(i).equals("/Font")) {
+        for (String token : obj.dict) {
+            if (token.equals("/Font")) {
                 fonts = true;
                 break;
             }

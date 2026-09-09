@@ -140,8 +140,8 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'H' || op.cmd == 'h') {
-                for (int i = 0; i < op.args.size(); i++) {
-                    float x = Float.parseFloat(op.args.get(i));
+                for (String arg : op.args) {
+                    float x = Float.parseFloat(arg);
                     if (op.cmd == 'h' && lastOp != null) {
                         x += lastOp.x;
                     }
@@ -150,8 +150,8 @@ public class SVG {
                     lastOp = pathOp;
                 }
             } else if (op.cmd == 'V' || op.cmd == 'v') {
-                for (int i = 0; i < op.args.size(); i++) {
-                    float y = Float.parseFloat(op.args.get(i));
+                for (String arg : op.args) {
+                    float y = Float.parseFloat(arg);
                     if (op.cmd == 'v' && lastOp != null) {
                         y += lastOp.y;
                     }

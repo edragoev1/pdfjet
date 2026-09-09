@@ -559,10 +559,9 @@ public class Table {
      * @param color the color of the cell border lines.
      */
     public void SetCellBordersColor(int color) {
-        for (int i = 0; i < tableData.Count; i++) {
-            List<Cell> row = tableData[i];
-            for (int j = 0; j < row.Count; j++) {
-                tableData[i][j].SetStrokeColor(color);
+        foreach (List<Cell> row in tableData) {
+            foreach (Cell cell in row) {
+                cell.SetStrokeColor(color);
             }
         }
     }
@@ -573,10 +572,9 @@ public class Table {
      * @param width the width of the cell border lines.
      */
     public void SetCellBordersWidth(float width) {
-        for (int i = 0; i < tableData.Count; i++) {
-            List<Cell> row = tableData[i];
-            for (int j = 0; j < row.Count; j++) {
-                tableData[i][j].SetLineWidth(width);
+        foreach (List<Cell> row in tableData) {
+            foreach (Cell cell in row) {
+                cell.SetLineWidth(width);
             }
         }
     }
@@ -733,13 +731,13 @@ public class Table {
                             if (buf.Length > 0) {
                                 buf.Append(" ");
                             }
-                            for (int k = 0; k < token.Length; k++) {
-                                if (cell.font.StringWidth(cell.fallbackFont, buf.ToString() + token[k]) > cellWidth) {
+                            foreach (char ch in token) {
+                                if (cell.font.StringWidth(cell.fallbackFont, buf.ToString() + ch) > cellWidth) {
                                     tableData2[i + n][j].SetText(buf.ToString());
                                     buf.Length = 0;
                                     n++;
                                 }
-                                buf.Append(token[k]);
+                                buf.Append(ch);
                             }
                         } else {
                             if (cell.font.StringWidth(cell.fallbackFont, (buf.ToString() + " " + token).Trim()) > cellWidth) {
@@ -781,12 +779,12 @@ public class Table {
                 if (buf.Length > 0) {
                     buf.Append(" ");
                 }
-                for (int k = 0; k < token.Length; k++) {
-                    if (cell.font.StringWidth(cell.fallbackFont, (buf.ToString() + " " + token[k]).Trim()) > cellWidth) {
+                foreach (char ch in token) {
+                    if (cell.font.StringWidth(cell.fallbackFont, (buf.ToString() + " " + ch).Trim()) > cellWidth) {
                         numOfVerCells++;
                         buf.Length = 0;
                     }
-                    buf.Append(token[k]);
+                    buf.Append(ch);
                 }
             } else {
                 if (cell.font.StringWidth(cell.fallbackFont, (buf.ToString() + " " + token).Trim()) > cellWidth) {

@@ -161,9 +161,7 @@ public class PDF417 : IDrawable {
         List<Int32> list = new List<Int32>();
 
         int currentMode = ALPHA;
-        int ch = 0;
-        for (int i = 0; i < str.Length; i++) {
-            ch = str[i];
+        foreach (int ch in str) {
             if (ch == 0x20) {
                 list.Add(26);   // The codeword for space
                 continue;

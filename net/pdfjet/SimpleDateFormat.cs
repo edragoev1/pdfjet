@@ -44,8 +44,8 @@ public class SimpleDateFormat {
             list.Add(now.Hour);
             list.Add(now.Minute);
             list.Add(now.Second);
-            for (int i = 0; i < list.Count; i++) {
-                String str = list[i].ToString();
+            foreach (int value in list) {
+                String str = value.ToString();
                 if (str.Length == 1) {
                     dateAndTime += "0";
                 }

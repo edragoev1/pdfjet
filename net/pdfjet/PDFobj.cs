@@ -254,8 +254,8 @@ public class PDFobj {
     private void AddFontResource(
             PDFobj obj, List<PDFobj> objects, String fontID, int number) {
         bool fonts = false;
-        for (int i = 0; i < obj.dict.Count; i++) {
-            if (obj.dict[i].Equals("/Font")) {
+        foreach (String token in obj.dict) {
+            if (token.Equals("/Font")) {
                 fonts = true;
                 break;
             }

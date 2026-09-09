@@ -268,8 +268,8 @@ class FontStream1 {
         pdf.append('\n');
 
         pdf.append("/W [0[\n");
-        for (int i = 0; i < font.advanceWidth.length; i++) {
-            pdf.append(Math.round(k * (float) font.advanceWidth[i]));
+        for (int width : font.advanceWidth) {
+            pdf.append(Math.round(k * (float) width));
             pdf.append(' ');
         }
         pdf.append("]]\n");

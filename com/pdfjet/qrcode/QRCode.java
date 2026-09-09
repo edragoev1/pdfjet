@@ -230,10 +230,8 @@ final public class QRCode implements Drawable {
 
     private void setupPositionAdjustPattern() {
         int[] pos = {6, 26};    // Magic Numbers
-        for (int i = 0; i < pos.length; i++) {
-            for (int j = 0; j < pos.length; j++) {
-                int row = pos[i];
-                int col = pos[j];
+        for (int row : pos) {
+            for (int col : pos) {
                 if (modules[row][col] != null) {
                     continue;
                 }
@@ -313,13 +311,13 @@ final public class QRCode implements Drawable {
         BitBuffer buffer = new BitBuffer();
         buffer.put(4, 4);
         buffer.put(qrData.length, 8);
-        for (int i = 0; i < qrData.length; i++) {
-            buffer.put(qrData[i], 8);
+        for (byte b : qrData) {
+            buffer.put(b, 8);
         }
 
         int totalDataCount = 0;
-        for (int i = 0; i < rsBlocks.length; i++) {
-            totalDataCount += rsBlocks[i].getDataCount();
+        for (RSBlock rsBlock : rsBlocks) {
+            totalDataCount += rsBlock.getDataCount();
         }
 
         if (buffer.getLengthInBits() > totalDataCount * 8) {
@@ -388,8 +386,8 @@ final public class QRCode implements Drawable {
         }
 
         int totalCodeCount = 0;
-        for (int i = 0; i < rsBlocks.length; i++) {
-            totalCodeCount += rsBlocks[i].getTotalCount();
+        for (RSBlock rsBlock : rsBlocks) {
+            totalCodeCount += rsBlock.getTotalCount();
         }
 
         byte[] data = new byte[totalCodeCount];

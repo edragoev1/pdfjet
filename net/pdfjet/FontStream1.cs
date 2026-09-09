@@ -259,8 +259,8 @@ class FontStream1 {
         pdf.Append('\n');
 
         pdf.Append("/W [0[\n");
-        for (int i = 0; i < font.advanceWidth.Length; i++) {
-            pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[i])));
+        foreach (int width in font.advanceWidth) {
+            pdf.Append((int) Math.Round(k * Convert.ToSingle(width)));
             pdf.Append(' ');
         }
         pdf.Append("]]\n");

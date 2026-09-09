@@ -1855,8 +1855,8 @@ public class PDF {
                 Append(obj.number);
                 Append(Token.NewObj);
                 if (obj.dict != null) {
-                    for (int i = 0; i < obj.dict.Count; i++) {
-                        Append(obj.dict[i]);
+                    foreach (String token in obj.dict) {
+                        Append(token);
                         Append(' ');
                     }
                 }

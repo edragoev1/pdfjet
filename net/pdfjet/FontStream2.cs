@@ -240,8 +240,8 @@ class FontStream2 {
         obj.dict.Add("[");
         obj.dict.Add("0");
         obj.dict.Add("[");
-        for (int i = 0; i < font.advanceWidth.Length; i++) {
-            obj.dict.Add(((int) Math.Round(k * font.advanceWidth[i])).ToString());
+        foreach (int width in font.advanceWidth) {
+            obj.dict.Add(((int) Math.Round(k * width)).ToString());
         }
         obj.dict.Add("]");
         obj.dict.Add("]");

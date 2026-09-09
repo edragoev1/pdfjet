@@ -521,8 +521,8 @@ public class Barcode : IDrawable {
         float[] xy = new float[] {0f, 0f};
 
         if (direction == LEFT_TO_RIGHT) {
-            for (int i = 0; i < fullText.Length; i++) {
-                String code = tableB[fullText[i]];
+            foreach (char symbol in fullText) {
+                String code = tableB[symbol];
                 if ( code == null ) {
                     throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
@@ -555,8 +555,8 @@ public class Barcode : IDrawable {
                 xy[0] = Math.Max(x, xy[0]);
             }
         } else if (direction == TOP_TO_BOTTOM) {
-            for (int i = 0; i < fullText.Length; i++) {
-                String code = tableB[fullText[i]];
+            foreach (char symbol in fullText) {
+                String code = tableB[symbol];
                 if ( code == null ) {
                     throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
@@ -593,8 +593,8 @@ public class Barcode : IDrawable {
         } else if (direction == BOTTOM_TO_TOP) {
             float height = 0.0f;
 
-            for (int i = 0; i < fullText.Length; i++) {
-                String code = tableB[fullText[i]];
+            foreach (char symbol in fullText) {
+                String code = tableB[symbol];
                 if ( code == null ) {
                     throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
@@ -612,8 +612,8 @@ public class Barcode : IDrawable {
             }
 
             y += height - m1;
-            for (int i = 0; i < fullText.Length; i++) {
-                String code = tableB[fullText[i]];
+            foreach (char symbol in fullText) {
+                String code = tableB[symbol];
 
                 for (int j = 0; j < 9; j++) {
                     char ch = code[j];
