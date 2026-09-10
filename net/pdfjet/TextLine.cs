@@ -459,7 +459,6 @@ public class TextLine : IDrawable {
     /// </summary>
     /// <param name="page">the page to draw this text line on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
-    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         if (page == null || text == null || text.Equals("")) {
             return new float[] {x, y};

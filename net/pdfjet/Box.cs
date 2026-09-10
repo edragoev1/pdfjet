@@ -239,7 +239,6 @@ public class Box : IDrawable {
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
-    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
         page.SetPenWidth(width);

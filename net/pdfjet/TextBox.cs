@@ -749,7 +749,6 @@ public class TextBox : IDrawable {
     /// </summary>
     /// <param name="page">the Page where the TextBox is to be drawn.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
-    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         String[] lines = getTextLines();
         float leading = font.GetAscent(fontSize) + font.GetDescent(fontSize) + spacing;

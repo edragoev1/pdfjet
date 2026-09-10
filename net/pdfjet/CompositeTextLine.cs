@@ -260,7 +260,6 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
-    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         float xMax = 0f;
         float yMax = 0f;

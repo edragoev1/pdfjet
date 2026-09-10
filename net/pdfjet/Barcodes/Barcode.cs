@@ -229,7 +229,6 @@ public class Barcode : IDrawable {
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
-    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         if (barcodeType == Barcode.EAN_13) {
             return DrawCodeEAN13(page, x1, y1);

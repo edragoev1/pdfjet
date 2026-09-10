@@ -608,7 +608,6 @@ public class Page {
     /// Sets the brush color.
     /// </summary>
     /// <param name="color">the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.</param>
-    /// <exception cref="IOException"/>
     /// <returns>this Page object.</returns>
     public Page SetBrushColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
@@ -628,7 +627,6 @@ public class Page {
     /// Sets the color for brush operations.
     /// </summary>
     /// <param name="rgbColor">the color.</param>
-    /// <exception cref="IOException"/>
     /// <returns>this Page object.</returns>
     public Page SetBrushColor(float[] rgbColor) {
         if (rgbColor == null) {

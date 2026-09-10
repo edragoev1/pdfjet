@@ -1,3 +1,7 @@
+#!/bin/bash
+# Stop at the first failure, so a missing tool cannot leave out a reference.
+set -e
+
 rm -rf docs/java
 
 javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \

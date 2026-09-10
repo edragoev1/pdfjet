@@ -16,7 +16,6 @@ public interface IDrawable {
     /// </summary>
     /// <param name="canvas">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
-    /// <exception cref="System.Exception"/>
     float[] DrawOn(Page canvas);
     /// <summary>Sets the location of this drawable on the page.</summary>
     IDrawable SetLocation(float x, float y);

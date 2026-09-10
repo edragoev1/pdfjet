@@ -41,7 +41,6 @@ public class QRCode : IDrawable {
     /// </summary>
     /// <param name="str">the string to encode.</param>
     /// <param name="errorCorrectLevel">the desired error correction level.</param>
-    /// <exception cref="System.Exception"/>
     public QRCode(String str, int errorCorrectLevel) {
         this.qrData = Encoding.GetEncoding("utf-8").GetBytes(str);
         this.errorCorrectLevel = errorCorrectLevel;
@@ -108,7 +107,6 @@ public class QRCode : IDrawable {
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
-    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         page.SetBrushColor(this.color);
         for (int row = 0; row < modules.Length; row++) {
