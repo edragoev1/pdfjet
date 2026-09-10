@@ -1,14 +1,31 @@
 package com.pdfjet.corefonts;
 
+/**
+ * The metrics of Times-BoldItalic, one of the 14 standard PDF fonts.
+ * The values are in thousandths of the font size.
+ */
 public final class Times_BoldItalic {
+    /** The default constructor */
+    public Times_BoldItalic() {
+    }
+
+    /** The PostScript name of the font */
     public static final String name = "Times-BoldItalic";
+    /** The x coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLx = -200;
+    /** The y coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLy = -218;
+    /** The x coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURx = 996;
+    /** The y coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURy = 921;
+    /** The position of the underline relative to the baseline */
     public static final int underlinePosition = -100;
+    /** The thickness of the underline */
     public static final int underlineThickness = 50;
+    /** The copyright notice of the font */
     public static final String notice = "Copyright (c) 1985, 1987, 1989, 1990, 1993, 1997 Adobe Systems Incorporated. All Rights Reserved. Times is a trademark of Linotype-Hell AG and/or its subsidiaries.";
+    /** One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment */
     public static final int[][] metrics = {
         {32,250,65,-37,193,-37,194,-37,196,-37,192,-37,197,-37,195,-37,86,-70,87,-70,89,-70,221,-70,159,-70,},
         {33,389,},

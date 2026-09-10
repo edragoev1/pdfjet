@@ -17,6 +17,12 @@ import java.util.Arrays;
 
 import com.pdfjet.*;
 
+/**
+ * Encrypts a PDF with 256-bit AES as defined in ISO 32000-2 (PDF 2.0).
+ * Pass the encryption object to PDF.setEncryption.
+ *
+ * Please see Example_30.
+ */
 public class Encryption {
     private final byte[] fileEncryptionKey;
     private final int objNumber;
@@ -46,6 +52,11 @@ public class Encryption {
 
     /**
      * Creates a new encryption dictionary and adds it to the PDF.
+     *
+     * @param pdf the PDF to encrypt.
+     * @param passwords the user and owner passwords.
+     * @param permissions the permissions granted to the user.
+     * @throws Exception if there is an issue.
      */
     public Encryption(PDF pdf, Passwords passwords, Permissions permissions) throws Exception {
         // === Generate a random 256-bit (32-byte) File Encryption Key ===
@@ -149,10 +160,20 @@ public class Encryption {
         objNumber = pdf.getObjNumber();
     }
 
+    /**
+     * Returns the randomly generated file encryption key.
+     *
+     * @return a copy of the 32-byte file encryption key.
+     */
     public byte[] getKey() {
         return fileEncryptionKey.clone(); // Return copy for safety
     }
 
+    /**
+     * Returns the object number of the encryption dictionary.
+     *
+     * @return the object number.
+     */
     public int getObjNumber() {
         return objNumber;
     }
@@ -288,7 +309,10 @@ public class Encryption {
     }
 
     /**
-     * Creates the unencrypted permissions block for Algorithm 10
+     * Creates the unencrypted permissions block for Algorithm 10.
+     *
+     * @param permissionsValue the value of the /P key.
+     * @return the 16-byte permissions block, before it is encrypted.
      */
     public static byte[] createUnencryptedPermsBlock(long permissionsValue) {
         // Extend the 32-bit permission to 64 bits with upper 32 bits set to 1

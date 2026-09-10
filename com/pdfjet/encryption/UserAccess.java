@@ -81,12 +81,20 @@ public enum UserAccess {
         this.value = value;
     }
 
+    /**
+     * Returns the bit mask of this permission.
+     *
+     * @return the bit mask.
+     */
     public int getValue() {
         return value;
     }
 
     /**
-     * Checks if this permission is contained in the given flags
+     * Checks if this permission is contained in the given flags.
+     *
+     * @param flags the permissions flags.
+     * @return true if this permission is set in the flags.
      */
     public boolean isSetIn(int flags) {
         return (flags & value) == value;

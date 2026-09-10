@@ -1,7 +1,14 @@
-rm -f docs/java/com/pdfjet/*.html
-rm -f docs/java/*.html
+rm -rf docs/java
 
-javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" com/pdfjet/*.java -d docs/java
+javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \
+    com/pdfjet/*.java \
+    com/pdfjet/barcodes/*.java \
+    com/pdfjet/corefonts/*.java \
+    com/pdfjet/encryption/*.java \
+    com/pdfjet/fonts/*.java \
+    com/pdfjet/pdf417/*.java \
+    com/pdfjet/qrcode/*.java \
+    -d docs/java
 
 # The C# API reference is built by DocFX from the XML doc comments in net/pdfjet.
 # Install it once with: dotnet tool install -g docfx

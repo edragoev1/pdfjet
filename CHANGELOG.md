@@ -59,6 +59,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing `@param` and `@return` tags. Classes that only hold constants or
   static methods got the same documented no-argument constructor they already
   had implicitly, so the public API is unchanged.
+- The Java reference also covers the `com.pdfjet.barcodes`,
+  `com.pdfjet.corefonts` and `com.pdfjet.encryption` packages, and the
+  `com.pdfjet` classes kept in `fonts/`, `pdf417/` and `qrcode/` (`NotoSans`,
+  `PDF417`, `ErrorCorrectLevel` and others), which `generate-documentation.sh`
+  used to skip. 331 doc comments were added across 36 of their files, and
+  Javadoc still reports no warnings.
 - `docs/` is no longer tracked in git. The `Documentation` GitHub Actions
   workflow (`.github/workflows/docs.yml`) builds the Java and C# references on
   every push to `master` and publishes them to GitHub Pages at

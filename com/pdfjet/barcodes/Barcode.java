@@ -55,6 +55,7 @@ public class Barcode implements Drawable {
      *
      * @param barcodeType the type of the barcode.
      * @param text the content text of the barcode.
+     * @throws Exception if the text is not valid for the barcode type.
      */
     public Barcode(int barcodeType, String text) throws Exception {
         this.barcodeType = barcodeType;
@@ -245,6 +246,15 @@ public class Barcode implements Drawable {
         }
     }
 
+    /**
+     * Draws this barcode on the specified page at the specified location.
+     *
+     * @param page the specified page.
+     * @param x1 the x coordinate of the barcode.
+     * @param y1 the y coordinate of the barcode.
+     * @return x and y coordinates of the bottom right corner of this component.
+     * @throws Exception  If an input or output exception occurred
+     */
     public float[] drawOnPageAtLocation(Page page, float x1, float y1) throws Exception {
         if (barcodeType == Barcode.EAN_13) {
             return drawCodeEAN13(page, x1, y1);

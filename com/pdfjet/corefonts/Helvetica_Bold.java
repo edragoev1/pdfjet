@@ -1,14 +1,31 @@
 package com.pdfjet.corefonts;
 
+/**
+ * The metrics of Helvetica-Bold, one of the 14 standard PDF fonts.
+ * The values are in thousandths of the font size.
+ */
 public final class Helvetica_Bold {
+    /** The default constructor */
+    public Helvetica_Bold() {
+    }
+
+    /** The PostScript name of the font */
     public static final String name = "Helvetica-Bold";
+    /** The x coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLx = -170;
+    /** The y coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLy = -228;
+    /** The x coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURx = 1003;
+    /** The y coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURy = 962;
+    /** The position of the underline relative to the baseline */
     public static final int underlinePosition = -100;
+    /** The thickness of the underline */
     public static final int underlineThickness = 50;
+    /** The copyright notice of the font */
     public static final String notice = "Copyright (c) 1985, 1987, 1989, 1990, 1997 Adobe Systems Incorporated. All Rights Reserved. Helvetica is a trademark of Linotype-Hell AG and/or its subsidiaries.";
+    /** One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment */
     public static final int[][] metrics = {
         {32,278,84,-100,86,-80,87,-80,89,-120,221,-120,159,-120,147,-80,145,-60,},
         {33,333,},

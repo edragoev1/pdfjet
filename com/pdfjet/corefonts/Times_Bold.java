@@ -1,14 +1,31 @@
 package com.pdfjet.corefonts;
 
+/**
+ * The metrics of Times-Bold, one of the 14 standard PDF fonts.
+ * The values are in thousandths of the font size.
+ */
 public final class Times_Bold {
+    /** The default constructor */
+    public Times_Bold() {
+    }
+
+    /** The PostScript name of the font */
     public static final String name = "Times-Bold";
+    /** The x coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLx = -168;
+    /** The y coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLy = -218;
+    /** The x coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURx = 1000;
+    /** The y coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURy = 935;
+    /** The position of the underline relative to the baseline */
     public static final int underlinePosition = -100;
+    /** The thickness of the underline */
     public static final int underlineThickness = 50;
+    /** The copyright notice of the font */
     public static final String notice = "Copyright (c) 1985, 1987, 1989, 1990, 1993, 1997 Adobe Systems Incorporated. All Rights Reserved. Times is a trademark of Linotype-Hell AG and/or its subsidiaries.";
+    /** One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment */
     public static final int[][] metrics = {
         {32,250,65,-55,193,-55,194,-55,196,-55,192,-55,197,-55,195,-55,84,-30,86,-45,87,-30,89,-55,221,-55,159,-55,},
         {33,333,},

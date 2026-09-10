@@ -11,7 +11,14 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
 
+/**
+ * AES-128 encryption used when computing the encryption dictionary.
+ */
 public class AES128 {
+    /** The default constructor */
+    public AES128() {
+    }
+
     /**
      * Encrypts K1 with AES-128-CBC, no padding.
      *

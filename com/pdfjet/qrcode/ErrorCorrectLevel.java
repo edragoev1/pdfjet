@@ -20,6 +20,10 @@ package com.pdfjet;
  * Used to specify the error correction level for QR Codes.
  */
 public class ErrorCorrectLevel {
+    /** The default constructor */
+    public ErrorCorrectLevel() {
+    }
+
     /** Low */
     public static final int L = 1;
 

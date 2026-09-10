@@ -1,14 +1,31 @@
 package com.pdfjet.corefonts;
 
+/**
+ * The metrics of Times-Italic, one of the 14 standard PDF fonts.
+ * The values are in thousandths of the font size.
+ */
 public final class Times_Italic {
+    /** The default constructor */
+    public Times_Italic() {
+    }
+
+    /** The PostScript name of the font */
     public static final String name = "Times-Italic";
+    /** The x coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLx = -169;
+    /** The y coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLy = -217;
+    /** The x coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURx = 1010;
+    /** The y coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURy = 883;
+    /** The position of the underline relative to the baseline */
     public static final int underlinePosition = -100;
+    /** The thickness of the underline */
     public static final int underlineThickness = 50;
+    /** The copyright notice of the font */
     public static final String notice = "Copyright (c) 1985, 1987, 1989, 1990, 1993, 1997 Adobe Systems Incorporated. All Rights Reserved. Times is a trademark of Linotype-Hell AG and/or its subsidiaries.";
+    /** One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment */
     public static final int[][] metrics = {
         {32,250,65,-18,193,-18,194,-18,196,-18,192,-18,197,-18,195,-18,84,-18,86,-35,87,-40,89,-75,221,-75,159,-75,},
         {33,333,},

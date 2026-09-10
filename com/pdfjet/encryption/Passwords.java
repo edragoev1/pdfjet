@@ -6,27 +6,55 @@
  */
 package com.pdfjet.encryption;
 
+/**
+ * The user and owner passwords of an encrypted PDF.
+ *
+ * Please see Example_30.
+ */
 public class Passwords {
     private String userPassword;
     private String ownerPassword;
 
+    /** The default constructor */
     public Passwords() {
     }
 
+    /**
+     * Sets the user password, which is required to open the document.
+     *
+     * @param userPassword the user password.
+     * @return this Passwords object.
+     */
     public Passwords setUserPassword(String userPassword) {
         this.userPassword = userPassword;
         return this;
     }
 
+    /**
+     * Sets the owner password, which opens the document with full access.
+     *
+     * @param ownerPassword the owner password.
+     * @return this Passwords object.
+     */
     public Passwords setOwnerPassword(String ownerPassword) {
         this.ownerPassword = ownerPassword;
         return this;
     }
 
+    /**
+     * Returns the user password.
+     *
+     * @return the user password.
+     */
     public String getUserPassword() {
         return userPassword;
     }
 
+    /**
+     * Returns the owner password.
+     *
+     * @return the owner password.
+     */
     public String getOwnerPassword() {
         return ownerPassword;
     }

@@ -42,6 +42,8 @@ public class Permissions {
     /**
      * Gets the permissions as the type-safe UserAccess enum combination.
      * Note: Java enums don't have built-in flags support like C#, so we return the raw value.
+     *
+     * @return the permissions flags.
      */
     public int getAccess() {
         return permissionsFlags;
@@ -51,6 +53,7 @@ public class Permissions {
      * Sets the permissions using the type-safe UserAccess enum values.
      * The value is automatically masked to ensure any invalid bits are cleared.
      *
+     * @param access the UserAccess values combined with bitwise OR.
      * @return this Permissions object.
      */
     public Permissions setAccess(int access) {
@@ -62,6 +65,8 @@ public class Permissions {
      * Gets the raw 32-bit integer value of the permissions flags.
      * This value is suitable for writing to the /P key in a PDF encryption dictionary.
      * All reserved bits are guaranteed to be zero.
+     *
+     * @return the value of the /P key.
      */
     public int getRawValue() {
         return permissionsFlags;
@@ -70,6 +75,8 @@ public class Permissions {
     /**
      * Gets a value indicating whether the user can print the document
      * (possibly at low quality, unless canPrintHighQuality() is true).
+     *
+     * @return true if the user can print the document.
      */
     public boolean canPrint() {
         return UserAccess.PRINT.isSetIn(permissionsFlags);
@@ -77,6 +84,8 @@ public class Permissions {
 
     /**
      * Gets a value indicating whether the user can modify the document's contents.
+     *
+     * @return true if the user can modify the contents.
      */
     public boolean canModifyContents() {
         return UserAccess.MODIFY_CONTENTS.isSetIn(permissionsFlags);
@@ -84,6 +93,8 @@ public class Permissions {
 
     /**
      * Gets a value indicating whether the user can copy or extract content.
+     *
+     * @return true if the user can copy the contents.
      */
     public boolean canCopyContents() {
         return UserAccess.COPY_CONTENTS.isSetIn(permissionsFlags);
@@ -92,6 +103,8 @@ public class Permissions {
     /**
      * Gets a value indicating whether the user can add or modify annotations and form fields.
      * This is primarily for legacy PDF support.
+     *
+     * @return true if the user can modify annotations.
      */
     public boolean canModifyAnnotations() {
         return UserAccess.MODIFY_ANNOTATIONS.isSetIn(permissionsFlags);
@@ -99,6 +112,8 @@ public class Permissions {
 
     /**
      * Gets a value indicating whether the user can fill interactive form fields.
+     *
+     * @return true if the user can fill form fields.
      */
     public boolean canFillFormFields() {
         return UserAccess.FILL_FORM_FIELDS.isSetIn(permissionsFlags);
@@ -106,6 +121,8 @@ public class Permissions {
 
     /**
      * Gets a value indicating whether the user can extract content for accessibility.
+     *
+     * @return true if the user can extract content for accessibility.
      */
     public boolean canExtractForAccessibility() {
         return UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(permissionsFlags);
@@ -113,6 +130,8 @@ public class Permissions {
 
     /**
      * Gets a value indicating whether the user can assemble the document (manipulate pages).
+     *
+     * @return true if the user can assemble the document.
      */
     public boolean canAssembleDocument() {
         return UserAccess.ASSEMBLE_DOCUMENT.isSetIn(permissionsFlags);
@@ -120,6 +139,8 @@ public class Permissions {
 
     /**
      * Gets a value indicating whether the user can print the document at high quality.
+     *
+     * @return true if the user can print at high quality.
      */
     public boolean canPrintHighQuality() {
         return UserAccess.PRINT_HIGH_QUALITY.isSetIn(permissionsFlags);
