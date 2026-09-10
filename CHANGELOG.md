@@ -41,6 +41,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   `SetTextColor` or `setTextColor`, which they only forwarded to. Java and C#
   keep `setColor`, marked deprecated.
 - Swift `SVGImage.getPenWidth()` is removed; call `getWidth()`.
+- Go `TextColumn.SetSize` and Swift `TextColumn.setSize` are removed, as C# marks
+  `SetSize` obsolete. Call `SetWidth` and `SetHeight` (Go) or `setWidth` and
+  `setHeight` (Swift); the height setters are new, matching C# `SetHeight`.
+  `Example_10` in both ports uses them.
 - The Swift `DonutChart` and `Example_03`, `Example_37` and `Example_41` call
   `setTextColor`.
 

@@ -121,7 +121,7 @@ func Example10() {
 	}
 
 	columnWidth := float32(470.0)
-	column.SetSize(columnWidth, 100.0)
+	column.SetWidth(columnWidth).SetHeight(100.0)
 	xy := column.DrawOn(page)
 
 	if rotate == 0 {

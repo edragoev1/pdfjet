@@ -78,19 +78,16 @@ func (textColumn *TextColumn) SetLocation(x, y float32) *TextColumn {
 	return textColumn
 }
 
-// SetSize sets the size of this text column.
-// @param w the width of this text column.
-// @param h the height of this text column.
-func (textColumn *TextColumn) SetSize(w, h float32) *TextColumn {
-	textColumn.w = w
-	textColumn.h = h
-	return textColumn
-}
-
 // SetWidth sets the desired width of this text column.
 // @param w the width of this text column.
 func (textColumn *TextColumn) SetWidth(w float32) *TextColumn {
 	textColumn.w = w
+	return textColumn
+}
+
+// SetHeight sets the height of this text column.
+func (textColumn *TextColumn) SetHeight(h float32) *TextColumn {
+	textColumn.h = h
 	return textColumn
 }
 

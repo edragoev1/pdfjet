@@ -91,19 +91,6 @@ public class TextColumn : Drawable {
     }
 
     ///
-    /// Sets the size of this text column.
-    ///
-    /// - Parameter w: the width of this text column.
-    /// - Parameter h: the height of this text column.
-    ///
-    @discardableResult
-    public func setSize(_ w: Float, _ h: Float) -> TextColumn {
-        self.w = w
-        self.h = h
-        return self
-    }
-
-    ///
     /// Sets the desired width of this text column.
     ///
     /// - Parameter w: the width of this text column.
@@ -111,6 +98,17 @@ public class TextColumn : Drawable {
     @discardableResult
     public func setWidth(_ w: Float) -> TextColumn {
         self.w = w
+        return self
+    }
+
+    ///
+    /// Sets the height of this text column.
+    ///
+    /// - Parameter h: the height of this text column.
+    ///
+    @discardableResult
+    public func setHeight(_ h: Float) -> TextColumn {
+        self.h = h
         return self
     }
 
