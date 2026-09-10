@@ -142,6 +142,7 @@ func (arc *Arc) SetFillColorRGB(r, g, b float32) *Arc {
 // SetFillColorRGBArray sets the fill color from an array of red, green and blue values.
 func (arc *Arc) SetFillColorRGBArray(rgbColor [3]float32) *Arc {
 	arc.fillColor = rgbColor
+	arc.hasFillColor = true
 	return arc
 }
 

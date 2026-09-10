@@ -868,7 +868,7 @@ public class Table {
     public int GetRowCount() { return tableData.Count; }
     /// <summary>Returns the number of cells in the specified row.</summary>
     public int GetColCount(int row) {
-        if (row <= tableData.Count) {
+        if (row >= 0 && row < tableData.Count) {
             return tableData[row].Count;
         } else {
             return 0;

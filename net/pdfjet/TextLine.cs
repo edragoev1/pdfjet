@@ -190,10 +190,9 @@ public class TextLine : IDrawable {
         return textColor;
     }
 
-    /// <summary>Sets the color of the underline and strikeout lines as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the color of the underline and strikeout lines as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
     public TextLine SetLineColor(int color) {
         if (color == Color.transparent) {
-            this.textColor = null;
             return this;
         }
         float r = ((color >> 16) & 0xff)/255f;

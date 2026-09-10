@@ -219,6 +219,7 @@ public class Stamp : Drawable {
         moveTo(x, y)
         lineTo(x + w, y)
         lineTo(x + w, y + h)
+        lineTo(x, y + h)
         fillPath()
         return self
     }

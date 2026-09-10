@@ -266,13 +266,13 @@ public class TextLine implements Drawable {
 
     /**
      * Sets the color of the underline and strikeout lines.
+     * Color.transparent leaves the line color unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextLine object.
      */
     public TextLine setLineColor(int color) {
         if (color == Color.transparent) {
-            this.textColor = null;
             return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
