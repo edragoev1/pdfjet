@@ -7,7 +7,9 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>A circle annotation.</summary>
 public class CircleAnnotation : BaseAnnotation {
+    /// <summary>Creates a circle annotation.</summary>
     public CircleAnnotation() {
         base.annotationType = Annotation.Circle;
     }

@@ -6,6 +6,7 @@
  */
 import Foundation
 
+/// A block of text that wraps at its width, with an optional border, background and padding.
 public class TextBlock : Drawable {
     internal var x: Float = 0.0
     internal var y: Float = 0.0
@@ -40,50 +41,59 @@ public class TextBlock : Drawable {
 
     private var highlightColors: [String: Int32]?
 
+    /// Creates a text block with the specified font and text.
     public init(_ font: Font, _ textContent: String) {
         self.font = font
         self.fontSize = font.size
         self.textContent = textContent
     }
 
+    /// Sets the font of the text.
     @discardableResult
     public func setFont(_ font: Font) -> TextBlock {
         self.font = font
         return self
     }
 
+    /// Sets the font used for characters the main font does not have.
     @discardableResult
     public func setFallbackFont(_ font: Font) -> TextBlock {
         self.fallbackFont = font
         return self
     }
 
+    /// Sets the size of the font. This changes the size of the Font object itself.
     @discardableResult
     public func setFontSize(_ size: Float) -> TextBlock {
         self.font.setSize(size)
         return self
     }
 
+    /// Sets the size of the fallback font, if there is one.
     @discardableResult
     public func setFallbackFontSize(_ size: Float) -> TextBlock {
         fallbackFont?.setSize(size)
         return self
     }
 
+    /// Sets the text.
     @discardableResult
     public func setText(_ text: String) -> TextBlock {
         self.textContent = text
         return self
     }
 
+    /// Returns the font of the text.
     public func getFont() -> Font {
         return font
     }
 
+    /// Returns the text.
     public func getText() -> String {
         return textContent
     }
 
+    /// Sets the location of the top left corner of this text block.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
@@ -91,6 +101,7 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the size of this text block.
     @discardableResult
     public func setSize(_ w: Float, _ h: Float) -> TextBlock {
         self.width = w
@@ -98,6 +109,7 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the width of this text block and resets its height to 0.
     @discardableResult
     public func setWidth(_ w: Float) -> TextBlock {
         self.width = w
@@ -105,38 +117,45 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Returns the width of this text block.
     public func getWidth() -> Float {
         return self.width
     }
 
+    /// Returns the height of this text block.
     public func getHeight() -> Float {
         return self.height
     }
 
+    /// Sets the radius of the border corners.
     @discardableResult
     public func setBorderCornerRadius(_ radius: Float) -> TextBlock {
         self.borderCornerRadius = radius
         return self
     }
 
+    /// Sets the space between the text and the border.
     @discardableResult
     public func setTextPadding(_ padding: Float) -> TextBlock {
         self.textPadding = padding
         return self
     }
 
+    /// Sets the border width.
     @discardableResult
     public func setBorderWidth(_ borderWidth: Float) -> TextBlock {
         self.borderWidth = borderWidth
         return self
     }
 
+    /// Sets the text line height. The value is stored but not used when drawing.
     @discardableResult
     public func setTextLineHeight(_ lineHeight: Float) -> TextBlock {
         self.textLineHeight = lineHeight
         return self
     }
 
+    /// Sets the text color as a 0xRRGGBB value.
     @discardableResult
     public func setTextColor(_ color: Int32) -> TextBlock {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -146,18 +165,21 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the text color from an array of red, green and blue values.
     @discardableResult
     public func setTextColor(_ textColor: [Float]) -> TextBlock {
         self.textColor = textColor
         return self
     }
 
+    /// Sets the text color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setTextColor(_ r: Float, _ g: Float, _ b: Float) -> TextBlock {
         self.textColor = [r, g, b]
         return self
     }
 
+    /// Sets the background color as a 0xRRGGBB value.
     @discardableResult
     public func setFillColor(_ color: Int32) -> TextBlock {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -167,12 +189,14 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the background color from an array of red, green and blue values, or nil for no background.
     @discardableResult
     public func setFillColor(_ fillColor: [Float]?) -> TextBlock {
         self.fillColor = fillColor
         return self
     }
 
+    /// Sets the border color as a 0xRRGGBB value.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> TextBlock {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -182,12 +206,14 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the border color from an array of red, green and blue values, or nil for no border.
     @discardableResult
     public func setBorderColor(_ borderColor: [Float]?) -> TextBlock {
         self.borderColor = borderColor
         return self
     }
 
+    /// Sets the colors used to highlight words in the text.
     @discardableResult
     public func setHighlightColors(_ highlightColors: [String: Int32]) -> TextBlock {
         self.highlightColors = highlightColors
@@ -209,12 +235,14 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the line spacing as a multiple of the font's body height.
     @discardableResult
     public func setLineSpacing(_ lineSpacing: Float) -> TextBlock {
         self.lineSpacing = lineSpacing
         return self
     }
 
+    /// Sets the horizontal alignment of the text.
     @discardableResult
     public func setTextAlignment(_ alignment: Alignment) -> TextBlock {
         self.textAlignment = alignment
@@ -282,12 +310,14 @@ public class TextBlock : Drawable {
         return textLines
     }
 
+    /// Sets the URI opened when this text block is clicked.
     @discardableResult
     public func setURIAction(_ uri: String) -> TextBlock {
         self.uri = uri
         return self
     }
 
+    /// Sets the direction of the text.
     @discardableResult
     public func setTextDirection(_ direction: Direction) -> TextBlock {
         self.textDirection = direction
@@ -323,6 +353,7 @@ public class TextBlock : Drawable {
         }
     }
 
+    /// Draws this text block on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let ascent = font.getAscent(fontSize)

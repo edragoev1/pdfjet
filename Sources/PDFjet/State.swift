@@ -14,6 +14,7 @@ class State {
     private var lineJoinStyle: JoinStyle
     private var linePattern: String
 
+    /// Creates a snapshot of the pen and brush colors, pen width, line cap and join styles and dash pattern.
     public init(
             _ pen: [Float],
             _ brush: [Float],
@@ -29,26 +30,32 @@ class State {
         self.linePattern = linePattern
     }
 
+    /// Returns the pen color.
     public func getPen() -> [Float] {
         return self.pen
     }
 
+    /// Returns the brush color.
     public func getBrush() -> [Float] {
         return self.brush
     }
 
+    /// Returns the pen width.
     public func getPenWidth() -> Float {
         return self.penWidth
     }
 
+    /// Returns the line cap style.
     public func getLineCapStyle() -> CapStyle {
         return self.lineCapStyle
     }
 
+    /// Returns the line join style.
     public func getLineJoinStyle() -> JoinStyle {
         return self.lineJoinStyle
     }
 
+    /// Returns the line dash pattern.
     public func getLinePattern() -> String {
         return self.linePattern
     }

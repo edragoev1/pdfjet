@@ -23,10 +23,12 @@ public class Dimension {
         self.h = height
     }
 
+    /// Returns the width.
     public func getWidth() -> Float? {
         return self.w
     }
 
+    /// Returns the height.
     public func getHeight() -> Float? {
         return self.h
     }

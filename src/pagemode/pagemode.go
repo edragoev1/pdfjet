@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package pagemode defines the page modes used when the document is opened.
 package pagemode
 
 // Constants used to specify the PDF page mode.

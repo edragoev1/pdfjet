@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package a4 defines the A4 page size in points.
 package a4
 
 // Portrait A4 page dimensions

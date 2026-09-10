@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package round holds the minimum, maximum and number of grid lines of a rounded value range.
 package round
 
 // MinValue the min value.

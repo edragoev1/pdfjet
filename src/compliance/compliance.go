@@ -1,5 +1,7 @@
+// Package compliance defines the PDF/UA and PDF/A compliance levels.
 package compliance
 
+// Compliance specifies the PDF/UA or PDF/A compliance level.
 type Compliance int
 
 // Used to set PDF/UA and PDF/A compliance.

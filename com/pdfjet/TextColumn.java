@@ -13,9 +13,13 @@ import java.util.*;
  * Please see Example_10.
  */
 public class TextColumn implements Drawable {
+    /** The text alignment. */
     protected int alignment = Align.LEFT;
+    /** The rotation in degrees: 0, 90 or 270. */
     protected int rotate;
+    /** The x coordinate of the top left corner. */
     protected float x;  // This variable is set in the beginning and only reset after the drawOn
+    /** The y coordinate of the top left corner. */
     protected float y;  // This variable is set in the beginning and only reset after the drawOn
     private float w;
     private float h;

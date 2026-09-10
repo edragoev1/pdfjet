@@ -29,7 +29,9 @@ public class SVGImage {
     float strokeWidth = 0f;
 
     List<SVGPath> paths = null;
+    /** The URI opened when the image is clicked. */
     protected String uri = null;
+    /** The destination key used by the GoTo action. */
     protected String key = null;
     private String language = null;
     private String actualText = Single.space;

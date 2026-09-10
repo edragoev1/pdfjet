@@ -11,6 +11,10 @@ using System.Collections.Generic;
 using PDFjet.NET.CoreFonts;
 
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create font objects.
+/// The font objects must be added to the PDF before they can be used to draw text.
+/// </summary>
 public class Font {
     /// <summary>
     ///  Is this a stream font?
@@ -125,6 +129,7 @@ public class Font {
     }
 
     // Constructor for CJK fonts
+    /// <summary>Creates a Chinese, Japanese or Korean font and adds it to the PDF.</summary>
     public Font(PDF pdf, CJKFont font) {
         String fontName = null;
         if (font == CJKFont.ADOBE_MING_STD_LIGHT) {             // Chinese (Traditional) font
@@ -222,12 +227,14 @@ public class Font {
     }
 
     // Constructor for .ttf.stream fonts:
+    /// <summary>Creates a font from a .ttf.stream or .otf.stream font and adds it to the PDF.</summary>
     public Font(PDF pdf, Stream inputStream, bool flag) {
         FontStream1.Register(pdf, this, inputStream);
         SetSize(size);
     }
 
     // Constructor for .ttf.stream fonts:
+    /// <summary>Creates a font from a .ttf.stream or .otf.stream font and adds it to the objects of an existing PDF.</summary>
     public Font(List<PDFobj> objects, Stream inputStream, bool flag) {
         FontStream2.Register(objects, this, inputStream);
         SetSize(size);
@@ -289,23 +296,28 @@ public class Font {
         return this;
     }
 
+    /// <summary>Returns the font size.</summary>
     public float GetSize() {
         return size;
     }
 
+    /// <summary>Returns the name of the font.</summary>
     public String GetName() {
         return this.name;
     }
 
+    /// <summary>Enables or disables kerning. Kerning is only supported for the 14 standard fonts.</summary>
     public Font SetKernPairs(bool kernPairs) {
         this.kernPairs = kernPairs;
         return this;
     }
 
+    /// <summary>Returns the width of the string at the current font size.</summary>
     public float StringWidth(String str) {
         return StringWidth(this.size, str);
     }
 
+    /// <summary>Returns the width of the string at the specified font size.</summary>
     public float StringWidth(float fontSize, String str) {
         float width = 0.0f;
 
@@ -351,14 +363,17 @@ public class Font {
         return width * fontSize / unitsPerEm;
     }
 
+    /// <summary>Returns the ascent at the current font size.</summary>
     public float GetAscent() {
         return ascent;
     }
 
+    /// <summary>Returns the descent at the current font size.</summary>
     public float GetDescent() {
         return descent;
     }
 
+    /// <summary>Returns the ascent at the specified font size.</summary>
     public float GetAscent(float fontSize) {
         if (isCJK) {
             return fontSize;
@@ -366,6 +381,7 @@ public class Font {
         return fontAscent * fontSize / unitsPerEm;
     }
 
+    /// <summary>Returns the descent at the specified font size.</summary>
     public float GetDescent(float fontSize) {
         if (isCJK) {
             return fontSize/4;
@@ -373,6 +389,7 @@ public class Font {
         return -fontDescent * fontSize / unitsPerEm;
     }
 
+    /// <summary>Returns the ascent plus the descent at the specified font size.</summary>
     public float GetBodyHeight(float fontSize) {
         return GetAscent(fontSize) + GetDescent(fontSize);
     }
@@ -393,18 +410,22 @@ public class Font {
         return ascent + descent;
     }
 
+    /// <summary>Returns the underline thickness at the specified font size.</summary>
     public float GetUnderlineThickness(float fontSize) {
         return (fontUnderlineThickness * fontSize / unitsPerEm);
     }
 
+    /// <summary>Returns the underline position at the specified font size.</summary>
     public float GetUnderlinePosition(float fontSize) {
         return  -(fontUnderlinePosition * fontSize / unitsPerEm) + underlineThickness / 2.0f;
     }
 
+    /// <summary>Returns how many characters of the string fit within the specified width.</summary>
     public int GetFitChars(String str, double width) {
         return GetFitChars(str, (float) width);
     }
 
+    /// <summary>Returns how many characters of the string fit within the specified width.</summary>
     public int GetFitChars(String str, float width) {
         float w = width * unitsPerEm / size;
         if (isCJK) {
@@ -478,6 +499,10 @@ public class Font {
         return this;
     }
 
+    /// <summary>
+    /// Returns the width of the string at the current font size,
+    /// using the fallback font for characters this font does not have.
+    /// </summary>
     public float StringWidth(Font fallbackFont, String str) {
         return StringWidth(fallbackFont, this.size, str);
     }
@@ -486,6 +511,7 @@ public class Font {
     /// Returns the width of a string drawn using two fonts.
     /// </summary>
     /// <param name="fallbackFont">the fallback font.</param>
+    /// <param name="fontSize">the font size.</param>
     /// <param name="str">the string.</param>
     /// <returns>the width.</returns>
     public float StringWidth(Font fallbackFont, float fontSize, String str) {

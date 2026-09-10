@@ -27,6 +27,8 @@ type EmbeddedFile struct {
 	content   []byte
 }
 
+// NewEmbeddedFileAtPath embeds the file at the specified path into the PDF,
+// compressing it when compress is true. It exits the program if the file cannot be opened.
 func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
 	fileName := filePath[strings.LastIndex(filePath, "/")+1:]
 	file, err := os.Open(filePath)

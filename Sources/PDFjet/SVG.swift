@@ -6,6 +6,7 @@
  */
 import Foundation
 
+/// Converts SVG path data to PDF path operations.
 public class SVG {
 
     static func isCommand(_ ch: Character) -> Bool {
@@ -37,6 +38,7 @@ public class SVG {
         }
     }
 
+    /// Parses SVG path data into a list of path operations.
     public static func getOperations(_ path: String) -> [PathOp] {
         var operations = [PathOp]()
         var op: PathOp?
@@ -79,6 +81,7 @@ public class SVG {
         return operations
     }
 
+    /// Converts SVG path operations to PDF path operations.
     public static func toPDF(_ list: [PathOp]) -> [PathOp] {
         var operations = [PathOp]()
         var lastOp: PathOp?

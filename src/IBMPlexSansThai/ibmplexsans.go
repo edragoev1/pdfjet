@@ -1,3 +1,4 @@
+// Package IBMPlexSansThai provides the paths to the IBM Plex Sans Thai fonts.
 package IBMPlexSansThai
 
 // IBMPlexSansThai provides the paths to the IBM Plex Sans Thai fonts.

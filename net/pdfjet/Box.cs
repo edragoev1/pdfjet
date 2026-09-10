@@ -63,6 +63,7 @@ public class Box : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the location of this box. Same as SetLocation.</summary>
     public Box SetXY(float x, float y) {
         SetLocation(x, y);
         return this;
@@ -79,6 +80,7 @@ public class Box : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the location of the top left corner of this box.</summary>
     public Box SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }

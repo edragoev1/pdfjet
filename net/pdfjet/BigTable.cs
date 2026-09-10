@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 
 namespace PDFjet.NET {
+    /// <summary>A table for large amounts of data, read row by row from a delimited text file.</summary>
     public class BigTable {
         private readonly PDF pdf;
         private readonly Font f1;
@@ -27,6 +28,13 @@ namespace PDFjet.NET {
         private int numberOfColumns;
         private bool startNewPage = true;
 
+        /// <summary>
+        /// Creates a table with the specified fonts and page size.
+        /// </summary>
+        /// <param name="pdf">the PDF.</param>
+        /// <param name="f1">the header font.</param>
+        /// <param name="f2">the body font.</param>
+        /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
         public BigTable(PDF pdf, Font f1, Font f2, float[] pageSize) {
             this.pdf = pdf;
             this.f1 = f1;
@@ -35,6 +43,7 @@ namespace PDFjet.NET {
             this.pages = new List<Page>();
         }
 
+        /// <summary>Sets the location of the top left corner of this table.</summary>
         public BigTable SetLocation(float x, float y) {
             for (int i = 0; i <= this.numberOfColumns; i++) {
                 this.vertLines[i] += x;
@@ -43,26 +52,31 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>Sets the number of columns in this table.</summary>
         public BigTable SetNumberOfColumns(int numberOfColumns) {
             this.numberOfColumns = numberOfColumns;
             return this;
         }
 
+        /// <summary>Sets the text alignment of the specified column.</summary>
         public BigTable SetTextAlignment(int column, Alignment alignment) {
             this.alignment[column] = alignment;
             return this;
         }
 
+        /// <summary>Sets the bottom margin.</summary>
         public BigTable SetBottomMargin(float bottomMargin) {
             this.bottomMargin = bottomMargin;
             return this;
         }
 
+        /// <summary>Sets the language of the table content.</summary>
         public BigTable SetLanguage(string language) {
             this.language = language;
             return this;
         }
 
+        /// <summary>Returns the pages created for this table.</summary>
         public List<Page> GetPages() {
             return pages;
         }
@@ -170,6 +184,12 @@ namespace PDFjet.NET {
             }
         }
 
+        /// <summary>
+        /// Reads the data file to set the column widths, the column alignment and the header fields.
+        /// </summary>
+        /// <param name="fileName">the data file.</param>
+        /// <param name="delimiter">the field delimiter.</param>
+        /// <returns>this BigTable object.</returns>
         public BigTable SetTableData(string fileName, string delimiter) {
             this.fileName = fileName;
             this.delimiter = delimiter;
@@ -220,6 +240,7 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>Draws the rows read from the data file, then the vertical lines.</summary>
         public void Complete() {
             using (StreamReader reader = new StreamReader(this.fileName)) {
                 string line;

@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package pdfjet is a library for creating PDF documents.
 package pdfjet
 
 import (
@@ -133,11 +134,13 @@ func NewPDF(w *bufio.Writer) *PDF {
 	return pdf
 }
 
+// SetCompliance sets the PDF/UA or PDF/A compliance of this document. See the compliance package.
 func (pdf *PDF) SetCompliance(compliance int) *PDF {
 	pdf.compliance = compliance
 	return pdf
 }
 
+// SetEncryption sets the encryption applied to this document. It does nothing when err is not nil.
 func (pdf *PDF) SetEncryption(encryption *Encryption, err error) *PDF {
 	if err == nil {
 		pdf.encryption = encryption
@@ -145,6 +148,7 @@ func (pdf *PDF) SetEncryption(encryption *Encryption, err error) *PDF {
 	return pdf
 }
 
+// NewPDFFile creates a PDF document that is written to the file at the specified path.
 func NewPDFFile(filePath string) *PDF {
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -1075,6 +1079,7 @@ func (pdf *PDF) AddPage(page *Page) {
 	pdf.prevPage = page
 }
 
+// AddPages adds the pages to this document.
 func (pdf *PDF) AddPages(pages []*Page) {
 	for _, page := range pages {
 		pdf.AddPage(page)
@@ -1890,6 +1895,7 @@ func (pdf *PDF) addFontDescriptor(
 	return resources
 }
 
+// AddResourceObjects adds the fonts and graphics states used by the pages to this document.
 func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	resources := make([]*PDFobj, 0)
 

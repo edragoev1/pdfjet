@@ -6,6 +6,7 @@
  */
 import Foundation
 
+/// An ellipse: an arc that sweeps 360 degrees.
 public final class Ellipse : Arc {
     ///
     /// The default constructor.

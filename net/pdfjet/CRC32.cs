@@ -1,6 +1,7 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>Computes CRC-32 checksums.</summary>
 public class CRC32 {
     readonly static uint[] table = new uint[] {
             0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419,
@@ -59,16 +60,19 @@ public class CRC32 {
 
     private UInt32 crc;
 
+    /// <summary>Creates a CRC-32 calculator.</summary>
     public CRC32() {
         crc = 0xffffffff;
     }
 
+    /// <summary>Updates the checksum with the bytes of data from index off up to, but not including, index len.</summary>
     public void Update(byte[] data, int off, int len) {
         for (int i = off; i < len; i++) {
             crc = (crc >> 8) ^ table[data[i] ^ crc & 0xff];
         }
     }
 
+    /// <summary>Returns the checksum.</summary>
     public long GetValue() {
         return ~crc;
     }

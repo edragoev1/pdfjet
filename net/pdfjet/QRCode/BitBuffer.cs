@@ -17,30 +17,36 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>A growable buffer of bits.</summary>
 public class BitBuffer {
     private byte[] buffer;
     private int length;
     private int increments = 32;
 
+    /// <summary>Creates an empty bit buffer.</summary>
     public BitBuffer() {
         buffer = new byte[increments];
         length = 0;
     }
 
+    /// <summary>Returns the underlying byte array.</summary>
     public byte[] GetBuffer() {
         return buffer;
     }
 
+    /// <summary>Returns the number of bits in the buffer.</summary>
     public int GetLengthInBits() {
         return length;
     }
 
+    /// <summary>Appends the lowest length bits of num, most significant bit first.</summary>
     public void Put(int num, int length) {
         for (int i = 0; i < length; i++) {
             Put(((int) ((uint) num >> (length - i - 1)) & 1) == 1);
         }
     }
 
+    /// <summary>Appends a single bit.</summary>
     public void Put(bool bit) {
         if (length == buffer.Length * 8) {
             byte[] newBuffer = new byte[buffer.Length + increments];

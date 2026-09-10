@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package b5 defines the B5 page size in points.
 package b5
 
 // Portrait B5 page dimensions

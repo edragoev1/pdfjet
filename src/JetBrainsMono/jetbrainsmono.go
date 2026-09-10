@@ -1,3 +1,4 @@
+// Package JetBrainsMono provides the paths to the JetBrains Mono fonts.
 package JetBrainsMono
 
 // JetBrainsMono holds the paths to the JetBrains Mono fonts.

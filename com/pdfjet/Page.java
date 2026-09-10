@@ -21,18 +21,29 @@ import java.util.*;
  * </pre>
  */
 final public class Page {
+    /** The PDF this page belongs to. */
     protected PDF pdf;
+    /** The page object, when the page was read from an existing PDF. */
     protected PDFobj pageObj;
+    /** The object number of this page. */
     protected int objNumber;
+    /** The content stream of this page. */
     protected ByteArrayOutputStream buf;
 
+    /** The text rendering mode. */
     protected int renderingMode = 0;
+    /** The page width. */
     protected float width;
+    /** The page height. */
     protected float height;
 
+    /** The crop box, or null. */
     protected float[] cropBox = null;
+    /** The bleed box, or null. */
     protected float[] bleedBox = null;
+    /** The trim box, or null. */
     protected float[] trimBox = null;
+    /** The art box, or null. */
     protected float[] artBox = null;
 
     private float[] brushColor = {0f, 0f, 0f};
@@ -50,11 +61,16 @@ final public class Page {
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
     private String strokeDashPattern = "[] 0";
 
+    /** The rotation of this page in degrees: 0, 90, 180 or 270. */
     protected float rotateDegrees = 0f;
 
+    /** The object numbers of the content streams. */
     protected final List<Integer> contents = new ArrayList<Integer>();
+    /** The annotations on this page. */
     protected final List<Annotation> annots = new ArrayList<Annotation>();
+    /** The destinations on this page. */
     protected final List<Destination> destinations= new ArrayList<Destination>();
+    /** The structure elements on this page. */
     protected final List<StructElem> structures = new ArrayList<StructElem>();
 
     private int mcid = 0;
@@ -1528,6 +1544,12 @@ final public class Page {
         append("c\n");
     }
 
+    /**
+     * Sets the font and font size used to draw text.
+     *
+     * @param font the font.
+     * @param fontSize the font size.
+     */
     protected void setTextFont(Font font, float fontSize) {
         if (font.fontID != null) {
             append('/');
@@ -1765,6 +1787,7 @@ final public class Page {
         }
     }
 
+    /** The hexadecimal digits. */
     protected static final byte[] HEX = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'A', 'B', 'C', 'D', 'E', 'F'
@@ -2171,7 +2194,10 @@ final public class Page {
 
     /**
      * Draws a string at the correct location.
+     * @param font the font.
      * @param str the string.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
      */
     protected void drawTextLine(Font font, String str, float x, float y) {
         append("BT\n");
@@ -2252,6 +2278,18 @@ final public class Page {
         append(" cm\n");
     }
 
+    /**
+     * Draws lines of text, one below the other, highlighting the specified words.
+     *
+     * @param font the font.
+     * @param fontSize the font size.
+     * @param textLines the lines of text.
+     * @param x the x coordinate.
+     * @param y the y coordinate of the first line.
+     * @param leading the distance between the lines.
+     * @param color the text color as an RGB array.
+     * @param highlightColors the words to highlight and their colors.
+     */
     protected void drawTextBlock(
             Font font,
             float fontSize,

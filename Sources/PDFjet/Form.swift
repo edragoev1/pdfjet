@@ -22,10 +22,12 @@ public class Form : Drawable {
     private var labelColor: [Float] = [0.0, 0.0, 0.0]
     private var valueColor: [Float] = [0.33, 0.33, 0.66]
 
+    /// Creates a form with the specified fields.
     public init(_ fields: [Field]) {
         self.fields = fields
     }
 
+    /// Sets the location of this form on the page.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
@@ -33,48 +35,56 @@ public class Form : Drawable {
         return self
     }
 
+    /// Sets the width of this form.
     @discardableResult
     public func setFormWidth(_ formWidth: Float) -> Form {
         self.formWidth = formWidth
         return self
     }
 
+    /// Sets the width of the lines.
     @discardableResult
     public func setLineWidth(_ lineWidth: Float) -> Form {
         self.lineWidth = lineWidth
         return self
     }
 
+    /// Sets the font of the labels.
     @discardableResult
     public func setLabelFont(_ f1: Font) -> Form {
         self.f1 = f1
         return self
     }
 
+    /// Sets the font size of the labels.
     @discardableResult
     public func setLabelFontSize(_ labelFontSize: Float) -> Form {
         self.labelFontSize = labelFontSize
         return self
     }
 
+    /// Sets the font of the values.
     @discardableResult
     public func setValueFont(_ f2: Font) -> Form {
         self.f2 = f2
         return self
     }
 
+    /// Sets the font size of the values.
     @discardableResult
     public func setValueFontSize(_ valueFontSize: Float) -> Form {
         self.valueFontSize = valueFontSize
         return self
     }
 
+    /// Sets the color of the labels from an array of red, green and blue values.
     @discardableResult
     public func setLabelColor(_ labelColor: [Float]) -> Form {
         self.labelColor = labelColor
         return self
     }
 
+    /// Sets the color of the values from an array of red, green and blue values.
     @discardableResult
     public func setValueColor(_ valueColor: [Float]) -> Form {
         self.valueColor = valueColor

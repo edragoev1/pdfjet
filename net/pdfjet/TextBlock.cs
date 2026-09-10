@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace PDFjet.NET {
+    /// <summary>A block of text that wraps at its width, with an optional border, background and padding.</summary>
     public class TextBlock : IDrawable {
         internal float x;
         internal float y;
@@ -42,6 +43,7 @@ namespace PDFjet.NET {
 //        private bool strikeout = false;
         private bool textIsArabic = false;
 
+        /// <summary>Creates a text block with the specified font and text.</summary>
         public TextBlock(Font font, string textContent) {
             this.font = font;
             this.fontSize = font.size;
@@ -69,90 +71,108 @@ namespace PDFjet.NET {
             return SetLocation(x, y);
         }
 
+        /// <summary>Sets the font of the text. It also becomes the fallback font.</summary>
         public TextBlock SetFont(Font font) {
             this.font = font;
             this.fallbackFont = font;
             return this;
         }
 
+        /// <summary>Sets the font used for characters the main font does not have.</summary>
         public TextBlock SetFallbackFont(Font font) {
             this.fallbackFont = font;
             return this;
         }
 
+        /// <summary>Sets the font size.</summary>
         public TextBlock SetFontSize(float fontSize) {
             this.fontSize = fontSize;
             return this;
         }
 
+        /// <summary>Sets the text.</summary>
         public TextBlock SetText(string text) {
             this.textContent = text;
             return this;
         }
 
+        /// <summary>Returns the font of the text.</summary>
         public Font GetFont() {
             return this.font;
         }
 
+        /// <summary>Returns the text.</summary>
         public string GetText() {
             return this.textContent;
         }
 
+        /// <summary>Sets the location of the top left corner of this text block.</summary>
         public TextBlock SetLocation(float x, float y) {
             this.x = x;
             this.y = y;
             return this;
         }
 
+        /// <summary>Sets the size of this text block.</summary>
         public TextBlock SetSize(float width, float height) {
             this.width = width;
             this.height = height;
             return this;
         }
 
+        /// <summary>Sets the width of this text block.</summary>
         public TextBlock SetWidth(double width) {
             this.width = (float) width;
             return this;
         }
 
+        /// <summary>Sets the width of this text block.</summary>
         public TextBlock SetWidth(float width) {
             this.width = width;
             return this;
         }
 
+        /// <summary>Returns the width of this text block.</summary>
         public float GetWidth() {
             return this.width;
         }
 
+        /// <summary>Sets the height of this text block.</summary>
         public TextBlock SetHeight(double height) {
             this.height = (float) height;
             return this;
         }
 
+        /// <summary>Sets the height of this text block.</summary>
         public TextBlock SetHeight(float height) {
             this.height = height;
             return this;
         }
 
+        /// <summary>Returns the height of this text block.</summary>
         public float GetHeight() {
             return this.height;
         }
 
+        /// <summary>Sets the radius of the border corners.</summary>
         public TextBlock SetBorderCornerRadius(float borderCornerRadius) {
             this.borderCornerRadius = borderCornerRadius;
             return this;
         }
 
+        /// <summary>Sets the space between the text and the border.</summary>
         public TextBlock SetTextPadding(float padding) {
             this.textPadding = padding;
             return this;
         }
 
+        /// <summary>Sets the border width.</summary>
         public TextBlock SetBorderWidth(float borderWidth) {
             this.borderWidth = borderWidth;
             return this;
         }
 
+        /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
         public TextBlock SetFillColor(int color) {
             if (color == Color.transparent) {
                 this.fillColor = null;
@@ -165,16 +185,19 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>Sets the background color from an array of red, green and blue values.</summary>
         public TextBlock SetFillColor(float[] rgbColor) {
             this.fillColor = rgbColor;
             return this;
         }
 
+        /// <summary>Sets the background color from an array of red, green and blue values.</summary>
         public TextBlock SetBackgroundColor(float[] rgbColor) {
             this.fillColor = rgbColor;
             return this;
         }
 
+        /// <summary>Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.</summary>
         public TextBlock SetBorderColor(int color) {
             if (color == Color.transparent) {
                 this.borderColor = null;
@@ -187,21 +210,25 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>Sets the border color from an array of red, green and blue values.</summary>
         public TextBlock SetBorderColor(float[] rgbColor) {
             this.borderColor = rgbColor;
             return this;
         }
 
+        /// <summary>Sets the line spacing as a multiple of the font's body height.</summary>
         public TextBlock SetLineSpacing(float lineSpacing) {
             this.lineSpacing = lineSpacing;
             return this;
         }
 
+        /// <summary>Sets the text color from an array of red, green and blue values.</summary>
         public TextBlock SetTextColor(float[] textColor) {
             this.textColor = textColor;
             return this;
         }
 
+        /// <summary>Sets the text color as a 0xRRGGBB value.</summary>
         public TextBlock SetTextColor(int color) {
             float r = ((color >> 16) & 0xff)/255f;
             float g = ((color >>  8) & 0xff)/255f;
@@ -210,20 +237,24 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>Sets the horizontal alignment of the text.</summary>
         public TextBlock SetTextAlignment(Alignment textAlignment) {
             this.textAlignment = textAlignment;
             return this;
         }
 
+        /// <summary>Sets the URI opened when this text block is clicked.</summary>
         public TextBlock SetURIAction(string uri) {
             this.uri = uri;
             return this;
         }
 
+        /// <summary>Returns the background color.</summary>
         public float[] GetBackgroundColor() {
             return this.fillColor;
         }
 
+        /// <summary>Sets the colors used to highlight keywords. The keywords are matched ignoring case.</summary>
         public TextBlock SetKeywordHighlightColors(Dictionary<string, int> map) {
             this.keywordHighlightColors = new Dictionary<string, int>();
             foreach (var key in map.Keys) {
@@ -232,6 +263,7 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>Marks the text as Arabic.</summary>
         public TextBlock SetTextIsArabic() {
             // Important!! The library renders Arabic properly, however it doesn't use ligatures like the one below !!
             // The Arabic character that looks like a Latin "I" and "J" connected is the ligature for "لَا" (lām + alif).
@@ -309,6 +341,7 @@ namespace PDFjet.NET {
             return textLines.ToArray();
         }
 
+        /// <summary>Sets whether the text is underlined.</summary>
         public TextBlock SetUnderline(bool underline) {
             this.underline = underline;
             return this;
@@ -340,6 +373,7 @@ namespace PDFjet.NET {
             }
         }
 
+        /// <summary>Draws this text block on the specified page.</summary>
         public float[] DrawOn(Page page) {
             float ascent = this.font.GetAscent(fontSize);
             float descent = this.font.GetDescent(fontSize);

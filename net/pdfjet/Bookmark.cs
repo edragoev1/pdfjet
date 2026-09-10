@@ -26,6 +26,7 @@ public class Bookmark {
     internal int objNumber = 0;
     internal String prefix = null;
 
+    /// <summary>Creates the root bookmark of the document outline.</summary>
     public Bookmark(PDF pdf) {
         pdf.toc = this;
     }
@@ -37,6 +38,12 @@ public class Bookmark {
         this.title = title;
     }
 
+    /// <summary>
+    /// Adds a bookmark with the specified title that points to the page.
+    /// </summary>
+    /// <param name="page">the page.</param>
+    /// <param name="title">the title.</param>
+    /// <returns>the new bookmark.</returns>
     public Bookmark AddBookmark(Page page, Title title) {
         Bookmark bm = this;
         while (bm.parent != null) {
@@ -58,18 +65,22 @@ public class Bookmark {
         return bookmark;
     }
 
+    /// <summary>Returns the destination key of this bookmark.</summary>
     public String GetDestKey() {
         return this.key;
     }
 
+    /// <summary>Returns the title of this bookmark.</summary>
     public String GetTitle() {
         return this.title;
     }
 
+    /// <summary>Returns the parent bookmark.</summary>
     public Bookmark GetParent() {
         return this.parent;
     }
 
+    /// <summary>Numbers this bookmark by its position, for example 1.2, and adds the number to the title.</summary>
     public Bookmark AutoNumber(TextLine text) {
         Bookmark bm = GetPrevBookmark();
         if (bm == null) {

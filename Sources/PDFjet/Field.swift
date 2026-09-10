@@ -14,6 +14,7 @@ public class Field {
     var label: String
     var value: String
 
+    /// Creates a form field with its horizontal position in the form, its label and its value.
     public init(_ x: Float, _ label: String, _ value: String) {
         self.x = x
         self.label = label

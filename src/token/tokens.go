@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package token defines PDF syntax tokens as byte slices.
 package token
 
 // PDF structure tokens as byte arrays.

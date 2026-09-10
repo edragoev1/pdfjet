@@ -6,20 +6,35 @@
  */
 import Foundation
 
+/// The metrics of the 14 standard PDF fonts.
 public class CoreFont {
+    /// Courier.
     public static let COURIER = 1
+    /// Courier Bold.
     public static let COURIER_BOLD = 2
+    /// Courier Oblique.
     public static let COURIER_OBLIQUE = 3
+    /// Courier Bold Oblique.
     public static let COURIER_BOLD_OBLIQUE = 4
+    /// Helvetica.
     public static let HELVETICA = 5
+    /// Helvetica Bold.
     public static let HELVETICA_BOLD = 6
+    /// Helvetica Oblique.
     public static let HELVETICA_OBLIQUE = 7
+    /// Helvetica Bold Oblique.
     public static let HELVETICA_BOLD_OBLIQUE = 8
+    /// Times Roman.
     public static let TIMES_ROMAN = 9
+    /// Times Bold.
     public static let TIMES_BOLD = 10
+    /// Times Italic.
     public static let TIMES_ITALIC = 11
+    /// Times Bold Italic.
     public static let TIMES_BOLD_ITALIC = 12
+    /// Symbol.
     public static let SYMBOL = 13
+    /// Zapf Dingbats.
     public static let ZAPF_DINGBATS = 14
 
     var name: String?
@@ -31,6 +46,7 @@ public class CoreFont {
     var underlineThickness: Int16?
     var metrics: [[Int16]]?
 
+    /// Loads the metrics of the specified standard font, for example CoreFont.HELVETICA.
     public init(_ coreFont: Int) {
         if coreFont == CoreFont.COURIER {
             self.name = Courier.name

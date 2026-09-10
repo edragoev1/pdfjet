@@ -29,6 +29,7 @@ public class CompositeTextLine : IDrawable {
 
     private float fontSize = 0f;
 
+    /// <summary>Creates a composite text line at the specified location.</summary>
     public CompositeTextLine(float x, float y) {
         this.x = x;
         this.y = y;

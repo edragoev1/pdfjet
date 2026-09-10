@@ -12,7 +12,9 @@ namespace PDFjet.NET {
 /// For more information about the page size classes - A3, A4, A5, B5, Executive, Letter, Legal and Tabloid - see the Page class.
 /// </summary>
 public class A4 {
+    /// <summary>The A4 page size in portrait orientation.</summary>
     public static readonly float[] PORTRAIT = new float[] {595.0f, 842.0f};
+    /// <summary>The A4 page size in landscape orientation.</summary>
     public static readonly float[] LANDSCAPE = new float[] {842.0f, 595.0f};
 }
 }   // End of namespace PDFjet.NET

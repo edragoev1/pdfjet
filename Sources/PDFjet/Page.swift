@@ -21,6 +21,7 @@ struct PDFjetError: Error {
 /// </pre>
 ///
 public class Page {
+    /// Pass to the Page initializer to create a page that is not added to the PDF right away.
     public static let DETACHED = false
 
     internal var pdf: PDF
@@ -89,6 +90,7 @@ public class Page {
         }
     }
 
+    /// Creates a page from a page object read from an existing PDF.
     public init(_ pdf: PDF, _ pageObj: PDFobj) {
         self.pdf = pdf
         self.pageObj = pageObj
@@ -107,6 +109,7 @@ public class Page {
         }
     }
 
+    /// Finishes a page read from an existing PDF by adding its new content to the objects.
     public func complete(_ objects: inout [PDFobj]) {
         restoreGraphicsState()
         pageObj!.addContent(&self.buf, &objects)
@@ -150,18 +153,22 @@ public class Page {
         self.init(pdf, pageSize, true)
     }
 
+    /// Adds a core font to the resources of this page and returns the font.
     public func addResource(_ coreFont: Int, _ objects: inout [PDFobj]) -> Font {
         return pageObj!.addResource(coreFont, &objects)
     }
 
+    /// Adds an image to the resources of this page.
     public func addResource(_ image: Image, _ objects: inout [PDFobj]) {
         pageObj!.addResource(image, &objects)
     }
 
+    /// Adds a font to the resources of this page.
     public func addResource(_ font: Font, _ objects: inout [PDFobj]) {
         pageObj!.addResource(font, &objects)
     }
 
+    /// Returns the content stream of this page.
     public func getContent() -> [UInt8] {
         return self.buf
     }
@@ -238,6 +245,7 @@ public class Page {
         strokePath()
     }
 
+    /// Draws the string in black. The fallback font is used for characters the main font does not have.
     public final func drawString(
             _ font: Font,
             _ fallbackFont: Font?,
@@ -298,6 +306,7 @@ public class Page {
         }
     }
 
+    /// Draws the string in black at the current size of the font.
     public final func drawString(
             _ font: Font,
             _ text: String?,
@@ -306,6 +315,7 @@ public class Page {
         drawString(font, font.size, text, x, y, [0.0, 0.0, 0.0], nil)
     }
 
+    /// Draws the string in black at the specified font size.
     public final func drawString(
             _ font: Font,
             _ fontSize: Float,
@@ -447,6 +457,7 @@ public class Page {
         }
     }
 
+    /// Saves the current graphics state. Please see Example_31.
     public func saveGraphicsState() {
         append("q\n")
     }
@@ -473,6 +484,7 @@ public class Page {
         append(" gs\n")
     }
 
+    /// Restores the last saved graphics state. Please see Example_31.
     public func restoreGraphicsState() {
         append("Q\n")
     }
@@ -483,6 +495,7 @@ public class Page {
     // - The method converts the integer color to normalized float values
     //   between 0 and 1 for each RGB component and appends the color
     //   to the drawing context.
+    /// Sets the pen color as a 0xRRGGBB value.
     @discardableResult
     public func setPenColor(_ color: Int32) -> Page {
         let r = Float((color >> 16) & 0xff)/255.0
@@ -542,6 +555,7 @@ public class Page {
     //   representing the current pen color.
     // - The array format is [r, g, b], where r, g, and b are the red, green, and blue
     //   components of the pen color respectively.
+    /// Returns the pen color as red, green and blue values between 0.0 and 1.0.
     public final func getPenColor() -> [Float] {
         return penColor
     }
@@ -552,6 +566,7 @@ public class Page {
     // - The method converts the integer color to normalized float values
     //   between 0 and 1 for each RGB component and appends the color
     //   to the drawing context for brush-related operations.
+    /// Sets the brush color as a 0xRRGGBB value.
     @discardableResult
     public func setBrushColor(_ color: Int32) -> Page {
         let r = Float((color >> 16) & 0xff)/255.0
@@ -611,6 +626,7 @@ public class Page {
     //   representing the current brush color.
     // - The array format is [r, g, b], where r, g, and b are the red, green, and blue
     //   components of the brush color respectively.
+    /// Returns the brush color as red, green and blue values between 0.0 and 1.0.
     public func getBrushColor() -> [Float] {
         return brushColor
     }
@@ -720,6 +736,7 @@ public class Page {
         return self
     }
 
+    /// Returns the current pen width.
     public func getPenWidth() -> Float {
         return self.penWidth
     }
@@ -1146,11 +1163,32 @@ public class Page {
         append(" c\n")
     }
 
+    ///
+    /// Adds a circular arc to the current path.
+    ///
+    /// @param x the x coordinate of the center.
+    /// @param y the y coordinate of the center.
+    /// @param r the radius.
+    /// @param startAngle the start angle in degrees.
+    /// @param sweepDegrees the sweep angle in degrees.
+    /// @return the control points and the end point of the last curve segment.
+    ///
     public func drawCircularArc(
         _ x: Float, _ y: Float, _ r: Float, _ startAngle: Float, _ sweepDegrees: Float) -> [Float] {
         return drawArc(x, y, r, r, startAngle, sweepDegrees)
     }
 
+    ///
+    /// Adds an elliptical arc to the current path.
+    ///
+    /// @param x the x coordinate of the center.
+    /// @param y the y coordinate of the center.
+    /// @param rx the horizontal radius.
+    /// @param ry the vertical radius.
+    /// @param startAngle the start angle in degrees.
+    /// @param sweepDegrees the sweep angle in degrees.
+    /// @return the control points and the end point of the last curve segment.
+    ///
     public func drawArc(
             _ x: Float,
             _ y: Float,
@@ -1241,6 +1279,7 @@ public class Page {
     // Original code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
     // >>
+    /// Draws a rectangle with rounded corners.
     public func drawRectRoundCorners(
             _ x: Float,
             _ y: Float,
@@ -1285,6 +1324,7 @@ public class Page {
         append("n\n")   // Close the path without painting it.
     }
 
+    /// Sets the clipping path to the specified rectangle.
     public func clipRect(
             _ x: Float,
             _ y: Float,
@@ -1409,6 +1449,7 @@ public class Page {
         self.buf.append(byte)
     }
 
+    /// Appends the bytes to the content stream of this page.
     public func append(_ buffer: [UInt8]) {
         self.buf.append(contentsOf: buffer)
     }
@@ -1465,6 +1506,7 @@ public class Page {
         }
     }
 
+    /// Begins marked content for a structure element when the document is PDF/UA compliant.
     public func addBMC(
             _ structure: String,
             _ actualText: String,
@@ -1472,6 +1514,7 @@ public class Page {
         addBMC(structure, nil, actualText, altDescription)
     }
 
+    /// Begins marked content in the specified language for a structure element when the document is PDF/UA compliant.
     public func addBMC(
             _ structure: String,
             _ language: String?,
@@ -1496,12 +1539,14 @@ public class Page {
         }
     }
 
+    /// Begins marked content for an artifact when the document is PDF/UA compliant.
     public func addArtifactBMC() {
         if pdf.compliance == Compliance.PDF_UA_1 {
             append("/Artifact BMC\n")
         }
     }
 
+    /// Ends the current marked content when the document is PDF/UA compliant.
     public func addEMC() {
         if pdf.compliance == Compliance.PDF_UA_1 {
             append("EMC\n")
@@ -1554,6 +1599,7 @@ public class Page {
         restoreGraphicsState()
     }
 
+    /// Draws the content stream scaled and placed at the specified location.
     public func drawContents(
             _ content: [UInt8],
             _ h: Float,     // The height of the graphics object in points.
@@ -1566,6 +1612,7 @@ public class Page {
         endTransform()
     }
 
+    /// Draws the characters of the string one at a time, dx apart.
     public func drawString(
             _ font: Font,
             _ str: String,
@@ -1604,6 +1651,7 @@ public class Page {
         buffer.append(hexadecimal.digits[index + 1])
     }
 
+    /// The hexadecimal digits.
     public static let HEX: [UInt8] = [
         UInt8(ascii: "0"), UInt8(ascii: "1"), UInt8(ascii: "2"), UInt8(ascii: "3"),
         UInt8(ascii: "4"), UInt8(ascii: "5"), UInt8(ascii: "6"), UInt8(ascii: "7"),
@@ -1630,6 +1678,7 @@ public class Page {
         }
     }
 
+    /// Draws the text as a watermark diagonally across the page.
     public func addWatermark(
             _ font: Font,
             _ text: String) throws {
@@ -1648,17 +1697,20 @@ public class Page {
         watermark.drawOn(self)
     }
 
+    /// Flips the y axis, so the origin is the top left corner of the page and y grows downward.
     public func invertYAxis() {
         append("1 0 0 -1 0 ")
         append(self.height)
         append(" cm\n")
     }
 
+    /// Draws the text line centered at the top of the page.
     @discardableResult
     public func addHeader(_ textLine: TextLine) throws -> [Float] {
         return try addHeader(textLine, 1.5*textLine.font!.ascent)
     }
 
+    /// Draws the text line centered at the top of the page, with its baseline at the specified offset.
     @discardableResult
     public func addHeader(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, offset)
@@ -1667,11 +1719,13 @@ public class Page {
         return xy
     }
 
+    /// Draws the text line centered at the bottom of the page.
     @discardableResult
     public func addFooter(_ textLine: TextLine) throws -> [Float] {
         return try addFooter(textLine, textLine.font!.ascent)
     }
 
+    /// Draws the text line centered at the bottom of the page, with its baseline at the specified offset from the bottom.
     @discardableResult
     public func addFooter(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset)

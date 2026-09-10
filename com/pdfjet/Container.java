@@ -168,6 +168,14 @@ public class Container implements Drawable {
         this.elements.add(element);
     }
 
+    /**
+     * Rotates a point around a center point.
+     *
+     * @param point the x and y coordinates of the point.
+     * @param center the x and y coordinates of the center.
+     * @param degrees the rotation angle in degrees.
+     * @return the x and y coordinates of the rotated point.
+     */
     protected static float[] rotateAroundCenter(float[] point, float[] center, double degrees) {
         double rad = degrees * Math.PI / 180.0; // convert to radians
 

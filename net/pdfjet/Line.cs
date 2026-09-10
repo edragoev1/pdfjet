@@ -99,6 +99,7 @@ public class Line : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the start point of this line.</summary>
     public Line SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
@@ -224,11 +225,13 @@ public class Line : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the color from red, green and blue values between 0.0 and 1.0.</summary>
     public Line SetColor(float r, float g, float b) {
         this.color = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the color from an array of red, green and blue values.</summary>
     public Line SetColor(float[] rgbColor) {
         this.color = rgbColor;
         return this;
@@ -282,6 +285,7 @@ public class Line : IDrawable {
         return this;
     }
 
+    /// <summary>Scales the coordinates of this line by the specified factor.</summary>
     public Line ScaleBy(float factor) {
         this.x1 *= factor;
         this.x2 *= factor;

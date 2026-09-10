@@ -71,12 +71,14 @@ public class CRC32 {
 
     private var crc: UInt32 = 0xffffffff
 
+    /// Updates the checksum with the bytes of data from index off up to, but not including, index len.
     public func update(_ data: [UInt8], _ off: Int, _ len: Int) {
         for i in off..<len {
             crc = (crc >> 8) ^ table[Int(UInt32(data[i]) ^ crc & UInt32(0xff))]
         }
     }
 
+    /// Returns the checksum.
     public func getValue() -> UInt32 {
         return ~self.crc
     }

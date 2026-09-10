@@ -18,49 +18,85 @@ final public class Font {
     /** Is this a stream font? */
     public static final boolean STREAM = true;
 
+    /** The name of the font. */
     protected String name;
+    /** The usage terms of the font, written to the font metadata. */
     protected String info;
+    /** The object number of the font. */
     protected int objNumber;
+    /** The resource name of a font read from an existing PDF, or null. */
     protected String fontID;
 
     // The object number of the embedded font file
+    /** The object number of the embedded font file. */
     protected int fileObjNumber;
+    /** The object number of the font descriptor. */
     protected int fontDescriptorObjNumber;
+    /** The object number of the CID font dictionary. */
     protected int cidFontDictObjNumber;
+    /** The object number of the ToUnicode CMap. */
     protected int toUnicodeCMapObjNumber;
 
     // Font attributes
+    /** The number of font units per em. */
     protected int unitsPerEm = 1000; // The default for core fonts.
+    /** The ascent in font units. */
     protected int fontAscent;
+    /** The descent in font units. */
     protected int fontDescent;
+    /** The x coordinate of the lower left corner of the font bounding box. */
     protected int bBoxLLx;
+    /** The y coordinate of the lower left corner of the font bounding box. */
     protected int bBoxLLy;
+    /** The x coordinate of the upper right corner of the font bounding box. */
     protected int bBoxURx;
+    /** The y coordinate of the upper right corner of the font bounding box. */
     protected int bBoxURy;
+    /** The first character code. */
     protected int firstChar = 32; // The default for core fonts.
+    /** The last character code. */
     protected int lastChar = 255; // The default for core fonts.
+    /** The cap height in font units. */
     protected int capHeight;
+    /** The underline position in font units. */
     protected int fontUnderlinePosition;
+    /** The underline thickness in font units. */
     protected int fontUnderlineThickness;
+    /** The advance width of each glyph. */
     protected int[] advanceWidth;
+    /** Maps Unicode code points to glyph IDs. */
     protected int[] unicodeToGID;
+    /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
+    /** The size of the compressed font data. */
     protected int compressedSize;
+    /** The size of the uncompressed font data. */
     protected int uncompressedSize;
+    /** The character metrics of a core font. */
     protected int[][] metrics; // Only used for core fonts.
 
     // Don't change the following default values!
+    /** The font size. */
     protected float size = 12.0f;
+    /** True if this is one of the 14 standard fonts. */
     protected boolean isCoreFont = false;
+    /** True if this is a Chinese, Japanese or Korean font. */
     protected boolean isCJK = false;
+    /** True if the text is skewed to simulate italic. */
     protected boolean skew15 = false;
+    /** True if kerning pairs are applied. */
     protected boolean kernPairs = false;
 
     // These attributes depend on the font size.
+    /** The ascent at the current font size. */
     protected float ascent;
+    /** The descent at the current font size. */
     protected float descent;
+    /** The body height at the current font size. */
     protected float bodyHeight;
+    /** The underline position at the current font size. */
     protected float underlinePosition;
+    /** The underline thickness at the current font size. */
     protected float underlineThickness;
 
     /**
@@ -113,6 +149,11 @@ final public class Font {
     }
 
     // Used by PDFobj
+    /**
+     * Creates a core font object without adding it to a PDF.
+     *
+     * @param coreFont the core font, one of the constants in CoreFont.
+     */
     protected Font(int coreFont) {
         CoreFont font = new CoreFont(coreFont);
         this.isCoreFont = true;

@@ -273,6 +273,8 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 	return font
 }
 
+// NewFontFromFile creates a font from the file at the specified path and adds it to the PDF.
+// Files ending in .stream are read as stream fonts. It exits the program if the file cannot be opened.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	var font *Font
 	f, err := os.Open(filePath)

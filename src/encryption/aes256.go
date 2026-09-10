@@ -130,11 +130,13 @@ func EncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error) {
 	return aes256.EncryptWithZeroIV(fileEncryptionKey, key)
 }
 
+// Encrypt encrypts data with AES-256 in CBC mode using a random IV, which is prepended to the result.
 func Encrypt(data, key []byte) ([]byte, error) {
 	aes256 := &AES256{}
 	return aes256.Encrypt(data, key)
 }
 
+// EncryptECB encrypts data with AES-256 in ECB mode without padding.
 func EncryptECB(data, key []byte) ([]byte, error) {
 	aes256 := &AES256{}
 	return aes256.EncryptECB(data, key)

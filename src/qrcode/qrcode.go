@@ -13,6 +13,7 @@
 //
 // Modified and adapted for use in PDFjet by PDFjet Software
 
+// Package qrcode creates QR code barcodes.
 package qrcode
 
 import (

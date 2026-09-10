@@ -59,6 +59,11 @@ public class Destination {
         this(name, 0f, (float) yPosition);
     }
 
+    /**
+     * Sets the object number of the page this destination points to.
+     *
+     * @param pageObjNumber the page object number.
+     */
     protected void setPageObjNumber(int pageObjNumber) {
         this.pageObjNumber = pageObjNumber;
     }

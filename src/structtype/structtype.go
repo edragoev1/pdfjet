@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package structtype defines the structure element types of tagged PDF.
 package structtype
 
 // Structure Elements for Tagged PDF

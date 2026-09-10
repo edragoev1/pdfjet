@@ -1,3 +1,4 @@
+// Package IBMPlexSansArabic provides the paths to the IBM Plex Sans Arabic fonts.
 package IBMPlexSansArabic
 
 // IBMPlexSansArabic provides the paths to the IBM Plex Sans Arabic fonts.

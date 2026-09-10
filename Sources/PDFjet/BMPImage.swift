@@ -29,6 +29,7 @@ class BMPImage {
     private let m00001111: UInt8 = 0x0F
 
     // Tested with images created from GIMP
+    /// Reads a BMP image from the stream.
     public init(_ stream: InputStream) {
         let bm = getBytes(stream, 2)
         // From Wikipedia
@@ -249,14 +250,17 @@ class BMPImage {
         return Int(val)
     }
 
+    /// Returns the image width.
     public func getWidth() -> Int {
         return self.w
     }
 
+    /// Returns the image height.
     public func getHeight() -> Int {
         return self.h
     }
 
+    /// Returns the compressed image data.
     public func getData() -> [UInt8] {
         return self.deflated!
     }

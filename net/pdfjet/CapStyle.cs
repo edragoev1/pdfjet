@@ -12,8 +12,11 @@ namespace PDFjet.NET {
 /// See the Line class for more information.
 /// </summary>
 public enum CapStyle : Int32 {
+    /// <summary>The line ends squarely at the end point.</summary>
     BUTT = 0,
+    /// <summary>The line ends with a semicircle.</summary>
     ROUND,
+    /// <summary>The line ends squarely, half the line width past the end point.</summary>
     PROJECTING_SQUARE
 }
 }   // End of namespace PDFjet.NET

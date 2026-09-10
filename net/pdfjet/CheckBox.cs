@@ -86,6 +86,7 @@ public class CheckBox : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the location of this check box on the page.</summary>
     public CheckBox SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
@@ -143,6 +144,7 @@ public class CheckBox : IDrawable {
         return this;
     }
 
+    /// <summary>Draws a blue X mark of the specified size at the specified location.</summary>
     public static void XMark(Page page, float x, float y, float size) {
         page.SetPenColor(Color.blue);
         page.SetPenWidth(size / 5);

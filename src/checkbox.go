@@ -87,6 +87,7 @@ func (checkBox *CheckBox) GetWidth() float32 {
 	return checkBox.w
 }
 
+// Check checks or unchecks this check box. See the mark package for the options.
 func (checkBox *CheckBox) Check(mark int) *CheckBox {
 	checkBox.mark = mark
 	return checkBox
@@ -116,6 +117,7 @@ func (checkBox *CheckBox) SetActualText(actualText string) *CheckBox {
 	return checkBox
 }
 
+// XMarkCheckBox draws a blue X mark of the specified size at x, y.
 func XMarkCheckBox(page *Page, x, y, size float32) {
 	page.SetPenColor(color.Blue)
 	page.SetPenWidth(size / 5)

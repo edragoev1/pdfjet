@@ -23,6 +23,7 @@ public class TextFrame : IDrawable {
     private int borderColor = Color.blue;
     private List<List<string>> paragraphs;
 
+    /// <summary>Creates a text frame from a list of paragraphs.</summary>
     public TextFrame(Font f1, List<string> inputList) {
         this.f1 = f1;
         this.leading = f1.GetAscent() + f1.GetDescent();
@@ -42,34 +43,41 @@ public class TextFrame : IDrawable {
         }
     }
 
+    /// <summary>Sets the location of the top left corner of this text frame.</summary>
     public TextFrame SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
+    /// <summary>Sets the location of the top left corner of this text frame.</summary>
     public TextFrame SetLocation(double x, double y) {
         return SetLocation((float)x, (float)y);
     }
 
+    /// <summary>Sets the width of this text frame.</summary>
     public TextFrame SetWidth(float w) {
         this.w = w;
         return this;
     }
 
+    /// <summary>Sets the width of this text frame.</summary>
     public TextFrame SetWidth(double w) {
         return SetWidth((float)w);
     }
 
+    /// <summary>Sets the height of this text frame.</summary>
     public TextFrame SetHeight(float h) {
         this.h = h;
         return this;
     }
 
+    /// <summary>Sets the height of this text frame.</summary>
     public TextFrame SetHeight(double h) {
         return SetHeight((float)h);
     }
 
+    /// <summary>Returns the height of this text frame.</summary>
     public float GetHeight() {
         return this.h;
     }
@@ -78,16 +86,19 @@ public class TextFrame : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets whether a border is drawn around this text frame.</summary>
     public TextFrame SetBorder(bool border) {
         this.border = border;
         return this;
     }
 
+    /// <summary>Sets the border color as a 0xRRGGBB value.</summary>
     public TextFrame SetBorderColor(int borderColor) {
         this.borderColor = borderColor;
         return this;
     }
 
+    /// <summary>Returns true if some of the text has not been drawn yet.</summary>
     public bool HasMoreText() {
         return paragraphs.Count > 0;
     }
@@ -100,6 +111,10 @@ public class TextFrame : IDrawable {
         }
     }
 
+    /// <summary>
+    /// Draws as much of the text as fits in this frame on the page.
+    /// Call HasMoreText to check whether text is left for another page.
+    /// </summary>
     public float[] DrawOn(Page page) {
         if (page == null) {
             throw new NullReferenceException("Page cannot be null");

@@ -17,6 +17,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/color"
 )
 
+// SVGImage is used to draw SVG images on a page.
 type SVGImage struct {
 	x, y, w, h     float32
 	viewBox        string
@@ -232,6 +233,7 @@ func getColor(colorMap map[string]int32, colorName string) (int32, error) {
 	return int32(color.Transparent), nil
 }
 
+// ScaleBy scales this SVG image by the specified factor.
 func (image *SVGImage) ScaleBy(factor float32) {
 	for _, path := range image.paths {
 		for _, op := range path.operations {
@@ -245,16 +247,19 @@ func (image *SVGImage) ScaleBy(factor float32) {
 	}
 }
 
+// SetLocation sets the location of the top left corner of this image on the page.
 func (image *SVGImage) SetLocation(x, y float32) *SVGImage {
 	image.x = x
 	image.y = y
 	return image
 }
 
+// GetWidth returns the width of this SVG image.
 func (image *SVGImage) GetWidth() float32 {
 	return image.w
 }
 
+// GetHeight returns the height of this SVG image.
 func (image *SVGImage) GetHeight() float32 {
 	return image.h
 }
@@ -316,6 +321,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 	}
 }
 
+// DrawOn draws this SVG image on the specified page.
 func (image *SVGImage) DrawOn(page *Page) []float32 {
 	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {

@@ -6,6 +6,7 @@
  */
 import Foundation
 
+/// A table for large amounts of data, read row by row from a delimited text file.
 public class BigTable {
     private let pdf: PDF
     private let f1: Font
@@ -30,6 +31,14 @@ public class BigTable {
     private var numberOfColumns: Int = 0
     private var startNewPage: Bool = true
 
+    ///
+    /// Creates a table with the specified fonts and page size.
+    ///
+    /// @param pdf the PDF.
+    /// @param f1 the header font.
+    /// @param f2 the body font.
+    /// @param pageSize the page size, for example Letter.PORTRAIT.
+    ///
     public init(_ pdf: PDF, _ f1: Font, _ f2: Font, _ pageSize: [Float]) {
         self.pdf = pdf
         self.f1 = f1
@@ -38,6 +47,7 @@ public class BigTable {
         self.pages = []
     }
 
+    /// Sets the location of the top left corner of this table.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> BigTable {
         for i in 0...self.numberOfColumns {
@@ -47,30 +57,35 @@ public class BigTable {
         return self
     }
 
+    /// Sets the number of columns in this table.
     @discardableResult
     public func setNumberOfColumns(_ numberOfColumns: Int) -> BigTable {
         self.numberOfColumns = numberOfColumns
         return self
     }
 
+    /// Sets the text alignment of the specified column.
     @discardableResult
     public func setTextAlignment(_ column: Int, _ alignment: Alignment) -> BigTable {
         self.alignment[column] = alignment
         return self
     }
 
+    /// Sets the bottom margin.
     @discardableResult
     public func setBottomMargin(_ bottomMargin: Float) -> BigTable {
         self.bottomMargin = bottomMargin
         return self
     }
 
+    /// Sets the language of the table content.
     @discardableResult
     public func setLanguage(_ language: String) -> BigTable {
         self.language = language
         return self
     }
 
+    /// Returns the pages created for this table.
     public func getPages() -> [Page] {
         return pages
     }
@@ -178,6 +193,13 @@ public class BigTable {
         return Alignment.LEFT
     }
 
+    ///
+    /// Reads the data file to set the column widths, the column alignment and the header fields.
+    ///
+    /// @param fileName the data file.
+    /// @param delimiter the field delimiter.
+    /// @return this BigTable object.
+    ///
     @discardableResult
     public func setTableData(_ fileName: String, _ delimiter: String) throws -> BigTable {
         self.fileName = fileName
@@ -223,6 +245,7 @@ public class BigTable {
         return self
     }
 
+    /// Draws the rows read from the data file, then the vertical lines.
     public func complete() throws {
         try enumerateFileLines(self.fileName) { line in
             let fields = line.components(separatedBy: self.delimiter)

@@ -199,6 +199,7 @@ public class Bidi {
         return buf3
     }
 
+    /// Returns true if the character is in the Arabic Unicode block, U+0600 to U+06FF.
     public static func isArabic(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
         return (scalar >= "\u{0600}" && scalar <= "\u{06FF}")
@@ -281,6 +282,7 @@ public class Bidi {
         }
     }
 
+    /// Returns true if the Arabic character joins the character that follows it.
     public static func joinsForward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
         let value = scalar.value
@@ -321,6 +323,7 @@ public class Bidi {
         return dualJoining.contains(value)
     }
 
+    /// Returns true if the Arabic character joins the character before it.
     public static func joinsBackward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
         let value = scalar.value

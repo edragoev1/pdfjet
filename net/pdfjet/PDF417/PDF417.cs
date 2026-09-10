@@ -111,6 +111,7 @@ public class PDF417 : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the location of this barcode. Same as SetLocation.</summary>
     public PDF417 SetXY(float x, float y) {
         SetLocation(x, y);
         return this;

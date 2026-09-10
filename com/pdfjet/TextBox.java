@@ -27,16 +27,27 @@ import java.util.*;
  * It was completely rewritten in 2013 by Evgeni Dragoev.
  */
 public class TextBox implements Drawable {
+    /** The font of the text. */
     protected Font font;
+    /** The font used for characters that the primary font does not have. */
     protected Font fallbackFont;
+    /** The font size. */
     protected float fontSize = 12f;
+    /** The text. */
     protected String text;
+    /** The x coordinate of the top left corner. */
     protected float x;
+    /** The y coordinate of the top left corner. */
     protected float y;
+    /** The width. */
     protected float width = 300f;
+    /** The height. */
     protected float height = 0f;
+    /** The spacing between lines of text. */
     protected float spacing = 0f;
+    /** The margin of this text box. */
     protected float margin = 0f;
+    /** The width of the border lines. */
     protected float lineWidth = 0f;
 
     private float[] fillColor;  // The background fill color

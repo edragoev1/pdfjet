@@ -136,6 +136,7 @@ public class Cell {
         return this.text;
     }
 
+    /// <summary>Sets the font size.</summary>
     public Cell SetFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
@@ -190,35 +191,42 @@ public class Cell {
         return this.point;
     }
 
+    /// <summary>Sets the composite text line drawn in this cell.</summary>
     public Cell SetCompositeTextLine(CompositeTextLine compositeTextLine) {
         this.compositeTextLine = compositeTextLine;
         return this;
     }
 
+    /// <summary>Returns the composite text line drawn in this cell.</summary>
     public CompositeTextLine GetCompositeTextLine() {
         return this.compositeTextLine;
     }
 
+    /// <summary>Sets the text box drawn in this cell.</summary>
     public Cell SetTextBox(TextBox textBox) {
         this.textBox = textBox;
         return this;
     }
 
+    /// <summary>Sets the text block drawn in this cell.</summary>
     public Cell SetTextBlock(TextBlock textBlock) {
         this.textBlock = textBlock;
         return this;
     }
 
+    /// <summary>Sets the text column drawn in this cell and widens the cell to fit it.</summary>
     public Cell SetTextColumn(TextColumn textColumn) {
         this.textColumn = textColumn;
         this.width = textColumn.GetWidth() + this.leftPadding + this.rightPadding;
         return this;
     }
 
+    /// <summary>Returns the text column drawn in this cell.</summary>
     public TextColumn GetTextColumn() {
         return this.textColumn;
     }
 
+    /// <summary>Sets the background color from an array of red, green and blue values.</summary>
     public Cell SetBackgroundColor(float[] rgbColor) {
         this.backgroundColor = rgbColor;
         return this;
@@ -256,6 +264,7 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Returns the top padding.</summary>
     public float GetTopPadding() {
         return this.topPadding;
     }
@@ -269,6 +278,7 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Returns the bottom padding.</summary>
     public float GetBottomPadding() {
         return this.bottomPadding;
     }
@@ -331,30 +341,36 @@ public class Cell {
         return cellHeight;
     }
 
+    /// <summary>Sets the width of the cell borders.</summary>
     public Cell SetLineWidth(Int32 width) {
         SetLineWidth((float) width);
         return this;
     }
 
+    /// <summary>Sets the width of the cell borders.</summary>
     public Cell SetLineWidth(float width) {
         this.lineWidth = width;
         return this;
     }
 
+    /// <summary>Returns the width of the cell borders.</summary>
     public float GetLineWidth() {
         return this.lineWidth;
     }
 
+    /// <summary>Sets the background color as a 0xRRGGBB value. Same as SetBackgroundColor.</summary>
     public Cell SetBgColor(int color) {
         SetBackgroundColor(color);
         return this;
     }
 
+    /// <summary>Sets the background color as a 0xRRGGBB value. Same as SetBackgroundColor.</summary>
     public Cell SetFillColor(int color) {
         SetBackgroundColor(color);
         return this;
     }
 
+    /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
     public Cell SetBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -363,18 +379,22 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Returns the background color. Same as GetBackgroundColor.</summary>
     public float[] GetFillColor() {
         return this.backgroundColor;
     }
 
+    /// <summary>Returns the text color.</summary>
     public float[] GetBrushColor() {
         return this.textColor;
     }
 
+    /// <summary>Returns the background color.</summary>
     public float[] GetBackgroundColor() {
         return this.backgroundColor;
     }
 
+    /// <summary>Sets the text color as a 0xRRGGBB value.</summary>
     public Cell SetTextColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -383,29 +403,35 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Sets the text color from red, green and blue values between 0.0 and 1.0.</summary>
     public Cell SetTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public Cell SetTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
         return this;
     }
 
+    /// <summary>Returns the text color.</summary>
     public float[] GetTextColor() {
         return this.textColor;
     }
 
+    /// <summary>Sets the stroke width.</summary>
     public Cell SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
+    /// <summary>Returns the stroke width.</summary>
     public float GetStrokeWidth() {
         return this.strokeWidth;
     }
 
+    /// <summary>Sets the stroke color as a 0xRRGGBB value.</summary>
     public Cell SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -414,16 +440,19 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Sets the stroke color from red, green and blue values between 0.0 and 1.0.</summary>
     public Cell SetStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
     public Cell SetStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
         return this;
     }
 
+    /// <summary>Returns the stroke color.</summary>
     public float[] GetStrokeColor() {
         return this.strokeColor;
     }
@@ -457,6 +486,7 @@ public class Cell {
     /// Sets the cell border object.
     /// </summary>
     /// <param name="border">the border object.</param>
+    /// <param name="visible">true to show the border, false to hide it.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetBorder(uint border, bool visible) {
         if (visible) {
@@ -542,10 +572,12 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Returns true if the text is underlined.</summary>
     public bool GetUnderline() {
         return (properties & 0x00400000) != 0;
     }
 
+    /// <summary>Sets whether the text is struck out.</summary>
     public Cell SetStrikeout(bool strikeout) {
         if (strikeout) {
             this.properties |= 0x00800000;
@@ -555,19 +587,23 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Returns true if the text is struck out.</summary>
     public bool GetStrikeout() {
         return (properties & 0x00800000) != 0;
     }
 
+    /// <summary>Sets the URI opened when this cell is clicked.</summary>
     public Cell SetURIAction(String uri) {
         this.uri = uri;
         return this;
     }
 
+    /// <summary>Returns the left padding.</summary>
     public float GetLeftPadding() {
         return this.leftPadding;
     }
 
+    /// <summary>Returns the right padding.</summary>
     public float GetRightPadding() {
         return this.rightPadding;
     }
@@ -824,10 +860,12 @@ public class Cell {
         page.AddEMC();
     }
 
+    /// <summary>Returns the text box drawn in this cell.</summary>
     public TextBox GetTextBox() {
         return this.textBox;
     }
 
+    /// <summary>Returns the text block drawn in this cell.</summary>
     public TextBlock GetTextBlock() {
         return this.textBlock;
     }

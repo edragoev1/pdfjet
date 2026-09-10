@@ -12,6 +12,8 @@
 /// Letter, Legal and Tabloid - see the Page class.
 ///
 public class Letter {
+    /// The letter page size in portrait orientation.
     public static let PORTRAIT: [Float] = [612.0, 792.0]
+    /// The letter page size in landscape orientation.
     public static let LANDSCAPE: [Float] = [792.0, 612.0]
 }

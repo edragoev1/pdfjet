@@ -27,26 +27,32 @@ func NewParagraph() *Paragraph {
 	return paragraph
 }
 
+// GetTextX returns the x coordinate where the text of this paragraph starts.
 func (paragraph *Paragraph) GetTextX() float32 {
 	return paragraph.xText
 }
 
+// GetTextY returns the baseline y coordinate of the first line of this paragraph.
 func (paragraph *Paragraph) GetTextY() float32 {
 	return paragraph.yText
 }
 
+// GetX1 returns the x coordinate of the top left corner of this paragraph.
 func (paragraph *Paragraph) GetX1() float32 {
 	return paragraph.x1
 }
 
+// GetY1 returns the y coordinate of the top left corner of this paragraph.
 func (paragraph *Paragraph) GetY1() float32 {
 	return paragraph.y1
 }
 
+// GetX2 returns the x coordinate where the last line of this paragraph ends.
 func (paragraph *Paragraph) GetX2() float32 {
 	return paragraph.x2
 }
 
+// GetY2 returns the y coordinate of the bottom of the last line of this paragraph.
 func (paragraph *Paragraph) GetY2() float32 {
 	return paragraph.y2
 }
@@ -69,14 +75,17 @@ func (paragraph *Paragraph) SetAlignment(alignment int) *Paragraph {
 	return paragraph
 }
 
+// GetTextLines returns the text lines of this paragraph.
 func (paragraph *Paragraph) GetTextLines() []*TextLine {
 	return paragraph.lines
 }
 
+// StartsWith returns true if the first line of this paragraph starts with the specified token.
 func (paragraph *Paragraph) StartsWith(token string) bool {
 	return strings.HasPrefix(paragraph.lines[0].GetText(), token)
 }
 
+// SetColor sets the text color of all lines in this paragraph.
 func (paragraph *Paragraph) SetColor(color int32) *Paragraph {
 	for _, line := range paragraph.lines {
 		line.SetTextColor(color)
@@ -84,6 +93,7 @@ func (paragraph *Paragraph) SetColor(color int32) *Paragraph {
 	return paragraph
 }
 
+// SetColorMap sets the word highlight colors of all lines in this paragraph.
 func (paragraph *Paragraph) SetColorMap(colorMap map[string]int32) *Paragraph {
 	for _, line := range paragraph.lines {
 		line.SetColorMap(colorMap)

@@ -21,6 +21,13 @@ public class DonutChart {
     var slices: [Slice]?
     var isDonutChart = true
 
+    ///
+    /// Creates a donut chart or a pie chart.
+    ///
+    /// @param f1 the font for the slice labels.
+    /// @param f2 the font for the percentages drawn inside the slices.
+    /// @param isDonutChart true for a donut chart, false for a pie chart.
+    ///
     public init(_ f1: Font, _ f2: Font, _ isDonutChart: Bool) {
         self.f1 = f1
         self.f2 = f2
@@ -28,6 +35,7 @@ public class DonutChart {
         self.slices = [Slice]()
     }
 
+    /// Sets the center of this chart.
     @discardableResult
     public func setLocation(_ xc: Float, _ yc: Float) -> DonutChart {
         self.xc = xc
@@ -35,6 +43,7 @@ public class DonutChart {
         return self
     }
 
+    /// Sets the outer and inner radius of this chart. A pie chart ignores the inner radius.
     @discardableResult
     public func setR1AndR2(_ r1: Float, _ r2: Float) -> DonutChart {
         self.r1 = r1
@@ -42,6 +51,7 @@ public class DonutChart {
         return self
     }
 
+    /// Adds a slice to this chart.
     public func addSlice(_ slice: Slice) {
         self.slices!.append(slice)
     }
@@ -191,6 +201,7 @@ public class DonutChart {
         }
     }
 
+    /// Draws this chart on the specified page.
     public func drawOn(_ page: Page) {
         if slices == nil || slices!.isEmpty {
             return

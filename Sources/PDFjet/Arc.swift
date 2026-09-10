@@ -35,18 +35,21 @@ public class Arc : Drawable {
     public init() {
     }
 
+    /// Sets the center of this arc.
     @discardableResult
     public func setLocation(_ cx: Float, _ cy: Float) -> Self {
         _ = setCenterXY(cx, cy)
         return self
     }
 
+    /// Starts this arc at the end point of the specified line.
     @discardableResult
     public func setStartPointToEndOf(_ line: Line) -> Arc {
         self.line = line
         return self
     }
 
+    /// Sets the center of this arc.
     @discardableResult
     public func setCenterXY(_ cx: Float, _ cy: Float) -> Arc {
         self.cx = cx
@@ -54,18 +57,21 @@ public class Arc : Drawable {
         return self
     }
 
+    /// Sets the horizontal radius of this arc.
     @discardableResult
     public func setRadiusX(_ rx: Float) -> Arc {
         self.rx = rx
         return self
     }
 
+    /// Sets the vertical radius of this arc.
     @discardableResult
     public func setRadiusY(_ ry: Float) -> Arc {
         self.ry = ry
         return self
     }
 
+    /// Sets both radii of this arc to the same value, making it circular.
     @discardableResult
     public func setRadius(_ r: Float) -> Arc {
         self.rx = r
@@ -73,18 +79,21 @@ public class Arc : Drawable {
         return self
     }
 
+    /// Sets the angle in degrees where this arc starts.
     @discardableResult
     public func setStartAngle(_ angle: Float) -> Arc {
         self.startAngle = angle
         return self
     }
 
+    /// Sets how many degrees this arc sweeps clockwise from its start angle.
     @discardableResult
     public func setSweepDegreesCW(_ sweepDegrees: Float) -> Arc {
         self.sweepDegrees = sweepDegrees
         return self
     }
 
+    /// Sets how many degrees this arc sweeps counterclockwise from its start angle.
     @discardableResult
     public func setSweepDegreesCCW(_ sweepDegrees: Float) -> Arc {
         self.sweepDegrees = -sweepDegrees
@@ -145,18 +154,21 @@ public class Arc : Drawable {
         return setStrokeColor(r, g, b)
     }
 
+    /// Sets the stroke color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) -> Arc {
         self.strokeColor = [r, g, b]
         return self
     }
 
+    /// Sets the stroke color from an array of red, green and blue values.
     @discardableResult
     public func setStrokeColor(_ rgbColor: [Float]) -> Arc {
         self.strokeColor = rgbColor
         return self
     }
 
+    /// Sets the fill color as a 0xRRGGBB value, for example Color.blue.
     @discardableResult
     public func setFillColor(_ color: Int32) -> Arc {
         let r = Float((color >> 16) & 0xff)/255.0
@@ -165,24 +177,28 @@ public class Arc : Drawable {
         return setFillColor(r, g, b)
     }
 
+    /// Sets the fill color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setFillColor(_ r: Float, _ g: Float, _ b: Float) -> Arc {
         self.fillColor = [r, g, b]
         return self
     }
 
+    /// Sets the fill color from an array of red, green and blue values.
     @discardableResult
     public func setFillColor(_ rgbColor: [Float]) -> Arc {
         self.fillColor = rgbColor
         return self
     }
 
+    /// Rotates this arc clockwise by the specified degrees.
     @discardableResult
     public func setRotateDegreesCW(_ degrees: Float) -> Arc {
         self.rotateDegrees = -degrees
         return self
     }
 
+    /// Rotates this arc counterclockwise by the specified degrees.
     @discardableResult
     public func setRotateDegreesCCW(_ degrees: Float) -> Arc {
         self.rotateDegrees = degrees

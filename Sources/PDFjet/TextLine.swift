@@ -141,6 +141,7 @@ public class TextLine : Drawable {
         return self
     }
 
+    /// Returns the font size.
     public func getFontSize() -> Float {
         return self.fontSize
     }
@@ -178,11 +179,13 @@ public class TextLine : Drawable {
         return self.fallbackFont
     }
 
+    /// Sets the text color as a 0xRRGGBB value. Use setTextColor instead.
     @discardableResult
     public func setColor(_ color: Int32) -> TextLine {
         return setTextColor(color)
     }
 
+    /// Sets the text color as a 0xRRGGBB value. Color.transparent leaves the color unchanged.
     @discardableResult
     public func setTextColor(_ color: Int32) -> TextLine {
         if color == Color.transparent {
@@ -195,22 +198,26 @@ public class TextLine : Drawable {
         return self
     }
 
+    /// Sets the text color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setTextColor(_ r: Float, _ g: Float, _ b: Float) -> TextLine {
         self.textColor = [r, g, b]
         return self
     }
 
+    /// Sets the text color from an array of red, green and blue values.
     @discardableResult
     public func setTextColor(_ textColor: [Float]) -> TextLine {
         self.textColor = textColor
         return self
     }
 
+    /// Returns the text color.
     public func getTextColor() -> [Float] {
         return self.textColor
     }
 
+    /// Sets the color of the underline and strikeout lines as a 0xRRGGBB value. Color.transparent leaves it unchanged.
     @discardableResult
     public func setLineColor(_ color: Int32) -> TextLine {
         if color == Color.transparent {
@@ -223,18 +230,21 @@ public class TextLine : Drawable {
         return self
     }
 
+    /// Sets the color of the underline and strikeout lines from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setLineColor(_ r: Float, _ g: Float, _ b: Float) -> TextLine {
         self.lineColor = [r, g, b]
         return self
     }
 
+    /// Sets the color of the underline and strikeout lines from an array of red, green and blue values.
     @discardableResult
     public func setLineColor(_ lineColor: [Float]) -> TextLine {
         self.lineColor = lineColor
         return self
     }
 
+    /// Returns the color of the underline and strikeout lines.
     public func getLineColor() -> [Float] {
         return self.lineColor
     }
@@ -440,12 +450,14 @@ public class TextLine : Drawable {
         return self.verticalOffset
     }
 
+    /// Sets the language of the text, for example "en-US".
     @discardableResult
     public func setLanguage(_ language: String?) -> TextLine {
         self.language = language
         return self
     }
 
+    /// Returns the language of the text.
     public func getLanguage() -> String? {
         return self.language
     }
@@ -462,49 +474,58 @@ public class TextLine : Drawable {
         return self
     }
 
+    /// Returns the alternate description of this text line.
     public func getAltDescription() -> String? {
         return self.altDescription
     }
 
+    /// Sets the language of the link annotation.
     @discardableResult
     public func setURILanguage(_ uriLanguage: String?) -> TextLine {
         self.uriLanguage = uriLanguage
         return self
     }
 
+    /// Sets the alternate description of the link annotation.
     @discardableResult
     public func setURIAltDescription(_ uriAltDescription: String?) -> TextLine {
         self.uriAltDescription = uriAltDescription
         return self
     }
 
+    /// Sets the actual text of the link annotation.
     @discardableResult
     public func setURIActualText(_ uriActualText: String?) -> TextLine {
         self.uriActualText = uriActualText
         return self
     }
 
+    /// Sets the structure element type, for example StructElem.P or StructElem.H1.
     @discardableResult
     public func setStructureType(_ structureType: String) -> TextLine {
         self.structureType = structureType
         return self
     }
 
+    /// Moves this text line down by the leading and returns the new y coordinate.
     public func advance(_ leading: Float) -> Float {
         self.y += leading
         return self.y
     }
 
+    /// Returns the y coordinate of this text line.
     public func getTextY() -> Float {
         return self.y
     }
 
+    /// Sets the colors used to highlight words in the text.
     @discardableResult
     public func setColorMap(_ colorMap: [String: Int32]?) -> TextLine {
         self.colorMap = colorMap
         return self
     }
 
+    /// Returns the colors used to highlight words in the text.
     public func getColorMap() -> [String: Int32]? {
         return self.colorMap
     }

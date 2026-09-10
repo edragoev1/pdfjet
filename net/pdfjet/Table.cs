@@ -17,15 +17,25 @@ namespace PDFjet.NET {
 /// Please see Example_08.
 /// </summary>
 public class Table {
+    /// <summary>The table has no header rows.</summary>
     public static readonly int WITH_0_HEADER_ROWS = 0;
+    /// <summary>The table has 1 header row.</summary>
     public static readonly int WITH_1_HEADER_ROW  = 1;
+    /// <summary>The table has 2 header rows.</summary>
     public static readonly int WITH_2_HEADER_ROWS = 2;
+    /// <summary>The table has 3 header rows.</summary>
     public static readonly int WITH_3_HEADER_ROWS = 3;
+    /// <summary>The table has 4 header rows.</summary>
     public static readonly int WITH_4_HEADER_ROWS = 4;
+    /// <summary>The table has 5 header rows.</summary>
     public static readonly int WITH_5_HEADER_ROWS = 5;
+    /// <summary>The table has 6 header rows.</summary>
     public static readonly int WITH_6_HEADER_ROWS = 6;
+    /// <summary>The table has 7 header rows.</summary>
     public static readonly int WITH_7_HEADER_ROWS = 7;
+    /// <summary>The table has 8 header rows.</summary>
     public static readonly int WITH_8_HEADER_ROWS = 8;
+    /// <summary>The table has 9 header rows.</summary>
     public static readonly int WITH_9_HEADER_ROWS = 9;
 
     private List<List<Cell>> tableData;
@@ -45,6 +55,7 @@ public class Table {
         tableData = new List<List<Cell>>();
     }
 
+    /// <summary>Creates a table that uses f1 for the header rows and f2 for the other rows.</summary>
     public Table(Font f1, Font f2) {
         this.f1 = f1;
         this.f2 = f2;
@@ -370,6 +381,7 @@ public class Table {
         return tableData[index];
     }
 
+    /// <summary>Returns the cells in the specified row. Same as GetRow.</summary>
     public List<Cell> GetRowAtIndex(int index) {
         return GetRow(index);
     }
@@ -389,6 +401,7 @@ public class Table {
         return column;
     }
 
+    /// <summary>Returns the cells in the specified column. Same as GetColumn.</summary>
     public List<Cell> GetColumnAtIndex(int index) {
         return GetColumn(index);
     }
@@ -406,6 +419,10 @@ public class Table {
         return xy;
     }
 
+    /// <summary>
+    /// Draws this table on as many new pages as it needs.
+    /// The new pages are added to the list, not to the PDF; add them to the PDF afterwards.
+    /// </summary>
     public float[] DrawOn(PDF pdf, List<Page> pages, float[] pageSize) {
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
@@ -823,6 +840,7 @@ public class Table {
         }
     }
 
+    /// <summary>Keeps only the columns with the specified indexes.</summary>
     public Table SetVisibleColumns(params int[] columns) {
         List<List<Cell>> list = new List<List<Cell>>();
         List<int> visible = new List<int>(columns);
@@ -839,13 +857,16 @@ public class Table {
         return this;
     }
 
+    /// <summary>Adds an empty row and returns its index.</summary>
     public int AppendRow() {
         List<Cell> row = new List<Cell>();
         tableData.Add(row);         // Add the row
         return tableData.Count - 1; // Return the current index of the new row
     }
 
+    /// <summary>Returns the number of rows.</summary>
     public int GetRowCount() { return tableData.Count; }
+    /// <summary>Returns the number of cells in the specified row.</summary>
     public int GetColCount(int row) {
         if (row <= tableData.Count) {
             return tableData[row].Count;
@@ -854,6 +875,7 @@ public class Table {
         }
     }
 
+    /// <summary>Sets the top margin on the first page when the table spans several pages.</summary>
     public Table SetFirstPageTopMargin(float firstPageTopMargin) {
         this.firstPageTopMargin = firstPageTopMargin;
         return this;

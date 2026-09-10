@@ -13,23 +13,40 @@
 /// Please see Example_05.
 ///
 public class Point : Drawable {
+    /// The point is not drawn.
     public static let INVISIBLE: Int = -1
+    /// A circle.
     public static let CIRCLE: Int = 0
+    /// A diamond.
     public static let DIAMOND: Int = 1
+    /// A box.
     public static let BOX: Int = 2
+    /// A plus sign.
     public static let PLUS: Int = 3
+    /// A horizontal dash.
     public static let H_DASH: Int = 4
+    /// A vertical dash.
     public static let V_DASH: Int = 5
+    /// A multiplication sign.
     public static let MULTIPLY: Int = 6
+    /// A star.
     public static let STAR: Int = 7
+    /// An X mark.
     public static let X_MARK: Int = 8
+    /// An up arrow.
     public static let UP_ARROW: Int = 9
+    /// A down arrow.
     public static let DOWN_ARROW: Int = 10
+    /// A left arrow.
     public static let LEFT_ARROW: Int = 11
+    /// A right arrow.
     public static let RIGHT_ARROW: Int = 12
 
+    /// A control point of a curve drawn with the c operator, which uses both control points.
     public static let controlPointC: String = "c"
+    /// A control point of a curve drawn with the v operator, where the first control point is the start point.
     public static let controlPointV: String = "v"
+    /// A control point of a curve drawn with the y operator, where the second control point is the end point.
     public static let controlPointY: String = "y"
 
     var x: Float = 0.0
@@ -52,6 +69,7 @@ public class Point : Drawable {
     private var textDirection: Int = 0
     private var uri: String?
 
+    /// Creates a point.
     public init() {
     }
 
@@ -224,6 +242,7 @@ public class Point : Drawable {
         return self.fillColor
     }
 
+    /// Sets the stroke color as a 0xRRGGBB value.
     @discardableResult
     public func setStrokeColor(_ strokeColor: Int32) -> Point {
         let r = Float((strokeColor >> 16) & 0xff)/255.0
@@ -372,6 +391,7 @@ public class Point : Drawable {
         return setTextColor([r, g, b])
     }
 
+    /// Sets the text color from an array of red, green and blue values.
     @discardableResult
     public func setTextColor(_ textColor: [Float]) -> Point {
         self.textColor = textColor

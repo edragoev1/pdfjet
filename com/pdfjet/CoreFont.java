@@ -35,13 +35,21 @@ public class CoreFont {
     /** Zapf Dingbats. */
     public static final int ZAPF_DINGBATS = 14;
 
+    /** The PostScript name of the font. */
     protected String name;
+    /** The x coordinate of the lower left corner of the font bounding box. */
     protected int bBoxLLx;
+    /** The y coordinate of the lower left corner of the font bounding box. */
     protected int bBoxLLy;
+    /** The x coordinate of the upper right corner of the font bounding box. */
     protected int bBoxURx;
+    /** The y coordinate of the upper right corner of the font bounding box. */
     protected int bBoxURy;
+    /** The position of the underline relative to the baseline. */
     protected int underlinePosition;
+    /** The thickness of the underline. */
     protected int underlineThickness;
+    /** The character widths and kerning pairs. */
     protected int[][] metrics;
 
     /**

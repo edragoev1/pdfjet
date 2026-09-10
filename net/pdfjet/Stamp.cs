@@ -10,6 +10,10 @@ using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
+/// <summary>
+/// Content that is drawn once, written as a PDF form XObject, and placed on pages with DrawOn.
+/// Please see Example_35.
+/// </summary>
 public class Stamp : IDrawable {
     internal int objNumber;
 
@@ -25,16 +29,19 @@ public class Stamp : IDrawable {
     private MemoryStream buf = new MemoryStream();
     private List<Font> fonts = new List<Font>();
 
+    /// <summary>Creates a stamp for the specified document.</summary>
     public Stamp(PDF pdf) {
         this.pdf = pdf;
     }
 
+    /// <summary>Sets the size of this stamp.</summary>
     public Stamp WithSize(float width, float height) {
         this.width = width;
         this.height = height;
         return this;
     }
 
+    /// <summary>Adds a font used by the text on this stamp.</summary>
     public Stamp WithFont(Font font) {
         fonts.Add(font);
         return this;
@@ -44,12 +51,14 @@ public class Stamp : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the location of the top left corner of this stamp on the page.</summary>
     public Stamp SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
+    /// <summary>Sets the location of the top left corner of this stamp on the page.</summary>
     public Stamp SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
@@ -64,6 +73,7 @@ public class Stamp : IDrawable {
         buf.Write(bytes, 0, bytes.Length);
     }
 
+    /// <summary>Sets the fill color for the content drawn after it, from an array of red, green and blue values.</summary>
     public Stamp SetFillColor(float[] rgbColor) {
         Append(rgbColor[0]);
         Append(" ");
@@ -75,6 +85,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the fill color for the content drawn after it, as a 0xRRGGBB value.</summary>
     public Stamp SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -89,6 +100,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the stroke color for the content drawn after it, from an array of red, green and blue values.</summary>
     public Stamp SetStrokeColor(float[] rgbColor) {
         Append(rgbColor[0]);
         Append(" ");
@@ -100,6 +112,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the stroke color for the content drawn after it, as a 0xRRGGBB value.</summary>
     public Stamp SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -114,6 +127,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the stroke width for the content drawn after it.</summary>
     public Stamp SetStrokeWidth(float width) {
         Append(width);
         Append(" w\n");
@@ -121,6 +135,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Begins a new path at the specified point.</summary>
     public Stamp MoveTo(float x, float y) {
         Append(x);
         Append(" ");
@@ -129,6 +144,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Adds a straight line from the current point to the specified point.</summary>
     public Stamp LineTo(float x, float y) {
         Append(x);
         Append(" ");
@@ -137,6 +153,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Adds a cubic Bézier curve from the current point to x3, y3, using x1, y1 and x2, y2 as control points.</summary>
     public Stamp CurveTo(
             float x1,
             float y1,
@@ -159,35 +176,42 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Strokes the current path.</summary>
     public Stamp StrokePath() {
         Append("S\n");
         return this;
     }
 
+    /// <summary>Closes and strokes the current path.</summary>
     public Stamp ClosePath() {
         Append("s\n");
         return this;
     }
 
+    /// <summary>Fills the current path.</summary>
     public Stamp FillPath() {
         Append("f\n");
         return this;
     }
 
+    /// <summary>Closes, fills and strokes the current path.</summary>
     public Stamp CloseFillAndStrokePath() {
         Append("b\n");
         return this;
     }
 
     // TODO:
+    /// <summary>Not implemented yet; does nothing.</summary>
     public Stamp Rectangle() {
         return this;
     }
 
+    /// <summary>Not implemented yet; does nothing.</summary>
     public Stamp Draw() {
         return this;
     }
 
+    /// <summary>Draws the outline of a rectangle.</summary>
     public Stamp DrawRect(float x, float y, float w, float h) {
         MoveTo(x, y);
         LineTo(x + w, y);
@@ -197,6 +221,7 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Draws a filled rectangle.</summary>
     public Stamp FillRect(float x, float y, float w, float h) {
         MoveTo(x, y);
         LineTo(x + w, y);
@@ -206,10 +231,12 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>Draws text using the font, font size, location and text in the parameters.</summary>
     public Stamp DrawText(TextParameters parameters) {
         return DrawText(parameters.font, parameters.fontSize, parameters.x, parameters.y, parameters.text);
     }
 
+    /// <summary>Draws text on this stamp. The font must also be added with WithFont.</summary>
     public Stamp DrawText(Font font, float fontSize, float x, float y, String text) {
         Append("BT\n");
         Append("/F");
@@ -264,6 +291,10 @@ public class Stamp : IDrawable {
         return this;
     }
 
+    /// <summary>
+    /// Writes this stamp to the document as a form XObject.
+    /// Call it once, after drawing the content and before DrawOn.
+    /// </summary>
     public void Complete() {
         pdf.NewObj();
         pdf.Append(Token.BeginDictionary);
@@ -320,6 +351,10 @@ public class Stamp : IDrawable {
         Append(" ");
     }
 
+    /// <summary>
+    /// Draws a path through the points. Control points define Bézier curves.
+    /// Throws an exception if the path has fewer than 2 points.
+    /// </summary>
     public void DrawPath(List<Point> path, string pathOperator) {
         if (path.Count < 2) {
             throw new Exception("The Path object must contain at least 2 points");
@@ -360,6 +395,7 @@ public class Stamp : IDrawable {
         buf.WriteByte(Page.HEX[codePoint & 0xF]);
     }
 
+    /// <summary>Draws this stamp on the specified page.</summary>
     public float[] DrawOn(Page page) {
         // page.AddBMC(StructElem.Figure, language, actualText, altDescription);
         page.SaveGraphicsState();

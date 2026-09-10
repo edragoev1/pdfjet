@@ -113,6 +113,7 @@ func (textLine *TextLine) SetFontSize(fontSize float32) *TextLine {
 	return textLine
 }
 
+// GetFontSize returns the font size.
 func (textLine *TextLine) GetFontSize() float32 {
 	return textLine.fontSize
 }
@@ -146,6 +147,7 @@ func (textLine *TextLine) SetColor(color int32) *TextLine {
 	return textLine.SetTextColor(color)
 }
 
+// SetTextColor sets the text color as a 0xRRGGBB value.
 func (textLine *TextLine) SetTextColor(color int32) *TextLine {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -154,6 +156,7 @@ func (textLine *TextLine) SetTextColor(color int32) *TextLine {
 	return textLine
 }
 
+// SetTextColorRGB sets the text color from red, green and blue values.
 func (textLine *TextLine) SetTextColorRGB(color [3]float32) *TextLine {
 	textLine.color = color
 	return textLine
@@ -396,11 +399,13 @@ func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
 	return textLine
 }
 
+// SetColorMap sets the colors used to highlight words in the text.
 func (textLine *TextLine) SetColorMap(colorMap map[string]int32) *TextLine {
 	textLine.colorMap = colorMap
 	return textLine
 }
 
+// GetColorMap returns the colors used to highlight words in the text.
 func (textLine *TextLine) GetColorMap() map[string]int32 {
 	return textLine.colorMap
 }

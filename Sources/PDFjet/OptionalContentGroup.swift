@@ -26,33 +26,39 @@ public class OptionalContentGroup {
     private var exportable: Bool?
     private var components = [Drawable]()
 
+    /// Creates an optional content group, also called a layer.
     public init(_ pdf: PDF, _ name: String) {
         self.pdf = pdf
         self.name = name
     }
 
+    /// Adds a drawable to this group.
     public func add(_ drawable: Drawable) {
         components.append(drawable)
     }
 
+    /// Sets whether this group is visible.
     @discardableResult
     public func setVisible(_ visible: Bool) -> OptionalContentGroup {
         self.visible = visible
         return self
     }
 
+    /// Sets whether this group is printed.
     @discardableResult
     public func setPrintable(_ printable: Bool) -> OptionalContentGroup {
         self.printable = printable
         return self
     }
 
+    /// Sets whether this group is exported.
     @discardableResult
     public func setExportable(_ exportable: Bool) -> OptionalContentGroup {
         self.exportable = exportable
         return self
     }
 
+    /// Draws this group and its drawables on the specified page.
     public func drawOn(_ page: Page) {
         if ocgNumber == -1 {
             pdf.newobj()

@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
  * Please see Example_35.
  */
 public class Stamp implements Drawable {
+    /** The object number of this stamp. */
     protected int objNumber;
 
     private PDF pdf;

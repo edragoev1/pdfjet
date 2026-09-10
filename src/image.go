@@ -44,6 +44,8 @@ type Image struct {
 	actualText     string
 }
 
+// NewImageFromFile creates an image from the PNG, BMP or JPEG file at the specified path.
+// It exits the program if the extension is not supported or the file cannot be opened.
 func NewImageFromFile(pdf *PDF, filePath string) *Image {
 	var imageType int
 	if strings.HasSuffix(strings.ToLower(filePath), ".png") {

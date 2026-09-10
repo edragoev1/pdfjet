@@ -10,7 +10,9 @@ package com.pdfjet;
  * Encapsulates the width and height of a component.
  */
 public class Dimension {
+    /** The width. */
     protected float w;
+    /** The height. */
     protected float h;
 
     /**

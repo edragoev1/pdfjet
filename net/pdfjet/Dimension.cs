@@ -23,10 +23,12 @@ public class Dimension {
         this.h = height;
     }
 
+    /// <summary>Returns the width.</summary>
     public float GetWidth() {
         return w;
     }
 
+    /// <summary>Returns the height.</summary>
     public float GetHeight() {
         return h;
     }

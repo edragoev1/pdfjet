@@ -17,6 +17,7 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>Helper methods for building QR codes.</summary>
 public class QRUtil {
     internal static Polynomial GetErrorCorrectPolynomial(int errorCorrectLength) {
         Polynomial a = new Polynomial(new int[] {1});
@@ -137,6 +138,7 @@ public class QRUtil {
 
     private const int G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
 
+    /// <summary>Returns the BCH code of the format information bits.</summary>
     public static int GetBCHTypeInfo(int data) {
         int d = data << 10;
         while (GetBCHDigit(d) - GetBCHDigit(G15) >= 0) {

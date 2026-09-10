@@ -23,6 +23,12 @@ namespace PDFjet.NET {
         private readonly List<Slice> slices;
         private readonly bool isDonutChart;
 
+        /// <summary>
+        /// Creates a donut chart or a pie chart.
+        /// </summary>
+        /// <param name="f1">the font for the slice labels.</param>
+        /// <param name="f2">the font for the percentages drawn inside the slices.</param>
+        /// <param name="isDonutChart">true for a donut chart, false for a pie chart.</param>
         public DonutChart(Font f1, Font f2, bool isDonutChart) {
             this.f1 = f1;
             this.f2 = f2;
@@ -30,18 +36,21 @@ namespace PDFjet.NET {
             this.slices = new List<Slice>();
         }
 
+        /// <summary>Sets the center of this chart.</summary>
         public DonutChart SetLocation(float xc, float yc) {
             this.xc = xc;
             this.yc = yc;
             return this;
         }
 
+        /// <summary>Sets the outer and inner radius of this chart. A pie chart ignores the inner radius.</summary>
         public DonutChart SetR1AndR2(float r1, float r2) {
             this.r1 = r1;
             this.r2 = r2;
             return this;
         }
 
+        /// <summary>Adds a slice to this chart.</summary>
         public void AddSlice(Slice slice) {
             slices.Add(slice);
         }
@@ -190,6 +199,7 @@ namespace PDFjet.NET {
             }
         }
 
+        /// <summary>Draws this chart on the specified page.</summary>
         public void DrawOn(Page page) {
             if (slices == null || slices.Count == 0) {
                 return;

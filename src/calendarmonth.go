@@ -46,27 +46,32 @@ func (calendarMonth *CalendarMonth) NewCalendarMonth(f1, f2 *Font, year, month i
 	calendarMonth.dayOfWeek = int(now.Weekday())
 }
 
+// SetHeadFont sets the font of the calendar header.
 func (calendarMonth *CalendarMonth) SetHeadFont(font *Font) *CalendarMonth {
 	calendarMonth.f1 = font
 	return calendarMonth
 }
 
+// SetBodyFont sets the font of the calendar body.
 func (calendarMonth *CalendarMonth) SetBodyFont(font *Font) *CalendarMonth {
 	calendarMonth.f2 = font
 	return calendarMonth
 }
 
+// SetLocation sets the location of the top left corner of the calendar.
 func (calendarMonth *CalendarMonth) SetLocation(x, y float32) *CalendarMonth {
 	calendarMonth.x1 = x
 	calendarMonth.y1 = y
 	return calendarMonth
 }
 
+// SetCellWidth sets the width of the day cells.
 func (calendarMonth *CalendarMonth) SetCellWidth(width float32) *CalendarMonth {
 	calendarMonth.dx = width
 	return calendarMonth
 }
 
+// SetCellHeight sets the height of the day cells.
 func (calendarMonth *CalendarMonth) SetCellHeight(height float32) *CalendarMonth {
 	calendarMonth.dy = height
 	return calendarMonth

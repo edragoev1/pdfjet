@@ -17,11 +17,13 @@ public class EmbeddedFile {
     internal int objNumber = -1;
     internal String fileName = null;
 
+    /// <summary>Embeds the file with the specified name into the PDF.</summary>
     public EmbeddedFile(PDF pdf, String fileName, Compress compress) :
         this(pdf, fileName.Substring(fileName.LastIndexOf("/") + 1),
                 new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
     }
 
+    /// <summary>Embeds a file read from the stream into the PDF under the specified name.</summary>
     public EmbeddedFile(PDF pdf, String fileName, Stream stream, Compress compress) {
         this.fileName = fileName;
         byte[] buf = Content.GetFromStream(stream);
@@ -70,6 +72,7 @@ public class EmbeddedFile {
         this.objNumber = pdf.GetObjNumber();
     }
 
+    /// <summary>Returns the name of the embedded file.</summary>
     public String GetFileName() {
         return fileName;
     }

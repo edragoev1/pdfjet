@@ -85,6 +85,7 @@ public class PDF {
     // Root
     // xref table
     // Trailer
+    /// <summary>Creates a PDF document that is written to the stream.</summary>
     public PDF(Stream os) : this(os, Compliance.PDF_1_7) {
     }
 
@@ -98,6 +99,7 @@ public class PDF {
         SetOutputStream(os);
     }
 
+    /// <summary>Sets the stream the document is written to.</summary>
     public PDF SetOutputStream(Stream os) {
         this.os = os;
 
@@ -116,15 +118,18 @@ public class PDF {
         return this;
     }
 
+    /// <summary>Returns the stream the document is written to.</summary>
     public Stream GetOutputStream() {
         return this.os;
     }
 
+    /// <summary>Sets the PDF/UA or PDF/A compliance of this document.</summary>
     public PDF SetCompliance(Compliance compliance) {
         this.compliance = compliance;
         return this;
     }
 
+    /// <summary>Sets the encryption applied to this document.</summary>
     public PDF SetEncryption(Encryption encryption) {
         this.encryption = encryption;
         return this;
@@ -1052,6 +1057,7 @@ public class PDF {
         }
     }
 
+    /// <summary>Adds the page to this document.</summary>
     public void AddPage(Page page) {
         if (page == null) {
             return;
@@ -1063,6 +1069,7 @@ public class PDF {
         prevPage = page;
     }
 
+    /// <summary>Adds the pages to this document.</summary>
     public void AddPages(List<Page> pages) {
         foreach (Page page in pages) {
             AddPage(page);
@@ -1188,21 +1195,25 @@ public class PDF {
         return this;
     }
 
+    /// <summary>Sets the keywords in the document metadata.</summary>
     public PDF SetKeywords(String keywords) {
         this.keywords = keywords;
         return this;
     }
 
+    /// <summary>Sets the creator in the document metadata.</summary>
     public PDF SetCreator(String creator) {
         this.creator = creator;
         return this;
     }
 
+    /// <summary>Sets the page layout used when the document is opened. See PageLayout.</summary>
     public PDF SetPageLayout(String pageLayout) {
         this.pageLayout = pageLayout;
         return this;
     }
 
+    /// <summary>Sets the page mode used when the document is opened. See PageMode.</summary>
     public PDF SetPageMode(String pageMode) {
         this.pageMode = pageMode;
         return this;
@@ -1269,6 +1280,7 @@ public class PDF {
         return sorted;
     }
 
+    /// <summary>Reads the objects of an existing PDF from the stream.</summary>
     public List<PDFobj> Read(Stream inputStream) {
         byte[] buf = Content.GetFromStream(inputStream);
 
@@ -1431,6 +1443,8 @@ public class PDF {
     /// Converts an array of bytes to an integer.
     /// </summary>
     /// <param name="buf">byte[]</param>
+    /// <param name="off">the index of the first byte.</param>
+    /// <param name="len">the number of bytes.</param>
     /// <returns>int</returns>
     private int ToInt(byte[] buf, int off, int len) {
         int i = 0;
@@ -1569,6 +1583,7 @@ public class PDF {
         return Int32.Parse(sb.ToString());
     }
 
+    /// <summary>Adds the outline dictionary for the bookmarks and returns its object number.</summary>
     public int AddOutlineDict(Bookmark toc) {
         int numOfChildren = GetNumOfChildren(0, toc);
         NewObj();
@@ -1588,6 +1603,7 @@ public class PDF {
         return GetObjNumber();
     }
 
+    /// <summary>Adds an outline item for the specified bookmark.</summary>
     public void AddOutlineItem(int parent, int i, Bookmark bm1) {
         int prev = (bm1.GetPrevBookmark() == null) ? 0 : parent + (i - 1);
         int next = (bm1.GetNextBookmark() == null) ? 0 : parent + (i + 1);
@@ -1661,11 +1677,13 @@ public class PDF {
         return numOfChildren;
     }
 
+    /// <summary>Adds objects read from an existing PDF to this document.</summary>
     public void AddObjects(List<PDFobj> objects) {
         this.pagesObjNumber = Int32.Parse(GetPagesObject(objects).dict[0]);
         AddObjectsToPDF(objects);
     }
 
+    /// <summary>Returns the root pages object.</summary>
     public PDFobj GetPagesObject(List<PDFobj> objects) {
         foreach (PDFobj obj in objects) {
             if (obj.GetValue("/Type").Equals("/Pages") &&
@@ -1676,6 +1694,7 @@ public class PDF {
         return null;
     }
 
+    /// <summary>Returns the page objects.</summary>
     public List<PDFobj> GetPageObjects(List<PDFobj> objects) {
         List<PDFobj> pages = new List<PDFobj>();
         GetPageObjects(GetPagesObject(objects), objects, pages);
@@ -1828,6 +1847,7 @@ public class PDF {
         }
     }
 
+    /// <summary>Adds the fonts and graphics states used by the pages to this document.</summary>
     public void AddResourceObjects(List<PDFobj> objects) {
         List<PDFobj> resources = new List<PDFobj>();
         List<PDFobj> pages = GetPageObjects(objects);

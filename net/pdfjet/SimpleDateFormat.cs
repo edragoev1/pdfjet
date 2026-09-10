@@ -8,15 +8,18 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
+/// <summary>Formats dates for the PDF metadata.</summary>
 public class SimpleDateFormat {
     private String format = null;
 
     // SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMddHHmmss'Z'");
     // SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    /// <summary>Creates a formatter for the yyyyMMddHHmmss'Z' or the yyyy-MM-dd'T'HH:mm:ss pattern.</summary>
     public SimpleDateFormat(String format) {
         this.format = format;
     }
 
+    /// <summary>Formats the date and time using the pattern of this formatter.</summary>
     public String Format(DateTime now) {
         String dateAndTime = now.Year.ToString();
         if (format[4] == '-') {

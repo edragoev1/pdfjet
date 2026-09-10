@@ -12,11 +12,17 @@ namespace PDFjet.NET {
 /// See the TextColumn class for more information.
 /// </summary>
 public class Paragraph {
+    /// <summary>The x coordinate where the text of this paragraph starts.</summary>
     public float xText;
+    /// <summary>The baseline y coordinate of the first line of this paragraph.</summary>
     public float yText;
+    /// <summary>The x coordinate of the top left corner of this paragraph.</summary>
     public float x1;
+    /// <summary>The y coordinate of the top left corner of this paragraph.</summary>
     public float y1;
+    /// <summary>The x coordinate where the last line of this paragraph ends.</summary>
     public float x2;
+    /// <summary>The y coordinate of the bottom of the last line of this paragraph.</summary>
     public float y2;
     internal List<TextLine> lines = null;
     internal uint alignment = Align.LEFT;
@@ -28,6 +34,7 @@ public class Paragraph {
         this.lines = new List<TextLine>();
     }
 
+    /// <summary>Creates a paragraph with the specified text line.</summary>
     public Paragraph(TextLine text) {
         this.lines = new List<TextLine>();
         this.lines.Add(text);
@@ -54,14 +61,17 @@ public class Paragraph {
         return this;
     }
 
+    /// <summary>Returns the text lines of this paragraph.</summary>
     public List<TextLine> GetTextLines() {
         return lines;
     }
 
+    /// <summary>Returns true if the first line of this paragraph starts with the specified token.</summary>
     public bool StartsWith(string token) {
         return lines[0].GetText().StartsWith(token);
     }
 
+    /// <summary>Sets the text color of all lines in this paragraph as a 0xRRGGBB value.</summary>
     public Paragraph SetColor(int color) {
         foreach (TextLine line in lines) {
             line.SetTextColor(color);
@@ -69,6 +79,7 @@ public class Paragraph {
         return this;
     }
 
+    /// <summary>Sets the word highlight colors of all lines in this paragraph.</summary>
     public Paragraph SetColorMap(Dictionary<string, int> colorMap) {
         foreach (TextLine line in lines) {
             line.SetColorMap(colorMap);

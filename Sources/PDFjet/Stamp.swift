@@ -7,6 +7,10 @@
 
 import Foundation
 
+///
+/// Content that is drawn once, written as a PDF form XObject, and placed on pages with drawOn.
+/// Please see Example_35.
+///
 public class Stamp : Drawable {
     internal var objNumber: Int?
 
@@ -22,10 +26,12 @@ public class Stamp : Drawable {
     private var buf = [UInt8]()
     private var fonts: [Font] = []
 
+    /// Creates a stamp for the specified document.
     public init(_ pdf: PDF) {
         self.pdf = pdf
     }
 
+    /// Sets the size of this stamp.
     @discardableResult
     public func withSize(_ width: Float, _ height: Float) -> Stamp {
         self.width = width
@@ -33,12 +39,14 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Adds a font used by the text on this stamp.
     @discardableResult
     public func withFont(_ font: Font) -> Stamp {
         fonts.append(font)
         return self
     }
 
+    /// Sets the location of the top left corner of this stamp on the page.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
@@ -46,6 +54,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Sets the fill color for the content drawn after it, from an array of red, green and blue values.
     @discardableResult
     public func setFillColor(_ rgbColor: [Float]) -> Stamp {
         append(rgbColor[0])
@@ -58,6 +67,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Sets the fill color for the content drawn after it, as a 0xRRGGBB value.
     @discardableResult
     public func setFillColor(_ color: Int32) -> Stamp {
         let r = Float((color >> 16) & 0xff) / 255.0
@@ -75,6 +85,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Sets the stroke color for the content drawn after it, from an array of red, green and blue values.
     @discardableResult
     public func setStrokeColor(_ rgbColor: [Float]) -> Stamp {
         append(rgbColor[0])
@@ -87,6 +98,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Sets the stroke color for the content drawn after it, as a 0xRRGGBB value.
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Stamp {
         let r = Float((color >> 16) & 0xff) / 255.0
@@ -104,6 +116,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Sets the stroke width for the content drawn after it.
     @discardableResult
     public func setStrokeWidth(_ width: Float) -> Stamp {
         append(width)
@@ -112,6 +125,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Begins a new path at the specified point.
     @discardableResult
     public func moveTo(_ x: Float, _ y: Float) -> Stamp {
         append(x)
@@ -121,6 +135,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Adds a straight line from the current point to the specified point.
     @discardableResult
     public func lineTo(_ x: Float, _ y: Float) -> Stamp {
         append(x)
@@ -130,6 +145,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Adds a cubic Bézier curve from the current point to x3, y3, using x1, y1 and x2, y2 as control points.
     @discardableResult
     public func curveTo(
         _ x1: Float, _ y1: Float,
@@ -151,24 +167,28 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Strokes the current path.
     @discardableResult
     public func strokePath() -> Stamp {
         append("S\n")
         return self
     }
 
+    /// Closes and strokes the current path.
     @discardableResult
     public func closePath() -> Stamp {
         append("s\n")
         return self
     }
 
+    /// Fills the current path.
     @discardableResult
     public func fillPath() -> Stamp {
         append("f\n")
         return self
     }
 
+    /// Closes, fills and strokes the current path.
     @discardableResult
     public func closeFillAndStrokePath() -> Stamp {
         append("b\n")
@@ -176,11 +196,13 @@ public class Stamp : Drawable {
     }
 
     // TODO: Implement
+    /// Not implemented yet; does nothing.
     @discardableResult
     public func rectangle() -> Stamp {
         return self
     }
 
+    /// Draws the outline of a rectangle.
     @discardableResult
     public func drawRect(_ x: Float, _ y: Float, _ w: Float, _ h: Float) -> Stamp {
         moveTo(x, y)
@@ -191,6 +213,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Draws a filled rectangle.
     @discardableResult
     public func fillRect(_ x: Float, _ y: Float, _ w: Float, _ h: Float) -> Stamp {
         moveTo(x, y)
@@ -200,6 +223,7 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Draws text using the font, font size, location and text in the parameters.
     @discardableResult
     public func drawText(_ parameters: TextParameters) -> Stamp {
         guard let font = parameters.font, let text = parameters.text else {
@@ -215,6 +239,7 @@ public class Stamp : Drawable {
         )
     }
 
+    /// Draws text on this stamp. The font must also be added with withFont.
     @discardableResult
     public func drawText(
         _ font: Font,
@@ -239,30 +264,38 @@ public class Stamp : Drawable {
         return self
     }
 
+    /// Sets the rotation angle of this stamp in degrees.
     @discardableResult
     public func rotate(_ degrees: Float) -> Stamp {
         self.rotateDegrees = degrees
         return self
     }
 
+    /// Sets the rotation angle of this stamp in degrees.
     @discardableResult
     public func setRotation(_ degrees: Float) -> Stamp {
         self.rotateDegrees = degrees
         return self
     }
 
+    /// Sets a clockwise rotation in degrees.
     @discardableResult
     public func setRotationClockwise(_ degrees: Float) -> Stamp {
         self.rotateDegrees = -degrees
         return self
     }
 
+    /// Sets a counterclockwise rotation in degrees.
     @discardableResult
     public func setRotationCounterClockwise(_ degrees: Float) -> Stamp {
         self.rotateDegrees = degrees
         return self
     }
 
+    ///
+    /// Writes this stamp to the document as a form XObject.
+    /// Call it once, after drawing the content and before drawOn.
+    ///
     public func complete() throws {
         pdf.newobj()
         pdf.append(Token.beginDictionary)
@@ -318,6 +351,10 @@ public class Stamp : Drawable {
         append(" ")
     }
 
+    ///
+    /// Draws a path through the points. Control points define Bézier curves.
+    /// Throws an error if the path has fewer than 2 points.
+    ///
     public func drawPath(_ path: [Point], _ pathOperator: String) throws {
         guard path.count >= 2 else {
             throw NSError(domain: "Stamp", code: 1,
@@ -356,6 +393,7 @@ public class Stamp : Drawable {
         buf.append(Page.HEX[codePoint & 0xF])
     }
 
+    /// Draws this stamp on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!

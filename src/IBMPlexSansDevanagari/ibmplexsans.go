@@ -1,3 +1,4 @@
+// Package IBMPlexSansDevanagari provides the paths to the IBM Plex Sans Devanagari fonts.
 package IBMPlexSansDevanagari
 
 // IBMPlexSansDevanagari provides the paths to the IBM Plex Sans Devanagari fonts.

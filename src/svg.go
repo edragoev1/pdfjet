@@ -11,9 +11,11 @@ import (
 	"strings"
 )
 
+// SVG converts SVG path data to PDF path operations.
 type SVG struct {
 }
 
+// NewSVG creates an SVG object.
 func NewSVG() *SVG {
 	return new(SVG)
 }
@@ -46,6 +48,7 @@ func isCommand(ch rune) bool {
 	return false
 }
 
+// GetOperations parses SVG path data into a list of path operations.
 func (svg *SVG) GetOperations(path string) []*PathOp {
 	operations := make([]*PathOp, 0)
 	var op = NewPathOp(' ')
@@ -88,6 +91,7 @@ func (svg *SVG) GetOperations(path string) []*PathOp {
 	return operations
 }
 
+// ToPDF converts SVG path operations to PDF path operations.
 func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 	operations := make([]*PathOp, 0)
 	var lastOp = NewPathOp(' ')

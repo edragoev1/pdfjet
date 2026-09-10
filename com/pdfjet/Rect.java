@@ -12,7 +12,9 @@ import java.util.*;
  * A rectangle that can be drawn on a page.
  */
 public class Rect implements Drawable {
+    /** The x coordinate of the top left corner. */
     protected float x;
+    /** The y coordinate of the top left corner. */
     protected float y;
     private float w;
     private float h;

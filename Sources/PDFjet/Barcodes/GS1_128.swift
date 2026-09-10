@@ -7,6 +7,7 @@
 
 class GS1_128 {
 
+/// The bar patterns of the Code 128 symbols, from 0 to 106.
 public static let TABLE = [
 212222, // 0
 222122, // 1
@@ -118,15 +119,23 @@ public static let TABLE = [
 ]
 
 // Shifts from SET_A -> SET_B or SET_B -> SET_A for a single char
+/// Switches between code sets A and B for a single character.
 public static let SHIFT = 98
 
+/// Switches to code set C.
 public static let CODE_C = 99       // Latch to SET_C
+/// The FNC 4 function code.
 public static let FNC_4 = 100       // FNC 4
+/// Switches to code set A.
 public static let CODE_A = 101      // Latch to SET_A
 
+/// Starts the barcode in code set A.
 public static let START_A = 103
+/// Starts the barcode in code set B.
 public static let START_B = 104
+/// Starts the barcode in code set C.
 public static let START_C = 105
+/// The stop code.
 public static let STOP = 106
 
 }   // End of GS1_128.swift

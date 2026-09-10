@@ -19,6 +19,7 @@ public final class PDFobj {
     final var data = [UInt8]()      // The decompressed data
     var gsNumber = -1
 
+    /// Creates an empty PDF object.
     public init() {
 
     }
@@ -45,10 +46,12 @@ public final class PDFobj {
         return self.data
     }
 
+    /// Sets the decompressed data.
     public final func setData(_ data: inout [UInt8]) {
         self.data = data
     }
 
+    /// Returns the compressed stream.
     public final func getStream() -> [UInt8]? {
         return self.stream
     }
@@ -69,6 +72,7 @@ public final class PDFobj {
         }
     }
 
+    /// Sets the stream.
     public final func setStream(_ stream: inout [UInt8]) {
         self.stream = stream
     }
@@ -184,6 +188,7 @@ public final class PDFobj {
         return objects[number - 1]
     }
 
+    /// Returns the content object of this page.
     public final func getContentObject(_ objects: inout [PDFobj]) -> PDFobj? {
         for i in 0..<dict.count {
             if dict[i] == "/Contents" {
@@ -404,6 +409,7 @@ public final class PDFobj {
         return false
     }
 
+    /// Adds a content stream to this page.
     public final func addContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
         let obj = PDFobj()
         obj.setNumber(objects.last!.number + 1)
@@ -526,6 +532,7 @@ public final class PDFobj {
         return numbers.last!
     }
 
+    /// Adds the graphics state to the resources of this page.
     public final func setGraphicsState(_ gs: GraphicsState, _ objects: inout [PDFobj]) {
         var obj: PDFobj?
         var index = -1

@@ -21,6 +21,7 @@ public class TextFrame : Drawable {
     private var borderColor: Int32 = Color.blue
     private var paragraphs: [[String]]
 
+    /// Creates a text frame from a list of paragraphs.
     public init(_ f1: Font, _ inputList: [String]) {
         self.f1 = f1
         self.leading = f1.getAscent() + f1.getDescent()
@@ -42,6 +43,7 @@ public class TextFrame : Drawable {
         }
     }
 
+    /// Sets the location of the top left corner of this text frame.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
@@ -49,38 +51,45 @@ public class TextFrame : Drawable {
         return self
     }
 
+    /// Sets the width of this text frame.
     @discardableResult
     public func setWidth(_ w: Float) -> TextFrame {
         self.w = w
         return self
     }
 
+    /// Sets the height of this text frame.
     @discardableResult
     public func setHeight(_ h: Float) -> TextFrame {
         self.h = h
         return self
     }
 
+    /// Returns the width of this text frame.
     public func getWidth() -> Float {
         return self.w!
     }
 
+    /// Returns the height of this text frame.
     public func getHeight() -> Float {
         return self.h!
     }
 
+    /// Sets whether a border is drawn around this text frame.
     @discardableResult
     public func setBorder(_ border: Bool) -> TextFrame {
         self.border = border
         return self
     }
 
+    /// Sets the border color as a 0xRRGGBB value.
     @discardableResult
     public func setBorderColor(_ borderColor: Int32) -> TextFrame {
         self.borderColor = borderColor
         return self
     }
 
+    /// Returns true if some of the text has not been drawn yet.
     public func hasMoreText() -> Bool {
         return paragraphs.count > 0
     }
@@ -93,6 +102,10 @@ public class TextFrame : Drawable {
         }
     }
 
+    ///
+    /// Draws as much of the text as fits in this frame on the page.
+    /// Call hasMoreText to check whether text is left for another page.
+    ///
     public func drawOn(_ page: Page?) -> [Float] {
         guard let page = page else {
             return [0.0, 0.0]

@@ -39,18 +39,21 @@ func NewDonutChart(f1, f2 *Font, isDonutChart bool) *DonutChart {
 	}
 }
 
+// SetLocation sets the center of this chart.
 func (dc *DonutChart) SetLocation(xc, yc float32) *DonutChart {
 	dc.xc = xc
 	dc.yc = yc
 	return dc
 }
 
+// SetR1AndR2 sets the outer and inner radius of this chart. A pie chart ignores the inner radius.
 func (dc *DonutChart) SetR1AndR2(r1, r2 float32) *DonutChart {
 	dc.r1 = r1
 	dc.r2 = r2
 	return dc
 }
 
+// AddSlice adds a slice to this chart.
 func (dc *DonutChart) AddSlice(slice *Slice) {
 	dc.slices = append(dc.slices, slice)
 }

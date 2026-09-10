@@ -20,8 +20,12 @@ import Foundation
  * Used to specify the error correction level for QR Codes.
  */
 public class ErrorCorrectLevel {
+    /// Recovers about 7% of the data.
     public static let L = 1
+    /// Recovers about 15% of the data.
     public static let M = 0
+    /// Recovers about 25% of the data.
     public static let Q = 3
+    /// Recovers about 30% of the data.
     public static let H = 2
 }

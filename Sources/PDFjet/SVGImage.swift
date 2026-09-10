@@ -247,6 +247,7 @@ public class SVGImage {
         return self
     }
 
+    /// Scales this SVG image by the specified factor.
     public func scaleBy(_ factor: Float) {
         guard let paths = paths else {
             return
@@ -266,10 +267,12 @@ public class SVGImage {
         }
     }
 
+    /// Returns the width of this SVG image.
     public func getPenWidth() -> Float {
         return self.w
     }
 
+    /// Returns the height of this SVG image.
     public func getHeight() -> Float {
         return self.h
     }
@@ -336,6 +339,7 @@ public class SVGImage {
         }
     }
 
+    /// Draws this SVG image on the specified page.
     @discardableResult
     public func drawOn(_ page: Page) -> [Float] {
         page.addBMC(StructElem.P, language, actualText, altDescription)

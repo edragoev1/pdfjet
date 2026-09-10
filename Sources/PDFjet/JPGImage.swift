@@ -63,6 +63,7 @@ class JPGImage {
     var data: [UInt8]
     var index = 0
 
+    /// Reads a JPEG image from the stream.
     public init(_ stream: InputStream) throws {
         self.data = try Content.getFromStream(stream)
         try processImage(&data)

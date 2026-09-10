@@ -31,14 +31,17 @@ public class PDFobj {
         this.dict = new List<String>();
     }
 
+    /// <summary>Returns the object number.</summary>
     public int GetNumber() {
         return this.number;
     }
 
+    /// <summary>Returns the tokens of the object dictionary.</summary>
     public List<String> GetDict() {
         return this.dict;
     }
 
+    /// <summary>Returns the decompressed stream data.</summary>
     public byte[] GetData() {
         return this.data;
     }
@@ -128,6 +131,7 @@ public class PDFobj {
         return numbers;
     }
 
+    /// <summary>Adds a content stream object number to the /Contents of this page.</summary>
     public void AddContentObject(int number) {
         int index = -1;
         for (int i = 0; i < dict.Count; i++) {
@@ -152,6 +156,7 @@ public class PDFobj {
         dict.Insert(index, number.ToString());
     }
 
+    /// <summary>Returns the width and height from the /MediaBox of this page.</summary>
     public float[] GetPageSize() {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/MediaBox")) {
@@ -188,6 +193,7 @@ public class PDFobj {
         return 0;
     }
 
+    /// <summary>Returns the content object of this page.</summary>
     public PDFobj GetContentObject(List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
@@ -203,6 +209,7 @@ public class PDFobj {
         return null;
     }
 
+    /// <summary>Returns the resources object of this page.</summary>
     public PDFobj GetResourcesObject(List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
@@ -216,6 +223,7 @@ public class PDFobj {
         return null;
     }
 
+    /// <summary>Adds a core font to the resources of this page and returns the font.</summary>
     public Font AddResource(int coreFont, List<PDFobj> objects) {
         Font font = new Font(coreFont);
         font.fontID = font.name.Replace('-', '_').ToUpper();
@@ -343,6 +351,7 @@ public class PDFobj {
         }
     }
 
+    /// <summary>Adds an image to the resources of this page.</summary>
     public void AddResource(Image image, List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
@@ -357,6 +366,7 @@ public class PDFobj {
         }
     }
 
+    /// <summary>Adds a font to the resources of this page.</summary>
     public void AddResource(Font font, List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
@@ -371,6 +381,7 @@ public class PDFobj {
         }
     }
 
+    /// <summary>Adds a content stream to this page.</summary>
     public void AddContent(byte[] content, List<PDFobj> objects) {
         PDFobj obj = new PDFobj();
         obj.SetNumber(objects.Count + 1);
@@ -489,6 +500,7 @@ public class PDFobj {
         return maxGSNumber;
     }
 
+    /// <summary>Adds the graphics state to the resources of this page.</summary>
     public PDFobj SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
         PDFobj obj = null;
         int index = -1;

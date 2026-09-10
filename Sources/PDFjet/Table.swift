@@ -12,15 +12,25 @@ import Foundation
 /// Please see Example_08.
 ///
 public class Table {
+    /// The table has no header rows.
     public static let WITH_0_HEADER_ROWS = 0
+    /// The table has 1 header row.
     public static let WITH_1_HEADER_ROW  = 1
+    /// The table has 2 header rows.
     public static let WITH_2_HEADER_ROWS = 2
+    /// The table has 3 header rows.
     public static let WITH_3_HEADER_ROWS = 3
+    /// The table has 4 header rows.
     public static let WITH_4_HEADER_ROWS = 4
+    /// The table has 5 header rows.
     public static let WITH_5_HEADER_ROWS = 5
+    /// The table has 6 header rows.
     public static let WITH_6_HEADER_ROWS = 6
+    /// The table has 7 header rows.
     public static let WITH_7_HEADER_ROWS = 7
+    /// The table has 8 header rows.
     public static let WITH_8_HEADER_ROWS = 8
+    /// The table has 9 header rows.
     public static let WITH_9_HEADER_ROWS = 9
 
     private var tableData: [[Cell]]
@@ -381,6 +391,7 @@ public class Table {
         return tableData[index]
     }
 
+    /// Returns the cells in the specified row. Same as getRow.
     public func getRowAtIndex(_ index: Int) -> [Cell] {
         return getRow(index)
     }
@@ -402,6 +413,7 @@ public class Table {
         return column
     }
 
+    /// Returns the cells in the specified column. Same as getColumn.
     public func getColumnAtIndex(_ index: Int) -> [Cell] {
         return getColumn(index)
     }
@@ -422,6 +434,10 @@ public class Table {
         return drawTableRows(page, drawHeaderRows(page, 0))
     }
 
+    ///
+    /// Draws this table on as many new pages as it needs.
+    /// The new pages are added to the list, not to the PDF; add them to the PDF afterwards.
+    ///
     @discardableResult
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: [Float]) -> [Float] {
         wrapAroundCellText()
@@ -633,6 +649,7 @@ public class Table {
     // Auto adjusts the widths of all columns so that they are just wide enough to
     // hold the text without truncation.
     //
+    /// Adjusts the width of every column to fit its widest text.
     @discardableResult
     public func setColumnWidths() -> Table {
         var maxColWidths = [Float](repeating: 0.0, count: tableData[0].count)
@@ -844,6 +861,7 @@ public class Table {
         }
     }
 
+    /// Keeps only the columns with the specified indexes.
     @discardableResult
     public func setVisibleColumns(_ visible: Int...) -> Table {
         var list = [[Cell]]()
@@ -862,6 +880,7 @@ public class Table {
         return self
     }
 
+    /// Sets the top margin on the first page when the table spans several pages.
     @discardableResult
     public func setFirstPageTopMargin(_ firstPageTopMargin: Float) -> Table {
         self.firstPageTopMargin = firstPageTopMargin

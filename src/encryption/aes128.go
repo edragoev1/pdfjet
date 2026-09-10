@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package encryption implements the AES encryption of PDF documents.
 package encryption
 
 import (

@@ -70,6 +70,7 @@ func (text *Text) GetSize() [2]float32 {
 	return [2]float32{text.width, text.yText + text.font.descent}
 }
 
+// SetBorderColor sets the border color as a 0xRRGGBB value and draws a border around this text.
 func (text *Text) SetBorderColor(color int32) *Text {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -78,6 +79,7 @@ func (text *Text) SetBorderColor(color int32) *Text {
 	return text
 }
 
+// SetBorderColorRGB sets the border color from red, green and blue values and draws a border around this text.
 func (text *Text) SetBorderColorRGB(borderColor [3]float32) *Text {
 	text.borderColor = borderColor
 	text.hasBorder = true
@@ -210,6 +212,7 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 	return tokens
 }
 
+// ParagraphsFromFile reads a text file and returns its paragraphs. An empty line separates the paragraphs.
 func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
 	paragraphs := make([]*Paragraph, 0)
 	paragraph := NewParagraph()

@@ -230,6 +230,7 @@ public class Chart : IDrawable {
         return this;
     }
 
+    /// <summary>Sets whether the x axis labels are drawn.</summary>
     public Chart SetDrawXAxisLabels(bool drawXAxisLabels) {
         this.drawXAxisLabels = drawXAxisLabels;
         return this;
@@ -602,11 +603,13 @@ public class Chart : IDrawable {
         }
     }
 
+    /// <summary>Sets whether the series colors are assigned automatically.</summary>
     public Chart SetAutoColors(bool autoColors) {
         this.autoColors = autoColors;
         return this;
     }
 
+    /// <summary>Converts a 0xRRGGBB color to red, green and blue values between 0.0 and 1.0.</summary>
     public float[] ToFloatArray(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;

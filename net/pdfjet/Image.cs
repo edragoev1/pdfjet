@@ -89,6 +89,7 @@ public class Image : IDrawable {
     }
 
     // Method for creating images from byte[] image data
+    /// <summary>Creates an image of the specified type from a byte array.</summary>
     public static Image CreateImage(PDF pdf, byte[] imageBytes, int imageType) {
         MemoryStream ms = new MemoryStream(imageBytes);
         Image image = new Image(pdf, ms, imageType);
@@ -97,6 +98,7 @@ public class Image : IDrawable {
     }
 
     // Convenience method for creating .PNG images
+    /// <summary>Creates a PNG image from a byte array.</summary>
     public static Image CreateImage(PDF pdf, byte[] imageBytes) {
         return CreateImage(pdf, imageBytes, ImageType.PNG);
     }
@@ -146,6 +148,7 @@ public class Image : IDrawable {
     }
 
     // Creates new image from an existing PDF object
+    /// <summary>Creates an image from an image object read from an existing PDF.</summary>
     public Image(PDF pdf, PDFobj obj) {
         w = float.Parse(obj.GetValue("/Width"));
         h = float.Parse(obj.GetValue("/Height"));
@@ -210,6 +213,7 @@ public class Image : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the location of the top left corner of this image.</summary>
     public Image SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
@@ -230,6 +234,7 @@ public class Image : IDrawable {
         return this.SetScaleFactor(factor, factor);
     }
 
+    /// <summary>Scales this image by the specified factor.</summary>
     public Image ScaleBy(float factor) {
         return this.SetScaleFactor(factor, factor);
     }
@@ -257,6 +262,7 @@ public class Image : IDrawable {
         return this;
     }
 
+    /// <summary>Scales the width and the height of this image by the specified factors.</summary>
     public Image ScaleBy(float widthFactor, float heightFactor) {
         return SetScaleFactor(widthFactor, heightFactor);
     }

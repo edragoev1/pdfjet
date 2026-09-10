@@ -21,6 +21,7 @@ type PathOp struct {
 	args []string
 }
 
+// NewPathOp creates a path operation with the specified command.
 func NewPathOp(cmd rune) *PathOp {
 	pathOp := new(PathOp)
 	pathOp.cmd = cmd
@@ -28,6 +29,7 @@ func NewPathOp(cmd rune) *PathOp {
 	return pathOp
 }
 
+// NewPathOpXY creates a path operation with the specified command and point.
 func NewPathOpXY(cmd rune, x, y float32) *PathOp {
 	pathOp := new(PathOp)
 	pathOp.cmd = cmd

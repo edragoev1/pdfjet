@@ -11,8 +11,11 @@ namespace PDFjet.NET {
 /// Please see Example_45
 /// </summary>
 public class Field {
+    /// <summary>The horizontal position of this field within the form.</summary>
     protected internal float x;
+    /// <summary>The label of this field.</summary>
     protected internal String label;
+    /// <summary>The value of this field.</summary>
     protected internal String value;
 
     /// <summary>

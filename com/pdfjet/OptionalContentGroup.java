@@ -20,7 +20,9 @@ import java.util.List;
  * @author Mark Paxton
  */
 public class OptionalContentGroup {
+    /** The object number of this group. */
     protected int objNumber;
+    /** The name of this group. */
     protected String name;
 
     private final PDF pdf;

@@ -28,6 +28,7 @@ public class Box : Drawable {
     private var actualText: String = Single.space
     private var altDescription: String = Single.space
 
+    /// Creates a box.
     public init() {
     }
 

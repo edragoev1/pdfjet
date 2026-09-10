@@ -10,7 +10,9 @@ package com.pdfjet;
  * Used to create rectangular boxes on a page.
  */
 public class Box implements Drawable {
+    /** The x coordinate of the top left corner. */
     protected float x;
+    /** The y coordinate of the top left corner. */
     protected float y;
 
     private float w;
@@ -22,7 +24,9 @@ public class Box implements Drawable {
     private String pattern = "[] 0";
     private boolean fillShape = false;
 
+    /** The URI opened when this box is clicked. */
     protected String uri = null;
+    /** The destination key used by the GoTo action. */
     protected String key = null;
 
     private String language = null;

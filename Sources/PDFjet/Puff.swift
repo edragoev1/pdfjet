@@ -41,6 +41,7 @@ enum PuffError: Error {
     case read(error: Int)
 }
 
+/// Decompresses Deflate data. A Swift port of puff.c by Mark Adler.
 public final class Puff {
     // Maximums for allocations and loops.
     // It is not useful to change these -- they are fixed by the deflate format.

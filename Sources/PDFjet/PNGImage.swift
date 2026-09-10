@@ -132,26 +132,32 @@ public class PNGImage {
         FlateEncode(&deflatedImageData, image!)
     }
 
+    /// Returns the image width.
     public func getWidth() -> Int? {
         return self.w
     }
 
+    /// Returns the image height.
     public func getHeight() -> Int? {
         return self.h
     }
 
+    /// Returns the PNG color type.
     public func getColorType() -> Int {
         return self.colorType
     }
 
+    /// Returns the bit depth.
     public func getBitDepth() -> Int {
         return self.bitDepth
     }
 
+    /// Returns the compressed image data.
     public func getData() -> [UInt8] {
         return self.deflatedImageData
     }
 
+    /// Returns the compressed alpha channel data.
     public func getAlpha() -> [UInt8] {
         return self.deflatedAlphaData
     }

@@ -86,6 +86,7 @@ public class TextBox : Drawable {
         self.fontSize = font.getSize()
     }
 
+    /// Sets the font and takes the font size from it.
     @discardableResult
     public func setFont(_ font: Font) -> TextBox {
         self.font = font
@@ -93,26 +94,31 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Returns the font.
     public func getFont() -> Font {
         return self.font
     }
 
+    /// Sets the font size.
     @discardableResult
     public func setFontSize(_ fontSize: Float) -> TextBox {
         self.fontSize = fontSize
         return self
     }
 
+    /// Sets the text.
     @discardableResult
     public func setText(_ text: String?) -> TextBox {
         self.text = text
         return self
     }
 
+    /// Returns the text.
     public func getText() -> String? {
         return self.text
     }
 
+    /// Sets the size of this text box.
     @discardableResult
     public func setSize(_ w: Float, _ h: Float) -> TextBox {
         self.width = w
@@ -120,6 +126,7 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Sets the location of the top left corner of this text box.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
@@ -127,118 +134,140 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Returns the x and y coordinates of the top left corner of this text box.
     public func getLocation() -> [Float] {
         return [self.x, self.y]
     }
 
+    /// Sets the width of this text box.
     @discardableResult
     public func setWidth(_ width: Float) -> TextBox {
         self.width = width
         return self
     }
 
+    /// Returns the width of this text box.
     public func getWidth() -> Float {
         return self.width
     }
 
+    /// Sets the height of this text box.
     @discardableResult
     public func setHeight(_ height: Float) -> TextBox {
         self.height = height
         return self
     }
 
+    /// Returns the height of this text box.
     public func getHeight() -> Float {
         return self.height
     }
 
+    /// Sets the margin between the text and the border.
     @discardableResult
     public func setMargin(_ margin: Float) -> TextBox {
         self.margin = margin
         return self
     }
 
+    /// Returns the margin between the text and the border.
     public func getMargin() -> Float {
         return self.margin
     }
 
+    /// Sets the width of the border lines.
     @discardableResult
     public func setLineWidth(_ lineWidth: Float) -> TextBox {
         self.lineWidth = lineWidth
         return self
     }
 
+    /// Returns the width of the border lines.
     public func getLineWidth() -> Float {
         return self.lineWidth
     }
 
+    /// Sets the spacing between lines of text.
     @discardableResult
     public func setSpacing(_ spacing: Float) -> TextBox {
         self.spacing = spacing
         return self
     }
 
+    /// Returns the spacing between lines of text.
     public func getSpacing() -> Float {
         return self.spacing
     }
 
+    /// Sets the background color as a 0xRRGGBB value.
     @discardableResult
     public func setFillColor(_ color: Int32) -> TextBox {
         self.fillColor = colorArray(color)
         return self
     }
 
+    /// Sets the background color from an array of red, green and blue values, or nil for no background.
     @discardableResult
     public func setFillColor(_ rgbColor: [Float]?) -> TextBox {
         self.fillColor = rgbColor
         return self
     }
 
+    /// Sets the background color as a 0xRRGGBB value.
     @discardableResult
     public func setBackgroundColor(_ color: Int32) -> TextBox {
         self.fillColor = colorArray(color)
         return self
     }
 
+    /// Sets the background color from an array of red, green and blue values, or nil for no background.
     @discardableResult
     public func setBackgroundColor(_ rgbColor: [Float]?) -> TextBox {
         self.fillColor = rgbColor
         return self
     }
 
+    /// Sets the text color as a 0xRRGGBB value.
     @discardableResult
     public func setTextColor(_ color: Int32) -> TextBox {
         self.textColor = colorArray(color)
         return self
     }
 
+    /// Sets the text color from an array of red, green and blue values.
     @discardableResult
     public func setTextColor(_ rgbColor: [Float]) -> TextBox {
         self.textColor = rgbColor
         return self
     }
 
+    /// Returns the text color.
     public func getTextColor() -> [Float] {
         return self.textColor
     }
 
+    /// Sets the width of the borders.
     @discardableResult
     public func setStrokeWidth(_ strokeWidth: Float) -> TextBox {
         self.strokeWidth = strokeWidth
         return self
     }
 
+    /// Sets the color of the borders as a 0xRRGGBB value.
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> TextBox {
         self.strokeColor = colorArray(color)
         return self
     }
 
+    /// Sets the color of the borders from an array of red, green and blue values.
     @discardableResult
     public func setStrokeColor(_ rgbColor: [Float]?) -> TextBox {
         self.strokeColor = rgbColor
         return self
     }
 
+    /// Returns the color of the borders.
     public func getStrokeColor() -> [Float]? {
         return self.strokeColor
     }
@@ -294,10 +323,12 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Returns the horizontal text alignment, for example Align.LEFT.
     public func getTextAlignment() -> UInt32 {
         return (self.properties & 0x00300000)
     }
 
+    /// Sets whether the text is underlined.
     @discardableResult
     public func setUnderline(_ underline: Bool) -> TextBox {
         if underline {
@@ -308,10 +339,12 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Returns true if the text is underlined.
     public func getUnderline() -> Bool {
         return (properties & 0x00400000) != 0x00000000
     }
 
+    /// Sets whether the text is struck out.
     @discardableResult
     public func setStrikeout(_ strikeout: Bool) -> TextBox {
         if strikeout {
@@ -322,56 +355,67 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Returns true if the text is struck out.
     public func getStrikeout() -> Bool {
         return (properties & 0x00800000) != 0x00000000
     }
 
+    /// Sets the font used for characters the main font does not have.
     @discardableResult
     public func setFallbackFont(_ fallbackFont: Font?) -> TextBox {
         self.fallbackFont = fallbackFont
         return self
     }
 
+    /// Returns the fallback font.
     public func getFallbackFont() -> Font? {
         return self.fallbackFont
     }
 
+    /// Sets the vertical alignment of the text: Align.TOP, Align.CENTER or Align.BOTTOM.
     @discardableResult
     public func setVerticalAlignment(_ valign: UInt32) -> TextBox {
         self.valign = valign
         return self
     }
 
+    /// Returns the vertical alignment of the text.
     public func getVerticalAlignment() -> UInt32 {
         return self.valign
     }
 
+    /// Sets the colors used to highlight words in the text.
     @discardableResult
     public func setTextColors(_ colors: [String : Int32]?) -> TextBox {
         self.colors = colors
         return self
     }
 
+    /// Returns the colors used to highlight words in the text.
     public func getTextColors() -> [String : Int32]? {
         return self.colors
     }
 
+    /// Sets the language of the text, for example "en-US".
     @discardableResult
     public func setLanguage(_ language: String) -> TextBox {
         self.language = language
         return self
     }
 
+    /// Returns the language of the text.
     public func getLanguage() -> String {
         return self.language
     }
 
+    /// Sets the alternate description of this text box, used for accessibility.
     @discardableResult
     public func setAltDescription(_ altDescription: String) -> TextBox {
         self.altDescription = altDescription
         return self
     }
 
+    /// Returns the alternate description of this text box.
     public func getAltDescription() -> String? {
         return self.altDescription
     }
@@ -716,6 +760,7 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Sets the direction of the text.
     @discardableResult
     public func setTextDirection(_ textDirection: Direction) -> TextBox {
         self.textDirection = textDirection

@@ -17,12 +17,15 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>A polynomial over GF(256), used for the Reed-Solomon error correction.</summary>
 public class Polynomial {
     private int[] num;
 
+    /// <summary>Creates a polynomial from its coefficients.</summary>
     public Polynomial(int[] num) : this(num, 0) {
     }
 
+    /// <summary>Creates a polynomial from its coefficients, without leading zeros, multiplied by x to the power of shift.</summary>
     public Polynomial(int[] num, int shift) {
         int offset = 0;
         while (offset < num.Length && num[offset] == 0) {
@@ -32,14 +35,17 @@ public class Polynomial {
         Array.Copy(num, offset, this.num, 0, num.Length - offset);
     }
 
+    /// <summary>Returns the coefficient at the specified index.</summary>
     public int Get(int index) {
         return num[index];
     }
 
+    /// <summary>Returns the number of coefficients.</summary>
     public int GetLength() {
         return num.Length;
     }
 
+    /// <summary>Returns the product of this polynomial and e.</summary>
     public Polynomial Multiply(Polynomial e) {
         int[] num = new int[GetLength() + e.GetLength() - 1];
         for (int i = 0; i < GetLength(); i++) {
@@ -51,6 +57,7 @@ public class Polynomial {
         return new Polynomial(num);
     }
 
+    /// <summary>Returns the remainder of dividing this polynomial by e.</summary>
     public Polynomial Mod(Polynomial e) {
         if (GetLength() - e.GetLength() < 0) {
             return this;

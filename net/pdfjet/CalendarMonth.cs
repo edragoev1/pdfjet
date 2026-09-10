@@ -8,6 +8,7 @@ using System;
 using System.Globalization;
 
 namespace PDFjet.NET {
+/// <summary>Draws a calendar for one month.</summary>
 public class CalendarMonth : IDrawable {
     Font f1 = null;
     Font f2 = null;
@@ -24,6 +25,13 @@ public class CalendarMonth : IDrawable {
     int daysInMonth;
     int dayOfWeek;
 
+    /// <summary>
+    /// Creates a calendar for the specified month.
+    /// </summary>
+    /// <param name="f1">the header font.</param>
+    /// <param name="f2">the body font.</param>
+    /// <param name="year">the year.</param>
+    /// <param name="month">the month, from 1 to 12.</param>
     public CalendarMonth(Font f1, Font f2, int year, int month) {
         this.f1 = f1;
         this.f2 = f2;
@@ -41,26 +49,31 @@ public class CalendarMonth : IDrawable {
         dy = dx;
     }
 
+    /// <summary>Sets the header font.</summary>
     public CalendarMonth SetHeadFont(Font font) {
         this.f1 = font;
         return this;
     }
 
+    /// <summary>Sets the body font.</summary>
     public CalendarMonth SetBodyFont(Font font) {
         this.f2 = font;
         return this;
     }
 
+    /// <summary>Sets the font size.</summary>
     public CalendarMonth SetFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
     }
 
+    /// <summary>Sets the width of the day cells.</summary>
     public CalendarMonth SetCellWidth(float width) {
         this.dx = width;
         return this;
     }
 
+    /// <summary>Sets the height of the day cells.</summary>
     public CalendarMonth SetCellHeight(float height) {
         this.dy = height;
         return this;
@@ -70,16 +83,19 @@ public class CalendarMonth : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the location of the top left corner of the calendar.</summary>
     public CalendarMonth SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
     }
 
+    /// <summary>Sets the location of the top left corner of the calendar.</summary>
     public CalendarMonth SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
 
+    /// <summary>Draws this calendar on the specified page.</summary>
     public float[] DrawOn(Page page) {
         for (int row = 0; row < 7; row++) {
             for (int col = 0; col < 7; col++) {

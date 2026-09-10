@@ -12,6 +12,7 @@ internal class FlateEncode {
     private let MASK: UInt32 = 0xFFFF
     private var hashtable: [Int32]
 
+    /// Compresses the input into zlib format and writes the result to the output.
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
         let flateLength = FlateLength.shared

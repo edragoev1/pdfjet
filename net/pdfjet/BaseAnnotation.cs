@@ -7,6 +7,7 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>The base class of the circle, square, polygon and text annotations.</summary>
 public class BaseAnnotation : IDrawable {
     internal String annotationType = null;
     internal float[] point1 = new float[] {0f, 0f};
@@ -23,9 +24,11 @@ public class BaseAnnotation : IDrawable {
     internal String altDescription = null;
     internal Container container = null;
 
+    /// <summary>Creates an annotation.</summary>
     public BaseAnnotation() {
     }
 
+    /// <summary>Sets the location of this annotation.</summary>
     public BaseAnnotation SetLocation(float x, float y) {
         this.point1 = new float[] {x, y};
         return this;
@@ -35,16 +38,19 @@ public class BaseAnnotation : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the size of this annotation, measured from its location.</summary>
     public BaseAnnotation SetSize(float w, float h) {
         this.point2 = new float[] {point1[0] + w, point1[1] + h};
         return this;
     }
 
+    /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public BaseAnnotation SetFillColor(float[] fillColor) {
         this.fillColor = fillColor;
         return this;
     }
 
+    /// <summary>Sets the fill color as a 0xRRGGBB value.</summary>
     public BaseAnnotation SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -53,21 +59,25 @@ public class BaseAnnotation : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the transparency of this annotation, from 0.0 to 1.0.</summary>
     public BaseAnnotation SetTransparency(float transparency) {
         this.transparency = transparency;
         return this;
     }
 
+    /// <summary>Sets the title of this annotation.</summary>
     public BaseAnnotation SetTitle(String title) {
         this.title = title;
         return this;
     }
 
+    /// <summary>Sets the text contents of this annotation.</summary>
     public BaseAnnotation SetContents(String contents) {
         this.contents = contents;
         return this;
     }
 
+    /// <summary>Rotates this annotation together with the container it is in.</summary>
     public void Rotate(double degrees) {
         if (container == null) { return; }
         float[] center = container.GetRotationCenter();
@@ -87,6 +97,7 @@ public class BaseAnnotation : IDrawable {
         }
     }
 
+    /// <summary>Adds this annotation to the specified page.</summary>
     public float[] DrawOn(Page page) {
         page.AddAnnotation(new Annotation(
                 annotationType,

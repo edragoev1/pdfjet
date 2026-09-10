@@ -12,9 +12,13 @@ import java.util.*;
  * Please see Example_51 and Example_52
  */
 public class Bookmark {
+    /** The page this bookmark points to. */
     protected Page page = null;
+    /** The y coordinate of the bookmark destination on the page. */
     protected float y = 0f;
+    /** The object number of this bookmark. */
     protected int objNumber = 0;
+    /** The number prefix added to the title by autoNumber. */
     protected String prefix = null;
 
     private int destNumber = 0;
@@ -144,6 +148,11 @@ public class Bookmark {
         return this;
     }
 
+    /**
+     * Returns this bookmark and all of its descendants in breadth-first order.
+     *
+     * @return the list of bookmarks.
+     */
     protected List<Bookmark> toArrayList() {
         List<Bookmark> list = new ArrayList<Bookmark>();
         Queue<Bookmark> queue = new java.util.LinkedList<Bookmark>();
@@ -160,26 +169,56 @@ public class Bookmark {
         return list;
     }
 
+    /**
+     * Returns the child bookmarks.
+     *
+     * @return the children, or null if there are none.
+     */
     protected List<Bookmark> getChildren() {
         return this.children;
     }
 
+    /**
+     * Returns the previous sibling bookmark.
+     *
+     * @return the previous bookmark.
+     */
     protected Bookmark getPrevBookmark() {
         return this.prev;
     }
 
+    /**
+     * Returns the next sibling bookmark.
+     *
+     * @return the next bookmark.
+     */
     protected Bookmark getNextBookmark() {
         return this.next;
     }
 
+    /**
+     * Returns the first child bookmark.
+     *
+     * @return the first child.
+     */
     protected Bookmark getFirstChild() {
         return this.children.get(0);
     }
 
+    /**
+     * Returns the last child bookmark.
+     *
+     * @return the last child.
+     */
     protected Bookmark getLastChild() {
         return children.get(children.size() - 1);
     }
 
+    /**
+     * Returns the destination of this bookmark.
+     *
+     * @return the destination.
+     */
     protected Destination getDestination() {
         return this.dest;
     }

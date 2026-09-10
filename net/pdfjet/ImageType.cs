@@ -13,8 +13,11 @@ namespace PDFjet.NET {
 /// See the Image class for more information.
 /// </summary>
 public class ImageType {
+    /// <summary>JPEG image.</summary>
     public static readonly int JPG = 0;
+    /// <summary>PNG image.</summary>
     public static readonly int PNG = 1;
+    /// <summary>BMP image.</summary>
     public static readonly int BMP = 2;
 }
 }   // End of namespace PDFjet.NET

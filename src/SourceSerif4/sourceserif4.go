@@ -1,3 +1,4 @@
+// Package SourceSerif4 provides the paths to the Source Serif 4 fonts.
 package SourceSerif4
 
 // SourceSerif4 holds the paths to the Source Serif 4 fonts.

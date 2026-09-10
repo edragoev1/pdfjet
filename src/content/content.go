@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package content reads the contents of files and readers.
 package content
 
 import (
@@ -11,6 +12,8 @@ import (
 	"os"
 )
 
+// OfTextFile returns the contents of the specified text file.
+// It exits the program if the file cannot be read.
 func OfTextFile(fileName string) string {
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -34,6 +37,8 @@ func OfTextFile(fileName string) string {
 	return string(runes)
 }
 
+// OfBinaryFile returns the contents of the specified file as bytes.
+// It exits the program if the file cannot be read.
 func OfBinaryFile(fileName string) []uint8 {
 	contents, err := os.ReadFile(fileName)
 	if err != nil {
@@ -42,6 +47,8 @@ func OfBinaryFile(fileName string) []uint8 {
 	return contents
 }
 
+// GetFromReader returns all the bytes read from the reader.
+// It exits the program if the reader fails.
 func GetFromReader(reader io.Reader) []uint8 {
 	contents, err := io.ReadAll(reader)
 	if err != nil {

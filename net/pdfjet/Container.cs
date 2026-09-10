@@ -2,13 +2,21 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
+/// <summary>A group of drawable elements that are moved, rotated and scaled together.</summary>
 public class Container : IDrawable {
+    /// <summary>The x coordinate of this container on the page.</summary>
     public float x;
+    /// <summary>The y coordinate of this container on the page.</summary>
     public float y;
+    /// <summary>The width of this container.</summary>
     public float width;
+    /// <summary>The height of this container.</summary>
     public float height;
+    /// <summary>The rotation angle in degrees.</summary>
     public float rotateDegrees;
+    /// <summary>The horizontal scale factor.</summary>
     public float scaleX;
+    /// <summary>The vertical scale factor.</summary>
     public float scaleY;
     private List<IDrawable> elements;
     internal Container parent = null;
@@ -57,6 +65,7 @@ public class Container : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the rotation angle of this container in degrees.</summary>
     public void Rotate(double degrees) {
         this.rotateDegrees = (float)degrees;
     }
@@ -79,6 +88,7 @@ public class Container : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the center of this container, which it rotates around.</summary>
     public float[] GetRotationCenter() {
         return new float[] {x + width/2f, y + height/2f};
     }
@@ -103,6 +113,7 @@ public class Container : IDrawable {
         return this;
     }
 
+    /// <summary>Adds a border in the specified 0xRRGGBB color around this container.</summary>
     public Container SetBorderColor(int borderColor) {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.SetBorderColor(borderColor);
@@ -110,12 +121,14 @@ public class Container : IDrawable {
         return this;
     }
 
+    /// <summary>Adds a black border around this container.</summary>
     public void AddBorder() {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.SetBorderColor(Color.black);
         this.Add(rect);
     }
 
+    /// <summary>Returns the elements in this container.</summary>
     public List<IDrawable> GetElements() {
         return this.elements;
     }

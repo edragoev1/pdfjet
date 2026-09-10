@@ -10,7 +10,10 @@
  *
  */
 public class Effect {
+    /// Normal text.
     public static let NORMAL = 0
+    /// Subscript text.
     public static let SUBSCRIPT = 1
+    /// Superscript text.
     public static let SUPERSCRIPT = 2
 }

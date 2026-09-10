@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package code128 defines the Code 128 barcode table.
 package code128
 
 // TABLE for the Code 128 table.

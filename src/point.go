@@ -306,6 +306,7 @@ func (point *Point) DrawOn(page *Page) [3]float32 {
 	return [3]float32{point.x + point.r, point.y + point.r}
 }
 
+// SetStrokeWidth sets the width of the lines used to draw this point.
 func (point *Point) SetStrokeWidth(strokeWidth float32) *Point {
 	point.strokeWidth = strokeWidth
 	return point

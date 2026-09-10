@@ -1,3 +1,4 @@
+// Package IBMPlexSansJP provides the paths to the IBM Plex Sans JP fonts.
 package IBMPlexSansJP
 
 // IBMPlexSansJP provides the paths to the IBM Plex Sans JP fonts.

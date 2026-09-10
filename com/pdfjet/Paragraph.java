@@ -31,7 +31,9 @@ public class Paragraph {
     /** The xy coordinate. */
     public float y2;
 
+    /** The text lines of this paragraph. */
     protected List<TextLine> lines = null;
+    /** The alignment of this paragraph. */
     protected int alignment = Align.LEFT;
 
     /**

@@ -14,29 +14,47 @@ namespace PDFjet.NET {
 /// Please see Example_05.
 /// </summary>
 public class Point : IDrawable {
+    /// <summary>The point is not drawn.</summary>
     public static readonly int INVISIBLE = -1;
+    /// <summary>A circle.</summary>
     public static readonly int CIRCLE = 0;
+    /// <summary>A diamond.</summary>
     public static readonly int DIAMOND = 1;
+    /// <summary>A box.</summary>
     public static readonly int BOX = 2;
+    /// <summary>A plus sign.</summary>
     public static readonly int PLUS = 3;
+    /// <summary>A horizontal dash.</summary>
     public static readonly int H_DASH = 4;
+    /// <summary>A vertical dash.</summary>
     public static readonly int V_DASH = 5;
+    /// <summary>A multiplication sign.</summary>
     public static readonly int MULTIPLY = 6;
+    /// <summary>A star.</summary>
     public static readonly int STAR = 7;
+    /// <summary>An X mark.</summary>
     public static readonly int X_MARK = 8;
+    /// <summary>An up arrow.</summary>
     public static readonly int UP_ARROW = 9;
+    /// <summary>A down arrow.</summary>
     public static readonly int DOWN_ARROW = 10;
+    /// <summary>A left arrow.</summary>
     public static readonly int LEFT_ARROW = 11;
+    /// <summary>A right arrow.</summary>
     public static readonly int RIGHT_ARROW = 12;
 
     // For the c operator we have both control points
+    /// <summary>A control point of a curve drawn with the c operator. Same as ControlPointC.</summary>
     public static readonly char CONTROL_POINT = 'c';
+    /// <summary>A control point of a curve drawn with the c operator, which uses both control points.</summary>
     public static readonly char ControlPointC = 'c';
 
     // For the v operator, the first control point shall coincide with initial point of the curve.
+    /// <summary>A control point of a curve drawn with the v operator, where the first control point is the start point.</summary>
     public static readonly char ControlPointV = 'v';
 
     // For the y operator, the second control point shall coincide with final point of the curve.
+    /// <summary>A control point of a curve drawn with the y operator, where the second control point is the end point.</summary>
     public static readonly char ControlPointY = 'y';
 
     internal float x;
@@ -148,6 +166,7 @@ public class Point : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the location of this point. Same as SetLocation.</summary>
     public Point SetXY(float x, float y) {
         SetLocation(x, y);
         return this;
@@ -249,6 +268,7 @@ public class Point : IDrawable {
         return r;
     }
 
+    /// <summary>Sets the fill color as a 0xRRGGBB value.</summary>
     public Point SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -257,25 +277,30 @@ public class Point : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the fill color from red, green and blue values between 0.0 and 1.0.</summary>
     public Point SetFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public Point SetFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /// <summary>Sets the width of the lines used to draw this point.</summary>
     public Point SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
+    /// <summary>Returns the fill color.</summary>
     public float[] GetFillColor() {
         return this.fillColor;
     }
 
+    /// <summary>Sets the stroke color as a 0xRRGGBB value.</summary>
     public Point SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -284,16 +309,19 @@ public class Point : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the stroke color from red, green and blue values between 0.0 and 1.0.</summary>
     public Point SetStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
     public Point SetStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
         return this;
     }
 
+    /// <summary>Returns the stroke color.</summary>
     public float[] GetStrokeColor() {
         return this.strokeColor;
     }
@@ -385,11 +413,13 @@ public class Point : IDrawable {
         return strokeDashPattern;
     }
 
+    /// <summary>Sets the path operator used to draw this point, for example PathOperator.Stroke.</summary>
     public Point SetPathOperator(string pathOperator) {
         this.pathOperator = pathOperator;
         return this;
     }
 
+    /// <summary>Returns the path operator used to draw this point.</summary>
     public string GetPathOperator() {
         return this.pathOperator;
     }

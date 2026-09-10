@@ -1,3 +1,4 @@
+// Package fastfloat converts float32 values to their text representation.
 package fastfloat
 
 import (

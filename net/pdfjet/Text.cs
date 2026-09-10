@@ -27,6 +27,7 @@ public class Text : IDrawable {
     private float borderWidth = 0.5f;
     private String borderPattern = "[] 0";
 
+    /// <summary>Creates a text object from the paragraphs.</summary>
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
     }
@@ -35,31 +36,37 @@ public class Text : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the location of the top left corner of this text.</summary>
     public Text SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
     }
 
+    /// <summary>Sets the location of the top left corner of this text.</summary>
     public Text SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
 
+    /// <summary>Sets the width at which the lines wrap.</summary>
     public Text SetWidth(float width) {
         this.width = width;
         return this;
     }
 
+    /// <summary>Sets the vertical distance between paragraphs.</summary>
     public Text SetParagraphLeading(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }
 
+    /// <summary>Sets the border width.</summary>
     public Text SetBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
         return this;
     }
 
+    /// <summary>Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.</summary>
     public Text SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
@@ -72,23 +79,27 @@ public class Text : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the border color from red, green and blue values and draws a border around this text.</summary>
     public Text SetBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
         this.hasBorder = true;
         return this;
     }
 
+    /// <summary>Sets the border color from an array of red, green and blue values and draws a border around this text.</summary>
     public Text SetBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
         this.hasBorder = true;
         return this;
     }
 
+    /// <summary>Sets the dash pattern of the border.</summary>
     public Text SetBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;
         return this;
     }
 
+    /// <summary>Draws the paragraphs on the specified page.</summary>
     public float[] DrawOn(Page page) {
         this.xText = x1;
         this.yText = y1 + paragraphs[0].lines[0].font.GetAscent();
@@ -137,6 +148,7 @@ public class Text : IDrawable {
         return tokens;
     }
 
+    /// <summary>Draws the text line, wrapping it at the width of this text, and returns where the next text starts.</summary>
     public float[] DrawTextLine(
             Page page, float x, float y, TextLine textLine) {
         this.xText = x;
@@ -223,6 +235,7 @@ public class Text : IDrawable {
         return list.ToArray();
     }
 
+    /// <summary>Reads a text file and returns its paragraphs. An empty line separates the paragraphs.</summary>
     public static List<Paragraph> paragraphsFromFile(Font f1, String filePath) {
         List<Paragraph> paragraphs = new List<Paragraph>();
         String contents = Content.OfTextFile(filePath);
@@ -253,6 +266,7 @@ public class Text : IDrawable {
         return paragraphs;
     }
 
+    /// <summary>Returns the lines of the specified text file.</summary>
     public static List<String> ReadLines(String filePath) {
         List<String> lines = new List<String>();
         FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);

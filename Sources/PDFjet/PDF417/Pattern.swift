@@ -6,6 +6,7 @@
  */
 
 class Pattern {
+/// The bar and space patterns of the PDF417 codewords in each of the three clusters.
 public static let table = [[Int32]](arrayLiteral:
 [0,31111136,51111125,21111155,],
 [1,41111144,61111133,31111163,],

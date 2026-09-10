@@ -14,6 +14,7 @@ public class EmbeddedFile {
     var objNumber: Int = -1
     var fileName: String?
 
+    /// Embeds the file at the specified path into the PDF.
     public convenience init(
             _ pdf: PDF,
             _ filePath: String,
@@ -33,6 +34,7 @@ public class EmbeddedFile {
         try self.init(pdf, fileName, stream, compress)
     }
 
+    /// Embeds a file read from the stream into the PDF under the specified name.
     public init(
             _ pdf: PDF,
             _ fileName: String,
@@ -76,6 +78,7 @@ public class EmbeddedFile {
         self.objNumber = pdf.getObjNumber()
     }
 
+    /// Returns the name of the embedded file.
     public func getFileName() -> String {
         return self.fileName!
     }

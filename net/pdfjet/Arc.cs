@@ -36,6 +36,7 @@ public class Arc : IDrawable {
     public Arc() {
     }
 
+    /// <summary>Sets the center of this arc.</summary>
     public Arc SetLocation(float cx, float cy) {
         SetCenterXY(cx, cy);
         return this;
@@ -45,43 +46,51 @@ public class Arc : IDrawable {
         return SetLocation(cx, cy);
     }
 
+    /// <summary>Starts this arc at the end point of the specified line.</summary>
     public Arc SetStartPointToEndOf(Line line) {
         this.line = line;
         return this;
     }
 
+    /// <summary>Sets the center of this arc.</summary>
     public Arc SetCenterXY(float cx, float cy) {
         this.cx = cx;
         this.cy = cy;
         return this;
     }
 
+    /// <summary>Sets the horizontal radius of this arc.</summary>
     public Arc SetRadiusX(float rx) {
         this.rx = rx;
         return this;
     }
 
+    /// <summary>Sets the vertical radius of this arc.</summary>
     public Arc SetRadiusY(float ry) {
         this.ry = ry;
         return this;
     }
 
+    /// <summary>Sets both radii of this arc to the same value, making it circular.</summary>
     public Arc SetRadius(float r) {
         this.rx = r;
         this.ry = r;
         return this;
     }
 
+    /// <summary>Sets the angle in degrees where this arc starts.</summary>
     public Arc SetStartAngle(float angle) {
         this.startAngle = angle;
         return this;
     }
 
+    /// <summary>Sets how many degrees this arc sweeps clockwise from its start angle.</summary>
     public Arc SetSweepDegreesCW(float sweepDegrees) {
         this.sweepDegrees = sweepDegrees;
         return this;
     }
 
+    /// <summary>Sets how many degrees this arc sweeps counterclockwise from its start angle.</summary>
     public Arc SetSweepDegreesCCW(float sweepDegrees) {
         this.sweepDegrees = -sweepDegrees;
         return this;
@@ -147,16 +156,19 @@ public class Arc : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the stroke color from red, green and blue values between 0.0 and 1.0.</summary>
     public Arc SetStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
     public Arc SetStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
         return this;
     }
 
+    /// <summary>Sets the fill color as a 0xRRGGBB value, for example Color.blue.</summary>
     public Arc SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -165,31 +177,37 @@ public class Arc : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the fill color from red, green and blue values between 0.0 and 1.0.</summary>
     public Arc SetFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public Arc SetFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /// <summary>Rotates this arc clockwise by the specified degrees.</summary>
     public Arc SetRotateDegreesCW(float degrees) {
         this.rotateDegrees = -degrees;
         return this;
     }
 
+    /// <summary>Rotates this arc clockwise by the specified degrees.</summary>
     public Arc SetRotateDegreesCW(double degrees) {
         this.rotateDegrees = (float) -degrees;
         return this;
     }
 
+    /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
     public Arc SetRotateDegreesCCW(float degrees) {
         this.rotateDegrees = degrees;
         return this;
     }
 
+    /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
     public Arc SetRotateDegreesCCW(double degrees) {
         this.rotateDegrees = (float) degrees;
         return this;

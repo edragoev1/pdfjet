@@ -30,6 +30,10 @@ internal sealed class Owner {
     }
 }
 
+/// <summary>
+/// Encrypts a PDF with 256-bit AES as defined in ISO 32000-2 (PDF 2.0).
+/// Pass the encryption object to PDF.SetEncryption. Please see Example_30.
+/// </summary>
 public class Encryption {
     private readonly byte[] fileEncryptionKey;
     private readonly int objNumber;
@@ -144,10 +148,12 @@ public class Encryption {
         objNumber = pdf.GetObjNumber();
     }
 
+    /// <summary>Returns the randomly generated file encryption key.</summary>
     public byte[] GetKey() {
         return fileEncryptionKey;
     }
 
+    /// <summary>Returns the object number of the encryption dictionary.</summary>
     public int GetObjNumber() {
         return objNumber;
     }
@@ -157,6 +163,9 @@ public class Encryption {
     /// </summary>
     /// <param name="password">
     /// The password (either user or owner password) to be hashed.
+    /// </param>
+    /// <param name="salt">
+    /// The 8-byte validation or key salt.
     /// </param>
     /// <param name="U">
     /// The 48-byte user key, required for verifying or creating the owner key.

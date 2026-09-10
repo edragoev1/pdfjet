@@ -18,14 +18,21 @@ import java.util.*;
  * Please see Example_03 and Example_24.
  */
 final public class Image implements Drawable {
+    /** The object number of the image. */
     protected int objNumber;
 
+    /** The x coordinate of the image on the page. */
     protected float x = 0f; // Position of the image on the page
+    /** The y coordinate of the image on the page. */
     protected float y = 0f;
+    /** The width of the image. */
     protected float w;      // Image width
+    /** The height of the image. */
     protected float h;      // Image height
 
+    /** The URI opened when the image is clicked. */
     protected String uri;
+    /** The destination key used by the GoTo action. */
     protected String key;
 
     private float xBox;

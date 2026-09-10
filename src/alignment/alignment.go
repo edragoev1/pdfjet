@@ -3,8 +3,10 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package alignment defines the text alignment constants.
 package alignment
 
+// Alignment specifies the text alignment.
 type Alignment int
 
 // Used to specify the text alignment in textblock.go

@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package border defines the constants that control the borders of a TextBox.
 package border
 
 // Used to control the visibility of the borders of a TextBox.

@@ -1,3 +1,4 @@
+// Package IBMPlexMath provides the paths to the IBM Plex Math fonts.
 package IBMPlexMath
 
 // Regular IBMPlexMath provides the paths to the IBM Plex Math fonts.

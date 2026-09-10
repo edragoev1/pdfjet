@@ -11,9 +11,13 @@ namespace PDFjet.NET {
 /// Used to create PDF destination objects.
 /// </summary>
 public class Destination {
+    /// <summary>The name of this destination.</summary>
     public String name;
+    /// <summary>The object number of the page this destination points to.</summary>
     public int pageObjNumber;
+    /// <summary>The x coordinate on the page.</summary>
     public float xPosition;
+    /// <summary>The y coordinate on the page.</summary>
     public float yPosition;
 
     /// <summary>

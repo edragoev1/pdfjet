@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package capstyle defines the line cap styles.
 package capstyle
 
 // Constants used to specify the cap style of a line.

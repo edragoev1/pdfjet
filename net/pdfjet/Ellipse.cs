@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
+/// <summary>An ellipse: an arc that sweeps 360 degrees.</summary>
 public class Ellipse : Arc {
     /// <summary>
     /// The default constructor.

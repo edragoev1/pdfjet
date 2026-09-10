@@ -131,6 +131,7 @@ func (cell *Cell) SetBarcode(barcode *Barcode) *Cell {
 	return cell
 }
 
+// GetBarcode returns the barcode drawn in this cell.
 func (cell *Cell) GetBarcode() *Barcode {
 	return cell.barcode
 }
@@ -187,6 +188,7 @@ func (cell *Cell) GetTextBox() *TextBox {
 	return cell.textBox
 }
 
+// GetTextBlock returns the text block drawn in this cell.
 func (cell *Cell) GetTextBlock() *TextBlock {
 	return cell.textBlock
 }
@@ -228,6 +230,7 @@ func (cell *Cell) SetLeftPadding(padding float32) *Cell {
 	return cell
 }
 
+// GetLeftPadding returns the left padding of this cell.
 func (cell *Cell) GetLeftPadding() float32 {
 	return cell.leftPadding
 }
@@ -239,6 +242,7 @@ func (cell *Cell) SetRightPadding(padding float32) *Cell {
 	return cell
 }
 
+// GetRightPadding returns the right padding of this cell.
 func (cell *Cell) GetRightPadding() float32 {
 	return cell.rightPadding
 }
@@ -297,6 +301,7 @@ func (cell *Cell) SetBgColorRGB(color [3]float32) *Cell {
 	return cell
 }
 
+// SetBackgroundColor sets the background color of this cell as a 0xRRGGBB value.
 func (cell *Cell) SetBackgroundColor(color int32) *Cell {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -375,29 +380,35 @@ func (cell *Cell) GetTopBorder() bool {
 	return cell.topBorder
 }
 
+// SetBottomBorder sets whether the bottom border of this cell is drawn.
 func (cell *Cell) SetBottomBorder(bottomBorder bool) *Cell {
 	cell.bottomBorder = bottomBorder
 	return cell
 }
 
+// GetBottomBorder returns true if the bottom border of this cell is drawn.
 func (cell *Cell) GetBottomBorder() bool {
 	return cell.bottomBorder
 }
 
+// SetLeftBorder sets whether the left border of this cell is drawn.
 func (cell *Cell) SetLeftBorder(leftBorder bool) *Cell {
 	cell.leftBorder = leftBorder
 	return cell
 }
 
+// GetLeftBorder returns true if the left border of this cell is drawn.
 func (cell *Cell) GetLeftBorder() bool {
 	return cell.leftBorder
 }
 
+// SetRightBorder sets whether the right border of this cell is drawn.
 func (cell *Cell) SetRightBorder(rightBorder bool) *Cell {
 	cell.rightBorder = rightBorder
 	return cell
 }
 
+// GetRightBorder returns true if the right border of this cell is drawn.
 func (cell *Cell) GetRightBorder() bool {
 	return cell.rightBorder
 }

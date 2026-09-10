@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// ReadTextLines returns the lines of the specified text file. It exits the program if the file cannot be opened.
 func ReadTextLines(filePath string) []string {
 	lines := make([]string, 0)
 	file, err := os.Open(filePath)
@@ -27,6 +28,7 @@ func ReadTextLines(filePath string) []string {
 	return lines
 }
 
+// PrintDuration prints the name of an example and how long it took in milliseconds.
 func PrintDuration(example string, duration time.Duration) {
 	durationAsString := fmt.Sprintf("%.1f", float32(duration.Microseconds())/float32(1000.0))
 	if len(durationAsString) == 3 {

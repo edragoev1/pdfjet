@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package cjkfont defines the Chinese, Japanese and Korean fonts.
 package cjkfont
 
 // Font is used to select Chinese, Japanese and Korean fonts.

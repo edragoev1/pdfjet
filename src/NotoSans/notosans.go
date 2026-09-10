@@ -1,5 +1,7 @@
+// Package NotoSans provides the paths to the Noto Sans fonts.
 package NotoSans
 
+// NotoSans provides the paths to the Noto Sans fonts.
 const (
 	Bold             = "fonts/NotoSans/NotoSans-Bold.ttf.stream"
 	BoldItalic       = "fonts/NotoSans/NotoSans-BoldItalic.ttf.stream"

@@ -25,7 +25,9 @@ public class SVGImage {
     float strokeWidth = 0f;
 
     List<SVGPath> paths = null;
+    /// <summary>The URI opened when the image is clicked.</summary>
     protected String uri = null;
+    /// <summary>The destination key used by the GoTo action.</summary>
     protected String key = null;
     private String language = null;
     private String actualText = Single.space;
@@ -182,12 +184,14 @@ public class SVGImage {
     // SetLocation, ScaleBy, getWidth, getHeight, drawPath, DrawOn
     // — unchanged from the original file.
 
+    /// <summary>Sets the location of the top left corner of this image on the page.</summary>
     public SVGImage SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
+    /// <summary>Scales this SVG image by the specified factor.</summary>
     public void ScaleBy(float factor) {
         foreach (SVGPath path in paths) {
             foreach (PathOp op in path.operations) {
@@ -201,10 +205,12 @@ public class SVGImage {
         }
     }
 
+    /// <summary>Returns the width of this SVG image.</summary>
     public float getWidth() {
         return this.w;
     }
 
+    /// <summary>Returns the height of this SVG image.</summary>
     public float getHeight() {
         return this.h;
     }
@@ -267,6 +273,7 @@ public class SVGImage {
         }
     }
 
+    /// <summary>Draws this SVG image on the specified page.</summary>
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
         foreach (SVGPath path in paths) {

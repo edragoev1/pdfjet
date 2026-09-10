@@ -31,6 +31,7 @@ public class CompositeTextLine : Drawable {
 
     private var fontSize: Float = 0
 
+    /// Creates a composite text line at the specified location.
     public init(_ x: Float, _ y: Float) {
         self.position[X] = x
         self.position[Y] = y

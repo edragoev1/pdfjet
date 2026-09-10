@@ -47,8 +47,15 @@ internal class Annotation {
     /// <param name="x2">the x coordinate of the bottom right corner.</param>
     /// <param name="y2">the y coordinate of the bottom right corner.</param>
     /// <param name="vertices">the polygon annotation vertices.</param>
+    /// <param name="fillColor">the fill color as an RGB array.</param>
+    /// <param name="transparency">the transparency, from 0.0 to 1.0.</param>
+    /// <param name="title">the title.</param>
+    /// <param name="contents">the text contents.</param>
     /// <param name="uri">the URI string.</param>
     /// <param name="key">the destination name.</param>
+    /// <param name="language">the language of the annotation.</param>
+    /// <param name="actualText">the actual text.</param>
+    /// <param name="altDescription">the alternate description.</param>
     internal Annotation(
             String annotationType,
             float x1,

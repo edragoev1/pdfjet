@@ -9,7 +9,9 @@ using System.IO;
 using System.Text;
 
 namespace PDFjet.NET {
+/// <summary>Reads the contents of files and streams.</summary>
 public class Content {
+    /// <summary>Returns the contents of the specified text file.</summary>
     public static String OfTextFile(String fileName) {
         StringBuilder sb = new StringBuilder(4096);
         StreamReader reader = null;
@@ -31,6 +33,7 @@ public class Content {
         return sb.ToString();
     }
 
+    /// <summary>Returns the contents of the specified file as bytes.</summary>
     public static byte[] OfBinaryFile(String fileName) {
         MemoryStream ms = new MemoryStream();
         BufferedStream stream = null;
@@ -47,6 +50,7 @@ public class Content {
         return ms.ToArray();
     }
 
+    /// <summary>Returns all the bytes read from the stream.</summary>
     public static byte[] GetFromStream(Stream stream) {
         MemoryStream ms = new MemoryStream();
         try {

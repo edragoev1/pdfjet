@@ -1,15 +1,28 @@
 using System;
 
 namespace PDFjet.NET.CoreFonts {
+/// <summary>
+/// The metrics of Symbol, one of the 14 standard PDF fonts.
+/// The values are in thousandths of the font size.
+/// </summary>
 public static class Symbol {
+    /// <summary>The PostScript name of the font</summary>
     public static readonly String name = "Symbol";
+    /// <summary>The x coordinate of the lower left corner of the font bounding box</summary>
     public static readonly int bBoxLLx = -180;
+    /// <summary>The y coordinate of the lower left corner of the font bounding box</summary>
     public static readonly int bBoxLLy = -293;
+    /// <summary>The x coordinate of the upper right corner of the font bounding box</summary>
     public static readonly int bBoxURx = 1090;
+    /// <summary>The y coordinate of the upper right corner of the font bounding box</summary>
     public static readonly int bBoxURy = 1010;
+    /// <summary>The position of the underline relative to the baseline</summary>
     public static readonly int underlinePosition = -100;
+    /// <summary>The thickness of the underline</summary>
     public static readonly int underlineThickness = 50;
+    /// <summary>The copyright notice of the font</summary>
     public static readonly string notice = "Copyright (c) 1985, 1987, 1989, 1990, 1997 Adobe Systems Incorporated. All rights reserved.";
+    /// <summary>One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment</summary>
     public static readonly int[][] metrics = {
         new int[] {32,250},
         new int[] {33,333},

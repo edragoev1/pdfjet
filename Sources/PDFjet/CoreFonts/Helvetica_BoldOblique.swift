@@ -1,12 +1,25 @@
+///
+/// The metrics of Helvetica-BoldOblique, one of the 14 standard PDF fonts.
+/// The values are in thousandths of the font size.
+///
 public enum Helvetica_BoldOblique {
+    /// The PostScript name of the font
     public static let name = "Helvetica-BoldOblique"
+    /// The x coordinate of the lower left corner of the font bounding box
     public static let bBoxLLx: Int16 = -174
+    /// The y coordinate of the lower left corner of the font bounding box
     public static let bBoxLLy: Int16 = -228
+    /// The x coordinate of the upper right corner of the font bounding box
     public static let bBoxURx: Int16 = 1114
+    /// The y coordinate of the upper right corner of the font bounding box
     public static let bBoxURy: Int16 = 962
+    /// The position of the underline relative to the baseline
     public static let underlinePosition: Int16 = -100
+    /// The thickness of the underline
     public static let underlineThickness: Int16 = 50
+    /// The copyright notice of the font
     public static let notice = "Copyright (c) 1985, 1987, 1989, 1990, 1997 Adobe Systems Incorporated. All Rights Reserved. Helvetica is a trademark of Linotype-Hell AG and/or its subsidiaries."
+    /// One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment
     public static let metrics: [[Int16]] = [
         [32,278,84,-100,86,-80,87,-80,89,-120,221,-120,159,-120,147,-80,145,-60],
         [33,333],

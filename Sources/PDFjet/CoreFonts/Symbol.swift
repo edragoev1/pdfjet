@@ -1,12 +1,25 @@
+///
+/// The metrics of Symbol, one of the 14 standard PDF fonts.
+/// The values are in thousandths of the font size.
+///
 public enum Symbol {
+    /// The PostScript name of the font
     public static let name = "Symbol"
+    /// The x coordinate of the lower left corner of the font bounding box
     public static let bBoxLLx: Int16 = -180
+    /// The y coordinate of the lower left corner of the font bounding box
     public static let bBoxLLy: Int16 = -293
+    /// The x coordinate of the upper right corner of the font bounding box
     public static let bBoxURx: Int16 = 1090
+    /// The y coordinate of the upper right corner of the font bounding box
     public static let bBoxURy: Int16 = 1010
+    /// The position of the underline relative to the baseline
     public static let underlinePosition: Int16 = -100
+    /// The thickness of the underline
     public static let underlineThickness: Int16 = 50
+    /// The copyright notice of the font
     public static let notice = "Copyright (c) 1985, 1987, 1989, 1990, 1997 Adobe Systems Incorporated. All rights reserved."
+    /// One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment
     public static let metrics: [[Int16]] = [
         [32,250],
         [33,333],

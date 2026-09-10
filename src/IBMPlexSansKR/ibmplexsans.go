@@ -1,3 +1,4 @@
+// Package IBMPlexSansKR provides the paths to the IBM Plex Sans KR fonts.
 package IBMPlexSansKR
 
 // IBMPlexSansKR provides the paths to the IBM Plex Sans KR fonts.

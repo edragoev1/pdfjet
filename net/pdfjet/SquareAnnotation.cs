@@ -7,7 +7,9 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>A square annotation.</summary>
 public class SquareAnnotation : BaseAnnotation {
+    /// <summary>Creates a square annotation.</summary>
     public SquareAnnotation() {
         base.annotationType = Annotation.Square;
     }

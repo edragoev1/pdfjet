@@ -67,19 +67,31 @@ public class Point implements Drawable {
     /** Control point for the y operator, where the second control point coincides with the final point of the curve. */
     public static final char CONTROL_POINT_Y = 'y';
 
+    /** The x coordinate. */
     protected float x;
+    /** The y coordinate. */
     protected float y;
+    /** The radius. */
     protected float r = 2f;
+    /** The shape, one of the shape constants in this class. */
     protected int shape = Point.CIRCLE;
+    /** The alignment of the text relative to this point. */
     protected int align = Align.RIGHT;
 
+    /** The fill color as an RGB array, or null. */
     protected float[] fillColor = null;
+    /** The stroke width. */
     protected float strokeWidth = 1f;
+    /** The stroke color as an RGB array, or null. */
     protected float[] strokeColor = null;
+    /** The stroke dash pattern. */
     protected String strokeDashPattern = "[] 0";
+    /** The operator used to paint the shape. */
     protected String pathOperator = PathOperator.CLOSE_AND_STROKE;
 
+    /** The control point type when this point is part of a path, or 0 if it is not a control point. */
     protected char controlPoint = '\0';
+    /** True if this point starts a path drawn on a chart. */
     protected boolean drawPath = false;
 
     private String text;

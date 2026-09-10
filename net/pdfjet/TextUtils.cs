@@ -7,7 +7,9 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>Text helper methods.</summary>
 public class TextUtils {
+    /// <summary>Prints the name of an example and how long it took.</summary>
     public static void PrintDuration(String example, long time0, long time1) {
         String duration = String.Format("{0:N1}", (time1 - time0)/1.0).Replace(",", "");
         if (duration.Length == 3) {

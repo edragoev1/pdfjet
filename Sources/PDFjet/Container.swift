@@ -5,14 +5,22 @@ import Foundation
 /// The container maintains its own position, dimensions, rotation, and scaling factors,
 /// and can draw its child elements onto a PDF `Page`.
 public class Container: Drawable {
+    /// The x coordinate of this container on the page.
     public var x: Float
+    /// The y coordinate of this container on the page.
     public var y: Float
+    /// The width of this container.
     public var width: Float
+    /// The height of this container.
     public var height: Float
+    /// The rotation angle in degrees.
     public var rotateDegrees: Float
+    /// The horizontal scale factor.
     public var scaleX: Float
+    /// The vertical scale factor.
     public var scaleY: Float
     private var elements: [Drawable]
+    /// The container that holds this container, or nil.
     public var parent: Container?
 
     /// Creates a new container with the specified width and height.
@@ -75,6 +83,7 @@ public class Container: Drawable {
         return self
     }
 
+    /// Returns the center of this container, which it rotates around.
     public func getRotationCenter() -> [Float] {
         return [self.x + self.width/2.0, self.y + self.height/2.0]
     }
@@ -100,6 +109,7 @@ public class Container: Drawable {
         return self
     }
 
+    /// Adds a border in the specified 0xRRGGBB color around this container.
     @discardableResult
     public func setBorderColor(_ borderColor: Int32) -> Container {
         let rect = Rect(0.0, 0.0, width, height)
@@ -108,6 +118,7 @@ public class Container: Drawable {
         return self
     }
 
+    /// Adds a black border around this container.
     public func addBorder() {
         let rect = Rect(0.0, 0.0, width, height)
         rect.setBorderColor(Color.black)

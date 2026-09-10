@@ -68,6 +68,7 @@ public class Chart : Drawable {
     private var f2: Font?
     private var fontSize: Float = 8.0
 
+    /// The data series of this chart, one array of points per series.
     public var chartData: [[Point]]?
 
     private static let DEFAULT_PALETTE = [
@@ -306,6 +307,7 @@ public class Chart : Drawable {
         return self
     }
 
+    /// Converts a 0xRRGGBB color to red, green and blue values between 0.0 and 1.0.
     public func toFloatArray(_ color: Int32) -> [Float] {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
@@ -313,18 +315,21 @@ public class Chart : Drawable {
         return [r, g, b]
     }
 
+    /// Sets whether the x axis labels are drawn.
     @discardableResult
     public func setDrawXAxisLabels(_ drawXAxisLabels: Bool) -> Chart {
         self.drawXAxisLabels = drawXAxisLabels
         return self
     }
 
+    /// Sets whether the y axis labels are drawn.
     @discardableResult
     public func setDrawYAxisLabels(_ drawYAxisLabels: Bool) -> Chart {
         self.drawYAxisLabels = drawYAxisLabels
         return self
     }
 
+    /// Sets whether this is an XY scatter chart rather than a category chart.
     @discardableResult
     public func setXYChart(_ xyChart: Bool) -> Chart {
         self.xyChart = xyChart

@@ -11,6 +11,8 @@
 /// Letter, Legal and Tabloid - see the Page class.
 ///
 public class B5 {
+    /// The B5 page size in portrait orientation.
     public static let PORTRAIT: [Float] = [516.0, 729.0]
+    /// The B5 page size in landscape orientation.
     public static let LANDSCAPE: [Float] = [729.0, 516.0]
 }

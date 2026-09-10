@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package pathoperator defines the path painting operators, such as stroke and fill.
 package pathoperator
 
 // Constants used to specify the 'Stroke', 'CloseAndStroke', 'Fill' and more operators.

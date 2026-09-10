@@ -7,12 +7,14 @@
 // The following Java implementation encrypts the system time and returns
 // the first 32 characters of the hash.
 
+// Package djb implements the Salsa20 hash function by Daniel J. Bernstein.
 package djb
 
 import (
 	"strings"
 )
 
+// Salsa20 computes a Salsa20 hash and returns its first 32 hexadecimal characters.
 func Salsa20() string {
 	a_in := [16]uint32{
 		0x61707865, 0x04030201, 0x08070605, 0x0c0b0a09,

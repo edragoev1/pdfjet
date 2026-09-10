@@ -23,6 +23,7 @@ func NewStructElem() *StructElem {
 	return structElem
 }
 
+// GetPageObjNumber returns the object number of the page this element is on.
 func (structElem *StructElem) GetPageObjNumber() int {
 	return structElem.pageObjNumber
 }

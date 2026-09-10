@@ -136,6 +136,7 @@ public class TextBox : IDrawable {
         return font;
     }
 
+    /// <summary>Sets the font size.</summary>
     public TextBox SetFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
@@ -341,6 +342,7 @@ public class TextBox : IDrawable {
         return spacing;
     }
 
+    /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
     public TextBox SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -349,11 +351,13 @@ public class TextBox : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the background color from an array of red, green and blue values.</summary>
     public TextBox SetFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
     public TextBox SetBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -362,11 +366,13 @@ public class TextBox : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the background color from an array of red, green and blue values.</summary>
     public TextBox SetBackgroundColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /// <summary>Sets the text color as a 0xRRGGBB value.</summary>
     public TextBox SetTextColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -375,43 +381,52 @@ public class TextBox : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the text color from red, green and blue values between 0.0 and 1.0.</summary>
     public TextBox SetTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public TextBox SetTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
         return this;
     }
 
+    /// <summary>Returns the text color.</summary>
     public float[] GetTextColor() {
         return textColor;
     }
 
+    /// <summary>Sets the language of the text, for example "en-US".</summary>
     public TextBox SetLanguage(String language) {
         this.language = language;
         return this;
     }
 
+    /// <summary>Returns the language of the text.</summary>
     public String GetLanguage() {
         return this.language;
     }
 
+    /// <summary>Sets the alternate description of this text box, used for accessibility.</summary>
     public TextBox SetAltDescription(String altDescription) {
         this.altDescription = altDescription;
         return this;
     }
 
+    /// <summary>Returns the alternate description of this text box.</summary>
     public String GetAltDescription() {
         return altDescription;
     }
 
+    /// <summary>Sets the width of the borders.</summary>
     public TextBox SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
+    /// <summary>Sets the color of the borders as a 0xRRGGBB value.</summary>
     public TextBox SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -420,16 +435,19 @@ public class TextBox : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the color of the borders from red, green and blue values between 0.0 and 1.0.</summary>
     public TextBox SetStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the color of the borders from an array of red, green and blue values.</summary>
     public TextBox SetStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
         return this;
     }
 
+    /// <summary>Returns the color of the borders.</summary>
     public float[] GetStrokeColor() {
         return strokeColor;
     }
@@ -557,11 +575,13 @@ public class TextBox : IDrawable {
         return (properties & 0x00800000) != 0;
     }
 
+    /// <summary>Sets the font used for characters the main font does not have.</summary>
     public TextBox SetFallbackFont(Font font) {
         this.fallbackFont = font;
         return this;
     }
 
+    /// <summary>Returns the fallback font.</summary>
     public Font GetFallbackFont() {
         return this.fallbackFont;
     }
@@ -576,15 +596,18 @@ public class TextBox : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the vertical alignment of the text.</summary>
     public uint GetVerticalAlignment() {
         return this.valign;
     }
 
+    /// <summary>Sets the colors used to highlight words in the text.</summary>
     public TextBox SetTextColors(Dictionary<String, Int32> colors) {
         this.colors = colors;
         return this;
     }
 
+    /// <summary>Returns the colors used to highlight words in the text.</summary>
     public Dictionary<String, Int32> GetTextColors() {
         return this.colors;
     }
@@ -917,6 +940,7 @@ public class TextBox : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the direction of the text.</summary>
     public TextBox SetTextDirection(Direction textDirection) {
         this.textDirection = textDirection;
         return this;

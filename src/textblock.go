@@ -173,6 +173,7 @@ func (textBlock *TextBlock) SetBorderWidth(borderWidth float32) *TextBlock {
 	return textBlock
 }
 
+// SetBorderColor sets the border color as a 0xRRGGBB value.
 func (textBlock *TextBlock) SetBorderColor(color int32) *TextBlock {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -222,6 +223,7 @@ func (textBlock *TextBlock) SetFillColor(fillColor int32) *TextBlock {
 	return textBlock
 }
 
+// SetFillColorRGB sets the fill color from red, green and blue values.
 func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) *TextBlock {
 	textBlock.fillColor = fillColor
 	textBlock.hasFillColor = true
@@ -259,11 +261,13 @@ func (textBlock *TextBlock) textIsCJK(str string) bool {
 	return numOfCJK > (len(runes) / 2)
 }
 
+// SetURIAction sets the URI opened when this text block is clicked.
 func (textBlock *TextBlock) SetURIAction(uri string) *TextBlock {
 	textBlock.uri = uri
 	return textBlock
 }
 
+// SetKeywordHighlightColors sets the colors used to highlight keywords, matched ignoring case.
 func (textBlock *TextBlock) SetKeywordHighlightColors(keywordHighlightColors map[string]int32) *TextBlock {
 	textBlock.keywordHighlightColors = make(map[string]int32)
 	for key, value := range keywordHighlightColors {

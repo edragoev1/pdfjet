@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package tabloid defines the tabloid page size in points.
 package tabloid
 
 // PORTRAIT tabloid page dimensions

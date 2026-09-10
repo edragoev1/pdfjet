@@ -28,44 +28,53 @@ public class OptionalContentGroup {
     private bool exportable;
     private List<IDrawable> components;
 
+    /// <summary>Creates an optional content group, also called a layer.</summary>
     public OptionalContentGroup(PDF pdf, String name) {
         this.pdf = pdf;
         this.name = name;
         this.components = new List<IDrawable>();
     }
 
+    /// <summary>Returns the name of this group.</summary>
     public String GetName() {
         return this.name;
     }
 
+    /// <summary>Adds a drawable to this group.</summary>
     public void Add(IDrawable drawable) {
         components.Add(drawable);
     }
 
+    /// <summary>Sets whether this group is visible.</summary>
     public OptionalContentGroup SetVisible(bool visible) {
         this.visible = visible;
         return this;
     }
 
+    /// <summary>Sets whether this group is printed.</summary>
     public OptionalContentGroup SetPrintable(bool printable) {
         this.printable = printable;
         return this;
     }
 
+    /// <summary>Sets whether this group is exported.</summary>
     public OptionalContentGroup SetExportable(bool exportable) {
         this.exportable = exportable;
         return this;
     }
 
     // Added by request from Planet Associates
+    /// <summary>Removes all drawables from this group.</summary>
     public void Clear() {
         this.components.Clear();
     }
 
+    /// <summary>Returns the drawables in this group.</summary>
     public List<IDrawable> GetComponents() {
         return components;
     }
 
+    /// <summary>Draws this group and its drawables on the specified page.</summary>
     public void DrawOn(Page page) {
         if (this.ocgNumber == -1) {
             pdf.NewObj();

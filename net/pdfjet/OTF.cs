@@ -9,6 +9,7 @@ using System.IO;
 using System.Text;
 
 namespace PDFjet.NET {
+/// <summary>Parses and extracts the data from TTF and OTF font files.</summary>
 public class OTF {
     internal String fontName;
     internal String fontInfo;
@@ -36,6 +37,7 @@ public class OTF {
     private int cffLen;
     private int index = 0;
 
+    /// <summary>Parses the font read from the stream.</summary>
     public OTF(Stream stream) {
         buf = Content.GetFromStream(stream);
 

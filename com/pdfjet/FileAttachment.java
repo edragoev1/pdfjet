@@ -10,13 +10,21 @@ package com.pdfjet;
  * Used to attach file objects.
  */
 public class FileAttachment implements Drawable {
+    /** The PDF this attachment belongs to. */
     protected PDF pdf;
+    /** The attached file. */
     protected EmbeddedFile embeddedFile;
+    /** The name of the icon: "PushPin" or "Paperclip". */
     protected String icon = "PushPin";
+    /** The title of the attachment. */
     protected String title = "";
+    /** The description shown for the attachment. */
     protected String contents = "Right mouse click on the icon to save the attached file.";
+    /** The x coordinate of the icon. */
     protected float x = 0f;
+    /** The y coordinate of the icon. */
     protected float y = 0f;
+    /** The height of the icon. */
     protected float h = 24f;
 
     /**

@@ -7,7 +7,9 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>Strings made of a single character.</summary>
 public class Single {
+    /// <summary>A single space.</summary>
     public const String space = " ";
 }
 }   // End of namespace PDFjet.NET

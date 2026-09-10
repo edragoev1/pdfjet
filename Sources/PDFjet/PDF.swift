@@ -121,6 +121,7 @@ public class PDF {
         append(Token.newline)
     }
 
+    /// Sets the PDF/UA or PDF/A compliance of this document.
     @discardableResult
     public func setCompliance(_ compliance: Compliance) -> PDF {
         self.compliance = compliance
@@ -959,6 +960,7 @@ public class PDF {
         append(Token.endDictionary)
     }
 
+    /// Adds the page to this document.
     public func addPage(_ page: Page) {
         pages.append(page)
         if prevPage != nil {
@@ -967,6 +969,7 @@ public class PDF {
         prevPage = page
     }
 
+    /// Adds the pages to this document.
     public func addPages(_ pages: [Page]) {
         for page in pages {
             addPage(page)
@@ -1119,12 +1122,14 @@ public class PDF {
         return self
     }
 
+    /// Sets the page layout used when the document is opened. See PageLayout.
     @discardableResult
     public func setPageLayout(_ pageLayout: String) -> PDF {
         self.pageLayout = pageLayout
         return self
     }
 
+    /// Sets the page mode used when the document is opened. See PageMode.
     @discardableResult
     public func setPageMode(_ pageMode: String) -> PDF {
         self.pageMode = pageMode
@@ -1530,6 +1535,7 @@ public class PDF {
         return Int(String(bytes: bytes, encoding: .ascii)!)!
     }
 
+    /// Adds the outline dictionary for the bookmarks and returns its object number.
     public func addOutlineDict(_ toc: Bookmark) -> Int {
         let numOfChildren = getNumOfChildren(0, toc)
         newobj()
@@ -1549,6 +1555,7 @@ public class PDF {
         return getObjNumber()
     }
 
+    /// Adds an outline item for the specified bookmark.
     public func addOutlineItem(
             _ parent: Int,
             _ i: Int,
@@ -1629,11 +1636,13 @@ public class PDF {
         return numberOfChildren
     }
 
+    /// Adds objects read from an existing PDF to this document.
     public func addObjects(_ objects: inout [PDFobj]) {
         self.pagesObjNumber = Int(getPagesObject(objects)!.dict[0])!
         addObjectsToPDF(&objects)
     }
 
+    /// Returns the root pages object.
     public func getPagesObject(
             _ objects: [PDFobj]) -> PDFobj? {
         for object in objects {
@@ -1645,6 +1654,7 @@ public class PDF {
         return nil
     }
 
+    /// Returns the page objects.
     public func getPageObjects(from objects: [PDFobj]) -> [PDFobj] {
         var pageObjects = [PDFobj]()
         let pagesObject = getPagesObject(objects)!
@@ -1800,6 +1810,7 @@ public class PDF {
         }
     }
 
+    /// Adds the fonts and graphics states used by the pages to this document.
     public func addResourceObjects(_ objects: inout [PDFobj]) {
         var resources = [PDFobj]()
         let pages = getPageObjects(from: objects)
@@ -1887,6 +1898,7 @@ public class PDF {
 
     private let HEX: [UInt8] = Array("0123456789ABCDEF".utf8)
 
+    /// Returns the UTF-8 bytes of the string as uppercase hexadecimal digits.
     public func toHex(_ str: String?) -> String {
         guard let str = str, !str.isEmpty else {
             return ""

@@ -10,6 +10,7 @@ import Foundation
 /// Some really useful helper methods.
 ///
 public class Content {
+    /// Returns the contents of the specified text file, without carriage returns.
     public static func ofTextFile( _ fileName: String) throws -> String {
         let contents = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
         var buffer = String()
@@ -21,10 +22,12 @@ public class Content {
         return buffer
     }
 
+    /// Returns the contents of the specified file as bytes.
     public static func ofBinaryFile( _ fileName: String) throws -> [UInt8] {
         return try getFromStream(InputStream(fileAtPath: fileName)!)
     }
 
+    /// Returns all the bytes read from the stream, reading bufferSize bytes at a time.
     public static func getFromStream( _ stream: InputStream, _ bufferSize: Int) throws -> [UInt8] {
         var contents = [UInt8]()
         var buffer = [UInt8](repeating: 0, count: bufferSize)
@@ -40,6 +43,7 @@ public class Content {
         return contents
     }
 
+    /// Returns all the bytes read from the stream.
     public static func getFromStream( _ stream: InputStream) throws -> [UInt8] {
         try self.getFromStream(stream, 4096)
     }

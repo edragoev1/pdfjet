@@ -82,10 +82,12 @@ const (
 	mTransY
 )
 
+// NewPage creates a page of the specified size and adds it to the PDF.
 func NewPage(pdf *PDF, pageSize [2]float32) *Page {
 	return newPage(pdf, pageSize, true)
 }
 
+// NewPageDetached creates a page of the specified size without adding it to the PDF.
 func NewPageDetached(pdf *PDF, pageSize [2]float32) *Page {
 	return newPage(pdf, pageSize, false)
 }
@@ -418,6 +420,7 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 	}
 }
 
+// SaveGraphicsState saves the current graphics state. Please see Example_31.
 func (page *Page) SaveGraphicsState() {
 	page.appendString("q\n")
 }
@@ -443,6 +446,7 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 	return page
 }
 
+// RestoreGraphicsState restores the last saved graphics state. Please see Example_31.
 func (page *Page) RestoreGraphicsState() {
 	page.appendString("Q\n")
 }
@@ -685,6 +689,7 @@ func (page *Page) SetPenWidth(width float32) *Page {
 	return page
 }
 
+// GetPenWidth returns the current pen width.
 func (page *Page) GetPenWidth() float32 {
 	return page.penWidth
 }
@@ -1036,11 +1041,15 @@ func (page *Page) CurveTo(x1, y1, x2, y2, x3, y3 float32) {
 	page.appendString(" c\n")
 }
 
+// DrawCircularArc adds a circular arc to the current path.
+// It returns the control points and the end point of the last curve segment.
 func (page *Page) DrawCircularArc(
 	x, y, r, startAngle, sweepDegrees float32) []float32 {
 	return page.DrawArc(x, y, r, r, startAngle, sweepDegrees)
 }
 
+// DrawArc adds an elliptical arc to the current path.
+// It returns the control points and the end point of the last curve segment.
 func (page *Page) DrawArc(
 	x, y, rx, ry, startAngle, sweepDegrees float32) []float32 {
 	var x1, y1, x2, y2, x3, y3 float32
@@ -1154,6 +1163,7 @@ func (page *Page) ClipPath() {
 	page.appendString("n\n") // Close the path without painting it.
 }
 
+// ClipRect sets the clipping path to the specified rectangle.
 func (page *Page) ClipRect(x, y, w, h float32) {
 	page.MoveTo(x, y)
 	page.LineTo(x+w, y)
@@ -1286,6 +1296,7 @@ func (page *Page) AddBMC(structure, language, actualText, altDescription string)
 	}
 }
 
+// AddArtifactBMC begins marked content for an artifact when the document is PDF/UA compliant.
 func (page *Page) AddArtifactBMC() {
 	if page.pdf.compliance == compliance.PDF_UA_1 {
 		page.appendString("/Artifact BMC\n")
@@ -1452,6 +1463,7 @@ func (page *Page) EndText() {
 	page.appendString("ET\n")
 }
 
+// SetTextLocation moves the text position to the specified location.
 func (page *Page) SetTextLocation(x, y float32) *Page {
 	page.appendFloat32(x)
 	page.appendByte(token.Space)
@@ -1460,28 +1472,33 @@ func (page *Page) SetTextLocation(x, y float32) *Page {
 	return page
 }
 
+// SetTextLeading sets the distance between lines of text.
 func (page *Page) SetTextLeading(leading float32) *Page {
 	page.appendFloat32(leading)
 	page.appendString(" TL\n")
 	return page
 }
 
+// NextLine moves the text position to the start of the next line.
 func (page *Page) NextLine() {
 	page.appendString("T*\n")
 }
 
+// SetTextScaling sets the horizontal scaling of the text in percent.
 func (page *Page) SetTextScaling(scaling float32) *Page {
 	page.appendFloat32(scaling)
 	page.appendString(" Tz\n")
 	return page
 }
 
+// SetTextRise moves the text baseline up or down by the specified amount.
 func (page *Page) SetTextRise(rise float32) *Page {
 	page.appendFloat32(rise)
 	page.appendString(" Ts\n")
 	return page
 }
 
+// DrawTextLine draws a string at the specified location using the current font size.
 func (page *Page) DrawTextLine(font *Font, str string, x float32, y float32) {
 	page.BeginText()
 	page.SetTextLocation(x, y)
@@ -1518,6 +1535,8 @@ func (page *Page) appendByteArray(a []byte) {
 	page.buf = append(page.buf, a...)
 }
 
+// ScaleAndRotate scales content to w by h, rotates it around its center
+// and places its top left corner at x, y.
 func (page *Page) ScaleAndRotate(x, y, w, h, degrees float32) {
 	// PDF transformations apply LAST-TO-FIRST (like a stack: last command = first applied)
 
@@ -1555,6 +1574,7 @@ func (page *Page) ScaleAndRotate(x, y, w, h, degrees float32) {
 	page.appendString(" cm\n")
 }
 
+// RotateAroundCenter rotates the coordinate system around the specified center.
 func (page *Page) RotateAroundCenter(centerX, centerY, degrees float32) {
 	page.appendString("1 0 0 1 ")
 	page.appendFloat32(centerX)

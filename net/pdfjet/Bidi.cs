@@ -213,6 +213,7 @@ namespace PDFjet.NET {
             return buf3.ToString();
         }
 
+        /// <summary>Returns true if the character is in the Arabic Unicode block, U+0600 to U+06FF.</summary>
         public static bool IsArabic(int ch) {
             return ch >= 0x0600 && ch <= 0x06FF;
         }
@@ -347,6 +348,7 @@ namespace PDFjet.NET {
             };
         }
 
+        /// <summary>Returns true if the Arabic character joins the character that follows it.</summary>
         public static bool JoinsForward(int ch) {
             if (ch == 0x0640) {
                 return true;   // TATWEEL — joins both sides
@@ -354,6 +356,7 @@ namespace PDFjet.NET {
             return DUAL_JOINING.Contains(ch);
         }
 
+        /// <summary>Returns true if the Arabic character joins the character before it.</summary>
         public static bool JoinsBackward(int ch) {
             if (ch == 0x0640) {
                 return true;

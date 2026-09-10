@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package a5 defines the A5 page size in points.
 package a5
 
 // Portrait A5 page dimensions

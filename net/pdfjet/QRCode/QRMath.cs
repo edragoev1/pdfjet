@@ -17,6 +17,7 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>Arithmetic in GF(256), used for the QR code error correction.</summary>
 public class QRMath {
     private static readonly int[] EXP_TABLE = new int[256];
     private static readonly int[] LOG_TABLE = new int[256];
@@ -38,6 +39,7 @@ public class QRMath {
         }
     }
 
+    /// <summary>Returns the logarithm of n in GF(256).</summary>
     public static int Glog(int n) {
         if (n < 1) {
             throw new ArithmeticException("log(" + n + ")");
@@ -45,6 +47,7 @@ public class QRMath {
         return LOG_TABLE[n];
     }
 
+    /// <summary>Returns 2 raised to the power of n in GF(256).</summary>
     public static int Gexp(int n) {
         while (n < 0) {
             n += 255;

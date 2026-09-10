@@ -89,14 +89,22 @@ public class StructElem {
     /** Content that is not part of the logical structure, such as page decorations. */
     public static final String ARTIFACT = "Artifact";
 
+    /** The object number of this element. */
     protected int objNumber;
+    /** The structure type, for example "P". */
     protected String structure = null;
+    /** The object number of the page this element is on. */
     protected int pageObjNumber;
+    /** The marked content ID. */
     protected int mcid = 0;
+    /** The language of the content. */
     protected String language = null;
+    /** The actual text of the content. */
     protected String actualText = null;
+    /** The alternate description of the content. */
     protected String altDescription = null;
     Annotation annotation = null;
+    /** The child elements. */
     protected List<StructElem> kids = null;
 
     /** The default constructor */

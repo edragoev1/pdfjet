@@ -12,8 +12,11 @@ namespace PDFjet.NET {
 /// See the Page and Line classes for more details.
 /// </summary>
 public enum JoinStyle : Int32 {
+    /// <summary>Joins the lines with a sharp corner.</summary>
     MITER = 0,
+    /// <summary>Joins the lines with a rounded corner.</summary>
     ROUND,
+    /// <summary>Joins the lines with a beveled corner.</summary>
     BEVEL
 }
 }   // End of namespace PDFjet.NET

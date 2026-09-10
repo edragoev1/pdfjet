@@ -12,15 +12,25 @@ import java.util.Map;
  * Used to create text line objects.
  */
 public class TextLine implements Drawable {
+    /** The x coordinate. */
     protected float x;
+    /** The y coordinate. */
     protected float y;
+    /** The font of the text. */
     protected Font font;
+    /** The font used for characters that the primary font does not have. */
     protected Font fallbackFont;
+    /** The font size. */
     protected float fontSize;
+    /** The text. */
     protected String text;
+    /** True if this is the last token of a line; needed to draw underline and strikeout. */
     protected boolean isLastToken = false;  // We need this for underline and strikeout to work properly!
+    /** The horizontal offset from the x coordinate. */
     protected float xOffset;                // The horizontal offset (from the X coordinate)
+    /** True if the text is underlined. */
     protected boolean underline = false;
+    /** True if the text is struck out. */
     protected boolean strikeout = false;
 
     private int degrees = 0;

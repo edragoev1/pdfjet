@@ -6,6 +6,7 @@
  */
 import Foundation
 
+/// Draws a calendar for one month.
 public class CalendarMonth : Drawable {
     var f1: Font?
     var f2: Font?
@@ -22,6 +23,14 @@ public class CalendarMonth : Drawable {
     var daysInMonth: Int?
     var dayOfWeek: Int?
 
+    ///
+    /// Creates a calendar for the specified month.
+    ///
+    /// @param f1 the header font.
+    /// @param f2 the body font.
+    /// @param year the year.
+    /// @param month the month, from 1 to 12.
+    ///
     public init(_ f1: Font, _ f2: Font, _ year: Int, _ month: Int) {
         self.f1 = f1
         self.f2 = f2
@@ -41,30 +50,35 @@ public class CalendarMonth : Drawable {
         dy = dx
     }
 
+    /// Sets the header font.
     @discardableResult
     public func setHeadFont(_ font: Font) -> CalendarMonth {
         self.f1 = font
         return self
     }
 
+    /// Sets the body font.
     @discardableResult
     public func setBodyFont(_ font: Font) -> CalendarMonth {
         self.f2 = font
         return self
     }
 
+    /// Sets the width of the day cells.
     @discardableResult
     public func setCellWidth(_ width: Float) -> CalendarMonth {
         self.dx = width
         return self
     }
 
+    /// Sets the height of the day cells.
     @discardableResult
     public func setCellHeight(_ height: Float) -> CalendarMonth {
         self.dy = height
         return self
     }
 
+    /// Sets the location of the top left corner of the calendar.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x1 = x
@@ -72,6 +86,7 @@ public class CalendarMonth : Drawable {
         return self
     }
 
+    /// Draws this calendar on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         for row in 0..<7 {

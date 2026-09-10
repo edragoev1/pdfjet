@@ -11,9 +11,13 @@ package com.pdfjet;
  * Please see Example_01.
  */
 public class Line implements Drawable {
+    /** The x coordinate of the start point. */
     protected float x1;
+    /** The y coordinate of the start point. */
     protected float y1;
+    /** The x coordinate of the end point. */
     protected float x2;
+    /** The y coordinate of the end point. */
     protected float y2;
 
     private int color = Color.black;

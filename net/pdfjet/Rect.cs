@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
+/// <summary>A rectangle that can be drawn on a page.</summary>
 public class Rect  : IDrawable {
     internal float x;
     internal float y;
@@ -32,6 +33,7 @@ public class Rect  : IDrawable {
     public Rect() {
     }
 
+    /// <summary>Creates a rectangle with its top left corner at x, y and the specified width and height.</summary>
     public Rect(float x, float y, float w, float h) {
         this.x = x;
         this.y = y;
@@ -39,6 +41,7 @@ public class Rect  : IDrawable {
         this.h = h;
     }
 
+    /// <summary>Creates a rectangle with its top left corner at x, y and the specified width and height.</summary>
     public Rect(double x, double y, double w, double h) {
         this.x = (float) x;
         this.y = (float) y;
@@ -46,12 +49,14 @@ public class Rect  : IDrawable {
         this.h = (float) h;
     }
 
+    /// <summary>Sets the location of the top left corner of this rectangle.</summary>
     public Rect SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
+    /// <summary>Sets the location of the top left corner of this rectangle.</summary>
     public Rect SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
@@ -60,12 +65,14 @@ public class Rect  : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Sets the size of this rectangle.</summary>
     public Rect SetSize(float w, float h) {
         this.w = w;
         this.h = h;
         return this;
     }
 
+    /// <summary>Sets the fill color as a 0xRRGGBB value.</summary>
     public Rect SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -74,21 +81,25 @@ public class Rect  : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the fill color from red, green and blue values between 0.0 and 1.0.</summary>
     public Rect SetFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public Rect SetFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /// <summary>Sets the border width.</summary>
     public Rect SetBorderWidth(float width) {
         this.borderWidth = width;
         return this;
     }
 
+    /// <summary>Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.</summary>
     public Rect SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
@@ -101,56 +112,67 @@ public class Rect  : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the border color from red, green and blue values between 0.0 and 1.0.</summary>
     public Rect SetBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the border color from an array of red, green and blue values, or null for no border.</summary>
     public Rect SetBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
         return this;
     }
 
+    /// <summary>Sets the corner radius.</summary>
     public Rect SetCornerRadius(float r) {
         this.r = r;
         return this;
     }
 
+    /// <summary>Sets the URI opened when this rectangle is clicked.</summary>
     public Rect SetURIAction(string uri) {
         this.uri = uri;
         return this;
     }
 
+    /// <summary>Sets the destination key used when this rectangle is clicked.</summary>
     public Rect SetGoToAction(string key) {
         this.key = key;
         return this;
     }
 
+    /// <summary>Sets the language of this rectangle, used for accessibility.</summary>
     public Rect SetLanguage(String language) {
         this.language = language;
         return this;
     }
 
+    /// <summary>Sets the actual text of this rectangle, used for accessibility.</summary>
     public Rect SetActualText(String actualText) {
         this.actualText = actualText;
         return this;
     }
 
+    /// <summary>Sets the alternate description of this rectangle, used for accessibility.</summary>
     public Rect SetAltDescription(string altDescription) {
         this.altDescription = altDescription;
         return this;
     }
 
+    /// <summary>Sets the dash pattern of the border.</summary>
     public Rect SetBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;
         return this;
     }
 
+    /// <summary>Multiplies the x and y coordinates of this rectangle by the specified factor.</summary>
     public void ScaleBy(float factor) {
         this.x *= factor;
         this.y *= factor;
     }
 
+    /// <summary>Draws this rectangle on the specified page.</summary>
     public float[] DrawOn(Page page) {
         if (page == null) {
             return new float[] {x + w, y + h};

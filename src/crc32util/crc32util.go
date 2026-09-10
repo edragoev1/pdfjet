@@ -1,3 +1,4 @@
+// Package crc32util computes CRC-32 checksums.
 package crc32util
 
 var table = []uint32{

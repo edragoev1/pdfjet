@@ -10,6 +10,7 @@ import Foundation
 /// Text processing utilities.
 ///
 public class TextUtils {
+    /// Prints the name of an example and how long it took.
     public static func printDuration(_ example: String, _ time0: Int64, _ time1: Int64) {
         var duration = String(time1 - time0)
         if duration.count == 1 {

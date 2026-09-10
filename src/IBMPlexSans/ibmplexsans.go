@@ -1,3 +1,4 @@
+// Package IBMPlexSans provides the paths to the IBM Plex Sans fonts.
 package IBMPlexSans
 
 // IBMPlexSans provides the paths to the IBM Plex Sans fonts.

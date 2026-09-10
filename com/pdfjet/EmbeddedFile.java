@@ -19,7 +19,9 @@ import java.util.zip.DeflaterOutputStream;
  * The file objects must added to the PDF before drawing on the first page.
  */
 public class EmbeddedFile {
+    /** The object number of the embedded file. */
     protected int objNumber = -1;
+    /** The name of the embedded file. */
     protected String fileName;
 
     /**

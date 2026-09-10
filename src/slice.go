@@ -5,6 +5,7 @@
 
 package pdfjet
 
+// Slice is a single slice of a donut or pie chart.
 type Slice struct {
 	angle   float32
 	color   int32
@@ -12,6 +13,7 @@ type Slice struct {
 	tooltip string
 }
 
+// NewSlice creates a slice with the angle in degrees, the 0xRRGGBB color, the label and the tooltip.
 func NewSlice(angle float32, color int32, text string, tooltip string) *Slice {
 	slice := new(Slice)
 	slice.angle = angle

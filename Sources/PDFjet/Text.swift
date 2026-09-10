@@ -24,6 +24,7 @@ public class Text : Drawable {
     private var borderWidth: Float = 0.5
     private var borderPattern: String = "[] 0"
 
+    /// Creates a text object from the paragraphs.
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
         self.font = paragraphs[0].lines![0].getFont()
@@ -31,6 +32,7 @@ public class Text : Drawable {
         self.leading = font!.getBodyHeight()
     }
 
+    /// Sets the location of the top left corner of this text.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x1 = x
@@ -38,18 +40,21 @@ public class Text : Drawable {
         return self
     }
 
+    /// Sets the width at which the lines wrap.
     @discardableResult
     public func setWidth(_ width: Float) -> Text {
         self.width = width
         return self
     }
 
+    /// Sets the distance between lines.
     @discardableResult
     public func setLeading(_ leading: Float) -> Text {
         self.leading = leading
         return self
     }
 
+    /// Sets the vertical distance between paragraphs.
     @discardableResult
     public func setParagraphLeading(
             _ paragraphLeading: Float) -> Text {
@@ -57,6 +62,7 @@ public class Text : Drawable {
         return self
     }
 
+    /// Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Text {
         if color == Color.transparent {
@@ -70,12 +76,14 @@ public class Text : Drawable {
         return self
     }
 
+    /// Sets the border color from an array of red, green and blue values.
     @discardableResult
     public func setBorderColor(_ borderColor: [Float]) -> Text {
         self.borderColor = borderColor
         return self
     }
 
+    /// Draws the paragraphs on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         self.xText = x1
@@ -225,6 +233,7 @@ public class Text : Drawable {
         return list
     }
 
+    /// Reads a text file and returns its paragraphs. An empty line separates the paragraphs.
     public static func paragraphsFromFile(_ f1: Font, _ filePath: String) throws -> [Paragraph] {
         var paragraphs = [Paragraph]()
         let contents = try Content.ofTextFile(filePath)
@@ -258,6 +267,7 @@ public class Text : Drawable {
         return paragraphs
     }
 
+    /// Returns the lines of the specified text file, without carriage returns.
     public static func readLines(_ filePath: String) throws -> [String] {
         var lines = [String]()
         let contents = try String(contentsOf: URL(fileURLWithPath: filePath), encoding: .utf8)

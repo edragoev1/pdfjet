@@ -20,37 +20,44 @@ public class FileAttachment : IDrawable {
     internal float y = 0f;
     internal float h = 24f;
 
+    /// <summary>Creates an attachment for the embedded file.</summary>
     public FileAttachment(PDF pdf, EmbeddedFile file) {
         this.pdf = pdf;
         this.embeddedFile = file;
     }
 
+    /// <summary>Sets the location of the attachment icon on the page.</summary>
     public FileAttachment SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
+    /// <summary>Uses the push pin icon.</summary>
     public FileAttachment SetIconPushPin() {
         this.icon = "PushPin";
         return this;
     }
 
+    /// <summary>Uses the paperclip icon.</summary>
     public FileAttachment SetIconPaperclip() {
         this.icon = "Paperclip";
         return this;
     }
 
+    /// <summary>Sets the height of the icon.</summary>
     public FileAttachment SetIconSize(float height) {
         this.h = height;
         return this;
     }
 
+    /// <summary>Sets the title of this attachment.</summary>
     public FileAttachment SetTitle(String title) {
         this.title = title;
         return this;
     }
 
+    /// <summary>Sets the description of this attachment.</summary>
     public FileAttachment SetDescription(String description) {
         this.contents = description;
         return this;
@@ -60,6 +67,7 @@ public class FileAttachment : IDrawable {
         return SetLocation(x, y);
     }
 
+    /// <summary>Adds this attachment to the specified page.</summary>
     public float[] DrawOn(Page page) {
         Annotation annotation = new Annotation(
                 Annotation.FileAttachment,

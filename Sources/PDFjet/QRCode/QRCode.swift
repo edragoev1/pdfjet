@@ -75,6 +75,7 @@ public class QRCode : Drawable {
         return self
     }
 
+    /// Sets the color of the QR code as a 0xRRGGBB value.
     @discardableResult
     public func setColor(_ color: Int32) -> QRCode {
         self.color = color
@@ -103,6 +104,7 @@ public class QRCode : Drawable {
         return [self.x + w, self.y + h]
     }
 
+    /// Returns the modules of the QR code: true for dark and false for light modules.
     public func getData() -> [[Bool?]]? {
         return self.modules
     }

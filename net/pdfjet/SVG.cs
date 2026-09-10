@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace PDFjet.NET {
+    /// <summary>Converts SVG path data to PDF path operations.</summary>
     public class SVG {
         private static bool isCommand(char ch) {
             // Capital letter commands use absolute coordinates
@@ -40,6 +41,7 @@ namespace PDFjet.NET {
             }
         }
 
+        /// <summary>Parses SVG path data into a list of path operations.</summary>
         public static List<PathOp> GetOperations(String path) {
             List<PathOp> operations = new List<PathOp>();
             PathOp op = null;
@@ -82,6 +84,7 @@ namespace PDFjet.NET {
             return operations;
         }
 
+        /// <summary>Converts SVG path operations to PDF path operations.</summary>
         public static List<PathOp> ToPDF(List<PathOp> list) {
             List<PathOp> operations = new List<PathOp>();
             PathOp lastOp = null;

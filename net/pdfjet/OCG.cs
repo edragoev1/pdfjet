@@ -1,6 +1,7 @@
 using System;
 
 namespace PDFjet.NET {
+/// <summary>Holds the object number and the name of an optional content group.</summary>
 public class OCG {
     // Fields to hold object number and name
     internal int objNumber;

@@ -225,12 +225,14 @@ public class Font {
     }
 
     // Constructor for .ttf.stream fonts:
+    /// Creates a font from a .ttf.stream or .otf.stream font and adds it to the PDF.
     public init(_ pdf: PDF, _ stream: InputStream, _ flag: Bool) throws {
         try FontStream1.register(pdf, self, stream)
         setSize(size)
     }
 
     // Constructor for .ttf.stream fonts:
+    /// Creates a font from a .ttf.stream or .otf.stream font and adds it to the objects of an existing PDF.
     public init(_ objects: inout [PDFobj], _ stream: InputStream, _ flag: Bool) throws {
         try FontStream2.register(&objects, self, stream)
         setSize(size)
@@ -312,6 +314,7 @@ public class Font {
         return self
     }
 
+    /// Returns the width of the string at the current font size.
     public func stringWidth(_ str: String?) -> Float {
         return stringWidth(self.size, str)
     }
@@ -389,6 +392,7 @@ public class Font {
         return self.descent
     }
 
+    /// Returns the ascent at the specified font size.
     public func getAscent(_ fontSize: Float) -> Float {
         if isCJK {
             return fontSize
@@ -396,6 +400,7 @@ public class Font {
         return Float(fontAscent) * fontSize / Float(unitsPerEm)
     }
 
+    /// Returns the descent at the specified font size.
     public func getDescent(_ fontSize: Float) -> Float {
         if isCJK {
             return fontSize/4
@@ -430,19 +435,23 @@ public class Font {
         return getAscent(fontSize) + getDescent(fontSize)
     }
 
+    /// Returns the underline thickness at the specified font size.
     public func getUnderlineThickness(_ fontSize: Float) -> Float {
         return Float(fontUnderlineThickness) * fontSize / Float(unitsPerEm)
     }
 
+    /// Returns the underline position at the specified font size.
     public func getUnderlinePosition(_ fontSize: Float) -> Float {
         return -(Float(fontUnderlinePosition) * fontSize / Float(unitsPerEm))
                 + getUnderlineThickness(fontSize) / 2.0
     }
 
+    /// Returns the underline thickness in font units.
     public func getUnderlineThickness() -> Int16 {
         return self.fontUnderlineThickness
     }
 
+    /// Returns the underline position in font units.
     public func getUnderlinePosition() -> Int16 {
         return self.fontUnderlinePosition
     }
@@ -535,6 +544,10 @@ public class Font {
         return self
     }
 
+    ///
+    /// Returns the width of the string at the current font size,
+    /// using the fallback font for characters this font does not have.
+    ///
     public func stringWidth(_ fallbackFont: Font?, _ str: String?) -> Float {
         return stringWidth(fallbackFont, self.size, str)
     }

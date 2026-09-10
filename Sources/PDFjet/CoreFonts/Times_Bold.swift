@@ -1,12 +1,25 @@
+///
+/// The metrics of Times-Bold, one of the 14 standard PDF fonts.
+/// The values are in thousandths of the font size.
+///
 public enum Times_Bold {
+    /// The PostScript name of the font
     public static let name = "Times-Bold"
+    /// The x coordinate of the lower left corner of the font bounding box
     public static let bBoxLLx: Int16 = -168
+    /// The y coordinate of the lower left corner of the font bounding box
     public static let bBoxLLy: Int16 = -218
+    /// The x coordinate of the upper right corner of the font bounding box
     public static let bBoxURx: Int16 = 1000
+    /// The y coordinate of the upper right corner of the font bounding box
     public static let bBoxURy: Int16 = 935
+    /// The position of the underline relative to the baseline
     public static let underlinePosition: Int16 = -100
+    /// The thickness of the underline
     public static let underlineThickness: Int16 = 50
+    /// The copyright notice of the font
     public static let notice = "Copyright (c) 1985, 1987, 1989, 1990, 1993, 1997 Adobe Systems Incorporated. All Rights Reserved. Times is a trademark of Linotype-Hell AG and/or its subsidiaries."
+    /// One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment
     public static let metrics: [[Int16]] = [
         [32,250,65,-55,193,-55,194,-55,196,-55,192,-55,197,-55,195,-55,84,-30,86,-45,87,-30,89,-55,221,-55,159,-55],
         [33,333],

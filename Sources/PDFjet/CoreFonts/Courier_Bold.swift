@@ -1,12 +1,25 @@
+///
+/// The metrics of Courier-Bold, one of the 14 standard PDF fonts.
+/// The values are in thousandths of the font size.
+///
 public enum Courier_Bold {
+    /// The PostScript name of the font
     public static let name = "Courier-Bold"
+    /// The x coordinate of the lower left corner of the font bounding box
     public static let bBoxLLx: Int16 = -113
+    /// The y coordinate of the lower left corner of the font bounding box
     public static let bBoxLLy: Int16 = -250
+    /// The x coordinate of the upper right corner of the font bounding box
     public static let bBoxURx: Int16 = 749
+    /// The y coordinate of the upper right corner of the font bounding box
     public static let bBoxURy: Int16 = 801
+    /// The position of the underline relative to the baseline
     public static let underlinePosition: Int16 = -100
+    /// The thickness of the underline
     public static let underlineThickness: Int16 = 50
+    /// The copyright notice of the font
     public static let notice = "Copyright (c) 1989, 1990, 1991, 1993, 1997 Adobe Systems Incorporated. All Rights Reserved."
+    /// One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment
     public static let metrics: [[Int16]] = [
         [32,600],
         [33,600],

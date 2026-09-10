@@ -5,7 +5,9 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
+/// The ICC color profile embedded in PDF/A documents.
 public class ICCBlackScaled {
+    /// The zlib compressed bytes of the profile.
     public static let profile: [UInt8] = [
 0x78,
 0x9C,

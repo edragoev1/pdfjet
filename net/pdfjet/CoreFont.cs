@@ -2,20 +2,35 @@ using System;
 using PDFjet.NET.CoreFonts;
 
 namespace PDFjet.NET {
+/// <summary>The metrics of the 14 standard PDF fonts.</summary>
 public class CoreFont {
+    /// <summary>Courier.</summary>
     public static readonly int COURIER = 1;
+    /// <summary>Courier Bold.</summary>
     public static readonly int COURIER_BOLD = 2;
+    /// <summary>Courier Oblique.</summary>
     public static readonly int COURIER_OBLIQUE = 3;
+    /// <summary>Courier Bold Oblique.</summary>
     public static readonly int COURIER_BOLD_OBLIQUE = 4;
+    /// <summary>Helvetica.</summary>
     public static readonly int HELVETICA = 5;
+    /// <summary>Helvetica Bold.</summary>
     public static readonly int HELVETICA_BOLD = 6;
+    /// <summary>Helvetica Oblique.</summary>
     public static readonly int HELVETICA_OBLIQUE = 7;
+    /// <summary>Helvetica Bold Oblique.</summary>
     public static readonly int HELVETICA_BOLD_OBLIQUE = 8;
+    /// <summary>Times Roman.</summary>
     public static readonly int TIMES_ROMAN = 9;
+    /// <summary>Times Bold.</summary>
     public static readonly int TIMES_BOLD = 10;
+    /// <summary>Times Italic.</summary>
     public static readonly int TIMES_ITALIC = 11;
+    /// <summary>Times Bold Italic.</summary>
     public static readonly int TIMES_BOLD_ITALIC = 12;
+    /// <summary>Symbol.</summary>
     public static readonly int SYMBOL = 13;
+    /// <summary>Zapf Dingbats.</summary>
     public static readonly int ZAPF_DINGBATS = 14;
 
     internal string name;
@@ -27,6 +42,7 @@ public class CoreFont {
     internal int underlineThickness;
     internal int[][] metrics;
 
+    /// <summary>Loads the metrics of the specified standard font, for example CoreFont.HELVETICA.</summary>
     public CoreFont(int coreFont) {
         switch (coreFont) {
             case 1: // CoreFont.COURIER

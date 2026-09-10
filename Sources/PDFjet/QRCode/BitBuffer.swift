@@ -21,24 +21,29 @@ class BitBuffer {
     private var length = 0
     private var increments = 32
 
+    /// Creates an empty bit buffer.
     public init() {
         buffer = [UInt8](repeating: 0, count: increments)
     }
 
+    /// Returns the underlying byte array.
     public func getBuffer() -> [UInt8]? {
         return self.buffer
     }
 
+    /// Returns the number of bits in the buffer.
     public func getLengthInBits() -> Int {
         return self.length
     }
 
+    /// Appends the lowest length bits of num, most significant bit first.
     public func put(_ num: UInt32, _ length: Int) {
         for i in 0..<length {
             put(((num >> (length - i - 1)) & 1) == 1)
         }
     }
 
+    /// Appends a single bit.
     public func put(_ bit: Bool) {
         if length == buffer.count * 8 {
             var newBuffer = [UInt8](repeating: 0, count: (buffer.count + increments))

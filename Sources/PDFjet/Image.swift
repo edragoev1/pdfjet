@@ -155,6 +155,7 @@ public class Image : Drawable {
         stream.close()
     }
 
+    /// Creates an image from an image object read from an existing PDF.
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         w = Float(obj.getValue("/Width"))
         h = Float(obj.getValue("/Height"))
@@ -241,11 +242,13 @@ public class Image : Drawable {
         return self
     }
 
+    /// Scales this image proportionally to the specified width.
     public func resizeWidth(_ width: Float) -> Image {
         let factor = width / getWidth()
         return self.scaleBy(factor, factor)
     }
 
+    /// Scales this image proportionally to the specified height.
     public func resizeHeight(_ height: Float) -> Image {
         let factor = height / getHeight()
         return self.scaleBy(factor, factor)
@@ -640,6 +643,7 @@ public class Image : Drawable {
         objNumber = obj.number
     }
 
+    /// Scales this image to fit between its location and the bottom right corner of the page.
     public func resizeToFit(_ page: Page, keepAspectRatio: Bool) {
         if keepAspectRatio {
             self.scaleBy(min((page.width - self.x)/self.w!, (page.height - self.y)/self.h!))
@@ -648,6 +652,7 @@ public class Image : Drawable {
         }
     }
 
+    /// Sets whether this image is drawn upside down.
     public func flipUpsideDown(_ flipUpsideDown: Bool) {
         self.flipUpsideDown = flipUpsideDown
     }

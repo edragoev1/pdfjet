@@ -1,3 +1,4 @@
+// Package IBMPlexMono provides the paths to the IBM Plex Mono fonts.
 package IBMPlexMono
 
 // IBMPlexMono provides the paths to the IBM Plex Mono fonts.

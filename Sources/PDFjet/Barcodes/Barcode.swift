@@ -12,13 +12,20 @@ import Foundation
 /// Please see Example_11.
 ///
 public class Barcode : Drawable {
+    /// EAN-13 barcode.
     public static let EAN_13 = 0
+    /// UPC-A barcode.
     public static let UPC_A = 1
+    /// Code 128 barcode.
     public static let CODE_128 = 2
+    /// Code 39 barcode.
     public static let CODE_39 = 3
 
+    /// Draws the barcode from left to right.
     public static let LEFT_TO_RIGHT = 0
+    /// Draws the barcode from top to bottom.
     public static let TOP_TO_BOTTOM = 1
+    /// Draws the barcode from bottom to top.
     public static let BOTTOM_TO_TOP = 2
 
     private var barcodeType = 0
@@ -833,6 +840,7 @@ public class Barcode : Drawable {
         }
     }
 
+    /// Returns the height of this barcode.
     public func getHeight() -> Float {
         if font == nil {
             return m1 * barHeightFactor

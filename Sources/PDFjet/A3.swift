@@ -11,6 +11,8 @@
 /// Executive, Letter, Legal and Tabloid see the Page class.
 ///
 public class A3 {
+    /// The A3 page size in portrait orientation.
     public static let PORTRAIT: [Float] = [595.0, 842.0]
+    /// The A3 page size in landscape orientation.
     public static let LANDSCAPE: [Float] = [1191.0, 842.0]
 }

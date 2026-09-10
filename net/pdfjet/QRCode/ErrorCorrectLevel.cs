@@ -21,9 +21,13 @@ namespace PDFjet.NET {
 /// Used to specify the error correction level for QR Codes.
 /// </summary>
 public class ErrorCorrectLevel {
+    /// <summary>Recovers about 7% of the data.</summary>
     public const int L = 1;
+    /// <summary>Recovers about 15% of the data.</summary>
     public const int M = 0;
+    /// <summary>Recovers about 25% of the data.</summary>
     public const int Q = 3;
+    /// <summary>Recovers about 30% of the data.</summary>
     public const int H = 2;
 }
 }   // End of namespace PDFjet.NET

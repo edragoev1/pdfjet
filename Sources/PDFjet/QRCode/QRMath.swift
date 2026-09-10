@@ -36,6 +36,7 @@ class QRMath {
         }
     }
 
+    /// Returns the logarithm of n in GF(256).
     public func glog(_ n: Int) -> Int {
         if n < 1 {
             Swift.print("log(" + String(describing: n) + ")")
@@ -43,6 +44,7 @@ class QRMath {
         return self.LOG_TABLE[n]
     }
 
+    /// Returns 2 raised to the power of i in GF(256).
     public func gexp(_ i: Int) -> Int {
         var n = i
         while n < 0 {

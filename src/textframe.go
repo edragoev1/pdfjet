@@ -27,6 +27,7 @@ type TextFrame struct {
 	paragraphs  [][]string
 }
 
+// NewTextFrame creates a text frame from a list of paragraphs.
 func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 	// Clone the input list
 	list := make([]string, len(inputList))
@@ -64,40 +65,48 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 	return tf
 }
 
+// SetLocation sets the location of the top left corner of this text frame.
 func (tf *TextFrame) SetLocation(x, y float32) *TextFrame {
 	tf.x = x
 	tf.y = y
 	return tf
 }
 
+// SetWidth sets the width of this text frame.
 func (tf *TextFrame) SetWidth(w float32) *TextFrame {
 	tf.w = w
 	return tf
 }
 
+// SetHeight sets the height of this text frame.
 func (tf *TextFrame) SetHeight(h float32) *TextFrame {
 	tf.h = h
 	return tf
 }
 
+// GetWidth returns the width of this text frame.
 func (tf *TextFrame) GetWidth() float32 {
 	return tf.w
 }
 
+// GetHeight returns the height of this text frame.
 func (tf *TextFrame) GetHeight() float32 {
 	return tf.h
 }
 
+// SetBorder sets whether a border is drawn around this text frame.
 func (tf *TextFrame) SetBorder(border bool) *TextFrame {
 	tf.border = border
 	return tf
 }
 
+// SetBorderColor sets the border color as a 0xRRGGBB value.
 func (tf *TextFrame) SetBorderColor(borderColor int32) *TextFrame {
 	tf.borderColor = borderColor
 	return tf
 }
 
+// HasMoreText returns true if some of the text has not been drawn yet.
 func (tf *TextFrame) HasMoreText() bool {
 	return len(tf.paragraphs) > 0
 }
@@ -110,6 +119,8 @@ func (tf *TextFrame) drawBorder(page *Page) {
 	}
 }
 
+// DrawOn draws as much of the text as fits in this frame on the page.
+// Call HasMoreText to check whether text is left for another page.
 func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
 	if page == nil {
 		return nil, fmt.Errorf("page cannot be nil")

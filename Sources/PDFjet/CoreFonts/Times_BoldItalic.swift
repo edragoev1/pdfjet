@@ -1,12 +1,25 @@
+///
+/// The metrics of Times-BoldItalic, one of the 14 standard PDF fonts.
+/// The values are in thousandths of the font size.
+///
 public enum Times_BoldItalic {
+    /// The PostScript name of the font
     public static let name = "Times-BoldItalic"
+    /// The x coordinate of the lower left corner of the font bounding box
     public static let bBoxLLx: Int16 = -200
+    /// The y coordinate of the lower left corner of the font bounding box
     public static let bBoxLLy: Int16 = -218
+    /// The x coordinate of the upper right corner of the font bounding box
     public static let bBoxURx: Int16 = 996
+    /// The y coordinate of the upper right corner of the font bounding box
     public static let bBoxURy: Int16 = 921
+    /// The position of the underline relative to the baseline
     public static let underlinePosition: Int16 = -100
+    /// The thickness of the underline
     public static let underlineThickness: Int16 = 50
+    /// The copyright notice of the font
     public static let notice = "Copyright (c) 1985, 1987, 1989, 1990, 1993, 1997 Adobe Systems Incorporated. All Rights Reserved. Times is a trademark of Linotype-Hell AG and/or its subsidiaries."
+    /// One row for each character from 32 to 255: the character code, its width, then pairs of a following character code and the kerning adjustment
     public static let metrics: [[Int16]] = [
         [32,250,65,-37,193,-37,194,-37,196,-37,192,-37,197,-37,195,-37,86,-70,87,-70,89,-70,221,-70,159,-70],
         [33,389],

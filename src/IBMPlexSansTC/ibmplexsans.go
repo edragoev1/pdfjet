@@ -1,3 +1,4 @@
+// Package IBMPlexSansTC provides the paths to the IBM Plex Sans TC fonts.
 package IBMPlexSansTC
 
 // IBMPlexSansTC provides the paths to the IBM Plex Sans TC fonts.

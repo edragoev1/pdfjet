@@ -3,6 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
+// Package pdf417 creates PDF417 barcodes.
 package pdf417
 
 import (

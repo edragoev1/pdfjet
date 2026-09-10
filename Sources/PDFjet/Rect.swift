@@ -6,6 +6,7 @@
  */
 import Foundation
 
+/// A rectangle that can be drawn on a page.
 public class Rect : Drawable {
     private var x: Float = 0.0
     private var y: Float = 0.0
@@ -75,12 +76,14 @@ public class Rect : Drawable {
         return self
     }
 
+    /// Sets the fill color from an array of red, green and blue values, or nil for no fill.
     @discardableResult
     public func setFillColor(_ fillColor: [Float]?) -> Rect {
         self.fillColor = fillColor
         return self
     }
 
+    /// Sets the fill color as a 0xRRGGBB value.
     @discardableResult
     public func setFillColor(_ color: Int32) -> Rect {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -90,6 +93,7 @@ public class Rect : Drawable {
         return self
     }
 
+    /// Sets the border color as a 0xRRGGBB value.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Rect {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -99,12 +103,14 @@ public class Rect : Drawable {
         return self
     }
 
+    /// Sets the border color from an array of red, green and blue values.
     @discardableResult
     public func setBorderColor(_ borderColor: [Float]?) -> Rect {
         self.borderColor = borderColor!
         return self
     }
 
+    /// Sets the border width.
     @discardableResult
     public func setBorderWidth(_ borderWidth: Float) -> Rect {
         self.borderWidth = borderWidth
@@ -192,6 +198,7 @@ public class Rect : Drawable {
 //         return self
 //     }
 
+    /// Sets the dash pattern of the border.
     @discardableResult
     public func setBorderPattern(_ borderPattern: String) -> Rect {
         self.borderPattern = borderPattern

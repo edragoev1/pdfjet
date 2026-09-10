@@ -160,6 +160,7 @@ public class Path : Drawable {
         return self.lineJoinStyle
     }
 
+    /// Adds x and y to the location of this path.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         xBox += x

@@ -6,9 +6,11 @@
  */
 import Foundation
 
+/// Generates a unique ID with the Salsa20 function.
 public class Salsa20 {
     private var id: String = ""
 
+    /// Computes a new ID.
     public init() {
 /*
 Test input:
@@ -111,6 +113,7 @@ The expected output:
         return hexString
     }
 
+    /// Returns the ID as 32 hexadecimal characters.
     public func getID() -> String {
         return self.id
     }

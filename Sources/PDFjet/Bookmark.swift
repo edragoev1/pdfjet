@@ -32,6 +32,7 @@ public class Bookmark {
     var objNumber = 0
     var prefix: String?
 
+    /// Creates the root bookmark of the document outline.
     public init(_ pdf: PDF) {
         pdf.toc = self
     }
@@ -47,6 +48,7 @@ public class Bookmark {
         self.title = title
     }
 
+    /// Adds a bookmark with the specified title that points to the page, and returns the new bookmark.
     @discardableResult
     public func addBookmark(
             _ page: Page,
@@ -71,18 +73,22 @@ public class Bookmark {
         return bookmark
     }
 
+    /// Returns the destination key of this bookmark.
     public func getDestKey() -> String {
         return self.key!
     }
 
+    /// Returns the title of this bookmark.
     public func getTitle() -> String {
         return self.title!
     }
 
+    /// Returns the parent bookmark.
     public func getParent() -> Bookmark? {
         return self.parent
     }
 
+    /// Numbers this bookmark by its position, for example 1.2, and adds the number to the title.
     @discardableResult
     public func autoNumber(_ text: TextLine) -> Bookmark {
         var bm = getPrevBookmark()

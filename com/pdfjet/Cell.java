@@ -13,31 +13,54 @@ import com.pdfjet.barcodes.*;
  * See the Table class for more information.
  */
 public class Cell {
+    /** The font of the cell text. */
     protected Font font;
+    /** The font used for characters that the primary font does not have. */
     protected Font fallbackFont;
+    /** The font size. */
     protected float fontSize;
+    /** The cell text. */
     protected String text;
+    /** The image drawn in this cell. */
     protected Image image;
+    /** The barcode drawn in this cell. */
     protected Barcode barcode;
+    /** The text box drawn in this cell. */
     protected TextBox textBox;
+    /** The text block drawn in this cell. */
     protected TextBlock textBlock;
+    /** The text column drawn in this cell. */
     protected TextColumn textColumn;
+    /** The point drawn in this cell. */
     protected Point point;
+    /** The composite text line drawn in this cell. */
     protected CompositeTextLine compositeTextLine;
+    /** The width of this cell. */
     protected float width = 75f;     // TODO: Rename to cellWidth
+    /** The top padding. */
     protected float topPadding = 2f;
+    /** The bottom padding. */
     protected float bottomPadding = 2f;
+    /** The left padding. */
     protected float leftPadding = 2f;
+    /** The right padding. */
     protected float rightPadding = 2f;
 
+    /** The width of the cell borders. */
     protected float lineWidth = 0f;  // TODO: Rename to borderWidth
 
+    /** The background color as an RGB array, or null. */
     protected float[] backgroundColor;
+    /** The text color as an RGB array. */
     protected float[] textColor = new float[] {0f, 0f, 0f};
+    /** The stroke width. */
     protected float strokeWidth;
+    /** The stroke color as an RGB array. */
     protected float[] strokeColor;
+    /** The stroke dash pattern. */
     protected String strokeDashPattern = "[] 0";    // Solid
 
+    /** The number of columns this cell spans. */
     protected int colspan = 1;
 
     // Cell properties
@@ -529,10 +552,20 @@ public class Cell {
         return this.backgroundColor;
     }
 
+    /**
+     * Sets the properties bit field: colspan, borders, text alignment and decoration.
+     *
+     * @param properties the properties.
+     */
     protected void setProperties(int properties) {
         this.properties = properties;
     }
 
+    /**
+     * Returns the properties bit field: colspan, borders, text alignment and decoration.
+     *
+     * @return the properties.
+     */
     protected int getProperties() {
         return this.properties;
     }
@@ -703,6 +736,13 @@ public class Cell {
 
     /**
      * Draws the point, text and borders of this cell.
+     *
+     * @param page the page to draw on.
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width of the cell.
+     * @param h the height of the cell.
+     * @throws Exception if an input or output exception occurred.
      */
     protected void drawOn(
             Page page,

@@ -1,5 +1,6 @@
 import Foundation
 
+/// The base class of the circle, square, polygon and text annotations.
 public class BaseAnnotation: Drawable {
     var annotationType: String?
     var point1: [Float] = [0, 0]
@@ -16,27 +17,32 @@ public class BaseAnnotation: Drawable {
     var altDescription: String?
     weak var container: Container?
 
+    /// Creates an annotation.
     public init() {
     }
 
+    /// Sets the location of this annotation.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.point1 = [x, y]
         return self
     }
 
+    /// Sets the size of this annotation, measured from its location.
     @discardableResult
     public func setSize(_ width: Float, _ height: Float) -> BaseAnnotation {
         self.point2 = [point1[0] + width, point1[1] + height]
         return self
     }
 
+    /// Sets the fill color from an array of red, green and blue values.
     @discardableResult
     public func setFillColor(_ color: [Float]) -> BaseAnnotation {
         self.fillColor = color
         return self
     }
 
+    /// Sets the fill color as a 0xRRGGBB value.
     @discardableResult
     public func setFillColor(_ color: Int32) -> BaseAnnotation {
         let r = Float((color >> 16) & 0xff) / 255.0
@@ -46,24 +52,28 @@ public class BaseAnnotation: Drawable {
         return self
     }
 
+    /// Sets the transparency of this annotation, from 0.0 to 1.0.
     @discardableResult
     public func setTransparency(_ transparency: Float) -> BaseAnnotation {
         self.transparency = transparency
         return self
     }
 
+    /// Sets the title of this annotation.
     @discardableResult
     public func setTitle(_ title: String?) -> BaseAnnotation {
         self.title = title
         return self
     }
 
+    /// Sets the text contents of this annotation.
     @discardableResult
     public func setContents(_ contents: String?) -> BaseAnnotation {
         self.contents = contents
         return self
     }
 
+    /// Rotates this annotation together with the container it is in.
     public func rotate(_ degrees: Double) {
         if container == nil { return }
         var center = container!.getRotationCenter()
@@ -85,6 +95,7 @@ public class BaseAnnotation: Drawable {
         }
     }
 
+    /// Adds this annotation to the specified page.
     public func drawOn(_ page: Page?) -> [Float] {
         page!.addAnnotation(Annotation(
             annotationType,

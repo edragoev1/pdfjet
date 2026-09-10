@@ -21,6 +21,7 @@ namespace PDFjet.NET {
 /// </code>
 /// </summary>
 public class Page {
+    /// <summary>Pass to the Page constructor to create a page that is not added to the PDF right away.</summary>
     public static bool DETACHED = false;
 
     internal PDF pdf;
@@ -108,6 +109,7 @@ public class Page {
         }
     }
 
+    /// <summary>Creates a page from a page object read from an existing PDF.</summary>
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
         this.structures = new List<StructElem>();
@@ -127,6 +129,7 @@ public class Page {
         }
     }
 
+    /// <summary>Finishes a page read from an existing PDF by adding its new content to the objects.</summary>
     public void Complete(List<PDFobj> objects) {
         RestoreGraphicsState();
         pageObj.AddContent(GetContent(), objects);
@@ -153,14 +156,17 @@ public class Page {
         return obj;
     }
 
+    /// <summary>Adds a core font to the resources of this page and returns the font.</summary>
     public Font AddResource(int coreFont, List<PDFobj> objects) {
         return pageObj.AddResource(coreFont, objects);
     }
 
+    /// <summary>Adds an image to the resources of this page.</summary>
     public void AddResource(Image image, List<PDFobj> objects) {
         pageObj.AddResource(image, objects);
     }
 
+    /// <summary>Adds a font to the resources of this page.</summary>
     public void AddResource(Font font, List<PDFobj> objects) {
         pageObj.AddResource(font, objects);
     }
@@ -250,10 +256,12 @@ public class Page {
         return this;
     }
 
+    /// <summary>Draws the text line centered at the top of the page.</summary>
     public float[] AddHeader(TextLine textLine) {
         return AddHeader(textLine, 1.5f*textLine.font.GetAscent(textLine.fontSize));
     }
 
+    /// <summary>Draws the text line centered at the top of the page, with its baseline at the specified offset.</summary>
     public float[] AddHeader(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, offset);
         float[] xy = textLine.DrawOn(this);
@@ -261,15 +269,18 @@ public class Page {
         return xy;
     }
 
+    /// <summary>Draws the text line centered at the bottom of the page.</summary>
     public float[] AddFooter(TextLine textLine) {
         return AddFooter(textLine, textLine.font.GetAscent());
     }
 
+    /// <summary>Draws the text line centered at the bottom of the page, with its baseline at the specified offset from the bottom.</summary>
     public float[] AddFooter(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, GetHeight() - offset);
         return textLine.DrawOn(this);
     }
 
+    /// <summary>Draws the text as a watermark diagonally across the page.</summary>
     public void AddWatermark(Font font, String text) {
         float hypotenuse = (float)
                 Math.Sqrt(this.height * this.height + this.width * this.width);
@@ -286,6 +297,7 @@ public class Page {
         watermark.DrawOn(this);
     }
 
+    /// <summary>Sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.</summary>
     public void RotateBy(double rotateDegrees) {
         if (rotateDegrees == 0 ||
             rotateDegrees == 90 ||
@@ -295,12 +307,14 @@ public class Page {
         }
     }
 
+    /// <summary>Flips the y axis, so the origin is the top left corner of the page and y grows downward.</summary>
     public void InvertYAxis() {
         Append("1 0 0 -1 0 ");
         Append(this.height);
         Append(" cm\n");
     }
 
+    /// <summary>Returns the content stream of this page.</summary>
     public byte[] GetContent() {
         return buf.ToArray();
     }
@@ -321,6 +335,7 @@ public class Page {
         return height;
     }
 
+    /// <summary>Returns the current stroke dash pattern.</summary>
     public String GetStrokeDashPattern() {
         return this.strokeDashPattern;
     }
@@ -342,6 +357,7 @@ public class Page {
         StrokePath();
     }
 
+    /// <summary>Draws the string in black. The fallback font is used for characters the main font does not have.</summary>
     public void DrawString(
             Font font,
             Font fallbackFont,
@@ -352,6 +368,10 @@ public class Page {
         DrawString(font, fallbackFont, fontSize, str, x, y, new float[] {0f, 0f, 0f}, null);
     }
 
+    /// <summary>
+    /// Draws the string in the specified 0xRRGGBB color, highlighting the words in the colors map.
+    /// The fallback font is used for characters the main font does not have.
+    /// </summary>
     public void DrawString(
             Font font,
             Font fallbackFont,
@@ -375,9 +395,12 @@ public class Page {
     /// </summary>
     /// <param name="font">the Thai or Hebrew font.</param>
     /// <param name="fallbackFont">the fallback font.</param>
+    /// <param name="fontSize">the font size.</param>
     /// <param name="str">the string to be drawn.</param>
     /// <param name="x">the x coordinate.</param>
     /// <param name="y">the y coordinate.</param>
+    /// <param name="textColor">the text color as an RGB array.</param>
+    /// <param name="colors">the words to highlight and their colors.</param>
     public void DrawString(
             Font font,
             Font fallbackFont,
@@ -416,6 +439,7 @@ public class Page {
     /// The baseline of the leftmost character is at position (x, y) on the page.
     /// </summary>
     /// <param name="font">the font to use.</param>
+    /// <param name="fontSize">the font size.</param>
     /// <param name="str">the string to be drawn.</param>
     /// <param name="x">the x coordinate.</param>
     /// <param name="y">the y coordinate.</param>
@@ -428,6 +452,7 @@ public class Page {
         DrawString(font, (float) fontSize, str, (float) x, (float) y);
     }
 
+    /// <summary>Draws the string in black with its baseline at the specified location.</summary>
     public void DrawString(
             Font font,
             float fontSize,
@@ -443,9 +468,12 @@ public class Page {
     /// The baseline of the leftmost character is at position (x, y) on the page.
     /// </summary>
     /// <param name="font">the font to use.</param>
+    /// <param name="fontSize">the font size.</param>
     /// <param name="str">the string to be drawn.</param>
     /// <param name="x">the x coordinate.</param>
     /// <param name="y">the y coordinate.</param>
+    /// <param name="textColor">the text color as an RGB array.</param>
+    /// <param name="highlightColors">the words to highlight and their colors.</param>
     public void DrawString(
             Font font,
             float fontSize,
@@ -871,6 +899,7 @@ public class Page {
         return this;
     }
 
+    /// <summary>Returns the current pen width.</summary>
     public float GetPenWidth() {
         return this.penWidth;
     }
@@ -1343,11 +1372,30 @@ public class Page {
         Append(" c\n");
     }
 
+    /// <summary>
+    /// Adds a circular arc to the current path.
+    /// </summary>
+    /// <param name="x">the x coordinate of the center.</param>
+    /// <param name="y">the y coordinate of the center.</param>
+    /// <param name="r">the radius.</param>
+    /// <param name="startAngle">the start angle in degrees.</param>
+    /// <param name="sweepDegrees">the sweep angle in degrees.</param>
+    /// <returns>the control points and the end point of the last curve segment.</returns>
     public float[] DrawCircularArc(
             float x, float y, float r, float startAngle, float sweepDegrees) {
         return DrawArc(x, y, r, r, startAngle, sweepDegrees);
     }
 
+    /// <summary>
+    /// Adds an elliptical arc to the current path.
+    /// </summary>
+    /// <param name="x">the x coordinate of the center.</param>
+    /// <param name="y">the y coordinate of the center.</param>
+    /// <param name="rx">the horizontal radius.</param>
+    /// <param name="ry">the vertical radius.</param>
+    /// <param name="startAngle">the start angle in degrees.</param>
+    /// <param name="sweepDegrees">the sweep angle in degrees.</param>
+    /// <returns>the control points and the end point of the last curve segment.</returns>
     public float[] DrawArc(
             float x,
             float y,
@@ -1417,6 +1465,7 @@ public class Page {
         Append("c\n");
     }
 
+    /// <summary>Sets the font and font size used to draw text.</summary>
     public Page SetTextFont(Font font, float fontSize) {
         if (font.fontID != null) {
             Append('/');
@@ -1434,6 +1483,7 @@ public class Page {
     // Code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
     // <<
+    /// <summary>Draws a rectangle with rounded corners.</summary>
     public void DrawRectRoundCorners(
             float x,
             float y,
@@ -1487,6 +1537,7 @@ public class Page {
         Append("n\n");  // Close the path without painting it.
     }
 
+    /// <summary>Sets the clipping path to the specified rectangle.</summary>
     public void ClipRect(float x, float y, float w, float h) {
         MoveTo(x, y);
         LineTo(x + w, y);
@@ -1730,6 +1781,7 @@ public class Page {
         RestoreGraphicsState();
     }
 
+    /// <summary>Draws the content stream scaled and placed at the specified location.</summary>
     public void DrawContents(
             byte[] content,
             float h,    // The height of the graphics object in points.
@@ -1802,7 +1854,10 @@ public class Page {
     /// <summary>
     /// Draws a string at the specified location.
     /// </summary>
+    /// <param name="font">the font.</param>
     /// <param name="str">the string.</param>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
     internal void DrawTextLine(Font font, String str, float x, float y) {
         Append("BT\n");
         SetTextLocation(x, y);

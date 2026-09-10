@@ -68,6 +68,7 @@ func (c *Container) SetRotationClockwise(degrees float64) *Container {
 	return c
 }
 
+// GetRotationCenter returns the center of this container, which it rotates around.
 func (c *Container) GetRotationCenter() [2]float32 {
 	return [2]float32{c.X + c.Width/2.0, c.Y + c.Height/2.0}
 }
@@ -98,6 +99,7 @@ func (c *Container) SetScaleFactorXY(sx, sy float32) *Container {
 	return c
 }
 
+// SetBorderColor adds a border in the specified 0xRRGGBB color around this container.
 func (c *Container) SetBorderColor(borderColor int32) *Container {
 	rect := NewRect(0.0, 0.0, c.Width, c.Height)
 	rect.SetBorderColor(borderColor)
@@ -105,6 +107,7 @@ func (c *Container) SetBorderColor(borderColor int32) *Container {
 	return c
 }
 
+// AddBorder adds a black border around this container.
 func (c *Container) AddBorder() {
 	rect := NewRect(0.0, 0.0, c.Width, c.Height)
 	rect.SetBorderColor(color.Black)

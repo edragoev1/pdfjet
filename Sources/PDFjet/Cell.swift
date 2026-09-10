@@ -163,6 +163,7 @@ public class Cell {
         return self.image
     }
 
+    /// Sets the barcode drawn in this cell and clears the cell text.
     @discardableResult
     public func setBarcode(_ barcode: Barcode) -> Cell {
         self.barcode = barcode
@@ -305,6 +306,7 @@ public class Cell {
         return self
     }
 
+    /// Returns the left padding.
     public func getLeftPadding() -> Float {
         return self.leftPadding
     }
@@ -321,6 +323,7 @@ public class Cell {
         return self
     }
 
+    /// Returns the right padding.
     public func getRightPadding() -> Float {
         return self.rightPadding
     }
@@ -369,6 +372,7 @@ public class Cell {
         return cellHeight
     }
 
+    /// Sets the text color as a 0xRRGGBB value.
     @discardableResult
     public func setTextColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -378,22 +382,26 @@ public class Cell {
         return self
     }
 
+    /// Sets the text color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setTextColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.textColor = [r, g, b]
         return self
     }
 
+    /// Sets the text color from an array of red, green and blue values.
     @discardableResult
     public func setTextColor(_ textColor: [Float]) -> Cell {
         self.textColor = textColor
         return self
     }
 
+    /// Returns the text color.
     public func getTextColor() -> [Float] {
         return self.textColor
     }
 
+    /// Sets the background color as a 0xRRGGBB value.
     @discardableResult
     public func setBackgroundColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -404,6 +412,7 @@ public class Cell {
         return self
     }
 
+    /// Sets the background color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setBackgroundColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.backgroundColor = [r, g, b]
@@ -411,6 +420,7 @@ public class Cell {
         return self
     }
 
+    /// Sets the background color from an array of red, green and blue values.
     @discardableResult
     public func setBackgroundColor(_ backgroundColor: [Float]) -> Cell {
         self.backgroundColor = backgroundColor
@@ -418,10 +428,12 @@ public class Cell {
         return self
     }
 
+    /// Returns the background color.
     public func getBackgroundColor() -> [Float] {
         return self.backgroundColor
     }
 
+    /// Sets the stroke color as a 0xRRGGBB value.
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
@@ -431,22 +443,26 @@ public class Cell {
         return self
     }
 
+    /// Sets the stroke color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.strokeColor = [r, g, b]
         return self
     }
 
+    /// Sets the stroke color from an array of red, green and blue values.
     @discardableResult
     public func setStrokeColor(_ rgbColor: [Float]?) -> Cell {
         self.strokeColor = rgbColor
         return self
     }
 
+    /// Returns the stroke color.
     public func getStrokeColor() -> [Float]? {
         return self.strokeColor
     }
 
+    /// Sets the stroke width.
     @discardableResult
     public func setLineWidth(_ width: Float) -> Cell {
         self.strokeWidth = width
@@ -491,6 +507,7 @@ public class Cell {
         return (self.properties & 0x0000FFFF)
     }
 
+    /// Sets whether all four borders of this cell are drawn.
     @discardableResult
     public func setAllBorders(_ visible: Bool) -> Cell {
         self.topBorder = visible
@@ -500,42 +517,50 @@ public class Cell {
         return self
     }
 
+    /// Sets whether the top border of this cell is drawn.
     @discardableResult
     public func setTopBorder(_ topBorder: Bool) -> Cell {
         self.topBorder = topBorder
         return self
     }
 
+    /// Returns true if the top border of this cell is drawn.
     public func getTopBorder() -> Bool {
         return self.topBorder
     }
 
+    /// Sets whether the bottom border of this cell is drawn.
     @discardableResult
     public func setBottomBorder(_ bottomBorder: Bool) -> Cell {
         self.bottomBorder = bottomBorder
         return self
     }
 
+    /// Returns true if the bottom border of this cell is drawn.
     public func getBottomBorder() -> Bool {
         return self.bottomBorder
     }
 
+    /// Sets whether the left border of this cell is drawn.
     @discardableResult
     public func setLeftBorder(_ leftBorder: Bool) -> Cell {
         self.leftBorder = leftBorder
         return self
     }
 
+    /// Returns true if the left border of this cell is drawn.
     public func getLeftBorder() -> Bool {
         return self.leftBorder
     }
 
+    /// Sets whether the right border of this cell is drawn.
     @discardableResult
     public func setRightBorder(_ rightBorder: Bool) -> Cell {
         self.rightBorder = rightBorder
         return self
     }
 
+    /// Returns true if the right border of this cell is drawn.
     public func getRightBorder() -> Bool {
         return self.rightBorder
     }
@@ -628,6 +653,7 @@ public class Cell {
         return self.strikeout
     }
 
+    /// Sets the URI opened when this cell is clicked.
     @discardableResult
     public func setURIAction(_ uri: String) -> Cell {
         self.uri = uri
@@ -883,6 +909,7 @@ public class Cell {
         page.addEMC()
     }
 
+    /// Returns the text block drawn in this cell.
     public func getTextBlock() -> TextBlock? {
         return textBlock
     }

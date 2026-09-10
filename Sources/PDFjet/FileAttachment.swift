@@ -19,11 +19,13 @@ public class FileAttachment : Drawable {
     var y: Float = 0.0
     var h: Float = 24.0
 
+    /// Creates an attachment for the embedded file.
     public init(_ pdf: PDF, _ file: EmbeddedFile) {
         self.pdf = pdf
         self.embeddedFile = file
     }
 
+    /// Sets the location of the attachment icon on the page.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
@@ -31,36 +33,42 @@ public class FileAttachment : Drawable {
         return self
     }
 
+    /// Uses the push pin icon.
     @discardableResult
     public func setIconPushPin() -> FileAttachment {
         self.icon = "PushPin"
         return self
     }
 
+    /// Uses the paperclip icon.
     @discardableResult
     public func setIconPaperclip() -> FileAttachment {
         self.icon = "Paperclip"
         return self
     }
 
+    /// Sets the height of the icon.
     @discardableResult
     public func setIconSize(_ height: Float) -> FileAttachment {
         self.h = height
         return self
     }
 
+    /// Sets the title of this attachment.
     @discardableResult
     public func setTitle(_ title: String) -> FileAttachment {
         self.title = title
         return self
     }
 
+    /// Sets the description of this attachment.
     @discardableResult
     public func setDescription(_ description: String) -> FileAttachment {
         self.contents = description
         return self
     }
 
+    /// Adds this attachment to the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let annotation = Annotation(

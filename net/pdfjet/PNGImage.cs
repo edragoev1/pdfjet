@@ -136,26 +136,32 @@ public class PNGImage {
         deflatedImageData = Compressor.Deflate(imageData);
     }
 
+    /// <summary>Returns the image width.</summary>
     public int GetWidth() {
         return this.w;
     }
 
+    /// <summary>Returns the image height.</summary>
     public int GetHeight() {
         return this.h;
     }
 
+    /// <summary>Returns the PNG color type.</summary>
     public int GetColorType() {
         return this.colorType;
     }
 
+    /// <summary>Returns the bit depth.</summary>
     public int GetBitDepth() {
         return this.bitDepth;
     }
 
+    /// <summary>Returns the compressed image data.</summary>
     public byte[] GetData() {
         return this.deflatedImageData;
     }
 
+    /// <summary>Returns the compressed alpha channel data.</summary>
     public byte[] GetAlpha() {
         return this.deflatedAlphaData;
     }

@@ -47,6 +47,8 @@ func NewTable() *Table {
 	return table
 }
 
+// NewTableFromFile creates a table from a delimited text file.
+// The first line uses f1 and the other lines use f2.
 func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 	table := new(Table)
 	table.numOfHeaderRows = 1
@@ -765,6 +767,7 @@ func (table *Table) contains(visible []int, index int) bool {
 	return false
 }
 
+// SetVisibleColumns keeps only the columns with the specified indexes.
 func (table *Table) SetVisibleColumns(visible ...int) *Table {
 	list := make([][]*Cell, 0)
 	for _, row := range table.tableData {
@@ -780,6 +783,7 @@ func (table *Table) SetVisibleColumns(visible ...int) *Table {
 	return table
 }
 
+// SetFirstPageTopMargin sets the top margin on the first page when the table spans several pages.
 func (table *Table) SetFirstPageTopMargin(firstPageTopMargin float32) *Table {
 	table.firstPageTopMargin = firstPageTopMargin
 	return table

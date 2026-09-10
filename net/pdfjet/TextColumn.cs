@@ -61,6 +61,7 @@ public class TextColumn : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the spacing between the lines.</summary>
     public TextColumn SetLineSpacing(float lineSpacing) {
         this.lineSpacing = lineSpacing;
         return this;
@@ -76,11 +77,13 @@ public class TextColumn : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the space between paragraphs.</summary>
     public TextColumn SetParagraphSpacing(float paragraphSpacing) {
         this.paragraphSpacing = paragraphSpacing;
         return this;
     }
 
+    /// <summary>Sets the space between paragraphs.</summary>
     public TextColumn SetParagraphSpacing(double paragraphSpacing) {
         this.paragraphSpacing = (float) paragraphSpacing;
         return this;
@@ -149,15 +152,18 @@ public class TextColumn : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the width of this text column.</summary>
     public float GetWidth() {
         return this.w;
     }
 
+    /// <summary>Sets the height of this text column.</summary>
     public TextColumn SetHeight(float h) {
         this.h = h;
         return this;
     }
 
+    /// <summary>Returns the height of this text column.</summary>
     public float GetHeight() {
         return this.h;
     }

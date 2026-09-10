@@ -6,6 +6,7 @@
  */
 
 class L5ECC {
+/// The Reed-Solomon error correction coefficients for level 5.
 public static let table: [Int] = [
 539,422,  6, 93,862,771,453,106,610,287,107,505,733,877,381,612,
 723,476,462,172,430,609,858,822,543,376,511,400,672,762,283,184,

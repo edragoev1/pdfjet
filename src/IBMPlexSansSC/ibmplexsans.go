@@ -1,3 +1,4 @@
+// Package IBMPlexSansSC provides the paths to the IBM Plex Sans SC fonts.
 package IBMPlexSansSC
 
 // IBMPlexSansSC provides the paths to the IBM Plex Sans SC fonts.

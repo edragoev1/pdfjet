@@ -1,3 +1,4 @@
+// Package corefont defines the metrics of the 14 standard PDF fonts.
 package corefont
 
 // CoreFont structure.

@@ -1,3 +1,4 @@
+// Package IBMPlexSansHebrew provides the paths to the IBM Plex Sans Hebrew fonts.
 package IBMPlexSansHebrew
 
 // IBMPlexSansHebrew provides the paths to the IBM Plex Sans Hebrew fonts.

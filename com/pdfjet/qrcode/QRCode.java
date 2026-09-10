@@ -138,8 +138,11 @@ final public class QRCode implements Drawable {
     }
 
     /**
+     *  Returns true if the module at the specified row and column is dark.
+     *
      *  @param row the row.
      *  @param col the column.
+     *  @return true if the module is dark.
      */
     protected boolean isDark(int row, int col) {
         if (modules[row][col] != null) {
@@ -149,10 +152,20 @@ final public class QRCode implements Drawable {
         }
     }
 
+    /**
+     * Returns the number of modules in each row and column.
+     *
+     * @return the module count.
+     */
     protected int getModuleCount() {
         return moduleCount;
     }
 
+    /**
+     * Returns the mask pattern with the lowest penalty score.
+     *
+     * @return the mask pattern.
+     */
     protected int getBestMaskPattern() {
         int minLostPoint = 0;
         int pattern = 0;
@@ -167,6 +180,12 @@ final public class QRCode implements Drawable {
         return pattern;
     }
 
+    /**
+     * Places the patterns and data in the modules using the specified mask pattern.
+     *
+     * @param test true when trying out a mask pattern.
+     * @param maskPattern the mask pattern.
+     */
     protected void make(boolean test, int maskPattern) {
         modules = new Boolean[moduleCount][moduleCount];
         setupPositionProbePattern(0, 0);

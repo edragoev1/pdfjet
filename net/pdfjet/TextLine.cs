@@ -98,6 +98,7 @@ public class TextLine : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the location where this text line is drawn on the page.</summary>
     public TextLine SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
@@ -130,6 +131,7 @@ public class TextLine : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the font size.</summary>
     public float GetFontSize() {
         return this.fontSize;
     }
@@ -152,11 +154,13 @@ public class TextLine : IDrawable {
         return this.fallbackFont;
     }
 
+    /// <summary>Sets the text color as a 0xRRGGBB value. Use SetTextColor instead.</summary>
     [Obsolete]
     public TextLine SetColor(int color) {
         return SetTextColor(color);
     }
 
+    /// <summary>Sets the text color as a 0xRRGGBB value. Color.transparent clears it.</summary>
     public TextLine SetTextColor(int color) {
         if (color == Color.transparent) {
             this.textColor = null;
@@ -169,20 +173,24 @@ public class TextLine : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the text color from red, green and blue values between 0.0 and 1.0.</summary>
     public TextLine SetTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
         return this;
     }
 
+    /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public TextLine SetTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
         return this;
     }
 
+    /// <summary>Returns the text color.</summary>
     public float[] GetTextColor() {
         return textColor;
     }
 
+    /// <summary>Sets the color of the underline and strikeout lines as a 0xRRGGBB value.</summary>
     public TextLine SetLineColor(int color) {
         if (color == Color.transparent) {
             this.textColor = null;
@@ -200,20 +208,24 @@ public class TextLine : IDrawable {
 //        return this;
 //    }
 
+    /// <summary>Sets the color of the underline and strikeout lines from an array of red, green and blue values.</summary>
     public TextLine SetLineColor(float[] rgbColor) {
         this.lineColor = rgbColor;
         return this;
     }
 
+    /// <summary>Returns the color of the underline and strikeout lines.</summary>
     public float[] GetLineColor() {
         return lineColor;
     }
 
+    /// <summary>Sets the colors used to highlight words in the text.</summary>
     public TextLine SetColorMap(Dictionary<String, int> colorMap) {
         this.colorMap = colorMap;
         return this;
     }
 
+    /// <summary>Returns the colors used to highlight words in the text.</summary>
     public Dictionary<String, int> GetColorMap() {
         return this.colorMap;
     }
@@ -393,11 +405,13 @@ public class TextLine : IDrawable {
         return verticalOffset;
     }
 
+    /// <summary>Sets the language of the text, for example "en-US".</summary>
     public TextLine SetLanguage(String language) {
         this.language = language;
         return this;
     }
 
+    /// <summary>Returns the language of the text.</summary>
     public String GetLanguage() {
         return this.language;
     }
@@ -412,30 +426,36 @@ public class TextLine : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the alternate description of this text line.</summary>
     public String GetAltDescription() {
         return altDescription;
     }
 
+    /// <summary>Sets the language of the link annotation.</summary>
     public TextLine SetURILanguage(String uriLanguage) {
         this.uriLanguage = uriLanguage;
         return this;
     }
 
+    /// <summary>Sets the alternate description of the link annotation.</summary>
     public TextLine SetURIAltDescription(String uriAltDescription) {
         this.uriAltDescription = uriAltDescription;
         return this;
     }
 
+    /// <summary>Sets the actual text of the link annotation.</summary>
     public TextLine SetURIActualText(String uriActualText) {
         this.uriActualText = uriActualText;
         return this;
     }
 
+    /// <summary>Sets the structure element type, for example StructElem.P or StructElem.H1.</summary>
     public TextLine SetStructureType(String structureType) {
         this.structureType = structureType;
         return this;
     }
 
+    /// <summary>Moves this text line down by the leading and returns the new y coordinate.</summary>
     public float Advance(float leading) {
         this.y += leading;
         return this.y;

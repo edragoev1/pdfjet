@@ -61,12 +61,14 @@ public class TextColumn : Drawable {
         return self
     }
 
+    /// Sets the spacing between the lines.
     @discardableResult
     public func setLineSpacing(_ lineSpacing: Float) -> TextColumn {
         self.lineSpacing = lineSpacing
         return self
     }
 
+    /// Sets the space between paragraphs.
     @discardableResult
     public func setParagraphSpacing(_ paragraphSpacing: Float) -> TextColumn {
         self.paragraphSpacing = paragraphSpacing

@@ -32,8 +32,11 @@ public class Barcode : IDrawable {
     /// </summary>
     public static readonly int CODE_39 = 3;
 
+    /// <summary>Draws the barcode from left to right.</summary>
     public static readonly int LEFT_TO_RIGHT = 0;
+    /// <summary>Draws the barcode from top to bottom.</summary>
     public static readonly int TOP_TO_BOTTOM = 1;
+    /// <summary>Draws the barcode from bottom to top.</summary>
     public static readonly int BOTTOM_TO_TOP = 2;
 
     private int barcodeType = 0;

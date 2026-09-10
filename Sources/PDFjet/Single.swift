@@ -9,5 +9,6 @@
 /// Please see Example_45
 ///
 public class Single {
+    /// A single space.
     public static let space: String = " "
 }

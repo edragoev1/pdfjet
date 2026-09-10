@@ -72,6 +72,7 @@ func (rect *Rect) SetSize(w, h float32) *Rect {
 	return rect
 }
 
+// SetBorderColor sets the border color as a 0xRRGGBB value.
 func (rect *Rect) SetBorderColor(color int32) *Rect {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -88,6 +89,7 @@ func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) *Rect {
 	return rect
 }
 
+// SetFillColor sets the fill color as a 0xRRGGBB value.
 func (rect *Rect) SetFillColor(color int32) *Rect {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -96,6 +98,7 @@ func (rect *Rect) SetFillColor(color int32) *Rect {
 	return rect
 }
 
+// SetFillColorRGB sets the fill color from red, green and blue values.
 func (rect *Rect) SetFillColorRGB(fillColor [3]float32) *Rect {
 	rect.fillColor = fillColor
 	rect.hasFillColor = true
@@ -109,6 +112,7 @@ func (rect *Rect) SetBorderWidth(borderWidth float32) *Rect {
 	return rect
 }
 
+// SetBorderPattern sets the line dash pattern of the border.
 func (rect *Rect) SetBorderPattern(borderPattern string) *Rect {
 	rect.borderPattern = borderPattern
 	return rect

@@ -1,3 +1,4 @@
+/// The operators that paint a path, for example in Page.drawPath.
 public enum PathOperator: String {
     case stroke = "S"                         // Stroke the path
     case closeAndStroke = "s"                 // Close and then stroke the path
