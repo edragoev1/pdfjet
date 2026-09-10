@@ -54,9 +54,11 @@ sudo apt install gcc
 
 ## Documentation
 
-The API references are published at <https://edragoev1.github.io/pdfjet/>. The
-`Documentation` GitHub Actions workflow rebuilds and publishes them on every push
-to `master`, so the generated HTML is not kept in git.
+The API references and the example pages are published at
+<https://edragoev1.github.io/pdfjet/>. The `Documentation` GitHub Actions
+workflow rebuilds and publishes the site on every push to `master`, so the
+generated HTML is not kept in git. This needs the repository's Pages source
+(Settings > Pages) set to GitHub Actions.
 
 To build them locally, `./generate-documentation.sh` runs Javadoc for the Java
 port into `docs/java`, and [DocFX](https://dotnet.github.io/docfx/) for the C#

@@ -69,6 +69,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   workflow (`.github/workflows/docs.yml`) builds the Java and C# references on
   every push to `master` and publishes them to GitHub Pages at
   <https://edragoev1.github.io/pdfjet/>, under `java/` and `net/`.
+- The published site also serves `examples-java.html`, `examples-dotnet.html`
+  and the example sources they link to, which GitHub Pages used to publish
+  straight from `master`, and its home page links to all of them. The Pages
+  source must be set to GitHub Actions; the rendered README, `CHANGELOG.html`
+  and `SECURITY.html` are no longer published.
+- The source links in `examples-dotnet.html` point to
+  `examples/Example_NN/Example_NN.cs`, where the C# examples are, instead of
+  `examples/Example_NN.cs`, which returned 404.
 
 ### Java 8 compatibility
 - `build-java.sh`, `build-java.cmd`, `run-java.sh` and `run-java.cmd` compile

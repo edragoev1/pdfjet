@@ -1,5 +1,7 @@
 # Builds the Java (Javadoc) and C# (DocFX) API references and publishes them
 # to GitHub Pages: https://edragoev1.github.io/pdfjet/java/ and .../net/
+# The site also serves examples-java.html, examples-dotnet.html and the example
+# sources they link to.
 #
 # One-time setup: Settings > Pages > Build and deployment > Source: GitHub Actions.
 
@@ -13,6 +15,9 @@ on:
             - "net/**"
             - "PDFjet.csproj"
             - "docfx/**"
+            - "examples/**"
+            - "examples-java.html"
+            - "examples-dotnet.html"
             - "generate-documentation.sh"
             - ".github/workflows/docs.yml"
     workflow_dispatch:
@@ -28,13 +33,15 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            # The fonts, images and other ports are not needed to build the docs.
+            # The fonts, images and other ports are not needed to build the site.
+            # Files in the repository root are always checked out.
             - uses: actions/checkout@v7
               with:
                   sparse-checkout: |
                       com
                       net
                       docfx
+                      examples
 
             - uses: actions/setup-java@v6
               with:
@@ -59,19 +66,32 @@ jobs:
                   mkdir -p "$site"
                   cp -r docs/java "$site/java"
                   cp -r docs/_net "$site/net"
+                  # The example pages link to the sources in examples/.
+                  cp examples-java.html examples-dotnet.html "$site/"
+                  cp -r examples "$site/examples"
                   cat > "$site/index.html" <<'EOF'
                   <!doctype html>
                   <html lang="en">
                   <head>
                   <meta charset="utf-8">
-                  <title>PDFjet API reference</title>
+                  <title>PDFjet</title>
                   </head>
                   <body>
-                  <h1>PDFjet API reference</h1>
+                  <h1>PDFjet</h1>
+                  <p>PDF library for Java, C#, Swift and Go developers.
+                  The source code is on <a href="https://github.com/edragoev1/pdfjet">GitHub</a>.</p>
+                  <h2>API reference</h2>
                   <ul>
                   <li><a href="java/">Java</a> (<code>com.pdfjet</code>)</li>
                   <li><a href="net/">C#</a> (<code>PDFjet.NET</code>)</li>
                   </ul>
+                  <h2>Examples</h2>
+                  <ul>
+                  <li><a href="examples-java.html">Java examples</a></li>
+                  <li><a href="examples-dotnet.html">C# examples</a></li>
+                  </ul>
+                  <p><a href="https://github.com/edragoev1/pdfjet/blob/master/CHANGELOG.md">Changelog</a>
+                  · <a href="https://github.com/edragoev1/pdfjet/blob/master/SECURITY.md">Security policy</a></p>
                   </body>
                   </html>
                   EOF
