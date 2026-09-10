@@ -4,7 +4,8 @@ rm -f out/production/examples/*.class
 
 mkdir -p out/production
 
-javac -O -encoding utf-8 -Xlint \
+# --release 8 builds Java 8 class files, so PDFjet.jar runs on Java 8 and later.
+javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options \
     com/pdfjet/*.java \
     com/pdfjet/barcodes/*.java \
     com/pdfjet/pdf417/*.java \

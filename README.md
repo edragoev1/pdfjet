@@ -60,6 +60,12 @@ Javadoc into `docs/java`, and for the C# port with
 doc comments (`/// <summary>`) in `net/pdfjet`; its configuration is in
 `docfx/`. Install DocFX once with `dotnet tool install -g docfx`.
 
+## Java compatibility
+
+The Java build scripts compile the library with `javac --release 8`, so
+`PDFjet.jar` runs on Java 8 and later. Building needs `javac` from JDK 9 or
+newer, because Java 8's `javac` has no `--release` option.
+
 ## Port differences
 
 The Java, C# and Go ports all support encrypted PDF files. The Swift port does

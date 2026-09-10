@@ -14,8 +14,8 @@ call clean.cmd
 REM Create output directory if it doesn't exist
 if not exist "out\production" mkdir "out\production"
 
-REM Compile the PDFjet library
-javac -O -encoding utf-8 -Xlint ^
+REM Compile the PDFjet library to Java 8 class files, so it runs on Java 8 and later
+javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options ^
     com\pdfjet\*.java ^
     com\pdfjet\barcodes\*.java ^
     com\pdfjet\pdf417\*.java ^

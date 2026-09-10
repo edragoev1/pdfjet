@@ -55,6 +55,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   types, and file headers became plain `/* */` comments.
 - `docs/_net` is no longer tracked in git; it is generated.
 
+### Java 8 compatibility
+- `build-java.sh`, `build-java.cmd`, `run-java.sh` and `run-java.cmd` compile
+  the library with `javac --release 8`, so `PDFjet.jar` runs on Java 8 and
+  later whichever JDK builds it. Before, the class files matched the JDK that
+  built them (Java 11 with this machine's default `javac`). `--release 8` also
+  rejects any API newer than Java 8; the library needed no changes, and all 50
+  examples run on Java 8.
+- The scripts need `javac` from JDK 9 or newer, because Java 8's `javac` has no
+  `--release` option. `-Xlint:-options` hides the "release 8 is obsolete"
+  warning that JDK 21 and newer print.
+
 ## v8.6.0 — 2026-09-05
 
 Producer string bumped from `PDFjet v8.5.0` to `PDFjet v8.6.0` in all four
