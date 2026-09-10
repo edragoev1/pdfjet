@@ -15,6 +15,11 @@
         "content": [
             {
                 "files": [ "api/*.yml", "index.md", "toc.yml" ]
+            },
+            {
+                "files": [ "PDFjet.md" ],
+                "src": "redirects",
+                "dest": "api"
             }
         ],
         "output": "../docs/_net",

@@ -77,6 +77,15 @@ This is the first entry in this file; earlier releases were not tracked here.
 - The source links in `examples-dotnet.html` point to
   `examples/Example_NN/Example_NN.cs`, where the C# examples are, instead of
   `examples/Example_NN.cs`, which returned 404.
+- In the C# reference, the `PDFjet` part of "Namespace: PDFjet.NET" on every
+  class page linked to a page that did not exist. DocFX now builds
+  `api/PDFjet.html` from `docfx/redirects/PDFjet.md`, which redirects to the
+  `PDFjet.NET` namespace page. The home page title is "PDFjet for .NET"
+  instead of "PDFjet for .NET | PDFjet for .NET".
+- The C# `Salsa20` class, which generates the document ID, is `internal` in the
+  `PDFjet.NET` namespace, like the package-private Java class. It was a public
+  class in the global namespace, the only C# type outside `PDFjet.NET`, and
+  DocFX left it out of the reference.
 
 ### Java 8 compatibility
 - `build-java.sh`, `build-java.cmd`, `run-java.sh` and `run-java.cmd` compile

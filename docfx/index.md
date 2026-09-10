@@ -1,3 +1,6 @@
+---
+_appTitle: ""
+---
 # PDFjet for .NET
 
 PDFjet is a PDF library with no dependencies on external packages. This site

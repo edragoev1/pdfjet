@@ -7,7 +7,8 @@
 using System;
 using System.Text;
 
-public class Salsa20 {
+namespace PDFjet.NET {
+internal class Salsa20 {
     private String id = null;
     public Salsa20() {
 /*
@@ -147,3 +148,4 @@ The expected output:
     }
 */
 }
+}   // End of namespace PDFjet.NET
