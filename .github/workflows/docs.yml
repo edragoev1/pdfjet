@@ -79,11 +79,6 @@ jobs:
                   go-version-file: go.mod
                   cache: false
 
-            - name: Install doc2go
-              run: |
-                  go install go.abhg.dev/doc2go@v0.12.2
-                  echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
             # The Ubuntu runner image includes the Swift toolchain with DocC.
             - name: Check the Swift toolchain
               run: |

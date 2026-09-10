@@ -17,9 +17,9 @@ docfx docfx/docfx.json
 
 # The Go API reference is built by doc2go from the doc comments in src.
 # The example programs in src/examples are left out.
-# Install it once with: go install go.abhg.dev/doc2go@v0.12.2
+# go run fetches and caches the pinned doc2go version, so nothing is installed.
 rm -rf docs/go
-doc2go -out docs/go -home github.com/edragoev1/pdfjet/src -rel-link-style index \
+go run go.abhg.dev/doc2go@v0.12.2 -out docs/go -home github.com/edragoev1/pdfjet/src -rel-link-style index \
     $(go list ./src/... | grep -v /examples/)
 
 # The Swift API reference is built by DocC, which comes with the Swift toolchain,
