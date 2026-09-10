@@ -248,7 +248,8 @@ func (image *Image) ScaleBy(factor float32) *Image {
 }
 
 // ScaleByWidthAndHeight scales this image by the specified width and height factor.
-// <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
+//
+// Author: Pieter Libin, pieter@emweb.be
 //
 // @param widthFactor the factor used to scale the width of the image
 // @param heightFactor the factor used to scale the height of the image

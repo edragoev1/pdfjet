@@ -28,13 +28,8 @@ import (
 // Page is used to create PDF page objects.
 //
 // Please note:
-// <pre>
-//
-//	The coordinate (0.0, 0.0) is the top left corner of the page.
-//	The size of the pages are represented in points.
-//	1 point is 1/72 inches.
-//
-// </pre>
+//   - The coordinate (0.0, 0.0) is the top left corner of the page.
+//   - Page sizes are in points; 1 point is 1/72 inch.
 type Page struct {
 	pdf           *PDF
 	buf           []byte
@@ -95,13 +90,8 @@ func NewPageDetached(pdf *PDF, pageSize [2]float32) *Page {
 // NewPage constructs page object and adds it to the PDF document.
 //
 // Please note:
-// <pre>
-//
-//	The coordinate (0.0, 0.0) is the top left corner of the page.
-//	The size of the pages are represented in points.
-//	1 point is 1/72 inches.
-//
-// </pre>
+//   - The coordinate (0.0, 0.0) is the top left corner of the page.
+//   - Page sizes are in points; 1 point is 1/72 inch.
 //
 // @param pdf the pdf object.
 // @param pageSize the page size of this page.
@@ -650,7 +640,7 @@ func (page *Page) SetDefaultLineWidth() *Page {
 // alternating dashes and gaps.
 // The dash phase specifies the distance into the dash pattern at which to start the dash.
 // The elements of both the dash array and the dash phase are expressed in user space units.
-// <pre>
+//
 // Examples of line dash patterns:
 //
 //	"[Array] Phase"     Appearance          Description
@@ -662,8 +652,6 @@ func (page *Page) SetDefaultLineWidth() *Page {
 //	 "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
 //	 "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
 //	 "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//
-// </pre>
 //
 // @param strokeDashPattern the line dash pattern.
 func (page *Page) SetStrokeDashPattern(strokeDashPattern string) *Page {
@@ -695,7 +683,7 @@ func (page *Page) GetPenWidth() float32 {
 }
 
 // SetLineCapStyle sets the current line cap style.
-// Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+// Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
 func (page *Page) SetLineCapStyle(style int) *Page {
 	page.lineCapStyle = style
 	page.appendInteger(page.lineCapStyle)
@@ -704,7 +692,7 @@ func (page *Page) SetLineCapStyle(style int) *Page {
 }
 
 // SetLineJoinStyle sets the line join style.
-// Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+// Supported values: joinstyle.Miter, joinstyle.Round and joinstyle.Bevel
 func (page *Page) SetLineJoinStyle(style int) *Page {
 	page.lineJoinStyle = style
 	page.appendInteger(page.lineJoinStyle)
@@ -831,7 +819,6 @@ func (page *Page) DrawCircle(x, y, r float32) {
 // @param x the x coordinate of the center of the circle to be drawn.
 // @param y the y coordinate of the center of the circle to be drawn.
 // @param r the radius of the circle to be drawn.
-// @param operation must be Operation.STROKE, Operation.CLOSE or Operation.FILL.
 func (page *Page) FillCircle(x, y, r float32) {
 	page.drawEllipse(x, y, r, r, pathoperator.Fill)
 }
@@ -1095,8 +1082,9 @@ func (page *Page) DrawArc(
 }
 
 // BezierCurveTo draw a Bézier curve starting from the current point.
-// <strong>Please note:</strong> You must call the fillPath, closePath or strokePath method after the last bezierCurveTo call.
-// <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
+// Please note: You must call the fillPath, closePath or strokePath method after the last bezierCurveTo call.
+//
+// Author: Pieter Libin, pieter@emweb.be
 //
 // @param p1 first control point
 // @param p2 second control point

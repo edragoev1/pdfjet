@@ -304,7 +304,7 @@ func (textLine *TextLine) GetTextDirection() int {
 }
 
 // SetTextEffect sets the text effect.
-// @param textEffect Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
+// @param textEffect effect.Normal, effect.Subscript or effect.Superscript.
 // @return this TextLine.
 func (textLine *TextLine) SetTextEffect(textEffect int) *TextLine {
 	textLine.textEffect = textEffect

@@ -143,7 +143,7 @@ public class Path : Drawable {
     ///
     /// Sets the line join style.
     ///
-    /// - Parameter style: the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+    /// - Parameter style: the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
     ///
     @discardableResult
     public func setLineJoinStyle(_ style: JoinStyle) -> Path {

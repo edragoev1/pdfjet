@@ -201,7 +201,7 @@ public class TextBox : IDrawable {
     /// <summary>
     /// Gets the location where this text box will be drawn on the page.
     /// </summary>
-    /// <returns>the float array of of x and y.</returns>
+    /// <returns>the float array of x and y.</returns>
     public float[] GetLocation() {
         return new float[] { this.x, this.y };
     }

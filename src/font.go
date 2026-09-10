@@ -69,20 +69,14 @@ const (
 // NewCoreFont is the constructor for the 14 standard fonts.
 // Creates a font object and adds it to the PDF.
 //
-// <pre>
 // Examples:
 //
-//	Font font1 = new Font(pdf, CoreFont.HELVETICA)
-//	Font font2 = new Font(pdf, CoreFont.TIMES_ITALIC)
-//	Font font3 = new Font(pdf, CoreFont.ZAPF_DINGBATS)
-//	...
-//
-// </pre>
+//	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+//	font2 := pdfjet.NewCoreFont(pdf, corefont.TimesItalic())
+//	font3 := pdfjet.NewCoreFont(pdf, corefont.ZapfDingbats())
 //
 // @param pdf the PDF to add this font to.
-// @param coreFont the core font. Must be one of the names defined in the CoreFont class.
-//
-// font := CoreFont(pdf, corefont.Helvetica())
+// @param coreFont the core font, for example corefont.Helvetica().
 func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	font := new(Font)
 	font.isCoreFont = true

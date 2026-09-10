@@ -17,17 +17,9 @@ import (
 )
 
 // PNGImage is used to embed PNG images in the PDF document.
-// <p>
-// <strong>Please note:</strong>
-// <p>
 //
-//	Interlaced images are not supported.
-//
-// <p>
-//
-//	To convert interlaced image to non-interlaced image use OptiPNG:
-//
-// <p>
+// Please note: interlaced images are not supported.
+// To convert an interlaced image to a non-interlaced image, use OptiPNG:
 //
 //	optipng -i0 -o7 myimage.png
 type PNGImage struct {

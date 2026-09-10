@@ -135,7 +135,7 @@ func (box *Box) SetStructureType(structureType string) *Box {
 // alternating dashes and gaps.
 // The dash phase specifies the distance into the dash pattern at which to start the dash.
 // The elements of both the dash array and the dash phase are expressed in user space units.
-// <pre>
+//
 // Examples of line dash patterns:
 //
 //	"[Array] Phase"     Appearance          Description
@@ -147,8 +147,6 @@ func (box *Box) SetStructureType(structureType string) *Box {
 //	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
 //	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
 //	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//
-// </pre>
 //
 // @param pattern the line dash pattern.
 func (box *Box) SetPattern(pattern string) *Box {

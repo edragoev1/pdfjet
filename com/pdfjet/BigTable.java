@@ -37,7 +37,7 @@ public class BigTable {
      *
      * @param pdf the font.
      * @param f1 the header font.
-     * @param f2 the the body font.
+     * @param f2 the body font.
      * @param pageSize specifies the page size.
      */
     public BigTable(PDF pdf, Font f1, Font f2, float[] pageSize) {

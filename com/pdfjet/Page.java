@@ -1257,7 +1257,7 @@ final public class Page {
      * @param y the y coordinate of the center of the ellipse to be drawn.
      * @param r1 the horizontal radius of the ellipse to be drawn.
      * @param r2 the vertical radius of the ellipse to be drawn.
-     * @param operation the operation.
+     * @param pathOperator the path operator.
      */
     private void drawEllipse(
             float x,

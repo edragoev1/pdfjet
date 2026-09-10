@@ -182,7 +182,7 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) {
 //
 // @param index the index of the specified column.
 // @param alignment the specified alignment.
-// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
+// Supported values: alignment.Left, alignment.Right, alignment.Center and alignment.Justify.
 func (table *Table) SetTextAlignInColumn(index, alignment int) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
@@ -466,7 +466,7 @@ func (table *Table) GetRowsRendered() int {
 	return -1
 }
 
-// SetCellBorders sets all table cells borders to <strong>false</strong> or <strong>true</strong>.
+// SetCellBorders sets all table cells borders to false or true.
 func (table *Table) SetCellBorders(border bool) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {

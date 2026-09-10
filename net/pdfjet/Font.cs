@@ -255,7 +255,7 @@ public class Font {
     /// </summary>
     /// <param name="pdf">the pdf object.</param>
     /// <param name="fontPath">the font path.</param>
-    /// <exception cref="System.Exception">thrown of the font file is not found.</exception>
+    /// <exception cref="System.Exception">thrown if the font file is not found.</exception>
     public Font(PDF pdf, String fontPath) {
         FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read);
         if (fontPath.EndsWith(".stream")) {

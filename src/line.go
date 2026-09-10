@@ -55,22 +55,21 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 // alternating dashes and gaps.
 // The dash phase specifies the distance into the dash pattern at which to start the dash.
 // The elements of both the dash array and the dash phase are expressed in user space units.
-// <pre>
+//
 // Examples of line dash patterns:
 //
-//	    "[Array] Phase"     Appearance          Description
-//	    _______________     _________________   ____________________________________
+//	"[Array] Phase"     Appearance          Description
+//	_______________     _________________   ____________________________________
 //
-//	    "[] 0"              -----------------   Solid line
-//	    "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	    "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	    "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	    "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	    "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//	</pre>
+//	"[] 0"              -----------------   Solid line
+//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
 //
-//	@param pattern the line dash pattern.
-//	@return this Line object.
+// @param pattern the line dash pattern.
+// @return this Line object.
 func (line *Line) SetPattern(pattern string) *Line {
 	line.pattern = pattern
 	return line
@@ -152,7 +151,7 @@ func (line *Line) SetColor(color int32) *Line {
 }
 
 // SetCapStyle sets the line cap style.
-// @param style the cap style of the current line. Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
+// @param style the cap style of the current line. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
 // @return this Line object.
 func (line *Line) SetCapStyle(style int) *Line {
 	line.capStyle = style
@@ -198,7 +197,6 @@ func (line *Line) ScaleBy(factor float32) *Line {
 //
 // @param page the page to draw this line on.
 // @return x and y coordinates of the bottom right corner of this component.
-// @throws Exception
 func (line *Line) DrawOn(page *Page) [2]float32 {
 	page.AddBMC(structtype.P, line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()

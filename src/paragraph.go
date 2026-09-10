@@ -69,7 +69,7 @@ func (paragraph *Paragraph) Add(textLine *TextLine) *Paragraph {
 // SetAlignment sets the alignment of the text in the paragraph.
 // @param alignment the alignment code.
 // @return the paragraph.
-// <pre>Supported values: align.Left, align.Right, align.Center and align.Justify.</pre>
+// Supported values: alignment.Left, alignment.Right, alignment.Center and alignment.Justify.
 func (paragraph *Paragraph) SetAlignment(alignment int) *Paragraph {
 	paragraph.alignment = alignment
 	return paragraph

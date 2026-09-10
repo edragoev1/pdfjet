@@ -244,7 +244,6 @@ func (composite *CompositeTextLine) GetWidth() float32 {
 // DrawOn draws this line on the specified page.
 // @param page the page to draw this line on.
 // @return x and y coordinates of the bottom right corner of this component.
-// @throws Exception
 func (composite *CompositeTextLine) DrawOn(page *Page) []float32 {
 	var xMax float64
 	var yMax float64

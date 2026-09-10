@@ -50,7 +50,7 @@ func (path *Path) Add(point *Point) {
 // alternating dashes and gaps.
 // The dash phase specifies the distance into the dash pattern at which to start the dash.
 // The elements of both the dash array and the dash phase are expressed in user space units.
-// <pre>
+//
 // Examples of line dash patterns:
 //
 //	"[Array] Phase"     Appearance          Description
@@ -63,7 +63,6 @@ func (path *Path) Add(point *Point) {
 //	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
 //	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
 //
-// </pre>
 // @param pattern the line dash pattern.
 func (path *Path) SetPattern(pattern string) *Path {
 	path.pattern = pattern
@@ -112,7 +111,7 @@ func (path *Path) GetLineCapStyle() int {
 }
 
 // SetLineJoinStyle sets the line join style.
-// Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+// Supported values: joinstyle.Miter, joinstyle.Round and joinstyle.Bevel
 func (path *Path) SetLineJoinStyle(style int) *Path {
 	path.lineJoinStyle = style
 	return path

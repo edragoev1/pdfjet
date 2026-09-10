@@ -1072,7 +1072,7 @@ public class Page {
     ///     new Point(200, 200),
     ///     new Point(100, 200)
     /// };
-    /// DrawPath(rect, PathOperator.STROKE);
+    /// DrawPath(rect, PathOperator.Stroke);
     /// </code>
     ///
     /// <code>
@@ -1083,7 +1083,7 @@ public class Page {
     ///     new Point(250, 150, Point.ControlPointC),   // Second control point
     ///     new Point(300, 100)            // End point
     /// };
-    /// DrawPath(curve, PathOperator.STROKE);
+    /// DrawPath(curve, PathOperator.Stroke);
     /// </code>
     /// </example>
     /// <seealso cref="Point"/>
@@ -1129,7 +1129,7 @@ public class Page {
     /// </summary>
     /// <remarks>Deprecated: As of v4.00 replaced by <see cref="DrawPath(List{Point}, string)"/></remarks>
     /// <param name="list">the list of points that define the bezier curve.</param>
-    /// <param name="pathOperator">must be Operation.STROKE or Operation.FILL.</param>
+    /// <param name="pathOperator">the path operator, for example PathOperator.Stroke or PathOperator.Fill.</param>
     public void DrawBezierCurve(List<Point> list, String pathOperator) {
         Point point = list[0];
         MoveTo(point.x, point.y);

@@ -224,7 +224,7 @@ public class TextBox implements Drawable {
     /**
      * Gets the location where this text box will be drawn on the page.
      *
-     * @return the float array of of x and y.
+     * @return the float array of x and y.
      */
     public float[] getLocation() {
         return new float[] {this.x, this.y};

@@ -142,7 +142,6 @@ func (point *Point) GetRadius() float32 {
 // SetShape sets the shape of this point.
 //
 // @param shape the shape of this point. Supported values:
-// <pre>
 //
 //	shape.Invisible
 //	shape.Circle
@@ -158,8 +157,6 @@ func (point *Point) GetRadius() float32 {
 //	shape.DownArrow
 //	shape.LeftArrow
 //	shape.RightArrow
-//
-// </pre>
 func (point *Point) SetShape(shape int) *Point {
 	point.shape = shape
 	return point
