@@ -30,6 +30,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   method signatures. Classes outside PDFjet that implement `Drawable` or
   `IDrawable` must update `setPosition`.
 
+### Stamp
+- `Stamp` now conforms to `Drawable` in Swift and Go, as it already did in
+  Java and C#, so it can be added to a `Container` or an
+  `OptionalContentGroup`. Swift `drawOn` takes `Page?` and `setPosition`
+  returns `Self`; Go `DrawOn` returns `[2]float32` instead of `[]float32`.
+
 ## v8.6.0 — 2026-09-05
 
 Producer string bumped from `PDFjet v8.5.0` to `PDFjet v8.6.0` in all four

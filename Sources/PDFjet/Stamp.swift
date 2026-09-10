@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class Stamp {
+public class Stamp : Drawable {
     internal var objNumber: Int?
 
     private let pdf: PDF
@@ -40,7 +40,7 @@ public class Stamp {
     }
 
     @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Stamp {
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self
@@ -364,7 +364,9 @@ public class Stamp {
     }
 
     @discardableResult
-    public func drawOn(_ page: Page) -> [Float] {
+    public func drawOn(_ page: Page?) -> [Float] {
+        let page = page!
+
         // Save graphics state
         page.saveGraphicsState()
 

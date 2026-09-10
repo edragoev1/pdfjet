@@ -371,7 +371,7 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 }
 
 // DrawOn draws the stamp on a page
-func (s *Stamp) DrawOn(page *Page) []float32 {
+func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 
 	drawX := s.x
@@ -418,5 +418,5 @@ func (s *Stamp) DrawOn(page *Page) []float32 {
 
 	page.RestoreGraphicsState()
 
-	return []float32{s.x + s.width, s.y + s.height}
+	return [2]float32{s.x + s.width, s.y + s.height}
 }
