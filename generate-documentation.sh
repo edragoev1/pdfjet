@@ -14,3 +14,10 @@ javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \
 # Install it once with: dotnet tool install -g docfx
 rm -rf docs/_net docfx/api
 docfx docfx/docfx.json
+
+# The Go API reference is built by doc2go from the doc comments in src.
+# The example programs in src/examples are left out.
+# Install it once with: go install go.abhg.dev/doc2go@v0.12.2
+rm -rf docs/go
+doc2go -out docs/go -home github.com/edragoev1/pdfjet/src -rel-link-style index \
+    $(go list ./src/... | grep -v /examples/)

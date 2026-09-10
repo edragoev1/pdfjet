@@ -86,6 +86,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   `PDFjet.NET` namespace, like the package-private Java class. It was a public
   class in the global namespace, the only C# type outside `PDFjet.NET`, and
   DocFX left it out of the reference.
+- The Go API reference is built with doc2go into `docs/go` by
+  `./generate-documentation.sh` and published under `go/`, next to `java/` and
+  `net/`; the site's home page links to it. It covers the 56 packages in `src`
+  and leaves out the example programs in `src/examples`. Install doc2go once
+  with `go install go.abhg.dev/doc2go@v0.12.2`.
+- Every exported Go identifier and every Go package has a doc comment, and
+  the C# XML docs and the Swift public API have no undocumented members.
+  Javadoc also reports no warnings for the protected fields and methods.
 
 ### Java 8 compatibility
 - `build-java.sh`, `build-java.cmd`, `run-java.sh` and `run-java.cmd` compile

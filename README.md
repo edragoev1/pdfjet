@@ -64,7 +64,10 @@ To build them locally, `./generate-documentation.sh` runs Javadoc for the Java
 port into `docs/java`, and [DocFX](https://dotnet.github.io/docfx/) for the C#
 port into `docs/_net`. DocFX reads the XML doc comments (`/// <summary>`) in
 `net/pdfjet`; its configuration is in `docfx/`. Install DocFX once with
-`dotnet tool install -g docfx`.
+`dotnet tool install -g docfx`. The Go reference is built with
+[doc2go](https://abhinav.github.io/doc2go/) from the doc comments in `src` into
+`docs/go`, leaving out the example programs in `src/examples`. Install doc2go
+once with `go install go.abhg.dev/doc2go@v0.12.2`.
 
 ## Java compatibility
 

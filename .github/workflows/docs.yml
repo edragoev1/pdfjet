@@ -1,5 +1,6 @@
-# Builds the Java (Javadoc) and C# (DocFX) API references and publishes them
-# to GitHub Pages: https://edragoev1.github.io/pdfjet/java/ and .../net/
+# Builds the Java (Javadoc), C# (DocFX) and Go (doc2go) API references and
+# publishes them to GitHub Pages: https://edragoev1.github.io/pdfjet/java/,
+# .../net/ and .../go/
 # The site also serves examples-java.html, examples-dotnet.html and the example
 # sources they link to.
 #
@@ -15,6 +16,8 @@ on:
             - "net/**"
             - "PDFjet.csproj"
             - "docfx/**"
+            - "src/**"
+            - "go.mod"
             - "examples/**"
             - "examples-java.html"
             - "examples-dotnet.html"
@@ -41,6 +44,7 @@ jobs:
                       com
                       net
                       docfx
+                      src
                       examples
 
             - uses: actions/setup-java@v6
@@ -57,6 +61,16 @@ jobs:
                   dotnet tool install -g docfx --version 2.78.5
                   echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
+            - uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            - name: Install doc2go
+              run: |
+                  go install go.abhg.dev/doc2go@v0.12.2
+                  echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
             - name: Generate the documentation
               run: bash generate-documentation.sh
 
@@ -66,6 +80,7 @@ jobs:
                   mkdir -p "$site"
                   cp -r docs/java "$site/java"
                   cp -r docs/_net "$site/net"
+                  cp -r docs/go "$site/go"
                   # The example pages link to the sources in examples/.
                   cp examples-java.html examples-dotnet.html "$site/"
                   cp -r examples "$site/examples"
@@ -84,6 +99,7 @@ jobs:
                   <ul>
                   <li><a href="java/">Java</a> (<code>com.pdfjet</code>)</li>
                   <li><a href="net/">C#</a> (<code>PDFjet.NET</code>)</li>
+                  <li><a href="go/">Go</a> (<code>github.com/edragoev1/pdfjet/src</code>)</li>
                   </ul>
                   <h2>Examples</h2>
                   <ul>
