@@ -54,11 +54,15 @@ sudo apt install gcc
 
 ## Documentation
 
-`./generate-documentation.sh` builds the API reference for the Java port with
-Javadoc into `docs/java`, and for the C# port with
-[DocFX](https://dotnet.github.io/docfx/) into `docs/_net`. DocFX reads the XML
-doc comments (`/// <summary>`) in `net/pdfjet`; its configuration is in
-`docfx/`. Install DocFX once with `dotnet tool install -g docfx`.
+The API references are published at <https://edragoev1.github.io/pdfjet/>. The
+`Documentation` GitHub Actions workflow rebuilds and publishes them on every push
+to `master`, so the generated HTML is not kept in git.
+
+To build them locally, `./generate-documentation.sh` runs Javadoc for the Java
+port into `docs/java`, and [DocFX](https://dotnet.github.io/docfx/) for the C#
+port into `docs/_net`. DocFX reads the XML doc comments (`/// <summary>`) in
+`net/pdfjet`; its configuration is in `docfx/`. Install DocFX once with
+`dotnet tool install -g docfx`.
 
 ## Java compatibility
 

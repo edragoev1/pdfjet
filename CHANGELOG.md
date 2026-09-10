@@ -53,7 +53,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   `<returns>`) instead of Javadoc-style `/** @param */` blocks, which DocFX and
   IDEs do not read. Class comments that sat above `namespace` moved onto their
   types, and file headers became plain `/* */` comments.
-- `docs/_net` is no longer tracked in git; it is generated.
+- `docs/` is no longer tracked in git. The `Documentation` GitHub Actions
+  workflow (`.github/workflows/docs.yml`) builds the Java and C# references on
+  every push to `master` and publishes them to GitHub Pages at
+  <https://edragoev1.github.io/pdfjet/>, under `java/` and `net/`.
 
 ### Java 8 compatibility
 - `build-java.sh`, `build-java.cmd`, `run-java.sh` and `run-java.cmd` compile

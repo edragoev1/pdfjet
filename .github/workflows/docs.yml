@@ -1,0 +1,94 @@
+# Builds the Java (Javadoc) and C# (DocFX) API references and publishes them
+# to GitHub Pages: https://edragoev1.github.io/pdfjet/java/ and .../net/
+#
+# One-time setup: Settings > Pages > Build and deployment > Source: GitHub Actions.
+
+name: Documentation
+
+on:
+    push:
+        branches: [ master ]
+        paths:
+            - "com/**"
+            - "net/**"
+            - "PDFjet.csproj"
+            - "docfx/**"
+            - "generate-documentation.sh"
+            - ".github/workflows/docs.yml"
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: pages
+    cancel-in-progress: false
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            # The fonts, images and other ports are not needed to build the docs.
+            - uses: actions/checkout@v7
+              with:
+                  sparse-checkout: |
+                      com
+                      net
+                      docfx
+
+            - uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - uses: actions/setup-dotnet@v6
+              with:
+                  dotnet-version: "8.0.x"
+
+            - name: Install DocFX
+              run: |
+                  dotnet tool install -g docfx --version 2.78.5
+                  echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+            - name: Generate the documentation
+              run: bash generate-documentation.sh
+
+            - name: Assemble the site
+              run: |
+                  site="$RUNNER_TEMP/site"
+                  mkdir -p "$site"
+                  cp -r docs/java "$site/java"
+                  cp -r docs/_net "$site/net"
+                  cat > "$site/index.html" <<'EOF'
+                  <!doctype html>
+                  <html lang="en">
+                  <head>
+                  <meta charset="utf-8">
+                  <title>PDFjet API reference</title>
+                  </head>
+                  <body>
+                  <h1>PDFjet API reference</h1>
+                  <ul>
+                  <li><a href="java/">Java</a> (<code>com.pdfjet</code>)</li>
+                  <li><a href="net/">C#</a> (<code>PDFjet.NET</code>)</li>
+                  </ul>
+                  </body>
+                  </html>
+                  EOF
+
+            - uses: actions/upload-pages-artifact@v5
+              with:
+                  path: ${{ runner.temp }}/site
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        permissions:
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - id: deployment
+              uses: actions/deploy-pages@v5

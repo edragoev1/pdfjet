@@ -102,7 +102,7 @@ public class Arc implements Drawable {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     * @param pattern the line dash pattern.
+     * @param strokeDashPattern the line dash pattern.
      * @return this Arc object.
      */
     public Arc setStrokeDashPattern(String strokeDashPattern) {
