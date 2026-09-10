@@ -1,1 +1,1 @@
-zip -r -9 PDFjet-ForJava-v7.07.3.zip PDFjet.jar data/ docs/ examples/ fonts/ images/ util/
+zip -r -9 PDFjet-ForJava-v8.7.0.zip PDFjet.jar data/ docs/ examples/ fonts/ images/ util/
