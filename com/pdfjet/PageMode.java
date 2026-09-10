@@ -30,6 +30,6 @@ public class PageMode {
     /** (PDF 1.5) Optional content group panel visible */
     public static final String USE_OC = "UseOC";
 
-    /** Use Attachements */
-    public static final String USE_ATTACHMENTS = "UseAttachements";
+    /** The attachments panel is visible. */
+    public static final String USE_ATTACHMENTS = "UseAttachments";
 }

@@ -42,6 +42,25 @@ This is the first entry in this file; earlier releases were not tracked here.
   `OptionalContentGroup`. Swift `drawOn` takes `Page?` and `setLocation`
   returns `Self`; Go `DrawOn` returns `[2]float32` instead of `[]float32`.
 
+### Fixes
+- `PageMode.USE_ATTACHMENTS` is `"UseAttachments"`, the page mode name in the
+  PDF specification, in Java, C# and Swift. It was `"UseAttachements"`, which
+  is not a PDF page mode, so viewers ignored it instead of opening the
+  attachments panel.
+- Swift `A3.PORTRAIT` is 842 × 1191 points, like the other ports; it was the A4
+  size.
+- Swift `Stamp.fillRect` fills the whole rectangle; it drew only three corners
+  and filled a triangle.
+- Swift `SVGImage` has `getWidth()`, like the other ports. The misnamed
+  `getPenWidth()` still works but is deprecated.
+- Java and C# `setLineColor(Color.transparent)` leaves the line color unchanged,
+  as in Swift. It used to clear the text color.
+- C# `Table.GetColCount` returns 0 for a row index equal to `GetRowCount()`
+  instead of throwing.
+- C# `NumberFormat.Format` honors the minimum number of fraction digits.
+- Go `Arc.SetFillColorRGBArray` enables the fill, like the other fill setters;
+  the color was stored but never drawn.
+
 ### Documentation
 - The C# API reference is built with DocFX (configuration in `docfx/`) into
   `docs/_net`. It replaces the copy of the Javadoc HTML that
@@ -77,6 +96,18 @@ This is the first entry in this file; earlier releases were not tracked here.
 - The source links in `examples-dotnet.html` point to
   `examples/Example_NN/Example_NN.cs`, where the C# examples are, instead of
   `examples/Example_NN.cs`, which returned 404.
+- The `Example_NN.pdf` links on `examples-java.html` and
+  `examples-dotnet.html` work on the published site; they returned 404,
+  because the PDF files are not kept in git. The `Documentation` workflow checks
+  out `fonts`, `images`, `data` and `PngSuite`, runs `build-java.sh`, fails if
+  an example does not create its PDF file, and publishes the 50 PDF files next
+  to the pages. The C# page says that its PDF files come from the Java
+  examples, which produce the same documents.
+- Both example pages have a title and a character set, and the stray
+  `</strong>` in their introduction is gone. The C# page is headed "PDFjet C#
+  Examples" instead of "PDFjet Java Examples", and names `build-dotnet.cmd` and
+  `build-dotnet.sh` instead of `build-dotnet-core.cmd`, `build-mono.cmd` and
+  `build-mono.sh`, which do not exist.
 - In the C# reference, the `PDFjet` part of "Namespace: PDFjet.NET" on every
   class page linked to a page that did not exist. DocFX now builds
   `api/PDFjet.html` from `docfx/redirects/PDFjet.md`, which redirects to the

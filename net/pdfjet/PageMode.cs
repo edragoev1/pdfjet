@@ -22,6 +22,6 @@ public class PageMode {
     /// <summary>The optional content group panel is visible.</summary>
     public const String USE_OC = "UseOC";                // (PDF 1.5) Optional content group panel visible
     /// <summary>The attachments panel is visible.</summary>
-    public const String USE_ATTACHMENTS = "UseAttachements";
+    public const String USE_ATTACHMENTS = "UseAttachments";
 }
 }   // End of namespace PDFjet.NET

@@ -1,8 +1,8 @@
 # Builds the Java (Javadoc), C# (DocFX), Go (doc2go) and Swift (DocC) API
 # references and publishes them to GitHub Pages:
 # https://edragoev1.github.io/pdfjet/java/, .../net/, .../go/ and .../swift/
-# The site also serves examples-java.html, examples-dotnet.html and the example
-# sources they link to.
+# The site also serves examples-java.html, examples-dotnet.html, the example
+# sources they link to and the PDF files the Java examples create.
 #
 # One-time setup: Settings > Pages > Build and deployment > Source: GitHub Actions.
 
@@ -21,9 +21,14 @@ on:
             - "Sources/**"
             - "Package.swift"
             - "examples/**"
+            - "fonts/**"
+            - "images/**"
+            - "data/**"
+            - "PngSuite/**"
             - "examples-java.html"
             - "examples-dotnet.html"
             - "generate-documentation.sh"
+            - "build-java.sh"
             - ".github/workflows/docs.yml"
     workflow_dispatch:
 
@@ -38,8 +43,9 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            # The fonts, images and other ports are not needed to build the site.
-            # Files in the repository root are always checked out.
+            # Only the ports, the DocFX configuration, the examples and the fonts,
+            # images and data the examples read are checked out. Files in the
+            # repository root are always checked out.
             - uses: actions/checkout@v7
               with:
                   sparse-checkout: |
@@ -49,6 +55,10 @@ jobs:
                       src
                       Sources
                       examples
+                      fonts
+                      images
+                      data
+                      PngSuite
 
             - uses: actions/setup-java@v6
               with:
@@ -83,6 +93,14 @@ jobs:
             - name: Generate the documentation
               run: bash generate-documentation.sh
 
+            # The example pages link to the PDF files the Java examples create.
+            # bash -e stops at the first example that fails, and the check after
+            # it makes sure every example created its PDF file.
+            - name: Build the example PDFs
+              run: |
+                  bash -e build-java.sh
+                  test "$(ls Example_*.pdf | wc -l)" -eq 50
+
             - name: Assemble the site
               run: |
                   site="$RUNNER_TEMP/site"
@@ -91,9 +109,11 @@ jobs:
                   cp -r docs/_net "$site/net"
                   cp -r docs/go "$site/go"
                   cp -r docs/swift "$site/swift"
-                  # The example pages link to the sources in examples/.
+                  # The example pages link to the sources in examples/ and to the
+                  # PDF files the Java examples created.
                   cp examples-java.html examples-dotnet.html "$site/"
                   cp -r examples "$site/examples"
+                  cp Example_*.pdf "$site/"
                   cat > "$site/index.html" <<'EOF'
                   <!doctype html>
                   <html lang="en">

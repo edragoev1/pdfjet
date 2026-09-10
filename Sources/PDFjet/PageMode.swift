@@ -20,5 +20,5 @@ public class PageMode {
     /// The optional content group panel is visible.
     public static let USE_OC = "UseOC"                 // (PDF 1.5) Optional content group panel visible
     /// The attachments panel is visible.
-    public static let USE_ATTACHMENTS = "UseAttachements"
+    public static let USE_ATTACHMENTS = "UseAttachments"
 }
