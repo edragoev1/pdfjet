@@ -74,16 +74,23 @@ public class TextFrame : IDrawable {
         return this.h;
     }
 
-    public void SetPosition(float x, float y) {
+    public TextFrame SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
-    public void SetBorder(bool border) {
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
+    }
+
+    public TextFrame SetBorder(bool border) {
         this.border = border;
+        return this;
     }
 
-    public void SetBorderColor(int borderColor) {
+    public TextFrame SetBorderColor(int borderColor) {
         this.borderColor = borderColor;
+        return this;
     }
 
     public bool HasMoreText() {

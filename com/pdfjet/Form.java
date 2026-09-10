@@ -38,9 +38,11 @@ public class Form implements Drawable {
      *
      * @param x the horizontal position
      * @param y the vertical position
+     * @return this Form object.
      */
-    public void setPosition(float x, float y) {
+    public Form setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -48,9 +50,11 @@ public class Form implements Drawable {
      *
      * @param x the horizontal position
      * @param y the vertical position
+     * @return this Form object.
      */
-    public void setPosition(double x, double y) {
+    public Form setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**

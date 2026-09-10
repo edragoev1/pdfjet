@@ -59,9 +59,11 @@ namespace PDFjet.NET {
          *
          *  @param x the x coordinate of the top left corner of the text box.
          *  @param y the y coordinate of the top left corner of the text box.
+         *  @return this TextBlock object.
          */
-        public void SetPosition(double x, double y) {
+        public TextBlock SetPosition(double x, double y) {
             SetPosition((float) x, (float) y);
+            return this;
         }
 
         /**
@@ -69,19 +71,27 @@ namespace PDFjet.NET {
          *
          *  @param x the x coordinate of the top left corner of the text box.
          *  @param y the y coordinate of the top left corner of the text box.
+         *  @return this TextBlock object.
          */
-        public void SetPosition(float x, float y) {
+        public TextBlock SetPosition(float x, float y) {
             this.x = x;
             this.y = y;
+            return this;
         }
 
-        public void SetFont(Font font) {
+        IDrawable IDrawable.SetPosition(float x, float y) {
+            return SetPosition(x, y);
+        }
+
+        public TextBlock SetFont(Font font) {
             this.font = font;
             this.fallbackFont = font;
+            return this;
         }
 
-        public void SetFallbackFont(Font font) {
+        public TextBlock SetFallbackFont(Font font) {
             this.fallbackFont = font;
+            return this;
         }
 
         public TextBlock SetFontSize(float fontSize) {
@@ -89,8 +99,9 @@ namespace PDFjet.NET {
             return this;
         }
 
-        public void SetText(string text) {
+        public TextBlock SetText(string text) {
             this.textContent = text;
+            return this;
         }
 
         public Font GetFont() {
@@ -107,94 +118,110 @@ namespace PDFjet.NET {
             return this;
         }
 
-        public void SetSize(float width, float height) {
+        public TextBlock SetSize(float width, float height) {
             this.width = width;
             this.height = height;
+            return this;
         }
 
-        public void SetWidth(double width) {
+        public TextBlock SetWidth(double width) {
             this.width = (float) width;
+            return this;
         }
 
-        public void SetWidth(float width) {
+        public TextBlock SetWidth(float width) {
             this.width = width;
+            return this;
         }
 
         public float GetWidth() {
             return this.width;
         }
 
-        public void SetHeight(double height) {
+        public TextBlock SetHeight(double height) {
             this.height = (float) height;
+            return this;
         }
 
-        public void SetHeight(float height) {
+        public TextBlock SetHeight(float height) {
             this.height = height;
+            return this;
         }
 
         public float GetHeight() {
             return this.height;
         }
 
-        public void SetBorderCornerRadius(float borderCornerRadius) {
+        public TextBlock SetBorderCornerRadius(float borderCornerRadius) {
             this.borderCornerRadius = borderCornerRadius;
+            return this;
         }
 
-        public void SetTextPadding(float padding) {
+        public TextBlock SetTextPadding(float padding) {
             this.textPadding = padding;
+            return this;
         }
 
-        public void SetBorderWidth(float borderWidth) {
+        public TextBlock SetBorderWidth(float borderWidth) {
             this.borderWidth = borderWidth;
+            return this;
         }
 
-        public void SetFillColor(int color) {
+        public TextBlock SetFillColor(int color) {
             if (color == Color.transparent) {
                 this.fillColor = null;
-                return;
+                return this;
             }
             float r = ((color >> 16) & 0xff)/255f;
             float g = ((color >>  8) & 0xff)/255f;
             float b = ((color)       & 0xff)/255f;
             this.fillColor = new float[] {r, g, b};
+            return this;
         }
 
-        public void SetFillColor(float[] rgbColor) {
+        public TextBlock SetFillColor(float[] rgbColor) {
             this.fillColor = rgbColor;
+            return this;
         }
 
-        public void SetBackgroundColor(float[] rgbColor) {
+        public TextBlock SetBackgroundColor(float[] rgbColor) {
             this.fillColor = rgbColor;
+            return this;
         }
 
-        public void SetBorderColor(int color) {
+        public TextBlock SetBorderColor(int color) {
             if (color == Color.transparent) {
                 this.borderColor = null;
-                return;
+                return this;
             }
             float r = ((color >> 16) & 0xff)/255f;
             float g = ((color >>  8) & 0xff)/255f;
             float b = ((color)       & 0xff)/255f;
             this.borderColor = new float[] {r, g, b};
+            return this;
         }
 
-        public void SetBorderColor(float[] rgbColor) {
+        public TextBlock SetBorderColor(float[] rgbColor) {
             this.borderColor = rgbColor;
+            return this;
         }
 
-        public void SetLineSpacing(float lineSpacing) {
+        public TextBlock SetLineSpacing(float lineSpacing) {
             this.lineSpacing = lineSpacing;
+            return this;
         }
 
-        public void SetTextColor(float[] textColor) {
+        public TextBlock SetTextColor(float[] textColor) {
             this.textColor = textColor;
+            return this;
         }
 
-        public void SetTextColor(int color) {
+        public TextBlock SetTextColor(int color) {
             float r = ((color >> 16) & 0xff)/255f;
             float g = ((color >>  8) & 0xff)/255f;
             float b = ((color)       & 0xff)/255f;
             this.textColor = new float[] {r, g, b};
+            return this;
         }
 
         public TextBlock SetTextAlignment(Alignment textAlignment) {
@@ -211,20 +238,22 @@ namespace PDFjet.NET {
             return this.fillColor;
         }
 
-        public void SetKeywordHighlightColors(Dictionary<string, int> map) {
+        public TextBlock SetKeywordHighlightColors(Dictionary<string, int> map) {
             this.keywordHighlightColors = new Dictionary<string, int>();
             foreach (var key in map.Keys) {
                 this.keywordHighlightColors[key.ToLower()] = map[key];
             }
+            return this;
         }
 
-        public void SetTextIsArabic() {
+        public TextBlock SetTextIsArabic() {
             // Important!! The library renders Arabic properly, however it doesn't use ligatures like the one below !!
             // The Arabic character that looks like a Latin "I" and "J" connected is the ligature for "لَا" (lām + alif).
             // Here is the isolated form: لا
             // When it's written, the lām (ل) resembles a curved "J" or a hook,
             // and the alif (ا) is a straight vertical stroke that looks like an "I".
             this.textIsArabic = true;
+            return this;
         }
 
         private bool TextIsCJK(string str) {
@@ -294,8 +323,9 @@ namespace PDFjet.NET {
             return textLines.ToArray();
         }
 
-        public void SetUnderline(bool underline) {
+        public TextBlock SetUnderline(bool underline) {
             this.underline = underline;
+            return this;
         }
 
         private void RightAlignText(TextLine[] textLines) {

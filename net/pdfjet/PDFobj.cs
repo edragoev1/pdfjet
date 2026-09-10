@@ -493,7 +493,7 @@ public class PDFobj {
         return maxGSNumber;
     }
 
-    public void SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+    public PDFobj SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
         PDFobj obj = null;
         int index = -1;
         for (int i = 0; i < dict.Count; i++) {
@@ -515,7 +515,7 @@ public class PDFobj {
             }
         }
         if (obj == null || index == -1) {
-            return;
+            return this;
         }
         gsNumber = GetMaxGSNumber(obj);
         if (gsNumber == 0) {                        // No existing ExtGState dictionary
@@ -546,6 +546,7 @@ public class PDFobj {
         buf.Append("q\n");
         buf.Append("/GS" + (gsNumber + 1).ToString() + " gs\n");
         AddPrefixContent(Encoding.ASCII.GetBytes(buf.ToString()), objects);
+        return this;
     }
 }
 }   // End of namespace PDFjet.NET

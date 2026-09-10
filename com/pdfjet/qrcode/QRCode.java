@@ -53,9 +53,11 @@ final public class QRCode implements Drawable {
      *
      *  @param x the x coordinate of the top left corner of the barcode.
      *  @param y the y coordinate of the top left corner of the barcode.
+     *  @return this QRCode object.
      */
-    public void setPosition(float x, float y) {
+    public QRCode setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -63,9 +65,11 @@ final public class QRCode implements Drawable {
      *
      *  @param x the x coordinate of the top left corner of the barcode.
      *  @param y the y coordinate of the top left corner of the barcode.
+     *  @return this QRCode object.
      */
-    public void setPosition(double x, double y) {
+    public QRCode setPosition(double x, double y) {
         setLocation((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -97,9 +101,11 @@ final public class QRCode implements Drawable {
      *  The default value is 2.0f
      *
      *  @param moduleLength the specified module length.
+     *  @return this QRCode object.
      */
-    public void setModuleLength(double moduleLength) {
+    public QRCode setModuleLength(double moduleLength) {
         this.m1 = (float) moduleLength;
+        return this;
     }
 
     /**
@@ -107,18 +113,22 @@ final public class QRCode implements Drawable {
      *  The default value is 2.0f
      *
      *  @param moduleLength the specified module length.
+     *  @return this QRCode object.
      */
-    public void setModuleLength(float moduleLength) {
+    public QRCode setModuleLength(float moduleLength) {
         this.m1 = moduleLength;
+        return this;
     }
 
     /**
      * Sets the color of the QR code.
      *
      * @param color the color.
+     * @return this QRCode object.
      */
-    public void setColor(int color) {
+    public QRCode setColor(int color) {
         this.color = color;
+        return this;
     }
 
     /**

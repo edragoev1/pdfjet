@@ -33,8 +33,9 @@ func NewBaseAnnotation() *BaseAnnotation {
 }
 
 // SetLocation sets the first point of the annotation.
-func (b *BaseAnnotation) SetLocation(x, y float32) {
+func (b *BaseAnnotation) SetLocation(x, y float32) *BaseAnnotation {
 	b.point1 = [2]float32{x, y}
+	return b
 }
 
 // SetPosition sets the first point of the annotation (alias for SetLocation).
@@ -43,36 +44,42 @@ func (b *BaseAnnotation) SetPosition(x, y float32) {
 }
 
 // SetSize sets the second point relative to the first point.
-func (b *BaseAnnotation) SetSize(w, h float32) {
+func (b *BaseAnnotation) SetSize(w, h float32) *BaseAnnotation {
 	b.point2 = [2]float32{b.point1[0] + w, b.point1[1] + h}
+	return b
 }
 
 // SetFillColor sets the fill color using RGB float32 values (0.0-1.0).
-func (b *BaseAnnotation) SetFillColor(colorRGB [3]float32) {
+func (b *BaseAnnotation) SetFillColor(colorRGB [3]float32) *BaseAnnotation {
 	b.fillColor = colorRGB
+	return b
 }
 
 // SetFillColorInt sets the fill color from an integer RGB value (0xRRGGBB).
-func (b *BaseAnnotation) SetFillColorInt(color int) {
+func (b *BaseAnnotation) SetFillColorInt(color int) *BaseAnnotation {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	blue := float32((color>>0)&0xff) / 255.0
 	b.SetFillColor([3]float32{r, g, blue})
+	return b
 }
 
 // SetTransparency sets the transparency level (0.0 = fully transparent, 1.0 = opaque).
-func (b *BaseAnnotation) SetTransparency(transparency float32) {
+func (b *BaseAnnotation) SetTransparency(transparency float32) *BaseAnnotation {
 	b.transparency = transparency
+	return b
 }
 
 // SetTitle sets the title of the annotation.
-func (b *BaseAnnotation) SetTitle(title string) {
+func (b *BaseAnnotation) SetTitle(title string) *BaseAnnotation {
 	b.title = title
+	return b
 }
 
 // SetContents sets the contents of the annotation.
-func (b *BaseAnnotation) SetContents(contents string) {
+func (b *BaseAnnotation) SetContents(contents string) *BaseAnnotation {
 	b.contents = contents
+	return b
 }
 
 // Rotate rotates the annotation around its center by the given degrees.

@@ -86,23 +86,27 @@ public class Chart : IDrawable {
     }
 
     /** Sets the chart title. */
-    public void SetTitle(String title) {
+    public Chart SetTitle(String title) {
         this.title = title;
+        return this;
     }
 
     /** Sets the X axis title. */
-    public void SetXAxisTitle(String title) {
+    public Chart SetXAxisTitle(String title) {
         this.xAxisTitle = title;
+        return this;
     }
 
     /** Sets the Y axis title. */
-    public void SetYAxisTitle(String title) {
+    public Chart SetYAxisTitle(String title) {
         this.yAxisTitle = title;
+        return this;
     }
 
     /** Sets the chart data (list of series, each a list of points). */
-    public void SetData(List<List<Point>> chartData) {
+    public Chart SetData(List<List<Point>> chartData) {
         this.chartData = chartData;
+        return this;
     }
 
     /** Returns the chart data. */
@@ -111,13 +115,19 @@ public class Chart : IDrawable {
     }
 
     /** Sets the top-left position of this chart on the page. */
-    public void SetPosition(double x, double y) {
+    public Chart SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /** Sets the top-left position of this chart on the page. */
-    public void SetPosition(float x, float y) {
+    public Chart SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /** Sets the top-left position. Returns this for chaining. */
@@ -133,29 +143,34 @@ public class Chart : IDrawable {
     }
 
     /** Sets the chart dimensions. */
-    public void SetSize(double w, double h) {
+    public Chart SetSize(double w, double h) {
         SetSize((float) w, (float) h);
+        return this;
     }
 
     /** Sets the chart dimensions. */
-    public void SetSize(float w, float h) {
+    public Chart SetSize(float w, float h) {
         this.w = w;
         this.h = h;
+        return this;
     }
 
     /** Sets the font size for axis labels. */
-    public void SetFontSize(float fontSize) {
+    public Chart SetFontSize(float fontSize) {
         this.fontSize = fontSize;
+        return this;
     }
 
     /** Sets minimum decimal places for axis labels. */
-    public void SetMinimumFractionDigits(int minFractionDigits) {
+    public Chart SetMinimumFractionDigits(int minFractionDigits) {
         this.minFractionDigits = minFractionDigits;
+        return this;
     }
 
     /** Sets maximum decimal places for axis labels. */
-    public void SetMaximumFractionDigits(int maxFractionDigits) {
+    public Chart SetMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
+        return this;
     }
 
     /**
@@ -193,57 +208,68 @@ public class Chart : IDrawable {
 
     /** Toggles drawing of X axis labels. */
     /** Toggles drawing of horizontal grid lines. */
-    public void SetDrawXAxisLines(bool drawXAxisLines) {
+    public Chart SetDrawXAxisLines(bool drawXAxisLines) {
         this.drawXAxisLines = drawXAxisLines;
+        return this;
     }
 
     /** Toggles drawing of vertical grid lines. */
-    public void SetDrawYAxisLines(bool drawYAxisLines) {
+    public Chart SetDrawYAxisLines(bool drawYAxisLines) {
         this.drawYAxisLines = drawYAxisLines;
+        return this;
     }
 
-    public void SetDrawXAxisLabels(bool drawXAxisLabels) {
+    public Chart SetDrawXAxisLabels(bool drawXAxisLabels) {
         this.drawXAxisLabels = drawXAxisLabels;
+        return this;
     }
 
     /** Toggles drawing of Y axis labels. */
-    public void SetDrawYAxisLabels(bool drawYAxisLabels) {
+    public Chart SetDrawYAxisLabels(bool drawYAxisLabels) {
         this.drawYAxisLabels = drawYAxisLabels;
+        return this;
     }
 
     /** Sets XY scatter mode (true) or category mode (false). */
-    public void SetXYChart(bool xyChart) {
+    public Chart SetXYChart(bool xyChart) {
         this.xyChart = xyChart;
+        return this;
     }
 
     /** Sets the outer chart border width (0 = invisible). */
-    public void SetChartBorderWidth(float width) {
+    public Chart SetChartBorderWidth(float width) {
         this.chartBorderWidth = width;
+        return this;
     }
 
     /** Sets the inner plot area border width (0 = invisible). */
-    public void SetInnerBorderWidth(float width) {
+    public Chart SetInnerBorderWidth(float width) {
         this.innerBorderWidth = width;
+        return this;
     }
 
     /** Sets the horizontal grid line width (0 = invisible). */
-    public void SetHGridLineWidth(float width) {
+    public Chart SetHGridLineWidth(float width) {
         this.hGridLineWidth = width;
+        return this;
     }
 
     /** Sets the vertical grid line width (0 = invisible). */
-    public void SetVGridLineWidth(float width) {
+    public Chart SetVGridLineWidth(float width) {
         this.vGridLineWidth = width;
+        return this;
     }
 
     /** Sets the horizontal grid line dash pattern (e.g. "[1 1] 0"). */
-    public void SetHGridLinePattern(String pattern) {
+    public Chart SetHGridLinePattern(String pattern) {
         this.hGridLinePattern = pattern;
+        return this;
     }
 
     /** Sets the vertical grid line dash pattern (e.g. "[1 1] 0"). */
-    public void SetVGridLinePattern(String pattern) {
+    public Chart SetVGridLinePattern(String pattern) {
         this.vGridLinePattern = pattern;
+        return this;
     }
 
     /**
@@ -528,8 +554,9 @@ public class Chart : IDrawable {
         }
     }
 
-    public void SetAutoColors(bool autoColors) {
+    public Chart SetAutoColors(bool autoColors) {
         this.autoColors = autoColors;
+        return this;
     }
 
     public float[] ToFloatArray(int color) {
@@ -661,21 +688,27 @@ public class Chart : IDrawable {
     /**
      * Manually sets X axis range and grid line count.
      * Skips auto-computation when grid lines > 0.
+     *
+     * @return this Chart object.
      */
-    public void SetXAxisMinMax(float xMin, float xMax, int xAxisGridLines) {
+    public Chart SetXAxisMinMax(float xMin, float xMax, int xAxisGridLines) {
         this.xMin = xMin;
         this.xMax = xMax;
         this.xAxisGridLines = xAxisGridLines;
+        return this;
     }
 
     /**
      * Manually sets Y axis range and grid line count.
      * Skips auto-computation when grid lines > 0.
+     *
+     * @return this Chart object.
      */
-    public void SetYAxisMinMax(float yMin, float yMax, int yAxisGridLines) {
+    public Chart SetYAxisMinMax(float yMin, float yMax, int yAxisGridLines) {
         this.yMin = yMin;
         this.yMax = yMax;
         this.yAxisGridLines = yAxisGridLines;
+        return this;
     }
 }
 }

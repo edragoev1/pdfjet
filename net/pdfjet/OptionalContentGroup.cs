@@ -43,16 +43,19 @@ public class OptionalContentGroup {
         components.Add(drawable);
     }
 
-    public void SetVisible(bool visible) {
+    public OptionalContentGroup SetVisible(bool visible) {
         this.visible = visible;
+        return this;
     }
 
-    public void SetPrintable(bool printable) {
+    public OptionalContentGroup SetPrintable(bool printable) {
         this.printable = printable;
+        return this;
     }
 
-    public void SetExportable(bool exportable) {
+    public OptionalContentGroup SetExportable(bool exportable) {
         this.exportable = exportable;
+        return this;
     }
 
     // Added by request from Planet Associates

@@ -50,9 +50,12 @@ public class Permissions {
     /**
      * Sets the permissions using the type-safe UserAccess enum values.
      * The value is automatically masked to ensure any invalid bits are cleared.
+     *
+     * @return this Permissions object.
      */
-    public void setAccess(int access) {
+    public Permissions setAccess(int access) {
         permissionsFlags = access & VALID_BITS_MASK;
+        return this;
     }
 
     /**
@@ -127,8 +130,9 @@ public class Permissions {
      *
      * @param permissions The permissions to modify (from the UserAccess enum values).
      * @param grant True to grant the permissions; false to revoke them.
+     * @return this Permissions object.
      */
-    public void setPermissions(int permissions, boolean grant) {
+    public Permissions setPermissions(int permissions, boolean grant) {
         if (grant) {
             permissionsFlags |= permissions;
         } else {
@@ -136,6 +140,7 @@ public class Permissions {
         }
         // Re-apply mask to ensure no invalid bits were set
         permissionsFlags &= VALID_BITS_MASK;
+        return this;
     }
 
     /**

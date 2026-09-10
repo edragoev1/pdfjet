@@ -56,79 +56,95 @@ public class Rect implements Drawable {
         return setLocation((float) x, (float) y);
     }
 
-    public void setPosition(float x, float y) {
+    public Rect setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
-    public void setPosition(double x, double y) {
+    public Rect setPosition(double x, double y) {
         setLocation((float) x, (float) y);
+        return this;
     }
 
-    public void setSize(float w, float h) {
+    public Rect setSize(float w, float h) {
         this.w = w;
         this.h = h;
+        return this;
     }
 
-    public void setFillColor(int color) {
+    public Rect setFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         setFillColor(r, g, b);
+        return this;
     }
 
-    public void setFillColor(float r, float g, float b) {
+    public Rect setFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setFillColor(float[] rgbColor) {
+    public Rect setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
+        return this;
     }
 
-    public void setBorderWidth(float borderWidth) {
+    public Rect setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
+        return this;
     }
 
-    public void setBorderColor(int color) {
+    public Rect setBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
-            return;
+            return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         setBorderColor(r, g, b);
+        return this;
     }
 
-    public void setBorderColor(float r, float g, float b) {
+    public Rect setBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setBorderColor(float[] rgbColor) {
+    public Rect setBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
+        return this;
     }
 
     /**
      * Sets the corner radius.
      * @param r the radius.
+     * @return this Rect object.
      */
-    public void setCornerRadius(float r) {
+    public Rect setCornerRadius(float r) {
         this.r = r;
+        return this;
     }
 
     /**
      * Sets the URI for the "click rect" action.
      * @param uri the URI
+     * @return this Rect object.
      */
-    public void setURIAction(String uri) {
+    public Rect setURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     /**
      * Sets the destination key for the action.
      * @param key the destination name.
+     * @return this Rect object.
      */
-    public void setGoToAction(String key) {
+    public Rect setGoToAction(String key) {
         this.key = key;
+        return this;
     }
 
     /**
@@ -164,18 +180,22 @@ public class Rect implements Drawable {
     /**
      * Sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
      * @param borderPattern the line dash pattern.
+     * @return this Rect object.
      */
-    public void setBorderPattern(String borderPattern) {
+    public Rect setBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;
+        return this;
     }
 
     /**
      * Sets the private fillShape variable.
      * If the value of fillShape is true - the rect is filled with the current brush color.
      * @param fillShape the value used to set the private fillShape variable.
+     * @return this Rect object.
      */
-    public void setFillShape(boolean fillShape) {
+    public Rect setFillShape(boolean fillShape) {
 // TODO:        this.fillShape = fillShape;
+        return this;
     }
 
     /**

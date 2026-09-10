@@ -120,9 +120,11 @@ public class Barcode : IDrawable {
      *
      * @param x1 the x coordinate of the top left corner of the barcode.
      * @param y1 the y coordinate of the top left corner of the barcode.
+     * @return this Barcode object.
      */
-    public void SetPosition(double x1, double y1) {
+    public Barcode SetPosition(double x1, double y1) {
         SetPosition((float) x1, (float) y1);
+        return this;
     }
 
     /**
@@ -130,9 +132,15 @@ public class Barcode : IDrawable {
      *
      * @param x1 the x coordinate of the top left corner of the barcode.
      * @param y1 the y coordinate of the top left corner of the barcode.
+     * @return this Barcode object.
      */
-    public void SetPosition(float x1, float y1) {
+    public Barcode SetPosition(float x1, float y1) {
         SetLocation(x1, y1);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x1, float y1) {
+        return SetPosition(x1, y1);
     }
 
     /**
@@ -162,9 +170,11 @@ public class Barcode : IDrawable {
      * The default value is 0.75
      *
      * @param moduleLength the specified module length.
+     * @return this Barcode object.
      */
-    public void SetModuleLength(double moduleLength) {
+    public Barcode SetModuleLength(double moduleLength) {
         this.m1 = (float) moduleLength;
+        return this;
     }
 
     /**
@@ -172,9 +182,11 @@ public class Barcode : IDrawable {
      * The default value is 0.75f
      *
      * @param moduleLength the specified module length.
+     * @return this Barcode object.
      */
-    public void SetModuleLength(float moduleLength) {
+    public Barcode SetModuleLength(float moduleLength) {
         this.m1 = moduleLength;
+        return this;
     }
 
     /**
@@ -183,9 +195,11 @@ public class Barcode : IDrawable {
      * The default value is 50.0
      *
      * @param barHeightFactor the specified bar height factor.
+     * @return this Barcode object.
      */
-    public void SetBarHeightFactor(double barHeightFactor) {
+    public Barcode SetBarHeightFactor(double barHeightFactor) {
         this.barHeightFactor = (float) barHeightFactor;
+        return this;
     }
 
     /**
@@ -194,27 +208,33 @@ public class Barcode : IDrawable {
      * The default value is 50.0
      *
      * @param barHeightFactor the specified bar height factor.
+     * @return this Barcode object.
      */
-    public void SetBarHeightFactor(float barHeightFactor) {
+    public Barcode SetBarHeightFactor(float barHeightFactor) {
         this.barHeightFactor = barHeightFactor;
+        return this;
     }
 
     /**
      * Sets the drawing direction for this font.
      *
      * @param direction the specified direction.
+     * @return this Barcode object.
      */
-    public void SetDirection(int direction) {
+    public Barcode SetDirection(int direction) {
         this.direction = direction;
+        return this;
     }
 
     /**
      * Sets the font to be used with this barcode.
      *
      * @param font the specified font.
+     * @return this Barcode object.
      */
-    public void SetFont(Font font) {
+    public Barcode SetFont(Font font) {
         this.font = font;
+        return this;
     }
 
     private static bool HasOnlyDigits(String text) {

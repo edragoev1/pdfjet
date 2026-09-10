@@ -92,9 +92,11 @@ public class Table {
     /// @param x the x coordinate of the top left point of the table.
     /// @param y the y coordinate of the top left point of the table.
     ///
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> Table {
         self.x1 = x
         self.y1 = y
+        return self
     }
 
     ///
@@ -102,8 +104,10 @@ public class Table {
     ///
     /// @param bottomMargin the margin.
     ///
-    public func setBottomMargin(_ bottomMargin: Float) {
+    @discardableResult
+    public func setBottomMargin(_ bottomMargin: Float) -> Table {
         self.bottomMargin = bottomMargin
+        return self
     }
 
     ///
@@ -115,7 +119,8 @@ public class Table {
     ///
     /// @param tableData the table data.
     ///
-    public func setData(_ tableData: [[Cell]]) {
+    @discardableResult
+    public func setData(_ tableData: [[Cell]]) -> Table {
         self.tableData = tableData
         self.numOfHeaderRows = 0
         self.rendered = self.numOfHeaderRows
@@ -130,6 +135,7 @@ public class Table {
                 row.append(Cell(font, ""))
             }
         }
+        return self
     }
 
     ///
@@ -138,7 +144,8 @@ public class Table {
     /// @param tableData the table data.
     /// @param numOfHeaderRows the number of header rows in this data.
     ///
-    public func setData(_ tableData: [[Cell]], _ numOfHeaderRows: Int) {
+    @discardableResult
+    public func setData(_ tableData: [[Cell]], _ numOfHeaderRows: Int) -> Table {
         self.tableData = tableData
         self.numOfHeaderRows = numOfHeaderRows
         self.rendered = numOfHeaderRows
@@ -153,6 +160,7 @@ public class Table {
                 row.append(Cell(font, ""))
             }
         }
+        return self
     }
 
     ///
@@ -211,7 +219,8 @@ public class Table {
     /// @param index the index of the specified column.
     /// @param alignment the specified alignment.
     ///
-    public func setTextAlignInColumn(_ index: Int, _ alignment: UInt32) throws {
+    @discardableResult
+    public func setTextAlignInColumn(_ index: Int, _ alignment: UInt32) throws -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -221,6 +230,7 @@ public class Table {
                 }
             }
         }
+        return self
     }
 
     ///
@@ -229,7 +239,8 @@ public class Table {
     /// @param index the index of the specified column.
     /// @param color the color specified as an integer.
     ///
-    public func setTextColorInColumn(_ index: Int, _ textColor: [Float]) {
+    @discardableResult
+    public func setTextColorInColumn(_ index: Int, _ textColor: [Float]) -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -239,6 +250,7 @@ public class Table {
                 }
             }
         }
+        return self
     }
 
     ///
@@ -247,7 +259,8 @@ public class Table {
     /// @param index the column index.
     /// @param font the font.
     ///
-    public func setFontInColumn(_ index: Int, _ font: Font) {
+    @discardableResult
+    public func setFontInColumn(_ index: Int, _ font: Font) -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -257,6 +270,7 @@ public class Table {
                 }
             }
         }
+        return self
     }
 
     ///
@@ -265,7 +279,8 @@ public class Table {
     /// @param index the index of the specified row.
     /// @param color the color specified as an integer.
     ///
-    public func setTextColorInRow(_ index: Int, _ color: Int32) {
+    @discardableResult
+    public func setTextColorInRow(_ index: Int, _ color: Int32) -> Table {
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
@@ -275,6 +290,7 @@ public class Table {
                 }
             }
         }
+        return self
     }
 
     ///
@@ -283,7 +299,8 @@ public class Table {
     /// @param index the row index.
     /// @param font the font.
     ///
-    public func setFontInRow(_ index: Int, _ font: Font) {
+    @discardableResult
+    public func setFontInRow(_ index: Int, _ font: Font) -> Table {
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
@@ -293,6 +310,7 @@ public class Table {
                 }
             }
         }
+        return self
     }
 
     ///
@@ -301,7 +319,8 @@ public class Table {
     /// @param index the index of specified column.
     /// @param width the specified width.
     ///
-    public func setColumnWidth(_ index: Int, _ width: Float) {
+    @discardableResult
+    public func setColumnWidth(_ index: Int, _ width: Float) -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -311,6 +330,7 @@ public class Table {
                 }
             }
         }
+        return self
     }
 
     ///
@@ -532,7 +552,8 @@ public class Table {
     ///
     /// Sets all table cells borders to <strong>false</strong> or <strong>true</strong>.
     ///
-    public func setCellBorders(_ border: Bool) {
+    @discardableResult
+    public func setCellBorders(_ border: Bool) -> Table {
         for row in tableData {
             for cell in row {
                 cell.setTopBorder(border)
@@ -541,6 +562,7 @@ public class Table {
                 cell.setRightBorder(border)
             }
         }
+        return self
     }
 
     ///
@@ -548,12 +570,14 @@ public class Table {
     ///
     /// @param color the color of the cell border lines.
     ///
-    public func setCellBordersColor(_ color: Int32) {
+    @discardableResult
+    public func setCellBordersColor(_ color: Int32) -> Table {
         for row in tableData {
             for cell in row {
                 cell.setStrokeColor(color)
             }
         }
+        return self
     }
 
     ///
@@ -561,12 +585,14 @@ public class Table {
     ///
     /// @param width the width of the border lines.
     ///
-    public func setCellBordersWidth(_ width: Float) {
+    @discardableResult
+    public func setCellBordersWidth(_ width: Float) -> Table {
         for row in tableData {
             for cell in row {
                 cell.setStrokeWidth(width)
             }
         }
+        return self
     }
 
     // Sets the right border on all cells in the last column.
@@ -607,7 +633,8 @@ public class Table {
     // Auto adjusts the widths of all columns so that they are just wide enough to
     // hold the text without truncation.
     //
-    public func setColumnWidths() {
+    @discardableResult
+    public func setColumnWidths() -> Table {
         var maxColWidths = [Float](repeating: 0.0, count: tableData[0].count)
         for row in tableData {
             var i = 0
@@ -649,6 +676,7 @@ public class Table {
                 row[i].setWidth(maxColWidths[i])
             }
         }
+        return self
     }
 
     private func addExtraTableRows() -> [[Cell]] {
@@ -816,7 +844,8 @@ public class Table {
         }
     }
 
-    public func setVisibleColumns(_ visible: Int...) {
+    @discardableResult
+    public func setVisibleColumns(_ visible: Int...) -> Table {
         var list = [[Cell]]()
         for row in tableData {
             var row2 = [Cell]()
@@ -830,9 +859,12 @@ public class Table {
             list.append(row2)
         }
         tableData = list
+        return self
     }
 
-    public func setFirstPageTopMargin(_ firstPageTopMargin: Float) {
+    @discardableResult
+    public func setFirstPageTopMargin(_ firstPageTopMargin: Float) -> Table {
         self.firstPageTopMargin = firstPageTopMargin
+        return self
     }
 }   // End of Table.swift

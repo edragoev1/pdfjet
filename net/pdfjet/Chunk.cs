@@ -17,8 +17,9 @@ public class Chunk {
         return this.data;
     }
 
-    public void SetData(byte[] data) {
+    public Chunk SetData(byte[] data) {
         this.data = data;
+        return this;
     }
 }   // End of Chunk.cs
 }   // End of namespace PDFjet.NET

@@ -97,36 +97,48 @@ public class Chart : Drawable {
      * Sets the title of the chart.
      *
      * @param title the title text.
+     * @return this Chart object.
      */
-    public func setTitle(_ title: String) {
+    @discardableResult
+    public func setTitle(_ title: String) -> Chart {
         self.title = title
+        return self
     }
 
     /**
      * Sets the title for the X axis.
      *
      * @param title the X axis title.
+     * @return this Chart object.
      */
-    public func setXAxisTitle(_ title: String) {
+    @discardableResult
+    public func setXAxisTitle(_ title: String) -> Chart {
         self.xAxisTitle = title
+        return self
     }
 
     /**
      * Sets the title for the Y axis.
      *
      * @param title the Y axis title.
+     * @return this Chart object.
      */
-    public func setYAxisTitle(_ title: String) {
+    @discardableResult
+    public func setYAxisTitle(_ title: String) -> Chart {
         self.yAxisTitle = title
+        return self
     }
 
     /**
      * Sets the data that will be used to draw this chart.
      *
      * @param chartData the data.
+     * @return this Chart object.
      */
-    public func setData(_ chartData: [[Point]]?) {
+    @discardableResult
+    public func setData(_ chartData: [[Point]]?) -> Chart {
         self.chartData = chartData
+        return self
     }
 
     /**
@@ -143,10 +155,13 @@ public class Chart : Drawable {
      *
      * @param x the x coordinate of the top left corner of this chart when drawn on the page.
      * @param y the y coordinate of the top left corner of this chart when drawn on the page.
+     * @return this Chart object.
      */
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> Chart {
         self.x1 = x
         self.y1 = y
+        return self
     }
 
     /**
@@ -154,28 +169,37 @@ public class Chart : Drawable {
      *
      * @param w the width of this chart.
      * @param h the height of this chart.
+     * @return this Chart object.
      */
-    public func setSize(_ w: Float, _ h: Float) {
+    @discardableResult
+    public func setSize(_ w: Float, _ h: Float) -> Chart {
         self.w = w
         self.h = h
+        return self
     }
 
     /**
      * Sets the minimum number of fractions digits do display for the X and Y axis labels.
      *
      * @param minFractionDigits the minimum number of fraction digits.
+     * @return this Chart object.
      */
-    public func setMinimumFractionDigits(_ minFractionDigits: Int) {
+    @discardableResult
+    public func setMinimumFractionDigits(_ minFractionDigits: Int) -> Chart {
         self.minFractionDigits = minFractionDigits
+        return self
     }
 
     /**
      * Sets the maximum number of fractions digits do display for the X and Y axis labels.
      *
      * @param maxFractionDigits the maximum number of fraction digits.
+     * @return this Chart object.
      */
-    public func setMaximumFractionDigits(_ maxFractionDigits: Int) {
+    @discardableResult
+    public func setMaximumFractionDigits(_ maxFractionDigits: Int) -> Chart {
         self.maxFractionDigits = maxFractionDigits
+        return self
     }
 
     /**
@@ -213,53 +237,73 @@ public class Chart : Drawable {
     }
 
     /** Toggles drawing of horizontal grid lines. */
-    public func setDrawXAxisLines(_ drawXAxisLines: Bool) {
+    @discardableResult
+    public func setDrawXAxisLines(_ drawXAxisLines: Bool) -> Chart {
         self.drawXAxisLines = drawXAxisLines
+        return self
     }
 
     /** Toggles drawing of vertical grid lines. */
-    public func setDrawYAxisLines(_ drawYAxisLines: Bool) {
+    @discardableResult
+    public func setDrawYAxisLines(_ drawYAxisLines: Bool) -> Chart {
         self.drawYAxisLines = drawYAxisLines
+        return self
     }
 
     /// Sets the font size used for the axis labels and point text.
-    public func setFontSize(_ fontSize: Float) {
+    @discardableResult
+    public func setFontSize(_ fontSize: Float) -> Chart {
         self.fontSize = fontSize
+        return self
     }
 
     /// Sets the width of the chart border.
-    public func setChartBorderWidth(_ width: Float) {
+    @discardableResult
+    public func setChartBorderWidth(_ width: Float) -> Chart {
         self.chartBorderWidth = width
+        return self
     }
 
     /// Sets the width of the inner border.
-    public func setInnerBorderWidth(_ width: Float) {
+    @discardableResult
+    public func setInnerBorderWidth(_ width: Float) -> Chart {
         self.innerBorderWidth = width
+        return self
     }
 
     /// Sets the width of the horizontal grid lines.
-    public func setHGridLineWidth(_ width: Float) {
+    @discardableResult
+    public func setHGridLineWidth(_ width: Float) -> Chart {
         self.hGridLineWidth = width
+        return self
     }
 
     /// Sets the width of the vertical grid lines.
-    public func setVGridLineWidth(_ width: Float) {
+    @discardableResult
+    public func setVGridLineWidth(_ width: Float) -> Chart {
         self.vGridLineWidth = width
+        return self
     }
 
     /// Sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
-    public func setHGridLinePattern(_ pattern: String) {
+    @discardableResult
+    public func setHGridLinePattern(_ pattern: String) -> Chart {
         self.hGridLinePattern = pattern
+        return self
     }
 
     /// Sets the vertical grid line dash pattern, e.g. "[1 1] 0".
-    public func setVGridLinePattern(_ pattern: String) {
+    @discardableResult
+    public func setVGridLinePattern(_ pattern: String) -> Chart {
         self.vGridLinePattern = pattern
+        return self
     }
 
     /// Toggles the automatic stroke colors for the data series.
-    public func setAutoColors(_ autoColors: Bool) {
+    @discardableResult
+    public func setAutoColors(_ autoColors: Bool) -> Chart {
         self.autoColors = autoColors
+        return self
     }
 
     public func toFloatArray(_ color: Int32) -> [Float] {
@@ -269,20 +313,28 @@ public class Chart : Drawable {
         return [r, g, b]
     }
 
-    public func setDrawXAxisLabels(_ drawXAxisLabels: Bool) {
+    @discardableResult
+    public func setDrawXAxisLabels(_ drawXAxisLabels: Bool) -> Chart {
         self.drawXAxisLabels = drawXAxisLabels
+        return self
     }
 
-    public func setDrawYAxisLabels(_ drawYAxisLabels: Bool) {
+    @discardableResult
+    public func setDrawYAxisLabels(_ drawYAxisLabels: Bool) -> Chart {
         self.drawYAxisLabels = drawYAxisLabels
+        return self
     }
 
-    public func setXYChart(_ xyChart: Bool) {
+    @discardableResult
+    public func setXYChart(_ xyChart: Bool) -> Chart {
         self.xyChart = xyChart
+        return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     /**
@@ -694,16 +746,20 @@ public class Chart : Drawable {
     }
 
     /// Sets xMin and xMax for the X axis and the number of X grid lines.
-    public func setXAxisMinMax(_ xMin: Float, _ xMax: Float, _ xAxisGridLines: Int) {
+    @discardableResult
+    public func setXAxisMinMax(_ xMin: Float, _ xMax: Float, _ xAxisGridLines: Int) -> Chart {
         self.xMin = xMin
         self.xMax = xMax
         self.xAxisGridLines = xAxisGridLines
+        return self
     }
 
     /// Sets yMin and yMax for the Y axis and the number of Y grid lines.
-    public func setYAxisMinMax(_ yMin: Float, _ yMax: Float, _ yAxisGridLines: Int) {
+    @discardableResult
+    public func setYAxisMinMax(_ yMin: Float, _ yMax: Float, _ yAxisGridLines: Int) -> Chart {
         self.yMin = yMin
         self.yMax = yMax
         self.yAxisGridLines = yAxisGridLines
+        return self
     }
 }   // End of Chart.swift

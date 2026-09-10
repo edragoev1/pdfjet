@@ -39,9 +39,15 @@ public class Form : IDrawable {
      *
      * @param x the horizontal position
      * @param y the vertical position
+     * @return this Form object.
      */
-    public void SetPosition(float x, float y) {
+    public Form SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**
@@ -49,9 +55,11 @@ public class Form : IDrawable {
      *
      * @param x the horizontal position
      * @param y the vertical position
+     * @return this Form object.
      */
-    public void SetPosition(double x, double y) {
+    public Form SetPosition(double x, double y) {
         SetLocation(x, y);
+        return this;
     }
 
     /**

@@ -33,14 +33,16 @@ public class DonutChart {
         this.slices = new ArrayList<>();
     }
 
-    public void setLocation(float xc, float yc) {
+    public DonutChart setLocation(float xc, float yc) {
         this.xc = xc;
         this.yc = yc;
+        return this;
     }
 
-    public void setR1AndR2(float r1, float r2) {
+    public DonutChart setR1AndR2(float r1, float r2) {
         this.r1 = r1;
         this.r2 = r2;
+        return this;
     }
 
     public void addSlice(Slice slice) {

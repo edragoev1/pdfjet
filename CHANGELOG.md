@@ -7,6 +7,29 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## Unreleased
+
+### Fluent setters
+- Every public setter that returned nothing now returns the object it was
+  called on, so calls can be chained:
+  `box.setSize(20f, 20f).setColor(Color.red).setLineWidth(1f)`. This changes
+  1,173 setters: 329 in Java, 334 in C#, 265 in Go and 245 in Swift. Setters
+  that already returned the object are unchanged.
+- Swift setters are marked `@discardableResult`, so existing calls that ignore
+  the result compile without warnings.
+- `Drawable.setPosition` returns the drawable: `Drawable` in Java (each class
+  returns its own type), `IDrawable` in C# (each class has a public
+  `SetPosition` returning its own type plus an explicit
+  `IDrawable.SetPosition`), and `Self` in Swift.
+- Go keeps `SetPosition(x, y float32)` without a result, because a Go type
+  only satisfies the `Drawable` interface with an exact signature match. Chain
+  from `SetLocation` instead, or from `SetCenterXY` on `Arc` and
+  `SetStartPoint` on `Line`.
+- Source compatible for callers. Java and C# code compiled against v8.6.0 must
+  be recompiled, because the setters' return types are part of the compiled
+  method signatures. Classes outside PDFjet that implement `Drawable` or
+  `IDrawable` must update `setPosition`.
+
 ## v8.6.0 — 2026-09-05
 
 Producer string bumped from `PDFjet v8.5.0` to `PDFjet v8.6.0` in all four

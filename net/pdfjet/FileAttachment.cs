@@ -25,33 +25,44 @@ public class FileAttachment : IDrawable {
         this.embeddedFile = file;
     }
 
-    public void SetLocation(float x, float y) {
+    public FileAttachment SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
-    public void SetIconPushPin() {
+    public FileAttachment SetIconPushPin() {
         this.icon = "PushPin";
+        return this;
     }
 
-    public void SetIconPaperclip() {
+    public FileAttachment SetIconPaperclip() {
         this.icon = "Paperclip";
+        return this;
     }
 
-    public void SetIconSize(float height) {
+    public FileAttachment SetIconSize(float height) {
         this.h = height;
+        return this;
     }
 
-    public void SetTitle(String title) {
+    public FileAttachment SetTitle(String title) {
         this.title = title;
+        return this;
     }
 
-    public void SetDescription(String description) {
+    public FileAttachment SetDescription(String description) {
         this.contents = description;
+        return this;
     }
 
-    public void SetPosition(float x, float y) {
+    public FileAttachment SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     public float[] DrawOn(Page page) {

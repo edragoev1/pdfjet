@@ -31,12 +31,18 @@ public class Text : IDrawable {
         this.paragraphs = paragraphs;
     }
 
-    public void SetPosition(double x, double y) {
+    public Text SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
+        return this;
     }
 
-    public void SetPosition(float x, float y) {
+    public Text SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     public Text SetLocation(float x, float y) {
@@ -59,33 +65,38 @@ public class Text : IDrawable {
         return this;
     }
 
-    public void SetBorderWidth(float borderWidth) {
+    public Text SetBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
+        return this;
     }
 
-    public void SetBorderColor(int color) {
+    public Text SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
-            return;
+            return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         SetBorderColor(r, g, b);
+        return this;
     }
 
-    public void SetBorderColor(float r, float g, float b) {
+    public Text SetBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
         this.hasBorder = true;
+        return this;
     }
 
-    public void SetBorderColor(float[] rgbColor) {
+    public Text SetBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
         this.hasBorder = true;
+        return this;
     }
 
-    public void SetBorderPattern(String borderPattern) {
+    public Text SetBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;
+        return this;
     }
 
     public float[] DrawOn(Page page) {

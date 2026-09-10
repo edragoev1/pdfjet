@@ -65,13 +65,20 @@ public class Box : IDrawable {
      *
      * @param x the x coordinate of the top left corner of this box when drawn on the page.
      * @param y the y coordinate of the top left corner of this box when drawn on the page.
+     * @return this Box object.
      */
-    public void SetPosition(float x, float y) {
+    public Box SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
-    public void SetXY(float x, float y) {
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
+    }
+
+    public Box SetXY(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
     /**
@@ -95,9 +102,11 @@ public class Box : IDrawable {
      *
      * @param w the width of this box.
      * @param h the height of this box.
+     * @return this Box object.
      */
-    public void SetSize(double w, double h) {
+    public Box SetSize(double w, double h) {
         SetSize((float) w, (float) h);
+        return this;
     }
 
     /**
@@ -105,55 +114,67 @@ public class Box : IDrawable {
      *
      * @param w the width of this box.
      * @param h the height of this box.
+     * @return this Box object.
      */
-    public void SetSize(float w, float h) {
+    public Box SetSize(float w, float h) {
         this.w = w;
         this.h = h;
+        return this;
     }
 
     /**
      * Sets the color for this box.
      *
      * @param color the color specified as an integer.
+     * @return this Box object.
      */
-    public void SetColor(int color) {
+    public Box SetColor(int color) {
         this.color = color;
+        return this;
     }
 
     /**
      * Sets the width of this line.
      *
      * @param width the width.
+     * @return this Box object.
      */
-    public void SetLineWidth(double width) {
+    public Box SetLineWidth(double width) {
         this.width = (float) width;
+        return this;
     }
 
     /**
      * Sets the width of this line.
      *
      * @param width the width.
+     * @return this Box object.
      */
-    public void SetLineWidth(float width) {
+    public Box SetLineWidth(float width) {
         this.width = width;
+        return this;
     }
 
     /**
      * Sets the URI for the "click box" action.
      *
      * @param uri the URI
+     * @return this Box object.
      */
-    public void SetURIAction(String uri) {
+    public Box SetURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     /**
      * Sets the destination key for the action.
      *
      * @param key the destination name.
+     * @return this Box object.
      */
-    public void SetGoToAction(String key) {
+    public Box SetGoToAction(String key) {
         this.key = key;
+        return this;
     }
 
     /**
@@ -200,9 +221,11 @@ public class Box : IDrawable {
      * </pre>
      *
      * @param pattern the line dash pattern.
+     * @return this Box object.
      */
-    public void SetPattern(String pattern) {
+    public Box SetPattern(String pattern) {
         this.pattern = pattern;
+        return this;
     }
 
     /**
@@ -210,9 +233,11 @@ public class Box : IDrawable {
      * If the value of fillShape is true - the box is filled with the current brush color.
      *
      * @param fillShape the value used to set the private fillShape variable.
+     * @return this Box object.
      */
-    public void SetFillShape(bool fillShape) {
+    public Box SetFillShape(bool fillShape) {
         this.fillShape = fillShape;
+        return this;
     }
 
     /**

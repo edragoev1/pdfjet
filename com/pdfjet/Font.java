@@ -346,9 +346,11 @@ final public class Font {
      * The kerning is implemented only for the 14 standard fonts.
      *
      * @param kernPairs if 'true' the kerning for this font is enabled.
+     * @return this Font object.
      */
-    public void setKernPairs(boolean kernPairs) {
+    public Font setKernPairs(boolean kernPairs) {
         this.kernPairs = kernPairs;
+        return this;
     }
 
     public float stringWidth(String str) {
@@ -575,9 +577,11 @@ final public class Font {
      * the RegularItalic and BoldItalic.
      *
      * @param skew15 the skew flag.
+     * @return this Font object.
      */
-    public void setItalic(boolean skew15) {
+    public Font setItalic(boolean skew15) {
         this.skew15 = skew15;
+        return this;
     }
 
     public float stringWidth(Font fallbackFont, String str) {

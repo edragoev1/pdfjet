@@ -300,8 +300,9 @@ public class Font {
         return this.name;
     }
 
-    public void SetKernPairs(bool kernPairs) {
+    public Font SetKernPairs(bool kernPairs) {
         this.kernPairs = kernPairs;
+        return this;
     }
 
     public float StringWidth(String str) {
@@ -476,9 +477,11 @@ public class Font {
     * For example you could embed only the Regular and Bold fonts and synthesize the RegularItalic and BoldItalic.
     *
     * @param skew15 the skew flag.
+    * @return this Font object.
     */
-    public void SetItalic(bool skew15) {
+    public Font SetItalic(bool skew15) {
         this.skew15 = skew15;
+        return this;
     }
 
     public float StringWidth(Font fallbackFont, String str) {

@@ -55,20 +55,28 @@ public class TextColumn : Drawable {
     ///
     /// @param lineBetweenParagraphs the specified Bool value.
     ///
-    public func setLineBetweenParagraphs(_ lineBetweenParagraphs: Bool) {
+    @discardableResult
+    public func setLineBetweenParagraphs(_ lineBetweenParagraphs: Bool) -> TextColumn {
         self.lineBetweenParagraphs = lineBetweenParagraphs
+        return self
     }
 
-    public func setLineSpacing(_ lineSpacing: Float) {
+    @discardableResult
+    public func setLineSpacing(_ lineSpacing: Float) -> TextColumn {
         self.lineSpacing = lineSpacing
+        return self
     }
 
-    public func setParagraphSpacing(_ paragraphSpacing: Float) {
+    @discardableResult
+    public func setParagraphSpacing(_ paragraphSpacing: Float) -> TextColumn {
         self.paragraphSpacing = paragraphSpacing
+        return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     ///
@@ -92,9 +100,11 @@ public class TextColumn : Drawable {
     /// @param w the width of this text column.
     /// @param h the height of this text column.
     ///
-    public func setSize(_ w: Float, _ h: Float) {
+    @discardableResult
+    public func setSize(_ w: Float, _ h: Float) -> TextColumn {
         self.w = w
         self.h = h
+        return self
     }
 
     ///
@@ -102,8 +112,10 @@ public class TextColumn : Drawable {
     ///
     /// @param w the width of this text column.
     ///
-    public func setWidth(_ w: Float) {
+    @discardableResult
+    public func setWidth(_ w: Float) -> TextColumn {
         self.w = w
+        return self
     }
 
     ///
@@ -126,8 +138,10 @@ public class TextColumn : Drawable {
     /// @param alignment the specified alignment code.
     /// Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
     ///
-    public func setAlignment(_ alignment: UInt32) {
+    @discardableResult
+    public func setAlignment(_ alignment: UInt32) -> TextColumn {
         self.alignment = alignment
+        return self
     }
 
     ///

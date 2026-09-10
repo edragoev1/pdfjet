@@ -103,8 +103,9 @@ public class Line implements Drawable {
         return this;
     }
 
-    public void setPosition(float x, float y) {
+    public Line setPosition(float x, float y) {
         setStartPoint(x, y);
+        return this;
     }
 
     public Line setLocation(float x, float y) {

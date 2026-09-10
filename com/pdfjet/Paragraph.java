@@ -96,21 +96,25 @@ public class Paragraph {
      * Sets the text lines color.
      *
      * @param color the text lines color.
+     * @return this Paragraph object.
      */
-    public void setColor(int color) {
+    public Paragraph setColor(int color) {
         for (TextLine line : lines) {
             line.setTextColor(color);
         }
+        return this;
     }
 
     /**
      * Sets the text lines color based on the specified color map.
      *
      * @param colorMap the color map.
+     * @return this Paragraph object.
      */
-    public void setColorMap(Map<String, Integer> colorMap) {
+    public Paragraph setColorMap(Map<String, Integer> colorMap) {
         for (TextLine line : lines) {
             line.setColorMap(colorMap);
         }
+        return this;
     }
 }   // End of Paragraph.java

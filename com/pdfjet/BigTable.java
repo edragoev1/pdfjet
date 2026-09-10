@@ -53,17 +53,20 @@ public class BigTable {
      *
      * @param x the x coordinate of the top left corner of the table box.
      * @param y the y coordinate of the top left corner of the table box.
+     * @return this BigTable object.
      */
-    public void setLocation(float x, float y) {
+    public BigTable setLocation(float x, float y) {
         // Adjust all vertical line positions relative to new X
         for (int i = 0; i <= this.numberOfColumns; i++) {
             this.vertLines[i] += x;
         }
         this.y = y;
+        return this;
     }
 
-    public void setNumberOfColumns(int numberOfColumns) {
+    public BigTable setNumberOfColumns(int numberOfColumns) {
         this.numberOfColumns = numberOfColumns;
+        return this;
     }
 
     /**
@@ -71,27 +74,33 @@ public class BigTable {
      *
      * @param column the column.
      * @param alignment the alignment.
+     * @return this BigTable object.
      */
-    public void setTextAlignment(int column, Alignment alignment) {
+    public BigTable setTextAlignment(int column, Alignment alignment) {
         this.alignment[column] = alignment;
+        return this;
     }
 
     /**
      * Sets the bottom margin.
      *
      * @param bottomMargin the bottom margin.
+     * @return this BigTable object.
      */
-    public void setBottomMargin(float bottomMargin) {
+    public BigTable setBottomMargin(float bottomMargin) {
         this.bottomMargin = bottomMargin;
+        return this;
     }
 
     /**
      * Sets the language.
      *
      * @param language the language.
+     * @return this BigTable object.
      */
-    public void setLanguage(String language) {
+    public BigTable setLanguage(String language) {
         this.language = language;
+        return this;
     }
 
     /**
@@ -214,8 +223,9 @@ public class BigTable {
      * @param fileName the file name.
      * @param delimiter the delimiter.
      * @throws IOException if there is an issue.
+     * @return this BigTable object.
      */
-    public void setTableData(String fileName, String delimiter) throws IOException {
+    public BigTable setTableData(String fileName, String delimiter) throws IOException {
         this.fileName = fileName;
         this.delimiter = delimiter;
         this.vertLines = new float[this.numberOfColumns + 1];
@@ -260,6 +270,7 @@ public class BigTable {
             vertLineX += this.widths[i];
             this.vertLines[i + 1] = vertLineX;
         }
+        return this;
     }
 
     public void complete() throws Exception {

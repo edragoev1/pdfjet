@@ -56,71 +56,89 @@ public class Rect  : IDrawable {
         return SetLocation((float) x, (float) y);
     }
 
-    public void SetPosition(float x, float y) {
+    public Rect SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
-    public void SetPosition(double x, double y) {
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
+    }
+
+    public Rect SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
+        return this;
     }
 
-    public void SetSize(float w, float h) {
+    public Rect SetSize(float w, float h) {
         this.w = w;
         this.h = h;
+        return this;
     }
 
-    public void SetFillColor(int color) {
+    public Rect SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         SetFillColor(r, g, b);
+        return this;
     }
 
-    public void SetFillColor(float r, float g, float b) {
+    public Rect SetFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetFillColor(float[] rgbColor) {
+    public Rect SetFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
+        return this;
     }
 
-    public void SetBorderWidth(float width) {
+    public Rect SetBorderWidth(float width) {
         this.borderWidth = width;
+        return this;
     }
 
-    public void SetBorderColor(int color) {
+    public Rect SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
-            return;
+            return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         SetBorderColor(r, g, b);
+        return this;
     }
 
-    public void SetBorderColor(float r, float g, float b) {
+    public Rect SetBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetBorderColor(float[] rgbColor) {
+    public Rect SetBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
+        return this;
     }
 
-    public void SetCornerRadius(float r) {
+    public Rect SetCornerRadius(float r) {
         this.r = r;
+        return this;
     }
 
-    public void SetURIAction(string uri) {
+    public Rect SetURIAction(string uri) {
         this.uri = uri;
+        return this;
     }
 
-    public void SetGoToAction(string key) {
+    public Rect SetGoToAction(string key) {
         this.key = key;
+        return this;
     }
 
-    public void SetLanguage(String language) {
+    public Rect SetLanguage(String language) {
         this.language = language;
+        return this;
     }
 
     public Rect SetActualText(String actualText) {
@@ -133,8 +151,9 @@ public class Rect  : IDrawable {
         return this;
     }
 
-    public void SetBorderPattern(String borderPattern) {
+    public Rect SetBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;
+        return this;
     }
 
     public void ScaleBy(float factor) {

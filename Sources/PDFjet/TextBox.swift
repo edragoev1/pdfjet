@@ -86,34 +86,44 @@ public class TextBox : Drawable {
         self.fontSize = font.getSize()
     }
 
-    public func setFont(_ font: Font) {
+    @discardableResult
+    public func setFont(_ font: Font) -> TextBox {
         self.font = font
         self.fontSize = font.getSize()
+        return self
     }
 
     public func getFont() -> Font {
         return self.font
     }
 
-    public func setFontSize(_ fontSize: Float) {
+    @discardableResult
+    public func setFontSize(_ fontSize: Float) -> TextBox {
         self.fontSize = fontSize
+        return self
     }
 
-    public func setText(_ text: String?) {
+    @discardableResult
+    public func setText(_ text: String?) -> TextBox {
         self.text = text
+        return self
     }
 
     public func getText() -> String? {
         return self.text
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
-    public func setSize(_ w: Float, _ h: Float) {
+    @discardableResult
+    public func setSize(_ w: Float, _ h: Float) -> TextBox {
         self.width = w
         self.height = h
+        return self
     }
 
     @discardableResult
@@ -127,8 +137,10 @@ public class TextBox : Drawable {
         return [self.x, self.y]
     }
 
-    public func setWidth(_ width: Float) {
+    @discardableResult
+    public func setWidth(_ width: Float) -> TextBox {
         self.width = width
+        return self
     }
 
     public func getWidth() -> Float {
@@ -155,60 +167,82 @@ public class TextBox : Drawable {
         return self.margin
     }
 
-    public func setLineWidth(_ lineWidth: Float) {
+    @discardableResult
+    public func setLineWidth(_ lineWidth: Float) -> TextBox {
         self.lineWidth = lineWidth
+        return self
     }
 
     public func getLineWidth() -> Float {
         return self.lineWidth
     }
 
-    public func setSpacing(_ spacing: Float) {
+    @discardableResult
+    public func setSpacing(_ spacing: Float) -> TextBox {
         self.spacing = spacing
+        return self
     }
 
     public func getSpacing() -> Float {
         return self.spacing
     }
 
-    public func setFillColor(_ color: Int32) {
+    @discardableResult
+    public func setFillColor(_ color: Int32) -> TextBox {
         self.fillColor = colorArray(color)
+        return self
     }
 
-    public func setFillColor(_ rgbColor: [Float]?) {
+    @discardableResult
+    public func setFillColor(_ rgbColor: [Float]?) -> TextBox {
         self.fillColor = rgbColor
+        return self
     }
 
-    public func setBackgroundColor(_ color: Int32) {
+    @discardableResult
+    public func setBackgroundColor(_ color: Int32) -> TextBox {
         self.fillColor = colorArray(color)
+        return self
     }
 
-    public func setBackgroundColor(_ rgbColor: [Float]?) {
+    @discardableResult
+    public func setBackgroundColor(_ rgbColor: [Float]?) -> TextBox {
         self.fillColor = rgbColor
+        return self
     }
 
-    public func setTextColor(_ color: Int32) {
+    @discardableResult
+    public func setTextColor(_ color: Int32) -> TextBox {
         self.textColor = colorArray(color)
+        return self
     }
 
-    public func setTextColor(_ rgbColor: [Float]) {
+    @discardableResult
+    public func setTextColor(_ rgbColor: [Float]) -> TextBox {
         self.textColor = rgbColor
+        return self
     }
 
     public func getTextColor() -> [Float] {
         return self.textColor
     }
 
-    public func setStrokeWidth(_ strokeWidth: Float) {
+    @discardableResult
+    public func setStrokeWidth(_ strokeWidth: Float) -> TextBox {
         self.strokeWidth = strokeWidth
+        return self
     }
 
-    public func setStrokeColor(_ color: Int32) {
+    @discardableResult
+    public func setStrokeColor(_ color: Int32) -> TextBox {
         self.strokeColor = colorArray(color)
+        return self
     }
 
-    public func setStrokeColor(_ rgbColor: [Float]?) {
+    @discardableResult
+    public func setStrokeColor(_ rgbColor: [Float]?) -> TextBox {
         self.strokeColor = rgbColor
+        return self
     }
 
     public func getStrokeColor() -> [Float]? {
@@ -218,8 +252,10 @@ public class TextBox : Drawable {
     ///
     /// Sets the border with the specified bit mask.
     ///
-    public func setBorder(_ border: UInt32) {
+    @discardableResult
+    public func setBorder(_ border: UInt32) -> TextBox {
         self.properties |= border
+        return self
     }
 
     ///
@@ -245,12 +281,14 @@ public class TextBox : Drawable {
     ///
     /// Sets all borders on or off.
     ///
-    public func setBorders(_ borders: Bool) {
+    @discardableResult
+    public func setBorders(_ borders: Bool) -> TextBox {
         if borders {
             setBorder(Border.ALL)
         } else {
             self.properties &= 0x00F0FFFF
         }
+        return self
     }
 
     ///
@@ -266,48 +304,58 @@ public class TextBox : Drawable {
         return (self.properties & 0x00300000)
     }
 
-    public func setUnderline(_ underline: Bool) {
+    @discardableResult
+    public func setUnderline(_ underline: Bool) -> TextBox {
         if underline {
             self.properties |= 0x00400000
         } else {
             self.properties &= 0x00BFFFFF
         }
+        return self
     }
 
     public func getUnderline() -> Bool {
         return (properties & 0x00400000) != 0x00000000
     }
 
-    public func setStrikeout(_ strikeout: Bool) {
+    @discardableResult
+    public func setStrikeout(_ strikeout: Bool) -> TextBox {
         if strikeout {
             self.properties |= 0x00800000
         } else {
             self.properties &= 0x007FFFFF
         }
+        return self
     }
 
     public func getStrikeout() -> Bool {
         return (properties & 0x00800000) != 0x00000000
     }
 
-    public func setFallbackFont(_ fallbackFont: Font?) {
+    @discardableResult
+    public func setFallbackFont(_ fallbackFont: Font?) -> TextBox {
         self.fallbackFont = fallbackFont
+        return self
     }
 
     public func getFallbackFont() -> Font? {
         return self.fallbackFont
     }
 
-    public func setVerticalAlignment(_ valign: UInt32) {
+    @discardableResult
+    public func setVerticalAlignment(_ valign: UInt32) -> TextBox {
         self.valign = valign
+        return self
     }
 
     public func getVerticalAlignment() -> UInt32 {
         return self.valign
     }
 
-    public func setTextColors(_ colors: [String : Int32]?) {
+    @discardableResult
+    public func setTextColors(_ colors: [String : Int32]?) -> TextBox {
         self.colors = colors
+        return self
     }
 
     public func getTextColors() -> [String : Int32]? {

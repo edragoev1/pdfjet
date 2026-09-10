@@ -93,23 +93,27 @@ func NewChart(f1, f2 *Font) *Chart {
 }
 
 // SetTitle sets the title of the chart.
-func (chart *Chart) SetTitle(title string) {
+func (chart *Chart) SetTitle(title string) *Chart {
 	chart.title = title
+	return chart
 }
 
 // SetXAxisTitle sets the title for the X axis.
-func (chart *Chart) SetXAxisTitle(title string) {
+func (chart *Chart) SetXAxisTitle(title string) *Chart {
 	chart.xAxisTitle = title
+	return chart
 }
 
 // SetYAxisTitle sets the title for the Y axis.
-func (chart *Chart) SetYAxisTitle(title string) {
+func (chart *Chart) SetYAxisTitle(title string) *Chart {
 	chart.yAxisTitle = title
+	return chart
 }
 
 // SetData sets the data that will be used to draw chart.
-func (chart *Chart) SetData(chartData [][]*Point) {
+func (chart *Chart) SetData(chartData [][]*Point) *Chart {
 	chart.chartData = chartData
+	return chart
 }
 
 // GetData returns the chart data.
@@ -118,25 +122,29 @@ func (chart *Chart) GetData() [][]*Point {
 }
 
 // SetLocation sets the location of chart on the page.
-func (chart *Chart) SetLocation(x, y float32) {
+func (chart *Chart) SetLocation(x, y float32) *Chart {
 	chart.x1 = x
 	chart.y1 = y
+	return chart
 }
 
 // SetSize sets the size of chart.
-func (chart *Chart) SetSize(w, h float32) {
+func (chart *Chart) SetSize(w, h float32) *Chart {
 	chart.w = w
 	chart.h = h
+	return chart
 }
 
 // SetMinimumFractionDigits sets the minimum number of fractions digits do display for the X and Y axis labels.
-func (chart *Chart) SetMinimumFractionDigits(minFractionDigits int) {
+func (chart *Chart) SetMinimumFractionDigits(minFractionDigits int) *Chart {
 	chart.minFractionDigits = minFractionDigits
+	return chart
 }
 
 // SetMaximumFractionDigits sets the maximum number of fractions digits do display for the X and Y axis labels.
-func (chart *Chart) SetMaximumFractionDigits(maxFractionDigits int) {
+func (chart *Chart) SetMaximumFractionDigits(maxFractionDigits int) *Chart {
 	chart.maxFractionDigits = maxFractionDigits
+	return chart
 }
 
 // Slope calculates the slope of a trend line given a list of points.
@@ -153,53 +161,63 @@ func (chart *Chart) Intercept(points []*Point, slope float32) float32 {
 }
 
 // SetDrawXAxisLines sets whether to draw horizontal grid lines on the chart.
-func (chart *Chart) SetDrawXAxisLines(drawXAxisLines bool) {
+func (chart *Chart) SetDrawXAxisLines(drawXAxisLines bool) *Chart {
 	chart.drawXAxisLines = drawXAxisLines
+	return chart
 }
 
 // SetDrawYAxisLines sets whether to draw vertical grid lines on the chart.
-func (chart *Chart) SetDrawYAxisLines(drawYAxisLines bool) {
+func (chart *Chart) SetDrawYAxisLines(drawYAxisLines bool) *Chart {
 	chart.drawYAxisLines = drawYAxisLines
+	return chart
 }
 
 // SetFontSize sets the font size used for the axis labels and point text.
-func (chart *Chart) SetFontSize(fontSize float32) {
+func (chart *Chart) SetFontSize(fontSize float32) *Chart {
 	chart.fontSize = fontSize
+	return chart
 }
 
 // SetChartBorderWidth sets the width of the chart border.
-func (chart *Chart) SetChartBorderWidth(width float32) {
+func (chart *Chart) SetChartBorderWidth(width float32) *Chart {
 	chart.chartBorderWidth = width
+	return chart
 }
 
 // SetInnerBorderWidth sets the width of the inner border.
-func (chart *Chart) SetInnerBorderWidth(width float32) {
+func (chart *Chart) SetInnerBorderWidth(width float32) *Chart {
 	chart.innerBorderWidth = width
+	return chart
 }
 
 // SetHGridLineWidth sets the width of the horizontal grid lines.
-func (chart *Chart) SetHGridLineWidth(width float32) {
+func (chart *Chart) SetHGridLineWidth(width float32) *Chart {
 	chart.hGridLineWidth = width
+	return chart
 }
 
 // SetVGridLineWidth sets the width of the vertical grid lines.
-func (chart *Chart) SetVGridLineWidth(width float32) {
+func (chart *Chart) SetVGridLineWidth(width float32) *Chart {
 	chart.vGridLineWidth = width
+	return chart
 }
 
 // SetHGridLinePattern sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
-func (chart *Chart) SetHGridLinePattern(pattern string) {
+func (chart *Chart) SetHGridLinePattern(pattern string) *Chart {
 	chart.hGridLinePattern = pattern
+	return chart
 }
 
 // SetVGridLinePattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
-func (chart *Chart) SetVGridLinePattern(pattern string) {
+func (chart *Chart) SetVGridLinePattern(pattern string) *Chart {
 	chart.vGridLinePattern = pattern
+	return chart
 }
 
 // SetAutoColors toggles the automatic stroke colors for the data series.
-func (chart *Chart) SetAutoColors(autoColors bool) {
+func (chart *Chart) SetAutoColors(autoColors bool) *Chart {
 	chart.autoColors = autoColors
+	return chart
 }
 
 // ToFloatArray converts an RGB color to the float array used internally.
@@ -216,18 +234,21 @@ func (chart *Chart) SetPosition(x, y float32) {
 }
 
 // SetDrawXAxisLabels sets whether to draw X axis labels on the chart.
-func (chart *Chart) SetDrawXAxisLabels(drawXAxisLabels bool) {
+func (chart *Chart) SetDrawXAxisLabels(drawXAxisLabels bool) *Chart {
 	chart.drawXAxisLabels = drawXAxisLabels
+	return chart
 }
 
 // SetDrawYAxisLabels sets whether to draw Y axis labels on the chart.
-func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) {
+func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) *Chart {
 	chart.drawYAxisLabels = drawYAxisLabels
+	return chart
 }
 
 // SetXYChart sets whether this is an XY chart (true) or a category chart (false).
-func (chart *Chart) SetXYChart(xyChart bool) {
+func (chart *Chart) SetXYChart(xyChart bool) *Chart {
 	chart.xyChart = xyChart
+	return chart
 }
 
 // DrawOn draws chart on the specified page.
@@ -681,15 +702,17 @@ func (chart *Chart) devsq(points []*Point) float32 {
 }
 
 // SetXAxisMinMax sets xMin and xMax for the X axis and the number of X grid lines.
-func (chart *Chart) SetXAxisMinMax(xMin, xMax float32, xAxisGridLines int) {
+func (chart *Chart) SetXAxisMinMax(xMin, xMax float32, xAxisGridLines int) *Chart {
 	chart.xMin = xMin
 	chart.xMax = xMax
 	chart.xAxisGridLines = xAxisGridLines
+	return chart
 }
 
 // SetYAxisMinMax sets yMin and yMax for the Y axis and the number of Y grid lines.
-func (chart *Chart) SetYAxisMinMax(yMin, yMax float32, yAxisGridLines int) {
+func (chart *Chart) SetYAxisMinMax(yMin, yMax float32, yAxisGridLines int) *Chart {
 	chart.yMin = yMin
 	chart.yMax = yMax
 	chart.yAxisGridLines = yAxisGridLines
+	return chart
 }

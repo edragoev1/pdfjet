@@ -39,9 +39,11 @@ public class Stamp {
         return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Stamp {
         self.x = x
         self.y = y
+        return self
     }
 
     @discardableResult

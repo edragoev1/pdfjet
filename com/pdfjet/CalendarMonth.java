@@ -58,36 +58,44 @@ public class CalendarMonth implements Drawable {
      * Sets the header font.
      *
      * @param font the header font.
+     * @return this CalendarMonth object.
      */
-    public void setHeadFont(Font font) {
+    public CalendarMonth setHeadFont(Font font) {
         this.f1 = font;
+        return this;
     }
 
     /**
      * Sets the body font.
      *
      * @param font the body font.
+     * @return this CalendarMonth object.
      */
-    public void setBodyFont(Font font) {
+    public CalendarMonth setBodyFont(Font font) {
         this.f2 = font;
+        return this;
     }
 
     /**
      * Sets the cell width.
      *
      * @param width the cell width.
+     * @return this CalendarMonth object.
      */
-    public void setCellWidth(float width) {
+    public CalendarMonth setCellWidth(float width) {
         this.dx = width;
+        return this;
     }
 
     /**
      * Sets the cell height.
      *
      * @param height the cell height.
+     * @return this CalendarMonth object.
      */
-    public void setCellHeight(float height) {
+    public CalendarMonth setCellHeight(float height) {
         this.dy = height;
+        return this;
     }
 
     /**
@@ -95,9 +103,11 @@ public class CalendarMonth implements Drawable {
      *
      * @param x the horizontal position.
      * @param y the vertical position.
+     * @return this CalendarMonth object.
      */
-    public void setPosition(float x, float y) {
+    public CalendarMonth setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**

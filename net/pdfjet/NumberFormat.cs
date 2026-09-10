@@ -15,12 +15,14 @@ public class NumberFormat {
         return new NumberFormat();
     }
 
-    public void SetMinimumFractionDigits(int minFractionDigits) {
+    public NumberFormat SetMinimumFractionDigits(int minFractionDigits) {
         this.minFractionDigits = minFractionDigits;
+        return this;
     }
 
-    public void SetMaximumFractionDigits(int maxFractionDigits) {
+    public NumberFormat SetMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
+        return this;
     }
 
     public String Format(double value) {

@@ -55,27 +55,33 @@ public class OptionalContentGroup {
      * Sets the visibility of this group
      *
      * @param visible flag
+     * @return this OptionalContentGroup object.
      */
-    public void setVisible(boolean visible) {
+    public OptionalContentGroup setVisible(boolean visible) {
         this.visible = visible;
+        return this;
     }
 
     /**
      * Sets the printability of this group
      *
      * @param printable flag
+     * @return this OptionalContentGroup object.
      */
-    public void setPrintable(boolean printable) {
+    public OptionalContentGroup setPrintable(boolean printable) {
         this.printable = printable;
+        return this;
     }
 
     /**
      * Sets the exportability of this group
      *
      * @param exportable flag
+     * @return this OptionalContentGroup object.
      */
-    public void setExportable(boolean exportable) {
+    public OptionalContentGroup setExportable(boolean exportable) {
         this.exportable = exportable;
+        return this;
     }
 
     /**

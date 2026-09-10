@@ -94,8 +94,10 @@ public class TextLine : Drawable {
         return self.text
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     ///

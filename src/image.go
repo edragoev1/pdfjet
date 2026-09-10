@@ -279,14 +279,16 @@ func (image *Image) ResizeHeight(height float32) *Image {
 
 // SetURIAction sets the URI for the "click box" action.
 // @param uri the URI
-func (image *Image) SetURIAction(uri string) {
+func (image *Image) SetURIAction(uri string) *Image {
 	image.uri = uri
+	return image
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
-func (image *Image) SetGoToAction(key string) {
+func (image *Image) SetGoToAction(key string) *Image {
 	image.key = key
+	return image
 }
 
 // RotateClockwise sets the image rotation to the specified number of degrees.

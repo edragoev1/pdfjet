@@ -143,9 +143,11 @@ public class Point : IDrawable {
      *
      * @param x the x coordinate of this point when drawn on the page.
      * @param y the y coordinate of this point when drawn on the page.
+     * @return this Point object.
      */
-    public void SetPosition(double x, double y) {
+    public Point SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -153,13 +155,20 @@ public class Point : IDrawable {
      *
      * @param x the x coordinate of this point when drawn on the page.
      * @param y the y coordinate of this point when drawn on the page.
+     * @return this Point object.
      */
-    public void SetPosition(float x, float y) {
+    public Point SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
-    public void SetXY(float x, float y) {
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
+    }
+
+    public Point SetXY(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
     /**
@@ -179,18 +188,22 @@ public class Point : IDrawable {
      * Sets the x coordinate of this point.
      *
      * @param x the x coordinate of this point when drawn on the page.
+     * @return this Point object.
      */
-    public void SetX(double x) {
+    public Point SetX(double x) {
         this.x = (float) x;
+        return this;
     }
 
     /**
      * Sets the x coordinate of this point.
      *
      * @param x the x coordinate of this point when drawn on the page.
+     * @return this Point object.
      */
-    public void SetX(float x) {
+    public Point SetX(float x) {
         this.x = x;
+        return this;
     }
 
     /**
@@ -206,18 +219,22 @@ public class Point : IDrawable {
      * Sets the y coordinate of this point.
      *
      * @param y the y coordinate of this point when drawn on the page.
+     * @return this Point object.
      */
-    public void SetY(double y) {
+    public Point SetY(double y) {
         this.y = (float) y;
+        return this;
     }
 
     /**
      * Sets the y coordinate of this point.
      *
      * @param y the y coordinate of this point when drawn on the page.
+     * @return this Point object.
      */
-    public void SetY(float y) {
+    public Point SetY(float y) {
         this.y = y;
+        return this;
     }
 
     /**
@@ -233,18 +250,22 @@ public class Point : IDrawable {
      * Sets the radius of this point.
      *
      * @param r the radius.
+     * @return this Point object.
      */
-    public void SetRadius(double r) {
+    public Point SetRadius(double r) {
         this.r = (float) r;
+        return this;
     }
 
     /**
      * Sets the radius of this point.
      *
      * @param r the radius.
+     * @return this Point object.
      */
-    public void SetRadius(float r) {
+    public Point SetRadius(float r) {
         this.r = r;
+        return this;
     }
 
     /**
@@ -256,23 +277,27 @@ public class Point : IDrawable {
         return r;
     }
 
-    public void SetFillColor(int color) {
+    public Point SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetFillColor(float r, float g, float b) {
+    public Point SetFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetFillColor(float[] rgbColor) {
+    public Point SetFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
+        return this;
     }
 
-    public void SetStrokeWidth(float strokeWidth) {
+    public Point SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
+        return this;
     }
 
     public float[] GetFillColor() {
@@ -321,9 +346,11 @@ public class Point : IDrawable {
      * Point.LEFT_ARROW
      * Point.RIGHT_ARROW
      * </pre>
+     * @return this Point object.
      */
-    public void SetShape(int shape) {
+    public Point SetShape(int shape) {
         this.shape = shape;
+        return this;
     }
 
     /**
@@ -339,9 +366,11 @@ public class Point : IDrawable {
      * Sets the width of the lines of this point.
      *
      * @param width the line width.
+     * @return this Point object.
      */
-    public void SetStrokeWidth(double width) {
+    public Point SetStrokeWidth(double width) {
         this.strokeWidth = (float) width;
+        return this;
     }
 
     /**
@@ -374,9 +403,11 @@ public class Point : IDrawable {
      * </pre>
      *
      * @param strokeDashPattern the stroke dash pattern.
+     * @return this Point object.
      */
-    public void SetStrokeDashPattern(String strokeDashPattern) {
+    public Point SetStrokeDashPattern(String strokeDashPattern) {
         this.strokeDashPattern = strokeDashPattern;
+        return this;
     }
 
     /**
@@ -388,8 +419,9 @@ public class Point : IDrawable {
         return strokeDashPattern;
     }
 
-    public void SetPathOperator(string pathOperator) {
+    public Point SetPathOperator(string pathOperator) {
         this.pathOperator = pathOperator;
+        return this;
     }
 
     public string GetPathOperator() {
@@ -420,9 +452,11 @@ public class Point : IDrawable {
      * Sets the URI for the "click point" action.
      *
      * @param uri the URI
+     * @return this Point object.
      */
-    public void SetURIAction(String uri) {
+    public Point SetURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     /**
@@ -438,9 +472,11 @@ public class Point : IDrawable {
      * Sets the point text.
      *
      * @param text the text.
+     * @return this Point object.
      */
-    public void SetText(String text) {
+    public Point SetText(String text) {
         this.text = text;
+        return this;
     }
 
     /**
@@ -456,9 +492,11 @@ public class Point : IDrawable {
      * Sets the point's text color.
      *
      * @param textColor the text color.
+     * @return this Point object.
      */
-    public void SetTextColor(int textColor) {
+    public Point SetTextColor(int textColor) {
         this.textColor = textColor;
+        return this;
     }
 
     /**
@@ -474,9 +512,11 @@ public class Point : IDrawable {
      * Sets the point's text direction.
      *
      * @param textDirection the text direction.
+     * @return this Point object.
      */
-    public void SetTextDirection(int textDirection) {
+    public Point SetTextDirection(int textDirection) {
         this.textDirection = textDirection;
+        return this;
     }
 
     /**
@@ -492,9 +532,11 @@ public class Point : IDrawable {
      * Sets the point alignment.
      *
      * @param align the alignment value.
+     * @return this Point object.
      */
-    public void SetAlignment(Alignment alignment) {
+    public Point SetAlignment(Alignment alignment) {
         this.alignment = alignment;
+        return this;
     }
 
     /**

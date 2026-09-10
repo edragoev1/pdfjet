@@ -38,9 +38,14 @@ public class Container : IDrawable {
     /// </summary>
     /// <param name="x">The X coordinate.</param>
     /// <param name="y">The Y coordinate.</param>
-    public void SetPosition(float x, float y) {
+    public Container SetPosition(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /// <summary>
@@ -48,17 +53,19 @@ public class Container : IDrawable {
     /// </summary>
     /// <param name="x">The X coordinate.</param>
     /// <param name="y">The Y coordinate.</param>
-    public void SetLocation(float x, float y) {
+    public Container SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /// <summary>
     /// Sets the rotation angle.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees.</param>
-    public void SetRotation(double degrees) {
+    public Container SetRotation(double degrees) {
         this.rotateDegrees = (float)degrees;
+        return this;
     }
 
     public void Rotate(double degrees) {
@@ -69,16 +76,18 @@ public class Container : IDrawable {
     /// Sets clockwise rotation.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
-    public void SetRotationClockwise(double degrees) {
+    public Container SetRotationClockwise(double degrees) {
         this.rotateDegrees = (float)-degrees;
+        return this;
     }
 
     /// <summary>
     /// Sets counter-clockwise rotation.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees (counter-clockwise).</param>
-    public void SetRotationCounterClockwise(double degrees) {
+    public Container SetRotationCounterClockwise(double degrees) {
         this.rotateDegrees = (float)degrees;
+        return this;
     }
 
     public float[] GetRotationCenter() {
@@ -89,8 +98,9 @@ public class Container : IDrawable {
     /// Sets a uniform scaling factor for both X and Y axes.
     /// </summary>
     /// <param name="factor">The scaling factor to apply.</param>
-    public void SetScaleFactor(float factor) {
+    public Container SetScaleFactor(float factor) {
         SetScaleFactorXY(factor, factor);
+        return this;
     }
 
     /// <summary>
@@ -98,15 +108,17 @@ public class Container : IDrawable {
     /// </summary>
     /// <param name="sx">The scaling factor for X.</param>
     /// <param name="sy">The scaling factor for Y.</param>
-    public void SetScaleFactorXY(float sx, float sy) {
+    public Container SetScaleFactorXY(float sx, float sy) {
         this.scaleX = sx;
         this.scaleY = sy;
+        return this;
     }
 
-    public void SetBorderColor(int borderColor) {
+    public Container SetBorderColor(int borderColor) {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.SetBorderColor(borderColor);
         this.Add(rect);
+        return this;
     }
 
     public void AddBorder() {

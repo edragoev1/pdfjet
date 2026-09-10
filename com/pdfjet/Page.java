@@ -603,12 +603,14 @@ final public class Page {
      * Sets the brush color.
      *
      * @param color the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
+     * @return this Page object.
      */
-    public void setBrushColor(int color) {
+    public Page setBrushColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         setBrushColor(new float[] {r, g, b});
+        return this;
     }
 
     /**
@@ -617,17 +619,18 @@ final public class Page {
      * @param rgbColor An array of three floats representing the red, green, and blue components of the color.
      *                 Each value should be between 0.0f and 1.0f. If the array is null or values are out of range,
      *                 the method logs a warning and does not change the brush color.
+     * @return this Page object.
      */
-    public void setBrushColor(float[] rgbColor) {
+    public Page setBrushColor(float[] rgbColor) {
         if (rgbColor == null) {
-            return; // Early exit if null
+            return this; // Early exit if null
         }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
             rgbColor[2] < 0f || rgbColor[2] > 1f) {
             PDF.LOG.warning("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return; // Early exit if out of range
+            return this; // Early exit if out of range
         }
 
         // Now set the brush color
@@ -640,6 +643,7 @@ final public class Page {
         append(Token.SPACE);
         append(rgbColor[2]);
         append(" rg\n");
+        return this;
     }
 
     /**
@@ -660,12 +664,14 @@ final public class Page {
      *              - The 16 most significant bits represent the red component,
      *              - The next 8 bits represent the green component,
      *              - The least significant 8 bits represent the blue component.
+     * @return this Page object.
      */
-    public void setPenColor(int color) {
+    public Page setPenColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         setPenColor(new float[] {r, g, b});
+        return this;
     }
 
     /**
@@ -674,17 +680,18 @@ final public class Page {
      * Each component should be in the range of 0.0f to 1.0f.
      *
      * @param rgbColor An array of three float values for red, green, and blue (0.0f to 1.0f).
+     * @return this Page object.
      */
-    public void setPenColor(float[] rgbColor) {
+    public Page setPenColor(float[] rgbColor) {
         if (rgbColor == null) {
-            return; // Early exit if null
+            return this; // Early exit if null
         }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
             rgbColor[2] < 0f || rgbColor[2] > 1f) {
             PDF.LOG.warning("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return; // Early exit if out of range
+            return this; // Early exit if out of range
         }
 
         // Now set the pen color
@@ -697,6 +704,7 @@ final public class Page {
         append(Token.SPACE);
         append(rgbColor[2]);
         append(" RG\n");
+        return this;
     }
 
     /**
@@ -717,8 +725,9 @@ final public class Page {
      * @param m Magenta component (0.0f to 1.0f).
      * @param y Yellow component (0.0f to 1.0f).
      * @param k Black component (0.0f to 1.0f).
+     * @return this Page object.
      */
-    public void setBrushColorCMYK(float c, float m, float y, float k) {
+    public Page setBrushColorCMYK(float c, float m, float y, float k) {
         append(c);
         append(' ');
         append(m);
@@ -727,6 +736,7 @@ final public class Page {
         append(' ');
         append(k);
         append(" k\n");
+        return this;
     }
 
     /**
@@ -737,8 +747,9 @@ final public class Page {
      * @param m Magenta component (0.0f to 1.0f).
      * @param y Yellow component (0.0f to 1.0f).
      * @param k Black component (0.0f to 1.0f).
+     * @return this Page object.
      */
-    public void setPenColorCMYK(float c, float m, float y, float k) {
+    public Page setPenColorCMYK(float c, float m, float y, float k) {
         append(c);
         append(' ');
         append(m);
@@ -747,15 +758,19 @@ final public class Page {
         append(' ');
         append(k);
         append(" K\n");
+        return this;
     }
 
     /**
      * Sets the line width to the default.
      * The default is the finest line width.
+     *
+     * @return this Page object.
      */
-    public void setDefaultLineWidth() {
+    public Page setDefaultLineWidth() {
         append(0f);
         append(" w\n");
+        return this;
     }
 
     /**
@@ -779,39 +794,48 @@ final public class Page {
      * </pre>
      *
      * @param strokeDashPattern the line dash pattern.
+     * @return this Page object.
      */
-    public void setStrokeDashPattern(String strokeDashPattern) {
+    public Page setStrokeDashPattern(String strokeDashPattern) {
         this.strokeDashPattern = strokeDashPattern;
         append(strokeDashPattern);
         append(" d\n");
+        return this;
     }
 
     /**
      * Sets the default line dash pattern - solid line.
+     *
+     * @return this Page object.
      */
-    public void setDefaultStrokeDashPattern() {
+    public Page setDefaultStrokeDashPattern() {
         append("[] 0");
         append(" d\n");
+        return this;
     }
 
     /**
      * Sets the pen width that will be used to draw lines and splines on this page.
      *
      * @param width the pen width.
+     * @return this Page object.
      */
-    public void setPenWidth(double width) {
+    public Page setPenWidth(double width) {
         setPenWidth((float) width);
+        return this;
     }
 
     /**
      * Sets the pen width that will be used to draw lines and splines on this page.
      *
      * @param width the pen width.
+     * @return this Page object.
      */
-    public void setPenWidth(float width) {
+    public Page setPenWidth(float width) {
         this.penWidth = width;
         append(width);
         append(" w\n");
+        return this;
     }
 
     public float getPenWidth() {
@@ -823,22 +847,26 @@ final public class Page {
      *
      * @param style the cap style of the current line.
      * Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
+     * @return this Page object.
      */
-    public void setLineCapStyle(CapStyle style) {
+    public Page setLineCapStyle(CapStyle style) {
         lineCapStyle = style;
         append(lineCapStyle.ordinal());
         append(" J\n");
+        return this;
     }
 
     /**
      * Sets the line join style.
      *
      * @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
+     * @return this Page object.
      */
-    public void setLineJoinStyle(JoinStyle style) {
+    public Page setLineJoinStyle(JoinStyle style) {
         lineJoinStyle = style;
         append(lineJoinStyle.ordinal());
         append(" j\n");
+        return this;
     }
 
     /**
@@ -1289,21 +1317,24 @@ final public class Page {
      *
      * @param mode the rendering mode.
      * @throws Exception  If an input or output exception occurred
+     * @return this Page object.
      */
-    public void setTextRenderingMode(int mode) throws Exception {
+    public Page setTextRenderingMode(int mode) throws Exception {
         if (mode >= 0 && mode <= 7) {
             this.renderingMode = mode;
         } else {
             throw new Exception("Invalid text rendering mode: " + mode);
         }
+        return this;
     }
 
     /**
      *  Sets the text direction.
      *
      *  @param degrees the angle.
+     *  @return this Page object.
      */
-    public void setTextDirection(int degrees) {
+    public Page setTextDirection(int degrees) {
         if (degrees > 360) degrees %= 360;
         if (degrees == 0) {
             tmx = new float[] { 1f,  0f,  0f,  1f};
@@ -1324,6 +1355,7 @@ final public class Page {
         tm1 = FastFloat.toByteArray(tmx[1]);
         tm2 = FastFloat.toByteArray(tmx[2]);
         tm3 = FastFloat.toByteArray(tmx[3]);
+        return this;
     }
 
     /**
@@ -1502,8 +1534,9 @@ final public class Page {
      * Sets the graphics state. Please see Example_31.
      *
      * @param gs the graphics state to use.
+     * @return this Page object.
      */
-    public void setGraphicsState(GraphicsState gs) {
+    public Page setGraphicsState(GraphicsState gs) {
         StringBuilder sb = new StringBuilder();
         sb.append("/CA ");
         sb.append(gs.getAlphaStroking());
@@ -1521,6 +1554,7 @@ final public class Page {
         append("/GS");
         append(n);
         append(" gs\n");
+        return this;
     }
 
     /**
@@ -1538,10 +1572,12 @@ final public class Page {
      * @param upperLeftY the top left Y coordinate of the CropBox.
      * @param lowerRightX the bottom right X coordinate of the CropBox.
      * @param lowerRightY the bottom right Y coordinate of the CropBox.
+     * @return this Page object.
      */
-    public void setCropBox(
+    public Page setCropBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.cropBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     /**
@@ -1552,10 +1588,12 @@ final public class Page {
      * @param upperLeftY the top left Y coordinate of the BleedBox.
      * @param lowerRightX the bottom right X coordinate of the BleedBox.
      * @param lowerRightY the bottom right Y coordinate of the BleedBox.
+     * @return this Page object.
      */
-    public void setBleedBox(
+    public Page setBleedBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.bleedBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     /**
@@ -1566,10 +1604,12 @@ final public class Page {
      * @param upperLeftY the top left Y coordinate of the TrimBox.
      * @param lowerRightX the bottom right X coordinate of the TrimBox.
      * @param lowerRightY the bottom right Y coordinate of the TrimBox.
+     * @return this Page object.
      */
-    public void setTrimBox(
+    public Page setTrimBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.trimBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     /**
@@ -1580,10 +1620,12 @@ final public class Page {
      * @param upperLeftY the top left Y coordinate of the ArtBox.
      * @param lowerRightX the bottom right X coordinate of the ArtBox.
      * @param lowerRightY the bottom right Y coordinate of the ArtBox.
+     * @return this Page object.
      */
-    public void setArtBox(
+    public Page setArtBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.artBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     private void appendPointXY(float x, float y) {

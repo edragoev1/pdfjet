@@ -321,8 +321,9 @@ func (font *Font) GetSize() float32 {
 // SetKernPairs sets the kerning for the selected font to 'true' or 'false'
 // depending on the passed value of kernPairs parameter.
 // The kerning is implemented only for the 14 standard fonts.
-func (font *Font) SetKernPairs(kernPairs bool) {
+func (font *Font) SetKernPairs(kernPairs bool) *Font {
 	font.kernPairs = kernPairs
+	return font
 }
 
 // GetAscent returns the ascent of this font at its current size.
@@ -452,8 +453,9 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 // Use this method when you don't have real italic font in the font family,
 // or when you want to generate smaller PDF files.
 // For example, you could embed only the Regular and Bold fonts and synthesize the RegularItalic and BoldItalic.
-func (font *Font) SetItalic(skew15 bool) {
+func (font *Font) SetItalic(skew15 bool) *Font {
 	font.skew15 = skew15
+	return font
 }
 
 // StringWidth returns the width of the specified string when drawn on the

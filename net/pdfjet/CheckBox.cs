@@ -80,12 +80,18 @@ public class CheckBox : IDrawable {
      * @param y the y coordinate on the Page.
      * @return this CheckBox.
      */
-    public void SetPosition(double x, double y) {
+    public CheckBox SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
+        return this;
     }
 
-    public void SetPosition(float x, float y) {
+    public CheckBox SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**

@@ -38,9 +38,11 @@ public class CompositeTextLine : IDrawable {
      * Sets the font size.
      *
      * @param fontSize the font size.
+     * @return this CompositeTextLine object.
      */
-    public void SetFontSize(float fontSize) {
+    public CompositeTextLine SetFontSize(float fontSize) {
         this.fontSize = fontSize;
+        return this;
     }
 
     /**
@@ -56,9 +58,11 @@ public class CompositeTextLine : IDrawable {
      * Sets the superscript factor for this composite text line.
      *
      * @param superscript the superscript size factor.
+     * @return this CompositeTextLine object.
      */
-    public void SetSuperscriptFactor(float superscript) {
+    public CompositeTextLine SetSuperscriptFactor(float superscript) {
         this.superscriptSizeFactor = superscript;
+        return this;
     }
 
     /**
@@ -74,9 +78,11 @@ public class CompositeTextLine : IDrawable {
      * Sets the subscript factor for this composite text line.
      *
      * @param subscript the subscript size factor.
+     * @return this CompositeTextLine object.
      */
-    public void SetSubscriptFactor(float subscript) {
+    public CompositeTextLine SetSubscriptFactor(float subscript) {
         this.subscriptSizeFactor = subscript;
+        return this;
     }
 
     /**
@@ -92,9 +98,11 @@ public class CompositeTextLine : IDrawable {
      * Sets the superscript position for this composite text line.
      *
      * @param superscriptPosition the superscript position.
+     * @return this CompositeTextLine object.
      */
-    public void SetSuperscriptPosition(float superscriptPosition) {
+    public CompositeTextLine SetSuperscriptPosition(float superscriptPosition) {
         this.superscriptPosition = superscriptPosition;
+        return this;
     }
 
     /**
@@ -110,9 +118,11 @@ public class CompositeTextLine : IDrawable {
      * Sets the subscript position for this composite text line.
      *
      * @param subscriptPosition the subscript position.
+     * @return this CompositeTextLine object.
      */
-    public void SetSubscriptPosition(float subscriptPosition) {
+    public CompositeTextLine SetSubscriptPosition(float subscriptPosition) {
         this.subscriptPosition = subscriptPosition;
+        return this;
     }
 
     /**
@@ -144,9 +154,11 @@ public class CompositeTextLine : IDrawable {
      *
      * @param x the x coordinate.
      * @param y the y coordinate.
+     * @return this CompositeTextLine object.
      */
-    public void SetPosition(double x, double y) {
+    public CompositeTextLine SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -155,9 +167,15 @@ public class CompositeTextLine : IDrawable {
      *
      * @param x the x coordinate.
      * @param y the y coordinate.
+     * @return this CompositeTextLine object.
      */
-    public void SetPosition(float x, float y) {
+    public CompositeTextLine SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**
@@ -166,10 +184,12 @@ public class CompositeTextLine : IDrawable {
      *
      * @param x the x coordinate.
      * @param y the y coordinate.
+     * @return this CompositeTextLine object.
      */
-    public void SetLocation(float x, float y) {
+    public CompositeTextLine SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**

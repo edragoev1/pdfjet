@@ -105,19 +105,21 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 // SetLocation sets the location (x, y) of the top left corner of table on the page.
 // @param x the x coordinate of the top left point of the table.
 // @param y the y coordinate of the top left point of the table.
-func (table *Table) SetLocation(x, y float32) {
+func (table *Table) SetLocation(x, y float32) *Table {
 	table.x1 = x
 	table.y1 = y
+	return table
 }
 
 // SetBottomMargin sets the bottom margin for table.
 // @param bottomMargin the margin.
-func (table *Table) SetBottomMargin(bottomMargin float32) {
+func (table *Table) SetBottomMargin(bottomMargin float32) *Table {
 	table.bottomMargin = bottomMargin
+	return table
 }
 
 // SetData sets the table data and specifies the number of header rows in table data.
-func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) {
+func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) *Table {
 	table.tableData = tableData
 	table.numOfHeaderRows = numOfHeaderRows
 	table.rendered = numOfHeaderRows
@@ -129,6 +131,7 @@ func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) {
 			row = append(row, NewCell(font, ""))
 		}
 	}
+	return table
 }
 
 // RightAlignNumbers sets the alignment of the numbers.
@@ -178,7 +181,7 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) {
 // @param index the index of the specified column.
 // @param alignment the specified alignment.
 // Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
-func (table *Table) SetTextAlignInColumn(index, alignment int) {
+func (table *Table) SetTextAlignInColumn(index, alignment int) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
@@ -188,12 +191,13 @@ func (table *Table) SetTextAlignInColumn(index, alignment int) {
 			}
 		}
 	}
+	return table
 }
 
 // SetTextColorInColumn sets the color of the text in the specified column.
 // @param index the index of the specified column.
 // @param color the color specified as an integer.
-func (table *Table) SetTextColorInColumn(index int, color int32) {
+func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
 	textColor := colorToRGB(color)
 	for _, row := range table.tableData {
 		if index < len(row) {
@@ -204,12 +208,13 @@ func (table *Table) SetTextColorInColumn(index int, color int32) {
 			}
 		}
 	}
+	return table
 }
 
 // SetFontInColumn sets the font for the specified column.
 // @param index the column index.
 // @param font the font.
-func (table *Table) SetFontInColumn(index int, font *Font) {
+func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
@@ -219,12 +224,13 @@ func (table *Table) SetFontInColumn(index int, font *Font) {
 			}
 		}
 	}
+	return table
 }
 
 // SetTextColorInRow sets the color of the text in the specified row.
 // @param index the index of the specified row.
 // @param color the color specified as an integer.
-func (table *Table) SetTextColorInRow(index int, color int32) {
+func (table *Table) SetTextColorInRow(index int, color int32) *Table {
 	textColor := colorToRGB(color)
 	if index < len(table.tableData) {
 		row := table.tableData[index]
@@ -235,12 +241,13 @@ func (table *Table) SetTextColorInRow(index int, color int32) {
 			}
 		}
 	}
+	return table
 }
 
 // SetFontInRow sets the font for the specified row.
 // @param index the row index.
 // @param font the font.
-func (table *Table) SetFontInRow(index int, font *Font) {
+func (table *Table) SetFontInRow(index int, font *Font) *Table {
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
@@ -250,12 +257,13 @@ func (table *Table) SetFontInRow(index int, font *Font) {
 			}
 		}
 	}
+	return table
 }
 
 // SetColumnWidth sets the width of the column with the specified index.
 // @param index the index of specified column.
 // @param width the specified width.
-func (table *Table) SetColumnWidth(index int, width float32) {
+func (table *Table) SetColumnWidth(index int, width float32) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
@@ -265,6 +273,7 @@ func (table *Table) SetColumnWidth(index int, width float32) {
 			}
 		}
 	}
+	return table
 }
 
 // GetColumnWidth returns the column width of the column at the specified index.
@@ -456,7 +465,7 @@ func (table *Table) GetRowsRendered() int {
 }
 
 // SetCellBorders sets all table cells borders to <strong>false</strong> or <strong>true</strong>.
-func (table *Table) SetCellBorders(border bool) {
+func (table *Table) SetCellBorders(border bool) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
 			cell.SetTopBorder(border)
@@ -465,27 +474,30 @@ func (table *Table) SetCellBorders(border bool) {
 			cell.SetRightBorder(border)
 		}
 	}
+	return table
 }
 
 // SetCellBordersColor sets the color of the cell borders.
 // @param color the color of the cell borders.
-func (table *Table) SetCellBordersColor(color int32) {
+func (table *Table) SetCellBordersColor(color int32) *Table {
 	penColor := colorToRGB(color)
 	for _, row := range table.tableData {
 		for _, cell := range row {
 			cell.SetPenColor(penColor)
 		}
 	}
+	return table
 }
 
 // SetCellBordersWidth sets the width of the cell borders.
 // @param width the width of the borders.
-func (table *Table) SetCellBordersWidth(width float32) {
+func (table *Table) SetCellBordersWidth(width float32) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
 			cell.SetLineWidth(width)
 		}
 	}
+	return table
 }
 
 // Sets the right border on all cells in the last column.
@@ -526,7 +538,7 @@ func (table *Table) setBottomBorderOnLastRow() {
 
 // SetColumnWidths auto adjusts the widths of all columns so that they are just wide enough to
 // hold the text without truncation.
-func (table *Table) SetColumnWidths() {
+func (table *Table) SetColumnWidths() *Table {
 	maxColWidths := []float32{}
 	firstRow := table.tableData[0]
 	for range firstRow {
@@ -571,6 +583,7 @@ func (table *Table) SetColumnWidths() {
 			cell.SetWidth(maxColWidths[i])
 		}
 	}
+	return table
 }
 
 func (table *Table) addExtraTableRows() [][]*Cell {
@@ -752,7 +765,7 @@ func (table *Table) contains(visible []int, index int) bool {
 	return false
 }
 
-func (table *Table) SetVisibleColumns(visible ...int) {
+func (table *Table) SetVisibleColumns(visible ...int) *Table {
 	list := make([][]*Cell, 0)
 	for _, row := range table.tableData {
 		row2 := make([]*Cell, 0)
@@ -764,8 +777,10 @@ func (table *Table) SetVisibleColumns(visible ...int) {
 		list = append(list, row2)
 	}
 	table.tableData = list
+	return table
 }
 
-func (table *Table) SetFirstPageTopMargin(firstPageTopMargin float32) {
+func (table *Table) SetFirstPageTopMargin(firstPageTopMargin float32) *Table {
 	table.firstPageTopMargin = firstPageTopMargin
+	return table
 }

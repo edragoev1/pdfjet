@@ -35,10 +35,12 @@ public class FileAttachment implements Drawable {
      *
      * @param x the horizontal position of the attachment
      * @param y the vertical position of the attachment
+     * @return this FileAttachment object.
      */
-    public void setPosition(float x, float y) {
+    public FileAttachment setPosition(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**
@@ -46,9 +48,11 @@ public class FileAttachment implements Drawable {
      *
      * @param x the horizontal position of the attachment
      * @param y the vertical position of the attachment
+     * @return this FileAttachment object.
      */
-    public void setPosition(double x, double y) {
+    public FileAttachment setPosition(double x, double y) {
         setPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -77,43 +81,55 @@ public class FileAttachment implements Drawable {
 
     /**
      * Sets the icon for the attachment to be "PushPin"
+     *
+     * @return this FileAttachment object.
      */
-    public void setIconPushPin() {
+    public FileAttachment setIconPushPin() {
         this.icon = "PushPin";
+        return this;
     }
 
     /**
      * Sets the icon for the attachment to be "Paperclip"
+     *
+     * @return this FileAttachment object.
      */
-    public void setIconPaperclip() {
+    public FileAttachment setIconPaperclip() {
         this.icon = "Paperclip";
+        return this;
     }
 
     /**
      * Sets the icon size
      *
      * @param height the vertical icon size
+     * @return this FileAttachment object.
      */
-    public void setIconSize(float height) {
+    public FileAttachment setIconSize(float height) {
         this.h = height;
+        return this;
     }
 
     /**
      * Sets the title for this attachment
      *
      * @param title the attachment title
+     * @return this FileAttachment object.
      */
-    public void setTitle(String title) {
+    public FileAttachment setTitle(String title) {
         this.title = title;
+        return this;
     }
 
     /**
      * Sets the attachment description
      *
      * @param description the description for the attachment
+     * @return this FileAttachment object.
      */
-    public void setDescription(String description) {
+    public FileAttachment setDescription(String description) {
         this.contents = description;
+        return this;
     }
 
     /**

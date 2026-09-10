@@ -30,12 +30,14 @@ public class Text implements Drawable {
         this.paragraphs = paragraphs;
     }
 
-    public void setPosition(float x, float y) {
+    public Text setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
-    public void setPosition(double x, double y) {
+    public Text setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     public Text setLocation(float x, float y) {
@@ -58,29 +60,33 @@ public class Text implements Drawable {
         return this;
     }
 
-    public void setBorderWidth(float borderWidth) {
+    public Text setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
+        return this;
     }
 
-    public void setBorderColor(int color) {
+    public Text setBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
-            return;
+            return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         setBorderColor(r, g, b);
+        return this;
     }
 
-    public void setBorderColor(float r, float g, float b) {
+    public Text setBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
         this.hasBorder = true;
+        return this;
     }
 
-    public void setBorderColor(float[] rgbColor) {
+    public Text setBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
         this.hasBorder = true;
+        return this;
     }
 
     public float[] drawOn(Page page) throws Exception {

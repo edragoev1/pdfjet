@@ -133,14 +133,16 @@ func NewPDF(w *bufio.Writer) *PDF {
 	return pdf
 }
 
-func (pdf *PDF) SetCompliance(compliance int) {
+func (pdf *PDF) SetCompliance(compliance int) *PDF {
 	pdf.compliance = compliance
+	return pdf
 }
 
-func (pdf *PDF) SetEncryption(encryption *Encryption, err error) {
+func (pdf *PDF) SetEncryption(encryption *Encryption, err error) *PDF {
 	if err == nil {
 		pdf.encryption = encryption
 	}
+	return pdf
 }
 
 func NewPDFFile(filePath string) *PDF {
@@ -1168,43 +1170,51 @@ func (pdf *PDF) Complete() {
 }
 
 // SetLanguage sets the "Language" document property of the PDF file.
-func (pdf *PDF) SetLanguage(language string) {
+func (pdf *PDF) SetLanguage(language string) *PDF {
 	pdf.language = language
+	return pdf
 }
 
 // SetTitle sets the "Title" document property of the PDF file.
-func (pdf *PDF) SetTitle(title string) {
+func (pdf *PDF) SetTitle(title string) *PDF {
 	pdf.title = title
+	return pdf
 }
 
 // SetAuthor sets the "Author" document property of the PDF file.
-func (pdf *PDF) SetAuthor(author string) {
+func (pdf *PDF) SetAuthor(author string) *PDF {
 	pdf.author = author
+	return pdf
 }
 
 // SetSubject sets the "Subject" document property of the PDF file.
-func (pdf *PDF) SetSubject(subject string) {
+func (pdf *PDF) SetSubject(subject string) *PDF {
 	pdf.subject = subject
+	return pdf
 }
 
 // SetKeywords sets the keywords.
-func (pdf *PDF) SetKeywords(keywords string) {
+func (pdf *PDF) SetKeywords(keywords string) *PDF {
 	pdf.keywords = keywords
+	return pdf
 }
 
 // SetCreator sets the creator field of the PDF.
-func (pdf *PDF) SetCreator(creator string) {
+func (pdf *PDF) SetCreator(creator string) *PDF {
 	pdf.creator = creator
+	return pdf
 }
 
 // SetPageLayout sets the page layout.
-func (pdf *PDF) SetPageLayout(pageLayout string) {
+func (pdf *PDF) SetPageLayout(pageLayout string) *PDF {
 	pdf.pageLayout = pageLayout
+	return pdf
 }
 
 // SetPageMode sets the page mode.
-func (pdf *PDF) SetPageMode(pageMode string) {
+func (pdf *PDF) SetPageMode(pageMode string) *PDF {
 	pdf.pageMode = pageMode
+	return pdf
 }
 
 func (pdf *PDF) getSortedObjects(objects []*PDFobj) []*PDFobj {

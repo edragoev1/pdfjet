@@ -88,18 +88,22 @@ public class Cell {
      * Sets the font for this cell.
      *
      * @param font the font.
+     * @return this Cell object.
      */
-    public void setFont(Font font) {
+    public Cell setFont(Font font) {
         this.font = font;
+        return this;
     }
 
     /**
      * Sets the fallback font for this cell.
      *
      * @param fallbackFont the fallback font.
+     * @return this Cell object.
      */
-    public void setFallbackFont(Font fallbackFont) {
+    public Cell setFallbackFont(Font fallbackFont) {
         this.fallbackFont = fallbackFont;
+        return this;
     }
 
     /**
@@ -124,9 +128,11 @@ public class Cell {
      * Sets the cell text.
      *
      * @param text the cell text.
+     * @return this Cell object.
      */
-    public void setText(String text) {
+    public Cell setText(String text) {
         this.text = text;
+        return this;
     }
 
     /**
@@ -142,20 +148,24 @@ public class Cell {
      * Sets the image inside this cell.
      *
      * @param image the image.
+     * @return this Cell object.
      */
-    public void setImage(Image image) {
+    public Cell setImage(Image image) {
         this.image = image;
         this.text = null;
+        return this;
     }
 
     /**
      * Sets the barcode inside this cell.
      *
      * @param barcode the barcode.
+     * @return this Cell object.
      */
-    public void setBarcode(Barcode barcode) {
+    public Cell setBarcode(Barcode barcode) {
         this.barcode = barcode;
         this.text = null;
+        return this;
     }
 
     /**
@@ -172,9 +182,11 @@ public class Cell {
      * See the Point class and Example_09 for more information.
      *
      * @param point the point.
+     * @return this Cell object.
      */
-    public void setPoint(Point point) {
+    public Cell setPoint(Point point) {
         this.point = point;
+        return this;
     }
 
     /**
@@ -190,9 +202,11 @@ public class Cell {
      * Sets the composite text object.
      *
      * @param compositeTextLine the composite text object.
+     * @return this Cell object.
      */
-    public void setCompositeTextLine(CompositeTextLine compositeTextLine) {
+    public Cell setCompositeTextLine(CompositeTextLine compositeTextLine) {
         this.compositeTextLine = compositeTextLine;
+        return this;
     }
 
     /**
@@ -208,10 +222,12 @@ public class Cell {
      * Sets the text box.
      *
      * @param textBox the text box.
+     * @return this Cell object.
      */
-    public void setTextBox(TextBox textBox) {
+    public Cell setTextBox(TextBox textBox) {
         this.textBox = textBox;
         this.text = null;
+        return this;
     }
 
     public Cell setTextBlock(TextBlock textBlock) {
@@ -229,14 +245,16 @@ public class Cell {
      * Sets the width of this cell.
      *
      * @param width the specified width.
+     * @return this Cell object.
      */
-    public void setWidth(float width) {
+    public Cell setWidth(float width) {
         this.width = width;
         if (textBox != null) {
             textBox.setWidth(this.width - (this.leftPadding + this.rightPadding));
         } else if (textBlock != null) {
             textBlock.setWidth(this.width - (this.leftPadding + this.rightPadding));
         }
+        return this;
     }
 
     /**
@@ -252,59 +270,71 @@ public class Cell {
      * Sets the top padding of this cell.
      *
      * @param padding the top padding.
+     * @return this Cell object.
      */
-    public void setTopPadding(float padding) {
+    public Cell setTopPadding(float padding) {
         this.topPadding = padding;
+        return this;
     }
 
     /**
      * Sets the bottom padding of this cell.
      *
      * @param padding the bottom padding.
+     * @return this Cell object.
      */
-    public void setBottomPadding(float padding) {
+    public Cell setBottomPadding(float padding) {
         this.bottomPadding = padding;
+        return this;
     }
 
     /**
      * Sets the left padding of this cell.
      *
      * @param padding the left padding.
+     * @return this Cell object.
      */
-    public void setLeftPadding(float padding) {
+    public Cell setLeftPadding(float padding) {
         this.leftPadding = padding;
+        return this;
     }
 
     /**
      * Sets the right padding of this cell.
      *
      * @param padding the right padding.
+     * @return this Cell object.
      */
-    public void setRightPadding(float padding) {
+    public Cell setRightPadding(float padding) {
         this.rightPadding = padding;
+        return this;
     }
 
     /**
      * Sets the top, bottom, left and right paddings of this cell.
      *
      * @param padding the right padding.
+     * @return this Cell object.
      */
-    public void setPadding(float padding) {
+    public Cell setPadding(float padding) {
         this.topPadding = padding;
         this.bottomPadding = padding;
         this.leftPadding = padding;
         this.rightPadding = padding;
+        return this;
     }
 
-    public void setStrokeColor(int color) {
+    public Cell setStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.strokeColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setStrokeColor(float[] strokeColor) {
+    public Cell setStrokeColor(float[] strokeColor) {
         this.strokeColor = strokeColor;
+        return this;
     }
 
     /**
@@ -320,9 +350,11 @@ public class Cell {
      * Sets the stroke width.
      *
      * @param strokeWidth the stroke width.
+     * @return this Cell object.
      */
-    public void setStrokeWidth(float strokeWidth) {
+    public Cell setStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
+        return this;
     }
 
     /**
@@ -369,9 +401,11 @@ public class Cell {
      * Sets the border line width.
      *
      * @param lineWidth the border line width.
+     * @return this Cell object.
      */
-    public void setLineWidth(float lineWidth) {
+    public Cell setLineWidth(float lineWidth) {
         this.lineWidth = lineWidth;
+        return this;
     }
 
     /**
@@ -387,20 +421,24 @@ public class Cell {
      * Sets the text color.
      *
      * @param textColor the text color.
+     * @return this Cell object.
      */
-    public void setBrushColor(float[] textColor) {
+    public Cell setBrushColor(float[] textColor) {
         this.textColor = textColor;
+        return this;
     }
 
-    public void setTextColor(int color) {
+    public Cell setTextColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.textColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setTextColor(float[] textColor) {
+    public Cell setTextColor(float[] textColor) {
         this.textColor = textColor;
+        return this;
     }
 
     /**
@@ -416,15 +454,17 @@ public class Cell {
         return textColor;
     }
 
-    public void setBackgroundColor(int color) {
+    public Cell setBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.backgroundColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setBackgroundColor(float[] color) {
+    public Cell setBackgroundColor(float[] color) {
         this.backgroundColor = color;
+        return this;
     }
 
     /**
@@ -448,10 +488,12 @@ public class Cell {
      * Sets the column span private variable.
      *
      * @param colspan the specified column span value.
+     * @return this Cell object.
      */
-    public void setColSpan(int colspan) {
+    public Cell setColSpan(int colspan) {
         this.properties &= 0x00FF0000;
         this.properties |= (colspan & 0x0000FFFF);
+        return this;
     }
 
     /**
@@ -468,13 +510,15 @@ public class Cell {
      *
      * @param border the border object.
      * @param visible the visibility of the border.
+     * @return this Cell object.
      */
-    public void setBorder(int border, boolean visible) {
+    public Cell setBorder(int border, boolean visible) {
         if (visible) {
             this.properties |= border;
         } else {
             this.properties &= (~border & 0x00FFFFFF);
         }
+        return this;
     }
 
     /**
@@ -490,13 +534,15 @@ public class Cell {
     /**
      * Sets all cell borders.
      * @param borders true or false.
+     * @return this Cell object.
      */
-    public void setBorders(boolean borders) {
+    public Cell setBorders(boolean borders) {
         if (borders) {
             this.properties &= 0x00FFFFFF;
         } else {
             this.properties &= 0x00F0FFFF;
         }
+        return this;
     }
 
     /**
@@ -504,10 +550,12 @@ public class Cell {
      *
      * @param alignment the alignment code.
      * Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
+     * @return this Cell object.
      */
-    public void setTextAlignment(int alignment) {
+    public Cell setTextAlignment(int alignment) {
         this.properties &= 0x00CFFFFF;
         this.properties |= (alignment & 0x00300000);
+        return this;
     }
 
     /**
@@ -524,9 +572,11 @@ public class Cell {
      *
      * @param alignment the alignment code.
      * Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
+     * @return this Cell object.
      */
-    public void setVerTextAlignment(int alignment) {
+    public Cell setVerTextAlignment(int alignment) {
         this.valign = alignment;
+        return this;
     }
 
     /**
@@ -543,13 +593,15 @@ public class Cell {
      * If the value of the underline variable is 'true' - the text is underlined.
      *
      * @param underline the underline text parameter.
+     * @return this Cell object.
      */
-    public void setUnderline(boolean underline) {
+    public Cell setUnderline(boolean underline) {
         if (underline) {
             this.properties |= 0x00400000;
         } else {
             this.properties &= 0x00BFFFFF;
         }
+        return this;
     }
 
     /**
@@ -565,13 +617,15 @@ public class Cell {
      * Sets the strikeout text parameter.
      *
      * @param strikeout the strikeout text parameter.
+     * @return this Cell object.
      */
-    public void setStrikeout(boolean strikeout) {
+    public Cell setStrikeout(boolean strikeout) {
         if (strikeout) {
             this.properties |= 0x00800000;
         } else {
             this.properties &= 0x007FFFFF;
         }
+        return this;
     }
 
     /**
@@ -587,9 +641,11 @@ public class Cell {
      * Sets the URI action.
      *
      * @param uri the URI.
+     * @return this Cell object.
      */
-    public void setURIAction(String uri) {
+    public Cell setURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     /**

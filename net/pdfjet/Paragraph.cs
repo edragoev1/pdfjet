@@ -64,16 +64,18 @@ public class Paragraph {
         return lines[0].GetText().StartsWith(token);
     }
 
-    public void SetColor(int color) {
+    public Paragraph SetColor(int color) {
         foreach (TextLine line in lines) {
             line.SetTextColor(color);
         }
+        return this;
     }
 
-    public void SetColorMap(Dictionary<string, int> colorMap) {
+    public Paragraph SetColorMap(Dictionary<string, int> colorMap) {
         foreach (TextLine line in lines) {
             line.SetColorMap(colorMap);
         }
+        return this;
     }
 }   // End of Paragraph.cs
 }   // End of namespace PDFjet.NET

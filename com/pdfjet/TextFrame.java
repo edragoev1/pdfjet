@@ -73,16 +73,19 @@ public class TextFrame implements Drawable {
         return this.h;
     }
 
-    public void setPosition(float x, float y) {
+    public TextFrame setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
-    public void setBorder(boolean border) {
+    public TextFrame setBorder(boolean border) {
         this.border = border;
+        return this;
     }
 
-    public void setBorderColor(int borderColor) {
+    public TextFrame setBorderColor(int borderColor) {
         this.borderColor = borderColor;
+        return this;
     }
 
     public boolean hasMoreText() {

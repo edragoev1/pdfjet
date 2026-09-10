@@ -35,8 +35,9 @@ public class Arc implements Drawable {
     public Arc() {
     }
 
-    public void setPosition(float cx, float cy) {
+    public Arc setPosition(float cx, float cy) {
         setCenterXY(cx, cy);
+        return this;
     }
 
     public Arc setStartPointToEndOf(Line line) {

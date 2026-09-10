@@ -16,7 +16,8 @@ class Chunk {
         return this.data;
     }
 
-    public void setData(byte[] data) {
+    public Chunk setData(byte[] data) {
         this.data = data;
+        return this;
     }
 }   // End of Chunk.java

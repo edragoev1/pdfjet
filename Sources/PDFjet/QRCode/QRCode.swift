@@ -50,8 +50,10 @@ public class QRCode : Drawable {
         self.make(false, getBestMaskPattern())
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     ///
@@ -79,8 +81,10 @@ public class QRCode : Drawable {
         return self
     }
 
-    public func setColor(_ color: Int32) {
+    @discardableResult
+    public func setColor(_ color: Int32) -> QRCode {
         self.color = color
+        return self
     }
 
     ///

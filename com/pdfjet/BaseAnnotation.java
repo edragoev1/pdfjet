@@ -25,39 +25,47 @@ public class BaseAnnotation implements Drawable {
     public BaseAnnotation() {
     }
 
-    public void setLocation(float x, float y) {
+    public BaseAnnotation setLocation(float x, float y) {
         this.point1 = new float[] {x, y};
+        return this;
     }
 
-    public void setPosition(float x, float y) {
+    public BaseAnnotation setPosition(float x, float y) {
         this.point1 = new float[] {x, y};
+        return this;
     }
 
-    public void setSize(float w, float h) {
+    public BaseAnnotation setSize(float w, float h) {
         this.point2 = new float[] {point1[0] + w, point1[1] + h};
+        return this;
     }
 
-    public void setFillColor(float[] fillColor) {
+    public BaseAnnotation setFillColor(float[] fillColor) {
         this.fillColor = fillColor;
+        return this;
     }
 
-    public void setFillColor(int color) {
+    public BaseAnnotation setFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         setFillColor(new float[] {r, g, b});
+        return this;
     }
 
-    public void setTransparency(float transparency) {
+    public BaseAnnotation setTransparency(float transparency) {
         this.transparency = transparency;
+        return this;
     }
 
-    public void setTitle(String title) {
+    public BaseAnnotation setTitle(String title) {
         this.title = title;
+        return this;
     }
 
-    public void setContents(String contents) {
+    public BaseAnnotation setContents(String contents) {
         this.contents = contents;
+        return this;
     }
 
     public void rotate(double degrees) {

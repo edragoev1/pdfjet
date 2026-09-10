@@ -123,9 +123,11 @@ public class Barcode implements Drawable {
      *
      * @param x1 the x coordinate of the top left corner of the barcode.
      * @param y1 the y coordinate of the top left corner of the barcode.
+     * @return this Barcode object.
      */
-    public void setPosition(float x1, float y1) {
+    public Barcode setPosition(float x1, float y1) {
         setLocation(x1, y1);
+        return this;
     }
 
     /**
@@ -133,9 +135,11 @@ public class Barcode implements Drawable {
      *
      * @param x1 the x coordinate of the top left corner of the barcode.
      * @param y1 the y coordinate of the top left corner of the barcode.
+     * @return this Barcode object.
      */
-    public void setPosition(double x1, double y1) {
+    public Barcode setPosition(double x1, double y1) {
         setLocation(x1, y1);
+        return this;
     }
 
     /**
@@ -167,9 +171,11 @@ public class Barcode implements Drawable {
      * The default value is 0.75
      *
      * @param moduleLength the specified module length.
+     * @return this Barcode object.
      */
-    public void setModuleLength(double moduleLength) {
+    public Barcode setModuleLength(double moduleLength) {
         this.m1 = (float) moduleLength;
+        return this;
     }
 
     /**
@@ -177,9 +183,11 @@ public class Barcode implements Drawable {
      * The default value is 0.75
      *
      * @param moduleLength the specified module length.
+     * @return this Barcode object.
      */
-    public void setModuleLength(float moduleLength) {
+    public Barcode setModuleLength(float moduleLength) {
         this.m1 = moduleLength;
+        return this;
     }
 
     /**
@@ -188,9 +196,11 @@ public class Barcode implements Drawable {
      * The default value is 50.0
      *
      * @param barHeightFactor the specified bar height factor.
+     * @return this Barcode object.
      */
-    public void setBarHeightFactor(double barHeightFactor) {
+    public Barcode setBarHeightFactor(double barHeightFactor) {
         this.barHeightFactor = (float) barHeightFactor;
+        return this;
     }
 
     /**
@@ -199,27 +209,33 @@ public class Barcode implements Drawable {
      * The default value is 50.0f
      *
      * @param barHeightFactor the specified bar height factor.
+     * @return this Barcode object.
      */
-    public void setBarHeightFactor(float barHeightFactor) {
+    public Barcode setBarHeightFactor(float barHeightFactor) {
         this.barHeightFactor = barHeightFactor;
+        return this;
     }
 
     /**
      * Sets the drawing direction for this font.
      *
      * @param direction the specified direction.
+     * @return this Barcode object.
      */
-    public void setDirection(int direction) {
+    public Barcode setDirection(int direction) {
         this.direction = direction;
+        return this;
     }
 
     /**
      * Sets the font to be used with this barcode.
      *
      * @param font the specified font.
+     * @return this Barcode object.
      */
-    public void setFont(Font font) {
+    public Barcode setFont(Font font) {
         this.font = font;
+        return this;
     }
 
     private static boolean hasOnlyDigits(String text) {

@@ -73,63 +73,73 @@ func (rect *Rect) SetPosition(x, y float32) {
 // SetSize sets the size of this rect.
 // @param w the width of this rect.
 // @param h the height of this rect.
-func (rect *Rect) SetSize(w, h float32) {
+func (rect *Rect) SetSize(w, h float32) *Rect {
 	rect.width = w
 	rect.height = h
+	return rect
 }
 
-func (rect *Rect) SetBorderColor(color int32) {
+func (rect *Rect) SetBorderColor(color int32) *Rect {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	rect.SetBorderColorRGB([3]float32{r, g, b})
+	return rect
 }
 
 // SetBorderColorRGB sets the color for this rectangle.
 // @param color the color specified as an integer.
-func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) {
+func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) *Rect {
 	rect.borderColor = borderColor
 	rect.hasBorderColor = true
+	return rect
 }
 
-func (rect *Rect) SetFillColor(color int32) {
+func (rect *Rect) SetFillColor(color int32) *Rect {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	rect.SetFillColorRGB([3]float32{r, g, b})
+	return rect
 }
 
-func (rect *Rect) SetFillColorRGB(fillColor [3]float32) {
+func (rect *Rect) SetFillColorRGB(fillColor [3]float32) *Rect {
 	rect.fillColor = fillColor
 	rect.hasFillColor = true
+	return rect
 }
 
 // SetBorderWidth sets the width of this line.
 // @param width the width.
-func (rect *Rect) SetBorderWidth(borderWidth float32) {
+func (rect *Rect) SetBorderWidth(borderWidth float32) *Rect {
 	rect.borderWidth = borderWidth
+	return rect
 }
 
-func (rect *Rect) SetBorderPattern(borderPattern string) {
+func (rect *Rect) SetBorderPattern(borderPattern string) *Rect {
 	rect.borderPattern = borderPattern
+	return rect
 }
 
 // SetCornerRadius sets the corner radius.
 // @param width the width.
-func (rect *Rect) SetCornerRadius(cornerRadius float32) {
+func (rect *Rect) SetCornerRadius(cornerRadius float32) *Rect {
 	rect.cornerRadius = cornerRadius
+	return rect
 }
 
 // SetURIAction sets the URI for the "click rect" action.
 // @param uri the URI
-func (rect *Rect) SetURIAction(uri string) {
+func (rect *Rect) SetURIAction(uri string) *Rect {
 	rect.uri = uri
+	return rect
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
-func (rect *Rect) SetGoToAction(key string) {
+func (rect *Rect) SetGoToAction(key string) *Rect {
 	rect.key = key
+	return rect
 }
 
 // SetAltDescription sets the alternate description of this rect.
@@ -176,15 +186,17 @@ func (rect *Rect) SetStructureType(structureType string) *Rect {
 // </pre>
 //
 // @param pattern the line dash pattern.
-func (rect *Rect) SetPattern(borderPattern string) {
+func (rect *Rect) SetPattern(borderPattern string) *Rect {
 	rect.borderPattern = borderPattern
+	return rect
 }
 
 // SetFillShape sets the private fillShape variable.
 // If the value of fillShape is true - the rect is filled with the current brushColor color.
 // @param fillShape the value used to set the private fillShape variable.
-func (rect *Rect) SetFillShape(fillShape bool) {
+func (rect *Rect) SetFillShape(fillShape bool) *Rect {
 	rect.fillShape = fillShape
+	return rect
 }
 
 // ScaleBy scales this rect by the specified factor.

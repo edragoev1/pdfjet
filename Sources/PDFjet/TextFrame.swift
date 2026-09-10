@@ -49,8 +49,10 @@ public class TextFrame : Drawable {
         return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     @discardableResult
@@ -73,12 +75,16 @@ public class TextFrame : Drawable {
         return self.h!
     }
 
-    public func setBorder(_ border: Bool) {
+    @discardableResult
+    public func setBorder(_ border: Bool) -> TextFrame {
         self.border = border
+        return self
     }
 
-    public func setBorderColor(_ borderColor: Int32) {
+    @discardableResult
+    public func setBorderColor(_ borderColor: Int32) -> TextFrame {
         self.borderColor = borderColor
+        return self
     }
 
     public func hasMoreText() -> Bool {

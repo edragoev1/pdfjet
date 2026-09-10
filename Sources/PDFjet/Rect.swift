@@ -66,9 +66,13 @@ public class Rect : Drawable {
      *   - x: the x coordinate of the top left corner of this rect when drawn on the page.
      *   - y: the y coordinate of the top left corner of this rect when drawn on the page.
      * - Returns: this Rect.
+     *
+     * @return this object.
      */
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     /**
@@ -76,68 +80,98 @@ public class Rect : Drawable {
      * - Parameters:
      *   - w: the width of this rect.
      *   - h: the height of this rect.
+     *
+     * @return this Rect object.
      */
-    public func setSize(_ w: Float, _ h: Float) {
+    @discardableResult
+    public func setSize(_ w: Float, _ h: Float) -> Rect {
         self.width = w
         self.height = h
+        return self
     }
 
-    public func setFillColor(_ fillColor: [Float]?) {
+    @discardableResult
+    public func setFillColor(_ fillColor: [Float]?) -> Rect {
         self.fillColor = fillColor
+        return self
     }
 
-    public func setFillColor(_ color: Int32) {
+    @discardableResult
+    public func setFillColor(_ color: Int32) -> Rect {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.fillColor = [r, g, b]
+        return self
     }
 
-    public func setBorderColor(_ color: Int32) {
+    @discardableResult
+    public func setBorderColor(_ color: Int32) -> Rect {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.borderColor = [r, g, b]
+        return self
     }
 
-    public func setBorderColor(_ borderColor: [Float]?) {
+    @discardableResult
+    public func setBorderColor(_ borderColor: [Float]?) -> Rect {
         self.borderColor = borderColor!
+        return self
     }
 
-    public func setBorderWidth(_ borderWidth: Float) {
+    @discardableResult
+    public func setBorderWidth(_ borderWidth: Float) -> Rect {
         self.borderWidth = borderWidth
+        return self
     }
 
     /**
      * Sets the width of this line.
      * - Parameter width: the width.
+     *
+     * @return this Rect object.
      */
-    public func setLineWidth(_ borderWidth: Float) {
+    @discardableResult
+    public func setLineWidth(_ borderWidth: Float) -> Rect {
         self.borderWidth = borderWidth
+        return self
     }
 
     /**
      * Sets the corner radius.
      * - Parameter r: the radius.
+     *
+     * @return this Rect object.
      */
-    public func setCornerRadius(_ r: Float) {
+    @discardableResult
+    public func setCornerRadius(_ r: Float) -> Rect {
         self.r = r
+        return self
     }
 
     /**
      * Sets the URI for the "click rect" action.
      * - Parameter uri: the URI
+     *
+     * @return this Rect object.
      */
-    public func setURIAction(_ uri: String) {
+    @discardableResult
+    public func setURIAction(_ uri: String) -> Rect {
         self.uri = uri
+        return self
     }
 
     /**
      * Sets the destination key for the action.
      * - Parameter key: the destination name.
+     *
+     * @return this Rect object.
      */
-    public func setGoToAction(_ key: String) {
+    @discardableResult
+    public func setGoToAction(_ key: String) -> Rect {
         self.key = key
+        return self
     }
 
     /**
@@ -173,8 +207,10 @@ public class Rect : Drawable {
 //         return self
 //     }
 
-    public func setBorderPattern(_ borderPattern: String) {
+    @discardableResult
+    public func setBorderPattern(_ borderPattern: String) -> Rect {
         self.borderPattern = borderPattern
+        return self
     }
 
     /**

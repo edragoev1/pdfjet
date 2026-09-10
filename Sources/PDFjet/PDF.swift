@@ -121,8 +121,10 @@ public class PDF {
         append(Token.newline)
     }
 
-    public func setCompliance(_ compliance: Compliance) {
+    @discardableResult
+    public func setCompliance(_ compliance: Compliance) -> PDF {
         self.compliance = compliance
+        return self
     }
 
     func newobj() {
@@ -1061,56 +1063,72 @@ public class PDF {
     /// Set the "Language" document property of the PDF file.
     /// - Parameter language The language of this document.
     ///
-    public func setLanguage(_ language: String) {
+    @discardableResult
+    public func setLanguage(_ language: String) -> PDF {
         self.language = language
+        return self
     }
 
     ///
     /// Set the "Title" document property of the PDF file.
     /// - Parameter title The title of this document.
     ///
-    public func setTitle(_ title: String) {
+    @discardableResult
+    public func setTitle(_ title: String) -> PDF {
         self.title = title
+        return self
     }
 
     ///
     /// Set the "Author" document property of the PDF file.
     /// - Parameter author The author of this document.
     ///
-    public func setAuthor(_ author: String) {
+    @discardableResult
+    public func setAuthor(_ author: String) -> PDF {
         self.author = author
+        return self
     }
 
     ///
     /// Set the "Subject" document property of the PDF file.
     /// - Parameter subject The subject of this document.
     ///
-    public func setSubject(_ subject: String) {
+    @discardableResult
+    public func setSubject(_ subject: String) -> PDF {
         self.subject = subject
+        return self
     }
 
     ///
     /// Set the "Keywords" document property of the PDF file.
     /// - Parameter keywords The author of this document.
     ///
-    public func setKeywords(_ keywords: String) {
+    @discardableResult
+    public func setKeywords(_ keywords: String) -> PDF {
         self.keywords = keywords
+        return self
     }
 
     ///
     /// Set the "Creator" document property of the PDF file.
     /// - Parameter creator The author of this document.
     ///
-    public func setCreator(_ creator: String) {
+    @discardableResult
+    public func setCreator(_ creator: String) -> PDF {
         self.creator = creator
+        return self
     }
 
-    public func setPageLayout(_ pageLayout: String) {
+    @discardableResult
+    public func setPageLayout(_ pageLayout: String) -> PDF {
         self.pageLayout = pageLayout
+        return self
     }
 
-    public func setPageMode(_ pageMode: String) {
+    @discardableResult
+    public func setPageMode(_ pageMode: String) -> PDF {
         self.pageMode = pageMode
+        return self
     }
 
     func append(_ number: UInt8) {

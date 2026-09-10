@@ -92,9 +92,11 @@ public class TextLine implements Drawable {
      *
      * @param x the x coordinate of the text line.
      * @param y the y coordinate of the text line.
+     * @return this TextLine object.
      */
-    public void setPosition(float x, float y) {
+    public TextLine setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -102,9 +104,11 @@ public class TextLine implements Drawable {
      *
      * @param x the x coordinate of the text line.
      * @param y the y coordinate of the text line.
+     * @return this TextLine object.
      */
-    public void setPosition(double x, double y) {
+    public TextLine setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**

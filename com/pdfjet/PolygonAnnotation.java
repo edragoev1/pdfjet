@@ -13,7 +13,8 @@ public class PolygonAnnotation extends BaseAnnotation {
         super.annotationType = Annotation.Polygon;
     }
 
-    public void setVertices(float[] vertices) {
+    public PolygonAnnotation setVertices(float[] vertices) {
         super.vertices = vertices;
+        return this;
     }
 }

@@ -39,14 +39,16 @@ func NewDonutChart(f1, f2 *Font, isDonutChart bool) *DonutChart {
 	}
 }
 
-func (dc *DonutChart) SetLocation(xc, yc float32) {
+func (dc *DonutChart) SetLocation(xc, yc float32) *DonutChart {
 	dc.xc = xc
 	dc.yc = yc
+	return dc
 }
 
-func (dc *DonutChart) SetR1AndR2(r1, r2 float32) {
+func (dc *DonutChart) SetR1AndR2(r1, r2 float32) *DonutChart {
 	dc.r1 = r1
 	dc.r2 = r2
+	return dc
 }
 
 func (dc *DonutChart) AddSlice(slice *Slice) {

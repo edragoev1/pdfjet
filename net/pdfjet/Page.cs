@@ -203,10 +203,12 @@ public class Page {
      * @param upperLeftY the top left Y coordinate of the CropBox.
      * @param lowerRightX the bottom right X coordinate of the CropBox.
      * @param lowerRightY the bottom right Y coordinate of the CropBox.
+     * @return this Page object.
      */
-    public void SetCropBox(
+    public Page SetCropBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.cropBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     /**
@@ -217,10 +219,12 @@ public class Page {
      * @param upperLeftY the top left Y coordinate of the BleedBox.
      * @param lowerRightX the bottom right X coordinate of the BleedBox.
      * @param lowerRightY the bottom right Y coordinate of the BleedBox.
+     * @return this Page object.
      */
-    public void SetBleedBox(
+    public Page SetBleedBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.bleedBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     /**
@@ -231,10 +235,12 @@ public class Page {
      * @param upperLeftY the top left Y coordinate of the TrimBox.
      * @param lowerRightX the bottom right X coordinate of the TrimBox.
      * @param lowerRightY the bottom right Y coordinate of the TrimBox.
+     * @return this Page object.
      */
-    public void SetTrimBox(
+    public Page SetTrimBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.trimBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     /**
@@ -245,10 +251,12 @@ public class Page {
      * @param upperLeftY the top left Y coordinate of the ArtBox.
      * @param lowerRightX the bottom right X coordinate of the ArtBox.
      * @param lowerRightY the bottom right Y coordinate of the ArtBox.
+     * @return this Page object.
      */
-    public void SetArtBox(
+    public Page SetArtBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.artBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
+        return this;
     }
 
     public float[] AddHeader(TextLine textLine) {
@@ -626,8 +634,9 @@ public class Page {
      *
      * @param color the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
      * @throws IOException
+     * @return this Page object.
      */
-    public void SetBrushColor(int color) {
+    public Page SetBrushColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -638,6 +647,7 @@ public class Page {
         Append(b);
         Append(" rg\n");
         this.brushColor = new float[] {r, g, b};
+        return this;
     }
 
     /**
@@ -645,17 +655,18 @@ public class Page {
      *
      * @param color the color.
      * @throws IOException
+     * @return this Page object.
      */
-    public void SetBrushColor(float[] rgbColor) {
+    public Page SetBrushColor(float[] rgbColor) {
         if (rgbColor == null) {
-            return; // Early exit if null
+            return this; // Early exit if null
         }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
             rgbColor[2] < 0f || rgbColor[2] > 1f) {
             Console.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return; // Early exit if out of range
+            return this; // Early exit if out of range
         }
 
         // Now set the brush color
@@ -668,6 +679,7 @@ public class Page {
         Append(Token.Space);
         Append(rgbColor[2]);
         Append(" rg\n");
+        return this;
     }
 
     /// <summary>
@@ -688,7 +700,7 @@ public class Page {
     /// You can use predefined colors from the <see cref="Color"/> class or define your own.
     /// </param>
     /// <exception cref="IOException">
-    public void SetPenColor(int color) {
+    public Page SetPenColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -700,6 +712,7 @@ public class Page {
         Append(" RG\n");
         // Set the pen color
         this.penColor = new float[] {r, g, b};
+        return this;
     }
 
     /// <summary>
@@ -712,9 +725,10 @@ public class Page {
     /// <b>Deprecated</b>: This method is now obsolete. Use SetPenColor(float[] rgbColor) instead.
     /// </remarks>
     [Obsolete("This method is now obsolete. Use SetPenColor(float[] rgbColor) instead.")]
-    public void SetPenColor(float r, float g, float b) {
+    public Page SetPenColor(float r, float g, float b) {
         // Call the newer method using an array
         SetPenColor(new float[] { r, g, b });
+        return this;
     }
 
     /// <summary>
@@ -726,16 +740,16 @@ public class Page {
     /// <remarks>
     /// Logs a warning and does not set the color if the values are out of range or the array is null.
     /// </remarks>
-    public void SetPenColor(float[] rgbColor) {
+    public Page SetPenColor(float[] rgbColor) {
         if (rgbColor == null) {
-            return; // Early exit if null
+            return this; // Early exit if null
         }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
             rgbColor[2] < 0f || rgbColor[2] > 1f) {
             Console.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return; // Early exit if out of range
+            return this; // Early exit if out of range
         }
 
         // Now set the pen color
@@ -748,6 +762,7 @@ public class Page {
         Append(Token.Space);
         Append(rgbColor[2]);
         Append(" RG\n");
+        return this;
     }
 
     /// <summary>
@@ -768,8 +783,9 @@ public class Page {
      * @param m the magenta component is float value from 0.0f to 1.0f.
      * @param y the yellow component is float value from 0.0f to 1.0f.
      * @param k the black component is float value from 0.0f to 1.0f.
+     * @return this Page object.
      */
-    public void SetBrushColorCMYK(float c, float m, float y, float k) {
+    public Page SetBrushColorCMYK(float c, float m, float y, float k) {
         Append(c);
         Append(' ');
         Append(m);
@@ -778,6 +794,7 @@ public class Page {
         Append(' ');
         Append(k);
         Append(" k\n");
+        return this;
     }
 
     /**
@@ -788,8 +805,9 @@ public class Page {
      * @param m the magenta component is float value from 0.0f to 1.0f.
      * @param y the yellow component is float value from 0.0f to 1.0f.
      * @param k the black component is float value from 0.0f to 1.0f.
+     * @return this Page object.
      */
-    public void SetPenColorCMYK(float c, float m, float y, float k) {
+    public Page SetPenColorCMYK(float c, float m, float y, float k) {
         Append(c);
         Append(' ');
         Append(m);
@@ -798,14 +816,18 @@ public class Page {
         Append(' ');
         Append(k);
         Append(" K\n");
+        return this;
     }
 
     /**
      * Sets the line width to the default.
      * The default is the finest line width.
+     *
+     * @return this Page object.
      */
-    public void SetDefaultStrokeWidth() {
+    public Page SetDefaultStrokeWidth() {
         Append("0 w\n");
+        return this;
     }
 
     /**
@@ -830,39 +852,48 @@ public class Page {
      * </pre>
      *
      * @param strokeDashPattern the stroke dash pattern.
+     * @return this Page object.
      */
-    public void SetStrokeDashPattern(String strokeDashPattern) {
+    public Page SetStrokeDashPattern(String strokeDashPattern) {
         this.strokeDashPattern = strokeDashPattern;
         Append(strokeDashPattern);
         Append(" d\n");
+        return this;
     }
 
     /**
      * Sets the default stroke pattern to be solid line or curve.
+     *
+     * @return this Page object.
      */
-    public void SetDefaultStrokeDashPattern() {
+    public Page SetDefaultStrokeDashPattern() {
         Append("[] 0");
         Append(" d\n");
+        return this;
     }
 
     /**
      * Sets the pen width that will be used to draw lines and splines on this page.
      *
      * @param width the pen width.
+     * @return this Page object.
      */
-    public void SetPenWidth(double width) {
+    public Page SetPenWidth(double width) {
         SetPenWidth((float) width);
+        return this;
     }
 
     /**
      * Sets the pen width that will be used to draw lines and splines on this page.
      *
      * @param width the pen width.
+     * @return this Page object.
      */
-    public void SetPenWidth(float width) {
+    public Page SetPenWidth(float width) {
         this.penWidth = width;
         Append(width);
         Append(" w\n");
+        return this;
     }
 
     public float GetPenWidth() {
@@ -874,11 +905,13 @@ public class Page {
      *
      * @param style the cap style of the current line.
      * Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
+     * @return this Page object.
      */
-    public void SetLineCapStyle(CapStyle style) {
+    public Page SetLineCapStyle(CapStyle style) {
         this.lineCapStyle = style;
         Append((Int32) style);
         Append(" J\n");
+        return this;
     }
 
     /**
@@ -886,11 +919,13 @@ public class Page {
      *
      * @param style the line join style code.
      * Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
+     * @return this Page object.
      */
-    public void SetLineJoinStyle(JoinStyle style) {
+    public Page SetLineJoinStyle(JoinStyle style) {
         this.lineJoinStyle = style;
         Append((Int32) style);
         Append(" j\n");
+        return this;
     }
 
     /// <summary>
@@ -1279,21 +1314,24 @@ public class Page {
      * Sets the text rendering mode.
      *
      * @param mode the rendering mode.
+     * @return this Page object.
      */
-    public void SetTextRenderingMode(int mode) {
+    public Page SetTextRenderingMode(int mode) {
         if (mode >= 0 && mode <= 7) {
             this.renderingMode = mode;
         } else {
             throw new Exception("Invalid text rendering mode: " + mode);
         }
+        return this;
     }
 
     /**
      * Sets the text direction.
      *
      * @param degrees the angle.
+     * @return this Page object.
      */
-    public void SetTextDirection(int degrees) {
+    public Page SetTextDirection(int degrees) {
         if (degrees > 360) degrees %= 360;
         if (degrees == 0) {
             tmx = new float[] {1f,  0f,  0f,  1f};
@@ -1314,6 +1352,7 @@ public class Page {
         tm1 = FastFloat.ToByteArray(tmx[1]);
         tm2 = FastFloat.ToByteArray(tmx[2]);
         tm3 = FastFloat.ToByteArray(tmx[3]);
+        return this;
     }
 
     /**
@@ -1417,7 +1456,7 @@ public class Page {
         Append("c\n");
     }
 
-    public void SetTextFont(Font font, float fontSize) {
+    public Page SetTextFont(Font font, float fontSize) {
         if (font.fontID != null) {
             Append('/');
             Append(font.fontID);
@@ -1428,6 +1467,7 @@ public class Page {
         Append(Token.Space);
         Append(fontSize);
         Append(" Tf\n");
+        return this;
     }
 
     // Code provided by:
@@ -1505,8 +1545,9 @@ public class Page {
      * Sets the graphics state. Please see Example_31.
      *
      * @param gs the graphics state to use.
+     * @return this Page object.
      */
-    public void SetGraphicsState(GraphicsState gs) {
+    public Page SetGraphicsState(GraphicsState gs) {
         StringBuilder sb = new StringBuilder();
         sb.Append("/CA ");
         sb.Append(gs.GetAlphaStroking());
@@ -1524,6 +1565,7 @@ public class Page {
         Append("/GS");
         Append(n);
         Append(" gs\n");
+        return this;
     }
 
     /**

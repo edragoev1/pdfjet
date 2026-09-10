@@ -20,10 +20,11 @@ func NewGraphicsState() *GraphicsState {
 }
 
 // SetAlphaStroking sets the stroking alpha.
-func (state *GraphicsState) SetAlphaStroking(strokingAlpha float32) {
+func (state *GraphicsState) SetAlphaStroking(strokingAlpha float32) *GraphicsState {
 	if strokingAlpha >= 0.0 && strokingAlpha <= 1.0 {
 		state.strokingAlpha = strokingAlpha
 	}
+	return state
 }
 
 // GetAlphaStroking returns the stroking alpha.
@@ -32,10 +33,11 @@ func (state *GraphicsState) GetAlphaStroking() float32 {
 }
 
 // SetAlphaNonStroking sets the non stroking alpha.
-func (state *GraphicsState) SetAlphaNonStroking(nonStrokingAlpha float32) {
+func (state *GraphicsState) SetAlphaNonStroking(nonStrokingAlpha float32) *GraphicsState {
 	if nonStrokingAlpha >= 0.0 && nonStrokingAlpha <= 1.0 {
 		state.nonStrokingAlpha = nonStrokingAlpha
 	}
+	return state
 }
 
 // GetAlphaNonStroking returns the non stroking alpha.

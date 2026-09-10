@@ -81,9 +81,10 @@ func NewTextBoxWithText(font *Font, text string) *TextBox {
 }
 
 // SetFont sets the font of this text box.
-func (textBox *TextBox) SetFont(font *Font) {
+func (textBox *TextBox) SetFont(font *Font) *TextBox {
 	textBox.font = font
 	textBox.fontSize = font.GetSize()
+	return textBox
 }
 
 // GetFont returns the font of this text box.
@@ -92,13 +93,15 @@ func (textBox *TextBox) GetFont() *Font {
 }
 
 // SetFontSize sets the font size of this text box.
-func (textBox *TextBox) SetFontSize(fontSize float32) {
+func (textBox *TextBox) SetFontSize(fontSize float32) *TextBox {
 	textBox.fontSize = fontSize
+	return textBox
 }
 
 // SetFallbackFont sets the fallback font.
-func (textBox *TextBox) SetFallbackFont(fallbackFont *Font) {
+func (textBox *TextBox) SetFallbackFont(fallbackFont *Font) *TextBox {
 	textBox.fallbackFont = fallbackFont
+	return textBox
 }
 
 // GetFallbackFont returns the fallback font.
@@ -107,8 +110,9 @@ func (textBox *TextBox) GetFallbackFont() *Font {
 }
 
 // SetText sets the text of this text box.
-func (textBox *TextBox) SetText(text string) {
+func (textBox *TextBox) SetText(text string) *TextBox {
 	textBox.text = text
+	return textBox
 }
 
 // GetText returns the text of this text box.
@@ -134,14 +138,16 @@ func (textBox *TextBox) GetLocation() [2]float32 {
 }
 
 // SetSize sets the size of this text box.
-func (textBox *TextBox) SetSize(w, h float32) {
+func (textBox *TextBox) SetSize(w, h float32) *TextBox {
 	textBox.width = w
 	textBox.height = h
+	return textBox
 }
 
 // SetWidth sets the width of this text box.
-func (textBox *TextBox) SetWidth(width float32) {
+func (textBox *TextBox) SetWidth(width float32) *TextBox {
 	textBox.width = width
+	return textBox
 }
 
 // GetWidth returns the width of this text box.
@@ -172,8 +178,9 @@ func (textBox *TextBox) GetMargin() float32 {
 }
 
 // SetLineWidth sets the border line width.
-func (textBox *TextBox) SetLineWidth(lineWidth float32) {
+func (textBox *TextBox) SetLineWidth(lineWidth float32) *TextBox {
 	textBox.lineWidth = lineWidth
+	return textBox
 }
 
 // GetLineWidth returns the border line width.
@@ -182,8 +189,9 @@ func (textBox *TextBox) GetLineWidth() float32 {
 }
 
 // SetSpacing sets the spacing between the lines of text.
-func (textBox *TextBox) SetSpacing(spacing float32) {
+func (textBox *TextBox) SetSpacing(spacing float32) *TextBox {
 	textBox.spacing = spacing
+	return textBox
 }
 
 // GetSpacing returns the spacing between the lines of text.
@@ -199,19 +207,22 @@ func colorToRGB(color int32) [3]float32 {
 }
 
 // SetBackgroundColor sets the background color of this text box.
-func (textBox *TextBox) SetBackgroundColor(color int32) {
+func (textBox *TextBox) SetBackgroundColor(color int32) *TextBox {
 	rgb := colorToRGB(color)
 	textBox.fillColor = &rgb
+	return textBox
 }
 
 // SetFillColor sets the background color of this text box.
-func (textBox *TextBox) SetFillColor(color int32) {
+func (textBox *TextBox) SetFillColor(color int32) *TextBox {
 	textBox.SetBackgroundColor(color)
+	return textBox
 }
 
 // SetTextColor sets the text color of this text box.
-func (textBox *TextBox) SetTextColor(color int32) {
+func (textBox *TextBox) SetTextColor(color int32) *TextBox {
 	textBox.textColor = colorToRGB(color)
+	return textBox
 }
 
 // GetTextColor returns the text color of this text box.
@@ -220,19 +231,22 @@ func (textBox *TextBox) GetTextColor() [3]float32 {
 }
 
 // SetStrokeWidth sets the width of the border lines.
-func (textBox *TextBox) SetStrokeWidth(strokeWidth float32) {
+func (textBox *TextBox) SetStrokeWidth(strokeWidth float32) *TextBox {
 	textBox.strokeWidth = strokeWidth
+	return textBox
 }
 
 // SetStrokeColor sets the color of the border lines.
-func (textBox *TextBox) SetStrokeColor(color int32) {
+func (textBox *TextBox) SetStrokeColor(color int32) *TextBox {
 	rgb := colorToRGB(color)
 	textBox.strokeColor = &rgb
+	return textBox
 }
 
 // SetBorder sets the border with the specified bit mask.
-func (textBox *TextBox) SetBorder(b uint32) {
+func (textBox *TextBox) SetBorder(b uint32) *TextBox {
 	textBox.properties |= b
+	return textBox
 }
 
 // GetBorder returns true if the specified border is set.
@@ -255,12 +269,13 @@ func (textBox *TextBox) GetBorder(b uint32) bool {
 }
 
 // SetBorders sets all the borders on or off.
-func (textBox *TextBox) SetBorders(borders bool) {
+func (textBox *TextBox) SetBorders(borders bool) *TextBox {
 	if borders {
 		textBox.SetBorder(border.All)
 	} else {
 		textBox.properties &= 0x00F0FFFF
 	}
+	return textBox
 }
 
 // SetTextAlignment sets the text alignment.
@@ -275,8 +290,9 @@ func (textBox *TextBox) GetTextAlignment() int {
 }
 
 // SetVerticalAlignment sets the vertical alignment of the text.
-func (textBox *TextBox) SetVerticalAlignment(valign int) {
+func (textBox *TextBox) SetVerticalAlignment(valign int) *TextBox {
 	textBox.valign = valign
+	return textBox
 }
 
 // GetVerticalAlignment returns the vertical alignment of the text.
@@ -285,12 +301,13 @@ func (textBox *TextBox) GetVerticalAlignment() int {
 }
 
 // SetUnderline underlines the text.
-func (textBox *TextBox) SetUnderline(underline bool) {
+func (textBox *TextBox) SetUnderline(underline bool) *TextBox {
 	if underline {
 		textBox.properties |= 0x00400000
 	} else {
 		textBox.properties &= 0x00BFFFFF
 	}
+	return textBox
 }
 
 // GetUnderline returns true if the text is underlined.
@@ -299,12 +316,13 @@ func (textBox *TextBox) GetUnderline() bool {
 }
 
 // SetStrikeout strikes out the text.
-func (textBox *TextBox) SetStrikeout(strikeout bool) {
+func (textBox *TextBox) SetStrikeout(strikeout bool) *TextBox {
 	if strikeout {
 		textBox.properties |= 0x00800000
 	} else {
 		textBox.properties &= 0x007FFFFF
 	}
+	return textBox
 }
 
 // GetStrikeout returns true if the text is stricken out.
@@ -313,8 +331,9 @@ func (textBox *TextBox) GetStrikeout() bool {
 }
 
 // SetTextColors sets the highlight colors of the keywords.
-func (textBox *TextBox) SetTextColors(colors map[string]int32) {
+func (textBox *TextBox) SetTextColors(colors map[string]int32) *TextBox {
 	textBox.colors = colors
+	return textBox
 }
 
 // GetTextColors returns the highlight colors of the keywords.

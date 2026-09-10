@@ -35,16 +35,22 @@ public class OptionalContentGroup {
         components.append(drawable)
     }
 
-    public func setVisible(_ visible: Bool) {
+    @discardableResult
+    public func setVisible(_ visible: Bool) -> OptionalContentGroup {
         self.visible = visible
+        return self
     }
 
-    public func setPrintable(_ printable: Bool) {
+    @discardableResult
+    public func setPrintable(_ printable: Bool) -> OptionalContentGroup {
         self.printable = printable
+        return self
     }
 
-    public func setExportable(_ exportable: Bool) {
+    @discardableResult
+    public func setExportable(_ exportable: Bool) -> OptionalContentGroup {
         self.exportable = exportable
+        return self
     }
 
     public func drawOn(_ page: Page) {

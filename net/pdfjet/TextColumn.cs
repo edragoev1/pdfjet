@@ -56,30 +56,37 @@ public class TextColumn : IDrawable {
      * If the value is set to true - an empty line will be inserted between the current and next paragraphs.
      *
      * @param lineBetweenParagraphs the specified bool value.
+     * @return this TextColumn object.
      */
-    public void SetLineBetweenParagraphs(bool lineBetweenParagraphs) {
+    public TextColumn SetLineBetweenParagraphs(bool lineBetweenParagraphs) {
         this.lineBetweenParagraphs = lineBetweenParagraphs;
+        return this;
     }
 
-    public void SetLineSpacing(float lineSpacing) {
+    public TextColumn SetLineSpacing(float lineSpacing) {
         this.lineSpacing = lineSpacing;
+        return this;
     }
 
     /**
      * Sets the spacing between the lines in this text column.
      *
      * @param spacing the specified spacing value.
+     * @return this TextColumn object.
      */
-    public void SetLineSpacing(double lineSpacing) {
+    public TextColumn SetLineSpacing(double lineSpacing) {
         this.lineSpacing = (float) lineSpacing;
+        return this;
     }
 
-    public void SetParagraphSpacing(float paragraphSpacing) {
+    public TextColumn SetParagraphSpacing(float paragraphSpacing) {
         this.paragraphSpacing = paragraphSpacing;
+        return this;
     }
 
-    public void SetParagraphSpacing(double paragraphSpacing) {
+    public TextColumn SetParagraphSpacing(double paragraphSpacing) {
         this.paragraphSpacing = (float) paragraphSpacing;
+        return this;
     }
 
     /**
@@ -87,9 +94,11 @@ public class TextColumn : IDrawable {
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
      * @param y the y coordinate of the top left corner of this text column when drawn on the page.
+     * @return this TextColumn object.
      */
-    public void SetPosition(double x, double y) {
+    public TextColumn SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -97,12 +106,18 @@ public class TextColumn : IDrawable {
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
      * @param y the y coordinate of the top left corner of this text column when drawn on the page.
+     * @return this TextColumn object.
      */
-    public void SetPosition(float x, float y) {
+    public TextColumn SetPosition(float x, float y) {
         this.x = x;
         this.y = y;
         this.x1 = x;
         this.y1 = y;
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**
@@ -124,10 +139,12 @@ public class TextColumn : IDrawable {
      *
      * @param w the width of this text column.
      * @param h the height of this text column.
+     * @return this TextColumn object.
      */
     [Obsolete]
-    public void SetSize(double w, double h) {
+    public TextColumn SetSize(double w, double h) {
         SetSize((float) w, (float) h);
+        return this;
     }
 
     /**
@@ -135,28 +152,33 @@ public class TextColumn : IDrawable {
      *
      * @param w the width of this text column.
      * @param h the height of this text column.
+     * @return this TextColumn object.
      */
     [Obsolete]
-    public void SetSize(float w, float h) {
+    public TextColumn SetSize(float w, float h) {
         this.w = w;
         this.h = h;
+        return this;
     }
 
     /**
      * Sets the desired width of this text column.
      *
      * @param w the width of this text column.
+     * @return this TextColumn object.
      */
-    public void SetWidth(float w) {
+    public TextColumn SetWidth(float w) {
         this.w = w;
+        return this;
     }
 
     public float GetWidth() {
         return this.w;
     }
 
-    public void SetHeight(float h) {
+    public TextColumn SetHeight(float h) {
         this.h = h;
+        return this;
     }
 
     public float GetHeight() {
@@ -168,9 +190,11 @@ public class TextColumn : IDrawable {
      *
      * @param alignment the specified alignment code.
      *      Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
+     * @return this TextColumn object.
      */
-    public void SetAlignment(uint alignment) {
+    public TextColumn SetAlignment(uint alignment) {
         this.alignment = alignment;
+        return this;
     }
 
     /**

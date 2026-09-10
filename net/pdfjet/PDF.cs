@@ -99,7 +99,7 @@ public class PDF {
         SetOutputStream(os);
     }
 
-    public void SetOutputStream(Stream os) {
+    public PDF SetOutputStream(Stream os) {
         this.os = os;
 
         DateTime date = new DateTime(DateTime.Now.Ticks);
@@ -114,18 +114,21 @@ public class PDF {
         Append((byte) 0xF5);
         Append((byte) 0xF6);
         Append(Token.Newline);
+        return this;
     }
 
     public Stream GetOutputStream() {
         return this.os;
     }
 
-    public void SetCompliance(Compliance compliance) {
+    public PDF SetCompliance(Compliance compliance) {
         this.compliance = compliance;
+        return this;
     }
 
-    public void SetEncryption(Encryption encryption) {
+    public PDF SetEncryption(Encryption encryption) {
         this.encryption = encryption;
+        return this;
     }
 
     internal void NewObj() {
@@ -1159,41 +1162,51 @@ public class PDF {
     /**
      * Set the "Title" document property of the PDF file.
      * @param title The title of this document.
+     * @return this PDF object.
      */
-    public void SetTitle(String title) {
+    public PDF SetTitle(String title) {
         this.title = title;
+        return this;
     }
 
     /**
      * Set the "Author" document property of the PDF file.
      * @param author The author of this document.
+     * @return this PDF object.
      */
-    public void SetAuthor(String author) {
+    public PDF SetAuthor(String author) {
         this.author = author;
+        return this;
     }
 
     /**
      * Set the "Subject" document property of the PDF file.
      * @param subject The subject of this document.
+     * @return this PDF object.
      */
-    public void SetSubject(String subject) {
+    public PDF SetSubject(String subject) {
         this.subject = subject;
+        return this;
     }
 
-    public void SetKeywords(String keywords) {
+    public PDF SetKeywords(String keywords) {
         this.keywords = keywords;
+        return this;
     }
 
-    public void SetCreator(String creator) {
+    public PDF SetCreator(String creator) {
         this.creator = creator;
+        return this;
     }
 
-    public void SetPageLayout(String pageLayout) {
+    public PDF SetPageLayout(String pageLayout) {
         this.pageLayout = pageLayout;
+        return this;
     }
 
-    public void SetPageMode(String pageMode) {
+    public PDF SetPageMode(String pageMode) {
         this.pageMode = pageMode;
+        return this;
     }
 
     internal void Append(int num) {

@@ -70,16 +70,18 @@ func (text *Text) GetSize() [2]float32 {
 	return [2]float32{text.width, text.yText + text.font.descent}
 }
 
-func (text *Text) SetBorderColor(color int32) {
+func (text *Text) SetBorderColor(color int32) *Text {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	text.SetBorderColorRGB([3]float32{r, g, b})
+	return text
 }
 
-func (text *Text) SetBorderColorRGB(borderColor [3]float32) {
+func (text *Text) SetBorderColorRGB(borderColor [3]float32) *Text {
 	text.borderColor = borderColor
 	text.hasBorder = true
+	return text
 }
 
 // DrawOn draws the text on the page.

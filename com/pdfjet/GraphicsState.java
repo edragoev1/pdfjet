@@ -22,11 +22,13 @@ public class GraphicsState {
      * Set the alpha stroking color
      *
      * @param CA the alpha stroking color
+     * @return this GraphicsState object.
      */
-    public void setAlphaStroking(float CA) {
+    public GraphicsState setAlphaStroking(float CA) {
         if (CA >= 0f && CA <= 1f) {
             this.CA = CA;
         }
+        return this;
     }
 
     /**
@@ -42,11 +44,13 @@ public class GraphicsState {
      * Set the non stroking alpha color
      *
      * @param ca the non stroking alpha color
+     * @return this GraphicsState object.
      */
-    public void setAlphaNonStroking(float ca) {
+    public GraphicsState setAlphaNonStroking(float ca) {
         if (ca >= 0f && ca <= 1f) {
             this.ca = ca;
         }
+        return this;
     }
 
     /**

@@ -13,8 +13,9 @@ public class PolygonAnnotation : BaseAnnotation {
         base.annotationType = Annotation.Polygon;
     }
 
-    public void SetVertices(float[] vertices) {
+    public PolygonAnnotation SetVertices(float[] vertices) {
         base.vertices = vertices;
+        return this;
     }
 }
 }

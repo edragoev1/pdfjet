@@ -203,9 +203,11 @@ public class Image : IDrawable {
      *
      * @param x the x coordinate of the top left corner of the image.
      * @param y the y coordinate of the top left corner of the image.
+     * @return this Image object.
      */
-    public void SetPosition(double x, double y) {
+    public Image SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -213,9 +215,15 @@ public class Image : IDrawable {
      *
      * @param x the x coordinate of the top left corner of the image.
      * @param y the y coordinate of the top left corner of the image.
+     * @return this Image object.
      */
-    public void SetPosition(float x, float y) {
+    public Image SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**
@@ -319,18 +327,22 @@ public class Image : IDrawable {
      * Sets the URI for the "click box" action.
      *
      * @param uri the URI
+     * @return this Image object.
      */
-    public void SetURIAction(String uri) {
+    public Image SetURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     /**
      * Sets the destination key for the action.
      *
      * @param key the destination name.
+     * @return this Image object.
      */
-    public void SetGoToAction(String key) {
+    public Image SetGoToAction(String key) {
         this.key = key;
+        return this;
     }
 
     /**

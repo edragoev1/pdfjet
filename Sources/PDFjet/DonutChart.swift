@@ -28,14 +28,18 @@ public class DonutChart {
         self.slices = [Slice]()
     }
 
-    public func setLocation(_ xc: Float, _ yc: Float) {
+    @discardableResult
+    public func setLocation(_ xc: Float, _ yc: Float) -> DonutChart {
         self.xc = xc
         self.yc = yc
+        return self
     }
 
-    public func setR1AndR2(_ r1: Float, _ r2: Float) {
+    @discardableResult
+    public func setR1AndR2(_ r1: Float, _ r2: Float) -> DonutChart {
         self.r1 = r1
         self.r2 = r2
+        return self
     }
 
     public func addSlice(_ slice: Slice) {

@@ -18,17 +18,20 @@ func NewPasswords() *Passwords {
 }
 
 // SetPasswords sets both user and owner passwords at once.
-func (p *Passwords) SetPasswords(userPassword, ownerPassword string) {
+func (p *Passwords) SetPasswords(userPassword, ownerPassword string) *Passwords {
 	p.UserPassword = userPassword
 	p.OwnerPassword = ownerPassword
+	return p
 }
 
 // SetUserPassword sets the user password.
-func (p *Passwords) SetUserPassword(userPassword string) {
+func (p *Passwords) SetUserPassword(userPassword string) *Passwords {
 	p.UserPassword = userPassword
+	return p
 }
 
 // SetOwnerPassword sets the owner password.
-func (p *Passwords) SetOwnerPassword(ownerPassword string) {
+func (p *Passwords) SetOwnerPassword(ownerPassword string) *Passwords {
 	p.OwnerPassword = ownerPassword
+	return p
 }

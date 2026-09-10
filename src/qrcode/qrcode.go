@@ -61,21 +61,24 @@ func (qrcode *QRCode) SetPosition(x, y float32) {
 // SetLocation sets the location where this barcode will be drawn on the page.
 // @param x the x coordinate of the top left corner of the barcode.
 // @param y the y coordinate of the top left corner of the barcode.
-func (qrcode *QRCode) SetLocation(x, y float32) {
+func (qrcode *QRCode) SetLocation(x, y float32) *QRCode {
 	qrcode.x = x
 	qrcode.y = y
+	return qrcode
 }
 
 // SetModuleLength sets the module length of this barcode.
 // The default value is 2.0f
 // @param moduleLength the specified module length.
-func (qrcode *QRCode) SetModuleLength(moduleLength float32) {
+func (qrcode *QRCode) SetModuleLength(moduleLength float32) *QRCode {
 	qrcode.m1 = moduleLength
+	return qrcode
 }
 
 // SetColor sets the color of the barcode.
-func (qrcode *QRCode) SetColor(color int32) {
+func (qrcode *QRCode) SetColor(color int32) *QRCode {
 	qrcode.color = color
+	return qrcode
 }
 
 // DrawOn draws this barcode on the specified page.

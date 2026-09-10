@@ -46,24 +46,34 @@ public class TextBlock : Drawable {
         self.textContent = textContent
     }
 
-    public func setFont(_ font: Font) {
+    @discardableResult
+    public func setFont(_ font: Font) -> TextBlock {
         self.font = font
+        return self
     }
 
-    public func setFallbackFont(_ font: Font) {
+    @discardableResult
+    public func setFallbackFont(_ font: Font) -> TextBlock {
         self.fallbackFont = font
+        return self
     }
 
-    public func setFontSize(_ size: Float) {
+    @discardableResult
+    public func setFontSize(_ size: Float) -> TextBlock {
         self.font.setSize(size)
+        return self
     }
 
-    public func setFallbackFontSize(_ size: Float) {
+    @discardableResult
+    public func setFallbackFontSize(_ size: Float) -> TextBlock {
         fallbackFont?.setSize(size)
+        return self
     }
 
-    public func setText(_ text: String) {
+    @discardableResult
+    public func setText(_ text: String) -> TextBlock {
         self.textContent = text
+        return self
     }
 
     public func getFont() -> Font {
@@ -74,24 +84,32 @@ public class TextBlock : Drawable {
         return textContent
     }
 
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> TextBlock {
         self.x = x
         self.y = y
+        return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
+        return self
     }
 
-    public func setSize(_ w: Float, _ h: Float) {
+    @discardableResult
+    public func setSize(_ w: Float, _ h: Float) -> TextBlock {
         self.width = w
         self.height = h
+        return self
     }
 
-    public func setWidth(_ w: Float) {
+    @discardableResult
+    public func setWidth(_ w: Float) -> TextBlock {
         self.width = w
         self.height = 0.0
+        return self
     }
 
     public func getWidth() -> Float {
@@ -102,27 +120,37 @@ public class TextBlock : Drawable {
         return self.height
     }
 
-    public func setBorderCornerRadius(_ radius: Float) {
+    @discardableResult
+    public func setBorderCornerRadius(_ radius: Float) -> TextBlock {
         self.borderCornerRadius = radius
+        return self
     }
 
-    public func setTextPadding(_ padding: Float) {
+    @discardableResult
+    public func setTextPadding(_ padding: Float) -> TextBlock {
         self.textPadding = padding
+        return self
     }
 
-    public func setBorderWidth(_ borderWidth: Float) {
+    @discardableResult
+    public func setBorderWidth(_ borderWidth: Float) -> TextBlock {
         self.borderWidth = borderWidth
+        return self
     }
 
-    public func setTextLineHeight(_ lineHeight: Float) {
+    @discardableResult
+    public func setTextLineHeight(_ lineHeight: Float) -> TextBlock {
         self.textLineHeight = lineHeight
+        return self
     }
 
-    public func setTextColor(_ color: Int32) {
+    @discardableResult
+    public func setTextColor(_ color: Int32) -> TextBlock {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.textColor = [r, g, b]
+        return self
     }
 
     @discardableResult
@@ -137,11 +165,13 @@ public class TextBlock : Drawable {
         return self
     }
 
-    public func setFillColor(_ color: Int32) {
+    @discardableResult
+    public func setFillColor(_ color: Int32) -> TextBlock {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.fillColor = [r, g, b]
+        return self
     }
 
     @discardableResult
@@ -150,11 +180,13 @@ public class TextBlock : Drawable {
         return self
     }
 
-    public func setBorderColor(_ color: Int32) {
+    @discardableResult
+    public func setBorderColor(_ color: Int32) -> TextBlock {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.borderColor = [r, g, b]
+        return self
     }
 
     @discardableResult
@@ -163,8 +195,10 @@ public class TextBlock : Drawable {
         return self
     }
 
-    public func setHighlightColors(_ highlightColors: [String: Int32]) {
+    @discardableResult
+    public func setHighlightColors(_ highlightColors: [String: Int32]) -> TextBlock {
         self.highlightColors = highlightColors
+        return self
     }
 
     ///
@@ -172,20 +206,26 @@ public class TextBlock : Drawable {
     ///
     /// - Parameter map: the keyword to color map.
     ///
-    public func setKeywordHighlightColors(_ map: [String: Int32]) {
+    @discardableResult
+    public func setKeywordHighlightColors(_ map: [String: Int32]) -> TextBlock {
         var colors = [String: Int32]()
         for (key, value) in map {
             colors[key.lowercased()] = value
         }
         self.highlightColors = colors
+        return self
     }
 
-    public func setLineSpacing(_ lineSpacing: Float) {
+    @discardableResult
+    public func setLineSpacing(_ lineSpacing: Float) -> TextBlock {
         self.lineSpacing = lineSpacing
+        return self
     }
 
-    public func setTextAlignment(_ alignment: Alignment) {
+    @discardableResult
+    public func setTextAlignment(_ alignment: Alignment) -> TextBlock {
         self.textAlignment = alignment
+        return self
     }
 
     private func textIsCJK(_ str: String) -> Bool {
@@ -255,8 +295,10 @@ public class TextBlock : Drawable {
         return self
     }
 
-    public func setTextDirection(_ direction: Direction) {
+    @discardableResult
+    public func setTextDirection(_ direction: Direction) -> TextBlock {
         self.textDirection = direction
+        return self
     }
 
     ///
@@ -264,8 +306,10 @@ public class TextBlock : Drawable {
     ///
     /// - Parameter underline: the underline flag.
     ///
-    public func setUnderline(_ underline: Bool) {
+    @discardableResult
+    public func setUnderline(_ underline: Bool) -> TextBlock {
         self.underline = underline
+        return self
     }
 
     private func rightAlignText(_ textLines: [TextLine]) {

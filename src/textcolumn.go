@@ -50,42 +50,48 @@ func NewTextColumn(rotateByDegrees int) *TextColumn {
 // SetLineBetweenParagraphs sets the lineBetweenParagraphs private variable value.
 // If the value is set to true - an empty line will be inserted between the current and next lines.
 // @param lineBetweenParagraphs the specified boolean value.
-func (textColumn *TextColumn) SetLineBetweenParagraphs(lineBetweenParagraphs bool) {
+func (textColumn *TextColumn) SetLineBetweenParagraphs(lineBetweenParagraphs bool) *TextColumn {
 	textColumn.lineBetweenParagraphs = lineBetweenParagraphs
+	return textColumn
 }
 
 // SetLineSpacing sets the space between the lines.
-func (textColumn *TextColumn) SetLineSpacing(lineSpacing float32) {
+func (textColumn *TextColumn) SetLineSpacing(lineSpacing float32) *TextColumn {
 	textColumn.lineSpacing = lineSpacing
+	return textColumn
 }
 
 // SetParagraphSpacing sets the space between the lines.
-func (textColumn *TextColumn) SetParagraphSpacing(paragraphSpacing float32) {
+func (textColumn *TextColumn) SetParagraphSpacing(paragraphSpacing float32) *TextColumn {
 	textColumn.paragraphSpacing = paragraphSpacing
+	return textColumn
 }
 
 // SetLocation sets the position of this text column on the page.
 // @param x the x coordinate of the top left corner of this text column when drawn on the page.
 // @param y the y coordinate of the top left corner of this text column when drawn on the page.
-func (textColumn *TextColumn) SetLocation(x, y float32) {
+func (textColumn *TextColumn) SetLocation(x, y float32) *TextColumn {
 	textColumn.x = x
 	textColumn.y = y
 	textColumn.x1 = x
 	textColumn.y1 = y
+	return textColumn
 }
 
 // SetSize sets the size of this text column.
 // @param w the width of this text column.
 // @param h the height of this text column.
-func (textColumn *TextColumn) SetSize(w, h float32) {
+func (textColumn *TextColumn) SetSize(w, h float32) *TextColumn {
 	textColumn.w = w
 	textColumn.h = h
+	return textColumn
 }
 
 // SetWidth sets the desired width of this text column.
 // @param w the width of this text column.
-func (textColumn *TextColumn) SetWidth(w float32) {
+func (textColumn *TextColumn) SetWidth(w float32) *TextColumn {
 	textColumn.w = w
+	return textColumn
 }
 
 // GetWidth returns the width of this text column.
@@ -100,8 +106,9 @@ func (textColumn *TextColumn) GetHeight() float32 {
 
 // SetAlignment sets the text alignment.
 // Supported values: align.Left, align.Right, align.Center and align.Justify
-func (textColumn *TextColumn) SetAlignment(alignment int) {
+func (textColumn *TextColumn) SetAlignment(alignment int) *TextColumn {
 	textColumn.alignment = alignment
+	return textColumn
 }
 
 // AddParagraph adds a new paragraph to this text column.

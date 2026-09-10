@@ -66,39 +66,45 @@ func (box *Box) SetLocation(x, y float32) *Box {
 // SetSize sets the size of this box.
 // @param w the width of this box.
 // @param h the height of this box.
-func (box *Box) SetSize(w, h float32) {
+func (box *Box) SetSize(w, h float32) *Box {
 	box.w = w
 	box.h = h
+	return box
 }
 
 // SetColor sets the color for this box.
 // @param color the color specified as an integer.
-func (box *Box) SetColor(color int32) {
+func (box *Box) SetColor(color int32) *Box {
 	box.color = color
+	return box
 }
 
 // SetLineWidth sets the width of this line.
 // @param width the width.
-func (box *Box) SetLineWidth(width float32) {
+func (box *Box) SetLineWidth(width float32) *Box {
 	box.width = width
+	return box
 }
 
 // SetCornerRadius sets the corner radius.
 // @param width the width.
-func (box *Box) SetCornerRadius(r float32) {
+func (box *Box) SetCornerRadius(r float32) *Box {
 	box.r = r
+	return box
 }
 
 // SetURIAction sets the URI for the "click box" action.
 // @param uri the URI
-func (box *Box) SetURIAction(uri string) {
+func (box *Box) SetURIAction(uri string) *Box {
 	box.uri = uri
+	return box
 }
 
 // SetGoToAction sets the destination key for the action.
 // @param key the destination name.
-func (box *Box) SetGoToAction(key string) {
+func (box *Box) SetGoToAction(key string) *Box {
 	box.key = key
+	return box
 }
 
 // SetAltDescription sets the alternate description of this box.
@@ -145,15 +151,17 @@ func (box *Box) SetStructureType(structureType string) *Box {
 // </pre>
 //
 // @param pattern the line dash pattern.
-func (box *Box) SetPattern(pattern string) {
+func (box *Box) SetPattern(pattern string) *Box {
 	box.pattern = pattern
+	return box
 }
 
 // SetFillShape sets the private fillShape variable.
 // If the value of fillShape is true - the box is filled with the current brushColor color.
 // @param fillShape the value used to set the private fillShape variable.
-func (box *Box) SetFillShape(fillShape bool) {
+func (box *Box) SetFillShape(fillShape bool) *Box {
 	box.fillShape = fillShape
+	return box
 }
 
 // ScaleBy scales this box by the specified factor.

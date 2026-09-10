@@ -82,8 +82,10 @@ public class Point : Drawable {
         self.controlPoint = controlPoint
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     ///
@@ -436,8 +438,10 @@ public class Point : Drawable {
     ///
     /// - Parameter pathOperator the path painting operator.
     ///
-    public func setPathOperator(_ pathOperator: PathOperator) {
+    @discardableResult
+    public func setPathOperator(_ pathOperator: PathOperator) -> Point {
         self.pathOperator = pathOperator
+        return self
     }
 
     ///

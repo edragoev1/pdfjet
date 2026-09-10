@@ -35,27 +35,32 @@ namespace PDFjet.NET {
             this.pages = new List<Page>();
         }
 
-        public void SetLocation(float x, float y) {
+        public BigTable SetLocation(float x, float y) {
             for (int i = 0; i <= this.numberOfColumns; i++) {
                 this.vertLines[i] += x;
             }
             this.y = y;
+            return this;
         }
 
-        public void SetNumberOfColumns(int numberOfColumns) {
+        public BigTable SetNumberOfColumns(int numberOfColumns) {
             this.numberOfColumns = numberOfColumns;
+            return this;
         }
 
-        public void SetTextAlignment(int column, Alignment alignment) {
+        public BigTable SetTextAlignment(int column, Alignment alignment) {
             this.alignment[column] = alignment;
+            return this;
         }
 
-        public void SetBottomMargin(float bottomMargin) {
+        public BigTable SetBottomMargin(float bottomMargin) {
             this.bottomMargin = bottomMargin;
+            return this;
         }
 
-        public void SetLanguage(string language) {
+        public BigTable SetLanguage(string language) {
             this.language = language;
+            return this;
         }
 
         public List<Page> GetPages() {
@@ -165,7 +170,7 @@ namespace PDFjet.NET {
             }
         }
 
-        public void SetTableData(string fileName, string delimiter) {
+        public BigTable SetTableData(string fileName, string delimiter) {
             this.fileName = fileName;
             this.delimiter = delimiter;
             this.vertLines = new float[this.numberOfColumns + 1];
@@ -212,6 +217,7 @@ namespace PDFjet.NET {
                 vertLineX += this.widths[i];
                 this.vertLines[i + 1] = vertLineX;
             }
+            return this;
         }
 
         public void Complete() {

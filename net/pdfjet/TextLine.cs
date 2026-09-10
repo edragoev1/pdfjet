@@ -93,8 +93,9 @@ public class TextLine : IDrawable {
      * @param y the y coordinate of the text line.
      * @return this TextLine.
      */
-    public void SetPosition(double x, double y) {
+    public TextLine SetPosition(double x, double y) {
         SetLocation((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -104,8 +105,13 @@ public class TextLine : IDrawable {
      * @param y the y coordinate of the text line.
      * @return this TextLine.
      */
-    public void SetPosition(float x, float y) {
+    public TextLine SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**

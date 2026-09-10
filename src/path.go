@@ -65,38 +65,44 @@ func (path *Path) Add(point *Point) {
 //
 // </pre>
 // @param pattern the line dash pattern.
-func (path *Path) SetPattern(pattern string) {
+func (path *Path) SetPattern(pattern string) *Path {
 	path.pattern = pattern
+	return path
 }
 
 // SetWidth sets the penColor width that will be used to draw the lines and splines that are part of this path.
 // @param width the penColor width.
-func (path *Path) SetWidth(width float32) {
+func (path *Path) SetWidth(width float32) *Path {
 	path.width = width
+	return path
 }
 
 // SetColor sets the penColor color that will be used to draw this path.
 // @param color the color is specified as an integer.
-func (path *Path) SetColor(color int32) {
+func (path *Path) SetColor(color int32) *Path {
 	path.color = color
+	return path
 }
 
 // SetClosePath sets the closePath variable.
 // @param closePath if true a line will be drawn between the first and last point of this path.
-func (path *Path) SetClosePath(closePath bool) {
+func (path *Path) SetClosePath(closePath bool) *Path {
 	path.closePath = closePath
+	return path
 }
 
 // SetFillShape sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brushColor color.
 // @param fillShape the fillShape flag.
-func (path *Path) SetFillShape(fillShape bool) {
+func (path *Path) SetFillShape(fillShape bool) *Path {
 	path.fillShape = fillShape
+	return path
 }
 
 // SetLineCapStyle sets the line cap style.
 // @param style the cap style of this path. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
-func (path *Path) SetLineCapStyle(style int) {
+func (path *Path) SetLineCapStyle(style int) *Path {
 	path.lineCapStyle = style
+	return path
 }
 
 // GetLineCapStyle returns the line cap style for this path.
@@ -107,8 +113,9 @@ func (path *Path) GetLineCapStyle() int {
 
 // SetLineJoinStyle sets the line join style.
 // Supported values: Join.MITER, Join.ROUND and Join.BEVEL
-func (path *Path) SetLineJoinStyle(style int) {
+func (path *Path) SetLineJoinStyle(style int) *Path {
 	path.lineJoinStyle = style
+	return path
 }
 
 // GetLineJoinStyle returns the line join style.
@@ -117,9 +124,10 @@ func (path *Path) GetLineJoinStyle() int {
 }
 
 // SetLocation sets the location of the path.
-func (path *Path) SetLocation(x, y float32) {
+func (path *Path) SetLocation(x, y float32) *Path {
 	path.xBox += x
 	path.yBox += y
+	return path
 }
 
 // ScaleBy scales the path using the specified factor.

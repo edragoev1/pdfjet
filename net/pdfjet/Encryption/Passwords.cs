@@ -14,12 +14,14 @@ public class Passwords {
     public Passwords() {
     }
 
-    public void SetUserPassword(String userPassword) {
+    public Passwords SetUserPassword(String userPassword) {
         this.userPassword = userPassword;
+        return this;
     }
 
-    public void SetOwnerPassword(String ownerPassword) {
+    public Passwords SetOwnerPassword(String ownerPassword) {
         this.ownerPassword = ownerPassword;
+        return this;
     }
 
     public String GetUserPassword() {

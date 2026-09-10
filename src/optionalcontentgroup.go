@@ -47,18 +47,21 @@ func (ocg *OptionalContentGroup) Add(drawable Drawable) {
 }
 
 // SetVisible sets the visibility of the group.
-func (ocg *OptionalContentGroup) SetVisible(visible bool) {
+func (ocg *OptionalContentGroup) SetVisible(visible bool) *OptionalContentGroup {
 	ocg.visible = visible
+	return ocg
 }
 
 // SetPrintable sets the printable components.
-func (ocg *OptionalContentGroup) SetPrintable(printable bool) {
+func (ocg *OptionalContentGroup) SetPrintable(printable bool) *OptionalContentGroup {
 	ocg.printable = printable
+	return ocg
 }
 
 // SetExportable sets the exportable components.
-func (ocg *OptionalContentGroup) SetExportable(exportable bool) {
+func (ocg *OptionalContentGroup) SetExportable(exportable bool) *OptionalContentGroup {
 	ocg.exportable = exportable
+	return ocg
 }
 
 // DrawOn draws the components in the optional content group on the page.

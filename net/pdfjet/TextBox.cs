@@ -126,9 +126,11 @@ public class TextBox : IDrawable {
      * Sets the font for this text box.
      *
      * @param font the font.
+     * @return this TextBox object.
      */
-    public void SetFont(Font font) {
+    public TextBox SetFont(Font font) {
         this.font = font;
+        return this;
     }
 
     /**
@@ -140,17 +142,20 @@ public class TextBox : IDrawable {
         return font;
     }
 
-    public void SetFontSize(float fontSize) {
+    public TextBox SetFontSize(float fontSize) {
         this.fontSize = fontSize;
+        return this;
     }
 
     /**
      * Sets the text box text.
      *
      * @param text the text box text.
+     * @return this TextBox object.
      */
-    public void SetText(String text) {
+    public TextBox SetText(String text) {
         this.text = text;
+        return this;
     }
 
     /**
@@ -167,9 +172,11 @@ public class TextBox : IDrawable {
      *
      * @param x the x coordinate of the top left corner of the text box.
      * @param y the y coordinate of the top left corner of the text box.
+     * @return this TextBox object.
      */
-    public void SetPosition(double x, double y) {
+    public TextBox SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -177,10 +184,16 @@ public class TextBox : IDrawable {
      *
      * @param x the x coordinate of the top left corner of the text box.
      * @param y the y coordinate of the top left corner of the text box.
+     * @return this TextBox object.
      */
-    public void SetPosition(float x, float y) {
+    public TextBox SetPosition(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**
@@ -200,10 +213,12 @@ public class TextBox : IDrawable {
      *
      * @param w the width of the text box.
      * @param h the height of the text box.
+     * @return this TextBox object.
      */
-    public void SetSize(float w, float h) {
+    public TextBox SetSize(float w, float h) {
         this.width = w;
         this.height = h;
+        return this;
     }
 
     /**
@@ -219,18 +234,22 @@ public class TextBox : IDrawable {
      * Sets the width of this text box.
      *
      * @param width the specified width.
+     * @return this TextBox object.
      */
-    public void SetWidth(double width) {
+    public TextBox SetWidth(double width) {
         this.width = (float) width;
+        return this;
     }
 
     /**
      * Sets the width of this text box.
      *
      * @param width the specified width.
+     * @return this TextBox object.
      */
-    public void SetWidth(float width) {
+    public TextBox SetWidth(float width) {
         this.width = width;
+        return this;
     }
 
     /**
@@ -304,18 +323,22 @@ public class TextBox : IDrawable {
      * Sets the border line width.
      *
      * @param lineWidth float
+     * @return this TextBox object.
      */
-    public void SetLineWidth(double lineWidth) {
+    public TextBox SetLineWidth(double lineWidth) {
         this.lineWidth = (float) lineWidth;
+        return this;
     }
 
     /**
      * Sets the border line width.
      *
      * @param lineWidth float
+     * @return this TextBox object.
      */
-    public void SetLineWidth(float lineWidth) {
+    public TextBox SetLineWidth(float lineWidth) {
         this.lineWidth = lineWidth;
+        return this;
     }
 
     /**
@@ -331,18 +354,22 @@ public class TextBox : IDrawable {
      * Sets the spacing between lines of text.
      *
      * @param spacing the spacing
+     * @return this TextBox object.
      */
-    public void SetSpacing(double spacing) {
+    public TextBox SetSpacing(double spacing) {
         this.spacing = (float) spacing;
+        return this;
     }
 
     /**
      * Sets the spacing between lines of text.
      *
      * @param spacing the spacing
+     * @return this TextBox object.
      */
-    public void SetSpacing(float spacing) {
+    public TextBox SetSpacing(float spacing) {
         this.spacing = spacing;
+        return this;
     }
 
     /**
@@ -354,41 +381,48 @@ public class TextBox : IDrawable {
         return spacing;
     }
 
-    public void SetFillColor(int color) {
+    public TextBox SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetFillColor(float[] rgbColor) {
+    public TextBox SetFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
+        return this;
     }
 
-    public void SetBackgroundColor(int color) {
+    public TextBox SetBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetBackgroundColor(float[] rgbColor) {
+    public TextBox SetBackgroundColor(float[] rgbColor) {
         this.fillColor = rgbColor;
+        return this;
     }
 
-    public void SetTextColor(int color) {
+    public TextBox SetTextColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.textColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetTextColor(float r, float g, float b) {
+    public TextBox SetTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetTextColor(float[] rgbColor) {
+    public TextBox SetTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
+        return this;
     }
 
     public float[] GetTextColor() {
@@ -413,23 +447,27 @@ public class TextBox : IDrawable {
         return altDescription;
     }
 
-    public void SetStrokeWidth(float strokeWidth) {
+    public TextBox SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
+        return this;
     }
 
-    public void SetStrokeColor(int color) {
+    public TextBox SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.strokeColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetStrokeColor(float r, float g, float b) {
+    public TextBox SetStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetStrokeColor(float[] rgbColor) {
+    public TextBox SetStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
+        return this;
     }
 
     public float[] GetStrokeColor() {
@@ -440,9 +478,11 @@ public class TextBox : IDrawable {
      * Sets the TextBox border properties.
      *
      * @param border the border properties.
+     * @return this TextBox object.
      */
-    public void SetBorder(uint border) {
+    public TextBox SetBorder(uint border) {
         this.properties |= border;
+        return this;
     }
 
     /**
@@ -484,13 +524,15 @@ public class TextBox : IDrawable {
      * Sets the TextBox borders on and off.
      *
      * @param borders the borders flag.
+     * @return this TextBox object.
      */
-    public void SetBorders(bool borders) {
+    public TextBox SetBorders(bool borders) {
         if (borders) {
             SetBorder(Border.ALL);
         } else {
             SetBorder(Border.NONE);
         }
+        return this;
     }
 
     /**
@@ -519,13 +561,15 @@ public class TextBox : IDrawable {
      * If the value of the underline variable is 'true' - the text is underlined.
      *
      * @param underline the underline flag.
+     * @return this TextBox object.
      */
-    public void SetUnderline(bool underline) {
+    public TextBox SetUnderline(bool underline) {
         if (underline) {
             this.properties |= 0x00400000;
         } else {
             this.properties &= 0x00BFFFFF;
         }
+        return this;
     }
 
     /**
@@ -542,13 +586,15 @@ public class TextBox : IDrawable {
      * In the flag is true - draw strikeout line through the text.
      *
      * @param strikeout the strikeout flag.
+     * @return this TextBox object.
      */
-    public void SetStrikeout(bool strikeout) {
+    public TextBox SetStrikeout(bool strikeout) {
         if (strikeout) {
             this.properties |= 0x00800000;
         } else {
             this.properties &= 0x007FFFFF;
         }
+        return this;
     }
 
     /**
@@ -560,8 +606,9 @@ public class TextBox : IDrawable {
         return (properties & 0x00800000) != 0;
     }
 
-    public void SetFallbackFont(Font font) {
+    public TextBox SetFallbackFont(Font font) {
         this.fallbackFont = font;
+        return this;
     }
 
     public Font GetFallbackFont() {
@@ -572,17 +619,20 @@ public class TextBox : IDrawable {
      * Sets the vertical alignment of the text in this TextBox.
      *
      * @param valign - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
+     * @return this TextBox object.
      */
-    public void SetVerticalAlignment(uint valign) {
+    public TextBox SetVerticalAlignment(uint valign) {
         this.valign = valign;
+        return this;
     }
 
     public uint GetVerticalAlignment() {
         return this.valign;
     }
 
-    public void SetTextColors(Dictionary<String, Int32> colors) {
+    public TextBox SetTextColors(Dictionary<String, Int32> colors) {
         this.colors = colors;
+        return this;
     }
 
     public Dictionary<String, Int32> GetTextColors() {

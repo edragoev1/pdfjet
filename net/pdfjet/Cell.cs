@@ -87,19 +87,23 @@ public class Cell {
      * Sets the font for this cell.
      *
      * @param font the font.
+     * @return this Cell object.
      */
-    public void SetFont(Font font) {
+    public Cell SetFont(Font font) {
         this.font = font;
         this.fontSize = font.GetSize();
+        return this;
     }
 
     /**
      * Sets the fallback font for this cell.
      *
      * @param fallbackFont the fallback font.
+     * @return this Cell object.
      */
-    public void SetFallbackFont(Font fallbackFont) {
+    public Cell SetFallbackFont(Font fallbackFont) {
         this.fallbackFont = fallbackFont;
+        return this;
     }
 
     /**
@@ -124,9 +128,11 @@ public class Cell {
      * Sets the cell text.
      *
      * @param text the cell text.
+     * @return this Cell object.
      */
-    public void SetText(String text) {
+    public Cell SetText(String text) {
         this.text = text;
+        return this;
     }
 
     /**
@@ -138,28 +144,33 @@ public class Cell {
         return this.text;
     }
 
-    public void SetFontSize(float fontSize) {
+    public Cell SetFontSize(float fontSize) {
         this.fontSize = fontSize;
+        return this;
     }
 
     /**
      * Sets the image inside this cell.
      *
      * @param image the image.
+     * @return this Cell object.
      */
-    public void SetImage(Image image) {
+    public Cell SetImage(Image image) {
         this.image = image;
         this.text = null;
+        return this;
     }
 
     /**
      * Sets the barcode inside this cell.
      *
      * @param barcode the barcode.
+     * @return this Cell object.
      */
-    public void SetBarcode(Barcode barcode) {
+    public Cell SetBarcode(Barcode barcode) {
         this.barcode = barcode;
         this.text = null;
+        return this;
     }
 
     /**
@@ -176,9 +187,11 @@ public class Cell {
      * See the Point class and Example_09 for more information.
      *
      * @param point the point.
+     * @return this Cell object.
      */
-    public void SetPoint(Point point) {
+    public Cell SetPoint(Point point) {
         this.point = point;
+        return this;
     }
 
     /**
@@ -190,8 +203,9 @@ public class Cell {
         return this.point;
     }
 
-    public void SetCompositeTextLine(CompositeTextLine compositeTextLine) {
+    public Cell SetCompositeTextLine(CompositeTextLine compositeTextLine) {
         this.compositeTextLine = compositeTextLine;
+        return this;
     }
 
     public CompositeTextLine GetCompositeTextLine() {
@@ -218,22 +232,25 @@ public class Cell {
         return this.textColumn;
     }
 
-    public void SetBackgroundColor(float[] rgbColor) {
+    public Cell SetBackgroundColor(float[] rgbColor) {
         this.backgroundColor = rgbColor;
+        return this;
     }
 
     /**
      * Sets the width of this cell.
      *
      * @param width the specified width.
+     * @return this Cell object.
      */
-    public void SetWidth(double width) {
+    public Cell SetWidth(double width) {
         this.width = (float) width;
         if (textBox != null) {
             textBox.SetWidth(this.width - (this.leftPadding + this.rightPadding));
         } else if (textBlock != null) {
             textBlock.SetWidth(this.width - (this.leftPadding + this.rightPadding));
         }
+        return this;
     }
 
     /**
@@ -335,31 +352,36 @@ public class Cell {
         return cellHeight;
     }
 
-    public void SetLineWidth(Int32 width) {
+    public Cell SetLineWidth(Int32 width) {
         SetLineWidth((float) width);
+        return this;
     }
 
-    public void SetLineWidth(float width) {
+    public Cell SetLineWidth(float width) {
         this.lineWidth = width;
+        return this;
     }
 
     public float GetLineWidth() {
         return this.lineWidth;
     }
 
-    public void SetBgColor(int color) {
+    public Cell SetBgColor(int color) {
         SetBackgroundColor(color);
+        return this;
     }
 
-    public void SetFillColor(int color) {
+    public Cell SetFillColor(int color) {
         SetBackgroundColor(color);
+        return this;
     }
 
-    public void SetBackgroundColor(int color) {
+    public Cell SetBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         backgroundColor = new float[] {r, g, b};
+        return this;
     }
 
     public float[] GetFillColor() {
@@ -374,46 +396,53 @@ public class Cell {
         return this.backgroundColor;
     }
 
-    public void SetTextColor(int color) {
+    public Cell SetTextColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         SetTextColor(r, g, b);
+        return this;
     }
 
-    public void SetTextColor(float r, float g, float b) {
+    public Cell SetTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetTextColor(float[] rgbColor) {
+    public Cell SetTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
+        return this;
     }
 
     public float[] GetTextColor() {
         return this.textColor;
     }
 
-    public void SetStrokeWidth(float strokeWidth) {
+    public Cell SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
+        return this;
     }
 
     public float GetStrokeWidth() {
         return this.strokeWidth;
     }
 
-    public void SetStrokeColor(int color) {
+    public Cell SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         SetStrokeColor(r, g, b);
+        return this;
     }
 
-    public void SetStrokeColor(float r, float g, float b) {
+    public Cell SetStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void SetStrokeColor(float[] rgbColor) {
+    public Cell SetStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
+        return this;
     }
 
     public float[] GetStrokeColor() {
@@ -451,13 +480,15 @@ public class Cell {
      * Sets the cell border object.
      *
      * @param border the border object.
+     * @return this Cell object.
      */
-    public void SetBorder(uint border, bool visible) {
+    public Cell SetBorder(uint border, bool visible) {
         if (visible) {
             this.properties |= border;
         } else {
             this.properties &= (~border & 0x00FFFFFF);
         }
+        return this;
     }
 
     /**
@@ -472,13 +503,15 @@ public class Cell {
     /**
      * Sets all cell borders.
      * @param borders true or false.
+     * @return this Cell object.
      */
-    public void SetBorders(bool borders) {
+    public Cell SetBorders(bool borders) {
         if (borders) {
             this.properties &= 0x00FFFFFF;
         } else {
             this.properties &= 0x00F0FFFF;
         }
+        return this;
     }
 
     /**
@@ -507,9 +540,11 @@ public class Cell {
      *
      * @param alignment the alignment code.
      * Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
+     * @return this Cell object.
      */
-    public void SetVerTextAlignment(uint alignment) {
+    public Cell SetVerTextAlignment(uint alignment) {
         this.valign = alignment;
+        return this;
     }
 
     /**
@@ -526,33 +561,37 @@ public class Cell {
      * If the value of the underline variable is 'true' - the text is underlined.
      *
      * @param underline the underline flag.
+     * @return this Cell object.
      */
-    public void SetUnderline(bool underline) {
+    public Cell SetUnderline(bool underline) {
         if (underline) {
             this.properties |= 0x00400000;
         } else {
             this.properties &= 0x00BFFFFF;
         }
+        return this;
     }
 
     public bool GetUnderline() {
         return (properties & 0x00400000) != 0;
     }
 
-    public void SetStrikeout(bool strikeout) {
+    public Cell SetStrikeout(bool strikeout) {
         if (strikeout) {
             this.properties |= 0x00800000;
         } else {
             this.properties &= 0x007FFFFF;
         }
+        return this;
     }
 
     public bool GetStrikeout() {
         return (properties & 0x00800000) != 0;
     }
 
-    public void SetURIAction(String uri) {
+    public Cell SetURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     public float GetLeftPadding() {

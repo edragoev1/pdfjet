@@ -68,8 +68,10 @@ public class Path : Drawable {
     ///
     /// - Parameter pattern the line dash pattern.
     ///
-    public func setPattern(_ pattern: String) {
+    @discardableResult
+    public func setPattern(_ pattern: String) -> Path {
         self.pattern = pattern
+        return self
     }
 
     ///
@@ -77,8 +79,10 @@ public class Path : Drawable {
     ///
     /// - Parameter width the pen width.
     ///
-    public func setWidth(_ width: Float) {
+    @discardableResult
+    public func setWidth(_ width: Float) -> Path {
         self.width = width
+        return self
     }
 
     ///
@@ -86,8 +90,10 @@ public class Path : Drawable {
     ///
     /// - Parameter color the color is specified as an integer.
     ///
-    public func setColor(_ color: Int32) {
+    @discardableResult
+    public func setColor(_ color: Int32) -> Path {
         self.color = color
+        return self
     }
 
     ///
@@ -95,8 +101,10 @@ public class Path : Drawable {
     ///
     /// - Parameter closePath if closePath is true a line will be draw between the first and last point of this path.
     ///
-    public func setClosePath(_ closePath: Bool) {
+    @discardableResult
+    public func setClosePath(_ closePath: Bool) -> Path {
         self.closePath = closePath
+        return self
     }
 
     ///
@@ -105,8 +113,10 @@ public class Path : Drawable {
     ///
     /// - Parameter fillShape the fillShape flag.
     ///
-    public func setFillShape(_ fillShape: Bool) {
+    @discardableResult
+    public func setFillShape(_ fillShape: Bool) -> Path {
         self.fillShape = fillShape
+        return self
     }
 
     ///
@@ -115,8 +125,10 @@ public class Path : Drawable {
     /// - Parameter style the cap style of this path.
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     ///
-    public func setLineCapStyle(_ style: CapStyle) {
+    @discardableResult
+    public func setLineCapStyle(_ style: CapStyle) -> Path {
         self.lineCapStyle = style
+        return self
     }
 
     ///
@@ -133,8 +145,10 @@ public class Path : Drawable {
     ///
     /// - Parameter style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
     ///
-    public func setLineJoinStyle(_ style: JoinStyle) {
+    @discardableResult
+    public func setLineJoinStyle(_ style: JoinStyle) -> Path {
         self.lineJoinStyle = style
+        return self
     }
 
     ///
@@ -146,8 +160,10 @@ public class Path : Drawable {
         return self.lineJoinStyle
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     @discardableResult

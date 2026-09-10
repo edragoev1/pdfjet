@@ -80,9 +80,11 @@ public class CheckBox implements Drawable {
      *
      *  @param x the x coordinate on the Page.
      *  @param y the y coordinate on the Page.
+     *  @return this CheckBox object.
      */
-    public void setPosition(float x, float y) {
+    public CheckBox setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -90,9 +92,11 @@ public class CheckBox implements Drawable {
      *
      *  @param x the x coordinate on the Page.
      *  @param y the y coordinate on the Page.
+     *  @return this CheckBox object.
      */
-    public void setPosition(double x, double y) {
+    public CheckBox setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**

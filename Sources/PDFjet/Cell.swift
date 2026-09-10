@@ -83,18 +83,24 @@ public class Cell {
      * Sets the font for this cell.
      *
      * @param font the font.
+     * @return this Cell object.
      */
-    public func setFont(_ font: Font?) {
+    @discardableResult
+    public func setFont(_ font: Font?) -> Cell {
         self.font = font
+        return self
     }
 
     /**
      * Sets the fallback font for this cell.
      *
      * @param fallbackFont the fallback font.
+     * @return this Cell object.
      */
-    public func setFallbackFont(_ fallbackFont: Font?) {
+    @discardableResult
+    public func setFallbackFont(_ fallbackFont: Font?) -> Cell {
         self.fallbackFont = fallbackFont
+        return self
     }
 
     /**
@@ -139,10 +145,13 @@ public class Cell {
      * Sets the image inside this cell.
      *
      * @param image the image.
+     * @return this Cell object.
      */
-    public func setImage(_ image: Image?) {
+    @discardableResult
+    public func setImage(_ image: Image?) -> Cell {
         self.image = image
         self.text = nil
+        return self
     }
 
     /**
@@ -154,9 +163,11 @@ public class Cell {
         return self.image
     }
 
-    public func setBarcode(_ barcode: Barcode) {
+    @discardableResult
+    public func setBarcode(_ barcode: Barcode) -> Cell {
         self.barcode = barcode
         self.text = nil
+        return self
     }
 
     /**
@@ -184,9 +195,12 @@ public class Cell {
      * Sets the composite text object.
      *
      * @param compositeTextLine the composite text object.
+     * @return this Cell object.
      */
-    public func setCompositeTextLine(_ compositeTextLine: CompositeTextLine?) {
+    @discardableResult
+    public func setCompositeTextLine(_ compositeTextLine: CompositeTextLine?) -> Cell {
         self.compositeTextLine = compositeTextLine
+        return self
     }
 
     /**
@@ -202,12 +216,15 @@ public class Cell {
      * Sets the width of this cell.
      *
      * @param width the specified width.
+     * @return this Cell object.
      */
-    public func setWidth(_ width: Float) {
+    @discardableResult
+    public func setWidth(_ width: Float) -> Cell {
         self.width = width
         if self.textBlock != nil {
             self.textBlock!.setWidth(self.width - (self.leftPadding + self.rightPadding))
         }
+        return self
     }
 
     ///
@@ -256,27 +273,36 @@ public class Cell {
      * Sets the top padding of this cell.
      *
      * @param padding the top padding.
+     * @return this Cell object.
      */
-    public func setTopPadding(_ padding: Float) {
+    @discardableResult
+    public func setTopPadding(_ padding: Float) -> Cell {
         self.topPadding = padding
+        return self
     }
 
     /**
      * Sets the bottom padding of this cell.
      *
      * @param padding the bottom padding.
+     * @return this Cell object.
      */
-    public func setBottomPadding(_ padding: Float) {
+    @discardableResult
+    public func setBottomPadding(_ padding: Float) -> Cell {
         self.bottomPadding = padding
+        return self
     }
 
     /**
      * Sets the left padding of this cell.
      *
      * @param padding the left padding.
+     * @return this Cell object.
      */
-    public func setLeftPadding(_ padding: Float) {
+    @discardableResult
+    public func setLeftPadding(_ padding: Float) -> Cell {
         self.leftPadding = padding
+        return self
     }
 
     public func getLeftPadding() -> Float {
@@ -287,9 +313,12 @@ public class Cell {
      * Sets the right padding of this cell.
      *
      * @param padding the right padding.
+     * @return this Cell object.
      */
-    public func setRightPadding(_ padding: Float) {
+    @discardableResult
+    public func setRightPadding(_ padding: Float) -> Cell {
         self.rightPadding = padding
+        return self
     }
 
     public func getRightPadding() -> Float {
@@ -300,12 +329,15 @@ public class Cell {
      * Sets the top, bottom, left and right paddings of this cell.
      *
      * @param padding the right padding.
+     * @return this Cell object.
      */
-    public func setPadding(_ padding: Float) {
+    @discardableResult
+    public func setPadding(_ padding: Float) -> Cell {
         self.topPadding = padding
         self.bottomPadding = padding
         self.leftPadding = padding
         self.rightPadding = padding
+        return self
     }
 
     /**
@@ -337,68 +369,88 @@ public class Cell {
         return cellHeight
     }
 
-    public func setTextColor(_ color: Int32) {
+    @discardableResult
+    public func setTextColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.textColor = [r, g, b]
+        return self
     }
 
-    public func setTextColor(_ r: Float, _ g: Float, _ b: Float) {
+    @discardableResult
+    public func setTextColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.textColor = [r, g, b]
+        return self
     }
 
-    public func setTextColor(_ textColor: [Float]) {
+    @discardableResult
+    public func setTextColor(_ textColor: [Float]) -> Cell {
         self.textColor = textColor
+        return self
     }
 
     public func getTextColor() -> [Float] {
         return self.textColor
     }
 
-    public func setBackgroundColor(_ color: Int32) {
+    @discardableResult
+    public func setBackgroundColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.backgroundColor = [r, g, b]
         self.hasBackground = true
+        return self
     }
 
-    public func setBackgroundColor(_ r: Float, _ g: Float, _ b: Float) {
+    @discardableResult
+    public func setBackgroundColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.backgroundColor = [r, g, b]
         self.hasBackground = true
+        return self
     }
 
-    public func setBackgroundColor(_ backgroundColor: [Float]) {
+    @discardableResult
+    public func setBackgroundColor(_ backgroundColor: [Float]) -> Cell {
         self.backgroundColor = backgroundColor
         self.hasBackground = true
+        return self
     }
 
     public func getBackgroundColor() -> [Float] {
         return self.backgroundColor
     }
 
-    public func setStrokeColor(_ color: Int32) {
+    @discardableResult
+    public func setStrokeColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.strokeColor = [r, g, b]
+        return self
     }
 
-    public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) {
+    @discardableResult
+    public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.strokeColor = [r, g, b]
+        return self
     }
 
-    public func setStrokeColor(_ rgbColor: [Float]?) {
+    @discardableResult
+    public func setStrokeColor(_ rgbColor: [Float]?) -> Cell {
         self.strokeColor = rgbColor
+        return self
     }
 
     public func getStrokeColor() -> [Float]? {
         return self.strokeColor
     }
 
-    public func setLineWidth(_ width: Float) {
+    @discardableResult
+    public func setLineWidth(_ width: Float) -> Cell {
         self.strokeWidth = width
+        return self
     }
 
     func setStrokeWidth(_ strokeWidth: Float) {
@@ -421,10 +473,13 @@ public class Cell {
      * Sets the column span private variable.
      *
      * @param colspan the specified column span value.
+     * @return this Cell object.
      */
-    public func setColSpan(_ colspan: UInt32) {
+    @discardableResult
+    public func setColSpan(_ colspan: UInt32) -> Cell {
         self.properties &= 0x00FF0000
         self.properties |= (colspan & 0x0000FFFF)
+        return self
     }
 
     /**
@@ -436,39 +491,49 @@ public class Cell {
         return (self.properties & 0x0000FFFF)
     }
 
-    public func setAllBorders(_ visible: Bool) {
+    @discardableResult
+    public func setAllBorders(_ visible: Bool) -> Cell {
         self.topBorder = visible
         self.bottomBorder = visible
         self.leftBorder = visible
         self.rightBorder = visible
+        return self
     }
 
-    public func setTopBorder(_ topBorder: Bool) {
+    @discardableResult
+    public func setTopBorder(_ topBorder: Bool) -> Cell {
         self.topBorder = topBorder
+        return self
     }
 
     public func getTopBorder() -> Bool {
         return self.topBorder
     }
 
-    public func setBottomBorder(_ bottomBorder: Bool) {
+    @discardableResult
+    public func setBottomBorder(_ bottomBorder: Bool) -> Cell {
         self.bottomBorder = bottomBorder
+        return self
     }
 
     public func getBottomBorder() -> Bool {
         return self.bottomBorder
     }
 
-    public func setLeftBorder(_ leftBorder: Bool) {
+    @discardableResult
+    public func setLeftBorder(_ leftBorder: Bool) -> Cell {
         self.leftBorder = leftBorder
+        return self
     }
 
     public func getLeftBorder() -> Bool {
         return self.leftBorder
     }
 
-    public func setRightBorder(_ rightBorder: Bool) {
+    @discardableResult
+    public func setRightBorder(_ rightBorder: Bool) -> Cell {
         self.rightBorder = rightBorder
+        return self
     }
 
     public func getRightBorder() -> Bool {
@@ -480,10 +545,13 @@ public class Cell {
      *
      * @param alignment the alignment code.
      * Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
+     * @return this Cell object.
      */
-    public func setTextAlignment(_ alignment: UInt32) {
+    @discardableResult
+    public func setTextAlignment(_ alignment: UInt32) -> Cell {
         self.properties &= 0x00CFFFFF
         self.properties |= (alignment & 0x00300000)
+        return self
     }
 
     /**
@@ -500,9 +568,12 @@ public class Cell {
      *
      * @param alignment the alignment code.
      * Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
+     * @return this Cell object.
      */
-    public func setVerTextAlignment(_ alignment: UInt32) {
+    @discardableResult
+    public func setVerTextAlignment(_ alignment: UInt32) -> Cell {
         self.valign = alignment
+        return self
     }
 
     /**
@@ -519,9 +590,12 @@ public class Cell {
      * If the value of the underline variable is 'true' - the text is underlined.
      *
      * @param underline the underline text parameter.
+     * @return this Cell object.
      */
-    public func setUnderline(_ underline: Bool) {
+    @discardableResult
+    public func setUnderline(_ underline: Bool) -> Cell {
         self.underline = underline
+        return self
     }
 
     /**
@@ -537,9 +611,12 @@ public class Cell {
      * Sets the strikeout text parameter.
      *
      * @param strikeout the strikeout text parameter.
+     * @return this Cell object.
      */
-    public func setStrikeout(_ strikeout: Bool) {
+    @discardableResult
+    public func setStrikeout(_ strikeout: Bool) -> Cell {
         self.strikeout = strikeout
+        return self
     }
 
     /**
@@ -551,8 +628,10 @@ public class Cell {
         return self.strikeout
     }
 
-    public func setURIAction(_ uri: String) {
+    @discardableResult
+    public func setURIAction(_ uri: String) -> Cell {
         self.uri = uri
+        return self
     }
 
     /**

@@ -19,39 +19,55 @@ public class BaseAnnotation: Drawable {
     public init() {
     }
 
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> BaseAnnotation {
         self.point1 = [x, y]
+        return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         self.point1 = [x, y]
+        return self
     }
 
-    public func setSize(_ width: Float, _ height: Float) {
+    @discardableResult
+    public func setSize(_ width: Float, _ height: Float) -> BaseAnnotation {
         self.point2 = [point1[0] + width, point1[1] + height]
+        return self
     }
 
-    public func setFillColor(_ color: [Float]) {
+    @discardableResult
+    public func setFillColor(_ color: [Float]) -> BaseAnnotation {
         self.fillColor = color
+        return self
     }
 
-    public func setFillColor(_ color: Int32) {
+    @discardableResult
+    public func setFillColor(_ color: Int32) -> BaseAnnotation {
         let r = Float((color >> 16) & 0xff) / 255.0
         let g = Float((color >> 8) & 0xff) / 255.0
         let b = Float(color & 0xff) / 255.0
         setFillColor([r, g, b])
+        return self
     }
 
-    public func setTransparency(_ transparency: Float) {
+    @discardableResult
+    public func setTransparency(_ transparency: Float) -> BaseAnnotation {
         self.transparency = transparency
+        return self
     }
 
-    public func setTitle(_ title: String?) {
+    @discardableResult
+    public func setTitle(_ title: String?) -> BaseAnnotation {
         self.title = title
+        return self
     }
 
-    public func setContents(_ contents: String?) {
+    @discardableResult
+    public func setContents(_ contents: String?) -> BaseAnnotation {
         self.contents = contents
+        return self
     }
 
     public func rotate(_ degrees: Double) {

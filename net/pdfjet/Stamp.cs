@@ -40,9 +40,14 @@ public class Stamp : IDrawable {
         return this;
     }
 
-    public void SetPosition(float x, float y) {
+    public Stamp SetPosition(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     public Stamp SetLocation(float x, float y) {

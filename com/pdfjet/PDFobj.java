@@ -532,8 +532,9 @@ public class PDFobj {
      *
      * @param gs the graphics state.
      * @param objects the objects list.
+     * @return this PDFobj object.
      */
-    public void setGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+    public PDFobj setGraphicsState(GraphicsState gs, List<PDFobj> objects) {
         PDFobj obj = null;
         int index = -1;
         for (int i = 0; i < dict.size(); i++) {
@@ -555,7 +556,7 @@ public class PDFobj {
             }
         }
         if (obj == null || index == -1) {
-            return;
+            return this;
         }
         gsNumber = getMaxGSNumber(obj);
         if (gsNumber == 0) {                    // No existing ExtGState dictionary
@@ -586,5 +587,6 @@ public class PDFobj {
         buf.append("q\n");
         buf.append("/GS" + String.valueOf(gsNumber + 1) + " gs\n");
         addPrefixContent(buf.toString().getBytes(), objects);
+        return this;
     }
 }

@@ -26,39 +26,51 @@ public class BaseAnnotation : IDrawable {
     public BaseAnnotation() {
     }
 
-    public void SetLocation(float x, float y) {
+    public BaseAnnotation SetLocation(float x, float y) {
         this.point1 = new float[] {x, y};
+        return this;
     }
 
-    public void SetPosition(float x, float y) {
+    public BaseAnnotation SetPosition(float x, float y) {
         this.point1 = new float[] {x, y};
+        return this;
     }
 
-    public void SetSize(float w, float h) {
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
+    }
+
+    public BaseAnnotation SetSize(float w, float h) {
         this.point2 = new float[] {point1[0] + w, point1[1] + h};
+        return this;
     }
 
-    public void SetFillColor(float[] fillColor) {
+    public BaseAnnotation SetFillColor(float[] fillColor) {
         this.fillColor = fillColor;
+        return this;
     }
 
-    public void SetFillColor(int color) {
+    public BaseAnnotation SetFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         SetFillColor(new float[] {r, g, b});
+        return this;
     }
 
-    public void SetTransparency(float transparency) {
+    public BaseAnnotation SetTransparency(float transparency) {
         this.transparency = transparency;
+        return this;
     }
 
-    public void SetTitle(String title) {
+    public BaseAnnotation SetTitle(String title) {
         this.title = title;
+        return this;
     }
 
-    public void SetContents(String contents) {
+    public BaseAnnotation SetContents(String contents) {
         this.contents = contents;
+        return this;
     }
 
     public void Rotate(double degrees) {

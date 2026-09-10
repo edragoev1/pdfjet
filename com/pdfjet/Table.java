@@ -115,9 +115,11 @@ public class Table {
      *
      * @param x the x coordinate of the top left point of the table.
      * @param y the y coordinate of the top left point of the table.
+     * @return this Table object.
      */
-    public void setPosition(float x, float y) {
+    public Table setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -125,9 +127,11 @@ public class Table {
      *
      * @param x the x coordinate of the top left point of the table.
      * @param y the y coordinate of the top left point of the table.
+     * @return this Table object.
      */
-    public void setPosition(double x, double y) {
+    public Table setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -135,10 +139,12 @@ public class Table {
      *
      * @param x the x coordinate of the top left point of the table.
      * @param y the y coordinate of the top left point of the table.
+     * @return this Table object.
      */
-    public void setLocation(float x, float y) {
+    public Table setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
+        return this;
     }
 
     /**
@@ -146,27 +152,33 @@ public class Table {
      *
      * @param x the x coordinate of the top left point of the table.
      * @param y the y coordinate of the top left point of the table.
+     * @return this Table object.
      */
-    public void setLocation(double x, double y) {
+    public Table setLocation(double x, double y) {
         setLocation((float) x, (float) y);
+        return this;
     }
 
     /**
      * Sets the bottom margin for this table.
      *
      * @param bottomMargin the margin.
+     * @return this Table object.
      */
-    public void setBottomMargin(double bottomMargin) {
+    public Table setBottomMargin(double bottomMargin) {
         this.bottomMargin = (float) bottomMargin;
+        return this;
     }
 
     /**
      * Sets the bottom margin for this table.
      *
      * @param bottomMargin the margin.
+     * @return this Table object.
      */
-    public void setBottomMargin(float bottomMargin) {
+    public Table setBottomMargin(float bottomMargin) {
         this.bottomMargin = bottomMargin;
+        return this;
     }
 
     /**
@@ -178,12 +190,14 @@ public class Table {
      * in the row will not change.
      *
      * @param tableData the table data.
+     * @return this Table object.
      */
-    public void setData(List<List<Cell>> tableData) {
+    public Table setData(List<List<Cell>> tableData) {
         this.tableData = tableData;
         this.numOfHeaderRows = 0;
         this.rendered = 0;
         addCellsToCompleteTheGrid(tableData);
+        return this;
     }
 
     /**
@@ -191,12 +205,14 @@ public class Table {
      *
      * @param tableData       the table data.
      * @param numOfHeaderRows the number of header rows in this data.
+     * @return this Table object.
      */
-    public void setData(List<List<Cell>> tableData, int numOfHeaderRows) {
+    public Table setData(List<List<Cell>> tableData, int numOfHeaderRows) {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;
         addCellsToCompleteTheGrid(tableData);
+        return this;
     }
 
     private void addCellsToCompleteTheGrid(List<List<Cell>> tableData) {
@@ -265,8 +281,9 @@ public class Table {
      * @param index     the index of the specified column.
      * @param alignment the specified alignment. Supported values: Align.LEFT,
      *                  Align.RIGHT, Align.CENTER and Align.JUSTIFY.
+     * @return this Table object.
      */
-    public void setTextAlignInColumn(int index, int alignment) {
+    public Table setTextAlignInColumn(int index, int alignment) {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
@@ -276,6 +293,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -283,8 +301,9 @@ public class Table {
      *
      * @param index the index of the specified column.
      * @param color the color specified as an integer.
+     * @return this Table object.
      */
-    public void setTextColorInColumn(int index, int color) {
+    public Table setTextColorInColumn(int index, int color) {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
@@ -294,6 +313,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -301,8 +321,9 @@ public class Table {
      *
      * @param index the column index.
      * @param font  the font.
+     * @return this Table object.
      */
-    public void setFontInColumn(int index, Font font) {
+    public Table setFontInColumn(int index, Font font) {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
@@ -312,6 +333,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -319,8 +341,9 @@ public class Table {
      *
      * @param index the index of the specified row.
      * @param color the color specified as an integer.
+     * @return this Table object.
      */
-    public void setTextColorInRow(int index, int color) {
+    public Table setTextColorInRow(int index, int color) {
         if (index < tableData.size()) {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
@@ -330,6 +353,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -337,8 +361,9 @@ public class Table {
      *
      * @param index the row index.
      * @param font  the font.
+     * @return this Table object.
      */
-    public void setFontInRow(int index, Font font) {
+    public Table setFontInRow(int index, Font font) {
         if (index < tableData.size()) {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
@@ -348,6 +373,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -355,8 +381,9 @@ public class Table {
      *
      * @param index the index of specified column.
      * @param width the specified width.
+     * @return this Table object.
      */
-    public void setColumnWidth(int index, float width) {
+    public Table setColumnWidth(int index, float width) {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
@@ -366,6 +393,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -575,39 +603,45 @@ public class Table {
     /**
      * Sets all table cells borders.
      * @param borders true or false.
+     * @return this Table object.
      */
-    public void setCellBorders(boolean borders) {
+    public Table setCellBorders(boolean borders) {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
                 cell.setBorders(borders);
             }
         }
+        return this;
     }
 
     /**
      * Sets the color of the cell border lines.
      *
      * @param color the color of the cell border lines.
+     * @return this Table object.
      */
-    public void setCellBordersColor(int color) {
+    public Table setCellBordersColor(int color) {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
                 cell.setStrokeColor(color);
             }
         }
+        return this;
     }
 
     /**
      * Sets the width of the cell border lines.
      *
      * @param width the width of the border lines.
+     * @return this Table object.
      */
-    public void setCellBordersWidth(float width) {
+    public Table setCellBordersWidth(float width) {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
                 cell.setLineWidth(width);
             }
         }
+        return this;
     }
 
     // Sets the right border on all cells in the last column.
@@ -647,8 +681,10 @@ public class Table {
     /**
      * Auto adjusts the widths of all columns so that they are just wide enough to
      * hold the text without truncation.
+     *
+     * @return this Table object.
      */
-    public void setColumnWidths() {
+    public Table setColumnWidths() {
         float[] maxColWidths = new float[tableData.get(0).size()];
         for (List<Cell> row : tableData) {
             for (int i = 0; i < row.size(); i++) {
@@ -691,6 +727,7 @@ public class Table {
                 row.get(i).setWidth(maxColWidths[i]);
             }
         }
+        return this;
     }
 
     private List<List<Cell>> addExtraTableRows() {
@@ -861,7 +898,7 @@ public class Table {
         }
     }
 
-    public void setVisibleColumns(Integer... columns) {
+    public Table setVisibleColumns(Integer... columns) {
         List<List<Cell>> list = new ArrayList<List<Cell>>();
         List<Integer> visible = Arrays.asList(columns);
         for (List<Cell> row : tableData) {
@@ -874,9 +911,11 @@ public class Table {
             list.add(row2);
         }
         tableData = list;
+        return this;
     }
 
-    public void setFirstPageTopMargin(float firstPageTopMargin) {
+    public Table setFirstPageTopMargin(float firstPageTopMargin) {
         this.firstPageTopMargin = firstPageTopMargin;
+        return this;
     }
 } // End of Table.java

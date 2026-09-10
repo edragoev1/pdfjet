@@ -47,8 +47,9 @@ func NewCompositeTextLine(x, y float32) *CompositeTextLine {
 }
 
 // SetFontSize sets the font size.
-func (composite *CompositeTextLine) SetFontSize(fontSize float32) {
+func (composite *CompositeTextLine) SetFontSize(fontSize float32) *CompositeTextLine {
 	composite.fontSize = fontSize
+	return composite
 }
 
 // GetFontSize gets the font size.
@@ -58,8 +59,9 @@ func (composite *CompositeTextLine) GetFontSize() float32 {
 
 // SetSuperscriptFactor sets the superscript factor for this composite text line.
 // @param superscript the superscript size factor.
-func (composite *CompositeTextLine) SetSuperscriptFactor(superscript float32) {
+func (composite *CompositeTextLine) SetSuperscriptFactor(superscript float32) *CompositeTextLine {
 	composite.superscriptSizeFactor = superscript
+	return composite
 }
 
 // GetSuperscriptFactor gets the superscript factor for this text line.
@@ -85,8 +87,9 @@ func (composite *CompositeTextLine) GetSubscriptFactor() float32 {
 
 // SetSuperscriptPosition sets the superscript position for this composite text line.
 // @param superscriptPosition the superscript position.
-func (composite *CompositeTextLine) SetSuperscriptPosition(superscriptPosition float32) {
+func (composite *CompositeTextLine) SetSuperscriptPosition(superscriptPosition float32) *CompositeTextLine {
 	composite.superscriptPosition = superscriptPosition
+	return composite
 }
 
 // GetSuperscriptPosition gets the superscript position for this text line.
@@ -96,8 +99,9 @@ func (composite *CompositeTextLine) GetSuperscriptPosition() float32 {
 
 // SetSubscriptPosition sets the subscript position for this composite text line.
 // @param subscriptPosition the subscript position.
-func (composite *CompositeTextLine) SetSubscriptPosition(subscriptPosition float32) {
+func (composite *CompositeTextLine) SetSubscriptPosition(subscriptPosition float32) *CompositeTextLine {
 	composite.subscriptPosition = subscriptPosition
+	return composite
 }
 
 // GetSubscriptPosition gets the subscript position for this text line.
@@ -143,14 +147,14 @@ func (composite *CompositeTextLine) AddComponent(textLine *TextLine) {
 // the new location set here.
 // @param x the x coordinate.
 // @param y the y coordinate.
-func (composite *CompositeTextLine) SetLocation(x, y float32) {
+func (composite *CompositeTextLine) SetLocation(x, y float32) *CompositeTextLine {
 	composite.position[composite.X] = x
 	composite.position[composite.Y] = y
 	composite.current[composite.X] = x
 	composite.current[composite.Y] = y
 
 	if len(composite.textLines) == 0 {
-		return
+		return composite
 	}
 
 	for _, textLine := range composite.textLines {
@@ -167,6 +171,7 @@ func (composite *CompositeTextLine) SetLocation(x, y float32) {
 		}
 		composite.current[composite.X] += textLine.GetWidth()
 	}
+	return composite
 }
 
 // GetPosition return the position of this composite text line.

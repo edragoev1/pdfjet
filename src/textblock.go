@@ -78,33 +78,38 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 // SetFont sets the font for textBlock text block.
 //
 // @param font the font.
-func (textBlock *TextBlock) SetFont(font *Font) {
+func (textBlock *TextBlock) SetFont(font *Font) *TextBlock {
 	textBlock.font = font
+	return textBlock
 }
 
 // SetFallbackFont sets the fallback font.
-func (textBlock *TextBlock) SetFallbackFont(fallbackFont *Font) {
+func (textBlock *TextBlock) SetFallbackFont(fallbackFont *Font) *TextBlock {
 	textBlock.fallbackFont = fallbackFont
+	return textBlock
 }
 
 // SetFontSize sets the font size for the text block.
 //
 // @param size the font size.
-func (textBlock *TextBlock) SetFontSize(size float32) {
+func (textBlock *TextBlock) SetFontSize(size float32) *TextBlock {
 	textBlock.font.SetSize(size)
+	return textBlock
 }
 
 // SetFallbackFontSize sets the font size for the text block.
 //
 // @param size the font size.
-func (textBlock *TextBlock) SetFallbackFontSize(size float32) {
+func (textBlock *TextBlock) SetFallbackFontSize(size float32) *TextBlock {
 	textBlock.fallbackFont.SetSize(size)
+	return textBlock
 }
 
 // SetText sets the text block text.
 // @param text the text block text.
-func (textBlock *TextBlock) SetText(text string) {
+func (textBlock *TextBlock) SetText(text string) *TextBlock {
 	textBlock.textContent = text
+	return textBlock
 }
 
 // GetFont returns the font used by textBlock text block.
@@ -122,9 +127,10 @@ func (textBlock *TextBlock) GetText() string {
 // SetLocation sets the location where textBlock text block will be drawn on the page.
 // @param x the x coordinate of the top left corner of the text block.
 // @param y the y coordinate of the top left corner of the text block.
-func (textBlock *TextBlock) SetLocation(x, y float32) {
+func (textBlock *TextBlock) SetLocation(x, y float32) *TextBlock {
 	textBlock.x = x
 	textBlock.y = y
+	return textBlock
 }
 
 func (textBlock *TextBlock) SetPosition(x, y float32) {
@@ -135,95 +141,109 @@ func (textBlock *TextBlock) SetPosition(x, y float32) {
 // SetSize sets the size of the textBlock.
 // @param w the width of the text block.
 // @param h the height of the text block.
-func (textBlock *TextBlock) SetSize(w, h float32) {
+func (textBlock *TextBlock) SetSize(w, h float32) *TextBlock {
 	textBlock.width = w
 	textBlock.height = h
+	return textBlock
 }
 
 // SetWidth sets the width of the text block.
 // The height is adjusted automatically to fit the text.
 // @param w the width of the text block.
 // @param h the height of the text block.
-func (textBlock *TextBlock) SetWidth(w float32) {
+func (textBlock *TextBlock) SetWidth(w float32) *TextBlock {
 	textBlock.width = w
 	textBlock.height = 0.0
+	return textBlock
 }
 
 // SetBorderCornerRadius sets the border corner radius.
 // @param borderRadius float the border corner radius.
-func (textBlock *TextBlock) SetBorderCornerRadius(borderCornerRadius float32) {
+func (textBlock *TextBlock) SetBorderCornerRadius(borderCornerRadius float32) *TextBlock {
 	textBlock.borderCornerRadius = borderCornerRadius
+	return textBlock
 }
 
 // SetTextPadding sets the padding around the block of text.
 // @param padding the padding between the text and the border.
-func (textBlock *TextBlock) SetTextPadding(padding float32) {
+func (textBlock *TextBlock) SetTextPadding(padding float32) *TextBlock {
 	textBlock.textPadding = padding
+	return textBlock
 }
 
 // SetBorderWidth sets the border width.
 // @param lineWidth float
-func (textBlock *TextBlock) SetBorderWidth(borderWidth float32) {
+func (textBlock *TextBlock) SetBorderWidth(borderWidth float32) *TextBlock {
 	textBlock.borderWidth = borderWidth
+	return textBlock
 }
 
-func (textBlock *TextBlock) SetBorderColor(color int32) {
+func (textBlock *TextBlock) SetBorderColor(color int32) *TextBlock {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	textBlock.SetBorderColorRGB([3]float32{r, g, b})
+	return textBlock
 }
 
 // SetBorderColorRGB sets the penColor color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetBorderColorRGB(borderColor [3]float32) {
+func (textBlock *TextBlock) SetBorderColorRGB(borderColor [3]float32) *TextBlock {
 	textBlock.borderColor = borderColor
 	textBlock.hasBorderColor = true
+	return textBlock
 }
 
 // SetLineSpacing sets the extra leading between lines of text.
 // @param lineHeight
-func (textBlock *TextBlock) SetLineSpacing(lineSpacing float32) {
+func (textBlock *TextBlock) SetLineSpacing(lineSpacing float32) *TextBlock {
 	textBlock.lineSpacing = lineSpacing
+	return textBlock
 }
 
 // SetTextColorRGB sets the text color.
-func (textBlock *TextBlock) SetTextColorRGB(textColor [3]float32) {
+func (textBlock *TextBlock) SetTextColorRGB(textColor [3]float32) *TextBlock {
 	textBlock.textColor = textColor
+	return textBlock
 }
 
 // SetTextColor sets the text color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetTextColor(color int32) {
+func (textBlock *TextBlock) SetTextColor(color int32) *TextBlock {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	textBlock.textColor = [3]float32{r, g, b}
+	return textBlock
 }
 
 // SetFillColor sets the text color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetFillColor(fillColor int32) {
+func (textBlock *TextBlock) SetFillColor(fillColor int32) *TextBlock {
 	r := float32((fillColor>>16)&0xff) / 255.0
 	g := float32((fillColor>>8)&0xff) / 255.0
 	b := float32((fillColor)&0xff) / 255.0
 	textBlock.SetFillColorRGB([3]float32{r, g, b})
+	return textBlock
 }
 
-func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) {
+func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) *TextBlock {
 	textBlock.fillColor = fillColor
 	textBlock.hasFillColor = true
+	return textBlock
 }
 
 // SetHighlightColors sets the text colors map.
-func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string]int32) {
+func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string]int32) *TextBlock {
 	textBlock.keywordHighlightColors = keywordHighlightColors
+	return textBlock
 }
 
 // SetTextAlignment sets the brushColor color.
 // @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetTextAlignment(textAlignment int) {
+func (textBlock *TextBlock) SetTextAlignment(textAlignment int) *TextBlock {
 	textBlock.textAlignment = textAlignment
+	return textBlock
 }
 
 func (textBlock *TextBlock) textIsCJK(str string) bool {
@@ -249,11 +269,12 @@ func (textBlock *TextBlock) SetURIAction(uri string) *TextBlock {
 	return textBlock
 }
 
-func (textBlock *TextBlock) SetKeywordHighlightColors(keywordHighlightColors map[string]int32) {
+func (textBlock *TextBlock) SetKeywordHighlightColors(keywordHighlightColors map[string]int32) *TextBlock {
 	textBlock.keywordHighlightColors = make(map[string]int32)
 	for key, value := range keywordHighlightColors {
 		textBlock.keywordHighlightColors[strings.ToLower(key)] = value
 	}
+	return textBlock
 }
 
 func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
@@ -315,8 +336,9 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 
 // SetUnderline underlines the text of this text block.
 // @param underline the underline flag.
-func (textBlock *TextBlock) SetUnderline(underline bool) {
+func (textBlock *TextBlock) SetUnderline(underline bool) *TextBlock {
 	textBlock.underline = underline
+	return textBlock
 }
 
 func (textBlock *TextBlock) underlineText(textLines []*TextLine) {

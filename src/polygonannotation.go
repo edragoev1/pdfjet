@@ -15,6 +15,7 @@ func NewPolygonAnnotation() *PolygonAnnotation {
 }
 
 // SetVertices sets the vertices for the polygon.
-func (p *PolygonAnnotation) SetVertices(vertices []float32) {
+func (p *PolygonAnnotation) SetVertices(vertices []float32) *PolygonAnnotation {
 	p.BaseAnnotation.vertices = vertices
+	return p
 }

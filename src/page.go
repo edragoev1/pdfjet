@@ -424,7 +424,7 @@ func (page *Page) SaveGraphicsState() {
 
 // SetGraphicsState sets the graphics state. Please see Example_31.
 // @param gs the graphics state to use.
-func (page *Page) SetGraphicsState(gs *GraphicsState) {
+func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 	var sb strings.Builder
 	sb.WriteString("/CA ")
 	sb.WriteString(fmt.Sprintf("%.2f", gs.GetAlphaStroking()))
@@ -440,6 +440,7 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) {
 	page.appendString("/GS")
 	page.appendInteger(n)
 	page.appendString(" gs\n")
+	return page
 }
 
 func (page *Page) RestoreGraphicsState() {
@@ -462,11 +463,12 @@ func (page *Page) RestoreGraphicsState() {
 //     to separate the red, green, and blue channels. Each component is then scaled
 //     to a float value between 0.0 and 1.0 (by dividing by 255).
 //   - The method calls SetPenColorRGB internally to apply the color using float32 values.
-func (page *Page) SetPenColor(color int32) {
+func (page *Page) SetPenColor(color int32) *Page {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	page.SetPenColorRGB([3]float32{r, g, b})
+	return page
 }
 
 // SetPenColorRGB sets the pen color using an RGB color array.
@@ -485,12 +487,12 @@ func (page *Page) SetPenColor(color int32) {
 //     the method prints a warning and exits early without modifying the color.
 //   - The method then sets the penColor and appends the color values to the
 //     appropriate output stream (e.g., for a PDF or graphics context).
-func (page *Page) SetPenColorRGB(rgbColor [3]float32) {
+func (page *Page) SetPenColorRGB(rgbColor [3]float32) *Page {
 	if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
 		rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
 		rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
 		log.Println("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
-		return // Early exit if out of range
+		return page // Early exit if out of range
 	}
 
 	// Now set the penColor color
@@ -503,6 +505,7 @@ func (page *Page) SetPenColorRGB(rgbColor [3]float32) {
 	page.appendString(" ")
 	page.appendFloat32(rgbColor[2])
 	page.appendString(" RG\n")
+	return page
 }
 
 // GetPenColorRGB returns the current pen color as an RGB float32 array.
@@ -534,11 +537,12 @@ func (page *Page) GetPenColorRGB() [3]float32 {
 //     to separate the red, green, and blue channels. Each component is then scaled
 //     to a float value between 0.0 and 1.0 (by dividing by 255).
 //   - The method calls SetBrushColorRGB internally to apply the color using float32 values.
-func (page *Page) SetBrushColor(color int32) {
+func (page *Page) SetBrushColor(color int32) *Page {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
 	page.SetBrushColorRGB([3]float32{r, g, b})
+	return page
 }
 
 // SetBrushColorRGB sets the brush color using an RGB color array.
@@ -557,12 +561,12 @@ func (page *Page) SetBrushColor(color int32) {
 //     the method prints a warning and exits early without modifying the color.
 //   - The method then sets the brushColor and appends the color values to the
 //     appropriate output stream (e.g., for a PDF or graphics context).
-func (page *Page) SetBrushColorRGB(rgbColor [3]float32) {
+func (page *Page) SetBrushColorRGB(rgbColor [3]float32) *Page {
 	if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
 		rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
 		rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
 		log.Println("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
-		return // Early exit if out of range
+		return page // Early exit if out of range
 	}
 
 	// Now set the brush color
@@ -575,6 +579,7 @@ func (page *Page) SetBrushColorRGB(rgbColor [3]float32) {
 	page.appendString(" ")
 	page.appendFloat32(rgbColor[2])
 	page.appendString(" rg\n")
+	return page
 }
 
 // GetBrushColorRGB returns the current brush color as an RGB float32 array.
@@ -597,7 +602,7 @@ func (page *Page) GetBrushColorRGB() [3]float32 {
 // @param m the magenta component is float value from 0.0 to 1.0.
 // @param y the yellow component is float value from 0.0 to 1.0.
 // @param k the black component is float value from 0.0 to 1.0.
-func (page *Page) SetPenColorCMYK(c, m, y, k float32) {
+func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 	page.appendFloat32(c)
 	page.appendString(" ")
 	page.appendFloat32(m)
@@ -606,6 +611,7 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) {
 	page.appendString(" ")
 	page.appendFloat32(k)
 	page.appendString(" K\n")
+	return page
 }
 
 // SetBrushColorCMYK sets the color for brushColor operations using CMYK.
@@ -614,7 +620,7 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) {
 // @param m the magenta component is float value from 0.0 to 1.0.
 // @param y the yellow component is float value from 0.0 to 1.0.
 // @param k the black component is float value from 0.0 to 1.0.
-func (page *Page) SetBrushColorCMYK(c, m, y, k float32) {
+func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 	page.appendFloat32(c)
 	page.appendString(" ")
 	page.appendFloat32(m)
@@ -623,13 +629,15 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) {
 	page.appendString(" ")
 	page.appendFloat32(k)
 	page.appendString(" k\n")
+	return page
 }
 
 // SetDefaultLineWidth sets the line width to the default.
 // The default is the finest line width.
-func (page *Page) SetDefaultLineWidth() {
+func (page *Page) SetDefaultLineWidth() *Page {
 	page.appendFloat32(0.0)
 	page.appendString(" w\n")
+	return page
 }
 
 // SetStrokeDashPattern the stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -654,24 +662,27 @@ func (page *Page) SetDefaultLineWidth() {
 // </pre>
 //
 // @param strokeDashPattern the line dash pattern.
-func (page *Page) SetStrokeDashPattern(strokeDashPattern string) {
+func (page *Page) SetStrokeDashPattern(strokeDashPattern string) *Page {
 	page.strokeDashPattern = strokeDashPattern
 	page.appendString(page.strokeDashPattern)
 	page.appendString(" d\n")
+	return page
 }
 
 // SetDefaultStrokeDashPattern sets the default line dash pattern - solid line.
-func (page *Page) SetDefaultStrokeDashPattern() {
+func (page *Page) SetDefaultStrokeDashPattern() *Page {
 	page.strokeDashPattern = "[] 0"
 	page.appendString(page.strokeDashPattern)
 	page.appendString(" d\n")
+	return page
 }
 
 // SetPenWidth sets the penColor width that will be used to draw lines and splines on this page.
-func (page *Page) SetPenWidth(width float32) {
+func (page *Page) SetPenWidth(width float32) *Page {
 	page.penWidth = width
 	page.appendFloat32(width)
 	page.appendString(" w\n")
+	return page
 }
 
 func (page *Page) GetPenWidth() float32 {
@@ -680,18 +691,20 @@ func (page *Page) GetPenWidth() float32 {
 
 // SetLineCapStyle sets the current line cap style.
 // Supported values: Cap.BUTT, Cap.ROUND and Cap.PROJECTING_SQUARE
-func (page *Page) SetLineCapStyle(style int) {
+func (page *Page) SetLineCapStyle(style int) *Page {
 	page.lineCapStyle = style
 	page.appendInteger(page.lineCapStyle)
 	page.appendString(" J\n")
+	return page
 }
 
 // SetLineJoinStyle sets the line join style.
 // Supported values: Join.MITER, Join.ROUND and Join.BEVEL
-func (page *Page) SetLineJoinStyle(style int) {
+func (page *Page) SetLineJoinStyle(style int) *Page {
 	page.lineJoinStyle = style
 	page.appendInteger(page.lineJoinStyle)
 	page.appendString(" j\n")
+	return page
 }
 
 // MoveTo moves the penColor to the point with coordinates (x, y) on the page.
@@ -958,12 +971,13 @@ func (page *Page) DrawPoint(p *Point) {
 // Example usage:
 //
 //	page.SetTextRenderingMode(3)
-func (page *Page) SetTextRenderingMode(mode int) {
+func (page *Page) SetTextRenderingMode(mode int) *Page {
 	if mode >= 0 && mode <= 7 {
 		page.renderingMode = mode
 	} else {
 		log.Fatal("Invalid text rendering mode: " + fmt.Sprint(mode))
 	}
+	return page
 }
 
 // SetTextDirection sets the text direction for rendering text on the page.
@@ -977,7 +991,7 @@ func (page *Page) SetTextRenderingMode(mode int) {
 // Example usage:
 //
 //	page.SetTextDirection(90)
-func (page *Page) SetTextDirection(degrees int) {
+func (page *Page) SetTextDirection(degrees int) *Page {
 	if degrees > 360 {
 		degrees %= 360
 	}
@@ -1001,6 +1015,7 @@ func (page *Page) SetTextDirection(degrees int) {
 	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
 	page.tm2 = fastfloat.ToByteArray(page.tmx[2])
 	page.tm3 = fastfloat.ToByteArray(page.tmx[3])
+	return page
 }
 
 // CurveTo adds a cubic Bézier curve command to the page’s content stream.
@@ -1085,7 +1100,7 @@ func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 }
 
 // SetTextFont sets the text font.
-func (page *Page) SetTextFont(font *Font, fontSize float32) {
+func (page *Page) SetTextFont(font *Font, fontSize float32) *Page {
 	if font.fontID != "" {
 		page.appendByte('/')
 		page.appendString(font.fontID)
@@ -1096,6 +1111,7 @@ func (page *Page) SetTextFont(font *Font, fontSize float32) {
 	page.appendByte(token.Space)
 	page.appendFloat32(fontSize)
 	page.appendString(" Tf\n")
+	return page
 }
 
 // DrawRectRoundCorners draws rectangle with rounded corners.
@@ -1152,8 +1168,9 @@ func (page *Page) ClipRect(x, y, w, h float32) {
 // @param upperLeftY the top left Y coordinate of the CropBox.
 // @param lowerRightX the bottom right X coordinate of the CropBox.
 // @param lowerRightY the bottom right Y coordinate of the CropBox.
-func (page *Page) SetCropBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) {
+func (page *Page) SetCropBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.cropBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
+	return page
 }
 
 // SetBleedBox sets the page BleedBox.
@@ -1162,8 +1179,9 @@ func (page *Page) SetCropBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY fl
 // @param upperLeftY the top left Y coordinate of the BleedBox.
 // @param lowerRightX the bottom right X coordinate of the BleedBox.
 // @param lowerRightY the bottom right Y coordinate of the BleedBox.
-func (page *Page) SetBleedBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) {
+func (page *Page) SetBleedBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.bleedBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
+	return page
 }
 
 // SetTrimBox sets the page TrimBox.
@@ -1172,8 +1190,9 @@ func (page *Page) SetBleedBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY f
 // @param upperLeftY the top left Y coordinate of the TrimBox.
 // @param lowerRightX the bottom right X coordinate of the TrimBox.
 // @param lowerRightY the bottom right Y coordinate of the TrimBox.
-func (page *Page) SetTrimBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) {
+func (page *Page) SetTrimBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.trimBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
+	return page
 }
 
 // SetArtBox sets the page ArtBox.
@@ -1182,8 +1201,9 @@ func (page *Page) SetTrimBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY fl
 // @param upperLeftY the top left Y coordinate of the ArtBox.
 // @param lowerRightX the bottom right X coordinate of the ArtBox.
 // @param lowerRightY the bottom right Y coordinate of the ArtBox.
-func (page *Page) SetArtBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) {
+func (page *Page) SetArtBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.artBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
+	return page
 }
 
 func (page *Page) appendPointXY(x, y float32) {
@@ -1432,30 +1452,34 @@ func (page *Page) EndText() {
 	page.appendString("ET\n")
 }
 
-func (page *Page) SetTextLocation(x, y float32) {
+func (page *Page) SetTextLocation(x, y float32) *Page {
 	page.appendFloat32(x)
 	page.appendByte(token.Space)
 	page.appendFloat32(page.height - y)
 	page.appendString(" Td\n")
+	return page
 }
 
-func (page *Page) SetTextLeading(leading float32) {
+func (page *Page) SetTextLeading(leading float32) *Page {
 	page.appendFloat32(leading)
 	page.appendString(" TL\n")
+	return page
 }
 
 func (page *Page) NextLine() {
 	page.appendString("T*\n")
 }
 
-func (page *Page) SetTextScaling(scaling float32) {
+func (page *Page) SetTextScaling(scaling float32) *Page {
 	page.appendFloat32(scaling)
 	page.appendString(" Tz\n")
+	return page
 }
 
-func (page *Page) SetTextRise(rise float32) {
+func (page *Page) SetTextRise(rise float32) *Page {
 	page.appendFloat32(rise)
 	page.appendString(" Ts\n")
+	return page
 }
 
 func (page *Page) DrawTextLine(font *Font, str string, x float32, y float32) {

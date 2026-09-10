@@ -35,8 +35,10 @@ public class Arc : Drawable {
     public init() {
     }
 
-    public func setPosition(_ cx: Float, _ cy: Float) {
+    @discardableResult
+    public func setPosition(_ cx: Float, _ cy: Float) -> Self {
         _ = setCenterXY(cx, cy)
+        return self
     }
 
     @discardableResult

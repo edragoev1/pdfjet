@@ -529,8 +529,10 @@ public class Font {
     ///
     /// @param skew15 the skew flag.
     ///
-    public func setItalic(_ skew15: Bool) {
+    @discardableResult
+    public func setItalic(_ skew15: Bool) -> Font {
         self.skew15 = skew15
+        return self
     }
 
     public func stringWidth(_ fallbackFont: Font?, _ str: String?) -> Float {

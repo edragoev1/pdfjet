@@ -101,8 +101,10 @@ public class PDF417 : Drawable {
         }
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     /**
@@ -110,10 +112,13 @@ public class PDF417 : Drawable {
      *
      *  @param x the x coordinate of the top left corner of the barcode.
      *  @param y the y coordinate of the top left corner of the barcode.
+     *  @return this PDF417 object.
      */
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> PDF417 {
         self.x1 = x
         self.y1 = y
+        return self
     }
 
     /**
@@ -123,10 +128,13 @@ public class PDF417 : Drawable {
      *  If the value is too small some scanners may have difficulty reading the barcode.
      *
      *  @param width the module width of the barcode.
+     *  @return this PDF417 object.
      */
-    public func setModuleWidth(_ width: Float) {
+    @discardableResult
+    public func setModuleWidth(_ width: Float) -> PDF417 {
         self.w1 = width
         self.h1 = 3 * w1
+        return self
     }
 
     /**

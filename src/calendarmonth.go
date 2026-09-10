@@ -46,25 +46,30 @@ func (calendarMonth *CalendarMonth) NewCalendarMonth(f1, f2 *Font, year, month i
 	calendarMonth.dayOfWeek = int(now.Weekday())
 }
 
-func (calendarMonth *CalendarMonth) SetHeadFont(font *Font) {
+func (calendarMonth *CalendarMonth) SetHeadFont(font *Font) *CalendarMonth {
 	calendarMonth.f1 = font
+	return calendarMonth
 }
 
-func (calendarMonth *CalendarMonth) SetBodyFont(font *Font) {
+func (calendarMonth *CalendarMonth) SetBodyFont(font *Font) *CalendarMonth {
 	calendarMonth.f2 = font
+	return calendarMonth
 }
 
-func (calendarMonth *CalendarMonth) SetLocation(x, y float32) {
+func (calendarMonth *CalendarMonth) SetLocation(x, y float32) *CalendarMonth {
 	calendarMonth.x1 = x
 	calendarMonth.y1 = y
+	return calendarMonth
 }
 
-func (calendarMonth *CalendarMonth) SetCellWidth(width float32) {
+func (calendarMonth *CalendarMonth) SetCellWidth(width float32) *CalendarMonth {
 	calendarMonth.dx = width
+	return calendarMonth
 }
 
-func (calendarMonth *CalendarMonth) SetCellHeight(height float32) {
+func (calendarMonth *CalendarMonth) SetCellHeight(height float32) *CalendarMonth {
 	calendarMonth.dy = height
+	return calendarMonth
 }
 
 // DrawOn draws the calendar month on the page.

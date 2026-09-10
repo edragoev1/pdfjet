@@ -63,9 +63,11 @@ public class TextBlock {
      *
      * @param x the x coordinate of the top left corner of the text box.
      * @param y the y coordinate of the top left corner of the text box.
+     * @return this TextBlock object.
      */
-    public void setPosition(double x, double y) {
+    public TextBlock setPosition(double x, double y) {
         setPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -73,19 +75,23 @@ public class TextBlock {
      *
      * @param x the x coordinate of the top left corner of the text box.
      * @param y the y coordinate of the top left corner of the text box.
+     * @return this TextBlock object.
      */
-    public void setPosition(float x, float y) {
+    public TextBlock setPosition(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
-    public void setFont(Font font) {
+    public TextBlock setFont(Font font) {
         this.font = font;
         this.fallbackFont = font;
+        return this;
     }
 
-    public void setFallbackFont(Font font) {
+    public TextBlock setFallbackFont(Font font) {
         this.fallbackFont = font;
+        return this;
     }
 
     public TextBlock setFontSize(float fontSize) {
@@ -93,8 +99,9 @@ public class TextBlock {
         return this;
     }
 
-    public void setText(String text) {
+    public TextBlock setText(String text) {
         this.textContent = text;
+        return this;
     }
 
     public Font getFont() {
@@ -111,14 +118,16 @@ public class TextBlock {
         return this;
     }
 
-    public void setSize(float w, float h) {
+    public TextBlock setSize(float w, float h) {
         this.width = w;
         this.height = h;
+        return this;
     }
 
-    public void setWidth(float w) {
+    public TextBlock setWidth(float w) {
         this.width = w;
         this.height = 0.0f;
+        return this;
     }
 
     public float getWidth() {
@@ -129,80 +138,93 @@ public class TextBlock {
         return this.height;
     }
 
-    public void setBorderCornerRadius(float borderCornerRadius) {
+    public TextBlock setBorderCornerRadius(float borderCornerRadius) {
         this.borderCornerRadius = borderCornerRadius;
+        return this;
     }
 
-    public void setTextPadding(float padding) {
+    public TextBlock setTextPadding(float padding) {
         this.textPadding = padding;
+        return this;
     }
 
-    public void setBorderWidth(float borderWidth) {
+    public TextBlock setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
+        return this;
     }
 
-    public void setTextColor(int color) {
+    public TextBlock setTextColor(int color) {
         if (color == Color.transparent) {
             this.textColor = null;
-            return;
+            return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.textColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setTextColor(float[] rgbColor) {
+    public TextBlock setTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
+        return this;
     }
 
-    public void setBorderColor(int color) {
+    public TextBlock setBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
-            return;
+            return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.borderColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setBorderColor(float[] rgbColor) {
+    public TextBlock setBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
+        return this;
     }
 
-    public void setLineSpacing(float lineSpacing) {
+    public TextBlock setLineSpacing(float lineSpacing) {
         this.lineSpacing = lineSpacing;
+        return this;
     }
 
-    public void setBackgroundColor(int color) {
+    public TextBlock setBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setFillColor(int color) {
+    public TextBlock setFillColor(int color) {
         if (color == Color.transparent) {
             this.fillColor = null;
-            return;
+            return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
+        return this;
     }
 
-    public void setFillColor(float[] rgbColor) {
+    public TextBlock setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
+        return this;
     }
 
-    public void setBackgroundColor(float[] fillColor) {
+    public TextBlock setBackgroundColor(float[] fillColor) {
         this.fillColor = fillColor;
+        return this;
     }
 
-    public void setTextAlignment(Alignment textAlignment) {
+    public TextBlock setTextAlignment(Alignment textAlignment) {
         this.textAlignment = textAlignment;
+        return this;
     }
 
     public TextBlock setURIAction(String uri) {
@@ -210,11 +232,12 @@ public class TextBlock {
         return this;
     }
 
-    public void setKeywordHighlightColors(Map<String, Integer> map) {
+    public TextBlock setKeywordHighlightColors(Map<String, Integer> map) {
         this.keywordHighlightColors = new HashMap<>();
         for (String key : map.keySet()) {
             this.keywordHighlightColors.put(key.toLowerCase(), map.get(key));
         }
+        return this;
     }
 
     private boolean textIsCJK(String str) {
@@ -281,8 +304,9 @@ public class TextBlock {
         return textLines.toArray(new TextLine[] {});
     }
 
-    public void setUnderline(boolean underline) {
+    public TextBlock setUnderline(boolean underline) {
         this.underline = underline;
+        return this;
     }
 
     private void rightAlignText(TextLine[] textLines) {

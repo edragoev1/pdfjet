@@ -54,9 +54,11 @@ public class QRCode : IDrawable {
      *
      * @param x the x coordinate of the top left corner of the barcode.
      * @param y the y coordinate of the top left corner of the barcode.
+     * @return this QRCode object.
      */
-    public void SetPosition(double x, double y) {
+    public QRCode SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -64,9 +66,15 @@ public class QRCode : IDrawable {
      *
      * @param x the x coordinate of the top left corner of the barcode.
      * @param y the y coordinate of the top left corner of the barcode.
+     * @return this QRCode object.
      */
-    public void SetPosition(float x, float y) {
+    public QRCode SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     /**
@@ -74,10 +82,12 @@ public class QRCode : IDrawable {
      *
      * @param x the x coordinate of the top left corner of the barcode.
      * @param y the y coordinate of the top left corner of the barcode.
+     * @return this QRCode object.
      */
-    public void SetLocation(float x, float y) {
+    public QRCode SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**
@@ -85,9 +95,11 @@ public class QRCode : IDrawable {
      * The default value is 2.0f
      *
      * @param moduleLength the specified module length.
+     * @return this QRCode object.
      */
-    public void SetModuleLength(double moduleLength) {
+    public QRCode SetModuleLength(double moduleLength) {
         this.m1 = (float) moduleLength;
+        return this;
     }
 
     /**
@@ -95,13 +107,16 @@ public class QRCode : IDrawable {
      * The default value is 2.0f
      *
      * @param moduleLength the specified module length.
+     * @return this QRCode object.
      */
-    public void SetModuleLength(float moduleLength) {
+    public QRCode SetModuleLength(float moduleLength) {
         this.m1 = moduleLength;
+        return this;
     }
 
-    public void SetColor(int color) {
+    public QRCode SetColor(int color) {
         this.color = color;
+        return this;
     }
 
     /**

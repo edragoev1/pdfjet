@@ -108,9 +108,10 @@ func NewPDF417(str string) *PDF417 {
 // SetLocation sets the location of this barcode on the page.
 // @param x the x coordinate of the top left corner of the barcode.
 // @param y the y coordinate of the top left corner of the barcode.
-func (barcode *PDF417) SetLocation(x, y float32) {
+func (barcode *PDF417) SetLocation(x, y float32) *PDF417 {
 	barcode.x1 = x
 	barcode.y1 = y
+	return barcode
 }
 
 // SetPosition sets the barcode location on the page.
@@ -122,9 +123,10 @@ func (barcode *PDF417) SetPosition(x, y float32) {
 // This changes the barcode size while preserving the aspect.
 // Use value between 0.5 and 0.75
 // If the value is too small some scanners may have difficulty reading the barcode.
-func (barcode *PDF417) SetModuleWidth(width float32) {
+func (barcode *PDF417) SetModuleWidth(width float32) *PDF417 {
 	barcode.w1 = width
 	barcode.h1 = 3 * barcode.w1
+	return barcode
 }
 
 func (barcode *PDF417) textToArrayOfIntegers() []int {

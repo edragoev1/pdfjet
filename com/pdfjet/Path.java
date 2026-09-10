@@ -66,54 +66,66 @@ public class Path implements Drawable {
      * </pre>
      *
      *  @param pattern the line dash pattern.
+     *  @return this Path object.
      */
-    public void setPattern(String pattern) {
+    public Path setPattern(String pattern) {
         this.pattern = pattern;
+        return this;
     }
 
     /**
      * Sets the pen width that will be used to draw the lines and splines that are part of this path.
      *
      * @param width the pen width.
+     * @return this Path object.
      */
-    public void setWidth(double width) {
+    public Path setWidth(double width) {
         this.width = (float) width;
+        return this;
     }
 
     /**
      * Sets the pen width that will be used to draw the lines and splines that are part of this path.
      *
      * @param width the pen width.
+     * @return this Path object.
      */
-    public void setWidth(float width) {
+    public Path setWidth(float width) {
         this.width = width;
+        return this;
     }
 
     /**
      * Sets the pen color that will be used to draw this path.
      *
      * @param color the color is specified as an integer.
+     * @return this Path object.
      */
-    public void setColor(int color) {
+    public Path setColor(int color) {
         this.color = color;
+        return this;
     }
 
     /**
      * Sets the closePath variable.
      *
      * @param closePath if closePath is true a line will be draw between the first and last point of this path.
+     * @return this Path object.
      */
-    public void setClosePath(boolean closePath) {
+    public Path setClosePath(boolean closePath) {
         this.closePath = closePath;
+        return this;
     }
 
     /**
      * Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
      *
      * @param fillShape the fillShape flag.
+     * @return this Path object.
      */
-    public void setFillShape(boolean fillShape) {
+    public Path setFillShape(boolean fillShape) {
         this.fillShape = fillShape;
+        return this;
     }
 
     /**
@@ -121,9 +133,11 @@ public class Path implements Drawable {
      *
      * @param style the cap style of this path.
      * Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
+     * @return this Path object.
      */
-    public void setLineCapStyle(CapStyle style) {
+    public Path setLineCapStyle(CapStyle style) {
         this.lineCapStyle = style;
+        return this;
     }
 
     /**
@@ -139,9 +153,11 @@ public class Path implements Drawable {
      * Sets the line join style.
      *
      * @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
+     * @return this Path object.
      */
-    public void setLineJoinStyle(JoinStyle style) {
+    public Path setLineJoinStyle(JoinStyle style) {
         this.lineJoinStyle = style;
+        return this;
     }
 
     /**
@@ -158,9 +174,11 @@ public class Path implements Drawable {
      *
      * @param x the x coordinate.
      * @param y the y coordinate.
+     * @return this Path object.
      */
-    public void setPosition(double x, double y) {
+    public Path setPosition(double x, double y) {
         setLocation((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -168,9 +186,11 @@ public class Path implements Drawable {
      *
      * @param x the x coordinate.
      * @param y the y coordinate.
+     * @return this Path object.
      */
-    public void setPosition(float x, float y) {
+    public Path setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**

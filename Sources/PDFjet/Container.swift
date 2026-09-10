@@ -41,9 +41,11 @@ public class Container: Drawable {
     /// - Parameters:
     ///   - x: The X coordinate.
     ///   - y: The Y coordinate.
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
+        return self
     }
 
     /// Sets the location of the container on the page (alias for `setPosition`).
@@ -51,30 +53,38 @@ public class Container: Drawable {
     /// - Parameters:
     ///   - x: The X coordinate.
     ///   - y: The Y coordinate.
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> Container {
         self.x = x
         self.y = y
+        return self
     }
 
     /// Sets the rotation angle.
     ///
     /// - Parameter degrees: The rotation angle in degrees.
-    public func setRotation(_ degrees: Double) {
+    @discardableResult
+    public func setRotation(_ degrees: Double) -> Container {
         self.rotateDegrees = Float(degrees)
+        return self
     }
 
     /// Sets clockwise rotation.
     ///
     /// - Parameter degrees: The rotation angle in degrees (clockwise).
-    public func setRotationClockwise(_ degrees: Double) {
+    @discardableResult
+    public func setRotationClockwise(_ degrees: Double) -> Container {
         self.rotateDegrees = Float(-degrees)
+        return self
     }
 
     /// Sets counter-clockwise rotation.
     ///
     /// - Parameter degrees: The rotation angle in degrees (counter-clockwise).
-    public func setRotationCounterClockwise(_ degrees: Double) {
+    @discardableResult
+    public func setRotationCounterClockwise(_ degrees: Double) -> Container {
         self.rotateDegrees = Float(degrees)
+        return self
     }
 
     public func getRotationCenter() -> [Float] {
@@ -84,8 +94,10 @@ public class Container: Drawable {
     /// Sets a uniform scaling factor for both X and Y axes.
     ///
     /// - Parameter factor: The scaling factor to apply.
-    public func setScaleFactor(_ factor: Float) {
+    @discardableResult
+    public func setScaleFactor(_ factor: Float) -> Container {
         setScaleFactorXY(factor, factor)
+        return self
     }
 
     /// Sets non-uniform scaling factors for the X and Y axes.
@@ -93,15 +105,19 @@ public class Container: Drawable {
     /// - Parameters:
     ///   - sx: The scaling factor for X.
     ///   - sy: The scaling factor for Y.
-    public func setScaleFactorXY(_ sx: Float, _ sy: Float) {
+    @discardableResult
+    public func setScaleFactorXY(_ sx: Float, _ sy: Float) -> Container {
         self.scaleX = sx
         self.scaleY = sy
+        return self
     }
 
-    public func setBorderColor(_ borderColor: Int32) {
+    @discardableResult
+    public func setBorderColor(_ borderColor: Int32) -> Container {
         let rect = Rect(0.0, 0.0, width, height)
         rect.setBorderColor(borderColor)
         self.add(rect)
+        return self
     }
 
     public func addBorder() {

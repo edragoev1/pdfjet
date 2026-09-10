@@ -54,13 +54,16 @@ public class TextColumn implements Drawable {
      * If the value is set to true - an empty line will be inserted between the current and next paragraphs.
      *
      * @param lineBetweenParagraphs the specified boolean value.
+     * @return this TextColumn object.
      */
-    public void setLineBetweenParagraphs(boolean lineBetweenParagraphs) {
+    public TextColumn setLineBetweenParagraphs(boolean lineBetweenParagraphs) {
         this.lineBetweenParagraphs = lineBetweenParagraphs;
+        return this;
     }
 
-    public void setParagraphSpacing(float paragraphSpacing) {
+    public TextColumn setParagraphSpacing(float paragraphSpacing) {
         this.paragraphSpacing = paragraphSpacing;
+        return this;
     }
 
     /**
@@ -68,9 +71,11 @@ public class TextColumn implements Drawable {
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
      * @param y the y coordinate of the top left corner of this text column when drawn on the page.
+     * @return this TextColumn object.
      */
-    public void setPosition(float x, float y) {
+    public TextColumn setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -78,9 +83,11 @@ public class TextColumn implements Drawable {
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
      * @param y the y coordinate of the top left corner of this text column when drawn on the page.
+     * @return this TextColumn object.
      */
-    public void setPosition(double x, double y) {
+    public TextColumn setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -114,9 +121,11 @@ public class TextColumn implements Drawable {
      *
      * @param w the width of this text column.
      * @param h the height of this text column.
+     * @return this TextColumn object.
      */
-    public void setSize(double w, double h) {
+    public TextColumn setSize(double w, double h) {
         setSize((float) w, (float) h);
+        return this;
     }
 
     /**
@@ -124,19 +133,23 @@ public class TextColumn implements Drawable {
      *
      * @param w the width of this text column.
      * @param h the height of this text column.
+     * @return this TextColumn object.
      */
-    public void setSize(float w, float h) {
+    public TextColumn setSize(float w, float h) {
         this.w = w;
         this.h = h;
+        return this;
     }
 
     /**
      * Sets the desired width of this text column.
      *
      * @param w the width of this text column.
+     * @return this TextColumn object.
      */
-    public void setWidth(float w) {
+    public TextColumn setWidth(float w) {
         this.w = w;
+        return this;
     }
 
     public float getWidth() {
@@ -152,27 +165,33 @@ public class TextColumn implements Drawable {
      *
      * @param alignment the specified alignment code.
      *                  Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
+     * @return this TextColumn object.
      */
-    public void setAlignment(int alignment) {
+    public TextColumn setAlignment(int alignment) {
         this.alignment = alignment;
+        return this;
     }
 
     /**
      * Sets the spacing between the lines in this text column.
      *
      * @param lineSpacing the line spacing value.
+     * @return this TextColumn object.
      */
-    public void setLineSpacing(double lineSpacing) {
+    public TextColumn setLineSpacing(double lineSpacing) {
         this.lineSpacing = (float) lineSpacing;
+        return this;
     }
 
     /**
      * Sets the spacing between the lines in this text column.
      *
      * @param lineSpacing the line spacing value.
+     * @return this TextColumn object.
      */
-    public void setLineSpacing(float lineSpacing) {
+    public TextColumn setLineSpacing(float lineSpacing) {
         this.lineSpacing = lineSpacing;
+        return this;
     }
 
     /**

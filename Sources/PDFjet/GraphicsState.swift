@@ -14,20 +14,24 @@ public class GraphicsState {
 
     }
 
-    public func setAlphaStroking(_ CA: Float) {
+    @discardableResult
+    public func setAlphaStroking(_ CA: Float) -> GraphicsState {
         if CA >= 0.0 && CA <= 1.0 {
             self.CA = CA
         }
+        return self
     }
 
     public func getAlphaStroking() -> Float {
         return self.CA
     }
 
-    public func setAlphaNonStroking(_ ca: Float) {
+    @discardableResult
+    public func setAlphaNonStroking(_ ca: Float) -> GraphicsState {
         if ca >= 0.0 && ca <= 1.0 {
             self.ca = ca
         }
+        return self
     }
 
     public func getAlphaNonStroking() -> Float {

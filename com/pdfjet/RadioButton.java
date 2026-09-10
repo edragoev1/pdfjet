@@ -51,9 +51,11 @@ public class RadioButton implements Drawable {
      *
      *  @param x the x coordinate on the Page.
      *  @param y the y coordinate on the Page.
+     *  @return this RadioButton object.
      */
-    public void setPosition(float x, float y) {
+    public RadioButton setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -61,9 +63,11 @@ public class RadioButton implements Drawable {
      *
      *  @param x the x coordinate on the Page.
      *  @param y the y coordinate on the Page.
+     *  @return this RadioButton object.
      */
-    public void setPosition(double x, double y) {
+    public RadioButton setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**

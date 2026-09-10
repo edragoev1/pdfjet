@@ -110,9 +110,11 @@ public class PDF417 implements Drawable {
      *
      * @param x the x coordinate of the top left corner of the barcode.
      * @param y the y coordinate of the top left corner of the barcode.
+     * @return this PDF417 object.
      */
-    public void setPosition(float x, float y) {
+    public PDF417 setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -120,9 +122,11 @@ public class PDF417 implements Drawable {
      *
      * @param x the x coordinate of the top left corner of the barcode.
      * @param y the y coordinate of the top left corner of the barcode.
+     * @return this PDF417 object.
      */
-    public void setPosition(double x, double y) {
+    public PDF417 setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -157,10 +161,12 @@ public class PDF417 implements Drawable {
      * barcode.
      *
      * @param width the module width of the barcode.
+     * @return this PDF417 object.
      */
-    public void setModuleWidth(float width) {
+    public PDF417 setModuleWidth(float width) {
         this.w1 = width;
         this.h1 = 3 * w1;
+        return this;
     }
 
     private List<Integer> textToArrayOfIntegers() {

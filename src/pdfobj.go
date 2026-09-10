@@ -57,7 +57,7 @@ func (obj *PDFobj) GetData() []byte {
 }
 
 // SetStreamAndData sets the object stream.
-func (obj *PDFobj) SetStreamAndData(buf []byte, length int) {
+func (obj *PDFobj) SetStreamAndData(buf []byte, length int) *PDFobj {
 	obj.stream = make([]byte, length)
 	for i := 0; i < length; i++ {
 		obj.stream[i] = buf[obj.streamOffset+i]
@@ -68,16 +68,19 @@ func (obj *PDFobj) SetStreamAndData(buf []byte, length int) {
 		// Assume no compression for now.
 		obj.data = obj.stream
 	}
+	return obj
 }
 
 // SetStream sets the object stream.
-func (obj *PDFobj) SetStream(stream []byte) {
+func (obj *PDFobj) SetStream(stream []byte) *PDFobj {
 	obj.stream = stream
+	return obj
 }
 
 // SetNumber sets the object number.
-func (obj *PDFobj) SetNumber(number int) {
+func (obj *PDFobj) SetNumber(number int) *PDFobj {
 	obj.number = number
+	return obj
 }
 
 // getValue returns the dictionary value for the specified key.
@@ -559,7 +562,7 @@ func getMaxGSNumber(obj *PDFobj) int {
 }
 
 // SetGraphicsState sets the graphics state.
-func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
+func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFobj {
 	var resources *PDFobj
 	index := -1
 	for i, token := range obj.dict {
@@ -585,7 +588,7 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 		}
 	}
 	if resources == nil || index == -1 {
-		return
+		return obj
 	}
 	obj.gsNumber = getMaxGSNumber(resources)
 	if obj.gsNumber == 0 { // No existing ExtGState dictionary
@@ -625,6 +628,7 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) {
 	buf.WriteString("q\n")
 	buf.WriteString("/GS" + strconv.Itoa(obj.gsNumber+1) + " gs\n")
 	obj.addPrefixContent([]byte(buf.String()), objects)
+	return obj
 }
 
 // formatFloat32 formats a float the way the Java and .NET editions do,

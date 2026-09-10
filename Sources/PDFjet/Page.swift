@@ -483,7 +483,8 @@ public class Page {
     // - The method converts the integer color to normalized float values
     //   between 0 and 1 for each RGB component and appends the color
     //   to the drawing context.
-    public func setPenColor(_ color: Int32) {
+    @discardableResult
+    public func setPenColor(_ color: Int32) -> Page {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
@@ -493,6 +494,7 @@ public class Page {
         append(Token.space)
         append(b)
         append(" RG\n")
+        return self
     }
 
     // setPenColor sets the pen color using an RGB color array.
@@ -550,7 +552,8 @@ public class Page {
     // - The method converts the integer color to normalized float values
     //   between 0 and 1 for each RGB component and appends the color
     //   to the drawing context for brush-related operations.
-    public func setBrushColor(_ color: Int32) {
+    @discardableResult
+    public func setBrushColor(_ color: Int32) -> Page {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
@@ -560,6 +563,7 @@ public class Page {
         append(Token.space)
         append(b)
         append(" rg\n")
+        return self
     }
 
     // setBrushColor sets the brush color using an RGB color array.
@@ -655,8 +659,10 @@ public class Page {
     /// Sets the line width to the default.
     /// The default is the finest line width.
     ///
-    public func setDefaultLineWidth() {
+    @discardableResult
+    public func setDefaultLineWidth() -> Page {
         append("0 w\n")
+        return self
     }
 
     ///
@@ -682,19 +688,23 @@ public class Page {
     ///
     /// - Parameter pattern the line dash pattern.
     ///
-    public func setStrokeDashPattern(_ pattern: String) {
+    @discardableResult
+    public func setStrokeDashPattern(_ pattern: String) -> Page {
         self.strokeDashPattern = pattern
         append(self.strokeDashPattern)
         append(" d\n")
+        return self
     }
 
     ///
     /// Sets the default line dash pattern - solid line.
     ///
-    public func setDefaultStrokeDashPattern() {
+    @discardableResult
+    public func setDefaultStrokeDashPattern() -> Page {
         self.strokeDashPattern = "[] 0"
         append(self.strokeDashPattern)
         append(" d\n")
+        return self
     }
 
     ///
@@ -702,10 +712,12 @@ public class Page {
     ///
     /// - Parameter width the pen width.
     ///
-    public func setPenWidth(_ width: Float) {
+    @discardableResult
+    public func setPenWidth(_ width: Float) -> Page {
         self.penWidth = width
         append(width)
         append(" w\n")
+        return self
     }
 
     public func getPenWidth() -> Float {
@@ -718,10 +730,12 @@ public class Page {
     /// - Parameter style the cap style of the current line.
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     ///
-    public func setLineCapStyle(_ style: CapStyle) {
+    @discardableResult
+    public func setLineCapStyle(_ style: CapStyle) -> Page {
         self.lineCapStyle = style
         append(self.lineCapStyle.rawValue)
         append(" J\n")
+        return self
     }
 
     ///
@@ -729,10 +743,12 @@ public class Page {
     ///
     /// - Parameter style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
     ///
-    public func setLineJoinStyle(_ style: JoinStyle) {
+    @discardableResult
+    public func setLineJoinStyle(_ style: JoinStyle) -> Page {
         self.lineJoinStyle = style
         append(self.lineJoinStyle.rawValue)
         append(" j\n")
+        return self
     }
 
     ///
@@ -1059,12 +1075,14 @@ public class Page {
     ///
     /// - Parameter mode the rendering mode.
     ///
-    public func setTextRenderingMode(_ mode: Int) throws {
+    @discardableResult
+    public func setTextRenderingMode(_ mode: Int) throws -> Page {
         if mode >= 0 && mode <= 7 {
             self.renderingMode = mode
         } else {
             throw PDFjetError(message: "Invalid text rendering mode: \(mode)")
         }
+        return self
     }
 
     ///
@@ -1072,7 +1090,8 @@ public class Page {
     ///
     /// - Parameter degrees the angle.
     ///
-    public func setTextDirection(_ angleInDegrees: Int) {
+    @discardableResult
+    public func setTextDirection(_ angleInDegrees: Int) -> Page {
         var degrees: Int = angleInDegrees
         if degrees > 360 {
             degrees %= 360
@@ -1096,6 +1115,7 @@ public class Page {
         self.tm1 = FastFloat.toByteArray(tmx[1])
         self.tm2 = FastFloat.toByteArray(tmx[2])
         self.tm3 = FastFloat.toByteArray(tmx[3])
+        return self
     }
 
     ///
@@ -1288,12 +1308,14 @@ public class Page {
     /// - Parameter lowerRightX the bottom right X coordinate of the CropBox.
     /// - Parameter lowerRightY the bottom right Y coordinate of the CropBox.
     ///
+    @discardableResult
     public func setCropBox(
             _ upperLeftX: Float,
             _ upperLeftY: Float,
             _ lowerRightX: Float,
-            _ lowerRightY: Float) {
+            _ lowerRightY: Float) -> Page {
         self.cropBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
+        return self
     }
 
     ///
@@ -1305,12 +1327,14 @@ public class Page {
     /// - Parameter lowerRightX the bottom right X coordinate of the BleedBox.
     /// - Parameter lowerRightY the bottom right Y coordinate of the BleedBox.
     ///
+    @discardableResult
     public func setBleedBox(
             _ upperLeftX: Float,
             _ upperLeftY: Float,
             _ lowerRightX: Float,
-            _ lowerRightY: Float) {
+            _ lowerRightY: Float) -> Page {
         self.bleedBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
+        return self
     }
 
     ///
@@ -1322,12 +1346,14 @@ public class Page {
     /// - Parameter lowerRightX the bottom right X coordinate of the TrimBox.
     /// - Parameter lowerRightY the bottom right Y coordinate of the TrimBox.
     ///
+    @discardableResult
     public func setTrimBox(
             _ upperLeftX: Float,
             _ upperLeftY: Float,
             _ lowerRightX: Float,
-            _ lowerRightY: Float) {
+            _ lowerRightY: Float) -> Page {
         self.trimBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
+        return self
     }
 
     ///
@@ -1339,12 +1365,14 @@ public class Page {
     /// - Parameter lowerRightX the bottom right X coordinate of the ArtBox.
     /// - Parameter lowerRightY the bottom right Y coordinate of the ArtBox.
     ///
+    @discardableResult
     public func setArtBox(
             _ upperLeftX: Float,
             _ upperLeftY: Float,
             _ lowerRightX: Float,
-            _ lowerRightY: Float) {
+            _ lowerRightY: Float) -> Page {
         self.artBox = [upperLeftX, upperLeftY, lowerRightX, lowerRightY]
+        return self
     }
 
     private func appendPointXY(_ x: Float, _ y: Float) {

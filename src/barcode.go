@@ -137,34 +137,39 @@ func reverseString(str string) string {
 // SetLocation sets the location where this barcode will be drawn on the page.
 // @param x1 the x coordinate of the top left corner of the barcode.
 // @param y1 the y coordinate of the top left corner of the barcode.
-func (barcode *Barcode) SetLocation(x1, y1 float32) {
+func (barcode *Barcode) SetLocation(x1, y1 float32) *Barcode {
 	barcode.x1 = x1
 	barcode.y1 = y1
+	return barcode
 }
 
 // SetModuleLength sets the module length of this barcode.
 // The default value is 0.75
-func (barcode *Barcode) SetModuleLength(moduleLength float32) {
+func (barcode *Barcode) SetModuleLength(moduleLength float32) *Barcode {
 	barcode.m1 = moduleLength
+	return barcode
 }
 
 // SetBarHeightFactor sets the bar height factor.
 // The height of the bars is the moduleLength * barHeightFactor
 // The default value is 50.0f
-func (barcode *Barcode) SetBarHeightFactor(barHeightFactor float32) {
+func (barcode *Barcode) SetBarHeightFactor(barHeightFactor float32) *Barcode {
 	barcode.barHeightFactor = barHeightFactor
+	return barcode
 }
 
 // SetDirection sets the drawing direction for this font.
 // @param direction the specified direction.
-func (barcode *Barcode) SetDirection(direction int) {
+func (barcode *Barcode) SetDirection(direction int) *Barcode {
 	barcode.direction = direction
+	return barcode
 }
 
 // SetFont sets the font to be used with this barcode.
 // @param font the specified font.
-func (barcode *Barcode) SetFont(font *Font) {
+func (barcode *Barcode) SetFont(font *Font) *Barcode {
 	barcode.font = font
+	return barcode
 }
 
 func hasOnlyDigits(text string) bool {

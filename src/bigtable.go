@@ -63,31 +63,36 @@ func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize [2]float32) *BigTable {
 }
 
 // SetLocation sets the table location
-func (bt *BigTable) SetLocation(x, y float32) {
+func (bt *BigTable) SetLocation(x, y float32) *BigTable {
 	for i := 0; i <= bt.numberOfColumns; i++ {
 		bt.vertLines[i] += x
 	}
 	bt.y = y
+	return bt
 }
 
 // SetNumberOfColumns sets the number of columns
-func (bt *BigTable) SetNumberOfColumns(numberOfColumns int) {
+func (bt *BigTable) SetNumberOfColumns(numberOfColumns int) *BigTable {
 	bt.numberOfColumns = numberOfColumns
+	return bt
 }
 
 // SetTextAlignment sets text alignment for a column
-func (bt *BigTable) SetTextAlignment(column int, alignment alignment.Alignment) {
+func (bt *BigTable) SetTextAlignment(column int, alignment alignment.Alignment) *BigTable {
 	bt.alignment[column] = alignment
+	return bt
 }
 
 // SetBottomMargin sets the bottom margin
-func (bt *BigTable) SetBottomMargin(bottomMargin float32) {
+func (bt *BigTable) SetBottomMargin(bottomMargin float32) *BigTable {
 	bt.bottomMargin = bottomMargin
+	return bt
 }
 
 // SetLanguage sets the language
-func (bt *BigTable) SetLanguage(language string) {
+func (bt *BigTable) SetLanguage(language string) *BigTable {
 	bt.language = language
+	return bt
 }
 
 // GetPages returns the generated pages

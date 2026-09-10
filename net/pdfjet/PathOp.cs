@@ -34,7 +34,7 @@ public class PathOp {
         this.args = new List<String>();
     }
 
-    public void SetCubicPoints(
+    public PathOp SetCubicPoints(
             float x1, float y1,
             float x2, float y2,
             float x, float y) {
@@ -44,6 +44,7 @@ public class PathOp {
         this.y2 = y2;
         this.x = x;
         this.y = y;
+        return this;
     }
 }
 }

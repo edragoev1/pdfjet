@@ -31,34 +31,40 @@ func NewFileAttachment(pdf *PDF, embeddedFile *EmbeddedFile) *FileAttachment {
 }
 
 // SetLocation sets the location.
-func (attachment *FileAttachment) SetLocation(x, y float32) {
+func (attachment *FileAttachment) SetLocation(x, y float32) *FileAttachment {
 	attachment.x = x
 	attachment.y = y
+	return attachment
 }
 
 // SetIconPushPin sets the push pin icon.
-func (attachment *FileAttachment) SetIconPushPin() {
+func (attachment *FileAttachment) SetIconPushPin() *FileAttachment {
 	attachment.icon = "PushPin"
+	return attachment
 }
 
 // SetIconPaperclip sets the paper clip icon.
-func (attachment *FileAttachment) SetIconPaperclip() {
+func (attachment *FileAttachment) SetIconPaperclip() *FileAttachment {
 	attachment.icon = "Paperclip"
+	return attachment
 }
 
 // SetIconSize sets the icon size.
-func (attachment *FileAttachment) SetIconSize(height float32) {
+func (attachment *FileAttachment) SetIconSize(height float32) *FileAttachment {
 	attachment.h = height
+	return attachment
 }
 
 // SetTitle sets the title.
-func (attachment *FileAttachment) SetTitle(title string) {
+func (attachment *FileAttachment) SetTitle(title string) *FileAttachment {
 	attachment.title = title
+	return attachment
 }
 
 // SetDescription sets the description.
-func (attachment *FileAttachment) SetDescription(description string) {
+func (attachment *FileAttachment) SetDescription(description string) *FileAttachment {
 	attachment.contents = description
+	return attachment
 }
 
 // DrawOn draws this component on the page.

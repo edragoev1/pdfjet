@@ -245,9 +245,10 @@ func (image *SVGImage) ScaleBy(factor float32) {
 	}
 }
 
-func (image *SVGImage) SetLocation(x, y float32) {
+func (image *SVGImage) SetLocation(x, y float32) *SVGImage {
 	image.x = x
 	image.y = y
+	return image
 }
 
 func (image *SVGImage) GetWidth() float32 {

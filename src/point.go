@@ -94,15 +94,17 @@ func (point *Point) Copy() *Point {
 // SetLocation sets the location (x, y) of this point.
 // @param x the x coordinate of this point when drawn on the page.
 // @param y the y coordinate of this point when drawn on the page.
-func (point *Point) SetLocation(x, y float32) {
+func (point *Point) SetLocation(x, y float32) *Point {
 	point.x = x
 	point.y = y
+	return point
 }
 
 // SetX sets the x coordinate of this point.
 // @param x the x coordinate of this point when drawn on the page.
-func (point *Point) SetX(x float32) {
+func (point *Point) SetX(x float32) *Point {
 	point.x = x
+	return point
 }
 
 // GetX returns the x coordinate of this point.
@@ -113,8 +115,9 @@ func (point *Point) GetX() float32 {
 
 // SetY sets the y coordinate of this point.
 // @param y the y coordinate of this point when drawn on the page.
-func (point *Point) SetY(y float32) {
+func (point *Point) SetY(y float32) *Point {
 	point.y = y
+	return point
 }
 
 // GetY returns the y coordinate of this point.
@@ -125,8 +128,9 @@ func (point *Point) GetY() float32 {
 
 // SetRadius sets the radius of this point.
 // @param r the radius.
-func (point *Point) SetRadius(r float32) {
+func (point *Point) SetRadius(r float32) *Point {
 	point.r = r
+	return point
 }
 
 // GetRadius returns the radius of this point.
@@ -209,8 +213,9 @@ func (point *Point) SetDrawPath() *Point {
 
 // SetURIAction sets the URI for the "click point" action.
 // @param uri the URI
-func (point *Point) SetURIAction(uri string) {
+func (point *Point) SetURIAction(uri string) *Point {
 	point.uri = uri
+	return point
 }
 
 // GetURIAction returns the URI for the "click point" action.
@@ -221,8 +226,9 @@ func (point *Point) GetURIAction() string {
 
 // SetText sets the point text.
 // @param text the text.
-func (point *Point) SetText(text string) {
+func (point *Point) SetText(text string) *Point {
 	point.text = text
+	return point
 }
 
 // GetText returns the text associated with this point.
@@ -250,8 +256,9 @@ func (point *Point) GetTextColor() [3]float32 {
 
 // SetTextDirection sets the point's text direction.
 // @param textDirection the text direction.
-func (point *Point) SetTextDirection(textDirection int) {
+func (point *Point) SetTextDirection(textDirection int) *Point {
 	point.textDirection = textDirection
+	return point
 }
 
 // GetTextDirection returns the point's text direction.
@@ -262,8 +269,9 @@ func (point *Point) GetTextDirection() int {
 
 // SetAlignment sets the point alignment inside table cell.
 // @param align the alignment value.
-func (point *Point) SetAlignment(align int) {
+func (point *Point) SetAlignment(align int) *Point {
 	point.align = align
+	return point
 }
 
 // GetAlignment returns the point alignment.
@@ -298,6 +306,7 @@ func (point *Point) DrawOn(page *Page) [3]float32 {
 	return [3]float32{point.x + point.r, point.y + point.r}
 }
 
-func (point *Point) SetStrokeWidth(strokeWidth float32) {
+func (point *Point) SetStrokeWidth(strokeWidth float32) *Point {
 	point.strokeWidth = strokeWidth
+	return point
 }

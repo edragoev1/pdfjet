@@ -22,6 +22,15 @@ public protocol Drawable {
      */
     @discardableResult
     func drawOn(_ page: Page?) -> [Float]
-    func setPosition(_ x: Float, _ y: Float)
+
+    /**
+     *  Set the x and y coordinates of the drawable object.
+     *
+     *  @param x the x location
+     *  @param y the y location
+     *  @return this drawable object.
+     */
+    @discardableResult
+    func setPosition(_ x: Float, _ y: Float) -> Self
 
 }

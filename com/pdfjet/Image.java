@@ -205,9 +205,11 @@ final public class Image implements Drawable {
      *
      * @param x the x coordinate of the top left corner of the image.
      * @param y the y coordinate of the top left corner of the image.
+     * @return this Image object.
      */
-    public void setPosition(float x, float y) {
+    public Image setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -215,9 +217,11 @@ final public class Image implements Drawable {
      *
      * @param x the x coordinate of the top left corner of the image.
      * @param y the y coordinate of the top left corner of the image.
+     * @return this Image object.
      */
-    public void setPosition(double x, double y) {
+    public Image setPosition(double x, double y) {
         setLocation(x, y);
+        return this;
     }
 
     /**
@@ -314,18 +318,22 @@ final public class Image implements Drawable {
      * Sets the URI for the "click box" action.
      *
      * @param uri the URI
+     * @return this Image object.
      */
-    public void setURIAction(String uri) {
+    public Image setURIAction(String uri) {
         this.uri = uri;
+        return this;
     }
 
     /**
      * Sets the destination key for the action.
      *
      * @param key the destination name.
+     * @return this Image object.
      */
-    public void setGoToAction(String key) {
+    public Image setGoToAction(String key) {
         this.key = key;
+        return this;
     }
 
     /**

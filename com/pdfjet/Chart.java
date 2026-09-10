@@ -102,23 +102,27 @@ public class Chart implements Drawable {
     }
 
     /** Sets the chart title. */
-    public void setTitle(String title) {
+    public Chart setTitle(String title) {
         this.title = title;
+        return this;
     }
 
     /** Sets the X axis title. */
-    public void setXAxisTitle(String title) {
+    public Chart setXAxisTitle(String title) {
         this.xAxisTitle = title;
+        return this;
     }
 
     /** Sets the Y axis title. */
-    public void setYAxisTitle(String title) {
+    public Chart setYAxisTitle(String title) {
         this.yAxisTitle = title;
+        return this;
     }
 
     /** Sets the chart data (list of series, each a list of points). */
-    public void setData(List<List<Point>> chartData) {
+    public Chart setData(List<List<Point>> chartData) {
         this.chartData = chartData;
+        return this;
     }
 
     /** Returns the chart data. */
@@ -127,13 +131,15 @@ public class Chart implements Drawable {
     }
 
     /** Sets the top-left position of this chart on the page. */
-    public void setPosition(double x, double y) {
+    public Chart setPosition(double x, double y) {
         setLocation((float) x, (float) y);
+        return this;
     }
 
     /** Sets the top-left position of this chart on the page. */
-    public void setPosition(float x, float y) {
+    public Chart setPosition(float x, float y) {
         setLocation(x, y);
+        return this;
     }
 
     /** Sets the top-left position. Returns this for chaining. */
@@ -149,29 +155,34 @@ public class Chart implements Drawable {
     }
 
     /** Sets the chart dimensions. */
-    public void setSize(double w, double h) {
+    public Chart setSize(double w, double h) {
         setSize((float) w, (float) h);
+        return this;
     }
 
     /** Sets the chart dimensions. */
-    public void setSize(float w, float h) {
+    public Chart setSize(float w, float h) {
         this.w = w;
         this.h = h;
+        return this;
     }
 
     /** Sets the font size for axis labels. */
-    public void setFontSize(float fontSize) {
+    public Chart setFontSize(float fontSize) {
         this.fontSize = fontSize;
+        return this;
     }
 
     /** Sets minimum decimal places for axis labels. */
-    public void setMinimumFractionDigits(int minFractionDigits) {
+    public Chart setMinimumFractionDigits(int minFractionDigits) {
         this.minFractionDigits = minFractionDigits;
+        return this;
     }
 
     /** Sets maximum decimal places for axis labels. */
-    public void setMaximumFractionDigits(int maxFractionDigits) {
+    public Chart setMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
+        return this;
     }
 
     /**
@@ -208,62 +219,74 @@ public class Chart implements Drawable {
     }
 
     /** Toggles drawing of horizontal grid lines. */
-    public void setDrawXAxisLines(boolean drawXAxisLines) {
+    public Chart setDrawXAxisLines(boolean drawXAxisLines) {
         this.drawXAxisLines = drawXAxisLines;
+        return this;
     }
 
     /** Toggles drawing of vertical grid lines. */
-    public void setDrawYAxisLines(boolean drawYAxisLines) {
+    public Chart setDrawYAxisLines(boolean drawYAxisLines) {
         this.drawYAxisLines = drawYAxisLines;
+        return this;
     }
 
     /** Toggles drawing of X axis labels. */
-    public void setDrawXAxisLabels(boolean drawXAxisLabels) {
+    public Chart setDrawXAxisLabels(boolean drawXAxisLabels) {
         this.drawXAxisLabels = drawXAxisLabels;
+        return this;
     }
 
     /** Toggles drawing of Y axis labels. */
-    public void setDrawYAxisLabels(boolean drawYAxisLabels) {
+    public Chart setDrawYAxisLabels(boolean drawYAxisLabels) {
         this.drawYAxisLabels = drawYAxisLabels;
+        return this;
     }
 
     /** Sets XY scatter mode (true) or category mode (false). */
-    public void setXYChart(boolean xyChart) {
+    public Chart setXYChart(boolean xyChart) {
         this.xyChart = xyChart;
+        return this;
     }
 
     /** Sets the outer chart border width (0 = invisible). */
-    public void setChartBorderWidth(float width) {
+    public Chart setChartBorderWidth(float width) {
         this.chartBorderWidth = width;
+        return this;
     }
 
     /** Sets the inner plot area border width (0 = invisible). */
-    public void setInnerBorderWidth(float width) {
+    public Chart setInnerBorderWidth(float width) {
         this.innerBorderWidth = width;
+        return this;
     }
 
     /** Sets the horizontal grid line width (0 = invisible). */
-    public void setHGridLineWidth(float width) {
+    public Chart setHGridLineWidth(float width) {
         this.hGridLineWidth = width;
+        return this;
     }
 
     /** Sets the vertical grid line width (0 = invisible). */
-    public void setVGridLineWidth(float width) {
+    public Chart setVGridLineWidth(float width) {
         this.vGridLineWidth = width;
+        return this;
     }
 
     /** Sets the horizontal grid line dash pattern (e.g. "[1 1] 0"). */
-    public void setHGridLinePattern(String pattern) {
+    public Chart setHGridLinePattern(String pattern) {
         this.hGridLinePattern = pattern;
+        return this;
     }
 
     /** Sets the vertical grid line dash pattern (e.g. "[1 1] 0"). */
-    public void setVGridLinePattern(String pattern) {
+    public Chart setVGridLinePattern(String pattern) {
         this.vGridLinePattern = pattern;
+        return this;
     }
 
-    public void setAutoColors(boolean autoColors) {
+    public Chart setAutoColors(boolean autoColors) {
         this.autoColors = autoColors;
+        return this;
     }
 
     /**
@@ -688,11 +711,13 @@ public class Chart implements Drawable {
      *  @param xMin for the X axis.
      *  @param xMax for the X axis.
      *  @param xAxisGridLines the number of X axis grid lines.
+     *  @return this Chart object.
      */
-    public void setXAxisMinMax(float xMin, float xMax, int xAxisGridLines) {
+    public Chart setXAxisMinMax(float xMin, float xMax, int xAxisGridLines) {
         this.xMin = xMin;
         this.xMax = xMax;
         this.xAxisGridLines = xAxisGridLines;
+        return this;
     }
 
     /**
@@ -702,10 +727,12 @@ public class Chart implements Drawable {
      *  @param yMin for the Y axis.
      *  @param yMax for the Y axis.
      *  @param yAxisGridLines the number of Y axis grid lines.
+     *  @return this Chart object.
      */
-    public void setYAxisMinMax(float yMin, float yMax, int yAxisGridLines) {
+    public Chart setYAxisMinMax(float yMin, float yMax, int yAxisGridLines) {
         this.yMin = yMin;
         this.yMax = yMax;
         this.yAxisGridLines = yAxisGridLines;
+        return this;
     }
 }   // End of Chart.java

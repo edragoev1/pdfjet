@@ -41,10 +41,12 @@ public class Container implements Drawable {
      *
      * @param x the X coordinate
      * @param y the Y coordinate
+     * @return this Container object.
      */
-    public void setPosition(float x, float y) {
+    public Container setPosition(float x, float y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 
     /**
@@ -68,27 +70,33 @@ public class Container implements Drawable {
      * Sets the rotation angle.
      *
      * @param degrees the rotation angle in degrees
+     * @return this Container object.
      */
-    public void setRotation(double degrees) {
+    public Container setRotation(double degrees) {
         this.rotateDegrees = (float) degrees;
+        return this;
     }
 
     /**
      * Sets clockwise rotation.
      *
      * @param degrees the rotation angle in degrees (clockwise)
+     * @return this Container object.
      */
-    public void setRotationClockwise(double degrees) {
+    public Container setRotationClockwise(double degrees) {
         this.rotateDegrees = (float) -degrees;
+        return this;
     }
 
     /**
      * Sets counter-clockwise rotation.
      *
      * @param degrees the rotation angle in degrees (counter-clockwise)
+     * @return this Container object.
      */
-    public void setRotationCounterClockwise(double degrees) {
+    public Container setRotationCounterClockwise(double degrees) {
         this.rotateDegrees = (float) degrees;
+        return this;
     }
 
     public float[] getRotationCenter() {
@@ -99,9 +107,11 @@ public class Container implements Drawable {
      * Sets a uniform scaling factor for both X and Y axes.
      *
      * @param factor the scaling factor to apply
+     * @return this Container object.
      */
-    public void setScaleFactor(float factor) {
+    public Container setScaleFactor(float factor) {
         setScaleFactorXY(factor, factor);
+        return this;
     }
 
     /**
@@ -109,16 +119,19 @@ public class Container implements Drawable {
      *
      * @param sx the scaling factor for X
      * @param sy the scaling factor for Y
+     * @return this Container object.
      */
-    public void setScaleFactorXY(float sx, float sy) {
+    public Container setScaleFactorXY(float sx, float sy) {
         this.scaleX = sx;
         this.scaleY = sy;
+        return this;
     }
 
-    public void setBorderColor(int borderColor) {
+    public Container setBorderColor(int borderColor) {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.setBorderColor(borderColor);
         this.add(rect);
+        return this;
     }
 
     public void addBorder() {

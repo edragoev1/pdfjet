@@ -77,14 +77,16 @@ func (paragraph *Paragraph) StartsWith(token string) bool {
 	return strings.HasPrefix(paragraph.lines[0].GetText(), token)
 }
 
-func (paragraph *Paragraph) SetColor(color int32) {
+func (paragraph *Paragraph) SetColor(color int32) *Paragraph {
 	for _, line := range paragraph.lines {
 		line.SetTextColor(color)
 	}
+	return paragraph
 }
 
-func (paragraph *Paragraph) SetColorMap(colorMap map[string]int32) {
+func (paragraph *Paragraph) SetColorMap(colorMap map[string]int32) *Paragraph {
 	for _, line := range paragraph.lines {
 		line.SetColorMap(colorMap)
 	}
+	return paragraph
 }

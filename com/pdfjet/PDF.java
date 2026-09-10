@@ -128,13 +128,16 @@ final public class PDF {
      * Sets the PDF document compliance.
      *
      * @param compliance the compliance level.
+     * @return this PDF object.
      */
-    public void setCompliance(Compliance compliance) {
+    public PDF setCompliance(Compliance compliance) {
         this.compliance = compliance;
+        return this;
     }
 
-    public void setEncryption(Encryption encryption) {
+    public PDF setEncryption(Encryption encryption) {
         this.encryption = encryption;
+        return this;
     }
 
     public void newobj() throws IOException {
@@ -1175,69 +1178,85 @@ final public class PDF {
     /**
      *  Set the "Language" document property of the PDF file.
      *  @param language The language of this document.
+     *  @return this PDF object.
      */
-    public void setLanguage(String language) {
+    public PDF setLanguage(String language) {
         this.language = language;
+        return this;
     }
 
     /**
      *  Set the "Title" document property of the PDF file.
      *  @param title The title of this document.
+     *  @return this PDF object.
      */
-    public void setTitle(String title) {
+    public PDF setTitle(String title) {
         this.title = title;
+        return this;
     }
 
     /**
      *  Set the "Author" document property of the PDF file.
      *  @param author The author of this document.
+     *  @return this PDF object.
      */
-    public void setAuthor(String author) {
+    public PDF setAuthor(String author) {
         this.author = author;
+        return this;
     }
 
     /**
      *  Set the "Subject" document property of the PDF file.
      *  @param subject The subject of this document.
+     *  @return this PDF object.
      */
-    public void setSubject(String subject) {
+    public PDF setSubject(String subject) {
         this.subject = subject;
+        return this;
     }
 
     /**
      * Sets the PDF keywords.
      *
      * @param keywords the keywords.
+     * @return this PDF object.
      */
-    public void setKeywords(String keywords) {
+    public PDF setKeywords(String keywords) {
         this.keywords = keywords;
+        return this;
     }
 
     /**
      * Sets the PDF creator.
      *
      * @param creator the creator.
+     * @return this PDF object.
      */
-    public void setCreator(String creator) {
+    public PDF setCreator(String creator) {
         this.creator = creator;
+        return this;
     }
 
     /**
      * Sets the PDF page layout.
      *
      * @param pageLayout the page layout.
+     * @return this PDF object.
      */
-    public void setPageLayout(String pageLayout) {
+    public PDF setPageLayout(String pageLayout) {
         this.pageLayout = pageLayout;
+        return this;
     }
 
     /**
      * Set the PDF page mode.
      *
      * @param pageMode the page mode.
+     * @return this PDF object.
      */
-    public void setPageMode(String pageMode) {
+    public PDF setPageMode(String pageMode) {
         this.pageMode = pageMode;
+        return this;
     }
 
     public void append(int num) throws IOException {

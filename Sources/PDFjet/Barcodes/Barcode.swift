@@ -108,8 +108,10 @@ public class Barcode : Drawable {
         tableB["Z"] = "bWBwBwbwb"
     }
 
-    public func setPosition(_ x1: Float, _ y1: Float) {
+    @discardableResult
+    public func setPosition(_ x1: Float, _ y1: Float) -> Self {
         setLocation(x1, y1)
+        return self
     }
 
     ///
@@ -118,9 +120,11 @@ public class Barcode : Drawable {
     /// @param x1 the x coordinate of the top left corner of the barcode.
     /// @param y1 the y coordinate of the top left corner of the barcode.
     ///
-    public func setLocation(_ x1: Float, _ y1: Float) {
+    @discardableResult
+    public func setLocation(_ x1: Float, _ y1: Float) -> Barcode {
         self.x1 = x1
         self.y1 = y1
+        return self
     }
 
     ///
@@ -129,8 +133,10 @@ public class Barcode : Drawable {
     ///
     /// @param moduleLength the specified module length.
     ///
-    public func setModuleLength(_ moduleLength: Double) {
+    @discardableResult
+    public func setModuleLength(_ moduleLength: Double) -> Barcode {
         self.m1 = Float(moduleLength)
+        return self
     }
 
     ///
@@ -139,8 +145,10 @@ public class Barcode : Drawable {
     ///
     /// @param moduleLength the specified module length.
     ///
-    public func setModuleLength(_ moduleLength: Float) {
+    @discardableResult
+    public func setModuleLength(_ moduleLength: Float) -> Barcode {
         self.m1 = moduleLength
+        return self
     }
 
     ///
@@ -150,8 +158,10 @@ public class Barcode : Drawable {
     ///
     /// @param barHeightFactor the specified bar height factor.
     ///
-    public func setBarHeightFactor(_ barHeightFactor: Double) {
+    @discardableResult
+    public func setBarHeightFactor(_ barHeightFactor: Double) -> Barcode {
         self.barHeightFactor = Float(barHeightFactor)
+        return self
     }
 
     ///
@@ -161,8 +171,10 @@ public class Barcode : Drawable {
     ///
     /// @param barHeightFactor the specified bar height factor.
     ///
-    public func setBarHeightFactor(_ barHeightFactor: Float) {
+    @discardableResult
+    public func setBarHeightFactor(_ barHeightFactor: Float) -> Barcode {
         self.barHeightFactor = barHeightFactor
+        return self
     }
 
     ///
@@ -170,8 +182,10 @@ public class Barcode : Drawable {
     ///
     /// @param direction the specified direction.
     ///
-    public func setDirection(_ direction: Int) {
+    @discardableResult
+    public func setDirection(_ direction: Int) -> Barcode {
         self.direction = direction
+        return self
     }
 
     ///
@@ -179,8 +193,10 @@ public class Barcode : Drawable {
     ///
     /// @param font the specified font.
     ///
-    public func setFont(_ font: Font) {
+    @discardableResult
+    public func setFont(_ font: Font) -> Barcode {
         self.font = font
+        return self
     }
 
     private static func hasOnlyDigits(_ text: String) -> Bool {

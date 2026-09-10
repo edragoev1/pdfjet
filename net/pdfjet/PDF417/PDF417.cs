@@ -102,9 +102,11 @@ public class PDF417 : IDrawable {
      *
      *  @param x the x coordinate of the top left corner of the barcode.
      *  @param y the y coordinate of the top left corner of the barcode.
+     *  @return this PDF417 object.
      */
-    public void SetPosition(double x, double y) {
+    public PDF417 SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -112,13 +114,20 @@ public class PDF417 : IDrawable {
      *
      *  @param x the x coordinate of the top left corner of the barcode.
      *  @param y the y coordinate of the top left corner of the barcode.
+     *  @return this PDF417 object.
      */
-    public void SetPosition(float x, float y) {
+    public PDF417 SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
-    public void SetXY(float x, float y) {
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
+    }
+
+    public PDF417 SetXY(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
     /**
@@ -140,10 +149,12 @@ public class PDF417 : IDrawable {
      *  If the value is too small some scanners may have difficulty reading the barcode.
      *
      *  @param width the module width of the barcode.
+     *  @return this PDF417 object.
      */
-    public void SetModuleWidth(float width) {
+    public PDF417 SetModuleWidth(float width) {
         this.w1 = width;
         this.h1 = 3 * w1;
+        return this;
     }
 
     /**

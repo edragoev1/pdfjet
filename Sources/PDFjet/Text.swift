@@ -31,8 +31,10 @@ public class Text : Drawable {
         self.leading = font!.getBodyHeight()
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
     @discardableResult

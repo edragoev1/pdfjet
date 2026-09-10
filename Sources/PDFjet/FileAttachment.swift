@@ -24,33 +24,47 @@ public class FileAttachment : Drawable {
         self.embeddedFile = file
     }
 
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> FileAttachment {
         self.x = x
         self.y = y
+        return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
-    public func setIconPushPin() {
+    @discardableResult
+    public func setIconPushPin() -> FileAttachment {
         self.icon = "PushPin"
+        return self
     }
 
-    public func setIconPaperclip() {
+    @discardableResult
+    public func setIconPaperclip() -> FileAttachment {
         self.icon = "Paperclip"
+        return self
     }
 
-    public func setIconSize(_ height: Float) {
+    @discardableResult
+    public func setIconSize(_ height: Float) -> FileAttachment {
         self.h = height
+        return self
     }
 
-    public func setTitle(_ title: String) {
+    @discardableResult
+    public func setTitle(_ title: String) -> FileAttachment {
         self.title = title
+        return self
     }
 
-    public func setDescription(_ description: String) {
+    @discardableResult
+    public func setDescription(_ description: String) -> FileAttachment {
         self.contents = description
+        return self
     }
 
     @discardableResult

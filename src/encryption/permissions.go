@@ -128,8 +128,9 @@ func (p *Permissions) GetAccess() UserAccess {
 }
 
 // SetAccess sets the permissions using UserAccess flags
-func (p *Permissions) SetAccess(access UserAccess) {
+func (p *Permissions) SetAccess(access UserAccess) *Permissions {
 	p.permissionsFlags = uint32(access) & ValidBitsMask
+	return p
 }
 
 // GetRawValue returns the raw 32-bit integer value of the permissions flags.
@@ -182,7 +183,7 @@ func (p *Permissions) CanPrintHighQuality() bool {
 }
 
 // SetPermissions sets or clears the specified permissions.
-func (p *Permissions) SetPermissions(permissions UserAccess, grant bool) {
+func (p *Permissions) SetPermissions(permissions UserAccess, grant bool) *Permissions {
 	if grant {
 		p.permissionsFlags |= uint32(permissions)
 	} else {
@@ -190,6 +191,7 @@ func (p *Permissions) SetPermissions(permissions UserAccess, grant bool) {
 	}
 	// Re-apply mask to ensure no invalid bits were set
 	p.permissionsFlags &= ValidBitsMask
+	return p
 }
 
 // String returns a string that represents the current permissions for debugging purposes.

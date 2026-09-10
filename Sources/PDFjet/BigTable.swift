@@ -38,27 +38,37 @@ public class BigTable {
         self.pages = []
     }
 
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> BigTable {
         for i in 0...self.numberOfColumns {
             self.vertLines[i] += x
         }
         self.y = y
+        return self
     }
 
-    public func setNumberOfColumns(_ numberOfColumns: Int) {
+    @discardableResult
+    public func setNumberOfColumns(_ numberOfColumns: Int) -> BigTable {
         self.numberOfColumns = numberOfColumns
+        return self
     }
 
-    public func setTextAlignment(_ column: Int, _ alignment: Alignment) {
+    @discardableResult
+    public func setTextAlignment(_ column: Int, _ alignment: Alignment) -> BigTable {
         self.alignment[column] = alignment
+        return self
     }
 
-    public func setBottomMargin(_ bottomMargin: Float) {
+    @discardableResult
+    public func setBottomMargin(_ bottomMargin: Float) -> BigTable {
         self.bottomMargin = bottomMargin
+        return self
     }
 
-    public func setLanguage(_ language: String) {
+    @discardableResult
+    public func setLanguage(_ language: String) -> BigTable {
         self.language = language
+        return self
     }
 
     public func getPages() -> [Page] {
@@ -168,7 +178,8 @@ public class BigTable {
         return Alignment.LEFT
     }
 
-    public func setTableData(_ fileName: String, _ delimiter: String) throws {
+    @discardableResult
+    public func setTableData(_ fileName: String, _ delimiter: String) throws -> BigTable {
         self.fileName = fileName
         self.delimiter = delimiter
         self.vertLines = [Float](repeating: 0.0, count: numberOfColumns + 1)
@@ -209,6 +220,7 @@ public class BigTable {
             vertLineX += widths[i]
             vertLines[i + 1] = vertLineX
         }
+        return self
     }
 
     public func complete() throws {

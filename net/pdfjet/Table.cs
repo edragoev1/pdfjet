@@ -103,9 +103,11 @@ public class Table {
      *
      * @param x the x coordinate of the top left point of the table.
      * @param y the y coordinate of the top left point of the table.
+     * @return this Table object.
      */
-    public void SetPosition(double x, double y) {
+    public Table SetPosition(double x, double y) {
         SetPosition((float) x, (float) y);
+        return this;
     }
 
     /**
@@ -113,9 +115,11 @@ public class Table {
      *
      * @param x the x coordinate of the top left point of the table.
      * @param y the y coordinate of the top left point of the table.
+     * @return this Table object.
      */
-    public void SetPosition(float x, float y) {
+    public Table SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
     }
 
     /**
@@ -134,26 +138,31 @@ public class Table {
      * Sets the bottom margin for this table.
      *
      * @param bottomMargin the margin.
+     * @return this Table object.
      */
-    public void SetBottomMargin(double bottomMargin) {
+    public Table SetBottomMargin(double bottomMargin) {
         this.bottomMargin = (float) bottomMargin;
+        return this;
     }
 
     /**
      * Sets the bottom margin for this table.
      *
      * @param bottomMargin the margin.
+     * @return this Table object.
      */
-    public void SetBottomMargin(float bottomMargin) {
+    public Table SetBottomMargin(float bottomMargin) {
         this.bottomMargin = bottomMargin;
+        return this;
     }
 
     /**
      * Sets the table data.
      *
      * @param tableData the table data.
+     * @return this Table object.
      */
-    public void SetData(List<List<Cell>> tableData) {
+    public Table SetData(List<List<Cell>> tableData) {
         this.tableData = tableData;
         this.numOfHeaderRows = 0;
         this.rendered = numOfHeaderRows;
@@ -167,6 +176,7 @@ public class Table {
                 row.Add(new Cell(font, ""));
             }
         }
+        return this;
     }
 
     /**
@@ -174,11 +184,13 @@ public class Table {
      *
      * @param tableData the table data.
      * @param numOfHeaderRows the number of header rows in this data.
+     * @return this Table object.
      */
-    public void SetData(List<List<Cell>> tableData, int numOfHeaderRows) {
+    public Table SetData(List<List<Cell>> tableData, int numOfHeaderRows) {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;
+        return this;
     }
 
     /**
@@ -230,8 +242,9 @@ public class Table {
      *
      * @param index the index of the specified column.
      * @param alignment the specified alignment. Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
+     * @return this Table object.
      */
-    public void SetTextAlignInColumn(int index, uint alignment) {
+    public Table SetTextAlignInColumn(int index, uint alignment) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
@@ -241,6 +254,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -248,8 +262,9 @@ public class Table {
      *
      * @param index the index of the specified column.
      * @param color the color specified as an integer.
+     * @return this Table object.
      */
-    public void SetTextColorInColumn(int index, int color) {
+    public Table SetTextColorInColumn(int index, int color) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
@@ -259,6 +274,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -266,8 +282,9 @@ public class Table {
      *
      * @param index the column index.
      * @param font the font.
+     * @return this Table object.
      */
-    public void SetFontInColumn(int index, Font font) {
+    public Table SetFontInColumn(int index, Font font) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
@@ -277,6 +294,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -284,8 +302,9 @@ public class Table {
      *
      * @param index the index of the specified row.
      * @param color the color specified as an integer.
+     * @return this Table object.
      */
-    public void SetTextColorInRow(int index, int color) {
+    public Table SetTextColorInRow(int index, int color) {
         if (index < tableData.Count) {
             List<Cell> row = tableData[index];
             foreach (Cell cell in row) {
@@ -295,6 +314,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -302,8 +322,9 @@ public class Table {
      *
      * @param index the row index.
      * @param font the font.
+     * @return this Table object.
      */
-    public void SetFontInRow(int index, Font font) {
+    public Table SetFontInRow(int index, Font font) {
         if (index < tableData.Count) {
             List<Cell> row = tableData[index];
             foreach (Cell cell in row) {
@@ -313,6 +334,7 @@ public class Table {
                 }
             }
         }
+        return this;
     }
 
     /**
@@ -320,13 +342,15 @@ public class Table {
      *
      * @param index the index of specified column.
      * @param width the specified width.
+     * @return this Table object.
      */
-    public void SetColumnWidth(int index, double width) {
+    public Table SetColumnWidth(int index, double width) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 row[index].SetWidth(width);
             }
         }
+        return this;
     }
 
     /**
@@ -544,39 +568,45 @@ public class Table {
     /**
      * Sets all table cells borders.
      * @param borders true or false.
+     * @return this Table object.
      */
-    public void SetCellBorders(bool borders) {
+    public Table SetCellBorders(bool borders) {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
                 cell.SetBorders(borders);
             }
         }
+        return this;
     }
 
     /**
      * Sets the color of the cell border lines.
      *
      * @param color the color of the cell border lines.
+     * @return this Table object.
      */
-    public void SetCellBordersColor(int color) {
+    public Table SetCellBordersColor(int color) {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
                 cell.SetStrokeColor(color);
             }
         }
+        return this;
     }
 
     /**
      * Sets the width of the cell border lines.
      *
      * @param width the width of the cell border lines.
+     * @return this Table object.
      */
-    public void SetCellBordersWidth(float width) {
+    public Table SetCellBordersWidth(float width) {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
                 cell.SetLineWidth(width);
             }
         }
+        return this;
     }
 
     // Sets the right border on all cells in the last column.
@@ -616,8 +646,10 @@ public class Table {
     /**
      * Auto adjusts the widths of all columns so that they are just wide enough to
      * hold the text without truncation.
+     *
+     * @return this Table object.
      */
-    public void SetColumnWidths() {
+    public Table SetColumnWidths() {
         float[] maxColWidths = new float[tableData[0].Count];
         foreach (List<Cell> row in tableData) {
             for (int i = 0; i < row.Count; i++) {
@@ -660,6 +692,7 @@ public class Table {
                 row[i].SetWidth(maxColWidths[i]);
             }
         }
+        return this;
     }
 
     private List<List<Cell>> AddExtraTableRows() {
@@ -828,7 +861,7 @@ public class Table {
         }
     }
 
-    public void SetVisibleColumns(params int[] columns) {
+    public Table SetVisibleColumns(params int[] columns) {
         List<List<Cell>> list = new List<List<Cell>>();
         List<int> visible = new List<int>(columns);
         foreach (List<Cell> row in tableData) {
@@ -841,6 +874,7 @@ public class Table {
             list.Add(row2);
         }
         tableData = list;
+        return this;
     }
 
     public int AppendRow() {
@@ -858,8 +892,9 @@ public class Table {
         }
     }
 
-    public void SetFirstPageTopMargin(float firstPageTopMargin) {
+    public Table SetFirstPageTopMargin(float firstPageTopMargin) {
         this.firstPageTopMargin = firstPageTopMargin;
+        return this;
     }
 }   // End of Table.cs
 }   // End of namespace PDFjet.NET

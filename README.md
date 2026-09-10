@@ -60,3 +60,9 @@ or `AES256`, because Swift has no AES-CBC implementation in its standard library
 on Linux (swift-crypto only ships AES-GCM), and this library deliberately has no
 dependencies on external packages. `Example_30` demonstrates encryption, so it
 exists for Java, C# and Go but not for Swift; `build-swift.sh` skips it.
+
+Public setters return the object they were called on, so calls can be chained,
+with one exception in Go: `SetPosition(x, y float32)` returns nothing, because
+a Go type only satisfies the `Drawable` interface with an exact signature
+match. Chain from `SetLocation` instead, or from `SetCenterXY` on `Arc` and
+`SetStartPoint` on `Line`.

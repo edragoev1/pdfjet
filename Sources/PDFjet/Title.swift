@@ -29,9 +29,11 @@ public class Title : Drawable {
         return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         self.prefix!.setLocation(x, y)
         self.textLine!.setLocation(x, y)
+        return self
     }
 
     @discardableResult

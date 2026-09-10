@@ -405,8 +405,9 @@ func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
 	return textLine
 }
 
-func (textLine *TextLine) SetColorMap(colorMap map[string]int32) {
+func (textLine *TextLine) SetColorMap(colorMap map[string]int32) *TextLine {
 	textLine.colorMap = colorMap
+	return textLine
 }
 
 func (textLine *TextLine) GetColorMap() map[string]int32 {

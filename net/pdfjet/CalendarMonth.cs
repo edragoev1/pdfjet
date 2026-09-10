@@ -41,28 +41,38 @@ public class CalendarMonth : IDrawable {
         dy = dx;
     }
 
-    public void SetHeadFont(Font font) {
+    public CalendarMonth SetHeadFont(Font font) {
         this.f1 = font;
+        return this;
     }
 
-    public void SetBodyFont(Font font) {
+    public CalendarMonth SetBodyFont(Font font) {
         this.f2 = font;
+        return this;
     }
 
-    public void SetFontSize(float fontSize) {
+    public CalendarMonth SetFontSize(float fontSize) {
         this.fontSize = fontSize;
+        return this;
     }
 
-    public void SetCellWidth(float width) {
+    public CalendarMonth SetCellWidth(float width) {
         this.dx = width;
+        return this;
     }
 
-    public void SetCellHeight(float height) {
+    public CalendarMonth SetCellHeight(float height) {
         this.dy = height;
+        return this;
     }
 
-    public void SetPosition(float x, float y) {
+    public CalendarMonth SetPosition(float x, float y) {
         SetLocation(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     public CalendarMonth SetLocation(float x, float y) {

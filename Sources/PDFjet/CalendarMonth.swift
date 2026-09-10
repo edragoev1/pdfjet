@@ -41,29 +41,41 @@ public class CalendarMonth : Drawable {
         dy = dx
     }
 
-    public func setHeadFont(_ font: Font) {
+    @discardableResult
+    public func setHeadFont(_ font: Font) -> CalendarMonth {
         self.f1 = font
+        return self
     }
 
-    public func setBodyFont(_ font: Font) {
+    @discardableResult
+    public func setBodyFont(_ font: Font) -> CalendarMonth {
         self.f2 = font
+        return self
     }
 
-    public func setCellWidth(_ width: Float) {
+    @discardableResult
+    public func setCellWidth(_ width: Float) -> CalendarMonth {
         self.dx = width
+        return self
     }
 
-    public func setCellHeight(_ height: Float) {
+    @discardableResult
+    public func setCellHeight(_ height: Float) -> CalendarMonth {
         self.dy = height
+        return self
     }
 
-    public func setPosition(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setPosition(_ x: Float, _ y: Float) -> Self {
         setLocation(x, y)
+        return self
     }
 
-    public func setLocation(_ x: Float, _ y: Float) {
+    @discardableResult
+    public func setLocation(_ x: Float, _ y: Float) -> CalendarMonth {
         self.x1 = x
         self.y1 = y
+        return self
     }
 
     @discardableResult

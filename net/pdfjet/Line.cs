@@ -99,8 +99,13 @@ public class Line : IDrawable {
         return this;
     }
 
-    public void SetPosition(float x, float y) {
+    public Line SetPosition(float x, float y) {
         SetStartPoint(x, y);
+        return this;
+    }
+
+    IDrawable IDrawable.SetPosition(float x, float y) {
+        return SetPosition(x, y);
     }
 
     public Line SetLocation(float x, float y) {
