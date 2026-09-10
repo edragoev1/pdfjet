@@ -16,7 +16,6 @@ public class TextBlock : Drawable {
     internal var fallbackFont: Font?
     internal var fontSize: Float = 12.0
     internal var textContent: String
-    internal var textLineHeight: Float = 1.0
     internal var textPadding: Float = 0.0
 
     private var fillColor: [Float]?
@@ -145,13 +144,6 @@ public class TextBlock : Drawable {
     @discardableResult
     public func setBorderWidth(_ borderWidth: Float) -> TextBlock {
         self.borderWidth = borderWidth
-        return self
-    }
-
-    /// Sets the text line height. The value is stored but not used when drawing.
-    @discardableResult
-    public func setTextLineHeight(_ lineHeight: Float) -> TextBlock {
-        self.textLineHeight = lineHeight
         return self
     }
 
