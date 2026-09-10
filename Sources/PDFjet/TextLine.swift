@@ -50,7 +50,7 @@ public class TextLine : Drawable {
     ///
     /// Constructor for creating text line objects.
     ///
-    /// - Parameter font the font to use.
+    /// - Parameter font: the font to use.
     ///
     public init(_ font: Font) {
         self.font = font
@@ -61,8 +61,8 @@ public class TextLine : Drawable {
     ///
     /// Constructor for creating text line objects.
     ///
-    /// - Parameter font the font to use.
-    /// - Parameter text the text.
+    /// - Parameter font: the font to use.
+    /// - Parameter text: the text.
     ///
     public init(_ font: Font, _ text: String) {
         self.font = font
@@ -75,7 +75,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the text.
     ///
-    /// - Parameter text the text.
+    /// - Parameter text: the text.
     /// - Returns: self.TextLine.
     ///
     @discardableResult
@@ -97,8 +97,8 @@ public class TextLine : Drawable {
     ///
     /// Sets the location where the text line will be drawn on the page.
     ///
-    /// - Parameter x the x coordinate of the text line.
-    /// - Parameter y the y coordinate of the text line.
+    /// - Parameter x: the x coordinate of the text line.
+    /// - Parameter y: the y coordinate of the text line.
     /// - Returns: text TextLine.
     ///
     @discardableResult
@@ -111,7 +111,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the text line font.
     ///
-    /// - Parameter font the font to use.
+    /// - Parameter font: the font to use.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -132,7 +132,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the text line font size.
     ///
-    /// - Parameter fontSize the fontSize to use.
+    /// - Parameter fontSize: the fontSize to use.
     /// - Returns: text TextLine.
     ///
     @discardableResult
@@ -149,7 +149,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the fallback font.
     ///
-    /// - Parameter fallbackFont the fallback font.
+    /// - Parameter fallbackFont: the fallback font.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -161,7 +161,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the text line fallback font size.
     ///
-    /// - Parameter fallbackFontSize the fallback font size.
+    /// - Parameter fallbackFontSize: the fallback font size.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -297,7 +297,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the URI for the "click text line" action.
     ///
-    /// - Parameter uri the URI
+    /// - Parameter uri: the URI
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -318,7 +318,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the destination key for the action.
     ///
-    /// - Parameter key the destination name.
+    /// - Parameter key: the destination name.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -340,7 +340,7 @@ public class TextLine : Drawable {
     /// Sets the underline variable.
     /// If the value of the underline variable is 'true' - the text is underlined.
     ///
-    /// - Parameter underline the underline flag.
+    /// - Parameter underline: the underline flag.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -362,7 +362,7 @@ public class TextLine : Drawable {
     /// Sets the strike variable.
     /// If the value of the strike variable is 'true' - a strike line is drawn through the text.
     ///
-    /// - Parameter strikeout the strikeout flag.
+    /// - Parameter strikeout: the strikeout flag.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -383,7 +383,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the direction in which to draw the text.
     ///
-    /// - Parameter degrees the number of degrees.
+    /// - Parameter degrees: the number of degrees.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -404,7 +404,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the text effect.
     ///
-    /// - Parameter textEffect Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
+    /// - Parameter textEffect: Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -432,7 +432,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the vertical offset of the text.
     ///
-    /// - Parameter verticalOffset the vertical offset.
+    /// - Parameter verticalOffset: the vertical offset.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -465,7 +465,7 @@ public class TextLine : Drawable {
     ///
     /// Sets the alternate description of the text line.
     ///
-    /// - Parameter altDescription the alternate description of the text line.
+    /// - Parameter altDescription: the alternate description of the text line.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -531,10 +531,9 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Draws the text line on the specified page if the draw parameter is true.
+    /// Draws the text line on the specified page.
     ///
-    /// - Parameter page the page to draw text line on.
-    /// - Parameter draw if draw is false - no action is performed.
+    /// - Parameter page: the page to draw text line on.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

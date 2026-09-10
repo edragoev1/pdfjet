@@ -94,9 +94,8 @@ public class Form : Drawable {
     /**
      * Draws this Form on the specified page.
      *
-     * @param page the page to draw this form on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
+     * - Parameter page: the page to draw this form on.
+     * - Returns: x and y coordinates of the bottom right corner of this component.
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

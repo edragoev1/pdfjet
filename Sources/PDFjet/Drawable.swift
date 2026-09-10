@@ -16,9 +16,8 @@ public protocol Drawable {
     /**
      *  Draw the component implementing this interface on the PDF page.
      *
-     *  @param page the page to draw on.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception
+     *  - Parameter page: the page to draw on.
+     *  - Returns: x and y coordinates of the bottom right corner of this component.
      */
     @discardableResult
     func drawOn(_ page: Page?) -> [Float]
@@ -26,9 +25,9 @@ public protocol Drawable {
     /**
      *  Set the x and y coordinates of the drawable object.
      *
-     *  @param x the x location
-     *  @param y the y location
-     *  @return this drawable object.
+     *  - Parameter x: the x location
+     *  - Parameter y: the y location
+     *  - Returns: this drawable object.
      */
     @discardableResult
     func setLocation(_ x: Float, _ y: Float) -> Self

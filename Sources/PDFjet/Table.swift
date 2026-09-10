@@ -99,8 +99,8 @@ public class Table {
     ///
     /// Sets the location (x, y) of the top left corner of this table on the page.
     ///
-    /// @param x the x coordinate of the top left point of the table.
-    /// @param y the y coordinate of the top left point of the table.
+    /// - Parameter x: the x coordinate of the top left point of the table.
+    /// - Parameter y: the y coordinate of the top left point of the table.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Table {
@@ -112,7 +112,7 @@ public class Table {
     ///
     /// Sets the bottom margin for this table.
     ///
-    /// @param bottomMargin the margin.
+    /// - Parameter bottomMargin: the margin.
     ///
     @discardableResult
     public func setBottomMargin(_ bottomMargin: Float) -> Table {
@@ -127,7 +127,7 @@ public class Table {
     /// All cell should be an unique object and you can not reuse blank cell objects.
     /// Even if one or more cells have colspan bigger than zero the number of cells in the row will not change.
     ///
-    /// @param tableData the table data.
+    /// - Parameter tableData: the table data.
     ///
     @discardableResult
     public func setData(_ tableData: [[Cell]]) -> Table {
@@ -151,8 +151,8 @@ public class Table {
     ///
     /// Sets the table data and specifies the number of header rows in this data.
     ///
-    /// @param tableData the table data.
-    /// @param numOfHeaderRows the number of header rows in this data.
+    /// - Parameter tableData: the table data.
+    /// - Parameter numOfHeaderRows: the number of header rows in this data.
     ///
     @discardableResult
     public func setData(_ tableData: [[Cell]], _ numOfHeaderRows: Int) -> Table {
@@ -226,8 +226,8 @@ public class Table {
     /// Sets the text alignment in the specified column.
     /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
     ///
-    /// @param index the index of the specified column.
-    /// @param alignment the specified alignment.
+    /// - Parameter index: the index of the specified column.
+    /// - Parameter alignment: the specified alignment.
     ///
     @discardableResult
     public func setTextAlignInColumn(_ index: Int, _ alignment: UInt32) throws -> Table {
@@ -246,8 +246,8 @@ public class Table {
     ///
     /// Sets the color of the text in the specified column.
     ///
-    /// @param index the index of the specified column.
-    /// @param color the color specified as an integer.
+    /// - Parameter index: the index of the specified column.
+    /// - Parameter textColor: the text color as an array of red, green and blue values.
     ///
     @discardableResult
     public func setTextColorInColumn(_ index: Int, _ textColor: [Float]) -> Table {
@@ -266,8 +266,8 @@ public class Table {
     ///
     /// Sets the font for the specified column.
     ///
-    /// @param index the column index.
-    /// @param font the font.
+    /// - Parameter index: the column index.
+    /// - Parameter font: the font.
     ///
     @discardableResult
     public func setFontInColumn(_ index: Int, _ font: Font) -> Table {
@@ -286,8 +286,8 @@ public class Table {
     ///
     /// Sets the color of the text in the specified row.
     ///
-    /// @param index the index of the specified row.
-    /// @param color the color specified as an integer.
+    /// - Parameter index: the index of the specified row.
+    /// - Parameter color: the color specified as an integer.
     ///
     @discardableResult
     public func setTextColorInRow(_ index: Int, _ color: Int32) -> Table {
@@ -306,8 +306,8 @@ public class Table {
     ///
     /// Sets the font for the specified row.
     ///
-    /// @param index the row index.
-    /// @param font the font.
+    /// - Parameter index: the row index.
+    /// - Parameter font: the font.
     ///
     @discardableResult
     public func setFontInRow(_ index: Int, _ font: Font) -> Table {
@@ -326,8 +326,8 @@ public class Table {
     ///
     /// Sets the width of the column with the specified index.
     ///
-    /// @param index the index of specified column.
-    /// @param width the specified width.
+    /// - Parameter index: the index of specified column.
+    /// - Parameter width: the specified width.
     ///
     @discardableResult
     public func setColumnWidth(_ index: Int, _ width: Float) -> Table {
@@ -346,8 +346,8 @@ public class Table {
     ///
     /// Returns the column width of the column at the specified index.
     ///
-    /// @param index the index of the column.
-    /// @return the width of the column.
+    /// - Parameter index: the index of the column.
+    /// - Returns: the width of the column.
     ///
     public func getColumnWidth(_ index: Int) -> Float {
         return getCellAtRowColumn(0, index).getWidth()
@@ -356,10 +356,10 @@ public class Table {
     ///
     /// Returns the cell at the specified row and column.
     ///
-    /// @param row the specified row.
-    /// @param col the specified column.
+    /// - Parameter row: the specified row.
+    /// - Parameter col: the specified column.
     ///
-    /// @return the cell at the specified row and column.
+    /// - Returns: the cell at the specified row and column.
     ///
     public func getCellAt(_ row: Int, _ col: Int) -> Cell {
         if row >= 0 {
@@ -371,10 +371,10 @@ public class Table {
     ///
     /// Returns the cell at the specified row and column.
     ///
-    /// @param row the specified row.
-    /// @param col the specified column.
+    /// - Parameter row: the specified row.
+    /// - Parameter col: the specified column.
     ///
-    /// @return the cell at the specified row and column.
+    /// - Returns: the cell at the specified row and column.
     ///
     public func getCellAtRowColumn(_ row: Int, _ col: Int) -> Cell {
         return getCellAt(row, col)
@@ -383,9 +383,9 @@ public class Table {
     ///
     /// Returns a list of cell for the specified row.
     ///
-    /// @param index the index of the specified row.
+    /// - Parameter index: the index of the specified row.
     ///
-    /// @return the list of cells.
+    /// - Returns: the list of cells.
     ///
     public func getRow(_ index: Int) -> [Cell] {
         return tableData[index]
@@ -399,9 +399,9 @@ public class Table {
     ///
     /// Returns a list of cell for the specified column.
     ///
-    /// @param index the index of the specified column.
+    /// - Parameter index: the index of the specified column.
     ///
-    /// @return the list of cells.
+    /// - Returns: the list of cells.
     ///
     public func getColumn(_ index: Int) -> [Cell] {
         var column = [Cell]()
@@ -421,10 +421,9 @@ public class Table {
     ///
     /// Draws this table on the specified page.
     ///
-    /// @param page the page to draw this table on.
-    /// @param draw if false - do not draw the table. Use to only find out where the table ends.
+    /// - Parameter page: the page to draw this table on.
     ///
-    /// @return Point the point on the page where to draw the next component.
+    /// - Returns: Point the point on the page where to draw the next component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -543,7 +542,7 @@ public class Table {
     ///
     /// Returns the width of this table when drawn on a page.
     ///
-    /// @return the width of this table.
+    /// - Returns: the width of this table.
     ///
     public func getWidth() -> Float {
         var table_width: Float = 0.0
@@ -559,14 +558,14 @@ public class Table {
     ///
     /// Returns the number of data rows that have been rendered so far.
     ///
-    /// @return the number of data rows that have been rendered so far.
+    /// - Returns: the number of data rows that have been rendered so far.
     ///
     public func getRowsRendered() -> Int {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows
     }
 
     ///
-    /// Sets all table cells borders to <strong>false</strong> or <strong>true</strong>.
+    /// Sets all table cells borders to `false` or `true`.
     ///
     @discardableResult
     public func setCellBorders(_ border: Bool) -> Table {
@@ -584,7 +583,7 @@ public class Table {
     ///
     /// Sets the color of the cell border lines.
     ///
-    /// @param color the color of the cell border lines.
+    /// - Parameter color: the color of the cell border lines.
     ///
     @discardableResult
     public func setCellBordersColor(_ color: Int32) -> Table {
@@ -599,7 +598,7 @@ public class Table {
     ///
     /// Sets the width of the cell border lines.
     ///
-    /// @param width the width of the border lines.
+    /// - Parameter width: the width of the border lines.
     ///
     @discardableResult
     public func setCellBordersWidth(_ width: Float) -> Table {
@@ -796,7 +795,7 @@ public class Table {
     ///
     /// Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
     ///
-    /// @return the number of vertical cells needed to wrap around the cell text.
+    /// - Returns: the number of vertical cells needed to wrap around the cell text.
     ///
     public func getNumVerCells(_ row: [Cell], _ index: Int) -> Int {
         let cell = row[index]

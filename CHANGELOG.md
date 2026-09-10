@@ -91,6 +91,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   `net/`; the site's home page links to it. It covers the 56 packages in `src`
   and leaves out the example programs in `src/examples`. Install doc2go once
   with `go install go.abhg.dev/doc2go@v0.12.2`.
+- The Swift API reference is built with DocC, which comes with the Swift
+  toolchain, into `docs/swift` and published under `swift/`; the site's home
+  page links to it. `generate-documentation.sh` extracts the public API with
+  `swift package dump-symbol-graph`, and `swift/` redirects to the `PDFjet`
+  module page.
+- The Swift doc comments use DocC markup, so DocC renders them and reports no
+  warnings: `- Parameter name:`, `- Returns:` and `- Throws:` instead of the
+  Javadoc tags `@param`, `@return` and `@throws`, which DocC showed as plain
+  text, Markdown instead of HTML tags, and fenced code blocks instead of
+  `<pre>`. `- Parameter` lines without the colon DocC needs got one. `@throws`
+  lines on functions that do not throw are removed, and parameter
+  descriptions that named the wrong parameter now match the signatures.
 - Every exported Go identifier and every Go package has a doc comment, and
   the C# XML docs and the Swift public API have no undocumented members.
   Javadoc also reports no warnings for the protected fields and methods.

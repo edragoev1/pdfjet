@@ -76,8 +76,8 @@ public class Point : Drawable {
     ///
     /// Constructor for creating point objects.
     ///
-    /// - Parameter x the x coordinate of this point when drawn on the page.
-    /// - Parameter y the y coordinate of this point when drawn on the page.
+    /// - Parameter x: the x coordinate of this point when drawn on the page.
+    /// - Parameter y: the y coordinate of this point when drawn on the page.
     ///
     public init(_ x: Float, _ y: Float) {
         self.x = x
@@ -87,9 +87,9 @@ public class Point : Drawable {
     ///
     /// Constructor for creating point objects.
     ///
-    /// - Parameter x the x coordinate of this point when drawn on the page.
-    /// - Parameter y the y coordinate of this point when drawn on the page.
-    /// - Parameter isControlPoint true if this point is one of the points specifying a curve.
+    /// - Parameter x: the x coordinate of this point when drawn on the page.
+    /// - Parameter y: the y coordinate of this point when drawn on the page.
+    /// - Parameter controlPoint: the control point type: Point.controlPointC, Point.controlPointV or Point.controlPointY.
     ///
     public init(
             _ x: Float,
@@ -103,8 +103,8 @@ public class Point : Drawable {
     ///
     /// Sets the location (x, y) of this point.
     ///
-    /// - Parameter x the x coordinate of this point when drawn on the page.
-    /// - Parameter y the y coordinate of this point when drawn on the page.
+    /// - Parameter x: the x coordinate of this point when drawn on the page.
+    /// - Parameter y: the y coordinate of this point when drawn on the page.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -116,7 +116,7 @@ public class Point : Drawable {
     ///
     /// Sets the x coordinate of this point.
     ///
-    /// - Parameter x the x coordinate of this point when drawn on the page.
+    /// - Parameter x: the x coordinate of this point when drawn on the page.
     ///
     @discardableResult
     public func setX(_ x: Float) -> Point {
@@ -136,7 +136,7 @@ public class Point : Drawable {
     ///
     /// Sets the y coordinate of this point.
     ///
-    /// - Parameter y the y coordinate of this point when drawn on the page.
+    /// - Parameter y: the y coordinate of this point when drawn on the page.
     ///
     @discardableResult
     public func setY(_ y: Float) -> Point {
@@ -156,7 +156,7 @@ public class Point : Drawable {
     ///
     /// Sets the radius of this point.
     ///
-    /// - Parameter r the radius.
+    /// - Parameter r: the radius.
     ///
     @discardableResult
     public func setRadius(_ r: Float) -> Point {
@@ -176,23 +176,9 @@ public class Point : Drawable {
     ///
     /// Sets the shape of this point.
     ///
-    /// - Parameter shape the shape of this point. Supported values:
-    /// <pre>
-    /// Point.INVISIBLE
-    /// Point.CIRCLE
-    /// Point.DIAMOND
-    /// Point.BOX
-    /// Point.PLUS
-    /// Point.H_DASH
-    /// Point.V_DASH
-    /// Point.MULTIPLY
-    /// Point.STAR
-    /// Point.X_MARK
-    /// Point.UP_ARROW
-    /// Point.DOWN_ARROW
-    /// Point.LEFT_ARROW
-    /// Point.RIGHT_ARROW
-    /// </pre>
+    /// - Parameter shape: the shape of this point: Point.INVISIBLE, Point.CIRCLE, Point.DIAMOND,
+    ///   Point.BOX, Point.PLUS, Point.H_DASH, Point.V_DASH, Point.MULTIPLY, Point.STAR,
+    ///   Point.X_MARK, Point.UP_ARROW, Point.DOWN_ARROW, Point.LEFT_ARROW or Point.RIGHT_ARROW.
     ///
     @discardableResult
     public func setShape(_ shape: Int) -> Point {
@@ -212,7 +198,7 @@ public class Point : Drawable {
     ///
     /// Sets the fill color for this point.
     ///
-    /// - Parameter fillColor the color specified as Int32.
+    /// - Parameter fillColor: the color specified as Int32.
     ///
     @discardableResult
     public func setFillColor(_ fillColor: Int32) -> Point {
@@ -225,7 +211,7 @@ public class Point : Drawable {
     ///
     /// Sets the fill color for this point.
     ///
-    /// - Parameter fillColor the color specified as float array.
+    /// - Parameter fillColor: the color specified as float array.
     ///
     @discardableResult
     public func setFillColor(_ fillColor: [Float]) -> Point {
@@ -254,7 +240,7 @@ public class Point : Drawable {
     ///
     /// Sets the stroke color for this point.
     ///
-    /// - Parameter strokeColor the color specified as float array.
+    /// - Parameter strokeColor: the color specified as float array.
     ///
     @discardableResult
     public func setStrokeColor(_ strokeColor: [Float]) -> Point {
@@ -274,7 +260,7 @@ public class Point : Drawable {
     ///
     /// Sets the stroke width.
     ///
-    /// - Parameter strokeWidth the stroke width.
+    /// - Parameter strokeWidth: the stroke width.
     ///
     @discardableResult
     public func setStrokeWidth(_ strokeWidth: Float) -> Point {
@@ -298,9 +284,9 @@ public class Point : Drawable {
     /// alternating dashes and gaps.
     /// The dash phase specifies the distance into the dash pattern at which to start the dash.
     /// The elements of both the dash array and the dash phase are expressed in user space units.
-    /// <pre>
     /// Examples of line dash patterns:
     ///
+    /// ```
     ///     "[Array] Phase"     Appearance          Description
     ///     _______________     _________________   ____________________________________
     ///
@@ -310,9 +296,9 @@ public class Point : Drawable {
     ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
     ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
     ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-    /// </pre>
+    /// ```
     ///
-    /// - Parameter strokeDashPattern the line dash pattern.
+    /// - Parameter strokeDashPattern: the line dash pattern.
     ///
     @discardableResult
     public func setStrokeDashPattern(_ strokeDashPattern: String) -> Point {
@@ -341,7 +327,7 @@ public class Point : Drawable {
     ///
     /// Sets the URI for the "click point" action.
     ///
-    /// - Parameter uri the URI
+    /// - Parameter uri: the URI
     ///
     @discardableResult
     public func setURIAction(_ uri: String) -> Point {
@@ -361,7 +347,7 @@ public class Point : Drawable {
     ///
     /// Sets the point text.
     ///
-    /// - Parameter text the text.
+    /// - Parameter text: the text.
     ///
     @discardableResult
     public func setText(_ text: String) -> Point {
@@ -381,7 +367,7 @@ public class Point : Drawable {
     ///
     /// Sets the point's text color.
     ///
-    /// - Parameter textColor the text color.
+    /// - Parameter textColor: the text color.
     ///
     @discardableResult
     public func setTextColor(_ textColor: Int32) -> Point {
@@ -410,7 +396,7 @@ public class Point : Drawable {
     ///
     /// Sets the point's text direction.
     ///
-    /// - Parameter textDirection the text direction.
+    /// - Parameter textDirection: the text direction.
     ///
     @discardableResult
     public func setTextDirection(_ textDirection: Int) -> Point {
@@ -430,7 +416,7 @@ public class Point : Drawable {
     ///
     /// Sets the point alignment inside table cell.
     ///
-    /// - Parameter align the alignment value.
+    /// - Parameter align: the alignment value.
     ///
     @discardableResult
     public func setAlignment(_ align: UInt32) -> Point {
@@ -450,7 +436,7 @@ public class Point : Drawable {
     ///
     /// Sets the path operator used to paint this point.
     ///
-    /// - Parameter pathOperator the path painting operator.
+    /// - Parameter pathOperator: the path painting operator.
     ///
     @discardableResult
     public func setPathOperator(_ pathOperator: PathOperator) -> Point {
@@ -470,9 +456,8 @@ public class Point : Drawable {
     ///
     /// Draws this point on the specified page.
     ///
-    /// - Parameter page the page to draw this point on.
+    /// - Parameter page: the page to draw this point on.
     /// - Returns: x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

@@ -78,8 +78,8 @@ public class Bidi {
      * Reorders the string so that Arabic and Hebrew text flows from right
      * to left while numbers and Latin text flows from left to right.
      *
-     * @param str the input string.
-     * @return the reordered string.
+     * - Parameter str: the input string.
+     * - Returns: the reordered string.
      */
     public static func reorderVisually(_ str: String) -> String {
         var buf1 = String()

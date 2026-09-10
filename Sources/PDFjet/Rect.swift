@@ -67,7 +67,7 @@ public class Rect : Drawable {
      *   - w: the width of this rect.
      *   - h: the height of this rect.
      *
-     * @return this Rect object.
+     * - Returns: this Rect object.
      */
     @discardableResult
     public func setSize(_ w: Float, _ h: Float) -> Rect {
@@ -118,10 +118,10 @@ public class Rect : Drawable {
     }
 
     /**
-     * Sets the width of this line.
-     * - Parameter width: the width.
+     * Sets the border width. Same as setBorderWidth.
+     * - Parameter borderWidth: the border width.
      *
-     * @return this Rect object.
+     * - Returns: this Rect object.
      */
     @discardableResult
     public func setLineWidth(_ borderWidth: Float) -> Rect {
@@ -133,7 +133,7 @@ public class Rect : Drawable {
      * Sets the corner radius.
      * - Parameter r: the radius.
      *
-     * @return this Rect object.
+     * - Returns: this Rect object.
      */
     @discardableResult
     public func setCornerRadius(_ r: Float) -> Rect {
@@ -145,7 +145,7 @@ public class Rect : Drawable {
      * Sets the URI for the "click rect" action.
      * - Parameter uri: the URI
      *
-     * @return this Rect object.
+     * - Returns: this Rect object.
      */
     @discardableResult
     public func setURIAction(_ uri: String) -> Rect {
@@ -157,7 +157,7 @@ public class Rect : Drawable {
      * Sets the destination key for the action.
      * - Parameter key: the destination name.
      *
-     * @return this Rect object.
+     * - Returns: this Rect object.
      */
     @discardableResult
     public func setGoToAction(_ key: String) -> Rect {

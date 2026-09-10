@@ -24,9 +24,9 @@ public class DonutChart {
     ///
     /// Creates a donut chart or a pie chart.
     ///
-    /// @param f1 the font for the slice labels.
-    /// @param f2 the font for the percentages drawn inside the slices.
-    /// @param isDonutChart true for a donut chart, false for a pie chart.
+    /// - Parameter f1: the font for the slice labels.
+    /// - Parameter f2: the font for the percentages drawn inside the slices.
+    /// - Parameter isDonutChart: true for a donut chart, false for a pie chart.
     ///
     public init(_ f1: Font, _ f2: Font, _ isDonutChart: Bool) {
         self.f1 = f1

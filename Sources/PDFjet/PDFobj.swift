@@ -31,7 +31,7 @@ public final class PDFobj {
     ///
     /// Returns the object dictionary.
     ///
-    /// @return the object dictionary.
+    /// - Returns: the object dictionary.
     ///
     public final func getDict() -> [String] {
         return self.dict
@@ -40,7 +40,7 @@ public final class PDFobj {
     ///
     /// Returns the uncompressed stream data.
     ///
-    /// @return the uncompressed stream data.
+    /// - Returns: the uncompressed stream data.
     ///
     public final func getData() -> [UInt8] {
         return self.data
@@ -84,9 +84,9 @@ public final class PDFobj {
     ///
     /// Returns the dictionary value for the specified key.
     ///
-    /// @param key the specified key.
+    /// - Parameter key: the specified key.
     ///
-    /// @return the value.
+    /// - Returns: the value.
     ///
     public final func getValue(_ key: String) -> String {
         var i = 0
@@ -467,8 +467,8 @@ public final class PDFobj {
     /// The original code was provided by Stefan Ostermann author of ScribMaster and HandWrite Pro.
     /// Additional code to handle PDFs with indirect array of stream objects was written by EDragoev.
     ///
-    /// @param content
-    /// @param objects
+    /// - Parameter content: the content stream to add.
+    /// - Parameter objects: the objects of the PDF, which receive the new content object.
     ///
     public final func addPrefixContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
         let obj = PDFobj()

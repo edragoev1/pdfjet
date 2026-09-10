@@ -56,7 +56,7 @@ public class TextBox : Drawable {
     ///
     /// Creates a text box and sets the font.
     ///
-    /// - Parameter font the font.
+    /// - Parameter font: the font.
     ///
     public init(_ font: Font) {
         self.font = font
@@ -66,8 +66,8 @@ public class TextBox : Drawable {
     ///
     /// Creates a text box and sets the font and the text.
     ///
-    /// - Parameter font the font.
-    /// - Parameter text the text.
+    /// - Parameter font: the font.
+    /// - Parameter text: the text.
     ///
     public init(_ font: Font, _ text: String?) {
         self.font = font
@@ -563,8 +563,8 @@ public class TextBox : Drawable {
     ///
     /// Draws this text box on the specified page.
     ///
-    /// - Parameter page the Page where the TextBox is to be drawn.
-    /// - Returns x and y coordinates of the bottom right corner of this component.
+    /// - Parameter page: the Page where the TextBox is to be drawn.
+    /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

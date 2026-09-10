@@ -35,8 +35,8 @@ public class RadioButton : Drawable {
     ///
     /// Sets the font size to use for this text line.
     ///
-    /// @param fontSize the fontSize to use.
-    /// @return this RadioButton.
+    /// - Parameter fontSize: the fontSize to use.
+    /// - Returns: this RadioButton.
     ///
     public func setFontSize(_ fontSize: Float) -> RadioButton {
         self.font.setSize(fontSize)
@@ -46,9 +46,9 @@ public class RadioButton : Drawable {
     ///
     /// Set the x,y location on the Page.
     ///
-    /// @param x the x coordinate on the Page.
-    /// @param y the y coordinate on the Page.
-    /// @return this RadioButton.
+    /// - Parameter x: the x coordinate on the Page.
+    /// - Parameter y: the y coordinate on the Page.
+    /// - Returns: this RadioButton.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -60,8 +60,8 @@ public class RadioButton : Drawable {
     ///
     /// Sets the URI for the "click text line" action.
     ///
-    /// @param uri the URI.
-    /// @return this RadioButton.
+    /// - Parameter uri: the URI.
+    /// - Returns: this RadioButton.
     ///
     @discardableResult
     public func setURIAction(_ uri: String) -> RadioButton {
@@ -72,8 +72,8 @@ public class RadioButton : Drawable {
     ///
     /// Selects or deselects this radio button.
     ///
-    /// @param selected the selection flag.
-    /// @return this RadioButton.
+    /// - Parameter selected: the selection flag.
+    /// - Returns: this RadioButton.
     ///
     @discardableResult
     public func select(_ selected: Bool) -> RadioButton {
@@ -84,8 +84,8 @@ public class RadioButton : Drawable {
     ///
     /// Sets the alternate description of this radio button.
     ///
-    /// @param altDescription the alternate description of the radio button.
-    /// @return this RadioButton.
+    /// - Parameter altDescription: the alternate description of the radio button.
+    /// - Returns: this RadioButton.
     ///
     public func setAltDescription(_ altDescription: String) -> RadioButton {
         self.altDescription = altDescription
@@ -95,8 +95,8 @@ public class RadioButton : Drawable {
     ///
     /// Sets the actual text for this radio button.
     ///
-    /// @param actualText the actual text for the radio button.
-    /// @return this RadioButton.
+    /// - Parameter actualText: the actual text for the radio button.
+    /// - Returns: this RadioButton.
     ///
     public func setActualText(_ actualText: String) -> RadioButton {
         self.actualText = actualText
@@ -106,9 +106,8 @@ public class RadioButton : Drawable {
     ///
     /// Draws this RadioButton on the specified Page.
     ///
-    /// @param page the Page where the RadioButton is to be drawn.
-    /// @return x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
+    /// - Parameter page: the Page where the RadioButton is to be drawn.
+    /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

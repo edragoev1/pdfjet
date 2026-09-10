@@ -7,7 +7,8 @@
 
 /**
  * Used to specify the pen and brush colors.
- * @see <a href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</a>
+ *
+ * - SeeAlso: [CSS color keywords](http://www.w3.org/TR/css3-color/#svg-color)
  */
 public class Color {
     /// The color named "transparent"

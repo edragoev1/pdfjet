@@ -34,10 +34,10 @@ public class BigTable {
     ///
     /// Creates a table with the specified fonts and page size.
     ///
-    /// @param pdf the PDF.
-    /// @param f1 the header font.
-    /// @param f2 the body font.
-    /// @param pageSize the page size, for example Letter.PORTRAIT.
+    /// - Parameter pdf: the PDF.
+    /// - Parameter f1: the header font.
+    /// - Parameter f2: the body font.
+    /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
     ///
     public init(_ pdf: PDF, _ f1: Font, _ f2: Font, _ pageSize: [Float]) {
         self.pdf = pdf
@@ -196,9 +196,9 @@ public class BigTable {
     ///
     /// Reads the data file to set the column widths, the column alignment and the header fields.
     ///
-    /// @param fileName the data file.
-    /// @param delimiter the field delimiter.
-    /// @return this BigTable object.
+    /// - Parameter fileName: the data file.
+    /// - Parameter delimiter: the field delimiter.
+    /// - Returns: this BigTable object.
     ///
     @discardableResult
     public func setTableData(_ fileName: String, _ delimiter: String) throws -> BigTable {

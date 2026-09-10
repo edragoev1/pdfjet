@@ -8,14 +8,13 @@ import Foundation
 
 /**
  * Used to embed PNG images in the PDF document.
- * <p>
- * <strong>Please note:</strong>
- * <p>
- *     Interlaced images are not supported.
- * <p>
- *     To convert interlaced image to non-interlaced image use OptiPNG:
- * <p>
- *     optipng -i0 -o7 myimage.png
+ *
+ * **Please note:** Interlaced images are not supported.
+ * To convert an interlaced image to a non-interlaced image, use OptiPNG:
+ *
+ * ```
+ * optipng -i0 -o7 myimage.png
+ * ```
  */
 public class PNGImage {
     var w: Int?                         // Image width in pixels

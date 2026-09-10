@@ -86,8 +86,8 @@ public class Chart : Drawable {
     /**
      * Create a XY chart object.
      *
-     * @param f1 the font used for the chart title.
-     * @param f2 the font used for the X and Y axis titles.
+     * - Parameter f1: the font used for the chart title.
+     * - Parameter f2: the font used for the X and Y axis titles.
      */
     public init(_ f1: Font, _ f2: Font) {
         self.f1 = f1
@@ -97,8 +97,8 @@ public class Chart : Drawable {
     /**
      * Sets the title of the chart.
      *
-     * @param title the title text.
-     * @return this Chart object.
+     * - Parameter title: the title text.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setTitle(_ title: String) -> Chart {
@@ -109,8 +109,8 @@ public class Chart : Drawable {
     /**
      * Sets the title for the X axis.
      *
-     * @param title the X axis title.
-     * @return this Chart object.
+     * - Parameter title: the X axis title.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setXAxisTitle(_ title: String) -> Chart {
@@ -121,8 +121,8 @@ public class Chart : Drawable {
     /**
      * Sets the title for the Y axis.
      *
-     * @param title the Y axis title.
-     * @return this Chart object.
+     * - Parameter title: the Y axis title.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setYAxisTitle(_ title: String) -> Chart {
@@ -133,8 +133,8 @@ public class Chart : Drawable {
     /**
      * Sets the data that will be used to draw this chart.
      *
-     * @param chartData the data.
-     * @return this Chart object.
+     * - Parameter chartData: the data.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setData(_ chartData: [[Point]]?) -> Chart {
@@ -145,7 +145,7 @@ public class Chart : Drawable {
     /**
      * Returns the chart data.
      *
-     * @return the chart data.
+     * - Returns: the chart data.
      */
     public func getData() -> [[Point]]? {
         return self.chartData
@@ -154,9 +154,9 @@ public class Chart : Drawable {
     /**
      * Sets the location of this chart on the page.
      *
-     * @param x the x coordinate of the top left corner of this chart when drawn on the page.
-     * @param y the y coordinate of the top left corner of this chart when drawn on the page.
-     * @return this Chart object.
+     * - Parameter x: the x coordinate of the top left corner of this chart when drawn on the page.
+     * - Parameter y: the y coordinate of the top left corner of this chart when drawn on the page.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -168,9 +168,9 @@ public class Chart : Drawable {
     /**
      * Sets the size of this chart.
      *
-     * @param w the width of this chart.
-     * @param h the height of this chart.
-     * @return this Chart object.
+     * - Parameter w: the width of this chart.
+     * - Parameter h: the height of this chart.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setSize(_ w: Float, _ h: Float) -> Chart {
@@ -182,8 +182,8 @@ public class Chart : Drawable {
     /**
      * Sets the minimum number of fractions digits do display for the X and Y axis labels.
      *
-     * @param minFractionDigits the minimum number of fraction digits.
-     * @return this Chart object.
+     * - Parameter minFractionDigits: the minimum number of fraction digits.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setMinimumFractionDigits(_ minFractionDigits: Int) -> Chart {
@@ -194,8 +194,8 @@ public class Chart : Drawable {
     /**
      * Sets the maximum number of fractions digits do display for the X and Y axis labels.
      *
-     * @param maxFractionDigits the maximum number of fraction digits.
-     * @return this Chart object.
+     * - Parameter maxFractionDigits: the maximum number of fraction digits.
+     * - Returns: this Chart object.
      */
     @discardableResult
     public func setMaximumFractionDigits(_ maxFractionDigits: Int) -> Chart {
@@ -207,8 +207,8 @@ public class Chart : Drawable {
      * Calculates the slope of a trend line given a list of points.
      * See Example_09.
      *
-     * @param points the list of points.
-     * @return the slope float value.
+     * - Parameter points: the list of points.
+     * - Returns: the slope float value.
      */
     public func slope(_ points: [Point])-> Float {
         return (covar(points) / devsq(points) * Float(points.count - 1))
@@ -218,8 +218,9 @@ public class Chart : Drawable {
      * Calculates the intercept of a trend line given a list of points.
      * See Example_09.
      *
-     * @param points the list of points.
-     * @return the intercept float value.
+     * - Parameter points: the list of points.
+     * - Parameter slope: the slope of the trend line.
+     * - Returns: the intercept float value.
      */
     public func intercept(_ points: [Point], _ slope: Double)-> Float {
         return intercept(points, Float(slope))
@@ -229,8 +230,9 @@ public class Chart : Drawable {
      * Calculates the intercept of a trend line given a list of points.
      * See Example_09.
      *
-     * @param points the list of points.
-     * @return the intercept float value.
+     * - Parameter points: the list of points.
+     * - Parameter slope: the slope of the trend line.
+     * - Returns: the intercept float value.
      */
     public func intercept(_ points: [Point], _ slope: Float)-> Float {
         let _mean: [Float] = mean(points)
@@ -339,7 +341,7 @@ public class Chart : Drawable {
     /**
      * Draws this chart on the specified page.
      *
-     * @param page the page to draw this chart on.
+     * - Parameter page: the page to draw this chart on.
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

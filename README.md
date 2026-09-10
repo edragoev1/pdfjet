@@ -67,7 +67,11 @@ port into `docs/_net`. DocFX reads the XML doc comments (`/// <summary>`) in
 `dotnet tool install -g docfx`. The Go reference is built with
 [doc2go](https://abhinav.github.io/doc2go/) from the doc comments in `src` into
 `docs/go`, leaving out the example programs in `src/examples`. Install doc2go
-once with `go install go.abhg.dev/doc2go@v0.12.2`.
+once with `go install go.abhg.dev/doc2go@v0.12.2`. The Swift reference is built
+with [DocC](https://www.swift.org/documentation/docc/), which comes with the
+Swift toolchain, from the doc comments in `Sources/PDFjet` into `docs/swift`.
+Its pages expect to be served from `/pdfjet/swift/`, as on GitHub Pages, so
+they do not work when opened straight from disk.
 
 ## Java compatibility
 

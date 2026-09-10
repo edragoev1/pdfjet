@@ -39,7 +39,7 @@ public class PDF417 : Drawable {
     /**
      *  Constructor for 2D barcodes.
      *
-     *  @param str the specified string.
+     *  - Parameter str: the specified string.
      */
     public init(_ str: String) throws {
         self.str = str
@@ -104,9 +104,9 @@ public class PDF417 : Drawable {
     /**
      *  Sets the location of this barcode on the page.
      *
-     *  @param x the x coordinate of the top left corner of the barcode.
-     *  @param y the y coordinate of the top left corner of the barcode.
-     *  @return this PDF417 object.
+     *  - Parameter x: the x coordinate of the top left corner of the barcode.
+     *  - Parameter y: the y coordinate of the top left corner of the barcode.
+     *  - Returns: this PDF417 object.
      */
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -121,8 +121,8 @@ public class PDF417 : Drawable {
      *  Use value between 0.5f and 0.75f.
      *  If the value is too small some scanners may have difficulty reading the barcode.
      *
-     *  @param width the module width of the barcode.
-     *  @return this PDF417 object.
+     *  - Parameter width: the module width of the barcode.
+     *  - Returns: this PDF417 object.
      */
     @discardableResult
     public func setModuleWidth(_ width: Float) -> PDF417 {
@@ -134,9 +134,8 @@ public class PDF417 : Drawable {
     /**
      *  Draws this barcode on the specified page.
      *
-     *  @param page the page to draw this barcode on.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception
+     *  - Parameter page: the page to draw this barcode on.
+     *  - Returns: x and y coordinates of the bottom right corner of this component.
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

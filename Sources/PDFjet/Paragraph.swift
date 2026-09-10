@@ -42,8 +42,8 @@ public class Paragraph {
     ///
     /// Adds a text line to this paragraph.
     ///
-    /// @param text the text line to add to this paragraph.
-    /// @return this paragraph.
+    /// - Parameter text: the text line to add to this paragraph.
+    /// - Returns: this paragraph.
     ///
     @discardableResult
     public func add(_ text: TextLine) -> Paragraph {
@@ -54,10 +54,10 @@ public class Paragraph {
     ///
     /// Sets the alignment of the text in this paragraph.
     ///
-    /// @param alignment the alignment code.
-    /// @return this paragraph.
+    /// - Parameter alignment: the alignment code.
+    /// - Returns: this paragraph.
     ///
-    /// <pre>Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.</pre>
+    /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
     ///
     @discardableResult
     public func setAlignment(_ alignment: UInt32) -> Paragraph {

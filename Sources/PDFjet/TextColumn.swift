@@ -36,7 +36,7 @@ public class TextColumn : Drawable {
     ///
     /// Create a text column object and set the rotation angle.
     ///
-    /// @param rotateByDegrees the specified rotation angle in degrees.
+    /// - Parameter rotateByDegrees: the specified rotation angle in degrees.
     ///
     public init(_ rotateByDegrees: Int) {
         if rotateByDegrees != 0 &&
@@ -53,7 +53,7 @@ public class TextColumn : Drawable {
     /// Sets the lineBetweenParagraphs private variable value.
     /// If the value is set to true - an empty line will be inserted between the current and next paragraphs.
     ///
-    /// @param lineBetweenParagraphs the specified Bool value.
+    /// - Parameter lineBetweenParagraphs: the specified Bool value.
     ///
     @discardableResult
     public func setLineBetweenParagraphs(_ lineBetweenParagraphs: Bool) -> TextColumn {
@@ -78,8 +78,8 @@ public class TextColumn : Drawable {
     ///
     /// Sets the position of this text column on the page.
     ///
-    /// @param x the x coordinate of the top left corner of this text column when drawn on the page.
-    /// @param y the y coordinate of the top left corner of this text column when drawn on the page.
+    /// - Parameter x: the x coordinate of the top left corner of this text column when drawn on the page.
+    /// - Parameter y: the y coordinate of the top left corner of this text column when drawn on the page.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -93,8 +93,8 @@ public class TextColumn : Drawable {
     ///
     /// Sets the size of this text column.
     ///
-    /// @param w the width of this text column.
-    /// @param h the height of this text column.
+    /// - Parameter w: the width of this text column.
+    /// - Parameter h: the height of this text column.
     ///
     @discardableResult
     public func setSize(_ w: Float, _ h: Float) -> TextColumn {
@@ -106,7 +106,7 @@ public class TextColumn : Drawable {
     ///
     /// Sets the desired width of this text column.
     ///
-    /// @param w the width of this text column.
+    /// - Parameter w: the width of this text column.
     ///
     @discardableResult
     public func setWidth(_ w: Float) -> TextColumn {
@@ -131,7 +131,7 @@ public class TextColumn : Drawable {
     ///
     /// Sets the text alignment.
     ///
-    /// @param alignment the specified alignment code.
+    /// - Parameter alignment: the specified alignment code.
     /// Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
     ///
     @discardableResult
@@ -143,7 +143,7 @@ public class TextColumn : Drawable {
     ///
     /// Adds a new paragraph to this text column.
     ///
-    /// @param paragraph the new paragraph object.
+    /// - Parameter paragraph: the new paragraph object.
     ///
     public func addParagraph(_ paragraph: Paragraph) {
         self.paragraphs.append(paragraph)
@@ -162,7 +162,7 @@ public class TextColumn : Drawable {
     /// Returns dimension object containing the width and height of this component.
     /// Please see Example_29.
     ///
-    /// @return dimension object containing the width and height of this component.
+    /// - Returns: dimension object containing the width and height of this component.
     ///
     public func getSize() -> Dimension {
         let xy = drawOn(nil)
@@ -170,11 +170,11 @@ public class TextColumn : Drawable {
     }
 
     ///
-    /// Draws this text column on the specified page if the 'draw' Bool value is 'true'.
+    /// Draws this text column on the specified page.
+    /// If the page is nil, nothing is drawn and only the location of the next component is computed.
     ///
-    /// @param page the page to draw this text column on.
-    /// @param draw the Bool value that specified if the text column should actually be drawn on the page.
-    /// @return the point with x and y coordinates of the location where to draw the next component.
+    /// - Parameter page: the page to draw this text column on.
+    /// - Returns: the point with x and y coordinates of the location where to draw the next component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -391,8 +391,8 @@ public class TextColumn : Drawable {
     ///
     /// Adds a new paragraph with Chinese text to this text column.
     ///
-    /// @param font the font used by this paragraph.
-    /// @param chinese the Chinese text.
+    /// - Parameter font: the font used by this paragraph.
+    /// - Parameter chinese: the Chinese text.
     ///
     public func addChineseParagraph(_ font: Font, _ chinese: String) {
         var paragraph: Paragraph
@@ -414,8 +414,8 @@ public class TextColumn : Drawable {
     ///
     /// Adds a new paragraph with Japanese text to this text column.
     ///
-    /// @param font the font used by this paragraph.
-    /// @param japanese the Japanese text.
+    /// - Parameter font: the font used by this paragraph.
+    /// - Parameter japanese: the Japanese text.
     ///
     public func addJapaneseParagraph(_ font: Font, _ japanese: String) {
         addChineseParagraph(font, japanese)

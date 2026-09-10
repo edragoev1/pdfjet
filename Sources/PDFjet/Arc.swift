@@ -119,7 +119,7 @@ public class Arc : Drawable {
     ///         "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
     ///         "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
     ///
-    /// - Parameter strokeDashPattern the line dash pattern.
+    /// - Parameter strokeDashPattern: the line dash pattern.
     /// - Returns: this Arc object.
     ///
     @discardableResult
@@ -131,7 +131,7 @@ public class Arc : Drawable {
     ///
     /// Sets the width of this line.
     ///
-    /// - Parameter strokeWidth the width.
+    /// - Parameter strokeWidth: the width.
     /// - Returns: this Arc object.
     ///
     @discardableResult
@@ -143,7 +143,7 @@ public class Arc : Drawable {
     ///
     /// Sets the color for this line.
     ///
-    /// - Parameter color the color specified as an integer.
+    /// - Parameter color: the color specified as an integer.
     /// - Returns: this Arc object.
     ///
     @discardableResult
@@ -208,7 +208,7 @@ public class Arc : Drawable {
     ///
     /// Sets the alternate description of this line.
     ///
-    /// - Parameter altDescription the alternate description of the line.
+    /// - Parameter altDescription: the alternate description of the line.
     /// - Returns: this Arc.
     ///
     @discardableResult
@@ -220,7 +220,7 @@ public class Arc : Drawable {
     ///
     /// Sets the actual text for this line.
     ///
-    /// - Parameter actualText the actual text for the line.
+    /// - Parameter actualText: the actual text for the line.
     /// - Returns: this Arc.
     ///
     @discardableResult
@@ -232,7 +232,7 @@ public class Arc : Drawable {
     ///
     /// Scales this line by the specified factor.
     ///
-    /// - Parameter factor the factor used to scale the line.
+    /// - Parameter factor: the factor used to scale the line.
     /// - Returns: this Arc object.
     ///
     @discardableResult
@@ -245,7 +245,7 @@ public class Arc : Drawable {
     ///
     /// Draws this line on the specified page.
     ///
-    /// - Parameter page the page to draw on.
+    /// - Parameter page: the page to draw on.
     /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult

@@ -42,7 +42,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Sets the font size.
      *
-     * @param fontSize the font size.
+     * - Parameter fontSize: the font size.
      */
     @discardableResult
     public func setFontSize(_ fontSize: Float) -> CompositeTextLine {
@@ -53,7 +53,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Gets the font size.
      *
-     * @return fontSize the font size.
+     * - Returns: fontSize the font size.
      */
     public func getFontSize()-> Float {
         return self.fontSize
@@ -62,7 +62,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Sets the superscript factor for this composite text line.
      *
-     * @param superscript the superscript size factor.
+     * - Parameter superscriptSizeFactor: the superscript size factor.
      */
     @discardableResult
     public func setSuperscriptFactor(_ superscriptSizeFactor: Float) -> CompositeTextLine {
@@ -73,7 +73,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Gets the superscript factor for this text line.
      *
-     * @return superscript the superscript size factor.
+     * - Returns: superscript the superscript size factor.
      */
     public func getSuperscriptFactor()-> Float {
         return self.superscriptSizeFactor
@@ -82,7 +82,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Sets the subscript factor for this composite text line.
      *
-     * @param subscript the subscript size factor.
+     * - Parameter subscriptSizeFactor: the subscript size factor.
      */
     @discardableResult
     public func setSubscriptFactor(_ subscriptSizeFactor: Float) -> CompositeTextLine {
@@ -93,7 +93,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Gets the subscript factor for this text line.
      *
-     * @return subscript the subscript size factor.
+     * - Returns: subscript the subscript size factor.
      */
     public func getSubscriptFactor()-> Float {
         return self.subscriptSizeFactor
@@ -102,7 +102,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Sets the superscript position for this composite text line.
      *
-     * @param superscriptPosition the superscript position.
+     * - Parameter superscriptPosition: the superscript position.
      */
     @discardableResult
     public func setSuperscriptPosition(_ superscriptPosition: Float) -> CompositeTextLine {
@@ -113,7 +113,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Gets the superscript position for this text line.
      *
-     * @return superscriptPosition the superscript position.
+     * - Returns: superscriptPosition the superscript position.
      */
     public func getSuperscriptPosition()-> Float {
         return self.superscriptPosition
@@ -122,7 +122,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Sets the subscript position for this composite text line.
      *
-     * @param subscriptPosition the subscript position.
+     * - Parameter subscriptPosition: the subscript position.
      */
     @discardableResult
     public func setSubscriptPosition(_ subscriptPosition: Float) -> CompositeTextLine {
@@ -133,7 +133,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Gets the subscript position for this text line.
      *
-     * @return subscriptPosition the subscript position.
+     * - Returns: subscriptPosition the subscript position.
      */
     public func getSubscriptPosition()-> Float {
         return self.subscriptPosition
@@ -147,7 +147,7 @@ public class CompositeTextLine : Drawable {
      * Set the size and offset based on effects
      * Set the new current position
      *
-     * @param component the component.
+     * - Parameter component: the component.
      */
     public func addComponent(_ component: TextLine) {
         if component.getTextEffect() == Effect.SUPERSCRIPT {
@@ -180,8 +180,8 @@ public class CompositeTextLine : Drawable {
      * Loop through all the text lines and reset their location based on
      * the new location set here.
      *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
+     * - Parameter x: the x coordinate.
+     * - Parameter y: the y coordinate.
      */
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -213,7 +213,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Return the location of this composite text line.
      *
-     * @return the location of this composite text line.
+     * - Returns: the location of this composite text line.
      */
     public func getLocation()-> [Float] {
         return self.position
@@ -222,8 +222,8 @@ public class CompositeTextLine : Drawable {
     /**
      * Return the nth entry in the TextLine array.
      *
-     * @param index the index of the nth element.
-     * @return the text line at the specified index.
+     * - Parameter index: the index of the nth element.
+     * - Returns: the text line at the specified index.
      */
     public func getTextLine(_ index: Int)-> TextLine? {
         let count = self.textLines.count
@@ -239,7 +239,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Returns the number of text lines.
      *
-     * @return the number of text lines.
+     * - Returns: the number of text lines.
      */
     public func getNumberOfTextLines()-> Int {
         return textLines.count
@@ -249,7 +249,7 @@ public class CompositeTextLine : Drawable {
      * Returns the vertical coordinates of the top left and bottom right corners
      * of the bounding box of this composite text line.
      *
-     * @return the an array containing the vertical coordinates.
+     * - Returns: the an array containing the vertical coordinates.
      */
     public func getMinMax()-> [Float] {
         var min: Float = position[Y]
@@ -285,7 +285,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Returns the height of this CompositeTextLine.
      *
-     * @return the height.
+     * - Returns: the height.
      */
     public func getHeight()-> Float {
         let yy = getMinMax()
@@ -295,7 +295,7 @@ public class CompositeTextLine : Drawable {
     /**
      * Returns the width of this CompositeTextLine.
      *
-     * @return the width.
+     * - Returns: the width.
      */
     public func getWidth()-> Float {
         return (current[X] - position[X])
@@ -304,9 +304,8 @@ public class CompositeTextLine : Drawable {
     /**
      * Draws this line on the specified page.
      *
-     * @param page the page to draw this line on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
+     * - Parameter page: the page to draw this line on.
+     * - Returns: x and y coordinates of the bottom right corner of this component.
      */
     @discardableResult
     public func drawOn(_ page: Page?)-> [Float] {

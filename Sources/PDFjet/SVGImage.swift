@@ -41,7 +41,7 @@ public class SVGImage {
     /**
      * Used to embed SVG images in the PDF document.
      *
-     * @param fileAtPath the path to the SVG file.
+     * - Parameter fileAtPath: the path to the SVG file.
      */
     public convenience init?(fileAtPath: String) {
         guard let fileStream = InputStream(fileAtPath: fileAtPath) else {
@@ -57,8 +57,7 @@ public class SVGImage {
     /**
      * Used to embed SVG images in the PDF document.
      *
-     * @param stream the input stream.
-     * @throws Exception  if exception occurred.
+     * - Parameter stream: the input stream.
      */
     public init(stream: InputStream) {
         paths = [SVGPath]()
@@ -236,9 +235,9 @@ public class SVGImage {
     /**
      *  Sets the location of this SVG on the page.
      *
-     *  @param x the x coordinate of the top left corner of this box when drawn on the page.
-     *  @param y the y coordinate of the top left corner of this box when drawn on the page.
-     *  @return this SVG object, to allow method chaining.
+     *  - Parameter x: the x coordinate of the top left corner of this box when drawn on the page.
+     *  - Parameter y: the y coordinate of the top left corner of this box when drawn on the page.
+     *  - Returns: this SVG object, to allow method chaining.
      */
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> SVGImage {

@@ -59,16 +59,16 @@ public class Font {
     /// Constructor for the 14 standard fonts.
     /// Creates a font object and adds it to the PDF.
     ///
-    /// <pre>
     /// Examples:
-    ///     Font font1 = Font(pdf, CoreFont.HELVETICA)
-    ///     Font font2 = Font(pdf, CoreFont.TIMES_ITALIC)
-    ///     Font font3 = Font(pdf, CoreFont.ZAPF_DINGBATS)
-    ///     ...
-    /// </pre>
     ///
-    /// @param pdf the PDF to add this font to.
-    /// @param coreFont the core font. Must be one the names defined in the CoreFont class.
+    /// ```swift
+    /// let font1 = Font(pdf, CoreFont.HELVETICA)
+    /// let font2 = Font(pdf, CoreFont.TIMES_ITALIC)
+    /// let font3 = Font(pdf, CoreFont.ZAPF_DINGBATS)
+    /// ```
+    ///
+    /// - Parameter pdf: the PDF to add this font to.
+    /// - Parameter coreFont: the core font. Must be one the names defined in the CoreFont class.
     ///
     public init(_ pdf: PDF, _ coreFont: Int) {
         let font = CoreFont(coreFont)
@@ -123,8 +123,8 @@ public class Font {
     /// Constructor for CJK - Chinese, Japanese and Korean fonts.
     /// Please see Example_04.
     ///
-    /// @param pdf the PDF to add this font to.
-    /// @param fontName the font name. Please see Example_04.
+    /// - Parameter pdf: the PDF to add this font to.
+    /// - Parameter font: the Chinese, Japanese or Korean font. Please see Example_04.
     ///
     public init(_ pdf: PDF, _ font: CJKFont) {
         var fontName: String?
@@ -241,8 +241,8 @@ public class Font {
     ///
     /// Constructor for OpenType and TrueType fonts.
     ///
-    /// @param pdf the PDF object that requires this font.
-    /// @param stream the input stream to read this font from.
+    /// - Parameter pdf: the PDF object that requires this font.
+    /// - Parameter stream: the input stream to read this font from.
     ///
     public init(_ pdf: PDF, _ stream: InputStream) throws {
         try OpenTypeFont.register(pdf, self, stream)
@@ -252,9 +252,9 @@ public class Font {
     ///
     /// Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
     ///
-    /// @param pdf the pdf object.
-    /// @param fontPath the font path.
-    /// @throws Exception thrown of the font file is not found.
+    /// - Parameter pdf: the pdf object.
+    /// - Parameter fontPath: the font path.
+    /// - Throws: an error if the font cannot be read.
     ///
     public init(_ pdf: PDF, _ fontPath: String) throws {
         let inputStream = InputStream(fileAtPath: fontPath)!
@@ -269,8 +269,8 @@ public class Font {
     ///
     /// Sets the size of this font.
     ///
-    /// @param fontSize specifies the size of this font.
-    /// @return the font.
+    /// - Parameter fontSize: specifies the size of this font.
+    /// - Returns: the font.
     ///
     @discardableResult
     public func setSize(_ fontSize: Float) -> Font {
@@ -294,7 +294,7 @@ public class Font {
     ///
     /// Returns the current font size.
     ///
-    /// @return the current size of the font.
+    /// - Returns: the current size of the font.
     ///
     public func getSize() -> Float {
         return self.size
@@ -306,7 +306,7 @@ public class Font {
     ///
     /// The kerning is implemented only for the 14 standard fonts.
     ///
-    /// @param kernPairs if 'true' the kerning for this font is enabled.
+    /// - Parameter kernPairs: if 'true' the kerning for this font is enabled.
     ///
     @discardableResult
     public func setKernPairs(_ kernPairs: Bool) -> Font {
@@ -320,11 +320,12 @@ public class Font {
     }
 
     ///
-    /// Returns the width of the specified string when drawn on the page with this font using the current font size.
+    /// Returns the width of the specified string when drawn with this font at the specified font size.
     ///
-    /// @param str the specified string.
+    /// - Parameter fontSize: the font size.
+    /// - Parameter str: the specified string.
     ///
-    /// @return the width of the string when draw on the page with this font using the current selected size.
+    /// - Returns: the width of the string.
     ///
     public func stringWidth(_ fontSize: Float, _ str: String?) -> Float {
         var width: Int = 0
@@ -377,7 +378,7 @@ public class Font {
     ///
     /// Returns the ascent of this font.
     ///
-    /// @return the ascent of the font.
+    /// - Returns: the ascent of the font.
     ///
     public func getAscent() -> Float {
         return self.ascent
@@ -386,7 +387,7 @@ public class Font {
     ///
     /// Returns the descent of this font.
     ///
-    /// @return the descent of the font.
+    /// - Returns: the descent of the font.
     ///
     public func getDescent() -> Float {
         return self.descent
@@ -411,7 +412,7 @@ public class Font {
     ///
     /// Returns the height of this font.
     ///
-    /// @return the height of the font.
+    /// - Returns: the height of the font.
     ///
     public func getBodyHeight() -> Float {
         return self.ascent + self.descent
@@ -420,7 +421,7 @@ public class Font {
     ///
     /// Returns the height of this font.
     ///
-    /// @return the height of the font.
+    /// - Returns: the height of the font.
     ///
     public func getHeight() -> Float {
         return self.ascent + self.descent
@@ -429,7 +430,7 @@ public class Font {
     ///
     /// Returns the height of the body of the font.
     ///
-    /// @return float the height of the body of the font.
+    /// - Returns: float the height of the body of the font.
     ///
     public func getBodyHeight(_ fontSize: Float) -> Float {
         return getAscent(fontSize) + getDescent(fontSize)
@@ -459,10 +460,10 @@ public class Font {
     ///
     /// Returns the number of characters from the specified string that will fit within the specified width.
     ///
-    /// @param str the specified string.
-    /// @param width the specified width.
+    /// - Parameter str: the specified string.
+    /// - Parameter width: the specified width.
     ///
-    /// @return the number of characters that will fit.
+    /// - Returns: the number of characters that will fit.
     ///
     public func getFitChars(
             _ str: String,
@@ -536,7 +537,7 @@ public class Font {
     /// or when you want to generate smaller PDF files.
     /// For example you could embed only the Regular and Bold fonts and synthesize the RegularItalic and BoldItalic.
     ///
-    /// @param skew15 the skew flag.
+    /// - Parameter skew15: the skew flag.
     ///
     @discardableResult
     public func setItalic(_ skew15: Bool) -> Font {
@@ -555,9 +556,10 @@ public class Font {
     ///
     /// Returns the width of a string drawn using two fonts.
     ///
-    /// @param fallbackFont the fallback font.
-    /// @param str the string.
-    /// @return the width.
+    /// - Parameter fallbackFont: the fallback font.
+    /// - Parameter fontSize: the font size.
+    /// - Parameter str: the string.
+    /// - Returns: the width.
     ///
     public func stringWidth(_ fallbackFont: Font?, _ fontSize: Float, _ str: String?) -> Float {
         var width: Float = 0.0

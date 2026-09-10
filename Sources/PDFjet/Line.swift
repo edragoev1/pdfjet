@@ -35,10 +35,10 @@ public class Line : Drawable {
     ///
     /// Create a line object.
     ///
-    /// @param x1 the x coordinate of the start point.
-    /// @param y1 the y coordinate of the start point.
-    /// @param x2 the x coordinate of the end point.
-    /// @param y2 the y coordinate of the end point.
+    /// - Parameter x1: the x coordinate of the start point.
+    /// - Parameter y1: the y coordinate of the start point.
+    /// - Parameter x2: the x coordinate of the end point.
+    /// - Parameter y2: the y coordinate of the end point.
     ///
     public init(_ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float) {
         self.x1 = x1
@@ -54,9 +54,9 @@ public class Line : Drawable {
     /// alternating dashes and gaps.
     /// The dash phase specifies the distance into the dash pattern at which to start the dash.
     /// The elements of both the dash array and the dash phase are expressed in user space units.
-    /// <pre>
     /// Examples of line dash patterns:
     ///
+    /// ```
     ///     "[Array] Phase"     Appearance          Description
     ///     _______________     _________________   ____________________________________
     ///
@@ -66,10 +66,10 @@ public class Line : Drawable {
     ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
     ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
     ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-    /// </pre>
+    /// ```
     ///
-    /// @param pattern the line dash pattern.
-    /// @return this Line object.
+    /// - Parameter pattern: the line dash pattern.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setPattern(_ pattern: String) -> Line {
@@ -87,9 +87,9 @@ public class Line : Drawable {
     ///
     /// Sets the x and y coordinates of the start point.
     ///
-    /// @param x the x coordinate of the start point.
-    /// @param y the y coordinate of the start point.
-    /// @return this Line object.
+    /// - Parameter x: the x coordinate of the start point.
+    /// - Parameter y: the y coordinate of the start point.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setStartPoint(_ x: Float, _ y: Float) -> Line {
@@ -101,9 +101,9 @@ public class Line : Drawable {
     ///
     /// Sets the x and y coordinates of the start point.
     ///
-    /// @param x the x coordinate of the start point.
-    /// @param y the y coordinate of the start point.
-    /// @return this Line object.
+    /// - Parameter x: the x coordinate of the start point.
+    /// - Parameter y: the y coordinate of the start point.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setPointA(_ x: Float, _ y: Float) -> Line {
@@ -115,7 +115,7 @@ public class Line : Drawable {
     ///
     /// Returns the start point of this line.
     ///
-    /// @return Point the point.
+    /// - Returns: Point the point.
     ///
     public func getStartPoint() -> Point {
         return Point(x1, y1)
@@ -124,9 +124,9 @@ public class Line : Drawable {
     ///
     /// Sets the x and y coordinates of the end point.
     ///
-    /// @param x the x coordinate of the end point.
-    /// @param y the t coordinate of the end point.
-    /// @return this Line object.
+    /// - Parameter x: the x coordinate of the end point.
+    /// - Parameter y: the t coordinate of the end point.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setEndPoint(_ x: Float, _ y: Float) -> Line {
@@ -138,9 +138,9 @@ public class Line : Drawable {
     ///
     /// Sets the x and y coordinates of the end point.
     ///
-    /// @param x the x coordinate of the end point.
-    /// @param y the t coordinate of the end point.
-    /// @return this Line object.
+    /// - Parameter x: the x coordinate of the end point.
+    /// - Parameter y: the t coordinate of the end point.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setPointB(_ x: Float, _ y: Float) -> Line {
@@ -152,7 +152,7 @@ public class Line : Drawable {
     ///
     /// Returns the end point of this line.
     ///
-    /// @return Point the point.
+    /// - Returns: Point the point.
     ///
     public func getEndPoint() -> Point {
         return Point(x2, y2)
@@ -161,8 +161,8 @@ public class Line : Drawable {
     ///
     /// Sets the width of this line.
     ///
-    /// @param width the width.
-    /// @return this Line object.
+    /// - Parameter width: the width.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setWidth(_ width: Float) -> Line {
@@ -173,8 +173,8 @@ public class Line : Drawable {
     ///
     /// Sets the color for this line.
     ///
-    /// @param color the color specified as an integer.
-    /// @return this Line object.
+    /// - Parameter color: the color specified as an integer.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setColor(_ color: Int32) -> Line {
@@ -185,9 +185,9 @@ public class Line : Drawable {
     ///
     /// Sets the line cap style.
     ///
-    /// @param style the cap style of the current line.
+    /// - Parameter style: the cap style of the current line.
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
-    /// @return this Line object.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func setCapStyle(_ style: CapStyle) -> Line {
@@ -198,7 +198,7 @@ public class Line : Drawable {
     ///
     /// Returns the line cap style.
     ///
-    /// @return the cap style.
+    /// - Returns: the cap style.
     ///
     public func getCapStyle() -> CapStyle {
         return self.capStyle
@@ -207,8 +207,8 @@ public class Line : Drawable {
     ///
     /// Sets the alternate description of this line.
     ///
-    /// @param altDescription the alternate description of the line.
-    /// @return this Line.
+    /// - Parameter altDescription: the alternate description of the line.
+    /// - Returns: this Line.
     ///
     @discardableResult
     public func setAltDescription(_ altDescription: String) -> Line {
@@ -219,8 +219,8 @@ public class Line : Drawable {
     ///
     /// Sets the actual text for this line.
     ///
-    /// @param actualText the actual text for the line.
-    /// @return this Line.
+    /// - Parameter actualText: the actual text for the line.
+    /// - Returns: this Line.
     ///
     @discardableResult
     public func setActualText(_ actualText: String) -> Line {
@@ -231,8 +231,8 @@ public class Line : Drawable {
     ///
     /// Scales this line by the specified factor.
     ///
-    /// @param factor the factor used to scale the line.
-    /// @return this Line object.
+    /// - Parameter factor: the factor used to scale the line.
+    /// - Returns: this Line object.
     ///
     @discardableResult
     public func scaleBy(_ factor: Float) -> Line {
@@ -246,9 +246,8 @@ public class Line : Drawable {
     ///
     /// Draws this line on the specified page.
     ///
-    /// @param page the page to draw this line on.
-    /// @return x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
+    /// - Parameter page: the page to draw this line on.
+    /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

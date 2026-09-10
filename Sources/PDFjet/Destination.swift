@@ -17,9 +17,9 @@ public class Destination {
     ///
     /// This initializer is used to create destination objects.
     ///
-    /// @param name the name of this destination object.
-    /// @param xPosition the x coordinate of the top left corner.
-    /// @param yPosition the y coordinate of the top left corner.
+    /// - Parameter name: the name of this destination object.
+    /// - Parameter xPosition: the x coordinate of the top left corner.
+    /// - Parameter yPosition: the y coordinate of the top left corner.
     ///
     public init(_ name: String, _ xPosition: Float, _ yPosition: Float) {
         self.name = name
@@ -30,8 +30,8 @@ public class Destination {
     ///
     /// This initializer is used to create destination objects.
     ///
-    /// @param name the name of this destination object.
-    /// @param yPosition the y coordinate of the top left corner.
+    /// - Parameter name: the name of this destination object.
+    /// - Parameter yPosition: the y coordinate of the top left corner.
     ///
     public init(_ name: String, _ yPosition: Float) {
         self.name = name

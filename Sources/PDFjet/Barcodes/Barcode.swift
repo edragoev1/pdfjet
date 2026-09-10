@@ -50,8 +50,8 @@ public class Barcode : Drawable {
     ///
     /// The constructor.
     ///
-    /// @param barcodeType the type of the barcode.
-    /// @param text the content string of the barcode.
+    /// - Parameter barcodeType: the type of the barcode.
+    /// - Parameter text: the content string of the barcode.
     ///
     public init(
             _ barcodeType: Int,
@@ -118,8 +118,8 @@ public class Barcode : Drawable {
     ///
     /// Sets the location where this barcode will be drawn on the page.
     ///
-    /// @param x1 the x coordinate of the top left corner of the barcode.
-    /// @param y1 the y coordinate of the top left corner of the barcode.
+    /// - Parameter x1: the x coordinate of the top left corner of the barcode.
+    /// - Parameter y1: the y coordinate of the top left corner of the barcode.
     ///
     @discardableResult
     public func setLocation(_ x1: Float, _ y1: Float) -> Self {
@@ -132,7 +132,7 @@ public class Barcode : Drawable {
     /// Sets the module length of this barcode.
     /// The default value is 0.75
     ///
-    /// @param moduleLength the specified module length.
+    /// - Parameter moduleLength: the specified module length.
     ///
     @discardableResult
     public func setModuleLength(_ moduleLength: Double) -> Barcode {
@@ -144,7 +144,7 @@ public class Barcode : Drawable {
     /// Sets the module length of this barcode.
     /// The default value is 0.75
     ///
-    /// @param moduleLength the specified module length.
+    /// - Parameter moduleLength: the specified module length.
     ///
     @discardableResult
     public func setModuleLength(_ moduleLength: Float) -> Barcode {
@@ -157,7 +157,7 @@ public class Barcode : Drawable {
     /// The height of the bars is the moduleLength * barHeightFactor
     /// The default value is 50.0
     ///
-    /// @param barHeightFactor the specified bar height factor.
+    /// - Parameter barHeightFactor: the specified bar height factor.
     ///
     @discardableResult
     public func setBarHeightFactor(_ barHeightFactor: Double) -> Barcode {
@@ -170,7 +170,7 @@ public class Barcode : Drawable {
     /// The height of the bars is the moduleLength * barHeightFactor
     /// The default value is 50.0f
     ///
-    /// @param barHeightFactor the specified bar height factor.
+    /// - Parameter barHeightFactor: the specified bar height factor.
     ///
     @discardableResult
     public func setBarHeightFactor(_ barHeightFactor: Float) -> Barcode {
@@ -181,7 +181,7 @@ public class Barcode : Drawable {
     ///
     /// Sets the drawing direction for this font.
     ///
-    /// @param direction the specified direction.
+    /// - Parameter direction: the specified direction.
     ///
     @discardableResult
     public func setDirection(_ direction: Int) -> Barcode {
@@ -192,7 +192,7 @@ public class Barcode : Drawable {
     ///
     /// Sets the font to be used with this barcode.
     ///
-    /// @param font the specified font.
+    /// - Parameter font: the specified font.
     ///
     @discardableResult
     public func setFont(_ font: Font) -> Barcode {
@@ -212,9 +212,8 @@ public class Barcode : Drawable {
     ///
     /// Draws this barcode on the specified page.
     ///
-    /// @param page the specified page.
-    /// @return x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
+    /// - Parameter page: the specified page.
+    /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

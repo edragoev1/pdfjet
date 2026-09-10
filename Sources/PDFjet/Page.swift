@@ -14,11 +14,9 @@ struct PDFjetError: Error {
 /// Used to create PDF page objects.
 ///
 /// Please note:
-/// <pre>
-///   The coordinate (0.0, 0.0) is the top left corner of the page.
-///   The size of the pages are represented in points.
-///   1 point is 1/72 inches.
-/// </pre>
+///
+/// - The coordinate (0.0, 0.0) is the top left corner of the page.
+/// - Page sizes are in points; 1 point is 1/72 inch.
 ///
 public class Page {
     /// Pass to the Page initializer to create a page that is not added to the PDF right away.
@@ -62,15 +60,13 @@ public class Page {
     /// Creates page object and add it to the PDF document.
     ///
     /// Please note:
-    /// <pre>
-    ///   The coordinate (0.0, 0.0) is the top left corner of the page.
-    ///   The size of the pages are represented in points.
-    ///   1 point is 1/72 inches.
-    /// </pre>
     ///
-    /// - Parameter pdf the pdf object.
-    /// - Parameter pageSize the page size of this page.
-    /// - Parameter addPageToPDF Bool flag.
+    /// - The coordinate (0.0, 0.0) is the top left corner of the page.
+    /// - Page sizes are in points; 1 point is 1/72 inch.
+    ///
+    /// - Parameter pdf: the pdf object.
+    /// - Parameter pageSize: the page size of this page.
+    /// - Parameter addPageToPDF: Bool flag.
     ///
     public init(
             _ pdf: PDF,
@@ -140,14 +136,12 @@ public class Page {
     /// Creates page object and add it to the PDF document.
     ///
     /// Please note:
-    /// <pre>
-    ///   The coordinate (0.0, 0.0) is the top left corner of the page.
-    ///   The size of the pages are represented in points.
-    ///   1 point is 1/72 inches.
-    /// </pre>
     ///
-    /// - Parameter pdf the pdf object.
-    /// - Parameter pageSize the page size of this page.
+    /// - The coordinate (0.0, 0.0) is the top left corner of the page.
+    /// - Page sizes are in points; 1 point is 1/72 inch.
+    ///
+    /// - Parameter pdf: the pdf object.
+    /// - Parameter pageSize: the page size of this page.
     ///
     public convenience init(_ pdf: PDF, _ pageSize: [Float]) {
         self.init(pdf, pageSize, true)
@@ -176,9 +170,9 @@ public class Page {
     ///
     /// Adds destination to this page.
     ///
-    /// - Parameter name The destination name.
-    /// - Parameter xPosition The horizontal position of the destination on this page.
-    /// - Parameter yPosition The vertical position of the destination on this page.
+    /// - Parameter name: The destination name.
+    /// - Parameter xPosition: The horizontal position of the destination on this page.
+    /// - Parameter yPosition: The vertical position of the destination on this page.
     ///
     /// - Returns: the destination.
     ///
@@ -195,8 +189,8 @@ public class Page {
     ///
     /// Adds destination to this page.
     ///
-    /// - Parameter name The destination name.
-    /// - Parameter yPosition The vertical position of the destination on this page.
+    /// - Parameter name: The destination name.
+    /// - Parameter yPosition: The vertical position of the destination on this page.
     ///
     /// - Returns: the destination.
     ///
@@ -230,10 +224,10 @@ public class Page {
     ///
     /// Draws a line on the page, using the current color, between the points (x1, y1) and (x2, y2).
     ///
-    /// - Parameter x1 the first point's x coordinate.
-    /// - Parameter y1 the first point's y coordinate.
-    /// - Parameter x2 the second point's x coordinate.
-    /// - Parameter y2 the second point's y coordinate.
+    /// - Parameter x1: the first point's x coordinate.
+    /// - Parameter y1: the first point's y coordinate.
+    /// - Parameter x2: the second point's x coordinate.
+    /// - Parameter y2: the second point's y coordinate.
     ///
     public func drawLine(
             _ x1: Float,
@@ -258,15 +252,18 @@ public class Page {
 
     ///
     /// Draws the text given by the specified string,
-    /// using the specified main font and the current brush color.
+    /// using the specified main font and text color.
     /// If the main font is missing some glyphs - the fallback font is used.
-    /// The baseline of the leftmost character is at position (x, y) on the page.
+    /// The baseline of the leftmost character is at position (xOrig, yOrig) on the page.
     ///
-    /// - Parameter font the main font.
-    /// - Parameter fallbackFont the fallback font.
-    /// - Parameter str the string to be drawn.
-    /// - Parameter x the x coordinate.
-    /// - Parameter y the y coordinate.
+    /// - Parameter font: the main font.
+    /// - Parameter fallbackFont: the fallback font.
+    /// - Parameter fontSize: the font size.
+    /// - Parameter str: the string to be drawn.
+    /// - Parameter xOrig: the x coordinate.
+    /// - Parameter yOrig: the y coordinate.
+    /// - Parameter textColor: the text color as an array of red, green and blue values.
+    /// - Parameter highlightColors: the words to highlight and their colors, or nil.
     ///
     public final func drawString(
             _ font: Font,
@@ -327,13 +324,16 @@ public class Page {
 
     ///
     /// Draws the text given by the specified string,
-    /// using the specified font and the current brush color.
+    /// using the specified font and text color.
     /// The baseline of the leftmost character is at position (x, y) on the page.
     ///
-    /// - Parameter font the font to use.
-    /// - Parameter str the string to be drawn.
-    /// - Parameter x the x coordinate.
-    /// - Parameter y the y coordinate.
+    /// - Parameter font: the font to use.
+    /// - Parameter fontSize: the font size.
+    /// - Parameter text: the string to be drawn.
+    /// - Parameter x: the x coordinate.
+    /// - Parameter y: the y coordinate.
+    /// - Parameter textColor: the text color as an array of red, green and blue values.
+    /// - Parameter highlightColors: the words to highlight and their colors, or nil.
     ///
     public final func drawString(
             _ font: Font,
@@ -465,7 +465,7 @@ public class Page {
     ///
     /// Sets the graphics state. Please see Example_31.
     ///
-    /// - Parameter gs the graphics state to use.
+    /// - Parameter gs: the graphics state to use.
     ///
     public final func setGraphicsState(_ gs: GraphicsState) {
         var sb = String()
@@ -635,10 +635,10 @@ public class Page {
     /// Sets the color for stroking operations using CMYK.
     /// The pen color is used when drawing lines and splines.
     ///
-    /// - Parameter c the cyan component is Float value from 0.0 to 1.0.
-    /// - Parameter m the magenta component is Float value from 0.0 to 1.0.
-    /// - Parameter y the yellow component is Float value from 0.0 to 1.0.
-    /// - Parameter k the black component is Float value from 0.0 to 1.0.
+    /// - Parameter c: the cyan component is Float value from 0.0 to 1.0.
+    /// - Parameter m: the magenta component is Float value from 0.0 to 1.0.
+    /// - Parameter y: the yellow component is Float value from 0.0 to 1.0.
+    /// - Parameter k: the black component is Float value from 0.0 to 1.0.
     ///
     public final func setPenColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
         append(c)
@@ -655,10 +655,10 @@ public class Page {
     /// Sets the color for brush operations using CMYK.
     /// This is the color used when drawing regular text and filling shapes.
     ///
-    /// - Parameter c the cyan component is Float value from 0.0 to 1.0.
-    /// - Parameter m the magenta component is Float value from 0.0 to 1.0.
-    /// - Parameter y the yellow component is Float value from 0.0 to 1.0.
-    /// - Parameter k the black component is Float value from 0.0 to 1.0.
+    /// - Parameter c: the cyan component is Float value from 0.0 to 1.0.
+    /// - Parameter m: the magenta component is Float value from 0.0 to 1.0.
+    /// - Parameter y: the yellow component is Float value from 0.0 to 1.0.
+    /// - Parameter k: the black component is Float value from 0.0 to 1.0.
     ///
     public final func setBrushColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
         append(c)
@@ -688,9 +688,9 @@ public class Page {
     /// alternating dashes and gaps.
     /// The dash phase specifies the distance into the dash pattern at which to start the dash.
     /// The elements of both the dash array and the dash phase are expressed in user space units.
-    /// <pre>
-    ///   Examples of line dash patterns:
+    /// Examples of line dash patterns:
     ///
+    /// ```
     ///   "[Array] Phase"     Appearance          Description
     ///   _______________     _________________   ____________________________________
     ///
@@ -700,9 +700,9 @@ public class Page {
     ///   "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
     ///   "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
     ///   "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-    /// </pre>
+    /// ```
     ///
-    /// - Parameter pattern the line dash pattern.
+    /// - Parameter pattern: the line dash pattern.
     ///
     @discardableResult
     public func setStrokeDashPattern(_ pattern: String) -> Page {
@@ -726,7 +726,7 @@ public class Page {
     ///
     /// Sets the pen width that will be used to draw lines and splines on this page.
     ///
-    /// - Parameter width the pen width.
+    /// - Parameter width: the pen width.
     ///
     @discardableResult
     public func setPenWidth(_ width: Float) -> Page {
@@ -744,7 +744,7 @@ public class Page {
     ///
     /// Sets the current line cap style.
     ///
-    /// - Parameter style the cap style of the current line.
+    /// - Parameter style: the cap style of the current line.
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     ///
     @discardableResult
@@ -758,7 +758,7 @@ public class Page {
     ///
     /// Sets the line join style.
     ///
-    /// - Parameter style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+    /// - Parameter style: the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
     ///
     @discardableResult
     public func setLineJoinStyle(_ style: JoinStyle) -> Page {
@@ -771,8 +771,8 @@ public class Page {
     ///
     /// Moves the pen to the point with coordinates (x, y) on the page.
     ///
-    /// - Parameter x the x coordinate of new pen position.
-    /// - Parameter y the y coordinate of new pen position.
+    /// - Parameter x: the x coordinate of new pen position.
+    /// - Parameter y: the y coordinate of new pen position.
     ///
     public func moveTo(_ x: Float, _ y: Float) {
         append(x)
@@ -820,10 +820,10 @@ public class Page {
     /// The top and bottom edges are at y and y + h.
     /// The rectangle is drawn using the current pen color.
     ///
-    /// - Parameter x the x coordinate of the rectangle to be drawn.
-    /// - Parameter y the y coordinate of the rectangle to be drawn.
-    /// - Parameter w the width of the rectangle to be drawn.
-    /// - Parameter h the height of the rectangle to be drawn.
+    /// - Parameter x: the x coordinate of the rectangle to be drawn.
+    /// - Parameter y: the y coordinate of the rectangle to be drawn.
+    /// - Parameter w: the width of the rectangle to be drawn.
+    /// - Parameter h: the height of the rectangle to be drawn.
     ///
     public func drawRect(
             _ x: Float,
@@ -843,10 +843,10 @@ public class Page {
     /// The top and bottom edges are at y and y + h.
     /// The rectangle is drawn using the current pen color.
     ///
-    /// - Parameter x the x coordinate of the rectangle to be drawn.
-    /// - Parameter y the y coordinate of the rectangle to be drawn.
-    /// - Parameter w the width of the rectangle to be drawn.
-    /// - Parameter h the height of the rectangle to be drawn.
+    /// - Parameter x: the x coordinate of the rectangle to be drawn.
+    /// - Parameter y: the y coordinate of the rectangle to be drawn.
+    /// - Parameter w: the width of the rectangle to be drawn.
+    /// - Parameter h: the height of the rectangle to be drawn.
     ///
     public func fillRect(
             _ x: Float,
@@ -863,8 +863,8 @@ public class Page {
     ///
     /// Draws or fills the specified path using the current pen or brush.
     ///
-    /// - Parameter path the path.
-    /// - Parameter operation specifies 'stroke' or 'fill' operation.
+    /// - Parameter path: the path.
+    /// - Parameter pathOperator: the path operator, for example PathOperator.stroke or PathOperator.fill.
     ///
     public func drawPath(
             _ path: [Point],
@@ -900,9 +900,9 @@ public class Page {
     ///
     /// The outline of the circle is drawn using the current pen color.
     ///
-    /// - Parameter x the x coordinate of the center of the circle to be drawn.
-    /// - Parameter y the y coordinate of the center of the circle to be drawn.
-    /// - Parameter r the radius of the circle to be drawn.
+    /// - Parameter x: the x coordinate of the center of the circle to be drawn.
+    /// - Parameter y: the y coordinate of the center of the circle to be drawn.
+    /// - Parameter r: the radius of the circle to be drawn.
     ///
     public func drawCircle(
             _ x: Float,
@@ -914,10 +914,10 @@ public class Page {
     ///
     /// Draws the specified circle on the page and fills it with the current brush color.
     ///
-    /// - Parameter x the x coordinate of the center of the circle to be drawn.
-    /// - Parameter y the y coordinate of the center of the circle to be drawn.
-    /// - Parameter r the radius of the circle to be drawn.
-    /// - Parameter operation must be Operation.STROKE, Operation.CLOSE or Operation.FILL.
+    /// - Parameter x: the x coordinate of the center of the circle to be drawn.
+    /// - Parameter y: the y coordinate of the center of the circle to be drawn.
+    /// - Parameter r: the radius of the circle to be drawn.
+    /// - Parameter pathOperator: the path operator, for example PathOperator.stroke or PathOperator.fill.
     ///
     public func drawCircle(
             _ x: Float,
@@ -930,10 +930,10 @@ public class Page {
     ///
     /// Draws an ellipse on the page using the current pen color.
     ///
-    /// - Parameter x the x coordinate of the center of the ellipse to be drawn.
-    /// - Parameter y the y coordinate of the center of the ellipse to be drawn.
-    /// - Parameter r1 the horizontal radius of the ellipse to be drawn.
-    /// - Parameter r2 the vertical radius of the ellipse to be drawn.
+    /// - Parameter x: the x coordinate of the center of the ellipse to be drawn.
+    /// - Parameter y: the y coordinate of the center of the ellipse to be drawn.
+    /// - Parameter r1: the horizontal radius of the ellipse to be drawn.
+    /// - Parameter r2: the vertical radius of the ellipse to be drawn.
     ///
     public func drawEllipse(
             _ x: Float,
@@ -946,10 +946,10 @@ public class Page {
     ///
     /// Fills an ellipse on the page using the current pen color.
     ///
-    /// - Parameter x the x coordinate of the center of the ellipse to be drawn.
-    /// - Parameter y the y coordinate of the center of the ellipse to be drawn.
-    /// - Parameter r1 the horizontal radius of the ellipse to be drawn.
-    /// - Parameter r2 the vertical radius of the ellipse to be drawn.
+    /// - Parameter x: the x coordinate of the center of the ellipse to be drawn.
+    /// - Parameter y: the y coordinate of the center of the ellipse to be drawn.
+    /// - Parameter r1: the horizontal radius of the ellipse to be drawn.
+    /// - Parameter r2: the vertical radius of the ellipse to be drawn.
     ///
     public func fillEllipse(
             _ x: Float,
@@ -962,11 +962,11 @@ public class Page {
     ///
     /// Draws an ellipse on the page and fills it using the current brush color.
     ///
-    /// - Parameter x the x coordinate of the center of the ellipse to be drawn.
-    /// - Parameter y the y coordinate of the center of the ellipse to be drawn.
-    /// - Parameter r1 the horizontal radius of the ellipse to be drawn.
-    /// - Parameter r2 the vertical radius of the ellipse to be drawn.
-    /// - Parameter operation the operation.
+    /// - Parameter x: the x coordinate of the center of the ellipse to be drawn.
+    /// - Parameter y: the y coordinate of the center of the ellipse to be drawn.
+    /// - Parameter r1: the horizontal radius of the ellipse to be drawn.
+    /// - Parameter r2: the vertical radius of the ellipse to be drawn.
+    /// - Parameter operation: the operation.
     ///
     private func drawEllipse(
             _ x: Float,
@@ -1007,7 +1007,7 @@ public class Page {
     ///
     /// Draws a point on the page using the current pen color.
     ///
-    /// - Parameter p the point.
+    /// - Parameter p: the point.
     ///
     public func drawPoint(_ p: Point) {
         if p.shape != Point.INVISIBLE  {
@@ -1090,7 +1090,7 @@ public class Page {
     ///
     /// Sets the text rendering mode.
     ///
-    /// - Parameter mode the rendering mode.
+    /// - Parameter mode: the rendering mode.
     ///
     @discardableResult
     public func setTextRenderingMode(_ mode: Int) throws -> Page {
@@ -1105,7 +1105,7 @@ public class Page {
     ///
     /// Sets the text direction.
     ///
-    /// - Parameter degrees the angle.
+    /// - Parameter angleInDegrees: the angle in degrees.
     ///
     @discardableResult
     public func setTextDirection(_ angleInDegrees: Int) -> Page {
@@ -1138,12 +1138,12 @@ public class Page {
     ///
     /// Draws a cubic bezier curve starting from the current point to the end point p3
     ///
-    /// @param x1 first control point x
-    /// @param y1 first control point y
-    /// @param x2 second control point x
-    /// @param y2 second control point y
-    /// @param x3 end point x
-    /// @param y3 end point y
+    /// - Parameter x1: first control point x
+    /// - Parameter y1: first control point y
+    /// - Parameter x2: second control point x
+    /// - Parameter y2: second control point y
+    /// - Parameter x3: end point x
+    /// - Parameter y3: end point y
     ///
     public func curveTo(
         _ x1: Float, _ y1: Float,
@@ -1166,12 +1166,12 @@ public class Page {
     ///
     /// Adds a circular arc to the current path.
     ///
-    /// @param x the x coordinate of the center.
-    /// @param y the y coordinate of the center.
-    /// @param r the radius.
-    /// @param startAngle the start angle in degrees.
-    /// @param sweepDegrees the sweep angle in degrees.
-    /// @return the control points and the end point of the last curve segment.
+    /// - Parameter x: the x coordinate of the center.
+    /// - Parameter y: the y coordinate of the center.
+    /// - Parameter r: the radius.
+    /// - Parameter startAngle: the start angle in degrees.
+    /// - Parameter sweepDegrees: the sweep angle in degrees.
+    /// - Returns: the control points and the end point of the last curve segment.
     ///
     public func drawCircularArc(
         _ x: Float, _ y: Float, _ r: Float, _ startAngle: Float, _ sweepDegrees: Float) -> [Float] {
@@ -1181,13 +1181,13 @@ public class Page {
     ///
     /// Adds an elliptical arc to the current path.
     ///
-    /// @param x the x coordinate of the center.
-    /// @param y the y coordinate of the center.
-    /// @param rx the horizontal radius.
-    /// @param ry the vertical radius.
-    /// @param startAngle the start angle in degrees.
-    /// @param sweepDegrees the sweep angle in degrees.
-    /// @return the control points and the end point of the last curve segment.
+    /// - Parameter x: the x coordinate of the center.
+    /// - Parameter y: the y coordinate of the center.
+    /// - Parameter rx: the horizontal radius.
+    /// - Parameter ry: the vertical radius.
+    /// - Parameter startAngle: the start angle in degrees.
+    /// - Parameter sweepDegrees: the sweep angle in degrees.
+    /// - Returns: the control points and the end point of the last curve segment.
     ///
     public func drawArc(
             _ x: Float,
@@ -1245,13 +1245,14 @@ public class Page {
 
     ///
     /// Draws a bezier curve starting from the current point.
-    /// <strong>Please note:</strong> You must call the fillPath,
+    /// **Please note:** You must call the fillPath,
     /// closePath or strokePath method after the last bezierCurveTo call.
-    /// <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
     ///
-    /// - Parameter p1 first control point
-    /// - Parameter p2 second control point
-    /// - Parameter p3 end point
+    /// *Author:* **Pieter Libin**, pieter@emweb.be
+    ///
+    /// - Parameter p1: first control point
+    /// - Parameter p2: second control point
+    /// - Parameter p3: end point
     ///
     public func bezierCurveTo(
             _ p1: Point,
@@ -1343,10 +1344,10 @@ public class Page {
     /// Sets the page CropBox.
     /// See page 77 of the PDF32000_2008.pdf specification.
     ///
-    /// - Parameter upperLeftX the top left X coordinate of the CropBox.
-    /// - Parameter upperLeftY the top left Y coordinate of the CropBox.
-    /// - Parameter lowerRightX the bottom right X coordinate of the CropBox.
-    /// - Parameter lowerRightY the bottom right Y coordinate of the CropBox.
+    /// - Parameter upperLeftX: the top left X coordinate of the CropBox.
+    /// - Parameter upperLeftY: the top left Y coordinate of the CropBox.
+    /// - Parameter lowerRightX: the bottom right X coordinate of the CropBox.
+    /// - Parameter lowerRightY: the bottom right Y coordinate of the CropBox.
     ///
     @discardableResult
     public func setCropBox(
@@ -1362,10 +1363,10 @@ public class Page {
     /// Sets the page BleedBox.
     /// See page 77 of the PDF32000_2008.pdf specification.
     ///
-    /// - Parameter upperLeftX the top left X coordinate of the BleedBox.
-    /// - Parameter upperLeftY the top left Y coordinate of the BleedBox.
-    /// - Parameter lowerRightX the bottom right X coordinate of the BleedBox.
-    /// - Parameter lowerRightY the bottom right Y coordinate of the BleedBox.
+    /// - Parameter upperLeftX: the top left X coordinate of the BleedBox.
+    /// - Parameter upperLeftY: the top left Y coordinate of the BleedBox.
+    /// - Parameter lowerRightX: the bottom right X coordinate of the BleedBox.
+    /// - Parameter lowerRightY: the bottom right Y coordinate of the BleedBox.
     ///
     @discardableResult
     public func setBleedBox(
@@ -1381,10 +1382,10 @@ public class Page {
     /// Sets the page TrimBox.
     /// See page 77 of the PDF32000_2008.pdf specification.
     ///
-    /// - Parameter upperLeftX the top left X coordinate of the TrimBox.
-    /// - Parameter upperLeftY the top left Y coordinate of the TrimBox.
-    /// - Parameter lowerRightX the bottom right X coordinate of the TrimBox.
-    /// - Parameter lowerRightY the bottom right Y coordinate of the TrimBox.
+    /// - Parameter upperLeftX: the top left X coordinate of the TrimBox.
+    /// - Parameter upperLeftY: the top left Y coordinate of the TrimBox.
+    /// - Parameter lowerRightX: the bottom right X coordinate of the TrimBox.
+    /// - Parameter lowerRightY: the bottom right Y coordinate of the TrimBox.
     ///
     @discardableResult
     public func setTrimBox(
@@ -1400,10 +1401,10 @@ public class Page {
     /// Sets the page ArtBox.
     /// See page 77 of the PDF32000_2008.pdf specification.
     ///
-    /// - Parameter upperLeftX the top left X coordinate of the ArtBox.
-    /// - Parameter upperLeftY the top left Y coordinate of the ArtBox.
-    /// - Parameter lowerRightX the bottom right X coordinate of the ArtBox.
-    /// - Parameter lowerRightY the bottom right Y coordinate of the ArtBox.
+    /// - Parameter upperLeftX: the top left X coordinate of the ArtBox.
+    /// - Parameter upperLeftY: the top left Y coordinate of the ArtBox.
+    /// - Parameter lowerRightX: the bottom right X coordinate of the ArtBox.
+    /// - Parameter lowerRightY: the bottom right Y coordinate of the ArtBox.
     ///
     @discardableResult
     public func setArtBox(
@@ -1749,8 +1750,8 @@ public class Page {
     /**
      * Sets the text location.
      *
-     * @param x the x coordinate of new text location.
-     * @param y the y coordinate of new text location.
+     * - Parameter x: the x coordinate of new text location.
+     * - Parameter y: the y coordinate of new text location.
      */
     func setTextLocation(_ x: Float, _ y: Float) {
         append(x)
@@ -1761,7 +1762,7 @@ public class Page {
 
     /**
      * Sets the text leading.
-     * @param leading the leading.
+     * - Parameter leading: the leading.
      */
     func setTextLeading(_ leading: Float) {
         append(leading)
@@ -1787,7 +1788,7 @@ public class Page {
 
     /**
      * Draws a string at the correct location.
-     * @param str the string.
+     * - Parameter str: the string.
      */
     internal func drawTextLine(_ font: Font, _ str: String, _ x: Float, _ y: Float) {
         append(Token.beginText)

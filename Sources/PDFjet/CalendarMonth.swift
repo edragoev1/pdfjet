@@ -26,10 +26,10 @@ public class CalendarMonth : Drawable {
     ///
     /// Creates a calendar for the specified month.
     ///
-    /// @param f1 the header font.
-    /// @param f2 the body font.
-    /// @param year the year.
-    /// @param month the month, from 1 to 12.
+    /// - Parameter f1: the header font.
+    /// - Parameter f2: the body font.
+    /// - Parameter year: the year.
+    /// - Parameter month: the month, from 1 to 12.
     ///
     public init(_ f1: Font, _ f2: Font, _ year: Int, _ month: Int) {
         self.f1 = f1

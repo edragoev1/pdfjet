@@ -40,8 +40,8 @@ public class CheckBox : Drawable {
     ///
     /// Sets the font size to use for this text line.
     ///
-    /// @param fontSize the fontSize to use.
-    /// @return this CheckBox.
+    /// - Parameter fontSize: the fontSize to use.
+    /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setFontSize(_ fontSize: Float) -> CheckBox {
@@ -52,8 +52,8 @@ public class CheckBox : Drawable {
     ///
     /// Sets the color of the check box.
     ///
-    /// @param boxColor the check box color specified as an 0xRRGGBB integer.
-    /// @return this CheckBox.
+    /// - Parameter boxColor: the check box color specified as an 0xRRGGBB integer.
+    /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setBoxColor(_ boxColor: Int32) -> CheckBox {
@@ -64,8 +64,8 @@ public class CheckBox : Drawable {
     ///
     /// Sets the color of the check mark.
     ///
-    /// @param checkColor the check mark color specified as an 0xRRGGBB integer.
-    /// @return this CheckBox.
+    /// - Parameter checkColor: the check mark color specified as an 0xRRGGBB integer.
+    /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setCheckmark(_ checkColor: Int32) -> CheckBox {
@@ -76,9 +76,9 @@ public class CheckBox : Drawable {
     ///
     /// Set the x,y location on the Page.
     ///
-    /// @param x the x coordinate on the Page.
-    /// @param y the y coordinate on the Page.
-    /// @return this CheckBox.
+    /// - Parameter x: the x coordinate on the Page.
+    /// - Parameter y: the y coordinate on the Page.
+    /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -104,7 +104,7 @@ public class CheckBox : Drawable {
     ///
     /// Checks or unchecks this check box. See the Mark class for available options.
     ///
-    /// @return this CheckBox.
+    /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func check(_ mark: Int) -> CheckBox {
@@ -115,8 +115,8 @@ public class CheckBox : Drawable {
     ///
     /// Sets the URI for the "click text line" action.
     ///
-    /// @param uri the URI.
-    /// @return this CheckBox.
+    /// - Parameter uri: the URI.
+    /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setURIAction(_ uri: String) -> CheckBox{
@@ -127,8 +127,8 @@ public class CheckBox : Drawable {
     ///
     /// Sets the alternate description of this check box.
     ///
-    /// @param altDescription the alternate description of the check box.
-    /// @return this Checkbox.
+    /// - Parameter altDescription: the alternate description of the check box.
+    /// - Returns: this Checkbox.
     ///
     @discardableResult
     public func setAltDescription(_ altDescription: String) -> CheckBox {
@@ -139,8 +139,8 @@ public class CheckBox : Drawable {
     ///
     /// Sets the actual text for this check box.
     ///
-    /// @param actualText the actual text for the check box.
-    /// @return this CheckBox.
+    /// - Parameter actualText: the actual text for the check box.
+    /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setActualText(_ actualText: String)-> CheckBox {
@@ -162,7 +162,7 @@ public class CheckBox : Drawable {
     ///
     /// Draws this CheckBox on the specified Page.
     ///
-    /// @param page the Page where the CheckBox is to be drawn.
+    /// - Parameter page: the Page where the CheckBox is to be drawn.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {

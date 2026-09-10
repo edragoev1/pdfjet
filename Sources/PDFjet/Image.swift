@@ -46,8 +46,8 @@ public class Image : Drawable {
     ///
     /// The main constructor for the Image class.
     ///
-    /// @param pdf the PDF to which we add this image.
-    /// @param filePath the path to the image file.
+    /// - Parameter pdf: the PDF to which we add this image.
+    /// - Parameter filePath: the path to the image file.
     ///
     public convenience init(_ pdf: PDF, _ filePath: String) throws {
         if (filePath.lowercased().hasSuffix(".png")) {
@@ -62,9 +62,9 @@ public class Image : Drawable {
     ///
     /// The main constructor for the Image class.
     ///
-    /// @param pdf the PDF to which we add this image.
-    /// @param stream the input stream to read the image from.
-    /// @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
+    /// - Parameter pdf: the PDF to which we add this image.
+    /// - Parameter stream: the input stream to read the image from.
+    /// - Parameter imageType: ImageType.JPG, ImageType.PNG and ImageType.BMP.
     ///
     public init(
             _ pdf: PDF,
@@ -107,9 +107,9 @@ public class Image : Drawable {
     ///
     /// Constructor used to attach images to existing PDF.
     ///
-    /// @param objects the map to which we add this image.
-    /// @param stream the input stream to read the image from.
-    /// @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
+    /// - Parameter objects: the map to which we add this image.
+    /// - Parameter stream: the input stream to read the image from.
+    /// - Parameter imageType: ImageType.JPG, ImageType.PNG and ImageType.BMP.
     ///
     public init(
             _ objects: inout [PDFobj],
@@ -208,8 +208,8 @@ public class Image : Drawable {
     ///
     /// Sets the location of this image on the page to (x, y).
     ///
-    /// @param x the x coordinate of the top left corner of the image.
-    /// @param y the y coordinate of the top left corner of the image.
+    /// - Parameter x: the x coordinate of the top left corner of the image.
+    /// - Parameter y: the y coordinate of the top left corner of the image.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -221,7 +221,7 @@ public class Image : Drawable {
     ///
     /// Scales this image by the specified factor.
     ///
-    /// @param factor the factor used to scale the image.
+    /// - Parameter factor: the factor used to scale the image.
     ///
     @discardableResult
     public func scaleBy(_ factor: Float) -> Image {
@@ -230,10 +230,11 @@ public class Image : Drawable {
 
     ///
     /// Scales this image by the specified width and height factor.
-    /// <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
     ///
-    /// @param widthFactor the factor used to scale the width of the image
-    /// @param heightFactor the factor used to scale the height of the image
+    /// *Author:* **Pieter Libin**, pieter@emweb.be
+    ///
+    /// - Parameter widthFactor: the factor used to scale the width of the image
+    /// - Parameter heightFactor: the factor used to scale the height of the image
     ///
     @discardableResult
     public func scaleBy(_ widthFactor: Float, _ heightFactor: Float) -> Image {
@@ -257,7 +258,7 @@ public class Image : Drawable {
     ///
     /// Sets the URI for the "click box" action.
     ///
-    /// @param uri the URI
+    /// - Parameter uri: the URI
     ///
     @discardableResult
     public func setURIAction(_ uri: String) -> Image {
@@ -268,7 +269,7 @@ public class Image : Drawable {
     ///
     /// Sets the destination key for the action.
     ///
-    /// @param key the destination name.
+    /// - Parameter key: the destination name.
     ///
     @discardableResult
     public func setGoToAction(_ key: String) -> Image {
@@ -279,7 +280,7 @@ public class Image : Drawable {
     ///
     /// Sets the image rotation to the specified number of degrees.
     ///
-    /// @param degrees the number of degrees.
+    /// - Parameter degrees: the number of degrees.
     ///
     @discardableResult
     public func rotateClockwise(_ degrees: Int) throws -> Image {
@@ -293,8 +294,8 @@ public class Image : Drawable {
     ///
     /// Sets the alternate description of this image.
     ///
-    /// @param altDescription the alternate description of the image.
-    /// @return this Image.
+    /// - Parameter altDescription: the alternate description of the image.
+    /// - Returns: this Image.
     ///
     @discardableResult
     public func setAltDescription(_ altDescription: String) -> Image {
@@ -305,8 +306,8 @@ public class Image : Drawable {
     ///
     /// Sets the actual text for this image.
     ///
-    /// @param actualText the actual text for the image.
-    /// @return this Image.
+    /// - Parameter actualText: the actual text for the image.
+    /// - Returns: this Image.
     ///
     @discardableResult
     public func setActualText(_ actualText: String) -> Image {
@@ -317,9 +318,8 @@ public class Image : Drawable {
     ///
     /// Draws this image on the specified page.
     ///
-    /// @param page the page to draw this image on.
-    /// @return x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
+    /// - Parameter page: the page to draw this image on.
+    /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -428,7 +428,7 @@ public class Image : Drawable {
     /// Returns the width of this image when drawn on the page.
     /// The scaling is take into account.
     ///
-    /// @return w - the width of this image.
+    /// - Returns: w - the width of this image.
     ///
     public func getWidth() -> Float {
         return self.w!
@@ -438,7 +438,7 @@ public class Image : Drawable {
     /// Returns the height of this image when drawn on the page.
     /// The scaling is take into account.
     ///
-    /// @return h - the height of this image.
+    /// - Returns: h - the height of this image.
     ///
     public func getHeight() -> Float {
         return self.h!

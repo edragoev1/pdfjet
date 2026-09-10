@@ -59,7 +59,7 @@ public class PDF {
     ///
     /// Creates a PDF object that represents a PDF document.
     ///
-    /// - Parameter os the associated output stream.
+    /// - Parameter os: the associated output stream.
     ///
     public convenience init(_ os: OutputStream) {
         self.init(os, Compliance.PDF_17)
@@ -98,8 +98,8 @@ public class PDF {
     /// Use this constructor to create PDF/A compliant PDF documents.
     /// Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
     ///
-    /// - Parameter os the associated output stream.
-    /// - Parameter compliance must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B
+    /// - Parameter os: the associated output stream.
+    /// - Parameter compliance: must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B
     ///
     public init(_ os: OutputStream, _ compliance: Compliance) {
         os.open()
@@ -1064,7 +1064,7 @@ public class PDF {
 
     ///
     /// Set the "Language" document property of the PDF file.
-    /// - Parameter language The language of this document.
+    /// - Parameter language: The language of this document.
     ///
     @discardableResult
     public func setLanguage(_ language: String) -> PDF {
@@ -1074,7 +1074,7 @@ public class PDF {
 
     ///
     /// Set the "Title" document property of the PDF file.
-    /// - Parameter title The title of this document.
+    /// - Parameter title: The title of this document.
     ///
     @discardableResult
     public func setTitle(_ title: String) -> PDF {
@@ -1084,7 +1084,7 @@ public class PDF {
 
     ///
     /// Set the "Author" document property of the PDF file.
-    /// - Parameter author The author of this document.
+    /// - Parameter author: The author of this document.
     ///
     @discardableResult
     public func setAuthor(_ author: String) -> PDF {
@@ -1094,7 +1094,7 @@ public class PDF {
 
     ///
     /// Set the "Subject" document property of the PDF file.
-    /// - Parameter subject The subject of this document.
+    /// - Parameter subject: The subject of this document.
     ///
     @discardableResult
     public func setSubject(_ subject: String) -> PDF {
@@ -1104,7 +1104,7 @@ public class PDF {
 
     ///
     /// Set the "Keywords" document property of the PDF file.
-    /// - Parameter keywords The author of this document.
+    /// - Parameter keywords: The author of this document.
     ///
     @discardableResult
     public func setKeywords(_ keywords: String) -> PDF {
@@ -1114,7 +1114,7 @@ public class PDF {
 
     ///
     /// Set the "Creator" document property of the PDF file.
-    /// - Parameter creator The author of this document.
+    /// - Parameter creator: The author of this document.
     ///
     @discardableResult
     public func setCreator(_ creator: String) -> PDF {
@@ -1199,7 +1199,7 @@ public class PDF {
     ///
     /// Returns a list of objects of type PDFobj read from input stream.
     ///
-    /// - Parameter inputStream the PDF input stream.
+    /// - Parameter stream: the PDF input stream.
     ///
     /// - Returns: [PDFobj] the list of PDF objects.
     ///
@@ -1381,7 +1381,7 @@ public class PDF {
 
     ///
     /// Converts an array of bytes to an integer.
-    /// - Parameter buf byte[]
+    /// - Parameter buf: byte[]
     /// - Returns: int
     ///
     private func toInt(

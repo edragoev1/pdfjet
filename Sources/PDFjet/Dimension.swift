@@ -15,8 +15,8 @@ public class Dimension {
     ///
     /// Constructor for creating dimension objects.
     ///
-    /// @param width the width.
-    /// @param height the height.
+    /// - Parameter width: the width.
+    /// - Parameter height: the height.
     ///
     public init(_ width: Float, _ height: Float) {
         self.w = width

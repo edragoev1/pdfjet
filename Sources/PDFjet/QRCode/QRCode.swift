@@ -38,9 +38,8 @@ public class QRCode : Drawable {
     ///
     /// Used to create 2D QR Code barcodes.
     ///
-    /// @param str the string to encode.
-    /// @param errorCorrectLevel the desired error correction level.
-    /// @throws UnsupportedEncodingException
+    /// - Parameter str: the string to encode.
+    /// - Parameter errorCorrectLevel: the desired error correction level.
     ///
     public init(
             _ str: String,
@@ -53,8 +52,8 @@ public class QRCode : Drawable {
     ///
     /// Sets the location where this barcode will be drawn on the page.
     ///
-    /// @param x the x coordinate of the top left corner of the barcode.
-    /// @param y the y coordinate of the top left corner of the barcode.
+    /// - Parameter x: the x coordinate of the top left corner of the barcode.
+    /// - Parameter y: the y coordinate of the top left corner of the barcode.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -67,7 +66,7 @@ public class QRCode : Drawable {
     /// Sets the module length of this barcode.
     /// The default value is 2.0
     ///
-    /// @param moduleLength the specified module length.
+    /// - Parameter moduleLength: the specified module length.
     ///
     @discardableResult
     public func setModuleLength(_ moduleLength: Float) -> QRCode {
@@ -85,9 +84,8 @@ public class QRCode : Drawable {
     ///
     /// Draws this barcode on the specified page.
     ///
-    /// @param page the specified page.
-    /// @return x and y coordinates of the bottom right corner of this component.
-    /// @throws Exception
+    /// - Parameter page: the specified page.
+    /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -110,8 +108,8 @@ public class QRCode : Drawable {
     }
 
     ///
-    /// @param row the row.
-    /// @param col the column.
+    /// - Parameter row: the row.
+    /// - Parameter col: the column.
     ///
     func isDark(_ row: Int, _ col: Int) -> Bool {
         if modules![row][col] != nil {

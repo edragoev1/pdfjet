@@ -21,3 +21,24 @@ docfx docfx/docfx.json
 rm -rf docs/go
 doc2go -out docs/go -home github.com/edragoev1/pdfjet/src -rel-link-style index \
     $(go list ./src/... | grep -v /examples/)
+
+# The Swift API reference is built by DocC, which comes with the Swift toolchain,
+# from the doc comments in Sources/PDFjet. The pages expect to be served from
+# /pdfjet/swift/, as on GitHub Pages.
+rm -rf docs/swift
+swift package dump-symbol-graph --minimum-access-level public --skip-synthesized-members
+docc convert \
+    --additional-symbol-graph-dir "$(dirname "$(swift build --show-bin-path)")/symbolgraph" \
+    --fallback-display-name PDFjet \
+    --fallback-bundle-identifier com.pdfjet.PDFjet \
+    --transform-for-static-hosting \
+    --hosting-base-path pdfjet/swift \
+    --output-path docs/swift
+# DocC has no page at its root, so the root redirects to the PDFjet module page.
+cat > docs/swift/index.html <<'EOF'
+<!doctype html>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url=documentation/pdfjet/">
+<title>PDFjet for Swift</title>
+<a href="documentation/pdfjet/">PDFjet for Swift</a>
+EOF

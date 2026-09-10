@@ -69,8 +69,8 @@ public class Cell {
     /**
      * Creates a cell object and sets the font and the cell text.
      *
-     * @param font the font.
-     * @param text the text.
+     * - Parameter font: the font.
+     * - Parameter text: the text.
      */
     public init(_ font: Font?, _ text: String?) {
         self.font = font
@@ -82,8 +82,8 @@ public class Cell {
     /**
      * Sets the font for this cell.
      *
-     * @param font the font.
-     * @return this Cell object.
+     * - Parameter font: the font.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setFont(_ font: Font?) -> Cell {
@@ -94,8 +94,8 @@ public class Cell {
     /**
      * Sets the fallback font for this cell.
      *
-     * @param fallbackFont the fallback font.
-     * @return this Cell object.
+     * - Parameter fallbackFont: the fallback font.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setFallbackFont(_ fallbackFont: Font?) -> Cell {
@@ -106,7 +106,7 @@ public class Cell {
     /**
      * Returns the font used by this cell.
      *
-     * @return the font.
+     * - Returns: the font.
      */
     public func getFont() -> Font? {
         return self.font
@@ -115,7 +115,7 @@ public class Cell {
     /**
      * Returns the fallback font used by this cell.
      *
-     * @return the fallback font.
+     * - Returns: the fallback font.
      */
     public func getFallbackFont() -> Font? {
         return self.fallbackFont
@@ -124,7 +124,7 @@ public class Cell {
     /**
      * Sets the cell text.
      *
-     * @param text the cell text.
+     * - Parameter text: the cell text.
      */
     @discardableResult
     public func setText(_ text: String?) -> Cell {
@@ -135,7 +135,7 @@ public class Cell {
     /**
      * Returns the cell text.
      *
-     * @return the cell text.
+     * - Returns: the cell text.
      */
     public func getText() -> String? {
         return self.text
@@ -144,8 +144,8 @@ public class Cell {
     /**
      * Sets the image inside this cell.
      *
-     * @param image the image.
-     * @return this Cell object.
+     * - Parameter image: the image.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setImage(_ image: Image?) -> Cell {
@@ -157,7 +157,7 @@ public class Cell {
     /**
      * Returns the cell image.
      *
-     * @return the image.
+     * - Returns: the image.
      */
     public func getImage() -> Image? {
         return self.image
@@ -175,7 +175,7 @@ public class Cell {
      * Sets the point inside this cell.
      * See the Point class and Example_09 for more information.
      *
-     * @param point the point.
+     * - Parameter point: the point.
      */
     @discardableResult
     public func setPoint(_ point: Point?) -> Cell {
@@ -186,7 +186,7 @@ public class Cell {
     /**
      * Returns the cell point.
      *
-     * @return the point.
+     * - Returns: the point.
      */
     public func getPoint() -> Point? {
         return self.point
@@ -195,8 +195,8 @@ public class Cell {
     /**
      * Sets the composite text object.
      *
-     * @param compositeTextLine the composite text object.
-     * @return this Cell object.
+     * - Parameter compositeTextLine: the composite text object.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setCompositeTextLine(_ compositeTextLine: CompositeTextLine?) -> Cell {
@@ -207,7 +207,7 @@ public class Cell {
     /**
      * Returns the composite text object.
      *
-     * @return the composite text object.
+     * - Returns: the composite text object.
      */
     public func getCompositeTextLine() -> CompositeTextLine? {
         return self.compositeTextLine
@@ -216,8 +216,8 @@ public class Cell {
     /**
      * Sets the width of this cell.
      *
-     * @param width the specified width.
-     * @return this Cell object.
+     * - Parameter width: the specified width.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setWidth(_ width: Float) -> Cell {
@@ -264,7 +264,7 @@ public class Cell {
     /**
      * Returns the cell width.
      *
-     * @return the cell width.
+     * - Returns: the cell width.
      */
     public func getWidth() -> Float {
         return self.width
@@ -273,8 +273,8 @@ public class Cell {
     /**
      * Sets the top padding of this cell.
      *
-     * @param padding the top padding.
-     * @return this Cell object.
+     * - Parameter padding: the top padding.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setTopPadding(_ padding: Float) -> Cell {
@@ -285,8 +285,8 @@ public class Cell {
     /**
      * Sets the bottom padding of this cell.
      *
-     * @param padding the bottom padding.
-     * @return this Cell object.
+     * - Parameter padding: the bottom padding.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setBottomPadding(_ padding: Float) -> Cell {
@@ -297,8 +297,8 @@ public class Cell {
     /**
      * Sets the left padding of this cell.
      *
-     * @param padding the left padding.
-     * @return this Cell object.
+     * - Parameter padding: the left padding.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setLeftPadding(_ padding: Float) -> Cell {
@@ -314,8 +314,8 @@ public class Cell {
     /**
      * Sets the right padding of this cell.
      *
-     * @param padding the right padding.
-     * @return this Cell object.
+     * - Parameter padding: the right padding.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setRightPadding(_ padding: Float) -> Cell {
@@ -331,8 +331,8 @@ public class Cell {
     /**
      * Sets the top, bottom, left and right paddings of this cell.
      *
-     * @param padding the right padding.
-     * @return this Cell object.
+     * - Parameter padding: the right padding.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setPadding(_ padding: Float) -> Cell {
@@ -346,7 +346,7 @@ public class Cell {
     /**
      * Returns the cell height.
      *
-     * @return the cell height.
+     * - Returns: the cell height.
      */
     public func getHeight(_ width: Float) -> Float {
         var cellHeight = Float(0.0)
@@ -488,8 +488,8 @@ public class Cell {
     /**
      * Sets the column span private variable.
      *
-     * @param colspan the specified column span value.
-     * @return this Cell object.
+     * - Parameter colspan: the specified column span value.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setColSpan(_ colspan: UInt32) -> Cell {
@@ -501,7 +501,7 @@ public class Cell {
     /**
      * Returns the column span private variable value.
      *
-     * @return the column span value.
+     * - Returns: the column span value.
      */
     public func getColSpan() -> UInt32 {
         return (self.properties & 0x0000FFFF)
@@ -568,9 +568,9 @@ public class Cell {
     /**
      * Sets the cell text alignment.
      *
-     * @param alignment the alignment code.
+     * - Parameter alignment: the alignment code.
      * Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
-     * @return this Cell object.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setTextAlignment(_ alignment: UInt32) -> Cell {
@@ -582,7 +582,7 @@ public class Cell {
     /**
      * Returns the text alignment.
      *
-     * @return the text horizontal alignment code.
+     * - Returns: the text horizontal alignment code.
      */
     public func getTextAlignment() -> UInt32{
         return (self.properties & 0x00300000)
@@ -591,9 +591,9 @@ public class Cell {
     /**
      * Sets the cell text vertical alignment.
      *
-     * @param alignment the alignment code.
+     * - Parameter alignment: the alignment code.
      * Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
-     * @return this Cell object.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setVerTextAlignment(_ alignment: UInt32) -> Cell {
@@ -604,7 +604,7 @@ public class Cell {
     /**
      * Returns the cell text vertical alignment.
      *
-     * @return the vertical alignment code.
+     * - Returns: the vertical alignment code.
      */
     public func getVerTextAlignment() -> UInt32 {
         return self.valign
@@ -614,8 +614,8 @@ public class Cell {
      * Sets the underline text parameter.
      * If the value of the underline variable is 'true' - the text is underlined.
      *
-     * @param underline the underline text parameter.
-     * @return this Cell object.
+     * - Parameter underline: the underline text parameter.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setUnderline(_ underline: Bool) -> Cell {
@@ -626,7 +626,7 @@ public class Cell {
     /**
      * Returns the underline text parameter.
      *
-     * @return the underline text parameter.
+     * - Returns: the underline text parameter.
      */
     public func getUnderline() -> Bool {
         return self.underline
@@ -635,8 +635,8 @@ public class Cell {
     /**
      * Sets the strikeout text parameter.
      *
-     * @param strikeout the strikeout text parameter.
-     * @return this Cell object.
+     * - Parameter strikeout: the strikeout text parameter.
+     * - Returns: this Cell object.
      */
     @discardableResult
     public func setStrikeout(_ strikeout: Bool) -> Cell {
@@ -647,7 +647,7 @@ public class Cell {
     /**
      * Returns the strikeout text parameter.
      *
-     * @return the strikeout text parameter.
+     * - Returns: the strikeout text parameter.
      */
     public func getStrikeout() -> Bool{
         return self.strikeout

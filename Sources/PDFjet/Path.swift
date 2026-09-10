@@ -37,7 +37,7 @@ public class Path : Drawable {
     ///
     /// Adds a point to this path.
     ///
-    /// - Parameter point the point to add.
+    /// - Parameter point: the point to add.
     ///
     public func add(_ point: Point) {
         points!.append(point)
@@ -52,9 +52,9 @@ public class Path : Drawable {
     /// alternating dashes and gaps.
     /// The dash phase specifies the distance into the dash pattern at which to start the dash.
     /// The elements of both the dash array and the dash phase are expressed in user space units.
-    /// <pre>
     /// Examples of line dash patterns:
     ///
+    /// ```
     ///     "[Array] Phase"     Appearance          Description
     ///     _______________     _________________   ____________________________________
     ///
@@ -64,9 +64,9 @@ public class Path : Drawable {
     ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
     ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
     ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-    /// </pre>
+    /// ```
     ///
-    /// - Parameter pattern the line dash pattern.
+    /// - Parameter pattern: the line dash pattern.
     ///
     @discardableResult
     public func setPattern(_ pattern: String) -> Path {
@@ -77,7 +77,7 @@ public class Path : Drawable {
     ///
     /// Sets the pen width that will be used to draw the lines and splines that are part of this path.
     ///
-    /// - Parameter width the pen width.
+    /// - Parameter width: the pen width.
     ///
     @discardableResult
     public func setWidth(_ width: Float) -> Path {
@@ -88,7 +88,7 @@ public class Path : Drawable {
     ///
     /// Sets the pen color that will be used to draw this path.
     ///
-    /// - Parameter color the color is specified as an integer.
+    /// - Parameter color: the color is specified as an integer.
     ///
     @discardableResult
     public func setColor(_ color: Int32) -> Path {
@@ -99,7 +99,7 @@ public class Path : Drawable {
     ///
     /// Sets the closePath variable.
     ///
-    /// - Parameter closePath if closePath is true a line will be draw between the first and last point of this path.
+    /// - Parameter closePath: if closePath is true a line will be draw between the first and last point of this path.
     ///
     @discardableResult
     public func setClosePath(_ closePath: Bool) -> Path {
@@ -111,7 +111,7 @@ public class Path : Drawable {
     /// Sets the fillShape private variable.
     /// If fillShape is true - the shape of the path will be filled with the current brush color.
     ///
-    /// - Parameter fillShape the fillShape flag.
+    /// - Parameter fillShape: the fillShape flag.
     ///
     @discardableResult
     public func setFillShape(_ fillShape: Bool) -> Path {
@@ -122,7 +122,7 @@ public class Path : Drawable {
     ///
     /// Sets the line cap style.
     ///
-    /// - Parameter style the cap style of this path.
+    /// - Parameter style: the cap style of this path.
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
     ///
     @discardableResult
@@ -143,7 +143,7 @@ public class Path : Drawable {
     ///
     /// Sets the line join style.
     ///
-    /// - Parameter style the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
+    /// - Parameter style: the line join style code. Supported values: Join.MITER, Join.ROUND and Join.BEVEL
     ///
     @discardableResult
     public func setLineJoinStyle(_ style: JoinStyle) -> Path {
@@ -171,7 +171,7 @@ public class Path : Drawable {
     ///
     /// Scales the path using the specified factor.
     ///
-    /// - Parameter factor the specified factor.
+    /// - Parameter factor: the specified factor.
     ///
     public func scaleBy(_ factor: Float) {
         for i in 0..<points!.count {
@@ -184,7 +184,7 @@ public class Path : Drawable {
     ///
     /// Draws this path on the page using the current selected color, pen width, line pattern and line join style.
     ///
-    /// - Parameter page the page to draw this path on.
+    /// - Parameter page: the page to draw this path on.
     /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
