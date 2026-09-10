@@ -36,17 +36,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   `setLocation` and C#'s `SetPosition` moved only the text, and Java's
   `setPosition(double, double)` called itself until the stack overflowed.
 
-### Deprecated methods removed from Go and Swift
-- Go `TextLine.SetColor` and Swift `TextLine.setColor` are removed; call
-  `SetTextColor` or `setTextColor`, which they only forwarded to. Java and C#
-  keep `setColor`, marked deprecated.
+### Deprecated methods removed
+- `TextLine.setColor` is removed from all four ports; call `setTextColor`,
+  which it only forwarded to. The Swift `DonutChart`, the Java `Example_37` and
+  the Swift `Example_03`, `Example_37` and `Example_41` now call `setTextColor`.
+- `TextColumn.setSize` is removed from all four ports; call `setWidth` and
+  `setHeight`. Java, Go and Swift get `setHeight`, which C# already had, and
+  their `Example_10` uses the two setters, as the C# example already did.
+- C# `Page.SetPenColor(float, float, float)` is removed; call
+  `SetPenColor(float[])`.
+- C# `Page.DrawBezierCurve`, deprecated since v4.00, is removed; call
+  `DrawPath`.
 - Swift `SVGImage.getPenWidth()` is removed; call `getWidth()`.
-- Go `TextColumn.SetSize` and Swift `TextColumn.setSize` are removed, as C# marks
-  `SetSize` obsolete. Call `SetWidth` and `SetHeight` (Go) or `setWidth` and
-  `setHeight` (Swift); the height setters are new, matching C# `SetHeight`.
-  `Example_10` in both ports uses them.
-- The Swift `DonutChart` and `Example_03`, `Example_37` and `Example_41` call
-  `setTextColor`.
+- The commented-out `setPenColor` and `setBrushColor` overloads that took
+  separate red, green and blue values are removed from the Java and C# `Page`
+  sources.
+- Code that calls a removed method must switch to its replacement.
 
 ### Stamp
 - `Stamp` now conforms to `Drawable` in Swift and Go, as it already did in

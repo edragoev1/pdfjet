@@ -118,31 +118,6 @@ public class TextColumn : IDrawable {
     }
 
     /// <summary>
-    /// Sets the size of this text column.
-    /// </summary>
-    /// <param name="w">the width of this text column.</param>
-    /// <param name="h">the height of this text column.</param>
-    /// <returns>this TextColumn object.</returns>
-    [Obsolete]
-    public TextColumn SetSize(double w, double h) {
-        SetSize((float) w, (float) h);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the size of this text column.
-    /// </summary>
-    /// <param name="w">the width of this text column.</param>
-    /// <param name="h">the height of this text column.</param>
-    /// <returns>this TextColumn object.</returns>
-    [Obsolete]
-    public TextColumn SetSize(float w, float h) {
-        this.w = w;
-        this.h = h;
-        return this;
-    }
-
-    /// <summary>
     /// Sets the desired width of this text column.
     /// </summary>
     /// <param name="w">the width of this text column.</param>

@@ -204,16 +204,6 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * @deprecated Use {@link #setTextColor(int color)} instead.
-     * @param color the color value.
-     * @return the text line.
-     */
-    @Deprecated
-    public TextLine setColor(int color) {
-        return setTextColor(color);
-    }
-
-    /**
      * Sets the text color. Color.transparent clears it.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.

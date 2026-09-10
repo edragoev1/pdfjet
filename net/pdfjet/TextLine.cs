@@ -154,12 +154,6 @@ public class TextLine : IDrawable {
         return this.fallbackFont;
     }
 
-    /// <summary>Sets the text color as a 0xRRGGBB value. Use SetTextColor instead.</summary>
-    [Obsolete]
-    public TextLine SetColor(int color) {
-        return SetTextColor(color);
-    }
-
     /// <summary>Sets the text color as a 0xRRGGBB value. Color.transparent clears it.</summary>
     public TextLine SetTextColor(int color) {
         if (color == Color.transparent) {

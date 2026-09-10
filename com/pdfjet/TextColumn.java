@@ -103,31 +103,6 @@ public class TextColumn implements Drawable {
     }
 
     /**
-     * Sets the size of this text column.
-     *
-     * @param w the width of this text column.
-     * @param h the height of this text column.
-     * @return this TextColumn object.
-     */
-    public TextColumn setSize(double w, double h) {
-        setSize((float) w, (float) h);
-        return this;
-    }
-
-    /**
-     * Sets the size of this text column.
-     *
-     * @param w the width of this text column.
-     * @param h the height of this text column.
-     * @return this TextColumn object.
-     */
-    public TextColumn setSize(float w, float h) {
-        this.w = w;
-        this.h = h;
-        return this;
-    }
-
-    /**
      * Sets the desired width of this text column.
      *
      * @param w the width of this text column.
@@ -145,6 +120,17 @@ public class TextColumn implements Drawable {
      */
     public float getWidth() {
         return this.w;
+    }
+
+    /**
+     * Sets the height of this text column.
+     *
+     * @param h the height of this text column.
+     * @return this TextColumn object.
+     */
+    public TextColumn setHeight(float h) {
+        this.h = h;
+        return this;
     }
 
     /**

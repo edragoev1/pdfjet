@@ -117,7 +117,8 @@ public class Example_10 {
         }
 
         float columnWidth = 470f;
-        column.setSize(columnWidth, 100f);
+        column.setWidth(columnWidth);
+        column.setHeight(100f);
         float[] xy = column.drawOn(page);
 
         if (rotate == 0) {

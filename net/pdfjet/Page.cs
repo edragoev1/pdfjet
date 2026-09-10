@@ -604,44 +604,6 @@ public class Page {
         }
     }
 
-//    /**
-//     * Sets the color for brush operations.
-//     * This is the color used when drawing regular text and filling shapes.
-//     *
-//     * @param r the red component is float value from 0.0 to 1.0.
-//     * @param g the green component is float value from 0.0 to 1.0.
-//     * @param b the blue component is float value from 0.0 to 1.0.
-//     */
-//    public void SetBrushColor(double r, double g, double b) {
-//        SetBrushColor(new float[] { (float) r, (float) g, (float) b });
-//    }
-//
-//    /**
-//     * Sets the color for stroking operations.
-//     * The pen color is used when drawing lines and splines.
-//     *
-//     * @param r the red component is float value from 0.0 to 1.0.
-//     * @param g the green component is float value from 0.0 to 1.0.
-//     * @param b the blue component is float value from 0.0 to 1.0.
-//     */
-//    public void SetPenColor(
-//            double r, double g, double b) {
-//        SetPenColor(new float[] { (float) r, (float) g, (float) b });
-//    }
-//
-//    /**
-//     * Sets the color for brush operations.
-//     * This is the color used when drawing regular text and filling shapes.
-//     *
-//     * @param r the red component is float value from 0.0f to 1.0f.
-//     * @param g the green component is float value from 0.0f to 1.0f.
-//     * @param b the blue component is float value from 0.0f to 1.0f.
-//     */
-//    [Obsolete("This method is now obsolete. Use SetBrushColor(float[] rgbColor) instead.")]
-//    public void SetBrushColor(float r, float g, float b) {
-//        SetBrushColor(new float[] {r, g, b}); // Call the second method with an array
-//    }
-
     /// <summary>
     /// Sets the brush color.
     /// </summary>
@@ -722,22 +684,6 @@ public class Page {
         Append(" RG\n");
         // Set the pen color
         this.penColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the pen color using individual red, green, and blue components.
-    /// </summary>
-    /// <param name="r">The red component as a float value from 0.0f to 1.0f.</param>
-    /// <param name="g">The green component as a float value from 0.0f to 1.0f.</param>
-    /// <param name="b">The blue component as a float value from 0.0f to 1.0f.</param>
-    /// <remarks>
-    /// <b>Deprecated</b>: This method is now obsolete. Use SetPenColor(float[] rgbColor) instead.
-    /// </remarks>
-    [Obsolete("This method is now obsolete. Use SetPenColor(float[] rgbColor) instead.")]
-    public Page SetPenColor(float r, float g, float b) {
-        // Call the newer method using an array
-        SetPenColor(new float[] { r, g, b });
         return this;
     }
 
@@ -1109,35 +1055,6 @@ public class Page {
                 } else {
                     LineTo(point.x, point.y);
                 }
-            }
-        }
-        Append(pathOperator);
-        Append('\n');
-    }
-
-    /// <summary>
-    /// Strokes a bezier curve and draws it using the current pen.
-    /// </summary>
-    /// <remarks>Deprecated: As of v4.00 replaced by <see cref="DrawPath(List{Point}, string)"/></remarks>
-    /// <param name="list">the list of points that define the bezier curve.</param>
-    public void DrawBezierCurve(List<Point> list) {
-        DrawBezierCurve(list, PathOperator.Stroke);
-    }
-
-    /// <summary>
-    /// Draws a bezier curve and fills it using the current brush.
-    /// </summary>
-    /// <remarks>Deprecated: As of v4.00 replaced by <see cref="DrawPath(List{Point}, string)"/></remarks>
-    /// <param name="list">the list of points that define the bezier curve.</param>
-    /// <param name="pathOperator">the path operator, for example PathOperator.Stroke or PathOperator.Fill.</param>
-    public void DrawBezierCurve(List<Point> list, String pathOperator) {
-        Point point = list[0];
-        MoveTo(point.x, point.y);
-        for (int i = 1; i < list.Count; i++) {
-            point = list[i];
-            Append(point);
-            if (i % 3 == 0) {
-                Append("c\n");
             }
         }
         Append(pathOperator);

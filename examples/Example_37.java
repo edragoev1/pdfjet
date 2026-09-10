@@ -74,7 +74,7 @@ class Example_37 {
             image.drawOn(page);
 
             TextLine text = new TextLine(f1, "Hello, World!");
-            text.setColor(Color.blue);
+            text.setTextColor(Color.blue);
             text.setLocation(50f, 200f);
             text.drawOn(page);
 
