@@ -40,12 +40,6 @@ public class Stamp implements Drawable {
         return this;
     }
 
-    public Stamp setPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-
     public Stamp setLocation(float x, float y) {
         this.x = x;
         this.y = y;

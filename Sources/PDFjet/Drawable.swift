@@ -31,6 +31,6 @@ public protocol Drawable {
      *  @return this drawable object.
      */
     @discardableResult
-    func setPosition(_ x: Float, _ y: Float) -> Self
+    func setLocation(_ x: Float, _ y: Float) -> Self
 
 }

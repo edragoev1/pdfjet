@@ -86,32 +86,8 @@ public class TextLine : IDrawable {
         return text;
     }
 
-    /**
-     * Sets the position where this text line will be drawn on the page.
-     *
-     * @param x the x coordinate of the text line.
-     * @param y the y coordinate of the text line.
-     * @return this TextLine.
-     */
-    public TextLine SetPosition(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
-    /**
-     * Sets the position where this text line will be drawn on the page.
-     *
-     * @param x the x coordinate of the text line.
-     * @param y the y coordinate of the text line.
-     * @return this TextLine.
-     */
-    public TextLine SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /**

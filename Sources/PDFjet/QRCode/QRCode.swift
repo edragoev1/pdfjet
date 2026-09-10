@@ -50,12 +50,6 @@ public class QRCode : Drawable {
         self.make(false, getBestMaskPattern())
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     ///
     /// Sets the location where this barcode will be drawn on the page.
     ///
@@ -63,7 +57,7 @@ public class QRCode : Drawable {
     /// @param y the y coordinate of the top left corner of the barcode.
     ///
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> QRCode {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

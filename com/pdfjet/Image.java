@@ -201,30 +201,6 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Sets the position of this image on the page to (x, y).
-     *
-     * @param x the x coordinate of the top left corner of the image.
-     * @param y the y coordinate of the top left corner of the image.
-     * @return this Image object.
-     */
-    public Image setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position of this image on the page to (x, y).
-     *
-     * @param x the x coordinate of the top left corner of the image.
-     * @param y the y coordinate of the top left corner of the image.
-     * @return this Image object.
-     */
-    public Image setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the location of this image on the page to (x, y).
      *
      * @param x the x coordinate of the top left corner of the image.

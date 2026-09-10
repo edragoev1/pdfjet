@@ -618,15 +618,15 @@ public class Cell {
         if (text != null && !text.Equals("")) {
             DrawText(page, x, y, w, h);
         } else if (textBox != null) {
-            textBox.SetPosition(x + leftPadding, y + topPadding);
+            textBox.SetLocation(x + leftPadding, y + topPadding);
             textBox.SetWidth(w - (leftPadding + rightPadding));
             textBox.DrawOn(page);
         } else if (textBlock != null) {
-            textBlock.SetPosition(x + leftPadding, y + topPadding);
+            textBlock.SetLocation(x + leftPadding, y + topPadding);
             textBlock.SetWidth(w - (leftPadding + rightPadding));
             textBlock.DrawOn(page);
         } else if (textColumn != null) {
-            textColumn.SetPosition(x + leftPadding, y + topPadding);
+            textColumn.SetLocation(x + leftPadding, y + topPadding);
             textColumn.DrawOn(page);
         } else if (image != null) {
             if (GetTextAlignment() == Align.LEFT) {

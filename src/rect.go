@@ -63,13 +63,6 @@ func (rect *Rect) SetLocation(x, y float32) *Rect {
 	return rect
 }
 
-// SetPosition sets the location of this rect on the page.
-// @param x the x coordinate of the top left corner of this rect when drawn on the page.
-// @param y the y coordinate of the top left corner of this rect when drawn on the page.
-func (rect *Rect) SetPosition(x, y float32) {
-	rect.SetLocation(x, y)
-}
-
 // SetSize sets the size of this rect.
 // @param w the width of this rect.
 // @param h the height of this rect.

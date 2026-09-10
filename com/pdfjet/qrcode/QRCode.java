@@ -49,30 +49,6 @@ final public class QRCode implements Drawable {
     }
 
     /**
-     *  Sets the position where this barcode will be drawn on the page.
-     *
-     *  @param x the x coordinate of the top left corner of the barcode.
-     *  @param y the y coordinate of the top left corner of the barcode.
-     *  @return this QRCode object.
-     */
-    public QRCode setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     *  Sets the position where this barcode will be drawn on the page.
-     *
-     *  @param x the x coordinate of the top left corner of the barcode.
-     *  @param y the y coordinate of the top left corner of the barcode.
-     *  @return this QRCode object.
-     */
-    public QRCode setPosition(double x, double y) {
-        setLocation((float) x, (float) y);
-        return this;
-    }
-
-    /**
      *  Sets the location where this barcode will be drawn on the page.
      *
      *  @param x the x coordinate of the top left corner of the barcode.

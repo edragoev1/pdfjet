@@ -175,12 +175,6 @@ public class CompositeTextLine : Drawable {
         textLines.append(component)
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     /**
      * Loop through all the text lines and reset their location based on
      * the new location set here.
@@ -189,7 +183,7 @@ public class CompositeTextLine : Drawable {
      * @param y the y coordinate.
      */
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> CompositeTextLine {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.position[X] = x
         self.position[Y] = y
         self.current[X]  = x

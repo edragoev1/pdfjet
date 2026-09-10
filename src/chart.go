@@ -228,11 +228,6 @@ func (chart *Chart) ToFloatArray(color int32) [3]float32 {
 	return [3]float32{r, g, b}
 }
 
-// SetPosition sets the position of this chart on the page.
-func (chart *Chart) SetPosition(x, y float32) {
-	chart.SetLocation(x, y)
-}
-
 // SetDrawXAxisLabels sets whether to draw X axis labels on the chart.
 func (chart *Chart) SetDrawXAxisLabels(drawXAxisLabels bool) *Chart {
 	chart.drawXAxisLabels = drawXAxisLabels

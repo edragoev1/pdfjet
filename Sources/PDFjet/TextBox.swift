@@ -114,12 +114,6 @@ public class TextBox : Drawable {
     }
 
     @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
-    @discardableResult
     public func setSize(_ w: Float, _ h: Float) -> TextBox {
         self.width = w
         self.height = h
@@ -127,7 +121,7 @@ public class TextBox : Drawable {
     }
 
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> TextBox {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

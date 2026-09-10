@@ -119,30 +119,6 @@ public class Barcode implements Drawable {
     }
 
     /**
-     * Sets the position where this barcode will be drawn on the page.
-     *
-     * @param x1 the x coordinate of the top left corner of the barcode.
-     * @param y1 the y coordinate of the top left corner of the barcode.
-     * @return this Barcode object.
-     */
-    public Barcode setPosition(float x1, float y1) {
-        setLocation(x1, y1);
-        return this;
-    }
-
-    /**
-     * Sets the position where this barcode will be drawn on the page.
-     *
-     * @param x1 the x coordinate of the top left corner of the barcode.
-     * @param y1 the y coordinate of the top left corner of the barcode.
-     * @return this Barcode object.
-     */
-    public Barcode setPosition(double x1, double y1) {
-        setLocation(x1, y1);
-        return this;
-    }
-
-    /**
      * Sets the location where this barcode will be drawn on the page.
      *
      * @param x1 the x coordinate of the top left corner of the barcode.

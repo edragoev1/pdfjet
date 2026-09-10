@@ -88,10 +88,6 @@ func (tf *TextFrame) GetHeight() float32 {
 	return tf.h
 }
 
-func (tf *TextFrame) SetPosition(x, y float32) {
-	tf.SetLocation(x, y)
-}
-
 func (tf *TextFrame) SetBorder(border bool) *TextFrame {
 	tf.border = border
 	return tf

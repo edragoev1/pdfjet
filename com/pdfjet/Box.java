@@ -66,30 +66,6 @@ public class Box implements Drawable {
     }
 
     /**
-     * Sets the position of this box on the page.
-     *
-     * @param x the x coordinate of the top left corner of this box when drawn on the page.
-     * @param y the y coordinate of the top left corner of this box when drawn on the page.
-     * @return this Box object.
-     */
-    public Box setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position of this box on the page.
-     *
-     * @param x the x coordinate of the top left corner of this box when drawn on the page.
-     * @param y the y coordinate of the top left corner of this box when drawn on the page.
-     * @return this Box object.
-     */
-    public Box setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the location of this box on the page.
      *
      * @param x the x coordinate of the top left corner of this box when drawn on the page.

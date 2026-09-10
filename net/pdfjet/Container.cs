@@ -33,23 +33,12 @@ public class Container : IDrawable {
         this.elements = new List<IDrawable>();
     }
 
-    /// <summary>
-    /// Sets the position of the container on the page.
-    /// </summary>
-    /// <param name="x">The X coordinate.</param>
-    /// <param name="y">The Y coordinate.</param>
-    public Container SetPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /// <summary>
-    /// Sets the location of the container on the page (alias for <see cref="SetPosition"/>).
+    /// Sets the location of the container on the page.
     /// </summary>
     /// <param name="x">The X coordinate.</param>
     /// <param name="y">The Y coordinate.</param>

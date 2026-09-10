@@ -34,32 +34,8 @@ public class Form : IDrawable {
         this.fields = fields;
     }
 
-    /**
-     * Sets the position of this form on the page
-     *
-     * @param x the horizontal position
-     * @param y the vertical position
-     * @return this Form object.
-     */
-    public Form SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
-    }
-
-    /**
-     * Sets the position of this form on the page
-     *
-     * @param x the horizontal position
-     * @param y the vertical position
-     * @return this Form object.
-     */
-    public Form SetPosition(double x, double y) {
-        SetLocation(x, y);
-        return this;
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /**

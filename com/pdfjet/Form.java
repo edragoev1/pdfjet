@@ -34,30 +34,6 @@ public class Form implements Drawable {
     }
 
     /**
-     * Sets the position of this form on the page
-     *
-     * @param x the horizontal position
-     * @param y the vertical position
-     * @return this Form object.
-     */
-    public Form setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position of this form on the page
-     *
-     * @param x the horizontal position
-     * @param y the vertical position
-     * @return this Form object.
-     */
-    public Form setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the location of this form on the page
      *
      * @param x the horizontal location

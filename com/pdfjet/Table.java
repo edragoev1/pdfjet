@@ -111,30 +111,6 @@ public class Table {
     }
 
     /**
-     * Sets the position (x, y) of the top left corner of this table on the page.
-     *
-     * @param x the x coordinate of the top left point of the table.
-     * @param y the y coordinate of the top left point of the table.
-     * @return this Table object.
-     */
-    public Table setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position (x, y) of the top left corner of this table on the page.
-     *
-     * @param x the x coordinate of the top left point of the table.
-     * @param y the y coordinate of the top left point of the table.
-     * @return this Table object.
-     */
-    public Table setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the location (x, y) of the top left corner of this table on the page.
      *
      * @param x the x coordinate of the top left point of the table.

@@ -38,8 +38,9 @@ func NewArc() *Arc {
 	return arc
 }
 
-func (arc *Arc) SetPosition(cx, cy float32) {
+func (arc *Arc) SetLocation(cx, cy float32) *Arc {
 	arc.SetCenterXY(cx, cy)
+	return arc
 }
 
 func (arc *Arc) SetStartPointToEndOf(line *Line) *Arc {

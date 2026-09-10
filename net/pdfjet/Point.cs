@@ -145,25 +145,13 @@ public class Point : IDrawable {
      * @param y the y coordinate of this point when drawn on the page.
      * @return this Point object.
      */
-    public Point SetPosition(double x, double y) {
-        SetPosition((float) x, (float) y);
+    public Point SetLocation(double x, double y) {
+        SetLocation((float) x, (float) y);
         return this;
     }
 
-    /**
-     * Sets the position (x, y) of this point.
-     *
-     * @param x the x coordinate of this point when drawn on the page.
-     * @param y the y coordinate of this point when drawn on the page.
-     * @return this Point object.
-     */
-    public Point SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     public Point SetXY(float x, float y) {

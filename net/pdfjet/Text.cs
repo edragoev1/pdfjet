@@ -31,18 +31,8 @@ public class Text : IDrawable {
         this.paragraphs = paragraphs;
     }
 
-    public Text SetPosition(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
-    public Text SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     public Text SetLocation(float x, float y) {

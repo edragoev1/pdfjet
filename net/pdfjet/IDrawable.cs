@@ -20,6 +20,6 @@ public interface IDrawable {
      * @throws Exception
      */
     float[] DrawOn(Page canvas);
-    IDrawable SetPosition(float x, float y);
+    IDrawable SetLocation(float x, float y);
 }
 }   // End of namespace PDFjet.NET

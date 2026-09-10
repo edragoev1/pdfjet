@@ -73,12 +73,6 @@ public class CheckBox : Drawable {
         return self
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     ///
     /// Set the x,y location on the Page.
     ///
@@ -87,7 +81,7 @@ public class CheckBox : Drawable {
     /// @return this CheckBox.
     ///
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> CheckBox {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

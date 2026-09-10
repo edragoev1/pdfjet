@@ -237,15 +237,6 @@ func (image *Image) SetLocation(x, y float32) *Image {
 	return image
 }
 
-// SetPosition sets the location of this image on the page to (x, y).
-//
-// @param x the x coordinate of the top left corner of the image.
-// @param y the y coordinate of the top left corner of the image.
-func (image *Image) SetPosition(x, y float32) {
-	image.x = x
-	image.y = y
-}
-
 // ScaleBy scales this image by the specified factor.
 // @param factor the factor used to scale the image.
 func (image *Image) ScaleBy(factor float32) *Image {

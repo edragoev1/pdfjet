@@ -170,30 +170,6 @@ public class Path implements Drawable {
     }
 
     /**
-     * Sets the path position.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Path object.
-     */
-    public Path setPosition(double x, double y) {
-        setLocation((float) x, (float) y);
-        return this;
-    }
-
-    /**
-     * Sets the path position.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Path object.
-     */
-    public Path setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the path location.
      *
      * @param x the x coordinate.

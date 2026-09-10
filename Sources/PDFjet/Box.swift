@@ -50,12 +50,6 @@ public class Box : Drawable {
         self.h = h
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     /**
      * Sets the location of this box on the page.
      *
@@ -65,7 +59,7 @@ public class Box : Drawable {
     @discardableResult
     public func setLocation(
             _ x: Float,
-            _ y: Float) -> Box {
+            _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

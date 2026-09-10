@@ -198,32 +198,8 @@ public class Image : IDrawable {
         objNumber = pdf.GetObjNumber();
     }
 
-    /**
-     * Sets the position of this image on the page to (x, y).
-     *
-     * @param x the x coordinate of the top left corner of the image.
-     * @param y the y coordinate of the top left corner of the image.
-     * @return this Image object.
-     */
-    public Image SetPosition(double x, double y) {
-        SetPosition((float) x, (float) y);
-        return this;
-    }
-
-    /**
-     * Sets the position of this image on the page to (x, y).
-     *
-     * @param x the x coordinate of the top left corner of the image.
-     * @param y the y coordinate of the top left corner of the image.
-     * @return this Image object.
-     */
-    public Image SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /**

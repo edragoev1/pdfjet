@@ -168,30 +168,6 @@ public class Point implements Drawable {
     }
 
     /**
-     *  Sets the position (x, y) of this point.
-     *
-     *  @param x the x coordinate of this point when drawn on the page.
-     *  @param y the y coordinate of this point when drawn on the page.
-     *  @return this Point object.
-     */
-    public Point setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     *  Sets the position (x, y) of this point.
-     *
-     *  @param x the x coordinate of this point when drawn on the page.
-     *  @param y the y coordinate of this point when drawn on the page.
-     *  @return this Point object.
-     */
-    public Point setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the location of the point.
      *
      * @param x the x coordinate.

@@ -61,8 +61,8 @@ on Linux (swift-crypto only ships AES-GCM), and this library deliberately has no
 dependencies on external packages. `Example_30` demonstrates encryption, so it
 exists for Java, C# and Go but not for Swift; `build-swift.sh` skips it.
 
-Public setters return the object they were called on, so calls can be chained,
-with one exception in Go: `SetPosition(x, y float32)` returns nothing, because
-a Go type only satisfies the `Drawable` interface with an exact signature
-match. Chain from `SetLocation` instead, or from `SetCenterXY` on `Arc` and
-`SetStartPoint` on `Line`.
+Public setters return the object they were called on, so calls can be chained.
+In Java, C# and Swift the `Drawable` interface declares `setLocation` as well as
+`drawOn`. In Go it declares only `DrawOn`: a Go type only satisfies an interface
+with an exact signature match, and each Go `SetLocation` returns its own type so
+it can be chained.

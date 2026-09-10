@@ -30,16 +30,6 @@ public class Text implements Drawable {
         this.paragraphs = paragraphs;
     }
 
-    public Text setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    public Text setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
     public Text setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;

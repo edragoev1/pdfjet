@@ -43,17 +43,7 @@ func NewContainer(width, height float32) *Container {
 	}
 }
 
-// SetPosition sets the position of the container on the page.
-//
-// x is the horizontal coordinate and y is the vertical coordinate.
-func (c *Container) SetPosition(x, y float32) {
-	c.X = x
-	c.Y = y
-}
-
 // SetLocation sets the location of the container on the page.
-//
-// This is an alias for SetPosition.
 //
 // x is the horizontal coordinate and y is the vertical coordinate.
 func (c *Container) SetLocation(x, y float32) *Container {

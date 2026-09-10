@@ -38,11 +38,6 @@ func (b *BaseAnnotation) SetLocation(x, y float32) *BaseAnnotation {
 	return b
 }
 
-// SetPosition sets the first point of the annotation (alias for SetLocation).
-func (b *BaseAnnotation) SetPosition(x, y float32) {
-	b.SetLocation(x, y)
-}
-
 // SetSize sets the second point relative to the first point.
 func (b *BaseAnnotation) SetSize(w, h float32) *BaseAnnotation {
 	b.point2 = [2]float32{b.point1[0] + w, b.point1[1] + h}

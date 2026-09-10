@@ -130,18 +130,6 @@ public class Chart implements Drawable {
         return chartData;
     }
 
-    /** Sets the top-left position of this chart on the page. */
-    public Chart setPosition(double x, double y) {
-        setLocation((float) x, (float) y);
-        return this;
-    }
-
-    /** Sets the top-left position of this chart on the page. */
-    public Chart setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
     /** Sets the top-left position. Returns this for chaining. */
     public Chart setLocation(double x, double y) {
         return setLocation((float) x, (float) y);

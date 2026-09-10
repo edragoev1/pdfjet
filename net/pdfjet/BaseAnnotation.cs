@@ -31,13 +31,8 @@ public class BaseAnnotation : IDrawable {
         return this;
     }
 
-    public BaseAnnotation SetPosition(float x, float y) {
-        this.point1 = new float[] {x, y};
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     public BaseAnnotation SetSize(float w, float h) {

@@ -40,14 +40,7 @@ public class Stamp : Drawable {
     }
 
     @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        self.x = x
-        self.y = y
-        return self
-    }
-
-    @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Stamp {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

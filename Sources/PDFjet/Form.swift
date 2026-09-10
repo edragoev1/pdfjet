@@ -27,13 +27,7 @@ public class Form : Drawable {
     }
 
     @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
-    @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Form {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

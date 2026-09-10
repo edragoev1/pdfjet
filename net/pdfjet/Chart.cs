@@ -114,20 +114,8 @@ public class Chart : IDrawable {
         return chartData;
     }
 
-    /** Sets the top-left position of this chart on the page. */
-    public Chart SetPosition(double x, double y) {
-        SetPosition((float) x, (float) y);
-        return this;
-    }
-
-    /** Sets the top-left position of this chart on the page. */
-    public Chart SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /** Sets the top-left position. Returns this for chaining. */

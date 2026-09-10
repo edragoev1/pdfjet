@@ -36,25 +36,13 @@ public class Container: Drawable {
         self.elements = [Drawable]()
     }
 
-    /// Sets the position of the container on the page.
+    /// Sets the location of the container on the page.
     ///
     /// - Parameters:
     ///   - x: The X coordinate.
     ///   - y: The Y coordinate.
     @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        self.x = x
-        self.y = y
-        return self
-    }
-
-    /// Sets the location of the container on the page (alias for `setPosition`).
-    ///
-    /// - Parameters:
-    ///   - x: The X coordinate.
-    ///   - y: The Y coordinate.
-    @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Container {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

@@ -43,25 +43,8 @@ public class RadioButton : IDrawable {
         return this;
     }
 
-    public RadioButton SetPosition(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
-    /**
-     * Set the x,y position on the Page.
-     *
-     * @param x the x coordinate on the Page.
-     * @param y the y coordinate on the Page.
-     * @return this RadioButton.
-     */
-    public RadioButton SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /**

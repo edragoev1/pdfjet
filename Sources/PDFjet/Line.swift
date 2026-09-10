@@ -78,7 +78,7 @@ public class Line : Drawable {
     }
 
     @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         setStartPoint(x, y)
         return self
     }

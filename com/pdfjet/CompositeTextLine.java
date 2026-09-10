@@ -177,32 +177,6 @@ public class CompositeTextLine implements Drawable {
         textLines.add(component);
     }
 
-    /**
-     *  Loop through all the text lines and reset their position based on
-     *  the new position set here.
-     *
-     *  @param x the x coordinate.
-     *  @param y the y coordinate.
-     *  @return this CompositeTextLine object.
-     */
-    public CompositeTextLine setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     *  Loop through all the text lines and reset their position based on
-     *  the new position set here.
-     *
-     *  @param x the x coordinate.
-     *  @param y the y coordinate.
-     *  @return this CompositeTextLine object.
-     */
-    public CompositeTextLine setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
     public CompositeTextLine setXY(float x, float y) {
         setLocation(x, y);
         return this;

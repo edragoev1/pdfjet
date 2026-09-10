@@ -37,20 +37,7 @@ public class Container implements Drawable {
     }
 
     /**
-     * Sets the position of the container on the page.
-     *
-     * @param x the X coordinate
-     * @param y the Y coordinate
-     * @return this Container object.
-     */
-    public Container setPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-
-    /**
-     * Sets the location of the container on the page (alias for {@link #setPosition}).
+     * Sets the location of the container on the page.
      *
      * @param x the X coordinate
      * @param y the Y coordinate

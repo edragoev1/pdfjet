@@ -73,11 +73,6 @@ public class TextFrame implements Drawable {
         return this.h;
     }
 
-    public TextFrame setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
     public TextFrame setBorder(boolean border) {
         this.border = border;
         return this;

@@ -86,10 +86,11 @@ func (line *Line) SetStartPoint(x, y float32) *Line {
 	return line
 }
 
-// SetPosition sets the start point of this line.
-func (line *Line) SetPosition(x, y float32) {
+// SetLocation sets the start point of this line.
+func (line *Line) SetLocation(x, y float32) *Line {
 	line.x1 = x
 	line.y1 = y
+	return line
 }
 
 // SetPointA sets the x and y coordinates of the start point.

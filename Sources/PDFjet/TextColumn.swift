@@ -73,12 +73,6 @@ public class TextColumn : Drawable {
         return self
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     ///
     /// Sets the position of this text column on the page.
     ///
@@ -86,7 +80,7 @@ public class TextColumn : Drawable {
     /// @param y the y coordinate of the top left corner of this text column when drawn on the page.
     ///
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> TextColumn {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         self.x1 = x

@@ -71,30 +71,6 @@ public class TextColumn implements Drawable {
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
      * @param y the y coordinate of the top left corner of this text column when drawn on the page.
-     * @return this TextColumn object.
-     */
-    public TextColumn setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position of this text column on the page.
-     *
-     * @param x the x coordinate of the top left corner of this text column when drawn on the page.
-     * @param y the y coordinate of the top left corner of this text column when drawn on the page.
-     * @return this TextColumn object.
-     */
-    public TextColumn setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position of this text column on the page.
-     *
-     * @param x the x coordinate of the top left corner of this text column when drawn on the page.
-     * @param y the y coordinate of the top left corner of this text column when drawn on the page.
      * @return this text column.
      */
     public TextColumn setLocation(float x, float y) {

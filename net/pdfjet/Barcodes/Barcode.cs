@@ -115,32 +115,8 @@ public class Barcode : IDrawable {
         tableB.Add( 'Z', "bWBwBwbwb" );
     }
 
-    /**
-     * Sets the position where this barcode will be drawn on the page.
-     *
-     * @param x1 the x coordinate of the top left corner of the barcode.
-     * @param y1 the y coordinate of the top left corner of the barcode.
-     * @return this Barcode object.
-     */
-    public Barcode SetPosition(double x1, double y1) {
-        SetPosition((float) x1, (float) y1);
-        return this;
-    }
-
-    /**
-     * Sets the position where this barcode will be drawn on the page.
-     *
-     * @param x1 the x coordinate of the top left corner of the barcode.
-     * @param y1 the y coordinate of the top left corner of the barcode.
-     * @return this Barcode object.
-     */
-    public Barcode SetPosition(float x1, float y1) {
-        SetLocation(x1, y1);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x1, float y1) {
-        return SetPosition(x1, y1);
+    IDrawable IDrawable.SetLocation(float x1, float y1) {
+        return SetLocation(x1, y1);
     }
 
     /**

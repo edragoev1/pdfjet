@@ -54,24 +54,9 @@ public class Rect : Drawable {
      * - Returns: this Rect.
      */
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Rect {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
-        return self
-    }
-
-    /**
-     * Sets the position of this rect on the page. Required by the Drawable interface.
-     * - Parameters:
-     *   - x: the x coordinate of the top left corner of this rect when drawn on the page.
-     *   - y: the y coordinate of the top left corner of this rect when drawn on the page.
-     * - Returns: this Rect.
-     *
-     * @return this object.
-     */
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
         return self
     }
 

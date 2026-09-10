@@ -28,5 +28,5 @@ public interface Drawable {
      * @param y the y location
      * @return this drawable object.
      */
-    public Drawable setPosition(float x, float y);
+    public Drawable setLocation(float x, float y);
 }

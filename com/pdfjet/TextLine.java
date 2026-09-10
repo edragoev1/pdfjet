@@ -88,30 +88,6 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the position where this text line will be drawn on the page.
-     *
-     * @param x the x coordinate of the text line.
-     * @param y the y coordinate of the text line.
-     * @return this TextLine object.
-     */
-    public TextLine setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position where this text line will be drawn on the page.
-     *
-     * @param x the x coordinate of the text line.
-     * @param y the y coordinate of the text line.
-     * @return this TextLine object.
-     */
-    public TextLine setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the location where this text line will be drawn on the page.
      *
      * @param x the x coordinate of the text line.

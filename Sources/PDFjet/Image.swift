@@ -204,12 +204,6 @@ public class Image : Drawable {
         objNumber = pdf.getObjNumber()
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     ///
     /// Sets the location of this image on the page to (x, y).
     ///
@@ -217,7 +211,7 @@ public class Image : Drawable {
     /// @param y the y coordinate of the top left corner of the image.
     ///
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Image {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

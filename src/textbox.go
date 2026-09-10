@@ -120,11 +120,6 @@ func (textBox *TextBox) GetText() string {
 	return textBox.text
 }
 
-// SetPosition sets the location of this text box.
-func (textBox *TextBox) SetPosition(x, y float32) {
-	textBox.SetLocation(x, y)
-}
-
 // SetLocation sets the location of this text box.
 func (textBox *TextBox) SetLocation(x, y float32) *TextBox {
 	textBox.x = x

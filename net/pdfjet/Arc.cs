@@ -36,13 +36,13 @@ public class Arc : IDrawable {
     public Arc() {
     }
 
-    public Arc SetPosition(float cx, float cy) {
+    public Arc SetLocation(float cx, float cy) {
         SetCenterXY(cx, cy);
         return this;
     }
 
-    IDrawable IDrawable.SetPosition(float cx, float cy) {
-        return SetPosition(cx, cy);
+    IDrawable IDrawable.SetLocation(float cx, float cy) {
+        return SetLocation(cx, cy);
     }
 
     public Arc SetStartPointToEndOf(Line line) {

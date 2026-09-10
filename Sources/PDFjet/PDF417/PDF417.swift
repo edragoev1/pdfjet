@@ -101,12 +101,6 @@ public class PDF417 : Drawable {
         }
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     /**
      *  Sets the location of this barcode on the page.
      *
@@ -115,7 +109,7 @@ public class PDF417 : Drawable {
      *  @return this PDF417 object.
      */
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> PDF417 {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x1 = x
         self.y1 = y
         return self

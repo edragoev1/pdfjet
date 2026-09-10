@@ -133,11 +133,6 @@ func (textBlock *TextBlock) SetLocation(x, y float32) *TextBlock {
 	return textBlock
 }
 
-func (textBlock *TextBlock) SetPosition(x, y float32) {
-	textBlock.x = x
-	textBlock.y = y
-}
-
 // SetSize sets the size of the textBlock.
 // @param w the width of the text block.
 // @param h the height of the text block.

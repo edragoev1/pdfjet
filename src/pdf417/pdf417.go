@@ -114,11 +114,6 @@ func (barcode *PDF417) SetLocation(x, y float32) *PDF417 {
 	return barcode
 }
 
-// SetPosition sets the barcode location on the page.
-func (barcode *PDF417) SetPosition(x, y float32) {
-	barcode.SetLocation(x, y)
-}
-
 // SetModuleWidth sets the module width for this barcode.
 // This changes the barcode size while preserving the aspect.
 // Use value between 0.5 and 0.75

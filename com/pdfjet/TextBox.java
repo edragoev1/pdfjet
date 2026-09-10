@@ -168,18 +168,6 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the position where this text box will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the text box.
-     * @param y the y coordinate of the top left corner of the text box.
-     * @return this TextBox object.
-     */
-    public TextBox setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the size of text box.
      *
      * @param w the width of the text box.
@@ -189,18 +177,6 @@ public class TextBox implements Drawable {
     public TextBox setSize(float w, float h) {
         this.width = w;
         this.height = h;
-        return this;
-    }
-
-    /**
-     * Sets the position where this text box will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the text box.
-     * @param y the y coordinate of the top left corner of the text box.
-     * @return this TextBox object.
-     */
-    public TextBox setPosition(double x, double y) {
-        setLocation(x, y);
         return this;
     }
 

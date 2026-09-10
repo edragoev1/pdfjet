@@ -47,12 +47,6 @@ func (s *Stamp) WithFont(font *Font) *Stamp {
 	return s
 }
 
-// SetPosition sets the position (doesn't return self)
-func (s *Stamp) SetPosition(x, y float32) {
-	s.x = x
-	s.y = y
-}
-
 // SetLocation sets the location and returns self for chaining
 func (s *Stamp) SetLocation(x, y float32) *Stamp {
 	s.x = x

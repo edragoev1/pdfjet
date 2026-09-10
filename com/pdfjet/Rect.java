@@ -56,16 +56,6 @@ public class Rect implements Drawable {
         return setLocation((float) x, (float) y);
     }
 
-    public Rect setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    public Rect setPosition(double x, double y) {
-        setLocation((float) x, (float) y);
-        return this;
-    }
-
     public Rect setSize(float w, float h) {
         this.w = w;
         this.h = h;

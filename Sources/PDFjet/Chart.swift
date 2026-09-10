@@ -158,7 +158,7 @@ public class Chart : Drawable {
      * @return this Chart object.
      */
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Chart {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x1 = x
         self.y1 = y
         return self
@@ -328,12 +328,6 @@ public class Chart : Drawable {
     @discardableResult
     public func setXYChart(_ xyChart: Bool) -> Chart {
         self.xyChart = xyChart
-        return self
-    }
-
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
         return self
     }
 

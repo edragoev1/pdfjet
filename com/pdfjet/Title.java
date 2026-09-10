@@ -30,18 +30,8 @@ public class Title implements Drawable {
         return this;
     }
 
-    public Title setPosition(float x, float y) {
-        prefix.setLocation(x, y);
-        textLine.setLocation(x, y);
-        return this;
-    }
-
-    public Title setPosition(double x, double y) {
-        setPosition(x, y);
-        return this;
-    }
-
     public Title setLocation(float x, float y) {
+        prefix.setLocation(x, y);
         textLine.setLocation(x, y);
         return this;
     }

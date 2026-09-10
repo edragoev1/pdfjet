@@ -51,13 +51,6 @@ func NewQRCode(str string, errorCorrectLevel int) *QRCode {
 	return qrcode
 }
 
-// SetPosition sets the position where this barcode will be drawn on the page.
-// @param x the x coordinate of the top left corner of the barcode.
-// @param y the y coordinate of the top left corner of the barcode.
-func (qrcode *QRCode) SetPosition(x, y float32) {
-	qrcode.SetLocation(x, y)
-}
-
 // SetLocation sets the location where this barcode will be drawn on the page.
 // @param x the x coordinate of the top left corner of the barcode.
 // @param y the y coordinate of the top left corner of the barcode.

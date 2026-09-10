@@ -56,18 +56,8 @@ public class Rect  : IDrawable {
         return SetLocation((float) x, (float) y);
     }
 
-    public Rect SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
-    }
-
-    public Rect SetPosition(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     public Rect SetSize(float w, float h) {

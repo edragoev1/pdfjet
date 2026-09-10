@@ -105,20 +105,8 @@ public class Table {
      * @param y the y coordinate of the top left point of the table.
      * @return this Table object.
      */
-    public Table SetPosition(double x, double y) {
-        SetPosition((float) x, (float) y);
-        return this;
-    }
-
-    /**
-     * Sets the position (x, y) of the top left corner of this table on the page.
-     *
-     * @param x the x coordinate of the top left point of the table.
-     * @param y the y coordinate of the top left point of the table.
-     * @return this Table object.
-     */
-    public Table SetPosition(float x, float y) {
-        SetLocation(x, y);
+    public Table SetLocation(double x, double y) {
+        SetLocation((float) x, (float) y);
         return this;
     }
 

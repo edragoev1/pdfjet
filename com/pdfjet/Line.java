@@ -103,11 +103,6 @@ public class Line implements Drawable {
         return this;
     }
 
-    public Line setPosition(float x, float y) {
-        setStartPoint(x, y);
-        return this;
-    }
-
     public Line setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;

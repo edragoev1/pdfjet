@@ -668,11 +668,11 @@ public class Cell {
             textBox.setWidth(w - (leftPadding + rightPadding));
             textBox.drawOn(page);
         } else if (textBlock != null) {
-            textBlock.setPosition(x + leftPadding, y + topPadding);
+            textBlock.setLocation(x + leftPadding, y + topPadding);
             textBlock.setWidth(w - (leftPadding + rightPadding));
             textBlock.drawOn(page);
         } else if (textColumn != null) {
-            textColumn.setPosition(x + leftPadding, y + topPadding);
+            textColumn.setLocation(x + leftPadding, y + topPadding);
             textColumn.drawOn(page);
         } else if (image != null) {
             if (getTextAlignment() == Align.LEFT) {

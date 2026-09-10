@@ -174,26 +174,13 @@ public class TextBox : IDrawable {
      * @param y the y coordinate of the top left corner of the text box.
      * @return this TextBox object.
      */
-    public TextBox SetPosition(double x, double y) {
-        SetPosition((float) x, (float) y);
+    public TextBox SetLocation(double x, double y) {
+        SetLocation((float) x, (float) y);
         return this;
     }
 
-    /**
-     * Sets the position where this text box will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the text box.
-     * @param y the y coordinate of the top left corner of the text box.
-     * @return this TextBox object.
-     */
-    public TextBox SetPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /**

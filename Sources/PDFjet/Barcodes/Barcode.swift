@@ -108,12 +108,6 @@ public class Barcode : Drawable {
         tableB["Z"] = "bWBwBwbwb"
     }
 
-    @discardableResult
-    public func setPosition(_ x1: Float, _ y1: Float) -> Self {
-        setLocation(x1, y1)
-        return self
-    }
-
     ///
     /// Sets the location where this barcode will be drawn on the page.
     ///
@@ -121,7 +115,7 @@ public class Barcode : Drawable {
     /// @param y1 the y coordinate of the top left corner of the barcode.
     ///
     @discardableResult
-    public func setLocation(_ x1: Float, _ y1: Float) -> Barcode {
+    public func setLocation(_ x1: Float, _ y1: Float) -> Self {
         self.x1 = x1
         self.y1 = y1
         return self

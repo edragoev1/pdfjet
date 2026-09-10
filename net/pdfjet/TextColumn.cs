@@ -96,28 +96,13 @@ public class TextColumn : IDrawable {
      * @param y the y coordinate of the top left corner of this text column when drawn on the page.
      * @return this TextColumn object.
      */
-    public TextColumn SetPosition(double x, double y) {
-        SetPosition((float) x, (float) y);
+    public TextColumn SetLocation(double x, double y) {
+        SetLocation((float) x, (float) y);
         return this;
     }
 
-    /**
-     * Sets the position of this text column on the page.
-     *
-     * @param x the x coordinate of the top left corner of this text column when drawn on the page.
-     * @param y the y coordinate of the top left corner of this text column when drawn on the page.
-     * @return this TextColumn object.
-     */
-    public TextColumn SetPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
-        this.x1 = x;
-        this.y1 = y;
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /**

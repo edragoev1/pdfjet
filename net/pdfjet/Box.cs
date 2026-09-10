@@ -60,20 +60,8 @@ public class Box : IDrawable {
         this.h = h;
     }
 
-    /**
-     * Sets the position of this box on the page.
-     *
-     * @param x the x coordinate of the top left corner of this box when drawn on the page.
-     * @param y the y coordinate of the top left corner of this box when drawn on the page.
-     * @return this Box object.
-     */
-    public Box SetPosition(float x, float y) {
-        SetLocation(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     public Box SetXY(float x, float y) {

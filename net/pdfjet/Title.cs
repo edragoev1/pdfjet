@@ -33,17 +33,12 @@ public class Title : IDrawable {
 
     public Title SetLocation(float x, float y) {
         prefix.SetLocation(x, y);
-        textLine.SetPosition(x, y);
+        textLine.SetLocation(x, y);
         return this;
     }
 
-    public Title SetPosition(float x, float y) {
-        textLine.SetPosition(x, y);
-        return this;
-    }
-
-    IDrawable IDrawable.SetPosition(float x, float y) {
-        return SetPosition(x, y);
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     public float[] DrawOn(Page page) {

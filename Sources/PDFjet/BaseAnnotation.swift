@@ -20,13 +20,7 @@ public class BaseAnnotation: Drawable {
     }
 
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> BaseAnnotation {
-        self.point1 = [x, y]
-        return self
-    }
-
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.point1 = [x, y]
         return self
     }

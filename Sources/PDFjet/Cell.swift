@@ -654,7 +654,7 @@ public class Cell {
             textBox!.setWidth(w - (leftPadding + rightPadding))
             textBox!.drawOn(page)
         } else if textColumn != nil {
-            textColumn!.setPosition(x + leftPadding, y + topPadding)
+            textColumn!.setLocation(x + leftPadding, y + topPadding)
             textColumn!.drawOn(page)
         } else if textBlock != nil {
             textBlock!.setLocation(x + leftPadding, y + topPadding)

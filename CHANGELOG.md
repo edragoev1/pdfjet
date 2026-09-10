@@ -12,28 +12,34 @@ This is the first entry in this file; earlier releases were not tracked here.
 ### Fluent setters
 - Every public setter that returned nothing now returns the object it was
   called on, so calls can be chained:
-  `box.setSize(20f, 20f).setColor(Color.red).setLineWidth(1f)`. This changes
-  1,173 setters: 329 in Java, 334 in C#, 265 in Go and 245 in Swift. Setters
-  that already returned the object are unchanged.
+  `box.setSize(20f, 20f).setColor(Color.red).setLineWidth(1f)`. Setters that
+  already returned the object are unchanged.
 - Swift setters are marked `@discardableResult`, so existing calls that ignore
   the result compile without warnings.
-- `Drawable.setPosition` returns the drawable: `Drawable` in Java (each class
-  returns its own type), `IDrawable` in C# (each class has a public
-  `SetPosition` returning its own type plus an explicit
-  `IDrawable.SetPosition`), and `Self` in Swift.
-- Go keeps `SetPosition(x, y float32)` without a result, because a Go type
-  only satisfies the `Drawable` interface with an exact signature match. Chain
-  from `SetLocation` instead, or from `SetCenterXY` on `Arc` and
-  `SetStartPoint` on `Line`.
-- Source compatible for callers. Java and C# code compiled against v8.6.0 must
-  be recompiled, because the setters' return types are part of the compiled
-  method signatures. Classes outside PDFjet that implement `Drawable` or
-  `IDrawable` must update `setPosition`.
+- Java and C# code compiled against v8.6.0 must be recompiled, because the
+  setters' return types are part of the compiled method signatures.
+
+### `setPosition` removed; use `setLocation`
+- `setPosition` is gone from every class in all four ports. Call
+  `setLocation`, which does the same thing: on `Arc` it sets the center, and
+  on `Line` the start point.
+- `Drawable` declares `setLocation` instead of `setPosition`. It returns
+  `Drawable` in Java (each class returns its own type), `IDrawable` in C#
+  (each class has a public `SetLocation` returning its own type plus an
+  explicit `IDrawable.SetLocation`), and `Self` in Swift. Classes outside
+  PDFjet that implement `Drawable` or `IDrawable` must implement `setLocation`.
+- Go's `Drawable` declares only `DrawOn`. A Go type only satisfies an
+  interface with an exact signature match, and each Go `SetLocation` returns
+  its own type so it can be chained.
+- `Title.setLocation` now moves both the prefix and the title text in Java, C#
+  and Swift (Go's `Title` has no location setter). Before, Java's
+  `setLocation` and C#'s `SetPosition` moved only the text, and Java's
+  `setPosition(double, double)` called itself until the stack overflowed.
 
 ### Stamp
 - `Stamp` now conforms to `Drawable` in Swift and Go, as it already did in
   Java and C#, so it can be added to a `Container` or an
-  `OptionalContentGroup`. Swift `drawOn` takes `Page?` and `setPosition`
+  `OptionalContentGroup`. Swift `drawOn` takes `Page?` and `setLocation`
   returns `Self`; Go `DrawOn` returns `[2]float32` instead of `[]float32`.
 
 ## v8.6.0 — 2026-09-05

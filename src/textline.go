@@ -91,15 +91,6 @@ func (textLine *TextLine) SetLocation(x, y float32) *TextLine {
 	return textLine
 }
 
-// SetPosition sets the location where this text line will be drawn on the page.
-// @param x the x coordinate of the text line.
-// @param y the y coordinate of the text line.
-// @return this TextLine.
-func (textLine *TextLine) SetPosition(x, y float32) {
-	textLine.x = x
-	textLine.y = y
-}
-
 // SetFont sets the font to use for this text line.
 // @param font the font to use.
 // @return this TextLine.

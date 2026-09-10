@@ -25,15 +25,9 @@ public class FileAttachment : Drawable {
     }
 
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> FileAttachment {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
-        return self
-    }
-
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
         return self
     }
 

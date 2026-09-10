@@ -106,30 +106,6 @@ public class PDF417 implements Drawable {
     }
 
     /**
-     * Sets the position of this barcode on the page.
-     *
-     * @param x the x coordinate of the top left corner of the barcode.
-     * @param y the y coordinate of the top left corner of the barcode.
-     * @return this PDF417 object.
-     */
-    public PDF417 setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the position of this barcode on the page.
-     *
-     * @param x the x coordinate of the top left corner of the barcode.
-     * @param y the y coordinate of the top left corner of the barcode.
-     * @return this PDF417 object.
-     */
-    public PDF417 setPosition(double x, double y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the location of this barcode on the page.
      *
      * @param x the x coordinate of the top left corner of the barcode.

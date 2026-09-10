@@ -85,14 +85,7 @@ public class TextBlock : Drawable {
     }
 
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> TextBlock {
-        self.x = x
-        self.y = y
-        return self
-    }
-
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

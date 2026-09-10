@@ -43,12 +43,6 @@ public class RadioButton : Drawable {
         return self
     }
 
-    @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
     ///
     /// Set the x,y location on the Page.
     ///
@@ -57,7 +51,7 @@ public class RadioButton : Drawable {
     /// @return this RadioButton.
     ///
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> RadioButton {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self

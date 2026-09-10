@@ -31,38 +31,13 @@ public class FileAttachment implements Drawable {
     }
 
     /**
-     * Sets the position of the file attachment on the page
-     *
-     * @param x the horizontal position of the attachment
-     * @param y the vertical position of the attachment
-     * @return this FileAttachment object.
-     */
-    public FileAttachment setPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-
-    /**
-     * Sets the position of the file attachment on the page
-     *
-     * @param x the horizontal position of the attachment
-     * @param y the vertical position of the attachment
-     * @return this FileAttachment object.
-     */
-    public FileAttachment setPosition(double x, double y) {
-        setPosition((float) x, (float) y);
-        return this;
-    }
-
-    /**
      * Sets the location of the file attachment on the page
      *
      * @param x the horizontal location of the attachment
      * @param y the vertical location of the attachment
-     * @return this drawable object.
+     * @return this FileAttachment object.
      */
-    public Drawable setLocation(float x, float y) {
+    public FileAttachment setLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
@@ -73,9 +48,9 @@ public class FileAttachment implements Drawable {
      *
      * @param x the horizontal location of the attachment
      * @param y the vertical location of the attachment
-     * @return this drawable object.
+     * @return this FileAttachment object.
      */
-    public Drawable setLocation(double x, double y) {
+    public FileAttachment setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
 

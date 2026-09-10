@@ -30,11 +30,6 @@ public class BaseAnnotation implements Drawable {
         return this;
     }
 
-    public BaseAnnotation setPosition(float x, float y) {
-        this.point1 = new float[] {x, y};
-        return this;
-    }
-
     public BaseAnnotation setSize(float w, float h) {
         this.point2 = new float[] {point1[0] + w, point1[1] + h};
         return this;

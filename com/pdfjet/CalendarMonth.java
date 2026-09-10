@@ -99,18 +99,6 @@ public class CalendarMonth implements Drawable {
     }
 
     /**
-     * Sets the calendar position.
-     *
-     * @param x the horizontal position.
-     * @param y the vertical position.
-     * @return this CalendarMonth object.
-     */
-    public CalendarMonth setPosition(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
      * Sets the calendar location.
      *
      * @param x the horizontal location.

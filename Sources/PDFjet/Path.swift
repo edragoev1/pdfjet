@@ -161,13 +161,7 @@ public class Path : Drawable {
     }
 
     @discardableResult
-    public func setPosition(_ x: Float, _ y: Float) -> Self {
-        setLocation(x, y)
-        return self
-    }
-
-    @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Path {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         xBox += x
         yBox += y
         return self

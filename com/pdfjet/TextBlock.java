@@ -65,21 +65,8 @@ public class TextBlock {
      * @param y the y coordinate of the top left corner of the text box.
      * @return this TextBlock object.
      */
-    public TextBlock setPosition(double x, double y) {
-        setPosition((float) x, (float) y);
-        return this;
-    }
-
-    /**
-     * Sets the position where this text box will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the text box.
-     * @param y the y coordinate of the top left corner of the text box.
-     * @return this TextBlock object.
-     */
-    public TextBlock setPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
+    public TextBlock setLocation(double x, double y) {
+        setLocation((float) x, (float) y);
         return this;
     }
 
