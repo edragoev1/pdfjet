@@ -332,10 +332,20 @@ final public class Font {
         return size;
     }
 
+    /**
+     * Returns the underline thickness of this font.
+     *
+     * @return the underline thickness.
+     */
     public float getUnderlineThickness() {
         return this.underlineThickness;
     }
 
+    /**
+     * Returns the underline position of this font.
+     *
+     * @return the underline position.
+     */
     public float getUnderlinePosition() {
         return this.underlinePosition;
     }
@@ -353,6 +363,12 @@ final public class Font {
         return this;
     }
 
+    /**
+     * Returns the width of the string drawn with this font at its current size.
+     *
+     * @param str the string.
+     * @return the width of the string.
+     */
     public float stringWidth(String str) {
         return stringWidth(this.size, str);
     }
@@ -431,6 +447,12 @@ final public class Font {
         return descent;
     }
 
+    /**
+     * Returns the ascent of this font at the specified size.
+     *
+     * @param fontSize the font size.
+     * @return the ascent.
+     */
     public float getAscent(float fontSize) {
         if (isCJK) {
             return fontSize;
@@ -438,6 +460,12 @@ final public class Font {
         return fontAscent * fontSize / unitsPerEm;
     }
 
+    /**
+     * Returns the descent of this font at the specified size.
+     *
+     * @param fontSize the font size.
+     * @return the descent.
+     */
     public float getDescent(float fontSize) {
         if (isCJK) {
             return fontSize/4;
@@ -445,14 +473,32 @@ final public class Font {
         return -fontDescent * fontSize / unitsPerEm;
     }
 
+    /**
+     * Returns the ascent plus the descent of this font at the specified size.
+     *
+     * @param fontSize the font size.
+     * @return the body height.
+     */
     public float getBodyHeight(float fontSize) {
         return getAscent(fontSize) + getDescent(fontSize);
     }
 
+    /**
+     * Returns the underline thickness of this font at the specified size.
+     *
+     * @param fontSize the font size.
+     * @return the underline thickness.
+     */
     public float getUnderlineThickness(float fontSize) {
         return (fontUnderlineThickness * fontSize / unitsPerEm);
     }
 
+    /**
+     * Returns the underline position of this font at the specified size.
+     *
+     * @param fontSize the font size.
+     * @return the underline position.
+     */
     public float getUnderlinePosition(float fontSize) {
         return  -(fontUnderlinePosition * fontSize / unitsPerEm) + underlineThickness / 2.0f;
     }
@@ -584,6 +630,14 @@ final public class Font {
         return this;
     }
 
+    /**
+     * Returns the width of the string at this font's current size, measuring the characters
+     * this font does not have with the fallback font.
+     *
+     * @param fallbackFont the fallback font.
+     * @param str the string.
+     * @return the width of the string.
+     */
     public float stringWidth(Font fallbackFont, String str) {
         return stringWidth(fallbackFont, this.size, str);
     }

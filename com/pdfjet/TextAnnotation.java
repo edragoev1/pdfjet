@@ -6,7 +6,13 @@
  */
 package com.pdfjet;
 
+/**
+ * A text note annotation.
+ */
 public class TextAnnotation extends BaseAnnotation {
+    /**
+     * Creates a text note annotation.
+     */
     public TextAnnotation() {
         super.annotationType = Annotation.Text;
     }

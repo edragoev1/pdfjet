@@ -6,7 +6,13 @@
  */
 package com.pdfjet;
 
+/**
+ * A circle annotation.
+ */
 public class CircleAnnotation extends BaseAnnotation {
+    /**
+     * Creates a circle annotation.
+     */
     public CircleAnnotation() {
         super.annotationType = Annotation.Circle;
     }

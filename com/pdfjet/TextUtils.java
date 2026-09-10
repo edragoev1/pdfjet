@@ -6,7 +6,21 @@
  */
 package com.pdfjet;
 
+/**
+ * Text helper methods.
+ */
 public class TextUtils {
+    /** The default constructor */
+    public TextUtils() {
+    }
+
+    /**
+     * Prints how long an example took: the difference between the two times.
+     *
+     * @param example the name of the example.
+     * @param time0 the start time.
+     * @param time1 the end time.
+     */
     public static void printDuration(String example, long time0, long time1) {
         String duration = String.valueOf(time1 - time0);
         if (duration.length() == 1) {

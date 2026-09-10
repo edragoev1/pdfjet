@@ -6,7 +6,14 @@
  */
 package com.pdfjet;
 
+/**
+ * Strings made of a single character.
+ */
 public class Single {
+    /** The default constructor */
+    public Single() {
+    }
+
     /** Single space */
     public static final String space = " ";
 }

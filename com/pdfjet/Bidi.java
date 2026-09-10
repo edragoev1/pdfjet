@@ -218,6 +218,12 @@ public class Bidi {
         return buf3.toString();
     }
 
+    /**
+     * Returns whether the character is in the Arabic Unicode block, U+0600 to U+06FF.
+     *
+     * @param ch the Unicode code point.
+     * @return true if the character is Arabic.
+     */
     public static boolean isArabic(int ch) {
         return ch >= 0x0600 && ch <= 0x06FF;
     }
@@ -352,6 +358,12 @@ public class Bidi {
         RIGHT_JOINING = right;
     }
 
+    /**
+     * Returns whether the Arabic character joins the character that follows it.
+     *
+     * @param ch the Unicode code point.
+     * @return true if the character joins forward.
+     */
     public static boolean joinsForward(int ch) {
         if (ch == 0x0640) {
             return true;   // TATWEEL — joins both sides
@@ -359,6 +371,12 @@ public class Bidi {
         return DUAL_JOINING.contains(ch);
     }
 
+    /**
+     * Returns whether the Arabic character joins the character before it.
+     *
+     * @param ch the Unicode code point.
+     * @return true if the character joins backward.
+     */
     public static boolean joinsBackward(int ch) {
         if (ch == 0x0640) {
             return true;

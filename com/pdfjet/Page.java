@@ -62,13 +62,20 @@ final public class Page {
     /*
      * From Android's Matrix object:
      */
+    /** Index of the horizontal scale in an Android Matrix value array. */
     public static final int MSCALE_X = 0;
+    /** Index of the horizontal skew in an Android Matrix value array. */
     public static final int MSKEW_X  = 1;
+    /** Index of the horizontal translation in an Android Matrix value array. */
     public static final int MTRANS_X = 2;
+    /** Index of the vertical skew in an Android Matrix value array. */
     public static final int MSKEW_Y  = 3;
+    /** Index of the vertical scale in an Android Matrix value array. */
     public static final int MSCALE_Y = 4;
+    /** Index of the vertical translation in an Android Matrix value array. */
     public static final int MTRANS_Y = 5;
 
+    /** Pass as addPageToPDF to create a page that is not added to the PDF right away. */
     public static final boolean DETACHED = false;
 
     /**
@@ -119,6 +126,12 @@ final public class Page {
         }
     }
 
+    /**
+     * Creates a page from a page object of an existing PDF.
+     *
+     * @param pdf the PDF document.
+     * @param pageObj the page object.
+     */
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
         this.pageObj = removeComments(pageObj);
@@ -309,6 +322,20 @@ final public class Page {
         drawString(font, fallbackFont, fontSize, str, x, y, new float[] {0f, 0f, 0f}, null);
     }
 
+    /**
+     * Draws the string using the specified fonts and text color.
+     * If the main font is missing some glyphs, the fallback font is used.
+     * The baseline of the leftmost character is at position (x, y) on the page.
+     *
+     * @param font the main font.
+     * @param fallbackFont the fallback font.
+     * @param fontSize the font size.
+     * @param str the string to be drawn.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @param color the text color as a 0xRRGGBB value.
+     * @param colors map used to highlight specific words.
+     */
     public void drawString(
             Font font,
             Font fallbackFont,
@@ -396,6 +423,16 @@ final public class Page {
         drawString(font, (float) fontSize, str, (float) x, (float) y);
     }
 
+    /**
+     * Draws the string in black using the specified font.
+     * The baseline of the leftmost character is at position (x, y) on the page.
+     *
+     * @param font the font.
+     * @param fontSize the font size.
+     * @param str the string to be drawn.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     */
     public void drawString(
             Font font,
             float fontSize,
@@ -515,6 +552,12 @@ final public class Page {
         }
     }
 
+    /**
+     * Appends the string to the page content as hexadecimal glyph codes for the font.
+     *
+     * @param font the font.
+     * @param str the string.
+     */
     public void drawUnicodeString(Font font, String str) {
         if (str == null || str.isEmpty()) {
             return;
@@ -838,6 +881,11 @@ final public class Page {
         return this;
     }
 
+    /**
+     * Returns the current pen width.
+     *
+     * @return the pen width.
+     */
     public float getPenWidth() {
         return penWidth;
     }
@@ -1384,11 +1432,32 @@ final public class Page {
         append(" c\n");
     }
 
+    /**
+     * Adds a circular arc to the current path.
+     *
+     * @param x the x coordinate of the center.
+     * @param y the y coordinate of the center.
+     * @param r the radius.
+     * @param startAngle the start angle in degrees.
+     * @param sweepDegrees the sweep angle in degrees.
+     * @return the control points and the end point of the last curve segment: x1, y1, x2, y2, x3, y3.
+     */
     public float[] drawCircularArc(
             float x, float y, float r, float startAngle, float sweepDegrees) {
         return drawArc(x, y, r, r, startAngle, sweepDegrees);
     }
 
+    /**
+     * Adds an elliptical arc to the current path.
+     *
+     * @param x the x coordinate of the center.
+     * @param y the y coordinate of the center.
+     * @param rx the horizontal radius.
+     * @param ry the vertical radius.
+     * @param startAngle the start angle in degrees.
+     * @param sweepDegrees the sweep angle in degrees.
+     * @return the control points and the end point of the last curve segment: x1, y1, x2, y2, x3, y3.
+     */
     public float[] drawArc(
             float x,
             float y,
@@ -1475,6 +1544,18 @@ final public class Page {
     // Code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
     // <<
+    /**
+     * Draws a rectangle with rounded corners.
+     *
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width.
+     * @param h the height.
+     * @param r1 the horizontal radius of the corners.
+     * @param r2 the vertical radius of the corners.
+     * @param pathOperator the path operator, for example PathOperator.STROKE or PathOperator.FILL.
+     * @throws Exception if the path cannot be drawn.
+     */
     public void drawRectRoundCorners(
             float x, float y, float w, float h, float r1, float r2, String pathOperator)
         throws Exception {
@@ -1515,6 +1596,14 @@ final public class Page {
         append("n\n");  // Close the path without painting it.
     }
 
+    /**
+     * Sets the clipping path to the specified rectangle.
+     *
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width.
+     * @param h the height.
+     */
     public void clipRect(float x, float y, float w, float h) {
         moveTo(x, y);
         lineTo(x + w, y);
@@ -1807,12 +1896,18 @@ final public class Page {
         }
     }
 
+    /**
+     * Begins marked content for an artifact, when the document is PDF/UA compliant.
+     */
     public void addArtifactBMC() {
         if (pdf.compliance == Compliance.PDF_UA_1) {
             append("/Artifact BMC\n");
         }
     }
 
+    /**
+     * Ends the current marked content, when the document is PDF/UA compliant.
+     */
     public void addEMC() {
         if (pdf.compliance == Compliance.PDF_UA_1) {
             append("EMC\n");
@@ -1862,6 +1957,17 @@ final public class Page {
         restoreGraphicsState();
     }
 
+    /**
+     * Draws the content stream scaled and placed at the specified location.
+     *
+     * @param content the content stream.
+     * @param h the height of the graphics object in points.
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param xScale the horizontal scaling factor.
+     * @param yScale the vertical scaling factor.
+     * @throws Exception if an input or output exception occurred.
+     */
     public void drawContents(
             byte[] content,
             float h,    // The height of the graphics object in points.
@@ -1874,6 +1980,16 @@ final public class Page {
         endTransform();
     }
 
+    /**
+     * Draws the string one character at a time, moving each character dx points to the right.
+     *
+     * @param font the font.
+     * @param fontSize the font size.
+     * @param str the string to be drawn.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @param dx the distance between the characters.
+     */
     public void drawString(
             Font font, float fontSize, String str, float x, float y, float dx) {
         float x1 = x;
@@ -1883,6 +1999,13 @@ final public class Page {
         }
     }
 
+    /**
+     * Draws the text as a light grey watermark diagonally across the page.
+     *
+     * @param font the font.
+     * @param text the watermark text.
+     * @throws Exception if an input or output exception occurred.
+     */
     public void addWatermark(
             Font font, String text) throws Exception {
         float hypotenuse = (float)
@@ -1900,6 +2023,11 @@ final public class Page {
         watermark.drawOn(this);
     }
 
+    /**
+     * Sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
+     *
+     * @param rotateDegrees the rotation angle in degrees.
+     */
     public void rotateBy(double rotateDegrees) {
         if (rotateDegrees == 0 ||
             rotateDegrees == 90 ||
@@ -1909,6 +2037,9 @@ final public class Page {
         }
     }
 
+    /**
+     * Flips the y axis, so the origin is the top left corner of the page and y grows downward.
+     */
     public void invertYAxis() {
         append("1 0 0 -1 0 ");
         append(this.height);
@@ -1949,10 +2080,25 @@ final public class Page {
         height = height / scaley;
     }
 
+    /**
+     * Draws the text line centered at the top of the page.
+     *
+     * @param textLine the text line.
+     * @return the x and y coordinates of the bottom right corner of the header.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] addHeader(TextLine textLine) throws Exception {
         return addHeader(textLine, 1.5f*textLine.font.ascent);
     }
 
+    /**
+     * Draws the text line centered at the top of the page.
+     *
+     * @param textLine the text line.
+     * @param offset the distance from the top of the page to the baseline.
+     * @return the x and y coordinates of the bottom right corner of the header.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] addHeader(TextLine textLine, float offset) throws Exception {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, offset);
         float[] xy = textLine.drawOn(this);
@@ -1960,10 +2106,25 @@ final public class Page {
         return xy;
     }
 
+    /**
+     * Draws the text line centered at the bottom of the page.
+     *
+     * @param textLine the text line.
+     * @return the x and y coordinates of the bottom right corner of the footer.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] addFooter(TextLine textLine) throws Exception {
         return addFooter(textLine, textLine.font.ascent);
     }
 
+    /**
+     * Draws the text line centered at the bottom of the page.
+     *
+     * @param textLine the text line.
+     * @param offset the distance from the bottom of the page to the baseline.
+     * @return the x and y coordinates of the bottom right corner of the footer.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] addFooter(TextLine textLine, float offset) throws Exception {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset);
         return textLine.drawOn(this);

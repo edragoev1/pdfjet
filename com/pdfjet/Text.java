@@ -26,6 +26,11 @@ public class Text implements Drawable {
     private float borderWidth = 0.5f;
     private String borderPattern = "[] 0";
 
+    /**
+     * Creates a text object from the paragraphs.
+     *
+     * @param paragraphs the paragraphs.
+     */
     public Text(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
     }
@@ -36,25 +41,56 @@ public class Text implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the location of the top left corner of this text.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Text object.
+     */
     public Text setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
 
+    /**
+     * Sets the width of this text. The lines wrap at this width.
+     *
+     * @param width the width.
+     * @return this Text object.
+     */
     public Text setWidth(float width) {
         this.width = width;
         return this;
     }
 
+    /**
+     * Sets the vertical distance between paragraphs.
+     *
+     * @param paragraphLeading the distance between paragraphs.
+     * @return this Text object.
+     */
     public Text setParagraphLeading(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }
 
+    /**
+     * Sets the border width.
+     *
+     * @param borderWidth the border width.
+     * @return this Text object.
+     */
     public Text setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
         return this;
     }
 
+    /**
+     * Sets the border color and draws a border around this text. Color.transparent removes the border.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Text object.
+     */
     public Text setBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
@@ -67,12 +103,26 @@ public class Text implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the border color and draws a border around this text.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this Text object.
+     */
     public Text setBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
         this.hasBorder = true;
         return this;
     }
 
+    /**
+     * Sets the border color and draws a border around this text.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Text object.
+     */
     public Text setBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
         this.hasBorder = true;
@@ -112,6 +162,16 @@ public class Text implements Drawable {
         return new float[] { x1 + width, y1 + height };
     }
 
+    /**
+     * Draws the text line, wrapping it at the width of this text.
+     *
+     * @param page the page to draw on.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @param textLine the text line.
+     * @return the x and y coordinates where the next text starts.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] drawTextLine(Page page, float x, float y, TextLine textLine) throws Exception {
         this.xText = x;
         this.yText = y;
@@ -199,6 +259,14 @@ public class Text implements Drawable {
         return list.toArray(new String[] {});
     }
 
+    /**
+     * Reads a text file and returns its paragraphs. An empty line separates the paragraphs.
+     *
+     * @param f1 the font for the text.
+     * @param filePath the path of the text file.
+     * @return the paragraphs.
+     * @throws Exception if the file cannot be read.
+     */
     public static List<Paragraph> paragraphsFromFile(Font f1, String filePath) throws Exception {
         List<Paragraph> paragraphs = new ArrayList<>();
         String contents = Content.ofTextFile(filePath);
@@ -229,6 +297,13 @@ public class Text implements Drawable {
         return paragraphs;
     }
 
+    /**
+     * Reads the lines of a text file, without carriage returns.
+     *
+     * @param filePath the path of the text file.
+     * @return the lines.
+     * @throws IOException if the file cannot be read.
+     */
     public static List<String> readLines(String filePath) throws IOException {
         List<String> lines = new ArrayList<>();
         FileInputStream stream = new FileInputStream(filePath);

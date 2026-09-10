@@ -10,6 +10,10 @@ import java.io.*;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Content that is drawn once, written as a PDF form XObject, and placed on pages with drawOn.
+ * Please see Example_35.
+ */
 public class Stamp implements Drawable {
     protected int objNumber;
 
@@ -25,16 +29,34 @@ public class Stamp implements Drawable {
     private ByteArrayOutputStream buf = new ByteArrayOutputStream();
     private List<Font> fonts = new ArrayList<Font>();
 
+    /**
+     * Creates a stamp for the specified document.
+     *
+     * @param pdf the PDF document.
+     */
     public Stamp(PDF pdf) {
         this.pdf = pdf;
     }
 
+    /**
+     * Sets the size of this stamp.
+     *
+     * @param width the width.
+     * @param height the height.
+     * @return this Stamp object.
+     */
     public Stamp withSize(float width, float height) {
         this.width = width;
         this.height = height;
         return this;
     }
 
+    /**
+     * Adds a font used by the text on this stamp.
+     *
+     * @param font the font.
+     * @return this Stamp object.
+     */
     public Stamp withFont(Font font) {
         fonts.add(font);
         return this;
@@ -46,6 +68,13 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the location of the top left corner of this stamp on the page.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Stamp object.
+     */
     public Stamp setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
@@ -60,6 +89,12 @@ public class Stamp implements Drawable {
         buf.write(bytes, 0, bytes.length);
     }
 
+    /**
+     * Sets the fill color for the content drawn after it.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Stamp object.
+     */
     public Stamp setFillColor(float[] rgbColor) {
         append(rgbColor[0]);
         append(" ");
@@ -71,6 +106,12 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the fill color for the content drawn after it.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Stamp object.
+     */
     public Stamp setFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -85,6 +126,12 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the stroke color for the content drawn after it.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Stamp object.
+     */
     public Stamp setStrokeColor(float[] rgbColor) {
         append(rgbColor[0]);
         append(" ");
@@ -96,6 +143,12 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the stroke color for the content drawn after it.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Stamp object.
+     */
     public Stamp setStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -110,6 +163,12 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the stroke width for the content drawn after it.
+     *
+     * @param width the stroke width.
+     * @return this Stamp object.
+     */
     public Stamp setStrokeWidth(float width) {
         append(width);
         append(" w\n");
@@ -117,6 +176,13 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Begins a new path at the specified point.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Stamp object.
+     */
     public Stamp moveTo(float x, float y) {
         append(x);
         append(" ");
@@ -125,6 +191,13 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Adds a straight line from the current point to the specified point.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Stamp object.
+     */
     public Stamp lineTo(float x, float y) {
         append(x);
         append(" ");
@@ -133,6 +206,17 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Adds a cubic Bézier curve from the current point.
+     *
+     * @param x1 the x coordinate of the first control point.
+     * @param y1 the y coordinate of the first control point.
+     * @param x2 the x coordinate of the second control point.
+     * @param y2 the y coordinate of the second control point.
+     * @param x3 the x coordinate of the end point.
+     * @param y3 the y coordinate of the end point.
+     * @return this Stamp object.
+     */
     public Stamp curveTo(
             float x1,
             float y1,
@@ -155,35 +239,73 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Strokes the current path.
+     *
+     * @return this Stamp object.
+     */
     public Stamp strokePath() {
         append("S\n");
         return this;
     }
 
+    /**
+     * Closes and strokes the current path.
+     *
+     * @return this Stamp object.
+     */
     public Stamp closePath() {
         append("s\n");
         return this;
     }
 
+    /**
+     * Fills the current path.
+     *
+     * @return this Stamp object.
+     */
     public Stamp fillPath() {
         append("f\n");
         return this;
     }
 
+    /**
+     * Closes, fills and strokes the current path.
+     *
+     * @return this Stamp object.
+     */
     public Stamp closeFillAndStrokePath() {
         append("b\n");
         return this;
     }
 
-    // TODO:
+    /**
+     * Not implemented yet; does nothing.
+     *
+     * @return this Stamp object.
+     */
     public Stamp rectangle() {
         return this;
     }
 
+    /**
+     * Not implemented yet; does nothing.
+     *
+     * @return this Stamp object.
+     */
     public Stamp draw() {
         return this;
     }
 
+    /**
+     * Draws the outline of a rectangle.
+     *
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width.
+     * @param h the height.
+     * @return this Stamp object.
+     */
     public Stamp drawRect(float x, float y, float w, float h) {
         moveTo(x, y);
         lineTo(x + w, y);
@@ -193,6 +315,15 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Draws a filled rectangle.
+     *
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width.
+     * @param h the height.
+     * @return this Stamp object.
+     */
     public Stamp fillRect(float x, float y, float w, float h) {
         moveTo(x, y);
         lineTo(x + w, y);
@@ -202,10 +333,26 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Draws text using the font, font size, location and text in the parameters.
+     *
+     * @param parameters the text parameters.
+     * @return this Stamp object.
+     */
     public Stamp drawText(TextParameters parameters) {
         return drawText(parameters.font, parameters.fontSize, parameters.x, parameters.y, parameters.text);
     }
 
+    /**
+     * Draws text on this stamp.
+     *
+     * @param font the font. Add it with withFont too.
+     * @param fontSize the font size.
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @param text the text.
+     * @return this Stamp object.
+     */
     public Stamp drawText(Font font, float fontSize, float x, float y, String text) {
         append("BT\n");
         append("/F");
@@ -224,42 +371,56 @@ public class Stamp implements Drawable {
         return this;
     }
 
-    /// <summary>
-    /// Sets the rotation angle.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees.</param>
+    /**
+     * Sets the rotation angle of this stamp.
+     *
+     * @param degrees the rotation angle in degrees.
+     * @return this Stamp object.
+     */
     public Stamp rotate(double degrees) {
         this.rotateDegrees = (float)degrees;
         return this;
     }
 
-    /// <summary>
-    /// Sets the rotation angle.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees.</param>
+    /**
+     * Sets the rotation angle of this stamp.
+     *
+     * @param degrees the rotation angle in degrees.
+     * @return this Stamp object.
+     */
     public Stamp setRotation(double degrees) {
         this.rotateDegrees = (float)degrees;
         return this;
     }
 
-    /// <summary>
-    /// Sets clockwise rotation.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
+    /**
+     * Sets a clockwise rotation.
+     *
+     * @param degrees the rotation angle in degrees, clockwise.
+     * @return this Stamp object.
+     */
     public Stamp setRotationClockwise(double degrees) {
         this.rotateDegrees = (float)-degrees;
         return this;
     }
 
-    /// <summary>
-    /// Sets counter-clockwise rotation.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees (counter-clockwise).</param>
+    /**
+     * Sets a counterclockwise rotation.
+     *
+     * @param degrees the rotation angle in degrees, counterclockwise.
+     * @return this Stamp object.
+     */
     public Stamp setRotationCounterClockwise(double degrees) {
         this.rotateDegrees = (float)degrees;
         return this;
     }
 
+    /**
+     * Writes this stamp to the document as a form XObject.
+     * Call it once, after drawing the content and before drawOn.
+     *
+     * @throws Exception if an input or output exception occurred.
+     */
     public void complete() throws Exception {
         pdf.newobj();
         pdf.append(Token.BEGIN_DICTIONARY);
@@ -326,6 +487,13 @@ public class Stamp implements Drawable {
         append(" ");
     }
 
+    /**
+     * Draws a path through the points.
+     *
+     * @param path the points. Control points define Bézier curves.
+     * @param pathOperator the path operator, for example PathOperator.STROKE.
+     * @throws Exception if the path has fewer than 2 points.
+     */
     public void drawPath(List<Point> path, String pathOperator) throws Exception {
         if (path.size() < 2) {
             throw new Exception("The Path object must contain at least 2 points");

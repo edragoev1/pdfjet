@@ -2,20 +2,37 @@ package com.pdfjet;
 
 import com.pdfjet.corefonts.*;
 
+/**
+ * The metrics of the 14 standard PDF fonts.
+ */
 public class CoreFont {
+    /** Courier. */
     public static final int COURIER = 1;
+    /** Courier Bold. */
     public static final int COURIER_BOLD = 2;
+    /** Courier Oblique. */
     public static final int COURIER_OBLIQUE = 3;
+    /** Courier Bold Oblique. */
     public static final int COURIER_BOLD_OBLIQUE = 4;
+    /** Helvetica. */
     public static final int HELVETICA = 5;
+    /** Helvetica Bold. */
     public static final int HELVETICA_BOLD = 6;
+    /** Helvetica Oblique. */
     public static final int HELVETICA_OBLIQUE = 7;
+    /** Helvetica Bold Oblique. */
     public static final int HELVETICA_BOLD_OBLIQUE = 8;
+    /** Times Roman. */
     public static final int TIMES_ROMAN = 9;
+    /** Times Bold. */
     public static final int TIMES_BOLD = 10;
+    /** Times Italic. */
     public static final int TIMES_ITALIC = 11;
+    /** Times Bold Italic. */
     public static final int TIMES_BOLD_ITALIC = 12;
+    /** Symbol. */
     public static final int SYMBOL = 13;
+    /** Zapf Dingbats. */
     public static final int ZAPF_DINGBATS = 14;
 
     protected String name;
@@ -27,6 +44,11 @@ public class CoreFont {
     protected int underlineThickness;
     protected int[][] metrics;
 
+    /**
+     * Loads the metrics of the specified standard font.
+     *
+     * @param coreFont one of the font constants in this class, for example CoreFont.HELVETICA.
+     */
     public CoreFont(int coreFont) {
         switch (coreFont) {
             case 1: // CoreFont.COURIER

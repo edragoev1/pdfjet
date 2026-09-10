@@ -100,10 +100,23 @@ public class TextLine implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the location of this text line.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this TextLine object.
+     */
     public TextLine setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
 
+    /**
+     * Moves this text line down by the specified leading.
+     *
+     * @param leading the distance to move down.
+     * @return the new y coordinate.
+     */
     public float advance(float leading) {
         this.y += leading;
         return this.y;
@@ -140,6 +153,11 @@ public class TextLine implements Drawable {
         return this;
     }
 
+    /**
+     * Returns the font size.
+     *
+     * @return the font size.
+     */
     public float getFontSize() {
         return this.fontSize;
     }
@@ -185,6 +203,12 @@ public class TextLine implements Drawable {
         return setTextColor(color);
     }
 
+    /**
+     * Sets the text color. Color.transparent clears it.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextLine object.
+     */
     public TextLine setTextColor(int color) {
         if (color == Color.transparent) {
             this.textColor = null;
@@ -197,20 +221,45 @@ public class TextLine implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this TextLine object.
+     */
     public TextLine setTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextLine object.
+     */
     public TextLine setTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
         return this;
     }
 
+    /**
+     * Returns the text color.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] getTextColor() {
         return textColor;
     }
 
+    /**
+     * Sets the color of the underline and strikeout lines.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextLine object.
+     */
     public TextLine setLineColor(int color) {
         if (color == Color.transparent) {
             this.textColor = null;
@@ -223,25 +272,55 @@ public class TextLine implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the color of the underline and strikeout lines.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this TextLine object.
+     */
     public TextLine setLineColor(float r, float g, float b) {
         this.lineColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the color of the underline and strikeout lines.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextLine object.
+     */
     public TextLine setLineColor(float[] rgbColor) {
         this.lineColor = rgbColor;
         return this;
     }
 
+    /**
+     * Returns the color of the underline and strikeout lines.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] getLineColor() {
         return lineColor;
     }
 
+    /**
+     * Sets the colors used to highlight words in the text.
+     *
+     * @param colorMap the words and their 0xRRGGBB colors.
+     * @return this TextLine object.
+     */
     public TextLine setColorMap(Map<String, Integer> colorMap) {
         this.colorMap = colorMap;
         return this;
     }
 
+    /**
+     * Returns the colors used to highlight words in the text.
+     *
+     * @return the words and their colors.
+     */
     public Map<String, Integer> getColorMap() {
         return this.colorMap;
     }
@@ -441,11 +520,22 @@ public class TextLine implements Drawable {
         return verticalOffset;
     }
 
+    /**
+     * Sets the language of the text, for example "en-US".
+     *
+     * @param language the language.
+     * @return this TextLine object.
+     */
     public TextLine setLanguage(String language) {
         this.language = language;
         return this;
     }
 
+    /**
+     * Returns the language of the text.
+     *
+     * @return the language.
+     */
     public String getLanguage() {
         return this.language;
     }
@@ -461,25 +551,54 @@ public class TextLine implements Drawable {
         return this;
     }
 
+    /**
+     * Returns the alternate description of this text line.
+     *
+     * @return the alternate description.
+     */
     public String getAltDescription() {
         return altDescription;
     }
 
+    /**
+     * Sets the language of the link annotation.
+     *
+     * @param uriLanguage the language.
+     * @return this TextLine object.
+     */
     public TextLine setURILanguage(String uriLanguage) {
         this.uriLanguage = uriLanguage;
         return this;
     }
 
+    /**
+     * Sets the alternate description of the link annotation.
+     *
+     * @param uriAltDescription the alternate description.
+     * @return this TextLine object.
+     */
     public TextLine setURIAltDescription(String uriAltDescription) {
         this.uriAltDescription = uriAltDescription;
         return this;
     }
 
+    /**
+     * Sets the actual text of the link annotation.
+     *
+     * @param uriActualText the actual text.
+     * @return this TextLine object.
+     */
     public TextLine setURIActualText(String uriActualText) {
         this.uriActualText = uriActualText;
         return this;
     }
 
+    /**
+     * Sets the structure element type of this text line, for example StructElem.P or StructElem.H1.
+     *
+     * @param structureType the structure element type.
+     * @return this TextLine object.
+     */
     public TextLine setStructureType(String structureType) {
         this.structureType = structureType;
         return this;

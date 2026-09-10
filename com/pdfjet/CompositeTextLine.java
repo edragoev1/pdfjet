@@ -33,6 +33,12 @@ public class CompositeTextLine implements Drawable {
 
     private float fontSize = 0f;
 
+    /**
+     * Creates a composite text line at the specified location.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     */
     public CompositeTextLine(float x, float y) {
         position[X] = x;
         position[Y] = y;
@@ -177,11 +183,25 @@ public class CompositeTextLine implements Drawable {
         textLines.add(component);
     }
 
+    /**
+     * Sets the location of this composite text line.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this CompositeTextLine object.
+     */
     public CompositeTextLine setXY(float x, float y) {
         setLocation(x, y);
         return this;
     }
 
+    /**
+     * Sets the location of this composite text line.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this CompositeTextLine object.
+     */
     public CompositeTextLine setXY(double x, double y) {
         setLocation(x, y);
         return this;

@@ -3,13 +3,23 @@ package com.pdfjet;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A group of drawable elements that are moved, rotated and scaled together.
+ */
 public class Container implements Drawable {
+    /** The x coordinate of this container on the page. */
     public float x;
+    /** The y coordinate of this container on the page. */
     public float y;
+    /** The width of this container. */
     public float width;
+    /** The height of this container. */
     public float height;
+    /** The rotation angle in degrees. */
     public float rotateDegrees;
+    /** The horizontal scaling factor. */
     public float scaleX;
+    /** The vertical scaling factor. */
     public float scaleY;
     private List<Drawable> elements;
     Container parent = null;
@@ -49,6 +59,11 @@ public class Container implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the rotation angle of this container.
+     *
+     * @param degrees the rotation angle in degrees.
+     */
     public void rotate(double degrees) {
         this.rotateDegrees = (float) degrees;
     }
@@ -86,6 +101,11 @@ public class Container implements Drawable {
         return this;
     }
 
+    /**
+     * Returns the center of this container, which it rotates around.
+     *
+     * @return the x and y coordinates of the center.
+     */
     public float[] getRotationCenter() {
         return new float[] {x + width/2f, y + height/2f};
     }
@@ -114,6 +134,12 @@ public class Container implements Drawable {
         return this;
     }
 
+    /**
+     * Adds a border in the specified color around this container.
+     *
+     * @param borderColor the border color as a 0xRRGGBB value.
+     * @return this Container object.
+     */
     public Container setBorderColor(int borderColor) {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.setBorderColor(borderColor);
@@ -121,6 +147,9 @@ public class Container implements Drawable {
         return this;
     }
 
+    /**
+     * Adds a black border around this container.
+     */
     public void addBorder() {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.setBorderColor(Color.black);

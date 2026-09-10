@@ -13,6 +13,10 @@ import java.nio.charset.StandardCharsets;
  * The Content.java class.
  */
 public class Content {
+    /** The default constructor */
+    public Content() {
+    }
+
     /**
      * Returns the file contents as string.
      *

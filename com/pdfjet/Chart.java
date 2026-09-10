@@ -101,36 +101,66 @@ public class Chart implements Drawable {
         nf = NumberFormat.getInstance();
     }
 
-    /** Sets the chart title. */
+    /**
+     * Sets the chart title.
+     *
+     * @param title the title.
+     * @return this Chart object.
+     */
     public Chart setTitle(String title) {
         this.title = title;
         return this;
     }
 
-    /** Sets the X axis title. */
+    /**
+     * Sets the X axis title.
+     *
+     * @param title the title.
+     * @return this Chart object.
+     */
     public Chart setXAxisTitle(String title) {
         this.xAxisTitle = title;
         return this;
     }
 
-    /** Sets the Y axis title. */
+    /**
+     * Sets the Y axis title.
+     *
+     * @param title the title.
+     * @return this Chart object.
+     */
     public Chart setYAxisTitle(String title) {
         this.yAxisTitle = title;
         return this;
     }
 
-    /** Sets the chart data (list of series, each a list of points). */
+    /**
+     * Sets the chart data: a list of series, each a list of points.
+     *
+     * @param chartData the chart data.
+     * @return this Chart object.
+     */
     public Chart setData(List<List<Point>> chartData) {
         this.chartData = chartData;
         return this;
     }
 
-    /** Returns the chart data. */
+    /**
+     * Returns the chart data.
+     *
+     * @return the list of series, each a list of points.
+     */
     public List<List<Point>> getData() {
         return chartData;
     }
 
-    /** Sets the top-left position. Returns this for chaining. */
+    /**
+     * Sets the location of the top left corner of this chart.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Chart object.
+     */
     public Chart setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
@@ -142,32 +172,59 @@ public class Chart implements Drawable {
         return this;
     }
 
-    /** Sets the chart dimensions. */
+    /**
+     * Sets the size of this chart.
+     *
+     * @param w the width.
+     * @param h the height.
+     * @return this Chart object.
+     */
     public Chart setSize(double w, double h) {
         setSize((float) w, (float) h);
         return this;
     }
 
-    /** Sets the chart dimensions. */
+    /**
+     * Sets the size of this chart.
+     *
+     * @param w the width.
+     * @param h the height.
+     * @return this Chart object.
+     */
     public Chart setSize(float w, float h) {
         this.w = w;
         this.h = h;
         return this;
     }
 
-    /** Sets the font size for axis labels. */
+    /**
+     * Sets the font size of the axis labels.
+     *
+     * @param fontSize the font size.
+     * @return this Chart object.
+     */
     public Chart setFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
     }
 
-    /** Sets minimum decimal places for axis labels. */
+    /**
+     * Sets the minimum number of decimal places in the axis labels.
+     *
+     * @param minFractionDigits the minimum number of decimal places.
+     * @return this Chart object.
+     */
     public Chart setMinimumFractionDigits(int minFractionDigits) {
         this.minFractionDigits = minFractionDigits;
         return this;
     }
 
-    /** Sets maximum decimal places for axis labels. */
+    /**
+     * Sets the maximum number of decimal places in the axis labels.
+     *
+     * @param maxFractionDigits the maximum number of decimal places.
+     * @return this Chart object.
+     */
     public Chart setMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
         return this;
@@ -206,72 +263,133 @@ public class Chart implements Drawable {
         return (_mean[1] - slope * _mean[0]);
     }
 
-    /** Toggles drawing of horizontal grid lines. */
+    /**
+     * Sets whether the horizontal grid lines are drawn.
+     *
+     * @param drawXAxisLines true to draw them.
+     * @return this Chart object.
+     */
     public Chart setDrawXAxisLines(boolean drawXAxisLines) {
         this.drawXAxisLines = drawXAxisLines;
         return this;
     }
 
-    /** Toggles drawing of vertical grid lines. */
+    /**
+     * Sets whether the vertical grid lines are drawn.
+     *
+     * @param drawYAxisLines true to draw them.
+     * @return this Chart object.
+     */
     public Chart setDrawYAxisLines(boolean drawYAxisLines) {
         this.drawYAxisLines = drawYAxisLines;
         return this;
     }
 
-    /** Toggles drawing of X axis labels. */
+    /**
+     * Sets whether the X axis labels are drawn.
+     *
+     * @param drawXAxisLabels true to draw them.
+     * @return this Chart object.
+     */
     public Chart setDrawXAxisLabels(boolean drawXAxisLabels) {
         this.drawXAxisLabels = drawXAxisLabels;
         return this;
     }
 
-    /** Toggles drawing of Y axis labels. */
+    /**
+     * Sets whether the Y axis labels are drawn.
+     *
+     * @param drawYAxisLabels true to draw them.
+     * @return this Chart object.
+     */
     public Chart setDrawYAxisLabels(boolean drawYAxisLabels) {
         this.drawYAxisLabels = drawYAxisLabels;
         return this;
     }
 
-    /** Sets XY scatter mode (true) or category mode (false). */
+    /**
+     * Sets whether this is an XY scatter chart or a category chart.
+     *
+     * @param xyChart true for an XY scatter chart, false for a category chart.
+     * @return this Chart object.
+     */
     public Chart setXYChart(boolean xyChart) {
         this.xyChart = xyChart;
         return this;
     }
 
-    /** Sets the outer chart border width (0 = invisible). */
+    /**
+     * Sets the width of the outer chart border. A width of 0 hides it.
+     *
+     * @param width the border width.
+     * @return this Chart object.
+     */
     public Chart setChartBorderWidth(float width) {
         this.chartBorderWidth = width;
         return this;
     }
 
-    /** Sets the inner plot area border width (0 = invisible). */
+    /**
+     * Sets the width of the plot area border. A width of 0 hides it.
+     *
+     * @param width the border width.
+     * @return this Chart object.
+     */
     public Chart setInnerBorderWidth(float width) {
         this.innerBorderWidth = width;
         return this;
     }
 
-    /** Sets the horizontal grid line width (0 = invisible). */
+    /**
+     * Sets the width of the horizontal grid lines. A width of 0 hides them.
+     *
+     * @param width the line width.
+     * @return this Chart object.
+     */
     public Chart setHGridLineWidth(float width) {
         this.hGridLineWidth = width;
         return this;
     }
 
-    /** Sets the vertical grid line width (0 = invisible). */
+    /**
+     * Sets the width of the vertical grid lines. A width of 0 hides them.
+     *
+     * @param width the line width.
+     * @return this Chart object.
+     */
     public Chart setVGridLineWidth(float width) {
         this.vGridLineWidth = width;
         return this;
     }
 
-    /** Sets the horizontal grid line dash pattern (e.g. "[1 1] 0"). */
+    /**
+     * Sets the dash pattern of the horizontal grid lines, for example "[1 1] 0".
+     *
+     * @param pattern the dash pattern.
+     * @return this Chart object.
+     */
     public Chart setHGridLinePattern(String pattern) {
         this.hGridLinePattern = pattern;
         return this;
     }
 
-    /** Sets the vertical grid line dash pattern (e.g. "[1 1] 0"). */
+    /**
+     * Sets the dash pattern of the vertical grid lines, for example "[1 1] 0".
+     *
+     * @param pattern the dash pattern.
+     * @return this Chart object.
+     */
     public Chart setVGridLinePattern(String pattern) {
         this.vGridLinePattern = pattern;
         return this;
     }
 
+    /**
+     * Sets whether the series colors are assigned automatically.
+     *
+     * @param autoColors true to assign the colors automatically.
+     * @return this Chart object.
+     */
     public Chart setAutoColors(boolean autoColors) {
         this.autoColors = autoColors;
         return this;
@@ -564,6 +682,12 @@ public class Chart implements Drawable {
         }
     }
 
+    /**
+     * Converts a 0xRRGGBB color to its red, green and blue components.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] toFloatArray(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;

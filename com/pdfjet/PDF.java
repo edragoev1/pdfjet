@@ -135,21 +135,42 @@ final public class PDF {
         return this;
     }
 
+    /**
+     * Sets the encryption applied to this document.
+     *
+     * @param encryption the encryption.
+     * @return this PDF object.
+     */
     public PDF setEncryption(Encryption encryption) {
         this.encryption = encryption;
         return this;
     }
 
+    /**
+     * Starts a new object in the document output and records its offset.
+     *
+     * @throws IOException if writing to the output fails.
+     */
     public void newobj() throws IOException {
         objOffset.add(byteCount);
         append(objOffset.size());
         append(Token.NEW_OBJ);
     }
 
+    /**
+     * Ends the current object in the document output.
+     *
+     * @throws IOException if writing to the output fails.
+     */
     public void endobj() throws IOException {
         append(Token.END_OBJ);
     }
 
+    /**
+     * Returns the number of the most recently started object.
+     *
+     * @return the object number.
+     */
     public int getObjNumber() {
         return objOffset.size();
     }
@@ -1079,6 +1100,12 @@ final public class PDF {
         prevPage = page;
     }
 
+    /**
+     * Adds the pages to this document.
+     *
+     * @param pages the pages.
+     * @throws Exception if an input or output exception occurred.
+     */
     public void addPages(List<Page> pages) throws Exception {
         for (Page page : pages) {
             addPage(page);
@@ -1259,40 +1286,90 @@ final public class PDF {
         return this;
     }
 
+    /**
+     * Writes the number to the document output.
+     *
+     * @param num the number.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(int num) throws IOException {
         append(Integer.toString(num));
     }
 
+    /**
+     * Writes the number to the document output.
+     *
+     * @param f the number.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(float f) throws IOException {
         append(FastFloat.toByteArray(f));
     }
 
+    /**
+     * Writes the string to the document output as UTF-8.
+     *
+     * @param str the string.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(String str) throws IOException {
         byte[] buf = str.getBytes(StandardCharsets.UTF_8);
         os.write(buf);
         byteCount += buf.length;
     }
 
+    /**
+     * Writes the character to the document output as a single byte.
+     *
+     * @param ch the character.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(char ch) throws IOException {
         os.write((byte) ch);
         byteCount += 1;
     }
 
+    /**
+     * Writes the byte to the document output.
+     *
+     * @param b the byte.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(byte b) throws IOException {
         os.write(b);
         byteCount += 1;
     }
 
+    /**
+     * Writes the bytes to the document output.
+     *
+     * @param buf the bytes.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(byte[] buf) throws IOException {
         os.write(buf, 0, buf.length);
         byteCount += buf.length;
     }
 
+    /**
+     * Writes part of the byte array to the document output.
+     *
+     * @param buf the bytes.
+     * @param off the offset of the first byte to write.
+     * @param len the number of bytes to write.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(byte[] buf, int off, int len) throws IOException {
         os.write(buf, off, len);
         byteCount += len;
     }
 
+    /**
+     * Writes the contents of the stream to the document output.
+     *
+     * @param baos the stream.
+     * @throws IOException if writing to the output fails.
+     */
     public void append(ByteArrayOutputStream baos) throws IOException {
         baos.writeTo(os);
         byteCount += baos.size();

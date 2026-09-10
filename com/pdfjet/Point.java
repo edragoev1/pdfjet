@@ -58,13 +58,13 @@ public class Point implements Drawable {
     /** Bezier Control Point */
     public static final char CONTROL_POINT = 'c';
 
-    // For the c operator we have both control points
+    /** Control point for the c operator, which uses both control points. */
     public static final char CONTROL_POINT_C = 'c';
 
-    // For the v operator, the first control point shall coincide with initial point of the curve.
+    /** Control point for the v operator, where the first control point coincides with the initial point of the curve. */
     public static final char CONTROL_POINT_V = 'v';
 
-    // For the y operator, the second control point shall coincide with final point of the curve.
+    /** Control point for the y operator, where the second control point coincides with the final point of the curve. */
     public static final char CONTROL_POINT_Y = 'y';
 
     protected float x;
@@ -308,6 +308,12 @@ public class Point implements Drawable {
         return r;
     }
 
+    /**
+     * Sets the fill color of this point.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Point object.
+     */
     public Point setFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -316,20 +322,45 @@ public class Point implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the fill color of this point.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this Point object.
+     */
     public Point setFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the fill color of this point.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Point object.
+     */
     public Point setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /**
+     * Returns the fill color of this point.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] getFillColor() {
         return this.fillColor;
     }
 
+    /**
+     * Sets the stroke color of this point.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Point object.
+     */
     public Point setStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -338,16 +369,35 @@ public class Point implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the stroke color of this point.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this Point object.
+     */
     public Point setStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the stroke color of this point.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Point object.
+     */
     public Point setStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
         return this;
     }
 
+    /**
+     * Returns the stroke color of this point.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] getStrokeColor() {
         return this.strokeColor;
     }
@@ -458,11 +508,22 @@ public class Point implements Drawable {
         return strokeDashPattern;
     }
 
+    /**
+     * Sets the path operator used to draw this point.
+     *
+     * @param pathOperator the path operator, for example PathOperator.STROKE.
+     * @return this Point object.
+     */
     public Point setPathOperator(String pathOperator) {
         this.pathOperator = pathOperator;
         return this;
     }
 
+    /**
+     * Returns the path operator used to draw this point.
+     *
+     * @return the path operator.
+     */
     public String getPathOperator() {
         return this.pathOperator;
     }

@@ -17,15 +17,25 @@ import java.util.*;
  * Please see Example_08.
  */
 public class Table {
+    /** The table has no header rows. */
     public static final int WITH_0_HEADER_ROWS = 0;
+    /** The table has 1 header row. */
     public static final int WITH_1_HEADER_ROW  = 1;
+    /** The table has 2 header rows. */
     public static final int WITH_2_HEADER_ROWS = 2;
+    /** The table has 3 header rows. */
     public static final int WITH_3_HEADER_ROWS = 3;
+    /** The table has 4 header rows. */
     public static final int WITH_4_HEADER_ROWS = 4;
+    /** The table has 5 header rows. */
     public static final int WITH_5_HEADER_ROWS = 5;
+    /** The table has 6 header rows. */
     public static final int WITH_6_HEADER_ROWS = 6;
+    /** The table has 7 header rows. */
     public static final int WITH_7_HEADER_ROWS = 7;
+    /** The table has 8 header rows. */
     public static final int WITH_8_HEADER_ROWS = 8;
+    /** The table has 9 header rows. */
     public static final int WITH_9_HEADER_ROWS = 9;
 
     private List<List<Cell>> tableData;
@@ -45,6 +55,12 @@ public class Table {
         tableData = new ArrayList<List<Cell>>();
     }
 
+    /**
+     * Creates a table that uses the specified fonts.
+     *
+     * @param f1 the font for the header rows.
+     * @param f2 the font for the other rows.
+     */
     public Table(Font f1, Font f2) {
         this.f1 = f1;
         this.f2 = f2;
@@ -420,6 +436,12 @@ public class Table {
         return tableData.get(index);
     }
 
+    /**
+     * Returns the cells in the specified row. Same as getRow.
+     *
+     * @param index the index of the row.
+     * @return the list of cells.
+     */
     public List<Cell> getRowAtIndex(int index) {
         return getRow(index);
     }
@@ -441,6 +463,12 @@ public class Table {
         return column;
     }
 
+    /**
+     * Returns the cells in the specified column. Same as getColumn.
+     *
+     * @param index the index of the column.
+     * @return the list of cells.
+     */
     public List<Cell> getColumnAtIndex(int index) {
         return getColumn(index);
     }
@@ -460,6 +488,16 @@ public class Table {
         return drawTableRows(page, drawHeaderRows(page, 0));
     }
 
+    /**
+     * Draws this table on as many new pages as it needs.
+     * The pages are created detached and added to the list; add them to the PDF afterwards.
+     *
+     * @param pdf the PDF document.
+     * @param pages the list that receives the new pages.
+     * @param pageSize the page size, for example Letter.PORTRAIT.
+     * @return the x and y coordinates below the table on the last page.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] drawOn(PDF pdf, List<Page> pages, float[] pageSize) throws Exception {
         wrapAroundCellText();
         setRightBorderOnLastColumn();
@@ -874,6 +912,12 @@ public class Table {
         }
     }
 
+    /**
+     * Keeps only the specified columns in this table.
+     *
+     * @param columns the indexes of the columns to keep.
+     * @return this Table object.
+     */
     public Table setVisibleColumns(Integer... columns) {
         List<List<Cell>> list = new ArrayList<List<Cell>>();
         List<Integer> visible = Arrays.asList(columns);
@@ -890,6 +934,12 @@ public class Table {
         return this;
     }
 
+    /**
+     * Sets the top margin on the first page, when the table is drawn on several pages.
+     *
+     * @param firstPageTopMargin the top margin.
+     * @return this Table object.
+     */
     public Table setFirstPageTopMargin(float firstPageTopMargin) {
         this.firstPageTopMargin = firstPageTopMargin;
         return this;

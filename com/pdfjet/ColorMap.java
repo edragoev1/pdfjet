@@ -16,6 +16,9 @@ import java.util.Map;
 public class ColorMap {
     Map<String, Integer> map = null;
 
+    /**
+     * Creates a map from the CSS color names to their 0xRRGGBB values.
+     */
     public ColorMap() {
         map = new HashMap<String, Integer>();
         map.put("transparent", -1);
@@ -171,6 +174,12 @@ public class ColorMap {
         map.put("oldgloryblue", 0x3c3b6e);
     }
 
+    /**
+     * Returns the color with the specified CSS name, or given as "#rrggbb" or "#rgb".
+     *
+     * @param colorName the color name or hexadecimal value.
+     * @return the color as a 0xRRGGBB value, or Color.transparent if the name is not known.
+     */
     public int getColor(String colorName) {
         if (colorName.startsWith("#")) {
             if (colorName.length() == 7) {

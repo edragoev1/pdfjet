@@ -11,6 +11,12 @@ package com.pdfjet;
  * For more information about the page size classes - A3, A4, A5, B5, Executive, Letter, Legal and Tabloid - see the Page class.
  */
 public class Tabloid {
+    /** The default constructor */
+    public Tabloid() {
+    }
+
+    /** Portrait orientation */
     public static final float[] PORTRAIT = new float[] {792.0f, 1224.0f};
+    /** Landscape orientation */
     public static final float[] LANDSCAPE = new float[] {1224.0f, 792.0f};
 }

@@ -142,6 +142,12 @@ public class TextBox implements Drawable {
         return font;
     }
 
+    /**
+     * Sets the font size of the text.
+     *
+     * @param fontSize the font size.
+     * @return this TextBox object.
+     */
     public TextBox setFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
@@ -248,6 +254,7 @@ public class TextBox implements Drawable {
      * Sets the height of this text box.
      *
      * @param height the specified height.
+     * @return this TextBox object.
      */
     public TextBox setHeight(double height) {
         this.height = (float) height;
@@ -258,6 +265,7 @@ public class TextBox implements Drawable {
      * Sets the height of this text box.
      *
      * @param height the specified height.
+     * @return this TextBox object.
      */
     public TextBox setHeight(float height) {
         this.height = height;
@@ -277,6 +285,7 @@ public class TextBox implements Drawable {
      * Sets the margin of this text box.
      *
      * @param margin the margin between the text and the box
+     * @return this TextBox object.
      */
     public TextBox setMargin(double margin) {
         this.margin = (float) margin;
@@ -287,6 +296,7 @@ public class TextBox implements Drawable {
      * Sets the margin of this text box.
      *
      * @param margin the margin between the text and the box
+     * @return this TextBox object.
      */
     public TextBox setMargin(float margin) {
         this.margin = margin;
@@ -364,6 +374,12 @@ public class TextBox implements Drawable {
         return spacing;
     }
 
+    /**
+     * Sets the background color.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBox object.
+     */
     public TextBox setFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -372,11 +388,23 @@ public class TextBox implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the background color.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBox object.
+     */
     public TextBox setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /**
+     * Sets the background color.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBox object.
+     */
     public TextBox setBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -385,11 +413,23 @@ public class TextBox implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the background color.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBox object.
+     */
     public TextBox setBackgroundColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBox object.
+     */
     public TextBox setTextColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -398,25 +438,56 @@ public class TextBox implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this TextBox object.
+     */
     public TextBox setTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBox object.
+     */
     public TextBox setTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
         return this;
     }
 
+    /**
+     * Returns the text color.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] getTextColor() {
         return textColor;
     }
 
+    /**
+     * Sets the stroke width of the borders.
+     *
+     * @param strokeWidth the stroke width.
+     * @return this TextBox object.
+     */
     public TextBox setStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
+    /**
+     * Sets the stroke color of the borders.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBox object.
+     */
     public TextBox setStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -425,16 +496,35 @@ public class TextBox implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the stroke color of the borders.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this TextBox object.
+     */
     public TextBox setStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the stroke color of the borders.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBox object.
+     */
     public TextBox setStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
         return this;
     }
 
+    /**
+     * Returns the stroke color of the borders.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] getStrokeColor() {
         return strokeColor;
     }
@@ -505,6 +595,7 @@ public class TextBox implements Drawable {
      *
      * @param alignment the alignment code.
      *                  Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
+     * @return this TextBox object.
      */
     public TextBox setTextAlignment(int alignment) {
         this.properties &= 0x00CFFFFF;
@@ -572,11 +663,22 @@ public class TextBox implements Drawable {
         return (properties & 0x00800000) != 0;
     }
 
+    /**
+     * Sets the font used for the characters the main font does not have.
+     *
+     * @param fallbackFont the fallback font.
+     * @return this TextBox object.
+     */
     public TextBox setFallbackFont(Font fallbackFont) {
         this.fallbackFont = fallbackFont;
         return this;
     }
 
+    /**
+     * Returns the fallback font.
+     *
+     * @return the fallback font.
+     */
     public Font getFallbackFont() {
         return this.fallbackFont;
     }
@@ -592,24 +694,51 @@ public class TextBox implements Drawable {
         return this;
     }
 
+    /**
+     * Returns the vertical alignment of the text.
+     *
+     * @return the vertical alignment.
+     */
     public int getVerticalAlignment() {
         return this.valign;
     }
 
+    /**
+     * Sets the colors used to highlight words in the text.
+     *
+     * @param colors the words and their 0xRRGGBB colors.
+     * @return this TextBox object.
+     */
     public TextBox setTextColors(Map<String, Integer> colors) {
         this.colors = colors;
         return this;
     }
 
+    /**
+     * Returns the colors used to highlight words in the text.
+     *
+     * @return the words and their colors.
+     */
     public Map<String, Integer> getTextColors() {
         return this.colors;
     }
 
+    /**
+     * Sets the language of the text, for example "en-US".
+     *
+     * @param language the language.
+     * @return this TextBox object.
+     */
     public TextBox setLanguage(String language) {
         this.language = language;
         return this;
     }
 
+    /**
+     * Returns the language of the text.
+     *
+     * @return the language.
+     */
     public String getLanguage() {
         return this.language;
     }
@@ -625,6 +754,11 @@ public class TextBox implements Drawable {
         return this;
     }
 
+    /**
+     * Returns the alternate description of this text box.
+     *
+     * @return the alternate description.
+     */
     public String getAltDescription() {
         return altDescription;
     }
@@ -952,12 +1086,19 @@ public class TextBox implements Drawable {
      * Sets the URI for the "click text line" action.
      *
      * @param uri the URI
+     * @return this TextBox object.
      */
     public TextBox setURIAction(String uri) {
         this.uri = uri;
         return this;
     }
 
+    /**
+     * Sets the direction of the text.
+     *
+     * @param textDirection the text direction.
+     * @return this TextBox object.
+     */
     public TextBox setTextDirection(Direction textDirection) {
         this.textDirection = textDirection;
         return this;

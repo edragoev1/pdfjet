@@ -18,6 +18,10 @@ import java.util.zip.*;
  * The generated PDFs using these stream fonts will me smaller in size.
  */
 public class GenerateStreamFontsFiles {
+    /** The default constructor */
+    public GenerateStreamFontsFiles() {
+    }
+
     private static boolean useZopfli = true;
 
     /**

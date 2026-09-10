@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A block of text that wraps at its width, with an optional border, background and padding.
+ */
 public class TextBlock {
     float x;
     float y;
@@ -70,76 +73,164 @@ public class TextBlock {
         return this;
     }
 
+    /**
+     * Sets the font of the text. It also becomes the fallback font.
+     *
+     * @param font the font.
+     * @return this TextBlock object.
+     */
     public TextBlock setFont(Font font) {
         this.font = font;
         this.fallbackFont = font;
         return this;
     }
 
+    /**
+     * Sets the font used for the characters the main font does not have.
+     *
+     * @param font the fallback font.
+     * @return this TextBlock object.
+     */
     public TextBlock setFallbackFont(Font font) {
         this.fallbackFont = font;
         return this;
     }
 
+    /**
+     * Sets the font size of the text.
+     *
+     * @param fontSize the font size.
+     * @return this TextBlock object.
+     */
     public TextBlock setFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
     }
 
+    /**
+     * Sets the text.
+     *
+     * @param text the text.
+     * @return this TextBlock object.
+     */
     public TextBlock setText(String text) {
         this.textContent = text;
         return this;
     }
 
+    /**
+     * Returns the font of the text.
+     *
+     * @return the font.
+     */
     public Font getFont() {
         return this.font;
     }
 
+    /**
+     * Returns the text.
+     *
+     * @return the text.
+     */
     public String getText() {
         return this.textContent;
     }
 
+    /**
+     * Sets the location of the top left corner of this text block.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this TextBlock object.
+     */
     public TextBlock setLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
+    /**
+     * Sets the size of this text block.
+     *
+     * @param w the width.
+     * @param h the height.
+     * @return this TextBlock object.
+     */
     public TextBlock setSize(float w, float h) {
         this.width = w;
         this.height = h;
         return this;
     }
 
+    /**
+     * Sets the width of this text block and resets its height, so the height fits the text.
+     *
+     * @param w the width.
+     * @return this TextBlock object.
+     */
     public TextBlock setWidth(float w) {
         this.width = w;
         this.height = 0.0f;
         return this;
     }
 
+    /**
+     * Returns the width of this text block.
+     *
+     * @return the width.
+     */
     public float getWidth() {
         return this.width;
     }
 
+    /**
+     * Returns the height of this text block.
+     *
+     * @return the height.
+     */
     public float getHeight() {
         return this.height;
     }
 
+    /**
+     * Sets the radius of the border corners.
+     *
+     * @param borderCornerRadius the corner radius.
+     * @return this TextBlock object.
+     */
     public TextBlock setBorderCornerRadius(float borderCornerRadius) {
         this.borderCornerRadius = borderCornerRadius;
         return this;
     }
 
+    /**
+     * Sets the space between the text and the border.
+     *
+     * @param padding the padding.
+     * @return this TextBlock object.
+     */
     public TextBlock setTextPadding(float padding) {
         this.textPadding = padding;
         return this;
     }
 
+    /**
+     * Sets the border width.
+     *
+     * @param borderWidth the border width.
+     * @return this TextBlock object.
+     */
     public TextBlock setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
         return this;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBlock object.
+     */
     public TextBlock setTextColor(int color) {
         if (color == Color.transparent) {
             this.textColor = null;
@@ -152,11 +243,23 @@ public class TextBlock {
         return this;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBlock object.
+     */
     public TextBlock setTextColor(float[] rgbColor) {
         this.textColor = rgbColor;
         return this;
     }
 
+    /**
+     * Sets the border color. Color.transparent removes the border.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBlock object.
+     */
     public TextBlock setBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
@@ -169,16 +272,34 @@ public class TextBlock {
         return this;
     }
 
+    /**
+     * Sets the border color.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBlock object.
+     */
     public TextBlock setBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
         return this;
     }
 
+    /**
+     * Sets the line spacing as a multiple of the font's body height.
+     *
+     * @param lineSpacing the line spacing.
+     * @return this TextBlock object.
+     */
     public TextBlock setLineSpacing(float lineSpacing) {
         this.lineSpacing = lineSpacing;
         return this;
     }
 
+    /**
+     * Sets the background color.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBlock object.
+     */
     public TextBlock setBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -187,6 +308,12 @@ public class TextBlock {
         return this;
     }
 
+    /**
+     * Sets the background color. Color.transparent removes the background.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this TextBlock object.
+     */
     public TextBlock setFillColor(int color) {
         if (color == Color.transparent) {
             this.fillColor = null;
@@ -199,26 +326,56 @@ public class TextBlock {
         return this;
     }
 
+    /**
+     * Sets the background color.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBlock object.
+     */
     public TextBlock setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /**
+     * Sets the background color.
+     *
+     * @param fillColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this TextBlock object.
+     */
     public TextBlock setBackgroundColor(float[] fillColor) {
         this.fillColor = fillColor;
         return this;
     }
 
+    /**
+     * Sets the horizontal alignment of the text.
+     *
+     * @param textAlignment the alignment.
+     * @return this TextBlock object.
+     */
     public TextBlock setTextAlignment(Alignment textAlignment) {
         this.textAlignment = textAlignment;
         return this;
     }
 
+    /**
+     * Sets the URI opened when this text block is clicked.
+     *
+     * @param uri the URI.
+     * @return this TextBlock object.
+     */
     public TextBlock setURIAction(String uri) {
         this.uri = uri;
         return this;
     }
 
+    /**
+     * Sets the colors used to highlight keywords. The keywords are matched ignoring case.
+     *
+     * @param map the keywords and their 0xRRGGBB colors.
+     * @return this TextBlock object.
+     */
     public TextBlock setKeywordHighlightColors(Map<String, Integer> map) {
         this.keywordHighlightColors = new HashMap<>();
         for (String key : map.keySet()) {
@@ -291,6 +448,12 @@ public class TextBlock {
         return textLines.toArray(new TextLine[] {});
     }
 
+    /**
+     * Sets whether the text is underlined.
+     *
+     * @param underline true to underline the text.
+     * @return this TextBlock object.
+     */
     public TextBlock setUnderline(boolean underline) {
         this.underline = underline;
         return this;
@@ -314,6 +477,13 @@ public class TextBlock {
         }
     }
 
+    /**
+     * Draws this text block on the specified page.
+     *
+     * @param page the page to draw on.
+     * @return the x and y coordinates of the bottom right corner of this text block.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] drawOn(Page page) throws Exception {
         float ascent = this.font.getAscent(fontSize);
         float descent = this.font.getDescent(fontSize);

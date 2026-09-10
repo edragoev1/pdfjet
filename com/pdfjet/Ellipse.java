@@ -6,6 +6,9 @@
  */
 package com.pdfjet;
 
+/**
+ * An ellipse: an arc that sweeps 360 degrees.
+ */
 public final class Ellipse extends Arc {
     /**
      * The default constructor.

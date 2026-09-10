@@ -14,6 +14,17 @@ import java.nio.charset.StandardCharsets;
  * These font metrics files are used by the TypeScript pdfjet-builder.
  */
 public class GenerateFontMetricsFiles {
+    /** The default constructor */
+    public GenerateFontMetricsFiles() {
+    }
+
+    /**
+     * Writes a TypeScript font metrics file for the specified font.
+     *
+     * @param path the directory that contains the font, ending with a separator.
+     * @param fileName the font file name. The output file has the same name with a .ts extension.
+     * @throws Exception if the font cannot be read or the output file cannot be written.
+     */
     public static void generateFontMetricsFiles(String path, String fileName) throws Exception {
         BufferedOutputStream fos = new BufferedOutputStream(
                 new FileOutputStream(fileName.substring(0, fileName.lastIndexOf(".")) + ".ts"));
@@ -72,6 +83,12 @@ public class GenerateFontMetricsFiles {
         fos.close();
     }
 
+    /**
+     * Generates the font metrics files for the fonts in a directory.
+     *
+     * @param args the command line arguments: the directory with the fonts.
+     * @throws Exception if a font cannot be read or an output file cannot be written.
+     */
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
             System.err.println("Usage:");

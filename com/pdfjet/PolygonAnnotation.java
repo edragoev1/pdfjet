@@ -8,11 +8,23 @@ package com.pdfjet;
 
 import java.util.*;
 
+/**
+ * A polygon annotation.
+ */
 public class PolygonAnnotation extends BaseAnnotation {
+    /**
+     * Creates a polygon annotation.
+     */
     public PolygonAnnotation() {
         super.annotationType = Annotation.Polygon;
     }
 
+    /**
+     * Sets the vertices of the polygon.
+     *
+     * @param vertices the x and y coordinates of the vertices, one pair after another.
+     * @return this PolygonAnnotation object.
+     */
     public PolygonAnnotation setVertices(float[] vertices) {
         super.vertices = vertices;
         return this;

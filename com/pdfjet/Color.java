@@ -11,6 +11,10 @@ package com.pdfjet;
  * @see <a href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</a>
  */
 public class Color {
+    /** The default constructor */
+    public Color() {
+    }
+
     /** The color named "transparent" */
     public static final int transparent = -1;
 

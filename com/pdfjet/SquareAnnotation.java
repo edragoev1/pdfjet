@@ -6,7 +6,13 @@
  */
 package com.pdfjet;
 
+/**
+ * A square annotation.
+ */
 public class SquareAnnotation extends BaseAnnotation {
+    /**
+     * Creates a square annotation.
+     */
     public SquareAnnotation() {
         super.annotationType = Annotation.Square;
     }

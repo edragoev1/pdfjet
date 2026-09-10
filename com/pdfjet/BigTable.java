@@ -64,6 +64,12 @@ public class BigTable {
         return this;
     }
 
+    /**
+     * Sets the number of columns in this table.
+     *
+     * @param numberOfColumns the number of columns.
+     * @return this BigTable object.
+     */
     public BigTable setNumberOfColumns(int numberOfColumns) {
         this.numberOfColumns = numberOfColumns;
         return this;
@@ -273,6 +279,11 @@ public class BigTable {
         return this;
     }
 
+    /**
+     * Draws the rows read from the data file, then the vertical lines. Call it after the last row has been added.
+     *
+     * @throws Exception if the data file cannot be read or drawing fails.
+     */
     public void complete() throws Exception {
         try (BufferedReader reader = new BufferedReader(new FileReader(this.fileName))) {
             String line;

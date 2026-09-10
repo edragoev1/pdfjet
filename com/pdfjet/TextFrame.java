@@ -22,6 +22,12 @@ public class TextFrame implements Drawable {
     private int borderColor = Color.blue;
     private List<List<String>> paragraphs;
 
+    /**
+     * Creates a text frame from a list of paragraphs.
+     *
+     * @param f1 the font.
+     * @param inputList the paragraphs.
+     */
     public TextFrame(Font f1, List<String> inputList) {
         this.f1 = f1;
         this.leading = f1.getAscent() + f1.getDescent();
@@ -47,42 +53,95 @@ public class TextFrame implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the location of the top left corner of this text frame.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this TextFrame object.
+     */
     public TextFrame setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
 
+    /**
+     * Sets the width of this text frame.
+     *
+     * @param w the width.
+     * @return this TextFrame object.
+     */
     public TextFrame setWidth(float w) {
         this.w = w;
         return this;
     }
 
+    /**
+     * Sets the width of this text frame.
+     *
+     * @param w the width.
+     * @return this TextFrame object.
+     */
     public TextFrame setWidth(double w) {
         return setWidth((float) w);
     }
 
+    /**
+     * Sets the height of this text frame.
+     *
+     * @param h the height.
+     * @return this TextFrame object.
+     */
     public TextFrame setHeight(float h) {
         this.h = h;
         return this;
     }
 
+    /**
+     * Sets the height of this text frame.
+     *
+     * @param h the height.
+     * @return this TextFrame object.
+     */
     public TextFrame setHeight(double h) {
         return setHeight((float) h);
     }
 
+    /**
+     * Returns the height of this text frame.
+     *
+     * @return the height.
+     */
     public float getHeight() {
         return this.h;
     }
 
+    /**
+     * Sets whether a border is drawn around this text frame.
+     *
+     * @param border true to draw a border.
+     * @return this TextFrame object.
+     */
     public TextFrame setBorder(boolean border) {
         this.border = border;
         return this;
     }
 
+    /**
+     * Sets the border color.
+     *
+     * @param borderColor the border color as a 0xRRGGBB value.
+     * @return this TextFrame object.
+     */
     public TextFrame setBorderColor(int borderColor) {
         this.borderColor = borderColor;
         return this;
     }
 
+    /**
+     * Returns whether some of the text has not been drawn yet.
+     *
+     * @return true if there is more text to draw.
+     */
     public boolean hasMoreText() {
         return paragraphs.size() > 0;
     }

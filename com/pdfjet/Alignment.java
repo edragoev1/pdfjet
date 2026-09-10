@@ -10,7 +10,10 @@ package com.pdfjet;
  * Used to specify the text alignment in TextBlock.
  */
 public enum Alignment {
+    /** Aligns the text to the left. */
     LEFT,
+    /** Aligns the text to the right. */
     RIGHT,
+    /** Centers the text. */
     CENTER;
 }

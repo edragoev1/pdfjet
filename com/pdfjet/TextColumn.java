@@ -61,6 +61,12 @@ public class TextColumn implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the space between paragraphs.
+     *
+     * @param paragraphSpacing the paragraph spacing.
+     * @return this TextColumn object.
+     */
     public TextColumn setParagraphSpacing(float paragraphSpacing) {
         this.paragraphSpacing = paragraphSpacing;
         return this;
@@ -128,10 +134,20 @@ public class TextColumn implements Drawable {
         return this;
     }
 
+    /**
+     * Returns the width of this text column.
+     *
+     * @return the width.
+     */
     public float getWidth() {
         return this.w;
     }
 
+    /**
+     * Returns the height of this text column.
+     *
+     * @return the height.
+     */
     public float getHeight() {
         return this.h;
     }

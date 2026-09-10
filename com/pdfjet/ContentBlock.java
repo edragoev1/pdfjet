@@ -5,6 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A named block of content, written as a PDF form XObject.
+ */
 public class ContentBlock {
     // XObject internal representation
     private final String xObjectName;
@@ -13,18 +16,30 @@ public class ContentBlock {
     // A map to keep track of the resources (for embedding in the page)
     private static final Map<String, ContentBlock> xObjectResources = new HashMap<>();
 
-    // Constructor
+    /**
+     * Creates a content block.
+     *
+     * @param name the name of the XObject.
+     * @param data the content stream data.
+     */
     public ContentBlock(String name, byte[] data) {
         this.xObjectName = name;
         this.xObjectData = data;
     }
 
-    // Add the XObject to the resources (for reuse)
+    /**
+     * Adds this content block to the shared XObject resources.
+     */
     public void addToResources() {
         xObjectResources.put(xObjectName, this);
     }
 
-    // Serialize the XObject (as a stream in a PDF context)
+    /**
+     * Returns this content block as a PDF form XObject.
+     *
+     * @return the XObject dictionary and stream.
+     * @throws IOException if the content cannot be written.
+     */
     public String serialize() throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("<<\n");
@@ -44,7 +59,11 @@ public class ContentBlock {
         return sb.toString();
     }
 
-    // Generate the resources section (PDF header)
+    /**
+     * Returns the /Resources dictionary that lists the content blocks added with addToResources.
+     *
+     * @return the resources dictionary.
+     */
     public static String generateResourcesSection() {
         StringBuilder resources = new StringBuilder();
         resources.append("/Resources <<\n");

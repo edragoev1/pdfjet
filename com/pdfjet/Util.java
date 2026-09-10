@@ -8,7 +8,20 @@ package com.pdfjet;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Utility methods.
+ */
 public class Util {
+    /** The default constructor */
+    public Util() {
+    }
+
+    /**
+     * Returns the bytes as a lowercase hexadecimal string.
+     *
+     * @param data the bytes.
+     * @return the hexadecimal string.
+     */
     public static String toHexString(byte[] data) {
         StringBuilder sb = new StringBuilder(data.length * 2);
         for (byte b : data) {

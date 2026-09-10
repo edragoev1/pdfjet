@@ -40,43 +40,92 @@ public class Arc implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the line whose end point this arc starts from.
+     *
+     * @param line the line.
+     * @return this Arc object.
+     */
     public Arc setStartPointToEndOf(Line line) {
         this.line = line;
         return this;
     }
 
+    /**
+     * Sets the center of this arc.
+     *
+     * @param cx the x coordinate of the center.
+     * @param cy the y coordinate of the center.
+     * @return this Arc object.
+     */
     public Arc setCenterXY(float cx, float cy) {
         this.cx = cx;
         this.cy = cy;
         return this;
     }
 
+    /**
+     * Sets the horizontal radius of this arc.
+     *
+     * @param rx the horizontal radius.
+     * @return this Arc object.
+     */
     public Arc setRadiusX(float rx) {
         this.rx = rx;
         return this;
     }
 
+    /**
+     * Sets the vertical radius of this arc.
+     *
+     * @param ry the vertical radius.
+     * @return this Arc object.
+     */
     public Arc setRadiusY(float ry) {
         this.ry = ry;
         return this;
     }
 
+    /**
+     * Sets both radii of this arc to the same value, making it circular.
+     *
+     * @param r the radius.
+     * @return this Arc object.
+     */
     public Arc setRadius(float r) {
         this.rx = r;
         this.ry = r;
         return this;
     }
 
+    /**
+     * Sets the angle where this arc starts.
+     *
+     * @param angle the start angle in degrees.
+     * @return this Arc object.
+     */
     public final Arc setStartAngle(float angle) {
         this.startAngle = angle;
         return this;
     }
 
+    /**
+     * Sets how far this arc sweeps clockwise from its start angle.
+     *
+     * @param sweepDegrees the sweep angle in degrees.
+     * @return this Arc object.
+     */
     public final Arc setSweepDegreesCW(float sweepDegrees) {
         this.sweepDegrees = sweepDegrees;
         return this;
     }
 
+    /**
+     * Sets how far this arc sweeps counterclockwise from its start angle.
+     *
+     * @param sweepDegrees the sweep angle in degrees.
+     * @return this Arc object.
+     */
     public final Arc setSweepDegreesCCW(float sweepDegrees) {
         this.sweepDegrees = -sweepDegrees;
         return this;
@@ -146,16 +195,36 @@ public class Arc implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the stroke color of this arc.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this Arc object.
+     */
     public Arc setStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the stroke color of this arc.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Arc object.
+     */
     public Arc setStrokeColor(float[] rgbColor) {
         this.strokeColor = rgbColor;
         return this;
     }
 
+    /**
+     * Sets the fill color of this arc.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Arc object.
+     */
     public Arc setFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -164,31 +233,69 @@ public class Arc implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the fill color of this arc.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this Arc object.
+     */
     public Arc setFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the fill color of this arc.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Arc object.
+     */
     public Arc setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /**
+     * Rotates this arc clockwise.
+     *
+     * @param degrees the rotation angle in degrees.
+     * @return this Arc object.
+     */
     public Arc setRotateDegreesCW(float degrees) {
         this.rotateDegrees = -degrees;
         return this;
     }
 
+    /**
+     * Rotates this arc clockwise.
+     *
+     * @param degrees the rotation angle in degrees.
+     * @return this Arc object.
+     */
     public Arc setRotateDegreesCW(double degrees) {
         this.rotateDegrees = (float) -degrees;
         return this;
     }
 
+    /**
+     * Rotates this arc counterclockwise.
+     *
+     * @param degrees the rotation angle in degrees.
+     * @return this Arc object.
+     */
     public Arc setRotateDegreesCCW(float degrees) {
         this.rotateDegrees = degrees;
         return this;
     }
 
+    /**
+     * Rotates this arc counterclockwise.
+     *
+     * @param degrees the rotation angle in degrees.
+     * @return this Arc object.
+     */
     public Arc setRotateDegreesCCW(double degrees) {
         this.rotateDegrees = (float) degrees;
         return this;

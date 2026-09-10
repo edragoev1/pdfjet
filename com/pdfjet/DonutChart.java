@@ -26,6 +26,13 @@ public class DonutChart {
     List<Slice> slices;
     boolean isDonutChart = true;
 
+    /**
+     * Creates a donut chart or a pie chart.
+     *
+     * @param f1 the font for the slice labels.
+     * @param f2 the font for the percentages drawn inside the slices.
+     * @param isDonutChart true for a donut chart, false for a pie chart.
+     */
     public DonutChart(Font f1, Font f2, boolean isDonutChart) {
         this.f1 = f1;
         this.f2 = f2;
@@ -33,18 +40,37 @@ public class DonutChart {
         this.slices = new ArrayList<>();
     }
 
+    /**
+     * Sets the center of this chart.
+     *
+     * @param xc the x coordinate of the center.
+     * @param yc the y coordinate of the center.
+     * @return this DonutChart object.
+     */
     public DonutChart setLocation(float xc, float yc) {
         this.xc = xc;
         this.yc = yc;
         return this;
     }
 
+    /**
+     * Sets the outer and inner radius of this chart.
+     *
+     * @param r1 the outer radius.
+     * @param r2 the inner radius. A pie chart ignores it.
+     * @return this DonutChart object.
+     */
     public DonutChart setR1AndR2(float r1, float r2) {
         this.r1 = r1;
         this.r2 = r2;
         return this;
     }
 
+    /**
+     * Adds a slice to this chart.
+     *
+     * @param slice the slice.
+     */
     public void addSlice(Slice slice) {
         slices.add(slice);
     }
@@ -193,6 +219,12 @@ public class DonutChart {
         }
     }
 
+    /**
+     * Draws this chart on the specified page.
+     *
+     * @param page the page to draw on.
+     * @throws Exception if an input or output exception occurred.
+     */
     public void drawOn(Page page) throws Exception {
         if (slices == null || slices.isEmpty()) {
             return;

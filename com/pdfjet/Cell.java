@@ -230,11 +230,23 @@ public class Cell {
         return this;
     }
 
+    /**
+     * Sets the text block drawn inside this cell.
+     *
+     * @param textBlock the text block.
+     * @return this Cell object.
+     */
     public Cell setTextBlock(TextBlock textBlock) {
         this.textBlock = textBlock;
         return this;
     }
 
+    /**
+     * Sets the text column drawn inside this cell, and widens the cell to fit it.
+     *
+     * @param textColumn the text column.
+     * @return this Cell object.
+     */
     public Cell setTextColumn(TextColumn textColumn) {
         this.textColumn = textColumn;
         this.width = textColumn.getWidth() + this.leftPadding + this.rightPadding;
@@ -324,6 +336,12 @@ public class Cell {
         return this;
     }
 
+    /**
+     * Sets the stroke color of this cell.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Cell object.
+     */
     public Cell setStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -332,6 +350,12 @@ public class Cell {
         return this;
     }
 
+    /**
+     * Sets the stroke color of this cell.
+     *
+     * @param strokeColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Cell object.
+     */
     public Cell setStrokeColor(float[] strokeColor) {
         this.strokeColor = strokeColor;
         return this;
@@ -428,6 +452,12 @@ public class Cell {
         return this;
     }
 
+    /**
+     * Sets the text color of this cell.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Cell object.
+     */
     public Cell setTextColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -436,6 +466,12 @@ public class Cell {
         return this;
     }
 
+    /**
+     * Sets the text color of this cell.
+     *
+     * @param textColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Cell object.
+     */
     public Cell setTextColor(float[] textColor) {
         this.textColor = textColor;
         return this;
@@ -450,10 +486,21 @@ public class Cell {
         return textColor;
     }
 
+    /**
+     * Returns the text color of this cell.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
     public float[] getTextColor() {
         return textColor;
     }
 
+    /**
+     * Sets the background color of this cell.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Cell object.
+     */
     public Cell setBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -462,6 +509,12 @@ public class Cell {
         return this;
     }
 
+    /**
+     * Sets the background color of this cell.
+     *
+     * @param color the red, green and blue components, from 0.0 to 1.0.
+     * @return this Cell object.
+     */
     public Cell setBackgroundColor(float[] color) {
         this.backgroundColor = color;
         return this;

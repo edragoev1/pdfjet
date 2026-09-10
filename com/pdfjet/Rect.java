@@ -8,6 +8,9 @@ package com.pdfjet;
 
 import java.util.*;
 
+/**
+ * A rectangle that can be drawn on a page.
+ */
 public class Rect implements Drawable {
     protected float x;
     protected float y;
@@ -32,6 +35,14 @@ public class Rect implements Drawable {
     public Rect() {
     }
 
+    /**
+     * Creates a rectangle.
+     *
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width.
+     * @param h the height.
+     */
     public Rect(float x, float y, float w, float h) {
         this.x = x;
         this.y = y;
@@ -39,6 +50,14 @@ public class Rect implements Drawable {
         this.h = h;
     }
 
+    /**
+     * Creates a rectangle.
+     *
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width.
+     * @param h the height.
+     */
     public Rect(double x, double y, double w, double h) {
         this.x = (float) x;
         this.y = (float) y;
@@ -52,16 +71,36 @@ public class Rect implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the location of the top left corner of this rectangle.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Rect object.
+     */
     public Rect setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
 
+    /**
+     * Sets the size of this rectangle.
+     *
+     * @param w the width.
+     * @param h the height.
+     * @return this Rect object.
+     */
     public Rect setSize(float w, float h) {
         this.w = w;
         this.h = h;
         return this;
     }
 
+    /**
+     * Sets the fill color of this rectangle.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Rect object.
+     */
     public Rect setFillColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -70,21 +109,47 @@ public class Rect implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the fill color of this rectangle.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this Rect object.
+     */
     public Rect setFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the fill color of this rectangle.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Rect object.
+     */
     public Rect setFillColor(float[] rgbColor) {
         this.fillColor = rgbColor;
         return this;
     }
 
+    /**
+     * Sets the border width of this rectangle.
+     *
+     * @param borderWidth the border width.
+     * @return this Rect object.
+     */
     public Rect setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
         return this;
     }
 
+    /**
+     * Sets the border color of this rectangle. Color.transparent removes the border.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this Rect object.
+     */
     public Rect setBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
@@ -97,11 +162,25 @@ public class Rect implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the border color of this rectangle.
+     *
+     * @param r the red component, from 0.0 to 1.0.
+     * @param g the green component, from 0.0 to 1.0.
+     * @param b the blue component, from 0.0 to 1.0.
+     * @return this Rect object.
+     */
     public Rect setBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
         return this;
     }
 
+    /**
+     * Sets the border color of this rectangle.
+     *
+     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
+     * @return this Rect object.
+     */
     public Rect setBorderColor(float[] rgbColor) {
         this.borderColor = rgbColor;
         return this;
