@@ -140,13 +140,6 @@ func (textLine *TextLine) GetFallbackFont() *Font {
 	return textLine.fallbackFont
 }
 
-// SetColor sets the color for this text line.
-// @param color the color is specified as an integer.
-// @return this TextLine.
-func (textLine *TextLine) SetColor(color int32) *TextLine {
-	return textLine.SetTextColor(color)
-}
-
 // SetTextColor sets the text color as a 0xRRGGBB value.
 func (textLine *TextLine) SetTextColor(color int32) *TextLine {
 	r := float32((color>>16)&0xff) / 255.0

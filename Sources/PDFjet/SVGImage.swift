@@ -271,12 +271,6 @@ public class SVGImage {
         return self.w
     }
 
-    /// Returns the width of this SVG image. Use getWidth instead.
-    @available(*, deprecated, renamed: "getWidth")
-    public func getPenWidth() -> Float {
-        return getWidth()
-    }
-
     /// Returns the height of this SVG image.
     public func getHeight() -> Float {
         return self.h

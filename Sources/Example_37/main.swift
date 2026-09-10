@@ -78,7 +78,7 @@ public class Example_37 {
             image.drawOn(page!)
 
             let text = TextLine(f1, "Hello, World!")
-            text.setColor(Color.blue)
+            text.setTextColor(Color.blue)
             text.setLocation(150.0, 150.0)
             text.drawOn(page!)
 

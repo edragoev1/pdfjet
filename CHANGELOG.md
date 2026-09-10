@@ -36,6 +36,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   `setLocation` and C#'s `SetPosition` moved only the text, and Java's
   `setPosition(double, double)` called itself until the stack overflowed.
 
+### Deprecated methods removed from Go and Swift
+- Go `TextLine.SetColor` and Swift `TextLine.setColor` are removed; call
+  `SetTextColor` or `setTextColor`, which they only forwarded to. Java and C#
+  keep `setColor`, marked deprecated.
+- Swift `SVGImage.getPenWidth()` is removed; call `getWidth()`.
+- The Swift `DonutChart` and `Example_03`, `Example_37` and `Example_41` call
+  `setTextColor`.
+
 ### Stamp
 - `Stamp` now conforms to `Drawable` in Swift and Go, as it already did in
   Java and C#, so it can be added to a `Container` or an
@@ -51,8 +59,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   size.
 - Swift `Stamp.fillRect` fills the whole rectangle; it drew only three corners
   and filled a triangle.
-- Swift `SVGImage` has `getWidth()`, like the other ports. The misnamed
-  `getPenWidth()` still works but is deprecated.
+- Swift `SVGImage` has `getWidth()`, like the other ports, instead of the
+  misnamed `getPenWidth()`.
 - Java and C# `setLineColor(Color.transparent)` leaves the line color unchanged,
   as in Swift. It used to clear the text color.
 - C# `Table.GetColCount` returns 0 for a row index equal to `GetRowCount()`

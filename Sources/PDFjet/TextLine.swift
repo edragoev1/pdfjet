@@ -179,12 +179,6 @@ public class TextLine : Drawable {
         return self.fallbackFont
     }
 
-    /// Sets the text color as a 0xRRGGBB value. Use setTextColor instead.
-    @discardableResult
-    public func setColor(_ color: Int32) -> TextLine {
-        return setTextColor(color)
-    }
-
     /// Sets the text color as a 0xRRGGBB value. Color.transparent leaves the color unchanged.
     @discardableResult
     public func setTextColor(_ color: Int32) -> TextLine {

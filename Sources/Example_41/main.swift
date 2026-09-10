@@ -64,7 +64,7 @@ public class Example_41 {
             if (p.startsWith("**")) {
                 f2.setSize(24.0)
                 p.getTextLines()[0].setFont(f2)
-                p.getTextLines()[0].setColor(Color.navy)
+                p.getTextLines()[0].setTextColor(Color.navy)
             } else {
                 p.setColor(Color.gray)
                 p.setColorMap(colorMap)

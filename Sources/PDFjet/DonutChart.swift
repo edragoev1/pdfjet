@@ -185,7 +185,7 @@ public class DonutChart {
 
             // Draw the label text just above the horizontal line
             let label = TextLine(f1!, text)
-            label.setColor(Color.black)
+            label.setTextColor(Color.black)
             if onRightSide {
                 label.setLocation(p2[0] + 2.0, yEnd - f1!.getAscent() / 3.0)
             } else {
@@ -223,7 +223,7 @@ public class DonutChart {
             if f2 != nil && slice.angle >= 15.0 {
                 let pct = Int(slice.angle / 360.0 * 100.0)
                 let label = TextLine(f2!, "\(pct)%")
-                label.setColor(Color.white)
+                label.setTextColor(Color.white)
                 let midAngle = angle - slice.angle / 2.0 - 90.0
                 let midR = (r1 + innerR) / 2.0
                 let pos = getPoint(xc, yc, midR, midAngle)
