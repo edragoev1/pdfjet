@@ -1,6 +1,6 @@
-# Builds the Java (Javadoc), C# (DocFX), Go (doc2go) and Swift (DocC) API
-# references and publishes them to GitHub Pages:
-# https://edragoev1.github.io/pdfjet/java/, .../net/, .../go/ and .../swift/
+# Builds the Java (Javadoc), C# (DocFX) and Go (doc2go) API references and
+# publishes them to GitHub Pages:
+# https://edragoev1.github.io/pdfjet/java/, .../net/ and .../go/
 # The site also serves examples-java.html, examples-dotnet.html, the example
 # sources they link to and the PDF files the Java examples create.
 #
@@ -18,8 +18,6 @@ on:
             - "docfx/**"
             - "src/**"
             - "go.mod"
-            - "Sources/**"
-            - "Package.swift"
             - "examples/**"
             - "fonts/**"
             - "images/**"
@@ -53,7 +51,6 @@ jobs:
                       net
                       docfx
                       src
-                      Sources
                       examples
                       fonts
                       images
@@ -79,12 +76,6 @@ jobs:
                   go-version-file: go.mod
                   cache: false
 
-            # The Ubuntu runner image includes the Swift toolchain with DocC.
-            - name: Check the Swift toolchain
-              run: |
-                  swift --version
-                  command -v docc
-
             - name: Generate the documentation
               run: bash generate-documentation.sh
 
@@ -103,7 +94,6 @@ jobs:
                   cp -r docs/java "$site/java"
                   cp -r docs/_net "$site/net"
                   cp -r docs/go "$site/go"
-                  cp -r docs/swift "$site/swift"
                   # The example pages link to the sources in examples/ and to the
                   # PDF files the Java examples created.
                   cp examples-java.html examples-dotnet.html "$site/"
@@ -125,7 +115,6 @@ jobs:
                   <li><a href="java/">Java</a> (<code>com.pdfjet</code>)</li>
                   <li><a href="net/">C#</a> (<code>PDFjet.NET</code>)</li>
                   <li><a href="go/">Go</a> (<code>github.com/edragoev1/pdfjet/src</code>)</li>
-                  <li><a href="swift/">Swift</a> (<code>PDFjet</code>)</li>
                   </ul>
                   <h2>Examples</h2>
                   <ul>
