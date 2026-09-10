@@ -1,4 +1,4 @@
-/**
+/*
  * Path.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -7,13 +7,13 @@
 using System;
 using System.Collections.Generic;
 
-/**
- * Used to create path objects.
- * The path objects may consist of lines, splines or both.
- *
- * Please see Example_02.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create path objects.
+/// The path objects may consist of lines, splines or both.
+///
+/// Please see Example_02.
+/// </summary>
 public class Path : IDrawable {
     private int color = Color.black;
     private float width = 0f;
@@ -26,145 +26,134 @@ public class Path : IDrawable {
     private CapStyle lineCapStyle = CapStyle.BUTT;
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
 
-    /**
-     * The default constructor.
-     */
+    /// <summary>
+    /// The default constructor.
+    /// </summary>
     public Path() {
         points = new List<Point>();
     }
 
-    /**
-     * Adds a point to this path.
-     *
-     * @param point the point to add.
-     */
+    /// <summary>
+    /// Adds a point to this path.
+    /// </summary>
+    /// <param name="point">the point to add.</param>
     public void Add(Point point) {
         points.Add(point);
     }
 
-    /**
-     * Sets the line dash pattern for this path.
-     *
-     * The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-     * It is specified by a dash array and a dash phase.
-     * The elements of the dash array are positive numbers that specify the lengths of
-     * alternating dashes and gaps.
-     * The dash phase specifies the distance into the dash pattern at which to start the dash.
-     * The elements of both the dash array and the dash phase are expressed in user space units.
-     * <pre>
-     * Examples of line dash patterns:
-     *
-     *     "[Array] Phase"     Appearance          Description
-     *     _______________     _________________   ____________________________________
-     *
-     *     "[] 0"              -----------------   Solid line
-     *     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-     *     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-     *     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-     *     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-     *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-     * </pre>
-     *
-     *  @param pattern the line dash pattern.
-     *  @return this Path object.
-     */
+    /// <summary>
+    /// Sets the line dash pattern for this path.
+    ///
+    /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
+    /// It is specified by a dash array and a dash phase.
+    /// The elements of the dash array are positive numbers that specify the lengths of
+    /// alternating dashes and gaps.
+    /// The dash phase specifies the distance into the dash pattern at which to start the dash.
+    /// The elements of both the dash array and the dash phase are expressed in user space units.
+    /// <code>
+    /// Examples of line dash patterns:
+    ///
+    ///     "[Array] Phase"     Appearance          Description
+    ///     _______________     _________________   ____________________________________
+    ///
+    ///     "[] 0"              -----------------   Solid line
+    ///     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+    ///     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+    ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+    ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+    ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+    /// </code>
+    /// </summary>
+    /// <param name="pattern">the line dash pattern.</param>
+    /// <returns>this Path object.</returns>
     public Path SetPattern(String pattern) {
         this.pattern = pattern;
         return this;
     }
 
-    /**
-     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
-     *
-     * @param width the pen width.
-     * @return this Path object.
-     */
+    /// <summary>
+    /// Sets the pen width that will be used to draw the lines and splines that are part of this path.
+    /// </summary>
+    /// <param name="width">the pen width.</param>
+    /// <returns>this Path object.</returns>
     public Path SetWidth(double width) {
         this.width = (float) width;
         return this;
     }
 
-    /**
-     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
-     *
-     * @param width the pen width.
-     * @return this Path object.
-     */
+    /// <summary>
+    /// Sets the pen width that will be used to draw the lines and splines that are part of this path.
+    /// </summary>
+    /// <param name="width">the pen width.</param>
+    /// <returns>this Path object.</returns>
     public Path SetWidth(float width) {
         this.width = width;
         return this;
     }
 
-    /**
-     * Sets the pen color that will be used to draw this path.
-     *
-     * @param color the color is specified as an integer.
-     * @return this Path object.
-     */
+    /// <summary>
+    /// Sets the pen color that will be used to draw this path.
+    /// </summary>
+    /// <param name="color">the color is specified as an integer.</param>
+    /// <returns>this Path object.</returns>
     public Path SetColor(int color) {
         this.color = color;
         return this;
     }
 
-    /**
-     * Sets the closePath variable.
-     *
-     * @param closePath if closePath is true a line will be draw between the first and last point of this path.
-     * @return this Path object.
-     */
+    /// <summary>
+    /// Sets the closePath variable.
+    /// </summary>
+    /// <param name="closePath">if closePath is true a line will be draw between the first and last point of this path.</param>
+    /// <returns>this Path object.</returns>
     public Path SetClosePath(bool closePath) {
         this.closePath = closePath;
         return this;
     }
 
-    /**
-     * Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
-     *
-     * @param fillShape the fillShape flag.
-     * @return this Path object.
-     */
+    /// <summary>
+    /// Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
+    /// </summary>
+    /// <param name="fillShape">the fillShape flag.</param>
+    /// <returns>this Path object.</returns>
     public Path SetFillShape(bool fillShape) {
         this.fillShape = fillShape;
         return this;
     }
 
-    /**
-     * Sets the line cap style.
-     *
-     * @param style the cap style of this path.
-     * Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
-     * @return this Path object.
-     */
+    /// <summary>
+    /// Sets the line cap style.
+    /// </summary>
+    /// <param name="style">the cap style of this path.
+    /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE</param>
+    /// <returns>this Path object.</returns>
     public Path SetLineCapStyle(CapStyle style) {
         this.lineCapStyle = style;
         return this;
     }
 
-    /**
-     * Returns the line cap style for this path.
-     *
-     * @return the line cap style for this path.
-     */
+    /// <summary>
+    /// Returns the line cap style for this path.
+    /// </summary>
+    /// <returns>the line cap style for this path.</returns>
     public CapStyle GetLineCapStyle() {
         return this.lineCapStyle;
     }
 
-    /**
-     * Sets the line join style.
-     *
-     * @param style the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
-     * @return this Path object.
-     */
+    /// <summary>
+    /// Sets the line join style.
+    /// </summary>
+    /// <param name="style">the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL</param>
+    /// <returns>this Path object.</returns>
     public Path SetLineJoinStyle(JoinStyle style) {
         this.lineJoinStyle = style;
         return this;
     }
 
-    /**
-     * Returns the line join style.
-     *
-     * @return the line join style.
-     */
+    /// <summary>
+    /// Returns the line join style.
+    /// </summary>
+    /// <returns>the line join style.</returns>
     public JoinStyle GetLineJoinStyle() {
         return this.lineJoinStyle;
     }
@@ -173,44 +162,40 @@ public class Path : IDrawable {
         return SetLocation(x, y);
     }
 
-    /**
-     * Sets the path location.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return the path.
-     */
+    /// <summary>
+    /// Sets the path location.
+    /// </summary>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
+    /// <returns>the path.</returns>
     public Path SetLocation(float x, float y) {
         xBox += x;
         yBox += y;
         return this;
     }
 
-    /**
-     * Sets the path location.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return the path.
-     */
+    /// <summary>
+    /// Sets the path location.
+    /// </summary>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
+    /// <returns>the path.</returns>
     public Path SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
 
-    /**
-     *  Scales the path using the specified factor.
-     *
-     *  @param factor the specified factor.
-     */
+    /// <summary>
+    ///  Scales the path using the specified factor.
+    /// </summary>
+    /// <param name="factor">the specified factor.</param>
     public void ScaleBy(double factor) {
         ScaleBy((float) factor);
     }
 
-    /**
-     *  Scales the path using the specified factor.
-     *
-     *  @param factor the specified factor.
-     */
+    /// <summary>
+    ///  Scales the path using the specified factor.
+    /// </summary>
+    /// <param name="factor">the specified factor.</param>
     public void ScaleBy(float factor) {
         foreach (Point point in points) {
             point.x *= factor;
@@ -218,12 +203,11 @@ public class Path : IDrawable {
         }
     }
 
-    /**
-     *  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
-     *
-     *  @param page the page to draw this path on.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     */
+    /// <summary>
+    ///  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
+    /// </summary>
+    /// <param name="page">the page to draw this path on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
         foreach (Point point in points) {
             point.x += xBox;

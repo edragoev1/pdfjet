@@ -1,4 +1,4 @@
-/**
+/*
  * PageLayout.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Used to specify the PDF page layout.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to specify the PDF page layout.
+/// </summary>
 public class PageLayout {
     public const String SINGLE_PAGE = "SinglePage";          // Display one page at a time
     public const String ONE_COLUMN = "OneColumn";            // Display the pages in one column

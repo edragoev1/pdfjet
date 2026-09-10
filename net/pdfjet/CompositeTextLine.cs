@@ -1,4 +1,4 @@
-/**
+/*
  * CompositeTextLine.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -8,11 +8,11 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-/**
- * This class was designed and implemented by Jon T. Swanson, Ph.D.
- *
- * Used to create composite text line objects.
- */
+/// <summary>
+/// This class was designed and implemented by Jon T. Swanson, Ph.D.
+///
+/// Used to create composite text line objects.
+/// </summary>
 public class CompositeTextLine : IDrawable {
     private float x = 0f;
     private float y = 0f;
@@ -34,128 +34,116 @@ public class CompositeTextLine : IDrawable {
         this.y = y;
     }
 
-    /**
-     * Sets the font size.
-     *
-     * @param fontSize the font size.
-     * @return this CompositeTextLine object.
-     */
+    /// <summary>
+    /// Sets the font size.
+    /// </summary>
+    /// <param name="fontSize">the font size.</param>
+    /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
     }
 
-    /**
-     * Gets the font size.
-     *
-     * @return fontSize the font size.
-     */
+    /// <summary>
+    /// Gets the font size.
+    /// </summary>
+    /// <returns>fontSize the font size.</returns>
     public float GetFontSize() {
         return fontSize;
     }
 
-    /**
-     * Sets the superscript factor for this composite text line.
-     *
-     * @param superscript the superscript size factor.
-     * @return this CompositeTextLine object.
-     */
+    /// <summary>
+    /// Sets the superscript factor for this composite text line.
+    /// </summary>
+    /// <param name="superscript">the superscript size factor.</param>
+    /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSuperscriptFactor(float superscript) {
         this.superscriptSizeFactor = superscript;
         return this;
     }
 
-    /**
-     * Gets the superscript factor for this text line.
-     *
-     * @return superscript the superscript size factor.
-     */
+    /// <summary>
+    /// Gets the superscript factor for this text line.
+    /// </summary>
+    /// <returns>superscript the superscript size factor.</returns>
     public float GetSuperscriptFactor() {
         return superscriptSizeFactor;
     }
 
-    /**
-     * Sets the subscript factor for this composite text line.
-     *
-     * @param subscript the subscript size factor.
-     * @return this CompositeTextLine object.
-     */
+    /// <summary>
+    /// Sets the subscript factor for this composite text line.
+    /// </summary>
+    /// <param name="subscript">the subscript size factor.</param>
+    /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSubscriptFactor(float subscript) {
         this.subscriptSizeFactor = subscript;
         return this;
     }
 
-    /**
-     * Gets the subscript factor for this text line.
-     *
-     * @return subscript the subscript size factor.
-     */
+    /// <summary>
+    /// Gets the subscript factor for this text line.
+    /// </summary>
+    /// <returns>subscript the subscript size factor.</returns>
     public float GetSubscriptFactor() {
         return subscriptSizeFactor;
     }
 
-    /**
-     * Sets the superscript position for this composite text line.
-     *
-     * @param superscriptPosition the superscript position.
-     * @return this CompositeTextLine object.
-     */
+    /// <summary>
+    /// Sets the superscript position for this composite text line.
+    /// </summary>
+    /// <param name="superscriptPosition">the superscript position.</param>
+    /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSuperscriptPosition(float superscriptPosition) {
         this.superscriptPosition = superscriptPosition;
         return this;
     }
 
-    /**
-     * Gets the superscript position for this text line.
-     *
-     * @return superscriptPosition the superscript position.
-     */
+    /// <summary>
+    /// Gets the superscript position for this text line.
+    /// </summary>
+    /// <returns>superscriptPosition the superscript position.</returns>
     public float GetSuperscriptPosition() {
         return superscriptPosition;
     }
 
-    /**
-     * Sets the subscript position for this composite text line.
-     *
-     * @param subscriptPosition the subscript position.
-     * @return this CompositeTextLine object.
-     */
+    /// <summary>
+    /// Sets the subscript position for this composite text line.
+    /// </summary>
+    /// <param name="subscriptPosition">the subscript position.</param>
+    /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSubscriptPosition(float subscriptPosition) {
         this.subscriptPosition = subscriptPosition;
         return this;
     }
 
-    /**
-     * Gets the subscript position for this text line.
-     *
-     * @return subscriptPosition the subscript position.
-     */
+    /// <summary>
+    /// Gets the subscript position for this text line.
+    /// </summary>
+    /// <returns>subscriptPosition the subscript position.</returns>
     public float GetSubscriptPosition() {
         return subscriptPosition;
     }
 
-    /**
-     * Add a new text line.
-     *
-     * Find the current font, current size and effects (normal, super or subscript)
-     * Set the position of the component to the starting stored as current position
-     * Set the size and offset based on effects
-     * Set the new current position
-     *
-     * @param component the component.
-     */
+    /// <summary>
+    /// Add a new text line.
+    ///
+    /// Find the current font, current size and effects (normal, super or subscript)
+    /// Set the position of the component to the starting stored as current position
+    /// Set the size and offset based on effects
+    /// Set the new current position
+    /// </summary>
+    /// <param name="component">the component.</param>
     public void AddComponent(TextLine component) {
         textLines.Add(component);
     }
 
-    /**
-     * Loop through all the text lines and reset their position based on
-     * the new position set here.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this CompositeTextLine object.
-     */
+    /// <summary>
+    /// Loop through all the text lines and reset their position based on
+    /// the new position set here.
+    /// </summary>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
+    /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetLocation(double x, double y) {
         SetLocation((float) x, (float) y);
         return this;
@@ -165,26 +153,24 @@ public class CompositeTextLine : IDrawable {
         return SetLocation(x, y);
     }
 
-    /**
-     * Loop through all the text lines and reset their location based on
-     * the new location set here.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this CompositeTextLine object.
-     */
+    /// <summary>
+    /// Loop through all the text lines and reset their location based on
+    /// the new location set here.
+    /// </summary>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
+    /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
-    /**
-     * Return the nth entry in the TextLine array.
-     *
-     * @param index the index of the nth element.
-     * @return the text line at the specified index.
-     */
+    /// <summary>
+    /// Return the nth entry in the TextLine array.
+    /// </summary>
+    /// <param name="index">the index of the nth element.</param>
+    /// <returns>the text line at the specified index.</returns>
     public TextLine GetTextLine(int index) {
         if (textLines == null || textLines.Count == 0) {
             return null;
@@ -195,21 +181,19 @@ public class CompositeTextLine : IDrawable {
         return textLines[index];
     }
 
-    /**
-     * Returns the number of text lines.
-     *
-     * @return the number of text lines.
-     */
+    /// <summary>
+    /// Returns the number of text lines.
+    /// </summary>
+    /// <returns>the number of text lines.</returns>
     public int Size() {
         return textLines.Count;
     }
 
-    /**
-     * Returns the vertical coordinates of the top left and bottom right corners
-     * of the bounding box of this composite text line.
-     *
-     * @return the an array containing the vertical coordinates.
-     */
+    /// <summary>
+    /// Returns the vertical coordinates of the top left and bottom right corners
+    /// of the bounding box of this composite text line.
+    /// </summary>
+    /// <returns>the an array containing the vertical coordinates.</returns>
     public float[] GetMinMax() {
         float min = this.y;
         float max = this.y;
@@ -240,21 +224,19 @@ public class CompositeTextLine : IDrawable {
         return new float[] {min, max};
     }
 
-    /**
-     * Returns the height of this CompositeTextLine.
-     *
-     * @return the height.
-     */
+    /// <summary>
+    /// Returns the height of this CompositeTextLine.
+    /// </summary>
+    /// <returns>the height.</returns>
     public float GetHeight() {
         float[] minMax = GetMinMax();
         return minMax[1] - minMax[0];
     }
 
-    /**
-     * Returns the width of this CompositeTextLine.
-     *
-     * @return the width.
-     */
+    /// <summary>
+    /// Returns the width of this CompositeTextLine.
+    /// </summary>
+    /// <returns>the width.</returns>
     public float GetWidth() {
         float width = 0f;
 
@@ -272,13 +254,12 @@ public class CompositeTextLine : IDrawable {
         return width;
     }
 
-    /**
-     * Draws this line on the specified page.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
-     */
+    /// <summary>
+    /// Draws this line on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         float xMax = 0f;
         float yMax = 0f;

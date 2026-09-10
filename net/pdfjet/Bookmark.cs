@@ -1,4 +1,4 @@
-/**
+/*
  * Bookmark.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -8,10 +8,10 @@ using System;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
-/**
- * Please see Example_51 and Example_52
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Please see Example_51 and Example_52
+/// </summary>
 public class Bookmark {
     private int destNumber = 0;
     private Page page = null;

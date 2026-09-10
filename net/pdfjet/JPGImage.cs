@@ -1,4 +1,4 @@
-/**
+/*
  * JPGImage.cs
  *
  * The authors make NO WARRANTY or representation, either express or implied,
@@ -39,10 +39,10 @@
 using System;
 using System.IO;
 
-/**
- * Used to embed JPG images in the PDF document.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to embed JPG images in the PDF document.
+/// </summary>
 class JPGImage {
     const char M_SOF0  = (char) 0x00C0;  // Start Of Frame N
     const char M_SOF1  = (char) 0x00C1;  // N indicates which compression process

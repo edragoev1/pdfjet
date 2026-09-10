@@ -1,4 +1,4 @@
-/**
+/*
  * FileAttachment.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Used to attach file objects.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to attach file objects.
+/// </summary>
 public class FileAttachment : IDrawable {
     internal PDF pdf = null;
     internal EmbeddedFile embeddedFile = null;

@@ -1,4 +1,4 @@
-/**
+/*
  * TextColumn.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -10,11 +10,11 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-/**
- *  Used to create text column objects and draw them on a page.
- *
- *  Please see Example_10 and Example_29.
- */
+/// <summary>
+///  Used to create text column objects and draw them on a page.
+///
+///  Please see Example_10 and Example_29.
+/// </summary>
 public class TextColumn : IDrawable {
     internal uint alignment = Align.LEFT;
     internal int rotate;
@@ -29,18 +29,17 @@ public class TextColumn : IDrawable {
     private List<Paragraph> paragraphs;
     private bool lineBetweenParagraphs = false;
 
-    /**
-     * Create a text column object.
-     */
+    /// <summary>
+    /// Create a text column object.
+    /// </summary>
     public TextColumn() {
         this.paragraphs = new List<Paragraph>();
     }
 
-    /**
-     * Create a text column object and set the rotation angle.
-     *
-     * @param rotateByDegrees the specified rotation angle in degrees.
-     */
+    /// <summary>
+    /// Create a text column object and set the rotation angle.
+    /// </summary>
+    /// <param name="rotateByDegrees">the specified rotation angle in degrees.</param>
     public TextColumn(int rotateByDegrees) {
         this.rotate = rotateByDegrees;
         if (rotate == 0 || rotate == 90 || rotate == 270) {
@@ -51,13 +50,12 @@ public class TextColumn : IDrawable {
         this.paragraphs = new List<Paragraph>();
     }
 
-    /**
-     * Sets the lineBetweenParagraphs private variable value.
-     * If the value is set to true - an empty line will be inserted between the current and next paragraphs.
-     *
-     * @param lineBetweenParagraphs the specified bool value.
-     * @return this TextColumn object.
-     */
+    /// <summary>
+    /// Sets the lineBetweenParagraphs private variable value.
+    /// If the value is set to true - an empty line will be inserted between the current and next paragraphs.
+    /// </summary>
+    /// <param name="lineBetweenParagraphs">the specified bool value.</param>
+    /// <returns>this TextColumn object.</returns>
     public TextColumn SetLineBetweenParagraphs(bool lineBetweenParagraphs) {
         this.lineBetweenParagraphs = lineBetweenParagraphs;
         return this;
@@ -68,12 +66,11 @@ public class TextColumn : IDrawable {
         return this;
     }
 
-    /**
-     * Sets the spacing between the lines in this text column.
-     *
-     * @param spacing the specified spacing value.
-     * @return this TextColumn object.
-     */
+    /// <summary>
+    /// Sets the spacing between the lines in this text column.
+    /// </summary>
+    /// <param name="lineSpacing">the specified spacing value.</param>
+    /// <returns>this TextColumn object.</returns>
     public TextColumn SetLineSpacing(double lineSpacing) {
         this.lineSpacing = (float) lineSpacing;
         return this;
@@ -89,13 +86,12 @@ public class TextColumn : IDrawable {
         return this;
     }
 
-    /**
-     * Sets the position of this text column on the page.
-     *
-     * @param x the x coordinate of the top left corner of this text column when drawn on the page.
-     * @param y the y coordinate of the top left corner of this text column when drawn on the page.
-     * @return this TextColumn object.
-     */
+    /// <summary>
+    /// Sets the position of this text column on the page.
+    /// </summary>
+    /// <param name="x">the x coordinate of the top left corner of this text column when drawn on the page.</param>
+    /// <param name="y">the y coordinate of the top left corner of this text column when drawn on the page.</param>
+    /// <returns>this TextColumn object.</returns>
     public TextColumn SetLocation(double x, double y) {
         SetLocation((float) x, (float) y);
         return this;
@@ -105,12 +101,11 @@ public class TextColumn : IDrawable {
         return SetLocation(x, y);
     }
 
-    /**
-     * Sets the location of this text column on the page.
-     *
-     * @param x the x coordinate of the top left corner.
-     * @param y the y coordinate of the top left corner.
-     */
+    /// <summary>
+    /// Sets the location of this text column on the page.
+    /// </summary>
+    /// <param name="x">the x coordinate of the top left corner.</param>
+    /// <param name="y">the y coordinate of the top left corner.</param>
     public TextColumn SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
@@ -119,26 +114,24 @@ public class TextColumn : IDrawable {
         return this;
     }
 
-    /**
-     * Sets the size of this text column.
-     *
-     * @param w the width of this text column.
-     * @param h the height of this text column.
-     * @return this TextColumn object.
-     */
+    /// <summary>
+    /// Sets the size of this text column.
+    /// </summary>
+    /// <param name="w">the width of this text column.</param>
+    /// <param name="h">the height of this text column.</param>
+    /// <returns>this TextColumn object.</returns>
     [Obsolete]
     public TextColumn SetSize(double w, double h) {
         SetSize((float) w, (float) h);
         return this;
     }
 
-    /**
-     * Sets the size of this text column.
-     *
-     * @param w the width of this text column.
-     * @param h the height of this text column.
-     * @return this TextColumn object.
-     */
+    /// <summary>
+    /// Sets the size of this text column.
+    /// </summary>
+    /// <param name="w">the width of this text column.</param>
+    /// <param name="h">the height of this text column.</param>
+    /// <returns>this TextColumn object.</returns>
     [Obsolete]
     public TextColumn SetSize(float w, float h) {
         this.w = w;
@@ -146,12 +139,11 @@ public class TextColumn : IDrawable {
         return this;
     }
 
-    /**
-     * Sets the desired width of this text column.
-     *
-     * @param w the width of this text column.
-     * @return this TextColumn object.
-     */
+    /// <summary>
+    /// Sets the desired width of this text column.
+    /// </summary>
+    /// <param name="w">the width of this text column.</param>
+    /// <returns>this TextColumn object.</returns>
     public TextColumn SetWidth(float w) {
         this.w = w;
         return this;
@@ -170,53 +162,49 @@ public class TextColumn : IDrawable {
         return this.h;
     }
 
-    /**
-     * Sets the text alignment.
-     *
-     * @param alignment the specified alignment code.
-     *      Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
-     * @return this TextColumn object.
-     */
+    /// <summary>
+    /// Sets the text alignment.
+    /// </summary>
+    /// <param name="alignment">the specified alignment code.
+    ///      Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY</param>
+    /// <returns>this TextColumn object.</returns>
     public TextColumn SetAlignment(uint alignment) {
         this.alignment = alignment;
         return this;
     }
 
-    /**
-     * Adds a new paragraph to this text column.
-     *
-     * @param paragraph the new paragraph object.
-     */
+    /// <summary>
+    /// Adds a new paragraph to this text column.
+    /// </summary>
+    /// <param name="paragraph">the new paragraph object.</param>
     public void AddParagraph(Paragraph paragraph) {
         this.paragraphs.Add(paragraph);
     }
 
-    /**
-     * Removes the last paragraph added to this text column.
-     */
+    /// <summary>
+    /// Removes the last paragraph added to this text column.
+    /// </summary>
     public void RemoveLastParagraph() {
         if (this.paragraphs.Count >= 1) {
             this.paragraphs.RemoveAt(this.paragraphs.Count - 1);
         }
     }
 
-    /**
-     * Returns dimension object containing the width and height of this component.
-     * Please see Example_29.
-     *
-     * @Return dimension object containing the width and height of this component.
-     */
+    /// <summary>
+    /// Returns dimension object containing the width and height of this component.
+    /// Please see Example_29.
+    /// </summary>
+    /// <returns>dimension object containing the width and height of this component.</returns>
     public Dimension GetSize() {
         float[] xy = DrawOn(null);
         return new Dimension(this.w, xy[1] - this.y);
     }
 
-    /**
-     * Draws this text column on the specified page.
-     *
-     * @param page the page to draw this text column on.
-     * @return the point with x and y coordinates of the location where to draw the next component.
-     */
+    /// <summary>
+    /// Draws this text column on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw this text column on.</param>
+    /// <returns>the point with x and y coordinates of the location where to draw the next component.</returns>
     public float[] DrawOn(Page page) {
         float[] xy = null;
         foreach (Paragraph paragraph in paragraphs) {
@@ -428,12 +416,11 @@ public class TextColumn : IDrawable {
         return new float[] {x1, y1};
     }
 
-    /**
-     * Adds a new paragraph with Chinese text to this text column.
-     *
-     * @param font the font used by this paragraph.
-     * @param chinese the Chinese text.
-     */
+    /// <summary>
+    /// Adds a new paragraph with Chinese text to this text column.
+    /// </summary>
+    /// <param name="font">the font used by this paragraph.</param>
+    /// <param name="chinese">the Chinese text.</param>
     public void AddChineseParagraph(Font font, String chinese) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
@@ -451,12 +438,11 @@ public class TextColumn : IDrawable {
         AddParagraph(paragraph);
     }
 
-    /**
-     * Adds a new paragraph with Japanese text to this text column.
-     *
-     * @param font the font used by this paragraph.
-     * @param japanese the Japanese text.
-     */
+    /// <summary>
+    /// Adds a new paragraph with Japanese text to this text column.
+    /// </summary>
+    /// <param name="font">the font used by this paragraph.</param>
+    /// <param name="japanese">the Japanese text.</param>
     public void AddJapaneseParagraph(Font font, String japanese) {
         AddChineseParagraph(font, japanese);
     }

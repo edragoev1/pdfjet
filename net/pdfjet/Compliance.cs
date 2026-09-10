@@ -1,15 +1,15 @@
-/**
+/*
  * Compliance.cs
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-/**
- * Used to set PDF/A compliance.
- * See the constructors in the PDF class.
- */
 namespace PDFjet.NET {
+    /// <summary>
+    /// Used to set PDF/A compliance.
+    /// See the constructors in the PDF class.
+    /// </summary>
     public enum Compliance {
         PDF_1_7,
         PDF_UA_1,

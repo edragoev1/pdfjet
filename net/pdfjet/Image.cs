@@ -1,4 +1,4 @@
-/**
+/*
  * Image.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -9,13 +9,13 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 
-/**
- * Used to create image objects and draw them on a page.
- * The image type can be one of the following: ImageType.JPG, ImageType.PNG or ImageType.BMP
- *
- * Please see Example_03 and Example_24.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create image objects and draw them on a page.
+/// The image type can be one of the following: ImageType.JPG, ImageType.PNG or ImageType.BMP
+///
+/// Please see Example_03 and Example_24.
+/// </summary>
 public class Image : IDrawable {
     internal int objNumber;
     internal float x = 0f;  // Position of the image on the page
@@ -33,24 +33,22 @@ public class Image : IDrawable {
     private String actualText = Single.space;
     private String altDescription = Single.space;
 
-    /**
-     * Convenience constructor for the Image class.
-     *
-     * @param pdf the PDF to which we add this image.
-     * @param filePath the file path to the image file.
-     */
+    /// <summary>
+    /// Convenience constructor for the Image class.
+    /// </summary>
+    /// <param name="pdf">the PDF to which we add this image.</param>
+    /// <param name="filePath">the file path to the image file.</param>
     public Image(PDF pdf, String filePath) : this(pdf, new FileStream(filePath, FileMode.Open, FileAccess.Read),
             filePath.ToLower().EndsWith(".png") ? ImageType.PNG :
             filePath.ToLower().EndsWith(".bmp") ? ImageType.BMP : ImageType.JPG) {
     }
 
-    /**
-     * The main constructor for the Image class.
-     *
-     * @param pdf the page to draw this image on.
-     * @param inputStream the input stream to read the image from.
-     * @param imageType ImageType.JPG, ImageType.PNG or ImageType.BMP.
-     */
+    /// <summary>
+    /// The main constructor for the Image class.
+    /// </summary>
+    /// <param name="pdf">the page to draw this image on.</param>
+    /// <param name="inputStream">the input stream to read the image from.</param>
+    /// <param name="imageType">ImageType.JPG, ImageType.PNG or ImageType.BMP.</param>
     public Image(PDF pdf, Stream inputStream, int imageType) {
         byte[] data;
         if (imageType == ImageType.JPG) {
@@ -103,13 +101,12 @@ public class Image : IDrawable {
         return CreateImage(pdf, imageBytes, ImageType.PNG);
     }
 
-    /**
-     * Constructor used to attach images to existing PDF.
-     *
-     * @param pdf the page to draw this image on.
-     * @param inputStream the input stream to read the image from.
-     * @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
-     */
+    /// <summary>
+    /// Constructor used to attach images to existing PDF.
+    /// </summary>
+    /// <param name="objects">the objects of the existing PDF.</param>
+    /// <param name="inputStream">the input stream to read the image from.</param>
+    /// <param name="imageType">ImageType.JPG, ImageType.PNG and ImageType.BMP.</param>
     public Image(List<PDFobj> objects, Stream inputStream, int imageType) {
         byte[] data;
         if (imageType == ImageType.JPG) {
@@ -202,12 +199,11 @@ public class Image : IDrawable {
         return SetLocation(x, y);
     }
 
-    /**
-     * Sets the location of this image on the page to (x, y).
-     *
-     * @param x the x coordinate of the top left corner of the image.
-     * @param y the y coordinate of the top left corner of the image.
-     */
+    /// <summary>
+    /// Sets the location of this image on the page to (x, y).
+    /// </summary>
+    /// <param name="x">the x coordinate of the top left corner of the image.</param>
+    /// <param name="y">the y coordinate of the top left corner of the image.</param>
     public Image SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
@@ -218,20 +214,18 @@ public class Image : IDrawable {
         return SetLocation((float) x, (float) y);
     }
 
-    /**
-     * Scales this image by the specified factor.
-     *
-     * @param factor the factor used to scale the image.
-     */
+    /// <summary>
+    /// Scales this image by the specified factor.
+    /// </summary>
+    /// <param name="factor">the factor used to scale the image.</param>
     public Image SetScaleFactor(double factor) {
         return this.SetScaleFactor((float) factor, (float) factor);
     }
 
-    /**
-     * Scales this image by the specified factor.
-     *
-     * @param factor the factor used to scale the image.
-     */
+    /// <summary>
+    /// Scales this image by the specified factor.
+    /// </summary>
+    /// <param name="factor">the factor used to scale the image.</param>
     public Image SetScaleFactor(float factor) {
         return this.SetScaleFactor(factor, factor);
     }
@@ -240,11 +234,10 @@ public class Image : IDrawable {
         return this.SetScaleFactor(factor, factor);
     }
 
-    /**
-     * Sets the image rotation to the specified number of degrees.
-     *
-     * @param degrees the number of degrees.
-     */
+    /// <summary>
+    /// Sets the image rotation to the specified number of degrees.
+    /// </summary>
+    /// <param name="degrees">the number of degrees.</param>
     public void RotateClockwise(int degrees) {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
             throw new Exception("The rotation angle must be 0, 90, 180 or 270");
@@ -252,13 +245,12 @@ public class Image : IDrawable {
         this.degrees = degrees;
     }
 
-    /**
-     * Scales this image by the specified width and height factor.
-     * <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
-     *
-     * @param widthFactor the factor used to scale the width of the image
-     * @param heightFactor the factor used to scale the height of the image
-     */
+    /// <summary>
+    /// Scales this image by the specified width and height factor.
+    /// <para><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</para>
+    /// </summary>
+    /// <param name="widthFactor">the factor used to scale the width of the image</param>
+    /// <param name="heightFactor">the factor used to scale the height of the image</param>
     public Image SetScaleFactor(float widthFactor, float heightFactor) {
         this.w *= widthFactor;
         this.h *= heightFactor;
@@ -269,87 +261,79 @@ public class Image : IDrawable {
         return SetScaleFactor(widthFactor, heightFactor);
     }
 
-    /**
-     * Resizes the image to the specified width.
-     *
-     * @param width the specified width.
-     */
+    /// <summary>
+    /// Resizes the image to the specified width.
+    /// </summary>
+    /// <param name="width">the specified width.</param>
     public Image ResizeWidth(float width) {
         float factor = width / GetWidth();
         return this.ScaleBy(factor, factor);
     }
 
-    /**
-     * Resizes the image to the specified height.
-     *
-     * @param height the specified height.
-     */
+    /// <summary>
+    /// Resizes the image to the specified height.
+    /// </summary>
+    /// <param name="height">the specified height.</param>
     public Image ResizeHeight(float height) {
         float factor = height / GetHeight();
         return this.ScaleBy(factor, factor);
     }
 
-    /**
-     * Places this image in the specified box.
-     *
-     * @param box the specified box.
-     */
+    /// <summary>
+    /// Places this image in the specified box.
+    /// </summary>
+    /// <param name="box">the specified box.</param>
     public void PlaceIn(Box box) {
         xBox = box.x;
         yBox = box.y;
     }
 
-    /**
-     * Sets the URI for the "click box" action.
-     *
-     * @param uri the URI
-     * @return this Image object.
-     */
+    /// <summary>
+    /// Sets the URI for the "click box" action.
+    /// </summary>
+    /// <param name="uri">the URI</param>
+    /// <returns>this Image object.</returns>
     public Image SetURIAction(String uri) {
         this.uri = uri;
         return this;
     }
 
-    /**
-     * Sets the destination key for the action.
-     *
-     * @param key the destination name.
-     * @return this Image object.
-     */
+    /// <summary>
+    /// Sets the destination key for the action.
+    /// </summary>
+    /// <param name="key">the destination name.</param>
+    /// <returns>this Image object.</returns>
     public Image SetGoToAction(String key) {
         this.key = key;
         return this;
     }
 
-    /**
-     * Sets the alternate description of this image.
-     *
-     * @param altDescription the alternate description of the image.
-     * @return this Image.
-     */
+    /// <summary>
+    /// Sets the alternate description of this image.
+    /// </summary>
+    /// <param name="altDescription">the alternate description of the image.</param>
+    /// <returns>this Image.</returns>
     public Image SetAltDescription(String altDescription) {
         this.altDescription = altDescription;
         return this;
     }
 
-    /**
-     * Sets the actual text for this image.
-     *
-     * @param actualText the actual text for the image.
-     * @return this Image.
-     */
+    /// <summary>
+    /// Sets the actual text for this image.
+    /// </summary>
+    /// <param name="actualText">the actual text for the image.</param>
+    /// <returns>this Image.</returns>
     public Image SetActualText(String actualText) {
         this.actualText = actualText;
         return this;
     }
 
-    /**
-     * Draws this image on the specified page.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
-     */
+    /// <summary>
+    /// Draws this image on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
 
@@ -449,32 +433,29 @@ public class Image : IDrawable {
         return new float[] {x + w, y + h};
     }
 
-    /**
-     * Returns the width of this image when drawn on the page.
-     * The scaling is take into account.
-     *
-     * @return w - the width of this image.
-     */
+    /// <summary>
+    /// Returns the width of this image when drawn on the page.
+    /// The scaling is take into account.
+    /// </summary>
+    /// <returns>w - the width of this image.</returns>
     public float GetWidth() {
         return this.w;
     }
 
-    /**
-     * Returns the height of this image when drawn on the page.
-     * The scaling is take into account.
-     *
-     * @return h - the height of this image.
-     */
+    /// <summary>
+    /// Returns the height of this image when drawn on the page.
+    /// The scaling is take into account.
+    /// </summary>
+    /// <returns>h - the height of this image.</returns>
     public float GetHeight() {
         return this.h;
     }
 
-    /**
-     * Resizes the image to fit the page.
-     *
-     * @param page the PDF page
-     * @param keepAspectRatio flag
-     */
+    /// <summary>
+    /// Resizes the image to fit the page.
+    /// </summary>
+    /// <param name="page">the PDF page</param>
+    /// <param name="keepAspectRatio">flag</param>
     public void ResizeToFit(Page page, bool keepAspectRatio) {
         if (keepAspectRatio) {
             this.ScaleBy(Math.Min((page.width - x)/w, (page.height - y)/h));
@@ -483,11 +464,10 @@ public class Image : IDrawable {
         }
     }
 
-    /**
-     * Flips this image upside down.
-     *
-     * @param flipUpsideDown flag
-     */
+    /// <summary>
+    /// Flips this image upside down.
+    /// </summary>
+    /// <param name="flipUpsideDown">flag</param>
     public void FlipUpsideDown(bool flipUpsideDown) {
         this.flipUpsideDown = flipUpsideDown;
     }

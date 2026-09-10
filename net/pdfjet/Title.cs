@@ -1,4 +1,4 @@
-/**
+/*
  * Title.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Please see Example_51 and Example_52
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Please see Example_51 and Example_52
+/// </summary>
 public class Title : IDrawable {
     public TextLine prefix = null;
     public TextLine textLine = null;

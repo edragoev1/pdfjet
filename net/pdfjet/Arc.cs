@@ -1,4 +1,4 @@
-/**
+/*
  * Arc.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Used to create arc objects.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create arc objects.
+/// </summary>
 public class Arc : IDrawable {
     private float cx;
     private float cy;
@@ -30,9 +30,9 @@ public class Arc : IDrawable {
 
     private Line line;
 
-    /**
-     * The default constructor.
-     */
+    /// <summary>
+    /// The default constructor.
+    /// </summary>
     public Arc() {
     }
 
@@ -87,62 +87,58 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /**
-     * The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-     * It is specified by a dash array and a dash phase.
-     * The elements of the dash array are positive numbers that specify the lengths of
-     * alternating dashes and gaps.
-     * The dash phase specifies the distance into the dash pattern at which to start the dash.
-     * The elements of both the dash array and the dash phase are expressed in user space units.
-     * <pre>
-     * Examples of line dash patterns:
-     *
-     *     "[Array] Phase"     Appearance          Description
-     *     _______________     _________________   ____________________________________
-     *     "[] 0"              -----------------   Solid line
-     *     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-     *     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-     *     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-     *     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-     *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-     * </pre>
-     *
-     * @param strokeDashPattern the stroke dash pattern.
-     * @return this Arc object.
-     */
+    /// <summary>
+    /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
+    /// It is specified by a dash array and a dash phase.
+    /// The elements of the dash array are positive numbers that specify the lengths of
+    /// alternating dashes and gaps.
+    /// The dash phase specifies the distance into the dash pattern at which to start the dash.
+    /// The elements of both the dash array and the dash phase are expressed in user space units.
+    /// <code>
+    /// Examples of line dash patterns:
+    ///
+    ///     "[Array] Phase"     Appearance          Description
+    ///     _______________     _________________   ____________________________________
+    ///     "[] 0"              -----------------   Solid line
+    ///     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+    ///     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+    ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+    ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+    ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+    /// </code>
+    /// </summary>
+    /// <param name="strokeDashPattern">the stroke dash pattern.</param>
+    /// <returns>this Arc object.</returns>
     public Arc SetStrokeDashPattern(String strokeDashPattern) {
         this.strokeDashPattern = strokeDashPattern;
         return this;
     }
 
-    /**
-     * Sets the width of this line.
-     *
-     * @param width the width.
-     * @return this Arc object.
-     */
+    /// <summary>
+    /// Sets the width of this line.
+    /// </summary>
+    /// <param name="width">the width.</param>
+    /// <returns>this Arc object.</returns>
     public Arc SetStrokeWidth(double width) {
         this.strokeWidth = (float) width;
         return this;
     }
 
-    /**
-     * Sets the width of this line.
-     *
-     * @param strokeWidth the width.
-     * @return this Arc object.
-     */
+    /// <summary>
+    /// Sets the width of this line.
+    /// </summary>
+    /// <param name="width">the width.</param>
+    /// <returns>this Arc object.</returns>
     public Arc SetStrokeWidth(float width) {
         this.strokeWidth = width;
         return this;
     }
 
-    /**
-     * Sets the color for this line.
-     *
-     * @param color the color specified as an integer.
-     * @return this Arc object.
-     */
+    /// <summary>
+    /// Sets the color for this line.
+    /// </summary>
+    /// <param name="color">the color specified as an integer.</param>
+    /// <returns>this Arc object.</returns>
     public Arc SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -199,57 +195,52 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /**
-     * Sets the alternate description of this line.
-     *
-     * @param altDescription the alternate description of the line.
-     * @return this Arc.
-     */
+    /// <summary>
+    /// Sets the alternate description of this line.
+    /// </summary>
+    /// <param name="altDescription">the alternate description of the line.</param>
+    /// <returns>this Arc.</returns>
     public Arc SetAltDescription(String altDescription) {
         this.altDescription = altDescription;
         return this;
     }
 
-    /**
-     * Sets the actual text for this line.
-     *
-     * @param actualText the actual text for the line.
-     * @return this Arc.
-     */
+    /// <summary>
+    /// Sets the actual text for this line.
+    /// </summary>
+    /// <param name="actualText">the actual text for the line.</param>
+    /// <returns>this Arc.</returns>
     public Arc SetActualText(String actualText) {
         this.actualText = actualText;
         return this;
     }
 
-    /**
-     * Scales this line by the specified factor.
-     *
-     * @param factor the factor used to scale the line.
-     * @return this Arc object.
-     */
+    /// <summary>
+    /// Scales this line by the specified factor.
+    /// </summary>
+    /// <param name="factor">the factor used to scale the line.</param>
+    /// <returns>this Arc object.</returns>
     public Arc SetScaleFactor(double factor) {
         return SetScaleFactor((float) factor);
     }
 
-    /**
-     * Scales this line by the specified factor.
-     *
-     * @param factor the factor used to scale the line.
-     * @return this Arc object.
-     */
+    /// <summary>
+    /// Scales this line by the specified factor.
+    /// </summary>
+    /// <param name="factor">the factor used to scale the line.</param>
+    /// <returns>this Arc object.</returns>
     public Arc SetScaleFactor(float factor) {
         this.rx *= factor;
         this.ry *= factor;
         return this;
     }
 
-    /**
-     * Draws this line on the specified page.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
-     */
+    /// <summary>
+    /// Draws this line on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         // If a start point was set, calculate center so arc begins there
         if (line != null) {

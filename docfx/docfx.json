@@ -1,0 +1,28 @@
+{
+    "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+    "metadata": [
+        {
+            "src": [
+                {
+                    "src": "..",
+                    "files": [ "PDFjet.csproj" ]
+                }
+            ],
+            "dest": "api"
+        }
+    ],
+    "build": {
+        "content": [
+            {
+                "files": [ "api/*.yml", "index.md", "toc.yml" ]
+            }
+        ],
+        "output": "../docs/_net",
+        "template": [ "default", "modern" ],
+        "globalMetadata": {
+            "_appName": "PDFjet",
+            "_appTitle": "PDFjet for .NET",
+            "_enableSearch": true
+        }
+    }
+}

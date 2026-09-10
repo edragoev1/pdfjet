@@ -1,4 +1,4 @@
-/**
+/*
  * QRCode.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -17,10 +17,10 @@
 using System;
 using System.Text;
 
-/**
- * Used to create 2D QR Code barcodes. Please see Example_20.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create 2D QR Code barcodes. Please see Example_20.
+/// </summary>
 public class QRCode : IDrawable {
     private const int PAD0 = 0xEC;
     private const int PAD1 = 0x11;
@@ -36,26 +36,24 @@ public class QRCode : IDrawable {
 
     private int color = Color.black;
 
-    /**
-     * Used to create 2D QR Code barcodes.
-     *
-     * @param str the string to encode.
-     * @param errorCorrectLevel the desired error correction level.
-     * @throws UnsupportedEncodingException
-     */
+    /// <summary>
+    /// Used to create 2D QR Code barcodes.
+    /// </summary>
+    /// <param name="str">the string to encode.</param>
+    /// <param name="errorCorrectLevel">the desired error correction level.</param>
+    /// <exception cref="System.Exception"/>
     public QRCode(String str, int errorCorrectLevel) {
         this.qrData = Encoding.GetEncoding("utf-8").GetBytes(str);
         this.errorCorrectLevel = errorCorrectLevel;
         this.Make(false, GetBestMaskPattern());
     }
 
-    /**
-     * Sets the position where this barcode will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the barcode.
-     * @param y the y coordinate of the top left corner of the barcode.
-     * @return this QRCode object.
-     */
+    /// <summary>
+    /// Sets the position where this barcode will be drawn on the page.
+    /// </summary>
+    /// <param name="x">the x coordinate of the top left corner of the barcode.</param>
+    /// <param name="y">the y coordinate of the top left corner of the barcode.</param>
+    /// <returns>this QRCode object.</returns>
     public QRCode SetLocation(double x, double y) {
         SetLocation((float) x, (float) y);
         return this;
@@ -65,38 +63,35 @@ public class QRCode : IDrawable {
         return SetLocation(x, y);
     }
 
-    /**
-     * Sets the location where this barcode will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the barcode.
-     * @param y the y coordinate of the top left corner of the barcode.
-     * @return this QRCode object.
-     */
+    /// <summary>
+    /// Sets the location where this barcode will be drawn on the page.
+    /// </summary>
+    /// <param name="x">the x coordinate of the top left corner of the barcode.</param>
+    /// <param name="y">the y coordinate of the top left corner of the barcode.</param>
+    /// <returns>this QRCode object.</returns>
     public QRCode SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
-    /**
-     * Sets the module length of this barcode.
-     * The default value is 2.0f
-     *
-     * @param moduleLength the specified module length.
-     * @return this QRCode object.
-     */
+    /// <summary>
+    /// Sets the module length of this barcode.
+    /// The default value is 2.0f
+    /// </summary>
+    /// <param name="moduleLength">the specified module length.</param>
+    /// <returns>this QRCode object.</returns>
     public QRCode SetModuleLength(double moduleLength) {
         this.m1 = (float) moduleLength;
         return this;
     }
 
-    /**
-     * Sets the module length of this barcode.
-     * The default value is 2.0f
-     *
-     * @param moduleLength the specified module length.
-     * @return this QRCode object.
-     */
+    /// <summary>
+    /// Sets the module length of this barcode.
+    /// The default value is 2.0f
+    /// </summary>
+    /// <param name="moduleLength">the specified module length.</param>
+    /// <returns>this QRCode object.</returns>
     public QRCode SetModuleLength(float moduleLength) {
         this.m1 = moduleLength;
         return this;
@@ -107,13 +102,12 @@ public class QRCode : IDrawable {
         return this;
     }
 
-    /**
-     * Draws this barcode on the specified page.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
-     */
+    /// <summary>
+    /// Draws this barcode on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         page.SetBrushColor(this.color);
         for (int row = 0; row < modules.Length; row++) {

@@ -1,4 +1,4 @@
-/**
+/*
  * PDF417.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -8,11 +8,11 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-/**
- *  Used to create PDF417 2D barcodes.
- *
- *  Please see Example_12.
- */
+/// <summary>
+///  Used to create PDF417 2D barcodes.
+///
+///  Please see Example_12.
+/// </summary>
 public class PDF417 : IDrawable {
     private const int ALPHA = 0x08;
     private const int LOWER = 0x04;
@@ -35,11 +35,10 @@ public class PDF417 : IDrawable {
     private int[] codewords = null;
     private String str = null;
 
-    /**
-     *  Constructor for 2D barcodes.
-     *
-     *  @param str the specified string.
-     */
+    /// <summary>
+    ///  Constructor for 2D barcodes.
+    /// </summary>
+    /// <param name="str">the specified string.</param>
     public PDF417(String str) {
         this.str = str;
         this.h1 = 3 * w1;
@@ -97,13 +96,12 @@ public class PDF417 : IDrawable {
         }
     }
 
-    /**
-     *  Sets the position of this barcode on the page.
-     *
-     *  @param x the x coordinate of the top left corner of the barcode.
-     *  @param y the y coordinate of the top left corner of the barcode.
-     *  @return this PDF417 object.
-     */
+    /// <summary>
+    ///  Sets the position of this barcode on the page.
+    /// </summary>
+    /// <param name="x">the x coordinate of the top left corner of the barcode.</param>
+    /// <param name="y">the y coordinate of the top left corner of the barcode.</param>
+    /// <returns>this PDF417 object.</returns>
     public PDF417 SetLocation(double x, double y) {
         SetLocation((float) x, (float) y);
         return this;
@@ -118,40 +116,37 @@ public class PDF417 : IDrawable {
         return this;
     }
 
-    /**
-     *  Sets the location of this barcode on the page.
-     *
-     *  @param x the x coordinate of the top left corner of the barcode.
-     *  @param y the y coordinate of the top left corner of the barcode.
-     */
+    /// <summary>
+    ///  Sets the location of this barcode on the page.
+    /// </summary>
+    /// <param name="x">the x coordinate of the top left corner of the barcode.</param>
+    /// <param name="y">the y coordinate of the top left corner of the barcode.</param>
     public PDF417 SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
     }
 
-    /**
-     *  Sets the module width for this barcode.
-     *  This changes the barcode size while preserving the aspect.
-     *  Use value between 0.5f and 0.75f.
-     *  If the value is too small some scanners may have difficulty reading the barcode.
-     *
-     *  @param width the module width of the barcode.
-     *  @return this PDF417 object.
-     */
+    /// <summary>
+    ///  Sets the module width for this barcode.
+    ///  This changes the barcode size while preserving the aspect.
+    ///  Use value between 0.5f and 0.75f.
+    ///  If the value is too small some scanners may have difficulty reading the barcode.
+    /// </summary>
+    /// <param name="width">the module width of the barcode.</param>
+    /// <returns>this PDF417 object.</returns>
     public PDF417 SetModuleWidth(float width) {
         this.w1 = width;
         this.h1 = 3 * w1;
         return this;
     }
 
-    /**
-     *  Draws this barcode on the specified page.
-     *
-     *  @param page the page to draw on.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception
-     */
+    /// <summary>
+    ///  Draws this barcode on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         return DrawPdf417(page);
     }

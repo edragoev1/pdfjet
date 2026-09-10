@@ -1,24 +1,22 @@
-/**
+/*
  * IDrawable.cs
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-/**
- * Interface that is required for components that can be drawn on a PDF page as part of Optional Content Group.
- *
- * @author Mark Paxton
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Interface that is required for components that can be drawn on a PDF page as part of Optional Content Group.
+/// </summary>
+/// <remarks>Author: Mark Paxton</remarks>
 public interface IDrawable {
-    /**
-     * Draw the component implementing this interface on the PDF page.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
-     */
+    /// <summary>
+    /// Draw the component implementing this interface on the PDF page.
+    /// </summary>
+    /// <param name="canvas">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     float[] DrawOn(Page canvas);
     IDrawable SetLocation(float x, float y);
 }

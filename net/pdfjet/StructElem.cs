@@ -1,4 +1,4 @@
-/**
+/*
  * StructElem.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Defines the StructElem types.
- */
 namespace PDFjet.NET {
+    /// <summary>
+    /// Defines the StructElem types.
+    /// </summary>
     public class StructElem {
         // Document structure
         public const string DOCUMENT = "Document";

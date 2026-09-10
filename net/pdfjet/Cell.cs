@@ -1,4 +1,4 @@
-/**
+/*
  * Cell.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -7,10 +7,10 @@
 using System;
 
 namespace PDFjet.NET {
-/**
- * Used to create table cell objects.
- * See the Table class for more information.
- */
+/// <summary>
+/// Used to create table cell objects.
+/// See the Table class for more information.
+/// </summary>
 public class Cell {
     internal Font font;
     internal Font fallbackFont;
@@ -59,23 +59,21 @@ public class Cell {
     private String uri;
     private uint valign = Align.TOP;
 
-    /**
-     *  Creates a cell object and sets the font.
-     *
-     *  @param font the font.
-     */
+    /// <summary>
+    ///  Creates a cell object and sets the font.
+    /// </summary>
+    /// <param name="font">the font.</param>
     public Cell(Font font) {
         this.font = font;
         this.fontSize = font.GetSize();
         this.fallbackFont = font;
     }
 
-    /**
-     * Creates a cell object and sets the font and the cell text.
-     *
-     * @param font the font.
-     * @param text the text.
-     */
+    /// <summary>
+    /// Creates a cell object and sets the font and the cell text.
+    /// </summary>
+    /// <param name="font">the font.</param>
+    /// <param name="text">the text.</param>
     public Cell(Font font, String text) {
         this.font = font;
         this.fontSize = font.GetSize();
@@ -83,63 +81,57 @@ public class Cell {
         this.text = text;
     }
 
-    /**
-     * Sets the font for this cell.
-     *
-     * @param font the font.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the font for this cell.
+    /// </summary>
+    /// <param name="font">the font.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetFont(Font font) {
         this.font = font;
         this.fontSize = font.GetSize();
         return this;
     }
 
-    /**
-     * Sets the fallback font for this cell.
-     *
-     * @param fallbackFont the fallback font.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the fallback font for this cell.
+    /// </summary>
+    /// <param name="fallbackFont">the fallback font.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetFallbackFont(Font fallbackFont) {
         this.fallbackFont = fallbackFont;
         return this;
     }
 
-    /**
-     * Returns the font used by this cell.
-     *
-     * @return the font.
-     */
+    /// <summary>
+    /// Returns the font used by this cell.
+    /// </summary>
+    /// <returns>the font.</returns>
     public Font GetFont() {
         return this.font;
     }
 
-    /**
-     * Returns the fallback font used by this cell.
-     *
-     * @return the fallback font.
-     */
+    /// <summary>
+    /// Returns the fallback font used by this cell.
+    /// </summary>
+    /// <returns>the fallback font.</returns>
     public Font GetFallbackFont() {
         return this.fallbackFont;
     }
 
-    /**
-     * Sets the cell text.
-     *
-     * @param text the cell text.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the cell text.
+    /// </summary>
+    /// <param name="text">the cell text.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetText(String text) {
         this.text = text;
         return this;
     }
 
-    /**
-     * Returns the cell text.
-     *
-     * @return the cell text.
-     */
+    /// <summary>
+    /// Returns the cell text.
+    /// </summary>
+    /// <returns>the cell text.</returns>
     public String GetText() {
         return this.text;
     }
@@ -149,56 +141,51 @@ public class Cell {
         return this;
     }
 
-    /**
-     * Sets the image inside this cell.
-     *
-     * @param image the image.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the image inside this cell.
+    /// </summary>
+    /// <param name="image">the image.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetImage(Image image) {
         this.image = image;
         this.text = null;
         return this;
     }
 
-    /**
-     * Sets the barcode inside this cell.
-     *
-     * @param barcode the barcode.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the barcode inside this cell.
+    /// </summary>
+    /// <param name="barcode">the barcode.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetBarcode(Barcode barcode) {
         this.barcode = barcode;
         this.text = null;
         return this;
     }
 
-    /**
-     * Returns the cell image.
-     *
-     * @return the image.
-     */
+    /// <summary>
+    /// Returns the cell image.
+    /// </summary>
+    /// <returns>the image.</returns>
     public Image GetImage() {
         return this.image;
     }
 
-    /**
-     * Sets the point inside this cell.
-     * See the Point class and Example_09 for more information.
-     *
-     * @param point the point.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the point inside this cell.
+    /// See the Point class and Example_09 for more information.
+    /// </summary>
+    /// <param name="point">the point.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetPoint(Point point) {
         this.point = point;
         return this;
     }
 
-    /**
-     * Returns the cell point.
-     *
-     * @return the point.
-     */
+    /// <summary>
+    /// Returns the cell point.
+    /// </summary>
+    /// <returns>the point.</returns>
     public Point GetPoint() {
         return this.point;
     }
@@ -237,12 +224,11 @@ public class Cell {
         return this;
     }
 
-    /**
-     * Sets the width of this cell.
-     *
-     * @param width the specified width.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the width of this cell.
+    /// </summary>
+    /// <param name="width">the specified width.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetWidth(double width) {
         this.width = (float) width;
         if (textBox != null) {
@@ -253,20 +239,18 @@ public class Cell {
         return this;
     }
 
-    /**
-     * Returns the cell width.
-     *
-     * @return the cell width.
-     */
+    /// <summary>
+    /// Returns the cell width.
+    /// </summary>
+    /// <returns>the cell width.</returns>
     public float GetWidth() {
         return this.width;
     }
 
-    /**
-     * Sets the top padding of this cell.
-     *
-     * @param padding the top padding.
-     */
+    /// <summary>
+    /// Sets the top padding of this cell.
+    /// </summary>
+    /// <param name="padding">the top padding.</param>
     public Cell SetTopPadding(float padding) {
         this.topPadding = padding;
         return this;
@@ -276,11 +260,10 @@ public class Cell {
         return this.topPadding;
     }
 
-    /**
-     * Sets the bottom padding of this cell.
-     *
-     * @param padding the bottom padding.
-     */
+    /// <summary>
+    /// Sets the bottom padding of this cell.
+    /// </summary>
+    /// <param name="padding">the bottom padding.</param>
     public Cell SetBottomPadding(float padding) {
         this.bottomPadding = padding;
         return this;
@@ -290,31 +273,28 @@ public class Cell {
         return this.bottomPadding;
     }
 
-    /**
-     * Sets the left padding of this cell.
-     *
-     * @param padding the left padding.
-     */
+    /// <summary>
+    /// Sets the left padding of this cell.
+    /// </summary>
+    /// <param name="padding">the left padding.</param>
     public Cell SetLeftPadding(float padding) {
         this.leftPadding = padding;
         return this;
     }
 
-    /**
-     * Sets the right padding of this cell.
-     *
-     * @param padding the right padding.
-     */
+    /// <summary>
+    /// Sets the right padding of this cell.
+    /// </summary>
+    /// <param name="padding">the right padding.</param>
     public Cell SetRightPadding(float padding) {
         this.rightPadding = padding;
         return this;
     }
 
-    /**
-     * Sets the top, bottom, left and right paddings of this cell.
-     *
-     * @param padding the right padding.
-     */
+    /// <summary>
+    /// Sets the top, bottom, left and right paddings of this cell.
+    /// </summary>
+    /// <param name="padding">the right padding.</param>
     public Cell SetPadding(float padding) {
         this.topPadding = padding;
         this.bottomPadding = padding;
@@ -323,11 +303,10 @@ public class Cell {
         return this;
     }
 
-    /**
-     * Returns the cell height.
-     *
-     * @return the cell height.
-     */
+    /// <summary>
+    /// Returns the cell height.
+    /// </summary>
+    /// <returns>the cell height.</returns>
     public float GetHeight(float width) {
         float cellHeight = 0f;
         if (textBox != null) {
@@ -457,31 +436,28 @@ public class Cell {
         return this.properties;
     }
 
-    /**
-     * Sets the column span private variable.
-     *
-     * @param colspan the specified column span value.
-     */
+    /// <summary>
+    /// Sets the column span private variable.
+    /// </summary>
+    /// <param name="colspan">the specified column span value.</param>
     public Cell SetColSpan(int colspan) {
         this.colspan = colspan;
         return this;
     }
 
-    /**
-     * Returns the column span private variable value.
-     *
-     * @return the column span value.
-     */
+    /// <summary>
+    /// Returns the column span private variable value.
+    /// </summary>
+    /// <returns>the column span value.</returns>
     public int GetColSpan() {
         return this.colspan;
     }
 
-    /**
-     * Sets the cell border object.
-     *
-     * @param border the border object.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the cell border object.
+    /// </summary>
+    /// <param name="border">the border object.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetBorder(uint border, bool visible) {
         if (visible) {
             this.properties |= border;
@@ -491,20 +467,19 @@ public class Cell {
         return this;
     }
 
-    /**
-     * Returns the cell border object.
-     *
-     * @return the cell border object.
-     */
+    /// <summary>
+    /// Returns the cell border object.
+    /// </summary>
+    /// <returns>the cell border object.</returns>
     public bool GetBorder(uint border) {
         return (this.properties & border) != 0;
     }
 
-    /**
-     * Sets all cell borders.
-     * @param borders true or false.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets all cell borders.
+    /// </summary>
+    /// <param name="borders">true or false.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetBorders(bool borders) {
         if (borders) {
             this.properties &= 0x00FFFFFF;
@@ -514,55 +489,50 @@ public class Cell {
         return this;
     }
 
-    /**
-     * Sets the cell text alignment.
-     *
-     * @param alignment the alignment code.
-     * Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
-     */
+    /// <summary>
+    /// Sets the cell text alignment.
+    /// </summary>
+    /// <param name="alignment">the alignment code.
+    /// Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.</param>
     public Cell SetTextAlignment(uint alignment) {
         this.properties &= 0x00CFFFFF;
         this.properties |= (alignment & 0x00300000);
         return this;
     }
 
-    /**
-     * Returns the text alignment.
-     *
-     * @return the horizontal alignment code.
-     */
+    /// <summary>
+    /// Returns the text alignment.
+    /// </summary>
+    /// <returns>the horizontal alignment code.</returns>
     public uint GetTextAlignment() {
         return (this.properties & 0x00300000);
     }
 
-    /**
-     * Sets the cell text vertical alignment.
-     *
-     * @param alignment the alignment code.
-     * Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the cell text vertical alignment.
+    /// </summary>
+    /// <param name="alignment">the alignment code.
+    /// Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetVerTextAlignment(uint alignment) {
         this.valign = alignment;
         return this;
     }
 
-    /**
-     * Returns the cell text vertical alignment.
-     *
-     * @return the vertical alignment code.
-     */
+    /// <summary>
+    /// Returns the cell text vertical alignment.
+    /// </summary>
+    /// <returns>the vertical alignment code.</returns>
     public uint GetVerTextAlignment() {
         return this.valign;
     }
 
-    /**
-     * Sets the underline variable.
-     * If the value of the underline variable is 'true' - the text is underlined.
-     *
-     * @param underline the underline flag.
-     * @return this Cell object.
-     */
+    /// <summary>
+    /// Sets the underline variable.
+    /// If the value of the underline variable is 'true' - the text is underlined.
+    /// </summary>
+    /// <param name="underline">the underline flag.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetUnderline(bool underline) {
         if (underline) {
             this.properties |= 0x00400000;
@@ -602,9 +572,9 @@ public class Cell {
         return this.rightPadding;
     }
 
-    /**
-     * Draws the point, text and borders of this cell.
-     */
+    /// <summary>
+    /// Draws the point, text and borders of this cell.
+    /// </summary>
     internal void DrawOn(
             Page page,
             float x,

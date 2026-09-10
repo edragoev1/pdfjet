@@ -1,4 +1,4 @@
-/**
+/*
  * Rect.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -26,9 +26,9 @@ public class Rect  : IDrawable {
     private string actualText = null;
     private string altDescription = null;
 
-    /**
-     * The default constructor.
-     */
+    /// <summary>
+    /// The default constructor.
+    /// </summary>
     public Rect() {
     }
 

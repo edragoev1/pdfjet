@@ -1,4 +1,4 @@
-/**
+/*
  * Ellipse.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -9,9 +9,9 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 public class Ellipse : Arc {
-    /**
-     * The default constructor.
-     */
+    /// <summary>
+    /// The default constructor.
+    /// </summary>
     public Ellipse() : base() {
         SetStartAngle(0f);
         SetSweepDegreesCW(360f);

@@ -1,4 +1,4 @@
-/**
+/*
  * Border.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,11 +6,11 @@
  */
 using System;
 
-/**
- * Used to control the visibility of cell borders.
- * See the Cell class for more information.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to control the visibility of cell borders.
+/// See the Cell class for more information.
+/// </summary>
 public class Border {
     public const uint NONE   = 0x00000000;
     public const uint TOP    = 0x00010000;

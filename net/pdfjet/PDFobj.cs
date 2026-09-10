@@ -1,4 +1,4 @@
-/**
+/*
  * PDFobj.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -8,11 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-/**
- * Used to create Java or .NET objects that represent the objects in PDF document.
- * See the PDF specification for more information.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create Java or .NET objects that represent the objects in PDF document.
+/// See the PDF specification for more information.
+/// </summary>
 public class PDFobj {
     internal int offset;           // The object offset
     internal int number;           // The object number
@@ -22,11 +22,11 @@ public class PDFobj {
     internal byte[] data;          // The decompressed data
     internal int gsNumber = -1;
 
-    /**
-     * Used to create Java or .NET objects that represent the objects in PDF document.
-     * See the PDF specification for more information.
-     * Also see Example_19.
-     */
+    /// <summary>
+    /// Used to create Java or .NET objects that represent the objects in PDF document.
+    /// See the PDF specification for more information.
+    /// Also see Example_19.
+    /// </summary>
     internal PDFobj() {
         this.dict = new List<String>();
     }
@@ -64,12 +64,11 @@ public class PDFobj {
         this.number = number;
     }
 
-    /**
-     * Returns the parameter value given the specified key.
-     *
-     * @param key the specified key.
-     * @return the value.
-     */
+    /// <summary>
+    /// Returns the parameter value given the specified key.
+    /// </summary>
+    /// <param name="key">the specified key.</param>
+    /// <returns>the value.</returns>
     public String GetValue(String key) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals(key)) {
@@ -421,14 +420,11 @@ public class PDFobj {
         }
     }
 
-    /**
-     * Adds new content object before the existing content objects.
-     * The original code was provided by Stefan Ostermann author of ScribMaster and HandWrite Pro.
-     * Additional code to handle PDFs with indirect array of stream objects was written by EDragoev.
-     *
-     * @param content
-     * @param objects
-     */
+    /// <summary>
+    /// Adds new content object before the existing content objects.
+    /// The original code was provided by Stefan Ostermann author of ScribMaster and HandWrite Pro.
+    /// Additional code to handle PDFs with indirect array of stream objects was written by EDragoev.
+    /// </summary>
     public void AddPrefixContent(byte[] content, List<PDFobj> objects) {
         PDFobj obj = new PDFobj();
         obj.SetNumber(objects.Count + 1);

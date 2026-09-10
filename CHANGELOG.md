@@ -42,6 +42,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   `OptionalContentGroup`. Swift `drawOn` takes `Page?` and `setLocation`
   returns `Self`; Go `DrawOn` returns `[2]float32` instead of `[]float32`.
 
+### Documentation
+- The C# API reference is built with DocFX (configuration in `docfx/`) into
+  `docs/_net`. It replaces the copy of the Javadoc HTML that
+  `util/Translate.java` rewrote with Java-to-C# word substitutions;
+  `Translate.java`, `translate-words.txt` and `capitalize-words.txt` are
+  removed. `./generate-documentation.sh` builds both references; install
+  DocFX once with `dotnet tool install -g docfx`.
+- The C# doc comments are XML doc comments (`/// <summary>`, `<param>`,
+  `<returns>`) instead of Javadoc-style `/** @param */` blocks, which DocFX and
+  IDEs do not read. Class comments that sat above `namespace` moved onto their
+  types, and file headers became plain `/* */` comments.
+- `docs/_net` is no longer tracked in git; it is generated.
+
 ## v8.6.0 — 2026-09-05
 
 Producer string bumped from `PDFjet v8.5.0` to `PDFjet v8.6.0` in all four

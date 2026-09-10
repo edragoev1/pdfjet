@@ -1,4 +1,4 @@
-/**
+/*
  * PDF.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -11,10 +11,10 @@ using System.Text;
 using System.Collections.Generic;
 using System.Reflection;
 
-/**
- * Used to create PDF objects that represent PDF documents.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create PDF objects that represent PDF documents.
+/// </summary>
 public class PDF {
     internal List<Font> fonts = new List<Font>();
     internal List<Image> images = new List<Image>();
@@ -51,9 +51,9 @@ public class PDF {
     private Page prevPage = null;
     private bool contentStreamsCompression = true;
 
-    /**
-     * The default constructor - use when reading PDF files.
-     */
+    /// <summary>
+    /// The default constructor - use when reading PDF files.
+    /// </summary>
     public PDF() {
     }
 
@@ -88,12 +88,11 @@ public class PDF {
     public PDF(Stream os) : this(os, Compliance.PDF_1_7) {
     }
 
-    /**
-     * Creates a PDF document with the specified compliance level.
-     *
-     * @param os the associated output stream.
-     * @param compliance must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B
-     */
+    /// <summary>
+    /// Creates a PDF document with the specified compliance level.
+    /// </summary>
+    /// <param name="os">the associated output stream.</param>
+    /// <param name="compliance">must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B</param>
     public PDF(Stream os, Compliance compliance) {
         this.compliance = compliance;
         SetOutputStream(os);
@@ -145,10 +144,10 @@ public class PDF {
         return objOffset.Count;
     }
 
-    /**
-     * Records the offset of an object that carries its own number, growing the
-     * table with placeholders for any number that has no object yet.
-     */
+    /// <summary>
+    /// Records the offset of an object that carries its own number, growing the
+    /// table with placeholders for any number that has no object yet.
+    /// </summary>
     private void SetObjOffset(int number, int offset) {
         if (number <= 0) {          // No number of its own - just append.
             objOffset.Add(offset);
@@ -1070,10 +1069,10 @@ public class PDF {
         }
     }
 
-    /**
-     * Completes the construction of the PDF and writes it to the output stream.
-     * The output stream is then automatically closed.
-     */
+    /// <summary>
+    /// Completes the construction of the PDF and writes it to the output stream.
+    /// The output stream is then automatically closed.
+    /// </summary>
     public void Complete() {
         if (prevPage != null) {
             AddPageContent(prevPage);
@@ -1159,31 +1158,31 @@ public class PDF {
         os.Close();
     }
 
-    /**
-     * Set the "Title" document property of the PDF file.
-     * @param title The title of this document.
-     * @return this PDF object.
-     */
+    /// <summary>
+    /// Set the "Title" document property of the PDF file.
+    /// </summary>
+    /// <param name="title">The title of this document.</param>
+    /// <returns>this PDF object.</returns>
     public PDF SetTitle(String title) {
         this.title = title;
         return this;
     }
 
-    /**
-     * Set the "Author" document property of the PDF file.
-     * @param author The author of this document.
-     * @return this PDF object.
-     */
+    /// <summary>
+    /// Set the "Author" document property of the PDF file.
+    /// </summary>
+    /// <param name="author">The author of this document.</param>
+    /// <returns>this PDF object.</returns>
     public PDF SetAuthor(String author) {
         this.author = author;
         return this;
     }
 
-    /**
-     * Set the "Subject" document property of the PDF file.
-     * @param subject The subject of this document.
-     * @return this PDF object.
-     */
+    /// <summary>
+    /// Set the "Subject" document property of the PDF file.
+    /// </summary>
+    /// <param name="subject">The subject of this document.</param>
+    /// <returns>this PDF object.</returns>
     public PDF SetSubject(String subject) {
         this.subject = subject;
         return this;
@@ -1428,11 +1427,11 @@ public class PDF {
         return obj;
     }
 
-    /**
-     * Converts an array of bytes to an integer.
-     * @param buf byte[]
-     * @return int
-     */
+    /// <summary>
+    /// Converts an array of bytes to an integer.
+    /// </summary>
+    /// <param name="buf">byte[]</param>
+    /// <returns>int</returns>
     private int ToInt(byte[] buf, int off, int len) {
         int i = 0;
         for (int j = 0; j < len; j++) {
@@ -1810,10 +1809,10 @@ public class PDF {
         return null;
     }
 
-    /**
-     * Collects the font descriptor of the given font, together with whichever
-     * embedded font program it carries.
-     */
+    /// <summary>
+    /// Collects the font descriptor of the given font, together with whichever
+    /// embedded font program it carries.
+    /// </summary>
     private void AddFontDescriptor(
             PDFobj font, List<PDFobj> objects, List<PDFobj> resources) {
         PDFobj descriptor = GetObject("/FontDescriptor", font, objects);

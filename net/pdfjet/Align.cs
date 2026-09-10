@@ -1,4 +1,4 @@
-/**
+/*
  * Align.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -7,10 +7,10 @@
 using System;
 
 namespace PDFjet.NET {
-/**
- * Used to specify the text alignment in paragraphs.
- * See the Paragraph class for more details.
- */
+/// <summary>
+/// Used to specify the text alignment in paragraphs.
+/// See the Paragraph class for more details.
+/// </summary>
 public class Align {
     public const uint LEFT    = 0x00000000;
     public const uint CENTER  = 0x00100000;

@@ -1,4 +1,4 @@
-/**
+/*
  * Barcode.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -9,19 +9,27 @@ using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-/**
- * Used to create one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
- *
- * Please see Example_11.
- */
+/// <summary>
+/// Used to create one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
+///
+/// Please see Example_11.
+/// </summary>
 public class Barcode : IDrawable {
-    /** Specifies EAN13 barcode */
+    /// <summary>
+    ///  Specifies EAN13 barcode
+    /// </summary>
     public static readonly int EAN_13 = 0;
-    /** Specifies UPC barcode */
+    /// <summary>
+    ///  Specifies UPC barcode
+    /// </summary>
     public static readonly int UPC_A = 1;
-    /** Specifies CODE128 barcode */
+    /// <summary>
+    ///  Specifies CODE128 barcode
+    /// </summary>
     public static readonly int CODE_128 = 2;
-    /** Specifies CODE39 barcode */
+    /// <summary>
+    ///  Specifies CODE39 barcode
+    /// </summary>
     public static readonly int CODE_39 = 3;
 
     public static readonly int LEFT_TO_RIGHT = 0;
@@ -47,12 +55,11 @@ public class Barcode : IDrawable {
 
     private Dictionary<Char, String> tableB = new Dictionary<Char, String>();
 
-    /**
-     * The constructor.
-     *
-     * @param barcodeType the type of the barcode.
-     * @param text the content string of the barcode.
-     */
+    /// <summary>
+    /// The constructor.
+    /// </summary>
+    /// <param name="barcodeType">the type of the barcode.</param>
+    /// <param name="text">the content string of the barcode.</param>
     public Barcode(int barcodeType, String text) {
         this.barcodeType = barcodeType;
         this.text = text;
@@ -119,95 +126,87 @@ public class Barcode : IDrawable {
         return SetLocation(x1, y1);
     }
 
-    /**
-     * Sets the location where this barcode will be drawn on the page.
-     *
-     * @param x1 the x coordinate of the top left corner of the barcode.
-     * @param y1 the y coordinate of the top left corner of the barcode.
-     */
+    /// <summary>
+    /// Sets the location where this barcode will be drawn on the page.
+    /// </summary>
+    /// <param name="x1">the x coordinate of the top left corner of the barcode.</param>
+    /// <param name="y1">the y coordinate of the top left corner of the barcode.</param>
     public Barcode SetLocation(float x1, float y1) {
         this.x1 = x1;
         this.y1 = y1;
         return (PDFjet.NET.Barcode) this;
     }
 
-    /**
-     * Sets the location where this barcode will be drawn on the page.
-     *
-     * @param x1 the x coordinate of the top left corner of the barcode.
-     * @param y1 the y coordinate of the top left corner of the barcode.
-     */
+    /// <summary>
+    /// Sets the location where this barcode will be drawn on the page.
+    /// </summary>
+    /// <param name="x1">the x coordinate of the top left corner of the barcode.</param>
+    /// <param name="y1">the y coordinate of the top left corner of the barcode.</param>
     public Barcode SetLocation(double x1, double y1) {
         return SetLocation((float) x1, (float) y1);
     }
 
-    /**
-     * Sets the module length of this barcode.
-     * The default value is 0.75
-     *
-     * @param moduleLength the specified module length.
-     * @return this Barcode object.
-     */
+    /// <summary>
+    /// Sets the module length of this barcode.
+    /// The default value is 0.75
+    /// </summary>
+    /// <param name="moduleLength">the specified module length.</param>
+    /// <returns>this Barcode object.</returns>
     public Barcode SetModuleLength(double moduleLength) {
         this.m1 = (float) moduleLength;
         return this;
     }
 
-    /**
-     * Sets the module length of this barcode.
-     * The default value is 0.75f
-     *
-     * @param moduleLength the specified module length.
-     * @return this Barcode object.
-     */
+    /// <summary>
+    /// Sets the module length of this barcode.
+    /// The default value is 0.75f
+    /// </summary>
+    /// <param name="moduleLength">the specified module length.</param>
+    /// <returns>this Barcode object.</returns>
     public Barcode SetModuleLength(float moduleLength) {
         this.m1 = moduleLength;
         return this;
     }
 
-    /**
-     * Sets the bar height factor.
-     * The height of the bars is the moduleLength * barHeightFactor
-     * The default value is 50.0
-     *
-     * @param barHeightFactor the specified bar height factor.
-     * @return this Barcode object.
-     */
+    /// <summary>
+    /// Sets the bar height factor.
+    /// The height of the bars is the moduleLength * barHeightFactor
+    /// The default value is 50.0
+    /// </summary>
+    /// <param name="barHeightFactor">the specified bar height factor.</param>
+    /// <returns>this Barcode object.</returns>
     public Barcode SetBarHeightFactor(double barHeightFactor) {
         this.barHeightFactor = (float) barHeightFactor;
         return this;
     }
 
-    /**
-     * Sets the bar height factor.
-     * The height of the bars is the moduleLength * barHeightFactor
-     * The default value is 50.0
-     *
-     * @param barHeightFactor the specified bar height factor.
-     * @return this Barcode object.
-     */
+    /// <summary>
+    /// Sets the bar height factor.
+    /// The height of the bars is the moduleLength * barHeightFactor
+    /// The default value is 50.0
+    /// </summary>
+    /// <param name="barHeightFactor">the specified bar height factor.</param>
+    /// <returns>this Barcode object.</returns>
     public Barcode SetBarHeightFactor(float barHeightFactor) {
         this.barHeightFactor = barHeightFactor;
         return this;
     }
 
-    /**
-     * Sets the drawing direction for this font.
-     *
-     * @param direction the specified direction.
-     * @return this Barcode object.
-     */
+    /// <summary>
+    /// Sets the drawing direction for this font.
+    /// </summary>
+    /// <param name="direction">the specified direction.</param>
+    /// <returns>this Barcode object.</returns>
     public Barcode SetDirection(int direction) {
         this.direction = direction;
         return this;
     }
 
-    /**
-     * Sets the font to be used with this barcode.
-     *
-     * @param font the specified font.
-     * @return this Barcode object.
-     */
+    /// <summary>
+    /// Sets the font to be used with this barcode.
+    /// </summary>
+    /// <param name="font">the specified font.</param>
+    /// <returns>this Barcode object.</returns>
     public Barcode SetFont(Font font) {
         this.font = font;
         return this;
@@ -222,13 +221,12 @@ public class Barcode : IDrawable {
         return true;
     }
 
-    /**
-     * Draws this barcode on the specified page.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
-     */
+    /// <summary>
+    /// Draws this barcode on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         if (barcodeType == Barcode.EAN_13) {
             return DrawCodeEAN13(page, x1, y1);
@@ -801,10 +799,10 @@ public class Barcode : IDrawable {
         }
     }
 
-    /**
-     * Returns the height of this barcode.
-     * @return the height of this barcode.
-     */
+    /// <summary>
+    /// Returns the height of this barcode.
+    /// </summary>
+    /// <returns>the height of this barcode.</returns>
     public float GetHeight() {
         if (font == null) {
             return m1 * barHeightFactor;

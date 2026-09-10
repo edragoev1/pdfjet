@@ -52,6 +52,14 @@ sudo apt install libc6-dev
 sudo apt install gcc
 ```
 
+## Documentation
+
+`./generate-documentation.sh` builds the API reference for the Java port with
+Javadoc into `docs/java`, and for the C# port with
+[DocFX](https://dotnet.github.io/docfx/) into `docs/_net`. DocFX reads the XML
+doc comments (`/// <summary>`) in `net/pdfjet`; its configuration is in
+`docfx/`. Install DocFX once with `dotnet tool install -g docfx`.
+
 ## Port differences
 
 The Java, C# and Go ports all support encrypted PDF files. The Swift port does

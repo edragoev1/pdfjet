@@ -1,4 +1,4 @@
-/**
+/*
  * Page.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -9,17 +9,17 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-/**
- * Used to create PDF page objects.
- *
- * Please note:
- * <pre>
- * The coordinate (0.0f, 0.0f) is the top left corner of the page.
- * The size of the pages are represented in points.
- * 1 point is 1/72 inches.
- * </pre>
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create PDF page objects.
+///
+/// Please note:
+/// <code>
+/// The coordinate (0.0f, 0.0f) is the top left corner of the page.
+/// The size of the pages are represented in points.
+/// 1 point is 1/72 inches.
+/// </code>
+/// </summary>
 public class Page {
     public static bool DETACHED = false;
 
@@ -62,36 +62,34 @@ public class Page {
 
     private int mcid;
 
-    /**
-     * Creates page object and add it to the PDF document.
-     *
-     * Please note:
-     * <pre>
-     * The coordinate (0.0, 0.0) is the top left corner of the page.
-     * The size of the pages are represented in points.
-     * 1 point is 1/72 inches.
-     * </pre>
-     *
-     * @param pdf the pdf object.
-     * @param pageSize the page size of this page.
-     */
+    /// <summary>
+    /// Creates page object and add it to the PDF document.
+    ///
+    /// Please note:
+    /// <code>
+    /// The coordinate (0.0, 0.0) is the top left corner of the page.
+    /// The size of the pages are represented in points.
+    /// 1 point is 1/72 inches.
+    /// </code>
+    /// </summary>
+    /// <param name="pdf">the pdf object.</param>
+    /// <param name="pageSize">the page size of this page.</param>
     public Page(PDF pdf, float[] pageSize) : this(pdf, pageSize, true) {
     }
 
-    /**
-     * Creates page object and add it to the PDF document.
-     *
-     * Please note:
-     * <pre>
-     * The coordinate (0.0, 0.0) is the top left corner of the page.
-     * The size of the pages are represented in points.
-     * 1 point is 1/72 inches.
-     * </pre>
-     *
-     * @param pdf the pdf object.
-     * @param pageSize the page size of this page.
-     * @param addPageToPDF bool flag.
-     */
+    /// <summary>
+    /// Creates page object and add it to the PDF document.
+    ///
+    /// Please note:
+    /// <code>
+    /// The coordinate (0.0, 0.0) is the top left corner of the page.
+    /// The size of the pages are represented in points.
+    /// 1 point is 1/72 inches.
+    /// </code>
+    /// </summary>
+    /// <param name="pdf">the pdf object.</param>
+    /// <param name="pageSize">the page size of this page.</param>
+    /// <param name="addPageToPDF">bool flag.</param>
     public Page(PDF pdf, float[] pageSize, bool addPageToPDF) {
         this.pdf = pdf;
         this.contents = new List<Int32>();
@@ -167,92 +165,85 @@ public class Page {
         pageObj.AddResource(font, objects);
     }
 
-    /**
-     * Adds destination to this page.
-     *
-     * @param name The destination name.
-     * @param xPosition The horizontal position of the destination on this page.
-     * @param yPosition The vertical position of the destination on this page.
-     *
-     * @return the destination.
-     */
+    /// <summary>
+    /// Adds destination to this page.
+    /// </summary>
+    /// <param name="name">The destination name.</param>
+    /// <param name="xPosition">The horizontal position of the destination on this page.</param>
+    /// <param name="yPosition">The vertical position of the destination on this page.</param>
+    /// <returns>the destination.</returns>
     public Destination AddDestination(String name, float xPosition, float yPosition) {
         Destination dest = new Destination(name, xPosition, height - yPosition);
         destinations.Add(dest);
         return dest;
     }
 
-    /**
-     * Adds destination to this page.
-     *
-     * @param name The destination name.
-     * @param yPosition The vertical position of the destination on this page.
-     * @return the destination.
-     */
+    /// <summary>
+    /// Adds destination to this page.
+    /// </summary>
+    /// <param name="name">The destination name.</param>
+    /// <param name="yPosition">The vertical position of the destination on this page.</param>
+    /// <returns>the destination.</returns>
     public Destination AddDestination(String name, float yPosition) {
         Destination dest = new Destination(name, 0f, height - yPosition);
         destinations.Add(dest);
         return dest;
     }
 
-    /**
-     * Sets the page CropBox.
-     * See page 77 of the PDF32000_2008.pdf specification.
-     *
-     * @param upperLeftX the top left X coordinate of the CropBox.
-     * @param upperLeftY the top left Y coordinate of the CropBox.
-     * @param lowerRightX the bottom right X coordinate of the CropBox.
-     * @param lowerRightY the bottom right Y coordinate of the CropBox.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the page CropBox.
+    /// See page 77 of the PDF32000_2008.pdf specification.
+    /// </summary>
+    /// <param name="upperLeftX">the top left X coordinate of the CropBox.</param>
+    /// <param name="upperLeftY">the top left Y coordinate of the CropBox.</param>
+    /// <param name="lowerRightX">the bottom right X coordinate of the CropBox.</param>
+    /// <param name="lowerRightY">the bottom right Y coordinate of the CropBox.</param>
+    /// <returns>this Page object.</returns>
     public Page SetCropBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.cropBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
         return this;
     }
 
-    /**
-     * Sets the page BleedBox.
-     * See page 77 of the PDF32000_2008.pdf specification.
-     *
-     * @param upperLeftX the top left X coordinate of the BleedBox.
-     * @param upperLeftY the top left Y coordinate of the BleedBox.
-     * @param lowerRightX the bottom right X coordinate of the BleedBox.
-     * @param lowerRightY the bottom right Y coordinate of the BleedBox.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the page BleedBox.
+    /// See page 77 of the PDF32000_2008.pdf specification.
+    /// </summary>
+    /// <param name="upperLeftX">the top left X coordinate of the BleedBox.</param>
+    /// <param name="upperLeftY">the top left Y coordinate of the BleedBox.</param>
+    /// <param name="lowerRightX">the bottom right X coordinate of the BleedBox.</param>
+    /// <param name="lowerRightY">the bottom right Y coordinate of the BleedBox.</param>
+    /// <returns>this Page object.</returns>
     public Page SetBleedBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.bleedBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
         return this;
     }
 
-    /**
-     * Sets the page TrimBox.
-     * See page 77 of the PDF32000_2008.pdf specification.
-     *
-     * @param upperLeftX the top left X coordinate of the TrimBox.
-     * @param upperLeftY the top left Y coordinate of the TrimBox.
-     * @param lowerRightX the bottom right X coordinate of the TrimBox.
-     * @param lowerRightY the bottom right Y coordinate of the TrimBox.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the page TrimBox.
+    /// See page 77 of the PDF32000_2008.pdf specification.
+    /// </summary>
+    /// <param name="upperLeftX">the top left X coordinate of the TrimBox.</param>
+    /// <param name="upperLeftY">the top left Y coordinate of the TrimBox.</param>
+    /// <param name="lowerRightX">the bottom right X coordinate of the TrimBox.</param>
+    /// <param name="lowerRightY">the bottom right Y coordinate of the TrimBox.</param>
+    /// <returns>this Page object.</returns>
     public Page SetTrimBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.trimBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
         return this;
     }
 
-    /**
-     * Sets the page ArtBox.
-     * See page 77 of the PDF32000_2008.pdf specification.
-     *
-     * @param upperLeftX the top left X coordinate of the ArtBox.
-     * @param upperLeftY the top left Y coordinate of the ArtBox.
-     * @param lowerRightX the bottom right X coordinate of the ArtBox.
-     * @param lowerRightY the bottom right Y coordinate of the ArtBox.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the page ArtBox.
+    /// See page 77 of the PDF32000_2008.pdf specification.
+    /// </summary>
+    /// <param name="upperLeftX">the top left X coordinate of the ArtBox.</param>
+    /// <param name="upperLeftY">the top left Y coordinate of the ArtBox.</param>
+    /// <param name="lowerRightX">the bottom right X coordinate of the ArtBox.</param>
+    /// <param name="lowerRightY">the bottom right Y coordinate of the ArtBox.</param>
+    /// <returns>this Page object.</returns>
     public Page SetArtBox(
             float upperLeftX, float upperLeftY, float lowerRightX, float lowerRightY) {
         this.artBox = new float[] {upperLeftX, upperLeftY, lowerRightX, lowerRightY};
@@ -314,20 +305,18 @@ public class Page {
         return buf.ToArray();
     }
 
-    /**
-     * Returns the width of this page.
-     *
-     * @return the width of the page.
-     */
+    /// <summary>
+    /// Returns the width of this page.
+    /// </summary>
+    /// <returns>the width of the page.</returns>
     public float GetWidth() {
         return width;
     }
 
-    /**
-     * Returns the height of this page.
-     *
-     * @return the height of the page.
-     */
+    /// <summary>
+    /// Returns the height of this page.
+    /// </summary>
+    /// <returns>the height of the page.</returns>
     public float GetHeight() {
         return height;
     }
@@ -336,14 +325,13 @@ public class Page {
         return this.strokeDashPattern;
     }
 
-    /**
-     * Draws a line on the page, using the current color, between the points (x1, y1) and (x2, y2).
-     *
-     * @param x1 the first point's x coordinate.
-     * @param y1 the first point's y coordinate.
-     * @param x2 the second point's x coordinate.
-     * @param y2 the second point's y coordinate.
-     */
+    /// <summary>
+    /// Draws a line on the page, using the current color, between the points (x1, y1) and (x2, y2).
+    /// </summary>
+    /// <param name="x1">the first point's x coordinate.</param>
+    /// <param name="y1">the first point's y coordinate.</param>
+    /// <param name="x2">the second point's x coordinate.</param>
+    /// <param name="y2">the second point's y coordinate.</param>
     public void DrawLine(
             double x1,
             double y1,
@@ -379,18 +367,17 @@ public class Page {
         DrawString(font, fallbackFont, fontSize, str, x, y, new float[] {r, g, b}, colors);
     }
 
-    /**
-     * Draws the text given by the specified string,
-     * using the specified Thai or Hebrew font and the current brush color.
-     * If the font is missing some glyphs - the fallback font is used.
-     * The baseline of the leftmost character is at position (x, y) on the page.
-     *
-     * @param font1 the Thai or Hebrew font.
-     * @param font2 the fallback font.
-     * @param str the string to be drawn.
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     */
+    /// <summary>
+    /// Draws the text given by the specified string,
+    /// using the specified Thai or Hebrew font and the current brush color.
+    /// If the font is missing some glyphs - the fallback font is used.
+    /// The baseline of the leftmost character is at position (x, y) on the page.
+    /// </summary>
+    /// <param name="font">the Thai or Hebrew font.</param>
+    /// <param name="fallbackFont">the fallback font.</param>
+    /// <param name="str">the string to be drawn.</param>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
     public void DrawString(
             Font font,
             Font fallbackFont,
@@ -423,16 +410,15 @@ public class Page {
         }
     }
 
-    /**
-     * Draws the text given by the specified string,
-     * using the specified font and the current brush color.
-     * The baseline of the leftmost character is at position (x, y) on the page.
-     *
-     * @param font the font to use.
-     * @param str the string to be drawn.
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     */
+    /// <summary>
+    /// Draws the text given by the specified string,
+    /// using the specified font and the current brush color.
+    /// The baseline of the leftmost character is at position (x, y) on the page.
+    /// </summary>
+    /// <param name="font">the font to use.</param>
+    /// <param name="str">the string to be drawn.</param>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
     public void DrawString(
             Font font,
             double fontSize,
@@ -451,16 +437,15 @@ public class Page {
         DrawString(font, fontSize, str, x, y, new float[] {0f, 0f, 0f}, null);
     }
 
-    /**
-     * Draws the text given by the specified string,
-     * using the specified font and the current brush color.
-     * The baseline of the leftmost character is at position (x, y) on the page.
-     *
-     * @param font the font to use.
-     * @param str the string to be drawn.
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     */
+    /// <summary>
+    /// Draws the text given by the specified string,
+    /// using the specified font and the current brush color.
+    /// The baseline of the leftmost character is at position (x, y) on the page.
+    /// </summary>
+    /// <param name="font">the font to use.</param>
+    /// <param name="str">the string to be drawn.</param>
+    /// <param name="x">the x coordinate.</param>
+    /// <param name="y">the y coordinate.</param>
     public void DrawString(
             Font font,
             float fontSize,
@@ -629,13 +614,12 @@ public class Page {
 //        SetBrushColor(new float[] {r, g, b}); // Call the second method with an array
 //    }
 
-    /**
-     * Sets the brush color.
-     *
-     * @param color the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
-     * @throws IOException
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the brush color.
+    /// </summary>
+    /// <param name="color">the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.</param>
+    /// <exception cref="IOException"/>
+    /// <returns>this Page object.</returns>
     public Page SetBrushColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -650,13 +634,12 @@ public class Page {
         return this;
     }
 
-    /**
-     * Sets the color for brush operations.
-     *
-     * @param color the color.
-     * @throws IOException
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the color for brush operations.
+    /// </summary>
+    /// <param name="rgbColor">the color.</param>
+    /// <exception cref="IOException"/>
+    /// <returns>this Page object.</returns>
     public Page SetBrushColor(float[] rgbColor) {
         if (rgbColor == null) {
             return this; // Early exit if null
@@ -686,7 +669,7 @@ public class Page {
     /// Returns the current brush color as an RGB float array.
     /// </summary>
     /// <returns>
-    /// A <see cref="float[]"/> containing the red, green, and blue components (0.0f to 1.0f) of the brush color.
+    /// A <c>float[]</c> containing the red, green, and blue components (0.0f to 1.0f) of the brush color.
     /// </returns>
     public float[] GetBrushColor() {
         return brushColor;
@@ -699,7 +682,6 @@ public class Page {
     /// The color value, where each component (red, green, blue) is packed into a 24-bit integer.
     /// You can use predefined colors from the <see cref="Color"/> class or define your own.
     /// </param>
-    /// <exception cref="IOException">
     public Page SetPenColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
@@ -769,22 +751,21 @@ public class Page {
     /// Gets the current pen color as an RGB float array.
     /// </summary>
     /// <returns>
-    /// A <see cref="float[]"/> with three elements: red, green, and blue components (0.0f to 1.0f).
+    /// A <c>float[]</c> with three elements: red, green, and blue components (0.0f to 1.0f).
     /// </returns>
     public float[] GetPenColor() {
         return penColor;
     }
 
-    /**
-     * Sets the color for brush operations using CMYK.
-     * This is the color used when drawing regular text and filling shapes.
-     *
-     * @param c the cyan component is float value from 0.0f to 1.0f.
-     * @param m the magenta component is float value from 0.0f to 1.0f.
-     * @param y the yellow component is float value from 0.0f to 1.0f.
-     * @param k the black component is float value from 0.0f to 1.0f.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the color for brush operations using CMYK.
+    /// This is the color used when drawing regular text and filling shapes.
+    /// </summary>
+    /// <param name="c">the cyan component is float value from 0.0f to 1.0f.</param>
+    /// <param name="m">the magenta component is float value from 0.0f to 1.0f.</param>
+    /// <param name="y">the yellow component is float value from 0.0f to 1.0f.</param>
+    /// <param name="k">the black component is float value from 0.0f to 1.0f.</param>
+    /// <returns>this Page object.</returns>
     public Page SetBrushColorCMYK(float c, float m, float y, float k) {
         Append(c);
         Append(' ');
@@ -797,16 +778,15 @@ public class Page {
         return this;
     }
 
-    /**
-     * Sets the color for stroking operations using CMYK.
-     * The pen color is used when drawing lines and splines.
-     *
-     * @param c the cyan component is float value from 0.0f to 1.0f.
-     * @param m the magenta component is float value from 0.0f to 1.0f.
-     * @param y the yellow component is float value from 0.0f to 1.0f.
-     * @param k the black component is float value from 0.0f to 1.0f.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the color for stroking operations using CMYK.
+    /// The pen color is used when drawing lines and splines.
+    /// </summary>
+    /// <param name="c">the cyan component is float value from 0.0f to 1.0f.</param>
+    /// <param name="m">the magenta component is float value from 0.0f to 1.0f.</param>
+    /// <param name="y">the yellow component is float value from 0.0f to 1.0f.</param>
+    /// <param name="k">the black component is float value from 0.0f to 1.0f.</param>
+    /// <returns>this Page object.</returns>
     public Page SetPenColorCMYK(float c, float m, float y, float k) {
         Append(c);
         Append(' ');
@@ -819,41 +799,39 @@ public class Page {
         return this;
     }
 
-    /**
-     * Sets the line width to the default.
-     * The default is the finest line width.
-     *
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the line width to the default.
+    /// The default is the finest line width.
+    /// </summary>
+    /// <returns>this Page object.</returns>
     public Page SetDefaultStrokeWidth() {
         Append("0 w\n");
         return this;
     }
 
-    /**
-     * The stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.
-     * It is specified by a dash array and a dash phase.
-     * The elements of the dash array are positive numbers that specify the lengths of
-     * alternating dashes and gaps.
-     * The dash phase specifies the distance into the dash pattern at which to start the dash.
-     * The elements of both the dash array and the dash phase are expressed in user space units.
-     * <pre>
-     * Examples of line dash patterns:
-     *
-     *     "[Array] Phase"     Appearance          Description
-     *     _______________     _________________   ____________________________________
-     *
-     *     "[] 0"              -----------------   Solid line
-     *     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-     *     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-     *     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-     *     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-     *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-     * </pre>
-     *
-     * @param strokeDashPattern the stroke dash pattern.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// The stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.
+    /// It is specified by a dash array and a dash phase.
+    /// The elements of the dash array are positive numbers that specify the lengths of
+    /// alternating dashes and gaps.
+    /// The dash phase specifies the distance into the dash pattern at which to start the dash.
+    /// The elements of both the dash array and the dash phase are expressed in user space units.
+    /// <code>
+    /// Examples of line dash patterns:
+    ///
+    ///     "[Array] Phase"     Appearance          Description
+    ///     _______________     _________________   ____________________________________
+    ///
+    ///     "[] 0"              -----------------   Solid line
+    ///     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+    ///     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+    ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+    ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+    ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+    /// </code>
+    /// </summary>
+    /// <param name="strokeDashPattern">the stroke dash pattern.</param>
+    /// <returns>this Page object.</returns>
     public Page SetStrokeDashPattern(String strokeDashPattern) {
         this.strokeDashPattern = strokeDashPattern;
         Append(strokeDashPattern);
@@ -861,34 +839,31 @@ public class Page {
         return this;
     }
 
-    /**
-     * Sets the default stroke pattern to be solid line or curve.
-     *
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the default stroke pattern to be solid line or curve.
+    /// </summary>
+    /// <returns>this Page object.</returns>
     public Page SetDefaultStrokeDashPattern() {
         Append("[] 0");
         Append(" d\n");
         return this;
     }
 
-    /**
-     * Sets the pen width that will be used to draw lines and splines on this page.
-     *
-     * @param width the pen width.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the pen width that will be used to draw lines and splines on this page.
+    /// </summary>
+    /// <param name="width">the pen width.</param>
+    /// <returns>this Page object.</returns>
     public Page SetPenWidth(double width) {
         SetPenWidth((float) width);
         return this;
     }
 
-    /**
-     * Sets the pen width that will be used to draw lines and splines on this page.
-     *
-     * @param width the pen width.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the pen width that will be used to draw lines and splines on this page.
+    /// </summary>
+    /// <param name="width">the pen width.</param>
+    /// <returns>this Page object.</returns>
     public Page SetPenWidth(float width) {
         this.penWidth = width;
         Append(width);
@@ -900,13 +875,12 @@ public class Page {
         return this.penWidth;
     }
 
-    /**
-     * Sets the current line cap style.
-     *
-     * @param style the cap style of the current line.
-     * Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the current line cap style.
+    /// </summary>
+    /// <param name="style">the cap style of the current line.
+    /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE</param>
+    /// <returns>this Page object.</returns>
     public Page SetLineCapStyle(CapStyle style) {
         this.lineCapStyle = style;
         Append((Int32) style);
@@ -914,13 +888,12 @@ public class Page {
         return this;
     }
 
-    /**
-     * Sets the line join style.
-     *
-     * @param style the line join style code.
-     * Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the line join style.
+    /// </summary>
+    /// <param name="style">the line join style code.
+    /// Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL</param>
+    /// <returns>this Page object.</returns>
     public Page SetLineJoinStyle(JoinStyle style) {
         this.lineJoinStyle = style;
         Append((Int32) style);
@@ -1035,7 +1008,7 @@ public class Page {
     /// subsequent points define line segments or curve control points. Must contain at least 2 points.</param>
     /// <param name="pathOperator">The path painting operator to apply (e.g., "S" for stroke, "f" for fill).
     /// Use constants from the PathOperator class for standard operators.</param>
-    /// <exception cref="Exception">Thrown when the path contains fewer than 2 points.</exception>
+    /// <exception cref="System.Exception">Thrown when the path contains fewer than 2 points.</exception>
     /// <remarks>
     /// <para>
     /// The method processes points as follows:
@@ -1084,8 +1057,8 @@ public class Page {
     /// DrawPath(curve, PathOperator.STROKE);
     /// </code>
     /// </example>
-    /// <see also cref="Point"/>
-    /// <see also cref="PathOperator"/>
+    /// <seealso cref="Point"/>
+    /// <seealso cref="PathOperator"/>
     public void DrawPath(List<Point> path, string pathOperator) {
         if (path.Count < 2) {
             throw new Exception("The Path object must contain at least 2 points");
@@ -1113,23 +1086,21 @@ public class Page {
         Append('\n');
     }
 
-    /**
-     * Strokes a bezier curve and draws it using the current pen.
-     * @deprecated  As of v4.00 replaced by {@link #drawPath(List, char)}
-     *
-     * @param list the list of points that define the bezier curve.
-     */
+    /// <summary>
+    /// Strokes a bezier curve and draws it using the current pen.
+    /// </summary>
+    /// <remarks>Deprecated: As of v4.00 replaced by <see cref="DrawPath(List{Point}, string)"/></remarks>
+    /// <param name="list">the list of points that define the bezier curve.</param>
     public void DrawBezierCurve(List<Point> list) {
         DrawBezierCurve(list, PathOperator.Stroke);
     }
 
-    /**
-     * Draws a bezier curve and fills it using the current brush.
-     * @deprecated  As of v4.00 replaced by {@link #drawPath(List, char)}
-     *
-     * @param list the list of points that define the bezier curve.
-     * @param operation must be Operation.STROKE or Operation.FILL.
-     */
+    /// <summary>
+    /// Draws a bezier curve and fills it using the current brush.
+    /// </summary>
+    /// <remarks>Deprecated: As of v4.00 replaced by <see cref="DrawPath(List{Point}, string)"/></remarks>
+    /// <param name="list">the list of points that define the bezier curve.</param>
+    /// <param name="pathOperator">must be Operation.STROKE or Operation.FILL.</param>
     public void DrawBezierCurve(List<Point> list, String pathOperator) {
         Point point = list[0];
         MoveTo(point.x, point.y);
@@ -1144,15 +1115,13 @@ public class Page {
         Append('\n');
     }
 
-    /**
-     * Draws an ellipse on the page and fills it using the current brush color.
-     *
-     * @param x the x coordinate of the center of the ellipse to be drawn.
-     * @param y the y coordinate of the center of the ellipse to be drawn.
-     * @param rx the horizontal radius of the ellipse to be drawn.
-     * @param ry the vertical radius of the ellipse to be drawn.
-     * @param operation must be: Operation.FILL
-     */
+    /// <summary>
+    /// Draws an ellipse on the page and fills it using the current brush color.
+    /// </summary>
+    /// <param name="x">the x coordinate of the center of the ellipse to be drawn.</param>
+    /// <param name="y">the y coordinate of the center of the ellipse to be drawn.</param>
+    /// <param name="rx">the horizontal radius of the ellipse to be drawn.</param>
+    /// <param name="ry">the vertical radius of the ellipse to be drawn.</param>
     public void DrawEllipse(
             float x,
             float y,
@@ -1161,39 +1130,36 @@ public class Page {
         DrawArc(x, y, rx, ry, 0f, 360f);
     }
 
-    /**
-     * Draws a circle on the page.
-     * The outline of the circle is drawn using the current pen color.
-     *
-     * @param x the x coordinate of the center of the circle to be drawn.
-     * @param y the y coordinate of the center of the circle to be drawn.
-     * @param r the radius of the circle to be drawn.
-     */
+    /// <summary>
+    /// Draws a circle on the page.
+    /// The outline of the circle is drawn using the current pen color.
+    /// </summary>
+    /// <param name="x">the x coordinate of the center of the circle to be drawn.</param>
+    /// <param name="y">the y coordinate of the center of the circle to be drawn.</param>
+    /// <param name="r">the radius of the circle to be drawn.</param>
     public void DrawCircle(float x, float y, float r) {
         DrawEllipse(x, y, r, r, PathOperator.Stroke);
     }
 
-    /**
-     * Draws the specified circle on the page and fills it with the current brush color.
-     *
-     * @param x the x coordinate of the center of the circle to be drawn.
-     * @param y the y coordinate of the center of the circle to be drawn.
-     * @param r the radius of the circle to be drawn.
-     * @param pathOperator must be PathOperator.Stroke, PathOperator.CloseAndStroke or PathOperator.Fill.
-     */
+    /// <summary>
+    /// Draws the specified circle on the page and fills it with the current brush color.
+    /// </summary>
+    /// <param name="x">the x coordinate of the center of the circle to be drawn.</param>
+    /// <param name="y">the y coordinate of the center of the circle to be drawn.</param>
+    /// <param name="r">the radius of the circle to be drawn.</param>
+    /// <param name="pathOperator">must be PathOperator.Stroke, PathOperator.CloseAndStroke or PathOperator.Fill.</param>
     public void DrawCircle(float x, float y, float r, string pathOperator) {
         DrawEllipse(x, y, r, r, pathOperator);
     }
 
-    /**
-     * Draws an ellipse on the page and fills it using the current brush color.
-     *
-     * @param x the x coordinate of the center of the ellipse to be drawn.
-     * @param y the y coordinate of the center of the ellipse to be drawn.
-     * @param r1 the horizontal radius of the ellipse to be drawn.
-     * @param r2 the vertical radius of the ellipse to be drawn.
-     * @param operation the operation.
-     */
+    /// <summary>
+    /// Draws an ellipse on the page and fills it using the current brush color.
+    /// </summary>
+    /// <param name="x">the x coordinate of the center of the ellipse to be drawn.</param>
+    /// <param name="y">the y coordinate of the center of the ellipse to be drawn.</param>
+    /// <param name="r1">the horizontal radius of the ellipse to be drawn.</param>
+    /// <param name="r2">the vertical radius of the ellipse to be drawn.</param>
+    /// <param name="pathOperator">the path operator.</param>
     internal void DrawEllipse(
             float x,
             float y,
@@ -1229,11 +1195,10 @@ public class Page {
         Append('\n');
     }
 
-    /**
-     * Draws a point on the page using the current pen color.
-     *
-     * @param p the point.
-     */
+    /// <summary>
+    /// Draws a point on the page using the current pen color.
+    /// </summary>
+    /// <param name="p">the point.</param>
     public void DrawPoint(Point p) {
         if (p.shape != Point.INVISIBLE) {
             List<Point> list;
@@ -1310,12 +1275,11 @@ public class Page {
         }
     }
 
-    /**
-     * Sets the text rendering mode.
-     *
-     * @param mode the rendering mode.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the text rendering mode.
+    /// </summary>
+    /// <param name="mode">the rendering mode.</param>
+    /// <returns>this Page object.</returns>
     public Page SetTextRenderingMode(int mode) {
         if (mode >= 0 && mode <= 7) {
             this.renderingMode = mode;
@@ -1325,12 +1289,11 @@ public class Page {
         return this;
     }
 
-    /**
-     * Sets the text direction.
-     *
-     * @param degrees the angle.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the text direction.
+    /// </summary>
+    /// <param name="degrees">the angle.</param>
+    /// <returns>this Page object.</returns>
     public Page SetTextDirection(int degrees) {
         if (degrees > 360) degrees %= 360;
         if (degrees == 0) {
@@ -1355,16 +1318,15 @@ public class Page {
         return this;
     }
 
-    /**
-     * Draws a cubic bezier curve starting from the current point to the end point p3
-     *
-     * @param x1 first control point x
-     * @param y1 first control point y
-     * @param x2 second control point x
-     * @param y2 second control point y
-     * @param x3 end point x
-     * @param y3 end point y
-     */
+    /// <summary>
+    /// Draws a cubic bezier curve starting from the current point to the end point p3
+    /// </summary>
+    /// <param name="x1">first control point x</param>
+    /// <param name="y1">first control point y</param>
+    /// <param name="x2">second control point x</param>
+    /// <param name="y2">second control point y</param>
+    /// <param name="x3">end point x</param>
+    /// <param name="y3">end point y</param>
     public void CurveTo(
             float x1, float y1, float x2, float y2, float x3, float y3) {
         Append(x1);
@@ -1439,16 +1401,15 @@ public class Page {
         return new float[6] { x1, y1, x2, y2, x3, y3 };
     }
 
-    /**
-     * Draws a bezier curve starting from the current point.
-     * <strong>Please note:</strong> You must call the StrokePath,
-     * ClosePath or FillPath methods after the last BezierCurveTo call.
-     * <p><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</p>
-     *
-     * @param p1 this first control point.
-     * @param p2 this second control point.
-     * @param p3 this end point.
-     */
+    /// <summary>
+    /// Draws a bezier curve starting from the current point.
+    /// <strong>Please note:</strong> You must call the StrokePath,
+    /// ClosePath or FillPath methods after the last BezierCurveTo call.
+    /// <para><i>Author:</i> <strong>Pieter Libin</strong>, pieter@emweb.be</para>
+    /// </summary>
+    /// <param name="p1">this first control point.</param>
+    /// <param name="p2">this second control point.</param>
+    /// <param name="p3">this end point.</param>
     public void BezierCurveTo(Point p1, Point p2, Point p3) {
         Append(p1);
         Append(p2);
@@ -1518,9 +1479,9 @@ public class Page {
         }
     }
 
-    /**
-     * Clips the path.
-     */
+    /// <summary>
+    /// Clips the path.
+    /// </summary>
     public void ClipPath() {
         Append("W\n");
         Append("n\n");  // Close the path without painting it.
@@ -1534,19 +1495,18 @@ public class Page {
         ClipPath();
     }
 
-    /**
-     * Saves the graphics state. Please see Example_31.
-     */
+    /// <summary>
+    /// Saves the graphics state. Please see Example_31.
+    /// </summary>
     public void SaveGraphicsState() {
         Append("q\n");
     }
 
-    /**
-     * Sets the graphics state. Please see Example_31.
-     *
-     * @param gs the graphics state to use.
-     * @return this Page object.
-     */
+    /// <summary>
+    /// Sets the graphics state. Please see Example_31.
+    /// </summary>
+    /// <param name="gs">the graphics state to use.</param>
+    /// <returns>this Page object.</returns>
     public Page SetGraphicsState(GraphicsState gs) {
         StringBuilder sb = new StringBuilder();
         sb.Append("/CA ");
@@ -1568,9 +1528,9 @@ public class Page {
         return this;
     }
 
-    /**
-     * Restores the graphics state. Please see Example_31.
-     */
+    /// <summary>
+    /// Restores the graphics state. Please see Example_31.
+    /// </summary>
     public void RestoreGraphicsState() {
         Append("Q\n");
     }
@@ -1610,9 +1570,9 @@ public class Page {
         buf.WriteByte(b);
     }
 
-    /**
-     * Appends the specified array of bytes to the page.
-     */
+    /// <summary>
+    /// Appends the specified array of bytes to the page.
+    /// </summary>
     internal void Append(byte[] buffer) {
         buf.Write(buffer, 0, buffer.Length);
     }
@@ -1801,12 +1761,11 @@ public class Page {
         }
     }
 
-    /**
-     * Sets the text location.
-     *
-     * @param x the x coordinate of new text location.
-     * @param y the y coordinate of new text location.
-     */
+    /// <summary>
+    /// Sets the text location.
+    /// </summary>
+    /// <param name="x">the x coordinate of new text location.</param>
+    /// <param name="y">the y coordinate of new text location.</param>
     internal void SetTextLocation(float x, float y) {
         Append(x);
         Append(Token.Space);
@@ -1814,18 +1773,18 @@ public class Page {
         Append(" Td\n");
     }
 
-    /**
-     * Sets the text leading.
-     * @param leading the leading.
-     */
+    /// <summary>
+    /// Sets the text leading.
+    /// </summary>
+    /// <param name="leading">the leading.</param>
     internal void SetTextLeading(float leading) {
         Append(leading);
         Append(" TL\n");
     }
 
-    /**
-     * Advance to the next line.
-     */
+    /// <summary>
+    /// Advance to the next line.
+    /// </summary>
     internal void NextLine() {
         Append("T*\n");
     }
@@ -1840,10 +1799,10 @@ public class Page {
         Append(" Ts\n");
     }
 
-    /**
-     * Draws a string at the specified location.
-     * @param str the string.
-     */
+    /// <summary>
+    /// Draws a string at the specified location.
+    /// </summary>
+    /// <param name="str">the string.</param>
     internal void DrawTextLine(Font font, String str, float x, float y) {
         Append("BT\n");
         SetTextLocation(x, y);

@@ -1,11 +1,11 @@
-/**
+/*
  * Direction.cs
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-/**
+/*
  * Used to specify the text writing direction in TextBox.cs
  */
 namespace PDFjet.NET {

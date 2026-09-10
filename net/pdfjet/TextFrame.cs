@@ -1,4 +1,4 @@
-/**
+/*
  * TextFrame.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -9,9 +9,9 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace PDFjet.NET {
-/**
- * Please see Example_47
- */
+/// <summary>
+/// Please see Example_47
+/// </summary>
 public class TextFrame : IDrawable {
     private Font f1;
     private float x;

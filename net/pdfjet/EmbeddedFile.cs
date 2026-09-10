@@ -1,4 +1,4 @@
-/**
+/*
  * EmbeddedFile.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -9,10 +9,10 @@ using System.IO;
 using System.Text;
 
 namespace PDFjet.NET {
-/**
- * Used to embed file objects.
- * The file objects must added to the PDF before drawing on the first page.
- */
+/// <summary>
+/// Used to embed file objects.
+/// The file objects must added to the PDF before drawing on the first page.
+/// </summary>
 public class EmbeddedFile {
     internal int objNumber = -1;
     internal String fileName = null;

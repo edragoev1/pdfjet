@@ -1,4 +1,4 @@
-/**
+/*
  * PNGImage.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -8,18 +8,15 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-/**
- * Used to embed PNG images in the PDF document.
- * <p>
- * <strong>Please note:</strong>
- * <p>
- *     Interlaced images are not supported.
- * <p>
- *     To convert interlaced image to non-interlaced image use OptiPNG:
- * <p>
- *     optipng -i0 -o7 myimage.png
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to embed PNG images in the PDF document.
+/// </summary>
+/// <remarks>
+/// <para><strong>Please note:</strong> Interlaced images are not supported.</para>
+/// <para>To convert interlaced image to non-interlaced image use OptiPNG:</para>
+/// <code>optipng -i0 -o7 myimage.png</code>
+/// </remarks>
 public class PNGImage {
     int w = 0;                  // Image width in pixels
     int h = 0;                  // Image height in pixels
@@ -34,10 +31,9 @@ public class PNGImage {
     private byte bitDepth = 8;
     private int colorType = 0;
 
-    /**
-     * Used to embed PNG images in the PDF document.
-     *
-     */
+    /// <summary>
+    /// Used to embed PNG images in the PDF document.
+    /// </summary>
     public PNGImage(Stream inputStream) {
         ValidatePNG(inputStream);
 

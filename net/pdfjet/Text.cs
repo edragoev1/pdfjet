@@ -1,4 +1,4 @@
-/**
+/*
  * Text.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -10,10 +10,10 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.IO;
 
-///
-/// Please see Example_45
-///
 namespace PDFjet.NET {
+/// <summary>
+/// Please see Example_45.
+/// </summary>
 public class Text : IDrawable {
     private List<Paragraph> paragraphs;
     private float x1;

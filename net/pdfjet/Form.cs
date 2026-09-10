@@ -1,4 +1,4 @@
-/**
+/*
  * Form.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -8,10 +8,10 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 
-/**
- * Please see Example_42
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Please see Example_42
+/// </summary>
 public class Form : IDrawable {
     private List<Field> fields;
     private float x;
@@ -25,11 +25,10 @@ public class Form : IDrawable {
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0.33f, 0.33f, 0.66f};
 
-    /**
-     * Creates a Form object
-     *
-     * @param fields the fields contained in this form
-     */
+    /// <summary>
+    /// Creates a Form object
+    /// </summary>
+    /// <param name="fields">the fields contained in this form</param>
     public Form(List<Field> fields) {
         this.fields = fields;
     }
@@ -38,125 +37,114 @@ public class Form : IDrawable {
         return SetLocation(x, y);
     }
 
-    /**
-     * Sets the location of this form on the page
-     *
-     * @param x the horizontal location
-     * @param y the vertical locations
-     * @return the form
-     */
+    /// <summary>
+    /// Sets the location of this form on the page
+    /// </summary>
+    /// <param name="x">the horizontal location</param>
+    /// <param name="y">the vertical locations</param>
+    /// <returns>the form</returns>
     public Form SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
     }
 
-    /**
-     * Sets the location of this form on the page
-     *
-     * @param x the horizontal location
-     * @param y the vertical locations
-     * @return the form
-     */
+    /// <summary>
+    /// Sets the location of this form on the page
+    /// </summary>
+    /// <param name="x">the horizontal location</param>
+    /// <param name="y">the vertical locations</param>
+    /// <returns>the form</returns>
     public Form SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
 
-    /**
-     * Sets the form width
-     *
-     * @param formWidth the form width
-     * @return this form
-     */
+    /// <summary>
+    /// Sets the form width
+    /// </summary>
+    /// <param name="formWidth">the form width</param>
+    /// <returns>this form</returns>
     public Form SetFormWidth(float formWidth) {
         this.formWidth = formWidth;
         return this;
     }
 
-    /**
-     * Sets the line width
-     *
-     * @param lineWidth the line width
-     * @return this form
-     */
+    /// <summary>
+    /// Sets the line width
+    /// </summary>
+    /// <param name="lineWidth">the line width</param>
+    /// <returns>this form</returns>
     public Form SetLineWidth(float lineWidth) {
         this.lineWidth = lineWidth;
         return this;
     }
 
-    /**
-     * Sets the font for the label
-     *
-     * @param f1 the font
-     * @return this form
-     */
+    /// <summary>
+    /// Sets the font for the label
+    /// </summary>
+    /// <param name="f1">the font</param>
+    /// <returns>this form</returns>
     public Form SetLabelFont(Font f1) {
         this.f1 = f1;
         return this;
     }
 
-    /**
-     * Sets the size for the label font
-     *
-     * @param labelFontSize the label font size
-     * @return the form
-     */
+    /// <summary>
+    /// Sets the size for the label font
+    /// </summary>
+    /// <param name="labelFontSize">the label font size</param>
+    /// <returns>the form</returns>
     public Form SetLabelFontSize(float labelFontSize) {
         this.labelFontSize = labelFontSize;
         return this;
     }
 
-    /**
-     * Sets the font for the value
-     *
-     * @param f2 the value font
-     * @return the form
-     */
+    /// <summary>
+    /// Sets the font for the value
+    /// </summary>
+    /// <param name="f2">the value font</param>
+    /// <returns>the form</returns>
     public Form SetValueFont(Font f2) {
         this.f2 = f2;
         return this;
     }
 
-    /**
-     * Sets the size for the value font
-     *
-     * @param valueFontSize the font size
-     * @return the form
-     */
+    /// <summary>
+    /// Sets the size for the value font
+    /// </summary>
+    /// <param name="valueFontSize">the font size</param>
+    /// <returns>the form</returns>
     public Form SetValueFontSize(float valueFontSize) {
         this.valueFontSize = valueFontSize;
         return this;
     }
 
-    /**
-     * Sets the label color
-     *
-     * @param labelColor the label color
-     * @return the form
-     */
+    /// <summary>
+    /// Sets the label color
+    /// </summary>
+    /// <param name="labelColor">the label color</param>
+    /// <returns>the form</returns>
     public Form SetLabelColor(float[] labelColor) {
         this.labelColor = labelColor;
         return this;
     }
 
-    /**
-     * Sets the color for the value
-     *
-     * @param valueColor the value color
-     * @return the form
-     */
+    /// <summary>
+    /// Sets the color for the value
+    /// </summary>
+    /// <param name="valueColor">the value color</param>
+    /// <returns>the form</returns>
     public Form SetValueColor(float[] valueColor) {
         this.valueColor = valueColor;
         return this;
     }
 
-    /**
-     *  Draws this Form on the specified page.
-     *
-     *  @param page the page to draw this form on.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception  If an input or output exception occurred
-     */
+    /// <summary>
+    ///  Draws this Form on the specified page.
+    /// </summary>
+    /// <param name="page">the page to draw this form on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception">If an input or output exception occurred</exception>
     public float[] DrawOn(Page page) {
         if (page == null) {
             throw new ArgumentNullException(nameof(page), "Page cannot be null");

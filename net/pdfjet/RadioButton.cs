@@ -1,4 +1,4 @@
-/**
+/*
  * RadioButton.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Creates a RadioButton, which can be set selected or unselected.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Creates a RadioButton, which can be set selected or unselected.
+/// </summary>
 public class RadioButton : IDrawable {
     private bool selected = false;
     private float x;
@@ -24,20 +24,19 @@ public class RadioButton : IDrawable {
     private String altDescription = Single.space;
     private String actualText = Single.space;
 
-    /**
-     * Creates a RadioButton that is not selected.
-     */
+    /// <summary>
+    /// Creates a RadioButton that is not selected.
+    /// </summary>
     public RadioButton(Font font, String label) {
         this.font = font;
         this.label = label;
     }
 
-    /**
-     * Sets the font size to use for this text line.
-     *
-     * @param fontSize the fontSize to use.
-     * @return this RadioButton.
-     */
+    /// <summary>
+    /// Sets the font size to use for this text line.
+    /// </summary>
+    /// <param name="fontSize">the fontSize to use.</param>
+    /// <returns>this RadioButton.</returns>
     public RadioButton SetFontSize(float fontSize) {
         this.font.SetSize(fontSize);
         return this;
@@ -47,13 +46,12 @@ public class RadioButton : IDrawable {
         return SetLocation(x, y);
     }
 
-    /**
-     * Set the x,y location on the Page.
-     *
-     * @param x the x coordinate on the Page.
-     * @param y the y coordinate on the Page.
-     * @return this RadioButton.
-     */
+    /// <summary>
+    /// Set the x,y location on the Page.
+    /// </summary>
+    /// <param name="x">the x coordinate on the Page.</param>
+    /// <param name="y">the y coordinate on the Page.</param>
+    /// <returns>this RadioButton.</returns>
     public RadioButton SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
@@ -64,57 +62,52 @@ public class RadioButton : IDrawable {
         return SetLocation((float) x, (float) y);
     }
 
-    /**
-     * Selects or deselects this radio button.
-     *
-     * @param selected the selection flag.
-     * @return this RadioButton.
-     */
+    /// <summary>
+    /// Selects or deselects this radio button.
+    /// </summary>
+    /// <param name="selected">the selection flag.</param>
+    /// <returns>this RadioButton.</returns>
     public RadioButton Select(bool selected) {
         this.selected = selected;
         return this;
     }
 
-    /**
-     * Sets the URI for the "click text line" action.
-     *
-     * @param uri the URI.
-     * @return this RadioButton.
-     */
+    /// <summary>
+    /// Sets the URI for the "click text line" action.
+    /// </summary>
+    /// <param name="uri">the URI.</param>
+    /// <returns>this RadioButton.</returns>
     public RadioButton SetURIAction(String uri) {
         this.uri = uri;
         return this;
     }
 
-    /**
-     * Sets the alternate description of this radio button.
-     *
-     * @param altDescription the alternate description of the radio button.
-     * @return this RadioButton.
-     */
+    /// <summary>
+    /// Sets the alternate description of this radio button.
+    /// </summary>
+    /// <param name="altDescription">the alternate description of the radio button.</param>
+    /// <returns>this RadioButton.</returns>
     public RadioButton SetAltDescription(String altDescription) {
         this.altDescription = altDescription;
         return this;
     }
 
-    /**
-     * Sets the actual text for this radio button.
-     *
-     * @param actualText the actual text for the radio button.
-     * @return this RadioButton.
-     */
+    /// <summary>
+    /// Sets the actual text for this radio button.
+    /// </summary>
+    /// <param name="actualText">the actual text for the radio button.</param>
+    /// <returns>this RadioButton.</returns>
     public RadioButton SetActualText(String actualText) {
         this.actualText = actualText;
         return this;
     }
 
-    /**
-     * Draws this RadioButton on the specified Page.
-     *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception
-     */
+    /// <summary>
+    /// Draws this RadioButton on the specified Page.
+    /// </summary>
+    /// <param name="page">the page to draw on.</param>
+    /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
+    /// <exception cref="System.Exception"/>
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
 

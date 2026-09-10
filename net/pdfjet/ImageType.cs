@@ -1,4 +1,4 @@
-/**
+/*
  * ImageType.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,12 +6,12 @@
  */
 using System;
 
-/**
- * Used to specify the image type of an image.
- * Supported types: ImageType.JPEG, ImageType.PNG and ImageType.BMP
- * See the Image class for more information.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to specify the image type of an image.
+/// Supported types: ImageType.JPEG, ImageType.PNG and ImageType.BMP
+/// See the Image class for more information.
+/// </summary>
 public class ImageType {
     public static readonly int JPG = 0;
     public static readonly int PNG = 1;

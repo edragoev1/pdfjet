@@ -1,4 +1,4 @@
-/**
+/*
  * Slice.cs
  *
  * Copyright (c) 2026 PDFjet Software

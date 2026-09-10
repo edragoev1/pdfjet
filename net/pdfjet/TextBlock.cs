@@ -1,4 +1,4 @@
-/**
+/*
  * TextBlock.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -54,13 +54,12 @@ namespace PDFjet.NET {
             this.textColor = new float[] {0f, 0f, 0f};      // Black color
         }
 
-        /**
-         *  Sets the position where this text box will be drawn on the page.
-         *
-         *  @param x the x coordinate of the top left corner of the text box.
-         *  @param y the y coordinate of the top left corner of the text box.
-         *  @return this TextBlock object.
-         */
+        /// <summary>
+        ///  Sets the position where this text box will be drawn on the page.
+        /// </summary>
+        /// <param name="x">the x coordinate of the top left corner of the text box.</param>
+        /// <param name="y">the y coordinate of the top left corner of the text box.</param>
+        /// <returns>this TextBlock object.</returns>
         public TextBlock SetLocation(double x, double y) {
             SetLocation((float) x, (float) y);
             return this;

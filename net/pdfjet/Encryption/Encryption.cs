@@ -1,4 +1,4 @@
-/**
+/*
  * Encryption.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -42,9 +42,8 @@ public class Encryption {
     /// Creates a new encryption dictionary and adds it to the PDF.
     /// </summary>
     /// <param name="pdf">The parent PDF document.</param>
-    /// TODO:
-    /// <param name="userPassword">The user password string.</param>
-    /// <param name="ownerPassword">The owner password string.</param>
+    /// <param name="passwords">The user and owner passwords.</param>
+    /// <param name="permissions">The permissions granted to the user.</param>
     public Encryption(PDF pdf, Passwords passwords, Permissions permissions) {
         // === Generate a random 256-bit (32-byte) File Encryption Key ===
         this.fileEncryptionKey = new byte[32]; // 32 bytes for AES-256

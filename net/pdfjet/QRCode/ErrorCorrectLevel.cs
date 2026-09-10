@@ -1,4 +1,4 @@
-/**
+/*
  * RSBlock.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -16,10 +16,10 @@
  */
 using System;
 
-/**
- * Used to specify the error correction level for QR Codes.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to specify the error correction level for QR Codes.
+/// </summary>
 public class ErrorCorrectLevel {
     public const int L = 1;
     public const int M = 0;

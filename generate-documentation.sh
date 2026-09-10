@@ -2,8 +2,8 @@ rm -f docs/java/com/pdfjet/*.html
 rm -f docs/java/*.html
 
 javadoc -public com/pdfjet/*.java -d docs/java
-rm -rf docs/_net
-cp -r docs/java docs/_net
-mv docs/_net/com docs/_net/net
-javac util/Translate.java
-java util.Translate
+
+# The C# API reference is built by DocFX from the XML doc comments in net/pdfjet.
+# Install it once with: dotnet tool install -g docfx
+rm -rf docs/_net docfx/api
+docfx docfx/docfx.json

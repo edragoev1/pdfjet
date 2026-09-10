@@ -1,4 +1,4 @@
-/**
+/*
  * OptionalContentGroup.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -12,12 +12,11 @@ using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-/**
- * Container for drawable objects that can be drawn on a page as part of Optional Content Group.
- * Please see the PDF specification and Example_30 for more details.
- *
- * @author Mark Paxton
- */
+/// <summary>
+/// Container for drawable objects that can be drawn on a page as part of Optional Content Group.
+/// Please see the PDF specification and Example_30 for more details.
+/// </summary>
+/// <remarks>Author: Mark Paxton</remarks>
 public class OptionalContentGroup {
     internal PDF pdf;
     internal int objNumber;

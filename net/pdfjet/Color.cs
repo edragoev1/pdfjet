@@ -1,15 +1,15 @@
-/**
+/*
  * Color.cs
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-/**
- * Used to specify the pen and brush colors.
- * @see <a href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</a>
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to specify the pen and brush colors.
+/// </summary>
+/// <seealso href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</seealso>
 public class Color {
     public const int transparent = -1;
 

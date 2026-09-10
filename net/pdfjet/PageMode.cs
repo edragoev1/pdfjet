@@ -1,4 +1,4 @@
-/**
+/*
  * PageMode.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Used to specify the PDF page layout.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to specify the PDF page layout.
+/// </summary>
 public class PageMode {
     public const String USE_NONE = "UseNone";            // Neither document outline nor thumbnail images visible
     public const String USE_OUTLINES = "UseOutlines";    // Document outline visible

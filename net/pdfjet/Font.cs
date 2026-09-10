@@ -1,4 +1,4 @@
-/**
+/*
  * Font.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -12,7 +12,9 @@ using PDFjet.NET.CoreFonts;
 
 namespace PDFjet.NET {
 public class Font {
-    /** Is this a stream font? */
+    /// <summary>
+    ///  Is this a stream font?
+    /// </summary>
     public const bool STREAM = true;
 
     internal String name;
@@ -59,21 +61,20 @@ public class Font {
     private float underlinePosition;
     private float underlineThickness;
 
-    /**
-     * Constructor for the 14 standard fonts.
-     * Creates a font object and adds it to the PDF.
-     *
-     * <pre>
-     * Examples:
-     *     Font font1 = new Font(pdf, CoreFont.HELVETICA);
-     *     Font font2 = new Font(pdf, CoreFont.TIMES_ITALIC);
-     *     Font font3 = new Font(pdf, CoreFont.ZAPF_DINGBATS);
-     *      ...
-     * </pre>
-     *
-     * @param pdf the PDF to add this font to.
-     * @param coreFont the core font. Must be one the names defined in the CoreFont class.
-     */
+    /// <summary>
+    /// Constructor for the 14 standard fonts.
+    /// Creates a font object and adds it to the PDF.
+    ///
+    /// <code>
+    /// Examples:
+    ///     Font font1 = new Font(pdf, CoreFont.HELVETICA);
+    ///     Font font2 = new Font(pdf, CoreFont.TIMES_ITALIC);
+    ///     Font font3 = new Font(pdf, CoreFont.ZAPF_DINGBATS);
+    ///      ...
+    /// </code>
+    /// </summary>
+    /// <param name="pdf">the PDF to add this font to.</param>
+    /// <param name="coreFont">the core font. Must be one the names defined in the CoreFont class.</param>
     public Font(PDF pdf, int coreFont) {
         CoreFont font = new CoreFont(coreFont);
         this.isCoreFont = true;
@@ -232,24 +233,22 @@ public class Font {
         SetSize(size);
     }
 
-    /**
-     * Constructor for OpenType and TrueType fonts.
-     *
-     * @param pdf the PDF object that requires this font.
-     * @param inputStream the input stream to read this font from.
-     */
+    /// <summary>
+    /// Constructor for OpenType and TrueType fonts.
+    /// </summary>
+    /// <param name="pdf">the PDF object that requires this font.</param>
+    /// <param name="inputStream">the input stream to read this font from.</param>
     public Font(PDF pdf, System.IO.Stream inputStream) {
         OpenTypeFont.Register(pdf, this, inputStream);
         SetSize(size);
     }
 
-    /**
-     * Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
-     *
-     * @param pdf the pdf object.
-     * @param fontPath the font path.
-     * @throws Exception thrown of the font file is not found.
-     */
+    /// <summary>
+    /// Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
+    /// </summary>
+    /// <param name="pdf">the pdf object.</param>
+    /// <param name="fontPath">the font path.</param>
+    /// <exception cref="System.Exception">thrown of the font file is not found.</exception>
     public Font(PDF pdf, String fontPath) {
         FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read);
         if (fontPath.EndsWith(".stream")) {
@@ -260,22 +259,20 @@ public class Font {
         SetSize(size);
     }
 
-    /**
-     * Sets the size of this font.
-     *
-     * @param fontSize specifies the size of this font.
-     * @return the font.
-     */
+    /// <summary>
+    /// Sets the size of this font.
+    /// </summary>
+    /// <param name="fontSize">specifies the size of this font.</param>
+    /// <returns>the font.</returns>
     public Font SetSize(double fontSize) {
         return SetSize((float) fontSize);
     }
 
-    /**
-     * Sets the size of this font.
-     *
-     * @param fontSize specifies the size of this font.
-     * @return the font.
-     */
+    /// <summary>
+    /// Sets the size of this font.
+    /// </summary>
+    /// <param name="fontSize">specifies the size of this font.</param>
+    /// <returns>the font.</returns>
     public Font SetSize(float fontSize) {
         this.size = fontSize;
         if (isCJK) {
@@ -380,20 +377,18 @@ public class Font {
         return GetAscent(fontSize) + GetDescent(fontSize);
     }
 
-    /**
-     * Returns the height of the body of this font.
-     *
-     * @return the height of the body of the font.
-     */
+    /// <summary>
+    /// Returns the height of the body of this font.
+    /// </summary>
+    /// <returns>the height of the body of the font.</returns>
     public float GetBodyHeight() {
         return bodyHeight;
     }
 
-    /**
-     * Returns the height of this font.
-     *
-     * @return the height of the font.
-     */
+    /// <summary>
+    /// Returns the height of this font.
+    /// </summary>
+    /// <returns>the height of the font.</returns>
     public float GetHeight() {
         return ascent + descent;
     }
@@ -468,17 +463,16 @@ public class Font {
         return i;
     }
 
-   /**
-    * Sets the skew15 private variable.
-    * When the variable is set to 'true' all glyphs in the font are skewed on 15 degrees.
-    * This makes a regular font look like an italic type font.
-    * Use this method when you don't have real italic font in the font family,
-    * or when you want to generate smaller PDF files.
-    * For example you could embed only the Regular and Bold fonts and synthesize the RegularItalic and BoldItalic.
-    *
-    * @param skew15 the skew flag.
-    * @return this Font object.
-    */
+   /// <summary>
+   /// Sets the skew15 private variable.
+   /// When the variable is set to 'true' all glyphs in the font are skewed on 15 degrees.
+   /// This makes a regular font look like an italic type font.
+   /// Use this method when you don't have real italic font in the font family,
+   /// or when you want to generate smaller PDF files.
+   /// For example you could embed only the Regular and Bold fonts and synthesize the RegularItalic and BoldItalic.
+   /// </summary>
+   /// <param name="skew15">the skew flag.</param>
+   /// <returns>this Font object.</returns>
     public Font SetItalic(bool skew15) {
         this.skew15 = skew15;
         return this;
@@ -488,13 +482,12 @@ public class Font {
         return StringWidth(fallbackFont, this.size, str);
     }
 
-    /**
-     * Returns the width of a string drawn using two fonts.
-     *
-     * @param fallbackFont the fallback font.
-     * @param str the string.
-     * @return the width.
-     */
+    /// <summary>
+    /// Returns the width of a string drawn using two fonts.
+    /// </summary>
+    /// <param name="fallbackFont">the fallback font.</param>
+    /// <param name="str">the string.</param>
+    /// <returns>the width.</returns>
     public float StringWidth(Font fallbackFont, float fontSize, String str) {
         float width = 0f;
 

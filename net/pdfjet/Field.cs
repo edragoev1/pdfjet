@@ -1,4 +1,4 @@
-/**
+/*
  * Field.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,22 +6,21 @@
  */
 using System;
 
-/**
- * Please see Example_45
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Please see Example_45
+/// </summary>
 public class Field {
     protected internal float x;
     protected internal String label;
     protected internal String value;
 
-    /**
-     * Creates a Field class that will be used in a Form class
-     *
-     * @param x the horizontal position within the Form
-     * @param label the field label
-     * @param value the field value
-     */
+    /// <summary>
+    /// Creates a Field class that will be used in a Form class
+    /// </summary>
+    /// <param name="x">the horizontal position within the Form</param>
+    /// <param name="label">the field label</param>
+    /// <param name="value">the field value</param>
     public Field(float x, String label, String value) {
         this.x = x;
         this.label = label;

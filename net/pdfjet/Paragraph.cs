@@ -1,4 +1,4 @@
-/**
+/*
  * Paragraph.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,11 +6,11 @@
  */
 using System.Collections.Generic;
 
-/**
- * Used to create paragraph objects.
- * See the TextColumn class for more information.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create paragraph objects.
+/// See the TextColumn class for more information.
+/// </summary>
 public class Paragraph {
     public float xText;
     public float yText;
@@ -21,9 +21,9 @@ public class Paragraph {
     internal List<TextLine> lines = null;
     internal uint alignment = Align.LEFT;
 
-    /**
-     * Constructor for creating paragraph objects.
-     */
+    /// <summary>
+    /// Constructor for creating paragraph objects.
+    /// </summary>
     public Paragraph() {
         this.lines = new List<TextLine>();
     }
@@ -33,24 +33,22 @@ public class Paragraph {
         this.lines.Add(text);
     }
 
-    /**
-     * Adds a text line to this paragraph.
-     *
-     * @param text the text line to add to this paragraph.
-     * @return this paragraph.
-     */
+    /// <summary>
+    /// Adds a text line to this paragraph.
+    /// </summary>
+    /// <param name="text">the text line to add to this paragraph.</param>
+    /// <returns>this paragraph.</returns>
     public Paragraph Add(TextLine text) {
         lines.Add(text);
         return this;
     }
 
-    /**
-     * Sets the alignment of the text in this paragraph.
-     *
-     * @param alignment the alignment code.
-     * @return this paragraph.
-     * <pre>Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.</pre>
-     */
+    /// <summary>
+    /// Sets the alignment of the text in this paragraph.
+    /// </summary>
+    /// <param name="alignment">the alignment code.</param>
+    /// <returns>this paragraph.
+    /// <code>Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.</code></returns>
     public Paragraph SetAlignment(uint alignment) {
         this.alignment = alignment;
         return this;

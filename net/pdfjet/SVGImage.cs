@@ -1,4 +1,4 @@
-/**
+/*
  * SVGImage.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -10,10 +10,10 @@ using System.Globalization;
 using System.IO;
 using System.Xml;
 
-/**
- * Used to embed SVG images in the PDF document.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to embed SVG images in the PDF document.
+/// </summary>
 public class SVGImage {
     float x = 0f;
     float y = 0f;
@@ -31,20 +31,18 @@ public class SVGImage {
     private String actualText = Single.space;
     private String altDescription = Single.space;
 
-    /**
-     * Used to embed SVG images in the PDF document.
-     *
-     * @param svgPath the path to the SVG file.
-     */
+    /// <summary>
+    /// Used to embed SVG images in the PDF document.
+    /// </summary>
+    /// <param name="svgPath">the path to the SVG file.</param>
     public SVGImage(String svgPath) : this(
         new FileStream(svgPath, FileMode.Open, FileAccess.Read)) {
     }
 
-    /**
-     * Used to embed SVG images in the PDF document.
-     *
-     * @param stream the input stream.
-     */
+    /// <summary>
+    /// Used to embed SVG images in the PDF document.
+    /// </summary>
+    /// <param name="stream">the input stream.</param>
     public SVGImage(Stream stream) {
         paths = new List<SVGPath>();
 

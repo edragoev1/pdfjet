@@ -1,4 +1,4 @@
-/**
+/*
  * Annotation.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,10 +6,10 @@
  */
 using System;
 
-/**
- * Used to create PDF annotation objects.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to create PDF annotation objects.
+/// </summary>
 internal class Annotation {
     public static readonly String Link = "Link";
     public static readonly String FileAttachment = "FileAttachment";
@@ -38,18 +38,17 @@ internal class Annotation {
     // Set once the annotation has been written with a /StructParent key.
     internal bool structParentWritten = false;
 
-    /**
-     * This class is used to create annotation objects.
-     *
-     * @param annotationType the annotation type.
-     * @param x1 the x coordinate of the top left corner.
-     * @param y1 the y coordinate of the top left corner.
-     * @param x2 the x coordinate of the bottom right corner.
-     * @param y2 the y coordinate of the bottom right corner.
-     * @param vertices the polygon annotation vertices.
-     * @param uri the URI string.
-     * @param key the destination name.
-     */
+    /// <summary>
+    /// This class is used to create annotation objects.
+    /// </summary>
+    /// <param name="annotationType">the annotation type.</param>
+    /// <param name="x1">the x coordinate of the top left corner.</param>
+    /// <param name="y1">the y coordinate of the top left corner.</param>
+    /// <param name="x2">the x coordinate of the bottom right corner.</param>
+    /// <param name="y2">the y coordinate of the bottom right corner.</param>
+    /// <param name="vertices">the polygon annotation vertices.</param>
+    /// <param name="uri">the URI string.</param>
+    /// <param name="key">the destination name.</param>
     internal Annotation(
             String annotationType,
             float x1,

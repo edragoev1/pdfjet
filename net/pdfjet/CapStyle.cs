@@ -1,4 +1,4 @@
-/**
+/*
  * CapStyle.cs
  *
  * Copyright (c) 2026 PDFjet Software
@@ -6,11 +6,11 @@
  */
 using System;
 
-/**
- * Used to specify the cap style of a line.
- * See the Line class for more information.
- */
 namespace PDFjet.NET {
+/// <summary>
+/// Used to specify the cap style of a line.
+/// See the Line class for more information.
+/// </summary>
 public enum CapStyle : Int32 {
     BUTT = 0,
     ROUND,

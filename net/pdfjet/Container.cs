@@ -156,7 +156,7 @@ public class Container : IDrawable {
     /// </summary>
     /// <param name="page">The <see cref="Page"/> to draw on.</param>
     /// <returns>An array containing the bottom-right position of the container.</returns>
-    /// <exception cref="Exception">Thrown if drawing fails.</exception>
+    /// <exception cref="System.Exception">Thrown if drawing fails.</exception>
     public float[] DrawOn(Page page) {
         page.SaveGraphicsState();
 
