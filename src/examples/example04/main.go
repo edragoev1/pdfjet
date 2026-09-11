@@ -66,7 +66,7 @@ func Example04() {
 		text.SetLocation(xPos, yPos)
 		text.DrawOn(page)
 		if strings.Contains(line, "Traditional") {
-			text.SetFont(f2)
+			text.SetFont(f1)
 		} else if strings.Contains(line, "Simplified") {
 			text.SetFont(f2)
 		} else if strings.Contains(line, "Japanese") {
