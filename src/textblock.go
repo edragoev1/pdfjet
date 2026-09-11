@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"strings"
+	"unicode"
 
 	"github.com/edragoev1/pdfjet/src/alignment"
 )
@@ -337,11 +338,18 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 						textBlock.font.size, sb.String()+token) <= textAreaWidth {
 						sb.WriteString(token + " ")
 					} else {
-						textLines = append(
-							textLines,
-							NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
-						sb.Reset()
-						sb.WriteString(token + " ")
+						if sb.Len() > 0 {
+							textLines = append(
+								textLines,
+								NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
+							sb.Reset()
+						}
+						// A word too wide for a line by itself is broken.
+						var rest string
+						textLines, rest = textBlock.appendBrokenWordLines(textLines, token, textAreaWidth)
+						if rest != "" {
+							sb.WriteString(rest + " ")
+						}
 					}
 				}
 				if sb.Len() > 0 {
@@ -354,6 +362,58 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 	}
 
 	return textLines
+}
+
+// appendBrokenWordLines appends the lines of a word too wide for a line by
+// itself, broken between its characters, and returns the rest of the word,
+// which fits on a line. No line starts with a combining mark, or with a Thai or
+// Lao vowel or sign written after its consonant, and none ends with a Thai or
+// Lao vowel written before its consonant.
+func (textBlock *TextBlock) appendBrokenWordLines(
+	textLines []*TextLine, word string, textAreaWidth float32) ([]*TextLine, string) {
+	font := textBlock.font
+	runes := []rune(word)
+	for font.StringWidthFB(textBlock.fallbackFont, font.size, string(runes)) > textAreaWidth {
+		// Each line gets at least one character, however narrow the block.
+		end := nextCharacterBreak(runes, 0)
+		next := nextCharacterBreak(runes, end)
+		for next < len(runes) &&
+			font.StringWidthFB(textBlock.fallbackFont, font.size, string(runes[:next])) <= textAreaWidth {
+			end = next
+			next = nextCharacterBreak(runes, end)
+		}
+		textLines = append(textLines, NewTextLine(font, string(runes[:end])))
+		runes = runes[end:]
+	}
+	return textLines, string(runes)
+}
+
+func nextCharacterBreak(runes []rune, i int) int {
+	ch := runes[i]
+	i++
+	for isLeadingVowel(ch) && i < len(runes) {
+		ch = runes[i]
+		i++
+	}
+	for i < len(runes) && staysWithPrevious(runes[i]) {
+		i++
+	}
+	return i
+}
+
+// isLeadingVowel returns true for the Thai and Lao vowels written before the
+// consonant they follow in speech.
+func isLeadingVowel(ch rune) bool {
+	return (ch >= 0x0E40 && ch <= 0x0E44) || (ch >= 0x0EC0 && ch <= 0x0EC4)
+}
+
+// staysWithPrevious returns true for the combining marks, and the Thai and Lao
+// vowels and signs written after a consonant, like SARA AA and MAI YAMOK, which
+// do not start a line.
+func staysWithPrevious(ch rune) bool {
+	return unicode.In(ch, unicode.Mn, unicode.Mc, unicode.Me) ||
+		(ch >= 0x0E2F && ch <= 0x0E3A) || (ch >= 0x0E45 && ch <= 0x0E4E) ||
+		(ch >= 0x0EAF && ch <= 0x0EBC) || (ch >= 0x0EC6 && ch <= 0x0ECE)
 }
 
 // appendRightToLeftLines wraps a paragraph of right to left text at the

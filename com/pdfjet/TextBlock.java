@@ -465,9 +465,15 @@ public class TextBlock {
                             sb.append(token);
                             sb.append(" ");
                         } else {
-                            textLines.add(new TextLine(font, sb.toString().trim()));
-                            sb.setLength(0);
-                            sb.append(token + " ");
+                            if (sb.length() > 0) {
+                                textLines.add(new TextLine(font, sb.toString().trim()));
+                                sb.setLength(0);
+                            }
+                            // A word too wide for a line by itself is broken.
+                            String rest = addBrokenWordLines(textLines, token, textAreaWidth);
+                            if (!rest.isEmpty()) {
+                                sb.append(rest + " ");
+                            }
                         }
                     }
                     if (sb.toString().trim().length() > 0) {
@@ -478,6 +484,58 @@ public class TextBlock {
         }
 
         return textLines.toArray(new TextLine[] {});
+    }
+
+    /**
+     * Adds the lines of a word too wide for a line by itself, broken between its
+     * characters, and returns the rest of the word, which fits on a line. No
+     * line starts with a combining mark, or with a Thai or Lao vowel or sign
+     * written after its consonant, and none ends with a Thai or Lao vowel
+     * written before its consonant.
+     */
+    private String addBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
+        while (font.stringWidth(fallbackFont, word) > textAreaWidth) {
+            // Each line gets at least one character, however narrow the block.
+            int end = nextCharacterBreak(word, 0);
+            int next = nextCharacterBreak(word, end);
+            while (next < word.length() &&
+                    font.stringWidth(fallbackFont, word.substring(0, next)) <= textAreaWidth) {
+                end = next;
+                next = nextCharacterBreak(word, end);
+            }
+            textLines.add(new TextLine(font, word.substring(0, end)));
+            word = word.substring(end);
+        }
+        return word;
+    }
+
+    private static int nextCharacterBreak(String word, int i) {
+        int ch = word.codePointAt(i);
+        i += Character.charCount(ch);
+        while (isLeadingVowel(ch) && i < word.length()) {
+            ch = word.codePointAt(i);
+            i += Character.charCount(ch);
+        }
+        while (i < word.length() && staysWithPrevious(word.codePointAt(i))) {
+            i += Character.charCount(word.codePointAt(i));
+        }
+        return i;
+    }
+
+    // The Thai and Lao vowels written before the consonant they follow in speech.
+    private static boolean isLeadingVowel(int ch) {
+        return (ch >= 0x0E40 && ch <= 0x0E44) || (ch >= 0x0EC0 && ch <= 0x0EC4);
+    }
+
+    // The combining marks, and the Thai and Lao vowels and signs written after
+    // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
+    private static boolean staysWithPrevious(int ch) {
+        int type = Character.getType(ch);
+        return type == Character.NON_SPACING_MARK ||
+                type == Character.COMBINING_SPACING_MARK ||
+                type == Character.ENCLOSING_MARK ||
+                (ch >= 0x0E2F && ch <= 0x0E3A) || (ch >= 0x0E45 && ch <= 0x0E4E) ||
+                (ch >= 0x0EAF && ch <= 0x0EBC) || (ch >= 0x0EC6 && ch <= 0x0ECE);
     }
 
     /**

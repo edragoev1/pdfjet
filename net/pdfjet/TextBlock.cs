@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace PDFjet.NET {
@@ -341,9 +342,15 @@ namespace PDFjet.NET {
                             if (this.font.StringWidth(fallbackFont, fontSize, sb.ToString() + token) <= textAreaWidth) {
                                 sb.Append(token).Append(" ");
                             } else {
-                                textLines.Add(new TextLine(font, sb.ToString().Trim()));
-                                sb.Clear();
-                                sb.Append(token).Append(" ");
+                                if (sb.Length > 0) {
+                                    textLines.Add(new TextLine(font, sb.ToString().Trim()));
+                                    sb.Clear();
+                                }
+                                // A word too wide for a line by itself is broken.
+                                String rest = AddBrokenWordLines(textLines, token, textAreaWidth);
+                                if (rest.Length > 0) {
+                                    sb.Append(rest).Append(" ");
+                                }
                             }
                         }
                         if (sb.ToString().Trim().Length > 0) {
@@ -354,6 +361,62 @@ namespace PDFjet.NET {
             }
 
             return textLines.ToArray();
+        }
+
+        /// <summary>
+        /// Adds the lines of a word too wide for a line by itself, broken between its
+        /// characters, and returns the rest of the word, which fits on a line. No
+        /// line starts with a combining mark, or with a Thai or Lao vowel or sign
+        /// written after its consonant, and none ends with a Thai or Lao vowel
+        /// written before its consonant.
+        /// </summary>
+        private String AddBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
+            while (font.StringWidth(fallbackFont, fontSize, word) > textAreaWidth) {
+                // Each line gets at least one character, however narrow the block.
+                int end = NextCharacterBreak(word, 0);
+                int next = NextCharacterBreak(word, end);
+                while (next < word.Length &&
+                        font.StringWidth(fallbackFont, fontSize, word.Substring(0, next)) <= textAreaWidth) {
+                    end = next;
+                    next = NextCharacterBreak(word, end);
+                }
+                textLines.Add(new TextLine(font, word.Substring(0, end)));
+                word = word.Substring(end);
+            }
+            return word;
+        }
+
+        private static int NextCharacterBreak(String word, int i) {
+            int ch = CodePointAt(word, i);
+            i += (ch > 0xFFFF) ? 2 : 1;
+            while (IsLeadingVowel(ch) && i < word.Length) {
+                ch = CodePointAt(word, i);
+                i += (ch > 0xFFFF) ? 2 : 1;
+            }
+            while (i < word.Length && StaysWithPrevious(CodePointAt(word, i))) {
+                i += (CodePointAt(word, i) > 0xFFFF) ? 2 : 1;
+            }
+            return i;
+        }
+
+        private static int CodePointAt(String str, int i) {
+            return Char.IsSurrogatePair(str, i) ? Char.ConvertToUtf32(str, i) : str[i];
+        }
+
+        // The Thai and Lao vowels written before the consonant they follow in speech.
+        private static bool IsLeadingVowel(int ch) {
+            return (ch >= 0x0E40 && ch <= 0x0E44) || (ch >= 0x0EC0 && ch <= 0x0EC4);
+        }
+
+        // The combining marks, and the Thai and Lao vowels and signs written after
+        // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
+        private static bool StaysWithPrevious(int ch) {
+            UnicodeCategory cat = CharUnicodeInfo.GetUnicodeCategory(ch);
+            return cat == UnicodeCategory.NonSpacingMark ||
+                    cat == UnicodeCategory.SpacingCombiningMark ||
+                    cat == UnicodeCategory.EnclosingMark ||
+                    (ch >= 0x0E2F && ch <= 0x0E3A) || (ch >= 0x0E45 && ch <= 0x0E4E) ||
+                    (ch >= 0x0EAF && ch <= 0x0EBC) || (ch >= 0x0EC6 && ch <= 0x0ECE);
         }
 
         /// <summary>

@@ -313,9 +313,15 @@ public class TextBlock : Drawable {
                             sb.append(token)
                             sb.append(" ")
                         } else {
-                            textLines.append(TextLine(font, sb.trim()))
-                            sb = ""
-                            sb = token + " "
+                            if !sb.isEmpty {
+                                textLines.append(TextLine(font, sb.trim()))
+                                sb = ""
+                            }
+                            // A word too wide for a line by itself is broken.
+                            let rest = addBrokenWordLines(&textLines, token, textAreaWidth)
+                            if !rest.isEmpty {
+                                sb = rest + " "
+                            }
                         }
                     }
                     if !sb.trim().isEmpty {
@@ -328,6 +334,66 @@ public class TextBlock : Drawable {
         if textLines.last!.text!.isEmpty { textLines.removeLast() }
 
         return textLines
+    }
+
+    /// Adds the lines of a word too wide for a line by itself, broken between its
+    /// characters, and returns the rest of the word, which fits on a line. No
+    /// line starts with a combining mark, or with a Thai or Lao vowel or sign
+    /// written after its consonant, and none ends with a Thai or Lao vowel
+    /// written before its consonant.
+    private func addBrokenWordLines(
+            _ textLines: inout [TextLine], _ word: String, _ textAreaWidth: Float) -> String {
+        var scalars = Array(word.unicodeScalars)
+        while font.stringWidth(fallbackFont, TextBlock.string(scalars[...])) > textAreaWidth {
+            // Each line gets at least one character, however narrow the block.
+            var end = TextBlock.nextCharacterBreak(scalars, 0)
+            var next = TextBlock.nextCharacterBreak(scalars, end)
+            while next < scalars.count &&
+                    font.stringWidth(fallbackFont, TextBlock.string(scalars[..<next])) <= textAreaWidth {
+                end = next
+                next = TextBlock.nextCharacterBreak(scalars, end)
+            }
+            textLines.append(TextLine(font, TextBlock.string(scalars[..<end])))
+            scalars = Array(scalars[end...])
+        }
+        return TextBlock.string(scalars[...])
+    }
+
+    private static func nextCharacterBreak(_ scalars: [Unicode.Scalar], _ start: Int) -> Int {
+        var ch = scalars[start]
+        var i = start + 1
+        while isLeadingVowel(ch.value) && i < scalars.count {
+            ch = scalars[i]
+            i += 1
+        }
+        while i < scalars.count && staysWithPrevious(scalars[i]) {
+            i += 1
+        }
+        return i
+    }
+
+    // The Thai and Lao vowels written before the consonant they follow in speech.
+    private static func isLeadingVowel(_ ch: UInt32) -> Bool {
+        return (ch >= 0x0E40 && ch <= 0x0E44) || (ch >= 0x0EC0 && ch <= 0x0EC4)
+    }
+
+    // The combining marks, and the Thai and Lao vowels and signs written after
+    // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
+    private static func staysWithPrevious(_ ch: Unicode.Scalar) -> Bool {
+        switch ch.properties.generalCategory {
+        case .nonspacingMark, .spacingMark, .enclosingMark:
+            return true
+        default:
+            let v = ch.value
+            return (v >= 0x0E2F && v <= 0x0E3A) || (v >= 0x0E45 && v <= 0x0E4E) ||
+                    (v >= 0x0EAF && v <= 0x0EBC) || (v >= 0x0EC6 && v <= 0x0ECE)
+        }
+    }
+
+    private static func string(_ scalars: ArraySlice<Unicode.Scalar>) -> String {
+        var str = ""
+        str.unicodeScalars.append(contentsOf: scalars)
+        return str
     }
 
     /// Wraps a paragraph of right to left text at the spaces between words and
