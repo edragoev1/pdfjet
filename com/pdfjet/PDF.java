@@ -377,12 +377,19 @@ final public class PDF {
         return getObjNumber();
     }
 
+    // Appends a token of a PDF that was read. Each of its characters is a byte
+    // of the PDF, so a string or name with bytes of 0x80 or more is copied
+    // unchanged, where UTF-8 would write two bytes for each of them.
+    private void appendToken(String token) throws IOException {
+        append(token.getBytes(StandardCharsets.ISO_8859_1));
+    }
+
     /**
      * Writes the "/Name number 0 R" entries collected from a PDF that was read.
      */
     private void appendImportedEntries(List<String> tokens) throws IOException {
         for (String token : tokens) {
-            append(token);
+            appendToken(token);
             if (token.equals("R")) {
                 append(Token.NEWLINE);
             } else {
@@ -395,7 +402,7 @@ final public class PDF {
         newobj();
         append(Token.BEGIN_DICTIONARY);
         if (!extGState.equals("")) {
-            append(extGState);
+            appendToken(extGState);
         }
         if (fonts.size() > 0 || importedFonts.size() > 0) {
             append("/Font\n");
@@ -1512,14 +1519,14 @@ final public class PDF {
         int p = 0;          // The nesting level of the parentheses in a literal string
         boolean done = false;
         while (!done && off < len) {
-            char c2 = (char) buf[off++];
+            char c2 = (char) (buf[off++] & 0xff);
             if (p > 0) {
                 // A literal string is one token, with its white space and
                 // delimiters. A backslash escapes the character after it.
                 token.append(c2);
                 if (c2 == '\\') {
                     if (off < len) {
-                        token.append((char) buf[off++]);
+                        token.append((char) (buf[off++] & 0xff));
                     }
                 } else if (c2 == '(') {
                     ++p;
@@ -1552,7 +1559,7 @@ final public class PDF {
                         // A hexadecimal string is one token, without its white space.
                         token.append(c2);
                         while (off < len && buf[off] != '>') {
-                            char c = (char) buf[off++];
+                            char c = (char) (buf[off++] & 0xff);
                             if (!isWhiteSpace(c)) {
                                 token.append(c);
                             }
@@ -2329,7 +2336,7 @@ final public class PDF {
                 append(Token.NEW_OBJ);
                 if (obj.dict != null) {
                     for (String token : obj.dict) {
-                        append(token);
+                        appendToken(token);
                         append(Token.SPACE);
                     }
                 }
@@ -2353,7 +2360,7 @@ final public class PDF {
                 String token = null;
                 for (int i = 0; i < n; i++) {
                     token = obj.dict.get(i);
-                    append(token);
+                    appendToken(token);
                     if (i < (n - 1)) {
                         append(Token.SPACE);
                     } else {

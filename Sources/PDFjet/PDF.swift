@@ -320,10 +320,17 @@ public class PDF {
         return self.getObjNumber()
     }
 
+    // Appends a token of a PDF that was read. Each of its characters is a byte
+    // of the PDF, so a string or name with bytes of 0x80 or more is copied
+    // unchanged, where UTF-8 would write two bytes for each of them.
+    private func appendToken(_ token: String) {
+        append(token.unicodeScalars.map { UInt8(truncatingIfNeeded: $0.value) })
+    }
+
     /// Writes the "/Name number 0 R" entries collected from a PDF that was read.
     private func appendImportedEntries(_ tokens: [String]) {
         for token in tokens {
-            append(token)
+            appendToken(token)
             if token == "R" {
                 append(Token.newline)
             } else {
@@ -336,7 +343,7 @@ public class PDF {
         newobj()
         append(Token.beginDictionary)
         if extGState != "" {
-            append(extGState)
+            appendToken(extGState)
         }
         if fonts.count > 0 || importedFonts.count > 0 {
             append("/Font\n")
@@ -2161,8 +2168,8 @@ public class PDF {
                 append(obj.number)
                 append(" 0 obj\n")
                 if !obj.dict.isEmpty {
-                    for obj in obj.dict {
-                        append(obj)
+                    for token in obj.dict {
+                        appendToken(token)
                         append(Token.space)
                     }
                 }
@@ -2193,7 +2200,7 @@ public class PDF {
                         buffer.append("\n")
                     }
                 }
-                append(buffer)
+                appendToken(buffer)
                 if obj.stream != nil {
                     append(obj.stream!)
                     append(Token.endStream)

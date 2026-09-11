@@ -1336,7 +1336,7 @@ func (pdf *PDF) Read(buf []byte) []*PDFobj {
 }
 
 func process(obj *PDFobj, sb *strings.Builder, buf []byte, off int) bool {
-	str := strings.TrimSpace(sb.String())
+	str := trimToken(sb.String())
 	if str != "" {
 		obj.dict = append(obj.dict, str)
 	}
@@ -1353,6 +1353,20 @@ func process(obj *PDFobj, sb *strings.Builder, buf []byte, off int) bool {
 		return true
 	}
 	return false
+}
+
+// trimToken removes the bytes up to the space at both ends, like trim() in
+// Java. strings.TrimSpace also removes Unicode spaces like the no-break space,
+// whose UTF-8 bytes can end a name.
+func trimToken(str string) string {
+	start, end := 0, len(str)
+	for start < end && str[start] <= ' ' {
+		start++
+	}
+	for end > start && str[end-1] <= ' ' {
+		end--
+	}
+	return str[start:end]
 }
 
 // getObjectAt returns the object at the offset, which has no tokens when the

@@ -351,12 +351,19 @@ public class PDF {
         return GetObjNumber();
     }
 
+    // Appends a token of a PDF that was read. Each of its characters is a byte
+    // of the PDF, so a string or name with bytes of 0x80 or more is copied
+    // unchanged, where UTF-8 would write two bytes for each of them.
+    private void AppendToken(String token) {
+        Append(Encoding.Latin1.GetBytes(token));
+    }
+
     /// <summary>
     /// Writes the "/Name number 0 R" entries collected from a PDF that was read.
     /// </summary>
     private void AppendImportedEntries(List<String> tokens) {
         foreach (String token in tokens) {
-            Append(token);
+            AppendToken(token);
             if (token.Equals("R")) {
                 Append(Token.Newline);
             } else {
@@ -369,7 +376,7 @@ public class PDF {
         NewObj();
         Append(Token.BeginDictionary);
         if (!extGState.Equals("")) {
-            Append(extGState);
+            AppendToken(extGState);
         }
 
         if (fonts.Count > 0 || importedFonts.Count > 0) {
@@ -1355,7 +1362,7 @@ public class PDF {
 
     private bool Process(
             PDFobj obj, StringBuilder sb1, byte[] buf, int off) {
-        String str = sb1.ToString().Trim();
+        String str = TrimToken(sb1.ToString());
         if (!str.Equals("")) {
             obj.dict.Add(str);
         }
@@ -1372,6 +1379,21 @@ public class PDF {
             return true;
         }
         return false;
+    }
+
+    // Removes the characters up to the space at both ends, like trim() in Java.
+    // Trim() also removes Unicode spaces like the no-break space, which is the
+    // byte 0xA0, so it could remove a byte at the end of a name.
+    private static String TrimToken(String str) {
+        int start = 0;
+        int end = str.Length;
+        while (start < end && str[start] <= ' ') {
+            start++;
+        }
+        while (end > start && str[end - 1] <= ' ') {
+            end--;
+        }
+        return str.Substring(start, end - start);
     }
 
     private PDFobj GetObject(byte[] buf, int off) {
@@ -2158,7 +2180,7 @@ public class PDF {
                 Append(Token.NewObj);
                 if (obj.dict != null) {
                     foreach (String token in obj.dict) {
-                        Append(token);
+                        AppendToken(token);
                         Append(' ');
                     }
                 }
@@ -2180,7 +2202,7 @@ public class PDF {
                 String token = null;
                 for (int i = 0; i < n; i++) {
                     token = obj.dict[i];
-                    Append(token);
+                    AppendToken(token);
                     if (i < (n - 1)) {
                         Append(Token.Space);
                     } else {
