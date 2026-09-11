@@ -1531,6 +1531,9 @@ public class PDF {
         }
 
         obj.SetStreamAndData(buf, length);
+        if (obj.GetValue("/Filter").Equals("/LZWDecode")) {
+            predictor = 0;      // SetStreamAndData has already undone it.
+        }
         int n = n1 + n2 + n3;   // Number of bytes per entry
         if (predictor > 0) {
             n += 1;

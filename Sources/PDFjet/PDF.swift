@@ -1474,6 +1474,9 @@ public class PDF {
         }
 
         try obj.setStreamAndData(&buf, length)
+        if obj.getValue("/Filter") == "/LZWDecode" {
+            predictor = 0       // setStreamAndData has already undone it.
+        }
         var n = n1 + n2 + n3    // Number of bytes per entry
         if predictor > 0 {
             n += 1

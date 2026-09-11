@@ -67,12 +67,33 @@ func (obj *PDFobj) SetStreamAndData(buf []byte, length int) *PDFobj {
 	if filter == "/FlateDecode" {
 		obj.data, _ = decompressor.Inflate(obj.stream)
 	} else if filter == "/LZWDecode" {
-		obj.data = decompressor.LZWDecode(obj.stream)
+		obj.data = decompressor.ApplyPredictor(
+			decompressor.LZWDecode(obj.stream),
+			obj.getDecodeParm("/Predictor", 1),
+			obj.getDecodeParm("/Colors", 1),
+			obj.getDecodeParm("/BitsPerComponent", 8),
+			obj.getDecodeParm("/Columns", 1))
 	} else {
 		// Assume no compression for now.
 		obj.data = obj.stream
 	}
 	return obj
+}
+
+// getDecodeParm returns the integer value of the key in the /DecodeParms
+// dictionary. A value that is not a 32-bit integer gets the default, as in
+// the Java and C# ports.
+func (obj *PDFobj) getDecodeParm(key string, defaultValue int) int {
+	tokens := strings.Split(obj.getValue("/DecodeParms"), " ")
+	for i := 0; i < len(tokens)-1; i++ {
+		if tokens[i] == key {
+			if value, err := strconv.ParseInt(tokens[i+1], 10, 32); err == nil {
+				return int(value)
+			}
+			break
+		}
+	}
+	return defaultValue
 }
 
 // SetStream sets the object stream.

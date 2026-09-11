@@ -70,7 +70,7 @@ public class PDFobj {
 
     /**
      * Copies the stream from the buffer and decompresses it when it uses
-     * FlateDecode or LZWDecode.
+     * FlateDecode or LZWDecode, and undoes the predictor of LZWDecode.
      *
      * @param buf the PDF bytes.
      * @param length the length of the stream.
@@ -84,12 +84,32 @@ public class PDFobj {
             if (filter.equals("/FlateDecode")) {
                 this.data = Decompressor.inflate(stream);
             } else if (filter.equals("/LZWDecode")) {
-                this.data = Decompressor.lzwDecode(stream);
+                this.data = Decompressor.applyPredictor(
+                        Decompressor.lzwDecode(stream),
+                        getDecodeParm("/Predictor", 1),
+                        getDecodeParm("/Colors", 1),
+                        getDecodeParm("/BitsPerComponent", 8),
+                        getDecodeParm("/Columns", 1));
             } else {
                 // Assume no compression for now.
                 this.data = stream;
             }
         }
+    }
+
+    // Returns the integer value of the key in the /DecodeParms dictionary.
+    private int getDecodeParm(String key, int defaultValue) {
+        String[] tokens = getValue("/DecodeParms").split(" ");
+        for (int i = 0; i < tokens.length - 1; i++) {
+            if (tokens[i].equals(key)) {
+                try {
+                    return Integer.parseInt(tokens[i + 1]);
+                } catch (NumberFormatException e) {
+                    break;
+                }
+            }
+        }
+        return defaultValue;
     }
 
     /**

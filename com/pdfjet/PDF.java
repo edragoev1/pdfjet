@@ -1660,6 +1660,9 @@ final public class PDF {
         }
 
         obj.setStreamAndData(buf, length);
+        if (obj.getValue("/Filter").equals("/LZWDecode")) {
+            predictor = 0;      // setStreamAndData has already undone it.
+        }
 
         int n = n1 + n2 + n3;   // Number of bytes per entry
         if (predictor > 0) {

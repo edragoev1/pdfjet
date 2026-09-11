@@ -1550,6 +1550,9 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 	}
 
 	obj.SetStreamAndData(buf, length)
+	if obj.getValue("/Filter") == "/LZWDecode" {
+		predictor = 0 // SetStreamAndData has already undone it.
+	}
 	n := n1 + n2 + n3 // Number of bytes per entry
 	if predictor > 0 {
 		n++

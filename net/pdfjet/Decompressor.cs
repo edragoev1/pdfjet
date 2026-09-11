@@ -65,6 +65,117 @@ class Decompressor {
         return bos.ToArray();
     }
 
+    /// <summary>
+    /// Undoes the predictor of the /DecodeParms of a stream: 2 is the TIFF
+    /// predictor, and 10 to 15 are the PNG predictors, where each row starts
+    /// with the type of the PNG filter of that row.
+    /// </summary>
+    internal static byte[] ApplyPredictor(
+            byte[] data,
+            int predictor,
+            int colors,
+            int bitsPerComponent,
+            int columns) {
+        // Larger values are not in real files, and would overflow the row length.
+        if (colors < 1 || colors > 256 ||
+                bitsPerComponent < 1 || bitsPerComponent > 16 ||
+                columns < 1 || columns > (1 << 18)) {
+            return data;
+        }
+        if (predictor == 2) {
+            return ApplyTIFFPredictor(data, colors, bitsPerComponent, columns);
+        } else if (predictor >= 10) {
+            return ApplyPNGPredictor(
+                    data,
+                    (colors * bitsPerComponent + 7) / 8,
+                    (colors * bitsPerComponent * columns + 7) / 8);
+        }
+        return data;
+    }
+
+    // Each sample adds the sample of the same color to its left.
+    private static byte[] ApplyTIFFPredictor(
+            byte[] data, int colors, int bitsPerComponent, int columns) {
+        byte[] decoded = (byte[]) data.Clone();
+        int rowLength = (colors * bitsPerComponent * columns + 7) / 8;
+        for (int row = 0; row < decoded.Length; row += rowLength) {
+            if (bitsPerComponent == 8) {
+                int end = Math.Min(row + rowLength, decoded.Length);
+                for (int i = row + colors; i < end; i++) {
+                    decoded[i] += decoded[i - colors];
+                }
+            } else {
+                int samples = Math.Min(
+                        colors * columns, (decoded.Length - row) * 8 / bitsPerComponent);
+                for (int i = colors; i < samples; i++) {
+                    int left = GetSample(decoded, row, (i - colors) * bitsPerComponent, bitsPerComponent);
+                    int sample = GetSample(decoded, row, i * bitsPerComponent, bitsPerComponent);
+                    SetSample(decoded, row, i * bitsPerComponent, bitsPerComponent, left + sample);
+                }
+            }
+        }
+        return decoded;
+    }
+
+    private static int GetSample(byte[] data, int row, int bit, int bitsPerComponent) {
+        int sample = 0;
+        for (int i = bit; i < bit + bitsPerComponent; i++) {
+            sample = (sample << 1) | ((data[row + (i >> 3)] >> (7 - (i & 7))) & 1);
+        }
+        return sample;
+    }
+
+    // Sets the low bitsPerComponent bits of the sample.
+    private static void SetSample(
+            byte[] data, int row, int bit, int bitsPerComponent, int sample) {
+        for (int i = bit + bitsPerComponent - 1; i >= bit; i--) {
+            int k = row + (i >> 3);
+            int mask = 1 << (7 - (i & 7));
+            data[k] = (byte) (((sample & 1) != 0) ? (data[k] | mask) : (data[k] & ~mask));
+            sample >>= 1;
+        }
+    }
+
+    // Only the last row can be shorter than rowLength.
+    private static byte[] ApplyPNGPredictor(byte[] data, int bytesPerPixel, int rowLength) {
+        int rows = (data.Length + rowLength) / (rowLength + 1);
+        byte[] decoded = new byte[data.Length - rows];
+        int j = 0;              // The index in decoded
+        for (int i = 0; i < data.Length; i += rowLength + 1) {
+            int filter = data[i];
+            int n = Math.Min(rowLength, data.Length - i - 1);
+            for (int x = 0; x < n; x++, j++) {
+                int left = (x >= bytesPerPixel) ? decoded[j - bytesPerPixel] : 0;
+                int up = (j >= rowLength) ? decoded[j - rowLength] : 0;
+                int upLeft = (x >= bytesPerPixel && j >= rowLength) ?
+                        decoded[j - rowLength - bytesPerPixel] : 0;
+                int value = data[i + 1 + x];
+                if (filter == 1) {          // Sub
+                    value += left;
+                } else if (filter == 2) {   // Up
+                    value += up;
+                } else if (filter == 3) {   // Average
+                    value += (left + up) / 2;
+                } else if (filter == 4) {   // Paeth
+                    value += Paeth(left, up, upLeft);
+                }                           // 0 is None, and so are unknown types.
+                decoded[j] = (byte) value;
+            }
+        }
+        return decoded;
+    }
+
+    private static int Paeth(int left, int up, int upLeft) {
+        int p = left + up - upLeft;
+        int pLeft = Math.Abs(p - left);
+        int pUp = Math.Abs(p - up);
+        int pUpLeft = Math.Abs(p - upLeft);
+        if (pLeft <= pUp && pLeft <= pUpLeft) {
+            return left;
+        }
+        return (pUp <= pUpLeft) ? up : upLeft;
+    }
+
     internal static byte[] Inflate(byte[] data) {
         using var outStream = new MemoryStream();
         using var inStream = new MemoryStream(data);

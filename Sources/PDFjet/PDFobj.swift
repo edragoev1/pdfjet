@@ -67,12 +67,29 @@ public final class PDFobj {
                 // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
                 // Swift.print("in pdf.read() => \(time1 - time0)")
             } else if filter == "/LZWDecode" {
-                data = lzwDecode(stream!)
+                data = applyPredictor(
+                        lzwDecode(stream!),
+                        getDecodeParm("/Predictor", 1),
+                        getDecodeParm("/Colors", 1),
+                        getDecodeParm("/BitsPerComponent", 8),
+                        getDecodeParm("/Columns", 1))
             } else {
                 // Assume no compression for now ...
                 self.data = stream!
             }
         }
+    }
+
+    // Returns the integer value of the key in the /DecodeParms dictionary.
+    // A value that is not a 32-bit integer gets the default, as in the Java
+    // and C# ports.
+    private final func getDecodeParm(_ key: String, _ defaultValue: Int) -> Int {
+        let tokens = getValue("/DecodeParms").split(separator: " ")
+        if let i = tokens.firstIndex(of: Substring(key)), i + 1 < tokens.count,
+                let value = Int32(tokens[i + 1]) {
+            return Int(value)
+        }
+        return defaultValue
     }
 
     /// Sets the stream.
