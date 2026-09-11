@@ -14,6 +14,7 @@ import Foundation
 public class Bidi {
 
     /* General,Isolated,End,Middle,Beginning */
+    /* The lam-alef ligatures that ligateLamAlef puts in are listed by their isolated forms. */
     private static let forms: [UInt32] = [
         0x0623, 0xFE83, 0xFE84, 0x0623, 0x0623,
         0x0628, 0xFE8F, 0xFE90, 0xFE92, 0xFE91,
@@ -51,6 +52,10 @@ public class Bidi {
         0x0625, 0xFE87, 0xFE88, 0x0625, 0x0625,
         0x0626, 0xFE89, 0xFE8A, 0xFE8C, 0xFE8B,
         0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
+        0xFEF5, 0xFEF5, 0xFEF6, 0xFEF5, 0xFEF5,     // LAM WITH ALEF WITH MADDA ABOVE
+        0xFEF7, 0xFEF7, 0xFEF8, 0xFEF7, 0xFEF7,     // LAM WITH ALEF WITH HAMZA ABOVE
+        0xFEF9, 0xFEF9, 0xFEFA, 0xFEF9, 0xFEF9,     // LAM WITH ALEF WITH HAMZA BELOW
+        0xFEFB, 0xFEFB, 0xFEFC, 0xFEFB, 0xFEFB,     // LAM WITH ALEF
     ]
 
     // The bidirectional character types of the Unicode Bidirectional
@@ -110,6 +115,10 @@ public class Bidi {
         0x0632, // ZAIN
         0x0648, // WAW
         0x0649, // ALEF MAKSURA (DOTLESS YEH)
+        0xFEF5, // LAM WITH ALEF WITH MADDA ABOVE
+        0xFEF7, // LAM WITH ALEF WITH HAMZA ABOVE
+        0xFEF9, // LAM WITH ALEF WITH HAMZA BELOW
+        0xFEFB, // LAM WITH ALEF
     ]
 
     private static func isArabicLetter(_ ch: UInt32) -> Bool {
@@ -155,7 +164,9 @@ public class Bidi {
     public static func reorderVisually(_ str: String) -> String {
         // Work with Unicode scalars, as the Java, C# and Go ports work with
         // code points. A Character would hold a letter and its diacritics.
-        let input = str.unicodeScalars.map { $0.value }
+        // The explicit embedding, override and isolate controls are left out,
+        // since left to right text is only nested one level deep.
+        let input = str.unicodeScalars.map { $0.value }.filter { !isExplicitFormatting($0) }
         let types = resolveTypes(input)
 
         // buf1 gets the right to left text in logical order and each left to
@@ -183,7 +194,8 @@ public class Bidi {
         }
         buf1.append(contentsOf: buf2.reversed())
 
-        let chars = buf1
+        // Arabic requires the lam-alef ligature.
+        let chars = ligateLamAlef(buf1)
         let n = chars.count
 
         var buf3 = String.UnicodeScalarView()
@@ -252,7 +264,11 @@ public class Bidi {
                 append(&buf3, ch)
             }
 
-            // Emit diacritics in their original order
+            // Emit the diacritics that are before this character in buf1. In a
+            // left to right run they are its own, reversed in buf1, so they
+            // come out after it in their original order. In right to left text
+            // they belong to the letter before it, so they come out reversed,
+            // before that letter, like the rest of the text.
             for k in 0..<diacriticCount {
                 append(&buf3, chars[i - 1 - k])
             }
@@ -260,6 +276,48 @@ public class Bidi {
             i = d
         }
         return String(buf3)
+    }
+
+    /// Replaces each lam followed by an alef with the lam-alef ligature. The
+    /// right to left text is in logical order here, so the diacritics of the
+    /// lam and of the alef come after the ligature.
+    private static func ligateLamAlef(_ chars: [UInt32]) -> [UInt32] {
+        var ligated = [UInt32]()
+        ligated.reserveCapacity(chars.count)
+        var i = 0
+        while i < chars.count {
+            ligated.append(chars[i])
+            if chars[i] == 0x0644 {                     // LAM
+                var alef = i + 1
+                while alef < chars.count && isTransparent(chars[alef]) {
+                    alef += 1
+                }
+                if alef < chars.count, let ligature = lamAlef(chars[alef]) {
+                    ligated[ligated.count - 1] = ligature
+                    ligated.append(contentsOf: chars[(i + 1)..<alef])
+                    i = alef
+                }
+            }
+            i += 1
+        }
+        return ligated
+    }
+
+    /// Returns the isolated lam-alef ligature for the alef, or nil for any other character.
+    private static func lamAlef(_ ch: UInt32) -> UInt32? {
+        switch ch {
+        case 0x0622: return 0xFEF5      // ALEF WITH MADDA ABOVE
+        case 0x0623: return 0xFEF7      // ALEF WITH HAMZA ABOVE
+        case 0x0625: return 0xFEF9      // ALEF WITH HAMZA BELOW
+        case 0x0627: return 0xFEFB      // ALEF
+        default:     return nil
+        }
+    }
+
+    /// Returns true for the explicit embedding, override and isolate controls:
+    /// LRE, RLE, PDF, LRO, RLO, LRI, RLI, FSI and PDI.
+    private static func isExplicitFormatting(_ ch: UInt32) -> Bool {
+        return (ch >= 0x202A && ch <= 0x202E) || (ch >= 0x2066 && ch <= 0x2069)
     }
 
     /// Appends a code point that came from a Unicode scalar or from the tables.

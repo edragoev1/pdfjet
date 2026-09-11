@@ -12,6 +12,8 @@ import (
 
 // forms holds the Arabic contextual letter forms.
 // Each quintet: General, Isolated, End, Middle, Beginning.
+// The lam-alef ligatures that ligateLamAlef puts in are listed by their
+// isolated forms.
 var forms = []rune{
 	0x0623, 0xFE83, 0xFE84, 0x0623, 0x0623,
 	0x0628, 0xFE8F, 0xFE90, 0xFE92, 0xFE91,
@@ -49,6 +51,10 @@ var forms = []rune{
 	0x0625, 0xFE87, 0xFE88, 0x0625, 0x0625,
 	0x0626, 0xFE89, 0xFE8A, 0xFE8C, 0xFE8B,
 	0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
+	0xFEF5, 0xFEF5, 0xFEF6, 0xFEF5, 0xFEF5, // LAM WITH ALEF WITH MADDA ABOVE
+	0xFEF7, 0xFEF7, 0xFEF8, 0xFEF7, 0xFEF7, // LAM WITH ALEF WITH HAMZA ABOVE
+	0xFEF9, 0xFEF9, 0xFEFA, 0xFEF9, 0xFEF9, // LAM WITH ALEF WITH HAMZA BELOW
+	0xFEFB, 0xFEFB, 0xFEFC, 0xFEFB, 0xFEFB, // LAM WITH ALEF
 }
 
 // Joining-type tables (built once at package init).
@@ -96,6 +102,10 @@ var rightJoining = map[rune]bool{
 	0x0632: true, // ZAIN
 	0x0648: true, // WAW
 	0x0649: true, // ALEF MAKSURA (DOTLESS YEH)
+	0xFEF5: true, // LAM WITH ALEF WITH MADDA ABOVE
+	0xFEF7: true, // LAM WITH ALEF WITH HAMZA ABOVE
+	0xFEF9: true, // LAM WITH ALEF WITH HAMZA BELOW
+	0xFEFB: true, // LAM WITH ALEF
 }
 
 // The bidirectional character types of the Unicode Bidirectional Algorithm,
@@ -113,21 +123,18 @@ const (
 	bidiON         // Other neutral
 )
 
-// Bidi provides BIDI processing for Arabic and Hebrew.
-//
-// Please see Example_27.
-
 // IsArabic reports whether the code point is in the Arabic block (U+0600..U+06FF).
 func IsArabic(ch rune) bool {
 	return ch >= 0x0600 && ch <= 0x06FF
 }
 
-// IsHebrew reports whether the code point is in the Hebrew block (U+0590..U+05FF).
+// isHebrew reports whether the code point is in the Hebrew block (U+0590..U+05FF).
 func isHebrew(ch rune) bool {
 	return ch >= 0x0590 && ch <= 0x05FF
 }
 
-// JoinsForward reports whether the character can join on its right side.
+// JoinsForward reports whether the Arabic character joins the character that
+// follows it.
 func JoinsForward(ch rune) bool {
 	if ch == 0x0640 {
 		return true // TATWEEL — joins both sides
@@ -135,7 +142,8 @@ func JoinsForward(ch rune) bool {
 	return dualJoining[ch]
 }
 
-// JoinsBackward reports whether the character can join on its left side.
+// JoinsBackward reports whether the Arabic character joins the character
+// before it.
 func JoinsBackward(ch rune) bool {
 	if ch == 0x0640 {
 		return true
@@ -146,8 +154,8 @@ func JoinsBackward(ch rune) bool {
 	return rightJoining[ch]
 }
 
-// IsArabicLetter reports whether the code point is one of the 37 Arabic
-// letters that have contextual presentation forms in the forms table.
+// isArabicLetter reports whether the code point is one of the Arabic letters,
+// or lam-alef ligatures, that have contextual forms in the forms table.
 func isArabicLetter(ch rune) bool {
 	for i := 0; i < len(forms); i += 5 {
 		if ch == forms[i] {
@@ -183,7 +191,7 @@ func isAlphaNumeric(ch rune) bool {
 }
 
 // mirrored returns the mirror image of a bidirectionally mirrored
-// character, or -1 (and ok == false) if the character is not mirrored.
+// character, and false if the character is not mirrored.
 // Data source: Unicode BidiMirroring.txt.
 func mirrored(ch rune) (rune, bool) {
 	switch ch {
@@ -580,10 +588,19 @@ func fillBidiTypes(types []int, start, end, t int) {
 // to right text nested in it one level deep. Spaces, punctuation and
 // brackets take their direction from the text around them, as in the
 // Unicode Bidirectional Algorithm.
+//
+// Please see Example_27.
 func ReorderVisually(str string) string {
 	// Work with code points (runes) so that supplementary characters
-	// are handled correctly.
-	input := []rune(str)
+	// are handled correctly. The explicit embedding, override and isolate
+	// controls are left out, since left to right text is only nested one
+	// level deep.
+	var input []rune
+	for _, ch := range str {
+		if !isExplicitFormatting(ch) {
+			input = append(input, ch)
+		}
+	}
 	types := resolveBidiTypes(input)
 
 	// buf1 gets the right to left text in logical order and each left to
@@ -612,8 +629,8 @@ func ReorderVisually(str string) string {
 	}
 	buf1 = appendRunesReversed(buf1, buf2)
 
-	// Convert to slice for O(1) indexing (fixes Bug #5)
-	chars := buf1
+	// Arabic requires the lam-alef ligature.
+	chars := ligateLamAlef(buf1)
 	n := len(chars)
 
 	var buf3 strings.Builder
@@ -694,7 +711,11 @@ func ReorderVisually(str string) string {
 			buf3.WriteRune(ch)
 		}
 
-		// Emit diacritics in their original order
+		// Emit the diacritics that are before this character in buf1. In a
+		// left to right run they are its own, reversed in buf1, so they
+		// come out after it in their original order. In right to left text
+		// they belong to the letter before it, so they come out reversed,
+		// before that letter, like the rest of the text.
 		for k := 0; k < diacriticCount; k++ {
 			buf3.WriteRune(chars[i-1-k])
 		}
@@ -703,6 +724,53 @@ func ReorderVisually(str string) string {
 	}
 
 	return buf3.String()
+}
+
+// ligateLamAlef replaces each lam followed by an alef with the lam-alef
+// ligature. The right to left text is in logical order here, so the
+// diacritics of the lam and of the alef come after the ligature.
+func ligateLamAlef(chars []rune) []rune {
+	ligated := make([]rune, 0, len(chars))
+	for i := 0; i < len(chars); i++ {
+		ligated = append(ligated, chars[i])
+		if chars[i] != 0x0644 { // LAM
+			continue
+		}
+		alef := i + 1
+		for alef < len(chars) && isTransparent(chars[alef]) {
+			alef++
+		}
+		if alef == len(chars) || lamAlefLigature(chars[alef]) == 0 {
+			continue
+		}
+		ligated[len(ligated)-1] = lamAlefLigature(chars[alef])
+		ligated = append(ligated, chars[i+1:alef]...)
+		i = alef
+	}
+	return ligated
+}
+
+// lamAlefLigature returns the isolated lam-alef ligature for the alef, or 0
+// for any other character.
+func lamAlefLigature(ch rune) rune {
+	switch ch {
+	case 0x0622: // ALEF WITH MADDA ABOVE
+		return 0xFEF5
+	case 0x0623: // ALEF WITH HAMZA ABOVE
+		return 0xFEF7
+	case 0x0625: // ALEF WITH HAMZA BELOW
+		return 0xFEF9
+	case 0x0627: // ALEF
+		return 0xFEFB
+	}
+	return 0
+}
+
+// isExplicitFormatting reports whether the character is one of the explicit
+// embedding, override and isolate controls: LRE, RLE, PDF, LRO, RLO, LRI,
+// RLI, FSI and PDI.
+func isExplicitFormatting(ch rune) bool {
+	return (ch >= 0x202A && ch <= 0x202E) || (ch >= 0x2066 && ch <= 0x2069)
 }
 
 // appendRunesReversed appends the runes to buf in reverse order.

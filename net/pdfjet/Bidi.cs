@@ -18,6 +18,7 @@ namespace PDFjet.NET {
     /// </summary>
     public static class Bidi {
         /* General, Isolated, End, Middle, Beginning */
+        /* The lam-alef ligatures that LigateLamAlef puts in are listed by their isolated forms. */
         private static readonly int[] forms = {
             0x0623, 0xFE83, 0xFE84, 0x0623, 0x0623,
             0x0628, 0xFE8F, 0xFE90, 0xFE92, 0xFE91,
@@ -55,6 +56,10 @@ namespace PDFjet.NET {
             0x0625, 0xFE87, 0xFE88, 0x0625, 0x0625,
             0x0626, 0xFE89, 0xFE8A, 0xFE8C, 0xFE8B,
             0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
+            0xFEF5, 0xFEF5, 0xFEF6, 0xFEF5, 0xFEF5,     // LAM WITH ALEF WITH MADDA ABOVE
+            0xFEF7, 0xFEF7, 0xFEF8, 0xFEF7, 0xFEF7,     // LAM WITH ALEF WITH HAMZA ABOVE
+            0xFEF9, 0xFEF9, 0xFEFA, 0xFEF9, 0xFEF9,     // LAM WITH ALEF WITH HAMZA BELOW
+            0xFEFB, 0xFEFB, 0xFEFC, 0xFEFB, 0xFEFB,     // LAM WITH ALEF
         };
 
         // The bidirectional character types of the Unicode Bidirectional
@@ -109,8 +114,10 @@ namespace PDFjet.NET {
         /// <returns>The reordered string.</returns>
         public static string ReorderVisually(string str) {
             // Work with code points so that supplementary characters are
-            // handled correctly.
-            int[] input = StringToCodePoints(str);
+            // handled correctly. The explicit embedding, override and isolate
+            // controls are left out, since left to right text is only nested
+            // one level deep.
+            int[] input = Array.FindAll(StringToCodePoints(str), cp => !IsExplicitFormatting(cp));
             int[] types = ResolveTypes(input);
 
             // buf1 gets the right to left text in logical order and each left
@@ -144,8 +151,8 @@ namespace PDFjet.NET {
                 buf1.Append(ReverseCodePoints(buf2.ToString()));
             }
 
-            // Convert to array for O(1) indexing (fixes Bug #5)
-            int[] chars = StringToCodePoints(buf1.ToString());
+            // Arabic requires the lam-alef ligature.
+            int[] chars = LigateLamAlef(StringToCodePoints(buf1.ToString()));
             int n = chars.Length;
 
             StringBuilder buf3 = new StringBuilder();
@@ -220,7 +227,11 @@ namespace PDFjet.NET {
                     buf3.AppendCodePoint(ch);
                 }
 
-                // Emit diacritics in their original order
+                // Emit the diacritics that are before this character in buf1. In a
+                // left to right run they are its own, reversed in buf1, so they
+                // come out after it in their original order. In right to left text
+                // they belong to the letter before it, so they come out reversed,
+                // before that letter, like the rest of the text.
                 for (int k = 0; k < diacriticCount; k++) {
                     buf3.AppendCodePoint(chars[i - 1 - k]);
                 }
@@ -229,6 +240,55 @@ namespace PDFjet.NET {
             }
 
             return buf3.ToString();
+        }
+
+        /// <summary>
+        /// Replaces each lam followed by an alef with the lam-alef ligature. The
+        /// right to left text is in logical order here, so the diacritics of the
+        /// lam and of the alef come after the ligature.
+        /// </summary>
+        private static int[] LigateLamAlef(int[] chars) {
+            int[] ligated = new int[chars.Length];
+            int n = 0;
+            for (int i = 0; i < chars.Length; i++) {
+                ligated[n++] = chars[i];
+                if (chars[i] != 0x0644) {                   // LAM
+                    continue;
+                }
+                int alef = i + 1;
+                while (alef < chars.Length && IsTransparent(chars[alef])) {
+                    alef++;
+                }
+                if (alef == chars.Length || LamAlef(chars[alef]) == 0) {
+                    continue;
+                }
+                ligated[n - 1] = LamAlef(chars[alef]);
+                for (int k = i + 1; k < alef; k++) {
+                    ligated[n++] = chars[k];
+                }
+                i = alef;
+            }
+            Array.Resize(ref ligated, n);
+            return ligated;
+        }
+
+        /// <summary>Returns the isolated lam-alef ligature for the alef, or 0 for any other character.</summary>
+        private static int LamAlef(int ch) {
+            switch (ch) {
+                case 0x0622: return 0xFEF5;     // ALEF WITH MADDA ABOVE
+                case 0x0623: return 0xFEF7;     // ALEF WITH HAMZA ABOVE
+                case 0x0625: return 0xFEF9;     // ALEF WITH HAMZA BELOW
+                case 0x0627: return 0xFEFB;     // ALEF
+                default:     return 0;
+            }
+        }
+
+        /// <summary>
+        /// Returns true for the explicit embedding, override and isolate controls:
+        /// LRE, RLE, PDF, LRO, RLO, LRI, RLI, FSI and PDI.
+        /// </summary>
+        private static bool IsExplicitFormatting(int ch) {
+            return (ch >= 0x202A && ch <= 0x202E) || (ch >= 0x2066 && ch <= 0x2069);
         }
 
         /// <summary>Returns true if the character is in the Arabic Unicode block, U+0600 to U+06FF.</summary>
@@ -646,6 +706,10 @@ namespace PDFjet.NET {
                 0x0632, // ZAIN
                 0x0648, // WAW
                 0x0649, // ALEF MAKSURA (DOTLESS YEH)
+                0xFEF5, // LAM WITH ALEF WITH MADDA ABOVE
+                0xFEF7, // LAM WITH ALEF WITH HAMZA ABOVE
+                0xFEF9, // LAM WITH ALEF WITH HAMZA BELOW
+                0xFEFB, // LAM WITH ALEF
             };
         }
 

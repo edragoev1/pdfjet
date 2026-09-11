@@ -19,6 +19,7 @@ import java.util.Set;
 public class Bidi {
 
     /* General,Isolated,End,Middle,Beginning */
+    /* The lam-alef ligatures that ligateLamAlef puts in are listed by their isolated forms. */
     private static final int[] forms = {
         0x0623, 0xFE83, 0xFE84, 0x0623, 0x0623,
         0x0628, 0xFE8F, 0xFE90, 0xFE92, 0xFE91,
@@ -56,6 +57,10 @@ public class Bidi {
         0x0625, 0xFE87, 0xFE88, 0x0625, 0x0625,
         0x0626, 0xFE89, 0xFE8A, 0xFE8C, 0xFE8B,
         0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
+        0xFEF5, 0xFEF5, 0xFEF6, 0xFEF5, 0xFEF5,     // LAM WITH ALEF WITH MADDA ABOVE
+        0xFEF7, 0xFEF7, 0xFEF8, 0xFEF7, 0xFEF7,     // LAM WITH ALEF WITH HAMZA ABOVE
+        0xFEF9, 0xFEF9, 0xFEFA, 0xFEF9, 0xFEF9,     // LAM WITH ALEF WITH HAMZA BELOW
+        0xFEFB, 0xFEFB, 0xFEFC, 0xFEFB, 0xFEFB,     // LAM WITH ALEF
     };
 
     // The bidirectional character types of the Unicode Bidirectional
@@ -115,8 +120,10 @@ public class Bidi {
      */
     public static String reorderVisually(String str) {
         // Work with code points so that supplementary characters are
-        // handled correctly.
-        int[] input = str.codePoints().toArray();
+        // handled correctly. The explicit embedding, override and isolate
+        // controls are left out, since left to right text is only nested one
+        // level deep.
+        int[] input = str.codePoints().filter(cp -> !isExplicitFormatting(cp)).toArray();
         int[] types = resolveTypes(input);
 
         // buf1 gets the right to left text in logical order and each left to
@@ -149,8 +156,8 @@ public class Bidi {
             buf1.append(reverseCodePoints(buf2.toString()));
         }
 
-        // Convert to array for O(1) indexing (fixes Bug #5)
-        int[] chars = buf1.codePoints().toArray();
+        // Arabic requires the lam-alef ligature.
+        int[] chars = ligateLamAlef(buf1.codePoints().toArray());
         int n = chars.length;
 
         StringBuilder buf3 = new StringBuilder();
@@ -225,7 +232,11 @@ public class Bidi {
                 buf3.appendCodePoint(ch);
             }
 
-            // Emit diacritics in their original order
+            // Emit the diacritics that are before this character in buf1. In a
+            // left to right run they are its own, reversed in buf1, so they
+            // come out after it in their original order. In right to left text
+            // they belong to the letter before it, so they come out reversed,
+            // before that letter, like the rest of the text.
             for (int k = 0; k < diacriticCount; k++) {
                 buf3.appendCodePoint(chars[i - 1 - k]);
             }
@@ -234,6 +245,54 @@ public class Bidi {
         }
 
         return buf3.toString();
+    }
+
+    /**
+     * Replaces each lam followed by an alef with the lam-alef ligature. The
+     * right to left text is in logical order here, so the diacritics of the
+     * lam and of the alef come after the ligature.
+     */
+    private static int[] ligateLamAlef(int[] chars) {
+        int[] ligated = new int[chars.length];
+        int n = 0;
+        for (int i = 0; i < chars.length; i++) {
+            ligated[n++] = chars[i];
+            if (chars[i] != 0x0644) {                   // LAM
+                continue;
+            }
+            int alef = i + 1;
+            while (alef < chars.length && isTransparent(chars[alef])) {
+                alef++;
+            }
+            if (alef == chars.length || lamAlef(chars[alef]) == 0) {
+                continue;
+            }
+            ligated[n - 1] = lamAlef(chars[alef]);
+            for (int k = i + 1; k < alef; k++) {
+                ligated[n++] = chars[k];
+            }
+            i = alef;
+        }
+        return Arrays.copyOf(ligated, n);
+    }
+
+    /** Returns the isolated lam-alef ligature for the alef, or 0 for any other character. */
+    private static int lamAlef(int ch) {
+        switch (ch) {
+        case 0x0622: return 0xFEF5;     // ALEF WITH MADDA ABOVE
+        case 0x0623: return 0xFEF7;     // ALEF WITH HAMZA ABOVE
+        case 0x0625: return 0xFEF9;     // ALEF WITH HAMZA BELOW
+        case 0x0627: return 0xFEFB;     // ALEF
+        default:     return 0;
+        }
+    }
+
+    /**
+     * Returns true for the explicit embedding, override and isolate controls:
+     * LRE, RLE, PDF, LRO, RLO, LRI, RLI, FSI and PDI.
+     */
+    private static boolean isExplicitFormatting(int ch) {
+        return (ch >= 0x202A && ch <= 0x202E) || (ch >= 0x2066 && ch <= 0x2069);
     }
 
     /**
@@ -657,6 +716,10 @@ public class Bidi {
         right.add(0x0632); // ZAIN
         right.add(0x0648); // WAW
         right.add(0x0649); // ALEF MAKSURA (DOTLESS YEH)
+        right.add(0xFEF5); // LAM WITH ALEF WITH MADDA ABOVE
+        right.add(0xFEF7); // LAM WITH ALEF WITH HAMZA ABOVE
+        right.add(0xFEF9); // LAM WITH ALEF WITH HAMZA BELOW
+        right.add(0xFEFB); // LAM WITH ALEF
         RIGHT_JOINING = right;
     }
 
