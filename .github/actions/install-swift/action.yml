@@ -1,0 +1,64 @@
+# Installs the swift.org Swift toolchain, which includes DocC, and puts it on
+# PATH. The Swift in the runner image is not relied on. Used by the Build and
+# Documentation workflows, whose jobs run on ubuntu-24.04, the Ubuntu release
+# the toolchain is built for.
+#
+# The download is cached, so most runs skip it. Its signature is checked on
+# every run, cached or not, against the Swift 6.x release key from
+# https://www.swift.org/keys/ kept next to this file in swift-release-key.asc
+# (fingerprint 52BB 7E3D E28A 71BE 22EC 05FF EF80 A866 B47A 981F), so no key
+# server is needed. The cache is saved only after the check passed.
+#
+# To upgrade Swift, change the swift-url default below. A new major version is
+# likely signed with a new key, which then replaces swift-release-key.asc.
+
+name: Install Swift
+description: Installs the swift.org Swift toolchain and checks its signature.
+
+inputs:
+    swift-url:
+        description: The swift.org toolchain for Ubuntu 24.04.
+        default: https://download.swift.org/swift-6.3.3-release/ubuntu2404/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE-ubuntu24.04.tar.gz
+
+runs:
+    using: composite
+    steps:
+        - name: Restore the Swift toolchain download
+          id: restore
+          uses: actions/cache/restore@v6
+          with:
+              path: ~/swift-download
+              key: swift-toolchain-${{ inputs.swift-url }}
+
+        - name: Install the Swift toolchain
+          shell: bash
+          env:
+              SWIFT_URL: ${{ inputs.swift-url }}
+          run: |
+              sudo apt-get -q -o Acquire::Retries=3 update
+              sudo apt-get -q -o Acquire::Retries=3 install -y binutils git unzip \
+                  gnupg2 libc6-dev libcurl4-openssl-dev libedit2 libgcc-13-dev \
+                  libpython3-dev libsqlite3-0 libstdc++-13-dev libxml2-dev \
+                  libncurses-dev libz3-dev pkg-config tzdata zlib1g-dev
+              mkdir -p ~/swift-download
+              cd ~/swift-download
+              if [ ! -f swift.tar.gz ] || [ ! -f swift.tar.gz.sig ]; then
+                  curl -fsSL --retry 3 --retry-all-errors \
+                      "$SWIFT_URL" -o swift.tar.gz "$SWIFT_URL.sig" -o swift.tar.gz.sig
+              fi
+              export GNUPGHOME="$(mktemp -d)"
+              gpg --batch --quiet --import "$GITHUB_ACTION_PATH/swift-release-key.asc"
+              gpg --batch --verify swift.tar.gz.sig swift.tar.gz
+              rm -rf "$GNUPGHOME"
+              mkdir "$RUNNER_TEMP/swift"
+              tar -xzf swift.tar.gz --directory "$RUNNER_TEMP/swift" --strip-components=1
+              "$RUNNER_TEMP/swift/usr/bin/swift" --version
+              test -x "$RUNNER_TEMP/swift/usr/bin/docc"
+              echo "$RUNNER_TEMP/swift/usr/bin" >> "$GITHUB_PATH"
+
+        - name: Save the Swift toolchain download
+          if: steps.restore.outputs.cache-hit != 'true'
+          uses: actions/cache/save@v6
+          with:
+              path: ~/swift-download
+              key: swift-toolchain-${{ inputs.swift-url }}

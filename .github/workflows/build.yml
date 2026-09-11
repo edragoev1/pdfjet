@@ -1,0 +1,82 @@
+# Builds the Java, C#, Go and Swift ports and runs their examples, one job per
+# port, with the port's build-*.sh script. The examples are the test suite. A
+# job fails if the library or an example does not compile, an example exits
+# with an error, or an example does not create its PDF file.
+
+name: Build
+
+on:
+    push:
+        branches: [ master ]
+        paths-ignore:
+            - "**.md"
+            - "docfx/**"
+            - "examples-java.html"
+            - "examples-dotnet.html"
+            - ".github/workflows/docs.yml"
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+# A newer push to the same branch cancels a build that is still running.
+concurrency:
+    group: build-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    build:
+        name: ${{ matrix.port }}
+        # Pinned to the Ubuntu release the Swift toolchain is built for.
+        runs-on: ubuntu-24.04
+        strategy:
+            # A failing port does not cancel the others.
+            fail-fast: false
+            matrix:
+                port: [ java, dotnet, go, swift ]
+        steps:
+            - uses: actions/checkout@v7
+
+            - if: matrix.port == 'java'
+              uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - if: matrix.port == 'dotnet'
+              uses: actions/setup-dotnet@v6
+              with:
+                  dotnet-version: "8.0.x"
+
+            - if: matrix.port == 'go'
+              uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            - if: matrix.port == 'swift'
+              uses: ./.github/actions/install-swift
+
+            # bash -e stops at the first example that fails. The Java and C#
+            # scripts compile the examples in parallel, so an example that does
+            # not compile fails the job when the script runs it.
+            - name: Build and run the examples
+              run: bash -e build-${{ matrix.port }}.sh
+
+            - name: Check that every example created its PDF file
+              env:
+                  PORT: ${{ matrix.port }}
+              run: |
+                  missing=0
+                  for i in $(seq -w 1 50); do
+                      # The Swift port has no Example_30, see build-swift.sh.
+                      if [ "$PORT" = swift ] && [ "$i" = 30 ]; then
+                          continue
+                      fi
+                      if [ ! -s "Example_$i.pdf" ]; then
+                          echo "::error::Example_$i.pdf was not created"
+                          missing=1
+                      fi
+                  done
+                  exit $missing

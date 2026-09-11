@@ -52,6 +52,14 @@ sudo apt install libc6-dev
 sudo apt install gcc
 ```
 
+## Builds
+
+The `Build` GitHub Actions workflow runs `build-java.sh`, `build-dotnet.sh`,
+`build-go.sh` and `build-swift.sh` on every push to `master` and on pull
+requests, one job per port. A job fails if the library or an example does not
+compile, an example exits with an error, or an example does not create its PDF
+file.
+
 ## Documentation
 
 The API references and the example pages are published at
