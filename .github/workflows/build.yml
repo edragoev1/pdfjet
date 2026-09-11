@@ -1,7 +1,8 @@
 # Builds the Java, C#, Go and Swift ports and runs their examples, one job per
 # port, with the port's build-*.sh script. The examples are the test suite. A
-# job fails if the library or an example does not compile, an example exits
-# with an error, or an example does not create its PDF file. The compare job
+# job fails if the library or an example does not compile or compiles with a
+# warning, go vet reports a problem in the Go port, an example exits with an
+# error, or an example does not create its PDF file. The compare job
 # then checks the PDFs: each example must render the same, with the same text
 # and drawing instructions, in every port as in Java, and the examples that
 # declare PDF/A or PDF/UA compliance must pass veraPDF.

@@ -57,8 +57,9 @@ sudo apt install gcc
 The `Build` GitHub Actions workflow runs `build-java.sh`, `build-dotnet.sh`,
 `build-go.sh` and `build-swift.sh` on every push to `master` and on pull
 requests, one job per port. A job fails if the library or an example does not
-compile, an example exits with an error, or an example does not create its PDF
-file. A second job then checks the PDFs with `.github/scripts/check-example-pdfs.py`:
+compile or compiles with a warning, `go vet` reports a problem in the Go port,
+an example exits with an error, or an example does not create its PDF file. A
+second job then checks the PDFs with `.github/scripts/check-example-pdfs.py`:
 each example must render the same, with its text in the same fonts, sizes,
 colors and positions and the same drawing instructions on every page, in the
 C#, Go and Swift ports as in Java, and

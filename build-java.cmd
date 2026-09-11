@@ -14,6 +14,7 @@ javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options ^
     com\pdfjet\barcodes\*.java ^
     com\pdfjet\pdf417\*.java ^
     com\pdfjet\qrcode\*.java ^
+    com\pdfjet\corefonts\*.java ^
     com\pdfjet\fonts\*.java ^
     com\pdfjet\encryption\*.java ^
     -d out\production
