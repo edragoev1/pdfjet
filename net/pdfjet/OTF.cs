@@ -32,6 +32,8 @@ public class OTF {
     internal int[] advanceWidth;
     internal readonly int[] unicodeToGID = new int[0x10000];
     internal System.Collections.Generic.Dictionary<int, int[]> markToMarkOffsets;
+    internal System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>> markAnchors;
+    internal System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>> baseAnchors;
     internal bool cff = false;
 
     private int cffOff;
@@ -270,10 +272,14 @@ public class OTF {
         this.cffLen = table.length;
     }
 
-    // Reads where the marks that attach to other marks go, like a Thai tone
-    // mark above an upper vowel, from the MarkToMark lookups of the GPOS table.
+    // Reads where the marks go from the GPOS table: the marks on letters and
+    // ligatures, like Hebrew and Arabic vowel marks, from its MarkToBase and
+    // MarkToLigature lookups, and the marks that attach to other marks, like a
+    // Thai tone mark above an upper vowel, from its MarkToMark lookups.
     private void GPOS(FontTable table) {
         markToMarkOffsets = new System.Collections.Generic.Dictionary<int, int[]>();
+        markAnchors = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>>();
+        baseAnchors = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>>();
         int lookupList = table.offset + GetUInt16(table.offset + 8);
         int lookupCount = GetUInt16(lookupList);
         for (int i = 0; i < lookupCount; i++) {
@@ -287,11 +293,60 @@ public class OTF {
                     type = GetUInt16(subTable + 2);
                     subTable += GetUInt32(subTable + 4);
                 }
-                if (type == 6 && GetUInt16(subTable) == 1) {
+                if (type == 4 && GetUInt16(subTable) == 1) {
+                    MarkToBase(subTable, false);
+                } else if (type == 5 && GetUInt16(subTable) == 1) {
+                    MarkToBase(subTable, true);
+                } else if (type == 6 && GetUInt16(subTable) == 1) {
                     MarkToMark(subTable);
                 }
             }
         }
+    }
+
+    // Keeps the anchors of a MarkToBase or MarkToLigature subtable, by glyph
+    // ID: the class and anchor of each mark, and an anchor of each letter for
+    // each class of marks, with 1 before an anchor that is there and 0 before
+    // one that is not. A ligature has anchors for each of the letters it joins,
+    // and keeps those of its first letter, like the lam of a lam-alef ligature.
+    private void MarkToBase(int subTable, bool ligature) {
+        int[] markGlyphs = Coverage(subTable + GetUInt16(subTable + 2));
+        int[] baseGlyphs = Coverage(subTable + GetUInt16(subTable + 4));
+        int classCount = GetUInt16(subTable + 6);
+        int markArray = subTable + GetUInt16(subTable + 8);
+        int baseArray = subTable + GetUInt16(subTable + 10);
+        System.Collections.Generic.Dictionary<int, int[]> marks = new System.Collections.Generic.Dictionary<int, int[]>();
+        for (int m = 0; m < markGlyphs.Length; m++) {
+            int anchor = markArray + GetUInt16(markArray + 4 + 4*m);
+            marks[markGlyphs[m]] = new int[] {
+                    GetUInt16(markArray + 2 + 4*m), GetInt16(anchor + 2), GetInt16(anchor + 4)};
+        }
+        System.Collections.Generic.Dictionary<int, int[]> bases = new System.Collections.Generic.Dictionary<int, int[]>();
+        for (int b = 0; b < baseGlyphs.Length; b++) {
+            // The anchor offsets are from the base array, or from the ligature
+            // attach table of a ligature.
+            int table = baseArray;
+            int record = baseArray + 2 + 2*b*classCount;
+            if (ligature) {
+                table = baseArray + GetUInt16(baseArray + 2 + 2*b);
+                record = table + 2;
+                if (GetUInt16(table) == 0) {    // No letters
+                    continue;
+                }
+            }
+            int[] anchors = new int[3*classCount];
+            for (int c = 0; c < classCount; c++) {
+                int anchorOffset = GetUInt16(record + 2*c);
+                if (anchorOffset != 0) {
+                    anchors[3*c] = 1;
+                    anchors[3*c + 1] = GetInt16(table + anchorOffset + 2);
+                    anchors[3*c + 2] = GetInt16(table + anchorOffset + 4);
+                }
+            }
+            bases[baseGlyphs[b]] = anchors;
+        }
+        markAnchors.Add(marks);
+        baseAnchors.Add(bases);
     }
 
     // Keeps the offset of each mark from the mark it attaches to, in font

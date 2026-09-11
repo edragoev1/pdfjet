@@ -813,6 +813,20 @@ func lettersOf(ch rune) []rune {
 	return nil
 }
 
+// letterOfIsolatedForm returns the letter that an isolated form put in by
+// ReorderVisually stands for, or 0 for any other character. An isolated form
+// looks like its letter.
+func letterOfIsolatedForm(ch rune) rune {
+	if ch >= 0xFB50 {
+		for i := 0; i < len(forms); i += 5 {
+			if forms[i+1] == ch {
+				return forms[i]
+			}
+		}
+	}
+	return 0
+}
+
 // lamAlefLigature returns the isolated lam-alef ligature for the alef, or 0
 // for any other character.
 func lamAlefLigature(ch rune) rune {

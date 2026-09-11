@@ -23,6 +23,8 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	font.lastChar = otf.lastChar
 	font.unicodeToGID = otf.unicodeToGID
 	font.markToMarkOffsets = otf.markToMarkOffsets
+	font.markAnchors = otf.markAnchors
+	font.baseAnchors = otf.baseAnchors
 	font.unitsPerEm = otf.unitsPerEm
 	font.bBoxLLx = otf.bBoxLLx
 	font.bBoxLLy = otf.bBoxLLy

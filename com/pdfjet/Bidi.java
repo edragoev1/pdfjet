@@ -323,6 +323,21 @@ public class Bidi {
         return null;
     }
 
+    /**
+     * Returns the letter that an isolated form put in by reorderVisually stands
+     * for, or 0 for any other character. An isolated form looks like its letter.
+     */
+    static int letterOfIsolatedForm(int ch) {
+        if (ch >= 0xFB50) {
+            for (int i = 0; i < forms.length; i += 5) {
+                if (forms[i + 1] == ch) {
+                    return forms[i];
+                }
+            }
+        }
+        return 0;
+    }
+
     /** Returns the isolated lam-alef ligature for the alef, or 0 for any other character. */
     private static int lamAlef(int ch) {
         switch (ch) {

@@ -41,6 +41,8 @@ class OTF {
 
     var unicodeToGID = [Int](repeating: 0, count: 0x10000)
     var markToMarkOffsets: [Int: [Int]]?
+    var markAnchors: [[Int: [Int]]]?
+    var baseAnchors: [[Int: [Int]]]?
 
     init(_ stream: InputStream) throws {
         buf = try Content.getFromStream(stream)
@@ -307,10 +309,14 @@ class OTF {
         return segment
     }
 
-    // Reads where the marks that attach to other marks go, like a Thai tone
-    // mark above an upper vowel, from the MarkToMark lookups of the GPOS table.
+    // Reads where the marks go from the GPOS table: the marks on letters and
+    // ligatures, like Hebrew and Arabic vowel marks, from its MarkToBase and
+    // MarkToLigature lookups, and the marks that attach to other marks, like a
+    // Thai tone mark above an upper vowel, from its MarkToMark lookups.
     private func GPOS(_ table: FontTable) {
         markToMarkOffsets = [Int: [Int]]()
+        markAnchors = [[Int: [Int]]]()
+        baseAnchors = [[Int: [Int]]]()
         let lookupList = table.offset! + uint16(at: table.offset! + 8)
         let lookupCount = uint16(at: lookupList)
         for i in 0..<lookupCount {
@@ -324,11 +330,60 @@ class OTF {
                     type = uint16(at: subTable + 2)
                     subTable += uint32(at: subTable + 4)
                 }
-                if type == 6 && uint16(at: subTable) == 1 {
+                if type == 4 && uint16(at: subTable) == 1 {
+                    markToBase(subTable, false)
+                } else if type == 5 && uint16(at: subTable) == 1 {
+                    markToBase(subTable, true)
+                } else if type == 6 && uint16(at: subTable) == 1 {
                     markToMark(subTable)
                 }
             }
         }
+    }
+
+    // Keeps the anchors of a MarkToBase or MarkToLigature subtable, by glyph
+    // ID: the class and anchor of each mark, and an anchor of each letter for
+    // each class of marks, with 1 before an anchor that is there and 0 before
+    // one that is not. A ligature has anchors for each of the letters it joins,
+    // and keeps those of its first letter, like the lam of a lam-alef ligature.
+    private func markToBase(_ subTable: Int, _ ligature: Bool) {
+        let markGlyphs = coverage(subTable + uint16(at: subTable + 2))
+        let baseGlyphs = coverage(subTable + uint16(at: subTable + 4))
+        let classCount = uint16(at: subTable + 6)
+        let markArray = subTable + uint16(at: subTable + 8)
+        let baseArray = subTable + uint16(at: subTable + 10)
+        var marks = [Int: [Int]]()
+        for (m, glyph) in markGlyphs.enumerated() {
+            let anchor = markArray + uint16(at: markArray + 4 + 4*m)
+            marks[glyph] = [
+                    uint16(at: markArray + 2 + 4*m), int16(at: anchor + 2), int16(at: anchor + 4)]
+        }
+        var bases = [Int: [Int]]()
+        for (b, glyph) in baseGlyphs.enumerated() {
+            // The anchor offsets are from the base array, or from the ligature
+            // attach table of a ligature.
+            var table = baseArray
+            var record = baseArray + 2 + 2*b*classCount
+            if ligature {
+                table = baseArray + uint16(at: baseArray + 2 + 2*b)
+                record = table + 2
+                if uint16(at: table) == 0 {     // No letters
+                    continue
+                }
+            }
+            var anchors = [Int](repeating: 0, count: 3*classCount)
+            for c in 0..<classCount {
+                let anchorOffset = uint16(at: record + 2*c)
+                if anchorOffset != 0 {
+                    anchors[3*c] = 1
+                    anchors[3*c + 1] = int16(at: table + anchorOffset + 2)
+                    anchors[3*c + 2] = int16(at: table + anchorOffset + 4)
+                }
+            }
+            bases[glyph] = anchors
+        }
+        markAnchors!.append(marks)
+        baseAnchors!.append(bases)
     }
 
     // Keeps the offset of each mark from the mark it attaches to, in font

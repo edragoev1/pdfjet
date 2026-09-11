@@ -41,6 +41,15 @@ public class Font {
     // the glyph IDs of the two marks, or nil. Only a font read from a .otf or
     // .ttf file has them, from its GPOS table.
     var markToMarkOffsets: [Int: [Int]]?
+    // The anchors of the marks, by glyph ID, for each MarkToBase and
+    // MarkToLigature lookup subtable, or nil: the class and anchor of each
+    // mark. Only a font read from a .otf or .ttf file has them, from its GPOS
+    // table.
+    var markAnchors: [[Int: [Int]]]?
+    // The anchors of the letters and ligatures that the marks go on, by glyph
+    // ID, for each subtable in markAnchors, or nil: 1 and an anchor, or 0 and
+    // no anchor, for each class of marks.
+    var baseAnchors: [[Int: [Int]]]?
     var cff: Bool = false
     var compressedSize: Int?
     var uncompressedSize: Int?

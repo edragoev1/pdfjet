@@ -51,6 +51,15 @@ public class Font {
     // the glyph IDs of the two marks, or null. Only a font read from a .otf or
     // .ttf file has them, from its GPOS table.
     internal Dictionary<int, int[]> markToMarkOffsets;
+    // The anchors of the marks, by glyph ID, for each MarkToBase and
+    // MarkToLigature lookup subtable, or null: the class and anchor of each
+    // mark. Only a font read from a .otf or .ttf file has them, from its GPOS
+    // table.
+    internal List<Dictionary<int, int[]>> markAnchors;
+    // The anchors of the letters and ligatures that the marks go on, by glyph
+    // ID, for each subtable in markAnchors, or null: 1 and an anchor, or 0 and
+    // no anchor, for each class of marks.
+    internal List<Dictionary<int, int[]>> baseAnchors;
     internal bool cff;
     internal int compressedSize;
     internal int uncompressedSize;

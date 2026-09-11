@@ -30,6 +30,8 @@ class OpenTypeFont {
         font.advanceWidth = otf.advanceWidth;
         font.unicodeToGID = otf.unicodeToGID;
         font.markToMarkOffsets = otf.markToMarkOffsets;
+        font.markAnchors = otf.markAnchors;
+        font.baseAnchors = otf.baseAnchors;
         font.setSize(font.size);
 
         embedFontFile(pdf, font, otf);

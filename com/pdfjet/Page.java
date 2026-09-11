@@ -597,38 +597,272 @@ final public class Page {
                     }
                 }
             }
-        } else {
-            // A mark that attaches to the mark before it, like a Thai tone mark
-            // above an upper vowel, is moved to where the font puts it. dx and
-            // dy are the offset of the glyph before, in font units.
-            int previousGID = 0;
-            int dx = 0;
-            int dy = 0;
+        } else if (font.markAnchors == null) {
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
-                if (cp != 0xFEFF) {     //BOM
-                    int gid;
-                    if (cp < font.firstChar || cp > font.lastChar) {
-                        gid = font.unicodeToGID[0x0020];
-                    } else {
-                        gid = font.unicodeToGID[cp];
+                if (cp != 0xFEFF) {     // BOM
+                    appendCodePointAsHex(glyphOf(font, cp));
+                }
+            }
+        } else {
+            // The font has a GPOS table, so the marks are moved to where it puts them.
+            int[] codePoints = new int[length];
+            int[] gids = new int[length];
+            int n = 0;
+            boolean hasMarks = false;
+            for (int i = 0; i < length; ) {
+                int cp = str.codePointAt(i);
+                i += Character.charCount(cp);
+                if (cp != 0xFEFF) {     // BOM
+                    codePoints[n] = cp;
+                    gids[n] = glyphOf(font, cp);
+                    hasMarks |= isMark(cp);
+                    n++;
+                }
+            }
+            if (!hasMarks) {
+                for (int i = 0; i < n; i++) {
+                    appendCodePointAsHex(gids[i]);
+                }
+                return;
+            }
+            int[] offsets = markOffsets(font, codePoints, gids, n);
+            int i = 0;
+            while (i < n) {
+                int end = i + 1;
+                if (codePoints[i] != 0x20) {
+                    while (end < n && codePoints[end] != 0x20) {
+                        end++;
                     }
-                    int[] offset = (font.markToMarkOffsets == null) ?
-                            null : font.markToMarkOffsets.get((previousGID << 16) | gid);
-                    if (offset == null) {
-                        appendCodePointAsHex(gid);
-                        dx = 0;
-                        dy = 0;
-                    } else {
-                        dx += offset[0] - font.advanceWidth[previousGID];
-                        dy += offset[1];
-                        appendMovedGlyph(font, gid, dx, dy);
+                }
+                if (isMoved(offsets, i, end)) {
+                    appendWordWithMovedMarks(font, codePoints, gids, offsets, i, end);
+                } else {
+                    for (int k = i; k < end; k++) {
+                        appendCodePointAsHex(gids[k]);
                     }
-                    previousGID = gid;
+                }
+                i = end;
+            }
+        }
+    }
+
+    private static boolean isMoved(int[] offsets, int from, int to) {
+        for (int k = from; k < to; k++) {
+            if (offsets[2*k] != 0 || offsets[2*k + 1] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Draws a word with moved marks in a marked content span that has the text
+    // of the word as its actual text. Text extraction would otherwise take a
+    // moved mark for text above or below the line, and break the word there.
+    // Poppler puts the actual text where the first glyph of the span is drawn,
+    // so a word that starts with a moved mark, like a Hebrew or Arabic word
+    // drawn in visual order, starts with a space drawn back over the space
+    // before it, and its actual text starts with a space. MuPDF takes the
+    // glyphs that match the actual text as they are, and leaves out a space
+    // drawn over a space.
+    private void appendWordWithMovedMarks(
+            Font font, int[] codePoints, int[] gids, int[] offsets, int from, int to) {
+        boolean leadingSpace = isMoved(offsets, from, from + 1);
+        StringBuilder text = new StringBuilder(leadingSpace ? " " : "");
+        for (int k = from; k < to; k++) {
+            // The text the glyphs map to: a glyph missing from the font is a
+            // space, and an Arabic letter form is its letter.
+            int cp = codePoints[k];
+            String letters = Bidi.lettersOf(cp);
+            if (cp < font.firstChar || cp > font.lastChar) {
+                text.append(' ');
+            } else if (letters != null) {
+                text.append(letters);
+            } else {
+                text.appendCodePoint(cp);
+            }
+        }
+        append("> Tj\n/Span <</ActualText <");
+        append(toUTF16Hex(text.toString()));
+        append(">>> BDC\n");
+        if (leadingSpace) {
+            int space = font.unicodeToGID[0x0020];
+            append("[");
+            append(1000f * font.advanceWidth[space] / font.unitsPerEm);
+            append(" <");
+            appendCodePointAsHex(space);
+            append(">] TJ\n");
+        }
+        append("<");
+        for (int k = from; k < to; k++) {
+            if (offsets[2*k] == 0 && offsets[2*k + 1] == 0) {
+                appendCodePointAsHex(gids[k]);
+            } else {
+                appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
+            }
+        }
+        append("> Tj\nEMC\n<");
+    }
+
+    private static int glyphOf(Font font, int cp) {
+        if (cp < font.firstChar || cp > font.lastChar) {
+            return font.unicodeToGID[0x0020];
+        }
+        return font.unicodeToGID[cp];
+    }
+
+    // Returns the offsets that move the marks to where the GPOS table of the
+    // font puts them, dx and dy in font units for each glyph. A mark goes on
+    // the letter or ligature before it. Right to left text is drawn in visual
+    // order, with the marks before their letter, so a Hebrew or Arabic mark
+    // goes on the letter after it. A mark that attaches to the mark before it,
+    // like a Thai tone mark above an upper vowel, goes on that mark instead.
+    // The marks of a letter are taken in logical order, sorted as HarfBuzz
+    // sorts them, so a fatha goes above a shadda whichever was typed first.
+    private static int[] markOffsets(Font font, int[] codePoints, int[] gids, int n) {
+        // Where each glyph is drawn before it is moved, in font units.
+        int[] x = new int[n];
+        for (int i = 1; i < n; i++) {
+            x[i] = x[i - 1] + font.advanceWidth[gids[i - 1]];
+        }
+        int[] offsets = new int[2*n];
+        for (int i = 0; i < n; i++) {
+            if (!isMark(codePoints[i])) {
+                continue;
+            }
+            int step = isRightToLeft(codePoints[i]) ? 1 : -1;
+            int base = i + step;
+            while (base >= 0 && base < n && isMark(codePoints[base])) {
+                base += step;
+            }
+            if (base >= 0 && base < n) {
+                int[] offset = markToBaseOffset(font, codePoints[base], gids[base], gids[i]);
+                if (offset != null) {
+                    offsets[2*i] = x[base] + offset[0] - x[i];
+                    offsets[2*i + 1] = offset[1];
                 }
             }
         }
+        int[] order = new int[n];
+        int i = 0;
+        while (i < n) {
+            if (!isMark(codePoints[i])) {
+                i++;
+                continue;
+            }
+            // The marks from i to j - 1 go on the same letter.
+            boolean rightToLeft = isRightToLeft(codePoints[i]);
+            int j = i + 1;
+            while (j < n && isMark(codePoints[j]) && isRightToLeft(codePoints[j]) == rightToLeft) {
+                j++;
+            }
+            int count = j - i;
+            for (int k = 0; k < count; k++) {
+                int mark = rightToLeft ? j - 1 - k : i + k;
+                // Moves the mark back past the marks that sort after it. A mark
+                // of order 0 is never moved, and no mark moves past it.
+                int markOrder = markOrder(codePoints[mark]);
+                int l = k - 1;
+                while (markOrder != 0 && l >= 0 && markOrder(codePoints[order[l]]) > markOrder) {
+                    order[l + 1] = order[l];
+                    l--;
+                }
+                order[l + 1] = mark;
+            }
+            for (int k = 1; k < count; k++) {
+                placeOnMark(font, gids, x, offsets, order[k], order[k - 1]);
+            }
+            i = j;
+        }
+        return offsets;
+    }
+
+    // Returns the order of a mark among the marks of its letter, or 0 for a
+    // mark that stays where it is: the canonical combining class of the mark,
+    // changed as in HarfBuzz to put the Hebrew points in the order of the SBL
+    // Hebrew manual, and the Arabic shadda before the other Arabic vowel marks.
+    private static int markOrder(int cp) {
+        if (cp >= 0x05B0 && cp <= 0x05C7) {     // Hebrew points
+            return hebrewMarkOrder[cp - 0x05B0];
+        }
+        if (cp >= 0x064B && cp <= 0x0652) {     // Arabic fathatan to sukun
+            return arabicMarkOrder[cp - 0x064B];
+        }
+        switch (cp) {
+        case 0x0670: return 35;     // ARABIC LETTER SUPERSCRIPT ALEF
+        case 0x0E38: case 0x0E39: return 103;   // THAI SARA U, SARA UU
+        case 0x0E3A: return 9;      // THAI PHINTHU
+        case 0x0E48: case 0x0E49: case 0x0E4A: case 0x0E4B: return 107;  // THAI tone marks
+        case 0x0EB8: case 0x0EB9: return 118;   // LAO VOWEL SIGN U, UU
+        case 0x0EC8: case 0x0EC9: case 0x0ECA: case 0x0ECB: return 122;  // LAO tone marks
+        default: return 0;
+        }
+    }
+
+    private static final int[] hebrewMarkOrder = {
+        22, 15, 16, 17, 23, 18, 19, 20,     // U+05B0 sheva to U+05B7 patah
+        21, 14, 14, 24, 12, 25, 0, 13,      // U+05B8 qamats to U+05BF rafe
+        0, 10, 11, 0, 230, 220, 0, 21       // U+05C0 to U+05C7 qamats qatan
+    };
+
+    private static final int[] arabicMarkOrder = {
+        28, 29, 30, 31, 32, 33, 27, 34      // U+064B fathatan to U+0652 sukun
+    };
+
+    // Returns the offset of the mark from the letter or ligature it goes on, in
+    // font units, or null. A font can have the anchors of an isolated Arabic
+    // letter form only for its letter, which looks the same.
+    private static int[] markToBaseOffset(Font font, int baseCodePoint, int baseGID, int markGID) {
+        int[] offset = anchorOffset(font, baseGID, markGID);
+        if (offset == null) {
+            int letter = Bidi.letterOfIsolatedForm(baseCodePoint);
+            if (letter != 0) {
+                offset = anchorOffset(font, font.unicodeToGID[letter], markGID);
+            }
+        }
+        return offset;
+    }
+
+    // Returns the offset of the mark from the glyph it goes on, from the first
+    // MarkToBase or MarkToLigature subtable that has an anchor for both, or null.
+    private static int[] anchorOffset(Font font, int baseGID, int markGID) {
+        for (int i = 0; i < font.markAnchors.size(); i++) {
+            int[] mark = font.markAnchors.get(i).get(markGID);
+            if (mark == null) {
+                continue;
+            }
+            int[] base = font.baseAnchors.get(i).get(baseGID);
+            int c = 3*mark[0];
+            if (base != null && c + 2 < base.length && base[c] == 1) {
+                return new int[] {base[c + 1] - mark[1], base[c + 2] - mark[2]};
+            }
+        }
+        return null;
+    }
+
+    // Moves the mark onto the other mark, if the font has an offset for the two.
+    private static void placeOnMark(
+            Font font, int[] gids, int[] x, int[] offsets, int mark, int other) {
+        int[] offset = font.markToMarkOffsets.get((gids[other] << 16) | gids[mark]);
+        if (offset != null) {
+            offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark];
+            offsets[2*mark + 1] = offsets[2*other + 1] + offset[1];
+        }
+    }
+
+    private static boolean isMark(int cp) {
+        int type = Character.getType(cp);
+        return type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK;
+    }
+
+    // Returns true if the character is in the blocks of the right to left scripts.
+    private static boolean isRightToLeft(int cp) {
+        return (cp >= 0x0590 && cp <= 0x08FF) ||
+                (cp >= 0xFB1D && cp <= 0xFDFF) ||
+                (cp >= 0xFE70 && cp <= 0xFEFF) ||
+                (cp >= 0x10800 && cp <= 0x10FFF) ||
+                (cp >= 0x1E800 && cp <= 0x1EFFF);
     }
 
     // Ends the string of glyphs, draws the glyph moved by dx and dy font units,

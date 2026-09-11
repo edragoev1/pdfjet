@@ -361,6 +361,18 @@ public class Bidi {
         return nil
     }
 
+    /// Returns the letter that an isolated form put in by reorderVisually
+    /// stands for, or nil for any other character. An isolated form looks
+    /// like its letter.
+    static func letterOfIsolatedForm(_ ch: UInt32) -> UInt32? {
+        if ch >= 0xFB50 {
+            for i in stride(from: 0, to: forms.count, by: 5) where forms[i + 1] == ch {
+                return forms[i]
+            }
+        }
+        return nil
+    }
+
     /// Returns the isolated lam-alef ligature for the alef, or nil for any other character.
     private static func lamAlef(_ ch: UInt32) -> UInt32? {
         switch ch {

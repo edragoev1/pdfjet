@@ -72,6 +72,19 @@ final public class Font {
      * .ttf file has them, from its GPOS table.
      */
     protected java.util.Map<Integer, int[]> markToMarkOffsets;
+    /**
+     * The anchors of the marks, by glyph ID, for each MarkToBase and
+     * MarkToLigature lookup subtable, or null: the class and anchor of each
+     * mark. Only a font read from a .otf or .ttf file has them, from its GPOS
+     * table.
+     */
+    protected java.util.List<java.util.Map<Integer, int[]>> markAnchors;
+    /**
+     * The anchors of the letters and ligatures that the marks go on, by glyph
+     * ID, for each subtable in markAnchors, or null: 1 and an anchor, or 0 and
+     * no anchor, for each class of marks.
+     */
+    protected java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
     /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
     /** The size of the compressed font data. */

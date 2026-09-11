@@ -319,6 +319,22 @@ namespace PDFjet.NET {
             return null;
         }
 
+        /// <summary>
+        /// Returns the letter that an isolated form put in by ReorderVisually
+        /// stands for, or 0 for any other character. An isolated form looks like
+        /// its letter.
+        /// </summary>
+        internal static int LetterOfIsolatedForm(int ch) {
+            if (ch >= 0xFB50) {
+                for (int i = 0; i < forms.Length; i += 5) {
+                    if (forms[i + 1] == ch) {
+                        return forms[i];
+                    }
+                }
+            }
+            return 0;
+        }
+
         /// <summary>Returns the isolated lam-alef ligature for the alef, or 0 for any other character.</summary>
         private static int LamAlef(int ch) {
             switch (ch) {

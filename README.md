@@ -116,15 +116,18 @@ ligature. `TextBlock.setRightToLeft(true)` wraps right to left text at the
 width of the text block and prepares each line that way. Example_27 shows both.
 
 The letters are shaped by replacing them with the presentation forms that fonts
-map to Unicode. PDFjet does not use a font's OpenType substitution and
-positioning tables (GSUB and GPOS), so:
+map to Unicode. PDFjet does not use a font's OpenType substitution table (GSUB),
+and uses only the mark positioning of its positioning table (GPOS), so:
 
 - Urdu is drawn in the Naskh style of the Arabic fonts, not in Nastaliq, the
   style Urdu is usually printed in. Nastaliq fonts, such as Noto Nastaliq
   Urdu, depend on the OpenType tables, so they are not expected to work.
-- Diacritics are not positioned on their letters. The Arabic, Persian and
-  Urdu marks are drawn where the font puts them by default, and Hebrew niqqud
-  falls between letters.
+- Diacritics are positioned on their letters only in a font read from a `.otf`
+  or `.ttf` file, as described in [Marks](#marks). In a font read from a
+  `.otf.stream` or `.ttf.stream` file they are drawn where the font puts them
+  by default: IBM Plex Sans Arabic draws every mark above its letter, and
+  Hebrew niqqud falls between letters.
+- The marks on a lam-alef ligature are put on its lam.
 - A font's localized forms, such as the Urdu shapes of some digits, and its
   optional ligatures and kerning are not used.
 - Only the letters of Arabic, Persian and Urdu are shaped. Letters used only by
@@ -160,11 +163,24 @@ is broken between its characters, so text without zero width spaces still fits
 in the text block, but its lines can break inside words. The Thai text of
 Example_27, `data/languages/thai.txt`, has a zero width space between its words.
 
-A mark above another mark, like a Thai tone mark above an upper vowel, is moved
-to where the GPOS table of the font puts it. Only a font read from a `.otf` or
-`.ttf` file has the table: a `.otf.stream` or `.ttf.stream` file does not, so
-its marks are drawn on top of each other. Example_27 reads its Thai font from
-`fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf` for this reason.
+## Marks
+
+A mark, like a Hebrew or Arabic vowel mark or a Thai tone mark, is moved to
+where the GPOS table of the font puts it: on its letter or ligature, or on the
+mark it attaches to, like a Thai tone mark above an upper vowel or an Arabic
+fatha above a shadda. The marks of a letter are stacked in the order HarfBuzz
+puts them in, so the stacking does not depend on the order they were typed in.
+Only a font read from a `.otf` or `.ttf` file has the table: a `.otf.stream` or
+`.ttf.stream` file does not, so its marks are drawn where the font puts them by
+default, and a mark on another mark is drawn on top of it. Example_27 reads its
+Thai font from `fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf` for this
+reason.
+
+Text extraction tools take a mark that is moved up or down for text off the
+line, and break the word at it. Each word with a moved mark is drawn in a
+marked content span that has the text of the word as its ActualText, so Poppler
+extracts the word whole. MuPDF 1.27 extracts the letters and marks in order,
+but puts spaces inside some of these words.
 
 ## Port differences
 

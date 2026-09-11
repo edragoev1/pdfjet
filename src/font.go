@@ -44,6 +44,8 @@ type Font struct {
 	advanceWidth           []uint16
 	unicodeToGID           []int
 	markToMarkOffsets      map[int][2]int // From the GPOS table of a .otf or .ttf file
+	markAnchors            []map[int][]int
+	baseAnchors            []map[int][]int
 	cff                    bool
 	compressedSize         int
 	uncompressedSize       int

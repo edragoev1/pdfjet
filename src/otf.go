@@ -49,6 +49,8 @@ type OTF struct {
 	advanceWidth       []uint16
 	unicodeToGID       []int
 	markToMarkOffsets  map[int][2]int
+	markAnchors        []map[int][]int
+	baseAnchors        []map[int][]int
 	cff                bool
 	cffOff             int
 	cffLen             int
@@ -317,10 +319,14 @@ func getCffTable(otf *OTF, table *FontTable) {
 	otf.cffLen = table.length
 }
 
-// getGposTable reads where the marks that attach to other marks go, like a Thai
-// tone mark above an upper vowel, from the MarkToMark lookups of the GPOS table.
+// getGposTable reads where the marks go from the GPOS table: the marks on
+// letters and ligatures, like Hebrew and Arabic vowel marks, from its MarkToBase
+// and MarkToLigature lookups, and the marks that attach to other marks, like a
+// Thai tone mark above an upper vowel, from its MarkToMark lookups.
 func getGposTable(otf *OTF, table *FontTable) {
 	otf.markToMarkOffsets = make(map[int][2]int)
+	otf.markAnchors = make([]map[int][]int, 0)
+	otf.baseAnchors = make([]map[int][]int, 0)
 	lookupList := table.offset + otf.uint16At(table.offset+8)
 	lookupCount := otf.uint16At(lookupList)
 	for i := 0; i < lookupCount; i++ {
@@ -334,11 +340,61 @@ func getGposTable(otf *OTF, table *FontTable) {
 				lookupType2 = otf.uint16At(subTable + 2)
 				subTable += otf.uint32At(subTable + 4)
 			}
-			if lookupType2 == 6 && otf.uint16At(subTable) == 1 {
+			if lookupType2 == 4 && otf.uint16At(subTable) == 1 {
+				otf.getMarkToBaseAnchors(subTable, false)
+			} else if lookupType2 == 5 && otf.uint16At(subTable) == 1 {
+				otf.getMarkToBaseAnchors(subTable, true)
+			} else if lookupType2 == 6 && otf.uint16At(subTable) == 1 {
 				otf.getMarkToMarkOffsets(subTable)
 			}
 		}
 	}
+}
+
+// getMarkToBaseAnchors keeps the anchors of a MarkToBase or MarkToLigature
+// subtable, by glyph ID: the class and anchor of each mark, and an anchor of
+// each letter for each class of marks, with 1 before an anchor that is there
+// and 0 before one that is not. A ligature has anchors for each of the letters
+// it joins, and keeps those of its first letter, like the lam of a lam-alef
+// ligature.
+func (otf *OTF) getMarkToBaseAnchors(subTable int, ligature bool) {
+	markGlyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+2))
+	baseGlyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+4))
+	classCount := otf.uint16At(subTable + 6)
+	markArray := subTable + otf.uint16At(subTable+8)
+	baseArray := subTable + otf.uint16At(subTable+10)
+	marks := make(map[int][]int)
+	for m, glyph := range markGlyphs {
+		anchor := markArray + otf.uint16At(markArray+4+4*m)
+		marks[glyph] = []int{
+			otf.uint16At(markArray + 2 + 4*m), otf.int16At(anchor + 2), otf.int16At(anchor + 4)}
+	}
+	bases := make(map[int][]int)
+	for b, glyph := range baseGlyphs {
+		// The anchor offsets are from the base array, or from the ligature
+		// attach table of a ligature.
+		table := baseArray
+		record := baseArray + 2 + 2*b*classCount
+		if ligature {
+			table = baseArray + otf.uint16At(baseArray+2+2*b)
+			record = table + 2
+			if otf.uint16At(table) == 0 { // No letters
+				continue
+			}
+		}
+		anchors := make([]int, 3*classCount)
+		for c := 0; c < classCount; c++ {
+			anchorOffset := otf.uint16At(record + 2*c)
+			if anchorOffset != 0 {
+				anchors[3*c] = 1
+				anchors[3*c+1] = otf.int16At(table + anchorOffset + 2)
+				anchors[3*c+2] = otf.int16At(table + anchorOffset + 4)
+			}
+		}
+		bases[glyph] = anchors
+	}
+	otf.markAnchors = append(otf.markAnchors, marks)
+	otf.baseAnchors = append(otf.baseAnchors, bases)
 }
 
 // getMarkToMarkOffsets keeps the offset of each mark from the mark it attaches

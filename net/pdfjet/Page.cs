@@ -590,41 +590,277 @@ public class Page {
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
-        } else {
-            // A mark that attaches to the mark before it, like a Thai tone mark
-            // above an upper vowel, is moved to where the font puts it. dx and
-            // dy are the offset of the glyph before, in font units.
-            int previousGID = 0;
-            int dx = 0;
-            int dy = 0;
+        } else if (font.markAnchors == null) {
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
                 if (codePoint != 0xFEFF) {                  // BOM
-                    int gid;
-                    if (codePoint < font.firstChar || codePoint > font.lastChar) {
-                        gid = font.unicodeToGID[0x0020];    // Space fallback
-                    } else {
-                        gid = font.unicodeToGID[codePoint];
-                    }
-                    int[] offset = null;
-                    if (font.markToMarkOffsets != null) {
-                        font.markToMarkOffsets.TryGetValue((previousGID << 16) | gid, out offset);
-                    }
-                    if (offset == null) {
-                        AppendCodePointAsHex(gid);
-                        dx = 0;
-                        dy = 0;
-                    } else {
-                        dx += offset[0] - font.advanceWidth[previousGID];
-                        dy += offset[1];
-                        AppendMovedGlyph(font, gid, dx, dy);
-                    }
-                    previousGID = gid;
+                    AppendCodePointAsHex(GlyphOf(font, codePoint));
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
+        } else {
+            // The font has a GPOS table, so the marks are moved to where it puts them.
+            int[] codePoints = new int[str.Length];
+            int[] gids = new int[str.Length];
+            int n = 0;
+            bool hasMarks = false;
+            int i = 0;
+            while (i < str.Length) {
+                int codePoint = char.ConvertToUtf32(str, i);
+                if (codePoint != 0xFEFF) {                  // BOM
+                    codePoints[n] = codePoint;
+                    gids[n] = GlyphOf(font, codePoint);
+                    hasMarks |= IsMark(codePoint);
+                    n++;
+                }
+                i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
+            }
+            if (!hasMarks) {
+                for (int k = 0; k < n; k++) {
+                    AppendCodePointAsHex(gids[k]);
+                }
+                return;
+            }
+            int[] offsets = MarkOffsets(font, codePoints, gids, n);
+            i = 0;
+            while (i < n) {
+                int end = i + 1;
+                if (codePoints[i] != 0x20) {
+                    while (end < n && codePoints[end] != 0x20) {
+                        end++;
+                    }
+                }
+                if (IsMoved(offsets, i, end)) {
+                    AppendWordWithMovedMarks(font, codePoints, gids, offsets, i, end);
+                } else {
+                    for (int k = i; k < end; k++) {
+                        AppendCodePointAsHex(gids[k]);
+                    }
+                }
+                i = end;
+            }
         }
+    }
+
+    private static int GlyphOf(Font font, int codePoint) {
+        if (codePoint < font.firstChar || codePoint > font.lastChar) {
+            return font.unicodeToGID[0x0020];               // Space fallback
+        }
+        return font.unicodeToGID[codePoint];
+    }
+
+    // Returns the offsets that move the marks to where the GPOS table of the
+    // font puts them, dx and dy in font units for each glyph. A mark goes on
+    // the letter or ligature before it. Right to left text is drawn in visual
+    // order, with the marks before their letter, so a Hebrew or Arabic mark
+    // goes on the letter after it. A mark that attaches to the mark before it,
+    // like a Thai tone mark above an upper vowel, goes on that mark instead.
+    // The marks of a letter are taken in logical order, sorted as HarfBuzz
+    // sorts them, so a fatha goes above a shadda whichever was typed first.
+    private static int[] MarkOffsets(Font font, int[] codePoints, int[] gids, int n) {
+        // Where each glyph is drawn before it is moved, in font units.
+        int[] x = new int[n];
+        for (int i = 1; i < n; i++) {
+            x[i] = x[i - 1] + font.advanceWidth[gids[i - 1]];
+        }
+        int[] offsets = new int[2*n];
+        for (int i = 0; i < n; i++) {
+            if (!IsMark(codePoints[i])) {
+                continue;
+            }
+            int step = IsRightToLeft(codePoints[i]) ? 1 : -1;
+            int baseIndex = i + step;
+            while (baseIndex >= 0 && baseIndex < n && IsMark(codePoints[baseIndex])) {
+                baseIndex += step;
+            }
+            if (baseIndex >= 0 && baseIndex < n) {
+                int[] offset = MarkToBaseOffset(font, codePoints[baseIndex], gids[baseIndex], gids[i]);
+                if (offset != null) {
+                    offsets[2*i] = x[baseIndex] + offset[0] - x[i];
+                    offsets[2*i + 1] = offset[1];
+                }
+            }
+        }
+        int[] order = new int[n];
+        int start = 0;
+        while (start < n) {
+            if (!IsMark(codePoints[start])) {
+                start++;
+                continue;
+            }
+            // The marks from start to end - 1 go on the same letter.
+            bool rightToLeft = IsRightToLeft(codePoints[start]);
+            int end = start + 1;
+            while (end < n && IsMark(codePoints[end]) && IsRightToLeft(codePoints[end]) == rightToLeft) {
+                end++;
+            }
+            int count = end - start;
+            for (int k = 0; k < count; k++) {
+                int mark = rightToLeft ? end - 1 - k : start + k;
+                // Moves the mark back past the marks that sort after it. A mark
+                // of order 0 is never moved, and no mark moves past it.
+                int markOrder = MarkOrder(codePoints[mark]);
+                int l = k - 1;
+                while (markOrder != 0 && l >= 0 && MarkOrder(codePoints[order[l]]) > markOrder) {
+                    order[l + 1] = order[l];
+                    l--;
+                }
+                order[l + 1] = mark;
+            }
+            for (int k = 1; k < count; k++) {
+                PlaceOnMark(font, gids, x, offsets, order[k], order[k - 1]);
+            }
+            start = end;
+        }
+        return offsets;
+    }
+
+    // Returns the offset of the mark from the letter or ligature it goes on, in
+    // font units, or null. A font can have the anchors of an isolated Arabic
+    // letter form only for its letter, which looks the same.
+    private static int[] MarkToBaseOffset(Font font, int baseCodePoint, int baseGID, int markGID) {
+        int[] offset = AnchorOffset(font, baseGID, markGID);
+        if (offset == null) {
+            int letter = Bidi.LetterOfIsolatedForm(baseCodePoint);
+            if (letter != 0) {
+                offset = AnchorOffset(font, font.unicodeToGID[letter], markGID);
+            }
+        }
+        return offset;
+    }
+
+    // Returns the offset of the mark from the glyph it goes on, from the first
+    // MarkToBase or MarkToLigature subtable that has an anchor for both, or null.
+    private static int[] AnchorOffset(Font font, int baseGID, int markGID) {
+        for (int i = 0; i < font.markAnchors.Count; i++) {
+            int[] mark;
+            if (!font.markAnchors[i].TryGetValue(markGID, out mark)) {
+                continue;
+            }
+            int[] anchors;
+            font.baseAnchors[i].TryGetValue(baseGID, out anchors);
+            int c = 3*mark[0];
+            if (anchors != null && c + 2 < anchors.Length && anchors[c] == 1) {
+                return new int[] {anchors[c + 1] - mark[1], anchors[c + 2] - mark[2]};
+            }
+        }
+        return null;
+    }
+
+    // Moves the mark onto the other mark, if the font has an offset for the two.
+    private static void PlaceOnMark(
+            Font font, int[] gids, int[] x, int[] offsets, int mark, int other) {
+        int[] offset;
+        if (font.markToMarkOffsets.TryGetValue((gids[other] << 16) | gids[mark], out offset)) {
+            offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark];
+            offsets[2*mark + 1] = offsets[2*other + 1] + offset[1];
+        }
+    }
+
+    private static bool IsMark(int codePoint) {
+        System.Globalization.UnicodeCategory category =
+                System.Globalization.CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(codePoint), 0);
+        return category == System.Globalization.UnicodeCategory.NonSpacingMark ||
+                category == System.Globalization.UnicodeCategory.EnclosingMark;
+    }
+
+    // Returns true if the character is in the blocks of the right to left scripts.
+    private static bool IsRightToLeft(int codePoint) {
+        return (codePoint >= 0x0590 && codePoint <= 0x08FF) ||
+                (codePoint >= 0xFB1D && codePoint <= 0xFDFF) ||
+                (codePoint >= 0xFE70 && codePoint <= 0xFEFF) ||
+                (codePoint >= 0x10800 && codePoint <= 0x10FFF) ||
+                (codePoint >= 0x1E800 && codePoint <= 0x1EFFF);
+    }
+
+    // Returns the order of a mark among the marks of its letter, or 0 for a
+    // mark that stays where it is: the canonical combining class of the mark,
+    // changed as in HarfBuzz to put the Hebrew points in the order of the SBL
+    // Hebrew manual, and the Arabic shadda before the other Arabic vowel marks.
+    private static int MarkOrder(int codePoint) {
+        if (codePoint >= 0x05B0 && codePoint <= 0x05C7) {   // Hebrew points
+            return hebrewMarkOrder[codePoint - 0x05B0];
+        }
+        if (codePoint >= 0x064B && codePoint <= 0x0652) {   // Arabic fathatan to sukun
+            return arabicMarkOrder[codePoint - 0x064B];
+        }
+        switch (codePoint) {
+            case 0x0670: return 35;     // ARABIC LETTER SUPERSCRIPT ALEF
+            case 0x0E38: case 0x0E39: return 103;   // THAI SARA U, SARA UU
+            case 0x0E3A: return 9;      // THAI PHINTHU
+            case 0x0E48: case 0x0E49: case 0x0E4A: case 0x0E4B: return 107;  // THAI tone marks
+            case 0x0EB8: case 0x0EB9: return 118;   // LAO VOWEL SIGN U, UU
+            case 0x0EC8: case 0x0EC9: case 0x0ECA: case 0x0ECB: return 122;  // LAO tone marks
+            default: return 0;
+        }
+    }
+
+    private static readonly int[] hebrewMarkOrder = {
+        22, 15, 16, 17, 23, 18, 19, 20,     // U+05B0 sheva to U+05B7 patah
+        21, 14, 14, 24, 12, 25, 0, 13,      // U+05B8 qamats to U+05BF rafe
+        0, 10, 11, 0, 230, 220, 0, 21       // U+05C0 to U+05C7 qamats qatan
+    };
+
+    private static readonly int[] arabicMarkOrder = {
+        28, 29, 30, 31, 32, 33, 27, 34      // U+064B fathatan to U+0652 sukun
+    };
+
+    private static bool IsMoved(int[] offsets, int start, int end) {
+        for (int k = start; k < end; k++) {
+            if (offsets[2*k] != 0 || offsets[2*k + 1] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Draws a word with moved marks in a marked content span that has the text
+    // of the word as its actual text. Text extraction would otherwise take a
+    // moved mark for text above or below the line, and break the word there.
+    // Poppler puts the actual text where the first glyph of the span is drawn,
+    // so a word that starts with a moved mark, like a Hebrew or Arabic word
+    // drawn in visual order, starts with a space drawn back over the space
+    // before it, and its actual text starts with a space. MuPDF takes the
+    // glyphs that match the actual text as they are, and leaves out a space
+    // drawn over a space.
+    private void AppendWordWithMovedMarks(
+            Font font, int[] codePoints, int[] gids, int[] offsets, int start, int end) {
+        bool leadingSpace = IsMoved(offsets, start, start + 1);
+        StringBuilder text = new StringBuilder(leadingSpace ? " " : "");
+        for (int k = start; k < end; k++) {
+            // The text the glyphs map to: a glyph missing from the font is a
+            // space, and an Arabic letter form is its letter.
+            int codePoint = codePoints[k];
+            String letters = Bidi.LettersOf(codePoint);
+            if (codePoint < font.firstChar || codePoint > font.lastChar) {
+                text.Append(' ');
+            } else if (letters != null) {
+                text.Append(letters);
+            } else {
+                text.Append(char.ConvertFromUtf32(codePoint));
+            }
+        }
+        Append("> Tj\n/Span <</ActualText <");
+        Append(ToUTF16Hex(text.ToString()));
+        Append(">>> BDC\n");
+        if (leadingSpace) {
+            int space = font.unicodeToGID[0x0020];
+            Append("[");
+            Append(1000f * font.advanceWidth[space] / font.unitsPerEm);
+            Append(" <");
+            AppendCodePointAsHex(space);
+            Append(">] TJ\n");
+        }
+        Append("<");
+        for (int k = start; k < end; k++) {
+            if (offsets[2*k] == 0 && offsets[2*k + 1] == 0) {
+                AppendCodePointAsHex(gids[k]);
+            } else {
+                AppendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
+            }
+        }
+        Append("> Tj\nEMC\n<");
     }
 
     // Ends the string of glyphs, draws the glyph moved by dx and dy font units,

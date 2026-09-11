@@ -369,35 +369,280 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				}
 			}
 		}
-	} else {
-		// A mark that attaches to the mark before it, like a Thai tone mark above
-		// an upper vowel, is moved to where the font puts it. dx and dy are the
-		// offset of the glyph before, in font units.
-		previousGID := 0
-		dx := 0
-		dy := 0
+	} else if font.markAnchors == nil {
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
-				var gid int
-				if c1 < font.firstChar || c1 > font.lastChar {
-					gid = 0x0020
-				} else {
-					gid = font.unicodeToGID[c1]
+				page.appendCodePointAsHex(glyphOf(font, c1))
+			}
+		}
+	} else {
+		// The font has a GPOS table, so the marks are moved to where it puts them.
+		codePoints := make([]rune, 0, len(runes))
+		gids := make([]int, 0, len(runes))
+		hasMarks := false
+		for _, c1 := range runes {
+			if c1 != 0xFEFF { // BOM marker
+				codePoints = append(codePoints, c1)
+				gids = append(gids, glyphOf(font, c1))
+				hasMarks = hasMarks || isMark(c1)
+			}
+		}
+		if !hasMarks {
+			for _, gid := range gids {
+				page.appendCodePointAsHex(gid)
+			}
+			return
+		}
+		offsets := markOffsets(font, codePoints, gids)
+		n := len(gids)
+		i := 0
+		for i < n {
+			end := i + 1
+			if codePoints[i] != 0x20 {
+				for end < n && codePoints[end] != 0x20 {
+					end++
 				}
-				offset, ok := font.markToMarkOffsets[(previousGID<<16)|gid]
-				if !ok {
-					page.appendCodePointAsHex(gid)
-					dx = 0
-					dy = 0
-				} else {
-					dx += offset[0] - int(font.advanceWidth[previousGID])
-					dy += offset[1]
-					page.appendMovedGlyph(font, gid, dx, dy)
+			}
+			if isMoved(offsets, i, end) {
+				page.appendWordWithMovedMarks(font, codePoints, gids, offsets, i, end)
+			} else {
+				for k := i; k < end; k++ {
+					page.appendCodePointAsHex(gids[k])
 				}
-				previousGID = gid
+			}
+			i = end
+		}
+	}
+}
+
+// glyphOf returns the glyph ID of the character, or of a space if the font does
+// not have the character.
+func glyphOf(font *Font, c rune) int {
+	if c < font.firstChar || c > font.lastChar {
+		return font.unicodeToGID[0x0020]
+	}
+	return font.unicodeToGID[c]
+}
+
+// markOffsets returns the offsets that move the marks to where the GPOS table
+// of the font puts them, dx and dy in font units for each glyph. A mark goes on
+// the letter or ligature before it. Right to left text is drawn in visual order,
+// with the marks before their letter, so a Hebrew or Arabic mark goes on the
+// letter after it. A mark that attaches to the mark before it, like a Thai tone
+// mark above an upper vowel, goes on that mark instead. The marks of a letter
+// are taken in logical order, sorted as HarfBuzz sorts them, so a fatha goes
+// above a shadda whichever was typed first.
+func markOffsets(font *Font, codePoints []rune, gids []int) []int {
+	n := len(gids)
+	// Where each glyph is drawn before it is moved, in font units.
+	x := make([]int, n)
+	for i := 1; i < n; i++ {
+		x[i] = x[i-1] + int(font.advanceWidth[gids[i-1]])
+	}
+	offsets := make([]int, 2*n)
+	for i := 0; i < n; i++ {
+		if !isMark(codePoints[i]) {
+			continue
+		}
+		step := -1
+		if isRightToLeft(codePoints[i]) {
+			step = 1
+		}
+		base := i + step
+		for base >= 0 && base < n && isMark(codePoints[base]) {
+			base += step
+		}
+		if base >= 0 && base < n {
+			if offset := markToBaseOffset(font, codePoints[base], gids[base], gids[i]); offset != nil {
+				offsets[2*i] = x[base] + offset[0] - x[i]
+				offsets[2*i+1] = offset[1]
 			}
 		}
 	}
+	order := make([]int, n)
+	start := 0
+	for start < n {
+		if !isMark(codePoints[start]) {
+			start++
+			continue
+		}
+		// The marks from start to end - 1 go on the same letter.
+		rightToLeft := isRightToLeft(codePoints[start])
+		end := start + 1
+		for end < n && isMark(codePoints[end]) && isRightToLeft(codePoints[end]) == rightToLeft {
+			end++
+		}
+		count := end - start
+		for k := 0; k < count; k++ {
+			mark := start + k
+			if rightToLeft {
+				mark = end - 1 - k
+			}
+			// Moves the mark back past the marks that sort after it. A mark of
+			// order 0 is never moved, and no mark moves past it.
+			rank := markOrder(codePoints[mark])
+			l := k - 1
+			for rank != 0 && l >= 0 && markOrder(codePoints[order[l]]) > rank {
+				order[l+1] = order[l]
+				l--
+			}
+			order[l+1] = mark
+		}
+		for k := 1; k < count; k++ {
+			placeOnMark(font, gids, x, offsets, order[k], order[k-1])
+		}
+		start = end
+	}
+	return offsets
+}
+
+// markToBaseOffset returns the offset of the mark from the letter or ligature it
+// goes on, in font units, or nil. A font can have the anchors of an isolated
+// Arabic letter form only for its letter, which looks the same.
+func markToBaseOffset(font *Font, baseCodePoint rune, baseGID, markGID int) []int {
+	offset := anchorOffset(font, baseGID, markGID)
+	if offset == nil {
+		if letter := letterOfIsolatedForm(baseCodePoint); letter != 0 {
+			offset = anchorOffset(font, font.unicodeToGID[letter], markGID)
+		}
+	}
+	return offset
+}
+
+// anchorOffset returns the offset of the mark from the glyph it goes on, from
+// the first MarkToBase or MarkToLigature subtable that has an anchor for both,
+// or nil.
+func anchorOffset(font *Font, baseGID, markGID int) []int {
+	for i, marks := range font.markAnchors {
+		mark, ok := marks[markGID]
+		if !ok {
+			continue
+		}
+		anchors, ok := font.baseAnchors[i][baseGID]
+		c := 3 * mark[0]
+		if ok && c+2 < len(anchors) && anchors[c] == 1 {
+			return []int{anchors[c+1] - mark[1], anchors[c+2] - mark[2]}
+		}
+	}
+	return nil
+}
+
+// placeOnMark moves the mark onto the other mark, if the font has an offset for
+// the two.
+func placeOnMark(font *Font, gids, x, offsets []int, mark, other int) {
+	if offset, ok := font.markToMarkOffsets[(gids[other]<<16)|gids[mark]]; ok {
+		offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark]
+		offsets[2*mark+1] = offsets[2*other+1] + offset[1]
+	}
+}
+
+func isMark(c rune) bool {
+	return unicode.In(c, unicode.Mn, unicode.Me)
+}
+
+// isRightToLeft returns true if the character is in the blocks of the right to
+// left scripts.
+func isRightToLeft(c rune) bool {
+	return (c >= 0x0590 && c <= 0x08FF) ||
+		(c >= 0xFB1D && c <= 0xFDFF) ||
+		(c >= 0xFE70 && c <= 0xFEFF) ||
+		(c >= 0x10800 && c <= 0x10FFF) ||
+		(c >= 0x1E800 && c <= 0x1EFFF)
+}
+
+// markOrder returns the order of a mark among the marks of its letter, or 0 for
+// a mark that stays where it is: the canonical combining class of the mark,
+// changed as in HarfBuzz to put the Hebrew points in the order of the SBL Hebrew
+// manual, and the Arabic shadda before the other Arabic vowel marks.
+func markOrder(c rune) int {
+	if c >= 0x05B0 && c <= 0x05C7 { // Hebrew points
+		return hebrewMarkOrder[c-0x05B0]
+	}
+	if c >= 0x064B && c <= 0x0652 { // Arabic fathatan to sukun
+		return arabicMarkOrder[c-0x064B]
+	}
+	switch c {
+	case 0x0670: // ARABIC LETTER SUPERSCRIPT ALEF
+		return 35
+	case 0x0E38, 0x0E39: // THAI SARA U, SARA UU
+		return 103
+	case 0x0E3A: // THAI PHINTHU
+		return 9
+	case 0x0E48, 0x0E49, 0x0E4A, 0x0E4B: // THAI tone marks
+		return 107
+	case 0x0EB8, 0x0EB9: // LAO VOWEL SIGN U, UU
+		return 118
+	case 0x0EC8, 0x0EC9, 0x0ECA, 0x0ECB: // LAO tone marks
+		return 122
+	}
+	return 0
+}
+
+var hebrewMarkOrder = [...]int{
+	22, 15, 16, 17, 23, 18, 19, 20, // U+05B0 sheva to U+05B7 patah
+	21, 14, 14, 24, 12, 25, 0, 13, // U+05B8 qamats to U+05BF rafe
+	0, 10, 11, 0, 230, 220, 0, 21, // U+05C0 to U+05C7 qamats qatan
+}
+
+var arabicMarkOrder = [...]int{
+	28, 29, 30, 31, 32, 33, 27, 34, // U+064B fathatan to U+0652 sukun
+}
+
+func isMoved(offsets []int, start, end int) bool {
+	for k := start; k < end; k++ {
+		if offsets[2*k] != 0 || offsets[2*k+1] != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// appendWordWithMovedMarks draws a word with moved marks in a marked content
+// span that has the text of the word as its actual text. Text extraction would
+// otherwise take a moved mark for text above or below the line, and break the
+// word there. Poppler puts the actual text where the first glyph of the span is
+// drawn, so a word that starts with a moved mark, like a Hebrew or Arabic word
+// drawn in visual order, starts with a space drawn back over the space before
+// it, and its actual text starts with a space. MuPDF takes the glyphs that match
+// the actual text as they are, and leaves out a space drawn over a space.
+func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, offsets []int, start, end int) {
+	leadingSpace := isMoved(offsets, start, start+1)
+	var text strings.Builder
+	if leadingSpace {
+		text.WriteRune(' ')
+	}
+	for k := start; k < end; k++ {
+		// The text the glyphs map to: a glyph missing from the font is a space,
+		// and an Arabic letter form is its letter.
+		c := codePoints[k]
+		if c < font.firstChar || c > font.lastChar {
+			text.WriteRune(' ')
+		} else if letters := lettersOf(c); letters != nil {
+			text.WriteString(string(letters))
+		} else {
+			text.WriteRune(c)
+		}
+	}
+	page.appendString("> Tj\n/Span <</ActualText <")
+	page.appendString(toUTF16Hex(text.String()))
+	page.appendString(">>> BDC\n")
+	if leadingSpace {
+		space := font.unicodeToGID[0x0020]
+		page.appendString("[")
+		page.appendFloat32(1000 * float32(font.advanceWidth[space]) / float32(font.unitsPerEm))
+		page.appendString(" <")
+		page.appendCodePointAsHex(space)
+		page.appendString(">] TJ\n")
+	}
+	page.appendString("<")
+	for k := start; k < end; k++ {
+		if offsets[2*k] == 0 && offsets[2*k+1] == 0 {
+			page.appendCodePointAsHex(gids[k])
+		} else {
+			page.appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k+1])
+		}
+	}
+	page.appendString("> Tj\nEMC\n<")
 }
 
 // appendMovedGlyph ends the string of glyphs, draws the glyph moved by dx and dy

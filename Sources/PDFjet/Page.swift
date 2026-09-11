@@ -445,35 +445,263 @@ public class Page {
                     }
                 }
             }
+        } else if font.markAnchors == nil {
+            for scalar in scalars where scalar.value != 0xFEFF {    // BOM
+                Page.appendCodePointAsHex(glyphOf(font, Int(scalar.value)), &self.buf)
+            }
         } else {
-            // A mark that attaches to the mark before it, like a Thai tone mark
-            // above an upper vowel, is moved to where the font puts it. dx and
-            // dy are the offset of the glyph before, in font units.
-            var previousGID = 0
-            var dx = 0
-            var dy = 0
-            for scalar in scalars {
-                if scalar.value != 0xFEFF {     // BOM
-                    var gid: Int
-                    if scalar < Unicode.Scalar(font.firstChar)! ||
-                            scalar > Unicode.Scalar(font.lastChar)! {
-                        gid = font.unicodeToGID[0x0020]
-                    } else {
-                        gid = font.unicodeToGID[Int(scalar.value)]
-                    }
-                    if let offset = font.markToMarkOffsets?[(previousGID << 16) | gid] {
-                        dx += offset[0] - Int(font.advanceWidth[previousGID])
-                        dy += offset[1]
-                        appendMovedGlyph(font, gid, dx, dy)
-                    } else {
-                        Page.appendCodePointAsHex(gid, &self.buf)
-                        dx = 0
-                        dy = 0
-                    }
-                    previousGID = gid
+            // The font has a GPOS table, so the marks are moved to where it puts them.
+            var codePoints = [Int]()
+            var gids = [Int]()
+            var hasMarks = false
+            for scalar in scalars where scalar.value != 0xFEFF {    // BOM
+                let codePoint = Int(scalar.value)
+                codePoints.append(codePoint)
+                gids.append(glyphOf(font, codePoint))
+                hasMarks = hasMarks || isMark(codePoint)
+            }
+            if !hasMarks {
+                for gid in gids {
+                    Page.appendCodePointAsHex(gid, &self.buf)
                 }
+                return
+            }
+            let offsets = markOffsets(font, codePoints, gids)
+            let n = gids.count
+            var i = 0
+            while i < n {
+                var end = i + 1
+                if codePoints[i] != 0x20 {
+                    while end < n && codePoints[end] != 0x20 {
+                        end += 1
+                    }
+                }
+                if isMoved(offsets, i, end) {
+                    appendWordWithMovedMarks(font, codePoints, gids, offsets, i, end)
+                } else {
+                    for k in i..<end {
+                        Page.appendCodePointAsHex(gids[k], &self.buf)
+                    }
+                }
+                i = end
             }
         }
+    }
+
+    private func glyphOf(_ font: Font, _ codePoint: Int) -> Int {
+        if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
+            return font.unicodeToGID[0x0020]
+        }
+        return font.unicodeToGID[codePoint]
+    }
+
+    // Returns the offsets that move the marks to where the GPOS table of the
+    // font puts them, dx and dy in font units for each glyph. A mark goes on
+    // the letter or ligature before it. Right to left text is drawn in visual
+    // order, with the marks before their letter, so a Hebrew or Arabic mark
+    // goes on the letter after it. A mark that attaches to the mark before it,
+    // like a Thai tone mark above an upper vowel, goes on that mark instead.
+    // The marks of a letter are taken in logical order, sorted as HarfBuzz
+    // sorts them, so a fatha goes above a shadda whichever was typed first.
+    private func markOffsets(_ font: Font, _ codePoints: [Int], _ gids: [Int]) -> [Int] {
+        let n = gids.count
+        // Where each glyph is drawn before it is moved, in font units.
+        var x = [Int](repeating: 0, count: n)
+        for i in stride(from: 1, to: n, by: 1) {
+            x[i] = x[i - 1] + Int(font.advanceWidth[gids[i - 1]])
+        }
+        var offsets = [Int](repeating: 0, count: 2*n)
+        for i in 0..<n where isMark(codePoints[i]) {
+            let step = isRightToLeft(codePoints[i]) ? 1 : -1
+            var base = i + step
+            while base >= 0 && base < n && isMark(codePoints[base]) {
+                base += step
+            }
+            if base >= 0 && base < n,
+                    let offset = markToBaseOffset(font, codePoints[base], gids[base], gids[i]) {
+                offsets[2*i] = x[base] + offset[0] - x[i]
+                offsets[2*i + 1] = offset[1]
+            }
+        }
+        var order = [Int](repeating: 0, count: n)
+        var start = 0
+        while start < n {
+            if !isMark(codePoints[start]) {
+                start += 1
+                continue
+            }
+            // The marks from start to end - 1 go on the same letter.
+            let rightToLeft = isRightToLeft(codePoints[start])
+            var end = start + 1
+            while end < n && isMark(codePoints[end]) && isRightToLeft(codePoints[end]) == rightToLeft {
+                end += 1
+            }
+            let count = end - start
+            for k in 0..<count {
+                let mark = rightToLeft ? end - 1 - k : start + k
+                // Moves the mark back past the marks that sort after it. A mark
+                // of order 0 is never moved, and no mark moves past it.
+                let rank = markOrder(codePoints[mark])
+                var l = k - 1
+                while rank != 0 && l >= 0 && markOrder(codePoints[order[l]]) > rank {
+                    order[l + 1] = order[l]
+                    l -= 1
+                }
+                order[l + 1] = mark
+            }
+            for k in stride(from: 1, to: count, by: 1) {
+                placeOnMark(font, gids, x, &offsets, order[k], order[k - 1])
+            }
+            start = end
+        }
+        return offsets
+    }
+
+    // Returns the offset of the mark from the letter or ligature it goes on, in
+    // font units, or nil. A font can have the anchors of an isolated Arabic
+    // letter form only for its letter, which looks the same.
+    private func markToBaseOffset(
+            _ font: Font, _ baseCodePoint: Int, _ baseGID: Int, _ markGID: Int) -> [Int]? {
+        if let offset = anchorOffset(font, baseGID, markGID) {
+            return offset
+        }
+        if let letter = Bidi.letterOfIsolatedForm(UInt32(baseCodePoint)) {
+            return anchorOffset(font, font.unicodeToGID[Int(letter)], markGID)
+        }
+        return nil
+    }
+
+    // Returns the offset of the mark from the glyph it goes on, from the first
+    // MarkToBase or MarkToLigature subtable that has an anchor for both, or nil.
+    private func anchorOffset(_ font: Font, _ baseGID: Int, _ markGID: Int) -> [Int]? {
+        for (i, marks) in font.markAnchors!.enumerated() {
+            guard let mark = marks[markGID] else {
+                continue
+            }
+            let c = 3*mark[0]
+            if let anchors = font.baseAnchors![i][baseGID], c + 2 < anchors.count, anchors[c] == 1 {
+                return [anchors[c + 1] - mark[1], anchors[c + 2] - mark[2]]
+            }
+        }
+        return nil
+    }
+
+    // Moves the mark onto the other mark, if the font has an offset for the two.
+    private func placeOnMark(
+            _ font: Font, _ gids: [Int], _ x: [Int], _ offsets: inout [Int], _ mark: Int, _ other: Int) {
+        if let offset = font.markToMarkOffsets?[(gids[other] << 16) | gids[mark]] {
+            offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark]
+            offsets[2*mark + 1] = offsets[2*other + 1] + offset[1]
+        }
+    }
+
+    private func isMark(_ codePoint: Int) -> Bool {
+        guard let scalar = Unicode.Scalar(UInt32(codePoint)) else {
+            return false
+        }
+        switch scalar.properties.generalCategory {
+        case .nonspacingMark, .enclosingMark:
+            return true
+        default:
+            return false
+        }
+    }
+
+    // Returns true if the character is in the blocks of the right to left scripts.
+    private func isRightToLeft(_ codePoint: Int) -> Bool {
+        return (codePoint >= 0x0590 && codePoint <= 0x08FF) ||
+                (codePoint >= 0xFB1D && codePoint <= 0xFDFF) ||
+                (codePoint >= 0xFE70 && codePoint <= 0xFEFF) ||
+                (codePoint >= 0x10800 && codePoint <= 0x10FFF) ||
+                (codePoint >= 0x1E800 && codePoint <= 0x1EFFF)
+    }
+
+    // Returns the order of a mark among the marks of its letter, or 0 for a
+    // mark that stays where it is: the canonical combining class of the mark,
+    // changed as in HarfBuzz to put the Hebrew points in the order of the SBL
+    // Hebrew manual, and the Arabic shadda before the other Arabic vowel marks.
+    private func markOrder(_ codePoint: Int) -> Int {
+        if codePoint >= 0x05B0 && codePoint <= 0x05C7 {     // Hebrew points
+            return Page.hebrewMarkOrder[codePoint - 0x05B0]
+        }
+        if codePoint >= 0x064B && codePoint <= 0x0652 {     // Arabic fathatan to sukun
+            return Page.arabicMarkOrder[codePoint - 0x064B]
+        }
+        switch codePoint {
+        case 0x0670: return 35      // ARABIC LETTER SUPERSCRIPT ALEF
+        case 0x0E38, 0x0E39: return 103     // THAI SARA U, SARA UU
+        case 0x0E3A: return 9       // THAI PHINTHU
+        case 0x0E48, 0x0E49, 0x0E4A, 0x0E4B: return 107    // THAI tone marks
+        case 0x0EB8, 0x0EB9: return 118     // LAO VOWEL SIGN U, UU
+        case 0x0EC8, 0x0EC9, 0x0ECA, 0x0ECB: return 122    // LAO tone marks
+        default: return 0
+        }
+    }
+
+    private static let hebrewMarkOrder: [Int] = [
+        22, 15, 16, 17, 23, 18, 19, 20,     // U+05B0 sheva to U+05B7 patah
+        21, 14, 14, 24, 12, 25, 0, 13,      // U+05B8 qamats to U+05BF rafe
+        0, 10, 11, 0, 230, 220, 0, 21       // U+05C0 to U+05C7 qamats qatan
+    ]
+
+    private static let arabicMarkOrder: [Int] = [
+        28, 29, 30, 31, 32, 33, 27, 34      // U+064B fathatan to U+0652 sukun
+    ]
+
+    private func isMoved(_ offsets: [Int], _ start: Int, _ end: Int) -> Bool {
+        for k in start..<end where offsets[2*k] != 0 || offsets[2*k + 1] != 0 {
+            return true
+        }
+        return false
+    }
+
+    // Draws a word with moved marks in a marked content span that has the text
+    // of the word as its actual text. Text extraction would otherwise take a
+    // moved mark for text above or below the line, and break the word there.
+    // Poppler puts the actual text where the first glyph of the span is drawn,
+    // so a word that starts with a moved mark, like a Hebrew or Arabic word
+    // drawn in visual order, starts with a space drawn back over the space
+    // before it, and its actual text starts with a space. MuPDF takes the
+    // glyphs that match the actual text as they are, and leaves out a space
+    // drawn over a space.
+    private func appendWordWithMovedMarks(
+            _ font: Font, _ codePoints: [Int], _ gids: [Int], _ offsets: [Int], _ start: Int, _ end: Int) {
+        let leadingSpace = isMoved(offsets, start, start + 1)
+        var text = leadingSpace ? " " : ""
+        for k in start..<end {
+            // The text the glyphs map to: a glyph missing from the font is a
+            // space, and an Arabic letter form is its letter.
+            let codePoint = codePoints[k]
+            if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
+                text.append(" ")
+            } else if let letters = Bidi.lettersOf(UInt32(codePoint)) {
+                for letter in letters {
+                    text.unicodeScalars.append(Unicode.Scalar(letter)!)
+                }
+            } else if let scalar = Unicode.Scalar(UInt32(codePoint)) {
+                text.unicodeScalars.append(scalar)
+            }
+        }
+        append("> Tj\n/Span <</ActualText <")
+        append(toUTF16Hex(text))
+        append(">>> BDC\n")
+        if leadingSpace {
+            let space = font.unicodeToGID[0x0020]
+            append("[")
+            append(1000.0 * Float(font.advanceWidth[space]) / Float(font.unitsPerEm))
+            append(" <")
+            Page.appendCodePointAsHex(space, &self.buf)
+            append(">] TJ\n")
+        }
+        append("<")
+        for k in start..<end {
+            if offsets[2*k] == 0 && offsets[2*k + 1] == 0 {
+                Page.appendCodePointAsHex(gids[k], &self.buf)
+            } else {
+                appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1])
+            }
+        }
+        append("> Tj\nEMC\n<")
     }
 
     // Ends the string of glyphs, draws the glyph moved by dx and dy font units,
