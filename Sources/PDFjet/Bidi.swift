@@ -7,7 +7,7 @@
 import Foundation
 
 /**
- * Provides BIDI processing for Arabic and Hebrew.
+ * Provides BIDI processing for Arabic, Persian, Urdu and Hebrew.
  *
  * Please see Example_27.
  */
@@ -52,6 +52,24 @@ public class Bidi {
         0x0625, 0xFE87, 0xFE88, 0x0625, 0x0625,
         0x0626, 0xFE89, 0xFE8A, 0xFE8C, 0xFE8B,
         0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
+        // The Persian and Urdu letters. Their isolated form is the letter itself,
+        // which fonts draw isolated, since IBM Plex Sans Arabic has no glyphs for
+        // their isolated presentation forms.
+        0x067E, 0x067E, 0xFB57, 0xFB59, 0xFB58,     // PEH
+        0x0686, 0x0686, 0xFB7B, 0xFB7D, 0xFB7C,     // TCHEH
+        0x0698, 0x0698, 0xFB8B, 0x0698, 0x0698,     // JEH
+        0x06A9, 0x06A9, 0xFB8F, 0xFB91, 0xFB90,     // KEHEH
+        0x06AF, 0x06AF, 0xFB93, 0xFB95, 0xFB94,     // GAF
+        0x06CC, 0x06CC, 0xFBFD, 0xFBFF, 0xFBFE,     // FARSI YEH
+        0x06C0, 0x06C0, 0xFBA5, 0x06C0, 0x06C0,     // HEH WITH YEH ABOVE
+        0x0679, 0x0679, 0xFB67, 0xFB69, 0xFB68,     // TTEH
+        0x0688, 0x0688, 0xFB89, 0x0688, 0x0688,     // DDAL
+        0x0691, 0x0691, 0xFB8D, 0x0691, 0x0691,     // RREH
+        0x06BA, 0x06BA, 0xFB9F, 0x06BA, 0x06BA,     // NOON GHUNNA
+        0x06BE, 0x06BE, 0xFBAB, 0xFBAD, 0xFBAC,     // HEH DOACHASHMEE
+        0x06C1, 0x06C1, 0xFBA7, 0xFBA9, 0xFBA8,     // HEH GOAL
+        0x06D2, 0x06D2, 0xFBAF, 0x06D2, 0x06D2,     // YEH BARREE
+        0x06D3, 0x06D3, 0xFBB1, 0x06D3, 0x06D3,     // YEH BARREE WITH HAMZA ABOVE
         0xFEF5, 0xFEF5, 0xFEF6, 0xFEF5, 0xFEF5,     // LAM WITH ALEF WITH MADDA ABOVE
         0xFEF7, 0xFEF7, 0xFEF8, 0xFEF7, 0xFEF7,     // LAM WITH ALEF WITH HAMZA ABOVE
         0xFEF9, 0xFEF9, 0xFEFA, 0xFEF9, 0xFEF9,     // LAM WITH ALEF WITH HAMZA BELOW
@@ -100,6 +118,14 @@ public class Bidi {
         0x0647, // HEH
         0x064A, // YEH
         0x0626, // YEH WITH HAMZA (Dual_Joining)
+        0x067E, // PEH
+        0x0686, // TCHEH
+        0x06A9, // KEHEH
+        0x06AF, // GAF
+        0x06CC, // FARSI YEH
+        0x0679, // TTEH
+        0x06BE, // HEH DOACHASHMEE
+        0x06C1, // HEH GOAL
     ]
 
     private static let rightJoining: Set<UInt32> = [
@@ -115,6 +141,13 @@ public class Bidi {
         0x0632, // ZAIN
         0x0648, // WAW
         0x0649, // ALEF MAKSURA (DOTLESS YEH)
+        0x0698, // JEH
+        0x06C0, // HEH WITH YEH ABOVE
+        0x0688, // DDAL
+        0x0691, // RREH
+        0x06BA, // NOON GHUNNA, which has no initial or medial form
+        0x06D2, // YEH BARREE
+        0x06D3, // YEH BARREE WITH HAMZA ABOVE
         0xFEF5, // LAM WITH ALEF WITH MADDA ABOVE
         0xFEF7, // LAM WITH ALEF WITH HAMZA ABOVE
         0xFEF9, // LAM WITH ALEF WITH HAMZA BELOW

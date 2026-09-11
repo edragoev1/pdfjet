@@ -131,6 +131,22 @@ func Example27() {
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetTextPadding(10.0)
 	textBlock.SetRightToLeft(true)
+	xy = textBlock.DrawOn(page)
+
+	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/persian.txt"))
+	textBlock.SetLocation(180.0, xy[1]+30.0)
+	textBlock.SetWidth(400.0)
+	textBlock.SetBorderColor(color.Blue)
+	textBlock.SetTextPadding(10.0)
+	textBlock.SetRightToLeft(true)
+	xy = textBlock.DrawOn(page)
+
+	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/urdu.txt"))
+	textBlock.SetLocation(180.0, xy[1]+30.0)
+	textBlock.SetWidth(400.0)
+	textBlock.SetBorderColor(color.Blue)
+	textBlock.SetTextPadding(10.0)
+	textBlock.SetRightToLeft(true)
 	textBlock.DrawOn(page)
 
 	pdf.Complete()
