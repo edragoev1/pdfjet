@@ -60,7 +60,8 @@ requests, one job per port. A job fails if the library or an example does not
 compile, an example exits with an error, or an example does not create its PDF
 file. A second job then checks the PDFs with `.github/scripts/check-example-pdfs.py`:
 each example must render the same, with its text in the same fonts, sizes,
-colors and positions, in the C#, Go and Swift ports as in Java, and
+colors and positions and the same drawing instructions on every page, in the
+C#, Go and Swift ports as in Java, and
 each example that declares PDF/A or PDF/UA compliance must pass
 [veraPDF](https://verapdf.org/) in all four ports.
 

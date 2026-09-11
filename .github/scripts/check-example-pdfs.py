@@ -12,6 +12,9 @@ standing for java, dotnet, go or swift. The check fails when:
   run of text with its font, size, color and position, because PyMuPDF draws
   fonts that are not embedded, like the CJK fonts of Example_04, with one
   fallback font, so text in the wrong font can render the same.
+- the content stream of any page, its drawing instructions, differs from
+  Java's in any token. That catches differences too small to change a pixel,
+  like a coordinate written as 511.6 where Java writes 511.59.
 - an example that declares PDF/A or PDF/UA compliance fails veraPDF, in any of
   the four ports. The standard comes from the setCompliance call in the Java
   example.
@@ -21,6 +24,7 @@ variable.
 """
 
 import functools
+import hashlib
 import os
 import re
 import subprocess
@@ -71,10 +75,12 @@ def user_password(source):
 
 
 def render(path, password):
-    """Returns the page count, and the pixels and text spans of the first MAX_PAGES pages.
+    """Returns what compare_example compares.
 
-    A text span is a run of text in one font, size and color. Each is returned
-    as (page number, text, font, size, color, bounding box).
+    That is the page count; the pixels and text spans of the first MAX_PAGES
+    pages; and a hash of the content stream tokens of every page. A text span
+    is a run of text in one font, size and color, returned as (page number,
+    text, font, size, color, bounding box).
     """
     with pymupdf.open(path) as doc:
         if doc.needs_pass and not doc.authenticate(password or ''):
@@ -90,7 +96,10 @@ def render(path, password):
                     for span in line['spans']:
                         spans.append((i + 1, span['text'], span['font'], round(span['size'], 2),
                                       span['color'], tuple(round(v, 2) for v in span['bbox'])))
-        return doc.page_count, pages, spans
+        # Only hashes are kept, because Example_43 has thousands of pages.
+        content = [hashlib.sha256(b' '.join(doc[i].read_contents().split())).digest()
+                   for i in range(doc.page_count)]
+        return doc.page_count, pages, spans, content
 
 
 def difference(a, b):
@@ -113,17 +122,34 @@ def span_difference(java, other):
     return f'{len(other)} text spans, Java has {len(java)}'
 
 
+def page_tokens(path, password, i):
+    with pymupdf.open(path) as doc:
+        if doc.needs_pass:
+            doc.authenticate(password or '')
+        return doc[i].read_contents().split()
+
+
+def token_difference(java_path, path, password, i):
+    java, other = page_tokens(java_path, password, i), page_tokens(path, password, i)
+    for k, (a, b) in enumerate(zip(java, other)):
+        if a != b:
+            before = b' '.join(java[max(0, k - 6):k]).decode('latin-1')
+            return f'writes {b.decode("latin-1")} where Java writes {a.decode("latin-1")}, after "{before}"'
+    return f'has {len(other)} tokens, Java has {len(java)}'
+
+
 def compare_example(template, n):
     """Compares example n of every port with the Java example."""
     problems = []
     name = f'Example_{n:02d}'
     password = user_password(java_source(n))
-    java_count, java_pages, java_spans = render(os.path.join(template.format(port='java'), f'{name}.pdf'), password)
+    java_path = os.path.join(template.format(port='java'), f'{name}.pdf')
+    java_count, java_pages, java_spans, java_content = render(java_path, password)
     for port in PORTS[1:]:
         path = os.path.join(template.format(port=port), f'{name}.pdf')
         if (port, n) in MISSING or (port, n) in RENDER_EXCEPTIONS:
             continue
-        count, pages, spans = render(path, password)
+        count, pages, spans, content = render(path, password)
         if count != java_count:
             problems.append(f'{port} {name}: {count} pages, Java has {java_count}')
             continue
@@ -132,6 +158,12 @@ def compare_example(template, n):
                 problems.append(f'{port} {name}: page {i} renders differently from Java ({difference(a, b)})')
         if spans != java_spans:
             problems.append(f'{port} {name}: {span_difference(java_spans, spans)}')
+        differing = [i for i, (a, b) in enumerate(zip(java_content, content)) if a != b]
+        if differing:
+            first = differing[0]
+            pages_text = '1 page' if len(differing) == 1 else f'{len(differing)} pages'
+            problems.append(f'{port} {name}: the content stream differs from Java on {pages_text}; '
+                            f'page {first + 1} {token_difference(java_path, path, password, first)}')
     return problems
 
 
@@ -165,7 +197,8 @@ def main():
     with ProcessPoolExecutor() as executor:
         for example_problems in executor.map(functools.partial(compare_example, template), EXAMPLES):
             problems += example_problems
-    print(f'Rendered up to {MAX_PAGES} pages of each example in every port and compared them with Java.')
+    print(f'Rendered up to {MAX_PAGES} pages of each example in every port and compared them, and the '
+          f'content streams of all pages, with Java.')
 
     by_profile = {}
     for n in EXAMPLES:
