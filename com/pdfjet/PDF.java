@@ -49,6 +49,7 @@ final public class PDF {
     private String language = "en-US";
     private String uuid = (new Salsa20()).getID();
     private final List<String> importedFonts = new ArrayList<String>();
+    private final List<String> importedXObjects = new ArrayList<String>();
     private String extGState = "";
     private Page prevPage = null;
     private boolean contentStreamsCompression = true;
@@ -376,6 +377,20 @@ final public class PDF {
         return getObjNumber();
     }
 
+    /**
+     * Writes the "/Name number 0 R" entries collected from a PDF that was read.
+     */
+    private void appendImportedEntries(List<String> tokens) throws IOException {
+        for (String token : tokens) {
+            append(token);
+            if (token.equals("R")) {
+                append(Token.NEWLINE);
+            } else {
+                append(Token.SPACE);
+            }
+        }
+    }
+
     private int addResourcesObject() throws Exception {
         newobj();
         append(Token.BEGIN_DICTIONARY);
@@ -385,14 +400,7 @@ final public class PDF {
         if (fonts.size() > 0 || importedFonts.size() > 0) {
             append("/Font\n");
             append(Token.BEGIN_DICTIONARY);
-            for (String token : importedFonts) {
-                append(token);
-                if (token.equals("R")) {
-                    append(Token.NEWLINE);
-                } else {
-                    append(Token.SPACE);
-                }
-            }
+            appendImportedEntries(importedFonts);
             for (Font font : fonts) {
                 append("/F");
                 append(font.objNumber);
@@ -402,9 +410,10 @@ final public class PDF {
             }
             append(Token.END_DICTIONARY);
         }
-        if (images.size() > 0 || stamps.size() > 0) {
+        if (images.size() > 0 || stamps.size() > 0 || importedXObjects.size() > 0) {
             append("/XObject\n");
             append(Token.BEGIN_DICTIONARY);
+            appendImportedEntries(importedXObjects);
             for (Image image : images) {
                 append("/Im");
                 append(image.objNumber);
@@ -2006,6 +2015,116 @@ final public class PDF {
     }
 
     /**
+     * Returns the entries of a sub-dictionary of the resources, like /XObject,
+     * without the brackets around them. The sub-dictionary can also be an
+     * object of its own.
+     */
+    private List<String> getResourceEntries(
+            PDFobj resources, String name, List<PDFobj> objects) {
+        List<String> entries = new ArrayList<String>();
+        List<String> dict = resources.getDict();
+        int i = dict.indexOf(name) + 1;
+        if (i == 0 || i >= dict.size()) {
+            return entries;
+        }
+        if (isInteger(dict.get(i))) {   // "/XObject 12 0 R"
+            dict = objects.get(Integer.parseInt(dict.get(i)) - 1).getDict();
+            i = dict.indexOf("<<");
+            if (i == -1) {
+                return entries;
+            }
+        }
+        if (!dict.get(i).equals("<<")) {
+            return entries;
+        }
+        int level = 1;
+        while (++i < dict.size()) {
+            String token = dict.get(i);
+            if (token.equals("<<")) {
+                ++level;
+            } else if (token.equals(">>") && --level == 0) {
+                break;
+            }
+            entries.add(token);
+        }
+        return entries;
+    }
+
+    private static boolean isInteger(String token) {
+        if (token.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < token.length(); i++) {
+            if (!Character.isDigit(token.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Returns the numbers of the objects that "number 0 R" references in the
+     * tokens refer to.
+     */
+    private List<Integer> getReferences(List<String> tokens) {
+        List<Integer> numbers = new ArrayList<Integer>();
+        for (int i = 0; i + 2 < tokens.size(); i++) {
+            if (tokens.get(i + 2).equals("R")
+                    && isInteger(tokens.get(i)) && isInteger(tokens.get(i + 1))) {
+                numbers.add(Integer.valueOf(tokens.get(i)));
+                i += 2;
+            }
+        }
+        return numbers;
+    }
+
+    /**
+     * Collects the object with the given number and every object it refers to,
+     * directly or through other objects, like the color space of an image or
+     * the resources of a form XObject. The page tree is not followed.
+     */
+    private void addObjectTree(
+            int number, List<PDFobj> objects, Set<Integer> numbers, List<PDFobj> resources) {
+        if (number <= 0 || number > objects.size() || !numbers.add(number)) {
+            return;
+        }
+        PDFobj obj = objects.get(number - 1);
+        String type = obj.getValue("/Type");
+        if (obj.dict.isEmpty()
+                || type.equals("/Page") || type.equals("/Pages") || type.equals("/Catalog")) {
+            return;
+        }
+        resources.add(obj);
+        for (int reference : getReferences(obj.dict)) {
+            addObjectTree(reference, objects, numbers, resources);
+        }
+    }
+
+    /**
+     * Collects the images and forms in the /XObject resources, with the
+     * objects they use, and adds their names to the resources object.
+     */
+    private void addXObjects(
+            PDFobj resObj, List<PDFobj> objects, Set<Integer> numbers, List<PDFobj> resources) {
+        List<String> entries = getResourceEntries(resObj, "/XObject", objects);
+        int i = 0;
+        while (i < entries.size()) {
+            String token = entries.get(i);
+            if (token.startsWith("/") && (i + 3) < entries.size()
+                    && entries.get(i + 3).equals("R")) {
+                // Like the fonts, a name that an earlier page added is kept.
+                if (!importedXObjects.contains(token)) {
+                    importedXObjects.addAll(entries.subList(i, i + 4));
+                    addObjectTree(Integer.parseInt(entries.get(i + 1)), objects, numbers, resources);
+                }
+                i += 4;
+            } else {
+                i += 1;
+            }
+        }
+    }
+
+    /**
      * Adds the specified objects to the PDF.
      *
      * @param objects the objects.
@@ -2013,6 +2132,7 @@ final public class PDF {
      */
     public void addResourceObjects(List<PDFobj> objects) throws Exception {
         List<PDFobj> resources = new ArrayList<PDFobj>();
+        Set<Integer> numbers = new HashSet<Integer>();
 
         List<PDFobj> pages = getPageObjects(objects);
         for (PDFobj page : pages) {
@@ -2035,10 +2155,24 @@ final public class PDF {
                     }
                 }
             }
+            addXObjects(resObj, objects, numbers, resources);
             extGState = getExtGState(resObj);
+            // The /ExtGState dictionary is copied as it is, so the objects
+            // that its entries refer to have to be copied too.
+            for (int number : getReferences(getResourceEntries(resObj, "/ExtGState", objects))) {
+                addObjectTree(number, objects, numbers, resources);
+            }
         }
         resources.sort((o1, o2) -> Integer.compare(o1.number, o2.number));
-        addObjectsToPDF(resources);
+        // An object can be collected twice, like a font that a form XObject
+        // uses too, and must be written once.
+        List<PDFobj> unique = new ArrayList<PDFobj>();
+        for (PDFobj obj : resources) {
+            if (unique.isEmpty() || unique.get(unique.size() - 1).number != obj.number) {
+                unique.add(obj);
+            }
+        }
+        addObjectsToPDF(unique);
     }
 
     /**

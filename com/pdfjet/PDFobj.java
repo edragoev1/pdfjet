@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,7 +69,8 @@ public class PDFobj {
     }
 
     /**
-     * Copies the stream from the buffer and decompresses it when it uses FlateDecode.
+     * Copies the stream from the buffer and decompresses it when it uses
+     * FlateDecode or LZWDecode.
      *
      * @param buf the PDF bytes.
      * @param length the length of the stream.
@@ -78,8 +80,11 @@ public class PDFobj {
         if (this.stream == null) {
             this.stream = new byte[length];
             System.arraycopy(buf, streamOffset, stream, 0, length);
-            if (getValue("/Filter").equals("/FlateDecode")) {
+            String filter = getValue("/Filter");
+            if (filter.equals("/FlateDecode")) {
                 this.data = Decompressor.inflate(stream);
+            } else if (filter.equals("/LZWDecode")) {
+                this.data = Decompressor.lzwDecode(stream);
             } else {
                 // Assume no compression for now.
                 this.data = stream;
@@ -232,23 +237,46 @@ public class PDFobj {
 
     /**
      * Returns the PDF contents object.
+     * The content of a page can be split into several streams, listed in an
+     * array that is either in the page dictionary or an object of its own.
+     * Together they are one content stream, so they are returned joined in
+     * a new object, which is not in the objects list.
      *
      * @param objects the objects list.
-     * @return the contents object.
+     * @return the contents object, or null if the page has no contents.
      */
     public PDFobj getContentObject(List<PDFobj> objects) {
-        for (int i = 0; i < dict.size(); i++) {
-            if (dict.get(i).equals("/Contents")) {
-                if (dict.get(i + 1).equals("[")) {
-                    String token = dict.get(i + 2);
-                    return objects.get(Integer.parseInt(token) - 1);
-                } else {
-                    String token = dict.get(i + 1);
-                    return objects.get(Integer.parseInt(token) - 1);
-                }
+        List<Integer> numbers = getObjectNumbers("/Contents");
+        if (numbers.size() == 1) {
+            PDFobj obj = objects.get(numbers.get(0) - 1);
+            if (obj.stream != null) {
+                return obj;
+            }
+            // "/Contents 39 0 R" where the object is "[ 41 0 R 43 0 R ]"
+            numbers = new ArrayList<Integer>();
+            int i = obj.dict.indexOf("[");
+            while (i != -1 && i + 3 < obj.dict.size() && obj.dict.get(i + 3).equals("R")) {
+                numbers.add(Integer.valueOf(obj.dict.get(i + 1)));
+                i += 3;
             }
         }
-        return null;
+        if (numbers.isEmpty()) {
+            return null;
+        }
+        if (numbers.size() == 1) {
+            return objects.get(numbers.get(0) - 1);
+        }
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        for (int number : numbers) {
+            byte[] data = objects.get(number - 1).data;
+            if (data != null) {
+                buf.write(data, 0, data.length);
+                buf.write('\n');    // A stream can end in the middle of a line.
+            }
+        }
+        PDFobj content = new PDFobj();
+        content.data = buf.toByteArray();
+        return content;
     }
 
     /**
