@@ -1,7 +1,10 @@
 # Builds the Java, C#, Go and Swift ports and runs their examples, one job per
 # port, with the port's build-*.sh script. The examples are the test suite. A
 # job fails if the library or an example does not compile, an example exits
-# with an error, or an example does not create its PDF file.
+# with an error, or an example does not create its PDF file. The compare job
+# then checks the PDFs: each example must render the same in every port as in
+# Java, and the examples that declare PDF/A or PDF/UA compliance must pass
+# veraPDF.
 
 name: Build
 
@@ -80,3 +83,86 @@ jobs:
                       fi
                   done
                   exit $missing
+
+            # The compare job checks these PDFs.
+            - name: Upload the example PDFs
+              uses: actions/upload-artifact@v7
+              with:
+                  name: example-pdfs-${{ matrix.port }}
+                  path: Example_*.pdf
+                  if-no-files-found: error
+                  retention-days: 3
+
+    # Checks the PDFs of all four ports with .github/scripts/check-example-pdfs.py.
+    compare:
+        needs: build
+        runs-on: ubuntu-24.04
+        steps:
+            # The script reads the Java examples for their compliance level and
+            # the password of the encrypted example.
+            - uses: actions/checkout@v7
+              with:
+                  sparse-checkout: |
+                      .github
+                      examples
+
+            # Each port's PDFs go into their own folder, example-pdfs-<port>.
+            - uses: actions/download-artifact@v8
+              with:
+                  pattern: example-pdfs-*
+                  path: ${{ runner.temp }}/pdfs
+
+            # veraPDF runs on Java.
+            - uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            # PyMuPDF renders the pages and extracts their text. It comes with
+            # its own MuPDF and fonts, so the pinned version gives the same
+            # result on every machine.
+            - name: Install PyMuPDF
+              run: |
+                  python3 -m venv "$RUNNER_TEMP/venv"
+                  "$RUNNER_TEMP/venv/bin/pip" install -q pymupdf==1.28.2
+
+            # The installer's SHA-256 is pinned. Its signature was checked against
+            # the veraPDF release key published at https://docs.verapdf.org/install/
+            # (fingerprint 13DD 102B 4DD6 9354 D12D E5A8 3184 8632 78B1 7FE7).
+            # Only the command line application is installed.
+            - name: Install veraPDF
+              env:
+                  VERAPDF_URL: https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip
+                  VERAPDF_SHA256: 6cc6341cb1af644044054b81f00a6590a7918abb18f762243de115258bcad838
+              run: |
+                  cd "$RUNNER_TEMP"
+                  curl -fsSL --retry 3 --retry-all-errors -o verapdf.zip "$VERAPDF_URL"
+                  echo "$VERAPDF_SHA256  verapdf.zip" | sha256sum -c -
+                  unzip -q verapdf.zip
+                  cat > auto-install.xml <<EOF
+                  <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+                  <AutomatedInstallation langpack="eng">
+                      <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+                      <com.izforge.izpack.panels.target.TargetPanel id="install_dir">
+                          <installpath>$RUNNER_TEMP/verapdf</installpath>
+                      </com.izforge.izpack.panels.target.TargetPanel>
+                      <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select">
+                          <pack index="0" name="veraPDF GUI" selected="false"/>
+                          <pack index="1" name="veraPDF Mac and *nix Scripts" selected="true"/>
+                          <pack index="2" name="veraPDF Validation model" selected="false"/>
+                          <pack index="3" name="veraPDF Documentation" selected="false"/>
+                          <pack index="4" name="veraPDF Sample Plugins" selected="false"/>
+                      </com.izforge.izpack.panels.packs.PacksPanel>
+                      <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+                      <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+                  </AutomatedInstallation>
+                  EOF
+                  java -jar verapdf-greenfield-1.30.2/verapdf-izpack-installer-1.30.2.jar auto-install.xml
+                  "$RUNNER_TEMP/verapdf/verapdf" --version
+
+            - name: Check the example PDFs
+              env:
+                  VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+              run: |
+                  "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-example-pdfs.py \
+                      "$RUNNER_TEMP/pdfs/example-pdfs-{port}"
