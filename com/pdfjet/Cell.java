@@ -904,9 +904,8 @@ public class Cell {
             } else {
                 xText = (x + cellW) - (compositeTextLine.getWidth() + this.rightPadding);
                 compositeTextLine.setLocation(xText, yText);
-                page.addBMC(StructElem.P, text, text);
+                // The text lines of the composite mark their own text.
                 compositeTextLine.drawOn(page);
-                page.addEMC();
             }
         } else if (getTextAlignment() == Align.CENTER) {
             if (compositeTextLine == null) {
@@ -925,9 +924,8 @@ public class Cell {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - compositeTextLine.getWidth()) / 2);
                 compositeTextLine.setLocation(xText, yText);
-                page.addBMC(StructElem.P, text, text);
+                // The text lines of the composite mark their own text.
                 compositeTextLine.drawOn(page);
-                page.addEMC();
             }
         } else if (getTextAlignment() == Align.LEFT) {
             xText = x + this.leftPadding;
@@ -943,9 +941,8 @@ public class Cell {
                 }
             } else {
                 compositeTextLine.setLocation(xText, yText);
-                page.addBMC(StructElem.P, text, text);
+                // The text lines of the composite mark their own text.
                 compositeTextLine.drawOn(page);
-                page.addEMC();
             }
         } else {
             throw new Exception("Invalid Text Alignment!");

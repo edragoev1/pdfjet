@@ -413,7 +413,14 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	page.SetTextDirection(textLine.degrees)
 	page.SetBrushColorRGB(textLine.color)
-	page.AddBMC(textLine.structureType, textLine.language, textLine.text, textLine.altDescription)
+	// The text is drawn, so it is not given again as actual text, or as its own
+	// alternate description: right to left text is drawn in visual order, and
+	// would be read backwards.
+	alt := textLine.altDescription
+	if alt == textLine.text {
+		alt = ""
+	}
+	page.AddBMC(textLine.structureType, textLine.language, "", alt)
 	page.DrawStringUsingColorMap(
 		textLine.font,
 		textLine.fallbackFont,
@@ -438,7 +445,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		yAdjust := underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Underlined text: "+textLine.text)
+		page.AddBMC(textLine.structureType, textLine.language, "", "Underlined text: "+textLine.text)
 		page.MoveTo(textLine.x+xAdjust, textLine.y+yAdjust)
 		page.LineTo(x2+xAdjust, y2+yAdjust)
 		page.StrokePath()
@@ -457,7 +464,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		yAdjust := (bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
 		y2 := textLine.y - lineLength*float32(math.Sin(radians))
-		page.AddBMC(textLine.structureType, textLine.language, textLine.text, "Strikethrough text: "+textLine.text)
+		page.AddBMC(textLine.structureType, textLine.language, "", "Strikethrough text: "+textLine.text)
 		page.MoveTo(textLine.x-xAdjust, textLine.y-yAdjust)
 		page.LineTo(x2-xAdjust, y2-yAdjust)
 		page.StrokePath()

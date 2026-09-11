@@ -618,7 +618,11 @@ public class TextLine implements Drawable {
 
         page.setTextDirection(degrees);
         page.setBrushColor(textColor);
-        page.addBMC(structureType, language, text, altDescription);
+        // The text is drawn, so it is not given again as actual text, or as its
+        // own alternate description: right to left text is drawn in visual
+        // order, and would be read backwards.
+        String alt = text.equals(altDescription) ? null : altDescription;
+        page.addBMC(structureType, language, null, alt);
         page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.addEMC();
 
@@ -634,7 +638,7 @@ public class TextLine implements Drawable {
             double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians) + verticalOffset;
             double x2 = x + (lineLength * Math.cos(radians));
             double y2 = y - (lineLength * Math.sin(radians));
-            page.addBMC(structureType, language, text, "Underlined text: " + text);
+            page.addBMC(structureType, language, null, "Underlined text: " + text);
             page.moveTo(x + xAdjust, y + yAdjust);
             page.lineTo(x2 + xAdjust, y2 + yAdjust);
             page.strokePath();
@@ -652,7 +656,7 @@ public class TextLine implements Drawable {
             double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
-            page.addBMC(structureType, language, text, "Strikethrough text: " + text);
+            page.addBMC(structureType, language, null, "Strikethrough text: " + text);
             page.moveTo(x - xAdjust, y - yAdjust);
             page.lineTo(x2 - xAdjust, y2 - yAdjust);
             page.strokePath();

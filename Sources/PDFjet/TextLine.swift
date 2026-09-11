@@ -541,7 +541,11 @@ public class TextLine : Drawable {
         self.y += yBox
 
         page!.setBrushColor(textColor)
-        page!.addBMC(structureType, language, text!, altDescription!)
+        // The text is drawn, so it is not given again as actual text, or as its
+        // own alternate description: right to left text is drawn in visual
+        // order, and would be read backwards.
+        let alt = altDescription == text ? "" : altDescription ?? ""
+        page!.addBMC(structureType, language, "", alt)
         page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         page!.addEMC()
 
@@ -557,7 +561,7 @@ public class TextLine : Drawable {
             let yAdjust = font!.underlinePosition * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(structureType, language, text!, "Underlined text: " + text!)
+            page!.addBMC(structureType, language, "", "Underlined text: " + text!)
             page!.moveTo(x + xAdjust, y + yAdjust)
             page!.lineTo(x2 + xAdjust, y2 + yAdjust)
             page!.strokePath()
@@ -575,7 +579,7 @@ public class TextLine : Drawable {
             let yAdjust = (font!.getBodyHeight(fontSize) / 4.0) * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
-            page!.addBMC(structureType, language, text!, "Strikethrough text: " + text!)
+            page!.addBMC(structureType, language, "", "Strikethrough text: " + text!)
             page!.moveTo(x - xAdjust, y - yAdjust)
             page!.lineTo(x2 - xAdjust, y2 - yAdjust)
             page!.strokePath()

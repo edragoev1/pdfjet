@@ -491,18 +491,29 @@ public class PDF {
                 append("\n")
             }
 
-            if let actualText = element.actualText, !actualText.isEmpty,
-                    let altDescription = element.altDescription, !altDescription.isEmpty {
-                let language = element.language ?? self.language
+            // The actual text is written only with an alternate description,
+            // since a text block and a text box pass the text they draw as the
+            // actual text without one.
+            let altDescription = element.altDescription ?? ""
+            let actualText = altDescription.isEmpty ? "" : element.actualText ?? ""
+            var language = element.language ?? ""
+            if language.isEmpty && !altDescription.isEmpty {
+                language = self.language
+            }
 
+            if !language.isEmpty {
                 append("/Lang <")
                 append(toHex(language))
                 append(">\n")
+            }
 
+            if !actualText.isEmpty {
                 append("/ActualText <")
                 append(toHex(actualText))
                 append(">\n")
+            }
 
+            if !altDescription.isEmpty {
                 append("/Alt <")
                 append(toHex(altDescription))
                 append(">\n")

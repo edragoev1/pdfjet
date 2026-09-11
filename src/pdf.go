@@ -532,28 +532,41 @@ func (pdf *PDF) addStructElementObjects() {
 			pdf.appendString("\n")
 		}
 
-		if element.actualText != "" && element.altDescription != "" {
-			language := element.language
-			if language == "" {
-				language = pdf.language
-			}
+		// The actual text is written only with an alternate description, since
+		// a text block and a text box pass the text they draw as the actual
+		// text without one.
+		hasAltDescription := element.altDescription != ""
+		hasActualText := hasAltDescription && element.actualText != ""
+		language := element.language
+		if language == "" && hasAltDescription {
+			language = pdf.language
+		}
+
+		if language != "" {
 			languageBytes := []byte(language)
-			actualTextBytes := []byte(element.actualText)
-			altDescriptionBytes := []byte(element.altDescription)
 			if pdf.encryption != nil {
 				languageBytes, _ = encryption.Encrypt(languageBytes, pdf.encryption.GetKey())
-				actualTextBytes, _ = encryption.Encrypt(actualTextBytes, pdf.encryption.GetKey())
-				altDescriptionBytes, _ = encryption.Encrypt(altDescriptionBytes, pdf.encryption.GetKey())
 			}
-
 			pdf.appendString("/Lang <")
 			pdf.appendString(hex.EncodeToString(languageBytes))
 			pdf.appendString(">\n")
+		}
 
+		if hasActualText {
+			actualTextBytes := []byte(element.actualText)
+			if pdf.encryption != nil {
+				actualTextBytes, _ = encryption.Encrypt(actualTextBytes, pdf.encryption.GetKey())
+			}
 			pdf.appendString("/ActualText <")
 			pdf.appendString(hex.EncodeToString(actualTextBytes))
 			pdf.appendString(">\n")
+		}
 
+		if hasAltDescription {
+			altDescriptionBytes := []byte(element.altDescription)
+			if pdf.encryption != nil {
+				altDescriptionBytes, _ = encryption.Encrypt(altDescriptionBytes, pdf.encryption.GetKey())
+			}
 			pdf.appendString("/Alt <")
 			pdf.appendString(hex.EncodeToString(altDescriptionBytes))
 			pdf.appendString(">\n")

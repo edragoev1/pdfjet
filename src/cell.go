@@ -606,9 +606,8 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		xText = x + cell.leftPadding
 		if cell.compositeTextLine != nil {
 			cell.compositeTextLine.SetLocation(xText, yText)
-			page.AddBMC("P", "", cell.text, cell.text)
+			// The text lines of the composite mark their own text.
 			cell.compositeTextLine.DrawOn(page)
-			page.AddEMC()
 			return
 		}
 		page.AddBMC("P", "", cell.text, cell.text)
@@ -625,9 +624,8 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		if cell.compositeTextLine != nil {
 			xText = (x + wCell) - (cell.compositeTextLine.GetWidth() + cell.rightPadding)
 			cell.compositeTextLine.SetLocation(xText, yText)
-			page.AddBMC("P", "", cell.text, cell.text)
+			// The text lines of the composite mark their own text.
 			cell.compositeTextLine.DrawOn(page)
-			page.AddEMC()
 			return
 		}
 		xText = (x + wCell) - (cell.font.StringWidth(cell.font.size, cell.text) + cell.rightPadding)
@@ -646,9 +644,8 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 			xText = x + cell.leftPadding +
 				(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.compositeTextLine.GetWidth()) / 2)
 			cell.compositeTextLine.SetLocation(xText, yText)
-			page.AddBMC("P", "", cell.text, cell.text)
+			// The text lines of the composite mark their own text.
 			cell.compositeTextLine.DrawOn(page)
-			page.AddEMC()
 			return
 		}
 		xText = x + cell.leftPadding +

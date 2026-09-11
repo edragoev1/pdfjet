@@ -547,30 +547,43 @@ final public class PDF {
                 append("\n");
             }
 
-            if (element.actualText != null && !element.actualText.isEmpty() &&
-                    element.altDescription != null && !element.altDescription.isEmpty()) {
-                String language = element.language;
-                if (language == null) {
-                    language = this.language;
-                }
+            // The actual text is written only with an alternate description,
+            // since a text block and a text box pass the text they draw as the
+            // actual text without one.
+            boolean hasAltDescription =
+                    element.altDescription != null && !element.altDescription.isEmpty();
+            boolean hasActualText = hasAltDescription &&
+                    element.actualText != null && !element.actualText.isEmpty();
+            String language = element.language;
+            if ((language == null || language.isEmpty()) && hasAltDescription) {
+                language = this.language;
+            }
 
+            if (language != null && !language.isEmpty()) {
                 byte[] languageBytes = language.getBytes(StandardCharsets.UTF_8);
-                byte[] actualTextBytes = element.actualText.getBytes(StandardCharsets.UTF_8);
-                byte[] altDescriptionBytes = element.altDescription.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
-                    actualTextBytes = AES256.encrypt(actualTextBytes, encryption.getKey());
-                    altDescriptionBytes = AES256.encrypt(altDescriptionBytes, encryption.getKey());
                 }
-
                 append("/Lang <");
                 append(Util.toHexString(languageBytes));
                 append(">\n");
+            }
 
+            if (hasActualText) {
+                byte[] actualTextBytes = element.actualText.getBytes(StandardCharsets.UTF_8);
+                if (encryption != null) {
+                    actualTextBytes = AES256.encrypt(actualTextBytes, encryption.getKey());
+                }
                 append("/ActualText <");
                 append(Util.toHexString(actualTextBytes));
                 append(">\n");
+            }
 
+            if (hasAltDescription) {
+                byte[] altDescriptionBytes = element.altDescription.getBytes(StandardCharsets.UTF_8);
+                if (encryption != null) {
+                    altDescriptionBytes = AES256.encrypt(altDescriptionBytes, encryption.getKey());
+                }
                 append("/Alt <");
                 append(Util.toHexString(altDescriptionBytes));
                 append(">\n");

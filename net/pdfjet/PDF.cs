@@ -530,29 +530,41 @@ public class PDF {
                 Append("\n");
             }
 
-            if (!String.IsNullOrEmpty(element.actualText) && !String.IsNullOrEmpty(element.altDescription)) {
-                String language = element.language;
-                if (language == null) {
-                    language = this.language;
-                }
+            // The actual text is written only with an alternate description,
+            // since a text block and a text box pass the text they draw as the
+            // actual text without one.
+            bool hasAltDescription = !String.IsNullOrEmpty(element.altDescription);
+            bool hasActualText = hasAltDescription && !String.IsNullOrEmpty(element.actualText);
+            String language = element.language;
+            if (String.IsNullOrEmpty(language) && hasAltDescription) {
+                language = this.language;
+            }
 
+            if (!String.IsNullOrEmpty(language)) {
                 byte[] languageBytes = Encoding.UTF8.GetBytes(language);
-                byte[] actualTextBytes = Encoding.UTF8.GetBytes(element.actualText);
-                byte[] altDescriptionBytes = Encoding.UTF8.GetBytes(element.altDescription);
                 if (encryption != null) {
                     languageBytes = AES256.Encrypt(languageBytes, encryption.GetKey());
-                    actualTextBytes = AES256.Encrypt(actualTextBytes, encryption.GetKey());
-                    altDescriptionBytes = AES256.Encrypt(altDescriptionBytes, encryption.GetKey());
                 }
-
                 Append("/Lang <");
                 Append(Util.ToHexString(languageBytes));
                 Append(">\n");
+            }
 
+            if (hasActualText) {
+                byte[] actualTextBytes = Encoding.UTF8.GetBytes(element.actualText);
+                if (encryption != null) {
+                    actualTextBytes = AES256.Encrypt(actualTextBytes, encryption.GetKey());
+                }
                 Append("/ActualText <");
                 Append(Util.ToHexString(actualTextBytes));
                 Append(">\n");
+            }
 
+            if (hasAltDescription) {
+                byte[] altDescriptionBytes = Encoding.UTF8.GetBytes(element.altDescription);
+                if (encryption != null) {
+                    altDescriptionBytes = AES256.Encrypt(altDescriptionBytes, encryption.GetKey());
+                }
                 Append("/Alt <");
                 Append(Util.ToHexString(altDescriptionBytes));
                 Append(">\n");

@@ -466,7 +466,11 @@ public class TextLine : IDrawable {
 
         page.SetTextDirection(degrees);
         page.SetBrushColor(textColor);
-        page.AddBMC(structureType, language, text, altDescription);
+        // The text is drawn, so it is not given again as actual text, or as its
+        // own alternate description: right to left text is drawn in visual
+        // order, and would be read backwards.
+        String alt = text.Equals(altDescription) ? null : altDescription;
+        page.AddBMC(structureType, language, null, alt);
         page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.AddEMC();
 
@@ -482,7 +486,7 @@ public class TextLine : IDrawable {
             double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(structureType, language, text, "Underlined text: " + text);
+            page.AddBMC(structureType, language, null, "Underlined text: " + text);
             page.MoveTo(x + xAdjust, y + yAdjust);
             page.LineTo(x2 + xAdjust, y2 + yAdjust);
             page.StrokePath();
@@ -500,7 +504,7 @@ public class TextLine : IDrawable {
             double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(structureType, language, text, "Strikethrough text: " + text);
+            page.AddBMC(structureType, language, null, "Strikethrough text: " + text);
             page.MoveTo(x - xAdjust, y - yAdjust);
             page.LineTo(x2 - xAdjust, y2 - yAdjust);
             page.StrokePath();

@@ -771,9 +771,8 @@ public class Cell {
             } else {
                 xText = (x + cellW) - (compositeTextLine.GetWidth() + this.rightPadding);
                 compositeTextLine.SetLocation(xText, yText);
-                page.AddBMC(StructElem.P, text, text);
+                // The text lines of the composite mark their own text.
                 compositeTextLine.DrawOn(page);
-                page.AddEMC();
             }
         } else if (GetTextAlignment() == Align.CENTER) {
             if (compositeTextLine == null) {
@@ -792,9 +791,8 @@ public class Cell {
                 xText = x + this.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - compositeTextLine.GetWidth()) / 2);
                 compositeTextLine.SetLocation(xText, yText);
-                page.AddBMC(StructElem.P, text, text);
+                // The text lines of the composite mark their own text.
                 compositeTextLine.DrawOn(page);
-                page.AddEMC();
             }
         } else if (GetTextAlignment() == Align.LEFT) {
             xText = x + this.leftPadding;
@@ -810,9 +808,8 @@ public class Cell {
                 }
             } else {
                 compositeTextLine.SetLocation(xText, yText);
-                page.AddBMC(StructElem.P, text, text);
+                // The text lines of the composite mark their own text.
                 compositeTextLine.DrawOn(page);
-                page.AddEMC();
             }
         } else {
             throw new Exception("Invalid Text Alignment!");
