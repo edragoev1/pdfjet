@@ -66,6 +66,10 @@ C#, Go and Swift ports as in Java, and
 each example that declares PDF/A or PDF/UA compliance must pass
 [veraPDF](https://verapdf.org/) in all four ports.
 
+To run the same checks locally before pushing, run `./check-examples.sh`. It
+builds the four ports one after another in the repository folder and then
+checks their PDFs, so it needs the four toolchains, Python 3 and veraPDF.
+
 ## Documentation
 
 The API references and the example pages are published at
