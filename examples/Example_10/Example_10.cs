@@ -118,7 +118,6 @@ public class Example_10 {
         }
 
         float columnWidth = 470f;
-        // Java's setSize(w, h) is deprecated in the C# port.
         column.SetWidth(columnWidth);
         column.SetHeight(100f);
         float[] xy = column.DrawOn(page);

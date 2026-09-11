@@ -114,7 +114,8 @@ public class Example_10 {
         } */
 
         let columnWidth: Float = 470.0
-        column.setWidth(columnWidth).setHeight(100.0)
+        column.setWidth(columnWidth)
+        column.setHeight(100.0)
         let xy = column.drawOn(page)
 
         if rotate == 0 {
