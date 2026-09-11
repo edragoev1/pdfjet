@@ -106,6 +106,34 @@ the examples run on Java 8 whichever JDK builds them, and any API newer than
 Java 8 is rejected. Java 8's `javac` has no `--release` option, so the scripts
 leave it out there; that `javac` builds Java 8 class files anyway.
 
+## Right to left text
+
+`Bidi.reorderVisually` prepares a line of Hebrew, Arabic, Persian or Urdu text
+for drawing. It puts the line in visual order, with left to right text such as
+Latin words and numbers nested in it one level deep, and replaces the Arabic,
+Persian and Urdu letters with their joined forms, including the lam-alef
+ligature. `TextBlock.setRightToLeft(true)` wraps right to left text at the
+width of the text block and prepares each line that way. Example_27 shows both.
+
+The letters are shaped by replacing them with the presentation forms that fonts
+map to Unicode. PDFjet does not use a font's OpenType substitution and
+positioning tables (GSUB and GPOS), so:
+
+- Urdu is drawn in the Naskh style of the Arabic fonts, not in Nastaliq, the
+  style Urdu is usually printed in. Nastaliq fonts, such as Noto Nastaliq
+  Urdu, depend on the OpenType tables, so they are not expected to work.
+- Diacritics are not positioned on their letters. The Arabic, Persian and
+  Urdu marks are drawn where the font puts them by default, and Hebrew niqqud
+  falls between letters.
+- A font's localized forms, such as the Urdu shapes of some digits, and its
+  optional ligatures and kerning are not used.
+- Only the letters of Arabic, Persian and Urdu are shaped. Letters used only by
+  other languages written in Arabic script, such as Pashto, Sindhi or Kurdish,
+  are drawn unjoined.
+- Each string is laid out as a right to left line. The explicit embedding,
+  override and isolate controls are left out, and text that is already shaped
+  into presentation forms is not supported.
+
 ## Port differences
 
 The Java, C# and Go ports all support encrypted PDF files. The Swift port does
