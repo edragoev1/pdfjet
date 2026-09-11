@@ -60,11 +60,14 @@ public final class PDFobj {
         if stream == nil {
             stream = [UInt8]()
             stream!.append(contentsOf: buffer[streamOffset..<streamOffset + length])
-            if getValue("/Filter") == "/FlateDecode" {
+            let filter = getValue("/Filter")
+            if filter == "/FlateDecode" {
                 // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
                 _ = try Puff(output: &data, input: &stream!)
                 // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
                 // Swift.print("in pdf.read() => \(time1 - time0)")
+            } else if filter == "/LZWDecode" {
+                data = lzwDecode(stream!)
             } else {
                 // Assume no compression for now ...
                 self.data = stream!
@@ -188,17 +191,42 @@ public final class PDFobj {
         return objects[number - 1]
     }
 
+    ///
     /// Returns the content object of this page.
+    /// The content of a page can be split into several streams, listed in an
+    /// array that is either in the page dictionary or an object of its own.
+    /// Together they are one content stream, so they are returned joined in
+    /// a new object, which is not in the objects list.
+    ///
+    /// - Returns: the content object, or nil if the page has no contents.
+    ///
     public final func getContentObject(_ objects: inout [PDFobj]) -> PDFobj? {
-        for i in 0..<dict.count {
-            if dict[i] == "/Contents" {
-                if dict[i + 1] == "[" {
-                    return getObject(number: Int(dict[i + 2])!, from: &objects)
-                }
-                return getObject(number: Int(dict[i + 1])!, from: &objects)
+        var numbers = getObjectNumbers("/Contents")
+        if numbers.count == 1 {
+            let object = objects[numbers[0] - 1]
+            if object.stream != nil {
+                return object
+            }
+            // "/Contents 39 0 R" where the object is "[ 41 0 R 43 0 R ]"
+            numbers = [Int]()
+            var i = object.dict.firstIndex(of: "[") ?? -1
+            while i != -1 && i + 3 < object.dict.count && object.dict[i + 3] == "R" {
+                numbers.append(Int(object.dict[i + 1])!)
+                i += 3
             }
         }
-        return nil
+        if numbers.isEmpty {
+            return nil
+        }
+        if numbers.count == 1 {
+            return objects[numbers[0] - 1]
+        }
+        let content = PDFobj()
+        for number in numbers {
+            content.data.append(contentsOf: objects[number - 1].data)
+            content.data.append(UInt8(ascii: "\n"))     // A stream can end in the middle of a line.
+        }
+        return content
     }
 
     final func getResourcesObject(_ objects: inout [PDFobj]) -> PDFobj? {

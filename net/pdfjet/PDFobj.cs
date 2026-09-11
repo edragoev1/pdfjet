@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace PDFjet.NET {
@@ -50,8 +51,11 @@ public class PDFobj {
         if (this.stream == null) {
             this.stream = new byte[length];
             Array.Copy(buf, streamOffset, stream, 0, length);
-            if (GetValue("/Filter").Equals("/FlateDecode")) {
+            String filter = GetValue("/Filter");
+            if (filter.Equals("/FlateDecode")) {
                 this.data = Decompressor.Inflate(stream);
+            } else if (filter.Equals("/LZWDecode")) {
+                this.data = Decompressor.LZWDecode(stream);
             } else {
                 // Assume no compression for now.
                 this.data = stream;
@@ -193,20 +197,45 @@ public class PDFobj {
         return 0;
     }
 
-    /// <summary>Returns the content object of this page.</summary>
+    /// <summary>
+    /// Returns the content object of this page, or null if it has no contents.
+    /// The content of a page can be split into several streams, listed in an
+    /// array that is either in the page dictionary or an object of its own.
+    /// Together they are one content stream, so they are returned joined in
+    /// a new object, which is not in the objects list.
+    /// </summary>
     public PDFobj GetContentObject(List<PDFobj> objects) {
-        for (int i = 0; i < dict.Count; i++) {
-            if (dict[i].Equals("/Contents")) {
-                if (dict[i + 1].Equals("[")) {
-                    String token = dict[i + 2];
-                    return objects[Int32.Parse(token) - 1];
-                } else {
-                    String token = dict[i + 1];
-                    return objects[Int32.Parse(token) - 1];
-                }
+        List<Int32> numbers = GetObjectNumbers("/Contents");
+        if (numbers.Count == 1) {
+            PDFobj obj = objects[numbers[0] - 1];
+            if (obj.stream != null) {
+                return obj;
+            }
+            // "/Contents 39 0 R" where the object is "[ 41 0 R 43 0 R ]"
+            numbers = new List<Int32>();
+            int i = obj.dict.IndexOf("[");
+            while (i != -1 && i + 3 < obj.dict.Count && obj.dict[i + 3].Equals("R")) {
+                numbers.Add(Int32.Parse(obj.dict[i + 1]));
+                i += 3;
             }
         }
-        return null;
+        if (numbers.Count == 0) {
+            return null;
+        }
+        if (numbers.Count == 1) {
+            return objects[numbers[0] - 1];
+        }
+        MemoryStream buf = new MemoryStream();
+        foreach (int number in numbers) {
+            byte[] bytes = objects[number - 1].data;
+            if (bytes != null) {
+                buf.Write(bytes, 0, bytes.Length);
+                buf.WriteByte((byte) '\n');     // A stream can end in the middle of a line.
+            }
+        }
+        PDFobj content = new PDFobj();
+        content.data = buf.ToArray();
+        return content;
     }
 
     /// <summary>Returns the resources object of this page.</summary>

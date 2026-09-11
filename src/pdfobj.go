@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"log"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -62,8 +63,11 @@ func (obj *PDFobj) SetStreamAndData(buf []byte, length int) *PDFobj {
 	for i := 0; i < length; i++ {
 		obj.stream[i] = buf[obj.streamOffset+i]
 	}
-	if obj.getValue("/Filter") == "/FlateDecode" {
+	filter := obj.getValue("/Filter")
+	if filter == "/FlateDecode" {
 		obj.data, _ = decompressor.Inflate(obj.stream)
+	} else if filter == "/LZWDecode" {
+		obj.data = decompressor.LZWDecode(obj.stream)
 	} else {
 		// Assume no compression for now.
 		obj.data = obj.stream
@@ -203,27 +207,45 @@ func (obj *PDFobj) getLength(objects []*PDFobj, number int) int {
 	return 0
 }
 
-// GetContentObject returns the content object.
+// GetContentObject returns the content object of the page, or nil if it has
+// no contents. The content of a page can be split into several streams, listed
+// in an array that is either in the page dictionary or an object of its own.
+// Together they are one content stream, so they are returned joined in a new
+// object, which is not in the objects list.
 func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
-	for i := 0; i < len(obj.dict); i++ {
-		if obj.dict[i] == "/Contents" {
-			if obj.dict[i+1] == "[" {
-				token := obj.dict[i+2]
-				index, err := strconv.Atoi(token)
-				if err != nil {
-					log.Fatal(err)
-				}
-				return objects[index-1]
-			}
-			token := obj.dict[i+1]
-			index, err := strconv.Atoi(token)
+	numbers := obj.GetObjectNumbers("/Contents")
+	if len(numbers) == 1 {
+		contents := objects[numbers[0]-1]
+		if contents.stream != nil {
+			return contents
+		}
+		// "/Contents 39 0 R" where the object is "[ 41 0 R 43 0 R ]"
+		numbers = make([]int, 0)
+		i := slices.Index(contents.dict, "[")
+		for i != -1 && i+3 < len(contents.dict) && contents.dict[i+3] == "R" {
+			number, err := strconv.Atoi(contents.dict[i+1])
 			if err != nil {
 				log.Fatal(err)
 			}
-			return objects[index-1]
+			numbers = append(numbers, number)
+			i += 3
 		}
 	}
-	return nil
+	if len(numbers) == 0 {
+		return nil
+	}
+	if len(numbers) == 1 {
+		return objects[numbers[0]-1]
+	}
+	content := NewPDFobj()
+	content.data = make([]byte, 0)
+	for _, number := range numbers {
+		if data := objects[number-1].data; data != nil {
+			content.data = append(content.data, data...)
+			content.data = append(content.data, '\n') // A stream can end in the middle of a line.
+		}
+	}
+	return content
 }
 
 func (obj *PDFobj) getResourcesObject(objects []*PDFobj) *PDFobj {

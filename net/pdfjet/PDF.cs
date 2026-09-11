@@ -47,6 +47,7 @@ public class PDF {
     private String pageMode = null;
     private String language = "en-US";
     private List<String> importedFonts = new List<String>();
+    private List<String> importedXObjects = new List<String>();
     private String extGState = "";
     private Page prevPage = null;
     private bool contentStreamsCompression = true;
@@ -350,6 +351,20 @@ public class PDF {
         return GetObjNumber();
     }
 
+    /// <summary>
+    /// Writes the "/Name number 0 R" entries collected from a PDF that was read.
+    /// </summary>
+    private void AppendImportedEntries(List<String> tokens) {
+        foreach (String token in tokens) {
+            Append(token);
+            if (token.Equals("R")) {
+                Append(Token.Newline);
+            } else {
+                Append(Token.Space);
+            }
+        }
+    }
+
     private int AddResourcesObject() {
         NewObj();
         Append(Token.BeginDictionary);
@@ -359,14 +374,7 @@ public class PDF {
 
         if (fonts.Count > 0 || importedFonts.Count > 0) {
             Append("/Font <<\n");
-            foreach (String token in importedFonts) {
-                Append(token);
-                if (token.Equals("R")) {
-                    Append(Token.Newline);
-                } else {
-                    Append(Token.Space);
-                }
-            }
+            AppendImportedEntries(importedFonts);
             foreach (Font font in fonts) {
                 Append("/F");
                 Append(font.objNumber);
@@ -378,8 +386,9 @@ public class PDF {
         }
 
         // Check if we have any XObjects
-        if (images.Count > 0 || stamps.Count > 0) {
+        if (images.Count > 0 || stamps.Count > 0 || importedXObjects.Count > 0) {
             Append("/XObject <<\n"); // Write the key and open the dictionary ONCE
+            AppendImportedEntries(importedXObjects);
             // Add all Images to the same dictionary
             foreach (Image image in images) {
                 Append("/Im");
@@ -1847,9 +1856,120 @@ public class PDF {
         }
     }
 
-    /// <summary>Adds the fonts and graphics states used by the pages to this document.</summary>
+    /// <summary>
+    /// Returns the entries of a sub-dictionary of the resources, like /XObject,
+    /// without the brackets around them. The sub-dictionary can also be an
+    /// object of its own.
+    /// </summary>
+    private List<String> GetResourceEntries(
+            PDFobj resources, String name, List<PDFobj> objects) {
+        List<String> entries = new List<String>();
+        List<String> dict = resources.GetDict();
+        int i = dict.IndexOf(name) + 1;
+        if (i == 0 || i >= dict.Count) {
+            return entries;
+        }
+        if (IsInteger(dict[i])) {   // "/XObject 12 0 R"
+            dict = objects[Int32.Parse(dict[i]) - 1].GetDict();
+            i = dict.IndexOf("<<");
+            if (i == -1) {
+                return entries;
+            }
+        }
+        if (!dict[i].Equals("<<")) {
+            return entries;
+        }
+        int level = 1;
+        while (++i < dict.Count) {
+            String token = dict[i];
+            if (token.Equals("<<")) {
+                ++level;
+            } else if (token.Equals(">>") && --level == 0) {
+                break;
+            }
+            entries.Add(token);
+        }
+        return entries;
+    }
+
+    private static bool IsInteger(String token) {
+        if (token.Length == 0) {
+            return false;
+        }
+        foreach (char c in token) {
+            if (c < '0' || c > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Returns the numbers of the objects that "number 0 R" references in the
+    /// tokens refer to.
+    /// </summary>
+    private List<Int32> GetReferences(List<String> tokens) {
+        List<Int32> numbers = new List<Int32>();
+        for (int i = 0; i + 2 < tokens.Count; i++) {
+            if (tokens[i + 2].Equals("R")
+                    && IsInteger(tokens[i]) && IsInteger(tokens[i + 1])) {
+                numbers.Add(Int32.Parse(tokens[i]));
+                i += 2;
+            }
+        }
+        return numbers;
+    }
+
+    /// <summary>
+    /// Collects the object with the given number and every object it refers to,
+    /// directly or through other objects, like the color space of an image or
+    /// the resources of a form XObject. The page tree is not followed.
+    /// </summary>
+    private void AddObjectTree(
+            int number, List<PDFobj> objects, HashSet<Int32> numbers, List<PDFobj> resources) {
+        if (number <= 0 || number > objects.Count || !numbers.Add(number)) {
+            return;
+        }
+        PDFobj obj = objects[number - 1];
+        String type = obj.GetValue("/Type");
+        if (obj.dict.Count == 0
+                || type.Equals("/Page") || type.Equals("/Pages") || type.Equals("/Catalog")) {
+            return;
+        }
+        resources.Add(obj);
+        foreach (int reference in GetReferences(obj.dict)) {
+            AddObjectTree(reference, objects, numbers, resources);
+        }
+    }
+
+    /// <summary>
+    /// Collects the images and forms in the /XObject resources, with the
+    /// objects they use, and adds their names to the resources object.
+    /// </summary>
+    private void AddXObjects(
+            PDFobj resObj, List<PDFobj> objects, HashSet<Int32> numbers, List<PDFobj> resources) {
+        List<String> entries = GetResourceEntries(resObj, "/XObject", objects);
+        int i = 0;
+        while (i < entries.Count) {
+            String token = entries[i];
+            if (token.StartsWith("/") && (i + 3) < entries.Count
+                    && entries[i + 3].Equals("R")) {
+                // Like the fonts, a name that an earlier page added is kept.
+                if (!importedXObjects.Contains(token)) {
+                    importedXObjects.AddRange(entries.GetRange(i, 4));
+                    AddObjectTree(Int32.Parse(entries[i + 1]), objects, numbers, resources);
+                }
+                i += 4;
+            } else {
+                i += 1;
+            }
+        }
+    }
+
+    /// <summary>Adds the fonts, images and graphics states used by the pages to this document.</summary>
     public void AddResourceObjects(List<PDFobj> objects) {
         List<PDFobj> resources = new List<PDFobj>();
+        HashSet<Int32> numbers = new HashSet<Int32>();
         List<PDFobj> pages = GetPageObjects(objects);
         foreach (PDFobj page in pages) {
             PDFobj resObj = page.GetResourcesObject(objects);
@@ -1871,12 +1991,26 @@ public class PDF {
                     }
                 }
             }
+            AddXObjects(resObj, objects, numbers, resources);
             extGState = GetExtGState(resObj);
+            // The /ExtGState dictionary is copied as it is, so the objects
+            // that its entries refer to have to be copied too.
+            foreach (int number in GetReferences(GetResourceEntries(resObj, "/ExtGState", objects))) {
+                AddObjectTree(number, objects, numbers, resources);
+            }
         }
         resources.Sort(delegate(PDFobj o1, PDFobj o2){
             return o1.number.CompareTo(o2.number);
         });
-        AddObjectsToPDF(resources);
+        // An object can be collected twice, like a font that a form XObject
+        // uses too, and must be written once.
+        List<PDFobj> unique = new List<PDFobj>();
+        foreach (PDFobj obj in resources) {
+            if (unique.Count == 0 || unique[unique.Count - 1].number != obj.number) {
+                unique.Add(obj);
+            }
+        }
+        AddObjectsToPDF(unique);
     }
 
     private void AddObjectsToPDF(List<PDFobj> objects) {

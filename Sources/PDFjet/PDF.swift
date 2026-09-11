@@ -20,6 +20,7 @@ public class PDF {
     var compliance = Compliance.PDF_17
     var toc: Bookmark?
     var importedFonts = [String]()
+    var importedXObjects = [String]()
     var extGState = ""
     let floatFormat = "%.2f"
 
@@ -319,6 +320,18 @@ public class PDF {
         return self.getObjNumber()
     }
 
+    /// Writes the "/Name number 0 R" entries collected from a PDF that was read.
+    private func appendImportedEntries(_ tokens: [String]) {
+        for token in tokens {
+            append(token)
+            if token == "R" {
+                append(Token.newline)
+            } else {
+                append(Token.space)
+            }
+        }
+    }
+
     private func addResourcesObject() -> Int {
         newobj()
         append(Token.beginDictionary)
@@ -328,14 +341,7 @@ public class PDF {
         if fonts.count > 0 || importedFonts.count > 0 {
             append("/Font\n")
             append(Token.beginDictionary)
-            for token in importedFonts {
-                append(token)
-                if token == "R" {
-                    append(Token.newline)
-                } else {
-                    append(Token.space)
-                }
-            }
+            appendImportedEntries(importedFonts)
             for font in fonts {
                 append("/F")
                 append(font.objNumber)
@@ -345,9 +351,10 @@ public class PDF {
             }
             append(Token.endDictionary)
         }
-        if images.count > 0 || stamps.count > 0 {
+        if images.count > 0 || stamps.count > 0 || importedXObjects.count > 0 {
             append("/XObject\n")
             append(Token.beginDictionary)
+            appendImportedEntries(importedXObjects)
             for image in images {
                 append("/Im")
                 append(image.objNumber!)
@@ -1810,9 +1817,134 @@ public class PDF {
         }
     }
 
-    /// Adds the fonts and graphics states used by the pages to this document.
+    ///
+    /// Returns the entries of a sub-dictionary of the resources, like /XObject,
+    /// without the brackets around them. The sub-dictionary can also be an
+    /// object of its own.
+    ///
+    private func getResourceEntries(
+            _ resources: PDFobj,
+            _ name: String,
+            _ objects: inout [PDFobj]) -> [String] {
+        var entries = [String]()
+        var dict = resources.getDict()
+        guard var i = dict.firstIndex(of: name) else {
+            return entries
+        }
+        i += 1
+        if i >= dict.count {
+            return entries
+        }
+        if isInteger(dict[i]) {     // "/XObject 12 0 R"
+            guard let number = Int(dict[i]), number > 0, number <= objects.count else {
+                return entries
+            }
+            dict = objects[number - 1].getDict()
+            guard let index = dict.firstIndex(of: "<<") else {
+                return entries
+            }
+            i = index
+        }
+        if dict[i] != "<<" {
+            return entries
+        }
+        var level = 1
+        i += 1
+        while i < dict.count {
+            let token = dict[i]
+            if token == "<<" {
+                level += 1
+            } else if token == ">>" {
+                level -= 1
+                if level == 0 {
+                    break
+                }
+            }
+            entries.append(token)
+            i += 1
+        }
+        return entries
+    }
+
+    private func isInteger(_ token: String) -> Bool {
+        return !token.isEmpty && token.allSatisfy { $0 >= "0" && $0 <= "9" }
+    }
+
+    ///
+    /// Returns the numbers of the objects that "number 0 R" references in the
+    /// tokens refer to.
+    ///
+    private func getReferences(_ tokens: [String]) -> [Int] {
+        var numbers = [Int]()
+        var i = 0
+        while i + 2 < tokens.count {
+            if tokens[i + 2] == "R" && isInteger(tokens[i]) && isInteger(tokens[i + 1]),
+                    let number = Int(tokens[i]) {
+                numbers.append(number)
+                i += 3
+            } else {
+                i += 1
+            }
+        }
+        return numbers
+    }
+
+    ///
+    /// Collects the object with the given number and every object it refers to,
+    /// directly or through other objects, like the color space of an image or
+    /// the resources of a form XObject. The page tree is not followed.
+    ///
+    private func addObjectTree(
+            _ number: Int,
+            _ objects: inout [PDFobj],
+            _ numbers: inout Set<Int>,
+            _ resources: inout [PDFobj]) {
+        if number <= 0 || number > objects.count || !numbers.insert(number).inserted {
+            return
+        }
+        let object = objects[number - 1]
+        let type = object.getValue("/Type")
+        if object.dict.isEmpty || type == "/Page" || type == "/Pages" || type == "/Catalog" {
+            return
+        }
+        resources.append(object)
+        for reference in getReferences(object.dict) {
+            addObjectTree(reference, &objects, &numbers, &resources)
+        }
+    }
+
+    ///
+    /// Collects the images and forms in the /XObject resources, with the
+    /// objects they use, and adds their names to the resources object.
+    ///
+    private func addXObjects(
+            _ resObj: PDFobj,
+            _ objects: inout [PDFobj],
+            _ numbers: inout Set<Int>,
+            _ resources: inout [PDFobj]) {
+        let entries = getResourceEntries(resObj, "/XObject", &objects)
+        var i = 0
+        while i < entries.count {
+            let token = entries[i]
+            if token.hasPrefix("/") && (i + 3) < entries.count && entries[i + 3] == "R" {
+                // Like the fonts, a name that an earlier page added is kept.
+                if !importedXObjects.contains(token) {
+                    importedXObjects.append(contentsOf: entries[i..<i + 4])
+                    if let number = Int(entries[i + 1]) {
+                        addObjectTree(number, &objects, &numbers, &resources)
+                    }
+                }
+                i += 4
+            } else {
+                i += 1
+            }
+        }
+    }
+
+    /// Adds the fonts, images and graphics states used by the pages to this document.
     public func addResourceObjects(_ objects: inout [PDFobj]) {
         var resources = [PDFobj]()
+        var numbers = Set<Int>()
         let pages = getPageObjects(from: objects)
         for page in pages {
             let resObj = page.getResourcesObject(&objects)!
@@ -1831,10 +1963,24 @@ public class PDF {
                     addFontDescriptor(descendantFont, &objects, &resources)
                 }
             }
+            addXObjects(resObj, &objects, &numbers, &resources)
             extGState = getExtGState(resObj)
+            // The /ExtGState dictionary is copied as it is, so the objects
+            // that its entries refer to have to be copied too.
+            for number in getReferences(getResourceEntries(resObj, "/ExtGState", &objects)) {
+                addObjectTree(number, &objects, &numbers, &resources)
+            }
         }
         resources.sort(by: { $0.number < $1.number })
-        addObjectsToPDF(&resources)
+        // An object can be collected twice, like a font that a form XObject
+        // uses too, and must be written once.
+        var unique = [PDFobj]()
+        for obj in resources {
+            if unique.isEmpty || unique.last!.number != obj.number {
+                unique.append(obj)
+            }
+        }
+        addObjectsToPDF(&unique)
     }
 
     private func addObjectsToPDF(_ objects: inout [PDFobj]) {

@@ -56,6 +56,7 @@ type PDF struct {
 	language                  string
 	toc                       *Bookmark
 	importedFonts             []string
+	importedXObjects          []string
 	extGState                 string
 	uuid                      string
 	prevPage                  *Page
@@ -365,6 +366,19 @@ func (pdf *PDF) addOutputIntentObject() int {
 	return pdf.getObjNumber()
 }
 
+// appendImportedEntries writes the "/Name number 0 R" entries collected from a
+// PDF that was read.
+func (pdf *PDF) appendImportedEntries(tokens []string) {
+	for _, token1 := range tokens {
+		pdf.appendString(token1)
+		if token1 == "R" {
+			pdf.appendString("\n")
+		} else {
+			pdf.appendString(" ")
+		}
+	}
+}
+
 func (pdf *PDF) addResourcesObject() int {
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)
@@ -374,14 +388,7 @@ func (pdf *PDF) addResourcesObject() int {
 	if len(pdf.fonts) > 0 || len(pdf.importedFonts) > 0 {
 		pdf.appendString("/Font\n")
 		pdf.appendByteArray(token.BeginDictionary)
-		for _, token1 := range pdf.importedFonts {
-			pdf.appendString(token1)
-			if token1 == "R" {
-				pdf.appendString("\n")
-			} else {
-				pdf.appendString(" ")
-			}
-		}
+		pdf.appendImportedEntries(pdf.importedFonts)
 		for _, font := range pdf.fonts {
 			pdf.appendString("/F")
 			pdf.appendInteger(font.objNumber)
@@ -391,9 +398,10 @@ func (pdf *PDF) addResourcesObject() int {
 		}
 		pdf.appendByteArray(token.EndDictionary)
 	}
-	if len(pdf.images) > 0 || len(pdf.stamps) > 0 {
+	if len(pdf.images) > 0 || len(pdf.stamps) > 0 || len(pdf.importedXObjects) > 0 {
 		pdf.appendString("/XObject\n")
 		pdf.appendByteArray(token.BeginDictionary)
+		pdf.appendImportedEntries(pdf.importedXObjects)
 		for _, image := range pdf.images {
 			pdf.appendString("/Im")
 			pdf.appendInteger(image.objNumber)
@@ -1895,9 +1903,122 @@ func (pdf *PDF) addFontDescriptor(
 	return resources
 }
 
-// AddResourceObjects adds the fonts and graphics states used by the pages to this document.
+// getResourceEntries returns the entries of a sub-dictionary of the resources,
+// like /XObject, without the brackets around them. The sub-dictionary can also
+// be an object of its own.
+func (pdf *PDF) getResourceEntries(resources *PDFobj, name string, objects []*PDFobj) []string {
+	entries := make([]string, 0)
+	dict := resources.GetDict()
+	i := slices.Index(dict, name) + 1
+	if i == 0 || i >= len(dict) {
+		return entries
+	}
+	if isInteger(dict[i]) { // "/XObject 12 0 R"
+		objNumber, err := strconv.Atoi(dict[i])
+		if err != nil || objNumber < 1 || objNumber > len(objects) {
+			return entries
+		}
+		dict = objects[objNumber-1].GetDict()
+		i = slices.Index(dict, "<<")
+		if i == -1 {
+			return entries
+		}
+	}
+	if dict[i] != "<<" {
+		return entries
+	}
+	level := 1
+	for i++; i < len(dict); i++ {
+		token1 := dict[i]
+		if token1 == "<<" {
+			level++
+		} else if token1 == ">>" {
+			level--
+			if level == 0 {
+				break
+			}
+		}
+		entries = append(entries, token1)
+	}
+	return entries
+}
+
+func isInteger(token1 string) bool {
+	if token1 == "" {
+		return false
+	}
+	for _, c := range token1 {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// getReferences returns the numbers of the objects that "number 0 R"
+// references in the tokens refer to.
+func (pdf *PDF) getReferences(tokens []string) []int {
+	numbers := make([]int, 0)
+	for i := 0; i+2 < len(tokens); i++ {
+		if tokens[i+2] == "R" && isInteger(tokens[i]) && isInteger(tokens[i+1]) {
+			if objNumber, err := strconv.Atoi(tokens[i]); err == nil {
+				numbers = append(numbers, objNumber)
+			}
+			i += 2
+		}
+	}
+	return numbers
+}
+
+// addObjectTree collects the object with the given number and every object it
+// refers to, directly or through other objects, like the color space of an
+// image or the resources of a form XObject. The page tree is not followed.
+func (pdf *PDF) addObjectTree(
+	objNumber int, objects []*PDFobj, numbers map[int]bool, resources []*PDFobj) []*PDFobj {
+	if objNumber <= 0 || objNumber > len(objects) || numbers[objNumber] {
+		return resources
+	}
+	numbers[objNumber] = true
+	obj := objects[objNumber-1]
+	objType := obj.getValue("/Type")
+	if len(obj.dict) == 0 || objType == "/Page" || objType == "/Pages" || objType == "/Catalog" {
+		return resources
+	}
+	resources = append(resources, obj)
+	for _, reference := range pdf.getReferences(obj.dict) {
+		resources = pdf.addObjectTree(reference, objects, numbers, resources)
+	}
+	return resources
+}
+
+// addXObjects collects the images and forms in the /XObject resources, with
+// the objects they use, and adds their names to the resources object.
+func (pdf *PDF) addXObjects(
+	resObj *PDFobj, objects []*PDFobj, numbers map[int]bool, resources []*PDFobj) []*PDFobj {
+	entries := pdf.getResourceEntries(resObj, "/XObject", objects)
+	i := 0
+	for i < len(entries) {
+		token1 := entries[i]
+		if strings.HasPrefix(token1, "/") && i+3 < len(entries) && entries[i+3] == "R" {
+			// Like the fonts, a name that an earlier page added is kept.
+			if !slices.Contains(pdf.importedXObjects, token1) {
+				pdf.importedXObjects = append(pdf.importedXObjects, entries[i:i+4]...)
+				if objNumber, err := strconv.Atoi(entries[i+1]); err == nil {
+					resources = pdf.addObjectTree(objNumber, objects, numbers, resources)
+				}
+			}
+			i += 4
+		} else {
+			i++
+		}
+	}
+	return resources
+}
+
+// AddResourceObjects adds the fonts, images and graphics states used by the pages to this document.
 func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	resources := make([]*PDFobj, 0)
+	numbers := make(map[int]bool)
 
 	pages := pdf.GetPageObjects(objects)
 	for _, page := range pages {
@@ -1918,13 +2039,27 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 				resources = pdf.addFontDescriptor(descendantFont, objects, resources)
 			}
 		}
+		resources = pdf.addXObjects(resObj, objects, numbers, resources)
 		pdf.extGState = pdf.getExtGState(resObj)
+		// The /ExtGState dictionary is copied as it is, so the objects that its
+		// entries refer to have to be copied too.
+		for _, objNumber := range pdf.getReferences(pdf.getResourceEntries(resObj, "/ExtGState", objects)) {
+			resources = pdf.addObjectTree(objNumber, objects, numbers, resources)
+		}
 	}
 	sort.SliceStable(resources, func(i, j int) bool {
 		return resources[i].number < resources[j].number
 	})
 
-	pdf.addObjectsToPDF(&resources)
+	// An object can be collected twice, like a font that a form XObject uses
+	// too, and must be written once.
+	unique := make([]*PDFobj, 0, len(resources))
+	for _, obj := range resources {
+		if len(unique) == 0 || unique[len(unique)-1].number != obj.number {
+			unique = append(unique, obj)
+		}
+	}
+	pdf.addObjectsToPDF(&unique)
 }
 
 func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
