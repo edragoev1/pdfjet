@@ -54,6 +54,9 @@ type Page struct {
 	tm2 []byte
 	tm3 []byte
 
+	textFontSize float32 // The font size of the text drawn last
+	textRise     float32
+
 	penWidth          float32
 	lineCapStyle      int
 	lineJoinStyle     int
@@ -367,18 +370,62 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 			}
 		}
 	} else {
+		// A mark that attaches to the mark before it, like a Thai tone mark above
+		// an upper vowel, is moved to where the font puts it. dx and dy are the
+		// offset of the glyph before, in font units.
+		previousGID := 0
+		dx := 0
+		dy := 0
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
+				var gid int
 				if c1 < font.firstChar || c1 > font.lastChar {
-					// page.appendString(fmt.Sprintf("%04X", font.unicodeToGID[0x0020]))
-					page.appendCodePointAsHex(0x0020)
+					gid = 0x0020
 				} else {
-					// page.appendString(fmt.Sprintf("%04X", font.unicodeToGID[c1]))
-					page.appendCodePointAsHex(font.unicodeToGID[c1])
+					gid = font.unicodeToGID[c1]
 				}
+				offset, ok := font.markToMarkOffsets[(previousGID<<16)|gid]
+				if !ok {
+					page.appendCodePointAsHex(gid)
+					dx = 0
+					dy = 0
+				} else {
+					dx += offset[0] - int(font.advanceWidth[previousGID])
+					dy += offset[1]
+					page.appendMovedGlyph(font, gid, dx, dy)
+				}
+				previousGID = gid
 			}
 		}
 	}
+}
+
+// appendMovedGlyph ends the string of glyphs, draws the glyph moved by dx and dy
+// font units, and starts the string again.
+func (page *Page) appendMovedGlyph(font *Font, gid, dx, dy int) {
+	fontSize := font.size
+	if page.textFontSize != 0 {
+		fontSize = page.textFontSize
+	}
+	page.appendString("> Tj\n")
+	page.appendFloat32(page.textRise + float32(dy)*fontSize/float32(font.unitsPerEm))
+	page.appendString(" Ts\n")
+	if dx == 0 {
+		page.appendString("<")
+		page.appendCodePointAsHex(gid)
+		page.appendString("> Tj\n")
+	} else {
+		adjustment := 1000 * float32(dx) / float32(font.unitsPerEm)
+		page.appendString("[")
+		page.appendFloat32(-adjustment)
+		page.appendString(" <")
+		page.appendCodePointAsHex(gid)
+		page.appendString("> ")
+		page.appendFloat32(adjustment)
+		page.appendString("] TJ\n")
+	}
+	page.appendFloat32(page.textRise)
+	page.appendString(" Ts\n<")
 }
 
 // Pre-allocated hex digits
@@ -1109,6 +1156,7 @@ func (page *Page) SetTextFont(font *Font, fontSize float32) *Page {
 	page.appendByte(token.Space)
 	page.appendFloat32(fontSize)
 	page.appendString(" Tf\n")
+	page.textFontSize = fontSize
 	return page
 }
 
@@ -1484,6 +1532,7 @@ func (page *Page) SetTextScaling(scaling float32) *Page {
 func (page *Page) SetTextRise(rise float32) *Page {
 	page.appendFloat32(rise)
 	page.appendString(" Ts\n")
+	page.textRise = rise
 	return page
 }
 

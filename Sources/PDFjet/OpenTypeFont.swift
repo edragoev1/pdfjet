@@ -21,6 +21,7 @@ class OpenTypeFont {
         font.bBoxURy = otf.bBoxURy!
         font.advanceWidth = otf.advanceWidth
         font.unicodeToGID = otf.unicodeToGID
+        font.markToMarkOffsets = otf.markToMarkOffsets
         font.fontAscent = otf.ascent!
         font.fontDescent = otf.descent!
         font.fontUnderlinePosition = otf.underlinePosition!

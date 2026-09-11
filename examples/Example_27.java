@@ -14,9 +14,10 @@ public class Example_27 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("Thai, Hebrew, Arabic and Persian text");
 
-        // Thai font
-        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
-        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
+        // Thai font, read from the .otf file: a .otf.stream file has no GPOS
+        // table, which places the tone marks above the upper vowels.
+        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf");
         f1.setSize(12f);
 
         // Hebrew font

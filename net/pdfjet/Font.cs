@@ -47,6 +47,10 @@ public class Font {
     internal int fontUnderlineThickness;
     internal int[] advanceWidth;
     internal int[] unicodeToGID;
+    // The offsets of the marks that attach to other marks, in font units, by
+    // the glyph IDs of the two marks, or null. Only a font read from a .otf or
+    // .ttf file has them, from its GPOS table.
+    internal Dictionary<int, int[]> markToMarkOffsets;
     internal bool cff;
     internal int compressedSize;
     internal int uncompressedSize;

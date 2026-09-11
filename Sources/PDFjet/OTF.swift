@@ -40,6 +40,7 @@ class OTF {
     private var index = 0
 
     var unicodeToGID = [Int](repeating: 0, count: 0x10000)
+    var markToMarkOffsets: [Int: [Int]]?
 
     init(_ stream: InputStream) throws {
         buf = try Content.getFromStream(stream)
@@ -80,6 +81,7 @@ class OTF {
             else if table.name == "hmtx" { hmtx(table) }
             else if table.name == "post" { post(table) }
             else if table.name == "CFF " { CFF_(table) }
+            else if table.name == "GPOS" { GPOS(table) }
             else if table.name == "cmap" { cmapTable = table }
             index = k       // Restore the index
         }
@@ -303,6 +305,112 @@ class OTF {
             }
         }
         return segment
+    }
+
+    // Reads where the marks that attach to other marks go, like a Thai tone
+    // mark above an upper vowel, from the MarkToMark lookups of the GPOS table.
+    private func GPOS(_ table: FontTable) {
+        markToMarkOffsets = [Int: [Int]]()
+        let lookupList = table.offset! + uint16(at: table.offset! + 8)
+        let lookupCount = uint16(at: lookupList)
+        for i in 0..<lookupCount {
+            let lookup = lookupList + uint16(at: lookupList + 2 + 2*i)
+            let lookupType = uint16(at: lookup)
+            let subTableCount = uint16(at: lookup + 4)
+            for j in 0..<subTableCount {
+                var subTable = lookup + uint16(at: lookup + 6 + 2*j)
+                var type = lookupType
+                if type == 9 {  // An extension lookup holds the subtable
+                    type = uint16(at: subTable + 2)
+                    subTable += uint32(at: subTable + 4)
+                }
+                if type == 6 && uint16(at: subTable) == 1 {
+                    markToMark(subTable)
+                }
+            }
+        }
+    }
+
+    // Keeps the offset of each mark from the mark it attaches to, in font
+    // units, by the glyph IDs of the two marks. The first lookup that has a
+    // pair of marks places them.
+    private func markToMark(_ subTable: Int) {
+        let mark1Glyphs = coverage(subTable + uint16(at: subTable + 2))
+        let mark2Glyphs = coverage(subTable + uint16(at: subTable + 4))
+        let classCount = uint16(at: subTable + 6)
+        let mark1Array = subTable + uint16(at: subTable + 8)
+        let mark2Array = subTable + uint16(at: subTable + 10)
+        for (m1, glyph1) in mark1Glyphs.enumerated() {
+            let markClass = uint16(at: mark1Array + 2 + 4*m1)
+            let anchor1 = mark1Array + uint16(at: mark1Array + 4 + 4*m1)
+            for (m2, glyph2) in mark2Glyphs.enumerated() {
+                let anchorOffset = uint16(at: mark2Array + 2 + 2*(m2*classCount + markClass))
+                if anchorOffset == 0 {
+                    continue
+                }
+                let anchor2 = mark2Array + anchorOffset
+                let key = (glyph2 << 16) | glyph1
+                if markToMarkOffsets![key] == nil {
+                    markToMarkOffsets![key] = [
+                            int16(at: anchor2 + 2) - int16(at: anchor1 + 2),
+                            int16(at: anchor2 + 4) - int16(at: anchor1 + 4)]
+                }
+            }
+        }
+    }
+
+    // Returns the glyph IDs of a coverage table, in the order of their coverage indexes.
+    private func coverage(_ offset: Int) -> [Int] {
+        let format = uint16(at: offset)
+        let count = uint16(at: offset + 2)
+        if format == 1 {
+            var glyphs = [Int](repeating: 0, count: count)
+            for i in 0..<count {
+                glyphs[i] = uint16(at: offset + 4 + 2*i)
+            }
+            return glyphs
+        }
+        // Format 2 has ranges of glyphs, each with the coverage index of its first glyph.
+        var size = 0
+        for i in 0..<count {
+            let range = offset + 4 + 6*i
+            let start = uint16(at: range)
+            let end = uint16(at: range + 2)
+            if end >= start {
+                size = max(size, uint16(at: range + 4) + end - start + 1)
+            }
+        }
+        var glyphs = [Int](repeating: 0, count: size)
+        for i in 0..<count {
+            let range = offset + 4 + 6*i
+            let start = uint16(at: range)
+            let end = uint16(at: range + 2)
+            let coverageIndex = uint16(at: range + 4)
+            if end >= start {
+                for glyph in start...end {
+                    glyphs[coverageIndex + glyph - start] = glyph
+                }
+            }
+        }
+        return glyphs
+    }
+
+    // The GPOS table is read at offsets from its subtables. A value outside
+    // the font data is read as 0, so a broken table cannot stop the font from
+    // loading.
+    private func uint16(at offset: Int) -> Int {
+        if offset < 0 || offset + 2 > buf.count {
+            return 0
+        }
+        return Int(buf[offset]) << 8 | Int(buf[offset + 1])
+    }
+
+    private func int16(at offset: Int) -> Int {
+        return Int(Int16(truncatingIfNeeded: uint16(at: offset)))
+    }
+
+    private func uint32(at offset: Int) -> Int {
+        return uint16(at: offset) << 16 | uint16(at: offset + 2)
     }
 
     private func readInt16() -> Int16 {

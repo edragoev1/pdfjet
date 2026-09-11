@@ -66,6 +66,12 @@ final public class Font {
     protected int[] advanceWidth;
     /** Maps Unicode code points to glyph IDs. */
     protected int[] unicodeToGID;
+    /**
+     * The offsets of the marks that attach to other marks, in font units, by
+     * the glyph IDs of the two marks, or null. Only a font read from a .otf or
+     * .ttf file has them, from its GPOS table.
+     */
+    protected java.util.Map<Integer, int[]> markToMarkOffsets;
     /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
     /** The size of the compressed font data. */

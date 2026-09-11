@@ -10,9 +10,10 @@ public class Example_27 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Thai, Hebrew, Arabic and Persian text")
 
-        // Thai font
-        // let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
-        let f1 = try Font(pdf, IBMPlexSansThai.Regular)
+        // Thai font, read from the .otf file: a .otf.stream file has no GPOS
+        // table, which places the tone marks above the upper vowels.
+        // let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+        let f1 = try Font(pdf, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf")
         f1.setSize(12.0)
 
         // Hebrew font
@@ -150,12 +151,6 @@ public class Example_27 {
         persianBlock.drawOn(page2)
 
         pdf.complete()
-    }
-
-    private func scalarsToString(_ scalars: [Unicode.Scalar]) -> String {
-        var str = ""
-        str.unicodeScalars.append(contentsOf: scalars)
-        return str
     }
 }   // End of Example_27.swift
 

@@ -31,6 +31,7 @@ public class OTF {
     internal short underlineThickness;
     internal int[] advanceWidth;
     internal readonly int[] unicodeToGID = new int[0x10000];
+    internal System.Collections.Generic.Dictionary<int, int[]> markToMarkOffsets;
     internal bool cff = false;
 
     private int cffOff;
@@ -77,6 +78,7 @@ public class OTF {
             else if (table.name.Equals("hmtx")) { Hmtx(table); }
             else if (table.name.Equals("post")) { Post(table); }
             else if (table.name.Equals("CFF ")) { CFF_(table); }
+            else if (table.name.Equals("GPOS")) { GPOS(table); }
             else if (table.name.Equals("cmap")) { cmapTable = table; }
             index = k;      // Restore the index
         }
@@ -266,6 +268,110 @@ public class OTF {
         this.cff = true;
         this.cffOff = table.offset;
         this.cffLen = table.length;
+    }
+
+    // Reads where the marks that attach to other marks go, like a Thai tone
+    // mark above an upper vowel, from the MarkToMark lookups of the GPOS table.
+    private void GPOS(FontTable table) {
+        markToMarkOffsets = new System.Collections.Generic.Dictionary<int, int[]>();
+        int lookupList = table.offset + GetUInt16(table.offset + 8);
+        int lookupCount = GetUInt16(lookupList);
+        for (int i = 0; i < lookupCount; i++) {
+            int lookup = lookupList + GetUInt16(lookupList + 2 + 2*i);
+            int lookupType = GetUInt16(lookup);
+            int subTableCount = GetUInt16(lookup + 4);
+            for (int j = 0; j < subTableCount; j++) {
+                int subTable = lookup + GetUInt16(lookup + 6 + 2*j);
+                int type = lookupType;
+                if (type == 9) {    // An extension lookup holds the subtable
+                    type = GetUInt16(subTable + 2);
+                    subTable += GetUInt32(subTable + 4);
+                }
+                if (type == 6 && GetUInt16(subTable) == 1) {
+                    MarkToMark(subTable);
+                }
+            }
+        }
+    }
+
+    // Keeps the offset of each mark from the mark it attaches to, in font
+    // units, by the glyph IDs of the two marks. The first lookup that has a
+    // pair of marks places them.
+    private void MarkToMark(int subTable) {
+        int[] mark1Glyphs = Coverage(subTable + GetUInt16(subTable + 2));
+        int[] mark2Glyphs = Coverage(subTable + GetUInt16(subTable + 4));
+        int classCount = GetUInt16(subTable + 6);
+        int mark1Array = subTable + GetUInt16(subTable + 8);
+        int mark2Array = subTable + GetUInt16(subTable + 10);
+        for (int m1 = 0; m1 < mark1Glyphs.Length; m1++) {
+            int markClass = GetUInt16(mark1Array + 2 + 4*m1);
+            int anchor1 = mark1Array + GetUInt16(mark1Array + 4 + 4*m1);
+            for (int m2 = 0; m2 < mark2Glyphs.Length; m2++) {
+                int anchorOffset = GetUInt16(mark2Array + 2 + 2*(m2*classCount + markClass));
+                if (anchorOffset == 0) {
+                    continue;
+                }
+                int anchor2 = mark2Array + anchorOffset;
+                int key = (mark2Glyphs[m2] << 16) | mark1Glyphs[m1];
+                if (!markToMarkOffsets.ContainsKey(key)) {
+                    markToMarkOffsets[key] = new int[] {
+                            GetInt16(anchor2 + 2) - GetInt16(anchor1 + 2),
+                            GetInt16(anchor2 + 4) - GetInt16(anchor1 + 4)};
+                }
+            }
+        }
+    }
+
+    // Returns the glyph IDs of a coverage table, in the order of their coverage indexes.
+    private int[] Coverage(int offset) {
+        int format = GetUInt16(offset);
+        int count = GetUInt16(offset + 2);
+        if (format == 1) {
+            int[] list = new int[count];
+            for (int i = 0; i < count; i++) {
+                list[i] = GetUInt16(offset + 4 + 2*i);
+            }
+            return list;
+        }
+        // Format 2 has ranges of glyphs, each with the coverage index of its first glyph.
+        int size = 0;
+        for (int i = 0; i < count; i++) {
+            int range = offset + 4 + 6*i;
+            int start = GetUInt16(range);
+            int end = GetUInt16(range + 2);
+            if (end >= start) {
+                size = Math.Max(size, GetUInt16(range + 4) + end - start + 1);
+            }
+        }
+        int[] glyphs = new int[size];
+        for (int i = 0; i < count; i++) {
+            int range = offset + 4 + 6*i;
+            int start = GetUInt16(range);
+            int end = GetUInt16(range + 2);
+            int coverageIndex = GetUInt16(range + 4);
+            for (int glyph = start; glyph <= end; glyph++) {
+                glyphs[coverageIndex + glyph - start] = glyph;
+            }
+        }
+        return glyphs;
+    }
+
+    // The GPOS table is read at offsets from its subtables. A value outside
+    // the font data is read as 0, so a broken table cannot stop the font from
+    // loading.
+    private int GetUInt16(int offset) {
+        if (offset < 0 || offset + 2 > buf.Length) {
+            return 0;
+        }
+        return (buf[offset] << 8) | buf[offset + 1];
+    }
+
+    private int GetInt16(int offset) {
+        return (short) GetUInt16(offset);
+    }
+
+    private int GetUInt32(int offset) {
+        return (GetUInt16(offset) << 16) | GetUInt16(offset + 2);
     }
 
     private int GetSegmentFor(

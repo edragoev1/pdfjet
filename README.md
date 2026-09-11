@@ -143,6 +143,12 @@ is broken between its characters, so text without zero width spaces still fits
 in the text block, but its lines can break inside words. The Thai text of
 Example_27, `data/languages/thai.txt`, has a zero width space between its words.
 
+A mark above another mark, like a Thai tone mark above an upper vowel, is moved
+to where the GPOS table of the font puts it. Only a font read from a `.otf` or
+`.ttf` file has the table: a `.otf.stream` or `.ttf.stream` file does not, so
+its marks are drawn on top of each other. Example_27 reads its Thai font from
+`fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf` for this reason.
+
 ## Port differences
 
 The Java, C# and Go ports all support encrypted PDF files. The Swift port does

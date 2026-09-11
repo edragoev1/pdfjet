@@ -37,6 +37,10 @@ public class Font {
     var fontUnderlineThickness: Int16 = 0
     var advanceWidth: [UInt16] = []
     var unicodeToGID: [Int] = []
+    // The offsets of the marks that attach to other marks, in font units, by
+    // the glyph IDs of the two marks, or nil. Only a font read from a .otf or
+    // .ttf file has them, from its GPOS table.
+    var markToMarkOffsets: [Int: [Int]]?
     var cff: Bool = false
     var compressedSize: Int?
     var uncompressedSize: Int?

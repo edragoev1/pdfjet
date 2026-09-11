@@ -43,6 +43,7 @@ type Font struct {
 	fontUnderlineThickness int16
 	advanceWidth           []uint16
 	unicodeToGID           []int
+	markToMarkOffsets      map[int][2]int // From the GPOS table of a .otf or .ttf file
 	cff                    bool
 	compressedSize         int
 	uncompressedSize       int

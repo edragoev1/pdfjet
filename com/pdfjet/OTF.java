@@ -32,6 +32,7 @@ public class OTF {
     short underlineThickness;
     int[] advanceWidth;
     int[] unicodeToGID = new int[0x10000];
+    java.util.Map<Integer, int[]> markToMarkOffsets;
     byte[] buf;
     byte[] compressed;
     boolean cff = false;
@@ -84,6 +85,7 @@ public class OTF {
             else if (table.name.equals("hmtx")) { hmtx(table); }
             else if (table.name.equals("post")) { post(table); }
             else if (table.name.equals("CFF ")) { CFF_(table); }
+            else if (table.name.equals("GPOS")) { GPOS(table); }
             else if (table.name.equals("cmap")) { cmapTable = table; }
             index = k;      // Restore the index
         }
@@ -278,6 +280,110 @@ public class OTF {
         this.cff = true;
         this.cffOff = table.offset;
         this.cffLen = table.length;
+    }
+
+    // Reads where the marks that attach to other marks go, like a Thai tone
+    // mark above an upper vowel, from the MarkToMark lookups of the GPOS table.
+    private void GPOS(FontTable table) {
+        markToMarkOffsets = new java.util.HashMap<Integer, int[]>();
+        int lookupList = table.offset + getUInt16(table.offset + 8);
+        int lookupCount = getUInt16(lookupList);
+        for (int i = 0; i < lookupCount; i++) {
+            int lookup = lookupList + getUInt16(lookupList + 2 + 2*i);
+            int lookupType = getUInt16(lookup);
+            int subTableCount = getUInt16(lookup + 4);
+            for (int j = 0; j < subTableCount; j++) {
+                int subTable = lookup + getUInt16(lookup + 6 + 2*j);
+                int type = lookupType;
+                if (type == 9) {    // An extension lookup holds the subtable
+                    type = getUInt16(subTable + 2);
+                    subTable += getUInt32(subTable + 4);
+                }
+                if (type == 6 && getUInt16(subTable) == 1) {
+                    markToMark(subTable);
+                }
+            }
+        }
+    }
+
+    // Keeps the offset of each mark from the mark it attaches to, in font
+    // units, by the glyph IDs of the two marks. The first lookup that has a
+    // pair of marks places them.
+    private void markToMark(int subTable) {
+        int[] mark1Glyphs = coverage(subTable + getUInt16(subTable + 2));
+        int[] mark2Glyphs = coverage(subTable + getUInt16(subTable + 4));
+        int classCount = getUInt16(subTable + 6);
+        int mark1Array = subTable + getUInt16(subTable + 8);
+        int mark2Array = subTable + getUInt16(subTable + 10);
+        for (int m1 = 0; m1 < mark1Glyphs.length; m1++) {
+            int markClass = getUInt16(mark1Array + 2 + 4*m1);
+            int anchor1 = mark1Array + getUInt16(mark1Array + 4 + 4*m1);
+            for (int m2 = 0; m2 < mark2Glyphs.length; m2++) {
+                int anchorOffset = getUInt16(mark2Array + 2 + 2*(m2*classCount + markClass));
+                if (anchorOffset == 0) {
+                    continue;
+                }
+                int anchor2 = mark2Array + anchorOffset;
+                int key = (mark2Glyphs[m2] << 16) | mark1Glyphs[m1];
+                if (!markToMarkOffsets.containsKey(key)) {
+                    markToMarkOffsets.put(key, new int[] {
+                            getInt16(anchor2 + 2) - getInt16(anchor1 + 2),
+                            getInt16(anchor2 + 4) - getInt16(anchor1 + 4)});
+                }
+            }
+        }
+    }
+
+    // Returns the glyph IDs of a coverage table, in the order of their coverage indexes.
+    private int[] coverage(int offset) {
+        int format = getUInt16(offset);
+        int count = getUInt16(offset + 2);
+        if (format == 1) {
+            int[] glyphs = new int[count];
+            for (int i = 0; i < count; i++) {
+                glyphs[i] = getUInt16(offset + 4 + 2*i);
+            }
+            return glyphs;
+        }
+        // Format 2 has ranges of glyphs, each with the coverage index of its first glyph.
+        int size = 0;
+        for (int i = 0; i < count; i++) {
+            int range = offset + 4 + 6*i;
+            int start = getUInt16(range);
+            int end = getUInt16(range + 2);
+            if (end >= start) {
+                size = Math.max(size, getUInt16(range + 4) + end - start + 1);
+            }
+        }
+        int[] glyphs = new int[size];
+        for (int i = 0; i < count; i++) {
+            int range = offset + 4 + 6*i;
+            int start = getUInt16(range);
+            int end = getUInt16(range + 2);
+            int coverageIndex = getUInt16(range + 4);
+            for (int glyph = start; glyph <= end; glyph++) {
+                glyphs[coverageIndex + glyph - start] = glyph;
+            }
+        }
+        return glyphs;
+    }
+
+    // The GPOS table is read at offsets from its subtables. A value outside
+    // the font data is read as 0, so a broken table cannot stop the font from
+    // loading.
+    private int getUInt16(int offset) {
+        if (offset < 0 || offset + 2 > buf.length) {
+            return 0;
+        }
+        return ((buf[offset] & 0xFF) << 8) | (buf[offset + 1] & 0xFF);
+    }
+
+    private int getInt16(int offset) {
+        return (short) getUInt16(offset);
+    }
+
+    private int getUInt32(int offset) {
+        return (getUInt16(offset) << 16) | getUInt16(offset + 2);
     }
 
     private int getSegmentFor(

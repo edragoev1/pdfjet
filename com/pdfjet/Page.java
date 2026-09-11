@@ -50,6 +50,8 @@ final public class Page {
     private float[] penColor = {0f, 0f, 0f};
 
     private float[] tmx = new float[] {1f, 0f, 0f, 1f};
+    private float textFontSize = 0f;    // The font size of the text drawn last
+    private float textRise = 0f;
     private byte[] tm0;   // Used for caching tm values
     private byte[] tm1;
     private byte[] tm2;
@@ -596,18 +598,62 @@ final public class Page {
                 }
             }
         } else {
+            // A mark that attaches to the mark before it, like a Thai tone mark
+            // above an upper vowel, is moved to where the font puts it. dx and
+            // dy are the offset of the glyph before, in font units.
+            int previousGID = 0;
+            int dx = 0;
+            int dy = 0;
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
                 if (cp != 0xFEFF) {     //BOM
+                    int gid;
                     if (cp < font.firstChar || cp > font.lastChar) {
-                        appendCodePointAsHex(font.unicodeToGID[0x0020]);
+                        gid = font.unicodeToGID[0x0020];
                     } else {
-                        appendCodePointAsHex(font.unicodeToGID[cp]);
+                        gid = font.unicodeToGID[cp];
                     }
+                    int[] offset = (font.markToMarkOffsets == null) ?
+                            null : font.markToMarkOffsets.get((previousGID << 16) | gid);
+                    if (offset == null) {
+                        appendCodePointAsHex(gid);
+                        dx = 0;
+                        dy = 0;
+                    } else {
+                        dx += offset[0] - font.advanceWidth[previousGID];
+                        dy += offset[1];
+                        appendMovedGlyph(font, gid, dx, dy);
+                    }
+                    previousGID = gid;
                 }
             }
         }
+    }
+
+    // Ends the string of glyphs, draws the glyph moved by dx and dy font units,
+    // and starts the string again.
+    private void appendMovedGlyph(Font font, int gid, int dx, int dy) {
+        float fontSize = (textFontSize != 0f) ? textFontSize : font.size;
+        append("> Tj\n");
+        append(textRise + dy * fontSize / font.unitsPerEm);
+        append(" Ts\n");
+        if (dx == 0) {
+            append("<");
+            appendCodePointAsHex(gid);
+            append("> Tj\n");
+        } else {
+            float adjustment = 1000f * dx / font.unitsPerEm;
+            append("[");
+            append(-adjustment);
+            append(" <");
+            appendCodePointAsHex(gid);
+            append("> ");
+            append(adjustment);
+            append("] TJ\n");
+        }
+        append(textRise);
+        append(" Ts\n<");
     }
 
     /**
@@ -1513,6 +1559,7 @@ final public class Page {
         append(Token.SPACE);
         append(fontSize);
         append(" Tf\n");
+        this.textFontSize = fontSize;
     }
 
     // Code provided by:
@@ -2142,6 +2189,7 @@ final public class Page {
     private void setTextRise(float rise) {
         append(rise);
         append(" Ts\n");
+        this.textRise = rise;
     }
 
     /**

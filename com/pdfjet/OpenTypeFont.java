@@ -29,6 +29,7 @@ class OpenTypeFont {
         font.fontUnderlineThickness = otf.underlineThickness;
         font.advanceWidth = otf.advanceWidth;
         font.unicodeToGID = otf.unicodeToGID;
+        font.markToMarkOffsets = otf.markToMarkOffsets;
         font.setSize(font.size);
 
         embedFontFile(pdf, font, otf);

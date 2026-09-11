@@ -13,9 +13,10 @@ public class Example_27 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Thai, Hebrew, Arabic and Persian text");
 
-        // Thai font
-        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
-        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
+        // Thai font, read from the .otf file: a .otf.stream file has no GPOS
+        // table, which places the tone marks above the upper vowels.
+        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
+        Font f1 = new Font(pdf, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf");
         f1.SetSize(12f);
 
         // Hebrew font
@@ -147,7 +148,6 @@ public class Example_27 {
     }
 
     public static void Main(String[] args) {
-        // Console.WriteLine(Bidi.Reverse("Les Mise\u0301rables"));
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_27();

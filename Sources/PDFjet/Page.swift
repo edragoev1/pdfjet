@@ -40,6 +40,8 @@ public class Page {
     internal var artBox: [Float]?
 
     internal var tmx: [Float] = [1.0, 0.0, 0.0, 1.0]
+    private var textFontSize: Float = 0.0   // The font size of the text drawn last
+    private var textRise: Float = 0.0
     internal var tm0: [UInt8]
     internal var tm1: [UInt8]
     internal var tm2: [UInt8]
@@ -444,17 +446,59 @@ public class Page {
                 }
             }
         } else {
+            // A mark that attaches to the mark before it, like a Thai tone mark
+            // above an upper vowel, is moved to where the font puts it. dx and
+            // dy are the offset of the glyph before, in font units.
+            var previousGID = 0
+            var dx = 0
+            var dy = 0
             for scalar in scalars {
                 if scalar.value != 0xFEFF {     // BOM
+                    var gid: Int
                     if scalar < Unicode.Scalar(font.firstChar)! ||
                             scalar > Unicode.Scalar(font.lastChar)! {
-                        Page.appendCodePointAsHex(font.unicodeToGID[0x0020], &self.buf)
+                        gid = font.unicodeToGID[0x0020]
                     } else {
-                        Page.appendCodePointAsHex(font.unicodeToGID[Int(scalar.value)], &self.buf)
+                        gid = font.unicodeToGID[Int(scalar.value)]
                     }
+                    if let offset = font.markToMarkOffsets?[(previousGID << 16) | gid] {
+                        dx += offset[0] - Int(font.advanceWidth[previousGID])
+                        dy += offset[1]
+                        appendMovedGlyph(font, gid, dx, dy)
+                    } else {
+                        Page.appendCodePointAsHex(gid, &self.buf)
+                        dx = 0
+                        dy = 0
+                    }
+                    previousGID = gid
                 }
             }
         }
+    }
+
+    // Ends the string of glyphs, draws the glyph moved by dx and dy font units,
+    // and starts the string again.
+    private func appendMovedGlyph(_ font: Font, _ gid: Int, _ dx: Int, _ dy: Int) {
+        let fontSize = (textFontSize != 0.0) ? textFontSize : font.size
+        append("> Tj\n")
+        append(textRise + Float(dy) * fontSize / Float(font.unitsPerEm))
+        append(" Ts\n")
+        if dx == 0 {
+            append("<")
+            Page.appendCodePointAsHex(gid, &self.buf)
+            append("> Tj\n")
+        } else {
+            let adjustment = 1000.0 * Float(dx) / Float(font.unitsPerEm)
+            append("[")
+            append(-adjustment)
+            append(" <")
+            Page.appendCodePointAsHex(gid, &self.buf)
+            append("> ")
+            append(adjustment)
+            append("] TJ\n")
+        }
+        append(textRise)
+        append(" Ts\n<")
     }
 
     /// Saves the current graphics state. Please see Example_31.
@@ -1275,6 +1319,7 @@ public class Page {
         append(Token.space)
         append(fontSize)
         append(" Tf\n")
+        self.textFontSize = fontSize
     }
 
     // Original code provided by:
@@ -1784,6 +1829,7 @@ public class Page {
     func setTextRise(_ rise: Float) {
         append(rise)
         append(" Ts\n")
+        self.textRise = rise
     }
 
     /**

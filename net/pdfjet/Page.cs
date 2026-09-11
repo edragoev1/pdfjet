@@ -43,6 +43,8 @@ public class Page {
     private float[] penColor = {0f, 0f, 0f};
 
     private float[] tmx = {1f, 0f, 0f, 1f};
+    private float textFontSize = 0f;    // The font size of the text drawn last
+    private float textRise = 0f;
     private byte[] tm0;
     private byte[] tm1;
     private byte[] tm2;
@@ -589,19 +591,65 @@ public class Page {
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
         } else {
+            // A mark that attaches to the mark before it, like a Thai tone mark
+            // above an upper vowel, is moved to where the font puts it. dx and
+            // dy are the offset of the glyph before, in font units.
+            int previousGID = 0;
+            int dx = 0;
+            int dy = 0;
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
                 if (codePoint != 0xFEFF) {                  // BOM
+                    int gid;
                     if (codePoint < font.firstChar || codePoint > font.lastChar) {
-                        AppendCodePointAsHex(font.unicodeToGID[0x0020]); // Space fallback
+                        gid = font.unicodeToGID[0x0020];    // Space fallback
                     } else {
-                        AppendCodePointAsHex(font.unicodeToGID[codePoint]);
+                        gid = font.unicodeToGID[codePoint];
                     }
+                    int[] offset = null;
+                    if (font.markToMarkOffsets != null) {
+                        font.markToMarkOffsets.TryGetValue((previousGID << 16) | gid, out offset);
+                    }
+                    if (offset == null) {
+                        AppendCodePointAsHex(gid);
+                        dx = 0;
+                        dy = 0;
+                    } else {
+                        dx += offset[0] - font.advanceWidth[previousGID];
+                        dy += offset[1];
+                        AppendMovedGlyph(font, gid, dx, dy);
+                    }
+                    previousGID = gid;
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
         }
+    }
+
+    // Ends the string of glyphs, draws the glyph moved by dx and dy font units,
+    // and starts the string again.
+    private void AppendMovedGlyph(Font font, int gid, int dx, int dy) {
+        float fontSize = (textFontSize != 0f) ? textFontSize : font.size;
+        Append("> Tj\n");
+        Append(textRise + dy * fontSize / font.unitsPerEm);
+        Append(" Ts\n");
+        if (dx == 0) {
+            Append("<");
+            AppendCodePointAsHex(gid);
+            Append("> Tj\n");
+        } else {
+            float adjustment = 1000f * dx / font.unitsPerEm;
+            Append("[");
+            Append(-adjustment);
+            Append(" <");
+            AppendCodePointAsHex(gid);
+            Append("> ");
+            Append(adjustment);
+            Append("] TJ\n");
+        }
+        Append(textRise);
+        Append(" Ts\n<");
     }
 
     /// <summary>
@@ -1392,6 +1440,7 @@ public class Page {
         Append(Token.Space);
         Append(fontSize);
         Append(" Tf\n");
+        this.textFontSize = fontSize;
         return this;
     }
 
@@ -1764,6 +1813,7 @@ public class Page {
     internal void SetTextRise(float rise) {
         Append(rise);
         Append(" Ts\n");
+        this.textRise = rise;
     }
 
     /// <summary>

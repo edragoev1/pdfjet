@@ -48,6 +48,7 @@ type OTF struct {
 	underlineThickness int16
 	advanceWidth       []uint16
 	unicodeToGID       []int
+	markToMarkOffsets  map[int][2]int
 	cff                bool
 	cffOff             int
 	cffLen             int
@@ -101,6 +102,8 @@ func NewOTF(reader io.Reader) *OTF {
 			getPostTable(otf, table)
 		case "CFF ":
 			getCffTable(otf, table)
+		case "GPOS":
+			getGposTable(otf, table)
 		case "cmap":
 			cmapTable = table
 		}
@@ -312,6 +315,110 @@ func getCffTable(otf *OTF, table *FontTable) {
 	otf.cff = true
 	otf.cffOff = table.offset
 	otf.cffLen = table.length
+}
+
+// getGposTable reads where the marks that attach to other marks go, like a Thai
+// tone mark above an upper vowel, from the MarkToMark lookups of the GPOS table.
+func getGposTable(otf *OTF, table *FontTable) {
+	otf.markToMarkOffsets = make(map[int][2]int)
+	lookupList := table.offset + otf.uint16At(table.offset+8)
+	lookupCount := otf.uint16At(lookupList)
+	for i := 0; i < lookupCount; i++ {
+		lookup := lookupList + otf.uint16At(lookupList+2+2*i)
+		lookupType := otf.uint16At(lookup)
+		subTableCount := otf.uint16At(lookup + 4)
+		for j := 0; j < subTableCount; j++ {
+			subTable := lookup + otf.uint16At(lookup+6+2*j)
+			lookupType2 := lookupType
+			if lookupType2 == 9 { // An extension lookup holds the subtable
+				lookupType2 = otf.uint16At(subTable + 2)
+				subTable += otf.uint32At(subTable + 4)
+			}
+			if lookupType2 == 6 && otf.uint16At(subTable) == 1 {
+				otf.getMarkToMarkOffsets(subTable)
+			}
+		}
+	}
+}
+
+// getMarkToMarkOffsets keeps the offset of each mark from the mark it attaches
+// to, in font units, by the glyph IDs of the two marks. The first lookup that
+// has a pair of marks places them.
+func (otf *OTF) getMarkToMarkOffsets(subTable int) {
+	mark1Glyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+2))
+	mark2Glyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+4))
+	classCount := otf.uint16At(subTable + 6)
+	mark1Array := subTable + otf.uint16At(subTable+8)
+	mark2Array := subTable + otf.uint16At(subTable+10)
+	for m1, glyph1 := range mark1Glyphs {
+		markClass := otf.uint16At(mark1Array + 2 + 4*m1)
+		anchor1 := mark1Array + otf.uint16At(mark1Array+4+4*m1)
+		for m2, glyph2 := range mark2Glyphs {
+			anchorOffset := otf.uint16At(mark2Array + 2 + 2*(m2*classCount+markClass))
+			if anchorOffset == 0 {
+				continue
+			}
+			anchor2 := mark2Array + anchorOffset
+			key := (glyph2 << 16) | glyph1
+			if _, ok := otf.markToMarkOffsets[key]; !ok {
+				otf.markToMarkOffsets[key] = [2]int{
+					otf.int16At(anchor2+2) - otf.int16At(anchor1+2),
+					otf.int16At(anchor2+4) - otf.int16At(anchor1+4)}
+			}
+		}
+	}
+}
+
+// coverageGlyphs returns the glyph IDs of a coverage table, in the order of
+// their coverage indexes.
+func (otf *OTF) coverageGlyphs(offset int) []int {
+	format := otf.uint16At(offset)
+	count := otf.uint16At(offset + 2)
+	if format == 1 {
+		glyphs := make([]int, count)
+		for i := 0; i < count; i++ {
+			glyphs[i] = otf.uint16At(offset + 4 + 2*i)
+		}
+		return glyphs
+	}
+	// Format 2 has ranges of glyphs, each with the coverage index of its first glyph.
+	size := 0
+	for i := 0; i < count; i++ {
+		rangeOffset := offset + 4 + 6*i
+		start := otf.uint16At(rangeOffset)
+		end := otf.uint16At(rangeOffset + 2)
+		if end >= start && otf.uint16At(rangeOffset+4)+end-start+1 > size {
+			size = otf.uint16At(rangeOffset+4) + end - start + 1
+		}
+	}
+	glyphs := make([]int, size)
+	for i := 0; i < count; i++ {
+		rangeOffset := offset + 4 + 6*i
+		start := otf.uint16At(rangeOffset)
+		end := otf.uint16At(rangeOffset + 2)
+		coverageIndex := otf.uint16At(rangeOffset + 4)
+		for glyph := start; glyph <= end; glyph++ {
+			glyphs[coverageIndex+glyph-start] = glyph
+		}
+	}
+	return glyphs
+}
+
+// The GPOS table is read at offsets from its subtables. A value outside the
+// font data is read as 0, so a broken table cannot stop the font from loading.
+func (otf *OTF) uint16At(offset int) int {
+	if offset < 0 || offset+2 > len(otf.buf) {
+		return 0
+	}
+	return int(otf.buf[offset])<<8 | int(otf.buf[offset+1])
+}
+
+func (otf *OTF) int16At(offset int) int {
+	return int(int16(otf.uint16At(offset)))
+}
+
+func (otf *OTF) uint32At(offset int) int {
+	return otf.uint16At(offset)<<16 | otf.uint16At(offset+2)
 }
 
 func getSegmentFor(ch rune, startCount, endCount []uint16, segCount int) int {
