@@ -1,6 +1,6 @@
-# Builds the Java (Javadoc), C# (DocFX) and Go (doc2go) API references and
-# publishes them to GitHub Pages:
-# https://edragoev1.github.io/pdfjet/java/, .../net/ and .../go/
+# Builds the Java (Javadoc), C# (DocFX), Go (doc2go) and Swift (DocC) API
+# references and publishes them to GitHub Pages:
+# https://edragoev1.github.io/pdfjet/java/, .../net/, .../go/ and .../swift/
 # The site also serves examples-java.html, examples-dotnet.html, the example
 # sources they link to and the PDF files the Java examples create.
 #
@@ -18,6 +18,8 @@ on:
             - "docfx/**"
             - "src/**"
             - "go.mod"
+            - "Sources/**"
+            - "Package.swift"
             - "examples/**"
             - "fonts/**"
             - "images/**"
@@ -39,7 +41,8 @@ concurrency:
 
 jobs:
     build:
-        runs-on: ubuntu-latest
+        # Pinned to the Ubuntu release the Swift toolchain below is built for.
+        runs-on: ubuntu-24.04
         steps:
             # Only the ports, the DocFX configuration, the examples and the fonts,
             # images and data the examples read are checked out. Files in the
@@ -51,6 +54,7 @@ jobs:
                       net
                       docfx
                       src
+                      Sources
                       examples
                       fonts
                       images
@@ -76,6 +80,31 @@ jobs:
                   go-version-file: go.mod
                   cache: false
 
+            # DocC comes with the Swift toolchain. The Swift in the runner image
+            # is not relied on: the swift.org toolchain is installed and its
+            # signature checked, as in the official Swift Docker image.
+            - name: Install the Swift toolchain
+              env:
+                  SWIFT_URL: https://download.swift.org/swift-6.3.3-release/ubuntu2404/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE-ubuntu24.04.tar.gz
+                  SWIFT_SIGNING_KEY: 52BB7E3DE28A71BE22EC05FFEF80A866B47A981F
+              run: |
+                  sudo apt-get -q update
+                  sudo apt-get -q install -y binutils git unzip gnupg2 libc6-dev \
+                      libcurl4-openssl-dev libedit2 libgcc-13-dev libpython3-dev \
+                      libsqlite3-0 libstdc++-13-dev libxml2-dev libncurses-dev \
+                      libz3-dev pkg-config tzdata zlib1g-dev
+                  cd "$RUNNER_TEMP"
+                  curl -fsSL "$SWIFT_URL" -o swift.tar.gz "$SWIFT_URL.sig" -o swift.tar.gz.sig
+                  export GNUPGHOME="$(mktemp -d)"
+                  gpg --batch --quiet --keyserver keyserver.ubuntu.com --recv-keys "$SWIFT_SIGNING_KEY"
+                  gpg --batch --verify swift.tar.gz.sig swift.tar.gz
+                  mkdir swift
+                  tar -xzf swift.tar.gz --directory swift --strip-components=1
+                  rm -rf "$GNUPGHOME" swift.tar.gz swift.tar.gz.sig
+                  swift/usr/bin/swift --version
+                  test -x swift/usr/bin/docc
+                  echo "$RUNNER_TEMP/swift/usr/bin" >> "$GITHUB_PATH"
+
             - name: Generate the documentation
               run: bash generate-documentation.sh
 
@@ -94,6 +123,7 @@ jobs:
                   cp -r docs/java "$site/java"
                   cp -r docs/_net "$site/net"
                   cp -r docs/go "$site/go"
+                  cp -r docs/swift "$site/swift"
                   # The example pages link to the sources in examples/ and to the
                   # PDF files the Java examples created.
                   cp examples-java.html examples-dotnet.html "$site/"
@@ -115,6 +145,7 @@ jobs:
                   <li><a href="java/">Java</a> (<code>com.pdfjet</code>)</li>
                   <li><a href="net/">C#</a> (<code>PDFjet.NET</code>)</li>
                   <li><a href="go/">Go</a> (<code>github.com/edragoev1/pdfjet/src</code>)</li>
+                  <li><a href="swift/">Swift</a> (<code>PDFjet</code>)</li>
                   </ul>
                   <h2>Examples</h2>
                   <ul>
