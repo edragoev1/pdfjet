@@ -621,7 +621,11 @@ func fillBidiTypes(types []int, start, end, t int) {
 // left to right. The string is laid out as a right to left line with left
 // to right text nested in it one level deep. Spaces, punctuation and
 // brackets take their direction from the text around them, as in the
-// Unicode Bidirectional Algorithm.
+// Unicode Bidirectional Algorithm. Brackets in right to left text are
+// replaced with their mirror images, each after a right-to-left mark
+// (U+200F). Page does not draw the mark, and gives the bracket after it the
+// bracket it stands for as actual text, so the text copied from the page has
+// the brackets that were typed.
 //
 // Please see Example_27.
 func ReorderVisually(str string) string {
@@ -655,9 +659,13 @@ func ReorderVisually(str string) string {
 			continue
 		}
 		// Brackets and the other mirrored characters are mirrored in right
-		// to left text.
+		// to left text. Text extraction reverses the line, but does not mirror
+		// them back, so an RLM before a mirrored character tells Page to give
+		// it the character it stands for as actual text. buf1 is reversed
+		// below, so the RLM goes after it here.
 		if m, ok := mirrored(ch); ok {
-			ch = m
+			buf1 = append(buf1, m, 0x200F)
+			continue
 		}
 		buf1 = append(buf1, ch)
 	}

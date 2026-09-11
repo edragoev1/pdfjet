@@ -189,7 +189,11 @@ public class Bidi {
      * The string is laid out as a right to left line with left to right text
      * nested in it one level deep. Spaces, punctuation and brackets take
      * their direction from the text around them, as in the Unicode
-     * Bidirectional Algorithm.
+     * Bidirectional Algorithm. Brackets in right to left text are replaced
+     * with their mirror images, each after a right-to-left mark (U+200F).
+     * Page does not draw the mark, and gives the bracket after it the
+     * bracket it stands for as actual text, so the text copied from the page
+     * has the brackets that were typed.
      *
      * - Parameter str: the input string.
      * - Returns: the reordered string.
@@ -222,8 +226,16 @@ public class Bidi {
                 continue
             }
             // Brackets and the other mirrored characters are mirrored in
-            // right to left text.
-            buf1.append(mirrored(ch) ?? ch)
+            // right to left text. Text extraction reverses the line, but does
+            // not mirror them back, so an RLM before a mirrored character
+            // tells Page to give it the character it stands for as actual
+            // text. buf1 is reversed below, so the RLM goes after it here.
+            if let m = mirrored(ch) {
+                buf1.append(m)
+                buf1.append(0x200F)
+            } else {
+                buf1.append(ch)
+            }
         }
         buf1.append(contentsOf: buf2.reversed())
 
@@ -702,7 +714,7 @@ public class Bidi {
     /// Returns the mirror image of a bidirectionally mirrored character,
     /// or nil if the character is not mirrored.
     /// Data source: Unicode BidiMirroring.txt.
-    private static func mirrored(_ ch: UInt32) -> UInt32? {
+    static func mirrored(_ ch: UInt32) -> UInt32? {
         switch ch {
         case 0x28: return 0x29      // ( )
         case 0x29: return 0x28

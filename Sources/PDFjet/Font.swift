@@ -375,7 +375,7 @@ public class Font {
                 }
             }
         } else {
-            for scalar in scalars {
+            for scalar in scalars where scalar.value != 0x200F {    // An RLM is not drawn
                 let c1 = Int(scalar.value)
                 if unicodeToGID[c1] < advanceWidth.count {
                     width += Int(advanceWidth[unicodeToGID[c1]])
@@ -581,8 +581,11 @@ public class Font {
         }
         var activeFont = self
         var buf = String()
-        for scalar in str!.unicodeScalars {
-            if activeFont.unicodeToGID[Int(scalar.value)] == 0 {
+        let scalars = Array(str!.unicodeScalars)
+        for (i, scalar) in scalars.enumerated() {
+            // An RLM is drawn with the character after it.
+            let next = (scalar.value == 0x200F && i + 1 < scalars.count) ? scalars[i + 1] : scalar
+            if activeFont.unicodeToGID[Int(next.value)] == 0 {
                 width += activeFont.stringWidth(fontSize, buf)
                 buf = ""
                 // Switch the active font

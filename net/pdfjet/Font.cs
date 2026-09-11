@@ -365,6 +365,9 @@ public class Font {
             }
         } else {
             foreach (int c1 in str) {
+                if (c1 == 0x200F) {
+                    continue;   // An RLM is not drawn
+                }
                 if (unicodeToGID[c1] < advanceWidth.Length) {
                     width += advanceWidth[unicodeToGID[c1]];
                 } else {
@@ -536,8 +539,11 @@ public class Font {
 
         Font activeFont = this;
         StringBuilder buf = new StringBuilder();
-        foreach (int ch in str) {
-            if (activeFont.unicodeToGID[ch] == 0) {
+        for (int i = 0; i < str.Length; i++) {
+            int ch = str[i];
+            // An RLM is drawn with the character after it.
+            int next = (ch == 0x200F && i + 1 < str.Length) ? str[i + 1] : ch;
+            if (activeFont.unicodeToGID[next] == 0) {
                 width += activeFont.StringWidth(fontSize, buf.ToString());
                 buf.Length = 0;
                 // Switch the active font

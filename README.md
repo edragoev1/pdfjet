@@ -141,10 +141,15 @@ Right to left text is drawn in visual order, and PDF viewers put it back in
 logical order when the text is copied or extracted. The joined letters map back
 to the letters they stand for, so the words come out as typed, but:
 
-- Brackets come out the wrong way round: `(15,4 مليار دولار)` comes out with a
-  `)` where the `(` was and a `(` where the `)` was. A bracket in right to left
-  text is drawn with the glyph of its mirror image, and the viewers reverse the
-  line without mirroring the brackets back.
+- A bracket in right to left text is drawn with the glyph of its mirror image,
+  and the viewers reverse the line without mirroring the brackets back. So
+  `Bidi.reorderVisually` puts a right-to-left mark (U+200F) before each bracket
+  it mirrors, and PDFjet draws the bracket in a marked content span that has
+  the bracket that was typed as its ActualText, and does not draw the mark.
+  Brackets around left to right text, as in `مرحبا (hello) عالم`, still come
+  out the wrong way round. MuPDF can move a bracket at either end of a line to
+  the other end, and Poppler puts a space before a closing bracket after a word
+  whose last letter has a mark, as in `(كَتَبَ )`.
 - The zero width non-joiner and joiner are not drawn, so they are not in the
   copied text: `می‌خواهم` comes out as `میخواهم`.
 - Poppler separates an Arabic comma or a period from the word before it, as in

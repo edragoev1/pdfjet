@@ -404,7 +404,9 @@ final public class Page {
             StringBuilder buf = new StringBuilder();
             for (int i = 0; i < str.length(); i++) {
                 int ch = str.charAt(i);
-                if (activeFont.unicodeToGID[ch] == 0) {
+                // An RLM is drawn with the character after it.
+                int next = (ch == 0x200F && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
+                if (activeFont.unicodeToGID[next] == 0) {
                     drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
                     x += activeFont.stringWidth(fontSize, buf.toString());
                     buf.setLength(0);
@@ -597,7 +599,7 @@ final public class Page {
                     }
                 }
             }
-        } else if (font.markAnchors == null) {
+        } else if (font.markAnchors == null && str.indexOf(0x200F) < 0) {     // RLM
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
@@ -606,28 +608,43 @@ final public class Page {
                 }
             }
         } else {
-            // The font has a GPOS table, so the marks are moved to where it puts them.
+            // The marks are moved to where the GPOS table of the font puts
+            // them, and the characters Bidi mirrored, each after an RLM, are
+            // given the characters they stand for as actual text.
             int[] codePoints = new int[length];
             int[] gids = new int[length];
+            boolean[] mirrored = null;
             int n = 0;
             boolean hasMarks = false;
+            boolean afterRLM = false;
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
-                if (cp != 0xFEFF) {     // BOM
+                if (cp == 0x200F) {     // RLM
+                    afterRLM = true;
+                } else if (cp != 0xFEFF) {     // BOM
+                    if (afterRLM && Bidi.mirrored(cp) != null) {
+                        if (mirrored == null) {
+                            mirrored = new boolean[length];
+                        }
+                        mirrored[n] = true;
+                    }
+                    afterRLM = false;
                     codePoints[n] = cp;
                     gids[n] = glyphOf(font, cp);
                     hasMarks |= isMark(cp);
                     n++;
                 }
             }
-            if (!hasMarks) {
+            int[] offsets = null;
+            if (hasMarks && font.markAnchors != null) {
+                offsets = markOffsets(font, codePoints, gids, n);
+            } else if (mirrored == null) {
                 for (int i = 0; i < n; i++) {
                     appendCodePointAsHex(gids[i]);
                 }
                 return;
             }
-            int[] offsets = markOffsets(font, codePoints, gids, n);
             int i = 0;
             while (i < n) {
                 int end = i + 1;
@@ -636,16 +653,48 @@ final public class Page {
                         end++;
                     }
                 }
-                if (isMoved(offsets, i, end)) {
-                    appendWordWithMovedMarks(font, codePoints, gids, offsets, i, end);
+                // The mirrored characters at the ends of a word with moved marks,
+                // like its brackets, are drawn in spans of their own: MuPDF
+                // leaves out text if the glyphs of its span map to other text.
+                int from = i;
+                int to = end;
+                while (mirrored != null && from < to && mirrored[from]) {
+                    from++;
+                }
+                while (mirrored != null && to > from && mirrored[to - 1]) {
+                    to--;
+                }
+                if (offsets != null && isMoved(offsets, from, to)) {
+                    appendGlyphs(codePoints, gids, mirrored, i, from);
+                    appendWordWithMovedMarks(font, codePoints, gids, offsets, from, to);
+                    appendGlyphs(codePoints, gids, mirrored, to, end);
                 } else {
-                    for (int k = i; k < end; k++) {
-                        appendCodePointAsHex(gids[k]);
-                    }
+                    appendGlyphs(codePoints, gids, mirrored, i, end);
                 }
                 i = end;
             }
         }
+    }
+
+    private void appendGlyphs(int[] codePoints, int[] gids, boolean[] mirrored, int from, int to) {
+        for (int k = from; k < to; k++) {
+            if (mirrored != null && mirrored[k]) {
+                appendMirroredGlyph(codePoints[k], gids[k]);
+            } else {
+                appendCodePointAsHex(gids[k]);
+            }
+        }
+    }
+
+    // Draws a character that Bidi mirrored in a marked content span that has
+    // the character it stands for as its actual text. Text extraction reverses
+    // right to left text, but does not mirror the brackets back.
+    private void appendMirroredGlyph(int cp, int gid) {
+        append("> Tj\n/Span <</ActualText <");
+        append(toUTF16Hex(new String(Character.toChars(Bidi.mirrored(cp)))));
+        append(">>> BDC\n<");
+        appendCodePointAsHex(gid);
+        append("> Tj\nEMC\n<");
     }
 
     private static boolean isMoved(int[] offsets, int from, int to) {

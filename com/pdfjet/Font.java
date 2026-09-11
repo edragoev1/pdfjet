@@ -478,6 +478,9 @@ final public class Font {
         } else {
             for (int i = 0; i < str.length(); i++) {
                 int c1 = str.charAt(i);
+                if (c1 == 0x200F) {
+                    continue;   // An RLM is not drawn
+                }
                 if (unicodeToGID[c1] < advanceWidth.length) {
                     width += advanceWidth[unicodeToGID[c1]];
                 } else {
@@ -721,7 +724,9 @@ final public class Font {
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             int ch = str.charAt(i);
-            if (activeFont.unicodeToGID[ch] == 0) {
+            // An RLM is drawn with the character after it.
+            int next = (ch == 0x200F && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
+            if (activeFont.unicodeToGID[next] == 0) {
                 width += activeFont.stringWidth(fontSize, buf.toString());
                 buf.setLength(0);
                 // Switch the active font

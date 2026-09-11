@@ -492,6 +492,9 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 		}
 	} else {
 		for _, c1 := range runes {
+			if c1 == 0x200F {
+				continue // An RLM is not drawn
+			}
 			if font.unicodeToGID[c1] < len(font.advanceWidth) {
 				width += float32(font.advanceWidth[font.unicodeToGID[c1]])
 			} else {
@@ -513,8 +516,14 @@ func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text strin
 
 	activeFont := font
 	var buf strings.Builder
-	for _, ch := range text {
-		if activeFont.unicodeToGID[ch] == 0 {
+	runes := []rune(text)
+	for i, ch := range runes {
+		// An RLM is drawn with the character after it.
+		next := ch
+		if ch == 0x200F && i+1 < len(runes) {
+			next = runes[i+1]
+		}
+		if activeFont.unicodeToGID[next] == 0 {
 			width += activeFont.StringWidth(fontSize, buf.String())
 			buf.Reset()
 			// Switch the active font

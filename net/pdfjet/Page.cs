@@ -417,8 +417,11 @@ public class Page {
         } else {
             Font activeFont = font;
             StringBuilder sb = new StringBuilder();
-            foreach (int ch in str) {
-                if (activeFont.unicodeToGID[ch] == 0) {
+            for (int i = 0; i < str.Length; i++) {
+                int ch = str[i];
+                // An RLM is drawn with the character after it.
+                int next = (ch == 0x200F && i + 1 < str.Length) ? str[i + 1] : ch;
+                if (activeFont.unicodeToGID[next] == 0) {
                     DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
                     x += activeFont.StringWidth(fontSize, sb.ToString());
                     sb.Length = 0;
@@ -590,7 +593,7 @@ public class Page {
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
-        } else if (font.markAnchors == null) {
+        } else if (font.markAnchors == null && str.IndexOf('\u200F') < 0) {    // RLM
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
@@ -600,15 +603,28 @@ public class Page {
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
         } else {
-            // The font has a GPOS table, so the marks are moved to where it puts them.
+            // The marks are moved to where the GPOS table of the font puts
+            // them, and the characters Bidi mirrored, each after an RLM, are
+            // given the characters they stand for as actual text.
             int[] codePoints = new int[str.Length];
             int[] gids = new int[str.Length];
+            bool[] mirrored = null;
             int n = 0;
             bool hasMarks = false;
+            bool afterRLM = false;
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
-                if (codePoint != 0xFEFF) {                  // BOM
+                if (codePoint == 0x200F) {                  // RLM
+                    afterRLM = true;
+                } else if (codePoint != 0xFEFF) {           // BOM
+                    if (afterRLM && Bidi.Mirrored(codePoint).HasValue) {
+                        if (mirrored == null) {
+                            mirrored = new bool[str.Length];
+                        }
+                        mirrored[n] = true;
+                    }
+                    afterRLM = false;
                     codePoints[n] = codePoint;
                     gids[n] = GlyphOf(font, codePoint);
                     hasMarks |= IsMark(codePoint);
@@ -616,13 +632,15 @@ public class Page {
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
-            if (!hasMarks) {
+            int[] offsets = null;
+            if (hasMarks && font.markAnchors != null) {
+                offsets = MarkOffsets(font, codePoints, gids, n);
+            } else if (mirrored == null) {
                 for (int k = 0; k < n; k++) {
                     AppendCodePointAsHex(gids[k]);
                 }
                 return;
             }
-            int[] offsets = MarkOffsets(font, codePoints, gids, n);
             i = 0;
             while (i < n) {
                 int end = i + 1;
@@ -631,16 +649,48 @@ public class Page {
                         end++;
                     }
                 }
-                if (IsMoved(offsets, i, end)) {
-                    AppendWordWithMovedMarks(font, codePoints, gids, offsets, i, end);
+                // The mirrored characters at the ends of a word with moved marks,
+                // like its brackets, are drawn in spans of their own: MuPDF
+                // leaves out text if the glyphs of its span map to other text.
+                int wordStart = i;
+                int wordEnd = end;
+                while (mirrored != null && wordStart < wordEnd && mirrored[wordStart]) {
+                    wordStart++;
+                }
+                while (mirrored != null && wordEnd > wordStart && mirrored[wordEnd - 1]) {
+                    wordEnd--;
+                }
+                if (offsets != null && IsMoved(offsets, wordStart, wordEnd)) {
+                    AppendGlyphs(codePoints, gids, mirrored, i, wordStart);
+                    AppendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd);
+                    AppendGlyphs(codePoints, gids, mirrored, wordEnd, end);
                 } else {
-                    for (int k = i; k < end; k++) {
-                        AppendCodePointAsHex(gids[k]);
-                    }
+                    AppendGlyphs(codePoints, gids, mirrored, i, end);
                 }
                 i = end;
             }
         }
+    }
+
+    private void AppendGlyphs(int[] codePoints, int[] gids, bool[] mirrored, int start, int end) {
+        for (int k = start; k < end; k++) {
+            if (mirrored != null && mirrored[k]) {
+                AppendMirroredGlyph(codePoints[k], gids[k]);
+            } else {
+                AppendCodePointAsHex(gids[k]);
+            }
+        }
+    }
+
+    // Draws a character that Bidi mirrored in a marked content span that has
+    // the character it stands for as its actual text. Text extraction reverses
+    // right to left text, but does not mirror the brackets back.
+    private void AppendMirroredGlyph(int codePoint, int gid) {
+        Append("> Tj\n/Span <</ActualText <");
+        Append(ToUTF16Hex(char.ConvertFromUtf32(Bidi.Mirrored(codePoint).Value)));
+        Append(">>> BDC\n<");
+        AppendCodePointAsHex(gid);
+        Append("> Tj\nEMC\n<");
     }
 
     private static int GlyphOf(Font font, int codePoint) {

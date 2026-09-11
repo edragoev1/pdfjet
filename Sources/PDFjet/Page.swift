@@ -287,8 +287,11 @@ public class Page {
         } else {
             var activeFont = font
             var buf = String()
-            for scalar in str!.unicodeScalars {
-                if activeFont.unicodeToGID[Int(scalar.value)] == 0 {
+            let scalars = Array(str!.unicodeScalars)
+            for (i, scalar) in scalars.enumerated() {
+                // An RLM is drawn with the character after it.
+                let next = (scalar.value == 0x200F && i + 1 < scalars.count) ? scalars[i + 1] : scalar
+                if activeFont.unicodeToGID[Int(next.value)] == 0 {
                     drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
                     x += activeFont.stringWidth(fontSize, buf)
                     buf = ""
@@ -445,28 +448,45 @@ public class Page {
                     }
                 }
             }
-        } else if font.markAnchors == nil {
+        } else if font.markAnchors == nil && !scalars.contains(where: { $0.value == 0x200F }) {    // RLM
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
                 Page.appendCodePointAsHex(glyphOf(font, Int(scalar.value)), &self.buf)
             }
         } else {
-            // The font has a GPOS table, so the marks are moved to where it puts them.
+            // The marks are moved to where the GPOS table of the font puts
+            // them, and the characters Bidi mirrored, each after an RLM, are
+            // given the characters they stand for as actual text.
             var codePoints = [Int]()
             var gids = [Int]()
+            var mirrored: [Bool]? = nil
             var hasMarks = false
+            var afterRLM = false
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
+                if scalar.value == 0x200F {     // RLM
+                    afterRLM = true
+                    continue
+                }
                 let codePoint = Int(scalar.value)
+                if afterRLM && Bidi.mirrored(scalar.value) != nil {
+                    if mirrored == nil {
+                        mirrored = [Bool](repeating: false, count: scalars.count)
+                    }
+                    mirrored![codePoints.count] = true
+                }
+                afterRLM = false
                 codePoints.append(codePoint)
                 gids.append(glyphOf(font, codePoint))
                 hasMarks = hasMarks || isMark(codePoint)
             }
-            if !hasMarks {
+            var offsets: [Int]? = nil
+            if hasMarks && font.markAnchors != nil {
+                offsets = markOffsets(font, codePoints, gids)
+            } else if mirrored == nil {
                 for gid in gids {
                     Page.appendCodePointAsHex(gid, &self.buf)
                 }
                 return
             }
-            let offsets = markOffsets(font, codePoints, gids)
             let n = gids.count
             var i = 0
             while i < n {
@@ -476,16 +496,52 @@ public class Page {
                         end += 1
                     }
                 }
-                if isMoved(offsets, i, end) {
-                    appendWordWithMovedMarks(font, codePoints, gids, offsets, i, end)
-                } else {
-                    for k in i..<end {
-                        Page.appendCodePointAsHex(gids[k], &self.buf)
+                // The mirrored characters at the ends of a word with moved marks,
+                // like its brackets, are drawn in spans of their own: MuPDF
+                // leaves out text if the glyphs of its span map to other text.
+                var wordStart = i
+                var wordEnd = end
+                if let mirrored = mirrored {
+                    while wordStart < wordEnd && mirrored[wordStart] {
+                        wordStart += 1
                     }
+                    while wordEnd > wordStart && mirrored[wordEnd - 1] {
+                        wordEnd -= 1
+                    }
+                }
+                if let offsets = offsets, isMoved(offsets, wordStart, wordEnd) {
+                    appendGlyphs(codePoints, gids, mirrored, i, wordStart)
+                    appendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd)
+                    appendGlyphs(codePoints, gids, mirrored, wordEnd, end)
+                } else {
+                    appendGlyphs(codePoints, gids, mirrored, i, end)
                 }
                 i = end
             }
         }
+    }
+
+    private func appendGlyphs(
+            _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ start: Int, _ end: Int) {
+        for k in start..<end {
+            if mirrored?[k] == true {
+                appendMirroredGlyph(codePoints[k], gids[k])
+            } else {
+                Page.appendCodePointAsHex(gids[k], &self.buf)
+            }
+        }
+    }
+
+    // Draws a character that Bidi mirrored in a marked content span that has
+    // the character it stands for as its actual text. Text extraction reverses
+    // right to left text, but does not mirror the brackets back.
+    private func appendMirroredGlyph(_ codePoint: Int, _ gid: Int) {
+        let scalar = Unicode.Scalar(Bidi.mirrored(UInt32(codePoint))!)!
+        append("> Tj\n/Span <</ActualText <")
+        append(toUTF16Hex(String(Character(scalar))))
+        append(">>> BDC\n<")
+        Page.appendCodePointAsHex(gid, &self.buf)
+        append("> Tj\nEMC\n<")
     }
 
     private func glyphOf(_ font: Font, _ codePoint: Int) -> Int {
