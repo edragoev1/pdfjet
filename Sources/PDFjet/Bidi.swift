@@ -14,46 +14,105 @@ import Foundation
 public class Bidi {
 
     /* General,Isolated,End,Middle,Beginning */
-    private static let forms: [Character] = [
-        "\u{0623}","\u{FE83}","\u{FE84}","\u{0623}","\u{0623}",
-        "\u{0628}","\u{FE8F}","\u{FE90}","\u{FE92}","\u{FE91}",
-        "\u{062A}","\u{FE95}","\u{FE96}","\u{FE98}","\u{FE97}",
-        "\u{062B}","\u{FE99}","\u{FE9A}","\u{FE9C}","\u{FE9B}",
-        "\u{062C}","\u{FE9D}","\u{FE9E}","\u{FEA0}","\u{FE9F}",
-        "\u{062D}","\u{FEA1}","\u{FEA2}","\u{FEA4}","\u{FEA3}",
-        "\u{062E}","\u{FEA5}","\u{FEA6}","\u{FEA8}","\u{FEA7}",
-        "\u{062F}","\u{FEA9}","\u{FEAA}","\u{062F}","\u{062F}",
-        "\u{0630}","\u{FEAB}","\u{FEAC}","\u{0630}","\u{0630}",
-        "\u{0631}","\u{FEAD}","\u{FEAE}","\u{0631}","\u{0631}",
-        "\u{0632}","\u{FEAF}","\u{FEB0}","\u{0632}","\u{0632}",
-        "\u{0633}","\u{FEB1}","\u{FEB2}","\u{FEB4}","\u{FEB3}",
-        "\u{0634}","\u{FEB5}","\u{FEB6}","\u{FEB8}","\u{FEB7}",
-        "\u{0635}","\u{FEB9}","\u{FEBA}","\u{FEBC}","\u{FEBB}",
-        "\u{0636}","\u{FEBD}","\u{FEBE}","\u{FEC0}","\u{FEBF}",
-        "\u{0637}","\u{FEC1}","\u{FEC2}","\u{FEC4}","\u{FEC3}",
-        "\u{0638}","\u{FEC5}","\u{FEC6}","\u{FEC8}","\u{FEC7}",
-        "\u{0639}","\u{FEC9}","\u{FECA}","\u{FECC}","\u{FECB}",
-        "\u{063A}","\u{FECD}","\u{FECE}","\u{FED0}","\u{FECF}",
-        "\u{0641}","\u{FED1}","\u{FED2}","\u{FED4}","\u{FED3}",
-        "\u{0642}","\u{FED5}","\u{FED6}","\u{FED8}","\u{FED7}",
-        "\u{0643}","\u{FED9}","\u{FEDA}","\u{FEDC}","\u{FEDB}",
-        "\u{0644}","\u{FEDD}","\u{FEDE}","\u{FEE0}","\u{FEDF}",
-        "\u{0645}","\u{FEE1}","\u{FEE2}","\u{FEE4}","\u{FEE3}",
-        "\u{0646}","\u{FEE5}","\u{FEE6}","\u{FEE8}","\u{FEE7}",
-        "\u{0647}","\u{FEE9}","\u{FEEA}","\u{FEEC}","\u{FEEB}",
-        "\u{0648}","\u{FEED}","\u{FEEE}","\u{0648}","\u{0648}",
-        "\u{064A}","\u{FEF1}","\u{FEF2}","\u{FEF4}","\u{FEF3}",
-        "\u{0622}","\u{FE81}","\u{FE82}","\u{0622}","\u{0622}",
-        "\u{0629}","\u{FE93}","\u{FE94}","\u{0629}","\u{0629}",
-        "\u{0649}","\u{FEEF}","\u{FEF0}","\u{0649}","\u{0649}",
-        "\u{0621}","\u{FE80}","\u{0621}","\u{0621}","\u{0621}",
-        "\u{0624}","\u{FE85}","\u{FE86}","\u{0624}","\u{0624}",
-        "\u{0625}","\u{FE87}","\u{FE88}","\u{0625}","\u{0625}",
-        "\u{0626}","\u{FE89}","\u{FE8A}","\u{FE8C}","\u{FE8B}",
-        "\u{0627}","\u{FE8D}","\u{FE8E}","\u{0627}","\u{0627}",
+    private static let forms: [UInt32] = [
+        0x0623, 0xFE83, 0xFE84, 0x0623, 0x0623,
+        0x0628, 0xFE8F, 0xFE90, 0xFE92, 0xFE91,
+        0x062A, 0xFE95, 0xFE96, 0xFE98, 0xFE97,
+        0x062B, 0xFE99, 0xFE9A, 0xFE9C, 0xFE9B,
+        0x062C, 0xFE9D, 0xFE9E, 0xFEA0, 0xFE9F,
+        0x062D, 0xFEA1, 0xFEA2, 0xFEA4, 0xFEA3,
+        0x062E, 0xFEA5, 0xFEA6, 0xFEA8, 0xFEA7,
+        0x062F, 0xFEA9, 0xFEAA, 0x062F, 0x062F,
+        0x0630, 0xFEAB, 0xFEAC, 0x0630, 0x0630,
+        0x0631, 0xFEAD, 0xFEAE, 0x0631, 0x0631,
+        0x0632, 0xFEAF, 0xFEB0, 0x0632, 0x0632,
+        0x0633, 0xFEB1, 0xFEB2, 0xFEB4, 0xFEB3,
+        0x0634, 0xFEB5, 0xFEB6, 0xFEB8, 0xFEB7,
+        0x0635, 0xFEB9, 0xFEBA, 0xFEBC, 0xFEBB,
+        0x0636, 0xFEBD, 0xFEBE, 0xFEC0, 0xFEBF,
+        0x0637, 0xFEC1, 0xFEC2, 0xFEC4, 0xFEC3,
+        0x0638, 0xFEC5, 0xFEC6, 0xFEC8, 0xFEC7,
+        0x0639, 0xFEC9, 0xFECA, 0xFECC, 0xFECB,
+        0x063A, 0xFECD, 0xFECE, 0xFED0, 0xFECF,
+        0x0641, 0xFED1, 0xFED2, 0xFED4, 0xFED3,
+        0x0642, 0xFED5, 0xFED6, 0xFED8, 0xFED7,
+        0x0643, 0xFED9, 0xFEDA, 0xFEDC, 0xFEDB,
+        0x0644, 0xFEDD, 0xFEDE, 0xFEE0, 0xFEDF,
+        0x0645, 0xFEE1, 0xFEE2, 0xFEE4, 0xFEE3,
+        0x0646, 0xFEE5, 0xFEE6, 0xFEE8, 0xFEE7,
+        0x0647, 0xFEE9, 0xFEEA, 0xFEEC, 0xFEEB,
+        0x0648, 0xFEED, 0xFEEE, 0x0648, 0x0648,
+        0x064A, 0xFEF1, 0xFEF2, 0xFEF4, 0xFEF3,
+        0x0622, 0xFE81, 0xFE82, 0x0622, 0x0622,
+        0x0629, 0xFE93, 0xFE94, 0x0629, 0x0629,
+        0x0649, 0xFEEF, 0xFEF0, 0x0649, 0x0649,
+        0x0621, 0xFE80, 0x0621, 0x0621, 0x0621,
+        0x0624, 0xFE85, 0xFE86, 0x0624, 0x0624,
+        0x0625, 0xFE87, 0xFE88, 0x0625, 0x0625,
+        0x0626, 0xFE89, 0xFE8A, 0xFE8C, 0xFE8B,
+        0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
     ]
 
-    private static func isArabicLetter(_ ch: Character) -> Bool {
+    // The bidirectional character types of the Unicode Bidirectional
+    // Algorithm, https://www.unicode.org/reports/tr9/
+    private static let L = 0        // Left to right
+    private static let R = 1        // Right to left
+    private static let AL = 2       // Arabic letter
+    private static let EN = 3       // European number
+    private static let AN = 4       // Arabic number
+    private static let ES = 5       // European number separator
+    private static let ET = 6       // European number terminator
+    private static let CS = 7       // Common number separator
+    private static let NSM = 8      // Nonspacing mark
+    private static let ON = 9       // Other neutral
+
+    private static let dualJoining: Set<UInt32> = [
+        0x0628, // BEH
+        0x062A, // TEH
+        0x062B, // THEH
+        0x062C, // JEEM
+        0x062D, // HAH
+        0x062E, // KHAH
+        0x0633, // SEEN
+        0x0634, // SHEEN
+        0x0635, // SAD
+        0x0636, // DAD
+        0x0637, // TAH
+        0x0638, // ZAH
+        0x0639, // AIN
+        0x063A, // GHAIN
+        0x063B, // KEHEH WITH 2 DOTS ABOVE
+        0x063C, // KEHEH WITH 3 DOTS BELOW
+        0x063D, // FARSI YEH WITH INVERTED V ABOVE
+        0x063E, // FARSI YEH WITH 2 DOTS ABOVE
+        0x063F, // FARSI YEH WITH 3 DOTS ABOVE
+        0x0641, // FEH
+        0x0642, // QAF
+        0x0643, // KAF
+        0x0644, // LAM
+        0x0645, // MEEM
+        0x0646, // NOON
+        0x0647, // HEH
+        0x064A, // YEH
+        0x0626, // YEH WITH HAMZA (Dual_Joining)
+    ]
+
+    private static let rightJoining: Set<UInt32> = [
+        0x0622, // ALEF WITH MADDA ABOVE
+        0x0623, // ALEF WITH HAMZA ABOVE
+        0x0624, // WAW WITH HAMZA ABOVE
+        0x0625, // ALEF WITH HAMZA BELOW
+        0x0627, // ALEF
+        0x0629, // TEH MARBUTA
+        0x062F, // DAL
+        0x0630, // THAL
+        0x0631, // REH
+        0x0632, // ZAIN
+        0x0648, // WAW
+        0x0649, // ALEF MAKSURA (DOTLESS YEH)
+    ]
+
+    private static func isArabicLetter(_ ch: UInt32) -> Bool {
         for i in stride(from: 0, to: forms.count, by: 5) {
             if ch == forms[i] {
                 return true
@@ -62,13 +121,21 @@ public class Bidi {
         return false
     }
 
+    private static func generalCategory(_ ch: UInt32) -> Unicode.GeneralCategory {
+        return Unicode.Scalar(ch)?.properties.generalCategory ?? .unassigned
+    }
+
     /// Returns true if the character is a Transparent joining type
     /// (combining mark / diacritic) that should be skipped when
     /// determining joining context, and kept attached to its base
-    /// letter during visual reordering.
-    private static func isTransparent(_ ch: Character) -> Bool {
-        guard let scalar = ch.unicodeScalars.first else { return false }
-        let cat = scalar.properties.generalCategory
+    /// letter during visual reordering. The zero width non-joiner is
+    /// not transparent: it keeps the letters on either side of it from
+    /// joining.
+    private static func isTransparent(_ ch: UInt32) -> Bool {
+        if ch == 0x200C {   // ZWNJ
+            return false
+        }
+        let cat = generalCategory(ch)
         return cat == .nonspacingMark
             || cat == .enclosingMark
             || cat == .format
@@ -77,53 +144,49 @@ public class Bidi {
     /**
      * Reorders the string so that Arabic and Hebrew text flows from right
      * to left while numbers and Latin text flows from left to right.
+     * The string is laid out as a right to left line with left to right text
+     * nested in it one level deep. Spaces, punctuation and brackets take
+     * their direction from the text around them, as in the Unicode
+     * Bidirectional Algorithm.
      *
      * - Parameter str: the input string.
      * - Returns: the reordered string.
      */
     public static func reorderVisually(_ str: String) -> String {
-        var buf1 = String()
-        var buf2 = String()
-        var rightToLeft: Bool = false
-        for i in 0..<str.count {
-            let ch = str[str.index(str.startIndex, offsetBy: i)]
-            if ch == "\u{200E}" {
-                rightToLeft = false
-                continue
-            }
-            if ch == "\u{200F}" || ch == "\u{061C}" {
-                rightToLeft = true
-                continue
-            }
-            if isArabic(ch) ||
-                    isHebrew(ch) ||
-                    mirrored(ch) != nil {
-                rightToLeft = true
-                if buf2.count > 0 {
-                    buf1.append(process(buf2))
-                    buf2 = ""
-                }
-                buf1.append(mirrored(ch) ?? ch)
-            } else if isAlphaNumeric(ch) {
-                rightToLeft = false
-                buf2.append(ch)
-            } else {
-                if rightToLeft {
-                    buf1.append(ch)
-                } else {
+        // Work with Unicode scalars, as the Java, C# and Go ports work with
+        // code points. A Character would hold a letter and its diacritics.
+        let input = str.unicodeScalars.map { $0.value }
+        let types = resolveTypes(input)
+
+        // buf1 gets the right to left text in logical order and each left to
+        // right run reversed, so that reversing buf1 below puts the right to
+        // left text in visual order and the left to right runs back in theirs.
+        var buf1 = [UInt32]()
+        var buf2 = [UInt32]()
+        for j in 0..<input.count {
+            let ch = input[j]
+            if types[j] == L {
+                if ch != 0x200E {                               // LRM
                     buf2.append(ch)
                 }
+                continue
             }
+            // An RLM or ALM is left out, but still ends the left to right run.
+            buf1.append(contentsOf: buf2.reversed())
+            buf2.removeAll()
+            if ch == 0x200F || ch == 0x061C {                   // RLM, ALM
+                continue
+            }
+            // Brackets and the other mirrored characters are mirrored in
+            // right to left text.
+            buf1.append(mirrored(ch) ?? ch)
         }
-        if buf2.count > 0 {
-            buf1.append(process(buf2))
-        }
+        buf1.append(contentsOf: buf2.reversed())
 
-        // Convert to array for O(1) indexing (fixes Bug #5)
-        let chars = Array(buf1)
+        let chars = buf1
         let n = chars.count
 
-        var buf3 = String()
+        var buf3 = String.UnicodeScalarView()
         var i: Int = n - 1
         while i >= 0 {
             let ch = chars[i]
@@ -131,18 +194,16 @@ public class Bidi {
             // If this is a transparent character (diacritic) with no
             // base letter to its right (in buf1 order), emit as-is.
             if isTransparent(ch) {
-                buf3.append(ch)
+                append(&buf3, ch)
                 i -= 1
                 continue
             }
 
-            // Collect trailing diacritics that follow this base letter
-            // in chars (at indices i-1, i-2, ... while transparent).
-            var diacritics: [Character] = []
+            var diacriticCount = 0
             var d = i - 1
             while d >= 0 {
                 if !isTransparent(chars[d]) { break }
-                diacritics.append(chars[d])
+                diacriticCount += 1
                 d -= 1
             }
 
@@ -153,7 +214,7 @@ public class Bidi {
                     if !isTransparent(chars[prevIdx]) { break }
                     prevIdx -= 1
                 }
-                let prevCh: Character = prevIdx >= 0 ? chars[prevIdx] : "\u{0000}"
+                let prevCh: UInt32 = prevIdx >= 0 ? chars[prevIdx] : 0x0000
 
                 // Find next non-transparent character (skip diacritics)
                 var nextIdx = i + 1
@@ -161,7 +222,7 @@ public class Bidi {
                     if !isTransparent(chars[nextIdx]) { break }
                     nextIdx += 1
                 }
-                let nextCh: Character = nextIdx < n ? chars[nextIdx] : "\u{0000}"
+                let nextCh: UInt32 = nextIdx < n ? chars[nextIdx] : 0x0000
 
                 for j in stride(from: 0, to: forms.count, by: 5) {
                     if ch == forms[j] {
@@ -174,45 +235,54 @@ public class Bidi {
                         let joinsOnRight = canJoinNext && nextJoins
 
                         if (!joinsOnLeft && !joinsOnRight) {
-                            buf3.append(forms[j + 1])
+                            append(&buf3, forms[j + 1])
                         } else if (joinsOnLeft && !joinsOnRight) {
-                            buf3.append(forms[j + 2])
+                            append(&buf3, forms[j + 2])
                         } else if (joinsOnLeft && joinsOnRight) {
-                            buf3.append(forms[j + 3])
+                            append(&buf3, forms[j + 3])
                         } else if (!joinsOnLeft && joinsOnRight) {
-                            buf3.append(forms[j + 4])
+                            append(&buf3, forms[j + 4])
                         }
                         break
                     }
                 }
-            } else {
-                buf3.append(ch)
+            } else if ch != 0x200C {
+                // A zero width non-joiner is left out: it only keeps the
+                // letters on either side of it from joining.
+                append(&buf3, ch)
             }
 
             // Emit diacritics in their original order
-            for dc in diacritics.reversed() {
-                buf3.append(dc)
+            for k in 0..<diacriticCount {
+                append(&buf3, chars[i - 1 - k])
             }
 
             i = d
         }
-        return buf3
+        return String(buf3)
+    }
+
+    /// Appends a code point that came from a Unicode scalar or from the tables.
+    private static func append(_ buf: inout String.UnicodeScalarView, _ ch: UInt32) {
+        buf.append(Unicode.Scalar(ch)!)
     }
 
     /// Returns true if the character is in the Arabic Unicode block, U+0600 to U+06FF.
     public static func isArabic(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
-        return (scalar >= "\u{0600}" && scalar <= "\u{06FF}")
+        return isArabic(scalar.value)
     }
 
-    private static func isHebrew(_ ch: Character) -> Bool {
-        guard let scalar = ch.unicodeScalars.first else { return false }
-        return (scalar >= "\u{0590}" && scalar <= "\u{05FF}")
+    private static func isArabic(_ ch: UInt32) -> Bool {
+        return ch >= 0x0600 && ch <= 0x06FF
     }
 
-    private static func isAlphaNumeric(_ ch: Character) -> Bool {
-        guard let scalar = ch.unicodeScalars.first else { return false }
-        let cat = scalar.properties.generalCategory
+    private static func isHebrew(_ ch: UInt32) -> Bool {
+        return ch >= 0x0590 && ch <= 0x05FF
+    }
+
+    private static func isAlphaNumeric(_ ch: UInt32) -> Bool {
+        let cat = generalCategory(ch)
         return cat == .decimalNumber     // Nd
             || cat == .uppercaseLetter   // Lu
             || cat == .lowercaseLetter   // Ll
@@ -221,63 +291,343 @@ public class Bidi {
             || cat == .otherLetter       // Lo
     }
 
+    // ---- Bidirectional types ----------------------------------------------
+
+    /// Returns the bidirectional character type of the letters, digits and
+    /// punctuation used in Arabic, Hebrew and Latin text.
+    private static func bidiType(_ ch: UInt32) -> Int {
+        if ch == 0x200E {                                           // LRM
+            return L
+        }
+        if ch == 0x200F {                                           // RLM
+            return R
+        }
+        if ch == 0x061C {                                           // ALM
+            return AL
+        }
+        let cat = generalCategory(ch)
+        if cat == .nonspacingMark || cat == .enclosingMark {
+            return NSM
+        }
+        if (ch >= 0x30 && ch <= 0x39)                               // 0 to 9
+                || ch == 0x00B2 || ch == 0x00B3 || ch == 0x00B9     // superscript 2, 3 and 1
+                || ch == 0x2070 || (ch >= 0x2074 && ch <= 0x2079)   // superscript digits
+                || (ch >= 0x2080 && ch <= 0x2089)                   // subscript digits
+                || (ch >= 0x06F0 && ch <= 0x06F9)                   // extended Arabic-Indic digits
+                || (ch >= 0xFF10 && ch <= 0xFF19) {                 // fullwidth digits
+            return EN
+        }
+        if (ch >= 0x0660 && ch <= 0x0669)                           // Arabic-Indic digits
+                || ch == 0x066B || ch == 0x066C {                   // Arabic decimal and thousands separators
+            return AN
+        }
+        if ch == 0x2B || ch == 0x2D || ch == 0x2212 {               // + - and minus sign
+            return ES
+        }
+        if ch == 0x2C || ch == 0x2E || ch == 0x2F || ch == 0x3A     // , . / :
+                || ch == 0x00A0 || ch == 0x060C {                   // no-break space, Arabic comma
+            return CS
+        }
+        if ch == 0x23 || ch == 0x25                                 // # %
+                || ch == 0x00B0 || ch == 0x00B1                     // degree, plus-minus
+                || ch == 0x0609 || ch == 0x060A || ch == 0x066A     // Arabic per mille, per ten thousand, percent
+                || (ch >= 0x2030 && ch <= 0x2034) {                 // per mille, per ten thousand, primes
+            return ET
+        }
+        if isHebrew(ch) {
+            return R
+        }
+        if isArabic(ch) {
+            return AL
+        }
+        if cat == .currencySymbol {
+            return ET
+        }
+        if isAlphaNumeric(ch) {
+            return L
+        }
+        return ON
+    }
+
+    /// Resolves the direction of each code point with the rules of the Unicode
+    /// Bidirectional Algorithm for a right to left line without explicit
+    /// embeddings: W1 to W7, N0 to N2 and I2.
+    ///
+    /// - Parameter input: the code points.
+    /// - Returns: L for each code point in a left to right run and R for the others.
+    private static func resolveTypes(_ input: [UInt32]) -> [Int] {
+        let n = input.count
+        let classes = input.map { bidiType($0) }
+        var types = classes
+
+        // W1: a nonspacing mark takes the type of the character before it.
+        for i in 0..<n {
+            if types[i] == NSM {
+                types[i] = (i == 0) ? R : types[i - 1]
+            }
+        }
+
+        // W2: a European number after an Arabic letter is an Arabic number.
+        // W3: an Arabic letter is right to left.
+        var lastStrong = R
+        for i in 0..<n {
+            if types[i] == AL {
+                lastStrong = AL
+                types[i] = R
+            } else if types[i] == L || types[i] == R {
+                lastStrong = types[i]
+            } else if types[i] == EN && lastStrong == AL {
+                types[i] = AN
+            }
+        }
+
+        // W4: a single separator between two numbers of the same kind is part
+        // of the number.
+        for i in stride(from: 1, to: n - 1, by: 1) {
+            let before = types[i - 1]
+            let after = types[i + 1]
+            if types[i] == ES && before == EN && after == EN {
+                types[i] = EN
+            } else if types[i] == CS && before == after && (before == EN || before == AN) {
+                types[i] = before
+            }
+        }
+
+        // W5: currency, percent and similar signs next to a European number
+        // are part of the number.
+        var start = 0
+        while start < n {
+            if types[start] != ET {
+                start += 1
+                continue
+            }
+            var end = start
+            while end < n && types[end] == ET {
+                end += 1
+            }
+            if (start > 0 && types[start - 1] == EN) || (end < n && types[end] == EN) {
+                for k in start..<end {
+                    types[k] = EN
+                }
+            }
+            start = end
+        }
+
+        // W6: the other separators and terminators are neutral.
+        for i in 0..<n {
+            if types[i] == ES || types[i] == ET || types[i] == CS {
+                types[i] = ON
+            }
+        }
+
+        // W7: a European number after left to right text is left to right.
+        lastStrong = R
+        for i in 0..<n {
+            if types[i] == L || types[i] == R {
+                lastStrong = types[i]
+            } else if types[i] == EN && lastStrong == L {
+                types[i] = L
+            }
+        }
+
+        // N0: both brackets of a pair take the same direction.
+        resolveBrackets(input, classes, &types)
+
+        // N1, N2: neutral characters with left to right text on both sides are
+        // left to right, and the others are right to left. Numbers count as
+        // right to left here, and so do the start and the end of the line.
+        start = 0
+        while start < n {
+            if types[start] != ON {
+                start += 1
+                continue
+            }
+            var end = start
+            while end < n && types[end] == ON {
+                end += 1
+            }
+            let leftToRight =
+                    start > 0 && types[start - 1] == L && end < n && types[end] == L
+            for k in start..<end {
+                types[k] = leftToRight ? L : R
+            }
+            start = end
+        }
+
+        // I2: numbers are displayed left to right.
+        for i in 0..<n {
+            if types[i] != R {
+                types[i] = L
+            }
+        }
+        return types
+    }
+
+    /// Applies rule N0. Finds the pairs of brackets with rule BD16 and gives
+    /// both brackets of a pair the direction of the text between them, or of
+    /// the text before them if the text between them is left to right.
+    private static func resolveBrackets(
+            _ input: [UInt32], _ classes: [Int], _ types: inout [Int]) {
+        let n = input.count
+        var closing = [Int](repeating: -1, count: n)    // The position of each opening bracket's pair
+        var stack = [Int]()
+        for i in 0..<n {
+            if types[i] != ON {
+                continue
+            }
+            let ch = input[i]
+            if isOpeningBracket(ch) {
+                if stack.count == 63 {
+                    break
+                }
+                stack.append(i)
+                continue
+            }
+            guard let m = mirrored(ch), isOpeningBracket(m) else {
+                continue
+            }
+            var k = stack.count - 1
+            while k >= 0 {
+                if input[stack[k]] == m {
+                    closing[stack[k]] = i
+                    stack.removeSubrange(k...)
+                    break
+                }
+                k -= 1
+            }
+        }
+
+        for open in 0..<n {
+            let close = closing[open]
+            if close < 0 {
+                continue
+            }
+            var direction = ON
+            for i in stride(from: open + 1, to: close, by: 1) {
+                let strong = strongDirection(types[i])
+                if strong == R {
+                    direction = R
+                    break
+                }
+                if strong == L {
+                    direction = L
+                }
+            }
+            if direction == L {
+                direction = R
+                for i in stride(from: open - 1, through: 0, by: -1) {
+                    let strong = strongDirection(types[i])
+                    if strong != ON {
+                        direction = strong
+                        break
+                    }
+                }
+            }
+            if direction != ON {
+                setBracketType(classes, &types, open, direction)
+                setBracketType(classes, &types, close, direction)
+            }
+        }
+    }
+
+    /// Sets the type of a bracket and of the nonspacing marks after it.
+    private static func setBracketType(
+            _ classes: [Int], _ types: inout [Int], _ i: Int, _ type: Int) {
+        types[i] = type
+        var k = i + 1
+        while k < types.count && classes[k] == NSM {
+            types[k] = type
+            k += 1
+        }
+    }
+
+    /// Returns L or R for a strong type, with numbers counting as R, or ON.
+    private static func strongDirection(_ type: Int) -> Int {
+        if type == L {
+            return L
+        }
+        if type == R || type == EN || type == AN {
+            return R
+        }
+        return ON
+    }
+
+    /// Returns true if the character is an opening bracket that pairs with the
+    /// closing bracket it mirrors. The angle brackets and angle quotation marks
+    /// in the mirrored table are not paired brackets.
+    private static func isOpeningBracket(_ ch: UInt32) -> Bool {
+        switch ch {
+        case 0x28, 0x5B, 0x7B,                  // ( [ {
+             0x207D, 0x208D,                    // superscript and subscript (
+             0x2308, 0x230A,                    // left ceiling and floor
+             0x2329,                            // left-pointing angle bracket
+             0x3008, 0x300A, 0x3010,            // CJK brackets
+             0x3014, 0x3016, 0x3018, 0x301A,
+             0xFE59, 0xFE5B, 0xFE5D,            // small ( { and tortoise shell
+             0xFF08, 0xFF3B, 0xFF5B:            // fullwidth ( [ {
+            return true
+        default:
+            return false
+        }
+    }
+
     /// Returns the mirror image of a bidirectionally mirrored character,
     /// or nil if the character is not mirrored.
     /// Data source: Unicode BidiMirroring.txt.
-    private static func mirrored(_ ch: Character) -> Character? {
+    private static func mirrored(_ ch: UInt32) -> UInt32? {
         switch ch {
-        case "(":  return ")"
-        case ")":  return "("
-        case "[":  return "]"
-        case "]":  return "["
-        case "{":  return "}"
-        case "}":  return "{"
-        case "<":  return ">"
-        case ">":  return "<"
-        case "«":  return "»"
-        case "»":  return "«"
-        case "\u{2039}": return "\u{203A}"   // ‹ ›  single angle quotes
-        case "\u{203A}": return "\u{2039}"
-        case "\u{207D}": return "\u{207E}"   // superscript ( )
-        case "\u{207E}": return "\u{207D}"
-        case "\u{208D}": return "\u{208E}"   // subscript ( )
-        case "\u{208E}": return "\u{208D}"
-        case "\u{2308}": return "\u{2309}"   // ⌈ ⌉  left/right ceiling
-        case "\u{2309}": return "\u{2308}"
-        case "\u{230A}": return "\u{230B}"   // ⌊ ⌋  left/right floor
-        case "\u{230B}": return "\u{230A}"
-        case "\u{2329}": return "\u{232A}"   // ⟨ ⟩  angle brackets
-        case "\u{232A}": return "\u{2329}"
-        case "\u{FF08}": return "\u{FF09}"   // fullwidth ( )
-        case "\u{FF09}": return "\u{FF08}"
-        case "\u{FF1C}": return "\u{FF1E}"   // fullwidth < >
-        case "\u{FF1E}": return "\u{FF1C}"
-        case "\u{FF3B}": return "\u{FF3D}"   // fullwidth [ ]
-        case "\u{FF3D}": return "\u{FF3B}"
-        case "\u{FF5B}": return "\u{FF5D}"   // fullwidth { }
-        case "\u{FF5D}": return "\u{FF5B}"
-        case "\u{FE59}": return "\u{FE5A}"   // small ( )
-        case "\u{FE5A}": return "\u{FE59}"
-        case "\u{FE5B}": return "\u{FE5C}"   // small { }
-        case "\u{FE5C}": return "\u{FE5B}"
-        case "\u{FE5D}": return "\u{FE5E}"   // small tortoise shell
-        case "\u{FE5E}": return "\u{FE5D}"
-        case "\u{FE64}": return "\u{FE65}"   // small < >
-        case "\u{FE65}": return "\u{FE64}"
-        case "\u{3008}": return "\u{3009}"   // CJK 〈 〉
-        case "\u{3009}": return "\u{3008}"
-        case "\u{300A}": return "\u{300B}"   // CJK 《 》
-        case "\u{300B}": return "\u{300A}"
-        case "\u{3010}": return "\u{3011}"   // CJK BLACK LENTICULAR BRACKET
-        case "\u{3011}": return "\u{3010}"
-        case "\u{3014}": return "\u{3015}"   // CJK 〔 〕
-        case "\u{3015}": return "\u{3014}"
-        case "\u{3016}": return "\u{3017}"   // CJK 〖 〗
-        case "\u{3017}": return "\u{3016}"
-        case "\u{3018}": return "\u{3019}"   // CJK 〘 〙
-        case "\u{3019}": return "\u{3018}"
-        case "\u{301A}": return "\u{301B}"   // CJK 〚 〛
-        case "\u{301B}": return "\u{301A}"
+        case 0x28: return 0x29      // ( )
+        case 0x29: return 0x28
+        case 0x5B: return 0x5D      // [ ]
+        case 0x5D: return 0x5B
+        case 0x7B: return 0x7D      // { }
+        case 0x7D: return 0x7B
+        case 0x3C: return 0x3E      // < >
+        case 0x3E: return 0x3C
+        case 0x00AB: return 0x00BB   // « »
+        case 0x00BB: return 0x00AB
+        case 0x2039: return 0x203A   // ‹ ›  single angle quotes
+        case 0x203A: return 0x2039
+        case 0x207D: return 0x207E   // superscript ( )
+        case 0x207E: return 0x207D
+        case 0x208D: return 0x208E   // subscript ( )
+        case 0x208E: return 0x208D
+        case 0x2308: return 0x2309   // ⌈ ⌉  left/right ceiling
+        case 0x2309: return 0x2308
+        case 0x230A: return 0x230B   // ⌊ ⌋  left/right floor
+        case 0x230B: return 0x230A
+        case 0x2329: return 0x232A   // ⟨ ⟩  angle brackets
+        case 0x232A: return 0x2329
+        case 0xFF08: return 0xFF09   // fullwidth ( )
+        case 0xFF09: return 0xFF08
+        case 0xFF1C: return 0xFF1E   // fullwidth < >
+        case 0xFF1E: return 0xFF1C
+        case 0xFF3B: return 0xFF3D   // fullwidth [ ]
+        case 0xFF3D: return 0xFF3B
+        case 0xFF5B: return 0xFF5D   // fullwidth { }
+        case 0xFF5D: return 0xFF5B
+        case 0xFE59: return 0xFE5A   // small ( )
+        case 0xFE5A: return 0xFE59
+        case 0xFE5B: return 0xFE5C   // small { }
+        case 0xFE5C: return 0xFE5B
+        case 0xFE5D: return 0xFE5E   // small tortoise shell
+        case 0xFE5E: return 0xFE5D
+        case 0xFE64: return 0xFE65   // small < >
+        case 0xFE65: return 0xFE64
+        case 0x3008: return 0x3009   // CJK 〈 〉
+        case 0x3009: return 0x3008
+        case 0x300A: return 0x300B   // CJK 《 》
+        case 0x300B: return 0x300A
+        case 0x3010: return 0x3011   // CJK BLACK LENTICULAR BRACKET
+        case 0x3011: return 0x3010
+        case 0x3014: return 0x3015   // CJK 〔 〕
+        case 0x3015: return 0x3014
+        case 0x3016: return 0x3017   // CJK 〖 〗
+        case 0x3017: return 0x3016
+        case 0x3018: return 0x3019   // CJK 〘 〙
+        case 0x3019: return 0x3018
+        case 0x301A: return 0x301B   // CJK 〚 〛
+        case 0x301B: return 0x301A
         default:   return nil
         }
     }
@@ -285,92 +635,23 @@ public class Bidi {
     /// Returns true if the Arabic character joins the character that follows it.
     public static func joinsForward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
-        let value = scalar.value
+        return joinsForward(scalar.value)
+    }
 
-        if value == 0x0640 { return true }
-
-        let dualJoining: Set<UInt32> = [
-            0x0628, // BEH
-            0x062A, // TEH
-            0x062B, // THEH
-            0x062C, // JEEM
-            0x062D, // HAH
-            0x062E, // KHAH
-            0x0633, // SEEN
-            0x0634, // SHEEN
-            0x0635, // SAD
-            0x0636, // DAD
-            0x0637, // TAH
-            0x0638, // ZAH
-            0x0639, // AIN
-            0x063A, // GHAIN
-            0x063B, // KEHEH WITH 2 DOTS ABOVE
-            0x063C, // KEHEH WITH 3 DOTS BELOW
-            0x063D, // FARSI YEH WITH INVERTED V ABOVE
-            0x063E, // FARSI YEH WITH 2 DOTS ABOVE
-            0x063F, // FARSI YEH WITH 3 DOTS ABOVE
-            0x0641, // FEH
-            0x0642, // QAF
-            0x0643, // KAF
-            0x0644, // LAM
-            0x0645, // MEEM
-            0x0646, // NOON
-            0x0647, // HEH
-            0x064A, // YEH
-            0x0626, // YEH WITH HAMZA (Dual_Joining)
-        ]
-
-        return dualJoining.contains(value)
+    private static func joinsForward(_ ch: UInt32) -> Bool {
+        if ch == 0x0640 { return true }     // TATWEEL — joins both sides
+        return dualJoining.contains(ch)
     }
 
     /// Returns true if the Arabic character joins the character before it.
     public static func joinsBackward(_ ch: Character) -> Bool {
         guard let scalar = ch.unicodeScalars.first else { return false }
-        let value = scalar.value
-
-        if value == 0x0640 { return true }
-
-        if joinsForward(ch) { return true }
-
-        let rightJoining: Set<UInt32> = [
-            0x0622, // ALEF WITH MADDA ABOVE
-            0x0623, // ALEF WITH HAMZA ABOVE
-            0x0624, // WAW WITH HAMZA ABOVE
-            0x0625, // ALEF WITH HAMZA BELOW
-            0x0627, // ALEF
-            0x0629, // TEH MARBUTA
-            0x062F, // DAL
-            0x0630, // THAL
-            0x0631, // REH
-            0x0632, // ZAIN
-            0x0648, // WAW
-            0x0649, // ALEF MAKSURA (DOTLESS YEH)
-        ]
-
-        return rightJoining.contains(value)
+        return joinsBackward(scalar.value)
     }
 
-    private static func process(_ buf: String) -> String {
-        let buf1 = String(buf.reversed())
-        var buf2 = String()
-        var buf3 = String()
-        for i in 0..<buf1.count {
-            let ch = buf1[buf1.index(buf1.startIndex, offsetBy: i)]
-            if (ch == " " || ch == "," || ch == "." || ch == "-") {
-                buf2.append(ch)
-                continue
-            }
-            let index1 = buf1.index(buf1.startIndex, offsetBy: i)
-            buf3.append(String(buf1[index1...]))
-            buf3.append(String(buf2.reversed()))
-            break
-        }
-        // If the entire input was separators (loop never hit break),
-        // buf3 is empty but buf2 holds the reversed separators.
-        // Return them so they aren't silently dropped.
-        if buf3.isEmpty {
-            return String(buf2.reversed())
-        }
-        return buf3
+    private static func joinsBackward(_ ch: UInt32) -> Bool {
+        if ch == 0x0640 { return true }
+        if joinsForward(ch) { return true }
+        return rightJoining.contains(ch)
     }
 }

@@ -1,5 +1,6 @@
 package com.pdfjet;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -57,6 +58,19 @@ public class Bidi {
         0x0627, 0xFE8D, 0xFE8E, 0x0627, 0x0627,
     };
 
+    // The bidirectional character types of the Unicode Bidirectional
+    // Algorithm, https://www.unicode.org/reports/tr9/
+    private static final int L = 0;     // Left to right
+    private static final int R = 1;     // Right to left
+    private static final int AL = 2;    // Arabic letter
+    private static final int EN = 3;    // European number
+    private static final int AN = 4;    // Arabic number
+    private static final int ES = 5;    // European number separator
+    private static final int ET = 6;    // European number terminator
+    private static final int CS = 7;    // Common number separator
+    private static final int NSM = 8;   // Nonspacing mark
+    private static final int ON = 9;    // Other neutral
+
     private Bidi() {
         // Utility class — no instances.
     }
@@ -74,9 +88,14 @@ public class Bidi {
      * Returns true if the character is a Transparent joining type
      * (combining mark / diacritic) that should be skipped when
      * determining joining context, and kept attached to its base
-     * letter during visual reordering.
+     * letter during visual reordering. The zero width non-joiner is
+     * not transparent: it keeps the letters on either side of it from
+     * joining.
      */
     private static boolean isTransparent(int ch) {
+        if (ch == 0x200C) {                         // ZWNJ
+            return false;
+        }
         int cat = Character.getType(ch);
         return cat == Character.NON_SPACING_MARK    // Mn
             || cat == Character.ENCLOSING_MARK      // Me
@@ -86,51 +105,48 @@ public class Bidi {
     /**
      * Reorders the string so that Arabic and Hebrew text flows from right
      * to left while numbers and Latin text flows from left to right.
+     * The string is laid out as a right to left line with left to right text
+     * nested in it one level deep. Spaces, punctuation and brackets take
+     * their direction from the text around them, as in the Unicode
+     * Bidirectional Algorithm.
      *
      * @param str the input string.
      * @return the reordered string.
      */
     public static String reorderVisually(String str) {
         // Work with code points so that supplementary characters are
-        // handled correctly (mirrors Swift's Character iteration).
+        // handled correctly.
         int[] input = str.codePoints().toArray();
+        int[] types = resolveTypes(input);
 
+        // buf1 gets the right to left text in logical order and each left to
+        // right run reversed, so that reversing buf1 below puts the right to
+        // left text in visual order and the left to right runs back in theirs.
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
-        boolean rightToLeft = false;
-
-        for (int ch : input) {
-            if (ch == 0x200E) {           // LRM
-                rightToLeft = false;
-                continue;
-            }
-            if (ch == 0x200F || ch == 0x061C) {   // RLM / ALM
-                rightToLeft = true;
-                continue;
-            }
-
-           Integer m = mirrored(ch);
-            if (isArabic(ch) || isHebrew(ch) || m != null) {
-                rightToLeft = true;
-                if (buf2.length() > 0) {
-                    buf1.append(process(buf2.toString()));
-                    buf2.setLength(0);
-                }
-                buf1.appendCodePoint(m != null ? m : ch);
-            } else if (isAlphaNumeric(ch)) {
-                rightToLeft = false;
-                buf2.appendCodePoint(ch);
-            } else {
-                if (rightToLeft) {
-                    buf1.appendCodePoint(ch);
-                } else {
+        for (int j = 0; j < input.length; j++) {
+            int ch = input[j];
+            if (types[j] == L) {
+                if (ch != 0x200E) {                             // LRM
                     buf2.appendCodePoint(ch);
                 }
+                continue;
             }
+            // An RLM or ALM is left out, but still ends the left to right run.
+            if (buf2.length() > 0) {
+                buf1.append(reverseCodePoints(buf2.toString()));
+                buf2.setLength(0);
+            }
+            if (ch == 0x200F || ch == 0x061C) {                 // RLM, ALM
+                continue;
+            }
+            // Brackets and the other mirrored characters are mirrored in
+            // right to left text.
+            Integer m = mirrored(ch);
+            buf1.appendCodePoint(m != null ? m : ch);
         }
-
         if (buf2.length() > 0) {
-            buf1.append(process(buf2.toString()));
+            buf1.append(reverseCodePoints(buf2.toString()));
         }
 
         // Convert to array for O(1) indexing (fixes Bug #5)
@@ -203,7 +219,9 @@ public class Bidi {
                         break;
                     }
                 }
-            } else {
+            } else if (ch != 0x200C) {
+                // A zero width non-joiner is left out: it only keeps the
+                // letters on either side of it from joining.
                 buf3.appendCodePoint(ch);
             }
 
@@ -240,6 +258,290 @@ public class Bidi {
             || cat == Character.TITLECASE_LETTER        // Lt
             || cat == Character.MODIFIER_LETTER         // Lm
             || cat == Character.OTHER_LETTER;           // Lo
+    }
+
+    // ---- Bidirectional types ----------------------------------------------
+
+    /**
+     * Returns the bidirectional character type of the letters, digits and
+     * punctuation used in Arabic, Hebrew and Latin text.
+     */
+    private static int bidiType(int ch) {
+        if (ch == 0x200E) {                                         // LRM
+            return L;
+        }
+        if (ch == 0x200F) {                                         // RLM
+            return R;
+        }
+        if (ch == 0x061C) {                                         // ALM
+            return AL;
+        }
+        int cat = Character.getType(ch);
+        if (cat == Character.NON_SPACING_MARK || cat == Character.ENCLOSING_MARK) {
+            return NSM;
+        }
+        if ((ch >= '0' && ch <= '9')
+                || ch == 0x00B2 || ch == 0x00B3 || ch == 0x00B9     // superscript 2, 3 and 1
+                || ch == 0x2070 || (ch >= 0x2074 && ch <= 0x2079)   // superscript digits
+                || (ch >= 0x2080 && ch <= 0x2089)                   // subscript digits
+                || (ch >= 0x06F0 && ch <= 0x06F9)                   // extended Arabic-Indic digits
+                || (ch >= 0xFF10 && ch <= 0xFF19)) {                // fullwidth digits
+            return EN;
+        }
+        if ((ch >= 0x0660 && ch <= 0x0669)                          // Arabic-Indic digits
+                || ch == 0x066B || ch == 0x066C) {                  // Arabic decimal and thousands separators
+            return AN;
+        }
+        if (ch == '+' || ch == '-' || ch == 0x2212) {               // minus sign
+            return ES;
+        }
+        if (ch == ',' || ch == '.' || ch == '/' || ch == ':'
+                || ch == 0x00A0 || ch == 0x060C) {                  // no-break space, Arabic comma
+            return CS;
+        }
+        if (ch == '#' || ch == '%'
+                || ch == 0x00B0 || ch == 0x00B1                     // degree, plus-minus
+                || ch == 0x0609 || ch == 0x060A || ch == 0x066A     // Arabic per mille, per ten thousand, percent
+                || (ch >= 0x2030 && ch <= 0x2034)) {                // per mille, per ten thousand, primes
+            return ET;
+        }
+        if (isHebrew(ch)) {
+            return R;
+        }
+        if (isArabic(ch)) {
+            return AL;
+        }
+        if (cat == Character.CURRENCY_SYMBOL) {
+            return ET;
+        }
+        if (isAlphaNumeric(ch)) {
+            return L;
+        }
+        return ON;
+    }
+
+    /**
+     * Resolves the direction of each code point with the rules of the Unicode
+     * Bidirectional Algorithm for a right to left line without explicit
+     * embeddings: W1 to W7, N0 to N2 and I2.
+     *
+     * @param input the code points.
+     * @return L for each code point in a left to right run and R for the others.
+     */
+    private static int[] resolveTypes(int[] input) {
+        int n = input.length;
+        int[] classes = new int[n];
+        for (int i = 0; i < n; i++) {
+            classes[i] = bidiType(input[i]);
+        }
+        int[] types = classes.clone();
+
+        // W1: a nonspacing mark takes the type of the character before it.
+        for (int i = 0; i < n; i++) {
+            if (types[i] == NSM) {
+                types[i] = (i == 0) ? R : types[i - 1];
+            }
+        }
+
+        // W2: a European number after an Arabic letter is an Arabic number.
+        // W3: an Arabic letter is right to left.
+        int lastStrong = R;
+        for (int i = 0; i < n; i++) {
+            if (types[i] == AL) {
+                lastStrong = AL;
+                types[i] = R;
+            } else if (types[i] == L || types[i] == R) {
+                lastStrong = types[i];
+            } else if (types[i] == EN && lastStrong == AL) {
+                types[i] = AN;
+            }
+        }
+
+        // W4: a single separator between two numbers of the same kind is
+        // part of the number.
+        for (int i = 1; i < n - 1; i++) {
+            int before = types[i - 1];
+            int after = types[i + 1];
+            if (types[i] == ES && before == EN && after == EN) {
+                types[i] = EN;
+            } else if (types[i] == CS && before == after && (before == EN || before == AN)) {
+                types[i] = before;
+            }
+        }
+
+        // W5: currency, percent and similar signs next to a European number
+        // are part of the number.
+        int start = 0;
+        while (start < n) {
+            if (types[start] != ET) {
+                start++;
+                continue;
+            }
+            int end = start;
+            while (end < n && types[end] == ET) {
+                end++;
+            }
+            if ((start > 0 && types[start - 1] == EN) || (end < n && types[end] == EN)) {
+                Arrays.fill(types, start, end, EN);
+            }
+            start = end;
+        }
+
+        // W6: the other separators and terminators are neutral.
+        for (int i = 0; i < n; i++) {
+            if (types[i] == ES || types[i] == ET || types[i] == CS) {
+                types[i] = ON;
+            }
+        }
+
+        // W7: a European number after left to right text is left to right.
+        lastStrong = R;
+        for (int i = 0; i < n; i++) {
+            if (types[i] == L || types[i] == R) {
+                lastStrong = types[i];
+            } else if (types[i] == EN && lastStrong == L) {
+                types[i] = L;
+            }
+        }
+
+        // N0: both brackets of a pair take the same direction.
+        resolveBrackets(input, classes, types);
+
+        // N1, N2: neutral characters with left to right text on both sides are
+        // left to right, and the others are right to left. Numbers count as
+        // right to left here, and so do the start and the end of the line.
+        start = 0;
+        while (start < n) {
+            if (types[start] != ON) {
+                start++;
+                continue;
+            }
+            int end = start;
+            while (end < n && types[end] == ON) {
+                end++;
+            }
+            boolean leftToRight =
+                    start > 0 && types[start - 1] == L && end < n && types[end] == L;
+            Arrays.fill(types, start, end, leftToRight ? L : R);
+            start = end;
+        }
+
+        // I2: numbers are displayed left to right.
+        for (int i = 0; i < n; i++) {
+            if (types[i] != R) {
+                types[i] = L;
+            }
+        }
+        return types;
+    }
+
+    /**
+     * Applies rule N0. Finds the pairs of brackets with rule BD16 and gives
+     * both brackets of a pair the direction of the text between them, or of
+     * the text before them if the text between them is left to right.
+     */
+    private static void resolveBrackets(int[] input, int[] classes, int[] types) {
+        int n = input.length;
+        int[] closing = new int[n];     // The position of each opening bracket's pair
+        Arrays.fill(closing, -1);
+        int[] stack = new int[63];
+        int depth = 0;
+        for (int i = 0; i < n; i++) {
+            if (types[i] != ON) {
+                continue;
+            }
+            int ch = input[i];
+            if (isOpeningBracket(ch)) {
+                if (depth == stack.length) {
+                    break;
+                }
+                stack[depth++] = i;
+                continue;
+            }
+            Integer m = mirrored(ch);
+            if (m == null || !isOpeningBracket(m)) {
+                continue;
+            }
+            for (int k = depth - 1; k >= 0; k--) {
+                if (input[stack[k]] == m) {
+                    closing[stack[k]] = i;
+                    depth = k;
+                    break;
+                }
+            }
+        }
+
+        for (int open = 0; open < n; open++) {
+            int close = closing[open];
+            if (close < 0) {
+                continue;
+            }
+            int direction = ON;
+            for (int i = open + 1; i < close; i++) {
+                int strong = strongDirection(types[i]);
+                if (strong == R) {
+                    direction = R;
+                    break;
+                }
+                if (strong == L) {
+                    direction = L;
+                }
+            }
+            if (direction == L) {
+                direction = R;
+                for (int i = open - 1; i >= 0; i--) {
+                    int strong = strongDirection(types[i]);
+                    if (strong != ON) {
+                        direction = strong;
+                        break;
+                    }
+                }
+            }
+            if (direction != ON) {
+                setBracketType(classes, types, open, direction);
+                setBracketType(classes, types, close, direction);
+            }
+        }
+    }
+
+    /** Sets the type of a bracket and of the nonspacing marks after it. */
+    private static void setBracketType(int[] classes, int[] types, int i, int type) {
+        types[i] = type;
+        for (int k = i + 1; k < types.length && classes[k] == NSM; k++) {
+            types[k] = type;
+        }
+    }
+
+    /** Returns L or R for a strong type, with numbers counting as R, or ON. */
+    private static int strongDirection(int type) {
+        if (type == L) {
+            return L;
+        }
+        if (type == R || type == EN || type == AN) {
+            return R;
+        }
+        return ON;
+    }
+
+    /**
+     * Returns true if the character is an opening bracket that pairs with the
+     * closing bracket it mirrors. The angle brackets and angle quotation marks
+     * in the mirrored table are not paired brackets.
+     */
+    private static boolean isOpeningBracket(int ch) {
+        switch (ch) {
+        case '(': case '[': case '{':
+        case 0x207D: case 0x208D:                   // superscript and subscript (
+        case 0x2308: case 0x230A:                   // left ceiling and floor
+        case 0x2329:                                // left-pointing angle bracket
+        case 0x3008: case 0x300A: case 0x3010:      // CJK brackets
+        case 0x3014: case 0x3016: case 0x3018: case 0x301A:
+        case 0xFE59: case 0xFE5B: case 0xFE5D:      // small ( { and tortoise shell
+        case 0xFF08: case 0xFF3B: case 0xFF5B:      // fullwidth ( [ {
+            return true;
+        default:
+            return false;
+        }
     }
 
     /**
@@ -388,38 +690,6 @@ public class Bidi {
     }
 
     // ---- Helpers ----------------------------------------------------------
-
-    /**
-     * Reverses the buffer, then peels separator characters (space, comma,
-     * period, hyphen) off the front (which was the end of the LTR run) and
-     * re-appends them at the back, so that e.g. trailing punctuation stays
-     * visually at the end.
-     */
-    private static String process(String buf) {
-        String buf1 = reverseCodePoints(buf);
-        StringBuilder buf2 = new StringBuilder();
-        StringBuilder buf3 = new StringBuilder();
-
-        int[] cps = buf1.codePoints().toArray();
-        for (int i = 0; i < cps.length; i++) {
-            int ch = cps[i];
-            if (ch == ' ' || ch == ',' || ch == '.' || ch == '-') {
-                buf2.appendCodePoint(ch);
-                continue;
-            }
-            buf3.append(new String(cps, i, cps.length - i));
-            buf3.append(reverseCodePoints(buf2.toString()));
-            break;
-        }
-
-        // If the entire input was separators (loop never hit break),
-        // buf3 is empty but buf2 holds the reversed separators.
-        // Return them so they aren't silently dropped.
-        if (buf3.length() == 0) {
-            return reverseCodePoints(buf2.toString());
-        }
-        return buf3.toString();
-    }
 
     /** Reverses a string at the code-point level (not UTF-16 unit level). */
     private static String reverseCodePoints(String s) {

@@ -98,6 +98,21 @@ var rightJoining = map[rune]bool{
 	0x0649: true, // ALEF MAKSURA (DOTLESS YEH)
 }
 
+// The bidirectional character types of the Unicode Bidirectional Algorithm,
+// https://www.unicode.org/reports/tr9/
+const (
+	bidiL   = iota // Left to right
+	bidiR          // Right to left
+	bidiAL         // Arabic letter
+	bidiEN         // European number
+	bidiAN         // Arabic number
+	bidiES         // European number separator
+	bidiET         // European number terminator
+	bidiCS         // Common number separator
+	bidiNSM        // Nonspacing mark
+	bidiON         // Other neutral
+)
+
 // Bidi provides BIDI processing for Arabic and Hebrew.
 //
 // Please see Example_27.
@@ -145,8 +160,12 @@ func isArabicLetter(ch rune) bool {
 // isTransparent reports whether the character is a Transparent joining type
 // (combining mark / diacritic) that should be skipped when determining
 // joining context, and kept attached to its base letter during visual
-// reordering.
+// reordering. The zero width non-joiner is not transparent: it keeps the
+// letters on either side of it from joining.
 func isTransparent(ch rune) bool {
+	if ch == 0x200C { // ZWNJ
+		return false
+	}
 	return unicode.Is(unicode.Mn, ch) || // Nonspacing Mark
 		unicode.Is(unicode.Me, ch) || // Enclosing Mark
 		unicode.Is(unicode.Cf, ch) // Format
@@ -277,59 +296,324 @@ func mirrored(ch rune) (rune, bool) {
 	}
 }
 
+// isOpeningBracket reports whether the character is an opening bracket that
+// pairs with the closing bracket it mirrors. The angle brackets and angle
+// quotation marks in the mirrored table are not paired brackets.
+func isOpeningBracket(ch rune) bool {
+	switch ch {
+	case '(', '[', '{',
+		0x207D, 0x208D, // superscript and subscript (
+		0x2308, 0x230A, // left ceiling and floor
+		0x2329,                 // left-pointing angle bracket
+		0x3008, 0x300A, 0x3010, // CJK brackets
+		0x3014, 0x3016, 0x3018, 0x301A,
+		0xFE59, 0xFE5B, 0xFE5D, // small ( { and tortoise shell
+		0xFF08, 0xFF3B, 0xFF5B: // fullwidth ( [ {
+		return true
+	default:
+		return false
+	}
+}
+
+// bidiType returns the bidirectional character type of the letters, digits
+// and punctuation used in Arabic, Hebrew and Latin text.
+func bidiType(ch rune) int {
+	switch {
+	case ch == 0x200E: // LRM
+		return bidiL
+	case ch == 0x200F: // RLM
+		return bidiR
+	case ch == 0x061C: // ALM
+		return bidiAL
+	case unicode.In(ch, unicode.Mn, unicode.Me):
+		return bidiNSM
+	case (ch >= '0' && ch <= '9') ||
+		ch == 0x00B2 || ch == 0x00B3 || ch == 0x00B9 || // superscript 2, 3 and 1
+		ch == 0x2070 || (ch >= 0x2074 && ch <= 0x2079) || // superscript digits
+		(ch >= 0x2080 && ch <= 0x2089) || // subscript digits
+		(ch >= 0x06F0 && ch <= 0x06F9) || // extended Arabic-Indic digits
+		(ch >= 0xFF10 && ch <= 0xFF19): // fullwidth digits
+		return bidiEN
+	case (ch >= 0x0660 && ch <= 0x0669) || // Arabic-Indic digits
+		ch == 0x066B || ch == 0x066C: // Arabic decimal and thousands separators
+		return bidiAN
+	case ch == '+' || ch == '-' || ch == 0x2212: // minus sign
+		return bidiES
+	case ch == ',' || ch == '.' || ch == '/' || ch == ':' ||
+		ch == 0x00A0 || ch == 0x060C: // no-break space, Arabic comma
+		return bidiCS
+	case ch == '#' || ch == '%' ||
+		ch == 0x00B0 || ch == 0x00B1 || // degree, plus-minus
+		ch == 0x0609 || ch == 0x060A || ch == 0x066A || // Arabic per mille, per ten thousand, percent
+		(ch >= 0x2030 && ch <= 0x2034): // per mille, per ten thousand, primes
+		return bidiET
+	case isHebrew(ch):
+		return bidiR
+	case IsArabic(ch):
+		return bidiAL
+	case unicode.Is(unicode.Sc, ch):
+		return bidiET
+	case isAlphaNumeric(ch):
+		return bidiL
+	}
+	return bidiON
+}
+
+// resolveBidiTypes resolves the direction of each code point with the rules
+// of the Unicode Bidirectional Algorithm for a right to left line without
+// explicit embeddings: W1 to W7, N0 to N2 and I2. It returns bidiL for each
+// code point in a left to right run and bidiR for the others.
+func resolveBidiTypes(input []rune) []int {
+	n := len(input)
+	classes := make([]int, n)
+	for i, ch := range input {
+		classes[i] = bidiType(ch)
+	}
+	types := make([]int, n)
+	copy(types, classes)
+
+	// W1: a nonspacing mark takes the type of the character before it.
+	for i := 0; i < n; i++ {
+		if types[i] == bidiNSM {
+			if i == 0 {
+				types[i] = bidiR
+			} else {
+				types[i] = types[i-1]
+			}
+		}
+	}
+
+	// W2: a European number after an Arabic letter is an Arabic number.
+	// W3: an Arabic letter is right to left.
+	lastStrong := bidiR
+	for i := 0; i < n; i++ {
+		if types[i] == bidiAL {
+			lastStrong = bidiAL
+			types[i] = bidiR
+		} else if types[i] == bidiL || types[i] == bidiR {
+			lastStrong = types[i]
+		} else if types[i] == bidiEN && lastStrong == bidiAL {
+			types[i] = bidiAN
+		}
+	}
+
+	// W4: a single separator between two numbers of the same kind is part of
+	// the number.
+	for i := 1; i < n-1; i++ {
+		before := types[i-1]
+		after := types[i+1]
+		if types[i] == bidiES && before == bidiEN && after == bidiEN {
+			types[i] = bidiEN
+		} else if types[i] == bidiCS && before == after && (before == bidiEN || before == bidiAN) {
+			types[i] = before
+		}
+	}
+
+	// W5: currency, percent and similar signs next to a European number are
+	// part of the number.
+	start := 0
+	for start < n {
+		if types[start] != bidiET {
+			start++
+			continue
+		}
+		end := start
+		for end < n && types[end] == bidiET {
+			end++
+		}
+		if (start > 0 && types[start-1] == bidiEN) || (end < n && types[end] == bidiEN) {
+			fillBidiTypes(types, start, end, bidiEN)
+		}
+		start = end
+	}
+
+	// W6: the other separators and terminators are neutral.
+	for i := 0; i < n; i++ {
+		if types[i] == bidiES || types[i] == bidiET || types[i] == bidiCS {
+			types[i] = bidiON
+		}
+	}
+
+	// W7: a European number after left to right text is left to right.
+	lastStrong = bidiR
+	for i := 0; i < n; i++ {
+		if types[i] == bidiL || types[i] == bidiR {
+			lastStrong = types[i]
+		} else if types[i] == bidiEN && lastStrong == bidiL {
+			types[i] = bidiL
+		}
+	}
+
+	// N0: both brackets of a pair take the same direction.
+	resolveBidiBrackets(input, classes, types)
+
+	// N1, N2: neutral characters with left to right text on both sides are
+	// left to right, and the others are right to left. Numbers count as right
+	// to left here, and so do the start and the end of the line.
+	start = 0
+	for start < n {
+		if types[start] != bidiON {
+			start++
+			continue
+		}
+		end := start
+		for end < n && types[end] == bidiON {
+			end++
+		}
+		if start > 0 && types[start-1] == bidiL && end < n && types[end] == bidiL {
+			fillBidiTypes(types, start, end, bidiL)
+		} else {
+			fillBidiTypes(types, start, end, bidiR)
+		}
+		start = end
+	}
+
+	// I2: numbers are displayed left to right.
+	for i := 0; i < n; i++ {
+		if types[i] != bidiR {
+			types[i] = bidiL
+		}
+	}
+	return types
+}
+
+// resolveBidiBrackets applies rule N0. It finds the pairs of brackets with
+// rule BD16 and gives both brackets of a pair the direction of the text
+// between them, or of the text before them if the text between them is left
+// to right.
+func resolveBidiBrackets(input []rune, classes, types []int) {
+	n := len(input)
+	closing := make([]int, n) // The position of each opening bracket's pair
+	for i := range closing {
+		closing[i] = -1
+	}
+	var stack []int
+	for i := 0; i < n; i++ {
+		if types[i] != bidiON {
+			continue
+		}
+		ch := input[i]
+		if isOpeningBracket(ch) {
+			if len(stack) == 63 {
+				break
+			}
+			stack = append(stack, i)
+			continue
+		}
+		m, ok := mirrored(ch)
+		if !ok || !isOpeningBracket(m) {
+			continue
+		}
+		for k := len(stack) - 1; k >= 0; k-- {
+			if input[stack[k]] == m {
+				closing[stack[k]] = i
+				stack = stack[:k]
+				break
+			}
+		}
+	}
+
+	for open := 0; open < n; open++ {
+		close := closing[open]
+		if close < 0 {
+			continue
+		}
+		direction := bidiON
+		for i := open + 1; i < close; i++ {
+			strong := bidiStrongDirection(types[i])
+			if strong == bidiR {
+				direction = bidiR
+				break
+			}
+			if strong == bidiL {
+				direction = bidiL
+			}
+		}
+		if direction == bidiL {
+			direction = bidiR
+			for i := open - 1; i >= 0; i-- {
+				strong := bidiStrongDirection(types[i])
+				if strong != bidiON {
+					direction = strong
+					break
+				}
+			}
+		}
+		if direction != bidiON {
+			setBidiBracketType(classes, types, open, direction)
+			setBidiBracketType(classes, types, close, direction)
+		}
+	}
+}
+
+// setBidiBracketType sets the type of a bracket and of the nonspacing marks
+// after it.
+func setBidiBracketType(classes, types []int, i, t int) {
+	types[i] = t
+	for k := i + 1; k < len(types) && classes[k] == bidiNSM; k++ {
+		types[k] = t
+	}
+}
+
+// bidiStrongDirection returns bidiL or bidiR for a strong type, with numbers
+// counting as bidiR, or bidiON.
+func bidiStrongDirection(t int) int {
+	switch t {
+	case bidiL:
+		return bidiL
+	case bidiR, bidiEN, bidiAN:
+		return bidiR
+	}
+	return bidiON
+}
+
+// fillBidiTypes sets types[start:end] to t.
+func fillBidiTypes(types []int, start, end, t int) {
+	for k := start; k < end; k++ {
+		types[k] = t
+	}
+}
+
 // ReorderVisually reorders the string so that Arabic and Hebrew text
 // flows from right to left while numbers and Latin text flows from
-// left to right.
+// left to right. The string is laid out as a right to left line with left
+// to right text nested in it one level deep. Spaces, punctuation and
+// brackets take their direction from the text around them, as in the
+// Unicode Bidirectional Algorithm.
 func ReorderVisually(str string) string {
 	// Work with code points (runes) so that supplementary characters
-	// are handled correctly (mirrors Swift's Character iteration).
+	// are handled correctly.
 	input := []rune(str)
+	types := resolveBidiTypes(input)
 
-	var buf1, buf2 strings.Builder
-	rightToLeft := false
-
-	for j := 0; j < len(input); j++ {
-		ch := input[j]
-
-		if ch == 0x200E { // LRM
-			rightToLeft = false
+	// buf1 gets the right to left text in logical order and each left to
+	// right run reversed, so that reversing buf1 below puts the right to left
+	// text in visual order and the left to right runs back in theirs.
+	var buf1, buf2 []rune
+	for j, ch := range input {
+		if types[j] == bidiL {
+			if ch != 0x200E { // LRM
+				buf2 = append(buf2, ch)
+			}
 			continue
 		}
-		if ch == 0x200F || ch == 0x061C { // RLM / ALM
-			rightToLeft = true
+		// An RLM or ALM is left out, but still ends the left to right run.
+		buf1 = appendRunesReversed(buf1, buf2)
+		buf2 = buf2[:0]
+		if ch == 0x200F || ch == 0x061C { // RLM, ALM
 			continue
 		}
-
-		m, ok := mirrored(ch)
-		if IsArabic(ch) || isHebrew(ch) || ok {
-			rightToLeft = true
-			if buf2.Len() > 0 {
-				buf1.WriteString(processLTR(buf2.String()))
-				buf2.Reset()
-			}
-			if ok {
-				buf1.WriteRune(m)
-			} else {
-				buf1.WriteRune(ch)
-			}
-		} else if isAlphaNumeric(ch) {
-			rightToLeft = false
-			buf2.WriteRune(ch)
-		} else {
-			if rightToLeft {
-				buf1.WriteRune(ch)
-			} else {
-				buf2.WriteRune(ch)
-			}
+		// Brackets and the other mirrored characters are mirrored in right
+		// to left text.
+		if m, ok := mirrored(ch); ok {
+			ch = m
 		}
+		buf1 = append(buf1, ch)
 	}
-
-	if buf2.Len() > 0 {
-		buf1.WriteString(processLTR(buf2.String()))
-	}
+	buf1 = appendRunesReversed(buf1, buf2)
 
 	// Convert to slice for O(1) indexing (fixes Bug #5)
-	chars := []rune(buf1.String())
+	chars := buf1
 	n := len(chars)
 
 	var buf3 strings.Builder
@@ -404,7 +688,9 @@ func ReorderVisually(str string) string {
 					break
 				}
 			}
-		} else {
+		} else if ch != 0x200C {
+			// A zero width non-joiner is left out: it only keeps the
+			// letters on either side of it from joining.
 			buf3.WriteRune(ch)
 		}
 
@@ -419,41 +705,10 @@ func ReorderVisually(str string) string {
 	return buf3.String()
 }
 
-// process reverses the buffer, then peels separator characters (space,
-// comma, period, hyphen) off the front (which was the end of the LTR
-// run) and re-appends them at the back, so that e.g. trailing
-// punctuation stays visually at the end.
-func processLTR(buf string) string {
-	buf1 := reverseRunesBidi(buf)
-	var buf2, buf3 strings.Builder
-
-	cps := []rune(buf1)
-	for j := 0; j < len(cps); j++ {
-		ch := cps[j]
-		if ch == ' ' || ch == ',' || ch == '.' || ch == '-' {
-			buf2.WriteRune(ch)
-			continue
-		}
-		buf3.WriteString(string(cps[j:]))
-		buf3.WriteString(reverseRunesBidi(buf2.String()))
-		break
+// appendRunesReversed appends the runes to buf in reverse order.
+func appendRunesReversed(buf, runes []rune) []rune {
+	for i := len(runes) - 1; i >= 0; i-- {
+		buf = append(buf, runes[i])
 	}
-
-	// If the entire input was separators (loop never hit break),
-	// buf3 is empty but buf2 holds the reversed separators.
-	// Return them so they aren't silently dropped.
-	if buf3.Len() == 0 {
-		return reverseRunesBidi(buf2.String())
-	}
-	return buf3.String()
-}
-
-// reverseRunesBidi reverses a string at the rune (code-point) level.
-func reverseRunesBidi(s string) string {
-	cps := []rune(s)
-	out := make([]rune, len(cps))
-	for i, j := 0, len(cps)-1; j >= 0; i, j = i+1, j-1 {
-		out[i] = cps[j]
-	}
-	return string(out)
+	return buf
 }
