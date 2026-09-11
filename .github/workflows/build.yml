@@ -5,7 +5,8 @@
 # error, or an example does not create its PDF file. The compare job
 # then checks the PDFs: each example must render the same, with the same text
 # and drawing instructions, in every port as in Java, and the examples that
-# declare PDF/A or PDF/UA compliance must pass veraPDF.
+# declare PDF/A or PDF/UA compliance must pass veraPDF. The java8 job builds the
+# Java port with JDK 8 and runs its examples on Java 8.
 
 name: Build
 
@@ -93,6 +94,35 @@ jobs:
                   path: Example_*.pdf
                   if-no-files-found: error
                   retention-days: 3
+
+    # The java job builds with JDK 21 and javac --release 8. This job builds with
+    # JDK 8, whose javac has no --release option, and runs the examples on the
+    # Java 8 runtime, so the library, the examples and build-java.sh keep working
+    # there. The compare job does not check its PDFs.
+    java8:
+        name: java (JDK 8)
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "8"
+
+            - name: Build and run the examples
+              run: bash -e build-java.sh
+
+            - name: Check that every example created its PDF file
+              run: |
+                  missing=0
+                  for i in $(seq -w 1 50); do
+                      if [ ! -s "Example_$i.pdf" ]; then
+                          echo "::error::Example_$i.pdf was not created"
+                          missing=1
+                      fi
+                  done
+                  exit $missing
 
     # Checks the PDFs of all four ports with .github/scripts/check-example-pdfs.py.
     compare:

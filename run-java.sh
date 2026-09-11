@@ -9,8 +9,16 @@ fi
 
 mkdir -p out/production
 
-# Compile the PDFjet library to Java 8 class files, so it runs on Java 8 and later.
-javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options \
+# --release 8 builds Java 8 class files, so the library and the example run on
+# Java 8 and later whichever JDK builds them. Java 8's javac has no --release
+# option and builds Java 8 class files anyway, so the option is left out there.
+RELEASE="--release 8"
+if ! javac --release 8 -version > /dev/null 2>&1; then
+    RELEASE=""
+fi
+
+# Compile the PDFjet library.
+javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options \
     com/pdfjet/*.java \
     com/pdfjet/barcodes/*.java \
     com/pdfjet/pdf417/*.java \
@@ -21,7 +29,7 @@ javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options \
     -d out/production
 
 # Compile and run the Example_?? program.
-javac -encoding utf-8 -Xlint -cp out/production examples/Example_$1.java -d out/production
+javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -cp out/production examples/Example_$1.java -d out/production
 java -cp out/production examples.Example_$1
 
 mupdf Example_$1.pdf

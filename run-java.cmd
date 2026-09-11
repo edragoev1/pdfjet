@@ -14,8 +14,14 @@ call clean.cmd
 REM Create output directory if it doesn't exist
 if not exist "out\production" mkdir "out\production"
 
-REM Compile the PDFjet library to Java 8 class files, so it runs on Java 8 and later
-javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options ^
+REM --release 8 builds Java 8 class files, so the library and the example run on
+REM Java 8 and later whichever JDK builds them. Java 8's javac has no --release
+REM option and builds Java 8 class files anyway, so the option is left out there.
+set RELEASE=--release 8
+javac --release 8 -version >nul 2>&1 || set RELEASE=
+
+REM Compile the PDFjet library
+javac -O -encoding utf-8 %RELEASE% -Xlint -Xlint:-options ^
     com\pdfjet\*.java ^
     com\pdfjet\barcodes\*.java ^
     com\pdfjet\pdf417\*.java ^
@@ -26,7 +32,7 @@ javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options ^
     -d out\production
 
 REM Compile and run the Example program
-javac -encoding utf-8 -Xlint -cp out\production examples\Example_%1.java -d out\production
+javac -encoding utf-8 %RELEASE% -Xlint -Xlint:-options -cp out\production examples\Example_%1.java -d out\production
 java -cp out\production examples.Example_%1
 
 REM Open the resulting PDF using the default PDF viewer

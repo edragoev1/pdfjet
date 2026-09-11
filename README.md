@@ -100,9 +100,11 @@ opened straight from disk.
 
 ## Java compatibility
 
-The Java build scripts compile the library with `javac --release 8`, so
-`PDFjet.jar` runs on Java 8 and later. Building needs `javac` from JDK 9 or
-newer, because Java 8's `javac` has no `--release` option.
+The Java library and examples compile and run on Java 8 and later. With JDK 9
+or newer, the Java build scripts pass `javac --release 8`, so `PDFjet.jar` and
+the examples run on Java 8 whichever JDK builds them, and any API newer than
+Java 8 is rejected. Java 8's `javac` has no `--release` option, so the scripts
+leave it out there; that `javac` builds Java 8 class files anyway.
 
 ## Port differences
 
