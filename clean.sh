@@ -5,6 +5,7 @@ rm -f examples/*.exe.mdb
 rm -f tests/*.exe.mdb
 rm -f util/*.class
 rm -f *.jar
+rm -f javac.*.args
 rm -f *.exe
 rm -f *.mdb
 rm -f *.dll
