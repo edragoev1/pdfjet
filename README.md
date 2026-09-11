@@ -134,6 +134,23 @@ positioning tables (GSUB and GPOS), so:
   override and isolate controls are left out, and text that is already shaped
   into presentation forms is not supported.
 
+Right to left text is drawn in visual order, and PDF viewers put it back in
+logical order when the text is copied or extracted. The joined letters map back
+to the letters they stand for, so the words come out as typed, but:
+
+- Brackets come out the wrong way round: `(15,4 مليار دولار)` comes out with a
+  `)` where the `(` was and a `(` where the `)` was. A bracket in right to left
+  text is drawn with the glyph of its mirror image, and the viewers reverse the
+  line without mirroring the brackets back.
+- The zero width non-joiner and joiner are not drawn, so they are not in the
+  copied text: `می‌خواهم` comes out as `میخواهم`.
+- Poppler separates an Arabic comma or a period from the word before it, as in
+  `مادر ،`, and MuPDF moves numbers, such as `۱۴۰۳`, next to a word beside
+  them.
+
+Marking the lines with their text in logical order as ActualText does not help:
+Poppler and MuPDF reverse that text as well.
+
 ## Text without spaces between words
 
 `TextBlock` wraps text at its spaces. Thai, Lao, Khmer and Burmese text has no
