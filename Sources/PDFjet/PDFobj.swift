@@ -548,16 +548,14 @@ public final class PDFobj {
     }
 
     private final func getMaxGSNumber(_ obj: PDFobj) -> Int {
-        var numbers = [Int]()
+        var maxGSNumber = 0
         for token in obj.dict {
-            if token == "/GS" {
-                numbers.append(Int(String(token.dropFirst(3)))!)
+            // The names are like /GS1, so they start with /GS, not equal it.
+            if token.hasPrefix("/GS"), let number = Int(token.dropFirst(3)) {
+                maxGSNumber = max(maxGSNumber, number)
             }
         }
-        if numbers.count == 0 {
-            return 0
-        }
-        return numbers.last!
+        return maxGSNumber
     }
 
     /// Adds the graphics state to the resources of this page.
