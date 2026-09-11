@@ -70,6 +70,11 @@ To run the same checks locally before pushing, run `./check-examples.sh`. It
 builds the four ports one after another in the repository folder and then
 checks their PDFs, so it needs the four toolchains, Python 3 and veraPDF.
 
+The `Windows` workflow runs the Windows scripts, `build-java.cmd`,
+`build-dotnet.cmd`, `build-go.cmd` and `build-swift.cmd`, on a Windows runner
+and checks that every example creates its PDF file. It only runs when started
+from the Actions tab.
+
 ## Documentation
 
 The API references and the example pages are published at

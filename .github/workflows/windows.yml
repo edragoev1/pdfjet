@@ -1,0 +1,101 @@
+# Runs the Windows build scripts, build-java.cmd, build-dotnet.cmd,
+# build-go.cmd and build-swift.cmd, on a Windows runner, one job per port. The
+# scripts do not stop when a command fails, so a job fails if an example does
+# not create its PDF file. The lines of the script's output that look like
+# errors are then shown as annotations. The workflow only runs when started
+# from the Actions tab with Run workflow.
+
+name: Windows
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        name: ${{ matrix.port }}
+        runs-on: windows-2025
+        # A script that waits for input does not hold the runner for hours.
+        timeout-minutes: 60
+        strategy:
+            # A failing port does not cancel the others.
+            fail-fast: false
+            matrix:
+                port: [ java, dotnet, go, swift ]
+        steps:
+            - uses: actions/checkout@v7
+
+            - if: matrix.port == 'java'
+              uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - if: matrix.port == 'dotnet'
+              uses: actions/setup-dotnet@v6
+              with:
+                  dotnet-version: "8.0.x"
+
+            - if: matrix.port == 'go'
+              uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            # The Swift release the Linux jobs install. gha-setup-swift is not
+            # a GitHub action, so it is pinned to the commit of its v0.4.1
+            # release.
+            - if: matrix.port == 'swift'
+              uses: compnerd/gha-setup-swift@397094e75494a93fa8d81db0268dbc8f5d6cf7c6 # v0.4.1
+              with:
+                  swift-version: swift-6.3.3-release
+                  swift-build: 6.3.3-RELEASE
+
+            # The input is empty, so the pause at the end of build-swift.cmd
+            # returns at once. The next step shows the output.
+            - name: Build and run the examples
+              id: build
+              shell: cmd
+              run: call build-${{ matrix.port }}.cmd < nul > build.log 2>&1
+
+            - name: Show the output and check that every example created its PDF file
+              if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+              shell: bash
+              env:
+                  PORT: ${{ matrix.port }}
+              run: |
+                  cat build.log
+                  missing=""
+                  for i in $(seq -w 1 50); do
+                      # The Swift port has no Example_30, see build-swift.cmd.
+                      if [ "$PORT" = swift ] && [ "$i" = 30 ]; then
+                          continue
+                      fi
+                      if [ ! -s "Example_$i.pdf" ]; then
+                          missing="$missing $i"
+                      fi
+                  done
+                  if [ -n "$missing" ]; then
+                      # GitHub shows at most 10 error annotations per step. The
+                      # messages del prints for files that do not exist are left out.
+                      tr -d '\r' < build.log \
+                          | grep -i -E 'error|exception|not recognized|cannot find|not found' \
+                          | grep -v -E 'Could Not Find|The system cannot find the path specified' \
+                          | head -n 9 > errors.txt || true
+                      while IFS= read -r line; do
+                          echo "::error::${line//%/%25}"
+                      done < errors.txt
+                      echo "::error::These examples did not create their PDF file:$missing"
+                      exit 1
+                  fi
+
+            - name: Upload the example PDFs
+              if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+              uses: actions/upload-artifact@v7
+              with:
+                  name: windows-example-pdfs-${{ matrix.port }}
+                  path: Example_*.pdf
+                  if-no-files-found: ignore
+                  retention-days: 3
