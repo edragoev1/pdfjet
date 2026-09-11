@@ -119,15 +119,15 @@ public class Example_09 {
             }
 
             var country_name = cols![0].trimmingCharacters(in: .whitespacesAndNewlines)
-            let population = Float(cols![1].filter({ $0 != "," }))
-            let x = Float(cols![5].filter({ $0 != "," }))
-            let y = Float(cols![7].filter({ $0 != "," }).trimmingCharacters(in: .whitespacesAndNewlines))
+            let population = Double(cols![1].filter({ $0 != "," }))
+            let x = Double(cols![5].filter({ $0 != "," }))
+            let y = Double(cols![7].filter({ $0 != "," }).trimmingCharacters(in: .whitespacesAndNewlines))
 
             if population != nil && x != nil && y != nil {
                 let point = Point()
                 point.setText(country_name)
-                point.setX(x! / population!)
-                point.setY((y! / population!) * Float(100.0))
+                point.setX(Float(x! / population!))
+                point.setY(Float(y! / population! * 100.0))
 
                 country_name = country_name.replacingOccurrences(of: " ", with: "_")
                 country_name = country_name.replacingOccurrences(of: "'", with: "_")

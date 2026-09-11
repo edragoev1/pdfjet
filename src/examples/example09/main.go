@@ -142,7 +142,7 @@ func getData(fileName, delimiter string) [][]*pdfjet.Point {
 
 		populationStr := strings.TrimSpace(cols[1])
 		populationStr = strings.ReplaceAll(populationStr, ",", "")
-		population, err := strconv.ParseFloat(populationStr, 32)
+		population, err := strconv.ParseFloat(populationStr, 64)
 		if err != nil {
 			continue
 		}
@@ -160,7 +160,7 @@ func getData(fileName, delimiter string) [][]*pdfjet.Point {
 
 		cellPhonesStr := strings.TrimSpace(cols[5])
 		cellPhonesStr = strings.ReplaceAll(cellPhonesStr, ",", "")
-		cellPhones, err := strconv.ParseFloat(cellPhonesStr, 32)
+		cellPhones, err := strconv.ParseFloat(cellPhonesStr, 64)
 		if err != nil {
 			continue
 		}
@@ -168,7 +168,7 @@ func getData(fileName, delimiter string) [][]*pdfjet.Point {
 
 		internetStr := strings.TrimSpace(cols[7])
 		internetStr = strings.ReplaceAll(internetStr, ",", "")
-		internet, err := strconv.ParseFloat(internetStr, 32)
+		internet, err := strconv.ParseFloat(internetStr, 64)
 		if err != nil {
 			continue
 		}
