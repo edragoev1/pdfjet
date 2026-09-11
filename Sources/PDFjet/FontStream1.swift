@@ -171,7 +171,14 @@ class FontStream1 {
                 buf.append("<")
                 buf.append(toHexString(Int32(gid)))
                 buf.append("> <")
-                buf.append(toHexString(Int32(cid)))
+                // A presentation form that the Bidi class puts in maps to the letters it stands for.
+                if let letters = Bidi.lettersOf(UInt32(cid)) {
+                    for letter in letters {
+                        buf.append(toHexString(Int32(letter)))
+                    }
+                } else {
+                    buf.append(toHexString(Int32(cid)))
+                }
                 buf.append(">\n")
                 list.append(buf)
                 buf = ""

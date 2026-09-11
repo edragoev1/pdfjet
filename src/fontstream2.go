@@ -187,7 +187,14 @@ func addToUnicodeCMapObject2(objects *[]*PDFobj, font *Font) {
 			buf.WriteString("<")
 			buf.WriteString(toHexString(gid))
 			buf.WriteString("> <")
-			buf.WriteString(toHexString(cid))
+			// A presentation form that the Bidi class puts in maps to the letters it stands for.
+			if letters := lettersOf(rune(cid)); letters != nil {
+				for _, letter := range letters {
+					buf.WriteString(toHexString(int(letter)))
+				}
+			} else {
+				buf.WriteString(toHexString(cid))
+			}
 			buf.WriteString(">\n")
 			list = append(list, buf.String())
 			buf.Reset()

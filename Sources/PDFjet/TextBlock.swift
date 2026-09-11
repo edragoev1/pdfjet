@@ -24,7 +24,7 @@ public class TextBlock : Drawable {
     private var borderWidth: Float = 0.5
     private var borderCornerRadius: Float = 0.0
 
-    private var language: String = "en-US"
+    private var language: String?
     private var altDescription: String = ""
     private var uri: String?
     private var key: String?
@@ -242,6 +242,15 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the language of the text, for example "he", "ar" or "fa", as a BCP 47
+    /// language tag. The text is marked with it, for screen readers and text
+    /// extraction.
+    @discardableResult
+    public func setLanguage(_ language: String?) -> TextBlock {
+        self.language = language
+        return self
+    }
+
     /// Sets whether the text is right to left, like Arabic and Hebrew text.
     /// Each paragraph is wrapped at the width in logical order, and each line
     /// is then reordered with Bidi.reorderVisually, which also shapes the
@@ -437,7 +446,8 @@ public class TextBlock : Drawable {
             y + textPadding,
             leading,
             textColor,
-            highlightColors)
+            highlightColors,
+            language)
         page!.addEMC()
 
         page!.restoreGraphicsState()

@@ -337,6 +337,30 @@ public class Bidi {
         return ligated
     }
 
+    /// Returns the letters that a presentation form put in by reorderVisually
+    /// stands for, or nil for any other character. The fonts map these forms
+    /// back to their letters, so text copied from a PDF has the letters. The
+    /// letters are in the order they are drawn: right to left text is drawn in
+    /// visual order, and text extraction reverses it, so a lam-alef ligature
+    /// gives its alef before its lam.
+    static func lettersOf(_ ch: UInt32) -> [UInt32]? {
+        if ch >= 0xFEF5 && ch <= 0xFEFC {               // the lam-alef ligatures
+            let alefs: [UInt32] = [0x0622, 0x0623, 0x0625, 0x0627]
+            return [alefs[Int((ch - 0xFEF5) / 2)], 0x0644]
+        }
+        if ch < 0xFB50 {
+            return nil
+        }
+        for i in stride(from: 0, to: forms.count, by: 5) {
+            for j in (i + 1)..<(i + 5) {
+                if forms[j] == ch {
+                    return [forms[i]]
+                }
+            }
+        }
+        return nil
+    }
+
     /// Returns the isolated lam-alef ligature for the alef, or nil for any other character.
     private static func lamAlef(_ ch: UInt32) -> UInt32? {
         switch ch {

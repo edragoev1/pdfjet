@@ -187,7 +187,15 @@ class FontStream2 {
                 buf.append('<');
                 buf.append(FontStream1.toHexString(gid));
                 buf.append("> <");
-                buf.append(FontStream1.toHexString(cid));
+                // A presentation form that the Bidi class puts in maps to the letters it stands for.
+                String letters = Bidi.lettersOf(cid);
+                if (letters == null) {
+                    buf.append(FontStream1.toHexString(cid));
+                } else {
+                    for (int i = 0; i < letters.length(); i++) {
+                        buf.append(FontStream1.toHexString(letters.charAt(i)));
+                    }
+                }
                 buf.append(">\n");
                 list.add(buf.toString());
                 buf.setLength(0);

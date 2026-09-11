@@ -108,6 +108,7 @@ public class Example_27 {
         textBlock.setBorderColor(Color.blue);
         textBlock.setTextPadding(10f);
         textBlock.setRightToLeft(true);
+        textBlock.setLanguage("he");
         xy = textBlock.drawOn(page);
 
         textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/arabic.txt"));
@@ -116,6 +117,7 @@ public class Example_27 {
         textBlock.setBorderColor(Color.blue);
         textBlock.setTextPadding(10f);
         textBlock.setRightToLeft(true);
+        textBlock.setLanguage("ar");
         xy = textBlock.drawOn(page);
 
         textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/persian.txt"));
@@ -124,6 +126,7 @@ public class Example_27 {
         textBlock.setBorderColor(Color.blue);
         textBlock.setTextPadding(10f);
         textBlock.setRightToLeft(true);
+        textBlock.setLanguage("fa");
         textBlock.drawOn(page);
 
         pdf.complete();

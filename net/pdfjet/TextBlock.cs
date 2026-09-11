@@ -32,7 +32,7 @@ namespace PDFjet.NET {
         private Alignment textAlignment = Alignment.LEFT;
 
 
-        private string language = "en-US";
+        private string language = null;
 //        private string altDescription = "";
         private string uri;
 //        private string key;
@@ -263,6 +263,16 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>
+        /// Sets the language of the text, for example "he", "ar" or "fa", as a BCP 47
+        /// language tag. The text is marked with it, for screen readers and text
+        /// extraction.
+        /// </summary>
+        public TextBlock SetLanguage(string language) {
+            this.language = language;
+            return this;
+        }
+
         /// <summary>Marks the text as Arabic. The same as SetRightToLeft(true).</summary>
         public TextBlock SetTextIsArabic() {
             return SetRightToLeft(true);
@@ -447,7 +457,8 @@ namespace PDFjet.NET {
                 this.y + this.textPadding,
                 leading,
                 this.textColor,
-                this.keywordHighlightColors);
+                this.keywordHighlightColors,
+                this.language);
             page.AddEMC();
             page.RestoreGraphicsState();
 

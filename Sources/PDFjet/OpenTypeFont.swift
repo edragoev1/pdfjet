@@ -185,7 +185,14 @@ class OpenTypeFont {
                 buf.append("<")
                 buf.append(toHexString(gid))
                 buf.append("> <")
-                buf.append(toHexString(cid))
+                // A presentation form that the Bidi class puts in maps to the letters it stands for.
+                if let letters = Bidi.lettersOf(UInt32(cid)) {
+                    for letter in letters {
+                        buf.append(toHexString(Int(letter)))
+                    }
+                } else {
+                    buf.append(toHexString(cid))
+                }
                 buf.append(">\n")
                 list.append(buf)
                 buf = ""

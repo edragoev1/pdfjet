@@ -1839,11 +1839,19 @@ public class Page {
             float y,
             float leading,
             float[] color,
-            Dictionary<String, Int32> highlightColors) {
+            Dictionary<String, Int32> highlightColors,
+            String language) {
         if (textLines == null || textLines.Length == 0) {
             return;
         }
 
+        // A span gives the language of the text, for screen readers and text extraction.
+        bool hasLanguage = !String.IsNullOrEmpty(language);
+        if (hasLanguage) {
+            Append("/Span <</Lang <");
+            Append(ToUTF16Hex(language));
+            Append(">>> BDC\n");
+        }
         Append("BT\n");
         SetBrushColor(color);
         SetTextFont(font, fontSize);
@@ -1870,6 +1878,9 @@ public class Page {
             yText += leading;
         }
         Append("ET\n");
+        if (hasLanguage) {
+            Append("EMC\n");
+        }
 
         float yLine = y + font.GetBodyHeight(fontSize);
         foreach (TextLine textLine in textLines) {
@@ -1880,6 +1891,16 @@ public class Page {
             }
             yLine += leading;
         }
+    }
+
+    // Returns the string as a PDF text string, in UTF-16BE with a byte order
+    // mark, written in hexadecimal.
+    private static String ToUTF16Hex(String str) {
+        StringBuilder sb = new StringBuilder("FEFF");
+        foreach (char ch in str) {
+            sb.Append(((int) ch).ToString("X4"));
+        }
+        return sb.ToString();
     }
 }   // End of Page.cs
 }   // End of namespace PDFjet.NET

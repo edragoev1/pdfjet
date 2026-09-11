@@ -115,6 +115,7 @@ public class Example_27 {
         hebrewBlock.setBorderColor(Color.blue)
         hebrewBlock.setTextPadding(10.0)
         hebrewBlock.setRightToLeft(true)
+        hebrewBlock.setLanguage("he")
         let xy2 = hebrewBlock.drawOn(page2)
 
         let arabicBlock = TextBlock(f3, try Content.ofTextFile("data/languages/arabic.txt"))
@@ -123,6 +124,7 @@ public class Example_27 {
         arabicBlock.setBorderColor(Color.blue)
         arabicBlock.setTextPadding(10.0)
         arabicBlock.setRightToLeft(true)
+        arabicBlock.setLanguage("ar")
         let xy3 = arabicBlock.drawOn(page2)
 
         let persianBlock = TextBlock(f3, try Content.ofTextFile("data/languages/persian.txt"))
@@ -131,6 +133,7 @@ public class Example_27 {
         persianBlock.setBorderColor(Color.blue)
         persianBlock.setTextPadding(10.0)
         persianBlock.setRightToLeft(true)
+        persianBlock.setLanguage("fa")
         persianBlock.drawOn(page2)
 
         pdf.complete()

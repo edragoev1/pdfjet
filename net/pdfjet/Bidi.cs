@@ -293,6 +293,32 @@ namespace PDFjet.NET {
             return ligated;
         }
 
+        /// <summary>
+        /// Returns the letters that a presentation form put in by ReorderVisually
+        /// stands for, or null for any other character. The fonts map these forms
+        /// back to their letters, so text copied from a PDF has the letters. The
+        /// letters are in the order they are drawn: right to left text is drawn in
+        /// visual order, and text extraction reverses it, so a lam-alef ligature
+        /// gives its alef before its lam.
+        /// </summary>
+        internal static string LettersOf(int ch) {
+            if (ch >= 0xFEF5 && ch <= 0xFEFC) {             // the lam-alef ligatures
+                int[] alefs = {0x0622, 0x0623, 0x0625, 0x0627};
+                return char.ConvertFromUtf32(alefs[(ch - 0xFEF5) / 2]) + char.ConvertFromUtf32(0x0644);
+            }
+            if (ch < 0xFB50) {
+                return null;
+            }
+            for (int i = 0; i < forms.Length; i += 5) {
+                for (int j = i + 1; j < i + 5; j++) {
+                    if (forms[j] == ch) {
+                        return char.ConvertFromUtf32(forms[i]);
+                    }
+                }
+            }
+            return null;
+        }
+
         /// <summary>Returns the isolated lam-alef ligature for the alef, or 0 for any other character.</summary>
         private static int LamAlef(int ch) {
             switch (ch) {

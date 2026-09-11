@@ -109,6 +109,7 @@ public class Example_27 {
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetTextPadding(10f);
         textBlock.SetRightToLeft(true);
+        textBlock.SetLanguage("he");
         xy = textBlock.DrawOn(page);
 
         textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/arabic.txt"));
@@ -117,6 +118,7 @@ public class Example_27 {
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetTextPadding(10f);
         textBlock.SetRightToLeft(true);
+        textBlock.SetLanguage("ar");
         xy = textBlock.DrawOn(page);
 
         textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/persian.txt"));
@@ -125,6 +127,7 @@ public class Example_27 {
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetTextPadding(10f);
         textBlock.SetRightToLeft(true);
+        textBlock.SetLanguage("fa");
         textBlock.DrawOn(page);
 
         pdf.Complete();

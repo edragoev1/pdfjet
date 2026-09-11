@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/src/color"
 	"github.com/edragoev1/pdfjet/src/compliance"
@@ -1589,6 +1590,17 @@ func (page *Page) RotateAroundCenter(centerX, centerY, degrees float32) {
 	page.appendString(" cm\n")
 }
 
+// toUTF16Hex returns the string as a PDF text string, in UTF-16BE with a byte
+// order mark, written in hexadecimal.
+func toUTF16Hex(str string) string {
+	var sb strings.Builder
+	sb.WriteString("FEFF")
+	for _, unit := range utf16.Encode([]rune(str)) {
+		fmt.Fprintf(&sb, "%04X", unit)
+	}
+	return sb.String()
+}
+
 func (page *Page) drawTextBlock(
 	font *Font,
 	fontSize float32,
@@ -1597,12 +1609,20 @@ func (page *Page) drawTextBlock(
 	y float32,
 	leading float32,
 	textColor [3]float32,
-	highlightColors map[string]int32) {
+	highlightColors map[string]int32,
+	language string) {
 
 	if len(textLines) == 0 {
 		return
 	}
 
+	// A span gives the language of the text, for screen readers and text extraction.
+	hasLanguage := language != ""
+	if hasLanguage {
+		page.appendString("/Span <</Lang <")
+		page.appendString(toUTF16Hex(language))
+		page.appendString(">>> BDC\n")
+	}
 	page.appendString("BT\n")
 	page.SetBrushColorRGB(textColor)
 	page.SetTextFont(font, fontSize)
@@ -1629,6 +1649,9 @@ func (page *Page) drawTextBlock(
 		yText += leading
 	}
 	page.appendString("ET\n")
+	if hasLanguage {
+		page.appendString("EMC\n")
+	}
 
 	yLine := y + font.GetBodyHeightAt(fontSize)
 	for _, textLine := range textLines {

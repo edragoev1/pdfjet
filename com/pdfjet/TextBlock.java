@@ -386,6 +386,18 @@ public class TextBlock {
     }
 
     /**
+     * Sets the language of the text, for example "he", "ar" or "fa". The text is
+     * marked with it, for screen readers and text extraction.
+     *
+     * @param language the language, as a BCP 47 language tag.
+     * @return this TextBlock object.
+     */
+    public TextBlock setLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /**
      * Sets whether the text is right to left, like Arabic and Hebrew text.
      * Each paragraph is wrapped at the width in logical order, and each line
      * is then reordered with Bidi.reorderVisually, which also shapes the
@@ -578,7 +590,8 @@ public class TextBlock {
             this.y + this.textPadding,
             leading,
             this.textColor,
-            keywordHighlightColors);
+            keywordHighlightColors,
+            this.language);
         page.addEMC();
         page.restoreGraphicsState();
 

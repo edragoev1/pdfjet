@@ -68,7 +68,7 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 	textBlock.borderWidth = 0.5
 	textBlock.borderCornerRadius = 0.0
 
-	textBlock.language = "en-US"
+	textBlock.language = ""
 	textBlock.altDescription = ""
 	textBlock.underline = false
 	textBlock.strikeout = false
@@ -241,6 +241,14 @@ func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string
 // @param color the color specified as 0xRRGGBB integer.
 func (textBlock *TextBlock) SetTextAlignment(textAlignment int) *TextBlock {
 	textBlock.textAlignment = textAlignment
+	return textBlock
+}
+
+// SetLanguage sets the language of the text, for example "he", "ar" or "fa",
+// as a BCP 47 language tag. The text is marked with it, for screen readers and
+// text extraction.
+func (textBlock *TextBlock) SetLanguage(language string) *TextBlock {
+	textBlock.language = language
 	return textBlock
 }
 
@@ -461,7 +469,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		rect.DrawOn(page)
 	}
 
-	page.AddBMC("P", textBlock.uriLanguage, textBlock.textContent, "")
+	page.AddBMC("P", textBlock.language, textBlock.textContent, "")
 	page.drawTextBlock(
 		textBlock.font,
 		textBlock.fontSize,
@@ -470,7 +478,8 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		textBlock.y+textBlock.textPadding,
 		leading,
 		textBlock.textColor,
-		textBlock.keywordHighlightColors)
+		textBlock.keywordHighlightColors,
+		textBlock.language)
 	page.AddEMC()
 
 	page.RestoreGraphicsState()

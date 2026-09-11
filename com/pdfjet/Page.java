@@ -2241,6 +2241,7 @@ final public class Page {
      * @param leading the distance between the lines.
      * @param color the text color as an RGB array.
      * @param highlightColors the words to highlight and their colors.
+     * @param language the language of the text, or null.
      */
     protected void drawTextBlock(
             Font font,
@@ -2250,11 +2251,19 @@ final public class Page {
             float y,
             float leading,
             float[] color,
-            Map<String, Integer> highlightColors) {
+            Map<String, Integer> highlightColors,
+            String language) {
         if (textLines == null || textLines.length == 0) {
             return;
         }
 
+        // A span gives the language of the text, for screen readers and text extraction.
+        boolean hasLanguage = language != null && !language.isEmpty();
+        if (hasLanguage) {
+            append("/Span <</Lang <");
+            append(toUTF16Hex(language));
+            append(">>> BDC\n");
+        }
         append("BT\n");
         setBrushColor(color);
         setTextFont(font, fontSize);
@@ -2281,6 +2290,9 @@ final public class Page {
             yText += leading;
         }
         append("ET\n");
+        if (hasLanguage) {
+            append("EMC\n");
+        }
 
         float yLine = y + font.getBodyHeight(fontSize);
         for (TextLine textLine : textLines) {
@@ -2291,5 +2303,22 @@ final public class Page {
             }
             yLine += leading;
         }
+    }
+
+    /**
+     * Returns the string as a PDF text string, in UTF-16BE with a byte order
+     * mark, written in hexadecimal.
+     */
+    private static String toUTF16Hex(String str) {
+        final String digits = "0123456789ABCDEF";
+        StringBuilder sb = new StringBuilder("FEFF");
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            sb.append(digits.charAt((ch >> 12) & 0xF));
+            sb.append(digits.charAt((ch >> 8) & 0xF));
+            sb.append(digits.charAt((ch >> 4) & 0xF));
+            sb.append(digits.charAt(ch & 0xF));
+        }
+        return sb.toString();
     }
 }   // End of Page.java

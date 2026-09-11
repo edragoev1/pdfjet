@@ -1877,11 +1877,19 @@ public class Page {
             _ y: Float,
             _ leading: Float,
             _ color: [Float],
-            _ highlightColors: Dictionary<String, Int32>?) {
+            _ highlightColors: Dictionary<String, Int32>?,
+            _ language: String?) {
         if textLines.count == 0 {
             return
         }
 
+        // A span gives the language of the text, for screen readers and text extraction.
+        let hasLanguage = language != nil && !language!.isEmpty
+        if hasLanguage {
+            append("/Span <</Lang <")
+            append(toUTF16Hex(language!))
+            append(">>> BDC\n")
+        }
         append("BT\n")
         setBrushColor(color)
         setTextFont(font, fontSize)
@@ -1908,6 +1916,9 @@ public class Page {
             yText += leading
         }
         append("ET\n")
+        if hasLanguage {
+            append("EMC\n")
+        }
 
         var yLine = y + font.getBodyHeight(fontSize)
         for textLine in textLines {
@@ -1918,5 +1929,19 @@ public class Page {
             }
             yLine += leading
         }
+    }
+
+    /// Returns the string as a PDF text string, in UTF-16BE with a byte order
+    /// mark, written in hexadecimal.
+    private func toUTF16Hex(_ str: String) -> String {
+        let digits = Array("0123456789ABCDEF")
+        var hex = "FEFF"
+        for unit in str.utf16 {
+            hex.append(digits[Int((unit >> 12) & 0xF)])
+            hex.append(digits[Int((unit >> 8) & 0xF)])
+            hex.append(digits[Int((unit >> 4) & 0xF)])
+            hex.append(digits[Int(unit & 0xF)])
+        }
+        return hex
     }
 }   // End of Page.swift

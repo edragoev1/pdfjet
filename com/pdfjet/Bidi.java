@@ -297,6 +297,32 @@ public class Bidi {
         return Arrays.copyOf(ligated, n);
     }
 
+    /**
+     * Returns the letters that a presentation form put in by reorderVisually
+     * stands for, or null for any other character. The fonts map these forms
+     * back to their letters, so text copied from a PDF has the letters. The
+     * letters are in the order they are drawn: right to left text is drawn in
+     * visual order, and text extraction reverses it, so a lam-alef ligature
+     * gives its alef before its lam.
+     */
+    static String lettersOf(int ch) {
+        if (ch >= 0xFEF5 && ch <= 0xFEFC) {             // the lam-alef ligatures
+            final int[] alefs = {0x0622, 0x0623, 0x0625, 0x0627};
+            return new String(new int[] {alefs[(ch - 0xFEF5) / 2], 0x0644}, 0, 2);
+        }
+        if (ch < 0xFB50) {
+            return null;
+        }
+        for (int i = 0; i < forms.length; i += 5) {
+            for (int j = i + 1; j < i + 5; j++) {
+                if (forms[j] == ch) {
+                    return new String(Character.toChars(forms[i]));
+                }
+            }
+        }
+        return null;
+    }
+
     /** Returns the isolated lam-alef ligature for the alef, or 0 for any other character. */
     private static int lamAlef(int ch) {
         switch (ch) {

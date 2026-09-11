@@ -181,7 +181,15 @@ class FontStream1 {
                 buf.Append('<');
                 buf.Append(ToHexString(gid));
                 buf.Append("> <");
-                buf.Append(ToHexString(cid));
+                // A presentation form that the Bidi class puts in maps to the letters it stands for.
+                String letters = Bidi.LettersOf(cid);
+                if (letters == null) {
+                    buf.Append(ToHexString(cid));
+                } else {
+                    foreach (char ch in letters) {
+                        buf.Append(ToHexString(ch));
+                    }
+                }
                 buf.Append(">\n");
                 list.Add(buf.ToString());
                 buf.Length = 0;

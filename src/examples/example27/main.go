@@ -123,6 +123,7 @@ func Example27() {
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetTextPadding(10.0)
 	textBlock.SetRightToLeft(true)
+	textBlock.SetLanguage("he")
 	xy = textBlock.DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/arabic.txt"))
@@ -131,6 +132,7 @@ func Example27() {
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetTextPadding(10.0)
 	textBlock.SetRightToLeft(true)
+	textBlock.SetLanguage("ar")
 	xy = textBlock.DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/persian.txt"))
@@ -139,6 +141,7 @@ func Example27() {
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetTextPadding(10.0)
 	textBlock.SetRightToLeft(true)
+	textBlock.SetLanguage("fa")
 	textBlock.DrawOn(page)
 
 	pdf.Complete()
