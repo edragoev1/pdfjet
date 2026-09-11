@@ -106,6 +106,25 @@ public class Example_27 {
         textLine.setLocation(x - f3.stringWidth(str), y)
         textLine.drawOn(page)
 
+        // Right to left text in text blocks, wrapped at their width.
+        let page2 = Page(pdf, Letter.PORTRAIT)
+
+        let hebrewBlock = TextBlock(f2, try Content.ofTextFile("data/languages/hebrew.txt"))
+        hebrewBlock.setLocation(180.0, 30.0)
+        hebrewBlock.setWidth(400.0)
+        hebrewBlock.setBorderColor(Color.blue)
+        hebrewBlock.setTextPadding(10.0)
+        hebrewBlock.setRightToLeft(true)
+        let xy2 = hebrewBlock.drawOn(page2)
+
+        let arabicBlock = TextBlock(f3, try Content.ofTextFile("data/languages/arabic.txt"))
+        arabicBlock.setLocation(180.0, xy2[1] + 30.0)
+        arabicBlock.setWidth(400.0)
+        arabicBlock.setBorderColor(Color.blue)
+        arabicBlock.setTextPadding(10.0)
+        arabicBlock.setRightToLeft(true)
+        arabicBlock.drawOn(page2)
+
         pdf.complete()
     }
 

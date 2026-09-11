@@ -35,6 +35,7 @@ public class TextBlock : Drawable {
     private var textAlignment: Alignment = Alignment.LEFT
     private var underline: Bool = false
     private var strikeout: Bool = false
+    private var rightToLeft: Bool = false
 
     private var lineSpacing: Float = 1.0
 
@@ -241,6 +242,17 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets whether the text is right to left, like Arabic and Hebrew text.
+    /// Each paragraph is wrapped at the width in logical order, and each line
+    /// is then reordered with Bidi.reorderVisually, which also shapes the
+    /// Arabic letters, and aligned to the right, unless the text alignment is
+    /// Alignment.CENTER.
+    @discardableResult
+    public func setRightToLeft(_ rightToLeft: Bool) -> TextBlock {
+        self.rightToLeft = rightToLeft
+        return self
+    }
+
     private func textIsCJK(_ str: String) -> Bool {
         let chars = Array(str)
         var numOfCJK = 0
@@ -264,6 +276,10 @@ public class TextBlock : Drawable {
         let lines = textContent.replacingOccurrences(of: "\r\n", with: "\n")
                 .components(separatedBy: .newlines)
         for line in lines {
+            if rightToLeft {
+                addRightToLeftLines(&textLines, line, textAreaWidth)
+                continue
+            }
             if font.stringWidth(fallbackFont, line) <= textAreaWidth {
                 textLines.append(TextLine(font, line))
             } else {
@@ -305,6 +321,27 @@ public class TextBlock : Drawable {
         return textLines
     }
 
+    /// Wraps a paragraph of right to left text at the spaces between words and
+    /// adds its lines in visual order. The paragraph is wrapped in logical
+    /// order, so its first words go on the first line, and each line is
+    /// measured after it is reordered, since the shaped Arabic letters differ
+    /// in width from the letters they replace.
+    private func addRightToLeftLines(
+            _ textLines: inout [TextLine], _ paragraph: String, _ textAreaWidth: Float) {
+        var line = ""
+        for word in paragraph.split(whereSeparator: \.isWhitespace).map(String.init) {
+            let candidate = line.isEmpty ? word : line + " " + word
+            if !line.isEmpty &&
+                    font.stringWidth(fallbackFont, Bidi.reorderVisually(candidate)) > textAreaWidth {
+                textLines.append(TextLine(font, Bidi.reorderVisually(line)))
+                line = word
+            } else {
+                line = candidate
+            }
+        }
+        textLines.append(TextLine(font, Bidi.reorderVisually(line)))
+    }
+
     /// Sets the URI opened when this text block is clicked.
     @discardableResult
     public func setURIAction(_ uri: String) -> TextBlock {
@@ -330,15 +367,18 @@ public class TextBlock : Drawable {
         return self
     }
 
+    // The offsets are from the left edge of the text, inside the padding.
     private func rightAlignText(_ textLines: [TextLine]) {
+        let textAreaWidth = self.width - 2 * self.textPadding
         for textLine in textLines {
-            textLine.xOffset = self.width - font.stringWidth(textLine.text)
+            textLine.xOffset = textAreaWidth - font.stringWidth(textLine.text)
         }
     }
 
     private func centerText(_ textLines: [TextLine]) {
+        let textAreaWidth = self.width - 2 * self.textPadding
         for textLine in textLines {
-            textLine.xOffset = (self.width - font.stringWidth(textLine.text)) / 2.0
+            textLine.xOffset = (textAreaWidth - font.stringWidth(textLine.text)) / 2.0
         }
     }
 
@@ -362,10 +402,10 @@ public class TextBlock : Drawable {
         page!.saveGraphicsState()
 
         page!.setPenWidth(self.borderWidth)
-        if textAlignment == Alignment.RIGHT {
-            rightAlignText(textLines)
-        } else if textAlignment == Alignment.CENTER {
+        if textAlignment == Alignment.CENTER {
             centerText(textLines)
+        } else if textAlignment == Alignment.RIGHT || rightToLeft {
+            rightAlignText(textLines)
         }
         if underline {
             underlineText(textLines)

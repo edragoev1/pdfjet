@@ -41,7 +41,7 @@ namespace PDFjet.NET {
 //        private string uriAltDescription;
         private bool underline = false;
 //        private bool strikeout = false;
-        private bool textIsArabic = false;
+        private bool rightToLeft = false;
 
         /// <summary>Creates a text block with the specified font and text.</summary>
         public TextBlock(Font font, string textContent) {
@@ -263,13 +263,20 @@ namespace PDFjet.NET {
             return this;
         }
 
-        /// <summary>Marks the text as Arabic.</summary>
+        /// <summary>Marks the text as Arabic. The same as SetRightToLeft(true).</summary>
         public TextBlock SetTextIsArabic() {
-            // Bidi.ReorderVisually shapes the letters and puts in the lam-alef
-            // ligature, which Arabic requires: a lām (ل) followed by an alif (ا)
-            // is written as one character, لا. It does not put in the optional
-            // ligatures.
-            this.textIsArabic = true;
+            return SetRightToLeft(true);
+        }
+
+        /// <summary>
+        /// Sets whether the text is right to left, like Arabic and Hebrew text.
+        /// Each paragraph is wrapped at the width in logical order, and each line
+        /// is then reordered with Bidi.ReorderVisually, which also shapes the
+        /// Arabic letters, and aligned to the right, unless the text alignment is
+        /// Alignment.CENTER.
+        /// </summary>
+        public TextBlock SetRightToLeft(bool rightToLeft) {
+            this.rightToLeft = rightToLeft;
             return this;
         }
 
@@ -295,9 +302,8 @@ namespace PDFjet.NET {
             string[] lines = this.textContent.Split('\n');
             foreach (String str in lines) {
                 String line = str;
-                if (textIsArabic) {
-                    line = Bidi.ReorderVisually(line);
-                    textLines.Add(new TextLine(font, line));
+                if (rightToLeft) {
+                    AddRightToLeftLines(textLines, line, textAreaWidth);
                     continue;
                 }
 
@@ -340,35 +346,54 @@ namespace PDFjet.NET {
             return textLines.ToArray();
         }
 
+        /// <summary>
+        /// Wraps a paragraph of right to left text at the spaces between words and
+        /// adds its lines in visual order. The paragraph is wrapped in logical
+        /// order, so its first words go on the first line, and each line is
+        /// measured after it is reordered, since the shaped Arabic letters differ
+        /// in width from the letters they replace.
+        /// </summary>
+        private void AddRightToLeftLines(List<TextLine> textLines, string paragraph, float textAreaWidth) {
+            string line = "";
+            foreach (string word in paragraph.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries)) {
+                string candidate = (line.Length == 0) ? word : line + " " + word;
+                if (line.Length > 0 &&
+                        this.font.StringWidth(fallbackFont, fontSize, Bidi.ReorderVisually(candidate)) > textAreaWidth) {
+                    textLines.Add(new TextLine(font, Bidi.ReorderVisually(line)));
+                    line = word;
+                } else {
+                    line = candidate;
+                }
+            }
+            textLines.Add(new TextLine(font, Bidi.ReorderVisually(line)));
+        }
+
         /// <summary>Sets whether the text is underlined.</summary>
         public TextBlock SetUnderline(bool underline) {
             this.underline = underline;
             return this;
         }
 
+        // The offsets are from the left edge of the text, inside the padding.
         private void RightAlignText(TextLine[] textLines) {
+            float textAreaWidth = this.width - 2 * this.textPadding;
             foreach (TextLine textLine in textLines) {
                 textLine.xOffset =
-                    this.width - font.StringWidth(fallbackFont, fontSize, textLine.text);
+                    textAreaWidth - font.StringWidth(fallbackFont, fontSize, textLine.text);
             }
         }
 
         private void CenterText(TextLine[] textLines) {
+            float textAreaWidth = this.width - 2 * this.textPadding;
             foreach (TextLine textLine in textLines) {
                 textLine.xOffset =
-                    (this.width - font.StringWidth(fallbackFont, fontSize, textLine.text)) / 2f;
+                    (textAreaWidth - font.StringWidth(fallbackFont, fontSize, textLine.text)) / 2f;
             }
         }
 
         private void UnderlineText(TextLine[] textLines) {
             foreach (TextLine textLine in textLines) {
                 textLine.underline = true;
-            }
-        }
-
-        private void ReorderVisually(TextLine[] textLines) {
-            foreach (TextLine textLine in textLines) {
-                textLine.text = Bidi.ReorderVisually(textLine.text);
             }
         }
 
@@ -387,10 +412,10 @@ namespace PDFjet.NET {
 
             page.SaveGraphicsState();
             page.SetPenWidth(this.borderWidth);
-            if (textAlignment == Alignment.RIGHT) {
-                RightAlignText(textLines);
-            } else if (textAlignment == Alignment.CENTER) {
+            if (textAlignment == Alignment.CENTER) {
                 CenterText(textLines);
+            } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
+                RightAlignText(textLines);
             }
             if (underline) {
                 UnderlineText(textLines);

@@ -99,6 +99,25 @@ public class Example_27 {
         textLine.setLocation(x - f3.stringWidth(str), y += 20f);
         textLine.drawOn(page);
 
+        // Right to left text in text blocks, wrapped at their width.
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        textBlock = new TextBlock(f2, Content.ofTextFile("data/languages/hebrew.txt"));
+        textBlock.setLocation(180f, 30f);
+        textBlock.setWidth(400f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setTextPadding(10f);
+        textBlock.setRightToLeft(true);
+        xy = textBlock.drawOn(page);
+
+        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/arabic.txt"));
+        textBlock.setLocation(180f, xy[1] + 30f);
+        textBlock.setWidth(400f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setTextPadding(10f);
+        textBlock.setRightToLeft(true);
+        textBlock.drawOn(page);
+
         pdf.complete();
     }
 

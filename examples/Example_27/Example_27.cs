@@ -100,6 +100,25 @@ public class Example_27 {
         textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
+        // Right to left text in text blocks, wrapped at their width.
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        textBlock = new TextBlock(f2, Content.OfTextFile("data/languages/hebrew.txt"));
+        textBlock.SetLocation(180f, 30f);
+        textBlock.SetWidth(400f);
+        textBlock.SetBorderColor(Color.blue);
+        textBlock.SetTextPadding(10f);
+        textBlock.SetRightToLeft(true);
+        xy = textBlock.DrawOn(page);
+
+        textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/arabic.txt"));
+        textBlock.SetLocation(180f, xy[1] + 30f);
+        textBlock.SetWidth(400f);
+        textBlock.SetBorderColor(Color.blue);
+        textBlock.SetTextPadding(10f);
+        textBlock.SetRightToLeft(true);
+        textBlock.DrawOn(page);
+
         pdf.Complete();
     }
 

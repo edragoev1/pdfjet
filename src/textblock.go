@@ -44,6 +44,7 @@ type TextBlock struct {
 	underline              bool
 	strikeout              bool
 	keywordHighlightColors map[string]int32
+	rightToLeft            bool
 }
 
 // NewTextBlock creates a text block and sets the font.
@@ -243,6 +244,16 @@ func (textBlock *TextBlock) SetTextAlignment(textAlignment int) *TextBlock {
 	return textBlock
 }
 
+// SetRightToLeft sets whether the text is right to left, like Arabic and
+// Hebrew text. Each paragraph is wrapped at the width in logical order, and
+// each line is then reordered with ReorderVisually, which also shapes the
+// Arabic letters, and aligned to the right, unless the text alignment is
+// alignment.Center.
+func (textBlock *TextBlock) SetRightToLeft(rightToLeft bool) *TextBlock {
+	textBlock.rightToLeft = rightToLeft
+	return textBlock
+}
+
 func (textBlock *TextBlock) textIsCJK(str string) bool {
 	// CJK Unified Ideographs Range: 4E00–9FD5
 	// Hiragana Range: 3040–309F
@@ -284,6 +295,10 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 	textBlock.textContent = strings.TrimSpace(textBlock.textContent)
 	lines := strings.Split(textBlock.textContent, "\n")
 	for _, line := range lines {
+		if textBlock.rightToLeft {
+			textLines = textBlock.appendRightToLeftLines(textLines, line, textAreaWidth)
+			continue
+		}
 		if textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.font.size, line) <= textAreaWidth {
 			textLines = append(
 				textLines,
@@ -333,6 +348,30 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 	return textLines
 }
 
+// appendRightToLeftLines wraps a paragraph of right to left text at the
+// spaces between words and appends its lines in visual order. The paragraph
+// is wrapped in logical order, so its first words go on the first line, and
+// each line is measured after it is reordered, since the shaped Arabic
+// letters differ in width from the letters they replace.
+func (textBlock *TextBlock) appendRightToLeftLines(
+	textLines []*TextLine, paragraph string, textAreaWidth float32) []*TextLine {
+	line := ""
+	for _, word := range strings.Fields(paragraph) {
+		candidate := word
+		if line != "" {
+			candidate = line + " " + word
+		}
+		if line != "" && textBlock.font.StringWidthFB(textBlock.fallbackFont,
+			textBlock.font.size, ReorderVisually(candidate)) > textAreaWidth {
+			textLines = append(textLines, NewTextLine(textBlock.font, ReorderVisually(line)))
+			line = word
+		} else {
+			line = candidate
+		}
+	}
+	return append(textLines, NewTextLine(textBlock.font, ReorderVisually(line)))
+}
+
 // SetUnderline underlines the text of this text block.
 // @param underline the underline flag.
 func (textBlock *TextBlock) SetUnderline(underline bool) *TextBlock {
@@ -346,16 +385,22 @@ func (textBlock *TextBlock) underlineText(textLines []*TextLine) {
 	}
 }
 
+// rightAlignText sets the offsets from the left edge of the text, inside the
+// padding.
 func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
+	textAreaWidth := textBlock.width - 2*textBlock.textPadding
 	for _, textLine := range textLines {
-		textLine.xOffset = textBlock.width -
+		textLine.xOffset = textAreaWidth -
 			textBlock.font.StringWidth(textBlock.font.size, textLine.text)
 	}
 }
 
+// centerText sets the offsets from the left edge of the text, inside the
+// padding.
 func (textBlock *TextBlock) centerText(textLines []*TextLine) {
+	textAreaWidth := textBlock.width - 2*textBlock.textPadding
 	for _, textLine := range textLines {
-		textLine.xOffset = (textBlock.width -
+		textLine.xOffset = (textAreaWidth -
 			textBlock.font.StringWidth(textBlock.font.size, textLine.text)) / 2.0
 	}
 }
@@ -389,12 +434,11 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 
 	page.SetPenWidth(textBlock.borderWidth)
-	switch textBlock.textAlignment {
-	case alignment.Right:
-		textBlock.rightAlignText(textLines)
-	case alignment.Center:
+	switch {
+	case textBlock.textAlignment == alignment.Center:
 		textBlock.centerText(textLines)
-	default:
+	case textBlock.textAlignment == alignment.Right || textBlock.rightToLeft:
+		textBlock.rightAlignText(textLines)
 	}
 	if textBlock.underline {
 		textBlock.underlineText(textLines)

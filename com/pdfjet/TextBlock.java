@@ -42,6 +42,7 @@ public class TextBlock {
     private Alignment textAlignment;
     private boolean underline;
     private boolean strikeout;
+    private boolean rightToLeft;
 
     /**
      * Creates a text block and sets the font.
@@ -384,6 +385,21 @@ public class TextBlock {
         return this;
     }
 
+    /**
+     * Sets whether the text is right to left, like Arabic and Hebrew text.
+     * Each paragraph is wrapped at the width in logical order, and each line
+     * is then reordered with Bidi.reorderVisually, which also shapes the
+     * Arabic letters, and aligned to the right, unless the text alignment is
+     * Alignment.CENTER.
+     *
+     * @param rightToLeft true if the text is right to left.
+     * @return this TextBlock object.
+     */
+    public TextBlock setRightToLeft(boolean rightToLeft) {
+        this.rightToLeft = rightToLeft;
+        return this;
+    }
+
     private boolean textIsCJK(String str) {
         // CJK Unified Ideographs Range: 4E00–9FD5
         // Hiragana Range: 3040–309F
@@ -408,6 +424,10 @@ public class TextBlock {
         float textAreaWidth = this.width - 2 * this.textPadding;
         String[] lines = this.textContent.split("\r?\n");
         for (String line : lines) {
+            if (rightToLeft) {
+                addRightToLeftLines(textLines, line, textAreaWidth);
+                continue;
+            }
             if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
                 textLines.add(new TextLine(font, line));
             } else {
@@ -449,6 +469,28 @@ public class TextBlock {
     }
 
     /**
+     * Wraps a paragraph of right to left text at the spaces between words and
+     * adds its lines in visual order. The paragraph is wrapped in logical
+     * order, so its first words go on the first line, and each line is
+     * measured after it is reordered, since the shaped Arabic letters differ
+     * in width from the letters they replace.
+     */
+    private void addRightToLeftLines(List<TextLine> textLines, String paragraph, float textAreaWidth) {
+        String line = "";
+        for (String word : paragraph.trim().split("\\s+")) {
+            String candidate = line.isEmpty() ? word : line + " " + word;
+            if (!line.isEmpty() &&
+                    font.stringWidth(fallbackFont, Bidi.reorderVisually(candidate)) > textAreaWidth) {
+                textLines.add(new TextLine(font, Bidi.reorderVisually(line)));
+                line = word;
+            } else {
+                line = candidate;
+            }
+        }
+        textLines.add(new TextLine(font, Bidi.reorderVisually(line)));
+    }
+
+    /**
      * Sets whether the text is underlined.
      *
      * @param underline true to underline the text.
@@ -459,15 +501,18 @@ public class TextBlock {
         return this;
     }
 
+    // The offsets are from the left edge of the text, inside the padding.
     private void rightAlignText(TextLine[] textLines) {
+        float textAreaWidth = this.width - 2 * this.textPadding;
         for (TextLine textLine : textLines) {
-            textLine.xOffset = this.width - font.stringWidth(textLine.text);
+            textLine.xOffset = textAreaWidth - font.stringWidth(textLine.text);
         }
     }
 
     private void centerText(TextLine[] textLines) {
+        float textAreaWidth = this.width - 2 * this.textPadding;
         for (TextLine textLine : textLines) {
-            textLine.xOffset = (this.width - font.stringWidth(textLine.text)) / 2f;
+            textLine.xOffset = (textAreaWidth - font.stringWidth(textLine.text)) / 2f;
         }
     }
 
@@ -498,10 +543,10 @@ public class TextBlock {
 
         page.saveGraphicsState();
         page.setPenWidth(this.borderWidth);
-        if (textAlignment == Alignment.RIGHT) {
-            rightAlignText(textLines);
-        } else if (textAlignment == Alignment.CENTER) {
+        if (textAlignment == Alignment.CENTER) {
             centerText(textLines);
+        } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
+            rightAlignText(textLines);
         }
         if (underline) {
             underlineText(textLines);
