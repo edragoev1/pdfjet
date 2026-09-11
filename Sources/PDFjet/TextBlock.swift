@@ -289,12 +289,15 @@ public class TextBlock : Drawable {
                 addRightToLeftLines(&textLines, line, textAreaWidth)
                 continue
             }
-            if font.stringWidth(fallbackFont, line) <= textAreaWidth {
-                textLines.append(TextLine(font, line))
+            // A zero width space marks a place where the line may break in text
+            // without spaces between its words, like Thai text. It is not drawn.
+            let text = line.replacingOccurrences(of: "\u{200B}", with: "")
+            if font.stringWidth(fallbackFont, text) <= textAreaWidth {
+                textLines.append(TextLine(font, text))
             } else {
-                if textIsCJK(line) {
+                if textIsCJK(text) {
                     var sb = ""
-                    for ch in line {
+                    for ch in text {
                         if font.stringWidth(fallbackFont, sb + String(ch)) <= textAreaWidth {
                             sb.append(ch)
                         } else {
@@ -309,18 +312,24 @@ public class TextBlock : Drawable {
                     var sb = ""
                     let tokens = line.split(whereSeparator: \.isWhitespace).map(String.init)
                     for token in tokens {
-                        if font.stringWidth(fallbackFont, sb + token) <= textAreaWidth {
-                            sb.append(token)
-                            sb.append(" ")
-                        } else {
-                            if !sb.isEmpty {
-                                textLines.append(TextLine(font, sb.trim()))
-                                sb = ""
-                            }
-                            // A word too wide for a line by itself is broken.
-                            let rest = addBrokenWordLines(&textLines, token, textAreaWidth)
-                            if !rest.isEmpty {
-                                sb = rest + " "
+                        // The words between the zero width spaces of a token
+                        // are joined with no space.
+                        let words = token.components(separatedBy: "\u{200B}")
+                        for (i, word) in words.enumerated() {
+                            let separator = (i == words.count - 1) ? " " : ""
+                            if font.stringWidth(fallbackFont, sb + word) <= textAreaWidth {
+                                sb.append(word)
+                                sb.append(separator)
+                            } else {
+                                if !sb.isEmpty {
+                                    textLines.append(TextLine(font, sb.trim()))
+                                    sb = ""
+                                }
+                                // A word too wide for a line by itself is broken.
+                                let rest = addBrokenWordLines(&textLines, word, textAreaWidth)
+                                if !rest.isEmpty {
+                                    sb = rest + separator
+                                }
                             }
                         }
                     }

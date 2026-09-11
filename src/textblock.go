@@ -308,14 +308,17 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 			textLines = textBlock.appendRightToLeftLines(textLines, line, textAreaWidth)
 			continue
 		}
-		if textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.font.size, line) <= textAreaWidth {
+		// A zero width space marks a place where the line may break in text
+		// without spaces between its words, like Thai text. It is not drawn.
+		text := strings.ReplaceAll(line, "\u200B", "")
+		if textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.font.size, text) <= textAreaWidth {
 			textLines = append(
 				textLines,
-				NewTextLine(textBlock.font, line))
+				NewTextLine(textBlock.font, text))
 		} else {
-			if textBlock.textIsCJK(line) {
+			if textBlock.textIsCJK(text) {
 				var sb strings.Builder
-				for _, ch := range line {
+				for _, ch := range text {
 					if textBlock.font.StringWidthFB(textBlock.fallbackFont,
 						textBlock.font.size, sb.String()+string(ch)) <= textAreaWidth {
 						sb.WriteRune(ch)
@@ -334,21 +337,30 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 				var sb strings.Builder
 				tokens := strings.Fields(line) // Split by whitespace
 				for _, token := range tokens {
-					if textBlock.font.StringWidthFB(textBlock.fallbackFont,
-						textBlock.font.size, sb.String()+token) <= textAreaWidth {
-						sb.WriteString(token + " ")
-					} else {
-						if sb.Len() > 0 {
-							textLines = append(
-								textLines,
-								NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
-							sb.Reset()
+					// The words between the zero width spaces of a token are
+					// joined with no space.
+					words := strings.Split(token, "\u200B")
+					for i, word := range words {
+						separator := " "
+						if i < len(words)-1 {
+							separator = ""
 						}
-						// A word too wide for a line by itself is broken.
-						var rest string
-						textLines, rest = textBlock.appendBrokenWordLines(textLines, token, textAreaWidth)
-						if rest != "" {
-							sb.WriteString(rest + " ")
+						if textBlock.font.StringWidthFB(textBlock.fallbackFont,
+							textBlock.font.size, sb.String()+word) <= textAreaWidth {
+							sb.WriteString(word + separator)
+						} else {
+							if sb.Len() > 0 {
+								textLines = append(
+									textLines,
+									NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
+								sb.Reset()
+							}
+							// A word too wide for a line by itself is broken.
+							var rest string
+							textLines, rest = textBlock.appendBrokenWordLines(textLines, word, textAreaWidth)
+							if rest != "" {
+								sb.WriteString(rest + separator)
+							}
 						}
 					}
 				}

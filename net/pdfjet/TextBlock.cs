@@ -318,12 +318,15 @@ namespace PDFjet.NET {
                     continue;
                 }
 
-                if (this.font.StringWidth(fallbackFont, fontSize, line) <= textAreaWidth) {
-                    textLines.Add(new TextLine(font, line));
+                // A zero width space marks a place where the line may break in text
+                // without spaces between its words, like Thai text. It is not drawn.
+                String text = line.Replace("\u200B", "");
+                if (this.font.StringWidth(fallbackFont, fontSize, text) <= textAreaWidth) {
+                    textLines.Add(new TextLine(font, text));
                 } else {
-                    if (TextIsCJK(line)) {
+                    if (TextIsCJK(text)) {
                         StringBuilder sb = new StringBuilder();
-                        foreach (char ch in line.ToCharArray()) {
+                        foreach (char ch in text.ToCharArray()) {
                             if (font.StringWidth(fallbackFont, fontSize, sb.ToString() + ch) <= textAreaWidth) {
                                 sb.Append(ch);
                             } else {
@@ -339,17 +342,24 @@ namespace PDFjet.NET {
                         StringBuilder sb = new StringBuilder();
                         string[] tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (string token in tokens) {
-                            if (this.font.StringWidth(fallbackFont, fontSize, sb.ToString() + token) <= textAreaWidth) {
-                                sb.Append(token).Append(" ");
-                            } else {
-                                if (sb.Length > 0) {
-                                    textLines.Add(new TextLine(font, sb.ToString().Trim()));
-                                    sb.Clear();
-                                }
-                                // A word too wide for a line by itself is broken.
-                                String rest = AddBrokenWordLines(textLines, token, textAreaWidth);
-                                if (rest.Length > 0) {
-                                    sb.Append(rest).Append(" ");
+                            // The words between the zero width spaces of a token
+                            // are joined with no space.
+                            string[] words = token.Split('\u200B');
+                            for (int i = 0; i < words.Length; i++) {
+                                String word = words[i];
+                                String separator = (i == words.Length - 1) ? " " : "";
+                                if (this.font.StringWidth(fallbackFont, fontSize, sb.ToString() + word) <= textAreaWidth) {
+                                    sb.Append(word).Append(separator);
+                                } else {
+                                    if (sb.Length > 0) {
+                                        textLines.Add(new TextLine(font, sb.ToString().Trim()));
+                                        sb.Clear();
+                                    }
+                                    // A word too wide for a line by itself is broken.
+                                    String rest = AddBrokenWordLines(textLines, word, textAreaWidth);
+                                    if (rest.Length > 0) {
+                                        sb.Append(rest).Append(separator);
+                                    }
                                 }
                             }
                         }

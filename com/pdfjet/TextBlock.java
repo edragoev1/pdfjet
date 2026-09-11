@@ -440,12 +440,15 @@ public class TextBlock {
                 addRightToLeftLines(textLines, line, textAreaWidth);
                 continue;
             }
-            if (font.stringWidth(fallbackFont, line) <= textAreaWidth) {
-                textLines.add(new TextLine(font, line));
+            // A zero width space marks a place where the line may break in text
+            // without spaces between its words, like Thai text. It is not drawn.
+            String text = line.replace("\u200B", "");
+            if (font.stringWidth(fallbackFont, text) <= textAreaWidth) {
+                textLines.add(new TextLine(font, text));
             } else {
-                if (textIsCJK(line)) {
+                if (textIsCJK(text)) {
                     StringBuilder sb = new StringBuilder();
-                    for (char ch : line.toCharArray()) {
+                    for (char ch : text.toCharArray()) {
                         if (font.stringWidth(fallbackFont, sb.toString() + ch) <= textAreaWidth) {
                             sb.append(ch);
                         } else {
@@ -461,18 +464,25 @@ public class TextBlock {
                     StringBuilder sb = new StringBuilder();
                     String[] tokens = line.split("\\s+");
                     for (String token : tokens) {
-                        if (font.stringWidth(fallbackFont, sb.toString() + token) <= textAreaWidth) {
-                            sb.append(token);
-                            sb.append(" ");
-                        } else {
-                            if (sb.length() > 0) {
-                                textLines.add(new TextLine(font, sb.toString().trim()));
-                                sb.setLength(0);
-                            }
-                            // A word too wide for a line by itself is broken.
-                            String rest = addBrokenWordLines(textLines, token, textAreaWidth);
-                            if (!rest.isEmpty()) {
-                                sb.append(rest + " ");
+                        // The words between the zero width spaces of a token
+                        // are joined with no space.
+                        String[] words = token.split("\u200B", -1);
+                        for (int i = 0; i < words.length; i++) {
+                            String word = words[i];
+                            String separator = (i == words.length - 1) ? " " : "";
+                            if (font.stringWidth(fallbackFont, sb.toString() + word) <= textAreaWidth) {
+                                sb.append(word);
+                                sb.append(separator);
+                            } else {
+                                if (sb.length() > 0) {
+                                    textLines.add(new TextLine(font, sb.toString().trim()));
+                                    sb.setLength(0);
+                                }
+                                // A word too wide for a line by itself is broken.
+                                String rest = addBrokenWordLines(textLines, word, textAreaWidth);
+                                if (!rest.isEmpty()) {
+                                    sb.append(rest + separator);
+                                }
                             }
                         }
                     }

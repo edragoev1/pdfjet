@@ -134,6 +134,15 @@ positioning tables (GSUB and GPOS), so:
   override and isolate controls are left out, and text that is already shaped
   into presentation forms is not supported.
 
+## Text without spaces between words
+
+`TextBlock` wraps text at its spaces. Thai, Lao, Khmer and Burmese text has no
+spaces between its words, so put a zero width space (U+200B) between the words
+where a line may break. It is not drawn. A word too wide for a line by itself
+is broken between its characters, so text without zero width spaces still fits
+in the text block, but its lines can break inside words. The Thai text of
+Example_27, `data/languages/thai.txt`, has a zero width space between its words.
+
 ## Port differences
 
 The Java, C# and Go ports all support encrypted PDF files. The Swift port does
