@@ -184,9 +184,10 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	// replacement character.
 	list = append(list, "<0000> <FFFD>\n")
 	var buf strings.Builder
+	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
 	for cid := 0; cid <= 0xffff; cid++ {
 		gid := font.unicodeToGID[cid]
-		if gid > 0 {
+		if gid > 0 && unicodeOf[gid] == cid {
 			buf.WriteString("<")
 			buf.WriteString(toHexString(gid))
 			buf.WriteString("> <")
@@ -289,6 +290,39 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.endobj()
 
 	font.cidFontDictObjNumber = pdf.getObjNumber()
+}
+
+// unicodeOfGlyphs returns the character that each glyph maps to in a ToUnicode
+// CMap. A glyph can stand for several characters, like the space and the
+// no-break space, but viewers read a CMap with more than one entry for a glyph
+// differently. So a glyph maps to the first character that uses it, unless
+// that is one text seldom has and another character uses the glyph too, like
+// the modifier letter apostrophe and the right single quotation mark.
+func unicodeOfGlyphs(unicodeToGID []int) []int {
+	chars := make([]int, 0x10000)
+	for i := range chars {
+		chars[i] = -1
+	}
+	for cid := 0; cid <= 0xffff; cid++ {
+		gid := unicodeToGID[cid]
+		if gid > 0 && (chars[gid] == -1 ||
+			(isSeldomText(chars[gid]) && !isSeldomText(cid))) {
+			chars[gid] = cid
+		}
+	}
+	return chars
+}
+
+// isSeldomText returns true for the soft hyphen, the spacing modifier letters,
+// the combining marks and the private use characters.
+func isSeldomText(ch int) bool {
+	return ch == 0x00AD ||
+		(ch >= 0x02B0 && ch <= 0x036F) ||
+		(ch >= 0x1AB0 && ch <= 0x1AFF) ||
+		(ch >= 0x1DC0 && ch <= 0x1DFF) ||
+		(ch >= 0x20D0 && ch <= 0x20FF) ||
+		(ch >= 0xE000 && ch <= 0xF8FF) ||
+		(ch >= 0xFE20 && ch <= 0xFE2F)
 }
 
 func writeListTo(sb *strings.Builder, list []string) {

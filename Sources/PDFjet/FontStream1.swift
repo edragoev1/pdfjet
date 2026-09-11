@@ -165,9 +165,10 @@ class FontStream1 {
         // the replacement character.
         list.append("<0000> <FFFD>\n")
         var buf = String()
+        let unicodeOf = unicodeOfGlyphs(font.unicodeToGID)
         for cid in 0...0xffff {
             let gid = font.unicodeToGID[cid]
-            if gid > 0 {
+            if gid > 0 && unicodeOf[gid] == cid {
                 buf.append("<")
                 buf.append(toHexString(Int32(gid)))
                 buf.append("> <")
@@ -254,6 +255,36 @@ class FontStream1 {
         pdf.endobj()
 
         font.cidFontDictObjNumber = pdf.getObjNumber()
+    }
+
+    /// Returns the character that each glyph maps to in a ToUnicode CMap. A
+    /// glyph can stand for several characters, like the space and the no-break
+    /// space, but viewers read a CMap with more than one entry for a glyph
+    /// differently. So a glyph maps to the first character that uses it, unless
+    /// that is one text seldom has and another character uses the glyph too,
+    /// like the modifier letter apostrophe and the right single quotation mark.
+    static func unicodeOfGlyphs(_ unicodeToGID: [Int]) -> [Int] {
+        var unicode = [Int](repeating: -1, count: 0x10000)
+        for cid in 0...0xffff {
+            let gid = unicodeToGID[cid]
+            if gid > 0 && (unicode[gid] == -1 ||
+                    (isSeldomText(unicode[gid]) && !isSeldomText(cid))) {
+                unicode[gid] = cid
+            }
+        }
+        return unicode
+    }
+
+    // The soft hyphen, the spacing modifier letters, the combining marks and
+    // the private use characters.
+    private static func isSeldomText(_ ch: Int) -> Bool {
+        return ch == 0x00AD ||
+                (ch >= 0x02B0 && ch <= 0x036F) ||
+                (ch >= 0x1AB0 && ch <= 0x1AFF) ||
+                (ch >= 0x1DC0 && ch <= 0x1DFF) ||
+                (ch >= 0x20D0 && ch <= 0x20FF) ||
+                (ch >= 0xE000 && ch <= 0xF8FF) ||
+                (ch >= 0xFE20 && ch <= 0xFE2F)
     }
 
     private static func toHexString(_ code: Int32) -> String {

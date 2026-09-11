@@ -186,9 +186,10 @@ class OpenTypeFont {
         // the replacement character.
         list.add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
+        int[] unicodeOf = FontStream1.unicodeOfGlyphs(otf.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = otf.unicodeToGID[cid];
-            if (gid > 0) {
+            if (gid > 0 && unicodeOf[gid] == cid) {
                 buf.append('<');
                 buf.append(toHexString(gid));
                 buf.append("> <");

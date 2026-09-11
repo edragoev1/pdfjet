@@ -177,9 +177,10 @@ class FontStream2 {
         // the replacement character.
         list.Add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
+        int[] unicodeOf = FontStream1.UnicodeOfGlyphs(font.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
-            if (gid > 0) {
+            if (gid > 0 && unicodeOf[gid] == cid) {
                 buf.Append('<');
                 buf.Append(FontStream1.ToHexString(gid));
                 buf.Append("> <");

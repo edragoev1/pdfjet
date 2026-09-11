@@ -175,9 +175,10 @@ class FontStream1 {
         // the replacement character.
         list.Add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
+        int[] unicodeOf = UnicodeOfGlyphs(font.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
-            if (gid > 0) {
+            if (gid > 0 && unicodeOf[gid] == cid) {
                 buf.Append('<');
                 buf.Append(ToHexString(gid));
                 buf.Append("> <");
@@ -278,6 +279,41 @@ class FontStream1 {
         pdf.EndObj();
 
         font.cidFontDictObjNumber = pdf.GetObjNumber();
+    }
+
+    /// <summary>
+    /// Returns the character that each glyph maps to in a ToUnicode CMap. A
+    /// glyph can stand for several characters, like the space and the no-break
+    /// space, but viewers read a CMap with more than one entry for a glyph
+    /// differently. So a glyph maps to the first character that uses it, unless
+    /// that is one text seldom has and another character uses the glyph too,
+    /// like the modifier letter apostrophe and the right single quotation mark.
+    /// </summary>
+    internal static int[] UnicodeOfGlyphs(int[] unicodeToGID) {
+        int[] unicode = new int[0x10000];
+        for (int i = 0; i < unicode.Length; i++) {
+            unicode[i] = -1;
+        }
+        for (int cid = 0; cid <= 0xffff; cid++) {
+            int gid = unicodeToGID[cid];
+            if (gid > 0 && (unicode[gid] == -1 ||
+                    (IsSeldomText(unicode[gid]) && !IsSeldomText(cid)))) {
+                unicode[gid] = cid;
+            }
+        }
+        return unicode;
+    }
+
+    // The soft hyphen, the spacing modifier letters, the combining marks and
+    // the private use characters.
+    private static bool IsSeldomText(int ch) {
+        return ch == 0x00AD ||
+                (ch >= 0x02B0 && ch <= 0x036F) ||
+                (ch >= 0x1AB0 && ch <= 0x1AFF) ||
+                (ch >= 0x1DC0 && ch <= 0x1DFF) ||
+                (ch >= 0x20D0 && ch <= 0x20FF) ||
+                (ch >= 0xE000 && ch <= 0xF8FF) ||
+                (ch >= 0xFE20 && ch <= 0xFE2F);
     }
 
     internal static String ToHexString(int code) {

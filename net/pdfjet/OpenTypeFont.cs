@@ -184,9 +184,10 @@ class OpenTypeFont {
         // the replacement character.
         list.Add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
+        int[] unicodeOf = FontStream1.UnicodeOfGlyphs(otf.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = otf.unicodeToGID[cid];
-            if (gid > 0) {
+            if (gid > 0 && unicodeOf[gid] == cid) {
                 buf.Append('<');
                 buf.Append(ToHexString(gid));
                 buf.Append("> <");

@@ -183,9 +183,10 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
 	// replacement character.
 	list = append(list, "<0000> <FFFD>\n")
 	var buf strings.Builder
+	unicodeOf := unicodeOfGlyphs(otf.unicodeToGID)
 	for cid := 0; cid <= 0xffff; cid++ {
 		gid := otf.unicodeToGID[cid]
-		if gid > 0 {
+		if gid > 0 && unicodeOf[gid] == cid {
 			buf.WriteString("<")
 			buf.WriteString(toHexString(gid))
 			buf.WriteString("> <")

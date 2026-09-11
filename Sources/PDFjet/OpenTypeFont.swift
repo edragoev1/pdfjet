@@ -179,9 +179,10 @@ class OpenTypeFont {
         // the replacement character.
         list.append("<0000> <FFFD>\n")
         var buf = String()
+        let unicodeOf = FontStream1.unicodeOfGlyphs(otf.unicodeToGID)
         for cid in 0...0xffff {
             let gid = otf.unicodeToGID[cid]
-            if gid > 0 {
+            if gid > 0 && unicodeOf[gid] == cid {
                 buf.append("<")
                 buf.append(toHexString(gid))
                 buf.append("> <")

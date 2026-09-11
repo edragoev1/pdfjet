@@ -181,9 +181,10 @@ func addToUnicodeCMapObject2(objects *[]*PDFobj, font *Font) {
 	// replacement character.
 	list = append(list, "<0000> <FFFD>\n")
 	var buf strings.Builder
+	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
 	for cid := 0; cid <= 0xffff; cid++ {
 		gid := font.unicodeToGID[cid]
-		if gid > 0 {
+		if gid > 0 && unicodeOf[gid] == cid {
 			buf.WriteString("<")
 			buf.WriteString(toHexString(gid))
 			buf.WriteString("> <")
