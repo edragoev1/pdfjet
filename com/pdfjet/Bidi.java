@@ -111,12 +111,12 @@ public class Bidi {
      * Returns true if the character is a Transparent joining type
      * (combining mark / diacritic) that should be skipped when
      * determining joining context, and kept attached to its base
-     * letter during visual reordering. The zero width non-joiner is
-     * not transparent: it keeps the letters on either side of it from
-     * joining.
+     * letter during visual reordering. The zero width non-joiner and
+     * joiner are not transparent: the non-joiner keeps the letters on
+     * either side of it from joining, and the joiner joins them.
      */
     private static boolean isTransparent(int ch) {
-        if (ch == 0x200C) {                         // ZWNJ
+        if (ch == 0x200C || ch == 0x200D) {         // ZWNJ, ZWJ
             return false;
         }
         int cat = Character.getType(ch);
@@ -244,9 +244,9 @@ public class Bidi {
                         break;
                     }
                 }
-            } else if (ch != 0x200C) {
-                // A zero width non-joiner is left out: it only keeps the
-                // letters on either side of it from joining.
+            } else if (ch != 0x200C && ch != 0x200D) {
+                // A zero width non-joiner or joiner is left out: it only
+                // changes whether the letters on either side of it join.
                 buf3.appendCodePoint(ch);
             }
 
@@ -268,7 +268,8 @@ public class Bidi {
     /**
      * Replaces each lam followed by an alef with the lam-alef ligature. The
      * right to left text is in logical order here, so the diacritics of the
-     * lam and of the alef come after the ligature.
+     * lam and of the alef come after the ligature. A zero width joiner
+     * between the two is left out.
      */
     private static int[] ligateLamAlef(int[] chars) {
         int[] ligated = new int[chars.length];
@@ -279,7 +280,7 @@ public class Bidi {
                 continue;
             }
             int alef = i + 1;
-            while (alef < chars.length && isTransparent(chars[alef])) {
+            while (alef < chars.length && (isTransparent(chars[alef]) || chars[alef] == 0x200D)) {
                 alef++;
             }
             if (alef == chars.length || lamAlef(chars[alef]) == 0) {
@@ -287,7 +288,9 @@ public class Bidi {
             }
             ligated[n - 1] = lamAlef(chars[alef]);
             for (int k = i + 1; k < alef; k++) {
-                ligated[n++] = chars[k];
+                if (chars[k] != 0x200D) {
+                    ligated[n++] = chars[k];
+                }
             }
             i = alef;
         }
@@ -763,8 +766,8 @@ public class Bidi {
      * @return true if the character joins forward.
      */
     public static boolean joinsForward(int ch) {
-        if (ch == 0x0640) {
-            return true;   // TATWEEL — joins both sides
+        if (ch == 0x0640 || ch == 0x200D) {
+            return true;   // TATWEEL and ZWJ join both sides
         }
         return DUAL_JOINING.contains(ch);
     }

@@ -170,11 +170,11 @@ public class Bidi {
     /// Returns true if the character is a Transparent joining type
     /// (combining mark / diacritic) that should be skipped when
     /// determining joining context, and kept attached to its base
-    /// letter during visual reordering. The zero width non-joiner is
-    /// not transparent: it keeps the letters on either side of it from
-    /// joining.
+    /// letter during visual reordering. The zero width non-joiner and
+    /// joiner are not transparent: the non-joiner keeps the letters on
+    /// either side of it from joining, and the joiner joins them.
     private static func isTransparent(_ ch: UInt32) -> Bool {
-        if ch == 0x200C {   // ZWNJ
+        if ch == 0x200C || ch == 0x200D {   // ZWNJ, ZWJ
             return false
         }
         let cat = generalCategory(ch)
@@ -291,9 +291,9 @@ public class Bidi {
                         break
                     }
                 }
-            } else if ch != 0x200C {
-                // A zero width non-joiner is left out: it only keeps the
-                // letters on either side of it from joining.
+            } else if ch != 0x200C && ch != 0x200D {
+                // A zero width non-joiner or joiner is left out: it only
+                // changes whether the letters on either side of it join.
                 append(&buf3, ch)
             }
 
@@ -313,7 +313,8 @@ public class Bidi {
 
     /// Replaces each lam followed by an alef with the lam-alef ligature. The
     /// right to left text is in logical order here, so the diacritics of the
-    /// lam and of the alef come after the ligature.
+    /// lam and of the alef come after the ligature. A zero width joiner
+    /// between the two is left out.
     private static func ligateLamAlef(_ chars: [UInt32]) -> [UInt32] {
         var ligated = [UInt32]()
         ligated.reserveCapacity(chars.count)
@@ -322,12 +323,12 @@ public class Bidi {
             ligated.append(chars[i])
             if chars[i] == 0x0644 {                     // LAM
                 var alef = i + 1
-                while alef < chars.count && isTransparent(chars[alef]) {
+                while alef < chars.count && (isTransparent(chars[alef]) || chars[alef] == 0x200D) {
                     alef += 1
                 }
                 if alef < chars.count, let ligature = lamAlef(chars[alef]) {
                     ligated[ligated.count - 1] = ligature
-                    ligated.append(contentsOf: chars[(i + 1)..<alef])
+                    ligated.append(contentsOf: chars[(i + 1)..<alef].filter { $0 != 0x200D })
                     i = alef
                 }
             }
@@ -730,7 +731,7 @@ public class Bidi {
     }
 
     private static func joinsForward(_ ch: UInt32) -> Bool {
-        if ch == 0x0640 { return true }     // TATWEEL — joins both sides
+        if ch == 0x0640 || ch == 0x200D { return true }     // TATWEEL and ZWJ join both sides
         return dualJoining.contains(ch)
     }
 

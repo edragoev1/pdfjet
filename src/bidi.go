@@ -169,8 +169,8 @@ func isHebrew(ch rune) bool {
 // JoinsForward reports whether the Arabic character joins the character that
 // follows it.
 func JoinsForward(ch rune) bool {
-	if ch == 0x0640 {
-		return true // TATWEEL — joins both sides
+	if ch == 0x0640 || ch == 0x200D {
+		return true // TATWEEL and ZWJ join both sides
 	}
 	return dualJoining[ch]
 }
@@ -201,10 +201,11 @@ func isArabicLetter(ch rune) bool {
 // isTransparent reports whether the character is a Transparent joining type
 // (combining mark / diacritic) that should be skipped when determining
 // joining context, and kept attached to its base letter during visual
-// reordering. The zero width non-joiner is not transparent: it keeps the
-// letters on either side of it from joining.
+// reordering. The zero width non-joiner and joiner are not transparent: the
+// non-joiner keeps the letters on either side of it from joining, and the
+// joiner joins them.
 func isTransparent(ch rune) bool {
-	if ch == 0x200C { // ZWNJ
+	if ch == 0x200C || ch == 0x200D { // ZWNJ, ZWJ
 		return false
 	}
 	return unicode.Is(unicode.Mn, ch) || // Nonspacing Mark
@@ -738,9 +739,9 @@ func ReorderVisually(str string) string {
 					break
 				}
 			}
-		} else if ch != 0x200C {
-			// A zero width non-joiner is left out: it only keeps the
-			// letters on either side of it from joining.
+		} else if ch != 0x200C && ch != 0x200D {
+			// A zero width non-joiner or joiner is left out: it only
+			// changes whether the letters on either side of it join.
 			buf3.WriteRune(ch)
 		}
 
@@ -761,7 +762,8 @@ func ReorderVisually(str string) string {
 
 // ligateLamAlef replaces each lam followed by an alef with the lam-alef
 // ligature. The right to left text is in logical order here, so the
-// diacritics of the lam and of the alef come after the ligature.
+// diacritics of the lam and of the alef come after the ligature. A zero
+// width joiner between the two is left out.
 func ligateLamAlef(chars []rune) []rune {
 	ligated := make([]rune, 0, len(chars))
 	for i := 0; i < len(chars); i++ {
@@ -770,14 +772,18 @@ func ligateLamAlef(chars []rune) []rune {
 			continue
 		}
 		alef := i + 1
-		for alef < len(chars) && isTransparent(chars[alef]) {
+		for alef < len(chars) && (isTransparent(chars[alef]) || chars[alef] == 0x200D) {
 			alef++
 		}
 		if alef == len(chars) || lamAlefLigature(chars[alef]) == 0 {
 			continue
 		}
 		ligated[len(ligated)-1] = lamAlefLigature(chars[alef])
-		ligated = append(ligated, chars[i+1:alef]...)
+		for _, ch := range chars[i+1 : alef] {
+			if ch != 0x200D {
+				ligated = append(ligated, ch)
+			}
+		}
 		i = alef
 	}
 	return ligated
