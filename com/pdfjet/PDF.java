@@ -1409,6 +1409,7 @@ final public class PDF {
 
     /**
      *  Returns a list of objects of type PDFobj read from input stream.
+     *  An encrypted PDF is decrypted when it opens without a password.
      *
      *  @param inputStream the PDF input stream.
      *
@@ -1419,23 +1420,37 @@ final public class PDF {
         byte[] buf = Content.getFromStream(inputStream);
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
-        int xref = getStartXRef(buf);
-        PDFobj obj1 = getObject(buf, xref);
-        if (obj1.dict.get(0).equals("xref")) {
-            // Get the objects using xref table
-            getObjects1(buf, obj1, objects1);
-        } else {
-            // Get the objects using XRef stream
-            getObjects2(buf, obj1, objects1);
+        PDFobj trailer = null;
+        try {
+            trailer = getObjects(buf, getStartXRef(buf), objects1, 0);
+        } catch (Exception e) {
+            trailer = null;     // A cross-reference stream that cannot be decoded.
         }
+        if (trailer == null || objects1.isEmpty()) {
+            // The cross-reference table is missing or wrong, like in a PDF
+            // that was changed without updating it.
+            objects1.clear();
+            trailer = getObjectsByScanning(buf, objects1);
+        }
+        Decryptor decryptor = Decryptor.getDecryptor(trailer, objects1);
 
         List<PDFobj> objects2 = new ArrayList<PDFobj>();
         for (PDFobj obj : objects1) {
+            String type = obj.getValue("/Type");
+            if (type.equals("/XRef")) {
+                continue;       // Skip the cross-reference streams.
+            }
+            if (decryptor != null) {
+                if (obj.number == decryptor.objNumber) {
+                    continue;   // Skip the encryption dictionary.
+                }
+                decryptor.decryptStrings(obj);
+            }
             if (obj.dict.contains("stream")) {
-                obj.setStreamAndData(buf, obj.getLength(objects1));
+                obj.setStreamAndData(buf, obj.getLength(objects1), decryptor);
             }
 
-            if (obj.getValue("/Type").equals("/ObjStm")) {
+            if (type.equals("/ObjStm")) {
                 int first = Integer.parseInt(obj.getValue("/First"));
                 PDFobj o2 = getObject(obj.data, 0, first);
                 int count = o2.dict.size();
@@ -1453,8 +1468,6 @@ final public class PDF {
                     o3.dict.add(0, num);
                     objects2.add(o3);
                 }
-            } else if (obj.getValue("/Type").equals("/XRef")) {
-                // Skip the stream XRef object.
             } else {
                 objects2.add(obj);
             }
@@ -1474,7 +1487,7 @@ final public class PDF {
             return true;
         } else if (str.equals("stream")) {
             obj.streamOffset = off;
-            if (buf[off] == '\n') {
+            if (off < buf.length && buf[off] == '\n') {
                 obj.streamOffset += 1;
             }
             return true;
@@ -1485,6 +1498,9 @@ final public class PDF {
     }
 
     private PDFobj getObject(byte[] buf, int off) {
+        if (off < 0 || off >= buf.length) {
+            return new PDFobj();    // An offset outside of the PDF has no tokens.
+        }
         return getObject(buf, off, buf.length);
     }
 
@@ -1493,86 +1509,90 @@ final public class PDF {
         obj.offset = off;
         StringBuilder token = new StringBuilder();
 
-        int p = 0;
-        char c1 = ' ';
+        int p = 0;          // The nesting level of the parentheses in a literal string
         boolean done = false;
         while (!done && off < len) {
             char c2 = (char) buf[off++];
-            if (c1 == '\\') {
+            if (p > 0) {
+                // A literal string is one token, with its white space and
+                // delimiters. A backslash escapes the character after it.
                 token.append(c2);
-                c1 = c2;
-                continue;
-            }
-
-            if (c2 == '(') {
-                if (p == 0) {
-                    done = process(obj, token, buf, off);
-                }
-                if (!done) {
-                    token.append(c2);
-                    c1 = c2;
+                if (c2 == '\\') {
+                    if (off < len) {
+                        token.append((char) buf[off++]);
+                    }
+                } else if (c2 == '(') {
                     ++p;
+                } else if (c2 == ')') {
+                    --p;
+                    if (p == 0) {
+                        done = process(obj, token, buf, off);
+                    }
                 }
-            } else if (c2 == ')') {
-                token.append(c2);
-                c1 = c2;
-                --p;
-                if (p == 0) {
-                    done = process(obj, token, buf, off);
-                }
-            } else if (c2 == 0x00       // Null
-                    || c2 == 0x09       // Horizontal Tab
-                    || c2 == 0x0A       // Line Feed (LF)
-                    || c2 == 0x0C       // Form Feed
-                    || c2 == 0x0D       // Carriage Return (CR)
-                    || c2 == 0x20) {    // Space
+            } else if (c2 == '(') {
                 done = process(obj, token, buf, off);
                 if (!done) {
-                    c1 = ' ';
+                    token.append(c2);
+                    p = 1;
                 }
+            } else if (isWhiteSpace(c2)) {
+                done = process(obj, token, buf, off);
             } else if (c2 == '/') {
                 done = process(obj, token, buf, off);
                 if (!done) {
                     token.append(c2);
-                    c1 = c2;
                 }
-            } else if (c2 == '<' || c2 == '>' || c2 == '%') {
-                if (p > 0) {
-                    token.append(c2);
-                    c1 = c2;
-                } else {
-                    if (c2 != c1) {
-                        done = process(obj, token, buf, off);
-                        if (!done) {
-                            token.append(c2);
-                            c1 = c2;
-                        }
-                    } else {
+            } else if (c2 == '<' || c2 == '>') {
+                done = process(obj, token, buf, off);
+                if (!done) {
+                    if (off < len && buf[off] == c2) {
+                        obj.dict.add(c2 == '<' ? "<<" : ">>");
+                        off++;
+                    } else if (c2 == '<') {
+                        // A hexadecimal string is one token, without its white space.
                         token.append(c2);
-                        done = process(obj, token, buf, off);
-                        if (!done) {
-                            c1 = ' ';
+                        while (off < len && buf[off] != '>') {
+                            char c = (char) buf[off++];
+                            if (!isWhiteSpace(c)) {
+                                token.append(c);
+                            }
                         }
+                        token.append('>');
+                        off++;
+                        done = process(obj, token, buf, off);
+                    } else {
+                        obj.dict.add(">");
                     }
+                }
+            } else if (c2 == '%') {
+                // A comment ends at the end of the line.
+                done = process(obj, token, buf, off);
+                while (!done && off < len && buf[off] != '\n' && buf[off] != '\r') {
+                    off++;
                 }
             } else if (c2 == '[' || c2 == ']' || c2 == '{' || c2 == '}') {
-                if (p > 0) {
-                    token.append(c2);
-                    c1 = c2;
-                } else {
-                    done = process(obj, token, buf, off);
-                    if (!done) {
-                        obj.dict.add(String.valueOf(c2));
-                        c1 = c2;
-                    }
+                done = process(obj, token, buf, off);
+                if (!done) {
+                    obj.dict.add(String.valueOf(c2));
                 }
             } else {
                 token.append(c2);
-                c1 = c2;
             }
+        }
+        if (!done) {
+            process(obj, token, buf, off);  // The last token, at the end of the data.
         }
 
         return obj;
+    }
+
+    private static boolean isWhiteSpace(int c) {
+        return c == 0x00        // Null
+            || c == 0x09        // Horizontal Tab
+            || c == 0x0A        // Line Feed (LF)
+            || c == 0x0C        // Form Feed
+            || c == 0x0D        // Carriage Return (CR)
+            || c == 0x20;       // Space
     }
 
     /**
@@ -1591,112 +1611,254 @@ final public class PDF {
         return i;
     }
 
-    private void getObjects1(
-            byte[] buf,
-            PDFobj obj,
-            List<PDFobj> objects) {
-
-        String xref = obj.getValue("/Prev");
-        if (!xref.isEmpty()) {
-            getObjects1(
-                    buf,
-                    getObject(buf, Integer.parseInt(xref)),
-                    objects);
+    // Returns the value of the token, or -1 when it is not an integer.
+    private static int toInteger(String token) {
+        try {
+            return isInteger(token) ? Integer.parseInt(token) : -1;
+        } catch (NumberFormatException e) {
+            return -1;
         }
+    }
 
-        int i = 1;
-        while (true) {
-            String token = obj.dict.get(i++);
-            if (token.equals("trailer")) {
-                break;
+    // Returns true when the tokens of the object start with "number
+    // generation obj", where the number is above 0, and is the number
+    // that is given unless that is -1.
+    private static boolean isObject(PDFobj obj, int number) {
+        if (obj.dict.size() < 3 || !obj.dict.get(2).equals("obj") || !isInteger(obj.dict.get(1))) {
+            return false;
+        }
+        int n = toInteger(obj.dict.get(0));
+        return n > 0 && (number == -1 || n == number);
+    }
+
+    /**
+     * Adds the objects of the cross-reference section at the offset to the
+     * list, after the objects of the sections before it, so that the newest
+     * version of an object that was updated comes last. A section is a
+     * cross-reference table, which can have an /XRefStm stream for the
+     * objects in object streams, or a cross-reference stream.
+     *
+     * @return the trailer of the section, which is the cross-reference
+     *     stream object when there is no table, or null when an offset in
+     *     the section is not that of its object.
+     */
+    private PDFobj getObjects(
+            byte[] buf, int offset, List<PDFobj> objects, int depth) throws Exception {
+        PDFobj xref = getObject(buf, offset);
+        boolean table = !xref.dict.isEmpty() && xref.dict.get(0).equals("xref");
+        if (depth > 1000 || (!table && !isObject(xref, -1))) {
+            return null;
+        }
+        String prev = xref.getValue("/Prev");
+        if (!prev.isEmpty() && getObjects(buf, toInteger(prev), objects, depth + 1) == null) {
+            return null;
+        }
+        if (table) {
+            // The objects in the table replace those in the /XRefStm stream.
+            String xrefStm = xref.getValue("/XRefStm");
+            if (!xrefStm.isEmpty() &&
+                    !getStreamObjects(buf, getObject(buf, toInteger(xrefStm)), objects)) {
+                return null;
             }
+            if (!getTableObjects(buf, xref, objects)) {
+                return null;
+            }
+        } else if (!getStreamObjects(buf, xref, objects)) {
+            return null;
+        }
+        return xref;
+    }
 
-            int n = Integer.parseInt(obj.dict.get(i++));    // Number of entries
-            for (int j = 0; j < n; j++) {
-                String offset = obj.dict.get(i++);          // Object offset
-                String number = obj.dict.get(i++);          // Generation number
-                String status = obj.dict.get(i++);          // Status keyword
-                if (!status.equals("f")) {
-                    PDFobj o2 = getObject(buf, Integer.parseInt(offset));
-                    o2.number = Integer.parseInt(o2.dict.get(0));
-                    objects.add(o2);
+    // Adds the objects in use of a cross-reference table, and returns false
+    // when an offset is not that of its object.
+    private boolean getTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+        List<String> dict = xref.dict;
+        int i = 1;
+        // Each subsection starts with its first object number and the number of entries.
+        while (i + 1 < dict.size() && isInteger(dict.get(i))) {
+            int number = toInteger(dict.get(i));
+            int count = toInteger(dict.get(i + 1));
+            i += 2;
+            for (int j = 0; j < count; j++, number++, i += 3) {
+                if (i + 2 >= dict.size()) {
+                    return false;
+                }
+                // The entry is the offset, the generation number and n for an object in use.
+                if (dict.get(i + 2).equals("n")) {
+                    PDFobj obj = getObject(buf, toInteger(dict.get(i)));
+                    if (!isObject(obj, number)) {
+                        return false;
+                    }
+                    obj.number = number;
+                    objects.add(obj);
                 }
             }
         }
-
+        return i < dict.size() && dict.get(i).equals("trailer");
     }
 
-    private void getObjects2(
-            byte[] buf,
-            PDFobj obj,
-            List<PDFobj> objects) throws Exception {
-
-        String prev = obj.getValue("/Prev");
-        if (!prev.isEmpty()) {
-            getObjects2(
-                    buf,
-                    getObject(buf, Integer.parseInt(prev)),
-                    objects);
+    // Adds the objects of a cross-reference stream that are not in object
+    // streams, and returns false when an offset is not that of its object.
+    private boolean getStreamObjects(
+            byte[] buf, PDFobj xref, List<PDFobj> objects) throws Exception {
+        if (!isObject(xref, -1) || !xref.getValue("/Type").equals("/XRef") ||
+                !xref.dict.contains("stream")) {
+            return false;
         }
-
         // See page 50 in PDF32000_2008.pdf
-        int n1 = 0;         // Field 1 number of bytes
-        int n2 = 0;         // Field 2 number of bytes
-        int n3 = 0;         // Field 3 number of bytes
-        int length = 0;
-        for (int i = 0; i < obj.dict.size(); i++) {
-            String token = obj.dict.get(i);
-            if (token.equals("/Length")) {
-                length = Integer.parseInt(obj.dict.get(i + 1));
-            } else if (token.equals("/W")) {
-                // "/W [ 1 3 1 ]"
-                n1 = Integer.parseInt(obj.dict.get(i + 2));
-                n2 = Integer.parseInt(obj.dict.get(i + 3));
-                n3 = Integer.parseInt(obj.dict.get(i + 4));
+        List<String> dict = xref.dict;
+        int w = dict.indexOf("/W");
+        if (w == -1 || w + 4 >= dict.size()) {
+            return false;
+        }
+        int n1 = toInteger(dict.get(w + 2));    // Field 1 number of bytes
+        int n2 = toInteger(dict.get(w + 3));    // Field 2 number of bytes
+        int n3 = toInteger(dict.get(w + 4));    // Field 3 number of bytes
+        int length = toInteger(xref.getValue("/Length"));
+        if (n1 < 0 || n2 < 0 || n3 < 0 || n1 + n2 + n3 == 0 ||
+                length < 0 || xref.streamOffset + length > buf.length) {
+            return false;
+        }
+        // The /Index array has the first object number and the number of
+        // entries of each subsection, and is [0 /Size] when it is missing.
+        List<Integer> index = new ArrayList<Integer>();
+        int k = dict.indexOf("/Index");
+        if (k != -1 && k + 1 < dict.size() && dict.get(k + 1).equals("[")) {
+            for (k += 2; k + 1 < dict.size() && isInteger(dict.get(k)); k += 2) {
+                index.add(toInteger(dict.get(k)));
+                index.add(toInteger(dict.get(k + 1)));
             }
+        } else {
+            index.add(0);
+            index.add(toInteger(xref.getValue("/Size")));
         }
 
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
-        obj.setStreamAndData(buf, length);
-
+        xref.setStreamAndData(buf, length);
         int n = n1 + n2 + n3;   // Number of bytes per entry
-        byte[] entry = new byte[n];
-        for (int i = 0; n > 0 && i + n <= obj.data.length; i += n) {
-            System.arraycopy(obj.data, i, entry, 0, n);
-            // Process the entries in a cross-reference stream.
-            // Page 51 in PDF32000_2008.pdf
-            if (entry[0] == 1) {    // Type 1 entry
-                PDFobj o2 = getObject(buf, toInt(entry, n1, n2));
-                o2.number = Integer.parseInt(o2.dict.get(0));
-                objects.add(o2);
+        int offset = 0;
+        for (int s = 0; s + 1 < index.size(); s += 2) {
+            int number = index.get(s);
+            for (int j = 0; j < index.get(s + 1) && offset + n <= xref.data.length; j++) {
+                // Process the entries in a cross-reference stream.
+                // Page 51 in PDF32000_2008.pdf
+                int type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1);
+                if (type == 1) {
+                    PDFobj obj = getObject(buf, toInt(xref.data, offset + n1, n2));
+                    if (!isObject(obj, number)) {
+                        return false;
+                    }
+                    obj.number = number;
+                    objects.add(obj);
+                }
+                number++;
+                offset += n;
             }
         }
+        return true;
     }
 
-    private int getStartXRef(byte[] buf) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = (buf.length - 10); i > 10; i--) {
-            if (buf[i] == 's' &&
-                    buf[i + 1] == 't' &&
-                    buf[i + 2] == 'a' &&
-                    buf[i + 3] == 'r' &&
-                    buf[i + 4] == 't' &&
-                    buf[i + 5] == 'x' &&
-                    buf[i + 6] == 'r' &&
-                    buf[i + 7] == 'e' &&
-                    buf[i + 8] == 'f') {
-                i += 10;                // Skip over "startxref" and the first EOL character
-                while (buf[i] < 0x30) { // Skip over possible second EOL character and spaces
-                    i += 1;
+    /**
+     * Adds the objects of the PDF to the list by looking for "number
+     * generation obj" in it, for when the cross-reference table is missing
+     * or wrong. The objects of incremental updates are later in the PDF, so
+     * the newest version of an object comes last.
+     *
+     * @return the last trailer, or the last cross-reference stream object
+     *     when there is no trailer, or null when there is neither.
+     */
+    private PDFobj getObjectsByScanning(byte[] buf, List<PDFobj> objects) {
+        PDFobj trailer = null;
+        PDFobj xrefStream = null;
+        int i = 0;
+        while (i < buf.length) {
+            if (isObjectStart(buf, i)) {
+                PDFobj obj = getObject(buf, i);
+                if (isObject(obj, -1)) {
+                    obj.number = toInteger(obj.dict.get(0));
+                    objects.add(obj);
+                    if (obj.getValue("/Type").equals("/XRef")) {
+                        xrefStream = obj;
+                    }
+                    if (obj.dict.contains("stream")) {
+                        // Skip the stream, as its bytes can look like an object.
+                        int end = indexOf(buf, "endstream", obj.streamOffset);
+                        i = (end == -1) ? buf.length : end;
+                        continue;
+                    }
                 }
-                while (Character.isDigit((char) buf[i])) {
-                    sb.append((char) buf[i]);
-                    i += 1;
-                }
-                break;
+            } else if (startsWith(buf, i, "trailer")) {
+                trailer = getObject(buf, i);
+            }
+            i++;
+        }
+        return (trailer != null) ? trailer : xrefStream;
+    }
+
+    // Returns true when "number generation obj" starts at the offset, after
+    // white space or at the start of the PDF.
+    private static boolean isObjectStart(byte[] buf, int off) {
+        if (off > 0 && !isWhiteSpace(buf[off - 1])) {
+            return false;
+        }
+        int i = off;
+        while (i < buf.length && buf[i] >= '0' && buf[i] <= '9') {
+            i++;
+        }
+        int j = i;
+        while (j < buf.length && isWhiteSpace(buf[j])) {
+            j++;
+        }
+        int k = j;
+        while (k < buf.length && buf[k] >= '0' && buf[k] <= '9') {
+            k++;
+        }
+        int m = k;
+        while (m < buf.length && isWhiteSpace(buf[m])) {
+            m++;
+        }
+        return i > off && j > i && k > j && m > k && startsWith(buf, m, "obj");
+    }
+
+    private static boolean startsWith(byte[] buf, int off, String str) {
+        if (off + str.length() > buf.length) {
+            return false;
+        }
+        for (int i = 0; i < str.length(); i++) {
+            if (buf[off + i] != str.charAt(i)) {
+                return false;
             }
         }
-        return Integer.parseInt(sb.toString());
+        return true;
+    }
+
+    private static int indexOf(byte[] buf, String str, int from) {
+        for (int i = Math.max(from, 0); i + str.length() <= buf.length; i++) {
+            if (startsWith(buf, i, str)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // Returns the offset after the last startxref, or -1 when there is none.
+    private int getStartXRef(byte[] buf) {
+        for (int i = buf.length - 9; i >= 0; i--) {
+            if (startsWith(buf, i, "startxref")) {
+                int j = i + 9;
+                while (j < buf.length && isWhiteSpace(buf[j])) {
+                    j++;
+                }
+                long offset = 0;
+                int k = j;
+                while (k < buf.length && buf[k] >= '0' && buf[k] <= '9' && offset <= Integer.MAX_VALUE) {
+                    offset = offset * 10 + (buf[k] - '0');
+                    k++;
+                }
+                return (k > j && offset <= Integer.MAX_VALUE) ? (int) offset : -1;
+            }
+        }
+        return -1;
     }
 
     /**
@@ -2187,21 +2349,13 @@ final public class PDF {
                 setObjOffset(obj.number, byteCount);
                 // Uncomment to see the format of the objects.
                 // System.out.println(obj.dict);
-                boolean link = false;
                 int n = obj.dict.size();
                 String token = null;
                 for (int i = 0; i < n; i++) {
                     token = obj.dict.get(i);
                     append(token);
-                    if (token.startsWith("(http:")) {
-                        link = true;
-                    } else if (link && token.endsWith(")")) {
-                        link = false;
-                    }
                     if (i < (n - 1)) {
-                        if (!link) {
-                            append(Token.SPACE);
-                        }
+                        append(Token.SPACE);
                     } else {
                         append(Token.NEWLINE);
                     }

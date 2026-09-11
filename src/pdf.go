@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/compressor"
@@ -1263,29 +1262,41 @@ func contains(slice []string, text string) bool {
 }
 
 // Read returns a list of objects of type PDFobj read from input stream.
+// An encrypted PDF is decrypted when it opens without a password.
 // @param inputStream the PDF input stream.
 // @return List<PDFobj> the list of PDF objects.
 func (pdf *PDF) Read(buf []byte) []*PDFobj {
 	objects1 := make([]*PDFobj, 0)
-	xref := pdf.getStartXRef(buf)
-
-	obj1 := getObject(buf, xref, len(buf))
-	if obj1.dict[0] == "xref" {
-		// Get the objects using xref table
-		getObjects1(buf, obj1, &objects1)
-	} else {
-		// Get the objects using XRef stream
-		getObjects2(buf, obj1, &objects1)
+	trailer := getObjects(buf, pdf.getStartXRef(buf), &objects1, 0)
+	if trailer == nil || len(objects1) == 0 {
+		// The cross-reference table is missing or wrong, like in a PDF
+		// that was changed without updating it.
+		objects1 = objects1[:0]
+		trailer = getObjectsByScanning(buf, &objects1)
+	}
+	dec, err := getDecryptor(trailer, objects1)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	objects2 := make([]*PDFobj, 0)
 	for _, obj := range objects1 {
+		objType := obj.getValue("/Type")
+		if objType == "/XRef" {
+			continue // Skip the cross-reference streams.
+		}
+		if dec != nil {
+			if obj.number == dec.objNumber {
+				continue // Skip the encryption dictionary.
+			}
+			dec.decryptStrings(obj)
+		}
 		if contains(obj.dict, "stream") {
 			length := obj.GetLength(objects1)
-			obj.SetStreamAndData(buf, length)
+			obj.setStreamAndData(buf, length, dec)
 		}
 
-		if obj.getValue("/Type") == "/ObjStm" {
+		if objType == "/ObjStm" {
 			first, err := strconv.Atoi(obj.getValue("/First"))
 			if err != nil {
 				log.Fatal(err)
@@ -1316,8 +1327,6 @@ func (pdf *PDF) Read(buf []byte) []*PDFobj {
 				o3.dict = insertStringAt(o3.dict, strconv.Itoa(num), 0)
 				objects2 = append(objects2, o3)
 			}
-		} else if obj.getValue("/Type") == "/XRef" {
-			// Skip the stream XRef object.
 		} else {
 			objects2 = append(objects2, obj)
 		}
@@ -1336,7 +1345,7 @@ func process(obj *PDFobj, sb *strings.Builder, buf []byte, off int) bool {
 		return true
 	} else if str == "stream" {
 		obj.streamOffset = off
-		if buf[off] == byte('\n') {
+		if off < len(buf) && buf[off] == byte('\n') {
 			obj.streamOffset++
 		}
 		return true
@@ -1346,93 +1355,110 @@ func process(obj *PDFobj, sb *strings.Builder, buf []byte, off int) bool {
 	return false
 }
 
+// getObjectAt returns the object at the offset, which has no tokens when the
+// offset is outside of the PDF.
+func getObjectAt(buf []byte, off int) *PDFobj {
+	if off < 0 || off >= len(buf) {
+		return NewPDFobj()
+	}
+	return getObject(buf, off, len(buf))
+}
+
 func getObject(buf []byte, off, length int) *PDFobj {
 	obj := NewPDFobj()
 	obj.offset = off
 
 	var token1 strings.Builder
-	p := 0
-	b1 := byte(' ')
+	p := 0 // The nesting level of the parentheses in a literal string
 	done := false
 	for !done && off < length {
 		b2 := buf[off]
 		off++
-		if b1 == byte('\\') {
+		if p > 0 {
+			// A literal string is one token, with its white space and
+			// delimiters. A backslash escapes the character after it.
 			token1.WriteByte(b2)
-			b1 = b2
-			continue
-		}
-
-		if b2 == byte('(') {
-			if p == 0 {
-				done = process(obj, &token1, buf, off)
-			}
-			if !done {
-				token1.WriteByte(b2)
-				b1 = b2
+			if b2 == '\\' {
+				if off < length {
+					token1.WriteByte(buf[off])
+					off++
+				}
+			} else if b2 == '(' {
 				p++
-			}
-		} else if b2 == byte(')') {
-			token1.WriteByte(b2)
-			b1 = b2
-			p--
-			if p == 0 {
-				done = process(obj, &token1, buf, off)
-			}
-		} else if b2 == 0x00 || // Null
-			b2 == 0x09 || // Horizontal Tab
-			b2 == 0x0A || // Line Feed (LF)
-			b2 == 0x0C || // Form Feed
-			b2 == 0x0D || // Carriage Return (CR)
-			b2 == 0x20 { // Space
-			done = process(obj, &token1, buf, off)
-			if !done {
-				b1 = byte(' ')
-			}
-		} else if b2 == byte('/') {
-			done = process(obj, &token1, buf, off)
-			if !done {
-				token1.WriteByte(b2)
-				b1 = b2
-			}
-		} else if b2 == byte('<') || b2 == byte('>') || b2 == byte('%') {
-			if p > 0 {
-				token1.WriteByte(b2)
-				b1 = b2
-			} else {
-				if b2 != b1 {
+			} else if b2 == ')' {
+				p--
+				if p == 0 {
 					done = process(obj, &token1, buf, off)
-					if !done {
-						token1.WriteByte(b2)
-						b1 = b2
+				}
+			}
+		} else if b2 == '(' {
+			done = process(obj, &token1, buf, off)
+			if !done {
+				token1.WriteByte(b2)
+				p = 1
+			}
+		} else if isWhiteSpace(int(b2)) {
+			done = process(obj, &token1, buf, off)
+		} else if b2 == '/' {
+			done = process(obj, &token1, buf, off)
+			if !done {
+				token1.WriteByte(b2)
+			}
+		} else if b2 == '<' || b2 == '>' {
+			done = process(obj, &token1, buf, off)
+			if !done {
+				if off < length && buf[off] == b2 {
+					if b2 == '<' {
+						obj.dict = append(obj.dict, "<<")
+					} else {
+						obj.dict = append(obj.dict, ">>")
 					}
-				} else {
+					off++
+				} else if b2 == '<' {
+					// A hexadecimal string is one token, without its white space.
 					token1.WriteByte(b2)
-					done = process(obj, &token1, buf, off)
-					if !done {
-						b1 = byte(' ')
+					for off < length && buf[off] != '>' {
+						if !isWhiteSpace(int(buf[off])) {
+							token1.WriteByte(buf[off])
+						}
+						off++
 					}
+					token1.WriteByte('>')
+					off++
+					done = process(obj, &token1, buf, off)
+				} else {
+					obj.dict = append(obj.dict, ">")
 				}
 			}
-		} else if b2 == byte('[') || b2 == byte(']') ||
-			b2 == byte('{') || b2 == byte('}') {
-			if p > 0 {
-				token1.WriteByte(b2)
-				b1 = b2
-			} else {
-				done = process(obj, &token1, buf, off)
-				if !done {
-					obj.dict = append(obj.dict, string(b2))
-					b1 = b2
-				}
+		} else if b2 == '%' {
+			// A comment ends at the end of the line.
+			done = process(obj, &token1, buf, off)
+			for !done && off < length && buf[off] != '\n' && buf[off] != '\r' {
+				off++
+			}
+		} else if b2 == '[' || b2 == ']' || b2 == '{' || b2 == '}' {
+			done = process(obj, &token1, buf, off)
+			if !done {
+				obj.dict = append(obj.dict, string(b2))
 			}
 		} else {
 			token1.WriteByte(b2)
-			b1 = b2
 		}
+	}
+	if !done {
+		process(obj, &token1, buf, off) // The last token, at the end of the data.
 	}
 
 	return obj
+}
+
+func isWhiteSpace(c int) bool {
+	return c == 0x00 || // Null
+		c == 0x09 || // Horizontal Tab
+		c == 0x0A || // Line Feed (LF)
+		c == 0x0C || // Form Feed
+		c == 0x0D || // Carriage Return (CR)
+		c == 0x20 // Space
 }
 
 // toInt converts an array of bytes to an integer.
@@ -1447,149 +1473,258 @@ func toInt(buf []byte, off, length int) int {
 	return i
 }
 
-func getObjects1(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
-	xref := obj.getValue("/Prev")
-	if xref != "" {
-		num, err := strconv.Atoi(xref)
-		if err != nil {
-			log.Fatal(err)
-		}
-		getObjects1(
-			buf,
-			getObject(buf, num, len(buf)),
-			objects)
+// toInteger returns the value of the token, or -1 when it is not an integer.
+func toInteger(token string) int {
+	if !isInteger(token) {
+		return -1
 	}
-
-	i := 1
-	for {
-		token1 := obj.dict[i]
-		i++
-		if token1 == "trailer" {
-			break
-		}
-
-		n, err := strconv.Atoi(obj.dict[i]) // Number of entries
-		if err != nil {
-			log.Fatal(err)
-		}
-		i++
-		for j := 0; j < n; j++ {
-			offset := obj.dict[i] // Object offset
-			i++
-			i++                   // Skip the generation number
-			status := obj.dict[i] // Status keyword
-			i++
-			if status != "f" {
-				off, err := strconv.Atoi(offset)
-				if err != nil {
-					log.Fatal(err)
-				}
-				o2 := getObject(buf, off, len(buf))
-				num, err := strconv.Atoi(o2.dict[0])
-				if err != nil {
-					log.Fatal(err)
-				}
-				o2.number = num
-				*objects = append(*objects, o2)
-			}
-		}
-	}
-}
-
-func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
-	prev := obj.getValue("/Prev")
-	if prev != "" {
-		off, err := strconv.Atoi(prev)
-		if err != nil {
-			log.Fatal(err)
-		}
-		getObjects2(
-			buf,
-			getObject(buf, off, len(buf)),
-			objects)
-	}
-
-	// See page 50 in PDF32000_2008.pdf
-	n1 := 0 // Field 1 number of bytes
-	n2 := 0 // Field 2 number of bytes
-	n3 := 0 // Field 3 number of bytes
-	length := 0
-	for i := 0; i < len(obj.dict); i++ {
-		token1 := obj.dict[i]
-		if token1 == "/Length" {
-			len1, err := strconv.Atoi(obj.dict[i+1])
-			if err != nil {
-				log.Fatal(err)
-			}
-			length = len1
-		} else if token1 == "/W" {
-			// "/W [ 1 3 1 ]"
-			num, err := strconv.Atoi(obj.dict[i+2])
-			if err != nil {
-				log.Fatal(err)
-			}
-			n1 = num
-			num, err = strconv.Atoi(obj.dict[i+3])
-			if err != nil {
-				log.Fatal(err)
-			}
-			n2 = num
-			num, err = strconv.Atoi(obj.dict[i+4])
-			if err != nil {
-				log.Fatal(err)
-			}
-			n3 = num
-		}
-	}
-
-	// SetStreamAndData undoes the predictor, so each entry is a row of the data.
-	obj.SetStreamAndData(buf, length)
-	n := n1 + n2 + n3 // Number of bytes per entry
-	for i := 0; n > 0 && i+n <= len(obj.data); i += n {
-		entry := obj.data[i : i+n]
-		// Process the entries in a cross-reference stream.
-		// Page 51 in PDF32000_2008.pdf
-		if entry[0] == 1 { // Type 1 entry
-			o2 := getObject(buf, toInt(entry, n1, n2), len(buf))
-			num, err := strconv.Atoi(o2.dict[0])
-			if err != nil {
-				log.Fatal(err)
-			}
-			o2.number = num
-			*objects = append(*objects, o2)
-		}
-	}
-}
-
-func (pdf *PDF) getStartXRef(buf []byte) int {
-	var sb strings.Builder
-	for i := len(buf) - 10; i > 10; i-- {
-		if buf[i] == 's' &&
-			buf[i+1] == 't' &&
-			buf[i+2] == 'a' &&
-			buf[i+3] == 'r' &&
-			buf[i+4] == 't' &&
-			buf[i+5] == 'x' &&
-			buf[i+6] == 'r' &&
-			buf[i+7] == 'e' &&
-			buf[i+8] == 'f' {
-			i += 10             // Skip over "startxref" and the first EOL character
-			for buf[i] < 0x30 { // Skip over possible second EOL character and spaces
-				i++
-			}
-			for unicode.IsDigit(rune(buf[i])) {
-				sb.WriteByte(buf[i])
-				i++
-			}
-			break
-		}
-	}
-
-	objNumber, err := strconv.Atoi(sb.String())
+	value, err := strconv.ParseInt(token, 10, 32)
 	if err != nil {
-		log.Fatal(err)
+		return -1
 	}
-	return objNumber
+	return int(value)
+}
+
+// isObject returns true when the tokens of the object start with "number
+// generation obj", where the number is above 0, and is the number that is
+// given unless that is -1.
+func isObject(obj *PDFobj, number int) bool {
+	if len(obj.dict) < 3 || obj.dict[2] != "obj" || !isInteger(obj.dict[1]) {
+		return false
+	}
+	n := toInteger(obj.dict[0])
+	return n > 0 && (number == -1 || n == number)
+}
+
+// getObjects adds the objects of the cross-reference section at the offset to
+// the list, after the objects of the sections before it, so that the newest
+// version of an object that was updated comes last. A section is a
+// cross-reference table, which can have an /XRefStm stream for the objects in
+// object streams, or a cross-reference stream. It returns the trailer of the
+// section, which is the cross-reference stream object when there is no table,
+// or nil when an offset in the section is not that of its object.
+func getObjects(buf []byte, offset int, objects *[]*PDFobj, depth int) *PDFobj {
+	xref := getObjectAt(buf, offset)
+	table := len(xref.dict) > 0 && xref.dict[0] == "xref"
+	if depth > 1000 || (!table && !isObject(xref, -1)) {
+		return nil
+	}
+	prev := xref.getValue("/Prev")
+	if prev != "" && getObjects(buf, toInteger(prev), objects, depth+1) == nil {
+		return nil
+	}
+	if table {
+		// The objects in the table replace those in the /XRefStm stream.
+		xrefStm := xref.getValue("/XRefStm")
+		if xrefStm != "" && !getStreamObjects(buf, getObjectAt(buf, toInteger(xrefStm)), objects) {
+			return nil
+		}
+		if !getTableObjects(buf, xref, objects) {
+			return nil
+		}
+	} else if !getStreamObjects(buf, xref, objects) {
+		return nil
+	}
+	return xref
+}
+
+// getTableObjects adds the objects in use of a cross-reference table, and
+// returns false when an offset is not that of its object.
+func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
+	dict := xref.dict
+	i := 1
+	// Each subsection starts with its first object number and the number of entries.
+	for i+1 < len(dict) && isInteger(dict[i]) {
+		number := toInteger(dict[i])
+		count := toInteger(dict[i+1])
+		i += 2
+		for j := 0; j < count; j, number, i = j+1, number+1, i+3 {
+			if i+2 >= len(dict) {
+				return false
+			}
+			// The entry is the offset, the generation number and n for an object in use.
+			if dict[i+2] == "n" {
+				obj := getObjectAt(buf, toInteger(dict[i]))
+				if !isObject(obj, number) {
+					return false
+				}
+				obj.number = number
+				*objects = append(*objects, obj)
+			}
+		}
+	}
+	return i < len(dict) && dict[i] == "trailer"
+}
+
+// getStreamObjects adds the objects of a cross-reference stream that are not
+// in object streams, and returns false when an offset is not that of its object.
+func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
+	if !isObject(xref, -1) || xref.getValue("/Type") != "/XRef" || !contains(xref.dict, "stream") {
+		return false
+	}
+	// See page 50 in PDF32000_2008.pdf
+	dict := xref.dict
+	w := slices.Index(dict, "/W")
+	if w == -1 || w+4 >= len(dict) {
+		return false
+	}
+	n1 := toInteger(dict[w+2]) // Field 1 number of bytes
+	n2 := toInteger(dict[w+3]) // Field 2 number of bytes
+	n3 := toInteger(dict[w+4]) // Field 3 number of bytes
+	length := toInteger(xref.getValue("/Length"))
+	if n1 < 0 || n2 < 0 || n3 < 0 || n1+n2+n3 == 0 ||
+		length < 0 || xref.streamOffset+length > len(buf) {
+		return false
+	}
+	// The /Index array has the first object number and the number of entries
+	// of each subsection, and is [0 /Size] when it is missing.
+	index := make([]int, 0)
+	k := slices.Index(dict, "/Index")
+	if k != -1 && k+1 < len(dict) && dict[k+1] == "[" {
+		for k += 2; k+1 < len(dict) && isInteger(dict[k]); k += 2 {
+			index = append(index, toInteger(dict[k]), toInteger(dict[k+1]))
+		}
+	} else {
+		index = append(index, 0, toInteger(xref.getValue("/Size")))
+	}
+
+	// setStreamAndData undoes the predictor, so each entry is a row of the data.
+	xref.setStreamAndData(buf, length, nil)
+	n := n1 + n2 + n3 // Number of bytes per entry
+	offset := 0
+	for s := 0; s+1 < len(index); s += 2 {
+		number := index[s]
+		for j := 0; j < index[s+1] && offset+n <= len(xref.data); j++ {
+			// Process the entries in a cross-reference stream.
+			// Page 51 in PDF32000_2008.pdf
+			entryType := 1
+			if n1 > 0 {
+				entryType = toInt(xref.data, offset, n1)
+			}
+			if entryType == 1 {
+				obj := getObjectAt(buf, toInt(xref.data, offset+n1, n2))
+				if !isObject(obj, number) {
+					return false
+				}
+				obj.number = number
+				*objects = append(*objects, obj)
+			}
+			number++
+			offset += n
+		}
+	}
+	return true
+}
+
+// getObjectsByScanning adds the objects of the PDF to the list by looking for
+// "number generation obj" in it, for when the cross-reference table is missing
+// or wrong. The objects of incremental updates are later in the PDF, so the
+// newest version of an object comes last. It returns the last trailer, or the
+// last cross-reference stream object when there is no trailer, or nil when
+// there is neither.
+func getObjectsByScanning(buf []byte, objects *[]*PDFobj) *PDFobj {
+	var trailer *PDFobj
+	var xrefStream *PDFobj
+	i := 0
+	for i < len(buf) {
+		if isObjectStart(buf, i) {
+			obj := getObjectAt(buf, i)
+			if isObject(obj, -1) {
+				obj.number = toInteger(obj.dict[0])
+				*objects = append(*objects, obj)
+				if obj.getValue("/Type") == "/XRef" {
+					xrefStream = obj
+				}
+				if contains(obj.dict, "stream") {
+					// Skip the stream, as its bytes can look like an object.
+					end := indexOf(buf, "endstream", obj.streamOffset)
+					if end == -1 {
+						i = len(buf)
+					} else {
+						i = end
+					}
+					continue
+				}
+			}
+		} else if startsWith(buf, i, "trailer") {
+			trailer = getObjectAt(buf, i)
+		}
+		i++
+	}
+	if trailer != nil {
+		return trailer
+	}
+	return xrefStream
+}
+
+// isObjectStart returns true when "number generation obj" starts at the
+// offset, after white space or at the start of the PDF.
+func isObjectStart(buf []byte, off int) bool {
+	if off > 0 && !isWhiteSpace(int(buf[off-1])) {
+		return false
+	}
+	i := off
+	for i < len(buf) && buf[i] >= '0' && buf[i] <= '9' {
+		i++
+	}
+	j := i
+	for j < len(buf) && isWhiteSpace(int(buf[j])) {
+		j++
+	}
+	k := j
+	for k < len(buf) && buf[k] >= '0' && buf[k] <= '9' {
+		k++
+	}
+	m := k
+	for m < len(buf) && isWhiteSpace(int(buf[m])) {
+		m++
+	}
+	return i > off && j > i && k > j && m > k && startsWith(buf, m, "obj")
+}
+
+func startsWith(buf []byte, off int, str string) bool {
+	if off+len(str) > len(buf) {
+		return false
+	}
+	for i := 0; i < len(str); i++ {
+		if buf[off+i] != str[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func indexOf(buf []byte, str string, from int) int {
+	for i := max(from, 0); i+len(str) <= len(buf); i++ {
+		if startsWith(buf, i, str) {
+			return i
+		}
+	}
+	return -1
+}
+
+// getStartXRef returns the offset after the last startxref, or -1 when there
+// is none.
+func (pdf *PDF) getStartXRef(buf []byte) int {
+	for i := len(buf) - 9; i >= 0; i-- {
+		if startsWith(buf, i, "startxref") {
+			j := i + 9
+			for j < len(buf) && isWhiteSpace(int(buf[j])) {
+				j++
+			}
+			offset := 0
+			k := j
+			for k < len(buf) && buf[k] >= '0' && buf[k] <= '9' && offset <= 2147483647 {
+				offset = offset*10 + int(buf[k]-'0')
+				k++
+			}
+			if k > j && offset <= 2147483647 {
+				return offset
+			}
+			return -1
+		}
+	}
+	return -1
 }
 
 func (pdf *PDF) addOutlineDict(toc *Bookmark) int {
@@ -2058,21 +2193,13 @@ func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
 			pdf.setObjOffset(obj.number, pdf.byteCount)
 			// Uncomment to see the format of the objects.
 			// log.Println(obj.dict)
-			var link = false
 			n := len(obj.dict)
 			var token1 string
 			for i := 0; i < n; i++ {
 				token1 = obj.dict[i]
 				pdf.appendString(token1)
-				if strings.HasPrefix(token1, "(http:") {
-					link = true
-				} else if link && strings.HasSuffix(token1, ")") {
-					link = false
-				}
 				if i < (n - 1) {
-					if !link {
-						pdf.appendString(" ")
-					}
+					pdf.appendString(" ")
 				} else {
 					pdf.appendString("\n")
 				}

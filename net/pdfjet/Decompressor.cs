@@ -176,6 +176,119 @@ class Decompressor {
         return (pUp <= pUpLeft) ? up : upLeft;
     }
 
+    /// <summary>
+    /// Decodes the data of an ASCIIHexDecode stream. White space is skipped,
+    /// &gt; ends the data, and a last digit without a pair is followed by 0.
+    /// </summary>
+    internal static byte[] ASCIIHexDecode(byte[] data) {
+        using var bos = new MemoryStream(data.Length / 2);
+        int high = -1;
+        foreach (byte b in data) {
+            if (b == '>') {
+                break;
+            }
+            int digit = HexValue(b);
+            if (digit == -1) {
+                continue;       // White space, or a character that is not valid.
+            }
+            if (high == -1) {
+                high = digit;
+            } else {
+                bos.WriteByte((byte) ((high << 4) | digit));
+                high = -1;
+            }
+        }
+        if (high != -1) {
+            bos.WriteByte((byte) (high << 4));
+        }
+        return bos.ToArray();
+    }
+
+    /// <summary>
+    /// Returns the value of a hexadecimal digit, or -1 when it is not one.
+    /// </summary>
+    internal static int HexValue(int c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// Decodes the data of an ASCII85Decode stream. Each group of five
+    /// characters from ! to u is four bytes, z is four zero bytes, and ~&gt;
+    /// ends the data. White space is skipped, and a last group of n
+    /// characters is n - 1 bytes.
+    /// </summary>
+    internal static byte[] ASCII85Decode(byte[] data) {
+        using var bos = new MemoryStream(data.Length * 4 / 5 + 4);
+        long value = 0;
+        int count = 0;
+        int i = 0;
+        if (data.Length >= 2 && data[0] == '<' && data[1] == '~') {
+            i = 2;              // The start of the data in PostScript.
+        }
+        for (; i < data.Length; i++) {
+            int c = data[i];
+            if (c == '~') {
+                break;
+            } else if (c == 'z' && count == 0) {
+                bos.WriteByte(0);
+                bos.WriteByte(0);
+                bos.WriteByte(0);
+                bos.WriteByte(0);
+            } else if (c >= '!' && c <= 'u') {
+                value = value * 85 + (c - '!');
+                if (++count == 5) {
+                    for (int j = 24; j >= 0; j -= 8) {
+                        bos.WriteByte((byte) (value >> j));
+                    }
+                    value = 0;
+                    count = 0;
+                }
+            }                   // White space, or a character that is not valid.
+        }
+        if (count > 1) {
+            for (int j = count; j < 5; j++) {
+                value = value * 85 + 84;
+            }
+            for (int j = 0; j < count - 1; j++) {
+                bos.WriteByte((byte) (value >> (24 - 8 * j)));
+            }
+        }
+        return bos.ToArray();
+    }
+
+    /// <summary>
+    /// Decodes the data of a RunLengthDecode stream. A length byte from 0 to
+    /// 127 is followed by that many plus one bytes to copy, one from 129 to
+    /// 255 by a byte to repeat 257 minus that many times, and 128 ends the data.
+    /// </summary>
+    internal static byte[] RunLengthDecode(byte[] data) {
+        using var bos = new MemoryStream(data.Length * 2);
+        int i = 0;
+        while (i < data.Length) {
+            int length = data[i++];
+            if (length < 128) {
+                int n = Math.Min(length + 1, data.Length - i);
+                bos.Write(data, i, n);
+                i += n;
+            } else if (length > 128 && i < data.Length) {
+                byte b = data[i++];
+                for (int j = 0; j < 257 - length; j++) {
+                    bos.WriteByte(b);
+                }
+            } else {
+                break;
+            }
+        }
+        return bos.ToArray();
+    }
+
     internal static byte[] Inflate(byte[] data) {
         using var outStream = new MemoryStream();
         using var inStream = new MemoryStream(data);

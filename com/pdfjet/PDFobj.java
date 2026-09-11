@@ -69,54 +69,155 @@ public class PDFobj {
     }
 
     /**
-     * Copies the stream from the buffer and decompresses it when it uses
-     * FlateDecode or LZWDecode, and undoes the predictor of its /DecodeParms
-     * unless it is an image.
+     * Copies the stream from the buffer, and decodes it with the filters of
+     * its /Filter entry.
      *
      * @param buf the PDF bytes.
      * @param length the length of the stream.
-     * @throws Exception if the stream cannot be decompressed.
+     * @throws Exception if the stream cannot be decoded.
      */
     protected void setStreamAndData(byte[] buf, int length) throws Exception {
+        setStreamAndData(buf, length, null);
+    }
+
+    // Copies the stream from the buffer, decrypts it when the PDF is encrypted,
+    // and decodes it with the filters of its /Filter entry. The decrypted
+    // stream replaces the encrypted one, so that it can be copied.
+    void setStreamAndData(byte[] buf, int length, Decryptor decryptor) throws Exception {
         if (this.stream == null) {
             this.stream = new byte[length];
             System.arraycopy(buf, streamOffset, stream, 0, length);
-            String filter = getValue("/Filter");
-            if (filter.equals("/FlateDecode")) {
-                this.data = applyDecodeParms(Decompressor.inflate(stream));
-            } else if (filter.equals("/LZWDecode")) {
-                this.data = applyDecodeParms(Decompressor.lzwDecode(stream));
-            } else {
-                // Assume no compression for now.
-                this.data = stream;
+            if (decryptor != null) {
+                this.stream = decryptor.decryptStream(this, stream);
+                setLength(stream.length);
             }
+            this.data = decode(stream);
         }
     }
 
-    // Undoes the predictor of the /DecodeParms dictionary. Images keep it, as
-    // they are copied with their stream, and their data is not used.
-    private byte[] applyDecodeParms(byte[] decoded) {
+    // Sets the /Length of the stream, replacing a reference to the length.
+    private void setLength(int length) {
+        int i = dict.indexOf("/Length");
+        if (i == -1 || i + 1 >= dict.size()) {
+            return;
+        }
+        if (i + 3 < dict.size() && dict.get(i + 3).equals("R")) {
+            dict.remove(i + 3);
+            dict.remove(i + 2);
+        }
+        dict.set(i + 1, String.valueOf(length));
+    }
+
+    // Decodes the stream with each filter of its /Filter entry in turn. A
+    // filter that is not supported, like DCTDecode, ends the decoding, and
+    // the data is what the filters before it decoded.
+    private byte[] decode(byte[] stream) throws Exception {
+        List<String> filters = getValues("/Filter");
+        byte[] decoded = stream;
+        for (int i = 0; i < filters.size(); i++) {
+            String filter = filters.get(i);
+            if (filter.equals("/FlateDecode") || filter.equals("/Fl")) {
+                decoded = applyDecodeParms(Decompressor.inflate(decoded), i);
+            } else if (filter.equals("/LZWDecode") || filter.equals("/LZW")) {
+                decoded = applyDecodeParms(Decompressor.lzwDecode(decoded), i);
+            } else if (filter.equals("/ASCIIHexDecode") || filter.equals("/AHx")) {
+                decoded = Decompressor.asciiHexDecode(decoded);
+            } else if (filter.equals("/ASCII85Decode") || filter.equals("/A85")) {
+                decoded = Decompressor.ascii85Decode(decoded);
+            } else if (filter.equals("/RunLengthDecode") || filter.equals("/RL")) {
+                decoded = Decompressor.runLengthDecode(decoded);
+            } else {
+                break;
+            }
+        }
+        return decoded;
+    }
+
+    // Returns the elements of the array that is the value of the key, or the
+    // value itself when it is not an array.
+    private List<String> getValues(String key) {
+        List<String> values = new ArrayList<String>();
+        int i = dict.indexOf(key) + 1;
+        if (i == 0 || i >= dict.size()) {
+            return values;
+        }
+        if (!dict.get(i).equals("[")) {
+            values.add(dict.get(i));
+            return values;
+        }
+        for (i += 1; i < dict.size() && !dict.get(i).equals("]"); i++) {
+            values.add(dict.get(i));
+        }
+        return values;
+    }
+
+    // Undoes the predictor in the parameters of the filter at the index.
+    // Images keep it, as they are copied with their stream, and their data
+    // is not used.
+    private byte[] applyDecodeParms(byte[] decoded, int index) {
         if (getValue("/Subtype").equals("/Image")) {
             return decoded;
         }
+        List<String> parms = getDecodeParms(index);
         return Decompressor.applyPredictor(
                 decoded,
-                getDecodeParm("/Predictor", 1),
-                getDecodeParm("/Colors", 1),
-                getDecodeParm("/BitsPerComponent", 8),
-                getDecodeParm("/Columns", 1));
+                getDecodeParm(parms, "/Predictor", 1),
+                getDecodeParm(parms, "/Colors", 1),
+                getDecodeParm(parms, "/BitsPerComponent", 8),
+                getDecodeParm(parms, "/Columns", 1));
     }
 
-    // Returns the integer value of the key in the /DecodeParms dictionary.
-    private int getDecodeParm(String key, int defaultValue) {
-        String[] tokens = getValue("/DecodeParms").split(" ");
-        for (int i = 0; i < tokens.length - 1; i++) {
-            if (tokens[i].equals(key)) {
-                try {
-                    return Integer.parseInt(tokens[i + 1]);
-                } catch (NumberFormatException e) {
-                    break;
+    // Returns the tokens of the parameters dictionary of the filter at the
+    // index. /DecodeParms is a dictionary for a single filter, or an array
+    // with a dictionary or null for each filter.
+    private List<String> getDecodeParms(int index) {
+        List<String> parms = new ArrayList<String>();
+        int i = dict.indexOf("/DecodeParms") + 1;
+        if (i == 0 || i >= dict.size()) {
+            return parms;
+        }
+        boolean array = dict.get(i).equals("[");
+        if (array) {
+            i += 1;
+        }
+        for (int element = 0; i < dict.size() && !dict.get(i).equals("]"); element++) {
+            int start = i;
+            if (dict.get(i).equals("<<")) {
+                int level = 0;
+                do {
+                    String token = dict.get(i++);
+                    if (token.equals("<<")) {
+                        level++;
+                    } else if (token.equals(">>")) {
+                        level--;
+                    }
+                } while (level > 0 && i < dict.size());
+            } else if (i + 2 < dict.size() && dict.get(i + 2).equals("R")) {
+                i += 3;     // A reference to a dictionary, which is not supported.
+            } else {
+                i += 1;     // null
+            }
+            if (element == index) {
+                if (dict.get(start).equals("<<")) {
+                    parms.addAll(dict.subList(start, i));
                 }
+                break;
+            }
+            if (!array) {
+                break;
+            }
+        }
+        return parms;
+    }
+
+    // Returns the integer value of the key in the parameters dictionary.
+    private static int getDecodeParm(List<String> parms, String key, int defaultValue) {
+        int i = parms.indexOf(key);
+        if (i != -1 && i + 1 < parms.size()) {
+            try {
+                return Integer.parseInt(parms.get(i + 1));
+            } catch (NumberFormatException e) {
+                return defaultValue;
             }
         }
         return defaultValue;

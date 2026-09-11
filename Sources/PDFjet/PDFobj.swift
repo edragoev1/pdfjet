@@ -56,47 +56,143 @@ public final class PDFobj {
         return self.stream
     }
 
-    final func setStreamAndData(_ buffer: inout [UInt8], _ length: Int) throws {
+    ///
+    /// Copies the stream from the buffer, decrypts it when the PDF is encrypted,
+    /// and decodes it with the filters of its /Filter entry. The decrypted
+    /// stream replaces the encrypted one, so that it can be copied.
+    ///
+    final func setStreamAndData(
+            _ buffer: inout [UInt8], _ length: Int, _ decryptor: Decryptor? = nil) throws {
         if stream == nil {
-            stream = [UInt8]()
-            stream!.append(contentsOf: buffer[streamOffset..<streamOffset + length])
-            let filter = getValue("/Filter")
-            if filter == "/FlateDecode" {
-                // let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-                _ = try Puff(output: &data, input: &stream!)
-                // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-                // Swift.print("in pdf.read() => \(time1 - time0)")
-                data = applyDecodeParms(data)
-            } else if filter == "/LZWDecode" {
-                data = applyDecodeParms(lzwDecode(stream!))
-            } else {
-                // Assume no compression for now ...
-                self.data = stream!
+            var copied = Array(buffer[streamOffset..<streamOffset + length])
+            if let decryptor = decryptor {
+                copied = decryptor.decryptStream(self, copied)
+                setLength(copied.count)
             }
+            stream = copied
+            data = try decode(copied)
         }
     }
 
-    // Undoes the predictor of the /DecodeParms dictionary. Images keep it, as
-    // they are copied with their stream, and their data is not used.
-    private final func applyDecodeParms(_ decoded: [UInt8]) -> [UInt8] {
+    // Sets the /Length of the stream, replacing a reference to the length.
+    private final func setLength(_ length: Int) {
+        guard let i = dict.firstIndex(of: "/Length"), i + 1 < dict.count else {
+            return
+        }
+        if i + 3 < dict.count && dict[i + 3] == "R" {
+            dict.removeSubrange((i + 2)...(i + 3))
+        }
+        dict[i + 1] = String(length)
+    }
+
+    // Decodes the stream with each filter of its /Filter entry in turn. A
+    // filter that is not supported, like DCTDecode, ends the decoding, and the
+    // data is what the filters before it decoded.
+    private final func decode(_ stream: [UInt8]) throws -> [UInt8] {
+        var decoded = stream
+        for (i, filter) in getValues("/Filter").enumerated() {
+            switch filter {
+            case "/FlateDecode", "/Fl":
+                var input = decoded
+                var output = [UInt8]()
+                _ = try Puff(output: &output, input: &input)
+                decoded = applyDecodeParms(output, i)
+            case "/LZWDecode", "/LZW":
+                decoded = applyDecodeParms(lzwDecode(decoded), i)
+            case "/ASCIIHexDecode", "/AHx":
+                decoded = asciiHexDecode(decoded)
+            case "/ASCII85Decode", "/A85":
+                decoded = ascii85Decode(decoded)
+            case "/RunLengthDecode", "/RL":
+                decoded = runLengthDecode(decoded)
+            default:
+                return decoded
+            }
+        }
+        return decoded
+    }
+
+    // Returns the elements of the array that is the value of the key, or the
+    // value itself when it is not an array.
+    private final func getValues(_ key: String) -> [String] {
+        guard let k = dict.firstIndex(of: key), k + 1 < dict.count else {
+            return []
+        }
+        if dict[k + 1] != "[" {
+            return [dict[k + 1]]
+        }
+        var values = [String]()
+        var i = k + 2
+        while i < dict.count && dict[i] != "]" {
+            values.append(dict[i])
+            i += 1
+        }
+        return values
+    }
+
+    // Undoes the predictor in the parameters of the filter at the index.
+    // Images keep it, as they are copied with their stream, and their data is
+    // not used.
+    private final func applyDecodeParms(_ decoded: [UInt8], _ index: Int) -> [UInt8] {
         if getValue("/Subtype") == "/Image" {
             return decoded
         }
+        let parms = getDecodeParms(index)
         return applyPredictor(
                 decoded,
-                getDecodeParm("/Predictor", 1),
-                getDecodeParm("/Colors", 1),
-                getDecodeParm("/BitsPerComponent", 8),
-                getDecodeParm("/Columns", 1))
+                getDecodeParm(parms, "/Predictor", 1),
+                getDecodeParm(parms, "/Colors", 1),
+                getDecodeParm(parms, "/BitsPerComponent", 8),
+                getDecodeParm(parms, "/Columns", 1))
     }
 
-    // Returns the integer value of the key in the /DecodeParms dictionary.
-    // A value that is not a 32-bit integer gets the default, as in the Java
-    // and C# ports.
-    private final func getDecodeParm(_ key: String, _ defaultValue: Int) -> Int {
-        let tokens = getValue("/DecodeParms").split(separator: " ")
-        if let i = tokens.firstIndex(of: Substring(key)), i + 1 < tokens.count,
-                let value = Int32(tokens[i + 1]) {
+    // Returns the tokens of the parameters dictionary of the filter at the
+    // index. /DecodeParms is a dictionary for a single filter, or an array with
+    // a dictionary or null for each filter.
+    private final func getDecodeParms(_ index: Int) -> [String] {
+        guard let k = dict.firstIndex(of: "/DecodeParms"), k + 1 < dict.count else {
+            return []
+        }
+        var i = k + 1
+        let array = dict[i] == "["
+        if array {
+            i += 1
+        }
+        var element = 0
+        while i < dict.count && dict[i] != "]" {
+            let start = i
+            if dict[i] == "<<" {
+                var level = 0
+                repeat {
+                    let token = dict[i]
+                    i += 1
+                    if token == "<<" {
+                        level += 1
+                    } else if token == ">>" {
+                        level -= 1
+                    }
+                } while level > 0 && i < dict.count
+            } else if i + 2 < dict.count && dict[i + 2] == "R" {
+                i += 3      // A reference to a dictionary, which is not supported.
+            } else {
+                i += 1      // null
+            }
+            if element == index {
+                return (dict[start] == "<<") ? Array(dict[start..<i]) : []
+            }
+            if !array {
+                break
+            }
+            element += 1
+        }
+        return []
+    }
+
+    // Returns the integer value of the key in the parameters dictionary. A
+    // value that is not a 32-bit integer gets the default, as in the Java and
+    // C# ports.
+    private final func getDecodeParm(_ parms: [String], _ key: String, _ defaultValue: Int) -> Int {
+        if let i = parms.firstIndex(of: key), i + 1 < parms.count, let value = Int32(parms[i + 1]) {
             return Int(value)
         }
         return defaultValue

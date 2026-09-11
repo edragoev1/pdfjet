@@ -47,43 +47,147 @@ public class PDFobj {
         return this.data;
     }
 
+    // Copies the stream from the buffer, and decodes it with the filters of
+    // its /Filter entry.
     internal void SetStreamAndData(byte[] buf, int length) {
+        SetStreamAndData(buf, length, null);
+    }
+
+    // Copies the stream from the buffer, decrypts it when the PDF is encrypted,
+    // and decodes it with the filters of its /Filter entry. The decrypted
+    // stream replaces the encrypted one, so that it can be copied.
+    internal void SetStreamAndData(byte[] buf, int length, Decryptor decryptor) {
         if (this.stream == null) {
             this.stream = new byte[length];
             Array.Copy(buf, streamOffset, stream, 0, length);
-            String filter = GetValue("/Filter");
-            if (filter.Equals("/FlateDecode")) {
-                this.data = ApplyDecodeParms(Decompressor.Inflate(stream));
-            } else if (filter.Equals("/LZWDecode")) {
-                this.data = ApplyDecodeParms(Decompressor.LZWDecode(stream));
-            } else {
-                // Assume no compression for now.
-                this.data = stream;
+            if (decryptor != null) {
+                this.stream = decryptor.DecryptStream(this, stream);
+                SetLength(stream.Length);
             }
+            this.data = Decode(stream);
         }
     }
 
-    // Undoes the predictor of the /DecodeParms dictionary. Images keep it, as
-    // they are copied with their stream, and their data is not used.
-    private byte[] ApplyDecodeParms(byte[] decoded) {
+    // Sets the /Length of the stream, replacing a reference to the length.
+    private void SetLength(int length) {
+        int i = dict.IndexOf("/Length");
+        if (i == -1 || i + 1 >= dict.Count) {
+            return;
+        }
+        if (i + 3 < dict.Count && dict[i + 3].Equals("R")) {
+            dict.RemoveAt(i + 3);
+            dict.RemoveAt(i + 2);
+        }
+        dict[i + 1] = length.ToString();
+    }
+
+    // Decodes the stream with each filter of its /Filter entry in turn. A
+    // filter that is not supported, like DCTDecode, ends the decoding, and
+    // the data is what the filters before it decoded.
+    private byte[] Decode(byte[] stream) {
+        List<String> filters = GetValues("/Filter");
+        byte[] decoded = stream;
+        for (int i = 0; i < filters.Count; i++) {
+            String filter = filters[i];
+            if (filter.Equals("/FlateDecode") || filter.Equals("/Fl")) {
+                decoded = ApplyDecodeParms(Decompressor.Inflate(decoded), i);
+            } else if (filter.Equals("/LZWDecode") || filter.Equals("/LZW")) {
+                decoded = ApplyDecodeParms(Decompressor.LZWDecode(decoded), i);
+            } else if (filter.Equals("/ASCIIHexDecode") || filter.Equals("/AHx")) {
+                decoded = Decompressor.ASCIIHexDecode(decoded);
+            } else if (filter.Equals("/ASCII85Decode") || filter.Equals("/A85")) {
+                decoded = Decompressor.ASCII85Decode(decoded);
+            } else if (filter.Equals("/RunLengthDecode") || filter.Equals("/RL")) {
+                decoded = Decompressor.RunLengthDecode(decoded);
+            } else {
+                break;
+            }
+        }
+        return decoded;
+    }
+
+    // Returns the elements of the array that is the value of the key, or the
+    // value itself when it is not an array.
+    private List<String> GetValues(String key) {
+        List<String> values = new List<String>();
+        int i = dict.IndexOf(key) + 1;
+        if (i == 0 || i >= dict.Count) {
+            return values;
+        }
+        if (!dict[i].Equals("[")) {
+            values.Add(dict[i]);
+            return values;
+        }
+        for (i += 1; i < dict.Count && !dict[i].Equals("]"); i++) {
+            values.Add(dict[i]);
+        }
+        return values;
+    }
+
+    // Undoes the predictor in the parameters of the filter at the index.
+    // Images keep it, as they are copied with their stream, and their data
+    // is not used.
+    private byte[] ApplyDecodeParms(byte[] decoded, int index) {
         if (GetValue("/Subtype").Equals("/Image")) {
             return decoded;
         }
+        List<String> parms = GetDecodeParms(index);
         return Decompressor.ApplyPredictor(
                 decoded,
-                GetDecodeParm("/Predictor", 1),
-                GetDecodeParm("/Colors", 1),
-                GetDecodeParm("/BitsPerComponent", 8),
-                GetDecodeParm("/Columns", 1));
+                GetDecodeParm(parms, "/Predictor", 1),
+                GetDecodeParm(parms, "/Colors", 1),
+                GetDecodeParm(parms, "/BitsPerComponent", 8),
+                GetDecodeParm(parms, "/Columns", 1));
     }
 
-    // Returns the integer value of the key in the /DecodeParms dictionary.
-    private int GetDecodeParm(String key, int defaultValue) {
-        String[] tokens = GetValue("/DecodeParms").Split(' ');
-        for (int i = 0; i < tokens.Length - 1; i++) {
-            if (tokens[i].Equals(key)) {
-                return Int32.TryParse(tokens[i + 1], out int value) ? value : defaultValue;
+    // Returns the tokens of the parameters dictionary of the filter at the
+    // index. /DecodeParms is a dictionary for a single filter, or an array
+    // with a dictionary or null for each filter.
+    private List<String> GetDecodeParms(int index) {
+        List<String> parms = new List<String>();
+        int i = dict.IndexOf("/DecodeParms") + 1;
+        if (i == 0 || i >= dict.Count) {
+            return parms;
+        }
+        bool array = dict[i].Equals("[");
+        if (array) {
+            i += 1;
+        }
+        for (int element = 0; i < dict.Count && !dict[i].Equals("]"); element++) {
+            int start = i;
+            if (dict[i].Equals("<<")) {
+                int level = 0;
+                do {
+                    String token = dict[i++];
+                    if (token.Equals("<<")) {
+                        level++;
+                    } else if (token.Equals(">>")) {
+                        level--;
+                    }
+                } while (level > 0 && i < dict.Count);
+            } else if (i + 2 < dict.Count && dict[i + 2].Equals("R")) {
+                i += 3;     // A reference to a dictionary, which is not supported.
+            } else {
+                i += 1;     // null
             }
+            if (element == index) {
+                if (dict[start].Equals("<<")) {
+                    parms.AddRange(dict.GetRange(start, i - start));
+                }
+                break;
+            }
+            if (!array) {
+                break;
+            }
+        }
+        return parms;
+    }
+
+    // Returns the integer value of the key in the parameters dictionary.
+    private static int GetDecodeParm(List<String> parms, String key, int defaultValue) {
+        int i = parms.IndexOf(key);
+        if (i != -1 && i + 1 < parms.Count) {
+            return Int32.TryParse(parms[i + 1], out int value) ? value : defaultValue;
         }
         return defaultValue;
     }

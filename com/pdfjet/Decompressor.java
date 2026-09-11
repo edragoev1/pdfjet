@@ -175,6 +175,119 @@ class Decompressor {
         return (pUp <= pUpLeft) ? up : upLeft;
     }
 
+    /**
+     * Decodes the data of an ASCIIHexDecode stream. White space is skipped,
+     * > ends the data, and a last digit without a pair is followed by 0.
+     */
+    static byte[] asciiHexDecode(byte[] data) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length / 2);
+        int high = -1;
+        for (byte b : data) {
+            if (b == '>') {
+                break;
+            }
+            int digit = hexValue(b);
+            if (digit == -1) {
+                continue;       // White space, or a character that is not valid.
+            }
+            if (high == -1) {
+                high = digit;
+            } else {
+                bos.write((high << 4) | digit);
+                high = -1;
+            }
+        }
+        if (high != -1) {
+            bos.write(high << 4);
+        }
+        return bos.toByteArray();
+    }
+
+    /**
+     * Returns the value of a hexadecimal digit, or -1 when it is not one.
+     */
+    static int hexValue(int c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+        return -1;
+    }
+
+    /**
+     * Decodes the data of an ASCII85Decode stream. Each group of five
+     * characters from ! to u is four bytes, z is four zero bytes, and ~>
+     * ends the data. White space is skipped, and a last group of n
+     * characters is n - 1 bytes.
+     */
+    static byte[] ascii85Decode(byte[] data) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length * 4 / 5 + 4);
+        long value = 0;
+        int count = 0;
+        int i = 0;
+        if (data.length >= 2 && data[0] == '<' && data[1] == '~') {
+            i = 2;              // The start of the data in PostScript.
+        }
+        for (; i < data.length; i++) {
+            int c = data[i] & 0xff;
+            if (c == '~') {
+                break;
+            } else if (c == 'z' && count == 0) {
+                bos.write(0);
+                bos.write(0);
+                bos.write(0);
+                bos.write(0);
+            } else if (c >= '!' && c <= 'u') {
+                value = value * 85 + (c - '!');
+                if (++count == 5) {
+                    for (int j = 24; j >= 0; j -= 8) {
+                        bos.write((int) (value >> j));
+                    }
+                    value = 0;
+                    count = 0;
+                }
+            }                   // White space, or a character that is not valid.
+        }
+        if (count > 1) {
+            for (int j = count; j < 5; j++) {
+                value = value * 85 + 84;
+            }
+            for (int j = 0; j < count - 1; j++) {
+                bos.write((int) (value >> (24 - 8 * j)));
+            }
+        }
+        return bos.toByteArray();
+    }
+
+    /**
+     * Decodes the data of a RunLengthDecode stream. A length byte from 0 to
+     * 127 is followed by that many plus one bytes to copy, one from 129 to
+     * 255 by a byte to repeat 257 minus that many times, and 128 ends the data.
+     */
+    static byte[] runLengthDecode(byte[] data) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length * 2);
+        int i = 0;
+        while (i < data.length) {
+            int length = data[i++] & 0xff;
+            if (length < 128) {
+                int n = Math.min(length + 1, data.length - i);
+                bos.write(data, i, n);
+                i += n;
+            } else if (length > 128 && i < data.length) {
+                byte b = data[i++];
+                for (int j = 0; j < 257 - length; j++) {
+                    bos.write(b);
+                }
+            } else {
+                break;
+            }
+        }
+        return bos.toByteArray();
+    }
+
     static byte[] inflate(byte[] data) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
         Inflater inflater = new Inflater();

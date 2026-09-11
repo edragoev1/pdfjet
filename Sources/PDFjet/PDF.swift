@@ -1205,6 +1205,7 @@ public class PDF {
 
     ///
     /// Returns a list of objects of type PDFobj read from input stream.
+    /// An encrypted PDF is decrypted when it opens without a password.
     ///
     /// - Parameter stream: the PDF input stream.
     ///
@@ -1213,23 +1214,39 @@ public class PDF {
     public func read(from stream: InputStream) throws -> [PDFobj] {
         var buffer1 = try Content.getFromStream(stream)
         var objects1 = [PDFobj]()
-        let xref = getStartXRef(&buffer1)
-        let obj1 = getObject(&buffer1, xref, buffer1.count)
-        if obj1.dict[0] == "xref" {
-            // Get the objects using xref table
-            getObjects1(&buffer1, obj1, &objects1)
-        } else {
-            // Get the objects using XRef stream
-            try getObjects2(&buffer1, obj1, &objects1)
+        let startXRef = getStartXRef(buffer1)
+        var trailer: PDFobj?
+        do {
+            trailer = try getObjects(&buffer1, startXRef, &objects1, 0)
+        } catch {
+            trailer = nil       // A cross-reference stream that cannot be decoded.
         }
+        if trailer == nil || objects1.isEmpty {
+            // The cross-reference table is missing or wrong, like in a PDF that
+            // was changed without updating it.
+            objects1.removeAll()
+            trailer = getObjectsByScanning(buffer1, &objects1)
+        }
+        let decryptor = try Decryptor.getDecryptor(trailer, objects1)
+
         var objects2 = [PDFobj]()
         for obj in objects1 {
-            if obj.dict.contains("stream") {
-                try obj.setStreamAndData(&buffer1, obj.getLength(&objects1)!)
+            let type = obj.getValue("/Type")
+            if type == "/XRef" {
+                continue        // Skip the cross-reference streams.
             }
-            if obj.getValue("/Type") == "/ObjStm" {
+            if let decryptor = decryptor {
+                if obj.number == decryptor.objNumber {
+                    continue    // Skip the encryption dictionary.
+                }
+                decryptor.decryptStrings(obj)
+            }
+            if obj.dict.contains("stream") {
+                try obj.setStreamAndData(&buffer1, obj.getLength(&objects1)!, decryptor)
+            }
+            if type == "/ObjStm" {
                 let first = Int(obj.getValue("/First"))!
-                let o2 = getObject(&obj.data, 0, first)
+                let o2 = getObject(obj.data, 0, first)
                 var i = 0
                 while i < o2.dict.count {
                     let num = o2.dict[i]
@@ -1238,14 +1255,12 @@ public class PDF {
                     if i <= o2.dict.count - 4 {
                         end = first + Int(o2.dict[i + 3])!
                     }
-                    let o3 = getObject(&obj.data, first + Int(off)!, end)
+                    let o3 = getObject(obj.data, first + Int(off)!, end)
                     o3.number = Int(num)!
                     o3.dict.insert(contentsOf: [num, "0", "obj"], at: 0)
                     objects2.append(o3)
                     i += 2
                 }
-            } else if obj.getValue("/Type") == "/XRef" {
-                // Skip the stream XRef object.
             } else {
                 objects2.append(obj)
             }
@@ -1254,24 +1269,33 @@ public class PDF {
     }
 
     private func process(
-            _ obj: inout PDFobj,
+            _ obj: PDFobj,
             _ token: inout [UInt8],
             _ buffer: [UInt8],
             _ offset: Int) -> Bool {
-        if token.count == 0 {
+        // Like trim() in Java, which removes the characters up to the space.
+        var start = 0
+        var end = token.count
+        while start < end && token[start] <= 0x20 {
+            start += 1
+        }
+        while end > start && token[end - 1] <= 0x20 {
+            end -= 1
+        }
+        if start == end {
+            token.removeAll()
             return false
         }
-        let str = String(bytes: token, encoding: .ascii)!.trim()
-        if str != "" {
-            obj.dict.append(str)
-        }
+        // ISO Latin 1 keeps each byte of a string as a character.
+        let str = String(bytes: token[start..<end], encoding: .isoLatin1)!
+        obj.dict.append(str)
         token.removeAll()
         if str == "endobj" {
             return true
         }
         if str == "stream" {
             obj.streamOffset = offset
-            if buffer[offset] == 0x0A {     // "\n"
+            if offset < buffer.count && buffer[offset] == 0x0A {   // "\n"
                 obj.streamOffset += 1
             }
             return true
@@ -1282,108 +1306,116 @@ public class PDF {
         return false
     }
 
-    private func getObject(
-            _ buf: inout [UInt8],
-            _ off: Int,
-            _ len: Int) -> PDFobj {
+    private func getObject(_ buf: [UInt8], _ off: Int) -> PDFobj {
+        if off < 0 || off >= buf.count {
+            return PDFobj()     // An offset outside of the PDF has no tokens.
+        }
+        return getObject(buf, off, buf.count)
+    }
+
+    private func getObject(_ buf: [UInt8], _ off: Int, _ len: Int) -> PDFobj {
         var offset = off
-        var obj = PDFobj()
+        let obj = PDFobj()
         obj.offset = offset
         var token = [UInt8]()
 
-        var p1 = 0
-        var c1: UInt8 = 0x20            // Space
+        var p = 0               // The nesting level of the parentheses in a literal string
         var done = false
         while !done && offset < len {
             let c2 = buf[offset]
             offset += 1
-            if c1 == 0x5C {             // "\\" - the previous byte escapes this one
+            if p > 0 {
+                // A literal string is one token, with its white space and
+                // delimiters. A backslash escapes the character after it.
                 token.append(c2)
-                c1 = c2
-                continue
-            }
-            if c2 == 0x28 {             // "("
-                if p1 == 0 {
-                    done = process(&obj, &token, buf, offset)
+                if c2 == 0x5C {             // "\\"
+                    if offset < len {
+                        token.append(buf[offset])
+                        offset += 1
+                    }
+                } else if c2 == 0x28 {      // "("
+                    p += 1
+                } else if c2 == 0x29 {      // ")"
+                    p -= 1
+                    if p == 0 {
+                        done = process(obj, &token, buf, offset)
+                    }
                 }
+            } else if c2 == 0x28 {          // "("
+                done = process(obj, &token, buf, offset)
                 if !done {
                     token.append(c2)
-                    c1 = c2
-                    p1 += 1
+                    p = 1
                 }
-            } else if c2 == 0x29 {      // ")"
-                token.append(c2)
-                c1 = c2
-                p1 -= 1
-                if p1 == 0 {
-                    done = process(&obj, &token, buf, offset)
-                }
-            } else if c2 == 0x00        // NULL
-                    || c2 == 0x09       // Horizontal Tab
-                    || c2 == 0x0A       // Line Feed (LF)
-                    || c2 == 0x0C       // Form Feed
-                    || c2 == 0x0D       // Carriage Return (CR)
-                    || c2 == 0x20 {     // Space
-                done = process(&obj, &token, buf, offset)
-                if !done {
-                    c1 = 0x20
-                }
-            } else if c2 == 0x2F {      // "/"
-                done = process(&obj, &token, buf, offset)
+            } else if isWhiteSpace(c2) {
+                done = process(obj, &token, buf, offset)
+            } else if c2 == 0x2F {          // "/"
+                done = process(obj, &token, buf, offset)
                 if !done {
                     token.append(c2)
-                    c1 = c2
                 }
-            } else if c2 == 0x3C ||     // "<"
-                    c2 == 0x3E ||       // ">"
-                    c2 == 0x25 {        // "%"
-                if p1 > 0 {
-                    // Inside a string these are ordinary characters.
-                    token.append(c2)
-                    c1 = c2
-                } else if c2 != c1 {
-                    done = process(&obj, &token, buf, offset)
-                    if !done {
+            } else if c2 == 0x3C || c2 == 0x3E {    // "<" or ">"
+                done = process(obj, &token, buf, offset)
+                if !done {
+                    if offset < len && buf[offset] == c2 {
+                        obj.dict.append((c2 == 0x3C) ? "<<" : ">>")
+                        offset += 1
+                    } else if c2 == 0x3C {
+                        // A hexadecimal string is one token, without its white space.
                         token.append(c2)
-                        c1 = c2
-                    }
-                } else {
-                    token.append(c2)
-                    done = process(&obj, &token, buf, offset)
-                    if !done {
-                        c1 = 0x20       // Space
+                        while offset < len && buf[offset] != 0x3E {
+                            if !isWhiteSpace(buf[offset]) {
+                                token.append(buf[offset])
+                            }
+                            offset += 1
+                        }
+                        token.append(0x3E)
+                        offset += 1
+                        done = process(obj, &token, buf, offset)
+                    } else {
+                        obj.dict.append(">")
                     }
                 }
-            } else if c2 == 0x5B ||       // "["
-                    c2 == 0x5D ||       // "]"
-                    c2 == 0x7B ||       // "{"
-                    c2 == 0x7D {        // "}"
-                if p1 > 0 {
-                    // Inside a string these are ordinary characters.
-                    token.append(c2)
-                    c1 = c2
-                } else {
-                    done = process(&obj, &token, buf, offset)
-                    if !done {
-                        if c2 == 0x5B {
-                            obj.dict.append("[")
-                        } else if c2 == 0x5D {
-                            obj.dict.append("]")
-                        } else if c2 == 0x7B {
-                            obj.dict.append("{")
-                        } else if c2 == 0x7D {
-                            obj.dict.append("}")
-                        }
-                        c1 = c2
+            } else if c2 == 0x25 {          // "%"
+                // A comment ends at the end of the line.
+                done = process(obj, &token, buf, offset)
+                while !done && offset < len && buf[offset] != 0x0A && buf[offset] != 0x0D {
+                    offset += 1
+                }
+            } else if c2 == 0x5B ||         // "["
+                    c2 == 0x5D ||           // "]"
+                    c2 == 0x7B ||           // "{"
+                    c2 == 0x7D {            // "}"
+                done = process(obj, &token, buf, offset)
+                if !done {
+                    if c2 == 0x5B {
+                        obj.dict.append("[")
+                    } else if c2 == 0x5D {
+                        obj.dict.append("]")
+                    } else if c2 == 0x7B {
+                        obj.dict.append("{")
+                    } else {
+                        obj.dict.append("}")
                     }
                 }
             } else {
                 token.append(c2)
-                c1 = c2
             }
+        }
+        if !done {
+            _ = process(obj, &token, buf, offset)   // The last token, at the end of the data.
         }
 
         return obj
+    }
+
+    private func isWhiteSpace(_ c: UInt8) -> Bool {
+        return c == 0x00            // Null
+            || c == 0x09            // Horizontal Tab
+            || c == 0x0A            // Line Feed (LF)
+            || c == 0x0C            // Form Feed
+            || c == 0x0D            // Carriage Return (CR)
+            || c == 0x20            // Space
     }
 
     ///
@@ -1392,7 +1424,7 @@ public class PDF {
     /// - Returns: int
     ///
     private func toInt(
-            _ buf: inout [UInt8],
+            _ buf: [UInt8],
             _ off: Int,
             _ len: Int) -> Int {
         var n = 0
@@ -1407,115 +1439,278 @@ public class PDF {
         return n
     }
 
-    private func getObjects1(
-            _ buf: inout [UInt8],
-            _ obj: PDFobj,
-            _ objects: inout [PDFobj]) {
-        let xref = obj.getValue("/Prev")
-        if xref != "" {
-            getObjects1(
-                    &buf,
-                    getObject(&buf, Int(xref)!, buf.count),
-                    &objects)
+    // Returns the value of the token, or -1 when it is not an integer.
+    private func toInteger(_ token: String) -> Int {
+        if isInteger(token), let value = Int32(token) {
+            return Int(value)
         }
-        var i = 1
-        while true {
-            let token = obj.dict[i]
-            i += 1
-            if token == "trailer" {
-                break
-            }
-            let n = Int(obj.dict[i])!       // Number of entries
-            i += 1
-            for _ in 0..<n {
-                let offset = obj.dict[i]    // Object offset
-                i += 1
-                _ = obj.dict[i]             // Generation number
-                i += 1
-                let status = obj.dict[i]    // Status keyword
-                i += 1
-                if status != "f" {
-                    let o2 = getObject(&buf, Int(offset)!, buf.count)
-                    o2.number = Int(o2.dict[0])!
-                    objects.append(o2)
-                }
-            }
-        }
+        return -1
     }
 
-    private func getObjects2(
-            _ buf: inout [UInt8],
-            _ obj: PDFobj,
-            _ objects: inout [PDFobj]) throws {
-        let prev = obj.getValue("/Prev")
-        if !prev.isEmpty {
-            try getObjects2(
-                    &buf,
-                    getObject(&buf, Int(prev)!, buf.count),
-                    &objects)
+    // Returns true when the tokens of the object start with "number generation
+    // obj", where the number is above 0, and is the number that is given unless
+    // that is -1.
+    private func isObject(_ obj: PDFobj, _ number: Int) -> Bool {
+        if obj.dict.count < 3 || obj.dict[2] != "obj" || !isInteger(obj.dict[1]) {
+            return false
         }
-        var n1 = 0          // Field 1 number of bytes
-        var n2 = 0          // Field 2 number of bytes
-        var n3 = 0          // Field 3 number of bytes
-        var length = 0
-        for i in 0..<obj.dict.count {
-            let token = obj.dict[i]
-            if token == "/Length" {
-                length = Int(obj.dict[i + 1])!
-            } else if token == "/W" {
-                // "/W [ 1 3 1 ]"
-                n1 = Int(obj.dict[i + 2])!
-                n2 = Int(obj.dict[i + 3])!
-                n3 = Int(obj.dict[i + 4])!
+        let n = toInteger(obj.dict[0])
+        return n > 0 && (number == -1 || n == number)
+    }
+
+    ///
+    /// Adds the objects of the cross-reference section at the offset to the
+    /// list, after the objects of the sections before it, so that the newest
+    /// version of an object that was updated comes last. A section is a
+    /// cross-reference table, which can have an /XRefStm stream for the
+    /// objects in object streams, or a cross-reference stream.
+    ///
+    /// - Returns: the trailer of the section, which is the cross-reference
+    ///   stream object when there is no table, or nil when an offset in the
+    ///   section is not that of its object.
+    ///
+    private func getObjects(
+            _ buf: inout [UInt8],
+            _ offset: Int,
+            _ objects: inout [PDFobj],
+            _ depth: Int) throws -> PDFobj? {
+        let xref = getObject(buf, offset)
+        let table = !xref.dict.isEmpty && xref.dict[0] == "xref"
+        if depth > 1000 || (!table && !isObject(xref, -1)) {
+            return nil
+        }
+        let prev = xref.getValue("/Prev")
+        if !prev.isEmpty {
+            if try getObjects(&buf, toInteger(prev), &objects, depth + 1) == nil {
+                return nil
             }
+        }
+        if table {
+            // The objects in the table replace those in the /XRefStm stream.
+            let xrefStm = xref.getValue("/XRefStm")
+            if !xrefStm.isEmpty {
+                let stream = getObject(buf, toInteger(xrefStm))
+                if try !getStreamObjects(&buf, stream, &objects) {
+                    return nil
+                }
+            }
+            if !getTableObjects(buf, xref, &objects) {
+                return nil
+            }
+        } else if try !getStreamObjects(&buf, xref, &objects) {
+            return nil
+        }
+        return xref
+    }
+
+    // Adds the objects in use of a cross-reference table, and returns false
+    // when an offset is not that of its object.
+    private func getTableObjects(_ buf: [UInt8], _ xref: PDFobj, _ objects: inout [PDFobj]) -> Bool {
+        let dict = xref.dict
+        var i = 1
+        // Each subsection starts with its first object number and the number of entries.
+        while i + 1 < dict.count && isInteger(dict[i]) {
+            var number = toInteger(dict[i])
+            let count = toInteger(dict[i + 1])
+            i += 2
+            var j = 0
+            while j < count {
+                if i + 2 >= dict.count {
+                    return false
+                }
+                // The entry is the offset, the generation number and n for an object in use.
+                if dict[i + 2] == "n" {
+                    let obj = getObject(buf, toInteger(dict[i]))
+                    if !isObject(obj, number) {
+                        return false
+                    }
+                    obj.number = number
+                    objects.append(obj)
+                }
+                j += 1
+                number += 1
+                i += 3
+            }
+        }
+        return i < dict.count && dict[i] == "trailer"
+    }
+
+    // Adds the objects of a cross-reference stream that are not in object
+    // streams, and returns false when an offset is not that of its object.
+    private func getStreamObjects(
+            _ buf: inout [UInt8],
+            _ xref: PDFobj,
+            _ objects: inout [PDFobj]) throws -> Bool {
+        if !isObject(xref, -1) || xref.getValue("/Type") != "/XRef" || !xref.dict.contains("stream") {
+            return false
+        }
+        // See page 50 in PDF32000_2008.pdf
+        let dict = xref.dict
+        guard let w = dict.firstIndex(of: "/W"), w + 4 < dict.count else {
+            return false
+        }
+        let n1 = toInteger(dict[w + 2])     // Field 1 number of bytes
+        let n2 = toInteger(dict[w + 3])     // Field 2 number of bytes
+        let n3 = toInteger(dict[w + 4])     // Field 3 number of bytes
+        let length = toInteger(xref.getValue("/Length"))
+        if n1 < 0 || n2 < 0 || n3 < 0 || n1 + n2 + n3 == 0 ||
+                length < 0 || xref.streamOffset + length > buf.count {
+            return false
+        }
+        // The /Index array has the first object number and the number of
+        // entries of each subsection, and is [0 /Size] when it is missing.
+        var index = [Int]()
+        if let k = dict.firstIndex(of: "/Index"), k + 1 < dict.count, dict[k + 1] == "[" {
+            var i = k + 2
+            while i + 1 < dict.count && isInteger(dict[i]) {
+                index.append(toInteger(dict[i]))
+                index.append(toInteger(dict[i + 1]))
+                i += 2
+            }
+        } else {
+            index.append(0)
+            index.append(toInteger(xref.getValue("/Size")))
         }
 
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
-        try obj.setStreamAndData(&buf, length)
+        try xref.setStreamAndData(&buf, length)
         let n = n1 + n2 + n3    // Number of bytes per entry
-        var entry = [UInt8](repeating: 0, count: n)
-        var i = 0
-        while n > 0 && i + n <= obj.data.count {
-            for j in 0..<n {
-                entry[j] = obj.data[i + j]
+        var offset = 0
+        var s = 0
+        while s + 1 < index.count {
+            var number = index[s]
+            var j = 0
+            while j < index[s + 1] && offset + n <= xref.data.count {
+                // Process the entries in a cross-reference stream.
+                // Page 51 in PDF32000_2008.pdf
+                let type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1)
+                if type == 1 {
+                    let obj = getObject(buf, toInt(xref.data, offset + n1, n2))
+                    if !isObject(obj, number) {
+                        return false
+                    }
+                    obj.number = number
+                    objects.append(obj)
+                }
+                number += 1
+                offset += n
+                j += 1
             }
-            // Process the entries in a cross-reference stream
-            // Page 51 in PDF32000_2008.pdf
-            if entry[0] == 1 {      // Type 1 entry
-                let o2 = getObject(&buf, toInt(&entry, n1, n2), buf.count)
-                o2.number = Int(o2.dict[0])!
-                objects.append(o2)
-            }
-            i += n
+            s += 2
         }
+        return true
     }
 
-    private func getStartXRef(_ buf: inout [UInt8]) -> Int {
-        var bytes = [UInt8]()
-        var i = buf.count - 10
-        while i > 10 {
-            if buf[i] == 0x73 &&                // "s"
-                    buf[i + 1] == 0x74 &&       // "t"
-                    buf[i + 2] == 0x61 &&       // "a"
-                    buf[i + 3] == 0x72 &&       // "r"
-                    buf[i + 4] == 0x74 &&       // "t"
-                    buf[i + 5] == 0x78 &&       // "x"
-                    buf[i + 6] == 0x72 &&       // "r"
-                    buf[i + 7] == 0x65 &&       // "e"
-                    buf[i + 8] == 0x66 {        // "f"
-                i += 10                 // Skip over "startxref" and the first EOL character
-                while buf[i] < 0x30 {   // Skip over possible second EOL character and spaces
-                    i += 1
+    ///
+    /// Adds the objects of the PDF to the list by looking for "number
+    /// generation obj" in it, for when the cross-reference table is missing or
+    /// wrong. The objects of incremental updates are later in the PDF, so the
+    /// newest version of an object comes last.
+    ///
+    /// - Returns: the last trailer, or the last cross-reference stream object
+    ///   when there is no trailer, or nil when there is neither.
+    ///
+    private func getObjectsByScanning(_ buf: [UInt8], _ objects: inout [PDFobj]) -> PDFobj? {
+        let trailerKeyword = Array("trailer".utf8)
+        let endStreamKeyword = Array("endstream".utf8)
+        var trailer: PDFobj?
+        var xrefStream: PDFobj?
+        var i = 0
+        while i < buf.count {
+            if isObjectStart(buf, i) {
+                let obj = getObject(buf, i)
+                if isObject(obj, -1) {
+                    obj.number = toInteger(obj.dict[0])
+                    objects.append(obj)
+                    if obj.getValue("/Type") == "/XRef" {
+                        xrefStream = obj
+                    }
+                    if obj.dict.contains("stream") {
+                        // Skip the stream, as its bytes can look like an object.
+                        let end = indexOf(buf, endStreamKeyword, obj.streamOffset)
+                        i = (end == -1) ? buf.count : end
+                        continue
+                    }
                 }
-                while buf[i] >= 0x30 && buf[i] <= 0x39 {
-                    bytes.append(buf[i])
-                    i += 1
+            } else if startsWith(buf, i, trailerKeyword) {
+                trailer = getObject(buf, i)
+            }
+            i += 1
+        }
+        return trailer ?? xrefStream
+    }
+
+    // Returns true when "number generation obj" starts at the offset, after
+    // white space or at the start of the PDF.
+    private func isObjectStart(_ buf: [UInt8], _ off: Int) -> Bool {
+        if off > 0 && !isWhiteSpace(buf[off - 1]) {
+            return false
+        }
+        var i = off
+        while i < buf.count && buf[i] >= 0x30 && buf[i] <= 0x39 {
+            i += 1
+        }
+        if i == off {
+            return false
+        }
+        var j = i
+        while j < buf.count && isWhiteSpace(buf[j]) {
+            j += 1
+        }
+        var k = j
+        while k < buf.count && buf[k] >= 0x30 && buf[k] <= 0x39 {
+            k += 1
+        }
+        var m = k
+        while m < buf.count && isWhiteSpace(buf[m]) {
+            m += 1
+        }
+        return j > i && k > j && m > k && m + 3 <= buf.count &&
+                buf[m] == 0x6F && buf[m + 1] == 0x62 && buf[m + 2] == 0x6A     // "obj"
+    }
+
+    private func startsWith(_ buf: [UInt8], _ off: Int, _ str: [UInt8]) -> Bool {
+        if off < 0 || off + str.count > buf.count {
+            return false
+        }
+        for i in 0..<str.count where buf[off + i] != str[i] {
+            return false
+        }
+        return true
+    }
+
+    private func indexOf(_ buf: [UInt8], _ str: [UInt8], _ from: Int) -> Int {
+        var i = max(from, 0)
+        while i + str.count <= buf.count {
+            if startsWith(buf, i, str) {
+                return i
+            }
+            i += 1
+        }
+        return -1
+    }
+
+    // Returns the offset after the last startxref, or -1 when there is none.
+    private func getStartXRef(_ buf: [UInt8]) -> Int {
+        let keyword = Array("startxref".utf8)
+        var i = buf.count - keyword.count
+        while i >= 0 {
+            if startsWith(buf, i, keyword) {
+                var j = i + keyword.count
+                while j < buf.count && isWhiteSpace(buf[j]) {
+                    j += 1
                 }
-                break
+                var offset = 0
+                var k = j
+                while k < buf.count && buf[k] >= 0x30 && buf[k] <= 0x39 && offset <= Int(Int32.max) {
+                    offset = offset * 10 + Int(buf[k] - 0x30)
+                    k += 1
+                }
+                return (k > j && offset <= Int(Int32.max)) ? offset : -1
             }
             i -= 1
         }
-        return Int(String(bytes: bytes, encoding: .ascii)!)!
+        return -1
     }
 
     /// Adds the outline dictionary for the bookmarks and returns its object number.
@@ -1985,7 +2180,6 @@ public class PDF {
                 append(Token.endObj)
             } else {
                 setObjOffset(obj.number, byteCount)
-                var link = false
                 let n = obj.dict.count
 
                 var buffer = String()
@@ -1993,15 +2187,8 @@ public class PDF {
                 for i in 0..<n {
                     token = obj.dict[i]
                     buffer.append(token!)
-                    if token!.hasPrefix("(http:") {
-                        link = true
-                    } else if link && token!.hasSuffix(")") {
-                        link = false
-                    }
                     if i < (n - 1) {
-                        if !link {
-                            buffer.append(" ")
-                        }
+                        buffer.append(" ")
                     } else {
                         buffer.append("\n")
                     }

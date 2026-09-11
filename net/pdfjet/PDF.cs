@@ -1289,26 +1289,45 @@ public class PDF {
         return sorted;
     }
 
-    /// <summary>Reads the objects of an existing PDF from the stream.</summary>
+    /// <summary>
+    /// Reads the objects of an existing PDF from the stream. An encrypted PDF
+    /// is decrypted when it opens without a password.
+    /// </summary>
     public List<PDFobj> Read(Stream inputStream) {
         byte[] buf = Content.GetFromStream(inputStream);
 
         List<PDFobj> objects1 = new List<PDFobj>();
-        int xref = GetStartXRef(buf);
-        PDFobj obj1 = GetObject(buf, xref);
-        if (obj1.dict[0].Equals("xref")) {
-            GetObjects1(buf, obj1, objects1);
-        } else {
-            GetObjects2(buf, obj1, objects1);
+        PDFobj trailer = null;
+        try {
+            trailer = GetObjects(buf, GetStartXRef(buf), objects1, 0);
+        } catch (Exception) {
+            trailer = null;     // A cross-reference stream that cannot be decoded.
         }
+        if (trailer == null || objects1.Count == 0) {
+            // The cross-reference table is missing or wrong, like in a PDF
+            // that was changed without updating it.
+            objects1.Clear();
+            trailer = GetObjectsByScanning(buf, objects1);
+        }
+        Decryptor decryptor = Decryptor.GetDecryptor(trailer, objects1);
 
         List<PDFobj> objects2 = new List<PDFobj>();
         foreach (PDFobj obj in objects1) {
+            String type = obj.GetValue("/Type");
+            if (type.Equals("/XRef")) {
+                continue;       // Skip the cross-reference streams.
+            }
+            if (decryptor != null) {
+                if (obj.number == decryptor.objNumber) {
+                    continue;   // Skip the encryption dictionary.
+                }
+                decryptor.DecryptStrings(obj);
+            }
             if (obj.dict.Contains("stream")) {
-                obj.SetStreamAndData(buf, obj.GetLength(objects1));
+                obj.SetStreamAndData(buf, obj.GetLength(objects1), decryptor);
             }
 
-            if (obj.GetValue("/Type").Equals("/ObjStm")) {
+            if (type.Equals("/ObjStm")) {
                 int first = Int32.Parse(obj.GetValue("/First"));
                 PDFobj o2 = GetObject(obj.data, 0, first);
                 int count = o2.dict.Count;
@@ -1326,8 +1345,6 @@ public class PDF {
                     o3.dict.Insert(0, num);
                     objects2.Add(o3);
                 }
-            } else if (obj.GetValue("/Type").Equals("/XRef")) {
-                // Skip the stream XRef object.
             } else {
                 objects2.Add(obj);
             }
@@ -1347,7 +1364,7 @@ public class PDF {
             return true;
         } else if (str.Equals("stream")) {
             obj.streamOffset = off;
-            if (buf[off] == '\n') {
+            if (off < buf.Length && buf[off] == '\n') {
                 obj.streamOffset += 1;
             }
             return true;
@@ -1358,6 +1375,9 @@ public class PDF {
     }
 
     private PDFobj GetObject(byte[] buf, int off) {
+        if (off < 0 || off >= buf.Length) {
+            return new PDFobj();    // An offset outside of the PDF has no tokens.
+        }
         return GetObject(buf, off, buf.Length);
     }
 
@@ -1366,86 +1386,90 @@ public class PDF {
         obj.offset = off;
         StringBuilder token = new StringBuilder();
 
-        int p = 0;
-        char c1 = ' ';
+        int p = 0;          // The nesting level of the parentheses in a literal string
         bool done = false;
         while (!done && off < len) {
             char c2 = (char) buf[off++];
-            if (c1 == '\\') {
+            if (p > 0) {
+                // A literal string is one token, with its white space and
+                // delimiters. A backslash escapes the character after it.
                 token.Append(c2);
-                c1 = c2;
-                continue;
-            }
-
-            if (c2 == '(') {
-                if (p == 0) {
-                    done = Process(obj, token, buf, off);
-                }
-                if (!done) {
-                    token.Append(c2);
-                    c1 = c2;
+                if (c2 == '\\') {
+                    if (off < len) {
+                        token.Append((char) buf[off++]);
+                    }
+                } else if (c2 == '(') {
                     ++p;
+                } else if (c2 == ')') {
+                    --p;
+                    if (p == 0) {
+                        done = Process(obj, token, buf, off);
+                    }
                 }
-            } else if (c2 == ')') {
-                token.Append(c2);
-                c1 = c2;
-                --p;
-                if (p == 0) {
-                    done = Process(obj, token, buf, off);
-                }
-            } else if (c2 == 0x00       // Null
-                    || c2 == 0x09       // Horizontal Tab
-                    || c2 == 0x0A       // Line Feed (LF)
-                    || c2 == 0x0C       // Form Feed
-                    || c2 == 0x0D       // Carriage Return (CR)
-                    || c2 == 0x20) {    // Space
+            } else if (c2 == '(') {
                 done = Process(obj, token, buf, off);
                 if (!done) {
-                    c1 = ' ';
+                    token.Append(c2);
+                    p = 1;
                 }
+            } else if (IsWhiteSpace(c2)) {
+                done = Process(obj, token, buf, off);
             } else if (c2 == '/') {
                 done = Process(obj, token, buf, off);
                 if (!done) {
                     token.Append(c2);
-                    c1 = c2;
                 }
-            } else if (c2 == '<' || c2 == '>' || c2 == '%') {
-                if (p > 0) {
-                    token.Append(c2);
-                    c1 = c2;
-                } else {
-                    if (c2 != c1) {
-                        done = Process(obj, token, buf, off);
-                        if (!done) {
-                            token.Append(c2);
-                            c1 = c2;
-                        }
-                    } else {
+            } else if (c2 == '<' || c2 == '>') {
+                done = Process(obj, token, buf, off);
+                if (!done) {
+                    if (off < len && buf[off] == c2) {
+                        obj.dict.Add(c2 == '<' ? "<<" : ">>");
+                        off++;
+                    } else if (c2 == '<') {
+                        // A hexadecimal string is one token, without its white space.
                         token.Append(c2);
-                        done = Process(obj, token, buf, off);
-                        if (!done) {
-                            c1 = ' ';
+                        while (off < len && buf[off] != '>') {
+                            char c = (char) buf[off++];
+                            if (!IsWhiteSpace(c)) {
+                                token.Append(c);
+                            }
                         }
+                        token.Append('>');
+                        off++;
+                        done = Process(obj, token, buf, off);
+                    } else {
+                        obj.dict.Add(">");
                     }
+                }
+            } else if (c2 == '%') {
+                // A comment ends at the end of the line.
+                done = Process(obj, token, buf, off);
+                while (!done && off < len && buf[off] != '\n' && buf[off] != '\r') {
+                    off++;
                 }
             } else if (c2 == '[' || c2 == ']' || c2 == '{' || c2 == '}') {
-                if (p > 0) {
-                    token.Append(c2);
-                    c1 = c2;
-                } else {
-                    done = Process(obj, token, buf, off);
-                    if (!done) {
-                        obj.dict.Add(c2.ToString());
-                        c1 = c2;
-                    }
+                done = Process(obj, token, buf, off);
+                if (!done) {
+                    obj.dict.Add(c2.ToString());
                 }
             } else {
                 token.Append(c2);
-                c1 = c2;
             }
+        }
+        if (!done) {
+            Process(obj, token, buf, off);  // The last token, at the end of the data.
         }
 
         return obj;
+    }
+
+    private static bool IsWhiteSpace(int c) {
+        return c == 0x00        // Null
+            || c == 0x09        // Horizontal Tab
+            || c == 0x0A        // Line Feed (LF)
+            || c == 0x0C        // Form Feed
+            || c == 0x0D        // Carriage Return (CR)
+            || c == 0x20;       // Space
     }
 
     /// <summary>
@@ -1466,107 +1490,242 @@ public class PDF {
         return i;
     }
 
-    private void GetObjects1(
-            byte[] buf,
-            PDFobj obj,
-            List<PDFobj> objects) {
-        String xref = obj.GetValue("/Prev");
-        if (!xref.Equals("")) {
-            GetObjects1(
-                    buf,
-                    GetObject(buf, Int32.Parse(xref)),
-                    objects);
+    // Returns the value of the token, or -1 when it is not an integer.
+    private static int ToInteger(String token) {
+        return (IsInteger(token) && Int32.TryParse(token, out int value)) ? value : -1;
+    }
+
+    // Returns true when the tokens of the object start with "number
+    // generation obj", where the number is above 0, and is the number
+    // that is given unless that is -1.
+    private static bool IsObject(PDFobj obj, int number) {
+        if (obj.dict.Count < 3 || !obj.dict[2].Equals("obj") || !IsInteger(obj.dict[1])) {
+            return false;
         }
+        int n = ToInteger(obj.dict[0]);
+        return n > 0 && (number == -1 || n == number);
+    }
 
-        int i = 1;
-        while (true) {
-            String token = obj.dict[i++];
-            if (token.Equals("trailer")) {
-                break;
+    // Adds the objects of the cross-reference section at the offset to the
+    // list, after the objects of the sections before it, so that the newest
+    // version of an object that was updated comes last. A section is a
+    // cross-reference table, which can have an /XRefStm stream for the
+    // objects in object streams, or a cross-reference stream. Returns the
+    // trailer of the section, which is the cross-reference stream object when
+    // there is no table, or null when an offset in the section is not that
+    // of its object.
+    private PDFobj GetObjects(byte[] buf, int offset, List<PDFobj> objects, int depth) {
+        PDFobj xref = GetObject(buf, offset);
+        bool table = xref.dict.Count > 0 && xref.dict[0].Equals("xref");
+        if (depth > 1000 || (!table && !IsObject(xref, -1))) {
+            return null;
+        }
+        String prev = xref.GetValue("/Prev");
+        if (!prev.Equals("") && GetObjects(buf, ToInteger(prev), objects, depth + 1) == null) {
+            return null;
+        }
+        if (table) {
+            // The objects in the table replace those in the /XRefStm stream.
+            String xrefStm = xref.GetValue("/XRefStm");
+            if (!xrefStm.Equals("") &&
+                    !GetStreamObjects(buf, GetObject(buf, ToInteger(xrefStm)), objects)) {
+                return null;
             }
+            if (!GetTableObjects(buf, xref, objects)) {
+                return null;
+            }
+        } else if (!GetStreamObjects(buf, xref, objects)) {
+            return null;
+        }
+        return xref;
+    }
 
-            int n = Int32.Parse(obj.dict[i++]);     // Number of entries
-            for (int j = 0; j < n; j++) {
-                String offset = obj.dict[i++];      // Object offset
-                String number = obj.dict[i++];      // Generation number
-                String status = obj.dict[i++];      // Status keyword
-                if (!status.Equals("f")) {
-                    PDFobj o2 = GetObject(buf, Int32.Parse(offset));
-                    o2.number = Int32.Parse(o2.dict[0]);
-                    objects.Add(o2);
+    // Adds the objects in use of a cross-reference table, and returns false
+    // when an offset is not that of its object.
+    private bool GetTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+        List<String> dict = xref.dict;
+        int i = 1;
+        // Each subsection starts with its first object number and the number of entries.
+        while (i + 1 < dict.Count && IsInteger(dict[i])) {
+            int number = ToInteger(dict[i]);
+            int count = ToInteger(dict[i + 1]);
+            i += 2;
+            for (int j = 0; j < count; j++, number++, i += 3) {
+                if (i + 2 >= dict.Count) {
+                    return false;
+                }
+                // The entry is the offset, the generation number and n for an object in use.
+                if (dict[i + 2].Equals("n")) {
+                    PDFobj obj = GetObject(buf, ToInteger(dict[i]));
+                    if (!IsObject(obj, number)) {
+                        return false;
+                    }
+                    obj.number = number;
+                    objects.Add(obj);
                 }
             }
         }
+        return i < dict.Count && dict[i].Equals("trailer");
     }
 
-    private void GetObjects2(
-            byte[] buf,
-            PDFobj obj,
-            List<PDFobj> objects) {
-        String prev = obj.GetValue("/Prev");
-        if (!prev.Equals("")) {
-            GetObjects2(
-                    buf,
-                    GetObject(buf, Int32.Parse(prev)),
-                    objects);
+    // Adds the objects of a cross-reference stream that are not in object
+    // streams, and returns false when an offset is not that of its object.
+    private bool GetStreamObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+        if (!IsObject(xref, -1) || !xref.GetValue("/Type").Equals("/XRef") ||
+                !xref.dict.Contains("stream")) {
+            return false;
         }
-
-        int n1 = 0;         // Field 1 number of bytes
-        int n2 = 0;         // Field 2 number of bytes
-        int n3 = 0;         // Field 3 number of bytes
-        int length = 0;
-        for (int i = 0; i < obj.dict.Count; i++) {
-            String token = obj.dict[i];
-            if (token.Equals("/Length")) {
-                length = Int32.Parse(obj.dict[i + 1]);
-            } else if (token.Equals("/W")) {
-                // "/W [ 1 3 1 ]"
-                n1 = Int32.Parse(obj.dict[i + 2]);
-                n2 = Int32.Parse(obj.dict[i + 3]);
-                n3 = Int32.Parse(obj.dict[i + 4]);
+        // See page 50 in PDF32000_2008.pdf
+        List<String> dict = xref.dict;
+        int w = dict.IndexOf("/W");
+        if (w == -1 || w + 4 >= dict.Count) {
+            return false;
+        }
+        int n1 = ToInteger(dict[w + 2]);    // Field 1 number of bytes
+        int n2 = ToInteger(dict[w + 3]);    // Field 2 number of bytes
+        int n3 = ToInteger(dict[w + 4]);    // Field 3 number of bytes
+        int length = ToInteger(xref.GetValue("/Length"));
+        if (n1 < 0 || n2 < 0 || n3 < 0 || n1 + n2 + n3 == 0 ||
+                length < 0 || xref.streamOffset + length > buf.Length) {
+            return false;
+        }
+        // The /Index array has the first object number and the number of
+        // entries of each subsection, and is [0 /Size] when it is missing.
+        List<int> index = new List<int>();
+        int k = dict.IndexOf("/Index");
+        if (k != -1 && k + 1 < dict.Count && dict[k + 1].Equals("[")) {
+            for (k += 2; k + 1 < dict.Count && IsInteger(dict[k]); k += 2) {
+                index.Add(ToInteger(dict[k]));
+                index.Add(ToInteger(dict[k + 1]));
             }
+        } else {
+            index.Add(0);
+            index.Add(ToInteger(xref.GetValue("/Size")));
         }
 
         // SetStreamAndData undoes the predictor, so each entry is a row of the data.
-        obj.SetStreamAndData(buf, length);
+        xref.SetStreamAndData(buf, length);
         int n = n1 + n2 + n3;   // Number of bytes per entry
-        byte[] entry = new byte[n];
-        for (int i = 0; n > 0 && i + n <= obj.data.Length; i += n) {
-            Array.Copy(obj.data, i, entry, 0, n);
-            // Process the entries in a cross-reference stream
-            // Page 51 in PDF32000_2008.pdf
-            if (entry[0] == 1) {    // Type 1 entry
-                PDFobj o2 = GetObject(buf, ToInt(entry, n1, n2));
-                o2.number = Int32.Parse(o2.dict[0]);
-                objects.Add(o2);
+        int offset = 0;
+        for (int s = 0; s + 1 < index.Count; s += 2) {
+            int number = index[s];
+            for (int j = 0; j < index[s + 1] && offset + n <= xref.data.Length; j++) {
+                // Process the entries in a cross-reference stream.
+                // Page 51 in PDF32000_2008.pdf
+                int type = (n1 == 0) ? 1 : ToInt(xref.data, offset, n1);
+                if (type == 1) {
+                    PDFobj obj = GetObject(buf, ToInt(xref.data, offset + n1, n2));
+                    if (!IsObject(obj, number)) {
+                        return false;
+                    }
+                    obj.number = number;
+                    objects.Add(obj);
+                }
+                number++;
+                offset += n;
             }
         }
+        return true;
     }
 
-    private int GetStartXRef(byte[] buf) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = (buf.Length - 10); i > 10; i--) {
-            if (buf[i] == 's' &&
-                    buf[i + 1] == 't' &&
-                    buf[i + 2] == 'a' &&
-                    buf[i + 3] == 'r' &&
-                    buf[i + 4] == 't' &&
-                    buf[i + 5] == 'x' &&
-                    buf[i + 6] == 'r' &&
-                    buf[i + 7] == 'e' &&
-                    buf[i + 8] == 'f') {
-                i += 10;                // Skip over "startxref" and the first EOL character
-                while (buf[i] < 0x30) { // Skip over possible second EOL character and spaces
-                    i += 1;
+    // Adds the objects of the PDF to the list by looking for "number
+    // generation obj" in it, for when the cross-reference table is missing
+    // or wrong. The objects of incremental updates are later in the PDF, so
+    // the newest version of an object comes last. Returns the last trailer,
+    // or the last cross-reference stream object when there is no trailer, or
+    // null when there is neither.
+    private PDFobj GetObjectsByScanning(byte[] buf, List<PDFobj> objects) {
+        PDFobj trailer = null;
+        PDFobj xrefStream = null;
+        int i = 0;
+        while (i < buf.Length) {
+            if (IsObjectStart(buf, i)) {
+                PDFobj obj = GetObject(buf, i);
+                if (IsObject(obj, -1)) {
+                    obj.number = ToInteger(obj.dict[0]);
+                    objects.Add(obj);
+                    if (obj.GetValue("/Type").Equals("/XRef")) {
+                        xrefStream = obj;
+                    }
+                    if (obj.dict.Contains("stream")) {
+                        // Skip the stream, as its bytes can look like an object.
+                        int end = IndexOf(buf, "endstream", obj.streamOffset);
+                        i = (end == -1) ? buf.Length : end;
+                        continue;
+                    }
                 }
-                while (Char.IsDigit((char) buf[i])) {
-                    sb.Append((char) buf[i]);
-                    i += 1;
-                }
-                break;
+            } else if (StartsWith(buf, i, "trailer")) {
+                trailer = GetObject(buf, i);
+            }
+            i++;
+        }
+        return (trailer != null) ? trailer : xrefStream;
+    }
+
+    // Returns true when "number generation obj" starts at the offset, after
+    // white space or at the start of the PDF.
+    private static bool IsObjectStart(byte[] buf, int off) {
+        if (off > 0 && !IsWhiteSpace(buf[off - 1])) {
+            return false;
+        }
+        int i = off;
+        while (i < buf.Length && buf[i] >= '0' && buf[i] <= '9') {
+            i++;
+        }
+        int j = i;
+        while (j < buf.Length && IsWhiteSpace(buf[j])) {
+            j++;
+        }
+        int k = j;
+        while (k < buf.Length && buf[k] >= '0' && buf[k] <= '9') {
+            k++;
+        }
+        int m = k;
+        while (m < buf.Length && IsWhiteSpace(buf[m])) {
+            m++;
+        }
+        return i > off && j > i && k > j && m > k && StartsWith(buf, m, "obj");
+    }
+
+    private static bool StartsWith(byte[] buf, int off, String str) {
+        if (off + str.Length > buf.Length) {
+            return false;
+        }
+        for (int i = 0; i < str.Length; i++) {
+            if (buf[off + i] != str[i]) {
+                return false;
             }
         }
-        return Int32.Parse(sb.ToString());
+        return true;
+    }
+
+    private static int IndexOf(byte[] buf, String str, int from) {
+        for (int i = Math.Max(from, 0); i + str.Length <= buf.Length; i++) {
+            if (StartsWith(buf, i, str)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // Returns the offset after the last startxref, or -1 when there is none.
+    private int GetStartXRef(byte[] buf) {
+        for (int i = buf.Length - 9; i >= 0; i--) {
+            if (StartsWith(buf, i, "startxref")) {
+                int j = i + 9;
+                while (j < buf.Length && IsWhiteSpace(buf[j])) {
+                    j++;
+                }
+                long offset = 0;
+                int k = j;
+                while (k < buf.Length && buf[k] >= '0' && buf[k] <= '9' && offset <= Int32.MaxValue) {
+                    offset = offset * 10 + (buf[k] - '0');
+                    k++;
+                }
+                return (k > j && offset <= Int32.MaxValue) ? (int) offset : -1;
+            }
+        }
+        return -1;
     }
 
     /// <summary>Adds the outline dictionary for the bookmarks and returns its object number.</summary>
@@ -2017,21 +2176,13 @@ public class PDF {
                 Append(Token.EndObj);
             } else {
                 SetObjOffset(obj.number, byteCount);
-                bool link = false;
                 int n = obj.dict.Count;
                 String token = null;
                 for (int i = 0; i < n; i++) {
                     token = obj.dict[i];
                     Append(token);
-                    if (token.StartsWith("(http:")) {
-                        link = true;
-                    } else if (link == true && token.EndsWith(")")) {
-                        link = false;
-                    }
                     if (i < (n - 1)) {
-                        if (!link) {
-                            Append(Token.Space);
-                        }
+                        Append(Token.Space);
                     } else {
                         Append(Token.Newline);
                     }

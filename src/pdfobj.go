@@ -57,50 +57,153 @@ func (obj *PDFobj) GetData() []byte {
 	return obj.data
 }
 
-// SetStreamAndData sets the object stream.
+// SetStreamAndData copies the stream from the buffer, and decodes it with the
+// filters of its /Filter entry.
 func (obj *PDFobj) SetStreamAndData(buf []byte, length int) *PDFobj {
-	obj.stream = make([]byte, length)
-	for i := 0; i < length; i++ {
-		obj.stream[i] = buf[obj.streamOffset+i]
-	}
-	filter := obj.getValue("/Filter")
-	if filter == "/FlateDecode" {
-		data, _ := decompressor.Inflate(obj.stream)
-		obj.data = obj.applyDecodeParms(data)
-	} else if filter == "/LZWDecode" {
-		obj.data = obj.applyDecodeParms(decompressor.LZWDecode(obj.stream))
-	} else {
-		// Assume no compression for now.
-		obj.data = obj.stream
+	return obj.setStreamAndData(buf, length, nil)
+}
+
+// setStreamAndData copies the stream from the buffer, decrypts it when the
+// PDF is encrypted, and decodes it with the filters of its /Filter entry. The
+// decrypted stream replaces the encrypted one, so that it can be copied.
+func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor) *PDFobj {
+	if obj.stream == nil {
+		obj.stream = make([]byte, length)
+		copy(obj.stream, buf[obj.streamOffset:obj.streamOffset+length])
+		if dec != nil {
+			obj.stream = dec.decryptStream(obj, obj.stream)
+			obj.setLength(len(obj.stream))
+		}
+		obj.data = obj.decode(obj.stream)
 	}
 	return obj
 }
 
-// applyDecodeParms undoes the predictor of the /DecodeParms dictionary. Images
-// keep it, as they are copied with their stream, and their data is not used.
-func (obj *PDFobj) applyDecodeParms(decoded []byte) []byte {
+// setLength sets the /Length of the stream, replacing a reference to the length.
+func (obj *PDFobj) setLength(length int) {
+	i := slices.Index(obj.dict, "/Length")
+	if i == -1 || i+1 >= len(obj.dict) {
+		return
+	}
+	if i+3 < len(obj.dict) && obj.dict[i+3] == "R" {
+		obj.dict = slices.Delete(obj.dict, i+2, i+4)
+	}
+	obj.dict[i+1] = strconv.Itoa(length)
+}
+
+// decode decodes the stream with each filter of its /Filter entry in turn. A
+// filter that is not supported, like DCTDecode, ends the decoding, and the
+// data is what the filters before it decoded.
+func (obj *PDFobj) decode(stream []byte) []byte {
+	decoded := stream
+	for i, filter := range obj.getValues("/Filter") {
+		switch filter {
+		case "/FlateDecode", "/Fl":
+			data, _ := decompressor.Inflate(decoded)
+			decoded = obj.applyDecodeParms(data, i)
+		case "/LZWDecode", "/LZW":
+			decoded = obj.applyDecodeParms(decompressor.LZWDecode(decoded), i)
+		case "/ASCIIHexDecode", "/AHx":
+			decoded = decompressor.ASCIIHexDecode(decoded)
+		case "/ASCII85Decode", "/A85":
+			decoded = decompressor.ASCII85Decode(decoded)
+		case "/RunLengthDecode", "/RL":
+			decoded = decompressor.RunLengthDecode(decoded)
+		default:
+			return decoded
+		}
+	}
+	return decoded
+}
+
+// getValues returns the elements of the array that is the value of the key,
+// or the value itself when it is not an array.
+func (obj *PDFobj) getValues(key string) []string {
+	values := make([]string, 0)
+	i := slices.Index(obj.dict, key) + 1
+	if i == 0 || i >= len(obj.dict) {
+		return values
+	}
+	if obj.dict[i] != "[" {
+		return append(values, obj.dict[i])
+	}
+	for i++; i < len(obj.dict) && obj.dict[i] != "]"; i++ {
+		values = append(values, obj.dict[i])
+	}
+	return values
+}
+
+// applyDecodeParms undoes the predictor in the parameters of the filter at the
+// index. Images keep it, as they are copied with their stream, and their data
+// is not used.
+func (obj *PDFobj) applyDecodeParms(decoded []byte, index int) []byte {
 	if obj.getValue("/Subtype") == "/Image" {
 		return decoded
 	}
+	parms := obj.getDecodeParms(index)
 	return decompressor.ApplyPredictor(
 		decoded,
-		obj.getDecodeParm("/Predictor", 1),
-		obj.getDecodeParm("/Colors", 1),
-		obj.getDecodeParm("/BitsPerComponent", 8),
-		obj.getDecodeParm("/Columns", 1))
+		getDecodeParm(parms, "/Predictor", 1),
+		getDecodeParm(parms, "/Colors", 1),
+		getDecodeParm(parms, "/BitsPerComponent", 8),
+		getDecodeParm(parms, "/Columns", 1))
 }
 
-// getDecodeParm returns the integer value of the key in the /DecodeParms
+// getDecodeParms returns the tokens of the parameters dictionary of the filter
+// at the index. /DecodeParms is a dictionary for a single filter, or an array
+// with a dictionary or null for each filter.
+func (obj *PDFobj) getDecodeParms(index int) []string {
+	dict := obj.dict
+	i := slices.Index(dict, "/DecodeParms") + 1
+	if i == 0 || i >= len(dict) {
+		return nil
+	}
+	array := dict[i] == "["
+	if array {
+		i++
+	}
+	for element := 0; i < len(dict) && dict[i] != "]"; element++ {
+		start := i
+		if dict[i] == "<<" {
+			level := 0
+			for {
+				token := dict[i]
+				i++
+				if token == "<<" {
+					level++
+				} else if token == ">>" {
+					level--
+				}
+				if level <= 0 || i >= len(dict) {
+					break
+				}
+			}
+		} else if i+2 < len(dict) && dict[i+2] == "R" {
+			i += 3 // A reference to a dictionary, which is not supported.
+		} else {
+			i++ // null
+		}
+		if element == index {
+			if dict[start] == "<<" {
+				return dict[start:i]
+			}
+			return nil
+		}
+		if !array {
+			break
+		}
+	}
+	return nil
+}
+
+// getDecodeParm returns the integer value of the key in the parameters
 // dictionary. A value that is not a 32-bit integer gets the default, as in
 // the Java and C# ports.
-func (obj *PDFobj) getDecodeParm(key string, defaultValue int) int {
-	tokens := strings.Split(obj.getValue("/DecodeParms"), " ")
-	for i := 0; i < len(tokens)-1; i++ {
-		if tokens[i] == key {
-			if value, err := strconv.ParseInt(tokens[i+1], 10, 32); err == nil {
-				return int(value)
-			}
-			break
+func getDecodeParm(parms []string, key string, defaultValue int) int {
+	i := slices.Index(parms, key)
+	if i != -1 && i+1 < len(parms) {
+		if value, err := strconv.ParseInt(parms[i+1], 10, 32); err == nil {
+			return int(value)
 		}
 	}
 	return defaultValue

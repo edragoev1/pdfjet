@@ -185,6 +185,114 @@ func abs(x int) int {
 	return x
 }
 
+// ASCIIHexDecode decodes the data of an ASCIIHexDecode stream. White space is
+// skipped, > ends the data, and a last digit without a pair is followed by 0.
+func ASCIIHexDecode(buf []byte) []byte {
+	decoded := make([]byte, 0, len(buf)/2)
+	high := -1
+	for _, b := range buf {
+		if b == '>' {
+			break
+		}
+		digit := HexValue(int(b))
+		if digit == -1 {
+			continue // White space, or a character that is not valid.
+		}
+		if high == -1 {
+			high = digit
+		} else {
+			decoded = append(decoded, byte(high<<4|digit))
+			high = -1
+		}
+	}
+	if high != -1 {
+		decoded = append(decoded, byte(high<<4))
+	}
+	return decoded
+}
+
+// HexValue returns the value of a hexadecimal digit, or -1 when it is not one.
+func HexValue(c int) int {
+	if c >= '0' && c <= '9' {
+		return c - '0'
+	} else if c >= 'a' && c <= 'f' {
+		return c - 'a' + 10
+	} else if c >= 'A' && c <= 'F' {
+		return c - 'A' + 10
+	}
+	return -1
+}
+
+// ASCII85Decode decodes the data of an ASCII85Decode stream. Each group of
+// five characters from ! to u is four bytes, z is four zero bytes, and ~>
+// ends the data. White space is skipped, and a last group of n characters is
+// n - 1 bytes.
+func ASCII85Decode(buf []byte) []byte {
+	decoded := make([]byte, 0, len(buf)*4/5+4)
+	var value int64
+	count := 0
+	i := 0
+	if len(buf) >= 2 && buf[0] == '<' && buf[1] == '~' {
+		i = 2 // The start of the data in PostScript.
+	}
+	for ; i < len(buf); i++ {
+		c := int64(buf[i])
+		if c == '~' {
+			break
+		} else if c == 'z' && count == 0 {
+			decoded = append(decoded, 0, 0, 0, 0)
+		} else if c >= '!' && c <= 'u' {
+			value = value*85 + (c - '!')
+			count++
+			if count == 5 {
+				for j := 24; j >= 0; j -= 8 {
+					decoded = append(decoded, byte(value>>j))
+				}
+				value = 0
+				count = 0
+			}
+		} // White space, or a character that is not valid.
+	}
+	if count > 1 {
+		for j := count; j < 5; j++ {
+			value = value*85 + 84
+		}
+		for j := 0; j < count-1; j++ {
+			decoded = append(decoded, byte(value>>(24-8*j)))
+		}
+	}
+	return decoded
+}
+
+// RunLengthDecode decodes the data of a RunLengthDecode stream. A length byte
+// from 0 to 127 is followed by that many plus one bytes to copy, one from 129
+// to 255 by a byte to repeat 257 minus that many times, and 128 ends the data.
+func RunLengthDecode(buf []byte) []byte {
+	decoded := make([]byte, 0, len(buf)*2)
+	i := 0
+	for i < len(buf) {
+		length := int(buf[i])
+		i++
+		if length < 128 {
+			n := length + 1
+			if n > len(buf)-i {
+				n = len(buf) - i
+			}
+			decoded = append(decoded, buf[i:i+n]...)
+			i += n
+		} else if length > 128 && i < len(buf) {
+			b := buf[i]
+			i++
+			for j := 0; j < 257-length; j++ {
+				decoded = append(decoded, b)
+			}
+		} else {
+			break
+		}
+	}
+	return decoded
+}
+
 // Inflate decompresses zlib-compressed data (RFC 1950).
 // Returns an error if the data is not valid zlib format.
 func Inflate(buf []byte) (result []byte, err error) {
