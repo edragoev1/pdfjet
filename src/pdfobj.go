@@ -65,19 +65,25 @@ func (obj *PDFobj) SetStreamAndData(buf []byte, length int) *PDFobj {
 	}
 	filter := obj.getValue("/Filter")
 	if filter == "/FlateDecode" {
-		obj.data, _ = decompressor.Inflate(obj.stream)
+		data, _ := decompressor.Inflate(obj.stream)
+		obj.data = obj.applyDecodeParms(data)
 	} else if filter == "/LZWDecode" {
-		obj.data = decompressor.ApplyPredictor(
-			decompressor.LZWDecode(obj.stream),
-			obj.getDecodeParm("/Predictor", 1),
-			obj.getDecodeParm("/Colors", 1),
-			obj.getDecodeParm("/BitsPerComponent", 8),
-			obj.getDecodeParm("/Columns", 1))
+		obj.data = obj.applyDecodeParms(decompressor.LZWDecode(obj.stream))
 	} else {
 		// Assume no compression for now.
 		obj.data = obj.stream
 	}
 	return obj
+}
+
+// applyDecodeParms undoes the predictor of the /DecodeParms dictionary.
+func (obj *PDFobj) applyDecodeParms(decoded []byte) []byte {
+	return decompressor.ApplyPredictor(
+		decoded,
+		obj.getDecodeParm("/Predictor", 1),
+		obj.getDecodeParm("/Colors", 1),
+		obj.getDecodeParm("/BitsPerComponent", 8),
+		obj.getDecodeParm("/Columns", 1))
 }
 
 // getDecodeParm returns the integer value of the key in the /DecodeParms

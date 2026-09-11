@@ -53,19 +53,24 @@ public class PDFobj {
             Array.Copy(buf, streamOffset, stream, 0, length);
             String filter = GetValue("/Filter");
             if (filter.Equals("/FlateDecode")) {
-                this.data = Decompressor.Inflate(stream);
+                this.data = ApplyDecodeParms(Decompressor.Inflate(stream));
             } else if (filter.Equals("/LZWDecode")) {
-                this.data = Decompressor.ApplyPredictor(
-                        Decompressor.LZWDecode(stream),
-                        GetDecodeParm("/Predictor", 1),
-                        GetDecodeParm("/Colors", 1),
-                        GetDecodeParm("/BitsPerComponent", 8),
-                        GetDecodeParm("/Columns", 1));
+                this.data = ApplyDecodeParms(Decompressor.LZWDecode(stream));
             } else {
                 // Assume no compression for now.
                 this.data = stream;
             }
         }
+    }
+
+    // Undoes the predictor of the /DecodeParms dictionary.
+    private byte[] ApplyDecodeParms(byte[] decoded) {
+        return Decompressor.ApplyPredictor(
+                decoded,
+                GetDecodeParm("/Predictor", 1),
+                GetDecodeParm("/Colors", 1),
+                GetDecodeParm("/BitsPerComponent", 8),
+                GetDecodeParm("/Columns", 1));
     }
 
     // Returns the integer value of the key in the /DecodeParms dictionary.

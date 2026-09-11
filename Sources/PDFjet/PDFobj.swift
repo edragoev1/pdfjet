@@ -66,18 +66,24 @@ public final class PDFobj {
                 _ = try Puff(output: &data, input: &stream!)
                 // let time1 = Int64(Date().timeIntervalSince1970 * 1000)
                 // Swift.print("in pdf.read() => \(time1 - time0)")
+                data = applyDecodeParms(data)
             } else if filter == "/LZWDecode" {
-                data = applyPredictor(
-                        lzwDecode(stream!),
-                        getDecodeParm("/Predictor", 1),
-                        getDecodeParm("/Colors", 1),
-                        getDecodeParm("/BitsPerComponent", 8),
-                        getDecodeParm("/Columns", 1))
+                data = applyDecodeParms(lzwDecode(stream!))
             } else {
                 // Assume no compression for now ...
                 self.data = stream!
             }
         }
+    }
+
+    // Undoes the predictor of the /DecodeParms dictionary.
+    private final func applyDecodeParms(_ decoded: [UInt8]) -> [UInt8] {
+        return applyPredictor(
+                decoded,
+                getDecodeParm("/Predictor", 1),
+                getDecodeParm("/Colors", 1),
+                getDecodeParm("/BitsPerComponent", 8),
+                getDecodeParm("/Columns", 1))
     }
 
     // Returns the integer value of the key in the /DecodeParms dictionary.

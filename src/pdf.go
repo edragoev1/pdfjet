@@ -1510,20 +1510,13 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 	}
 
 	// See page 50 in PDF32000_2008.pdf
-	predictor := 0 // The predictor
-	n1 := 0        // Field 1 number of bytes
-	n2 := 0        // Field 2 number of bytes
-	n3 := 0        // Field 3 number of bytes
+	n1 := 0 // Field 1 number of bytes
+	n2 := 0 // Field 2 number of bytes
+	n3 := 0 // Field 3 number of bytes
 	length := 0
 	for i := 0; i < len(obj.dict); i++ {
 		token1 := obj.dict[i]
-		if token1 == "/Predictor" {
-			val, err := strconv.Atoi(obj.dict[i+1])
-			if err != nil {
-				log.Fatal(err)
-			}
-			predictor = val
-		} else if token1 == "/Length" {
+		if token1 == "/Length" {
 			len1, err := strconv.Atoi(obj.dict[i+1])
 			if err != nil {
 				log.Fatal(err)
@@ -1549,49 +1542,21 @@ func getObjects2(buf []byte, obj *PDFobj, objects *[]*PDFobj) {
 		}
 	}
 
+	// SetStreamAndData undoes the predictor, so each entry is a row of the data.
 	obj.SetStreamAndData(buf, length)
-	if obj.getValue("/Filter") == "/LZWDecode" {
-		predictor = 0 // SetStreamAndData has already undone it.
-	}
 	n := n1 + n2 + n3 // Number of bytes per entry
-	if predictor > 0 {
-		n++
-	}
-
-	entry := make([]byte, n)
-	for i := 0; i < len(obj.data); i += n {
-		if predictor == 12 {
-			// Apply the 'Up' filter.
-			for j := 1; j < n; j++ {
-				entry[j] += obj.data[i+j]
-			}
-		} else {
-			for j := 0; j < n; j++ {
-				entry[j] = obj.data[i+j]
-			}
-		}
+	for i := 0; n > 0 && i+n <= len(obj.data); i += n {
+		entry := obj.data[i : i+n]
 		// Process the entries in a cross-reference stream.
 		// Page 51 in PDF32000_2008.pdf
-		if predictor > 0 {
-			if entry[1] == 1 { // Type 1 entry
-				o2 := getObject(buf, toInt(entry, 1+n1, n2), len(buf))
-				num, err := strconv.Atoi(o2.dict[0])
-				if err != nil {
-					log.Fatal(err)
-				}
-				o2.number = num
-				*objects = append(*objects, o2)
+		if entry[0] == 1 { // Type 1 entry
+			o2 := getObject(buf, toInt(entry, n1, n2), len(buf))
+			num, err := strconv.Atoi(o2.dict[0])
+			if err != nil {
+				log.Fatal(err)
 			}
-		} else {
-			if entry[0] == 1 { // Type 1 entry
-				o2 := getObject(buf, toInt(entry, n1, n2), len(buf))
-				num, err := strconv.Atoi(o2.dict[0])
-				if err != nil {
-					log.Fatal(err)
-				}
-				o2.number = num
-				*objects = append(*objects, o2)
-			}
+			o2.number = num
+			*objects = append(*objects, o2)
 		}
 	}
 }

@@ -1511,16 +1511,13 @@ public class PDF {
                     objects);
         }
 
-        int predictor = 0;  // The predictor
         int n1 = 0;         // Field 1 number of bytes
         int n2 = 0;         // Field 2 number of bytes
         int n3 = 0;         // Field 3 number of bytes
         int length = 0;
         for (int i = 0; i < obj.dict.Count; i++) {
             String token = obj.dict[i];
-            if (token.Equals("/Predictor")) {
-                predictor = Int32.Parse(obj.dict[i + 1]);
-            } else if (token.Equals("/Length")) {
+            if (token.Equals("/Length")) {
                 length = Int32.Parse(obj.dict[i + 1]);
             } else if (token.Equals("/W")) {
                 // "/W [ 1 3 1 ]"
@@ -1530,41 +1527,18 @@ public class PDF {
             }
         }
 
+        // SetStreamAndData undoes the predictor, so each entry is a row of the data.
         obj.SetStreamAndData(buf, length);
-        if (obj.GetValue("/Filter").Equals("/LZWDecode")) {
-            predictor = 0;      // SetStreamAndData has already undone it.
-        }
         int n = n1 + n2 + n3;   // Number of bytes per entry
-        if (predictor > 0) {
-            n += 1;
-        }
-
         byte[] entry = new byte[n];
-        for (int i = 0; i < obj.data.Length; i += n) {
-            if (predictor == 12) {
-                // Apply the 'Up' filter.
-                for (int j = 1; j < n; j++) {
-                    entry[j] += obj.data[i + j];
-                }
-            } else {
-                for (int j = 0; j < n; j++) {
-                    entry[j] = obj.data[i + j];
-                }
-            }
+        for (int i = 0; n > 0 && i + n <= obj.data.Length; i += n) {
+            Array.Copy(obj.data, i, entry, 0, n);
             // Process the entries in a cross-reference stream
             // Page 51 in PDF32000_2008.pdf
-            if (predictor > 0) {
-                if (entry[1] == 1) {    // Type 1 entry
-                    PDFobj o2 = GetObject(buf, ToInt(entry, 1 + n1, n2));
-                    o2.number = Int32.Parse(o2.dict[0]);
-                    objects.Add(o2);
-                }
-            } else {
-                if (entry[0] == 1) {    // Type 1 entry
-                    PDFobj o2 = GetObject(buf, ToInt(entry, n1, n2));
-                    o2.number = Int32.Parse(o2.dict[0]);
-                    objects.Add(o2);
-                }
+            if (entry[0] == 1) {    // Type 1 entry
+                PDFobj o2 = GetObject(buf, ToInt(entry, n1, n2));
+                o2.number = Int32.Parse(o2.dict[0]);
+                objects.Add(o2);
             }
         }
     }

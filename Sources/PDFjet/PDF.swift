@@ -1454,16 +1454,13 @@ public class PDF {
                     getObject(&buf, Int(prev)!, buf.count),
                     &objects)
         }
-        var predictor = 0   // The predictor
         var n1 = 0          // Field 1 number of bytes
         var n2 = 0          // Field 2 number of bytes
         var n3 = 0          // Field 3 number of bytes
         var length = 0
         for i in 0..<obj.dict.count {
             let token = obj.dict[i]
-            if token == "/Predictor" {
-                predictor = Int(obj.dict[i + 1])!
-            } else if token == "/Length" {
+            if token == "/Length" {
                 length = Int(obj.dict[i + 1])!
             } else if token == "/W" {
                 // "/W [ 1 3 1 ]"
@@ -1473,45 +1470,21 @@ public class PDF {
             }
         }
 
+        // setStreamAndData undoes the predictor, so each entry is a row of the data.
         try obj.setStreamAndData(&buf, length)
-        if obj.getValue("/Filter") == "/LZWDecode" {
-            predictor = 0       // setStreamAndData has already undone it.
-        }
-        var n = n1 + n2 + n3    // Number of bytes per entry
-        if predictor > 0 {
-            n += 1
-        }
-
+        let n = n1 + n2 + n3    // Number of bytes per entry
         var entry = [UInt8](repeating: 0, count: n)
         var i = 0
-        while i < obj.data.count {
-            var j = 0
-            if predictor > 0 {
-                // Apply the "Up" predictor.
-                while j < n {
-                    entry[j] = entry[j] &+ obj.data[i + j]
-                    j += 1
-                }
-            } else {
-                while j < n {
-                    entry[j] = obj.data[i + j]
-                    j += 1
-                }
+        while n > 0 && i + n <= obj.data.count {
+            for j in 0..<n {
+                entry[j] = obj.data[i + j]
             }
             // Process the entries in a cross-reference stream
             // Page 51 in PDF32000_2008.pdf
-            if predictor > 0 {
-                if entry[1] == 1 {      // Type 1 entry
-                    let o2 = getObject(&buf, toInt(&entry, 1 + n1, n2), buf.count)
-                    o2.number = Int(o2.dict[0])!
-                    objects.append(o2)
-                }
-            } else {
-                if entry[0] == 1 {      // Type 1 entry
-                    let o2 = getObject(&buf, toInt(&entry, n1, n2), buf.count)
-                    o2.number = Int(o2.dict[0])!
-                    objects.append(o2)
-                }
+            if entry[0] == 1 {      // Type 1 entry
+                let o2 = getObject(&buf, toInt(&entry, n1, n2), buf.count)
+                o2.number = Int(o2.dict[0])!
+                objects.append(o2)
             }
             i += n
         }

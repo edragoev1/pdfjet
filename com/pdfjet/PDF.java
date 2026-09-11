@@ -1640,16 +1640,13 @@ final public class PDF {
         }
 
         // See page 50 in PDF32000_2008.pdf
-        int predictor = 0;  // Predictor byte
         int n1 = 0;         // Field 1 number of bytes
         int n2 = 0;         // Field 2 number of bytes
         int n3 = 0;         // Field 3 number of bytes
         int length = 0;
         for (int i = 0; i < obj.dict.size(); i++) {
             String token = obj.dict.get(i);
-            if (token.equals("/Predictor")) {
-                predictor = Integer.parseInt(obj.dict.get(i + 1));
-            } else if (token.equals("/Length")) {
+            if (token.equals("/Length")) {
                 length = Integer.parseInt(obj.dict.get(i + 1));
             } else if (token.equals("/W")) {
                 // "/W [ 1 3 1 ]"
@@ -1659,42 +1656,19 @@ final public class PDF {
             }
         }
 
+        // setStreamAndData undoes the predictor, so each entry is a row of the data.
         obj.setStreamAndData(buf, length);
-        if (obj.getValue("/Filter").equals("/LZWDecode")) {
-            predictor = 0;      // setStreamAndData has already undone it.
-        }
 
         int n = n1 + n2 + n3;   // Number of bytes per entry
-        if (predictor > 0) {
-            n += 1;
-        }
-
         byte[] entry = new byte[n];
-        for (int i = 0; i < obj.data.length; i += n) {
-            if (predictor == 12) {
-                // Apply the 'Up' filter.
-                for (int j = 1; j < n; j++) {
-                    entry[j] += obj.data[i + j];
-                }
-            } else {
-                for (int j = 0; j < n; j++) {
-                    entry[j] = obj.data[i + j];
-                }
-            }
+        for (int i = 0; n > 0 && i + n <= obj.data.length; i += n) {
+            System.arraycopy(obj.data, i, entry, 0, n);
             // Process the entries in a cross-reference stream.
             // Page 51 in PDF32000_2008.pdf
-            if (predictor > 0) {
-                if (entry[1] == 1) {    // Type 1 entry
-                    PDFobj o2 = getObject(buf, toInt(entry, 1 + n1, n2));
-                    o2.number = Integer.parseInt(o2.dict.get(0));
-                    objects.add(o2);
-                }
-            } else {
-                if (entry[0] == 1) {    // Type 1 entry
-                    PDFobj o2 = getObject(buf, toInt(entry, n1, n2));
-                    o2.number = Integer.parseInt(o2.dict.get(0));
-                    objects.add(o2);
-                }
+            if (entry[0] == 1) {    // Type 1 entry
+                PDFobj o2 = getObject(buf, toInt(entry, n1, n2));
+                o2.number = Integer.parseInt(o2.dict.get(0));
+                objects.add(o2);
             }
         }
     }

@@ -82,13 +82,13 @@ private func setSample(
 
 // Only the last row can be shorter than rowLength.
 private func applyPNGPredictor(_ data: [UInt8], _ bytesPerPixel: Int, _ rowLength: Int) -> [UInt8] {
-    var decoded = [UInt8]()
-    decoded.reserveCapacity(data.count)
+    let rows = (data.count + rowLength) / (rowLength + 1)
+    var decoded = [UInt8](repeating: 0, count: data.count - rows)
+    var j = 0               // The index in decoded
     for i in stride(from: 0, to: data.count, by: rowLength + 1) {
         let filter = data[i]
         let n = min(rowLength, data.count - i - 1)
         for x in 0..<n {
-            let j = decoded.count
             let left = (x >= bytesPerPixel) ? Int(decoded[j - bytesPerPixel]) : 0
             let up = (j >= rowLength) ? Int(decoded[j - rowLength]) : 0
             let upLeft = (x >= bytesPerPixel && j >= rowLength) ?
@@ -103,7 +103,8 @@ private func applyPNGPredictor(_ data: [UInt8], _ bytesPerPixel: Int, _ rowLengt
             } else if filter == 4 {     // Paeth
                 value += paeth(left, up, upLeft)
             }                           // 0 is None, and so are unknown types.
-            decoded.append(UInt8(value & 0xFF))
+            decoded[j] = UInt8(value & 0xFF)
+            j += 1
         }
     }
     return decoded
