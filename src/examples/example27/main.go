@@ -8,6 +8,7 @@ import (
 	"github.com/edragoev1/pdfjet/src/IBMPlexSansHebrew"
 	"github.com/edragoev1/pdfjet/src/IBMPlexSansThai"
 	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/src/compliance"
 	"github.com/edragoev1/pdfjet/src/content"
 	"github.com/edragoev1/pdfjet/src/letter"
 )
@@ -15,6 +16,8 @@ import (
 // Example27 draws Thai, Hebrew and Arabic text.
 func Example27() {
 	pdf := pdfjet.NewPDFFile("Example_27.pdf")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Thai, Hebrew, Arabic and Persian text")
 
 	// Thai font
 	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
@@ -38,6 +41,7 @@ func Example27() {
 	textBlock.SetWidth(430.0)
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetTextPadding(10.0)
+	textBlock.SetLanguage("th")
 	xy := textBlock.DrawOn(page)
 
 	x := float32(570.0)
@@ -47,6 +51,7 @@ func Example27() {
 	y += 20.0
 	str = pdfjet.ReorderVisually(str)
 	textLine := pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
 	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -54,6 +59,7 @@ func Example27() {
 	str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
 	str = pdfjet.ReorderVisually(str)
 	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
 	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -61,6 +67,7 @@ func Example27() {
 	str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
 	str = pdfjet.ReorderVisually(str)
 	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
 	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -68,6 +75,7 @@ func Example27() {
 	str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
 	str = pdfjet.ReorderVisually(str)
 	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
 	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -75,6 +83,7 @@ func Example27() {
 	str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
 	str = pdfjet.ReorderVisually(str)
 	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
 	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -83,6 +92,7 @@ func Example27() {
 	str = pdfjet.ReorderVisually(
 		"قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
 	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
 	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -90,6 +100,7 @@ func Example27() {
 	str = pdfjet.ReorderVisually(
 		"على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
 	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
 	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -97,6 +108,7 @@ func Example27() {
 	str = pdfjet.ReorderVisually(
 		"وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
 	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
 	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -104,6 +116,7 @@ func Example27() {
 	str = pdfjet.ReorderVisually(
 		"من بيجو وسيتروين ودونغفينغ.")
 	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
 	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
 	textLine.DrawOn(page)
 
@@ -111,6 +124,7 @@ func Example27() {
 	str = pdfjet.ReorderVisually(
 		"وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
 	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
 	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
 	textLine.DrawOn(page)
 

@@ -10,6 +10,8 @@ public class Example_27 {
     public Example_27() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_27.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Thai, Hebrew, Arabic and Persian text");
 
         // Thai font
         // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
@@ -34,6 +36,7 @@ public class Example_27 {
         textBlock.SetWidth(430f);
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetTextPadding(10f);
+        textBlock.SetLanguage("th");
         float[] xy = textBlock.DrawOn(page);
 
         float x = 570f;
@@ -42,30 +45,35 @@ public class Example_27 {
         String str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
         str = Bidi.ReorderVisually(str);
         TextLine textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
         textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)";
         str = Bidi.ReorderVisually(str);
         textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
         textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)";
         str = Bidi.ReorderVisually(str);
         textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
         textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)";
         str = Bidi.ReorderVisually(str);
         textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
         textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)";
         str = Bidi.ReorderVisually(str);
         textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
         textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
@@ -73,30 +81,35 @@ public class Example_27 {
         str = Bidi.ReorderVisually(
                 "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا");
         textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
         textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = Bidi.ReorderVisually(
                 "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.");
         textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
         textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = Bidi.ReorderVisually(
                 "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل");
         textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
         textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = Bidi.ReorderVisually(
                 "من بيجو وسيتروين ودونغفينغ.");
         textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
         textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
         str = Bidi.ReorderVisually(
                 "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.");
         textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
         textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
         textLine.DrawOn(page);
 
