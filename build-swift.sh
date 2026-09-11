@@ -1,7 +1,10 @@
 rm -rf .build
 
-# -warnings-as-errors fails the build of an example, and so its run, on any
-# warning in the example or the library.
+# Builds the library and all the examples at once, then runs the examples.
+# -warnings-as-errors fails the build on any warning.
+swift build --configuration release -Xswiftc -warnings-as-errors
+bin=$(swift build --configuration release --show-bin-path)
+
 for i in $(seq 1 50);
 do
     # The Swift port has no Example_30 - it demonstrates encryption, which the
@@ -10,8 +13,8 @@ do
         continue
     fi
     if [ $i -lt 10 ]; then
-        swift run --configuration release -Xswiftc -warnings-as-errors Example_0$i
+        "$bin/Example_0$i"
     else
-        swift run --configuration release -Xswiftc -warnings-as-errors Example_$i
+        "$bin/Example_$i"
     fi
 done
