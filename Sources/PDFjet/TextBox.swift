@@ -493,7 +493,10 @@ public class TextBox : Drawable {
         // incrementally instead of re-measuring the whole accumulated line on
         // every token, which made wrapping a long paragraph O(n^2).
         let additive = !font.isCoreFont
-        let lines = (text ?? "").components(separatedBy: CharacterSet.newlines)
+        // CharacterSet.newlines matches "\r" and "\n" separately, so Windows line
+        // endings are replaced first, or each would split off an empty line.
+        let lines = (text ?? "").replacingOccurrences(of: "\r\n", with: "\n")
+                .components(separatedBy: CharacterSet.newlines)
         for line in lines {
             if font.stringWidth(fallbackFont, fontSize, line) <= textAreaWidth {
                 list.append(line)

@@ -77,8 +77,9 @@ public class Example_34 {
         var tableData = [[Cell]]()
 
         var currentRow: Int = 0
-        let lines = (try String(contentsOfFile:
-                fileName, encoding: .utf8)).components(separatedBy: "\n")
+        let lines = (try String(contentsOfFile: fileName, encoding: .utf8))
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .components(separatedBy: "\n")
 
         for line in lines {
             if line.isEmpty {

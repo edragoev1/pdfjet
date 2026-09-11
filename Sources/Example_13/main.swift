@@ -17,7 +17,7 @@ public class Example_13 {
         var tableData = [[Cell]]()
         let text = (try String(contentsOfFile:
                 "data/winter-2009.txt", encoding: .utf8)).trimmingCharacters(in: .newlines)
-        let lines = text.components(separatedBy: "\n")
+        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
         for line1 in lines {
             let line = line1.trimmingCharacters(in: .newlines)
             var row = [Cell]()

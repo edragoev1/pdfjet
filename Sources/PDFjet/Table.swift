@@ -56,8 +56,11 @@ public class Table {
         var delimiterRegex: String?
         var numberOfFields = 0
         var lineNumber = 0
-        var lines = (try String(contentsOfFile:
-                fileName, encoding: .utf8)).components(separatedBy: "\n")
+        // Swift treats "\r\n" as one character, which a "\n" separator does not
+        // match, so Windows line endings are replaced first.
+        var lines = (try String(contentsOfFile: fileName, encoding: .utf8))
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .components(separatedBy: "\n")
         if lines.last == "" {
             lines.removeLast()          // Ignore the trailing end-of-line marker
         }

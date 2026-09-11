@@ -58,7 +58,7 @@ func Example04() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	strContent := string(content)
+	strContent := strings.ReplaceAll(string(content), "\r\n", "\n")
 	lines := strings.Split(strContent, "\n")
 	text := pdfjet.NewTextLine(f0, "")
 	for _, line := range lines {

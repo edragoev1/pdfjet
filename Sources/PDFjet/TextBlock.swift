@@ -259,7 +259,10 @@ public class TextBlock : Drawable {
         var textLines = [TextLine]()
 
         let textAreaWidth = self.width - 2 * self.textPadding
-        let lines = textContent.components(separatedBy: .newlines)
+        // .newlines matches "\r" and "\n" separately, so Windows line endings
+        // are replaced first, or each would split off an empty line.
+        let lines = textContent.replacingOccurrences(of: "\r\n", with: "\n")
+                .components(separatedBy: .newlines)
         for line in lines {
             if font.stringWidth(fallbackFont, line) <= textAreaWidth {
                 textLines.append(TextLine(font, line))

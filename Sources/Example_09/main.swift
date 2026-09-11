@@ -106,7 +106,7 @@ public class Example_09 {
 
         let text = (try String(contentsOfFile:
                 fileName, encoding: .utf8)).trimmingCharacters(in: .newlines)
-        let lines = text.components(separatedBy: "\n")
+        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
         for line1 in lines {
             let line = line1.trimmingCharacters(in: .whitespacesAndNewlines)
             var cols: [String]?
