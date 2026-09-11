@@ -131,15 +131,7 @@ public class Example_27 {
         persianBlock.setBorderColor(Color.blue)
         persianBlock.setTextPadding(10.0)
         persianBlock.setRightToLeft(true)
-        let xy4 = persianBlock.drawOn(page2)
-
-        let urduBlock = TextBlock(f3, try Content.ofTextFile("data/languages/urdu.txt"))
-        urduBlock.setLocation(180.0, xy4[1] + 30.0)
-        urduBlock.setWidth(400.0)
-        urduBlock.setBorderColor(Color.blue)
-        urduBlock.setTextPadding(10.0)
-        urduBlock.setRightToLeft(true)
-        urduBlock.drawOn(page2)
+        persianBlock.drawOn(page2)
 
         pdf.complete()
     }

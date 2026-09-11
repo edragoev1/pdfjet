@@ -124,14 +124,6 @@ public class Example_27 {
         textBlock.setBorderColor(Color.blue);
         textBlock.setTextPadding(10f);
         textBlock.setRightToLeft(true);
-        xy = textBlock.drawOn(page);
-
-        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/urdu.txt"));
-        textBlock.setLocation(180f, xy[1] + 30f);
-        textBlock.setWidth(400f);
-        textBlock.setBorderColor(Color.blue);
-        textBlock.setTextPadding(10f);
-        textBlock.setRightToLeft(true);
         textBlock.drawOn(page);
 
         pdf.complete();
