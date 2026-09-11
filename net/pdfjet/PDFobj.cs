@@ -63,8 +63,12 @@ public class PDFobj {
         }
     }
 
-    // Undoes the predictor of the /DecodeParms dictionary.
+    // Undoes the predictor of the /DecodeParms dictionary. Images keep it, as
+    // they are copied with their stream, and their data is not used.
     private byte[] ApplyDecodeParms(byte[] decoded) {
+        if (GetValue("/Subtype").Equals("/Image")) {
+            return decoded;
+        }
         return Decompressor.ApplyPredictor(
                 decoded,
                 GetDecodeParm("/Predictor", 1),

@@ -70,7 +70,8 @@ public class PDFobj {
 
     /**
      * Copies the stream from the buffer and decompresses it when it uses
-     * FlateDecode or LZWDecode, and undoes the predictor of its /DecodeParms.
+     * FlateDecode or LZWDecode, and undoes the predictor of its /DecodeParms
+     * unless it is an image.
      *
      * @param buf the PDF bytes.
      * @param length the length of the stream.
@@ -92,8 +93,12 @@ public class PDFobj {
         }
     }
 
-    // Undoes the predictor of the /DecodeParms dictionary.
+    // Undoes the predictor of the /DecodeParms dictionary. Images keep it, as
+    // they are copied with their stream, and their data is not used.
     private byte[] applyDecodeParms(byte[] decoded) {
+        if (getValue("/Subtype").equals("/Image")) {
+            return decoded;
+        }
         return Decompressor.applyPredictor(
                 decoded,
                 getDecodeParm("/Predictor", 1),

@@ -76,8 +76,12 @@ public final class PDFobj {
         }
     }
 
-    // Undoes the predictor of the /DecodeParms dictionary.
+    // Undoes the predictor of the /DecodeParms dictionary. Images keep it, as
+    // they are copied with their stream, and their data is not used.
     private final func applyDecodeParms(_ decoded: [UInt8]) -> [UInt8] {
+        if getValue("/Subtype") == "/Image" {
+            return decoded
+        }
         return applyPredictor(
                 decoded,
                 getDecodeParm("/Predictor", 1),

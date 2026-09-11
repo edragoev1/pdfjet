@@ -76,8 +76,12 @@ func (obj *PDFobj) SetStreamAndData(buf []byte, length int) *PDFobj {
 	return obj
 }
 
-// applyDecodeParms undoes the predictor of the /DecodeParms dictionary.
+// applyDecodeParms undoes the predictor of the /DecodeParms dictionary. Images
+// keep it, as they are copied with their stream, and their data is not used.
 func (obj *PDFobj) applyDecodeParms(decoded []byte) []byte {
+	if obj.getValue("/Subtype") == "/Image" {
+		return decoded
+	}
 	return decompressor.ApplyPredictor(
 		decoded,
 		obj.getDecodeParm("/Predictor", 1),
