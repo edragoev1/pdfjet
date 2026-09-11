@@ -3,6 +3,14 @@
 :: Navigate to the "src" directory
 cd src
 
+:: The Go compiler has no warnings; go vet reports the suspicious code instead.
+:: The script stops if it finds a problem.
+go vet ./...
+if errorlevel 1 (
+    cd ..
+    exit /b 1
+)
+
 :: Loop from 1 to 50
 for /L %%i in (1,1,50) do (
     :: Check if %%i is less than 10

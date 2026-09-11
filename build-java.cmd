@@ -9,7 +9,8 @@ del /f /q out\production\examples\*.class
 if not exist "out\production" mkdir "out\production"
 
 :: Compile the PDFjet library to Java 8 class files, so it runs on Java 8 and later
-javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options ^
+:: -Werror fails the build on any warning and then writes no class files
+javac -O -encoding utf-8 --release 8 -Xlint -Xlint:-options -Werror ^
     com\pdfjet\*.java ^
     com\pdfjet\barcodes\*.java ^
     com\pdfjet\pdf417\*.java ^
@@ -25,9 +26,9 @@ jar cf PDFjet.jar -C out\production .
 :: Compile the Example files (loop from 1 to 50)
 for /L %%i in (1,1,50) do (
     if %%i lss 10 (
-        javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples\Example_0%%i.java -d out\production
+        javac -O -encoding utf-8 -Xlint -Werror -cp PDFjet.jar examples\Example_0%%i.java -d out\production
     ) else (
-        javac -O -encoding utf-8 -Xlint -cp PDFjet.jar examples\Example_%%i.java -d out\production
+        javac -O -encoding utf-8 -Xlint -Werror -cp PDFjet.jar examples\Example_%%i.java -d out\production
     )
 )
 
