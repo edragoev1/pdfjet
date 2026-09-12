@@ -21,7 +21,6 @@ public class Example_14 {
         Page page = new Page(pdf, A4.PORTRAIT);
 
         Table table = new Table();
-        // table.setCellMargin(10f);
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
 
@@ -38,7 +37,6 @@ public class Example_14 {
                 }
                 cell.setBorders(false);
 
-                // WITH:
                 cell.setTopPadding(10f);
                 cell.setBottomPadding(10f);
                 cell.setLeftPadding(10f);

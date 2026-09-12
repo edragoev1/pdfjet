@@ -14,7 +14,6 @@ public class Example_07 {
                 Compliance.PDF_A_3B);
         pdf.SetTitle("PDF/A-3B compliant PDF");
 
-        // The following code is faster and consumes less memory:
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, A4.LANDSCAPE);

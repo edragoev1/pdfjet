@@ -52,7 +52,6 @@ public class Example_41 {
             }
         }
 
-        paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
         var colorMap = [String: Int32]()
         colorMap["Physics"] = Color.red
         colorMap["physics"] = Color.red

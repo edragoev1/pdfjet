@@ -27,7 +27,6 @@ public class Example_15 {
                 } else {
                     cell = Cell(f2, "")
                 }
-                // cell.setNoBorders()
                 cell.setTopPadding(10.0)
                 cell.setBottomPadding(10.0)
                 cell.setLeftPadding(10.0)

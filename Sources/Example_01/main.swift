@@ -9,10 +9,17 @@ public class Example_01 {
         let stream = OutputStream(toFileAtPath: "Example_01.pdf", append: false)
         let pdf = PDF(stream!)
         pdf.setCompliance(Compliance.PDF_UA_1)
+        // pdf.setCompliance(Compliance.PDF_A_1A)
+        // pdf.setCompliance(Compliance.PDF_A_1B)
+        // pdf.setCompliance(Compliance.PDF_A_2A)
+        // pdf.setCompliance(Compliance.PDF_A_2B)
+        // pdf.setCompliance(Compliance.PDF_A_3A)
+        // pdf.setCompliance(Compliance.PDF_A_3B)
         pdf.setTitle("Document containing English, Greek and Bulgarian text blocks.")
 
         // Load the font (IBMPlexSans Regular) for use in the document
         let font = try Font(pdf, IBMPlexSans.Regular)
+        font.setSize(12.0)
 
         // Create a new page with Portrait orientation
         let page = Page(pdf, Letter.PORTRAIT)
@@ -23,41 +30,36 @@ public class Example_01 {
         map["Freedom"] = Color.blue
 
         // Read English text from a file
-        let englishText = try String(
-                contentsOfFile: "data/languages/english.txt", encoding: .utf8)
-        let textBlock = TextBlock(font, englishText)
+        var textBlock = TextBlock(
+                font, try Content.ofTextFile("data/languages/english.txt"))
         textBlock.setLocation(50, 50)   // Set the position for the English text
-        textBlock.setWidth(473)         // Set width of the text block
+        textBlock.setWidth(473)         // Why 473f? To match the Google Fonts samples.
         textBlock.setTextPadding(10)    // Set padding around the text
         textBlock.setBorderColor(Color.blue)
         textBlock.setKeywordHighlightColors(map)
         var xy = textBlock.drawOn(page) // Draw the English text on the page and get coordinates
 
-        // Draw a blue rectangle around the English text block
+        // Draw a small blue rectangle for testing ...
         let rect = Rect(xy[0], xy[1], 30, 30)
         rect.setBorderColor(Color.blue)
         rect.drawOn(page)
 
         // Read Greek text from a file and draw it on the page
-        let greekText = try String(
-                contentsOfFile: "data/languages/greek.txt", encoding: .utf8)
-        let textBlock2 = TextBlock(font, greekText)
-        textBlock2.setLocation(50, xy[1] + 30)  // Set location below the previous text
-        textBlock2.setWidth(473)                // Set width for Greek text block
-        textBlock2.setTextPadding(10)           // Set padding around the Greek text
-        xy = textBlock2.drawOn(page)            // Draw Greek text and update coordinates
+        textBlock = TextBlock(font, try Content.ofTextFile("data/languages/greek.txt"))
+        textBlock.setLocation(50, xy[1] + 30)   // Set location below the previous text
+        textBlock.setWidth(473)                 // Set width for Greek text block
+        textBlock.setTextPadding(10)            // Set padding around the Greek text
+        xy = textBlock.drawOn(page)             // Draw Greek text and update coordinates
 
         // Read Bulgarian text from a file and draw it with a blue border and rounded corners
-        let bulgarianText = try String(
-                contentsOfFile: "data/languages/bulgarian.txt", encoding: .utf8)
-        let textBlock3 = TextBlock(font, bulgarianText)
-        textBlock3.setLocation(50, xy[1] + 30)  // Set location below Greek text
-        textBlock3.setWidth(473)                // Set width for Bulgarian text block
-        textBlock3.setTextPadding(10)           // Set padding around the Bulgarian text
-        textBlock3.setBorderColor(Color.blue)   // Blue border for the Bulgarian text
-        textBlock3.setBorderCornerRadius(10)    // Set rounded corners for the border
-        textBlock3.setUnderline(true)           // Underline the Bulgarian text
-        textBlock3.drawOn(page)                 // Draw the Bulgarian text
+        textBlock = TextBlock(font, try Content.ofTextFile("data/languages/bulgarian.txt"))
+        textBlock.setLocation(50, xy[1] + 30)   // Set location below Greek text
+        textBlock.setWidth(473)                 // Set width for Bulgarian text block
+        textBlock.setTextPadding(10)            // Set padding around the Bulgarian text
+        textBlock.setBorderColor(Color.blue)    // Blue border for the Bulgarian text
+        textBlock.setBorderCornerRadius(10)     // Set rounded corners for the border
+        textBlock.setUnderline(true)            // Underline the Bulgarian text
+        textBlock.drawOn(page)                  // Draw the Bulgarian text
 
         // Finalize the PDF creation
         pdf.complete()

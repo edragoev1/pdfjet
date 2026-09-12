@@ -1,14 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
-	"github.com/edragoev1/pdfjet/v9/src/imagetype"
 )
 
 // Example17 is a test case for PNG images.
@@ -16,7 +12,7 @@ func Example17() {
 	pdf := pdfjet.NewPDFFile("Example_17.pdf")
 
 	image1 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P08.PNG")
-	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG") // Indexed Image with Bit Depth == 4
+	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG")
 	image3 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P02.PNG")
 	image4 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P01.PNG")
 	image5 := pdfjet.NewImageFromFile(pdf, "PngSuite/S01N3P01.PNG")
@@ -30,209 +26,55 @@ func Example17() {
 	image13 := pdfjet.NewImageFromFile(pdf, "PngSuite/S09N3P02.PNG")
 	image14 := pdfjet.NewImageFromFile(pdf, "PngSuite/S32N3P04.PNG")
 	image15 := pdfjet.NewImageFromFile(pdf, "PngSuite/S33N3P04.PNG")
+	image16 := pdfjet.NewImageFromFile(pdf, "PngSuite/S34N3P04.PNG")
+	image17 := pdfjet.NewImageFromFile(pdf, "PngSuite/S35N3P04.PNG")
+	image18 := pdfjet.NewImageFromFile(pdf, "PngSuite/S36N3P04.PNG")
+	image19 := pdfjet.NewImageFromFile(pdf, "PngSuite/S37N3P04.PNG")
+	image20 := pdfjet.NewImageFromFile(pdf, "PngSuite/S38N3P04.PNG")
+	image21 := pdfjet.NewImageFromFile(pdf, "PngSuite/S39N3P04.PNG")
+	image22 := pdfjet.NewImageFromFile(pdf, "PngSuite/S40N3P04.PNG")
 
-	file16, err := os.Open("PngSuite/S34N3P04.PNG")
-	if err != nil {
-		log.Fatal(err)
-	}
-	reader := bufio.NewReader(file16)
-	defer file16.Close()
-	image16 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image23 := pdfjet.NewImageFromFile(pdf, "images/qrcode.png")
 
-	file17, err := os.Open("PngSuite/S35N3P04.PNG")
-	reader = bufio.NewReader(file17)
-	defer file17.Close()
-	image17 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image24 := pdfjet.NewImageFromFile(pdf, "PngSuite/F00N2C08.PNG")
+	image25 := pdfjet.NewImageFromFile(pdf, "PngSuite/F01N2C08.PNG")
+	image26 := pdfjet.NewImageFromFile(pdf, "PngSuite/F02N2C08.PNG")
+	image27 := pdfjet.NewImageFromFile(pdf, "PngSuite/F03N2C08.PNG")
+	image28 := pdfjet.NewImageFromFile(pdf, "PngSuite/F04N2C08.PNG")
 
-	file18, err := os.Open("PngSuite/S36N3P04.PNG")
-	reader = bufio.NewReader(file18)
-	defer file18.Close()
-	image18 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image29 := pdfjet.NewImageFromFile(pdf, "PngSuite/Z00N2C08.PNG") // color, no interlacing, compression level 0 (none)
+	image30 := pdfjet.NewImageFromFile(pdf, "PngSuite/Z03N2C08.PNG") // color, no interlacing, compression level 3
+	image31 := pdfjet.NewImageFromFile(pdf, "PngSuite/Z06N2C08.PNG") // color, no interlacing, compression level 6 (default)
+	image32 := pdfjet.NewImageFromFile(pdf, "PngSuite/Z09N2C08.PNG") // color, no interlacing, compression level 9 (maximum)
 
-	file19, err := os.Open("PngSuite/S37N3P04.PNG")
-	reader = bufio.NewReader(file19)
-	defer file19.Close()
-	image19 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image33 := pdfjet.NewImageFromFile(pdf, "PngSuite/F00N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 0
+	image34 := pdfjet.NewImageFromFile(pdf, "PngSuite/F01N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 1
+	image35 := pdfjet.NewImageFromFile(pdf, "PngSuite/F02N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 2
+	image36 := pdfjet.NewImageFromFile(pdf, "PngSuite/F03N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 3
+	image37 := pdfjet.NewImageFromFile(pdf, "PngSuite/F04N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 4
 
-	file20, err := os.Open("PngSuite/S38N3P04.PNG")
-	reader = bufio.NewReader(file20)
-	defer file20.Close()
-	image20 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image38 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN0G08.PNG") // 8 bit grayscale
+	image39 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN0G04.PNG") // 4 bit grayscale
+	image40 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN0G02.PNG") // 2 bit grayscale
+	image41 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN0G01.PNG") // Black and White image
 
-	file21, err := os.Open("PngSuite/S39N3P04.PNG")
-	reader = bufio.NewReader(file21)
-	defer file21.Close()
-	image21 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image42 := pdfjet.NewImageFromFile(pdf, "PngSuite/BGAN6A08.PNG") // Image with alpha transparency
 
-	file22, err := os.Open("PngSuite/S40N3P04.PNG")
-	reader = bufio.NewReader(file22)
-	defer file22.Close()
-	image22 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image43 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI1N2C16.PNG") // Color image with 1 IDAT chunk
+	image44 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI4N2C16.PNG") // Color image with 2 IDAT chunks
+	image45 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI4N2C16.PNG") // Color image with 4 IDAT chunks
+	image46 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI9N2C16.PNG") // IDAT chunks with length == 1
 
-	file23, err := os.Open("images/qrcode.png")
-	reader = bufio.NewReader(file23)
-	defer file23.Close()
-	image23 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image47 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI1N0G16.PNG") // Grayscale image with 1 IDAT chunk
+	image48 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI4N0G16.PNG") // Grayscale image with 2 IDAT chunks
+	image49 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI4N0G16.PNG") // Grayscale image with 4 IDAT chunks
+	image50 := pdfjet.NewImageFromFile(pdf, "PngSuite/OI9N0G16.PNG") // IDAT chunks with length == 1
 
-	file24, err := os.Open("PngSuite/F00N2C08.PNG")
-	reader = bufio.NewReader(file24)
-	defer file24.Close()
-	image24 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file25, err := os.Open("PngSuite/F01N2C08.PNG")
-	reader = bufio.NewReader(file25)
-	defer file25.Close()
-	image25 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file26, err := os.Open("PngSuite/F02N2C08.PNG")
-	reader = bufio.NewReader(file26)
-	defer file26.Close()
-	image26 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file27, err := os.Open("PngSuite/F03N2C08.PNG")
-	reader = bufio.NewReader(file27)
-	defer file27.Close()
-	image27 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file28, err := os.Open("PngSuite/F04N2C08.PNG")
-	reader = bufio.NewReader(file28)
-	defer file28.Close()
-	image28 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file29, err := os.Open("PngSuite/Z00N2C08.PNG") // color, no interlacing, compression level 0 (none)
-	reader = bufio.NewReader(file29)
-	defer file29.Close()
-	image29 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file30, err := os.Open("PngSuite/Z03N2C08.PNG") // color, no interlacing, compression level 3
-	reader = bufio.NewReader(file30)
-	defer file30.Close()
-	image30 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file31, err := os.Open("PngSuite/Z06N2C08.PNG") // color, no interlacing, compression level 6 (default)
-	reader = bufio.NewReader(file31)
-	defer file31.Close()
-	image31 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file32, err := os.Open("PngSuite/Z09N2C08.PNG") // color, no interlacing, compression level 9 (maximum)
-	reader = bufio.NewReader(file32)
-	defer file32.Close()
-	image32 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file33, err := os.Open("PngSuite/F00N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 0
-	reader = bufio.NewReader(file33)
-	defer file33.Close()
-	image33 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file34, err := os.Open("PngSuite/F01N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 1
-	reader = bufio.NewReader(file34)
-	defer file34.Close()
-	image34 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file35, err := os.Open("PngSuite/F02N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 2
-	reader = bufio.NewReader(file35)
-	defer file35.Close()
-	image35 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file36, err := os.Open("PngSuite/F03N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 3
-	reader = bufio.NewReader(file36)
-	defer file36.Close()
-	image36 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file37, err := os.Open("PngSuite/F04N0G08.PNG") // 8 bit greyscale, no interlacing, filter-type 4
-	reader = bufio.NewReader(file37)
-	defer file37.Close()
-	image37 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file38, err := os.Open("PngSuite/BASN0G08.PNG") // 8 bit greyscale
-	reader = bufio.NewReader(file38)
-	defer file38.Close()
-	image38 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file39, err := os.Open("PngSuite/BASN0G04.PNG") // 4 bit greyscale
-	reader = bufio.NewReader(file39)
-	defer file39.Close()
-	image39 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file40, err := os.Open("PngSuite/BASN0G02.PNG") // 2 bit greyscale
-	reader = bufio.NewReader(file40)
-	defer file40.Close()
-	image40 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file41, err := os.Open("PngSuite/BASN0G01.PNG") // Black and White image
-	reader = bufio.NewReader(file41)
-	defer file41.Close()
-	image41 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file42, err := os.Open("PngSuite/BGAN6A08.PNG") // Image with alpha transparency
-	reader = bufio.NewReader(file42)
-	defer file42.Close()
-	image42 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file43, err := os.Open("PngSuite/OI1N2C16.PNG") // Color image with 1 IDAT chunk
-	reader = bufio.NewReader(file43)
-	defer file43.Close()
-	image43 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file44, err := os.Open("PngSuite/OI4N2C16.PNG") // Color image with 2 IDAT chunks
-	reader = bufio.NewReader(file44)
-	defer file44.Close()
-	image44 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file45, err := os.Open("PngSuite/OI4N2C16.PNG") // Color image with 4 IDAT chunks
-	reader = bufio.NewReader(file45)
-	defer file45.Close()
-	image45 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file46, err := os.Open("PngSuite/OI9N2C16.PNG") // IDAT chunks with length == 1
-	reader = bufio.NewReader(file46)
-	defer file46.Close()
-	image46 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file47, err := os.Open("PngSuite/OI1N0G16.PNG") // Grayscale image with 1 IDAT chunk
-	reader = bufio.NewReader(file47)
-	defer file47.Close()
-	image47 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file48, err := os.Open("PngSuite/OI4N0G16.PNG") // Grayscale image with 2 IDAT chunks
-	reader = bufio.NewReader(file48)
-	defer file48.Close()
-	image48 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file49, err := os.Open("PngSuite/OI4N0G16.PNG") // Grayscale image with 4 IDAT chunks
-	reader = bufio.NewReader(file49)
-	defer file49.Close()
-	image49 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file50, err := os.Open("PngSuite/OI9N0G16.PNG") // IDAT chunks with length == 1
-	reader = bufio.NewReader(file50)
-	defer file50.Close()
-	image50 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file51, err := os.Open("PngSuite/TBBN3P08.PNG") // Transparent, black background chunk
-	reader = bufio.NewReader(file51)
-	defer file51.Close()
-	image51 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file52, err := os.Open("PngSuite/TBGN3P08.PNG")
-	reader = bufio.NewReader(file52)
-	defer file52.Close()
-	image52 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file53, err := os.Open("PngSuite/TBWN3P08.PNG")
-	reader = bufio.NewReader(file53)
-	defer file53.Close()
-	image53 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file54, err := os.Open("PngSuite/TBYN3P08.PNG")
-	reader = bufio.NewReader(file54)
-	defer file54.Close()
-	image54 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
-
-	file55, err := os.Open("images/LGK_ADDRESS.PNG")
-	reader = bufio.NewReader(file55)
-	defer file55.Close()
-	image55 := pdfjet.NewImage(pdf, reader, imagetype.PNG)
+	image51 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBBN3P08.PNG") // Transparent, black background chunk
+	image52 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBGN3P08.PNG")
+	image53 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBWN3P08.PNG")
+	image54 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBYN3P08.PNG")
+	image55 := pdfjet.NewImageFromFile(pdf, "images/LGK_ADDRESS.PNG")
 
 	page := pdfjet.NewPage(pdf, a4.Portrait)
 

@@ -105,6 +105,8 @@ public class Example_10 {
         column.addParagraph(p4)
         column.addParagraph(p5)
 
+        // The other branches are commented out because Swift reports them as
+        // never executed with rotate == 0, and the build treats warnings as errors.
         if rotate == 0 {
             column.setLocation(90.0, 300.0)
         } /* else if rotate == 90 {

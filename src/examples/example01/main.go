@@ -15,6 +15,12 @@ import (
 func Example01() {
 	pdf := pdfjet.NewPDFFile("Example_01.pdf")
 	pdf.SetCompliance(compliance.PDF_UA_1)
+	// pdf.SetCompliance(compliance.PDF_A_1A)
+	// pdf.SetCompliance(compliance.PDF_A_1B)
+	// pdf.SetCompliance(compliance.PDF_A_2A)
+	// pdf.SetCompliance(compliance.PDF_A_2B)
+	// pdf.SetCompliance(compliance.PDF_A_3A)
+	// pdf.SetCompliance(compliance.PDF_A_3B)
 	pdf.SetTitle("Document containing English, Greek and Bulgarian text blocks.")
 
 	// Load font and set size
@@ -39,7 +45,7 @@ func Example01() {
 	textBlock.SetKeywordHighlightColors(colorMap)
 	xy := textBlock.DrawOn(page)
 
-	// Draw a blue rectangle near the English text block
+	// Draw a small blue rectangle for testing ...
 	rect := pdfjet.NewRect(xy[0], xy[1], 30.0, 30.0)
 	rect.SetBorderColor(color.Blue)
 	rect.DrawOn(page)

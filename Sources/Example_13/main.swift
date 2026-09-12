@@ -40,10 +40,10 @@ public class Example_13 {
         table.removeLineBetweenRows(0, 1)
 
         var cell = table.getCellAt(1, 1)
-        cell.setTopBorder(true)
+        cell.setBorder(Border.TOP, true)
 
         cell = table.getCellAt(1, 2)
-        cell.setTopBorder(true)
+        cell.setBorder(Border.TOP, true)
 
         cell = table.getCellAt(0, 1)
         cell.setColSpan(2)
@@ -111,8 +111,8 @@ public class Example_13 {
         let column = table.getColumnAtIndex(index)
         for cell in column {
             cell.setBackgroundColor(Color.white)
-            cell.setTopBorder(false)
-            cell.setBottomBorder(false)
+            cell.setBorder(Border.TOP, false)
+            cell.setBorder(Border.BOTTOM, false)
         }
     }
 

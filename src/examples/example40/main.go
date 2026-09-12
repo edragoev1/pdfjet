@@ -43,14 +43,7 @@ func Example40() {
 // GetData returns the chart data.
 func GetData() [][]*pdfjet.Point {
 	chartData := make([][]*pdfjet.Point, 0)
-	/*
-	   AddVerticalBar(chartData, 15.0, 24f, 45f, Color.blue, " Vertical", Color.white)
-	   AddVerticalBar(chartData, 17.0, 24f, 75f, Color.yellow, " Vertical", Color.black)
-	   AddVerticalBar(chartData, 19.0, 24f, 65f, Color.peachpuff, " Vertical", Color.black)
-	   AddVerticalBar(chartData, 25.0, 24f, 20f, Color.green, " Bar", Color.white)
-	   AddVerticalBar(chartData, 35.0, 24f, 31f, Color.red, " Chart", Color.white)
-	   AddVerticalBar(chartData, 45.0, 24f, 73f, Color.gold, " Example", Color.black)
-	*/
+
 	w := float32(14.0)
 	x := float32(10.0)
 	dx1 := float32(16.0)
@@ -117,19 +110,15 @@ func AddVerticalBar(
 
 	point := pdfjet.NewPoint(x, 0.0)
 	point.SetDrawPath()
-	point.SetX(x)
-	// point.SetY(0.0)
 	point.SetShape(shape.Invisible)
-	point.SetStrokeColor(color)
 	point.SetStrokeWidth(w)
+	point.SetStrokeColor(color)
 	point.SetText(text)
 	point.SetTextColor(textColor)
 	point.SetTextDirection(90)
 	path1 = append(path1, point)
 
-	point = pdfjet.NewPoint(x, 0.0)
-	// point.SetX(x)
-	point.SetY(h)
+	point = pdfjet.NewPoint(x, h)
 	point.SetShape(shape.Invisible)
 	path1 = append(path1, point)
 

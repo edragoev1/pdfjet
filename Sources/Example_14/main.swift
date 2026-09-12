@@ -38,25 +38,25 @@ public class Example_14 {
 
                 cell!.setText("Hello \(i) \(j)")
                 if i == 0 {
-                    cell!.setTopBorder(true)
+                    cell!.setBorder(Border.TOP, true)
                     cell!.setUnderline(true)
                     cell!.setUnderline(false)
                 }
                 if i == 4 {
-                    cell!.setBottomBorder(true)
+                    cell!.setBorder(Border.BOTTOM, true)
                 }
                 if j == 0 {
-                    cell!.setLeftBorder(true)
+                    cell!.setBorder(Border.LEFT, true)
                 }
                 if j == 4 {
-                    cell!.setRightBorder(true)
+                    cell!.setBorder(Border.RIGHT, true)
                 }
 
                 if i == 2 && j == 2 {
-                    cell!.setTopBorder(true)
-                    cell!.setBottomBorder(true)
-                    cell!.setLeftBorder(true)
-                    cell!.setRightBorder(true)
+                    cell!.setBorder(Border.TOP, true)
+                    cell!.setBorder(Border.BOTTOM, true)
+                    cell!.setBorder(Border.LEFT, true)
+                    cell!.setBorder(Border.RIGHT, true)
 
                     cell!.setColSpan(3)
                     cell!.setBackgroundColor(Color.darkseagreen)

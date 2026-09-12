@@ -7,7 +7,7 @@ import PDFjet
 public class Example_50 {
     public init(_ fileNumber: String, _ fileName: String) throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_\(fileNumber).pdf", append: false)!)
-        var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/\(fileName)")!)
+        var objects = try pdf.read(from: InputStream(fileAtPath: fileName)!)
 
         let image = try Image(
                 &objects,
@@ -163,8 +163,9 @@ public class Example_50 {
 }   // End of Example_50.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = try Example_50("50", "rc65-16e.pdf")
-// _ = try Example_50("50", "PDF32000_2008.pdf")
-// _ = try Example_50("50", "NoPredictor.pdf")
+_ = try Example_50("50", "data/testPDFs/rc65-16e.pdf")
+// _ = try Example_50("50", "data/testPDFs/NoPredictor.pdf")
+// _ = try Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf")
+// _ = try Example_50("50", "../specifications/ISO_32000-2_2017(en).PDF")
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 TextUtils.printDuration("Example_50", time0, time1)

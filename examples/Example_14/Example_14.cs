@@ -21,7 +21,6 @@ public class Example_14 {
         Page page = new Page(pdf, A4.PORTRAIT);
 
         Table table = new Table();
-        // table.SetCellMargin(10f);
 
         List<List<Cell>> tableData = new List<List<Cell>>();
 
@@ -37,7 +36,6 @@ public class Example_14 {
                 }
                 cell.SetBorders(false);
 
-                // WITH:
                 cell.SetTopPadding(10f);
                 cell.SetBottomPadding(10f);
                 cell.SetLeftPadding(10f);

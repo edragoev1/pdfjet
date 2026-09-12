@@ -18,7 +18,7 @@ import (
 func Example50(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_50.pdf")
 
-	buf, err := os.ReadFile("data/testPDFs/" + fileName)
+	buf, err := os.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -194,9 +194,10 @@ func stripSpacesAndDashes(str string) string {
 
 func main() {
 	time0 := time.Now().UnixMilli()
-	Example50("rc65-16e.pdf")
-	// Example50("../specification/PDF32000_2008.pdf")
-	// Example50("NoPredictor.pdf")
+	Example50("data/testPDFs/rc65-16e.pdf")
+	// Example50("data/testPDFs/NoPredictor.pdf")
+	// Example50("../../eBooks/UniversityPhysicsVolume1.pdf")
+	// Example50("../specifications/ISO_32000-2_2017(en).PDF")
 	time1 := time.Now().UnixMilli()
 	pdfjet.PrintDuration("Example_50", time0, time1)
 }

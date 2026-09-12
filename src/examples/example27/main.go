@@ -47,8 +47,8 @@ func Example27() {
 	x := float32(570.0)
 	y := xy[1] + 55.0
 
-	str := "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
 	y += 20.0
+	str := "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
 	str = pdfjet.ReorderVisually(str)
 	textLine := pdfjet.NewTextLine(f2, str)
 	textLine.SetLanguage("he")

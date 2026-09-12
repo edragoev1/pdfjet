@@ -19,11 +19,14 @@ func Example43() {
 	// Used for performance testing. Results in 2000+ pages PDF.
 	fileName := "data/Electric_Vehicle_Population_Data.csv"
 	// fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
+	// fileName := "data/Electric_Vehicle_Population_5_Lines.csv"
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	// f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f1.SetSize(10.0)
 
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f2.SetSize(9.0)
 
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)

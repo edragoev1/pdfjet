@@ -13,6 +13,12 @@ public class Example_01 {
         // Initialize PDF object with the file stream
         PDF pdf = new PDF(new BufferedStream(fs));
         pdf.SetCompliance(Compliance.PDF_UA_1);
+        // pdf.SetCompliance(Compliance.PDF_A_1A);
+        // pdf.SetCompliance(Compliance.PDF_A_1B);
+        // pdf.SetCompliance(Compliance.PDF_A_2A);
+        // pdf.SetCompliance(Compliance.PDF_A_2B);
+        // pdf.SetCompliance(Compliance.PDF_A_3A);
+        // pdf.SetCompliance(Compliance.PDF_A_3B);
         pdf.SetTitle("Document containing English, Greek and Bulgarian text blocks.");
 
         // Load font for the PDF (IBMPlexSans Regular)
@@ -31,13 +37,13 @@ public class Example_01 {
         TextBlock textBlock = new TextBlock(font,
                 Content.OfTextFile("data/languages/english.txt"));
         textBlock.SetLocation(50f, 50f);
-        textBlock.SetWidth(473f);
+        textBlock.SetWidth(473f);   // Why 473f? To match the Google Fonts samples.
         textBlock.SetTextPadding(10f);
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetKeywordHighlightColors(map);
         float[] xy = textBlock.DrawOn(page);  // Draw the text and get coordinates
 
-        // Draw a blue rectangle around the English text block
+        // Draw a small blue rectangle for testing ...
         Rect rect = new Rect(xy[0], xy[1], 30f, 30f);
         rect.SetBorderColor(Color.blue);
         rect.DrawOn(page);

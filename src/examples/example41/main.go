@@ -10,7 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example41 draws paragraphs of styled text with the Text component on A4 paper.
+// Example41 draws paragraphs of styled text with the Text component on Letter paper.
 func Example41() {
 	pdf := pdfjet.NewPDFFile("Example_41.pdf")
 
@@ -57,12 +57,12 @@ func Example41() {
 		}
 	}
 
-	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	colorMap := make(map[string]int32)
 	colorMap["Physics"] = color.Red
 	colorMap["physics"] = color.Red
 	colorMap["Experimentation"] = color.Orange
 	colorMap["science"] = color.Blue
+	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	f2size := f2.GetSize()
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {

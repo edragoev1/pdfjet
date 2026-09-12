@@ -17,11 +17,14 @@ public class Example_43 {
         // Used for performance testing. Results in 2000+ pages PDF.
         String fileName = "data/Electric_Vehicle_Population_Data.csv";
         // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+        // String fileName = "data/Electric_Vehicle_Population_5_Lines.csv";
 
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
+        // Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
         f1.SetSize(10f);
 
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        // Font f2 = new Font(pdf, CoreFont.HELVETICA);
         f2.SetSize(9f);
 
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);

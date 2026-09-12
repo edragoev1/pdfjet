@@ -5,17 +5,9 @@ import PDFjet
  * Example_37.swift
  */
 public class Example_37 {
-    public init() throws {
+    public init(_ fileName: String) throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_37.pdf", append: false)!)
-
-        var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/wirth.pdf")!)
-        // var objects = try pdf.read(from: InputStream(fileAtPath: "../../eBooks/UniversityPhysicsVolume1.pdf")!)
-        // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/Smalltalk-and-OO.pdf")!)
-        // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/InsideSmalltalk1.pdf")!)
-        // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/InsideSmalltalk2.pdf")!)
-        // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/Greenbook.pdf")!)
-        // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/Bluebook.pdf")!)
-        // try pdf.read(&objects, from: InputStream(fileAtPath: "data/testPDFs/Orangebook.pdf")!)
+        var objects = try pdf.read(from: InputStream(fileAtPath: fileName)!)
 
         let f1 = try Font(
                 &objects,
@@ -44,52 +36,18 @@ public class Example_37 {
         }
         pdf.addObjects(&objects)
 
-/*
-        var images = [Image]()
-        for obj in objects {
-            if obj.getValue("/Subtype") == "/Image" {
-                let w = Float(obj.getValue("/Width"))!
-                let h = Float(obj.getValue("/Height"))!
-                if w > 500.0 && h > 500.0 {
-                    images.append(try Image(pdf, obj))
-                }
-            }
-        }
-
-        let f1 = Font(pdf, CoreFont.HELVETICA)
-        f1.setSize(72.0)
-        var page: Page?
-        for image in images {
-            page = Page(pdf, A4.PORTRAIT)
-
-            let gs = GraphicsState()
-            gs.set_CA(0.75)     // Stroking alpha
-            gs.set_ca(0.75)     // Nonstroking alpha
-            page!.setGraphicsState(gs)
-
-            image.resizeToFit(page!, keepAspectRatio: true)
-
-            // image.flipUpsideDown(true)
-            // image.setLocation(0.0, -image.getHeight()!)
-
-            // image.rotateClockwise(180)
-            // image.setLocation(0.0, 0.0)
-
-            image.drawOn(page!)
-
-            let text = TextLine(f1, "Hello, World!")
-            text.setTextColor(Color.blue)
-            text.setLocation(150.0, 150.0)
-            text.drawOn(page!)
-
-            page!.setGraphicsState(GraphicsState())
-        }
-*/
         pdf.complete()
     }
 }   // End of Example_37.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = try Example_37()
+_ = try Example_37("data/testPDFs/wirth.pdf")
+// _ = try Example_37("../../eBooks/UniversityPhysicsVolume1.pdf")
+// _ = try Example_37("../../eBooks/Smalltalk-and-OO.pdf")
+// _ = try Example_37("../../eBooks/InsideSmalltalk1.pdf")
+// _ = try Example_37("../../eBooks/InsideSmalltalk2.pdf")
+// _ = try Example_37("../../eBooks/Greenbook.pdf")
+// _ = try Example_37("../../eBooks/Bluebook.pdf")
+// _ = try Example_37("../../eBooks/Orangebook.pdf")
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 TextUtils.printDuration("Example_37", time0, time1)

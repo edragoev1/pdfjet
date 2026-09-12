@@ -12,8 +12,9 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example02 demonstrates creating a PDF document with Japanese and Korean text
-// using their respective fonts. The example shows how to:
+// Example02 demonstrates creating a PDF document with Japanese, Korean,
+// Simplified Chinese and Traditional Chinese text using their respective fonts.
+// The example shows how to:
 // 1. Initialize a PDF document
 // 2. Load and configure Asian fonts
 // 3. Add content from text files
@@ -22,11 +23,9 @@ func Example02() {
 	// Initialize new PDF document that will be saved as Example_02.pdf
 	pdf := pdfjet.NewPDFFile("Example_02.pdf")
 
-	// Load Japanese font from file and set its size to 12 points
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular)
 	f1.SetSize(14.0)
 
-	// Load Korean font from file and set its size to 12 points
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansKR.Regular)
 	f2.SetSize(14.0)
 
@@ -39,11 +38,6 @@ func Example02() {
 	// Create a new page in portrait Letter size
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	// Create and draw Japanese text block:
-	// - Content loaded from japanese.txt file
-	// - Positioned at (50, 50) coordinates
-	// - Set to 415 units wide (height auto-adjusts)
-	// - Border explicitly disabled
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
@@ -51,11 +45,6 @@ func Example02() {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait)
 
-	// Create and draw Korean text block:
-	// - Content loaded from korean.txt file
-	// - Positioned at (50, 450) coordinates
-	// - Same width as Japanese block for consistency
-	// - Border explicitly disabled
 	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)

@@ -37,7 +37,6 @@ public class Example_15 {
                 cell.SetLeftPadding(10f);
                 cell.SetRightPadding(10f);
 
-                //  cell.SetNoBorders();
                 cell.SetText("Hello " + i + " " + j);
 
                 CompositeTextLine composite = new CompositeTextLine(0f, 0f);

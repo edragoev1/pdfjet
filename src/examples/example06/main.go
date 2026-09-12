@@ -63,7 +63,7 @@ func Example06() {
 	polygonAnnotation := pdfjet.NewPolygonAnnotation()
 	polygonAnnotation.SetLocation(0.0, 0.0)
 	polygonAnnotation.SetVertices([]float32{0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0})
-	polygonAnnotation.SetFillColor([3]float32{1.0, 0.0, 0.0}) // Red color
+	polygonAnnotation.SetFillColorInt(color.Red)
 	polygonAnnotation.SetTransparency(0.5)
 	polygonAnnotation.SetTitle("Polygon")
 	polygonAnnotation.SetContents("Polygon Annotation")

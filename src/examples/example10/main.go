@@ -65,8 +65,8 @@ func Example10() {
 	buf.WriteString("until 2002.")
 
 	p3 := pdfjet.NewParagraph()
-	// p3.SetAlignment(align.Left)
-	// p3.SetAlignment(align.Right)
+	// p3.SetAlignment(alignment.Left)
+	// p3.SetAlignment(alignment.Right)
 	p3.SetAlignment(alignment.Justify)
 	text := pdfjet.NewTextLine(f1, buf.String())
 	p3.Add(text)

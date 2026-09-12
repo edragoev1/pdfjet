@@ -10,6 +10,8 @@ public class Example_16 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Text block with highlighted keywords")
 
+        // let f1 = try Font(pdf, SourceSerif4.Regular)
+        // let f1 = try Font(pdf, NotoSans.Regular)
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(15.0)
 
@@ -20,19 +22,32 @@ public class Example_16 {
         colors["pay"] = Color.green
         colors["freedom"] = Color.blue
 
+        // page.saveGraphicsState()
+
         let gs = GraphicsState()
         gs.setAlphaStroking(0.5)        // Stroking alpha
         gs.setAlphaNonStroking(0.5)     // Non-Stroking alpha
         page.setGraphicsState(gs)
 
         let englishText = try Content.ofTextFile("data/languages/english.txt")
+        // f1.setSize(14.0)
         let textBox = TextBox(f1, englishText)
+        // textBox.setLocation(50.0, 50.0)
+        // textBox.setLocation(50.0, 100.0)
         textBox.setLocation(100.0, 50.0)
         textBox.setWidth(400.0)
         // If no height is specified the height will be calculated based on the text.
         textBox.setHeight(450.0)
+        // textBox.setTextDirection(Direction.LEFT_TO_RIGHT)
+        // textBox.setTextDirection(Direction.BOTTOM_TO_TOP)
+        // textBox.setTextDirection(Direction.TOP_TO_BOTTOM)
 
         textBox.setVerticalAlignment(Align.TOP)
+        // textBox.setVerticalAlignment(Align.BOTTOM)
+        // textBox.setVerticalAlignment(Align.CENTER)
+
+        // textBox.setTextAlignment(Align.CENTER)
+        // textBox.setHeight(400.0)
 
         textBox.setBackgroundColor(Color.whitesmoke)
         textBox.setTextColors(colors)
@@ -40,6 +55,7 @@ public class Example_16 {
         let xy = textBox.drawOn(page)
 
         page.setGraphicsState(GraphicsState())      // Reset GS
+        // page.restoreGraphicsState()
 
         let box = Box()
         box.setLocation(xy[0], xy[1])

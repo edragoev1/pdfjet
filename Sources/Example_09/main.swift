@@ -4,6 +4,11 @@ import PDFjet
 ///
 /// Example_09.swift
 ///
+struct ExampleError: Error, CustomStringConvertible {
+    let message: String
+    var description: String { message }
+}
+
 public class Example_09 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_09.pdf", append: false)!)
@@ -117,7 +122,8 @@ public class Example_09 {
             } else if delimiter == "\t" {
                 cols = line.components(separatedBy: "\t")
             } else {
-                print("Only pipes and tabs can be used as delimiters")
+                throw ExampleError(
+                        message: "Only pipes and tabs can be used as delimiters")
             }
 
             var country_name = cols![0].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -128,15 +134,14 @@ public class Example_09 {
             if population != nil && x != nil && y != nil {
                 let point = Point()
                 point.setText(country_name)
-                point.setX(Float(x! / population!))
-                point.setY(Float(y! / population! * 100.0))
-
                 country_name = country_name.replacingOccurrences(of: " ", with: "_")
                 country_name = country_name.replacingOccurrences(of: "'", with: "_")
                 country_name = country_name.replacingOccurrences(of: ",", with: "_")
                 country_name = country_name.replacingOccurrences(of: "(", with: "_")
                 country_name = country_name.replacingOccurrences(of: ")", with: "_")
                 point.setURIAction("http://pdfjet.com/country/\(country_name).txt")
+                point.setX(Float(x! / population!))
+                point.setY(Float(y! / population! * 100.0))
 
                 point.setRadius(2.0)
                 point.setStrokeColor(Color.gray)

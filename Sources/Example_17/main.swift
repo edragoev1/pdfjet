@@ -128,14 +128,17 @@ public class Example_17 {
 
 
         fileName = "PngSuite/Z00N2C08.PNG"
+        // color, no interlacing, compression level 0 (none)
         fis = InputStream(fileAtPath: fileName)
         let image29 = try Image(pdf, fis!, ImageType.PNG)
 
         fileName = "PngSuite/Z03N2C08.PNG"
+        // color, no interlacing, compression level 3
         fis = InputStream(fileAtPath: fileName)
         let image30 = try Image(pdf, fis!, ImageType.PNG)
 
         fileName = "PngSuite/Z06N2C08.PNG"
+        // color, no interlacing, compression level 6 (default)
         fis = InputStream(fileAtPath: fileName)
         let image31 = try Image(pdf, fis!, ImageType.PNG)
 

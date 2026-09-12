@@ -7,6 +7,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -44,10 +45,10 @@ func Example13() {
 	table.RemoveLineBetweenRows(0, 1)
 
 	cell := table.GetCellAt(1, 1)
-	cell.SetTopBorder(true)
+	cell.SetBorder(border.Top, true)
 
 	cell = table.GetCellAt(1, 2)
-	cell.SetTopBorder(true)
+	cell.SetBorder(border.Top, true)
 
 	cell = table.GetCellAt(0, 1)
 	cell.SetColSpan(2)
@@ -62,7 +63,11 @@ func Example13() {
 	for i := 2; i < len(column); i++ {
 		cell := column[i]
 		cell.SetTextAlignment(alignment.Center)
-		if n, err := strconv.Atoi(cell.GetText()); err == nil && n > 40 {
+		n, err := strconv.Atoi(cell.GetText())
+		if err != nil {
+			continue
+		}
+		if n > 40 {
 			cell.SetBackgroundColor(color.DarkSeaGreen)
 		} else {
 			cell.SetBackgroundColor(color.Yellow)
@@ -111,8 +116,8 @@ func Example13() {
 func blankOutColumn(table *pdfjet.Table, index int) {
 	for _, cell := range table.GetColumnAtIndex(index) {
 		cell.SetBackgroundColor(color.White)
-		cell.SetTopBorder(false)
-		cell.SetBottomBorder(false)
+		cell.SetBorder(border.Top, false)
+		cell.SetBorder(border.Bottom, false)
 	}
 }
 

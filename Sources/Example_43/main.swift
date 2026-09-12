@@ -13,11 +13,14 @@ public class Example_43 {
         // Used for performance testing. Results in 2000+ pages PDF.
         let fileName = "data/Electric_Vehicle_Population_Data.csv"
         // let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
+        // let fileName = "data/Electric_Vehicle_Population_5_Lines.csv"
 
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
+        // let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
         f1.setSize(10.0)
 
         let f2 = try Font(pdf, IBMPlexSans.Regular)
+        // let f2 = Font(pdf, CoreFont.HELVETICA)
         f2.setSize(9.0)
 
         let table = BigTable(pdf, f1, f2, Letter.LANDSCAPE)

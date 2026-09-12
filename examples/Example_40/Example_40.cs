@@ -6,7 +6,6 @@ using PDFjet.NET;
 
 /**
  * Example_40.cs
- * We will draw the American flag using Box, Line and Point objects.
  */
 public class Example_40 {
     public Example_40() {

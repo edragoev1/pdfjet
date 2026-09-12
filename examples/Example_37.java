@@ -39,48 +39,6 @@ class Example_37 {
         }
         pdf.addObjects(objects);
 
-/*
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        f1.setSize(72f);
-
-        Map<Integer, Image> images = new TreeMap<Integer, Image>();
-        for (PDFobj obj : objects.values()) {
-            if (obj.getValue("/Subtype").equals("/Image")) {
-                float w = Float.valueOf(obj.getValue("/Width"));
-                float h = Float.valueOf(obj.getValue("/Height"));
-                if (w > 500f && h > 500f) {
-                    images.put(obj.getNumber(), new Image(pdf, obj));
-                }
-            }
-        }
-
-        Page page = null;
-        for (Image image : images.values()) {
-            page = new Page(pdf, A4.PORTRAIT);
-
-            GraphicsState gs = new GraphicsState();
-            gs.set_CA(0.7f);    // Stroking alpha
-            gs.set_ca(0.7f);    // Nonstroking alpha
-            page.setGraphicsState(gs);
-
-            image.resizeToFit(page, true);
-
-            // image.flipUpsideDown(true);
-            // image.setLocation(0f, -image.getHeight());
-
-            // image.rotateClockwise(180);
-            // image.setLocation(0f, 0f);
-
-            image.drawOn(page);
-
-            TextLine text = new TextLine(f1, "Hello, World!");
-            text.setTextColor(Color.blue);
-            text.setLocation(50f, 200f);
-            text.drawOn(page);
-
-            page.setGraphicsState(new GraphicsState());
-        }
-*/
         pdf.complete();
     }
 

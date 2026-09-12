@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"log"
 	"os"
 	"strings"
@@ -54,14 +55,15 @@ func Example04() {
 	var yPos float32
 	yPos = 100.0
 
-	content, err := os.ReadFile("data/happy-new-year.txt")
+	file, err := os.Open("data/happy-new-year.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
-	strContent := strings.ReplaceAll(string(content), "\r\n", "\n")
-	lines := strings.Split(strContent, "\n")
+	defer file.Close()
+	reader := bufio.NewScanner(file)
 	text := pdfjet.NewTextLine(f0, "")
-	for _, line := range lines {
+	for reader.Scan() {
+		line := reader.Text()
 		text.SetText(line)
 		text.SetLocation(xPos, yPos)
 		text.DrawOn(page)
@@ -77,6 +79,9 @@ func Example04() {
 			text.SetFont(f0)
 		}
 		yPos += 25.0
+	}
+	if err := reader.Err(); err != nil {
+		log.Fatal(err)
 	}
 
 	pdf.Complete()

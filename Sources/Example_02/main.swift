@@ -23,32 +23,32 @@ public class Example_02 {
 
         var page = Page(pdf, Letter.PORTRAIT)
 
-        var text = try String(contentsOfFile: "data/languages/japanese.txt", encoding: .utf8)
-        var textBlock = TextBlock(f1, text)
+        var textBlock = TextBlock(
+                f1, try Content.ofTextFile("data/languages/japanese.txt"))
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        text = try String(contentsOfFile: "data/languages/korean.txt", encoding: .utf8)
-        textBlock = TextBlock(f2, text)
+        textBlock = TextBlock(
+                f2, try Content.ofTextFile("data/languages/korean.txt"))
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        text = try String(contentsOfFile: "data/languages/simplified-chinese.txt", encoding: .utf8)
-        textBlock = TextBlock(f3, text)
+        textBlock = TextBlock(
+                f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        text = try String(contentsOfFile: "data/languages/traditional-chinese.txt", encoding: .utf8)
-        textBlock = TextBlock(f4, text)
+        textBlock = TextBlock(
+                f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)

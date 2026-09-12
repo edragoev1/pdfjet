@@ -56,7 +56,6 @@ public class Example_41 {
             }
         }
 
-        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
         Dictionary<String, int> colorMap = new Dictionary<String, int>();
         colorMap["Physics"] = Color.red;
         colorMap["physics"] = Color.red;

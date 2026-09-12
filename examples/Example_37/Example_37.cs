@@ -8,20 +8,10 @@ using PDFjet.NET;
  * Example_37.cs
  */
 class Example_37 {
-    public Example_37() {
+    public Example_37(String fileName) {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_37.pdf", FileMode.Create)));
-
-        FileStream fis = new FileStream("data/testPDFs/wirth.pdf", FileMode.Open, FileAccess.Read);
-        // FileStream fis = new FileStream("../../eBooks/UniversityPhysicsVolume1.pdf", FileMode.Open, FileAccess.Read);
-        // FileStream fis = new FileStream("data/testPDFs/Smalltalk-and-OO.pdf", FileMode.Open, FileAccess.Read);
-        // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk1.pdf", FileMode.Open, FileAccess.Read);
-        // FileStream fis = new FileStream("data/testPDFs/InsideSmalltalk2.pdf", FileMode.Open, FileAccess.Read);
-        // FileStream fis = new FileStream("data/testPDFs/Greenbook.pdf", FileMode.Open);
-        // FileStream fis = new FileStream("data/testPDFs/Bluebook.pdf", FileMode.Open);
-        // FileStream fis = new FileStream("data/testPDFs/Orangebook.pdf", FileMode.Open);
-
-        List<PDFobj> objects = pdf.Read(fis);
+        List<PDFobj> objects = pdf.Read(new FileStream(fileName, FileMode.Open, FileAccess.Read));
 
         Font f1 = new Font(objects,
                 new FileStream(IBMPlexSans.Regular,
@@ -49,55 +39,21 @@ class Example_37 {
             page.Complete(objects); // The graphics stack is unwinded automatically
         }
         pdf.AddObjects(objects);
-/*
-        List<Image> images = new List<Image>();
-        foreach (PDFobj obj in objects.Values) {
-            if (obj.GetValue("/Subtype").Equals("/Image")) {
-                float w = float.Parse(obj.GetValue("/Width"));
-                float h = float.Parse(obj.GetValue("/Height"));
-                if (w > 500f && h > 500f) {
-                    images.Add(new Image(pdf, obj));
-                }
-            }
-        }
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
-        f1.SetSize(72f);
-
-        Page page = null;
-        foreach (Image image in images) {
-            page = new Page(pdf, A4.PORTRAIT);
-
-            GraphicsState gs = new GraphicsState();
-            gs.Set_CA(0.7f);    // Stroking alpha
-            gs.Set_ca(0.7f);    // Nonstroking alpha
-            page.SetGraphicsState(gs);
-
-            image.ResizeToFit(page, true);
-
-            // image.FlipUpsideDown(true);
-            // image.SetLocation(0f, -image.GetHeight());
-
-            // image.RotateClockwise(180);
-            // image.SetLocation(0f, 0f);
-
-            image.DrawOn(page);
-
-            TextLine text = new TextLine(f1, "Hello, World!");
-            text.SetTextColor(Color.blue);
-            text.SetLocation(150f, 150f);
-            text.DrawOn(page);
-
-            page.SetGraphicsState(new GraphicsState());
-        }
-*/
         pdf.Complete();
     }
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_37();
+        new Example_37("data/testPDFs/wirth.pdf");
+        // new Example_37("../../eBooks/UniversityPhysicsVolume1.pdf");
+        // new Example_37("../../eBooks/Smalltalk-and-OO.pdf");
+        // new Example_37("../../eBooks/InsideSmalltalk1.pdf");
+        // new Example_37("../../eBooks/InsideSmalltalk2.pdf");
+        // new Example_37("../../eBooks/Greenbook.pdf");
+        // new Example_37("../../eBooks/Bluebook.pdf");
+        // new Example_37("../../eBooks/Orangebook.pdf");
         long time1 = sw.ElapsedMilliseconds;
         TextUtils.PrintDuration("Example_37", time0, time1);
     }

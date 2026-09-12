@@ -7,6 +7,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
@@ -34,10 +35,7 @@ func Example14() {
 			} else {
 				cell = pdfjet.NewCell(f2, "")
 			}
-			cell.SetTopBorder(false)
-			cell.SetBottomBorder(false)
-			cell.SetLeftBorder(false)
-			cell.SetRightBorder(false)
+			cell.SetBorders(false)
 
 			cell.SetTopPadding(10.0)
 			cell.SetBottomPadding(10.0)
@@ -46,25 +44,25 @@ func Example14() {
 
 			cell.SetText("Hello " + strconv.Itoa(i) + " " + strconv.Itoa(j))
 			if i == 0 {
-				cell.SetTopBorder(true)
+				cell.SetBorder(border.Top, true)
 				cell.SetUnderline(true)
 				cell.SetUnderline(false)
 			}
 			if i == 4 {
-				cell.SetBottomBorder(true)
+				cell.SetBorder(border.Bottom, true)
 			}
 			if j == 0 {
-				cell.SetLeftBorder(true)
+				cell.SetBorder(border.Left, true)
 			}
 			if j == 4 {
-				cell.SetRightBorder(true)
+				cell.SetBorder(border.Right, true)
 			}
 
 			if i == 2 && j == 2 {
-				cell.SetTopBorder(true)
-				cell.SetBottomBorder(true)
-				cell.SetLeftBorder(true)
-				cell.SetRightBorder(true)
+				cell.SetBorder(border.Top, true)
+				cell.SetBorder(border.Bottom, true)
+				cell.SetBorder(border.Left, true)
+				cell.SetBorder(border.Right, true)
 
 				cell.SetColSpan(3)
 				cell.SetBackgroundColor(color.DarkSeaGreen)

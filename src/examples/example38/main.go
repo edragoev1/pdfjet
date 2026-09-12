@@ -5,6 +5,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -227,8 +228,8 @@ func getCell(
 	cell := pdfjet.NewCell(font, text)
 	cell.SetColSpan(colSpan)
 	cell.SetWidth(50.0)
-	cell.SetTopBorder(topBorder)
-	cell.SetBottomBorder(bottomBorder)
+	cell.SetBorder(border.Top, topBorder)
+	cell.SetBorder(border.Bottom, bottomBorder)
 	cell.SetTextAlignment(alignment.Center)
 	cell.SetBackgroundColor(color.LightBlue)
 	cell.SetLineWidth(1.0)

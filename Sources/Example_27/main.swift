@@ -26,21 +26,21 @@ public class Example_27 {
         let f3 = try Font(pdf, IBMPlexSansArabic.Regular)
         f3.setSize(12.0)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.PORTRAIT)
 
-        let textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/thai.txt"))
+        var textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/thai.txt"))
         textBlock.setLocation(30.0, 30.0)
         textBlock.setWidth(430.0)
         textBlock.setBorderColor(Color.blue)
         textBlock.setTextPadding(10.0)
         textBlock.setLanguage("th")
-        let xy = textBlock.drawOn(page)
+        var xy = textBlock.drawOn(page)
 
         let x: Float = 570.0
         var y: Float = xy[1] + 55.0
 
-        var str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
         y += 20.0
+        var str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
         str = Bidi.reorderVisually(str)
         var textLine = TextLine(f2, str)
         textLine.setLanguage("he")
@@ -121,34 +121,34 @@ public class Example_27 {
         textLine.drawOn(page)
 
         // Right to left text in text blocks, wrapped at their width.
-        let page2 = Page(pdf, Letter.PORTRAIT)
+        page = Page(pdf, Letter.PORTRAIT)
 
-        let hebrewBlock = TextBlock(f2, try Content.ofTextFile("data/languages/hebrew.txt"))
-        hebrewBlock.setLocation(180.0, 30.0)
-        hebrewBlock.setWidth(400.0)
-        hebrewBlock.setBorderColor(Color.blue)
-        hebrewBlock.setTextPadding(10.0)
-        hebrewBlock.setRightToLeft(true)
-        hebrewBlock.setLanguage("he")
-        let xy2 = hebrewBlock.drawOn(page2)
+        textBlock = TextBlock(f2, try Content.ofTextFile("data/languages/hebrew.txt"))
+        textBlock.setLocation(180.0, 30.0)
+        textBlock.setWidth(400.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setTextPadding(10.0)
+        textBlock.setRightToLeft(true)
+        textBlock.setLanguage("he")
+        xy = textBlock.drawOn(page)
 
-        let arabicBlock = TextBlock(f3, try Content.ofTextFile("data/languages/arabic.txt"))
-        arabicBlock.setLocation(180.0, xy2[1] + 30.0)
-        arabicBlock.setWidth(400.0)
-        arabicBlock.setBorderColor(Color.blue)
-        arabicBlock.setTextPadding(10.0)
-        arabicBlock.setRightToLeft(true)
-        arabicBlock.setLanguage("ar")
-        let xy3 = arabicBlock.drawOn(page2)
+        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/arabic.txt"))
+        textBlock.setLocation(180.0, xy[1] + 30.0)
+        textBlock.setWidth(400.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setTextPadding(10.0)
+        textBlock.setRightToLeft(true)
+        textBlock.setLanguage("ar")
+        xy = textBlock.drawOn(page)
 
-        let persianBlock = TextBlock(f3, try Content.ofTextFile("data/languages/persian.txt"))
-        persianBlock.setLocation(180.0, xy3[1] + 30.0)
-        persianBlock.setWidth(400.0)
-        persianBlock.setBorderColor(Color.blue)
-        persianBlock.setTextPadding(10.0)
-        persianBlock.setRightToLeft(true)
-        persianBlock.setLanguage("fa")
-        persianBlock.drawOn(page2)
+        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/persian.txt"))
+        textBlock.setLocation(180.0, xy[1] + 30.0)
+        textBlock.setWidth(400.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setTextPadding(10.0)
+        textBlock.setRightToLeft(true)
+        textBlock.setLanguage("fa")
+        textBlock.drawOn(page)
 
         pdf.complete()
     }

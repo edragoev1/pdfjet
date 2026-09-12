@@ -30,6 +30,8 @@ func Example16() {
 	colors["pay"] = color.Green
 	colors["freedom"] = color.Blue
 
+	// page.SaveGraphicsState()
+
 	gs := pdfjet.NewGraphicsState()
 	gs.SetAlphaStroking(0.5)    // Stroking alpha
 	gs.SetAlphaNonStroking(0.5) // Non-Stroking alpha
@@ -61,6 +63,7 @@ func Example16() {
 	xy := textBox.DrawOn(page)
 
 	page.SetGraphicsState(pdfjet.NewGraphicsState()) // Reset GS
+	// page.RestoreGraphicsState()
 
 	box := pdfjet.NewBox()
 	box.SetLocation(xy[0], xy[1])

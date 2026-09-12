@@ -57,12 +57,12 @@ func Example03() {
 		}
 	}
 
-	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	colorMap := make(map[string]int32)
 	colorMap["Physics"] = color.Red
 	colorMap["physics"] = color.Red
 	colorMap["Experimentation"] = color.Orange
 	colorMap["science"] = color.Blue
+	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	f2size := f2.GetSize()
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {

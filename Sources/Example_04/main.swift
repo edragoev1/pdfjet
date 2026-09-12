@@ -50,9 +50,12 @@ public class Example_04 {
         var y_pos: Float = 100.0
 
         let fileName = "data/happy-new-year.txt"
-        let lines = (try String(contentsOfFile: fileName, encoding: .utf8))
+        var lines = (try String(contentsOfFile: fileName, encoding: .utf8))
                 .replacingOccurrences(of: "\r\n", with: "\n")
                 .components(separatedBy: .newlines)
+        if lines.last == "" {
+            lines.removeLast()  // The trailing newline is not a line, as in Java's readLine()
+        }
 
         let text = TextLine(f0)
         for line in lines {
