@@ -19,13 +19,14 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     com/pdfjet/barcodes/*.java \
     com/pdfjet/pdf417/*.java \
     com/pdfjet/qrcode/*.java \
+    com/pdfjet/datamatrix/*.java \
     com/pdfjet/corefonts/*.java \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     -d out/production
 jar cf PDFjet.jar -C out/production .
 
-for i in $(seq 1 50);
+for i in $(seq 1 51);
 do
     if [ $i -lt 10 ]; then
         javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -cp PDFjet.jar examples/Example_0$i.java -d out/production &
@@ -35,7 +36,7 @@ do
 done
 wait
 
-for i in $(seq 1 50);
+for i in $(seq 1 51);
 do
     if [ $i -lt 10 ]; then
         java -cp .:PDFjet.jar:out/production examples.Example_0$i

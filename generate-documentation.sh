@@ -12,6 +12,7 @@ javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \
     com/pdfjet/fonts/*.java \
     com/pdfjet/pdf417/*.java \
     com/pdfjet/qrcode/*.java \
+    com/pdfjet/datamatrix/*.java \
     -d docs/java
 
 # The C# API reference is built by DocFX from the XML doc comments in net/pdfjet.

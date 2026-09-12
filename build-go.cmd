@@ -11,8 +11,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Loop from 1 to 50
-for /L %%i in (1,1,50) do (
+:: Loop from 1 to 51
+for /L %%i in (1,1,51) do (
     :: Check if %%i is less than 10
     if %%i lss 10 (
         go build -o ..\Example_0%%i.exe examples\example0%%i\main.go
@@ -25,7 +25,7 @@ for /L %%i in (1,1,50) do (
 cd ..
 
 :: Run the .exe files
-for /L %%i in (1,1,50) do (
+for /L %%i in (1,1,51) do (
     :: Check if %%i is less than 10
     if %%i lss 10 (
         Example_0%%i.exe

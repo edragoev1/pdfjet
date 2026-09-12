@@ -9,8 +9,8 @@ REM The -warnaserror switch would still write it, so the example would run.
 REM Build the PDFjet library project
 dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true
 
-REM Build Example_01 to Example_50
-for /L %%i in (1,1,50) do (
+REM Build Example_01 to Example_51
+for /L %%i in (1,1,51) do (
     REM Check if the example number is less than 10
     if %%i lss 10 (
         dotnet build examples\Example_0%%i\Example_0%%i.csproj -c release -p:TreatWarningsAsErrors=true
@@ -19,8 +19,8 @@ for /L %%i in (1,1,50) do (
     )
 )
 
-REM Run Example_01 to Example_50
-for /L %%i in (1,1,50) do (
+REM Run Example_01 to Example_51
+for /L %%i in (1,1,51) do (
     REM Check if the example number is less than 10
     if %%i lss 10 (
         dotnet examples\Example_0%%i\bin\release\net8.0\Example_0%%i.dll

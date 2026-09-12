@@ -96,7 +96,7 @@ jobs:
             - name: Build the example PDFs
               run: |
                   bash -e build-java.sh
-                  test "$(ls Example_*.pdf | wc -l)" -eq 50
+                  test "$(ls Example_*.pdf | wc -l)" -eq 51
 
             - name: Assemble the site
               run: |

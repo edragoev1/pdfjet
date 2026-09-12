@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>               <!-- Specifies that it's a console app -->
+    <TargetFramework>net8.0</TargetFramework>  <!-- Targets .NET 8 -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <StartupObject>Example_51</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PDFjet">
+      <HintPath>../../bin/release/net8.0/PDFjet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

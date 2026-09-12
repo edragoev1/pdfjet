@@ -9,7 +9,7 @@ swift build --configuration release -Xswiftc -warnings-as-errors
 if errorlevel 1 exit /b 1
 for /f "delims=" %%b in ('swift build --configuration release --show-bin-path') do set BIN=%%b
 
-for /L %%i in (1,1,50) do (
+for /L %%i in (1,1,51) do (
     if %%i lss 10 (
         "%BIN%\Example_0%%i.exe"
     ) else (

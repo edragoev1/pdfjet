@@ -48,7 +48,7 @@ for port in java dotnet go swift; do
     fi
     mkdir -p "$WORK/pdfs/$port"
     missing=0
-    for i in $(seq -w 1 50); do
+    for i in $(seq -w 1 51); do
         if [ -s Example_$i.pdf ]; then
             mv Example_$i.pdf "$WORK/pdfs/$port/"
         else
