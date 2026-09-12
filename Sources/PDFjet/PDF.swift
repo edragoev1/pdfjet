@@ -299,6 +299,9 @@ public class PDF {
         sb.append("</x:xmpmeta>\n")
         sb.append("<?xpacket end=\"w\"?>")
 
+        // The metadata is encrypted like every other stream, and the
+        // encryption dictionary says so with /EncryptMetadata true. Readers do
+        // not agree on which metadata streams to leave alone when it is false.
         let buf = encrypted([UInt8](sb.utf8))
 
         // This is the metadata object

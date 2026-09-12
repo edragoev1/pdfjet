@@ -55,7 +55,7 @@ public class Encryption {
         for i in 0..<4 {
             perms[i] = UInt8(truncatingIfNeeded: p >> (8 * i))    // Little-endian
         }
-        perms += Array("Fadb".utf8)         // 'F' for EncryptMetadata false
+        perms += Array("Tadb".utf8)         // 'T' for EncryptMetadata true
         perms += Cryptography.randomBytes(4)
         let encryptedPerms = Cryptography.aesEncryptBlock(perms, fileEncryptionKey)
 
@@ -91,7 +91,7 @@ public class Encryption {
         pdf.append(Encryption.toHex(oe))
         pdf.append(">\n")
 
-        pdf.append("/EncryptMetadata false\n")
+        pdf.append("/EncryptMetadata true\n")
 
         // A set of flags specifying which operations shall be permitted
         pdf.append("/P ")

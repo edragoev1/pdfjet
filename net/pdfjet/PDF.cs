@@ -277,6 +277,9 @@ public class PDF {
         sb.Append("</x:xmpmeta>\n");
         sb.Append("<?xpacket end=\"w\"?>");
 
+        // The metadata is encrypted like every other stream, and the
+        // encryption dictionary says so with /EncryptMetadata true. Readers do
+        // not agree on which metadata streams to leave alone when it is false.
         byte[] xml = (new System.Text.UTF8Encoding()).GetBytes(sb.ToString());
         if (encryption != null) {
             xml = AES256.Encrypt(xml, encryption.GetKey());

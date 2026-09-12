@@ -114,7 +114,7 @@ public class Encryption {
         pdf.Append(ToHex(owner.OE));
         pdf.Append(">\n");
 
-        pdf.Append("/EncryptMetadata false\n");
+        pdf.Append("/EncryptMetadata true\n");
 
         // The flags specifying which operations shall be permitted, with the
         // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
@@ -126,7 +126,7 @@ public class Encryption {
 
         // Create the unencrypted block per Algorithm 10
         byte[] perms = CreateUnencryptedPermsBlock(p);
-        perms[8]  = (byte) 'F'; // for EncryptMetadata false and 'T' for true
+        perms[8]  = (byte) 'T'; // 'T' for EncryptMetadata true
         perms[9]  = (byte) 'a';
         perms[10] = (byte) 'd';
         perms[11] = (byte) 'b';

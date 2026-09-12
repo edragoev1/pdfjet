@@ -303,6 +303,9 @@ final public class PDF {
         sb.append("</x:xmpmeta>\n");
         sb.append("<?xpacket end=\"w\"?>");
 
+        // The metadata is encrypted like every other stream, and the
+        // encryption dictionary says so with /EncryptMetadata true. Readers do
+        // not agree on which metadata streams to leave alone when it is false.
         byte[] xml = sb.toString().getBytes(StandardCharsets.UTF_8);
         if (encryption != null) {
             xml = AES256.encrypt(xml, encryption.getKey());

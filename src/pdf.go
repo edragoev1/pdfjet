@@ -292,10 +292,14 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	sb.WriteString("</x:xmpmeta>\n")
 	sb.WriteString("<?xpacket end=\"w\"?>")
 
+	// The metadata is encrypted like every other stream, and the
+	// encryption dictionary says so with /EncryptMetadata true. Readers do
+	// not agree on which metadata streams to leave alone when it is false.
 	xml := []byte(sb.String())
 	if pdf.encryption != nil {
 		xml, _ = encryption.Encrypt(xml, pdf.encryption.GetKey())
 	}
+
 	// This is the metadata object
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)

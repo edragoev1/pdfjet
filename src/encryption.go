@@ -106,7 +106,7 @@ func NewEncryption(pdf *PDF,
 	pdf.appendString(byteArrayToHexString(owner.OE))
 	pdf.appendString(">\n")
 
-	pdf.appendString("/EncryptMetadata false\n")
+	pdf.appendString("/EncryptMetadata true\n")
 
 	// The flags specifying which operations shall be permitted, with the
 	// reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
@@ -118,7 +118,7 @@ func NewEncryption(pdf *PDF,
 
 	// Create the unencrypted block per Algorithm 10
 	perms := createUnencryptedPermsBlock(p)
-	perms[8] = 'F' // for EncryptMetadata false
+	perms[8] = 'T' // 'T' for EncryptMetadata true
 	perms[9] = 'a'
 	perms[10] = 'd'
 	perms[11] = 'b'
