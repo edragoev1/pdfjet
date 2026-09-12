@@ -27,7 +27,6 @@ final public class Font {
     /** The resource name of a font read from an existing PDF, or null. */
     protected String fontID;
 
-    // The object number of the embedded font file
     /** The object number of the embedded font file. */
     protected int fileObjNumber;
     /** The object number of the font descriptor. */
@@ -458,19 +457,21 @@ final public class Font {
         }
 
         if (isCJK) {
-            return str.length() * ascent;
+            // Every glyph of a CJK font is as wide as the font size.
+            return str.codePointCount(0, str.length()) * fontSize;
         }
 
         if (isCoreFont) {
-            for (int i = 0; i < str.length(); i++) {
-                int c1 = str.charAt(i);
+            for (int i = 0; i < str.length(); ) {
+                int c1 = str.codePointAt(i);
+                i += Character.charCount(c1);
                 if (c1 < firstChar || c1 > lastChar) {
                     c1 = 0x20;
                 }
                 c1 -= 32;
                 width += metrics[c1][1];
-                if (kernPairs && i < (str.length() - 1)) {
-                    int c2 = str.charAt(i + 1);
+                if (kernPairs && i < str.length()) {
+                    int c2 = str.codePointAt(i);
                     if (c2 < firstChar || c2 > lastChar) {
                         c2 = 32;
                     }
@@ -483,20 +484,32 @@ final public class Font {
                 }
             }
         } else {
-            for (int i = 0; i < str.length(); i++) {
-                int c1 = str.charAt(i);
-                if (isJoinerOrRLM(c1)) {
-                    continue;   // An RLM, LRM, ZWNJ or ZWJ is not drawn
-                }
-                if (unicodeToGID[c1] < advanceWidth.length) {
-                    width += advanceWidth[unicodeToGID[c1]];
-                } else {
-                    width += advanceWidth[0];
-                }
+            for (int i = 0; i < str.length(); ) {
+                int cp = str.codePointAt(i);
+                i += Character.charCount(cp);
+                width += advanceWidthOf(cp);
             }
         }
 
         return width * fontSize / unitsPerEm;
+    }
+
+    // Returns the advance width, in font units, of the glyph that Page draws
+    // for the character: none for an RLM, LRM, ZWNJ, ZWJ or byte order mark,
+    // which are not drawn, and that of a space for a character the font does
+    // not cover.
+    private int advanceWidthOf(int cp) {
+        if (isJoinerOrRLM(cp) || cp == 0xFEFF) {
+            return 0;
+        }
+        int gid = (cp < firstChar || cp > lastChar) ? unicodeToGID[0x20] : unicodeToGID[cp];
+        return (gid < advanceWidth.length) ? advanceWidth[gid] : advanceWidth[0];
+    }
+
+    // Returns true if the font has a glyph for the character. A character past
+    // the end of the glyph table of the font, like an emoji, has none.
+    boolean hasGlyph(int cp) {
+        return cp < unicodeToGID.length && unicodeToGID[cp] != 0;
     }
 
     /**
@@ -570,7 +583,7 @@ final public class Font {
      * @return the underline position.
      */
     public float getUnderlinePosition(float fontSize) {
-        return  -(fontUnderlinePosition * fontSize / unitsPerEm) + underlineThickness / 2.0f;
+        return -(fontUnderlinePosition * fontSize / unitsPerEm) + getUnderlineThickness(fontSize) / 2.0f;
     }
 
     /**
@@ -617,26 +630,23 @@ final public class Font {
         float w = width * unitsPerEm / size;
 
         if (isCJK) {
-            return (int) (w / ascent);
+            // Every glyph of a CJK font is as wide as the font size.
+            int fit = Math.max(0, (int) (width / size));
+            return str.offsetByCodePoints(0, Math.min(fit, str.codePointCount(0, str.length())));
         }
 
         if (isCoreFont) {
             return getCoreFontFitChars(str, w);
         }
 
-        int i;
-        for (i = 0; i < str.length(); i++) {
-            int c1 = str.charAt(i);
-
-            if (c1 < firstChar || c1 > lastChar) {
-                w -= advanceWidth[0];
-            } else {
-                w -= advanceWidth[unicodeToGID[c1]];
-            }
-
+        int i = 0;
+        while (i < str.length()) {
+            int cp = str.codePointAt(i);
+            w -= advanceWidthOf(cp);
             if (w < 0) {
                 break;
             }
+            i += Character.charCount(cp);
         }
 
         return i;
@@ -647,7 +657,8 @@ final public class Font {
 
         int i = 0;
         while (i < str.length()) {
-            int c1 = str.charAt(i);
+            int c1 = str.codePointAt(i);
+            int next = i + Character.charCount(c1);
 
             if (c1 < firstChar || c1 > lastChar) {
                 c1 = 32;
@@ -660,8 +671,8 @@ final public class Font {
                 return i;
             }
 
-            if (kernPairs && i < (str.length() - 1)) {
-                int c2 = str.charAt(i + 1);
+            if (kernPairs && next < str.length()) {
+                int c2 = str.codePointAt(next);
                 if (c2 < firstChar || c2 > lastChar) {
                     c2 = 32;
                 }
@@ -676,7 +687,7 @@ final public class Font {
                 }
             }
 
-            i += 1;
+            i = next;
         }
 
         return i;
@@ -730,17 +741,19 @@ final public class Font {
     public float stringWidth(Font fallbackFont, float fontSize, String str) {
         float width = 0f;
 
-        if (this.isCoreFont || this.isCJK || fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
+        if (str == null || this.isCoreFont || this.isCJK ||
+                fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
             return stringWidth(fontSize, str);
         }
 
         Font activeFont = this;
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < str.length(); i++) {
-            int ch = str.charAt(i);
+        for (int i = 0; i < str.length(); ) {
+            int cp = str.codePointAt(i);
+            int count = Character.charCount(cp);
             // An RLM, ZWNJ or ZWJ goes with the character after it.
-            int next = (isJoinerOrRLM(ch) && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
-            if (activeFont.unicodeToGID[next] == 0) {
+            int next = (isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
+            if (!activeFont.hasGlyph(next)) {
                 width += activeFont.stringWidth(fontSize, buf.toString());
                 buf.setLength(0);
                 // Switch the active font
@@ -750,7 +763,8 @@ final public class Font {
                     activeFont = this;
                 }
             }
-            buf.append((char) ch);
+            buf.append(str, i, i + count);
+            i += count;
         }
         width += activeFont.stringWidth(fontSize, buf.toString());
 

@@ -458,7 +458,7 @@ public class Page {
                 int count = (ch > 0xFFFF) ? 2 : 1;
                 // An RLM, ZWNJ or ZWJ goes with the character after it.
                 int next = (Font.IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
-                if (!HasGlyph(activeFont, next)) {
+                if (!activeFont.HasGlyph(next)) {
                     DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
                     x += activeFont.StringWidth(fontSize, sb.ToString());
                     sb.Length = 0;
@@ -474,12 +474,6 @@ public class Page {
             }
             DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
         }
-    }
-
-    // Returns true if the font has a glyph for the character. A character past
-    // the end of the glyph table of the font, like an emoji, has none.
-    private static bool HasGlyph(Font font, int codePoint) {
-        return codePoint < font.unicodeToGID.Length && font.unicodeToGID[codePoint] != 0;
     }
 
     /// <summary>

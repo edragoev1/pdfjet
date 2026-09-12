@@ -8,7 +8,7 @@ import Foundation
 
 ///
 /// Used to create font objects.
-/// The font objects must added to the PDF before they can be used to draw text.
+/// The font objects must be added to the PDF before they can be used to draw text.
 ///
 public class Font {
     /// Passed to the stream font constructors to mark the font as a stream font.
@@ -271,7 +271,10 @@ public class Font {
     /// - Throws: an error if the font cannot be read.
     ///
     public init(_ pdf: PDF, _ fontPath: String) throws {
-        let inputStream = InputStream(fileAtPath: fontPath)!
+        guard FileManager.default.fileExists(atPath: fontPath),
+                let inputStream = InputStream(fileAtPath: fontPath) else {
+            throw PDFjetError(message: "Font file not found: " + fontPath)
+        }
         if (fontPath.hasSuffix(".stream")) {
             try FontStream1.register(pdf, self, inputStream)
         } else {
@@ -353,7 +356,8 @@ public class Font {
         }
 
         if isCJK {
-            return Float(str!.count) * self.ascent
+            // Every glyph of a CJK font is as wide as the font size.
+            return Float(str!.unicodeScalars.count) * fontSize
         }
 
         let scalars = Array(str!.unicodeScalars)
@@ -381,17 +385,30 @@ public class Font {
                 }
             }
         } else {
-            for scalar in scalars where !Font.isJoinerOrRLM(scalar.value) {    // An RLM, ZWNJ or ZWJ is not drawn
-                let c1 = Int(scalar.value)
-                if unicodeToGID[c1] < advanceWidth.count {
-                    width += Int(advanceWidth[unicodeToGID[c1]])
-                } else {
-                    width += Int(advanceWidth[0])
-                }
+            for scalar in scalars {
+                width += advanceWidthOf(Int(scalar.value))
             }
         }
 
         return Float(width) * fontSize / Float(self.unitsPerEm)
+    }
+
+    // Returns the advance width, in font units, of the glyph that Page draws
+    // for the character: none for an RLM, LRM, ZWNJ, ZWJ or byte order mark,
+    // which are not drawn, and that of a space for a character the font does
+    // not cover.
+    private func advanceWidthOf(_ codePoint: Int) -> Int {
+        if Font.isJoinerOrRLM(UInt32(codePoint)) || codePoint == 0xFEFF {
+            return 0
+        }
+        let gid = (codePoint < firstChar || codePoint > lastChar) ? unicodeToGID[0x20] : unicodeToGID[codePoint]
+        return Int((gid < advanceWidth.count) ? advanceWidth[gid] : advanceWidth[0])
+    }
+
+    // Returns true if the font has a glyph for the character. A character past
+    // the end of the glyph table of the font, like an emoji, has none.
+    func hasGlyph(_ codePoint: Int) -> Bool {
+        return codePoint < unicodeToGID.count && unicodeToGID[codePoint] != 0
     }
 
     ///
@@ -429,12 +446,12 @@ public class Font {
     }
 
     ///
-    /// Returns the height of this font.
+    /// Returns the height of the body of this font at its current size.
     ///
-    /// - Returns: the height of the font.
+    /// - Returns: the height of the body of the font.
     ///
     public func getBodyHeight() -> Float {
-        return self.ascent + self.descent
+        return self.bodyHeight
     }
 
     ///
@@ -446,11 +463,7 @@ public class Font {
         return self.ascent + self.descent
     }
 
-    ///
-    /// Returns the height of the body of the font.
-    ///
-    /// - Returns: float the height of the body of the font.
-    ///
+    /// Returns the ascent plus the descent at the specified font size.
     public func getBodyHeight(_ fontSize: Float) -> Float {
         return getAscent(fontSize) + getDescent(fontSize)
     }
@@ -489,19 +502,15 @@ public class Font {
             _ width: Float) -> Int {
         var w = width * Float(unitsPerEm) / size
         if isCJK {
-            return Int(w / Float(self.ascent))
+            // Every glyph of a CJK font is as wide as the font size.
+            return max(0, min(Int(width / size), str.unicodeScalars.count))
         }
         if isCoreFont {
             return getCoreFontFitChars(str, w)
         }
         var i = 0
         for scalar in str.unicodeScalars {
-            let c1 = Int(scalar.value)
-            if c1 < firstChar || c1 > lastChar {
-                w -= Float(advanceWidth[0])
-            } else {
-                w -= Float(advanceWidth[unicodeToGID[c1]])
-            }
+            w -= Float(advanceWidthOf(Int(scalar.value)))
             if w < 0 {
                 break
             }
@@ -582,7 +591,8 @@ public class Font {
     ///
     public func stringWidth(_ fallbackFont: Font?, _ fontSize: Float, _ str: String?) -> Float {
         var width: Float = 0.0
-        if self.isCoreFont || self.isCJK || fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK {
+        if str == nil || self.isCoreFont || self.isCJK ||
+                fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK {
             return stringWidth(fontSize, str)
         }
         var activeFont = self
@@ -591,7 +601,7 @@ public class Font {
         for (i, scalar) in scalars.enumerated() {
             // An RLM, ZWNJ or ZWJ goes with the character after it.
             let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
-            if activeFont.unicodeToGID[Int(next.value)] == 0 {
+            if !activeFont.hasGlyph(Int(next.value)) {
                 width += activeFont.stringWidth(fontSize, buf)
                 buf = ""
                 // Switch the active font

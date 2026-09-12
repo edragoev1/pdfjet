@@ -407,7 +407,7 @@ final public class Page {
                 int count = Character.charCount(cp);
                 // An RLM, ZWNJ or ZWJ goes with the character after it.
                 int next = (Font.isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
-                if (!hasGlyph(activeFont, next)) {
+                if (!activeFont.hasGlyph(next)) {
                     drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
                     x += activeFont.stringWidth(fontSize, buf.toString());
                     buf.setLength(0);
@@ -423,12 +423,6 @@ final public class Page {
             }
             drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
         }
-    }
-
-    // Returns true if the font has a glyph for the character. A character past
-    // the end of the glyph table of the font, like an emoji, has none.
-    private static boolean hasGlyph(Font font, int cp) {
-        return cp < font.unicodeToGID.length && font.unicodeToGID[cp] != 0;
     }
 
     /**

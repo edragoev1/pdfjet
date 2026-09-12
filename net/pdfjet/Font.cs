@@ -339,19 +339,25 @@ public class Font {
         }
 
         if (isCJK) {
-            return str.Length * ascent;
+            // Every glyph of a CJK font is as wide as the font size.
+            int count = 0;
+            for (int i = 0; i < str.Length; i += (Util.CodePointAt(str, i) > 0xFFFF) ? 2 : 1) {
+                count++;
+            }
+            return count * fontSize;
         }
 
         if (isCoreFont) {
-            for (int i = 0; i < str.Length; i++) {
-                int c1 = str[i];
+            for (int i = 0; i < str.Length; ) {
+                int c1 = Util.CodePointAt(str, i);
+                i += (c1 > 0xFFFF) ? 2 : 1;
                 if (c1 < firstChar || c1 > lastChar) {
                     c1 = 0x20;
                 }
                 c1 -= 32;
                 width += metrics[c1][1];
-                if (kernPairs && i < (str.Length - 1)) {
-                    int c2 = str[i + 1];
+                if (kernPairs && i < str.Length) {
+                    int c2 = Util.CodePointAt(str, i);
                     if (c2 < firstChar || c2 > lastChar) {
                         c2 = 32;
                     }
@@ -364,19 +370,32 @@ public class Font {
                 }
             }
         } else {
-            foreach (int c1 in str) {
-                if (IsJoinerOrRLM(c1)) {
-                    continue;   // An RLM, ZWNJ or ZWJ is not drawn
-                }
-                if (unicodeToGID[c1] < advanceWidth.Length) {
-                    width += advanceWidth[unicodeToGID[c1]];
-                } else {
-                    width += advanceWidth[0];
-                }
+            for (int i = 0; i < str.Length; ) {
+                int codePoint = Util.CodePointAt(str, i);
+                i += (codePoint > 0xFFFF) ? 2 : 1;
+                width += AdvanceWidthOf(codePoint);
             }
         }
 
         return width * fontSize / unitsPerEm;
+    }
+
+    // Returns the advance width, in font units, of the glyph that Page draws
+    // for the character: none for an RLM, LRM, ZWNJ, ZWJ or byte order mark,
+    // which are not drawn, and that of a space for a character the font does
+    // not cover.
+    private int AdvanceWidthOf(int codePoint) {
+        if (IsJoinerOrRLM(codePoint) || codePoint == 0xFEFF) {
+            return 0;
+        }
+        int gid = (codePoint < firstChar || codePoint > lastChar) ? unicodeToGID[0x20] : unicodeToGID[codePoint];
+        return (gid < advanceWidth.Length) ? advanceWidth[gid] : advanceWidth[0];
+    }
+
+    // Returns true if the font has a glyph for the character. A character past
+    // the end of the glyph table of the font, like an emoji, has none.
+    internal bool HasGlyph(int codePoint) {
+        return codePoint < unicodeToGID.Length && unicodeToGID[codePoint] != 0;
     }
 
     /// <summary>Returns the ascent at the current font size.</summary>
@@ -443,7 +462,7 @@ public class Font {
 
     /// <summary>Returns the underline position at the specified font size.</summary>
     public float GetUnderlinePosition(float fontSize) {
-        return  -(fontUnderlinePosition * fontSize / unitsPerEm) + underlineThickness / 2.0f;
+        return -(fontUnderlinePosition * fontSize / unitsPerEm) + GetUnderlineThickness(fontSize) / 2.0f;
     }
 
     /// <summary>Returns how many characters of the string fit within the specified width.</summary>
@@ -455,20 +474,26 @@ public class Font {
     public int GetFitChars(String str, float width) {
         float w = width * unitsPerEm / size;
         if (isCJK) {
-            return (int) (w / ascent);
+            // Every glyph of a CJK font is as wide as the font size.
+            int fit = Math.Max(0, (int) (width / size));
+            int k = 0;
+            while (k < str.Length && fit > 0) {
+                k += (Util.CodePointAt(str, k) > 0xFFFF) ? 2 : 1;
+                fit--;
+            }
+            return k;
         }
         if (isCoreFont) {
             return GetCoreFontFitChars(str, w);
         }
-        int i;
-        for (i = 0; i < str.Length; i++) {
-            int c1 = str[i];
-            if (c1 < firstChar || c1 > lastChar) {
-                w -= advanceWidth[0];
-            } else {
-                w -= advanceWidth[unicodeToGID[c1]];
+        int i = 0;
+        while (i < str.Length) {
+            int codePoint = Util.CodePointAt(str, i);
+            w -= AdvanceWidthOf(codePoint);
+            if (w < 0) {
+                break;
             }
-            if (w < 0) break;
+            i += (codePoint > 0xFFFF) ? 2 : 1;
         }
         return i;
     }
@@ -478,7 +503,8 @@ public class Font {
 
         int i = 0;
         while (i < str.Length) {
-            int c1 = str[i];
+            int c1 = Util.CodePointAt(str, i);
+            int next = i + ((c1 > 0xFFFF) ? 2 : 1);
             if (c1 < firstChar || c1 > lastChar) {
                 c1 = 32;
             }
@@ -488,8 +514,8 @@ public class Font {
             if (w < 0) {
                 return i;
             }
-            if (kernPairs && i < (str.Length - 1)) {
-                int c2 = str[i + 1];
+            if (kernPairs && next < str.Length) {
+                int c2 = Util.CodePointAt(str, next);
                 if (c2 < firstChar || c2 > lastChar) {
                     c2 = 32;
                 }
@@ -504,7 +530,7 @@ public class Font {
                 }
             }
 
-            i += 1;
+            i = next;
         }
 
         return i;
@@ -550,17 +576,19 @@ public class Font {
     public float StringWidth(Font fallbackFont, float fontSize, String str) {
         float width = 0f;
 
-        if (this.isCoreFont || this.isCJK || fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
+        if (str == null || this.isCoreFont || this.isCJK ||
+                fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
             return StringWidth(fontSize, str);
         }
 
         Font activeFont = this;
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < str.Length; i++) {
-            int ch = str[i];
+        for (int i = 0; i < str.Length; ) {
+            int ch = Util.CodePointAt(str, i);
+            int count = (ch > 0xFFFF) ? 2 : 1;
             // An RLM, ZWNJ or ZWJ goes with the character after it.
-            int next = (IsJoinerOrRLM(ch) && i + 1 < str.Length) ? str[i + 1] : ch;
-            if (activeFont.unicodeToGID[next] == 0) {
+            int next = (IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
+            if (!activeFont.HasGlyph(next)) {
                 width += activeFont.StringWidth(fontSize, buf.ToString());
                 buf.Length = 0;
                 // Switch the active font
@@ -570,7 +598,8 @@ public class Font {
                     activeFont = this;
                 }
             }
-            buf.Append((char) ch);
+            buf.Append(str, i, count);
+            i += count;
         }
         width += activeFont.StringWidth(fontSize, buf.ToString());
 

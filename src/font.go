@@ -118,8 +118,8 @@ func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	return font
 }
 
-// NewCoreFontForPDFobj is the constructor used by PDFobj
-// Core font should be an interface!
+// NewCoreFontForPDFobj creates a core font that is not added to a PDF, for
+// PDFobj.AddCoreFontResource.
 func NewCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 	font := new(Font)
 	font.isCoreFont = true
@@ -397,23 +397,19 @@ func (font *Font) GetUnderlinePositionAt(fontSize float32) float32 {
 // that will fit within the specified width.
 func (font *Font) GetFitChars(text string, width float32) int {
 	w := width * float32(font.unitsPerEm) / font.size
+	runes := []rune(text)
 	if font.isCJK {
-		return int(w / font.ascent)
+		// Every glyph of a CJK font is as wide as the font size.
+		return max(0, min(int(width/font.size), len(runes)))
 	}
 
 	if font.isCoreFont {
 		return font.getCoreFontFitChars(text, w)
 	}
 
-	runes := []rune(text)
 	i := 0
 	for i < len(runes) {
-		c1 := runes[i]
-		if c1 < font.firstChar || c1 > font.lastChar {
-			w -= float32(font.advanceWidth[0])
-		} else {
-			w -= float32(font.advanceWidth[font.unicodeToGID[c1]])
-		}
+		w -= float32(font.advanceWidthOf(runes[i]))
 		if w < 0 {
 			break
 		}
@@ -446,8 +442,8 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 				c2 = 32
 			}
 			for j := 2; j < len(font.metrics[ch]); j += 2 {
-				if rune(font.metrics[c2][j]) == c2 {
-					w -= float32(font.metrics[c2][j+1])
+				if rune(font.metrics[ch][j]) == c2 {
+					w -= float32(font.metrics[ch][j+1])
 					if w < 0 {
 						return i
 					}
@@ -480,11 +476,12 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 		return width
 	}
 
+	runes := []rune(str)
 	if font.isCJK {
-		return float32(len([]rune(str))) * font.ascent
+		// Every glyph of a CJK font is as wide as the font size.
+		return float32(len(runes)) * fontSize
 	}
 
-	runes := []rune(str)
 	if font.isCoreFont {
 		for i, c1 := range runes {
 			if c1 < font.firstChar || c1 > font.lastChar {
@@ -507,18 +504,37 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 		}
 	} else {
 		for _, c1 := range runes {
-			if isJoinerOrRLM(c1) {
-				continue // An RLM, ZWNJ or ZWJ is not drawn
-			}
-			if font.unicodeToGID[c1] < len(font.advanceWidth) {
-				width += float32(font.advanceWidth[font.unicodeToGID[c1]])
-			} else {
-				width += float32(font.advanceWidth[0])
-			}
+			width += float32(font.advanceWidthOf(c1))
 		}
 	}
 
 	return width * fontSize / float32(font.unitsPerEm)
+}
+
+// advanceWidthOf returns the advance width, in font units, of the glyph that
+// Page draws for the character: none for an RLM, LRM, ZWNJ, ZWJ or byte order
+// mark, which are not drawn, and that of a space for a character the font does
+// not cover.
+func (font *Font) advanceWidthOf(c rune) int {
+	if isJoinerOrRLM(c) || c == 0xFEFF {
+		return 0
+	}
+	gid := 0
+	if c < font.firstChar || c > font.lastChar {
+		gid = font.unicodeToGID[0x20]
+	} else {
+		gid = font.unicodeToGID[c]
+	}
+	if gid < len(font.advanceWidth) {
+		return int(font.advanceWidth[gid])
+	}
+	return int(font.advanceWidth[0])
+}
+
+// hasGlyph returns true if the font has a glyph for the character. A character
+// past the end of the glyph table of the font, like an emoji, has none.
+func (font *Font) hasGlyph(c rune) bool {
+	return int(c) < len(font.unicodeToGID) && font.unicodeToGID[c] != 0
 }
 
 // StringWidthFB returns the width of text string drawn using main and fallback fonts.
@@ -538,7 +554,7 @@ func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text strin
 		if isJoinerOrRLM(ch) && i+1 < len(runes) {
 			next = runes[i+1]
 		}
-		if activeFont.unicodeToGID[next] == 0 {
+		if !activeFont.hasGlyph(next) {
 			width += activeFont.StringWidth(fontSize, buf.String())
 			buf.Reset()
 			// Switch the active font

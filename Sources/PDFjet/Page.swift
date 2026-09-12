@@ -305,7 +305,7 @@ public class Page {
             for (i, scalar) in scalars.enumerated() {
                 // An RLM, ZWNJ or ZWJ goes with the character after it.
                 let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
-                if !hasGlyph(activeFont, Int(next.value)) {
+                if !activeFont.hasGlyph(Int(next.value)) {
                     drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
                     x += activeFont.stringWidth(fontSize, buf)
                     buf = ""
@@ -320,12 +320,6 @@ public class Page {
             }
             drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
         }
-    }
-
-    // Returns true if the font has a glyph for the character. A character past
-    // the end of the glyph table of the font, like an emoji, has none.
-    private func hasGlyph(_ font: Font, _ codePoint: Int) -> Bool {
-        return codePoint < font.unicodeToGID.count && font.unicodeToGID[codePoint] != 0
     }
 
     /// Draws the string in black at the specified font size.

@@ -253,7 +253,7 @@ func (page *Page) DrawStringUsingColorMap(
 			if isJoinerOrRLM(ch) && i+1 < len(runes) {
 				next = runes[i+1]
 			}
-			if !hasGlyph(activeFont, next) {
+			if !activeFont.hasGlyph(next) {
 				page.drawString(activeFont, fontSize, buf.String(), x, y, brush, colors)
 				x += activeFont.StringWidth(fontSize, buf.String())
 				buf.Reset()
@@ -268,12 +268,6 @@ func (page *Page) DrawStringUsingColorMap(
 		}
 		page.drawString(activeFont, fontSize, buf.String(), x, y, brush, colors)
 	}
-}
-
-// hasGlyph returns true if the font has a glyph for the character. A character
-// past the end of the glyph table of the font, like an emoji, has none.
-func hasGlyph(font *Font, c rune) bool {
-	return int(c) < len(font.unicodeToGID) && font.unicodeToGID[c] != 0
 }
 
 // drawString draws the text given by the specified string,
