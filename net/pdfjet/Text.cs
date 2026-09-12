@@ -6,13 +6,12 @@
  */
 using System;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
-using System.IO;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Please see Example_45.
+/// Paragraphs of text lines, wrapped at a width, with an optional border.
+/// Please see Example_03, Example_41 and Example_49.
 /// </summary>
 public class Text : IDrawable {
     private List<Paragraph> paragraphs;
@@ -70,6 +69,7 @@ public class Text : IDrawable {
     public Text SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
+            this.hasBorder = false;
             return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
@@ -99,13 +99,18 @@ public class Text : IDrawable {
         return this;
     }
 
-    /// <summary>Draws the paragraphs on the specified page.</summary>
+    /// <summary>
+    /// Draws the paragraphs on the specified page. With no page nothing is drawn
+    /// and the paragraphs get their coordinates.
+    /// </summary>
     public float[] DrawOn(Page page) {
+        TextLine firstLine = paragraphs[0].lines[0];
         this.xText = x1;
-        this.yText = y1 + paragraphs[0].lines[0].font.GetAscent();
+        this.yText = y1 + firstLine.font.GetAscent(firstLine.fontSize);
         foreach (Paragraph paragraph in paragraphs) {
+            firstLine = paragraph.lines[0];
             paragraph.x1 = x1;
-            paragraph.y1 = yText - paragraph.lines[0].font.GetAscent();
+            paragraph.y1 = yText - firstLine.font.GetAscent(firstLine.fontSize);
             paragraph.xText = xText;
             paragraph.yText = yText;
             foreach (TextLine textLine in paragraph.lines) {
@@ -113,7 +118,7 @@ public class Text : IDrawable {
                 xText = point[0];
                 yText = point[1];
                 paragraph.x2 = xText;
-                paragraph.y2 = yText + textLine.font.GetDescent(textLine.font.size);
+                paragraph.y2 = yText + textLine.font.GetDescent(textLine.fontSize);
             }
             xText = x1;
             yText += paragraphLeading;
@@ -133,20 +138,8 @@ public class Text : IDrawable {
         return new float[] { x1 + width, y1 + height };
     }
 
-    // Splits the text on runs of whitespace, the way Java's
-    // String.split("\s+") does: Regex.Split keeps the empty token that a
-    // trailing run of whitespace produces, and that token draws an extra space.
-    private static String[] SplitOnWhitespace(String text) {
-        String[] tokens = Regex.Split(text, @"\s+");
-        int count = tokens.Length;
-        while (count > 0 && tokens[count - 1].Length == 0) {
-            count -= 1;
-        }
-        if (count < tokens.Length) {
-            Array.Resize(ref tokens, count);
-        }
-        return tokens;
-    }
+    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+    private static readonly char[] whitespace = new char[] {' ', '\t', '\n', '\x0B', '\f', '\r'};
 
     // Draws the text line, wrapping it at the width of this text, and returns where the next text starts.
     private float[] DrawTextLine(
@@ -158,13 +151,16 @@ public class Text : IDrawable {
         if (StringIsCJK(textLine.text)) {
             tokens = TokenizeCJK(textLine, this.width);
         } else {
-            tokens = SplitOnWhitespace(textLine.text);
+            tokens = textLine.text.Split(whitespace, StringSplitOptions.RemoveEmptyEntries);
         }
 
+        Font font = textLine.font;
+        Font fallbackFont = textLine.fallbackFont;
+        float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
         foreach (String token in tokens) {
-            float runLength = textLine.font.StringWidth(textLine.fallbackFont, buf.ToString());
-            float tokenWidth = textLine.font.StringWidth(textLine.fallbackFont, token + Single.space);
+            float runLength = font.StringWidth(fallbackFont, fontSize, buf.ToString());
+            float tokenWidth = font.StringWidth(fallbackFont, fontSize, token + Single.space);
             if ((runLength + tokenWidth) < (this.x1 + this.width) - this.xText) {
                 buf.Append(token + Single.space);
             } else {
@@ -195,9 +191,7 @@ public class Text : IDrawable {
                 .SetLocation(xText, yText)
                 .DrawOn(page);
 
-        return new float[] {
-                xText + textLine.font.StringWidth(textLine.fallbackFont, buf.ToString()),
-                yText };
+        return new float[] {xText + font.StringWidth(fallbackFont, fontSize, buf.ToString()), yText};
     }
 
     private bool StringIsCJK(String str) {
@@ -221,7 +215,7 @@ public class Text : IDrawable {
         List<String> list = new List<String>();
         StringBuilder buf = new StringBuilder();
         foreach (char ch in textLine.text) {
-            if (textLine.font.StringWidth(textLine.fallbackFont, buf.ToString() + ch) < textWidth) {
+            if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, buf.ToString() + ch) < textWidth) {
                 buf.Append(ch);
             } else {
                 list.Add(buf.ToString());
@@ -236,7 +230,7 @@ public class Text : IDrawable {
     }
 
     /// <summary>Reads a text file and returns its paragraphs. An empty line separates the paragraphs.</summary>
-    public static List<Paragraph> paragraphsFromFile(Font f1, String filePath) {
+    public static List<Paragraph> ParagraphsFromFile(Font f1, String filePath) {
         List<Paragraph> paragraphs = new List<Paragraph>();
         String contents = Content.OfTextFile(filePath);
         Paragraph paragraph = new Paragraph();
@@ -266,26 +260,22 @@ public class Text : IDrawable {
         return paragraphs;
     }
 
-    /// <summary>Returns the lines of the specified text file.</summary>
+    /// <summary>Reads the lines of a UTF-8 text file, without carriage returns.</summary>
     public static List<String> ReadLines(String filePath) {
         List<String> lines = new List<String>();
-        FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        String contents = Content.OfTextFile(filePath);
         StringBuilder buffer = new StringBuilder();
-        int ch;
-        while ((ch = stream.ReadByte()) != -1) {
-            if (ch == '\r') {
-                continue;
-            } else if (ch == '\n') {
+        foreach (char ch in contents) {
+            if (ch == '\n') {
                 lines.Add(buffer.ToString());
                 buffer.Length = 0;
             } else {
-                buffer.Append((char) ch);
+                buffer.Append(ch);
             }
         }
         if (buffer.Length > 0) {
             lines.Add(buffer.ToString());
         }
-        stream.Close();
         return lines;
     }
 }   // End of Text.cs

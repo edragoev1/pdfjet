@@ -61,7 +61,7 @@ public class Example_41 {
         colorMap["physics"] = Color.red;
         colorMap["Experimentation"] = Color.orange;
         colorMap["science"] = Color.blue;
-        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        paragraphs = Text.ParagraphsFromFile(f1, "data/physics.txt");
         float f2size = f2.GetSize();
         foreach (Paragraph p in paragraphs) {
             if (p.StartsWith("**")) {

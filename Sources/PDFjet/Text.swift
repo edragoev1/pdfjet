@@ -7,12 +7,11 @@
 import Foundation
 
 ///
-/// Please see Example_45
+/// Paragraphs of text lines, wrapped at a width, with an optional border.
+/// Please see Example_03, Example_41 and Example_49.
 ///
 public class Text : Drawable {
-    private var paragraphs: [Paragraph]?
-    private var font: Font?
-    private var fallbackFont: Font?
+    private var paragraphs: [Paragraph]
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var width: Float = 0.0
@@ -26,8 +25,6 @@ public class Text : Drawable {
     /// Creates a text object from the paragraphs.
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
-        self.font = paragraphs[0].lines[0].getFont()
-        self.fallbackFont = paragraphs[0].lines[0].getFallbackFont()
     }
 
     /// Sets the location of the top left corner of this text.
@@ -81,21 +78,31 @@ public class Text : Drawable {
         return self
     }
 
-    /// Sets the border color from an array of red, green and blue values.
+    /// Sets the border color from red, green and blue values between 0.0 and 1.0 and draws a border around this text.
+    @discardableResult
+    public func setBorderColor(_ r: Float, _ g: Float, _ b: Float) -> Text {
+        self.borderColor = [r, g, b]
+        return self
+    }
+
+    /// Sets the border color from an array of red, green and blue values and draws a border around this text.
     @discardableResult
     public func setBorderColor(_ borderColor: [Float]) -> Text {
         self.borderColor = borderColor
         return self
     }
 
-    /// Draws the paragraphs on the specified page.
+    /// Draws the paragraphs on the specified page. With no page nothing is drawn
+    /// and the paragraphs get their coordinates.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        var firstLine = paragraphs[0].lines[0]
         self.xText = x1
-        self.yText = y1 + self.paragraphs![0].lines[0].font!.getAscent()
-        for paragraph in self.paragraphs! {
+        self.yText = y1 + firstLine.font!.getAscent(firstLine.fontSize)
+        for paragraph in self.paragraphs {
+            firstLine = paragraph.lines[0]
             paragraph.x1 = x1
-            paragraph.y1 = yText - paragraph.lines[0].font!.getAscent()
+            paragraph.y1 = yText - firstLine.font!.getAscent(firstLine.fontSize)
             paragraph.xText = self.xText
             paragraph.yText = self.yText
             for textLine in paragraph.lines {
@@ -103,13 +110,13 @@ public class Text : Drawable {
                 xText = point[0]
                 yText = point[1]
                 paragraph.x2 = self.xText
-                paragraph.y2 = self.yText + textLine.font!.getDescent(textLine.font!.size)
+                paragraph.y2 = self.yText + textLine.font!.getDescent(textLine.fontSize)
             }
             self.xText = x1
             self.yText += self.paragraphLeading
         }
 
-        let lastParagraph = paragraphs![paragraphs!.count - 1]
+        let lastParagraph = paragraphs[paragraphs.count - 1]
         let lastTextLine = lastParagraph.getTextLines()[lastParagraph.getTextLines().count - 1]
         let height = ((self.yText - paragraphLeading) - self.y1) +
                 lastTextLine.font!.getDescent(lastTextLine.fontSize)
@@ -124,21 +131,8 @@ public class Text : Drawable {
         return [self.x1 + self.width, self.y1 + height]
     }
 
-    /// Splits the text on runs of whitespace, the way Java's
-    /// String.split("\s+") does: components(separatedBy:) splits on every
-    /// whitespace character, so a run of them - or a trailing one - yields
-    /// empty tokens, and every empty token draws an extra space.
-    static func splitOnWhitespace(_ text: String) -> [String] {
-        let parts = text.components(separatedBy: .whitespacesAndNewlines)
-        var tokens = [String]()
-        for (index, part) in parts.enumerated() {
-            if index == 0 || !part.isEmpty {
-                tokens.append(part)
-            }
-        }
-        return tokens
-    }
-
+    // Draws the text line, wrapping it at the width of this text, and returns
+    // where the next text starts.
     private func drawTextLine(
             _ page: Page?,
             _ x: Float,
@@ -151,52 +145,44 @@ public class Text : Drawable {
         if stringIsCJK(textLine.text!) {
             tokens = tokenizeCJK(textLine, self.width)
         } else {
-            tokens = Text.splitOnWhitespace(textLine.text!)
+            tokens = textLine.text!.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
         }
 
+        let font = textLine.font!
+        let fallbackFont = textLine.fallbackFont
+        let fontSize = textLine.fontSize
         var buf = String()
-        for i in 0..<tokens.count {
-            let token = tokens[i]
-            let lineWidth = textLine.font!.stringWidth(textLine.fallbackFont, buf)
-            let tokenWidth = textLine.font!.stringWidth(
-                    textLine.fallbackFont, token + Single.space)
+        for token in tokens {
+            let lineWidth = font.stringWidth(fallbackFont, fontSize, buf)
+            let tokenWidth = font.stringWidth(fallbackFont, fontSize, token + Single.space)
             if (lineWidth + tokenWidth) < (self.x1 + self.width) - self.xText {
                 buf.append(token)
                 buf.append(Single.space)
             } else {
-                if page != nil {
-                    TextLine(textLine.font!, buf)
-                            .setFallbackFont(textLine.getFallbackFont())
-                            .setFontSize(textLine.getFontSize())
-                            .setLocation(xText, yText)
-                            .setTextColor(textLine.getTextColor())
-                            .setColorMap(textLine.getColorMap())
-                            .setUnderline(textLine.getUnderline())
-                            .setStrikeout(textLine.getStrikeout())
-                            .setLanguage(textLine.getLanguage())
-                            .drawOn(page)
-                }
+                drawLine(page, textLine, buf)
                 xText = x1
                 yText += textLine.getHeight()
-                buf = ""
-                buf.append(token)
-                buf.append(Single.space)
+                buf = token + Single.space
             }
         }
-        if page != nil {
-            TextLine(textLine.font!, buf)
-                    .setFallbackFont(textLine.getFallbackFont())
-                    .setFontSize(textLine.getFontSize())
-                    .setLocation(xText, yText)
-                    .setTextColor(textLine.getTextColor())
-                    .setColorMap(textLine.getColorMap())
-                    .setUnderline(textLine.getUnderline())
-                    .setStrikeout(textLine.getStrikeout())
-                    .setLanguage(textLine.getLanguage())
-                    .drawOn(page)
-        }
+        drawLine(page, textLine, buf)
 
-        return [xText + textLine.font!.stringWidth(textLine.fallbackFont, buf), yText]
+        return [xText + font.stringWidth(fallbackFont, fontSize, buf), yText]
+    }
+
+    // Draws one wrapped line of the text line at the current location, with
+    // the text line's font, colors and decorations.
+    private func drawLine(_ page: Page?, _ textLine: TextLine, _ str: String) {
+        TextLine(textLine.font!, str)
+                .setFallbackFont(textLine.getFallbackFont())
+                .setFontSize(textLine.getFontSize())
+                .setTextColor(textLine.getTextColor())
+                .setColorMap(textLine.getColorMap())
+                .setUnderline(textLine.getUnderline())
+                .setStrikeout(textLine.getStrikeout())
+                .setLanguage(textLine.getLanguage())
+                .setLocation(xText, yText)
+                .drawOn(page)
     }
 
     private func stringIsCJK(_ str: String) -> Bool {
@@ -224,7 +210,7 @@ public class Text : Drawable {
         var buf = String()
         let scalars = Array(textLine.text!.unicodeScalars)
         for scalar in scalars {
-            if textLine.font!.stringWidth(textLine.fallbackFont, buf + String(scalar)) < textWidth {
+            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, buf + String(scalar)) < textWidth {
                 buf.append(String(scalar))
             } else {
                 list.append(buf)
@@ -272,15 +258,13 @@ public class Text : Drawable {
         return paragraphs
     }
 
-    /// Returns the lines of the specified text file, without carriage returns.
+    /// Reads the lines of a UTF-8 text file, without carriage returns.
     public static func readLines(_ filePath: String) throws -> [String] {
         var lines = [String]()
-        let contents = try String(contentsOf: URL(fileURLWithPath: filePath), encoding: .utf8)
+        let contents = try Content.ofTextFile(filePath)
         var buffer = String()
         for scalar in contents.unicodeScalars {
-            if scalar == "\r" {
-                continue
-            } else if scalar == "\n" {
+            if scalar == "\n" {
                 lines.append(buffer)
                 buffer = ""
             } else {

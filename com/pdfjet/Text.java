@@ -6,12 +6,16 @@
  */
 package com.pdfjet;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * Please see Example_46.java
+ * Paragraphs of text lines, wrapped at a width, with an optional border.
+ * Please see Example_03, Example_41 and Example_49.
  */
 public class Text implements Drawable {
     private final List<Paragraph> paragraphs;
@@ -35,6 +39,13 @@ public class Text implements Drawable {
         this.paragraphs = paragraphs;
     }
 
+    /**
+     * Sets the location of the top left corner of this text.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Text object.
+     */
     public Text setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
@@ -105,6 +116,7 @@ public class Text implements Drawable {
     public Text setBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
+            this.hasBorder = false;
             return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
@@ -140,12 +152,22 @@ public class Text implements Drawable {
         return this;
     }
 
+    /**
+     * Draws the paragraphs on the specified page. With no page nothing is drawn
+     * and the paragraphs get their coordinates.
+     *
+     * @param page the page to draw on.
+     * @return the x and y coordinates of the bottom right corner of this text.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] drawOn(Page page) throws Exception {
+        TextLine firstLine = paragraphs.get(0).lines.get(0);
         this.xText = x1;
-        this.yText = y1 + paragraphs.get(0).lines.get(0).font.getAscent();
+        this.yText = y1 + firstLine.font.getAscent(firstLine.fontSize);
         for (Paragraph paragraph : paragraphs) {
+            firstLine = paragraph.lines.get(0);
             paragraph.x1 = x1;
-            paragraph.y1 = yText - paragraph.lines.get(0).font.getAscent();
+            paragraph.y1 = yText - firstLine.font.getAscent(firstLine.fontSize);
             paragraph.xText = xText;
             paragraph.yText = yText;
             for (TextLine textLine : paragraph.lines) {
@@ -153,7 +175,7 @@ public class Text implements Drawable {
                 xText = point[0];
                 yText = point[1];
                 paragraph.x2 = xText;
-                paragraph.y2 = yText + textLine.font.getDescent(textLine.font.size);
+                paragraph.y2 = yText + textLine.font.getDescent(textLine.fontSize);
             }
             xText = x1;
             yText += paragraphLeading;
@@ -186,10 +208,16 @@ public class Text implements Drawable {
             tokens = textLine.text.split("\\s+");
         }
 
+        Font font = textLine.font;
+        Font fallbackFont = textLine.fallbackFont;
+        float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
         for (String token : tokens) {
-            float runLength = textLine.font.stringWidth(textLine.fallbackFont, buf.toString());
-            float tokenWidth = textLine.font.stringWidth(textLine.fallbackFont, token + Single.space);
+            if (token.isEmpty()) {  // Before leading whitespace
+                continue;
+            }
+            float runLength = font.stringWidth(fallbackFont, fontSize, buf.toString());
+            float tokenWidth = font.stringWidth(fallbackFont, fontSize, token + Single.space);
             if ((runLength + tokenWidth) < ((this.x1 + this.width) - this.xText)) {
                 buf.append(token).append(Single.space);
             } else {
@@ -220,9 +248,7 @@ public class Text implements Drawable {
                 .setLocation(xText, yText)
                 .drawOn(page);
 
-        return new float[] {
-                xText + textLine.font.stringWidth(textLine.fallbackFont, buf.toString()),
-                yText };
+        return new float[] {xText + font.stringWidth(fallbackFont, fontSize, buf.toString()), yText};
     }
 
     private boolean stringIsCJK(String str) {
@@ -248,7 +274,7 @@ public class Text implements Drawable {
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < textLine.text.length(); i++) {
             char ch = textLine.text.charAt(i);
-            if (textLine.font.stringWidth(textLine.fallbackFont, buf.toString() + ch) < textWidth) {
+            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, buf.toString() + ch) < textWidth) {
                 buf.append(ch);
             } else {
                 list.add(buf.toString());
@@ -301,7 +327,7 @@ public class Text implements Drawable {
     }
 
     /**
-     * Reads the lines of a text file, without carriage returns.
+     * Reads the lines of a UTF-8 text file, without carriage returns.
      *
      * @param filePath the path of the text file.
      * @return the lines.
@@ -309,23 +335,24 @@ public class Text implements Drawable {
      */
     public static List<String> readLines(String filePath) throws IOException {
         List<String> lines = new ArrayList<>();
-        FileInputStream stream = new FileInputStream(filePath);
-        StringBuilder buffer = new StringBuilder();
-        int ch;
-        while ((ch = stream.read()) != -1) {
-            if (ch == '\r') {
-                continue;
-            } else if (ch == '\n') {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
+            StringBuilder buffer = new StringBuilder();
+            int ch;
+            while ((ch = reader.read()) != -1) {
+                if (ch == '\r') {
+                    continue;
+                } else if (ch == '\n') {
+                    lines.add(buffer.toString());
+                    buffer.setLength(0);
+                } else {
+                    buffer.append((char) ch);
+                }
+            }
+            if (buffer.length() > 0) {
                 lines.add(buffer.toString());
-                buffer.setLength(0);
-            } else {
-                buffer.append((char) ch);
             }
         }
-        if (buffer.length() > 0) {
-            lines.add(buffer.toString());
-        }
-        stream.close();
         return lines;
     }
 }   // End of Text.java
