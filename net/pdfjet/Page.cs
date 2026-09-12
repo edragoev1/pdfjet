@@ -419,8 +419,8 @@ public class Page {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < str.Length; i++) {
                 int ch = str[i];
-                // An RLM is drawn with the character after it.
-                int next = (ch == 0x200F && i + 1 < str.Length) ? str[i + 1] : ch;
+                // An RLM, ZWNJ or ZWJ goes with the character after it.
+                int next = (Font.IsJoinerOrRLM(ch) && i + 1 < str.Length) ? str[i + 1] : ch;
                 if (activeFont.unicodeToGID[next] == 0) {
                     DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
                     x += activeFont.StringWidth(fontSize, sb.ToString());
@@ -593,7 +593,8 @@ public class Page {
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
-        } else if (font.markAnchors == null && str.IndexOf('\u200F') < 0) {    // RLM
+        } else if (font.markAnchors == null && str.IndexOf('‏') < 0 &&
+                str.IndexOf('‌') < 0 && str.IndexOf('‍') < 0) {  // RLM, ZWNJ, ZWJ
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
@@ -604,11 +605,15 @@ public class Page {
             }
         } else {
             // The marks are moved to where the GPOS table of the font puts
-            // them, and the characters Bidi mirrored, each after an RLM, are
-            // given the characters they stand for as actual text.
+            // them, the characters Bidi mirrored, each after an RLM, are given
+            // the characters they stand for as actual text, and a zero width
+            // non-joiner or joiner that the font has no glyph for is put in the
+            // actual text of the glyph before it. A font that has a glyph for
+            // it draws the glyph, which has no width.
             int[] codePoints = new int[str.Length];
             int[] gids = new int[str.Length];
             bool[] mirrored = null;
+            int[] joiners = null;
             int n = 0;
             bool hasMarks = false;
             bool afterRLM = false;
@@ -617,6 +622,15 @@ public class Page {
                 int codePoint = char.ConvertToUtf32(str, i);
                 if (codePoint == 0x200F) {                  // RLM
                     afterRLM = true;
+                } else if ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0) {
+                    // A ZWNJ or ZWJ the font has no glyph for goes with the
+                    // glyph before it. One with nothing before it is left out.
+                    if (n > 0) {
+                        if (joiners == null) {
+                            joiners = new int[str.Length];
+                        }
+                        joiners[n - 1] = codePoint;
+                    }
                 } else if (codePoint != 0xFEFF) {           // BOM
                     if (afterRLM && Bidi.Mirrored(codePoint).HasValue) {
                         if (mirrored == null) {
@@ -635,7 +649,7 @@ public class Page {
             int[] offsets = null;
             if (hasMarks && font.markAnchors != null) {
                 offsets = MarkOffsets(font, codePoints, gids, n);
-            } else if (mirrored == null) {
+            } else if (mirrored == null && joiners == null) {
                 for (int k = 0; k < n; k++) {
                     AppendCodePointAsHex(gids[k]);
                 }
@@ -649,48 +663,116 @@ public class Page {
                         end++;
                     }
                 }
-                // The mirrored characters at the ends of a word with moved marks,
-                // like its brackets, are drawn in spans of their own: MuPDF
-                // leaves out text if the glyphs of its span map to other text.
-                int wordStart = i;
-                int wordEnd = end;
-                while (mirrored != null && wordStart < wordEnd && mirrored[wordStart]) {
-                    wordStart++;
-                }
-                while (mirrored != null && wordEnd > wordStart && mirrored[wordEnd - 1]) {
-                    wordEnd--;
-                }
-                if (offsets != null && IsMoved(offsets, wordStart, wordEnd)) {
-                    AppendGlyphs(codePoints, gids, mirrored, i, wordStart);
-                    AppendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd);
-                    AppendGlyphs(codePoints, gids, mirrored, wordEnd, end);
-                } else {
-                    AppendGlyphs(codePoints, gids, mirrored, i, end);
+                // A glyph with a joiner after it is drawn in a span of its own,
+                // and so are the mirrored characters at the ends of a word with
+                // moved marks, like its brackets: MuPDF leaves out or repeats
+                // text when the glyphs of a span do not match its actual text
+                // one by one.
+                int k = i;
+                while (k < end) {
+                    int j = k;
+                    while (j < end && (joiners == null || joiners[j] == 0)) {
+                        j++;
+                    }
+                    AppendWord(font, codePoints, gids, mirrored, offsets, k, j);
+                    if (j < end) {
+                        AppendGlyphWithActualText(font, codePoints, gids, offsets, mirrored, joiners, j);
+                    }
+                    k = j + 1;
                 }
                 i = end;
             }
         }
     }
 
-    private void AppendGlyphs(int[] codePoints, int[] gids, bool[] mirrored, int start, int end) {
+    // Draws the glyphs of a word, or of the part of a word before a joiner,
+    // in a marked content span with the text of the word when it has moved
+    // marks, with the mirrored characters at its ends in spans of their own.
+    private void AppendWord(
+            Font font, int[] codePoints, int[] gids, bool[] mirrored, int[] offsets, int i, int end) {
+        int wordStart = i;
+        int wordEnd = end;
+        while (mirrored != null && wordStart < wordEnd && mirrored[wordStart]) {
+            wordStart++;
+        }
+        while (mirrored != null && wordEnd > wordStart && mirrored[wordEnd - 1]) {
+            wordEnd--;
+        }
+        if (offsets != null && IsMoved(offsets, wordStart, wordEnd)) {
+            AppendGlyphs(font, codePoints, gids, mirrored, i, wordStart);
+            AppendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd);
+            AppendGlyphs(font, codePoints, gids, mirrored, wordEnd, end);
+        } else {
+            AppendGlyphs(font, codePoints, gids, mirrored, i, end);
+        }
+    }
+
+    private void AppendGlyphs(
+            Font font, int[] codePoints, int[] gids, bool[] mirrored, int start, int end) {
         for (int k = start; k < end; k++) {
             if (mirrored != null && mirrored[k]) {
-                AppendMirroredGlyph(codePoints[k], gids[k]);
+                AppendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
                 AppendCodePointAsHex(gids[k]);
             }
         }
     }
 
-    // Draws a character that Bidi mirrored in a marked content span that has
-    // the character it stands for as its actual text. Text extraction reverses
-    // right to left text, but does not mirror the brackets back.
-    private void AppendMirroredGlyph(int codePoint, int gid) {
+    // Draws a glyph in a marked content span that has the text it stands for
+    // as its actual text: the character Bidi mirrored, since text extraction
+    // reverses right to left text but does not mirror the brackets back, or
+    // the text of the glyph followed by the zero width non-joiner or joiner
+    // after it, which the font has no glyph for. A space glyph that takes no
+    // room stands in for the joiner, so that the span has a glyph for each
+    // character of its actual text but the last: MuPDF pairs the characters
+    // with the glyphs, and repeats text when a glyph matches its character
+    // after one that does not. Poppler takes the actual text as it is.
+    private void AppendGlyphWithActualText(
+            Font font, int[] codePoints, int[] gids, int[] offsets, bool[] mirrored, int[] joiners, int k) {
+        int codePoint = codePoints[k];
+        int joiner = (joiners != null) ? joiners[k] : 0;
+        StringBuilder text = new StringBuilder();
+        if (mirrored != null && mirrored[k]) {
+            text.Append(char.ConvertFromUtf32(Bidi.Mirrored(codePoint).Value));
+        } else {
+            text.Append(TextOf(font, codePoint));
+        }
+        if (joiner != 0) {
+            text.Append(char.ConvertFromUtf32(joiner));
+        }
         Append("> Tj\n/Span <</ActualText <");
-        Append(ToUTF16Hex(char.ConvertFromUtf32(Bidi.Mirrored(codePoint).Value)));
-        Append(">>> BDC\n<");
-        AppendCodePointAsHex(gid);
-        Append("> Tj\nEMC\n<");
+        Append(ToUTF16Hex(text.ToString()));
+        Append(">>> BDC\n");
+        if (offsets != null && (offsets[2*k] != 0 || offsets[2*k + 1] != 0)) {
+            Append("<");
+            AppendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
+            Append("> Tj\n");
+        } else {
+            Append("<");
+            AppendCodePointAsHex(gids[k]);
+            Append("> Tj\n");
+        }
+        if (joiner != 0) {
+            int space = font.unicodeToGID[0x0020];
+            Append("[<");
+            AppendCodePointAsHex(space);
+            Append("> ");
+            Append(1000f * font.advanceWidth[space] / font.unitsPerEm);
+            Append("] TJ\n");
+        }
+        Append("EMC\n<");
+    }
+
+    // Returns the text the glyph of the code point maps to: a glyph missing
+    // from the font is a space, and an Arabic letter form is its letter.
+    private static String TextOf(Font font, int codePoint) {
+        String letters = Bidi.LettersOf(codePoint);
+        if (codePoint < font.firstChar || codePoint > font.lastChar) {
+            return " ";
+        } else if (letters != null) {
+            return letters;
+        }
+        return char.ConvertFromUtf32(codePoint);
     }
 
     private static int GlyphOf(Font font, int codePoint) {
@@ -879,17 +961,7 @@ public class Page {
         bool leadingSpace = IsMoved(offsets, start, start + 1);
         StringBuilder text = new StringBuilder(leadingSpace ? " " : "");
         for (int k = start; k < end; k++) {
-            // The text the glyphs map to: a glyph missing from the font is a
-            // space, and an Arabic letter form is its letter.
-            int codePoint = codePoints[k];
-            String letters = Bidi.LettersOf(codePoint);
-            if (codePoint < font.firstChar || codePoint > font.lastChar) {
-                text.Append(' ');
-            } else if (letters != null) {
-                text.Append(letters);
-            } else {
-                text.Append(char.ConvertFromUtf32(codePoint));
-            }
+            text.Append(TextOf(font, codePoints[k]));     // The text the glyphs map to
         }
         Append("> Tj\n/Span <</ActualText <");
         Append(ToUTF16Hex(text.ToString()));

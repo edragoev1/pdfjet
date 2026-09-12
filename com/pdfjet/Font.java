@@ -478,8 +478,8 @@ final public class Font {
         } else {
             for (int i = 0; i < str.length(); i++) {
                 int c1 = str.charAt(i);
-                if (c1 == 0x200F) {
-                    continue;   // An RLM is not drawn
+                if (c1 == 0x200F || c1 == 0x200C || c1 == 0x200D) {
+                    continue;   // An RLM, ZWNJ or ZWJ is not drawn
                 }
                 if (unicodeToGID[c1] < advanceWidth.length) {
                     width += advanceWidth[unicodeToGID[c1]];
@@ -705,6 +705,13 @@ final public class Font {
         return stringWidth(fallbackFont, this.size, str);
     }
 
+    // Returns true for the right-to-left mark and the zero width non-joiner
+    // and joiner, which are not drawn: Page gives the glyph after them an
+    // actual text.
+    static boolean isJoinerOrRLM(int ch) {
+        return ch == 0x200F || ch == 0x200C || ch == 0x200D;
+    }
+
     /**
      * Returns the width of a string drawn using two fonts.
      *
@@ -724,8 +731,8 @@ final public class Font {
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             int ch = str.charAt(i);
-            // An RLM is drawn with the character after it.
-            int next = (ch == 0x200F && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
+            // An RLM, ZWNJ or ZWJ goes with the character after it.
+            int next = (isJoinerOrRLM(ch) && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
             if (activeFont.unicodeToGID[next] == 0) {
                 width += activeFont.stringWidth(fontSize, buf.toString());
                 buf.setLength(0);

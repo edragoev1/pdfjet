@@ -365,8 +365,8 @@ public class Font {
             }
         } else {
             foreach (int c1 in str) {
-                if (c1 == 0x200F) {
-                    continue;   // An RLM is not drawn
+                if (IsJoinerOrRLM(c1)) {
+                    continue;   // An RLM, ZWNJ or ZWJ is not drawn
                 }
                 if (unicodeToGID[c1] < advanceWidth.Length) {
                     width += advanceWidth[unicodeToGID[c1]];
@@ -515,6 +515,13 @@ public class Font {
         return this;
     }
 
+    // Returns true for the right-to-left mark and the zero width non-joiner
+    // and joiner, which are not drawn: Page gives the glyph before or after
+    // them an actual text.
+    internal static bool IsJoinerOrRLM(int ch) {
+        return ch == 0x200F || ch == 0x200C || ch == 0x200D;
+    }
+
     /// <summary>
     /// Returns the width of the string at the current font size,
     /// using the fallback font for characters this font does not have.
@@ -541,8 +548,8 @@ public class Font {
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < str.Length; i++) {
             int ch = str[i];
-            // An RLM is drawn with the character after it.
-            int next = (ch == 0x200F && i + 1 < str.Length) ? str[i + 1] : ch;
+            // An RLM, ZWNJ or ZWJ goes with the character after it.
+            int next = (IsJoinerOrRLM(ch) && i + 1 < str.Length) ? str[i + 1] : ch;
             if (activeFont.unicodeToGID[next] == 0) {
                 width += activeFont.StringWidth(fontSize, buf.ToString());
                 buf.Length = 0;

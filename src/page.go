@@ -247,9 +247,9 @@ func (page *Page) DrawStringUsingColorMap(
 		var buf strings.Builder
 		runes := []rune(text)
 		for i, ch := range runes {
-			// An RLM is drawn with the character after it.
+			// An RLM, ZWNJ or ZWJ goes with the character after it.
 			next := ch
-			if ch == 0x200F && i+1 < len(runes) {
+			if isJoinerOrRLM(ch) && i+1 < len(runes) {
 				next = runes[i+1]
 			}
 			if activeFont.unicodeToGID[next] == 0 {
@@ -375,24 +375,38 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				}
 			}
 		}
-	} else if font.markAnchors == nil && !strings.ContainsRune(text, 0x200F) { // RLM
+	} else if font.markAnchors == nil && !strings.ContainsRune(text, 0x200F) &&
+		!strings.ContainsRune(text, 0x200C) && !strings.ContainsRune(text, 0x200D) { // RLM, ZWNJ, ZWJ
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
 				page.appendCodePointAsHex(glyphOf(font, c1))
 			}
 		}
 	} else {
-		// The marks are moved to where the GPOS table of the font puts them, and
-		// the characters Bidi mirrored, each after an RLM, are given the
-		// characters they stand for as actual text.
+		// The marks are moved to where the GPOS table of the font puts them, the
+		// characters Bidi mirrored, each after an RLM, are given the characters
+		// they stand for as actual text, and a zero width non-joiner or joiner
+		// that the font has no glyph for is put in the actual text of the glyph
+		// before it. A font that has a glyph for it draws the glyph, which has
+		// no width.
 		codePoints := make([]rune, 0, len(runes))
 		gids := make([]int, 0, len(runes))
 		var mirroredAt []bool
+		var joiners []rune
 		hasMarks := false
 		afterRLM := false
 		for _, c1 := range runes {
 			if c1 == 0x200F { // RLM
 				afterRLM = true
+			} else if (c1 == 0x200C || c1 == 0x200D) && font.unicodeToGID[c1] == 0 {
+				// A ZWNJ or ZWJ the font has no glyph for goes with the glyph
+				// before it. One with nothing before it is left out.
+				if len(codePoints) > 0 {
+					if joiners == nil {
+						joiners = make([]rune, len(runes))
+					}
+					joiners[len(codePoints)-1] = c1
+				}
 			} else if c1 != 0xFEFF { // BOM marker
 				if _, ok := mirrored(c1); afterRLM && ok {
 					if mirroredAt == nil {
@@ -409,7 +423,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		var offsets []int
 		if hasMarks && font.markAnchors != nil {
 			offsets = markOffsets(font, codePoints, gids)
-		} else if mirroredAt == nil {
+		} else if mirroredAt == nil && joiners == nil {
 			for _, gid := range gids {
 				page.appendCodePointAsHex(gid)
 			}
@@ -424,50 +438,118 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 					end++
 				}
 			}
-			// The mirrored characters at the ends of a word with moved marks,
-			// like its brackets, are drawn in spans of their own: MuPDF leaves
-			// out text if the glyphs of its span map to other text.
-			wordStart, wordEnd := i, end
-			for mirroredAt != nil && wordStart < wordEnd && mirroredAt[wordStart] {
-				wordStart++
-			}
-			for mirroredAt != nil && wordEnd > wordStart && mirroredAt[wordEnd-1] {
-				wordEnd--
-			}
-			if offsets != nil && isMoved(offsets, wordStart, wordEnd) {
-				page.appendGlyphs(codePoints, gids, mirroredAt, i, wordStart)
-				page.appendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd)
-				page.appendGlyphs(codePoints, gids, mirroredAt, wordEnd, end)
-			} else {
-				page.appendGlyphs(codePoints, gids, mirroredAt, i, end)
+			// A glyph with a joiner after it is drawn in a span of its own, and
+			// so are the mirrored characters at the ends of a word with moved
+			// marks, like its brackets: MuPDF leaves out or repeats text when
+			// the glyphs of a span do not match its actual text one by one.
+			k := i
+			for k < end {
+				j := k
+				for j < end && (joiners == nil || joiners[j] == 0) {
+					j++
+				}
+				page.appendWord(font, codePoints, gids, mirroredAt, offsets, k, j)
+				if j < end {
+					page.appendGlyphWithActualText(font, codePoints, gids, offsets, mirroredAt, joiners, j)
+				}
+				k = j + 1
 			}
 			i = end
 		}
 	}
 }
 
+// appendWord draws the glyphs of a word, or of the part of a word before a
+// joiner, in a marked content span with the text of the word when it has moved
+// marks, with the mirrored characters at its ends in spans of their own.
+func (page *Page) appendWord(
+	font *Font, codePoints []rune, gids []int, mirroredAt []bool, offsets []int, i, end int) {
+	wordStart, wordEnd := i, end
+	for mirroredAt != nil && wordStart < wordEnd && mirroredAt[wordStart] {
+		wordStart++
+	}
+	for mirroredAt != nil && wordEnd > wordStart && mirroredAt[wordEnd-1] {
+		wordEnd--
+	}
+	if offsets != nil && isMoved(offsets, wordStart, wordEnd) {
+		page.appendGlyphs(font, codePoints, gids, mirroredAt, i, wordStart)
+		page.appendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd)
+		page.appendGlyphs(font, codePoints, gids, mirroredAt, wordEnd, end)
+	} else {
+		page.appendGlyphs(font, codePoints, gids, mirroredAt, i, end)
+	}
+}
+
 // appendGlyphs draws the glyphs from start to end, each character Bidi mirrored
 // in a span of its own.
-func (page *Page) appendGlyphs(codePoints []rune, gids []int, mirroredAt []bool, start, end int) {
+func (page *Page) appendGlyphs(font *Font, codePoints []rune, gids []int, mirroredAt []bool, start, end int) {
 	for k := start; k < end; k++ {
 		if mirroredAt != nil && mirroredAt[k] {
-			page.appendMirroredGlyph(codePoints[k], gids[k])
+			page.appendGlyphWithActualText(font, codePoints, gids, nil, mirroredAt, nil, k)
 		} else {
 			page.appendCodePointAsHex(gids[k])
 		}
 	}
 }
 
-// appendMirroredGlyph draws a character that Bidi mirrored in a marked content
-// span that has the character it stands for as its actual text. Text extraction
-// reverses right to left text, but does not mirror the brackets back.
-func (page *Page) appendMirroredGlyph(c rune, gid int) {
-	m, _ := mirrored(c)
+// appendGlyphWithActualText draws a glyph in a marked content span that has the
+// text it stands for as its actual text: the character Bidi mirrored, since
+// text extraction reverses right to left text but does not mirror the brackets
+// back, or the text of the glyph followed by the zero width non-joiner or
+// joiner after it, which the font has no glyph for. A space glyph that takes no
+// room stands in for the joiner, so that the span has a glyph for each
+// character of its actual text but the last: MuPDF pairs the characters with
+// the glyphs, and repeats text when a glyph matches its character after one
+// that does not. Poppler takes the actual text as it is.
+func (page *Page) appendGlyphWithActualText(
+	font *Font, codePoints []rune, gids []int, offsets []int, mirroredAt []bool, joiners []rune, k int) {
+	c := codePoints[k]
+	var joiner rune
+	if joiners != nil {
+		joiner = joiners[k]
+	}
+	var text strings.Builder
+	if mirroredAt != nil && mirroredAt[k] {
+		m, _ := mirrored(c)
+		text.WriteRune(m)
+	} else {
+		text.WriteString(textOf(font, c))
+	}
+	if joiner != 0 {
+		text.WriteRune(joiner)
+	}
 	page.appendString("> Tj\n/Span <</ActualText <")
-	page.appendString(toUTF16Hex(string(m)))
-	page.appendString(">>> BDC\n<")
-	page.appendCodePointAsHex(gid)
-	page.appendString("> Tj\nEMC\n<")
+	page.appendString(toUTF16Hex(text.String()))
+	page.appendString(">>> BDC\n")
+	if offsets != nil && (offsets[2*k] != 0 || offsets[2*k+1] != 0) {
+		page.appendString("<")
+		page.appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k+1])
+		page.appendString("> Tj\n")
+	} else {
+		page.appendString("<")
+		page.appendCodePointAsHex(gids[k])
+		page.appendString("> Tj\n")
+	}
+	if joiner != 0 {
+		space := font.unicodeToGID[0x0020]
+		page.appendString("[<")
+		page.appendCodePointAsHex(space)
+		page.appendString("> ")
+		page.appendFloat32(1000.0 * float32(font.advanceWidth[space]) / float32(font.unitsPerEm))
+		page.appendString("] TJ\n")
+	}
+	page.appendString("EMC\n<")
+}
+
+// textOf returns the text the glyph of the character maps to: a glyph missing
+// from the font is a space, and an Arabic letter form is its letter.
+func textOf(font *Font, c rune) string {
+	if c < font.firstChar || c > font.lastChar {
+		return " "
+	} else if letters := lettersOf(c); letters != nil {
+		return string(letters)
+	}
+	return string(c)
 }
 
 // glyphOf returns the glyph ID of the character, or of a space if the font does
@@ -667,16 +749,7 @@ func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, 
 		text.WriteRune(' ')
 	}
 	for k := start; k < end; k++ {
-		// The text the glyphs map to: a glyph missing from the font is a space,
-		// and an Arabic letter form is its letter.
-		c := codePoints[k]
-		if c < font.firstChar || c > font.lastChar {
-			text.WriteRune(' ')
-		} else if letters := lettersOf(c); letters != nil {
-			text.WriteString(string(letters))
-		} else {
-			text.WriteRune(c)
-		}
+		text.WriteString(textOf(font, codePoints[k])) // The text the glyphs map to
 	}
 	page.appendString("> Tj\n/Span <</ActualText <")
 	page.appendString(toUTF16Hex(text.String()))

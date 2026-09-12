@@ -375,7 +375,7 @@ public class Font {
                 }
             }
         } else {
-            for scalar in scalars where scalar.value != 0x200F {    // An RLM is not drawn
+            for scalar in scalars where !Font.isJoinerOrRLM(scalar.value) {    // An RLM, ZWNJ or ZWJ is not drawn
                 let c1 = Int(scalar.value)
                 if unicodeToGID[c1] < advanceWidth.count {
                     width += Int(advanceWidth[unicodeToGID[c1]])
@@ -583,8 +583,8 @@ public class Font {
         var buf = String()
         let scalars = Array(str!.unicodeScalars)
         for (i, scalar) in scalars.enumerated() {
-            // An RLM is drawn with the character after it.
-            let next = (scalar.value == 0x200F && i + 1 < scalars.count) ? scalars[i + 1] : scalar
+            // An RLM, ZWNJ or ZWJ goes with the character after it.
+            let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
             if activeFont.unicodeToGID[Int(next.value)] == 0 {
                 width += activeFont.stringWidth(fontSize, buf)
                 buf = ""
@@ -599,5 +599,12 @@ public class Font {
         }
         width += activeFont.stringWidth(fontSize, buf)
         return width
+    }
+
+    // Returns true for the right-to-left mark and the zero width non-joiner
+    // and joiner, which are not drawn: Page gives the glyph before or after
+    // them an actual text.
+    static func isJoinerOrRLM(_ value: UInt32) -> Bool {
+        return value == 0x200F || value == 0x200C || value == 0x200D
     }
 }   // End of Font.swift

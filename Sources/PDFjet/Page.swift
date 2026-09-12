@@ -289,8 +289,8 @@ public class Page {
             var buf = String()
             let scalars = Array(str!.unicodeScalars)
             for (i, scalar) in scalars.enumerated() {
-                // An RLM is drawn with the character after it.
-                let next = (scalar.value == 0x200F && i + 1 < scalars.count) ? scalars[i + 1] : scalar
+                // An RLM, ZWNJ or ZWJ goes with the character after it.
+                let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
                 if activeFont.unicodeToGID[Int(next.value)] == 0 {
                     drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
                     x += activeFont.stringWidth(fontSize, buf)
@@ -448,17 +448,22 @@ public class Page {
                     }
                 }
             }
-        } else if font.markAnchors == nil && !scalars.contains(where: { $0.value == 0x200F }) {    // RLM
+        } else if font.markAnchors == nil &&
+                !scalars.contains(where: { Font.isJoinerOrRLM($0.value) }) {    // RLM, ZWNJ, ZWJ
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
                 Page.appendCodePointAsHex(glyphOf(font, Int(scalar.value)), &self.buf)
             }
         } else {
             // The marks are moved to where the GPOS table of the font puts
-            // them, and the characters Bidi mirrored, each after an RLM, are
-            // given the characters they stand for as actual text.
+            // them, the characters Bidi mirrored, each after an RLM, are given
+            // the characters they stand for as actual text, and a zero width
+            // non-joiner or joiner that the font has no glyph for is put in the
+            // actual text of the glyph before it. A font that has a glyph for
+            // it draws the glyph, which has no width.
             var codePoints = [Int]()
             var gids = [Int]()
             var mirrored: [Bool]? = nil
+            var joiners: [Int]? = nil
             var hasMarks = false
             var afterRLM = false
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
@@ -467,6 +472,17 @@ public class Page {
                     continue
                 }
                 let codePoint = Int(scalar.value)
+                if (codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0 {
+                    // A ZWNJ or ZWJ the font has no glyph for goes with the
+                    // glyph before it. One with nothing before it is left out.
+                    if !codePoints.isEmpty {
+                        if joiners == nil {
+                            joiners = [Int](repeating: 0, count: scalars.count)
+                        }
+                        joiners![codePoints.count - 1] = codePoint
+                    }
+                    continue
+                }
                 if afterRLM && Bidi.mirrored(scalar.value) != nil {
                     if mirrored == nil {
                         mirrored = [Bool](repeating: false, count: scalars.count)
@@ -481,7 +497,7 @@ public class Page {
             var offsets: [Int]? = nil
             if hasMarks && font.markAnchors != nil {
                 offsets = markOffsets(font, codePoints, gids)
-            } else if mirrored == nil {
+            } else if mirrored == nil && joiners == nil {
                 for gid in gids {
                     Page.appendCodePointAsHex(gid, &self.buf)
                 }
@@ -496,52 +512,125 @@ public class Page {
                         end += 1
                     }
                 }
-                // The mirrored characters at the ends of a word with moved marks,
-                // like its brackets, are drawn in spans of their own: MuPDF
-                // leaves out text if the glyphs of its span map to other text.
-                var wordStart = i
-                var wordEnd = end
-                if let mirrored = mirrored {
-                    while wordStart < wordEnd && mirrored[wordStart] {
-                        wordStart += 1
+                // A glyph with a joiner after it is drawn in a span of its own,
+                // and so are the mirrored characters at the ends of a word with
+                // moved marks, like its brackets: MuPDF leaves out or repeats
+                // text when the glyphs of a span do not match its actual text
+                // one by one.
+                var k = i
+                while k < end {
+                    var j = k
+                    while j < end && (joiners == nil || joiners![j] == 0) {
+                        j += 1
                     }
-                    while wordEnd > wordStart && mirrored[wordEnd - 1] {
-                        wordEnd -= 1
+                    appendWord(font, codePoints, gids, mirrored, offsets, k, j)
+                    if j < end {
+                        appendGlyphWithActualText(font, codePoints, gids, offsets, mirrored, joiners, j)
                     }
-                }
-                if let offsets = offsets, isMoved(offsets, wordStart, wordEnd) {
-                    appendGlyphs(codePoints, gids, mirrored, i, wordStart)
-                    appendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd)
-                    appendGlyphs(codePoints, gids, mirrored, wordEnd, end)
-                } else {
-                    appendGlyphs(codePoints, gids, mirrored, i, end)
+                    k = j + 1
                 }
                 i = end
             }
         }
     }
 
+    // Draws the glyphs of a word, or of the part of a word before a joiner,
+    // in a marked content span with the text of the word when it has moved
+    // marks, with the mirrored characters at its ends in spans of their own.
+    private func appendWord(
+            _ font: Font, _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ offsets: [Int]?,
+            _ i: Int, _ end: Int) {
+        var wordStart = i
+        var wordEnd = end
+        if let mirrored = mirrored {
+            while wordStart < wordEnd && mirrored[wordStart] {
+                wordStart += 1
+            }
+            while wordEnd > wordStart && mirrored[wordEnd - 1] {
+                wordEnd -= 1
+            }
+        }
+        if let offsets = offsets, isMoved(offsets, wordStart, wordEnd) {
+            appendGlyphs(font, codePoints, gids, mirrored, i, wordStart)
+            appendWordWithMovedMarks(font, codePoints, gids, offsets, wordStart, wordEnd)
+            appendGlyphs(font, codePoints, gids, mirrored, wordEnd, end)
+        } else {
+            appendGlyphs(font, codePoints, gids, mirrored, i, end)
+        }
+    }
+
     private func appendGlyphs(
-            _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ start: Int, _ end: Int) {
+            _ font: Font, _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ start: Int, _ end: Int) {
         for k in start..<end {
             if mirrored?[k] == true {
-                appendMirroredGlyph(codePoints[k], gids[k])
+                appendGlyphWithActualText(font, codePoints, gids, nil, mirrored, nil, k)
             } else {
                 Page.appendCodePointAsHex(gids[k], &self.buf)
             }
         }
     }
 
-    // Draws a character that Bidi mirrored in a marked content span that has
-    // the character it stands for as its actual text. Text extraction reverses
-    // right to left text, but does not mirror the brackets back.
-    private func appendMirroredGlyph(_ codePoint: Int, _ gid: Int) {
-        let scalar = Unicode.Scalar(Bidi.mirrored(UInt32(codePoint))!)!
+    // Draws a glyph in a marked content span that has the text it stands for
+    // as its actual text: the character Bidi mirrored, since text extraction
+    // reverses right to left text but does not mirror the brackets back, or
+    // the text of the glyph followed by the zero width non-joiner or joiner
+    // after it, which the font has no glyph for. A space glyph that takes no
+    // room stands in for the joiner, so that the span has a glyph for each
+    // character of its actual text but the last: MuPDF pairs the characters
+    // with the glyphs, and repeats text when a glyph matches its character
+    // after one that does not. Poppler takes the actual text as it is.
+    private func appendGlyphWithActualText(
+            _ font: Font, _ codePoints: [Int], _ gids: [Int], _ offsets: [Int]?, _ mirrored: [Bool]?,
+            _ joiners: [Int]?, _ k: Int) {
+        let codePoint = codePoints[k]
+        let joiner = joiners?[k] ?? 0
+        var text = ""
+        if mirrored?[k] == true {
+            text.unicodeScalars.append(Unicode.Scalar(Bidi.mirrored(UInt32(codePoint))!)!)
+        } else {
+            text.append(textOf(font, codePoint))
+        }
+        if joiner != 0 {
+            text.unicodeScalars.append(Unicode.Scalar(UInt32(joiner))!)
+        }
         append("> Tj\n/Span <</ActualText <")
-        append(toUTF16Hex(String(Character(scalar))))
-        append(">>> BDC\n<")
-        Page.appendCodePointAsHex(gid, &self.buf)
-        append("> Tj\nEMC\n<")
+        append(toUTF16Hex(text))
+        append(">>> BDC\n")
+        if let offsets = offsets, offsets[2*k] != 0 || offsets[2*k + 1] != 0 {
+            append("<")
+            appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1])
+            append("> Tj\n")
+        } else {
+            append("<")
+            Page.appendCodePointAsHex(gids[k], &self.buf)
+            append("> Tj\n")
+        }
+        if joiner != 0 {
+            let space = font.unicodeToGID[0x0020]
+            append("[<")
+            Page.appendCodePointAsHex(space, &self.buf)
+            append("> ")
+            append(1000.0 * Float(font.advanceWidth[space]) / Float(font.unitsPerEm))
+            append("] TJ\n")
+        }
+        append("EMC\n<")
+    }
+
+    // Returns the text the glyph of the code point maps to: a glyph missing
+    // from the font is a space, and an Arabic letter form is its letter.
+    private func textOf(_ font: Font, _ codePoint: Int) -> String {
+        if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
+            return " "
+        }
+        var text = ""
+        if let letters = Bidi.lettersOf(UInt32(codePoint)) {
+            for letter in letters {
+                text.unicodeScalars.append(Unicode.Scalar(letter)!)
+            }
+        } else if let scalar = Unicode.Scalar(UInt32(codePoint)) {
+            text.unicodeScalars.append(scalar)
+        }
+        return text
     }
 
     private func glyphOf(_ font: Font, _ codePoint: Int) -> Int {
@@ -725,18 +814,7 @@ public class Page {
         let leadingSpace = isMoved(offsets, start, start + 1)
         var text = leadingSpace ? " " : ""
         for k in start..<end {
-            // The text the glyphs map to: a glyph missing from the font is a
-            // space, and an Arabic letter form is its letter.
-            let codePoint = codePoints[k]
-            if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
-                text.append(" ")
-            } else if let letters = Bidi.lettersOf(UInt32(codePoint)) {
-                for letter in letters {
-                    text.unicodeScalars.append(Unicode.Scalar(letter)!)
-                }
-            } else if let scalar = Unicode.Scalar(UInt32(codePoint)) {
-                text.unicodeScalars.append(scalar)
-            }
+            text.append(textOf(font, codePoints[k]))    // The text the glyphs map to
         }
         append("> Tj\n/Span <</ActualText <")
         append(toUTF16Hex(text))

@@ -404,8 +404,8 @@ final public class Page {
             StringBuilder buf = new StringBuilder();
             for (int i = 0; i < str.length(); i++) {
                 int ch = str.charAt(i);
-                // An RLM is drawn with the character after it.
-                int next = (ch == 0x200F && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
+                // An RLM, ZWNJ or ZWJ goes with the character after it.
+                int next = (Font.isJoinerOrRLM(ch) && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
                 if (activeFont.unicodeToGID[next] == 0) {
                     drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
                     x += activeFont.stringWidth(fontSize, buf.toString());
@@ -599,7 +599,8 @@ final public class Page {
                     }
                 }
             }
-        } else if (font.markAnchors == null && str.indexOf(0x200F) < 0) {     // RLM
+        } else if (font.markAnchors == null && str.indexOf(0x200F) < 0 &&
+                str.indexOf(0x200C) < 0 && str.indexOf(0x200D) < 0) {   // RLM, ZWNJ, ZWJ
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
@@ -609,11 +610,15 @@ final public class Page {
             }
         } else {
             // The marks are moved to where the GPOS table of the font puts
-            // them, and the characters Bidi mirrored, each after an RLM, are
-            // given the characters they stand for as actual text.
+            // them, the characters Bidi mirrored, each after an RLM, are given
+            // the characters they stand for as actual text, and a zero width
+            // non-joiner or joiner that the font has no glyph for is put in the
+            // actual text of the glyph before it. A font that has a glyph for
+            // it draws the glyph, which has no width.
             int[] codePoints = new int[length];
             int[] gids = new int[length];
             boolean[] mirrored = null;
+            int[] joiners = null;
             int n = 0;
             boolean hasMarks = false;
             boolean afterRLM = false;
@@ -622,6 +627,15 @@ final public class Page {
                 i += Character.charCount(cp);
                 if (cp == 0x200F) {     // RLM
                     afterRLM = true;
+                } else if ((cp == 0x200C || cp == 0x200D) && font.unicodeToGID[cp] == 0) {
+                    // A ZWNJ or ZWJ the font has no glyph for goes with the
+                    // glyph before it. One with nothing before it is left out.
+                    if (n > 0) {
+                        if (joiners == null) {
+                            joiners = new int[length];
+                        }
+                        joiners[n - 1] = cp;
+                    }
                 } else if (cp != 0xFEFF) {     // BOM
                     if (afterRLM && Bidi.mirrored(cp) != null) {
                         if (mirrored == null) {
@@ -639,7 +653,7 @@ final public class Page {
             int[] offsets = null;
             if (hasMarks && font.markAnchors != null) {
                 offsets = markOffsets(font, codePoints, gids, n);
-            } else if (mirrored == null) {
+            } else if (mirrored == null && joiners == null) {
                 for (int i = 0; i < n; i++) {
                     appendCodePointAsHex(gids[i]);
                 }
@@ -653,48 +667,116 @@ final public class Page {
                         end++;
                     }
                 }
-                // The mirrored characters at the ends of a word with moved marks,
-                // like its brackets, are drawn in spans of their own: MuPDF
-                // leaves out text if the glyphs of its span map to other text.
-                int from = i;
-                int to = end;
-                while (mirrored != null && from < to && mirrored[from]) {
-                    from++;
-                }
-                while (mirrored != null && to > from && mirrored[to - 1]) {
-                    to--;
-                }
-                if (offsets != null && isMoved(offsets, from, to)) {
-                    appendGlyphs(codePoints, gids, mirrored, i, from);
-                    appendWordWithMovedMarks(font, codePoints, gids, offsets, from, to);
-                    appendGlyphs(codePoints, gids, mirrored, to, end);
-                } else {
-                    appendGlyphs(codePoints, gids, mirrored, i, end);
+                // A glyph with a joiner after it is drawn in a span of its own,
+                // and so are the mirrored characters at the ends of a word with
+                // moved marks, like its brackets: MuPDF leaves out or repeats
+                // text when the glyphs of a span do not match its actual text
+                // one by one.
+                int k = i;
+                while (k < end) {
+                    int j = k;
+                    while (j < end && (joiners == null || joiners[j] == 0)) {
+                        j++;
+                    }
+                    appendWord(font, codePoints, gids, mirrored, offsets, k, j);
+                    if (j < end) {
+                        appendGlyphWithActualText(font, codePoints, gids, offsets, mirrored, joiners, j);
+                    }
+                    k = j + 1;
                 }
                 i = end;
             }
         }
     }
 
-    private void appendGlyphs(int[] codePoints, int[] gids, boolean[] mirrored, int from, int to) {
+    // Draws the glyphs of a word, or of the part of a word before a joiner,
+    // in a marked content span with the text of the word when it has moved
+    // marks, with the mirrored characters at its ends in spans of their own.
+    private void appendWord(
+            Font font, int[] codePoints, int[] gids, boolean[] mirrored, int[] offsets, int i, int end) {
+        int from = i;
+        int to = end;
+        while (mirrored != null && from < to && mirrored[from]) {
+            from++;
+        }
+        while (mirrored != null && to > from && mirrored[to - 1]) {
+            to--;
+        }
+        if (offsets != null && isMoved(offsets, from, to)) {
+            appendGlyphs(font, codePoints, gids, mirrored, i, from);
+            appendWordWithMovedMarks(font, codePoints, gids, offsets, from, to);
+            appendGlyphs(font, codePoints, gids, mirrored, to, end);
+        } else {
+            appendGlyphs(font, codePoints, gids, mirrored, i, end);
+        }
+    }
+
+    private void appendGlyphs(
+            Font font, int[] codePoints, int[] gids, boolean[] mirrored, int from, int to) {
         for (int k = from; k < to; k++) {
             if (mirrored != null && mirrored[k]) {
-                appendMirroredGlyph(codePoints[k], gids[k]);
+                appendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
                 appendCodePointAsHex(gids[k]);
             }
         }
     }
 
-    // Draws a character that Bidi mirrored in a marked content span that has
-    // the character it stands for as its actual text. Text extraction reverses
-    // right to left text, but does not mirror the brackets back.
-    private void appendMirroredGlyph(int cp, int gid) {
+    // Draws a glyph in a marked content span that has the text it stands for
+    // as its actual text: the character Bidi mirrored, since text extraction
+    // reverses right to left text but does not mirror the brackets back, or
+    // the text of the glyph followed by the zero width non-joiner or joiner
+    // after it, which the font has no glyph for. A space glyph that takes no
+    // room stands in for the joiner, so that the span has a glyph for each
+    // character of its actual text but the last: MuPDF pairs the characters
+    // with the glyphs, and repeats text when a glyph matches its character
+    // after one that does not. Poppler takes the actual text as it is.
+    private void appendGlyphWithActualText(
+            Font font, int[] codePoints, int[] gids, int[] offsets, boolean[] mirrored, int[] joiners, int k) {
+        int cp = codePoints[k];
+        int joiner = (joiners != null) ? joiners[k] : 0;
+        StringBuilder text = new StringBuilder();
+        if (mirrored != null && mirrored[k]) {
+            text.appendCodePoint(Bidi.mirrored(cp));
+        } else {
+            text.append(textOf(font, cp));
+        }
+        if (joiner != 0) {
+            text.appendCodePoint(joiner);
+        }
         append("> Tj\n/Span <</ActualText <");
-        append(toUTF16Hex(new String(Character.toChars(Bidi.mirrored(cp)))));
-        append(">>> BDC\n<");
-        appendCodePointAsHex(gid);
-        append("> Tj\nEMC\n<");
+        append(toUTF16Hex(text.toString()));
+        append(">>> BDC\n");
+        if (offsets != null && (offsets[2*k] != 0 || offsets[2*k + 1] != 0)) {
+            append("<");
+            appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
+            append("> Tj\n");
+        } else {
+            append("<");
+            appendCodePointAsHex(gids[k]);
+            append("> Tj\n");
+        }
+        if (joiner != 0) {
+            int space = font.unicodeToGID[0x0020];
+            append("[<");
+            appendCodePointAsHex(space);
+            append("> ");
+            append(1000f * font.advanceWidth[space] / font.unitsPerEm);
+            append("] TJ\n");
+        }
+        append("EMC\n<");
+    }
+
+    // Returns the text the glyph of the code point maps to: a glyph missing
+    // from the font is a space, and an Arabic letter form is its letter.
+    private static String textOf(Font font, int cp) {
+        String letters = Bidi.lettersOf(cp);
+        if (cp < font.firstChar || cp > font.lastChar) {
+            return " ";
+        } else if (letters != null) {
+            return letters;
+        }
+        return new String(Character.toChars(cp));
     }
 
     private static boolean isMoved(int[] offsets, int from, int to) {
@@ -720,17 +802,7 @@ final public class Page {
         boolean leadingSpace = isMoved(offsets, from, from + 1);
         StringBuilder text = new StringBuilder(leadingSpace ? " " : "");
         for (int k = from; k < to; k++) {
-            // The text the glyphs map to: a glyph missing from the font is a
-            // space, and an Arabic letter form is its letter.
-            int cp = codePoints[k];
-            String letters = Bidi.lettersOf(cp);
-            if (cp < font.firstChar || cp > font.lastChar) {
-                text.append(' ');
-            } else if (letters != null) {
-                text.append(letters);
-            } else {
-                text.appendCodePoint(cp);
-            }
+            text.append(textOf(font, codePoints[k]));     // The text the glyphs map to
         }
         append("> Tj\n/Span <</ActualText <");
         append(toUTF16Hex(text.toString()));

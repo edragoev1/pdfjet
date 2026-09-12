@@ -414,6 +414,9 @@ public class TextBlock : Drawable {
     // The combining marks, and the Thai and Lao vowels and signs written after
     // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
     private static func staysWithPrevious(_ ch: Unicode.Scalar) -> Bool {
+        if ch.value == 0x200C || ch.value == 0x200D {   // ZWNJ, ZWJ
+            return true
+        }
         switch ch.properties.generalCategory {
         case .nonspacingMark, .spacingMark, .enclosingMark:
             return true

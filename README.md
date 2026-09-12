@@ -158,8 +158,11 @@ to the letters they stand for, so the words come out as typed, but:
   out the wrong way round. MuPDF can move a bracket at either end of a line to
   the other end, and Poppler puts a space before a closing bracket after a word
   whose last letter has a mark, as in `(كَتَبَ )`.
-- The zero width non-joiner and joiner are not drawn, so they are not in the
-  copied text: `می‌خواهم` comes out as `میخواهم`.
+- The zero width non-joiner and joiner, as in `می‌خواهم`, are not drawn, but
+  each is put in the ActualText of the glyph before it, with a space glyph that
+  takes no room standing in for it, so Poppler and MuPDF copy them. A font that
+  has glyphs for them, like IBM Plex Sans Devanagari, draws those instead. A
+  joiner inside a lam-alef ligature is left out.
 - Poppler separates an Arabic comma or a period from the word before it, as in
   `مادر ،`, and MuPDF moves numbers, such as `۱۴۰۳`, next to a word beside
   them.

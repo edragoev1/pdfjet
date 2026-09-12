@@ -453,6 +453,9 @@ func isLeadingVowel(ch rune) bool {
 // vowels and signs written after a consonant, like SARA AA and MAI YAMOK, which
 // do not start a line.
 func staysWithPrevious(ch rune) bool {
+	if ch == 0x200C || ch == 0x200D { // ZWNJ, ZWJ
+		return true
+	}
 	return unicode.In(ch, unicode.Mn, unicode.Mc, unicode.Me) ||
 		(ch >= 0x0E2F && ch <= 0x0E3A) || (ch >= 0x0E45 && ch <= 0x0E4E) ||
 		(ch >= 0x0EAF && ch <= 0x0EBC) || (ch >= 0x0EC6 && ch <= 0x0ECE)

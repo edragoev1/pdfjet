@@ -562,6 +562,9 @@ public class TextBlock {
     // The combining marks, and the Thai and Lao vowels and signs written after
     // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
     private static boolean staysWithPrevious(int ch) {
+        if (ch == 0x200C || ch == 0x200D) {         // ZWNJ, ZWJ
+            return true;
+        }
         int type = Character.getType(ch);
         return type == Character.NON_SPACING_MARK ||
                 type == Character.COMBINING_SPACING_MARK ||

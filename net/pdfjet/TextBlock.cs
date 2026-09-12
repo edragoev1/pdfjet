@@ -442,6 +442,9 @@ namespace PDFjet.NET {
         // The combining marks, and the Thai and Lao vowels and signs written after
         // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
         private static bool StaysWithPrevious(int ch) {
+            if (ch == 0x200C || ch == 0x200D) {         // ZWNJ, ZWJ
+                return true;
+            }
             UnicodeCategory cat = CharUnicodeInfo.GetUnicodeCategory(ch);
             return cat == UnicodeCategory.NonSpacingMark ||
                     cat == UnicodeCategory.SpacingCombiningMark ||

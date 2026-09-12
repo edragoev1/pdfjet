@@ -492,8 +492,8 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 		}
 	} else {
 		for _, c1 := range runes {
-			if c1 == 0x200F {
-				continue // An RLM is not drawn
+			if isJoinerOrRLM(c1) {
+				continue // An RLM, ZWNJ or ZWJ is not drawn
 			}
 			if font.unicodeToGID[c1] < len(font.advanceWidth) {
 				width += float32(font.advanceWidth[font.unicodeToGID[c1]])
@@ -518,9 +518,9 @@ func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text strin
 	var buf strings.Builder
 	runes := []rune(text)
 	for i, ch := range runes {
-		// An RLM is drawn with the character after it.
+		// An RLM, ZWNJ or ZWJ goes with the character after it.
 		next := ch
-		if ch == 0x200F && i+1 < len(runes) {
+		if isJoinerOrRLM(ch) && i+1 < len(runes) {
 			next = runes[i+1]
 		}
 		if activeFont.unicodeToGID[next] == 0 {
@@ -538,4 +538,11 @@ func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text strin
 	width += activeFont.StringWidth(fontSize, buf.String())
 
 	return width
+}
+
+// isJoinerOrRLM returns true for the right-to-left mark and the zero width
+// non-joiner and joiner, which are not drawn: Page gives the glyph before or
+// after them an actual text.
+func isJoinerOrRLM(ch rune) bool {
+	return ch == 0x200F || ch == 0x200C || ch == 0x200D
 }

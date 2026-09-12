@@ -337,9 +337,11 @@ public class Bidi {
                         break
                     }
                 }
-            } else if ch != 0x200C && ch != 0x200D {
-                // A zero width non-joiner or joiner is left out: it only
-                // changes whether the letters on either side of it join.
+            } else {
+                // A zero width non-joiner or joiner changes whether the
+                // letters on either side of it join. It is kept: Page does not
+                // draw it, but puts it in the actual text of the glyph before
+                // it, so it is in the text copied from the page.
                 buf3.append(ch)
                 from3.append(origins[i])
             }
