@@ -134,8 +134,10 @@ public class CompositeTextLine : IDrawable {
     /// Set the new current position
     /// </summary>
     /// <param name="component">the component.</param>
-    public void AddComponent(TextLine component) {
+    /// <returns>this CompositeTextLine object.</returns>
+    public CompositeTextLine AddComponent(TextLine component) {
         textLines.Add(component);
+        return this;
     }
 
     /// <summary>

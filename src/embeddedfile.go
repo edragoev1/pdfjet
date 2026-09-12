@@ -71,7 +71,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 		file.content, _ = encryption.Encrypt(file.content, pdf.encryption.GetKey())
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /EmbeddedFile\n")
 	if compress {
@@ -84,9 +84,9 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	pdf.appendByteArray(token.Stream)
 	pdf.appendByteArray(file.content)
 	pdf.appendByteArray(token.EndStream)
-	pdf.endobj()
+	pdf.endObj()
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Filespec\n")
 
@@ -102,7 +102,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	pdf.appendInteger(pdf.getObjNumber() - 1)
 	pdf.appendString(" 0 R>>\n")
 	pdf.appendByteArray(token.EndDictionary)
-	pdf.endobj()
+	pdf.endObj()
 
 	file.objNumber = pdf.getObjNumber()
 

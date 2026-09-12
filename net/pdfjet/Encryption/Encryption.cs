@@ -152,7 +152,7 @@ public class Encryption {
     }
 
     /// <summary>Returns the object number of the encryption dictionary.</summary>
-    public int GetObjNumber() {
+    internal int GetObjNumber() {
         return objNumber;
     }
 

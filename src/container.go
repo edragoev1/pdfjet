@@ -124,11 +124,12 @@ func (c *Container) AddBorder() {
 // Add adds a drawable element to this container.
 //
 // element is the Drawable object to add.
-func (c *Container) Add(element Drawable) {
+func (c *Container) Add(element Drawable) *Container {
 	if child, ok := element.(*Container); ok {
 		child.parent = c
 	}
 	c.elements = append(c.elements, element)
+	return c
 }
 
 // DrawOn draws the container and all child elements onto the given page.

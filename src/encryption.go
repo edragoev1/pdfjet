@@ -76,7 +76,7 @@ func NewEncryption(pdf *PDF,
 	clearBytes(ownerPasswordBytes)
 
 	// Encryption Dictionary
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n") // Begin Dictionary
 	pdf.appendString("/Filter /Standard\n")
 	pdf.appendString("/V 5\n") // Algorithm 2.A / 2.B
@@ -145,7 +145,7 @@ func NewEncryption(pdf *PDF,
 	pdf.appendString(">\n")
 
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	enc.objNumber = pdf.getObjNumber()
 	return enc, nil
@@ -158,8 +158,8 @@ func (enc *Encryption) GetKey() []byte {
 	return key
 }
 
-// GetObjNumber returns the object number
-func (enc *Encryption) GetObjNumber() int {
+// getObjNumber returns the object number of the encryption dictionary.
+func (enc *Encryption) getObjNumber() int {
 	return enc.objNumber
 }
 

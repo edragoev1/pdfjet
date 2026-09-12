@@ -157,13 +157,13 @@ func NewPDFFile(filePath string) *PDF {
 	return pdf
 }
 
-func (pdf *PDF) newobj() {
+func (pdf *PDF) newObj() {
 	pdf.objOffsets = append(pdf.objOffsets, pdf.byteCount)
 	pdf.appendInteger(len(pdf.objOffsets))
 	pdf.appendString(" 0 obj\n")
 }
 
-func (pdf *PDF) endobj() {
+func (pdf *PDF) endObj() {
 	pdf.appendString("endobj\n")
 }
 
@@ -301,7 +301,7 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	}
 
 	// This is the metadata object
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Metadata\n")
 	pdf.appendString("/Subtype /XML\n")
@@ -312,7 +312,7 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	pdf.appendByteArray(token.Stream)
 	pdf.appendByteArray(xml)
 	pdf.appendByteArray(token.EndStream)
-	pdf.endobj()
+	pdf.endObj()
 
 	return pdf.getObjNumber()
 }
@@ -329,7 +329,7 @@ func (pdf *PDF) addOutputIntentObject() int {
 		profile, _ = encryption.Encrypt(profile, pdf.encryption.GetKey())
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/N 3\n")
 
@@ -342,14 +342,14 @@ func (pdf *PDF) addOutputIntentObject() int {
 	pdf.appendByteArray(token.Stream)
 	pdf.appendByteArray(profile)
 	pdf.appendByteArray(token.EndStream)
-	pdf.endobj()
+	pdf.endObj()
 
 	identifierBytes := []byte("sRGB IEC61966-2.1")
 	if pdf.encryption != nil {
 		identifierBytes, _ = encryption.Encrypt(identifierBytes, pdf.encryption.GetKey())
 	}
 	// OutputIntent object
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /OutputIntent\n")
 	pdf.appendString("/S /GTS_PDFA1\n")
@@ -370,7 +370,7 @@ func (pdf *PDF) addOutputIntentObject() int {
 	pdf.appendInteger(pdf.getObjNumber() - 1)
 	pdf.appendByteArray(token.ObjRef)
 	pdf.appendByteArray(token.EndDictionary)
-	pdf.endobj()
+	pdf.endObj()
 
 	return pdf.getObjNumber()
 }
@@ -389,7 +389,7 @@ func (pdf *PDF) appendImportedEntries(tokens []string) {
 }
 
 func (pdf *PDF) addResourcesObject() int {
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	if len(pdf.fonts) > 0 || len(pdf.importedFonts) > 0 {
 		pdf.appendString("/Font\n")
@@ -458,12 +458,12 @@ func (pdf *PDF) addResourcesObject() int {
 		pdf.appendByteArray(token.EndDictionary)
 	}
 	pdf.appendByteArray(token.EndDictionary)
-	pdf.endobj()
+	pdf.endObj()
 	return pdf.getObjNumber()
 }
 
 func (pdf *PDF) addPagesObject() {
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Pages\n")
 	pdf.appendString("/Kids [\n")
@@ -479,11 +479,11 @@ func (pdf *PDF) addPagesObject() {
 	pdf.appendInteger(len(pdf.pages))
 	pdf.appendByte('\n')
 	pdf.appendByteArray(token.EndDictionary)
-	pdf.endobj()
+	pdf.endObj()
 }
 
 func (pdf *PDF) addStructTreeRootObject() int {
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /StructTreeRoot\n")
 	pdf.appendString("/ParentTree ")
@@ -494,12 +494,12 @@ func (pdf *PDF) addStructTreeRootObject() int {
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("]\n")
 	pdf.appendByteArray(token.EndDictionary)
-	pdf.endobj()
+	pdf.endObj()
 	return pdf.getObjNumber()
 }
 
 func (pdf *PDF) addStructDocumentObject(parent int) int {
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /StructElem\n")
 	pdf.appendString("/S /Document\n")
@@ -513,7 +513,7 @@ func (pdf *PDF) addStructDocumentObject(parent int) int {
 	}
 	pdf.appendString("]\n")
 	pdf.appendByteArray(token.EndDictionary)
-	pdf.endobj()
+	pdf.endObj()
 	return pdf.getObjNumber()
 }
 
@@ -521,7 +521,7 @@ func (pdf *PDF) addStructElementObjects() {
 	structTreeRootObjNumber := pdf.getObjNumber() + 1
 	structTreeRootObjNumber += len(pdf.structElements)
 	for _, element := range pdf.structElements {
-		pdf.newobj()
+		pdf.newObj()
 		element.objNumber = pdf.getObjNumber()
 		pdf.appendString("<<\n/Type /StructElem /S /")
 		pdf.appendString(element.structure)
@@ -582,12 +582,12 @@ func (pdf *PDF) addStructElementObjects() {
 		}
 
 		pdf.appendString(">>\n")
-		pdf.endobj()
+		pdf.endObj()
 	}
 }
 
 func (pdf *PDF) addNumsParentTree() {
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Nums [\n")
 	// The keys must be listed in increasing order, so the page entries - whose
@@ -620,12 +620,12 @@ func (pdf *PDF) addNumsParentTree() {
 	}
 	pdf.appendString("]\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 }
 
 func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) int {
 	// Add the root object
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Catalog\n")
 
@@ -682,7 +682,7 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	}
 
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 	return pdf.getObjNumber()
 }
 
@@ -723,7 +723,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 
 	for i, page := range pdf.pages {
 		// Page object
-		pdf.newobj()
+		pdf.newObj()
 		page.objNumber = pdf.getObjNumber()
 		pdf.appendString("<<\n")
 		pdf.appendString("/Type /Page\n")
@@ -783,7 +783,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 		}
 
 		pdf.appendString(">>\n")
-		pdf.endobj()
+		pdf.endObj()
 	}
 }
 
@@ -795,7 +795,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 		}
 		page.buf = nil // Release the page content memory!
 
-		pdf.newobj()
+		pdf.newObj()
 		pdf.appendString("<<\n")
 		pdf.appendString("/Filter /FlateDecode\n")
 		pdf.appendString("/Length ")
@@ -805,7 +805,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 		pdf.appendString("stream\n")
 		pdf.appendByteArray(compressed)
 		pdf.appendString("\nendstream\n")
-		pdf.endobj()
+		pdf.endObj()
 		page.contents = append(page.contents, pdf.getObjNumber())
 	} else { // No compression. Used for diagnostics
 		buf := page.buf
@@ -814,7 +814,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 		}
 		page.buf = nil // Release the page content memory!
 
-		pdf.newobj()
+		pdf.newObj()
 		pdf.appendString("<<\n")
 		pdf.appendString("/Length ")
 		pdf.appendInteger(len(buf))
@@ -823,13 +823,13 @@ func (pdf *PDF) addPageContent(page *Page) {
 		pdf.appendString("stream\n")
 		pdf.appendByteArray(buf)
 		pdf.appendString("\nendstream\n")
-		pdf.endobj()
+		pdf.endObj()
 		page.contents = append(page.contents, pdf.getObjNumber())
 	}
 }
 
 func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
-	pdf.newobj()
+	pdf.newObj()
 	annot.objNumber = pdf.getObjNumber()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Annot\n")
@@ -1027,7 +1027,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		index++
 	}
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	return index
 }
@@ -1188,7 +1188,7 @@ func (pdf *PDF) Complete() {
 
 	if pdf.encryption != nil {
 		pdf.appendString("/Encrypt ")
-		pdf.appendInteger(pdf.encryption.GetObjNumber())
+		pdf.appendInteger(pdf.encryption.getObjNumber())
 		pdf.appendString(" 0 R\n")
 	}
 
@@ -1787,7 +1787,7 @@ func (pdf *PDF) getStartXRef(buf []byte) int {
 
 func (pdf *PDF) addOutlineDict(toc *Bookmark) int {
 	numOfChildren := getNumOfChildren(0, toc)
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Outlines\n")
 	pdf.appendString("/First ")
@@ -1800,7 +1800,7 @@ func (pdf *PDF) addOutlineDict(toc *Bookmark) int {
 	pdf.appendInteger(numOfChildren)
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 	return pdf.getObjNumber()
 }
 
@@ -1828,7 +1828,7 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 		title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Title <")
 	pdf.appendString(hex.EncodeToString(title))
@@ -1870,7 +1870,7 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 	pdf.appendFloat32(bm1.getDestination().yPosition)
 	pdf.appendString(" 0]\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 }
 
 func getNumOfChildren(numOfChildren int, bm1 *Bookmark) int {

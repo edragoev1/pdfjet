@@ -315,7 +315,7 @@ public class Stamp : Drawable {
     /// Call it once, after drawing the content and before drawOn.
     ///
     public func complete() throws {
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Form\n")
@@ -341,7 +341,7 @@ public class Stamp : Drawable {
         pdf.append(Token.stream)
         pdf.append(buf)
         pdf.append(Token.endStream)
-        pdf.endobj()
+        pdf.endObj()
 
         pdf.stamps.append(self)
         objNumber = pdf.getObjNumber()

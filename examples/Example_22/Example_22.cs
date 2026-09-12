@@ -63,8 +63,8 @@ public class Example_22 {
         path.Add(new Point( 7f,  9f));
         path.Add(new Point( 3f,  9f));
         path.SetClosePath(true);
-        path.SetColor(Color.oldgloryblue);
-        path.SetColor(Color.deepskyblue);
+        path.SetStrokeColor(Color.oldgloryblue);
+        path.SetStrokeColor(Color.deepskyblue);
         path.SetFillShape(true);
         path.DrawOn(page);
 

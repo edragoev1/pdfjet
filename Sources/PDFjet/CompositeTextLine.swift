@@ -149,7 +149,8 @@ public class CompositeTextLine : Drawable {
      *
      * - Parameter component: the component.
      */
-    public func addComponent(_ component: TextLine) {
+    @discardableResult
+    public func addComponent(_ component: TextLine) -> CompositeTextLine {
         if component.getTextEffect() == Effect.SUPERSCRIPT {
             if fontSize > 0 {
                 // Set it on the TextLine: drawOn uses the line's own font size,
@@ -174,6 +175,7 @@ public class CompositeTextLine : Drawable {
         }
         current[X] += component.getWidth()
         textLines.append(component)
+        return self
     }
 
     /**

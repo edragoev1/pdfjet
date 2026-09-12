@@ -37,8 +37,10 @@ public class Path : IDrawable {
     /// Adds a point to this path.
     /// </summary>
     /// <param name="point">the point to add.</param>
-    public void Add(Point point) {
+    /// <returns>this Path object.</returns>
+    public Path Add(Point point) {
         points.Add(point);
+        return this;
     }
 
     /// <summary>
@@ -72,31 +74,31 @@ public class Path : IDrawable {
     }
 
     /// <summary>
-    /// Sets the pen width that will be used to draw the lines and splines that are part of this path.
+    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path.
     /// </summary>
-    /// <param name="width">the pen width.</param>
+    /// <param name="width">the stroke width.</param>
     /// <returns>this Path object.</returns>
-    public Path SetWidth(double width) {
+    public Path SetStrokeWidth(double width) {
         this.width = (float) width;
         return this;
     }
 
     /// <summary>
-    /// Sets the pen width that will be used to draw the lines and splines that are part of this path.
+    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path.
     /// </summary>
-    /// <param name="width">the pen width.</param>
+    /// <param name="width">the stroke width.</param>
     /// <returns>this Path object.</returns>
-    public Path SetWidth(float width) {
+    public Path SetStrokeWidth(float width) {
         this.width = width;
         return this;
     }
 
     /// <summary>
-    /// Sets the pen color that will be used to draw this path.
+    /// Sets the stroke color that will be used to draw this path.
     /// </summary>
     /// <param name="color">the color is specified as an integer.</param>
     /// <returns>this Path object.</returns>
-    public Path SetColor(int color) {
+    public Path SetStrokeColor(int color) {
         this.color = color;
         return this;
     }

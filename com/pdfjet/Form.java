@@ -169,7 +169,7 @@ public class Form implements Drawable {
                                 y + yField,
                                 x + formWidth,
                                 y + yField);
-                        hLine.setWidth(lineWidth).drawOn(page);
+                        hLine.setStrokeWidth(lineWidth).drawOn(page);
                     }
                     yField += f1.getAscent(labelFontSize) + 3f*f1.getDescent(labelFontSize);
                 }
@@ -201,7 +201,7 @@ public class Form implements Drawable {
                         (y + yField) - rowHeight,
                         x + field.x,
                         y + yField);
-                vLine.setWidth(lineWidth).drawOn(page);
+                vLine.setStrokeWidth(lineWidth).drawOn(page);
             }
         }
 

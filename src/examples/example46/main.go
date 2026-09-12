@@ -45,8 +45,8 @@ func Example46() {
 	textBox.SetLocation(10.0, 130.0)
 
 	line := pdfjet.NewLine(300.0, 150.0, 500.0, 150.0)
-	line.SetWidth(2.0)
-	line.SetColor(color.Blue)
+	line.SetStrokeWidth(2.0)
+	line.SetStrokeColor(color.Blue)
 
 	group = pdfjet.NewOptionalContentGroup(pdf, "Blue Line")
 	group.Add(textBox)
@@ -55,8 +55,8 @@ func Example46() {
 	group.DrawOn(page)
 
 	line = pdfjet.NewLine(300.0, 160.0, 500.0, 160.0)
-	line.SetWidth(2.0)
-	line.SetColor(color.Red)
+	line.SetStrokeWidth(2.0)
+	line.SetStrokeColor(color.Red)
 
 	group = pdfjet.NewOptionalContentGroup(pdf, "Barcode")
 	group.Add(image2)

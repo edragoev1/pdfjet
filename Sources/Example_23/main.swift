@@ -49,8 +49,8 @@ public class Example_23 {
             y1,
             x1 - 10.0,
             y1 + f1.getAscent())
-        blueLine.setColor(Color.blue)
-        blueLine.setWidth(3.0)
+        blueLine.setStrokeColor(Color.blue)
+        blueLine.setStrokeWidth(3.0)
         blueLine.drawOn(page)
 
         // Line beside the text descent
@@ -59,8 +59,8 @@ public class Example_23 {
             y1 + f1.getAscent(),
             x1 - 10.0,
             y1 + f1.getAscent() + f1.getDescent())
-        redLine.setColor(Color.red)
-        redLine.setWidth(3.0)
+        redLine.setStrokeColor(Color.red)
+        redLine.setStrokeWidth(3.0)
         redLine.drawOn(page)
 
         let baseLine = Line(

@@ -27,7 +27,7 @@ func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	addToUnicodeCMapObject(pdf, font)
 
 	// Type0 Font Dictionary
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /Type0\n")
@@ -42,7 +42,7 @@ func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.appendInteger(font.toUnicodeCMapObjNumber)
 	pdf.appendString(" 0 R\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.objNumber = pdf.getObjNumber()
 	pdf.fonts = append(pdf.fonts, font)
@@ -59,7 +59,7 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 
 	metadataObjNumber := pdf.addMetadataObject(font.info, true)
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 
 	pdf.appendString("/Metadata ")
@@ -105,7 +105,7 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 		pdf.appendByteArray(compressed)
 	}
 	pdf.appendString("\nendstream\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.fileObjNumber = pdf.getObjNumber()
 }
@@ -118,7 +118,7 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 		}
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /FontDescriptor\n")
 	pdf.appendString("/FontName /")
@@ -153,7 +153,7 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	pdf.appendString("\n")
 	pdf.appendString("/StemV 79\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.fontDescriptorObjNumber = pdf.getObjNumber()
 }
@@ -222,7 +222,7 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 		buf2, _ = encryption.Encrypt(buf2, pdf.encryption.GetKey())
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Length ")
 	pdf.appendInteger(len(buf2))
@@ -231,7 +231,7 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	pdf.appendString("stream\n")
 	pdf.appendByteArray(buf2)
 	pdf.appendString("\nendstream\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.toUnicodeCMapObjNumber = pdf.getObjNumber()
 }
@@ -244,7 +244,7 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 		}
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Font\n")
 	if font.cff {
@@ -287,7 +287,7 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 
 	pdf.appendString("/CIDToGIDMap /Identity\n")
 	pdf.appendByteArray(token.EndDictionary)
-	pdf.endobj()
+	pdf.endObj()
 
 	font.cidFontDictObjNumber = pdf.getObjNumber()
 }

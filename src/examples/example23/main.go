@@ -55,8 +55,8 @@ func Example23() {
 		y1,
 		x1-10.0,
 		y1+f1.GetAscent())
-	blueLine.SetColor(color.Blue)
-	blueLine.SetWidth(3.0)
+	blueLine.SetStrokeColor(color.Blue)
+	blueLine.SetStrokeWidth(3.0)
 	blueLine.DrawOn(page)
 
 	// Line beside the text descent
@@ -65,8 +65,8 @@ func Example23() {
 		y1+f1.GetAscent(),
 		x1-10.0,
 		y1+f1.GetAscent()+f1.GetDescent())
-	redLine.SetColor(color.Red)
-	redLine.SetWidth(3.0)
+	redLine.SetStrokeColor(color.Red)
+	redLine.SetStrokeWidth(3.0)
 	redLine.DrawOn(page)
 
 	baseLine := pdfjet.NewLine(

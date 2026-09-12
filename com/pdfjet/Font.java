@@ -149,7 +149,7 @@ final public class Font {
         this.fontDescent = font.bBoxLLy;
         setSize(size);
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /Font\n");
         pdf.append("/Subtype /Type1\n");
@@ -160,7 +160,7 @@ final public class Font {
             pdf.append("/Encoding /WinAnsiEncoding\n");
         }
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
         objNumber = pdf.getObjNumber();
 
         pdf.fonts.add(this);
@@ -216,7 +216,7 @@ final public class Font {
         this.bodyHeight = this.ascent + this.descent;
 
         // Font Descriptor
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /FontDescriptor\n");
         pdf.append("/FontName /");
@@ -225,10 +225,10 @@ final public class Font {
         pdf.append("/Flags 4\n");
         pdf.append("/FontBBox [0 0 0 0]\n");
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
 
         // CIDFont Dictionary
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /Font\n");
         pdf.append("/Subtype /CIDFontType0\n");
@@ -258,10 +258,10 @@ final public class Font {
         }
         pdf.append(">>\n");
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
 
         // Type0 Font Dictionary
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /Font\n");
         pdf.append("/Subtype /Type0\n");
@@ -286,7 +286,7 @@ final public class Font {
         pdf.append(pdf.getObjNumber() - 1);
         pdf.append(" 0 R]\n");
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
         objNumber = pdf.getObjNumber();
 
         pdf.fonts.add(this);

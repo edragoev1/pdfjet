@@ -66,8 +66,8 @@ func Example22() {
 	path.Add(pdfjet.NewPoint(7.0, 9.0))
 	path.Add(pdfjet.NewPoint(3.0, 9.0))
 	path.SetClosePath(true)
-	path.SetColor(color.OldGloryBlue)
-	path.SetColor(color.DeepSkyBlue)
+	path.SetStrokeColor(color.OldGloryBlue)
+	path.SetStrokeColor(color.DeepSkyBlue)
 	path.SetFillShape(true)
 	path.DrawOn(page)
 

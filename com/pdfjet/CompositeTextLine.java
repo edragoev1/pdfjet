@@ -155,8 +155,9 @@ public class CompositeTextLine implements Drawable {
      *  Set the new current position
      *
      *  @param component the component.
+     *  @return this CompositeTextLine object.
      */
-    public void addComponent(TextLine component) {
+    public CompositeTextLine addComponent(TextLine component) {
         if (component.getTextEffect() == Effect.SUPERSCRIPT) {
             if (fontSize > 0f) {
                 // Set it on the TextLine: drawOn uses the line's own font size,
@@ -181,6 +182,7 @@ public class CompositeTextLine implements Drawable {
         }
         current[X] += component.getWidth();
         textLines.add(component);
+        return this;
     }
 
     /**

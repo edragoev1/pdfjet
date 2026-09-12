@@ -52,8 +52,8 @@ public class Example_23 {
             y1,
             x1 - 10f,
             y1 + f1.GetAscent());
-        blueLine.SetColor(Color.blue);
-        blueLine.SetWidth(3f);
+        blueLine.SetStrokeColor(Color.blue);
+        blueLine.SetStrokeWidth(3f);
         blueLine.DrawOn(page);
 
         // Line beside the text descent
@@ -62,8 +62,8 @@ public class Example_23 {
             y1 + f1.GetAscent(),
             x1 - 10f,
             y1 + f1.GetAscent() + f1.GetDescent());
-        redLine.SetColor(Color.red);
-        redLine.SetWidth(3f);
+        redLine.SetStrokeColor(Color.red);
+        redLine.SetStrokeWidth(3f);
         redLine.DrawOn(page);
 
         Line baseLine = new Line(

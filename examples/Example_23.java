@@ -51,8 +51,8 @@ public class Example_23 {
             y1,
             x1 - 10f,
             y1 + f1.getAscent());
-        blueLine.setColor(Color.blue);
-        blueLine.setWidth(3f);
+        blueLine.setStrokeColor(Color.blue);
+        blueLine.setStrokeWidth(3f);
         blueLine.drawOn(page);
 
         // Line beside the text descent
@@ -61,8 +61,8 @@ public class Example_23 {
             y1 + f1.getAscent(),
             x1 - 10f,
             y1 + f1.getAscent() + f1.getDescent());
-        redLine.setColor(Color.red);
-        redLine.setWidth(3f);
+        redLine.setStrokeColor(Color.red);
+        redLine.setStrokeWidth(3f);
         redLine.drawOn(page);
 
         Line baseLine = new Line(

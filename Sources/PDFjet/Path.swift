@@ -39,8 +39,10 @@ public class Path : Drawable {
     ///
     /// - Parameter point: the point to add.
     ///
-    public func add(_ point: Point) {
+    @discardableResult
+    public func add(_ point: Point) -> Path {
         points!.append(point)
+        return self
     }
 
     ///
@@ -75,23 +77,23 @@ public class Path : Drawable {
     }
 
     ///
-    /// Sets the pen width that will be used to draw the lines and splines that are part of this path.
+    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path.
     ///
-    /// - Parameter width: the pen width.
+    /// - Parameter width: the stroke width.
     ///
     @discardableResult
-    public func setWidth(_ width: Float) -> Path {
+    public func setStrokeWidth(_ width: Float) -> Path {
         self.width = width
         return self
     }
 
     ///
-    /// Sets the pen color that will be used to draw this path.
+    /// Sets the stroke color that will be used to draw this path.
     ///
     /// - Parameter color: the color is specified as an integer.
     ///
     @discardableResult
-    public func setColor(_ color: Int32) -> Path {
+    public func setStrokeColor(_ color: Int32) -> Path {
         self.color = color
         return self
     }

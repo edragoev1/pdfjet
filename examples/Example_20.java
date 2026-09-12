@@ -79,7 +79,7 @@ class Example_20 {
 
         path.add(new Point(10.5f,  4.5f));
         path.setClosePath(true);
-        path.setColor(Color.red);
+        path.setStrokeColor(Color.red);
         // path.setFillShape(true);
         path.setLocation(100f, 100f);
         path.scaleBy(10f);

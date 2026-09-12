@@ -88,8 +88,8 @@ public class Example_03 {
                         .setLocation(p.xText - 15f, p.yText)
                         .drawOn(page);
                 new Line(p.x1 - 3f, p.y1, p.x1 - 3f, p.y2)
-                        .setColor(Color.navy)
-                        .setWidth(1f).drawOn(page);
+                        .setStrokeColor(Color.navy)
+                        .setStrokeWidth(1f).drawOn(page);
                 paragraphNumber++;
             }
         }

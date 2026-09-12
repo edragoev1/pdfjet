@@ -183,46 +183,46 @@ public class Line : IDrawable {
     }
 
     /// <summary>
-    /// Sets the width of this line.
+    /// Sets the stroke width of this line.
     /// </summary>
     /// <param name="width">the width.</param>
     /// <returns>this Line object.</returns>
-    public Line SetWidth(double width) {
+    public Line SetStrokeWidth(double width) {
         this.width = (float) width;
         return this;
     }
 
     /// <summary>
-    /// Sets the width of this line.
+    /// Sets the stroke width of this line.
     /// </summary>
     /// <param name="width">the width.</param>
     /// <returns>this Line object.</returns>
-    public Line SetWidth(float width) {
+    public Line SetStrokeWidth(float width) {
         this.width = width;
         return this;
     }
 
     /// <summary>
-    /// Sets the color for this line.
+    /// Sets the stroke color of this line.
     /// </summary>
     /// <param name="color">the color specified as an integer.</param>
     /// <returns>this Line object.</returns>
-    public Line SetColor(int color) {
+    public Line SetStrokeColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        SetColor(r, g, b);
+        SetStrokeColor(r, g, b);
         return this;
     }
 
-    /// <summary>Sets the color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Line SetColor(float r, float g, float b) {
+    /// <summary>Sets the stroke color from red, green and blue values between 0.0 and 1.0.</summary>
+    public Line SetStrokeColor(float r, float g, float b) {
         this.color = new float[] {r, g, b};
         return this;
     }
 
-    /// <summary>Sets the color from an array of red, green and blue values.</summary>
-    public Line SetColor(float[] rgbColor) {
+    /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
+    public Line SetStrokeColor(float[] rgbColor) {
         this.color = rgbColor;
         return this;
     }

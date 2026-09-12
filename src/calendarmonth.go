@@ -94,7 +94,7 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
 					calendarMonth.y1+calendarMonth.dx/4,
 					calendarMonth.x1+7*calendarMonth.dx,
 					calendarMonth.y1+calendarMonth.dx/4)
-				line.SetWidth(0.5)
+				line.SetStrokeWidth(0.5)
 				line.DrawOn(page)
 			} else {
 				dayOfMonth := ((7*row + col) - 6) - (calendarMonth.dayOfWeek - 1)

@@ -277,7 +277,7 @@ func (s *Stamp) SetRotationCounterClockwise(degrees float64) *Stamp {
 // Complete writes this stamp to the document as a form XObject.
 // Call it once, after drawing the content and before DrawOn.
 func (s *Stamp) Complete() {
-	s.pdf.newobj()
+	s.pdf.newObj()
 	s.pdf.appendByteArray(token.BeginDictionary)
 	s.pdf.appendString("/Type /XObject\n")
 	s.pdf.appendString("/Subtype /Form\n")
@@ -308,7 +308,7 @@ func (s *Stamp) Complete() {
 	s.pdf.appendByteArray(token.Stream)
 	s.pdf.appendByteArray(s.buf.Bytes())
 	s.pdf.appendByteArray(token.EndStream)
-	s.pdf.endobj()
+	s.pdf.endObj()
 	s.pdf.stamps = append(s.pdf.stamps, s)
 	s.objNumber = s.pdf.getObjNumber()
 }

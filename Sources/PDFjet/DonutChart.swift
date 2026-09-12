@@ -52,8 +52,10 @@ public class DonutChart : Drawable {
     }
 
     /// Adds a slice to this chart.
-    public func addSlice(_ slice: Slice) {
+    @discardableResult
+    public func addSlice(_ slice: Slice) -> DonutChart {
         self.slices!.append(slice)
+        return self
     }
 
     private func getControlPoints(

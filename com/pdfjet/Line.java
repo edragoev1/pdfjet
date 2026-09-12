@@ -197,34 +197,34 @@ public class Line implements Drawable {
     }
 
     /**
-     *  Sets the width of this line.
+     *  Sets the stroke width of this line.
      *
      *  @param width the width.
      *  @return this Line object.
      */
-    public Line setWidth(double width) {
+    public Line setStrokeWidth(double width) {
         this.width = (float) width;
         return this;
     }
 
     /**
-     *  Sets the width of this line.
+     *  Sets the stroke width of this line.
      *
      *  @param width the width.
      *  @return this Line object.
      */
-    public Line setWidth(float width) {
+    public Line setStrokeWidth(float width) {
         this.width = width;
         return this;
     }
 
     /**
-     *  Sets the color for this line.
+     *  Sets the stroke color of this line.
      *
      *  @param color the color specified as an integer.
      *  @return this Line object.
      */
-    public Line setColor(int color) {
+    public Line setStrokeColor(int color) {
         this.color = color;
         return this;
     }

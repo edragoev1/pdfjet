@@ -158,7 +158,7 @@ final public class Image implements Drawable {
     public Image(PDF pdf, PDFobj obj) throws Exception {
         w = Float.parseFloat(obj.getValue("/Width"));
         h = Float.parseFloat(obj.getValue("/Height"));
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Image\n");
@@ -199,7 +199,7 @@ final public class Image implements Drawable {
         pdf.append("stream\n");
         pdf.append(obj.stream, 0, obj.stream.length);
         pdf.append("\nendstream\n");
-        pdf.endobj();
+        pdf.endObj();
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
     }
@@ -468,7 +468,7 @@ final public class Image implements Drawable {
             byte[] data,
             String colorSpace,
             int bitsPerComponent) throws Exception {
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Image\n");
@@ -497,7 +497,7 @@ final public class Image implements Drawable {
         pdf.append("stream\n");
         pdf.append(buf, 0, buf.length);
         pdf.append("\nendstream\n");
-        pdf.endobj();
+        pdf.endObj();
         objNumber = pdf.getObjNumber();
     }
 
@@ -511,7 +511,7 @@ final public class Image implements Drawable {
         if (alpha != null) {
             addSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent);
         }
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Image\n");
@@ -553,7 +553,7 @@ final public class Image implements Drawable {
         pdf.append("stream\n");
         pdf.append(buf, 0, buf.length);
         pdf.append("\nendstream\n");
-        pdf.endobj();
+        pdf.endObj();
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
     }

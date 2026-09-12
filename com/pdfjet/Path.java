@@ -37,9 +37,11 @@ public class Path implements Drawable {
      * Adds a point to this path.
      *
      * @param point the point to add.
+     * @return this Path object.
      */
-    public void add(Point point) {
+    public Path add(Point point) {
         points.add(point);
+        return this;
     }
 
     /**
@@ -74,34 +76,34 @@ public class Path implements Drawable {
     }
 
     /**
-     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
+     * Sets the stroke width that will be used to draw the lines and splines that are part of this path.
      *
-     * @param width the pen width.
+     * @param width the stroke width.
      * @return this Path object.
      */
-    public Path setWidth(double width) {
+    public Path setStrokeWidth(double width) {
         this.width = (float) width;
         return this;
     }
 
     /**
-     * Sets the pen width that will be used to draw the lines and splines that are part of this path.
+     * Sets the stroke width that will be used to draw the lines and splines that are part of this path.
      *
-     * @param width the pen width.
+     * @param width the stroke width.
      * @return this Path object.
      */
-    public Path setWidth(float width) {
+    public Path setStrokeWidth(float width) {
         this.width = width;
         return this;
     }
 
     /**
-     * Sets the pen color that will be used to draw this path.
+     * Sets the stroke color that will be used to draw this path.
      *
      * @param color the color is specified as an integer.
      * @return this Path object.
      */
-    public Path setColor(int color) {
+    public Path setStrokeColor(int color) {
         this.color = color;
         return this;
     }

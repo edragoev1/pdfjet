@@ -179,7 +179,7 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	}
 	image.h = float32(val)
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /XObject\n")
 	pdf.appendString("/Subtype /Image\n")
@@ -220,7 +220,7 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendString("stream\n")
 	pdf.appendByteArray(obj.stream)
 	pdf.appendString("\nendstream\n")
-	pdf.endobj()
+	pdf.endObj()
 	pdf.images = append(pdf.images, image)
 	image.objNumber = pdf.getObjNumber()
 
@@ -423,7 +423,7 @@ func (image *Image) GetHeight() float32 {
 }
 
 func (image *Image) addSoftMask(pdf *PDF, data []byte, colorSpace string, bitsPerComponent int) {
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /XObject\n")
 	pdf.appendString("/Subtype /Image\n")
@@ -452,7 +452,7 @@ func (image *Image) addSoftMask(pdf *PDF, data []byte, colorSpace string, bitsPe
 	pdf.appendString("stream\n")
 	pdf.appendByteArray(buf)
 	pdf.appendString("\nendstream\n")
-	pdf.endobj()
+	pdf.endObj()
 	image.objNumber = pdf.getObjNumber()
 }
 
@@ -466,7 +466,7 @@ func (image *Image) addImageToPDF(
 	if alpha != nil {
 		image.addSoftMask(pdf, alpha, device.Gray, bitsPerComponent)
 	}
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /XObject\n")
 	pdf.appendString("/Subtype /Image\n")
@@ -509,7 +509,7 @@ func (image *Image) addImageToPDF(
 	pdf.appendString("stream\n")
 	pdf.appendByteArray(buf)
 	pdf.appendString("\nendstream\n")
-	pdf.endobj()
+	pdf.endObj()
 	pdf.images = append(pdf.images, image)
 	image.objNumber = pdf.getObjNumber()
 }

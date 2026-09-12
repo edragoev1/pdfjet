@@ -74,7 +74,7 @@ public class Example_20 {
 
         path.add(Point(10.5,  4.5))
         path.setClosePath(true)
-        path.setColor(Color.red)
+        path.setStrokeColor(Color.red)
         // path.setFillShape(true)
         path.setLocation(100.0, 100.0)
         path.scaleBy(10.0)

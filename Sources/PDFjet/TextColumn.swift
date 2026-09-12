@@ -142,8 +142,10 @@ public class TextColumn : Drawable {
     ///
     /// - Parameter paragraph: the new paragraph object.
     ///
-    public func addParagraph(_ paragraph: Paragraph) {
+    @discardableResult
+    public func addParagraph(_ paragraph: Paragraph) -> TextColumn {
         self.paragraphs.append(paragraph)
+        return self
     }
 
     ///

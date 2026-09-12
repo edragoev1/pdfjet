@@ -160,12 +160,14 @@ public class Container implements Drawable {
      * Adds a drawable element to this container.
      *
      * @param element the element to add
+     * @return this Container object.
      */
-    public void add(Drawable element) {
+    public Container add(Drawable element) {
         if (element instanceof Container) {
             ((Container) element).parent = this;
         }
         this.elements.add(element);
+        return this;
     }
 
     /**

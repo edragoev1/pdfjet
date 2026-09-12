@@ -89,7 +89,7 @@ public class Encryption {
         }
 
         // === Encryption Dictionary ===
-        pdf.newobj();
+        pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Filter /Standard\n");
         pdf.append("/V 5\n");           // Algorithm 2.A / 2.B
@@ -156,7 +156,7 @@ public class Encryption {
         pdf.append(">\n");
 
         pdf.append(Token.END_DICTIONARY);
-        pdf.endobj();
+        pdf.endObj();
 
         objNumber = pdf.getObjNumber();
     }

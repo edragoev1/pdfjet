@@ -40,7 +40,7 @@ class OpenTypeFont {
         addToUnicodeCMapObject(pdf, font, otf);
 
         // Type0 Font Dictionary
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /Font\n");
         pdf.append("/Subtype /Type0\n");
@@ -57,7 +57,7 @@ class OpenTypeFont {
         pdf.append(" 0 R\n");
 
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.objNumber = pdf.getObjNumber();
         pdf.fonts.add(font);
@@ -73,7 +73,7 @@ class OpenTypeFont {
         }
 
         int metadataObjNumber = pdf.addMetadataObject(otf.fontInfo, true);
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         if (otf.cff) {
             pdf.append("/Subtype /CIDFontType0C\n");
@@ -105,7 +105,7 @@ class OpenTypeFont {
         pdf.append("stream\n");
         pdf.append(buf);
         pdf.append("\nendstream\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.fileObjNumber = pdf.getObjNumber();
     }
@@ -119,7 +119,7 @@ class OpenTypeFont {
             }
         }
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /FontDescriptor\n");
         pdf.append("/FontName /");
@@ -154,7 +154,7 @@ class OpenTypeFont {
         pdf.append('\n');
         pdf.append("/StemV 79\n");
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.fontDescriptorObjNumber = pdf.getObjNumber();
     }
@@ -226,7 +226,7 @@ class OpenTypeFont {
             buf2 = AES256.encrypt(buf2, pdf.encryption.getKey());
         }
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Length ");
         pdf.append(buf2.length);
@@ -235,7 +235,7 @@ class OpenTypeFont {
         pdf.append("stream\n");
         pdf.append(buf2);
         pdf.append("\nendstream\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.toUnicodeCMapObjNumber = pdf.getObjNumber();
     }
@@ -251,7 +251,7 @@ class OpenTypeFont {
             }
         }
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /Font\n");
         if (otf.cff) {
@@ -293,7 +293,7 @@ class OpenTypeFont {
 
         pdf.append("/CIDToGIDMap /Identity\n");
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.cidFontDictObjNumber = pdf.getObjNumber();
     }

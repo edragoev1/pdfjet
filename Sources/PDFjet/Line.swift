@@ -159,25 +159,25 @@ public class Line : Drawable {
     }
 
     ///
-    /// Sets the width of this line.
+    /// Sets the stroke width of this line.
     ///
     /// - Parameter width: the width.
     /// - Returns: this Line object.
     ///
     @discardableResult
-    public func setWidth(_ width: Float) -> Line {
+    public func setStrokeWidth(_ width: Float) -> Line {
         self.width = width
         return self
     }
 
     ///
-    /// Sets the color for this line.
+    /// Sets the stroke color of this line.
     ///
     /// - Parameter color: the color specified as an integer.
     /// - Returns: this Line object.
     ///
     @discardableResult
-    public func setColor(_ color: Int32) -> Line {
+    public func setStrokeColor(_ color: Int32) -> Line {
         self.color = color
         return self
     }

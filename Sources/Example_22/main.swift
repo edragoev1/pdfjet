@@ -60,8 +60,8 @@ public class Example_22 {
         path.add(Point( 7.0,  9.0))
         path.add(Point( 3.0,  9.0))
         path.setClosePath(true)
-        path.setColor(Color.oldgloryblue)
-        path.setColor(Color.deepskyblue)
+        path.setStrokeColor(Color.oldgloryblue)
+        path.setStrokeColor(Color.deepskyblue)
         path.setFillShape(true)
         path.drawOn(page)
 

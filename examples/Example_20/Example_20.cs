@@ -79,7 +79,7 @@ class Example_20 {
 
         path.Add(new Point(10.5f,  4.5f));
         path.SetClosePath(true);
-        path.SetColor(Color.red);
+        path.SetStrokeColor(Color.red);
         // path.SetFillShape(true);
         path.SetLocation(100f, 100f);
         path.ScaleBy(10f);

@@ -117,7 +117,7 @@ func (composite *CompositeTextLine) GetSubscriptPosition() float32 {
 // Set the size and offset based on effects
 // Set the new current position
 // @param component the component.
-func (composite *CompositeTextLine) AddComponent(textLine *TextLine) {
+func (composite *CompositeTextLine) AddComponent(textLine *TextLine) *CompositeTextLine {
 	if textLine.GetTextEffect() == effect.Superscript {
 		if composite.fontSize > 0.0 {
 			// Set it on the TextLine: DrawOn uses the line's own font size, so
@@ -142,6 +142,7 @@ func (composite *CompositeTextLine) AddComponent(textLine *TextLine) {
 	}
 	composite.current[composite.x] += textLine.GetWidth()
 	composite.textLines = append(composite.textLines, textLine)
+	return composite
 }
 
 // SetLocation loops through all the text lines and reset their location based on

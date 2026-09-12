@@ -43,7 +43,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	addOpenTypeFontToUnicodeCMapObject(pdf, font, otf)
 
 	// Type0 Font Dictionary
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /Type0\n")
@@ -58,7 +58,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.appendInteger(font.toUnicodeCMapObjNumber)
 	pdf.appendString(" 0 R\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.objNumber = pdf.getObjNumber()
 	pdf.fonts = append(pdf.fonts, font)
@@ -75,7 +75,7 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
 
 	metadataObjNumber := pdf.addMetadataObject(otf.fontInfo, true)
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	if otf.cff {
 		pdf.appendString("/Subtype /CIDFontType0C\n")
@@ -107,7 +107,7 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
 	pdf.appendString("stream\n")
 	pdf.appendByteArray(buf)
 	pdf.appendString("\nendstream\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.fileObjNumber = pdf.getObjNumber()
 }
@@ -120,7 +120,7 @@ func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *OTF) {
 		}
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /FontDescriptor\n")
 	pdf.appendString("/FontName /")
@@ -155,7 +155,7 @@ func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *OTF) {
 	pdf.appendString("\n")
 	pdf.appendString("/StemV 79\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.fontDescriptorObjNumber = pdf.getObjNumber()
 }
@@ -224,7 +224,7 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
 		buf2, _ = encryption.Encrypt(buf2, pdf.encryption.GetKey())
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Length ")
 	pdf.appendInteger(len(buf2))
@@ -233,7 +233,7 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
 	pdf.appendString("stream\n")
 	pdf.appendByteArray(buf2)
 	pdf.appendString("\nendstream\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.toUnicodeCMapObjNumber = pdf.getObjNumber()
 }
@@ -246,7 +246,7 @@ func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *OTF) {
 		}
 	}
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Font\n")
 	if otf.cff {
@@ -297,7 +297,7 @@ func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *OTF) {
 
 	pdf.appendString("/CIDToGIDMap /Identity\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.cidFontDictObjNumber = pdf.getObjNumber()
 }

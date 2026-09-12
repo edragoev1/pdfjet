@@ -64,7 +64,7 @@ public class EmbeddedFile {
             buf = AES256.encrypt(buf, pdf.encryption.getKey());
         }
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /EmbeddedFile\n");
         if (compress == Compress.YES) {
@@ -77,9 +77,9 @@ public class EmbeddedFile {
         pdf.append(Token.STREAM);
         pdf.append(buf);
         pdf.append(Token.END_STREAM);
-        pdf.endobj();
+        pdf.endObj();
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /Filespec\n");
 
@@ -95,7 +95,7 @@ public class EmbeddedFile {
         pdf.append(pdf.getObjNumber() - 1);
         pdf.append(" 0 R>>\n");
         pdf.append(Token.END_DICTIONARY);
-        pdf.endobj();
+        pdf.endObj();
 
         this.objNumber = pdf.getObjNumber();
     }

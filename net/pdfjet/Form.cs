@@ -162,7 +162,7 @@ public class Form : IDrawable {
                                 y + yField,
                                 x + formWidth,
                                 y + yField);
-                        hLine.SetWidth(lineWidth).DrawOn(page);
+                        hLine.SetStrokeWidth(lineWidth).DrawOn(page);
                     }
                     yField += f1.GetAscent(labelFontSize) + 3f*f1.GetDescent(labelFontSize);
                 }
@@ -194,7 +194,7 @@ public class Form : IDrawable {
                         (y + yField) - rowHeight,
                         x + field.x,
                         y + yField);
-                vLine.SetWidth(lineWidth).DrawOn(page);
+                vLine.SetStrokeWidth(lineWidth).DrawOn(page);
             }
         }
 

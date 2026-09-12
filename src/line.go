@@ -134,18 +134,18 @@ func (line *Line) GetEndPoint() *Point {
 	return NewPoint(line.x2, line.y2)
 }
 
-// SetWidth sets the width of this line.
+// SetStrokeWidth sets the stroke width of this line.
 // @param width the width.
 // @return this Line object.
-func (line *Line) SetWidth(width float32) *Line {
+func (line *Line) SetStrokeWidth(width float32) *Line {
 	line.width = width
 	return line
 }
 
-// SetColor sets the color for this line.
+// SetStrokeColor sets the stroke color of this line.
 // @param color the color specified as an integer.
 // @return this Line object.
-func (line *Line) SetColor(color int32) *Line {
+func (line *Line) SetStrokeColor(color int32) *Line {
 	line.color = color
 	return line
 }

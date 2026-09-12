@@ -63,8 +63,8 @@ public class Example_22 {
         path.add(new Point( 7f,  9f));
         path.add(new Point( 3f,  9f));
         path.setClosePath(true);
-        path.setColor(Color.oldgloryblue);
-        path.setColor(Color.deepskyblue);
+        path.setStrokeColor(Color.oldgloryblue);
+        path.setStrokeColor(Color.deepskyblue);
         path.setFillShape(true);
         path.drawOn(page);
 

@@ -191,9 +191,11 @@ public class TextColumn implements Drawable {
      * Adds a new paragraph to this text column.
      *
      * @param paragraph the new paragraph object.
+     * @return this TextColumn object.
      */
-    public void addParagraph(Paragraph paragraph) {
+    public TextColumn addParagraph(Paragraph paragraph) {
         this.paragraphs.add(paragraph);
+        return this;
     }
 
     /**

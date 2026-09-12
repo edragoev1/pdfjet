@@ -610,7 +610,7 @@ public class Chart : IDrawable {
     }
 
     /// <summary>Converts a 0xRRGGBB color to red, green and blue values between 0.0 and 1.0.</summary>
-    public float[] ToFloatArray(int color) {
+    private float[] ToFloatArray(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

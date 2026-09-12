@@ -70,9 +70,11 @@ public class DonutChart implements Drawable {
      * Adds a slice to this chart.
      *
      * @param slice the slice.
+     * @return this DonutChart object.
      */
-    public void addSlice(Slice slice) {
+    public DonutChart addSlice(Slice slice) {
         slices.add(slice);
+        return this;
     }
 
     private float[][] getControlPoints(

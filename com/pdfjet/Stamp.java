@@ -448,7 +448,7 @@ public class Stamp implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public void complete() throws Exception {
-        pdf.newobj();
+        pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Form\n");
@@ -479,7 +479,7 @@ public class Stamp implements Drawable {
         pdf.append(Token.STREAM);
         pdf.append(buf.toByteArray());
         pdf.append(Token.END_STREAM);
-        pdf.endobj();
+        pdf.endObj();
         pdf.stamps.add(this);
         objNumber = pdf.getObjNumber();
     }

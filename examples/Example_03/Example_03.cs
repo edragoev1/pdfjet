@@ -87,8 +87,8 @@ public class Example_03 {
                         .SetLocation(p.xText - 15f, p.yText)
                         .DrawOn(page);
                 new Line(p.x1 - 3f, p.y1, p.x1 - 3f, p.y2)
-                        .SetColor(Color.navy)
-                        .SetWidth(1f).DrawOn(page);
+                        .SetStrokeColor(Color.navy)
+                        .SetStrokeWidth(1f).DrawOn(page);
                 paragraphNumber++;
             }
         }

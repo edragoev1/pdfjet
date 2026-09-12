@@ -124,7 +124,7 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 						form.y+yField,
 						form.x+form.formWidth,
 						form.y+yField)
-					hLine.SetWidth(form.lineWidth).DrawOn(page)
+					hLine.SetStrokeWidth(form.lineWidth).DrawOn(page)
 				}
 				yField += form.f1.GetAscentAt(form.labelFontSize) + 3.0*form.f1.GetDescentAt(form.labelFontSize)
 			}
@@ -154,7 +154,7 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 				(form.y+yField)-rowHeight,
 				form.x+field.x,
 				form.y+yField)
-			vLine.SetWidth(form.lineWidth).DrawOn(page)
+			vLine.SetStrokeWidth(form.lineWidth).DrawOn(page)
 		}
 	}
 

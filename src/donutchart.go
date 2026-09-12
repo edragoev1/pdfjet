@@ -56,8 +56,9 @@ func (dc *DonutChart) SetR1AndR2(r1, r2 float32) *DonutChart {
 }
 
 // AddSlice adds a slice to this chart.
-func (dc *DonutChart) AddSlice(slice *Slice) {
+func (dc *DonutChart) AddSlice(slice *Slice) *DonutChart {
 	dc.slices = append(dc.slices, slice)
+	return dc
 }
 
 // getControlPoints computes the four Bézier control points for a

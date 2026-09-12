@@ -68,7 +68,7 @@ public class Encryption {
         let encryptedPerms = Cryptography.aesEncryptBlock(perms, fileEncryptionKey)
 
         // The encryption dictionary.
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Filter /Standard\n")
         pdf.append("/V 5\n")            // Algorithm 2.A / 2.B
@@ -111,7 +111,7 @@ public class Encryption {
         pdf.append(">\n")
 
         pdf.append(Token.endDictionary)
-        pdf.endobj()
+        pdf.endObj()
 
         objNumber = pdf.getObjNumber()
     }
@@ -130,7 +130,7 @@ public class Encryption {
     ///
     /// - Returns: the object number.
     ///
-    public func getObjNumber() -> Int {
+    func getObjNumber() -> Int {
         return objNumber
     }
 

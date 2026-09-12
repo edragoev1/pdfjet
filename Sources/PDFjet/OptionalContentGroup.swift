@@ -38,8 +38,10 @@ public class OptionalContentGroup {
     }
 
     /// Adds a drawable to this group.
-    public func add(_ drawable: Drawable) {
+    @discardableResult
+    public func add(_ drawable: Drawable) -> OptionalContentGroup {
         components.append(drawable)
+        return self
     }
 
     /// Removes all drawables from this group.
@@ -76,7 +78,7 @@ public class OptionalContentGroup {
     /// Draws this group and its drawables on the specified page.
     public func drawOn(_ page: Page) {
         if ocgNumber == -1 {
-            pdf.newobj()
+            pdf.newObj()
             pdf.append(Token.beginDictionary)
             pdf.append("/Type /OCG\n")
             pdf.append("/Name <")
@@ -100,7 +102,7 @@ public class OptionalContentGroup {
             }
             pdf.append(">>\n")
             pdf.append(Token.endDictionary)
-            pdf.endobj()
+            pdf.endObj()
 
             objNumber = pdf.getObjNumber()
 

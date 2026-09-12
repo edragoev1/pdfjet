@@ -199,6 +199,13 @@ Pick from the README limitations; the first three are the ones users hit.
       `Content.ofTextFile`, and so `Text.readLines` and
       `Text.paragraphsFromFile`, drop a byte order mark at the start of the
       file, as C# and Swift do.
+      `Line` and `Path` `setWidth` and `setColor` are renamed `setStrokeWidth`
+      and `setStrokeColor`, as in `Arc` and `Point`; `Container.add`,
+      `Path.add`, `OptionalContentGroup.add`, `DonutChart.addSlice`,
+      `CompositeTextLine.addComponent` and `TextColumn.addParagraph` return
+      the object they are called on; `Chart.toFloatArray` is no longer
+      public, and `Encryption.getObjNumber` is internal in C#, Go and Swift;
+      Java `PDF.newobj` and `endobj` are named `newObj` and `endObj`.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

@@ -116,7 +116,7 @@ public class Form : Drawable {
                                 y + yField,
                                 x + formWidth,
                                 y + yField)
-                        hLine.setWidth(lineWidth).drawOn(page)
+                        hLine.setStrokeWidth(lineWidth).drawOn(page)
                     }
                     yField += f1!.getAscent(labelFontSize) + 3.0*f1!.getDescent(labelFontSize)
                 }
@@ -148,7 +148,7 @@ public class Form : Drawable {
                         (y + yField) - rowHeight,
                         x + field.x,
                         y + yField)
-                vLine.setWidth(lineWidth).drawOn(page)
+                vLine.setStrokeWidth(lineWidth).drawOn(page)
             }
         }
 

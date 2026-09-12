@@ -44,8 +44,8 @@ public class Example_46 {
         Line line = new Line();
         line.setPointA(300f, 150f);
         line.setPointB(500f, 150f);
-        line.setWidth(2f);
-        line.setColor(Color.blue);
+        line.setStrokeWidth(2f);
+        line.setStrokeColor(Color.blue);
 
         group = new OptionalContentGroup(pdf, "Blue Line");
         group.add(textBox);
@@ -56,8 +56,8 @@ public class Example_46 {
         line = new Line();
         line.setPointA(300f, 160f);
         line.setPointB(500f, 160f);
-        line.setWidth(2f);
-        line.setColor(Color.red);
+        line.setStrokeWidth(2f);
+        line.setStrokeColor(Color.red);
 
         group = new OptionalContentGroup(pdf, "Barcode");
         group.add(image2);

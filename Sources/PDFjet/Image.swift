@@ -156,7 +156,7 @@ public class Image : Drawable {
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         w = Float(obj.getValue("/Width"))
         h = Float(obj.getValue("/Height"))
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
@@ -197,7 +197,7 @@ public class Image : Drawable {
         pdf.append(Token.stream)
         pdf.append(obj.stream!, 0, obj.stream!.count)
         pdf.append(Token.endStream)
-        pdf.endobj()
+        pdf.endObj()
         pdf.images.append(self)
         objNumber = pdf.getObjNumber()
     }
@@ -439,7 +439,7 @@ public class Image : Drawable {
             _ alpha: [UInt8],
             _ colorSpace: String,
             _ bitsPerComponent: Int) {
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
@@ -464,7 +464,7 @@ public class Image : Drawable {
         pdf.append(Token.stream)
         pdf.append(buf, 0, buf.count)
         pdf.append(Token.endStream)
-        pdf.endobj()
+        pdf.endObj()
         objNumber = pdf.getObjNumber()
     }
 
@@ -479,7 +479,7 @@ public class Image : Drawable {
             addSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent)
         }
 
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
@@ -517,7 +517,7 @@ public class Image : Drawable {
         pdf.append(Token.stream)
         pdf.append(buf, 0, buf.count)
         pdf.append(Token.endStream)
-        pdf.endobj()
+        pdf.endObj()
         pdf.images.append(self)
         self.objNumber = pdf.getObjNumber()
     }

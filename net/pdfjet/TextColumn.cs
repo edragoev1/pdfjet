@@ -157,8 +157,10 @@ public class TextColumn : IDrawable {
     /// Adds a new paragraph to this text column.
     /// </summary>
     /// <param name="paragraph">the new paragraph object.</param>
-    public void AddParagraph(Paragraph paragraph) {
+    /// <returns>this TextColumn object.</returns>
+    public TextColumn AddParagraph(Paragraph paragraph) {
         this.paragraphs.Add(paragraph);
+        return this;
     }
 
     /// <summary>

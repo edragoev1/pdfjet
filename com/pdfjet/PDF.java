@@ -162,7 +162,7 @@ final public class PDF {
      *
      * @throws IOException if writing to the output fails.
      */
-    public void newobj() throws IOException {
+    public void newObj() throws IOException {
         objOffset.add(byteCount);
         append(objOffset.size());
         append(Token.NEW_OBJ);
@@ -173,7 +173,7 @@ final public class PDF {
      *
      * @throws IOException if writing to the output fails.
      */
-    public void endobj() throws IOException {
+    public void endObj() throws IOException {
         append(Token.END_OBJ);
     }
 
@@ -322,7 +322,7 @@ final public class PDF {
         }
 
         // This is the metadata object
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Metadata\n");
         append("/Subtype /XML\n");
@@ -333,7 +333,7 @@ final public class PDF {
         append(Token.STREAM);
         append(xml, 0, xml.length);
         append(Token.END_STREAM);
-        endobj();
+        endObj();
 
         return getObjNumber();
     }
@@ -349,7 +349,7 @@ final public class PDF {
             profile = AES256.encrypt(profile, encryption.getKey());
         }
 
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/N 3\n");
 
@@ -362,14 +362,14 @@ final public class PDF {
         append(Token.STREAM);
         append(profile, 0, profile.length);
         append(Token.END_STREAM);
-        endobj();
+        endObj();
 
         byte[] identifierBytes = "sRGB IEC61966-2.1".getBytes(StandardCharsets.UTF_8);
         if (encryption != null) {
             identifierBytes = AES256.encrypt(identifierBytes, encryption.getKey());
         }
         // OutputIntent object
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /OutputIntent\n");
         append("/S /GTS_PDFA1\n");
@@ -390,7 +390,7 @@ final public class PDF {
         append(getObjNumber() - 1);
         append(Token.OBJ_REF);
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
 
         return getObjNumber();
     }
@@ -417,7 +417,7 @@ final public class PDF {
     }
 
     private int addResourcesObject() throws Exception {
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         if (fonts.size() > 0 || importedFonts.size() > 0) {
             append("/Font\n");
@@ -480,12 +480,12 @@ final public class PDF {
             append(Token.END_DICTIONARY);
         }
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
         return getObjNumber();
     }
 
     private void addPagesObject() throws Exception {
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Pages\n");
         append("/Kids [\n");
@@ -501,11 +501,11 @@ final public class PDF {
         append(pages.size());
         append(Token.NEWLINE);
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
     }
 
     private int addStructTreeRootObject() throws Exception {
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /StructTreeRoot\n");
         append("/ParentTree ");
@@ -516,12 +516,12 @@ final public class PDF {
         append(Token.OBJ_REF);
         append("]\n");
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
         return getObjNumber();
     }
 
     private int addStructDocumentObject(int parent) throws Exception {
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /StructElem\n");
         append("/S /Document\n");
@@ -535,7 +535,7 @@ final public class PDF {
         }
         append("]\n");
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
         return getObjNumber();
     }
 
@@ -544,7 +544,7 @@ final public class PDF {
         structTreeRootObjNumber += this.structElements.size();
 
         for (StructElem element : this.structElements) {
-            newobj();
+            newObj();
             element.objNumber = getObjNumber();
             append("<<\n/Type /StructElem /S /");
             append(element.structure);
@@ -607,12 +607,12 @@ final public class PDF {
             }
 
             append(">>\n");
-            endobj();
+            endObj();
         }
     }
 
     private void addNumsParentTree() throws Exception {
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Nums [\n");
         // The keys must be listed in increasing order, so the page entries -
@@ -644,13 +644,13 @@ final public class PDF {
         }
         append("]\n");
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
     }
 
     private int addRootObject(
             int structTreeRootObjNumber, int outlineDictNumber) throws Exception {
         // Add the root object
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Catalog\n");
 
@@ -706,7 +706,7 @@ final public class PDF {
         }
 
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
         return getObjNumber();
     }
 
@@ -749,7 +749,7 @@ final public class PDF {
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
             // Page object
-            newobj();
+            newObj();
             page.objNumber = getObjNumber();
             append(Token.BEGIN_DICTIONARY);
             append("/Type /Page\n");
@@ -808,7 +808,7 @@ final public class PDF {
             }
 
             append(Token.END_DICTIONARY);
-            endobj();
+            endObj();
         }
     }
 
@@ -828,7 +828,7 @@ final public class PDF {
                 buf = AES256.encrypt(buf, encryption.getKey());
             }
 
-            newobj();
+            newObj();
             append(Token.BEGIN_DICTIONARY);
             append("/Filter /FlateDecode\n");
             append(Token.LENGTH);
@@ -838,7 +838,7 @@ final public class PDF {
             append(Token.STREAM);
             append(buf);
             append(Token.END_STREAM);
-            endobj();
+            endObj();
             page.contents.add(getObjNumber());
         } else {    // No compression. Used for diagnostics
             byte[] buf = page.buf.toByteArray();
@@ -847,7 +847,7 @@ final public class PDF {
             }
             page.buf = null;    // Release the page content memory!
 
-            newobj();
+            newObj();
             append(Token.BEGIN_DICTIONARY);
             append(Token.LENGTH);
             append(buf.length);
@@ -856,13 +856,13 @@ final public class PDF {
             append(Token.STREAM);
             append(buf);
             append(Token.END_STREAM);
-            endobj();
+            endObj();
             page.contents.add(getObjNumber());
         }
     }
 
     private int addAnnotationObject(Annotation annot, int index) throws Exception {
-        newobj();
+        newObj();
         annot.objNumber = getObjNumber();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Annot\n");
@@ -1059,7 +1059,7 @@ final public class PDF {
             append("\n");
         }
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
 
         return index;
     }
@@ -1923,7 +1923,7 @@ final public class PDF {
      */
     int addOutlineDict(Bookmark toc) throws Exception {
         int numOfChildren = getNumOfChildren(0, toc);
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Outlines\n");
         append("/First ");
@@ -1936,7 +1936,7 @@ final public class PDF {
         append(numOfChildren);
         append("\n");
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
         return getObjNumber();
     }
 
@@ -1966,7 +1966,7 @@ final public class PDF {
             title = AES256.encrypt(title, encryption.getKey());
         }
 
-        newobj();
+        newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Title <");
         append(Util.toHexString(title));
@@ -2008,7 +2008,7 @@ final public class PDF {
         append(bm1.getDestination().yPosition);
         append(" 0]\n");
         append(Token.END_DICTIONARY);
-        endobj();
+        endObj();
     }
 
     private int getNumOfChildren(int numOfChildren, Bookmark bm1) {

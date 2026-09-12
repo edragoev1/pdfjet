@@ -309,7 +309,7 @@ public class Chart : Drawable {
     }
 
     /// Converts a 0xRRGGBB color to red, green and blue values between 0.0 and 1.0.
-    public func toFloatArray(_ color: Int32) -> [Float] {
+    private func toFloatArray(_ color: Int32) -> [Float] {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0

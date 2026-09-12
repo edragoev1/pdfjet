@@ -310,7 +310,7 @@ arguments, Go has the full form only: `NewCell(font, text)`,
 coordinates, `NewParagraph()`, `NewTextColumn(rotation)`,
 `Table.SetData(data, headerRows)` and `Page.AddBMC` with the language.
 `content.GetFromReader` is `Content.getFromStream`. Java's `PDF` keeps
-`append`, `newobj`, `endobj` and `getObjNumber` public, which the other ports
+`append`, `newObj`, `endObj` and `getObjNumber` public, which the other ports
 keep internal: the `com.pdfjet.encryption` package writes the encryption
 dictionary with them, and Java has no visibility between package-private and
 public.
@@ -337,8 +337,9 @@ in Swift where Java and C# have `toString`; C# also keeps its `Access` and
 
 A few members are public in one port only because that port needs them across
 a package boundary; they are not API and can change in any release. In Java:
-`PDF.append`, `newobj`, `endobj`, `getObjNumber` and `addObjectsToPDF`, used
-by `com.pdfjet.encryption`, `Barcode.drawOnPageAtLocation`, used by `Cell`,
+`PDF.append`, `newObj`, `endObj`, `getObjNumber` and `addObjectsToPDF`, used
+by `com.pdfjet.encryption`, `Encryption.getObjNumber`, used by `PDF`,
+`Barcode.drawOnPageAtLocation`, used by `Cell`,
 and the `AES128`, `AES256` and `OTF` classes. In Go: the exported functions of
 the `encryption` package (`Encrypt`, `EncryptECB`, `EncryptK1`,
 `EncryptWithZeroIV`), the `CoreFont` fields, and the types of the helper files

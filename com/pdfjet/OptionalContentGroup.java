@@ -57,9 +57,11 @@ public class OptionalContentGroup {
      * Add drawable object to the group
      *
      * @param drawable the drawable object
+     * @return this OptionalContentGroup object.
      */
-    public void add(Drawable drawable) {
+    public OptionalContentGroup add(Drawable drawable) {
         components.add(drawable);
+        return this;
     }
 
     /**
@@ -119,7 +121,7 @@ public class OptionalContentGroup {
      */
     public void drawOn(Page page) throws Exception {
         if (this.ocgNumber == -1) {
-            pdf.newobj();
+            pdf.newObj();
             pdf.append("<<\n");
             pdf.append("/Type /OCG\n");
 
@@ -149,7 +151,7 @@ public class OptionalContentGroup {
             }
             pdf.append(">>\n");
             pdf.append(">>\n");
-            pdf.endobj();
+            pdf.endObj();
 
             objNumber = pdf.getObjNumber();
 

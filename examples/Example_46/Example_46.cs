@@ -46,8 +46,8 @@ public class Example_46 {
         Line line = new Line();
         line.SetPointA(300f, 150f);
         line.SetPointB(500f, 150f);
-        line.SetWidth(2f);
-        line.SetColor(Color.blue);
+        line.SetStrokeWidth(2f);
+        line.SetStrokeColor(Color.blue);
 
         group = new OptionalContentGroup(pdf, "Blue Line");
         group.Add(textBox);
@@ -58,8 +58,8 @@ public class Example_46 {
         line = new Line();
         line.SetPointA(300f, 160f);
         line.SetPointB(500f, 160f);
-        line.SetWidth(2f);
-        line.SetColor(Color.red);
+        line.SetStrokeWidth(2f);
+        line.SetStrokeColor(Color.red);
 
         group = new OptionalContentGroup(pdf, "Barcode");
         group.Add(image2);

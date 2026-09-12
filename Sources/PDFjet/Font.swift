@@ -101,7 +101,7 @@ public class Font {
         self.fontDescent = Int16(font.bBoxLLy!)
         setSize(size)
 
-        pdf.newobj()
+        pdf.newObj()
         pdf.append("<<\n")
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /Type1\n")
@@ -112,7 +112,7 @@ public class Font {
             pdf.append("/Encoding /WinAnsiEncoding\n")
         }
         pdf.append(">>\n")
-        pdf.endobj()
+        pdf.endObj()
         self.objNumber = pdf.getObjNumber()
 
         pdf.fonts.append(self)
@@ -162,7 +162,7 @@ public class Font {
         self.bodyHeight = self.ascent + self.descent
 
         // Font Descriptor
-        pdf.newobj()
+        pdf.newObj()
         pdf.append("<<\n")
         pdf.append("/Type /FontDescriptor\n")
         pdf.append("/FontName /")
@@ -171,10 +171,10 @@ public class Font {
         pdf.append("/Flags 4\n")
         pdf.append("/FontBBox [0 0 0 0]\n")
         pdf.append(">>\n")
-        pdf.endobj()
+        pdf.endObj()
 
         // CIDFont Dictionary
-        pdf.newobj()
+        pdf.newObj()
         pdf.append("<<\n")
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /CIDFontType0\n")
@@ -204,10 +204,10 @@ public class Font {
         }
         pdf.append(">>\n")
         pdf.append(">>\n")
-        pdf.endobj()
+        pdf.endObj()
 
         // Type0 Font Dictionary
-        pdf.newobj()
+        pdf.newObj()
         pdf.append("<<\n")
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /Type0\n")
@@ -232,7 +232,7 @@ public class Font {
         pdf.append(pdf.getObjNumber() - 1)
         pdf.append(" 0 R]\n")
         pdf.append(">>\n")
-        pdf.endobj()
+        pdf.endObj()
         self.objNumber = pdf.getObjNumber()
 
         pdf.fonts.append(self)

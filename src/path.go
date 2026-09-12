@@ -38,8 +38,9 @@ func NewPath() *Path {
 
 // Add adds a point to this path.
 // @param point the point to add.
-func (path *Path) Add(point *Point) {
+func (path *Path) Add(point *Point) *Path {
 	path.points = append(path.points, point)
+	return path
 }
 
 // SetPattern sets the line dash pattern for this path.
@@ -69,16 +70,16 @@ func (path *Path) SetPattern(pattern string) *Path {
 	return path
 }
 
-// SetWidth sets the penColor width that will be used to draw the lines and splines that are part of this path.
-// @param width the penColor width.
-func (path *Path) SetWidth(width float32) *Path {
+// SetStrokeWidth sets the stroke width that will be used to draw the lines and splines that are part of this path.
+// @param width the stroke width.
+func (path *Path) SetStrokeWidth(width float32) *Path {
 	path.width = width
 	return path
 }
 
-// SetColor sets the penColor color that will be used to draw this path.
+// SetStrokeColor sets the stroke color that will be used to draw this path.
 // @param color the color is specified as an integer.
-func (path *Path) SetColor(color int32) *Path {
+func (path *Path) SetStrokeColor(color int32) *Path {
 	path.color = color
 	return path
 }

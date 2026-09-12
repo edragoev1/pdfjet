@@ -47,8 +47,9 @@ func (ocg *OptionalContentGroup) GetName() string {
 }
 
 // Add appends drawable component to this optional content group.
-func (ocg *OptionalContentGroup) Add(drawable Drawable) {
+func (ocg *OptionalContentGroup) Add(drawable Drawable) *OptionalContentGroup {
 	ocg.components = append(ocg.components, drawable)
+	return ocg
 }
 
 // Clear removes all drawable components from this optional content group.
@@ -82,7 +83,7 @@ func (ocg *OptionalContentGroup) SetExportable(exportable bool) *OptionalContent
 // DrawOn draws the components in the optional content group on the page.
 func (ocg *OptionalContentGroup) DrawOn(page *Page) {
 	if ocg.ocgNumber == -1 {
-		ocg.pdf.newobj()
+		ocg.pdf.newObj()
 		ocg.pdf.appendByteArray(token.BeginDictionary)
 		ocg.pdf.appendString("/Type /OCG\n")
 
@@ -117,7 +118,7 @@ func (ocg *OptionalContentGroup) DrawOn(page *Page) {
 		}
 		ocg.pdf.appendString(">>\n")
 		ocg.pdf.appendByteArray(token.EndDictionary)
-		ocg.pdf.endobj()
+		ocg.pdf.endObj()
 
 		ocg.objNumber = ocg.pdf.getObjNumber()
 

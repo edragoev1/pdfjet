@@ -105,8 +105,9 @@ func (textColumn *TextColumn) SetAlignment(alignment int) *TextColumn {
 }
 
 // AddParagraph adds a new paragraph to this text column.
-func (textColumn *TextColumn) AddParagraph(paragraph *Paragraph) {
+func (textColumn *TextColumn) AddParagraph(paragraph *Paragraph) *TextColumn {
 	textColumn.paragraphs = append(textColumn.paragraphs, paragraph)
+	return textColumn
 }
 
 // RemoveLastParagraph removes the last paragraph added to this text column.

@@ -688,7 +688,7 @@ public class Chart implements Drawable {
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
-    public float[] toFloatArray(int color) {
+    private float[] toFloatArray(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

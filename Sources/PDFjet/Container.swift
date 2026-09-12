@@ -135,8 +135,10 @@ public class Container: Drawable {
     /// Adds a drawable element to this container.
     ///
     /// - Parameter element: The element to add.
-    public func add(_ element: Drawable) {
+    @discardableResult
+    public func add(_ element: Drawable) -> Container {
         self.elements.append(element)
+        return self
     }
 
     /// Rotates a point around a center by a specified number of degrees.

@@ -99,7 +99,7 @@ func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	font.fontDescent = coreFont.BBoxLLy
 	font.SetSize(font.size)
 
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /Type1\n")
@@ -110,7 +110,7 @@ func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 		pdf.appendString("/Encoding /WinAnsiEncoding\n")
 	}
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	font.objNumber = pdf.getObjNumber()
 	pdf.fonts = append(pdf.fonts, font)
@@ -171,7 +171,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	font.bodyHeight = font.ascent + font.descent
 
 	// Font Descriptor
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /FontDescriptor\n")
 	pdf.appendString("/FontName /")
@@ -180,10 +180,10 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	pdf.appendString("/Flags 4\n")
 	pdf.appendString("/FontBBox [0 0 0 0]\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	// CIDFont Dictionary
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /CIDFontType0\n")
@@ -212,10 +212,10 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	}
 	pdf.appendString(">>\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 
 	// Type0 Font Dictionary
-	pdf.newobj()
+	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Font\n")
 	pdf.appendString("/Subtype /Type0\n")
@@ -239,7 +239,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	pdf.appendInteger(pdf.getObjNumber() - 1)
 	pdf.appendString(" 0 R]\n")
 	pdf.appendString(">>\n")
-	pdf.endobj()
+	pdf.endObj()
 	font.objNumber = pdf.getObjNumber()
 	pdf.fonts = append(pdf.fonts, font)
 

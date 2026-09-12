@@ -23,7 +23,7 @@ class FontStream1 {
         addToUnicodeCMapObject(pdf, font);
 
         // Type0 Font Dictionary
-        pdf.newobj();
+        pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /Font\n");
         pdf.append("/Subtype /Type0\n");
@@ -38,7 +38,7 @@ class FontStream1 {
         pdf.append(font.toUnicodeCMapObjNumber);
         pdf.append(" 0 R\n");
         pdf.append(Token.END_DICTIONARY);
-        pdf.endobj();
+        pdf.endObj();
         font.objNumber = pdf.getObjNumber();
         pdf.fonts.add(font);
     }
@@ -55,7 +55,7 @@ class FontStream1 {
 
         int metadataObjNumber = pdf.addMetadataObject(font.info, true);
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
 
         pdf.append("/Metadata ");
@@ -105,7 +105,7 @@ class FontStream1 {
             pdf.append(compressed);
         }
         pdf.append(Token.END_STREAM);
-        pdf.endobj();
+        pdf.endObj();
 
         font.fileObjNumber = pdf.getObjNumber();
     }
@@ -118,7 +118,7 @@ class FontStream1 {
             }
         }
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /FontDescriptor\n");
         pdf.append("/FontName /");
@@ -153,7 +153,7 @@ class FontStream1 {
         pdf.append('\n');
         pdf.append("/StemV 79\n");
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.fontDescriptorObjNumber = pdf.getObjNumber();
     }
@@ -221,7 +221,7 @@ class FontStream1 {
             buf2 = AES256.encrypt(buf2, pdf.encryption.getKey());
         }
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Length ");
         pdf.append(buf2.length);
@@ -230,7 +230,7 @@ class FontStream1 {
         pdf.append("stream\n");
         pdf.append(buf2);
         pdf.append("\nendstream\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.toUnicodeCMapObjNumber = pdf.getObjNumber();
     }
@@ -243,7 +243,7 @@ class FontStream1 {
             }
         }
 
-        pdf.newobj();
+        pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /Font\n");
         if (font.cff) {
@@ -285,7 +285,7 @@ class FontStream1 {
 
         pdf.append("/CIDToGIDMap /Identity\n");
         pdf.append(">>\n");
-        pdf.endobj();
+        pdf.endObj();
 
         font.cidFontDictObjNumber = pdf.getObjNumber();
     }

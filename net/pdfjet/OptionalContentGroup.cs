@@ -41,8 +41,9 @@ public class OptionalContentGroup {
     }
 
     /// <summary>Adds a drawable to this group.</summary>
-    public void Add(IDrawable drawable) {
+    public OptionalContentGroup Add(IDrawable drawable) {
         components.Add(drawable);
+        return this;
     }
 
     /// <summary>Sets whether this group is visible.</summary>

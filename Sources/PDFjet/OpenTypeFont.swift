@@ -36,7 +36,7 @@ class OpenTypeFont {
         addToUnicodeCMapObject(pdf, font, otf)
 
         // Type0 Font Dictionary
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Font\n")
         pdf.append("/Subtype /Type0\n")
@@ -53,7 +53,7 @@ class OpenTypeFont {
         pdf.append(" 0 R\n")
 
         pdf.append(Token.endDictionary)
-        pdf.endobj()
+        pdf.endObj()
 
         font.objNumber = pdf.getObjNumber()
         pdf.fonts.append(font)
@@ -75,7 +75,7 @@ class OpenTypeFont {
             pdf.append(" 0 R\n")
         }
 
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         if otf.cff {
             pdf.append("/Subtype /CIDFontType0C\n")
@@ -97,7 +97,7 @@ class OpenTypeFont {
         pdf.append(Token.stream)
         pdf.append(compressed)
         pdf.append(Token.endStream)
-        pdf.endobj()
+        pdf.endObj()
 
         font.fileObjNumber = pdf.getObjNumber()
     }
@@ -114,7 +114,7 @@ class OpenTypeFont {
         }
 
         let factor = Float(1000.0) / Float(otf.unitsPerEm!)
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /FontDescriptor\n")
         pdf.append("/FontName /")
@@ -149,7 +149,7 @@ class OpenTypeFont {
         pdf.append(Token.newline)
         pdf.append("/StemV 79\n")
         pdf.append(Token.endDictionary)
-        pdf.endobj()
+        pdf.endObj()
 
         font.fontDescriptorObjNumber = pdf.getObjNumber()
     }
@@ -215,7 +215,7 @@ class OpenTypeFont {
         sb.append("end\nend")
 
         let cmap = pdf.encrypted(Array(sb.utf8))
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Length ")
         pdf.append(cmap.count)
@@ -224,7 +224,7 @@ class OpenTypeFont {
         pdf.append(Token.stream)
         pdf.append(cmap)
         pdf.append(Token.endStream)
-        pdf.endobj()
+        pdf.endObj()
 
         font.toUnicodeCMapObjNumber = pdf.getObjNumber()
     }
@@ -240,7 +240,7 @@ class OpenTypeFont {
             }
         }
 
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Font\n")
         if otf.cff {
@@ -276,7 +276,7 @@ class OpenTypeFont {
 
         pdf.append("/CIDToGIDMap /Identity\n")
         pdf.append(Token.endDictionary)
-        pdf.endobj()
+        pdf.endObj()
 
         font.cidFontDictObjNumber = pdf.getObjNumber()
     }

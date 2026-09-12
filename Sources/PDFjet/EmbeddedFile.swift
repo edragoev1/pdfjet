@@ -49,7 +49,7 @@ public class EmbeddedFile {
         }
         buf = pdf.encrypted(buf)
 
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /EmbeddedFile\n")
         if compress == Compress.YES {
@@ -62,9 +62,9 @@ public class EmbeddedFile {
         pdf.append(Token.stream)
         pdf.append(buf)
         pdf.append(Token.endStream)
-        pdf.endobj()
+        pdf.endObj()
 
-        pdf.newobj()
+        pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Filespec\n")
         pdf.append("/F <")
@@ -74,7 +74,7 @@ public class EmbeddedFile {
         pdf.append(pdf.getObjNumber() - 1)
         pdf.append(" 0 R>>\n")
         pdf.append(Token.endDictionary)
-        pdf.endobj()
+        pdf.endObj()
 
         self.objNumber = pdf.getObjNumber()
     }

@@ -220,8 +220,8 @@ func (chart *Chart) SetAutoColors(autoColors bool) *Chart {
 	return chart
 }
 
-// ToFloatArray converts an RGB color to the float array used internally.
-func (chart *Chart) ToFloatArray(color int32) [3]float32 {
+// toFloatArray converts an RGB color to the float array used internally.
+func (chart *Chart) toFloatArray(color int32) [3]float32 {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32(color&0xff) / 255.0
@@ -547,7 +547,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 		if p0.drawPath {
 			if chart.autoColors && p0.strokeColor == [3]float32{} {
 				index := seriesIndex % len(defaultPalette)
-				p0.strokeColor = chart.ToFloatArray(defaultPalette[index])
+				p0.strokeColor = chart.toFloatArray(defaultPalette[index])
 			}
 			if p0.hasStrokeColor {
 				page.SetPenColorRGB(p0.strokeColor)

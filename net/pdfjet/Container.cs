@@ -137,11 +137,13 @@ public class Container : IDrawable {
     /// Adds a drawable element to this container.
     /// </summary>
     /// <param name="element">The element to add.</param>
-    public void Add(IDrawable element) {
+    /// <returns>this Container object.</returns>
+    public Container Add(IDrawable element) {
         if (element.GetType() == typeof(Container)) {
             ((Container) element).parent = this;
         }
         this.elements.Add(element);
+        return this;
     }
 
     internal static float[] RotateAroundCenter(float[] point, float[] center, double degrees) {

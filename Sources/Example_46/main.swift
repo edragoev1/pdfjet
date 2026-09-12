@@ -42,8 +42,8 @@ public class Example_46 {
         var line = Line()
         line.setPointA(300.0, 150.0)
         line.setPointB(500.0, 150.0)
-        line.setWidth(2.0)
-        line.setColor(Color.blue)
+        line.setStrokeWidth(2.0)
+        line.setStrokeColor(Color.blue)
 
         group = OptionalContentGroup(pdf, "Blue Line")
         group.add(textBox)
@@ -54,8 +54,8 @@ public class Example_46 {
         line = Line()
         line.setPointA(300.0, 160.0)
         line.setPointB(500.0, 160.0)
-        line.setWidth(2.0)
-        line.setColor(Color.red)
+        line.setStrokeWidth(2.0)
+        line.setStrokeColor(Color.red)
 
         group = OptionalContentGroup(pdf, "Barcode")
         group.add(image2)

@@ -55,8 +55,9 @@ namespace PDFjet.NET {
         }
 
         /// <summary>Adds a slice to this chart.</summary>
-        public void AddSlice(Slice slice) {
+        public DonutChart AddSlice(Slice slice) {
             slices.Add(slice);
+            return this;
         }
 
         private static float[,] GetControlPoints(
