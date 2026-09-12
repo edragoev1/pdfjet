@@ -6,8 +6,8 @@
 package pdfjet
 
 import (
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
-	"github.com/edragoev1/pdfjet/v9/src/single"
 )
 
 // Rect is used to create rectangular shapes on a page.
@@ -42,11 +42,7 @@ func NewRect(x, y, w, h float32) *Rect {
 	rect.width = w
 	rect.height = h
 
-	rect.borderWidth = 0.0
 	rect.borderPattern = "[] 0"
-
-	rect.altDescription = single.Space
-	rect.actualText = single.Space
 	return rect
 }
 
@@ -69,16 +65,20 @@ func (rect *Rect) SetSize(w, h float32) *Rect {
 }
 
 // SetBorderColor sets the border color as a 0xRRGGBB value.
-func (rect *Rect) SetBorderColor(color int32) *Rect {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+// color.Transparent removes the border.
+func (rect *Rect) SetBorderColor(borderColor int32) *Rect {
+	if borderColor == color.Transparent {
+		rect.hasBorderColor = false
+		return rect
+	}
+	r := float32((borderColor>>16)&0xff) / 255.0
+	g := float32((borderColor>>8)&0xff) / 255.0
+	b := float32((borderColor)&0xff) / 255.0
 	rect.SetBorderColorRGB([3]float32{r, g, b})
 	return rect
 }
 
-// SetBorderColorRGB sets the color for this rectangle.
-// @param color the color specified as an integer.
+// SetBorderColorRGB sets the border color from red, green and blue values.
 func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) *Rect {
 	rect.borderColor = borderColor
 	rect.hasBorderColor = true
@@ -86,10 +86,10 @@ func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) *Rect {
 }
 
 // SetFillColor sets the fill color as a 0xRRGGBB value.
-func (rect *Rect) SetFillColor(color int32) *Rect {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+func (rect *Rect) SetFillColor(fillColor int32) *Rect {
+	r := float32((fillColor>>16)&0xff) / 255.0
+	g := float32((fillColor>>8)&0xff) / 255.0
+	b := float32((fillColor)&0xff) / 255.0
 	rect.SetFillColorRGB([3]float32{r, g, b})
 	return rect
 }
@@ -101,8 +101,7 @@ func (rect *Rect) SetFillColorRGB(fillColor [3]float32) *Rect {
 	return rect
 }
 
-// SetBorderWidth sets the width of this line.
-// @param width the width.
+// SetBorderWidth sets the border width.
 func (rect *Rect) SetBorderWidth(borderWidth float32) *Rect {
 	rect.borderWidth = borderWidth
 	return rect
@@ -115,7 +114,6 @@ func (rect *Rect) SetBorderPattern(borderPattern string) *Rect {
 }
 
 // SetCornerRadius sets the corner radius.
-// @param width the width.
 func (rect *Rect) SetCornerRadius(cornerRadius float32) *Rect {
 	rect.cornerRadius = cornerRadius
 	return rect
@@ -136,6 +134,7 @@ func (rect *Rect) SetGoToAction(key string) *Rect {
 }
 
 // SetLanguage sets the language of this rect, used for accessibility.
+// When it is not set, the language of the document is used.
 // @param language the language, for example "en-US".
 func (rect *Rect) SetLanguage(language string) *Rect {
 	rect.language = language
@@ -169,6 +168,10 @@ func (rect *Rect) ScaleBy(factor float32) {
 // @param page the page to draw this rect on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (rect *Rect) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		return [2]float32{rect.x + rect.width, rect.y + rect.height}
+	}
+
 	const k float32 = 0.55228
 
 	// A rectangle carries no text, so it is decorative content.
@@ -247,7 +250,6 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 			x2:             rect.x + rect.width,
 			y2:             rect.y + rect.height,
 			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
 			title:          "",
 			contents:       "",

@@ -93,9 +93,13 @@ public class Rect : Drawable {
         return self
     }
 
-    /// Sets the border color as a 0xRRGGBB value.
+    /// Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Rect {
+        if color == Color.transparent {
+            self.borderColor = nil
+            return self
+        }
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
@@ -103,10 +107,10 @@ public class Rect : Drawable {
         return self
     }
 
-    /// Sets the border color from an array of red, green and blue values.
+    /// Sets the border color from an array of red, green and blue values, or nil for no border.
     @discardableResult
     public func setBorderColor(_ borderColor: [Float]?) -> Rect {
-        self.borderColor = borderColor!
+        self.borderColor = borderColor
         return self
     }
 
@@ -155,6 +159,7 @@ public class Rect : Drawable {
 
     /**
      * Sets the language of this rect, used for accessibility.
+     * When it is not set, the language of the document is used.
      * - Parameter language: the language, for example "en-US".
      *
      * - Returns: this Rect object.
@@ -207,50 +212,53 @@ public class Rect : Drawable {
     /**
      * Draws this rect on the specified page.
      * - Parameter page: the page to draw this rect on.
-     * - Throws: an exception if drawing fails.
      * - Returns: x and y coordinates of the bottom right corner of this component.
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        guard let page = page else {
+            return [self.x + self.width, self.y + self.height]
+        }
+
         let k: Float = 0.55228
 
         // A rectangle carries no text, so it is decorative content.
-        page!.addArtifactBMC()
-        page!.saveGraphicsState()
+        page.addArtifactBMC()
+        page.saveGraphicsState()
 
         if self.r == 0.0 {
             if fillColor != nil {
-                page!.moveTo(self.x, self.y)
-                page!.lineTo(self.x + self.width, self.y)
-                page!.lineTo(self.x + self.width, self.y + self.height)
-                page!.lineTo(self.x, self.y + self.height)
-                page!.lineTo(self.x, self.y)
-                page!.setBrushColor(self.fillColor)
-                page!.fillPath()
+                page.moveTo(self.x, self.y)
+                page.lineTo(self.x + self.width, self.y)
+                page.lineTo(self.x + self.width, self.y + self.height)
+                page.lineTo(self.x, self.y + self.height)
+                page.lineTo(self.x, self.y)
+                page.setBrushColor(self.fillColor)
+                page.fillPath()
             }
             if borderColor != nil {
-                page!.moveTo(self.x, self.y)
-                page!.lineTo(self.x + self.width, self.y)
-                page!.lineTo(self.x + self.width, self.y + self.height)
-                page!.lineTo(self.x, self.y + self.height)
-                page!.setPenColor(self.borderColor)
-                page!.setPenWidth(self.borderWidth)
-                page!.setStrokeDashPattern(self.borderPattern)
-                page!.closePath()
+                page.moveTo(self.x, self.y)
+                page.lineTo(self.x + self.width, self.y)
+                page.lineTo(self.x + self.width, self.y + self.height)
+                page.lineTo(self.x, self.y + self.height)
+                page.setPenColor(self.borderColor)
+                page.setPenWidth(self.borderWidth)
+                page.setStrokeDashPattern(self.borderPattern)
+                page.closePath()
             }
         } else {
             // The pen and brush must be set before the path is painted,
             // otherwise the rounded rectangle is drawn with whatever state
             // the page happened to be left in.
             if borderColor != nil {
-                page!.setStrokeDashPattern(self.borderPattern)
+                page.setStrokeDashPattern(self.borderPattern)
             }
             if fillColor != nil {
-                page!.setBrushColor(self.fillColor)
+                page.setBrushColor(self.fillColor)
             }
             if borderColor != nil {
-                page!.setPenWidth(self.borderWidth)
-                page!.setPenColor(self.borderColor)
+                page.setPenWidth(self.borderWidth)
+                page.setPenColor(self.borderColor)
             }
 
             var points: [Point] = []
@@ -273,18 +281,18 @@ public class Rect : Drawable {
             points.append(Point(self.x + self.r, self.y))
 
             if fillColor != nil && borderColor == nil {
-                page!.drawPath(points, PathOperator.fill)
+                page.drawPath(points, PathOperator.fill)
             } else if fillColor == nil && borderColor != nil {
-                page!.drawPath(points, PathOperator.stroke)
+                page.drawPath(points, PathOperator.stroke)
             } else if fillColor != nil && borderColor != nil {
-                page!.drawPath(points, PathOperator.fillAndStroke)
+                page.drawPath(points, PathOperator.fillAndStroke)
             }
         }
-        page!.restoreGraphicsState()
-        page!.addEMC()
+        page.restoreGraphicsState()
+        page.addEMC()
 
         if self.uri != nil || self.key != nil {
-            page!.addAnnotation(Annotation(
+            page.addAnnotation(Annotation(
                     Annotation.Link,
                     self.x,
                     self.y,

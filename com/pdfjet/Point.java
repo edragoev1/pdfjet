@@ -631,6 +631,10 @@ public class Point implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return new float[] {x + r, y + r};
+        }
+
         page.saveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.setBrushColor(fillColor);

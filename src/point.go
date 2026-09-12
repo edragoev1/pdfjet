@@ -31,9 +31,8 @@ type Point struct {
 	drawPath          bool
 	text              string
 	textColor         [3]float32
-	hasTextColor      bool
 	textDirection     int
-	uri, key          string
+	uri               string
 }
 
 // NewPoint constructor for creating point objects.
@@ -79,16 +78,6 @@ func NewControlPointY(x, y float32) *Point {
 	point := NewPoint(x, y)
 	point.controlPoint = 'y'
 	return point
-}
-
-// copy returns a new Point with the same properties as this point.
-// Because all Point fields are value types, the returned copy is
-// fully independent of the original — modifying it will not affect
-// the original point and vice versa.
-// @return a copy of this point.
-func (point *Point) copy() *Point {
-	cp := *point
-	return &cp
 }
 
 // SetLocation sets the location (x, y) of this point.
@@ -168,8 +157,7 @@ func (point *Point) GetShape() int {
 	return point.shape
 }
 
-// SetFillColor sets the penColor color for this point.
-// @param color the color specified as an integer.
+// SetFillColor sets the fill color as a 0xRRGGBB value.
 func (point *Point) SetFillColor(fillColor int32) *Point {
 	r := float32((fillColor>>16)&0xff) / 255.0
 	g := float32((fillColor>>8)&0xff) / 255.0
@@ -179,14 +167,12 @@ func (point *Point) SetFillColor(fillColor int32) *Point {
 	return point
 }
 
-// GetFillColor returns the point color as an integer.
-// @return the color.
+// GetFillColor returns the fill color as red, green and blue values.
 func (point *Point) GetFillColor() [3]float32 {
 	return point.fillColor
 }
 
-// SetStrokeColor sets the penColor color for this point.
-// @param color the color specified as an integer.
+// SetStrokeColor sets the stroke color as a 0xRRGGBB value.
 func (point *Point) SetStrokeColor(strokeColor int32) *Point {
 	r := float32((strokeColor>>16)&0xff) / 255.0
 	g := float32((strokeColor>>8)&0xff) / 255.0
@@ -196,8 +182,7 @@ func (point *Point) SetStrokeColor(strokeColor int32) *Point {
 	return point
 }
 
-// GetStrokeColor returns the point color as an integer.
-// @return the color.
+// GetStrokeColor returns the stroke color as red, green and blue values.
 func (point *Point) GetStrokeColor() [3]float32 {
 	return point.strokeColor
 }
@@ -234,19 +219,16 @@ func (point *Point) GetText() string {
 	return point.text
 }
 
-// SetTextColor sets the point's text color.
-// @param textColor the text color.
+// SetTextColor sets the point's text color as a 0xRRGGBB value.
 func (point *Point) SetTextColor(textColor int32) *Point {
 	r := float32((textColor>>16)&0xff) / 255.0
 	g := float32((textColor>>8)&0xff) / 255.0
 	b := float32((textColor)&0xff) / 255.0
 	point.textColor = [3]float32{r, g, b}
-	point.hasTextColor = true
 	return point
 }
 
-// GetTextColor returns the point's text color.
-// @return the text color.
+// GetTextColor returns the point's text color as red, green and blue values.
 func (point *Point) GetTextColor() [3]float32 {
 	return point.textColor
 }
@@ -281,23 +263,25 @@ func (point *Point) GetAlignment() int {
 // @param page the page to draw this point on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (point *Point) DrawOn(page *Page) [2]float32 {
-	page.SaveGraphicsState()
+	if page == nil {
+		return [2]float32{point.x + point.r, point.y + point.r}
+	}
 
-	if point.hasFillColor == true && point.hasStrokeColor == true {
+	page.SaveGraphicsState()
+	if point.hasFillColor && point.hasStrokeColor {
 		page.SetBrushColorRGB(point.fillColor)
 		page.SetPenColorRGB(point.strokeColor)
 		page.SetPenWidth(point.strokeWidth)
 		point.pathOperator = pathoperator.FillAndStroke
-	} else if point.hasFillColor == true && point.hasStrokeColor == false {
+	} else if point.hasFillColor && !point.hasStrokeColor {
 		page.SetBrushColorRGB(point.fillColor)
 		point.pathOperator = pathoperator.Fill
-	} else if point.hasFillColor == false && point.hasStrokeColor == true {
+	} else if !point.hasFillColor && point.hasStrokeColor {
 		page.SetPenColorRGB(point.strokeColor)
 		page.SetPenWidth(point.strokeWidth)
 		point.pathOperator = pathoperator.CloseAndStroke
 	}
 	page.DrawPoint(point)
-
 	page.RestoreGraphicsState()
 
 	return [2]float32{point.x + point.r, point.y + point.r}

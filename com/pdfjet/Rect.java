@@ -27,7 +27,7 @@ public class Rect implements Drawable {
 
     private String uri;
     private String key;
-    private String language = "en-US";
+    private String language = null;
     private String actualText = null;
     private String altDescription = null;
 
@@ -67,6 +67,13 @@ public class Rect implements Drawable {
         this.h = (float) h;
     }
 
+    /**
+     * Sets the location of the top left corner of this rectangle.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Rect object.
+     */
     public Rect setLocation(float x, float y) {
         this.x = x;
         this.y = y;
@@ -220,6 +227,7 @@ public class Rect implements Drawable {
 
     /**
      * Sets the language of this rect, used for accessibility.
+     * When it is not set, the language of the document is used.
      * @param language the language, for example "en-US".
      * @return this Rect object.
      */

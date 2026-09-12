@@ -403,8 +403,12 @@ public class Chart : Drawable {
             }
         }
 
-        // Translate the point coordinates
+        // Translate copies of the points, so the data of the chart is not changed
+        var plotData = [[Point]]()
         for points in chartData! {
+            plotData.append(points.map { Point($0) })
+        }
+        for points in plotData {
             for point in points {
                 if xyChart {
                     point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin)
@@ -438,7 +442,7 @@ public class Chart : Drawable {
         }
 
         if page != nil {
-            drawPathsAndPoints(page!, chartData!)
+            drawPathsAndPoints(page!, plotData)
 
             // Draw the Y axis title
             page!.setBrushColor(Color.black)

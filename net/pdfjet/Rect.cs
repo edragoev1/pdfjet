@@ -23,7 +23,7 @@ public class Rect  : IDrawable {
 
     private string uri;
     private string key;
-    private string language = "en-US";
+    private string language = null;
     private string actualText = null;
     private string altDescription = null;
 
@@ -142,7 +142,7 @@ public class Rect  : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the language of this rectangle, used for accessibility.</summary>
+    /// <summary>Sets the language of this rectangle, used for accessibility. When it is not set, the language of the document is used.</summary>
     public Rect SetLanguage(String language) {
         this.language = language;
         return this;

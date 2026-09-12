@@ -521,6 +521,10 @@ public class Point : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] {x + r, y + r};
+        }
+
         page.SaveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.SetBrushColor(fillColor);

@@ -65,7 +65,7 @@ public class Point : Drawable {
     var drawPath = false
 
     private var text: String?
-    private var textColor: [Float]?
+    private var textColor: [Float] = [0.0, 0.0, 0.0]
     private var textDirection: Int = 0
     private var uri: String?
 
@@ -98,6 +98,30 @@ public class Point : Drawable {
         self.x = x
         self.y = y
         self.controlPoint = controlPoint
+    }
+
+    ///
+    /// Creates a copy of the specified point, including its colors, text and URI action.
+    ///
+    /// - Parameter point: the point to copy.
+    ///
+    public init(_ point: Point) {
+        self.x = point.x
+        self.y = point.y
+        self.r = point.r
+        self.shape = point.shape
+        self.align = point.align
+        self.fillColor = point.fillColor
+        self.strokeWidth = point.strokeWidth
+        self.strokeColor = point.strokeColor
+        self.strokeDashPattern = point.strokeDashPattern
+        self.pathOperator = point.pathOperator
+        self.controlPoint = point.controlPoint
+        self.drawPath = point.drawPath
+        self.text = point.text
+        self.textColor = point.textColor
+        self.textDirection = point.textDirection
+        self.uri = point.uri
     }
 
     ///
@@ -211,10 +235,10 @@ public class Point : Drawable {
     ///
     /// Sets the fill color for this point.
     ///
-    /// - Parameter fillColor: the color specified as float array.
+    /// - Parameter fillColor: the red, green and blue values, or nil for no fill.
     ///
     @discardableResult
-    public func setFillColor(_ fillColor: [Float]) -> Point {
+    public func setFillColor(_ fillColor: [Float]?) -> Point {
         self.fillColor = fillColor
         return self
     }
@@ -240,21 +264,21 @@ public class Point : Drawable {
     ///
     /// Sets the stroke color for this point.
     ///
-    /// - Parameter strokeColor: the color specified as float array.
+    /// - Parameter strokeColor: the red, green and blue values, or nil for no stroke.
     ///
     @discardableResult
-    public func setStrokeColor(_ strokeColor: [Float]) -> Point {
+    public func setStrokeColor(_ strokeColor: [Float]?) -> Point {
         self.strokeColor = strokeColor
         return self
     }
 
     ///
-    /// Returns the stroke color as float array.
+    /// Returns the stroke color, or nil when no stroke color was set.
     ///
     /// - Returns: the stroke color.
     ///
-    public func getStrokeColor() -> [Float] {
-        return self.strokeColor!
+    public func getStrokeColor() -> [Float]? {
+        return self.strokeColor
     }
 
     ///
@@ -390,7 +414,7 @@ public class Point : Drawable {
     /// - Returns: the text color.
     ///
     public func getTextColor() -> [Float] {
-        return self.textColor!
+        return self.textColor
     }
 
     ///
@@ -461,22 +485,26 @@ public class Point : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.saveGraphicsState()
+        guard let page = page else {
+            return [self.x + self.r, self.y + self.r]
+        }
+
+        page.saveGraphicsState()
         if fillColor != nil && strokeColor != nil {
-            page!.setBrushColor(fillColor)
-            page!.setPenColor(strokeColor)
-            page!.setPenWidth(strokeWidth)  // Use strokeWidth
+            page.setBrushColor(fillColor)
+            page.setPenColor(strokeColor)
+            page.setPenWidth(strokeWidth)
             self.pathOperator = PathOperator.fillAndStroke
         } else if fillColor != nil && strokeColor == nil {
-            page!.setBrushColor(fillColor)
+            page.setBrushColor(fillColor)
             self.pathOperator = PathOperator.fill
         } else if fillColor == nil && strokeColor != nil {
-            page!.setPenColor(strokeColor)
-            page!.setPenWidth(strokeWidth)  // Use strokeWidth
+            page.setPenColor(strokeColor)
+            page.setPenWidth(strokeWidth)
             self.pathOperator = PathOperator.closeAndStroke
         }
-        page!.drawPoint(self)
-        page!.restoreGraphicsState()
+        page.drawPoint(self)
+        page.restoreGraphicsState()
         return [self.x + self.r, self.y + self.r]
     }
 }   // End of Point.swift
