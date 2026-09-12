@@ -383,21 +383,36 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 // Lao vowel written before its consonant.
 func (textBlock *TextBlock) appendBrokenWordLines(
 	textLines []*TextLine, word string, textAreaWidth float32) ([]*TextLine, string) {
-	font := textBlock.font
 	runes := []rune(word)
-	for font.StringWidthFB(textBlock.fallbackFont, font.size, string(runes)) > textAreaWidth {
+	for textBlock.lineWidth(string(runes)) > textAreaWidth {
 		// Each line gets at least one character, however narrow the block.
 		end := nextCharacterBreak(runes, 0)
 		next := nextCharacterBreak(runes, end)
-		for next < len(runes) &&
-			font.StringWidthFB(textBlock.fallbackFont, font.size, string(runes[:next])) <= textAreaWidth {
+		for next < len(runes) && textBlock.lineWidth(string(runes[:next])) <= textAreaWidth {
 			end = next
 			next = nextCharacterBreak(runes, end)
 		}
-		textLines = append(textLines, NewTextLine(font, string(runes[:end])))
+		textLines = append(textLines, textBlock.newTextLine(string(runes[:end])))
 		runes = runes[end:]
 	}
 	return textLines, string(runes)
+}
+
+// lineWidth returns the width of a line of text, measured after the line is
+// reordered if the text is right to left.
+func (textBlock *TextBlock) lineWidth(text string) float32 {
+	if textBlock.rightToLeft {
+		text = ReorderVisually(text)
+	}
+	return textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.font.size, text)
+}
+
+// newTextLine returns a line of text, reordered if the text is right to left.
+func (textBlock *TextBlock) newTextLine(text string) *TextLine {
+	if textBlock.rightToLeft {
+		text = ReorderVisually(text)
+	}
+	return NewTextLine(textBlock.font, text)
 }
 
 func nextCharacterBreak(runes []rune, i int) int {
@@ -429,27 +444,40 @@ func staysWithPrevious(ch rune) bool {
 }
 
 // appendRightToLeftLines wraps a paragraph of right to left text at the
-// spaces between words and appends its lines in visual order. The paragraph
-// is wrapped in logical order, so its first words go on the first line, and
-// each line is measured after it is reordered, since the shaped Arabic
-// letters differ in width from the letters they replace.
+// spaces between words and at its zero width spaces, and appends its lines in
+// visual order. The paragraph is wrapped in logical order, so its first words
+// go on the first line, and each line is measured after it is reordered, since
+// the shaped Arabic letters differ in width from the letters they replace. A
+// word too wide for a line by itself is broken between its characters.
 func (textBlock *TextBlock) appendRightToLeftLines(
 	textLines []*TextLine, paragraph string, textAreaWidth float32) []*TextLine {
-	line := ""
-	for _, word := range strings.Fields(paragraph) {
-		candidate := word
-		if line != "" {
-			candidate = line + " " + word
-		}
-		if line != "" && textBlock.font.StringWidthFB(textBlock.fallbackFont,
-			textBlock.font.size, ReorderVisually(candidate)) > textAreaWidth {
-			textLines = append(textLines, NewTextLine(textBlock.font, ReorderVisually(line)))
-			line = word
-		} else {
-			line = candidate
+	var sb strings.Builder
+	for _, token := range strings.Fields(paragraph) {
+		// The words between the zero width spaces of a token are joined with no
+		// space.
+		words := strings.Split(token, "\u200B")
+		for i, word := range words {
+			separator := " "
+			if i < len(words)-1 {
+				separator = ""
+			}
+			if textBlock.lineWidth(sb.String()+word) <= textAreaWidth {
+				sb.WriteString(word + separator)
+			} else {
+				if sb.Len() > 0 {
+					textLines = append(textLines, textBlock.newTextLine(strings.TrimSpace(sb.String())))
+					sb.Reset()
+				}
+				// A word too wide for a line by itself is broken.
+				var rest string
+				textLines, rest = textBlock.appendBrokenWordLines(textLines, word, textAreaWidth)
+				if rest != "" {
+					sb.WriteString(rest + separator)
+				}
+			}
 		}
 	}
-	return append(textLines, NewTextLine(textBlock.font, ReorderVisually(line)))
+	return append(textLines, textBlock.newTextLine(strings.TrimSpace(sb.String())))
 }
 
 // SetUnderline underlines the text of this text block.

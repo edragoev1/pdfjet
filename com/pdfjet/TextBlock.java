@@ -504,19 +504,29 @@ public class TextBlock {
      * written before its consonant.
      */
     private String addBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
-        while (font.stringWidth(fallbackFont, word) > textAreaWidth) {
+        while (lineWidth(word) > textAreaWidth) {
             // Each line gets at least one character, however narrow the block.
             int end = nextCharacterBreak(word, 0);
             int next = nextCharacterBreak(word, end);
-            while (next < word.length() &&
-                    font.stringWidth(fallbackFont, word.substring(0, next)) <= textAreaWidth) {
+            while (next < word.length() && lineWidth(word.substring(0, next)) <= textAreaWidth) {
                 end = next;
                 next = nextCharacterBreak(word, end);
             }
-            textLines.add(new TextLine(font, word.substring(0, end)));
+            textLines.add(newTextLine(word.substring(0, end)));
             word = word.substring(end);
         }
         return word;
+    }
+
+    // Returns the width of a line of text, measured after the line is reordered
+    // if the text is right to left.
+    private float lineWidth(String text) {
+        return font.stringWidth(fallbackFont, rightToLeft ? Bidi.reorderVisually(text) : text);
+    }
+
+    // Returns a line of text, reordered if the text is right to left.
+    private TextLine newTextLine(String text) {
+        return new TextLine(font, rightToLeft ? Bidi.reorderVisually(text) : text);
     }
 
     private static int nextCharacterBreak(String word, int i) {
@@ -550,24 +560,38 @@ public class TextBlock {
 
     /**
      * Wraps a paragraph of right to left text at the spaces between words and
-     * adds its lines in visual order. The paragraph is wrapped in logical
-     * order, so its first words go on the first line, and each line is
-     * measured after it is reordered, since the shaped Arabic letters differ
-     * in width from the letters they replace.
+     * at its zero width spaces, and adds its lines in visual order. The
+     * paragraph is wrapped in logical order, so its first words go on the
+     * first line, and each line is measured after it is reordered, since the
+     * shaped Arabic letters differ in width from the letters they replace. A
+     * word too wide for a line by itself is broken between its characters.
      */
     private void addRightToLeftLines(List<TextLine> textLines, String paragraph, float textAreaWidth) {
-        String line = "";
-        for (String word : paragraph.trim().split("\\s+")) {
-            String candidate = line.isEmpty() ? word : line + " " + word;
-            if (!line.isEmpty() &&
-                    font.stringWidth(fallbackFont, Bidi.reorderVisually(candidate)) > textAreaWidth) {
-                textLines.add(new TextLine(font, Bidi.reorderVisually(line)));
-                line = word;
-            } else {
-                line = candidate;
+        StringBuilder sb = new StringBuilder();
+        for (String token : paragraph.trim().split("\\s+")) {
+            // The words between the zero width spaces of a token are joined
+            // with no space.
+            String[] words = token.split("\u200B", -1);
+            for (int i = 0; i < words.length; i++) {
+                String word = words[i];
+                String separator = (i == words.length - 1) ? " " : "";
+                if (lineWidth(sb.toString() + word) <= textAreaWidth) {
+                    sb.append(word);
+                    sb.append(separator);
+                } else {
+                    if (sb.length() > 0) {
+                        textLines.add(newTextLine(sb.toString().trim()));
+                        sb.setLength(0);
+                    }
+                    // A word too wide for a line by itself is broken.
+                    String rest = addBrokenWordLines(textLines, word, textAreaWidth);
+                    if (!rest.isEmpty()) {
+                        sb.append(rest + separator);
+                    }
+                }
             }
         }
-        textLines.add(new TextLine(font, Bidi.reorderVisually(line)));
+        textLines.add(newTextLine(sb.toString().trim()));
     }
 
     /**

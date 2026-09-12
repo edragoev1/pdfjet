@@ -381,19 +381,29 @@ namespace PDFjet.NET {
         /// written before its consonant.
         /// </summary>
         private String AddBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
-            while (font.StringWidth(fallbackFont, fontSize, word) > textAreaWidth) {
+            while (LineWidth(word) > textAreaWidth) {
                 // Each line gets at least one character, however narrow the block.
                 int end = NextCharacterBreak(word, 0);
                 int next = NextCharacterBreak(word, end);
-                while (next < word.Length &&
-                        font.StringWidth(fallbackFont, fontSize, word.Substring(0, next)) <= textAreaWidth) {
+                while (next < word.Length && LineWidth(word.Substring(0, next)) <= textAreaWidth) {
                     end = next;
                     next = NextCharacterBreak(word, end);
                 }
-                textLines.Add(new TextLine(font, word.Substring(0, end)));
+                textLines.Add(NewTextLine(word.Substring(0, end)));
                 word = word.Substring(end);
             }
             return word;
+        }
+
+        // Returns the width of a line of text, measured after the line is
+        // reordered if the text is right to left.
+        private float LineWidth(String text) {
+            return font.StringWidth(fallbackFont, fontSize, rightToLeft ? Bidi.ReorderVisually(text) : text);
+        }
+
+        // Returns a line of text, reordered if the text is right to left.
+        private TextLine NewTextLine(String text) {
+            return new TextLine(font, rightToLeft ? Bidi.ReorderVisually(text) : text);
         }
 
         private static int NextCharacterBreak(String word, int i) {
@@ -431,24 +441,37 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Wraps a paragraph of right to left text at the spaces between words and
-        /// adds its lines in visual order. The paragraph is wrapped in logical
-        /// order, so its first words go on the first line, and each line is
-        /// measured after it is reordered, since the shaped Arabic letters differ
-        /// in width from the letters they replace.
+        /// at its zero width spaces, and adds its lines in visual order. The
+        /// paragraph is wrapped in logical order, so its first words go on the
+        /// first line, and each line is measured after it is reordered, since the
+        /// shaped Arabic letters differ in width from the letters they replace. A
+        /// word too wide for a line by itself is broken between its characters.
         /// </summary>
         private void AddRightToLeftLines(List<TextLine> textLines, string paragraph, float textAreaWidth) {
-            string line = "";
-            foreach (string word in paragraph.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries)) {
-                string candidate = (line.Length == 0) ? word : line + " " + word;
-                if (line.Length > 0 &&
-                        this.font.StringWidth(fallbackFont, fontSize, Bidi.ReorderVisually(candidate)) > textAreaWidth) {
-                    textLines.Add(new TextLine(font, Bidi.ReorderVisually(line)));
-                    line = word;
-                } else {
-                    line = candidate;
+            StringBuilder sb = new StringBuilder();
+            foreach (string token in paragraph.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries)) {
+                // The words between the zero width spaces of a token are joined
+                // with no space.
+                string[] words = token.Split('\u200B');
+                for (int i = 0; i < words.Length; i++) {
+                    String word = words[i];
+                    String separator = (i == words.Length - 1) ? " " : "";
+                    if (LineWidth(sb.ToString() + word) <= textAreaWidth) {
+                        sb.Append(word).Append(separator);
+                    } else {
+                        if (sb.Length > 0) {
+                            textLines.Add(NewTextLine(sb.ToString().Trim()));
+                            sb.Clear();
+                        }
+                        // A word too wide for a line by itself is broken.
+                        String rest = AddBrokenWordLines(textLines, word, textAreaWidth);
+                        if (rest.Length > 0) {
+                            sb.Append(rest).Append(separator);
+                        }
+                    }
                 }
             }
-            textLines.Add(new TextLine(font, Bidi.ReorderVisually(line)));
+            textLines.Add(NewTextLine(sb.ToString().Trim()));
         }
 
         /// <summary>Sets whether the text is underlined.</summary>

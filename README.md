@@ -165,7 +165,8 @@ Poppler and MuPDF reverse that text as well.
 spaces between its words, so put a zero width space (U+200B) between the words
 where a line may break. It is not drawn. A word too wide for a line by itself
 is broken between its characters, so text without zero width spaces still fits
-in the text block, but its lines can break inside words. The Thai text of
+in the text block, but its lines can break inside words. In right to left text
+the letters on either side of such a break are not joined. The Thai text of
 Example_27, `data/languages/thai.txt`, has a zero width space between its words.
 
 ## Marks

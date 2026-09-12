@@ -353,19 +353,29 @@ public class TextBlock : Drawable {
     private func addBrokenWordLines(
             _ textLines: inout [TextLine], _ word: String, _ textAreaWidth: Float) -> String {
         var scalars = Array(word.unicodeScalars)
-        while font.stringWidth(fallbackFont, TextBlock.string(scalars[...])) > textAreaWidth {
+        while lineWidth(TextBlock.string(scalars[...])) > textAreaWidth {
             // Each line gets at least one character, however narrow the block.
             var end = TextBlock.nextCharacterBreak(scalars, 0)
             var next = TextBlock.nextCharacterBreak(scalars, end)
-            while next < scalars.count &&
-                    font.stringWidth(fallbackFont, TextBlock.string(scalars[..<next])) <= textAreaWidth {
+            while next < scalars.count && lineWidth(TextBlock.string(scalars[..<next])) <= textAreaWidth {
                 end = next
                 next = TextBlock.nextCharacterBreak(scalars, end)
             }
-            textLines.append(TextLine(font, TextBlock.string(scalars[..<end])))
+            textLines.append(newTextLine(TextBlock.string(scalars[..<end])))
             scalars = Array(scalars[end...])
         }
         return TextBlock.string(scalars[...])
+    }
+
+    // Returns the width of a line of text, measured after the line is reordered
+    // if the text is right to left.
+    private func lineWidth(_ text: String) -> Float {
+        return font.stringWidth(fallbackFont, rightToLeft ? Bidi.reorderVisually(text) : text)
+    }
+
+    // Returns a line of text, reordered if the text is right to left.
+    private func newTextLine(_ text: String) -> TextLine {
+        return TextLine(font, rightToLeft ? Bidi.reorderVisually(text) : text)
     }
 
     private static func nextCharacterBreak(_ scalars: [Unicode.Scalar], _ start: Int) -> Int {
@@ -406,24 +416,37 @@ public class TextBlock : Drawable {
     }
 
     /// Wraps a paragraph of right to left text at the spaces between words and
-    /// adds its lines in visual order. The paragraph is wrapped in logical
-    /// order, so its first words go on the first line, and each line is
-    /// measured after it is reordered, since the shaped Arabic letters differ
-    /// in width from the letters they replace.
+    /// at its zero width spaces, and adds its lines in visual order. The
+    /// paragraph is wrapped in logical order, so its first words go on the
+    /// first line, and each line is measured after it is reordered, since the
+    /// shaped Arabic letters differ in width from the letters they replace. A
+    /// word too wide for a line by itself is broken between its characters.
     private func addRightToLeftLines(
             _ textLines: inout [TextLine], _ paragraph: String, _ textAreaWidth: Float) {
-        var line = ""
-        for word in paragraph.split(whereSeparator: \.isWhitespace).map(String.init) {
-            let candidate = line.isEmpty ? word : line + " " + word
-            if !line.isEmpty &&
-                    font.stringWidth(fallbackFont, Bidi.reorderVisually(candidate)) > textAreaWidth {
-                textLines.append(TextLine(font, Bidi.reorderVisually(line)))
-                line = word
-            } else {
-                line = candidate
+        var sb = ""
+        for token in paragraph.split(whereSeparator: \.isWhitespace).map(String.init) {
+            // The words between the zero width spaces of a token are joined
+            // with no space.
+            let words = token.components(separatedBy: "\u{200B}")
+            for (i, word) in words.enumerated() {
+                let separator = (i == words.count - 1) ? " " : ""
+                if lineWidth(sb + word) <= textAreaWidth {
+                    sb.append(word)
+                    sb.append(separator)
+                } else {
+                    if !sb.isEmpty {
+                        textLines.append(newTextLine(sb.trim()))
+                        sb = ""
+                    }
+                    // A word too wide for a line by itself is broken.
+                    let rest = addBrokenWordLines(&textLines, word, textAreaWidth)
+                    if !rest.isEmpty {
+                        sb = rest + separator
+                    }
+                }
             }
         }
-        textLines.append(TextLine(font, Bidi.reorderVisually(line)))
+        textLines.append(newTextLine(sb.trim()))
     }
 
     /// Sets the URI opened when this text block is clicked.
