@@ -54,24 +54,24 @@ func (s *Stamp) SetLocation(x, y float32) Drawable {
 	return s
 }
 
-// AppendFloat appends a float value to the buffer
-func (s *Stamp) AppendFloat(value float32) {
+// appendFloat appends a float value to the buffer
+func (s *Stamp) appendFloat(value float32) {
 	s.buf.Write(toByteArray(value))
 }
 
-// AppendString appends a string to the buffer
-func (s *Stamp) AppendString(str string) {
+// appendString appends a string to the buffer
+func (s *Stamp) appendString(str string) {
 	s.buf.Write([]byte(str))
 }
 
 // SetFillColorRGB sets fill color from RGB array
 func (s *Stamp) SetFillColorRGB(rgbColor []float32) *Stamp {
-	s.AppendFloat(rgbColor[0])
-	s.AppendString(" ")
-	s.AppendFloat(rgbColor[1])
-	s.AppendString(" ")
-	s.AppendFloat(rgbColor[2])
-	s.AppendString(" rg\n")
+	s.appendFloat(rgbColor[0])
+	s.appendString(" ")
+	s.appendFloat(rgbColor[1])
+	s.appendString(" ")
+	s.appendFloat(rgbColor[2])
+	s.appendString(" rg\n")
 	s.fillColor = rgbColor
 	return s
 }
@@ -86,12 +86,12 @@ func (s *Stamp) SetFillColor(color int) *Stamp {
 
 // SetStrokeColorRGB sets stroke color from RGB array
 func (s *Stamp) SetStrokeColorRGB(rgbColor []float32) *Stamp {
-	s.AppendFloat(rgbColor[0])
-	s.AppendString(" ")
-	s.AppendFloat(rgbColor[1])
-	s.AppendString(" ")
-	s.AppendFloat(rgbColor[2])
-	s.AppendString(" RG\n")
+	s.appendFloat(rgbColor[0])
+	s.appendString(" ")
+	s.appendFloat(rgbColor[1])
+	s.appendString(" ")
+	s.appendFloat(rgbColor[2])
+	s.appendString(" RG\n")
 	s.strokeColor = rgbColor
 	return s
 }
@@ -106,68 +106,68 @@ func (s *Stamp) SetStrokeColor(color int) *Stamp {
 
 // SetStrokeWidth sets the stroke width
 func (s *Stamp) SetStrokeWidth(width float32) *Stamp {
-	s.AppendFloat(width)
-	s.AppendString(" w\n")
+	s.appendFloat(width)
+	s.appendString(" w\n")
 	s.strokeWidth = width
 	return s
 }
 
 // MoveTo adds a move-to path command
 func (s *Stamp) MoveTo(x, y float32) *Stamp {
-	s.AppendFloat(x)
-	s.AppendString(" ")
-	s.AppendFloat(s.height - y)
-	s.AppendString(" m\n")
+	s.appendFloat(x)
+	s.appendString(" ")
+	s.appendFloat(s.height - y)
+	s.appendString(" m\n")
 	return s
 }
 
 // LineTo adds a line-to path command
 func (s *Stamp) LineTo(x, y float32) *Stamp {
-	s.AppendFloat(x)
-	s.AppendString(" ")
-	s.AppendFloat(s.height - y)
-	s.AppendString(" l\n")
+	s.appendFloat(x)
+	s.appendString(" ")
+	s.appendFloat(s.height - y)
+	s.appendString(" l\n")
 	return s
 }
 
 // CurveTo adds a cubic Bezier curve command
 func (s *Stamp) CurveTo(x1, y1, x2, y2, x3, y3 float32) *Stamp {
-	s.AppendFloat(x1)
-	s.AppendString(" ")
-	s.AppendFloat(s.height - y1)
-	s.AppendString(" ")
-	s.AppendFloat(x2)
-	s.AppendString(" ")
-	s.AppendFloat(s.height - y2)
-	s.AppendString(" ")
-	s.AppendFloat(x3)
-	s.AppendString(" ")
-	s.AppendFloat(s.height - y3)
-	s.AppendString(" c\n")
+	s.appendFloat(x1)
+	s.appendString(" ")
+	s.appendFloat(s.height - y1)
+	s.appendString(" ")
+	s.appendFloat(x2)
+	s.appendString(" ")
+	s.appendFloat(s.height - y2)
+	s.appendString(" ")
+	s.appendFloat(x3)
+	s.appendString(" ")
+	s.appendFloat(s.height - y3)
+	s.appendString(" c\n")
 	return s
 }
 
 // StrokePath adds stroke operator
 func (s *Stamp) StrokePath() *Stamp {
-	s.AppendString("S\n")
+	s.appendString("S\n")
 	return s
 }
 
 // ClosePath adds close+stroke operator
 func (s *Stamp) ClosePath() *Stamp {
-	s.AppendString("s\n")
+	s.appendString("s\n")
 	return s
 }
 
 // FillPath adds fill operator
 func (s *Stamp) FillPath() *Stamp {
-	s.AppendString("f\n")
+	s.appendString("f\n")
 	return s
 }
 
 // CloseFillAndStrokePath adds close+fill+stroke operator
 func (s *Stamp) CloseFillAndStrokePath() *Stamp {
-	s.AppendString("b\n")
+	s.appendString("b\n")
 	return s
 }
 
@@ -193,25 +193,25 @@ func (s *Stamp) FillRect(x, y, w, h float32) *Stamp {
 
 // DrawTextUsingParams draws text using the TextParameters data.
 func (s *Stamp) DrawTextUsingParams(params *TextParameters) *Stamp {
-	return s.drawText(params.font, params.fontSize, params.x, params.y, params.text)
+	return s.DrawText(params.font, params.fontSize, params.x, params.y, params.text)
 }
 
 // DrawText draws text on the stamp
-func (s *Stamp) drawText(font *Font, fontSize, x, y float32, text string) *Stamp {
-	s.AppendString("BT\n")
-	s.AppendString("/F")
-	s.AppendFloat(float32(font.objNumber))
-	s.AppendString(" ")
-	s.AppendFloat(fontSize)
-	s.AppendString(" Tf\n")
-	s.AppendFloat(x)
-	s.AppendString(" ")
-	s.AppendFloat(s.height - y)
-	s.AppendString(" Td\n")
-	s.AppendString("<")
-	s.DrawText(font, text)
-	s.AppendString("> Tj\n")
-	s.AppendString("ET\n")
+func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp {
+	s.appendString("BT\n")
+	s.appendString("/F")
+	s.appendFloat(float32(font.objNumber))
+	s.appendString(" ")
+	s.appendFloat(fontSize)
+	s.appendString(" Tf\n")
+	s.appendFloat(x)
+	s.appendString(" ")
+	s.appendFloat(s.height - y)
+	s.appendString(" Td\n")
+	s.appendString("<")
+	s.drawEncodedText(font, text)
+	s.appendString("> Tj\n")
+	s.appendString("ET\n")
 	return s
 }
 
@@ -285,8 +285,8 @@ func (s *Stamp) Complete() {
 	s.objNumber = s.pdf.getObjNumber()
 }
 
-// DrawText draws encoded text characters
-func (s *Stamp) DrawText(font *Font, str string) {
+// drawEncodedText appends the glyph IDs of the text as hexadecimal
+func (s *Stamp) drawEncodedText(font *Font, str string) {
 	for _, codePoint := range str {
 		if codePoint == 0xFEFF { // Skip the BOM
 			continue
@@ -302,15 +302,14 @@ func (s *Stamp) DrawText(font *Font, str string) {
 	}
 }
 
-// AppendPoint appends a Point to the buffer
-func (s *Stamp) AppendPoint(point *Point) {
-	s.AppendFloat(point.x)
-	s.AppendString(" ")
-	s.AppendFloat(s.height - point.y)
-	s.AppendString(" ")
+// appendPoint appends a Point to the buffer
+func (s *Stamp) appendPoint(point *Point) {
+	s.appendFloat(point.x)
+	s.appendString(" ")
+	s.appendFloat(s.height - point.y)
+	s.appendString(" ")
 }
 
-// DrawPath draws a path of Points
 // DrawPath draws a path of Points
 func (s *Stamp) DrawPath(path []*Point, pathOperator string) {
 	if len(path) < 2 {
@@ -325,10 +324,10 @@ func (s *Stamp) DrawPath(path []*Point, pathOperator string) {
 		point = path[i]
 		if point.controlPoint != 0 {
 			controlPoint = point.controlPoint
-			s.AppendPoint(point)
+			s.appendPoint(point)
 		} else {
 			if controlPoint != 0 {
-				s.AppendPoint(point)
+				s.appendPoint(point)
 				s.buf.WriteByte(controlPoint) // More efficient than WriteString()
 				s.buf.WriteByte('\n')
 				controlPoint = 0

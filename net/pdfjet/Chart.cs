@@ -436,7 +436,7 @@ public class Chart : IDrawable {
                 x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2,
                 y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
-        page.SetDefaultStrokeWidth();
+        page.SetDefaultLineWidth();
         page.SetDefaultStrokeDashPattern();
         page.SetPenColor(Color.black);
 

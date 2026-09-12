@@ -67,13 +67,16 @@ public class Cell {
     private var strikeout: Bool
 
     /**
-     * Creates a cell object and sets the font and the cell text.
+     * Creates a cell object and sets the font and, optionally, the cell text.
      *
      * - Parameter font: the font.
      * - Parameter text: the text.
      */
-    public init(_ font: Font?, _ text: String?) {
+    public init(_ font: Font?, _ text: String? = nil) {
         self.font = font
+        if font != nil {
+            self.fontSize = font!.size
+        }
         self.text = text
         self.underline = false
         self.strikeout = false
@@ -88,6 +91,9 @@ public class Cell {
     @discardableResult
     public func setFont(_ font: Font?) -> Cell {
         self.font = font
+        if font != nil {
+            self.fontSize = font!.size
+        }
         return self
     }
 
@@ -141,6 +147,13 @@ public class Cell {
         return self.text
     }
 
+    /// Sets the font size of the cell text.
+    @discardableResult
+    public func setFontSize(_ fontSize: Float) -> Cell {
+        self.fontSize = fontSize
+        return self
+    }
+
     /**
      * Sets the image inside this cell.
      *
@@ -169,6 +182,11 @@ public class Cell {
         self.barcode = barcode
         self.text = nil
         return self
+    }
+
+    /// Returns the barcode drawn in this cell.
+    public func getBarcode() -> Barcode? {
+        return self.barcode
     }
 
     /**
@@ -261,6 +279,13 @@ public class Cell {
         return self.textBox
     }
 
+    /// Sets the text block drawn in this cell.
+    @discardableResult
+    public func setTextBlock(_ textBlock: TextBlock) -> Cell {
+        self.textBlock = textBlock
+        return self
+    }
+
     /**
      * Returns the cell width.
      *
@@ -282,6 +307,11 @@ public class Cell {
         return self
     }
 
+    /// Returns the top padding.
+    public func getTopPadding() -> Float {
+        return self.topPadding
+    }
+
     /**
      * Sets the bottom padding of this cell.
      *
@@ -292,6 +322,11 @@ public class Cell {
     public func setBottomPadding(_ padding: Float) -> Cell {
         self.bottomPadding = padding
         return self
+    }
+
+    /// Returns the bottom padding.
+    public func getBottomPadding() -> Float {
+        return self.bottomPadding
     }
 
     /**
@@ -462,18 +497,27 @@ public class Cell {
         return self.strokeColor
     }
 
-    /// Sets the stroke width.
+    /// Sets the width of the cell borders.
     @discardableResult
-    public func setLineWidth(_ width: Float) -> Cell {
-        self.strokeWidth = width
+    public func setLineWidth(_ lineWidth: Float) -> Cell {
+        self.lineWidth = lineWidth
         return self
     }
 
-    func setStrokeWidth(_ strokeWidth: Float) {
-        self.strokeWidth = strokeWidth
+    /// Returns the width of the cell borders.
+    public func getLineWidth() -> Float {
+        return self.lineWidth
     }
 
-    func getStrokeWidth() -> Float {
+    /// Sets the stroke width.
+    @discardableResult
+    public func setStrokeWidth(_ strokeWidth: Float) -> Cell {
+        self.strokeWidth = strokeWidth
+        return self
+    }
+
+    /// Returns the stroke width.
+    public func getStrokeWidth() -> Float {
         return self.strokeWidth
     }
 
@@ -507,14 +551,36 @@ public class Cell {
         return (self.properties & 0x0000FFFF)
     }
 
+    /// Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.
+    @discardableResult
+    public func setBorder(_ border: UInt32, _ visible: Bool) -> Cell {
+        if border & Border.TOP != 0 {
+            self.topBorder = visible
+        }
+        if border & Border.BOTTOM != 0 {
+            self.bottomBorder = visible
+        }
+        if border & Border.LEFT != 0 {
+            self.leftBorder = visible
+        }
+        if border & Border.RIGHT != 0 {
+            self.rightBorder = visible
+        }
+        return self
+    }
+
+    /// Returns true if any of the specified borders, for example Border.TOP, is drawn.
+    public func getBorder(_ border: UInt32) -> Bool {
+        return (border & Border.TOP != 0 && self.topBorder) ||
+                (border & Border.BOTTOM != 0 && self.bottomBorder) ||
+                (border & Border.LEFT != 0 && self.leftBorder) ||
+                (border & Border.RIGHT != 0 && self.rightBorder)
+    }
+
     /// Sets whether all four borders of this cell are drawn.
     @discardableResult
-    public func setAllBorders(_ visible: Bool) -> Cell {
-        self.topBorder = visible
-        self.bottomBorder = visible
-        self.leftBorder = visible
-        self.rightBorder = visible
-        return self
+    public func setBorders(_ visible: Bool) -> Cell {
+        return setBorder(Border.ALL, visible)
     }
 
     /// Sets whether the top border of this cell is drawn.
@@ -748,7 +814,7 @@ public class Cell {
             _ cellH: Float) {
         page.addArtifactBMC()
         page.setBrushColor(backgroundColor)
-        page.fillRect(x, y + strokeWidth/2, cellW, cellH)
+        page.fillRect(x, y + lineWidth/2, cellW, cellH)
         page.addEMC()
     }
 
@@ -760,8 +826,8 @@ public class Cell {
             _ cellH: Float) {
         page.addArtifactBMC()
         page.setPenColor(strokeColor)
-        page.setPenWidth(strokeWidth)
-        let qWidth: Float = strokeWidth / 4.0
+        page.setPenWidth(lineWidth)
+        let qWidth: Float = lineWidth / 4.0
         if topBorder {
             page.moveTo(x - qWidth, y)
             page.lineTo(x + cellW, y)
@@ -794,10 +860,11 @@ public class Cell {
 
         var xText: Float?
         var yText: Float?
+        let ascent = font!.getAscent(fontSize)
         if valign == Align.TOP {
-            yText = y + font!.ascent + self.topPadding
+            yText = y + ascent + self.topPadding
         } else if valign == Align.CENTER {
-            yText = y + cellH/2 + font!.ascent/2
+            yText = y + cellH/2 + ascent/2
         } else if valign == Align.BOTTOM {
             yText = (y + cellH) - self.bottomPadding
         } else {
@@ -809,7 +876,7 @@ public class Cell {
             if compositeTextLine == nil {
                 xText = (x + cellW) - (font!.stringWidth(text) + self.rightPadding)
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil)
+                page.drawString(font!, fallbackFont, fontSize, text!, xText!, yText!, textColor, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)
@@ -828,7 +895,7 @@ public class Cell {
                 xText = x + self.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font!.stringWidth(text)) / 2)
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil)
+                page.drawString(font!, fallbackFont, fontSize, text!, xText!, yText!, textColor, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)
@@ -847,7 +914,7 @@ public class Cell {
             xText = x + self.leftPadding
             if compositeTextLine == nil {
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil)
+                page.drawString(font!, fallbackFont, fontSize, text!, xText!, yText!, textColor, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)

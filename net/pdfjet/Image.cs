@@ -25,8 +25,6 @@ public class Image : IDrawable {
     internal String uri;
     internal String key;
 
-    private float xBox;
-    private float yBox;
     private int degrees = 0;
     private bool flipUpsideDown = false;
     private String language = null;
@@ -90,7 +88,7 @@ public class Image : IDrawable {
 
     // Method for creating images from byte[] image data
     /// <summary>Creates an image of the specified type from a byte array.</summary>
-    public static Image CreateImage(PDF pdf, byte[] imageBytes, int imageType) {
+    internal static Image CreateImage(PDF pdf, byte[] imageBytes, int imageType) {
         MemoryStream ms = new MemoryStream(imageBytes);
         Image image = new Image(pdf, ms, imageType);
         ms.Dispose();
@@ -99,7 +97,7 @@ public class Image : IDrawable {
 
     // Convenience method for creating .PNG images
     /// <summary>Creates a PNG image from a byte array.</summary>
-    public static Image CreateImage(PDF pdf, byte[] imageBytes) {
+    internal static Image CreateImage(PDF pdf, byte[] imageBytes) {
         return CreateImage(pdf, imageBytes, ImageType.PNG);
     }
 
@@ -222,21 +220,18 @@ public class Image : IDrawable {
     /// Scales this image by the specified factor.
     /// </summary>
     /// <param name="factor">the factor used to scale the image.</param>
-    public Image SetScaleFactor(double factor) {
-        return this.SetScaleFactor((float) factor, (float) factor);
+    /// <returns>this Image object.</returns>
+    public Image ScaleBy(double factor) {
+        return this.ScaleBy((float) factor, (float) factor);
     }
 
     /// <summary>
     /// Scales this image by the specified factor.
     /// </summary>
     /// <param name="factor">the factor used to scale the image.</param>
-    public Image SetScaleFactor(float factor) {
-        return this.SetScaleFactor(factor, factor);
-    }
-
-    /// <summary>Scales this image by the specified factor.</summary>
+    /// <returns>this Image object.</returns>
     public Image ScaleBy(float factor) {
-        return this.SetScaleFactor(factor, factor);
+        return this.ScaleBy(factor, factor);
     }
 
     /// <summary>
@@ -256,15 +251,11 @@ public class Image : IDrawable {
     /// </summary>
     /// <param name="widthFactor">the factor used to scale the width of the image</param>
     /// <param name="heightFactor">the factor used to scale the height of the image</param>
-    public Image SetScaleFactor(float widthFactor, float heightFactor) {
+    /// <returns>this Image object.</returns>
+    public Image ScaleBy(float widthFactor, float heightFactor) {
         this.w *= widthFactor;
         this.h *= heightFactor;
         return this;
-    }
-
-    /// <summary>Scales the width and the height of this image by the specified factors.</summary>
-    public Image ScaleBy(float widthFactor, float heightFactor) {
-        return SetScaleFactor(widthFactor, heightFactor);
     }
 
     /// <summary>
@@ -283,15 +274,6 @@ public class Image : IDrawable {
     public Image ResizeHeight(float height) {
         float factor = height / GetHeight();
         return this.ScaleBy(factor, factor);
-    }
-
-    /// <summary>
-    /// Places this image in the specified box.
-    /// </summary>
-    /// <param name="box">the specified box.</param>
-    public void PlaceIn(Box box) {
-        xBox = box.x;
-        yBox = box.y;
     }
 
     /// <summary>
@@ -341,10 +323,6 @@ public class Image : IDrawable {
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
         page.AddBMC(StructElem.P, language, actualText, altDescription);
-
-        x += xBox;
-        y += yBox;
-
         page.SaveGraphicsState();
 
         if (degrees == 0) {

@@ -730,6 +730,12 @@ public class PDF {
             buffer.append(String(Int(page.height)))
             buffer.append("]\n")
 
+            if page.rotateDegrees != 0.0 {
+                buffer.append("/Rotate ")
+                buffer.append(String(Int(page.rotateDegrees)))
+                buffer.append("\n")
+            }
+
             if page.cropBox != nil {
                 addPageBox(&buffer, "CropBox", page, page.cropBox!)
             }
@@ -1809,7 +1815,7 @@ public class PDF {
     }
 
     /// Adds the outline dictionary for the bookmarks and returns its object number.
-    public func addOutlineDict(_ toc: Bookmark) -> Int {
+    func addOutlineDict(_ toc: Bookmark) -> Int {
         let numOfChildren = getNumOfChildren(0, toc)
         newobj()
         append(Token.beginDictionary)
@@ -1829,7 +1835,7 @@ public class PDF {
     }
 
     /// Adds an outline item for the specified bookmark.
-    public func addOutlineItem(
+    func addOutlineItem(
             _ parent: Int,
             _ i: Int,
             _ bm1: Bookmark) {
@@ -1916,7 +1922,7 @@ public class PDF {
     }
 
     /// Returns the root pages object.
-    public func getPagesObject(
+    func getPagesObject(
             _ objects: [PDFobj]) -> PDFobj? {
         for object in objects {
             if object.getValue("/Type") == "/Pages" &&
@@ -2303,7 +2309,7 @@ public class PDF {
     private let HEX: [UInt8] = Array("0123456789ABCDEF".utf8)
 
     /// Returns the UTF-8 bytes of the string as uppercase hexadecimal digits.
-    public func toHex(_ str: String?) -> String {
+    func toHex(_ str: String?) -> String {
         guard let str = str, !str.isEmpty else {
             return ""
         }

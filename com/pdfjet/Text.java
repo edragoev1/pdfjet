@@ -86,6 +86,17 @@ public class Text implements Drawable {
     }
 
     /**
+     * Sets the dash pattern of the border.
+     *
+     * @param borderPattern the dash pattern, for example "[3] 0".
+     * @return this Text object.
+     */
+    public Text setBorderPattern(String borderPattern) {
+        this.borderPattern = borderPattern;
+        return this;
+    }
+
+    /**
      * Sets the border color and draws a border around this text. Color.transparent removes the border.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
@@ -162,17 +173,9 @@ public class Text implements Drawable {
         return new float[] { x1 + width, y1 + height };
     }
 
-    /**
-     * Draws the text line, wrapping it at the width of this text.
-     *
-     * @param page the page to draw on.
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @param textLine the text line.
-     * @return the x and y coordinates where the next text starts.
-     * @throws Exception if an input or output exception occurred.
-     */
-    public float[] drawTextLine(Page page, float x, float y, TextLine textLine) throws Exception {
+    // Draws the text line, wrapping it at the width of this text, and returns
+    // the x and y coordinates where the next text starts.
+    private float[] drawTextLine(Page page, float x, float y, TextLine textLine) throws Exception {
         this.xText = x;
         this.yText = y;
 

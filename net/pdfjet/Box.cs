@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -16,6 +17,7 @@ public class Box : IDrawable {
 
     private float w;
     private float h;
+    private float r = 0f;
 
     private int color = Color.black;
     private float width = 0f;
@@ -61,12 +63,6 @@ public class Box : IDrawable {
 
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
-    }
-
-    /// <summary>Sets the location of this box. Same as SetLocation.</summary>
-    public Box SetXY(float x, float y) {
-        SetLocation(x, y);
-        return this;
     }
 
     /// <summary>
@@ -135,6 +131,16 @@ public class Box : IDrawable {
     /// <returns>this Box object.</returns>
     public Box SetLineWidth(float width) {
         this.width = width;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the corner radius of this box.
+    /// </summary>
+    /// <param name="r">the radius of the rounded corners.</param>
+    /// <returns>this Box object.</returns>
+    public Box SetCornerRadius(float r) {
+        this.r = r;
         return this;
     }
 
@@ -248,14 +254,38 @@ public class Box : IDrawable {
         } else {
             page.SetPenColor(color);
         }
-        page.MoveTo(x, y);
-        page.LineTo(x + w, y);
-        page.LineTo(x + w, y + h);
-        page.LineTo(x, y + h);
-        if (fillShape) {
-            page.FillPath();
+        if (r == 0f) {
+            page.MoveTo(x, y);
+            page.LineTo(x + w, y);
+            page.LineTo(x + w, y + h);
+            page.LineTo(x, y + h);
+            if (fillShape) {
+                page.FillPath();
+            } else {
+                page.ClosePath();
+            }
         } else {
-            page.ClosePath();
+            const float k = 0.55228f;
+            List<Point> points = new List<Point> {
+                new Point(x + r, y),
+                new Point((x + w) - r, y),
+                new Point((x + w - r) + r * k, y, Point.ControlPointC),
+                new Point((x + w), (y + r) - r * k, Point.ControlPointC),
+                new Point((x + w), (y + r)),
+                new Point((x + w), (y + h) - r),
+                new Point((x + w), ((y + h) - r) + r * k, Point.ControlPointC),
+                new Point(((x + w) - r) + r * k, (y + h), Point.ControlPointC),
+                new Point(((x + w) - r), (y + h)),
+                new Point((x + r), (y + h)),
+                new Point(((x + r) - r * k), (y + h), Point.ControlPointC),
+                new Point(x, ((y + h) - r) + r * k, Point.ControlPointC),
+                new Point(x, (y + h) - r),
+                new Point(x, (y + r)),
+                new Point(x, (y + r) - r * k, Point.ControlPointC),
+                new Point((x + r) - r * k, y, Point.ControlPointC),
+                new Point((x + r), y)
+            };
+            page.DrawPath(points, fillShape ? PathOperator.Fill : PathOperator.Stroke);
         }
         page.AddEMC();
 

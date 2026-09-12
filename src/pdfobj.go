@@ -29,10 +29,10 @@ type PDFobj struct {
 	gsNumber     int      // Graphics State Number
 }
 
-// NewPDFobj is used to create Java or .NET objects that represent the objects in PDF document.
+// newPDFobj is used to create Java or .NET objects that represent the objects in PDF document.
 // See the PDF specification for more information.
 // Also see Example_19.
-func NewPDFobj() *PDFobj {
+func newPDFobj() *PDFobj {
 	obj := new(PDFobj)
 	obj.dict = make([]string, 0)
 	obj.gsNumber = -1
@@ -43,7 +43,8 @@ func (obj *PDFobj) add(token string) {
 	obj.dict = append(obj.dict, token)
 }
 
-func (obj *PDFobj) getNumber() int {
+// GetNumber returns the object number.
+func (obj *PDFobj) GetNumber() int {
 	return obj.number
 }
 
@@ -55,12 +56,6 @@ func (obj *PDFobj) GetDict() []string {
 // GetData returns the uncompressed stream data.
 func (obj *PDFobj) GetData() []byte {
 	return obj.data
-}
-
-// SetStreamAndData copies the stream from the buffer, and decodes it with the
-// filters of its /Filter entry.
-func (obj *PDFobj) SetStreamAndData(buf []byte, length int) *PDFobj {
-	return obj.setStreamAndData(buf, length, nil)
 }
 
 // setStreamAndData copies the stream from the buffer, decrypts it when the
@@ -137,7 +132,7 @@ func (obj *PDFobj) getValues(key string) []string {
 // index. Images keep it, as they are copied with their stream, and their data
 // is not used.
 func (obj *PDFobj) applyDecodeParms(decoded []byte, index int) []byte {
-	if obj.getValue("/Subtype") == "/Image" {
+	if obj.GetValue("/Subtype") == "/Image" {
 		return decoded
 	}
 	parms := obj.getDecodeParms(index)
@@ -209,20 +204,20 @@ func getDecodeParm(parms []string, key string, defaultValue int) int {
 	return defaultValue
 }
 
-// SetStream sets the object stream.
-func (obj *PDFobj) SetStream(stream []byte) *PDFobj {
+// setStream sets the object stream.
+func (obj *PDFobj) setStream(stream []byte) *PDFobj {
 	obj.stream = stream
 	return obj
 }
 
-// SetNumber sets the object number.
-func (obj *PDFobj) SetNumber(number int) *PDFobj {
+// setNumber sets the object number.
+func (obj *PDFobj) setNumber(number int) *PDFobj {
 	obj.number = number
 	return obj
 }
 
-// getValue returns the dictionary value for the specified key.
-func (obj *PDFobj) getValue(key string) string {
+// GetValue returns the dictionary value for the specified key.
+func (obj *PDFobj) GetValue(key string) string {
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == key {
 			token := obj.dict[i+1]
@@ -255,8 +250,8 @@ func (obj *PDFobj) getValue(key string) string {
 	return ""
 }
 
-// GetObjectNumbers returns the object numbers.
-func (obj *PDFobj) GetObjectNumbers(key string) []int {
+// getObjectNumbers returns the object numbers.
+func (obj *PDFobj) getObjectNumbers(key string) []int {
 	numbers := make([]int, 0)
 	for i := 0; i < len(obj.dict); i++ {
 		token := obj.dict[i]
@@ -309,8 +304,8 @@ func (obj *PDFobj) GetPageSize() [2]float32 {
 	return letter.Portrait
 }
 
-// GetLength return the length value.
-func (obj *PDFobj) GetLength(objects []*PDFobj) int {
+// getLength return the length value.
+func (obj *PDFobj) getLength(objects []*PDFobj) int {
 	for i := 0; i < len(obj.dict); i++ {
 		token := obj.dict[i]
 		if token == "/Length" {
@@ -320,7 +315,7 @@ func (obj *PDFobj) GetLength(objects []*PDFobj) int {
 			}
 			if obj.dict[i+2] == "0" &&
 				obj.dict[i+3] == "R" {
-				return obj.getLength(objects, number)
+				return obj.getLengthFromObject(objects, number)
 			}
 			return number
 		}
@@ -328,7 +323,8 @@ func (obj *PDFobj) GetLength(objects []*PDFobj) int {
 	return 0
 }
 
-func (obj *PDFobj) getLength(objects []*PDFobj, number int) int {
+// getLengthFromObject returns the /Length stored in the object with the number.
+func (obj *PDFobj) getLengthFromObject(objects []*PDFobj, number int) int {
 	for _, obj := range objects {
 		if obj.number == number {
 			length, err := strconv.Atoi(obj.dict[3])
@@ -347,7 +343,7 @@ func (obj *PDFobj) getLength(objects []*PDFobj, number int) int {
 // Together they are one content stream, so they are returned joined in a new
 // object, which is not in the objects list.
 func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
-	numbers := obj.GetObjectNumbers("/Contents")
+	numbers := obj.getObjectNumbers("/Contents")
 	if len(numbers) == 1 {
 		contents := objects[numbers[0]-1]
 		if contents.stream != nil {
@@ -371,7 +367,7 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 	if len(numbers) == 1 {
 		return objects[numbers[0]-1]
 	}
-	content := NewPDFobj()
+	content := newPDFobj()
 	content.data = make([]byte, 0)
 	for _, number := range numbers {
 		if data := objects[number-1].data; data != nil {
@@ -382,7 +378,8 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 	return content
 }
 
-func (obj *PDFobj) getResourcesObject(objects []*PDFobj) *PDFobj {
+// GetResourcesObject returns the resources object of this page, or nil if it has none.
+func (obj *PDFobj) GetResourcesObject(objects []*PDFobj) *PDFobj {
 	for i, token := range obj.dict {
 		if token == "/Resources" {
 			token = obj.dict[i+1]
@@ -399,10 +396,11 @@ func (obj *PDFobj) getResourcesObject(objects []*PDFobj) *PDFobj {
 	return nil
 }
 
-func (obj *PDFobj) addCoreFontResource(coreFont *corefont.CoreFont, objects *[]*PDFobj) *Font {
+// AddCoreFontResource adds a core font to the resources of this page and returns it.
+func (obj *PDFobj) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*PDFobj) *Font {
 	font := NewCoreFontForPDFobj(coreFont)
 	font.fontID = strings.ToUpper(strings.ReplaceAll(font.name, "-", "_"))
-	obj2 := NewPDFobj()
+	obj2 := newPDFobj()
 	obj2.dict = append(obj2.dict, "<<")
 	obj2.dict = append(obj2.dict, "/Type")
 	obj2.dict = append(obj2.dict, "/Font")
@@ -583,10 +581,11 @@ func (obj *PDFobj) AddFontResource(font *Font, objects *[]*PDFobj) {
 	}
 }
 
-func (obj *PDFobj) addContent(content []byte, objects *[]*PDFobj) {
-	obj2 := NewPDFobj()
-	obj2.SetNumber(len(*objects) + 1)
-	obj2.SetStream(content)
+// AddContent appends a content stream to the contents of this page.
+func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
+	obj2 := newPDFobj()
+	obj2.setNumber(len(*objects) + 1)
+	obj2.setStream(content)
 	*objects = append(*objects, obj2)
 
 	objNumber := strconv.Itoa(obj2.number)
@@ -644,10 +643,10 @@ func (obj *PDFobj) addContent(content []byte, objects *[]*PDFobj) {
  * @param content
  * @param objects
  */
-func (obj *PDFobj) addPrefixContent(content []byte, objects *[]*PDFobj) {
-	obj2 := NewPDFobj()
-	obj2.SetNumber(len(*objects) + 1)
-	obj2.SetStream(content)
+func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
+	obj2 := newPDFobj()
+	obj2.setNumber(len(*objects) + 1)
+	obj2.setStream(content)
 	*objects = append(*objects, obj2)
 
 	objNumber := strconv.Itoa(obj2.number)
@@ -783,7 +782,7 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 	var buf strings.Builder
 	buf.WriteString("q\n")
 	buf.WriteString("/GS" + strconv.Itoa(obj.gsNumber+1) + " gs\n")
-	obj.addPrefixContent([]byte(buf.String()), objects)
+	obj.AddPrefixContent([]byte(buf.String()), objects)
 	return obj
 }
 

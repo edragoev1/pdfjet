@@ -276,3 +276,69 @@ Swift `OptionSet` is a struct, not an enum, so both ports keep the enum with the
 bit values of the standard and the `int` that `Permissions` masks and checks.
 In all four ports the value is the `/P` entry of the encryption dictionary
 without its reserved bits, so `getRawValue` is the same number everywhere.
+
+`./audit-api.py` lists the public types and members of the four ports, matches
+them by name without regard to case and underscores, and prints what is not in
+every port and what takes a different number of parameters, so a change to a
+public signature can be checked against the other three ports. Its report is
+empty apart from the conventions below.
+
+### Names, overloads and constructors
+
+The Java name is the reference. C# and Go use its PascalCase form
+(`setLocation`, `SetLocation`), Swift the same camelCase name with unlabelled
+arguments. Java and C# have `float` and `double` overloads of the setters,
+Swift has one form with default arguments where Java has a shorter overload,
+and Go, which cannot overload, gives the other form a suffix:
+`SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize`,
+`DrawStringUsingColorMap` and `DrawStringUsingSpacing` for the `drawString`
+overloads, `StringWidthFB` for `stringWidth` with a fallback font,
+`DrawCircleUsingPathOperator` for `drawCircle` with an operator, and
+`AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
+`addResource` overloads of `Page` and `PDFobj`. Some setters take `r, g, b`
+floats next to the `int` color in some ports only; the `int` form is in every
+port.
+
+Constructors are `New<Type>` functions in Go, again with a suffix for an
+overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewPageDetached` for
+`Page.DETACHED`, `NewTableFromFile`, `NewTextBoxWithText`, and `NewFont`,
+`NewFontFromFile`, `NewCoreFont`, `NewCJKFont`, `NewFontStream1` and
+`NewFontStream2` where the other ports pass `Font.STREAM` or a `CoreFont` to
+the `Font` constructor. Where the other ports have an overload with fewer
+arguments, Go has the full form only: `NewCell(font, text)`,
+`NewDestination(name, x, y)`, `NewLine`, `NewRect` and `NewPoint` with their
+coordinates, `NewParagraph()`, `NewTable()`, `NewTextColumn(rotation)`,
+`Table.SetData(data, headerRows)` and `Page.AddBMC` with the language.
+`content.GetFromReader` is `Content.getFromStream`.
+
+### Constants and fields in Go
+
+Java, C# and Swift keep constants in classes; Go keeps them in packages:
+`color.Blue` for `Color.blue`, `shape.Circle` for `Point.CIRCLE`,
+`structtype.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
+`direction`, `effect`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
+`pathoperator`, `imagetype`, `mark`, the page sizes (`letter.Portrait`) and
+the font families (`IBMPlexSans.Regular`). The `alignment` package serves for
+both `Align` and `Alignment`, so it also has `Top`, `Bottom` and `Justify`.
+The core fonts are functions, `corefont.Courier()`, where the other ports have
+a `Courier` class with the metrics. The QR code error correction levels are
+`qrcode.ErrorCorrectLevelL` and so on, and `Table.WITH_2_HEADER_ROWS` is
+`pdfjet.TableWith2HeaderRows`. Where Java, C# and Swift have public fields
+(`Paragraph.x1`, `Title.prefix`, `TextParameters`), Go has getters
+(`GetX1`). `Permissions` prints through `String()` in Go and `description`
+in Swift where Java and C# have `toString`; C# also keeps its `Access` and
+`RawValue` properties next to `GetAccess` and `GetRawValue`.
+
+### Helpers that are public because of packaging
+
+A few members are public in one port only because that port needs them across
+a package boundary; they are not API and can change in any release. In Java:
+`PDF.append`, `newobj`, `endobj`, `getObjNumber` and `addObjectsToPDF`, used
+by `com.pdfjet.encryption`, `Barcode.drawOnPageAtLocation`, used by `Cell`,
+and the `AES128`, `AES256` and `OTF` classes. In Go: the exported functions of
+the `encryption` package (`Encrypt`, `EncryptECB`, `EncryptK1`,
+`EncryptWithZeroIV`), the `CoreFont` fields, and the types of the helper files
+in the root package (`Annotation`, `BMPImage`, `JPGImage`, `OCG`, `State`,
+`Round`, `OTF`, `SVG`, `SVGPath`). The Java `GenerateFontMetricsFiles` and
+`GenerateStreamFontsFiles` classes are the command line tools that make the
+font files, not library classes.

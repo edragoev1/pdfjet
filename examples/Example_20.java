@@ -51,8 +51,8 @@ class Example_20 {
         path.add(new Point(15.5f,  4.5f));
 
         path.add(new Point(18.0f,  3.5f));
-        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT));
-        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT));
+        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
         path.add(new Point(20.5f,  7.5f));
 
         path.add(new Point(21.0f,  9.5f));
@@ -73,8 +73,8 @@ class Example_20 {
         path.add(new Point( 5.0f,  9.5f));
 
         path.add(new Point( 5.5f,  7.5f));
-        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT));
-        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT));
+        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
         path.add(new Point( 8.0f,  3.5f));
 
         path.add(new Point(10.5f,  4.5f));

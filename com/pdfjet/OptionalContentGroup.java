@@ -45,12 +45,37 @@ public class OptionalContentGroup {
     }
 
     /**
+     * Returns the name of this group.
+     *
+     * @return the name of the group.
+     */
+    public String getName() {
+        return this.name;
+    }
+
+    /**
      * Add drawable object to the group
      *
      * @param drawable the drawable object
      */
     public void add(Drawable drawable) {
         components.add(drawable);
+    }
+
+    /**
+     * Removes all drawable objects from the group.
+     */
+    public void clear() {
+        components.clear();
+    }
+
+    /**
+     * Returns the drawable objects in the group.
+     *
+     * @return the list of drawable objects.
+     */
+    public List<Drawable> getComponents() {
+        return components;
     }
 
     /**

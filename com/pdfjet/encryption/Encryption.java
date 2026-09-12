@@ -323,7 +323,7 @@ public class Encryption {
      * @param permissionsValue the value of the /P key.
      * @return the 16-byte permissions block, before it is encrypted.
      */
-    public static byte[] createUnencryptedPermsBlock(long permissionsValue) {
+    private static byte[] createUnencryptedPermsBlock(long permissionsValue) {
         // Extend the 32-bit permission to 64 bits with upper 32 bits set to 1
         long extendedPermissions = 0xFFFF_FFFF_0000_0000L | (permissionsValue & 0xFFFFFFFFL);
 

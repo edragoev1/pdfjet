@@ -2,7 +2,7 @@ import Foundation
 
 /// A polygon annotation.
 public class PolygonAnnotation: BaseAnnotation {
-    override public init() {
+    public override init() {
         super.init()
         self.annotationType = Annotation.Polygon
     }

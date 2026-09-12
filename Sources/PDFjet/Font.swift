@@ -11,6 +11,9 @@ import Foundation
 /// The font objects must added to the PDF before they can be used to draw text.
 ///
 public class Font {
+    /// Passed to the stream font constructors to mark the font as a stream font.
+    public static let STREAM: Bool = true
+
     var name: String = ""
     var info: String = ""
     var objNumber = 0
@@ -311,6 +314,11 @@ public class Font {
         return self.size
     }
 
+    /// Returns the name of this font.
+    public func getName() -> String {
+        return self.name
+    }
+
     ///
     /// Sets the kerning for the selected font to 'true' or 'false'
     /// depending on the passed value of kernPairs parameter.
@@ -458,14 +466,14 @@ public class Font {
                 + getUnderlineThickness(fontSize) / 2.0
     }
 
-    /// Returns the underline thickness in font units.
-    public func getUnderlineThickness() -> Int16 {
-        return self.fontUnderlineThickness
+    /// Returns the underline thickness at the current font size.
+    public func getUnderlineThickness() -> Float {
+        return self.underlineThickness
     }
 
-    /// Returns the underline position in font units.
-    public func getUnderlinePosition() -> Int16 {
-        return self.fontUnderlinePosition
+    /// Returns the underline position at the current font size.
+    public func getUnderlinePosition() -> Float {
+        return self.underlinePosition
     }
 
     ///

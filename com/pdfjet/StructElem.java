@@ -108,7 +108,7 @@ public class StructElem {
     protected List<StructElem> kids = null;
 
     /** The default constructor */
-    public StructElem() {
+    StructElem() {
         this.kids = new ArrayList<StructElem>();
     }
 
@@ -117,7 +117,7 @@ public class StructElem {
      *
      * @param structElem the child element.
      */
-    public void addKidStructElem(StructElem structElem) {
+    void addKidStructElem(StructElem structElem) {
         this.kids.add(structElem);
     }
 }

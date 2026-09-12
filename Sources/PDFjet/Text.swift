@@ -18,7 +18,6 @@ public class Text : Drawable {
     private var width: Float = 0.0
     private var xText: Float = 0.0
     private var yText: Float = 0.0
-    private var leading: Float = 0.0
     private var paragraphLeading: Float = 24.0
     private var borderColor: [Float]?
     private var borderWidth: Float = 0.5
@@ -29,7 +28,6 @@ public class Text : Drawable {
         self.paragraphs = paragraphs
         self.font = paragraphs[0].lines![0].getFont()
         self.fallbackFont = paragraphs[0].lines![0].getFallbackFont()
-        self.leading = font!.getBodyHeight()
     }
 
     /// Sets the location of the top left corner of this text.
@@ -47,18 +45,25 @@ public class Text : Drawable {
         return self
     }
 
-    /// Sets the distance between lines.
-    @discardableResult
-    public func setLeading(_ leading: Float) -> Text {
-        self.leading = leading
-        return self
-    }
-
     /// Sets the vertical distance between paragraphs.
     @discardableResult
     public func setParagraphLeading(
             _ paragraphLeading: Float) -> Text {
         self.paragraphLeading = paragraphLeading
+        return self
+    }
+
+    /// Sets the width of the border.
+    @discardableResult
+    public func setBorderWidth(_ borderWidth: Float) -> Text {
+        self.borderWidth = borderWidth
+        return self
+    }
+
+    /// Sets the dash pattern of the border, for example "[3] 0".
+    @discardableResult
+    public func setBorderPattern(_ borderPattern: String) -> Text {
+        self.borderPattern = borderPattern
         return self
     }
 

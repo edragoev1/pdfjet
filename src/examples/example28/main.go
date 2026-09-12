@@ -68,7 +68,8 @@ func drawLineOfText(page *pdfjet.Page, f1 *pdfjet.Font, x, y float32, c1, c2 int
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example28()
-	pdfjet.PrintDuration("Example_28", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_28", time0, time1)
 }

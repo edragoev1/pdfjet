@@ -22,8 +22,8 @@ type Container struct {
 	RotateDegrees float32    // The rotation angle of the container in degrees.
 	ScaleX        float32    // The scaling factor along the X-axis.
 	ScaleY        float32    // The scaling factor along the Y-axis.
-	Elements      []Drawable // The list of child drawable elements.
-	Parent        *Container
+	elements      []Drawable // The list of child drawable elements.
+	parent        *Container
 }
 
 // NewContainer creates a new container with the specified width and height.
@@ -39,7 +39,7 @@ func NewContainer(width, height float32) *Container {
 		RotateDegrees: 0,
 		ScaleX:        1,
 		ScaleY:        1,
-		Elements:      []Drawable{},
+		elements:      []Drawable{},
 	}
 }
 
@@ -50,6 +50,13 @@ func (c *Container) SetLocation(x, y float32) Drawable {
 	c.X = x
 	c.Y = y
 	return c
+}
+
+// Rotate sets the rotation angle of this container.
+//
+// degrees specifies the rotation angle in degrees.
+func (c *Container) Rotate(degrees float64) {
+	c.RotateDegrees = float32(degrees)
 }
 
 // SetRotation sets the rotation angle of the container in degrees.
@@ -119,32 +126,9 @@ func (c *Container) AddBorder() {
 // element is the Drawable object to add.
 func (c *Container) Add(element Drawable) {
 	if child, ok := element.(*Container); ok {
-		child.Parent = c
+		child.parent = c
 	}
-	c.Elements = append(c.Elements, element)
-}
-
-// RotateAroundCenter rotates a 2D point around a center point by the given degrees.
-// Accepts []float32 slices where index 0 is X and index 1 is Y.
-func RotateAroundCenter(point, center []float32, degrees float64) []float32 {
-	// Convert degrees to radians
-	rad := degrees * math.Pi / 180.0
-
-	// Translate to center (point relative to center)
-	dx := float64(point[0]) - float64(center[0])
-	dy := float64(point[1]) - float64(center[1])
-
-	// Apply rotation using 2D rotation matrix
-	cos := math.Cos(rad)
-	sin := math.Sin(rad)
-	dxRot := dx*cos - dy*sin
-	dyRot := dx*sin + dy*cos
-
-	// Translate back
-	nx := float64(center[0]) + dxRot
-	ny := float64(center[1]) + dyRot
-
-	return []float32{float32(nx), float32(ny)}
+	c.elements = append(c.elements, element)
 }
 
 // DrawOn draws the container and all child elements onto the given page.
@@ -205,7 +189,7 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendString(" cm\n")
 
 	// 6) Draw children elements
-	for _, element := range c.Elements {
+	for _, element := range c.elements {
 		var annot *BaseAnnotation
 		// Check if element is a known annotation type and cast it
 		if sq, ok := element.(*SquareAnnotation); ok {
@@ -223,11 +207,11 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 			annot.point2[0] += c.X
 			annot.point2[1] += c.Y
 			annot.container = c
-			if c.Parent != nil {
-				annot.point1[0] += c.Parent.X
-				annot.point1[1] += c.Parent.Y
-				annot.point2[0] += c.Parent.X
-				annot.point2[1] += c.Parent.Y
+			if c.parent != nil {
+				annot.point1[0] += c.parent.X
+				annot.point1[1] += c.parent.Y
+				annot.point2[0] += c.parent.X
+				annot.point2[1] += c.parent.Y
 			}
 			annot.Rotate(float64(-c.RotateDegrees))
 		}

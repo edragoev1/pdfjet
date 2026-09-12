@@ -91,6 +91,12 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>Sets the size of the fallback font.</summary>
+        public TextBlock SetFallbackFontSize(float fontSize) {
+            this.fallbackFont.SetSize(fontSize);
+            return this;
+        }
+
         /// <summary>Sets the text.</summary>
         public TextBlock SetText(string text) {
             this.textContent = text;
@@ -272,11 +278,6 @@ namespace PDFjet.NET {
         public TextBlock SetLanguage(string language) {
             this.language = language;
             return this;
-        }
-
-        /// <summary>Marks the text as Arabic. The same as SetRightToLeft(true).</summary>
-        public TextBlock SetTextIsArabic() {
-            return SetRightToLeft(true);
         }
 
         /// <summary>

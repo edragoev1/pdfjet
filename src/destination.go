@@ -21,13 +21,13 @@ type Destination struct {
 func NewDestination(name string, xPosition float32, yPosition float32) *Destination {
 	destination := new(Destination)
 	destination.name = name
-	destination.yPosition = xPosition
+	destination.xPosition = xPosition
 	destination.yPosition = yPosition
 	return destination
 }
 
-// SetPageObjNumber sets the page object number.
-func (destination *Destination) SetPageObjNumber(pageObjNumber int) *Destination {
+// setPageObjNumber sets the page object number.
+func (destination *Destination) setPageObjNumber(pageObjNumber int) *Destination {
 	destination.pageObjNumber = pageObjNumber
 	return destination
 }

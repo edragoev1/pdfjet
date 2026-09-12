@@ -34,7 +34,6 @@ type TextLine struct {
 	uri, key           string
 	language           string
 	altDescription     string
-	actualText         string
 	uriLanguage        string
 	uriActualText      string
 	uriAltDescription  string
@@ -55,7 +54,6 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.textEffect = effect.Normal
 	textLine.verticalOffset = 0.0
 	textLine.altDescription = text
-	textLine.actualText = text
 	textLine.structureType = structtype.P
 	return textLine
 }
@@ -72,7 +70,6 @@ func NewEmptyTextLine(font *Font) *TextLine {
 func (textLine *TextLine) SetText(text string) *TextLine {
 	textLine.text = text
 	textLine.altDescription = text
-	textLine.actualText = text
 	return textLine
 }
 
@@ -355,19 +352,6 @@ func (textLine *TextLine) GetAltDescription() string {
 	return textLine.altDescription
 }
 
-// SetActualText sets the actual text for this text line.
-// @param actualText the actual text for the text line.
-// @return this TextLine.
-func (textLine *TextLine) SetActualText(actualText string) *TextLine {
-	textLine.actualText = actualText
-	return textLine
-}
-
-// GetActualText gets the actual text.
-func (textLine *TextLine) GetActualText() string {
-	return textLine.actualText
-}
-
 // SetURILanguage sets the URI language.
 func (textLine *TextLine) SetURILanguage(uriLanguage string) *TextLine {
 	textLine.uriLanguage = uriLanguage
@@ -434,13 +418,13 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	radians := math.Pi * float64(textLine.degrees) / 180.0
 	if textLine.underline {
-		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
+		page.SetPenWidth(textLine.font.GetUnderlineThicknessAt(textLine.fontSize))
 		page.SetPenColorRGB(textLine.lineColor)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		if textLine.isLastToken {
 			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
 		}
-		underlinePosition := textLine.font.GetUnderlinePosition(textLine.fontSize)
+		underlinePosition := textLine.font.GetUnderlinePositionAt(textLine.fontSize)
 		xAdjust := underlinePosition * float32(math.Sin(radians))
 		yAdjust := underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
 		x2 := textLine.x + lineLength*float32(math.Cos(radians))
@@ -453,7 +437,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	}
 
 	if textLine.strikeout {
-		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
+		page.SetPenWidth(textLine.font.GetUnderlineThicknessAt(textLine.fontSize))
 		page.SetPenColorRGB(textLine.lineColor)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		if textLine.isLastToken {
@@ -472,7 +456,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	}
 
 	if textLine.uri != "" || textLine.key != "" {
-		page.AddAnnotation(&Annotation{
+		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             textLine.x,
 			y1:             (textLine.y + textLine.verticalOffset) - textLine.font.GetAscentAt(textLine.fontSize),
@@ -502,7 +486,8 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	return [2]float32{float32(xMax), float32(yMax)}
 }
 
-func (textLine *TextLine) advance(leading float32) float32 {
+// Advance moves this text line down by the leading and returns the new y coordinate.
+func (textLine *TextLine) Advance(leading float32) float32 {
 	textLine.y += leading
 	return textLine.y
 }

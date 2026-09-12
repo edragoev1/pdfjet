@@ -206,7 +206,8 @@ func getData(fileName, delimiter string) [][]*pdfjet.Point {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example09()
-	pdfjet.PrintDuration("Example_09", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_09", time0, time1)
 }

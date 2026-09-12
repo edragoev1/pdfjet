@@ -55,7 +55,9 @@ public class Example_09 {
         trendLine.append(p1)
         trendLine.append(p2)
 
-        chart.chartData!.append(trendLine)
+        var chartData = chart.getData()!
+        chartData.append(trendLine)
+        chart.setData(chartData)
     }
 
     public func addTableToChart(

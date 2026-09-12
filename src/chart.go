@@ -314,10 +314,10 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	}
 
 	if chart.drawXAxisLabels {
-		chart.DrawXAxisLabels(page)
+		chart.drawXAxisLabelsOn(page)
 	}
 	if chart.drawYAxisLabels {
-		chart.DrawYAxisLabels(page)
+		chart.drawYAxisLabelsOn(page)
 	}
 
 	// Defensive copy so the user's data is never mutated
@@ -345,7 +345,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 			}
 			if point.uri != "" {
 				// AddAnnotation flips y into PDF space; do not pre-flip here.
-				page.AddAnnotation(&Annotation{
+				page.addAnnotation(&Annotation{
 					annotationType: AnnotationLink,
 					x1:             point.x - point.r,
 					y1:             point.y - point.r,
@@ -511,8 +511,8 @@ func (chart *Chart) drawVerticalGridLines(page *Page) {
 	}
 }
 
-// DrawXAxisLabels draws the X axis labels.
-func (chart *Chart) DrawXAxisLabels(page *Page) {
+// drawXAxisLabelsOn draws the X axis labels.
+func (chart *Chart) drawXAxisLabelsOn(page *Page) {
 	format := chart.formatString()
 	x := chart.x5
 	y := chart.y8 + chart.f2.GetBodyHeight()
@@ -526,8 +526,8 @@ func (chart *Chart) DrawXAxisLabels(page *Page) {
 	}
 }
 
-// DrawYAxisLabels draws the Y axis labels.
-func (chart *Chart) DrawYAxisLabels(page *Page) {
+// drawYAxisLabelsOn draws the Y axis labels.
+func (chart *Chart) drawYAxisLabelsOn(page *Page) {
 	format := chart.formatString()
 	x := chart.x5 - chart.getLongestAxisYLabelWidth()
 	y := chart.y8 + chart.f2.ascent/3

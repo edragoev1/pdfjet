@@ -19,11 +19,16 @@ suffix is listed with it. Go constants live in packages (color.Blue,
 alignment.Left); a package with at most one exported type is treated as the
 class of the same name.
 
+A public no-arg constructor of a class that has only constants and static
+members is not reported: Java declares one for javadoc and C# has an implicit
+one. C# properties count as members, matched by name with the getters of the
+other ports.
+
 The report has three tables: types that are not in every port, members that
 are not in every port of a type that is, and members whose numbers of
-parameters differ between ports. Language conventions that this script cannot
-tell from a gap (float and double overloads, Swift argument labels) are left
-to the reader.
+parameters differ between ports. What remains after the fixes of v9.0.0 is
+the set of conventions listed in the README Port differences section; keep
+the report to those when changing a public signature.
 """
 
 import os
@@ -105,7 +110,7 @@ def files(folder, ext, skip=()):
 # Java and C# ---------------------------------------------------------------
 
 JAVA_MODS = r"(?:(?:static|final|abstract|synchronized|override|virtual|new|readonly|const|sealed|unsafe)\s+)*"
-TYPE = r"[\w.<>\[\],?]+(?:\s*\[\s*\])*"
+TYPE = r"[\w.\[\]?]+(?:<[\w.<>\[\],? ]*>)?(?:\[\])*"
 
 
 def read_c_like(api, path, port):
@@ -145,7 +150,8 @@ def read_c_like(api, path, port):
             members.setdefault(key_of(m.group(2)), Member("method")).add(m.group(2), count_params(m.group(3)))
         return
     for m in re.finditer(
-            r"public\s+" + JAVA_MODS + r"(?:(" + TYPE + r")\s+)?(\w+)\s*\(([^)]*)\)\s*(?:throws[^{;]*)?[{;]", body):
+            r"public\s+" + JAVA_MODS + r"(?:(" + TYPE + r")\s+)?(\w+)\s*\(([^)]*)\)\s*(?:throws[^{;]*)?"
+            r"(?::\s*(?:this|base)\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)\s*)?[{;]", body):
         rtype, name, params = m.groups()
         if rtype is None or name == cls:
             members.setdefault("<init>", Member("ctor")).add(name, count_params(params))
@@ -163,7 +169,8 @@ def read_c_like(api, path, port):
             members.setdefault(key_of(name), Member("field")).add(name)
     # A class that declares no constructor has a public no-arg one.
     if kind == "class" and "<init>" not in members and not re.search(
-            r"(?:abstract|static)\s+(?:\w+\s+)*class\s+" + cls + r"\b", text):
+            r"(?:abstract|static)\s+(?:\w+\s+)*class\s+" + cls + r"\b", text) and not re.search(
+            r"(?:protected|private|internal)\s+" + cls + r"\s*\(", body):
         members.setdefault("<init>", Member("ctor")).add(cls, 0)
 
 

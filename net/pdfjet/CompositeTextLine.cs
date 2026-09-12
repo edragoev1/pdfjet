@@ -183,10 +183,18 @@ public class CompositeTextLine : IDrawable {
     }
 
     /// <summary>
+    /// Returns the position of this composite text line.
+    /// </summary>
+    /// <returns>the x and y coordinates of this composite text line.</returns>
+    public float[] GetPosition() {
+        return new float[] {this.x, this.y};
+    }
+
+    /// <summary>
     /// Returns the number of text lines.
     /// </summary>
     /// <returns>the number of text lines.</returns>
-    public int Size() {
+    public int GetNumberOfTextLines() {
         return textLines.Count;
     }
 

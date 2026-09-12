@@ -49,6 +49,13 @@ public class Table : Drawable {
     }
 
     ///
+    /// Creates a table that uses f1 for the header rows and f2 for the other rows.
+    ///
+    public init(_ f1: Font, _ f2: Font) {
+        tableData = [[Cell]]()
+    }
+
+    ///
     /// Create a table object.
     ///
     public init(_ f1: Font, _ f2: Font, _ fileName: String) throws {
@@ -607,7 +614,7 @@ public class Table : Drawable {
     public func setCellBordersWidth(_ width: Float) -> Table {
         for row in tableData {
             for cell in row {
-                cell.setStrokeWidth(width)
+                cell.setLineWidth(width)
             }
         }
         return self
@@ -717,6 +724,7 @@ public class Table : Drawable {
                     cell2.setWidth(cell.getWidth())
                     cell2.setLeftPadding(cell.getLeftPadding())
                     cell2.setRightPadding(cell.getRightPadding())
+                    cell2.setLineWidth(cell.getLineWidth())
                     cell2.setStrokeWidth(cell.getStrokeWidth())
                     // Java copies a null background across as null, which
                     // leaves the new cell without one.
@@ -752,7 +760,7 @@ public class Table : Drawable {
     /// Wraps around the text in all cells so it fits the column width.
     /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
     ///
-    public func wrapAroundCellText() {
+    func wrapAroundCellText() {
         let tableData2 = addExtraTableRows()
         for (i, row) in tableData2.enumerated() {
             for (j, cell) in row.enumerated() {
@@ -800,7 +808,7 @@ public class Table : Drawable {
     ///
     /// - Returns: the number of vertical cells needed to wrap around the cell text.
     ///
-    public func getNumVerCells(_ row: [Cell], _ index: Int) -> Int {
+    func getNumVerCells(_ row: [Cell], _ index: Int) -> Int {
         let cell = row[index]
         var numOfVerCells = 1
         if cell.text == nil {

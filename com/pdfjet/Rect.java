@@ -219,6 +219,16 @@ public class Rect implements Drawable {
     }
 
     /**
+     * Sets the language of this rect, used for accessibility.
+     * @param language the language, for example "en-US".
+     * @return this Rect object.
+     */
+    public Rect setLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /**
      * Sets the alternate description of this rect.
      * @param altDescription the alternate description of the rect.
      * @return this Rect.
@@ -246,17 +256,6 @@ public class Rect implements Drawable {
     public Rect setBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;
         return this;
-    }
-
-    /**
-     * Places this rect in the another rect.
-     * @param rect the other rect.
-     * @param xOffset the x offset from the top left corner of the rect.
-     * @param yOffset the y offset from the top left corner of the rect.
-     */
-    public void placeIn(Rect rect, float xOffset, float yOffset) {
-        this.x = rect.x + xOffset;
-        this.y = rect.y + yOffset;
     }
 
     /**

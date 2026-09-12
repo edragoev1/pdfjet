@@ -23,8 +23,8 @@ type L5ECC struct {
 	Table []int // exported field – callers can read it
 }
 
-// L5ECCInstance
+// l5ECCInstance
 // ---------------------------------------------------------------------
 // Exported singleton instance
 // ---------------------------------------------------------------------
-var L5ECCInstance = L5ECC{Table: l5ECCTable}
+var l5ECCInstance = L5ECC{Table: l5ECCTable}

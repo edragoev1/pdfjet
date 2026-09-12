@@ -88,11 +88,6 @@ public class StructElem {
     /// Content that is not part of the document structure, such as page numbers.
     public static let Artifact = "Artifact"
 
-    // Figure and special elements
-    /// A figure. Same as Figure.
-    public static let figure = "Figure"
-    /// Content that is not part of the document structure. Same as Artifact.
-    public static let artifact = "Artifact"
     var objNumber: Int?
     var structure: String?
     var pageObjNumber: Int?

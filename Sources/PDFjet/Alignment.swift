@@ -9,10 +9,7 @@
  * Used to specify the text alignment in the BigTable.swift
  */
 public enum Alignment {
-    case TOP
-    case BOTTOM
     case LEFT
     case RIGHT
     case CENTER
-    case JUSTIFY
 }

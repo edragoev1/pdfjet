@@ -44,8 +44,6 @@ public class Point : IDrawable {
     public static readonly int RIGHT_ARROW = 12;
 
     // For the c operator we have both control points
-    /// <summary>A control point of a curve drawn with the c operator. Same as ControlPointC.</summary>
-    public static readonly char CONTROL_POINT = 'c';
     /// <summary>A control point of a curve drawn with the c operator, which uses both control points.</summary>
     public static readonly char ControlPointC = 'c';
 
@@ -164,12 +162,6 @@ public class Point : IDrawable {
 
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
-    }
-
-    /// <summary>Sets the location of this point. Same as SetLocation.</summary>
-    public Point SetXY(float x, float y) {
-        SetLocation(x, y);
-        return this;
     }
 
     /// <summary>
@@ -422,15 +414,6 @@ public class Point : IDrawable {
     /// <summary>Returns the path operator used to draw this point.</summary>
     public string GetPathOperator() {
         return this.pathOperator;
-    }
-
-    /// <summary>
-    /// Sets this point as the start of a path that will be drawn on the chart.
-    /// </summary>
-    /// <returns>the point.</returns>
-    public Point SetStartOfPath() {
-        this.drawPath = true;
-        return this;
     }
 
     /// <summary>

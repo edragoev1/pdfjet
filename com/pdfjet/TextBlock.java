@@ -109,6 +109,17 @@ public class TextBlock implements Drawable {
     }
 
     /**
+     * Sets the size of the fallback font.
+     *
+     * @param fontSize the fallback font size.
+     * @return this TextBlock object.
+     */
+    public TextBlock setFallbackFontSize(float fontSize) {
+        this.fallbackFont.setSize(fontSize);
+        return this;
+    }
+
+    /**
      * Sets the text.
      *
      * @param text the text.
@@ -172,6 +183,17 @@ public class TextBlock implements Drawable {
     public TextBlock setWidth(float w) {
         this.width = w;
         this.height = 0.0f;
+        return this;
+    }
+
+    /**
+     * Sets the height of this text block.
+     *
+     * @param h the height.
+     * @return this TextBlock object.
+     */
+    public TextBlock setHeight(float h) {
+        this.height = h;
         return this;
     }
 
@@ -347,6 +369,15 @@ public class TextBlock implements Drawable {
     public TextBlock setBackgroundColor(float[] fillColor) {
         this.fillColor = fillColor;
         return this;
+    }
+
+    /**
+     * Returns the background color.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0, or null.
+     */
+    public float[] getBackgroundColor() {
+        return this.fillColor;
     }
 
     /**

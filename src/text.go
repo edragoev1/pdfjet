@@ -6,6 +6,9 @@
 package pdfjet
 
 import (
+	"bufio"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/content"
@@ -18,7 +21,6 @@ type Text struct {
 	paragraphs                  []*Paragraph
 	font, fallbackFont          *Font
 	x1, y1, xText, yText, width float32
-	leading                     float32
 	paragraphLeading            float32
 	hasBorder                   bool
 	borderColor                 [3]float32
@@ -32,7 +34,6 @@ func NewText(paragraphs []*Paragraph) *Text {
 	text.paragraphs = paragraphs
 	text.font = paragraphs[0].lines[0].GetFont()
 	text.fallbackFont = paragraphs[0].lines[0].GetFallbackFont()
-	text.leading = text.font.ascent + text.font.descent
 	text.paragraphLeading = 24.0
 	text.borderColor = [3]float32{0.0, 0.0, 0.0}
 	text.borderWidth = 0.5
@@ -53,21 +54,22 @@ func (text *Text) SetWidth(width float32) *Text {
 	return text
 }
 
-// SetLeading sets the leading of the text.
-func (text *Text) SetLeading(leading float32) *Text {
-	text.leading = leading
-	return text
-}
-
 // SetParagraphLeading sets the paragraph leading.
 func (text *Text) SetParagraphLeading(paragraphLeading float32) *Text {
 	text.paragraphLeading = paragraphLeading
 	return text
 }
 
-// GetSize returns the size of the text block.
-func (text *Text) GetSize() [2]float32 {
-	return [2]float32{text.width, text.yText + text.font.descent}
+// SetBorderWidth sets the width of the border.
+func (text *Text) SetBorderWidth(borderWidth float32) *Text {
+	text.borderWidth = borderWidth
+	return text
+}
+
+// SetBorderPattern sets the dash pattern of the border, for example "[3] 0".
+func (text *Text) SetBorderPattern(borderPattern string) *Text {
+	text.borderPattern = borderPattern
+	return text
 }
 
 // SetBorderColor sets the border color as a 0xRRGGBB value and draws a border around this text.
@@ -210,6 +212,21 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 		tokens = append(tokens, sb.String())
 	}
 	return tokens
+}
+
+// ReadLines returns the lines of the specified text file. It exits the program if the file cannot be opened.
+func ReadLines(filePath string) []string {
+	lines := make([]string, 0)
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines
 }
 
 // ParagraphsFromFile reads a text file and returns its paragraphs. An empty line separates the paragraphs.

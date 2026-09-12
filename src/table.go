@@ -389,7 +389,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 			if i == (table.numOfHeaderRows - 1) {
 				cell.SetBottomBorder(true)
 			}
-			cell.DrawOn(page, x, y, w, h)
+			cell.drawOn(page, x, y, w, h)
 			x += w
 		}
 		x = table.x1
@@ -418,7 +418,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 			}
 			if page != nil {
 				page.SetBrushColorRGB(cell.GetTextColor())
-				cell.DrawOn(page, x, y, w, h)
+				cell.drawOn(page, x, y, w, h)
 			}
 			x += w
 		}
@@ -486,7 +486,7 @@ func (table *Table) SetCellBordersColor(color int32) *Table {
 	penColor := colorToRGB(color)
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetPenColor(penColor)
+			cell.SetStrokeColorRGB(penColor)
 		}
 	}
 	return table
@@ -611,11 +611,11 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				cell2.SetLineWidth(cell.GetLineWidth())
 				// Java copies a null background and a null pen color across as
 				// null, which leaves the new cell without either.
-				if cell.hasBackground {
-					cell2.SetBgColorRGB(cell.GetBgColor())
+				if cell.hasBackgroundColor {
+					cell2.SetBackgroundColorRGB(cell.GetBackgroundColor())
 				}
-				if cell.hasPenColor {
-					cell2.SetPenColor(cell.GetPenColor())
+				if cell.hasStrokeColor {
+					cell2.SetStrokeColorRGB(cell.GetStrokeColor())
 				}
 				cell2.SetTextColorRGB(cell.GetTextColor())
 				cell2.SetTopBorder(cell.GetTopBorder())

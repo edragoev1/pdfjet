@@ -12,7 +12,6 @@ namespace PDFjet.NET {
 public class CalendarMonth : IDrawable {
     Font f1 = null;
     Font f2 = null;
-    float fontSize = 12f;
 
     float x1 = 75f;
     float y1 = 75f;
@@ -58,12 +57,6 @@ public class CalendarMonth : IDrawable {
     /// <summary>Sets the body font.</summary>
     public CalendarMonth SetBodyFont(Font font) {
         this.f2 = font;
-        return this;
-    }
-
-    /// <summary>Sets the font size.</summary>
-    public CalendarMonth SetFontSize(float fontSize) {
-        this.fontSize = fontSize;
         return this;
     }
 
@@ -117,14 +110,14 @@ public class CalendarMonth : IDrawable {
                         String s1 = dayOfMonth.ToString();
                         float offset = (dx - f2.StringWidth(s1)) / 2;
                         TextLine text = new TextLine(f2, s1);
-                        text.SetLocation(x1 + col*dx + offset, y1 + row*dy + f2.GetAscent(fontSize));
+                        text.SetLocation(x1 + col*dx + offset, y1 + row*dy + f2.GetAscent());
                         text.DrawOn(page);
 
                         page.SetPenWidth(1.5f);
                         page.SetPenColor(Color.blue);
                         page.DrawEllipse(
                                 x1 + col*dx + dx/2,
-                                y1 + row*dy + f2.GetBodyHeight(fontSize)/2,
+                                y1 + row*dy + f2.GetBodyHeight()/2,
                                 dx/2.5f,
                                 dy/2.5f);
                     }

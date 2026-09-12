@@ -83,9 +83,9 @@ func (b *BaseAnnotation) Rotate(degrees float64) {
 		return
 	}
 	center := b.container.GetRotationCenter()
-	if b.container.Parent != nil {
-		center[0] += b.container.Parent.X
-		center[1] += b.container.Parent.Y
+	if b.container.parent != nil {
+		center[0] += b.container.parent.X
+		center[1] += b.container.parent.Y
 	}
 	b.point1 = rotateAroundCenter(b.point1, center, degrees)
 	b.point2 = rotateAroundCenter(b.point2, center, degrees)
@@ -119,7 +119,7 @@ func rotateAroundCenter(point, center [2]float32, degrees float64) [2]float32 {
 
 // DrawOn draws the annotation on the specified page.
 func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
-	page.AddAnnotation(&Annotation{
+	page.addAnnotation(&Annotation{
 		annotationType: b.annotationType,
 		x1:             b.point1[0],
 		y1:             b.point1[1],

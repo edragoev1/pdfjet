@@ -154,6 +154,22 @@ func (textBlock *TextBlock) SetWidth(w float32) *TextBlock {
 	return textBlock
 }
 
+// SetHeight sets the height of this text block.
+func (textBlock *TextBlock) SetHeight(h float32) *TextBlock {
+	textBlock.height = h
+	return textBlock
+}
+
+// GetWidth returns the width of this text block.
+func (textBlock *TextBlock) GetWidth() float32 {
+	return textBlock.width
+}
+
+// GetHeight returns the height of this text block.
+func (textBlock *TextBlock) GetHeight() float32 {
+	return textBlock.height
+}
+
 // SetBorderCornerRadius sets the border corner radius.
 // @param borderRadius float the border corner radius.
 func (textBlock *TextBlock) SetBorderCornerRadius(borderCornerRadius float32) *TextBlock {
@@ -232,10 +248,19 @@ func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) *TextBlock {
 	return textBlock
 }
 
-// SetHighlightColors sets the text colors map.
-func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string]int32) *TextBlock {
-	textBlock.keywordHighlightColors = keywordHighlightColors
-	return textBlock
+// SetBackgroundColor sets the background color as a 0xRRGGBB value.
+func (textBlock *TextBlock) SetBackgroundColor(color int32) *TextBlock {
+	return textBlock.SetFillColor(color)
+}
+
+// SetBackgroundColorRGB sets the background color from red, green and blue values.
+func (textBlock *TextBlock) SetBackgroundColorRGB(color [3]float32) *TextBlock {
+	return textBlock.SetFillColorRGB(color)
+}
+
+// GetBackgroundColor returns the background color.
+func (textBlock *TextBlock) GetBackgroundColor() [3]float32 {
+	return textBlock.fillColor
 }
 
 // SetTextAlignment sets the brushColor color.
@@ -613,7 +638,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	// You can uncomment and adapt if required.
 	//if textBlock.textdirection == LEFT_TO_RIGHT &&
 	//  (textBlock.uri != "" || textBlock.key != "") {
-	//  page.AddAnnotation(Annotation{
+	//  page.addAnnotation(Annotation{
 	//      Uri:               t.Uri,
 	//      Key:               t.Key,
 	//      X:                 t.X,

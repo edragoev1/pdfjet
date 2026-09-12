@@ -41,9 +41,24 @@ func NewOptionalContentGroup(pdf *PDF, name string) *OptionalContentGroup {
 	return ocg
 }
 
+// GetName returns the name of this optional content group.
+func (ocg *OptionalContentGroup) GetName() string {
+	return ocg.name
+}
+
 // Add appends drawable component to this optional content group.
 func (ocg *OptionalContentGroup) Add(drawable Drawable) {
 	ocg.components = append(ocg.components, drawable)
+}
+
+// Clear removes all drawable components from this optional content group.
+func (ocg *OptionalContentGroup) Clear() {
+	ocg.components = ocg.components[:0]
+}
+
+// GetComponents returns the drawable components in this optional content group.
+func (ocg *OptionalContentGroup) GetComponents() []Drawable {
+	return ocg.components
 }
 
 // SetVisible sets the visibility of the group.

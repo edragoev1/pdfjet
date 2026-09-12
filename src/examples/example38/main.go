@@ -236,7 +236,8 @@ func getCell(
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example38()
-	pdfjet.PrintDuration("Example_38", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_38", time0, time1)
 }

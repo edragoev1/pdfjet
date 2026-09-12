@@ -222,7 +222,7 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 	centerX := arc.cx
 	centerY := page.height - arc.cy
 
-	page.RotateAroundCenter(centerX, centerY, arc.rotateDegrees)
+	page.rotateAroundCenter(centerX, centerY, arc.rotateDegrees)
 	page.DrawArc(
 		arc.cx,
 		arc.cy,

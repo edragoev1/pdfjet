@@ -152,8 +152,8 @@ type TextCompact struct {
 	Table [][3]int // exported field – callers can read it
 }
 
-// TextCompactInstance
+// textCompactInstance
 // ---------------------------------------------------------------------
 // Exported singleton instance
 // ---------------------------------------------------------------------
-var TextCompactInstance = TextCompact{Table: textCompact}
+var textCompactInstance = TextCompact{Table: textCompact}

@@ -963,7 +963,7 @@ namespace PDFjet.NET {
         /// Appends a Unicode code point to the StringBuilder. A lone surrogate
         /// is appended as it is.
         /// </summary>
-        public static void AppendCodePoint(this StringBuilder sb, int codePoint) {
+        internal static void AppendCodePoint(this StringBuilder sb, int codePoint) {
             if (codePoint >= 0xD800 && codePoint <= 0xDFFF) {
                 sb.Append((char) codePoint);
             } else {

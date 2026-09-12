@@ -118,18 +118,6 @@ public class Rect : Drawable {
     }
 
     /**
-     * Sets the border width. Same as setBorderWidth.
-     * - Parameter borderWidth: the border width.
-     *
-     * - Returns: this Rect object.
-     */
-    @discardableResult
-    public func setLineWidth(_ borderWidth: Float) -> Rect {
-        self.borderWidth = borderWidth
-        return self
-    }
-
-    /**
      * Sets the corner radius.
      * - Parameter r: the radius.
      *
@@ -162,6 +150,18 @@ public class Rect : Drawable {
     @discardableResult
     public func setGoToAction(_ key: String) -> Rect {
         self.key = key
+        return self
+    }
+
+    /**
+     * Sets the language of this rect, used for accessibility.
+     * - Parameter language: the language, for example "en-US".
+     *
+     * - Returns: this Rect object.
+     */
+    @discardableResult
+    public func setLanguage(_ language: String) -> Rect {
+        self.language = language
         return self
     }
 

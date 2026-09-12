@@ -20,11 +20,14 @@ public final class PDFobj {
     var gsNumber = -1
 
     /// Creates an empty PDF object.
-    public init() {
+    init() {
 
     }
 
-    final func getNumber() -> Int {
+    /// Returns the object number.
+    ///
+    /// - Returns: the object number.
+    public final func getNumber() -> Int {
         return self.number
     }
 
@@ -47,12 +50,12 @@ public final class PDFobj {
     }
 
     /// Sets the decompressed data.
-    public final func setData(_ data: inout [UInt8]) {
+    final func setData(_ data: inout [UInt8]) {
         self.data = data
     }
 
     /// Returns the compressed stream.
-    public final func getStream() -> [UInt8]? {
+    final func getStream() -> [UInt8]? {
         return self.stream
     }
 
@@ -199,7 +202,7 @@ public final class PDFobj {
     }
 
     /// Sets the stream.
-    public final func setStream(_ stream: inout [UInt8]) {
+    final func setStream(_ stream: inout [UInt8]) {
         self.stream = stream
     }
 
@@ -278,7 +281,10 @@ public final class PDFobj {
         return numbers
     }
 
-    final func getPageSize() -> [Float] {
+    /// Returns the width and height from the /MediaBox of this page.
+    ///
+    /// - Returns: the page size.
+    public final func getPageSize() -> [Float] {
         for i in 0..<dict.count {
             if dict[i] == "/MediaBox" {
                 return [Float(dict[i + 4])!, Float(dict[i + 5])!]
@@ -352,7 +358,11 @@ public final class PDFobj {
         return content
     }
 
-    final func getResourcesObject(_ objects: inout [PDFobj]) -> PDFobj? {
+    /// Returns the resources object of this page.
+    ///
+    /// - Parameter objects: the objects of the PDF.
+    /// - Returns: the resources object, or nil if the page has none.
+    public final func getResourcesObject(_ objects: inout [PDFobj]) -> PDFobj? {
         var i = 0
         while i < dict.count {
             if dict[i] == "/Resources" {
@@ -367,7 +377,12 @@ public final class PDFobj {
         return nil
     }
 
-    final func addResource(
+    /// Adds a core font to the resources of this page.
+    ///
+    /// - Parameter coreFont: the core font.
+    /// - Parameter objects: the objects of the PDF.
+    /// - Returns: the font.
+    public final func addResource(
             _ coreFont: Int,
             _ objects: inout [PDFobj]) -> Font {
         let font = Font(coreFont)
@@ -516,7 +531,11 @@ public final class PDFobj {
         }
     }
 
-    final func addResource(
+    /// Adds an image to the resources of this page.
+    ///
+    /// - Parameter image: the image.
+    /// - Parameter objects: the objects of the PDF.
+    public final func addResource(
             _ image: Image,
             _ objects: inout [PDFobj]) {
         for i in 0..<dict.count {
@@ -533,7 +552,11 @@ public final class PDFobj {
         }
     }
 
-    final func addResource(
+    /// Adds a font to the resources of this page.
+    ///
+    /// - Parameter font: the font.
+    /// - Parameter objects: the objects of the PDF.
+    public final func addResource(
             _ font: Font,
             _ objects: inout [PDFobj]) {
         for i in 0..<dict.count {

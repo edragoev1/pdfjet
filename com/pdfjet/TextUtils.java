@@ -10,8 +10,7 @@ package com.pdfjet;
  * Text helper methods.
  */
 public class TextUtils {
-    /** The default constructor */
-    public TextUtils() {
+    private TextUtils() {
     }
 
     /**

@@ -24,9 +24,6 @@ public class Image : Drawable {
     var uri: String?
     var key: String?
 
-    private var xBox: Float?
-    private var yBox: Float?
-
     private var degrees = 0
     private var flipUpsideDown = false
 
@@ -324,13 +321,6 @@ public class Image : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         page!.addBMC(StructElem.P, language, actualText, altDescription)
-        if xBox != nil {
-            x += xBox!
-        }
-        if yBox != nil {
-            y += yBox!
-        }
-
         page!.saveGraphicsState()
 
         if degrees == 0 {

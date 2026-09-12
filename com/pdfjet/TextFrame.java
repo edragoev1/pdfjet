@@ -107,6 +107,15 @@ public class TextFrame implements Drawable {
     }
 
     /**
+     * Returns the width of this text frame.
+     *
+     * @return the width.
+     */
+    public float getWidth() {
+        return this.w;
+    }
+
+    /**
      * Returns the height of this text frame.
      *
      * @return the height.

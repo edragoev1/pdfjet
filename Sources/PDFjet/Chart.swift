@@ -69,7 +69,7 @@ public class Chart : Drawable {
     private var fontSize: Float = 8.0
 
     /// The data series of this chart, one array of points per series.
-    public var chartData: [[Point]]?
+    private var chartData: [[Point]]?
 
     private static let DEFAULT_PALETTE = [
         Color.blue,

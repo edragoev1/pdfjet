@@ -51,8 +51,8 @@ class Example_20 {
         path.Add(new Point(15.5f,  4.5f));
 
         path.Add(new Point(18.0f,  3.5f));
-        path.Add(new Point(15.5f, 13.5f, Point.CONTROL_POINT));
-        path.Add(new Point(15.5f, 13.5f, Point.CONTROL_POINT));
+        path.Add(new Point(15.5f, 13.5f, Point.ControlPointC));
+        path.Add(new Point(15.5f, 13.5f, Point.ControlPointC));
         path.Add(new Point(20.5f,  7.5f));
 
         path.Add(new Point(21.0f,  9.5f));
@@ -73,8 +73,8 @@ class Example_20 {
         path.Add(new Point( 5.0f,  9.5f));
 
         path.Add(new Point( 5.5f,  7.5f));
-        path.Add(new Point(10.5f, 13.5f, Point.CONTROL_POINT));
-        path.Add(new Point(10.5f, 13.5f, Point.CONTROL_POINT));
+        path.Add(new Point(10.5f, 13.5f, Point.ControlPointC));
+        path.Add(new Point(10.5f, 13.5f, Point.ControlPointC));
         path.Add(new Point( 8.0f,  3.5f));
 
         path.Add(new Point(10.5f,  4.5f));

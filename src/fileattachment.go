@@ -86,6 +86,6 @@ func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
 		actualText:     "",
 		altDescription: ""}
 	annotation.fileAttachment = attachment
-	page.AddAnnotation(annotation)
+	page.addAnnotation(annotation)
 	return [2]float32{attachment.x + attachment.h, attachment.y + attachment.h}
 }

@@ -241,7 +241,7 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 			if textLine.GetGoToAction() != "" {
-				page.AddAnnotation(&Annotation{
+				page.addAnnotation(&Annotation{
 					annotationType: AnnotationLink,
 					x1:             textColumn.x,
 					y1:             page.height - (textColumn.y - textLine.font.ascent),
@@ -306,7 +306,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 	for _, textLine := range textLines {
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 		if textLine.uri != "" || textLine.key != "" {
-			page.AddAnnotation(&Annotation{
+			page.addAnnotation(&Annotation{
 				annotationType: AnnotationLink,
 				x1:             textColumn.x,
 				y1:             textColumn.y - textLine.font.ascent,

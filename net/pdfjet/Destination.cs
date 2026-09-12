@@ -12,13 +12,13 @@ namespace PDFjet.NET {
 /// </summary>
 public class Destination {
     /// <summary>The name of this destination.</summary>
-    public String name;
+    internal String name;
     /// <summary>The object number of the page this destination points to.</summary>
-    public int pageObjNumber;
+    internal int pageObjNumber;
     /// <summary>The x coordinate on the page.</summary>
-    public float xPosition;
+    internal float xPosition;
     /// <summary>The y coordinate on the page.</summary>
-    public float yPosition;
+    internal float yPosition;
 
     /// <summary>
     /// This constructor is used to create destination objects.

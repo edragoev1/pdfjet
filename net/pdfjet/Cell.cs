@@ -164,6 +164,11 @@ public class Cell {
         return this;
     }
 
+    /// <summary>Returns the barcode drawn in this cell.</summary>
+    public Barcode GetBarcode() {
+        return this.barcode;
+    }
+
     /// <summary>
     /// Returns the cell image.
     /// </summary>
@@ -358,18 +363,6 @@ public class Cell {
         return this.lineWidth;
     }
 
-    /// <summary>Sets the background color as a 0xRRGGBB value. Same as SetBackgroundColor.</summary>
-    public Cell SetBgColor(int color) {
-        SetBackgroundColor(color);
-        return this;
-    }
-
-    /// <summary>Sets the background color as a 0xRRGGBB value. Same as SetBackgroundColor.</summary>
-    public Cell SetFillColor(int color) {
-        SetBackgroundColor(color);
-        return this;
-    }
-
     /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
     public Cell SetBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
@@ -377,16 +370,6 @@ public class Cell {
         float b = ((color)       & 0xff)/255f;
         backgroundColor = new float[] {r, g, b};
         return this;
-    }
-
-    /// <summary>Returns the background color. Same as GetBackgroundColor.</summary>
-    public float[] GetFillColor() {
-        return this.backgroundColor;
-    }
-
-    /// <summary>Returns the text color.</summary>
-    public float[] GetBrushColor() {
-        return this.textColor;
     }
 
     /// <summary>Returns the background color.</summary>
@@ -517,6 +500,46 @@ public class Cell {
             this.properties &= 0x00F0FFFF;
         }
         return this;
+    }
+
+    /// <summary>Sets whether the top border of this cell is drawn.</summary>
+    public Cell SetTopBorder(bool topBorder) {
+        return SetBorder(Border.TOP, topBorder);
+    }
+
+    /// <summary>Returns true if the top border of this cell is drawn.</summary>
+    public bool GetTopBorder() {
+        return GetBorder(Border.TOP);
+    }
+
+    /// <summary>Sets whether the bottom border of this cell is drawn.</summary>
+    public Cell SetBottomBorder(bool bottomBorder) {
+        return SetBorder(Border.BOTTOM, bottomBorder);
+    }
+
+    /// <summary>Returns true if the bottom border of this cell is drawn.</summary>
+    public bool GetBottomBorder() {
+        return GetBorder(Border.BOTTOM);
+    }
+
+    /// <summary>Sets whether the left border of this cell is drawn.</summary>
+    public Cell SetLeftBorder(bool leftBorder) {
+        return SetBorder(Border.LEFT, leftBorder);
+    }
+
+    /// <summary>Returns true if the left border of this cell is drawn.</summary>
+    public bool GetLeftBorder() {
+        return GetBorder(Border.LEFT);
+    }
+
+    /// <summary>Sets whether the right border of this cell is drawn.</summary>
+    public Cell SetRightBorder(bool rightBorder) {
+        return SetBorder(Border.RIGHT, rightBorder);
+    }
+
+    /// <summary>Returns true if the right border of this cell is drawn.</summary>
+    public bool GetRightBorder() {
+        return GetBorder(Border.RIGHT);
     }
 
     /// <summary>

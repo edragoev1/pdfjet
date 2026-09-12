@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"log"
 	"strconv"
 	"time"
 
@@ -25,8 +24,13 @@ type CalendarMonth struct {
 	dayOfWeek   int
 }
 
-// NewCalendarMonth constructs new calendar month object.
-func (calendarMonth *CalendarMonth) NewCalendarMonth(f1, f2 *Font, year, month int) {
+// NewCalendarMonth creates a calendar for the specified month.
+// @param f1 the header font.
+// @param f2 the body font.
+// @param year the year.
+// @param month the month, from 1 to 12.
+func NewCalendarMonth(f1, f2 *Font, year, month int) *CalendarMonth {
+	calendarMonth := new(CalendarMonth)
 	calendarMonth.f1 = f1
 	calendarMonth.f2 = f2
 	calendarMonth.x1 = 75.0
@@ -35,15 +39,10 @@ func (calendarMonth *CalendarMonth) NewCalendarMonth(f1, f2 *Font, year, month i
 	calendarMonth.dy = 20.0
 	calendarMonth.days = []string{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
 	calendarMonth.daysInMonth = calendarMonth.getDaysInMonth(year, month-1)
-
-	now := time.Now()
-	log.Println(now.Year())
-	log.Println(now.Month())
-	log.Println(now.Day())
-	log.Println(now.Hour())
-	log.Println(now.Minute())
-	log.Println(now.Second())
-	calendarMonth.dayOfWeek = int(now.Weekday())
+	// The day of the week of the first day of the month, from 1 (Sunday) to 7.
+	firstDay := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	calendarMonth.dayOfWeek = int(firstDay.Weekday()) + 1
+	return calendarMonth
 }
 
 // SetHeadFont sets the font of the calendar header.

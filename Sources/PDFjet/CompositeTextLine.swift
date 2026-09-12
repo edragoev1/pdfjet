@@ -211,11 +211,11 @@ public class CompositeTextLine : Drawable {
     }
 
     /**
-     * Return the location of this composite text line.
+     * Return the position of this composite text line.
      *
-     * - Returns: the location of this composite text line.
+     * - Returns: the position of this composite text line.
      */
-    public func getLocation()-> [Float] {
+    public func getPosition()-> [Float] {
         return self.position
     }
 

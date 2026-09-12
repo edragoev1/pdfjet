@@ -238,6 +238,14 @@ func (textBox *TextBox) SetStrokeColor(color int32) *TextBox {
 	return textBox
 }
 
+// GetStrokeColor returns the color of the border lines, or black if none was set.
+func (textBox *TextBox) GetStrokeColor() [3]float32 {
+	if textBox.strokeColor == nil {
+		return [3]float32{0.0, 0.0, 0.0}
+	}
+	return *textBox.strokeColor
+}
+
 // SetBorder sets the border with the specified bit mask.
 func (textBox *TextBox) SetBorder(b uint32) *TextBox {
 	textBox.properties |= b
@@ -560,7 +568,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 			if textBox.fillColor != nil {
 				page.SetBrushColorRGB(*textBox.fillColor)
 			}
-			page.SetPenWidth(font.GetUnderlineThickness(fontSize))
+			page.SetPenWidth(font.GetUnderlineThicknessAt(fontSize))
 		}
 		xText := textBox.x + textBox.margin
 		yText := textBox.y + textBox.margin + font.GetAscentAt(fontSize)
@@ -615,7 +623,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 			if textBox.strokeColor != nil {
 				page.SetPenColorRGB(*textBox.strokeColor)
 			}
-			page.SetPenWidth(font.GetUnderlineThickness(fontSize))
+			page.SetPenWidth(font.GetUnderlineThicknessAt(fontSize))
 		}
 		xText := textBox.x + textBox.margin
 		yText := textBox.y + textBox.margin + font.GetAscentAt(fontSize)
@@ -650,7 +658,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		textBox.drawBorders(page)
 		if textBox.textDirection == direction.LeftToRight &&
 			(textBox.uri != "" || textBox.key != "") {
-			page.AddAnnotation(&Annotation{
+			page.addAnnotation(&Annotation{
 				annotationType: AnnotationLink,
 				x1:             textBox.x,
 				y1:             textBox.y,
@@ -702,8 +710,8 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 		lineLength := font.StringWidthFB(fallbackFont, fontSize, text)
 		if textBox.GetUnderline() {
 			page.AddArtifactBMC()
-			page.MoveTo(xText, yText+font.GetUnderlinePosition(fontSize))
-			page.LineTo(xText+lineLength, yText+font.GetUnderlinePosition(fontSize))
+			page.MoveTo(xText, yText+font.GetUnderlinePositionAt(fontSize))
+			page.LineTo(xText+lineLength, yText+font.GetUnderlinePositionAt(fontSize))
 			page.StrokePath()
 			page.AddEMC()
 		}

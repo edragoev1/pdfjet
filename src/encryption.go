@@ -49,11 +49,11 @@ func NewEncryption(pdf *PDF,
 
 	enc.stream = bytes.NewBuffer(make([]byte, 0, 32768)) // 32 KB buffer
 
-	userPassword := passwords.UserPassword
+	userPassword := passwords.GetUserPassword()
 	if len(userPassword) > 127 {
 		userPassword = userPassword[:127]
 	}
-	ownerPassword := passwords.OwnerPassword
+	ownerPassword := passwords.GetOwnerPassword()
 	if len(ownerPassword) > 127 {
 		ownerPassword = ownerPassword[:127]
 	}

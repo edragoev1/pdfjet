@@ -35,8 +35,6 @@ type Image struct {
 	h              float32 // Image height
 	uri            string
 	key            string
-	xBox           float32
-	yBox           float32
 	degrees        int
 	flipUpsideDown bool
 	language       string
@@ -169,13 +167,13 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image.altDescription = single.Space
 	image.actualText = single.Space
 
-	val, err := strconv.ParseFloat(obj.getValue("/Width"), 32)
+	val, err := strconv.ParseFloat(obj.GetValue("/Width"), 32)
 	if err != nil {
 		log.Fatal(err)
 	}
 	image.w = float32(val)
 
-	val, err = strconv.ParseFloat(obj.getValue("/Height"), 32)
+	val, err = strconv.ParseFloat(obj.GetValue("/Height"), 32)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -186,7 +184,7 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendString("/Type /XObject\n")
 	pdf.appendString("/Subtype /Image\n")
 	pdf.appendString("/Filter ")
-	pdf.appendString(obj.getValue("/Filter"))
+	pdf.appendString(obj.GetValue("/Filter"))
 	pdf.appendString("\n")
 	pdf.appendString("/Width ")
 	pdf.appendFloat32(image.w)
@@ -194,22 +192,22 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendString("/Height ")
 	pdf.appendFloat32(image.h)
 	pdf.appendString("\n")
-	colorSpace := obj.getValue("/ColorSpace")
+	colorSpace := obj.GetValue("/ColorSpace")
 	if colorSpace != "" {
 		pdf.appendString("/ColorSpace ")
 		pdf.appendString(colorSpace)
 		pdf.appendString("\n")
 	}
 	pdf.appendString("/BitsPerComponent ")
-	pdf.appendString(obj.getValue("/BitsPerComponent"))
+	pdf.appendString(obj.GetValue("/BitsPerComponent"))
 	pdf.appendString("\n")
-	decodeParms := obj.getValue("/DecodeParms")
+	decodeParms := obj.GetValue("/DecodeParms")
 	if decodeParms != "" {
 		pdf.appendString("/DecodeParms ")
 		pdf.appendString(decodeParms)
 		pdf.appendString("\n")
 	}
-	imageMask := obj.getValue("/ImageMask")
+	imageMask := obj.GetValue("/ImageMask")
 	if imageMask != "" {
 		pdf.appendString("/ImageMask ")
 		pdf.appendString(imageMask)
@@ -315,10 +313,6 @@ func (image *Image) SetActualText(actualText string) *Image {
 // @return x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
 	page.AddBMC(structtype.P, image.language, image.actualText, image.altDescription)
-
-	image.x += image.xBox
-	image.y += image.yBox
-
 	page.SaveGraphicsState()
 
 	switch image.degrees {
@@ -392,7 +386,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if image.uri != "" || image.key != "" {
-		page.AddAnnotation(&Annotation{
+		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             image.x,
 			y1:             image.y,
@@ -525,7 +519,7 @@ func (image *Image) addSoftMaskToObjects(
 	data []byte,
 	colorSpace string,
 	bitsPerComponent int) {
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.dict = append(obj.dict, "<<")
 	obj.dict = append(obj.dict, "/Type")
 	obj.dict = append(obj.dict, "/XObject")
@@ -544,7 +538,7 @@ func (image *Image) addSoftMaskToObjects(
 	obj.dict = append(obj.dict, "/Length")
 	obj.dict = append(obj.dict, strconv.Itoa(len(data)))
 	obj.dict = append(obj.dict, ">>")
-	obj.SetStream(data)
+	obj.setStream(data)
 	obj.number = len(*objects) + 1
 	*objects = append(*objects, obj)
 	image.objNumber = obj.number
@@ -561,7 +555,7 @@ func (image *Image) addImageToObjects(
 		image.addSoftMaskToObjects(objects, alpha, device.Gray, bitsPerComponent)
 	}
 
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.dict = append(obj.dict, "<<")
 	obj.dict = append(obj.dict, "/Type")
 	obj.dict = append(obj.dict, "/XObject")
@@ -606,7 +600,7 @@ func (image *Image) addImageToObjects(
 	obj.dict = append(obj.dict, "/Length")
 	obj.dict = append(obj.dict, strconv.Itoa(len(data)))
 	obj.dict = append(obj.dict, ">>")
-	obj.SetStream(data)
+	obj.setStream(data)
 	obj.number = len(*objects) + 1
 	*objects = append(*objects, obj)
 	image.objNumber = obj.number

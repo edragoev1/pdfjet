@@ -33,15 +33,15 @@ type PDF417 struct {
 
 // Constants
 const (
-	ALPHA        = 0x08
-	LOWER        = 0x04
-	MIXED        = 0x02
-	PUNCT        = 0x01
-	LatchToLower = 27
-	ShiftToAlpha = 27
-	LatchToMixed = 28
-	LatchToAlpha = 28
-	ShiftToPunct = 29
+	alpha        = 0x08
+	lower        = 0x04
+	mixed        = 0x02
+	punct        = 0x01
+	latchToLower = 27
+	shiftToAlpha = 27
+	latchToMixed = 28
+	latchToAlpha = 28
+	shiftToPunct = 29
 )
 
 // NewPDF417 constructor for 2D barcodes.
@@ -91,7 +91,7 @@ func NewPDF417(str string) *PDF417 {
 		}
 	}
 
-	dataLen := (barcode.rows * barcode.cols) - len(L5ECCInstance.Table)
+	dataLen := (barcode.rows * barcode.cols) - len(l5ECCInstance.Table)
 	for i := 0; i < dataLen; i++ {
 		buffer[i] = 900 // The default pad codeword
 	}
@@ -134,49 +134,49 @@ func (barcode *PDF417) SetModuleWidth(width float32) *PDF417 {
 func (barcode *PDF417) textToArrayOfIntegers() []int {
 	list := make([]int, 0)
 
-	currentMode := ALPHA
+	currentMode := alpha
 	for _, ch := range barcode.str {
 		if ch == 0x20 {
 			list = append(list, 26) // The codeword for space
 			continue
 		}
 
-		value := TextCompactInstance.Table[ch][1]
-		mode := TextCompactInstance.Table[ch][2]
+		value := textCompactInstance.Table[ch][1]
+		mode := textCompactInstance.Table[ch][2]
 		if mode == currentMode {
 			list = append(list, value)
 		} else {
-			if mode == ALPHA && currentMode == LOWER {
-				list = append(list, ShiftToAlpha)
+			if mode == alpha && currentMode == lower {
+				list = append(list, shiftToAlpha)
 				list = append(list, value)
-			} else if mode == ALPHA && currentMode == MIXED {
-				list = append(list, LatchToAlpha)
-				list = append(list, value)
-				currentMode = mode
-			} else if mode == LOWER && currentMode == ALPHA {
-				list = append(list, LatchToLower)
+			} else if mode == alpha && currentMode == mixed {
+				list = append(list, latchToAlpha)
 				list = append(list, value)
 				currentMode = mode
-			} else if mode == LOWER && currentMode == MIXED {
-				list = append(list, LatchToLower)
+			} else if mode == lower && currentMode == alpha {
+				list = append(list, latchToLower)
 				list = append(list, value)
 				currentMode = mode
-			} else if mode == MIXED && currentMode == ALPHA {
-				list = append(list, LatchToMixed)
+			} else if mode == lower && currentMode == mixed {
+				list = append(list, latchToLower)
 				list = append(list, value)
 				currentMode = mode
-			} else if mode == MIXED && currentMode == LOWER {
-				list = append(list, LatchToMixed)
+			} else if mode == mixed && currentMode == alpha {
+				list = append(list, latchToMixed)
 				list = append(list, value)
 				currentMode = mode
-			} else if mode == PUNCT && currentMode == ALPHA {
-				list = append(list, ShiftToPunct)
+			} else if mode == mixed && currentMode == lower {
+				list = append(list, latchToMixed)
 				list = append(list, value)
-			} else if mode == PUNCT && currentMode == LOWER {
-				list = append(list, ShiftToPunct)
+				currentMode = mode
+			} else if mode == punct && currentMode == alpha {
+				list = append(list, shiftToPunct)
 				list = append(list, value)
-			} else if mode == PUNCT && currentMode == MIXED {
-				list = append(list, ShiftToPunct)
+			} else if mode == punct && currentMode == lower {
+				list = append(list, shiftToPunct)
+				list = append(list, value)
+			} else if mode == punct && currentMode == mixed {
+				list = append(list, shiftToPunct)
 				list = append(list, value)
 			}
 		}
@@ -193,7 +193,7 @@ func (barcode *PDF417) addData(buf []int, dataLen int) {
 	for i := 0; i < len(list); i += 2 {
 		hi = list[i]
 		if i+1 == len(list) {
-			lo = ShiftToPunct // Pad
+			lo = shiftToPunct // Pad
 		} else {
 			lo = list[i+1]
 		}
@@ -206,18 +206,18 @@ func (barcode *PDF417) addData(buf []int, dataLen int) {
 }
 
 func (barcode *PDF417) addECC(buf []int) {
-	ecc := make([]int, len(L5ECCInstance.Table))
+	ecc := make([]int, len(l5ECCInstance.Table))
 	t2 := 0
 	t3 := 0
 	dataLen := len(buf) - len(ecc)
 	for i := 0; i < dataLen; i++ {
 		t1 := (buf[i] + ecc[len(ecc)-1]) % 929
 		for j := len(ecc) - 1; j > 0; j-- {
-			t2 := (t1 * L5ECCInstance.Table[j]) % 929
+			t2 := (t1 * l5ECCInstance.Table[j]) % 929
 			t3 := 929 - t2
 			ecc[j] = (ecc[j-1] + t3) % 929
 		}
-		t2 = (t1 * L5ECCInstance.Table[0]) % 929
+		t2 = (t1 * l5ECCInstance.Table[0]) % 929
 		t3 = 929 - t2
 		ecc[0] = t3 % 929
 	}

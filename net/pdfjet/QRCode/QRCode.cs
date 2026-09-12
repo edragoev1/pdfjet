@@ -122,6 +122,14 @@ public class QRCode : IDrawable {
         return new float[] {x + w, y + h};
     }
 
+    /// <summary>
+    /// Returns the modules of the QR code: true for dark and false for light modules.
+    /// </summary>
+    /// <returns>the QR code data.</returns>
+    public Boolean?[][] GetData() {
+        return modules;
+    }
+
     internal bool IsDark(int row, int col) {
         if (modules[row][col] != null) {
             return (bool) modules[row][col];

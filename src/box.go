@@ -25,7 +25,6 @@ type Box struct {
 	language       string
 	altDescription string
 	actualText     string
-	structureType  string
 }
 
 // NewBox creates new Box object.
@@ -36,7 +35,6 @@ func NewBox() *Box {
 	box.pattern = "[] 0"
 	box.altDescription = single.Space
 	box.actualText = single.Space
-	box.structureType = structtype.P
 	return box
 }
 
@@ -86,8 +84,8 @@ func (box *Box) SetLineWidth(width float32) *Box {
 	return box
 }
 
-// SetCornerRadius sets the corner radius.
-// @param width the width.
+// SetCornerRadius sets the corner radius of this box.
+// @param r the radius of the rounded corners.
 func (box *Box) SetCornerRadius(r float32) *Box {
 	box.r = r
 	return box
@@ -120,12 +118,6 @@ func (box *Box) SetAltDescription(altDescription string) *Box {
 // @return this Box.
 func (box *Box) SetActualText(actualText string) *Box {
 	box.actualText = actualText
-	return box
-}
-
-// SetStructureType sets the type of the structure.
-func (box *Box) SetStructureType(structureType string) *Box {
-	box.structureType = structureType
 	return box
 }
 
@@ -173,9 +165,7 @@ func (box *Box) ScaleBy(factor float32) {
 // @param page the page to draw this box on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (box *Box) DrawOn(page *Page) [2]float32 {
-	const k float32 = 0.5517
-
-	page.AddBMC(box.structureType, box.language, box.actualText, box.altDescription)
+	page.AddBMC(structtype.P, box.language, box.actualText, box.altDescription)
 	page.SetPenWidth(box.width)
 	page.SetStrokeDashPattern(box.pattern)
 	if box.fillShape {
@@ -194,6 +184,7 @@ func (box *Box) DrawOn(page *Page) [2]float32 {
 			page.ClosePath()
 		}
 	} else {
+		const k float32 = 0.55228
 		points := make([]*Point, 0)
 		points = append(points, NewPoint(box.x+box.r, box.y))
 		points = append(points, NewPoint((box.x+box.w)-box.r, box.y))
@@ -213,12 +204,16 @@ func (box *Box) DrawOn(page *Page) [2]float32 {
 		points = append(points, NewControlPointC((box.x+box.r)-box.r*k, box.y))
 		points = append(points, NewPoint(box.x+box.r, box.y))
 
-		page.DrawPath(points, pathoperator.Stroke)
+		if box.fillShape {
+			page.DrawPath(points, pathoperator.Fill)
+		} else {
+			page.DrawPath(points, pathoperator.Stroke)
+		}
 	}
 	page.AddEMC()
 
 	if box.uri != "" || box.key != "" {
-		page.AddAnnotation(&Annotation{
+		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             box.x,
 			y1:             box.y,

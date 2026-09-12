@@ -77,6 +77,11 @@ public class TextFrame : IDrawable {
         return SetHeight((float)h);
     }
 
+    /// <summary>Returns the width of this text frame.</summary>
+    public float GetWidth() {
+        return this.w;
+    }
+
     /// <summary>Returns the height of this text frame.</summary>
     public float GetHeight() {
         return this.h;

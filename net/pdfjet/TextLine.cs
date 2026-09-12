@@ -146,6 +146,14 @@ public class TextLine : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the size of the fallback font.</summary>
+    /// <param name="fallbackFontSize">the fallback font size.</param>
+    /// <returns>this TextLine.</returns>
+    public TextLine SetFallbackFontSize(float fallbackFontSize) {
+        this.fallbackFont.SetSize(fallbackFontSize);
+        return this;
+    }
+
     /// <summary>
     /// Returns the fallback font.
     /// </summary>

@@ -31,7 +31,6 @@ public class TextBlock : Drawable {
     private var uriLanguage: String?
     private var uriActualText: String?
     private var uriAltDescription: String?
-    private var textDirection: Direction = Direction.LEFT_TO_RIGHT
     private var textAlignment: Alignment = Alignment.LEFT
     private var underline: Bool = false
     private var strikeout: Bool = false
@@ -117,6 +116,13 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the height of this text block.
+    @discardableResult
+    public func setHeight(_ h: Float) -> TextBlock {
+        self.height = h
+        return self
+    }
+
     /// Returns the width of this text block.
     public func getWidth() -> Float {
         return self.width
@@ -189,6 +195,23 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Sets the background color as a 0xRRGGBB value.
+    @discardableResult
+    public func setBackgroundColor(_ color: Int32) -> TextBlock {
+        return setFillColor(color)
+    }
+
+    /// Sets the background color from an array of red, green and blue values, or nil for no background.
+    @discardableResult
+    public func setBackgroundColor(_ backgroundColor: [Float]?) -> TextBlock {
+        return setFillColor(backgroundColor)
+    }
+
+    /// Returns the background color, or nil if there is none.
+    public func getBackgroundColor() -> [Float]? {
+        return self.fillColor
+    }
+
     /// Sets the border color as a 0xRRGGBB value.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> TextBlock {
@@ -203,13 +226,6 @@ public class TextBlock : Drawable {
     @discardableResult
     public func setBorderColor(_ borderColor: [Float]?) -> TextBlock {
         self.borderColor = borderColor
-        return self
-    }
-
-    /// Sets the colors used to highlight words in the text.
-    @discardableResult
-    public func setHighlightColors(_ highlightColors: [String: Int32]) -> TextBlock {
-        self.highlightColors = highlightColors
         return self
     }
 
@@ -479,13 +495,6 @@ public class TextBlock : Drawable {
     @discardableResult
     public func setURIAction(_ uri: String) -> TextBlock {
         self.uri = uri
-        return self
-    }
-
-    /// Sets the direction of the text.
-    @discardableResult
-    public func setTextDirection(_ direction: Direction) -> TextBlock {
-        self.textDirection = direction
         return self
     }
 

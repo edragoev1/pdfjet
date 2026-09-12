@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
@@ -104,9 +105,9 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 		yBox+radioButton.r1+radioButton.penWidth, radioButton.r1)
 
 	if radioButton.selected {
-		page.FillCircle(
+		page.DrawCircleUsingPathOperator(
 			radioButton.x+radioButton.r1+radioButton.penWidth,
-			yBox+radioButton.r1+radioButton.penWidth, radioButton.r2)
+			yBox+radioButton.r1+radioButton.penWidth, radioButton.r2, pathoperator.Fill)
 	}
 
 	if radioButton.uri != "" {
@@ -122,7 +123,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if radioButton.uri != "" || radioButton.key != "" {
-		page.AddAnnotation(&Annotation{
+		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             radioButton.x + 3*radioButton.r1,
 			y1:             radioButton.y,

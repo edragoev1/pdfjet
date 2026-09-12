@@ -78,7 +78,7 @@ func Example50(fileName string) {
 	page.DrawString(font3, nil, "Jones", x+258.0, y)
 
 	// Social Insurance Number
-	page.DrawArrayOfCharacters(font1, stripSpacesAndDashes("243-590-129"), x+437.0, y, dx)
+	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("243-590-129"), x+437.0, y, dx)
 
 	// Last Name at Birth
 	y += dy
@@ -96,7 +96,7 @@ func Example50(fileName string) {
 	page.DrawString(font1, nil, "Ontario", x+365.0, y)
 
 	// Postal Code
-	page.DrawArrayOfCharacters(font1, stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
+	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
 
 	// Home Address
 	y += dy
@@ -110,7 +110,7 @@ func Example50(fileName string) {
 	page.DrawString(font1, nil, "Ontario", x+365.0, y)
 
 	// Postal Code
-	page.DrawArrayOfCharacters(font1, stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
+	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
 
 	// Home telephone number
 	page.DrawString(font1, nil, "905-222-3333", x, y+dy)
@@ -124,10 +124,10 @@ func Example50(fileName string) {
 
 	// Move date from previous province or territory
 	y += dy
-	page.DrawArrayOfCharacters(font1, stripSpacesAndDashes("2016-04-12"), x+452.0, y, dx)
+	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("2016-04-12"), x+452.0, y, dx)
 
 	// Date new marital status began
-	page.DrawArrayOfCharacters(font1, stripSpacesAndDashes("2014-11-02"), x+452.0, 467.0, dx)
+	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("2014-11-02"), x+452.0, 467.0, dx)
 
 	// First name of spouse
 	y = 521.0
@@ -136,7 +136,7 @@ func Example50(fileName string) {
 	page.DrawString(font1, nil, "Jones", x+258.0, y)
 
 	// Social Insurance number of spouse
-	page.DrawArrayOfCharacters(font1, stripSpacesAndDashes("192-760-427"), x+437.0, y, dx)
+	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("192-760-427"), x+437.0, y, dx)
 
 	// Spouse or common-law partner's address
 	page.DrawString(font1, nil, "12 Smithfield Drive", x, 554.0)
@@ -193,9 +193,10 @@ func stripSpacesAndDashes(str string) string {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example50("rc65-16e.pdf")
 	// Example50("../specification/PDF32000_2008.pdf")
 	// Example50("NoPredictor.pdf")
-	pdfjet.PrintDuration("Example_50", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_50", time0, time1)
 }

@@ -55,9 +55,6 @@ public class Point implements Drawable {
     /** RIGHT_ARROW shaped point */
     public static final int RIGHT_ARROW = 12;
 
-    /** Bezier Control Point */
-    public static final char CONTROL_POINT = 'c';
-
     /** Control point for the c operator, which uses both control points. */
     public static final char CONTROL_POINT_C = 'c';
 
@@ -177,30 +174,6 @@ public class Point implements Drawable {
         this.x = x;
         this.y = y;
         this.controlPoint = controlPoint;
-    }
-
-    /**
-     * Sets the location of the point.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Point object.
-     */
-    public Point setXY(float x, float y) {
-        setLocation(x, y);
-        return this;
-    }
-
-    /**
-     * Sets the location of the point.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Point object.
-     */
-    public Point setXY(double x, double y) {
-        setLocation(x, y);
-        return this;
     }
 
     /**

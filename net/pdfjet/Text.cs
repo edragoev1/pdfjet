@@ -148,8 +148,8 @@ public class Text : IDrawable {
         return tokens;
     }
 
-    /// <summary>Draws the text line, wrapping it at the width of this text, and returns where the next text starts.</summary>
-    public float[] DrawTextLine(
+    // Draws the text line, wrapping it at the width of this text, and returns where the next text starts.
+    private float[] DrawTextLine(
             Page page, float x, float y, TextLine textLine) {
         this.xText = x;
         this.yText = y;

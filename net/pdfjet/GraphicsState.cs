@@ -7,6 +7,10 @@ public class GraphicsState {
     private float CA = 1f;
     private float ca = 1f;
 
+    /// <summary>Creates a graphics state with both alpha values set to 1.0.</summary>
+    public GraphicsState() {
+    }
+
     /// <summary>Sets the alpha of stroking operations, from 0.0 to 1.0. Other values are ignored.</summary>
     public GraphicsState SetAlphaStroking(float CA) {
         if (CA >= 0f && CA <= 1f) {

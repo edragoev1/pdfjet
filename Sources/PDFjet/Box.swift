@@ -17,6 +17,7 @@ public class Box : Drawable {
 
     private var w: Float = 0.0
     private var h: Float = 0.0
+    private var r: Float = 0.0
 
     private var color = Color.black
 
@@ -100,6 +101,17 @@ public class Box : Drawable {
     @discardableResult
     public func setLineWidth(_ width: Float) -> Box {
         self.width = width
+        return self
+    }
+
+    /**
+     * Sets the corner radius of this box.
+     *
+     * - Parameter r: the radius of the rounded corners.
+     */
+    @discardableResult
+    public func setCornerRadius(_ r: Float) -> Box {
+        self.r = r
         return self
     }
 
@@ -222,14 +234,37 @@ public class Box : Drawable {
         } else {
             page!.setPenColor(color)
         }
-        page!.moveTo(x, y)
-        page!.lineTo(x + w, y)
-        page!.lineTo(x + w, y + h)
-        page!.lineTo(x, y + h)
-        if fillShape {
-            page!.fillPath()
+        if r == 0.0 {
+            page!.moveTo(x, y)
+            page!.lineTo(x + w, y)
+            page!.lineTo(x + w, y + h)
+            page!.lineTo(x, y + h)
+            if fillShape {
+                page!.fillPath()
+            } else {
+                page!.closePath()
+            }
         } else {
-            page!.closePath()
+            let k: Float = 0.55228
+            var points: [Point] = []
+            points.append(Point(x + r, y))
+            points.append(Point((x + w) - r, y))
+            points.append(Point((x + w - r) + r * k, y, Point.controlPointC))
+            points.append(Point(x + w, (y + r) - r * k, Point.controlPointC))
+            points.append(Point(x + w, y + r))
+            points.append(Point(x + w, (y + h) - r))
+            points.append(Point(x + w, ((y + h) - r) + r * k, Point.controlPointC))
+            points.append(Point(((x + w) - r) + r * k, y + h, Point.controlPointC))
+            points.append(Point((x + w) - r, y + h))
+            points.append(Point(x + r, y + h))
+            points.append(Point((x + r) - r * k, y + h, Point.controlPointC))
+            points.append(Point(x, ((y + h) - r) + r * k, Point.controlPointC))
+            points.append(Point(x, (y + h) - r))
+            points.append(Point(x, y + r))
+            points.append(Point(x, (y + r) - r * k, Point.controlPointC))
+            points.append(Point((x + r) - r * k, y, Point.controlPointC))
+            points.append(Point(x + r, y))
+            page!.drawPath(points, fillShape ? PathOperator.fill : PathOperator.stroke)
         }
         page!.addEMC()
 

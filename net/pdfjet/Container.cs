@@ -129,7 +129,7 @@ public class Container : IDrawable {
     }
 
     /// <summary>Returns the elements in this container.</summary>
-    public List<IDrawable> GetElements() {
+    internal List<IDrawable> GetElements() {
         return this.elements;
     }
 

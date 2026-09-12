@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -27,7 +28,11 @@ func Example30() {
 			// encryption.CopyContents|
 			encryption.AssembleDocument, true)
 
-	pdf.SetEncryption(pdfjet.NewEncryption(pdf, passwords, permissions))
+	enc, err := pdfjet.NewEncryption(pdf, passwords, permissions)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pdf.SetEncryption(enc)
 
 	// f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
@@ -61,7 +66,8 @@ func Example30() {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example30()
-	pdfjet.PrintDuration("Example_30", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_30", time0, time1)
 }

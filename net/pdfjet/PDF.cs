@@ -101,7 +101,7 @@ public class PDF {
     }
 
     /// <summary>Sets the stream the document is written to.</summary>
-    public PDF SetOutputStream(Stream os) {
+    internal PDF SetOutputStream(Stream os) {
         this.os = os;
 
         DateTime date = new DateTime(DateTime.Now.Ticks);
@@ -120,7 +120,7 @@ public class PDF {
     }
 
     /// <summary>Returns the stream the document is written to.</summary>
-    public Stream GetOutputStream() {
+    internal Stream GetOutputStream() {
         return this.os;
     }
 
@@ -1212,6 +1212,16 @@ public class PDF {
     }
 
     /// <summary>
+    /// Set the "Language" document property of the PDF file.
+    /// </summary>
+    /// <param name="language">The language of this document.</param>
+    /// <returns>this PDF object.</returns>
+    public PDF SetLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /// <summary>
     /// Set the "Author" document property of the PDF file.
     /// </summary>
     /// <param name="author">The author of this document.</param>
@@ -1783,7 +1793,7 @@ public class PDF {
     }
 
     /// <summary>Adds the outline dictionary for the bookmarks and returns its object number.</summary>
-    public int AddOutlineDict(Bookmark toc) {
+    internal int AddOutlineDict(Bookmark toc) {
         int numOfChildren = GetNumOfChildren(0, toc);
         NewObj();
         Append(Token.BeginDictionary);
@@ -1803,7 +1813,7 @@ public class PDF {
     }
 
     /// <summary>Adds an outline item for the specified bookmark.</summary>
-    public void AddOutlineItem(int parent, int i, Bookmark bm1) {
+    internal void AddOutlineItem(int parent, int i, Bookmark bm1) {
         int prev = (bm1.GetPrevBookmark() == null) ? 0 : parent + (i - 1);
         int next = (bm1.GetNextBookmark() == null) ? 0 : parent + (i + 1);
 
@@ -1883,7 +1893,7 @@ public class PDF {
     }
 
     /// <summary>Returns the root pages object.</summary>
-    public PDFobj GetPagesObject(List<PDFobj> objects) {
+    internal PDFobj GetPagesObject(List<PDFobj> objects) {
         foreach (PDFobj obj in objects) {
             if (obj.GetValue("/Type").Equals("/Pages") &&
                     obj.GetValue("/Parent").Equals("")) {

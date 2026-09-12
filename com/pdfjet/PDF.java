@@ -1916,7 +1916,7 @@ final public class PDF {
      * @return the number of children.
      * @throws Exception if there is an issue.
      */
-    public int addOutlineDict(Bookmark toc) throws Exception {
+    int addOutlineDict(Bookmark toc) throws Exception {
         int numOfChildren = getNumOfChildren(0, toc);
         newobj();
         append(Token.BEGIN_DICTIONARY);
@@ -1943,7 +1943,7 @@ final public class PDF {
      * @param bm1 the bookmark.
      * @throws Exception if there is an issue.
      */
-    public void addOutlineItem(int parent, int i, Bookmark bm1) throws Exception {
+    void addOutlineItem(int parent, int i, Bookmark bm1) throws Exception {
         int prev = (bm1.getPrevBookmark() == null) ? 0 : parent + (i - 1);
         int next = (bm1.getNextBookmark() == null) ? 0 : parent + (i + 1);
 
@@ -2033,7 +2033,7 @@ final public class PDF {
      * @param objects the page objects.
      * @return the pages object.
      */
-    public PDFobj getPagesObject(List<PDFobj> objects) {
+    PDFobj getPagesObject(List<PDFobj> objects) {
         for (PDFobj obj : objects) {
             if (obj.getValue("/Type").equals("/Pages") && obj.getValue("/Parent").equals("")) {
                 return obj;

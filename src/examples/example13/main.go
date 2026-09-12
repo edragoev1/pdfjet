@@ -23,7 +23,7 @@ func Example13() {
 	f2.SetSize(7.0)
 
 	tableData := make([][]*pdfjet.Cell, 0)
-	lines := pdfjet.ReadTextLines("data/winter-2009.txt")
+	lines := pdfjet.ReadLines("data/winter-2009.txt")
 	for _, line := range lines {
 		row := make([]*pdfjet.Cell, 0)
 		for _, column := range strings.Split(line, "|") {
@@ -123,7 +123,8 @@ func setBgColorForRow(table *pdfjet.Table, index int, color int32) {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example13()
-	pdfjet.PrintDuration("Example_13", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_13", time0, time1)
 }

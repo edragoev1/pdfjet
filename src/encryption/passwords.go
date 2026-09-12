@@ -10,8 +10,8 @@ package encryption
 // that is not set is empty, so the PDF opens without a prompt when the user
 // password is not set.
 type Passwords struct {
-	UserPassword  string
-	OwnerPassword string
+	userPassword  string
+	ownerPassword string
 }
 
 // NewPasswords creates a new instance of Passwords.
@@ -19,21 +19,24 @@ func NewPasswords() *Passwords {
 	return &Passwords{}
 }
 
-// SetPasswords sets both user and owner passwords at once.
-func (p *Passwords) SetPasswords(userPassword, ownerPassword string) *Passwords {
-	p.UserPassword = userPassword
-	p.OwnerPassword = ownerPassword
-	return p
-}
-
 // SetUserPassword sets the user password.
 func (p *Passwords) SetUserPassword(userPassword string) *Passwords {
-	p.UserPassword = userPassword
+	p.userPassword = userPassword
 	return p
 }
 
 // SetOwnerPassword sets the owner password.
 func (p *Passwords) SetOwnerPassword(ownerPassword string) *Passwords {
-	p.OwnerPassword = ownerPassword
+	p.ownerPassword = ownerPassword
 	return p
+}
+
+// GetUserPassword returns the user password.
+func (p *Passwords) GetUserPassword() string {
+	return p.userPassword
+}
+
+// GetOwnerPassword returns the owner password.
+func (p *Passwords) GetOwnerPassword() string {
+	return p.ownerPassword
 }

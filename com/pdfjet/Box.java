@@ -6,6 +6,9 @@
  */
 package com.pdfjet;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Used to create rectangular boxes on a page.
  */
@@ -17,6 +20,7 @@ public class Box implements Drawable {
 
     private float w;
     private float h;
+    private float r = 0f;
 
     private int color = Color.black;
 
@@ -153,6 +157,17 @@ public class Box implements Drawable {
     }
 
     /**
+     * Sets the corner radius of this box.
+     *
+     * @param r the radius of the rounded corners.
+     * @return this Box object.
+     */
+    public Box setCornerRadius(float r) {
+        this.r = r;
+        return this;
+    }
+
+    /**
      * Sets the URI for the "click box" action.
      *
      * @param uri the URI
@@ -272,14 +287,37 @@ public class Box implements Drawable {
         } else {
             page.setPenColor(color);
         }
-        page.moveTo(x, y);
-        page.lineTo(x + w, y);
-        page.lineTo(x + w, y + h);
-        page.lineTo(x, y + h);
-        if (fillShape) {
-            page.fillPath();
+        if (r == 0f) {
+            page.moveTo(x, y);
+            page.lineTo(x + w, y);
+            page.lineTo(x + w, y + h);
+            page.lineTo(x, y + h);
+            if (fillShape) {
+                page.fillPath();
+            } else {
+                page.closePath();
+            }
         } else {
-            page.closePath();
+            final float k = 0.55228f;
+            List<Point> points = new ArrayList<Point>();
+            points.add(new Point(x + r, y));
+            points.add(new Point((x + w) - r, y));
+            points.add(new Point((x + w - r) + r * k, y, Point.CONTROL_POINT_C));
+            points.add(new Point((x + w), (y + r) - r * k, Point.CONTROL_POINT_C));
+            points.add(new Point((x + w), (y + r)));
+            points.add(new Point((x + w), (y + h) - r));
+            points.add(new Point((x + w), ((y + h) - r) + r * k, Point.CONTROL_POINT_C));
+            points.add(new Point(((x + w) - r) + r * k, (y + h), Point.CONTROL_POINT_C));
+            points.add(new Point(((x + w) - r), (y + h)));
+            points.add(new Point((x + r), (y + h)));
+            points.add(new Point(((x + r) - r * k), (y + h), Point.CONTROL_POINT_C));
+            points.add(new Point(x, ((y + h) - r) + r * k, Point.CONTROL_POINT_C));
+            points.add(new Point(x, (y + h) - r));
+            points.add(new Point(x, (y + r)));
+            points.add(new Point(x, (y + r) - r * k, Point.CONTROL_POINT_C));
+            points.add(new Point((x + r) - r * k, y, Point.CONTROL_POINT_C));
+            points.add(new Point((x + r), y));
+            page.drawPath(points, fillShape ? PathOperator.FILL : PathOperator.STROKE);
         }
         page.addEMC();
 

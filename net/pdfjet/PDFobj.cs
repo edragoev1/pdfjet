@@ -265,7 +265,7 @@ public class PDFobj {
     }
 
     /// <summary>Adds a content stream object number to the /Contents of this page.</summary>
-    public void AddContentObject(int number) {
+    internal void AddContentObject(int number) {
         int index = -1;
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {

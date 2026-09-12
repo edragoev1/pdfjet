@@ -531,7 +531,7 @@ public class Table implements Drawable {
                     w += row.get(j++).getWidth();
                 }
                 if (page != null) {
-                    page.setBrushColor(cell.getBrushColor());
+                    page.setBrushColor(cell.getTextColor());
                     if (i == (numOfHeaderRows - 1)) {
                         cell.setBorder(Border.BOTTOM, true);
                     }
@@ -564,7 +564,7 @@ public class Table implements Drawable {
                     w += row.get(i++).getWidth();
                 }
                 if (page != null) {
-                    page.setBrushColor(cell.getBrushColor());
+                    page.setBrushColor(cell.getTextColor());
                     cell.drawOn(page, x, y, w, h);
                 }
                 x += w;
@@ -612,6 +612,16 @@ public class Table implements Drawable {
             tableWidth += cell.getWidth();
         }
         return tableWidth;
+    }
+
+    /**
+     * Returns the number of table rows that were rendered by the last drawOn,
+     * not counting the header rows.
+     *
+     * @return the number of rendered rows.
+     */
+    public int getRowsRendered() {
+        return rendered == -1 ? rendered : rendered - numOfHeaderRows;
     }
 
     /**
@@ -848,7 +858,7 @@ public class Table implements Drawable {
      *  @param index the index of the column.
      *  @return the number of vertical cells needed to wrap around the cell text.
      */
-    public int getNumVerCells(List<Cell> row, int index) {
+    protected int getNumVerCells(List<Cell> row, int index) {
         Cell cell = row.get(index);
         int numOfVerCells = 1;
         if (cell.text == null) {

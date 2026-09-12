@@ -135,6 +135,13 @@ func (rect *Rect) SetGoToAction(key string) *Rect {
 	return rect
 }
 
+// SetLanguage sets the language of this rect, used for accessibility.
+// @param language the language, for example "en-US".
+func (rect *Rect) SetLanguage(language string) *Rect {
+	rect.language = language
+	return rect
+}
+
 // SetAltDescription sets the alternate description of this rect.
 // @param altDescription the alternate description of the rect.
 // @return this Rect.
@@ -148,31 +155,6 @@ func (rect *Rect) SetAltDescription(altDescription string) *Rect {
 // @return this Rect.
 func (rect *Rect) SetActualText(actualText string) *Rect {
 	rect.actualText = actualText
-	return rect
-}
-
-// SetPattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
-// It is specified by a dash array and a dash phase.
-// The elements of the dash array are positive numbers that specify the lengths of
-// alternating dashes and gaps.
-// The dash phase specifies the distance into the dash pattern at which to start the dash.
-// The elements of both the dash array and the dash phase are expressed in user space units.
-//
-// Examples of line dash patterns:
-//
-//	"[Array] Phase"     Appearance          Description
-//	_______________     _________________   ____________________________________
-//
-//	"[] 0"              -----------------   Solid line
-//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//
-// @param pattern the line dash pattern.
-func (rect *Rect) SetPattern(borderPattern string) *Rect {
-	rect.borderPattern = borderPattern
 	return rect
 }
 
@@ -258,7 +240,7 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if rect.uri != "" || rect.key != "" {
-		page.AddAnnotation(&Annotation{
+		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             rect.x,
 			y1:             rect.y,

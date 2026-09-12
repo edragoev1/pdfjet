@@ -578,7 +578,7 @@ final public class Page {
      * @param font the font.
      * @param str the string.
      */
-    public void drawUnicodeString(Font font, String str) {
+    void drawUnicodeString(Font font, String str) {
         if (str == null || str.isEmpty()) {
             return;
         }
@@ -1986,23 +1986,23 @@ final public class Page {
 
         // Starting point
         list.add(new Point(x + w - r1, y));
-        list.add(new Point(x + w - r1 + m4*r1, y, Point.CONTROL_POINT));
-        list.add(new Point(x + w, y + r2 - m4*r2, Point.CONTROL_POINT));
+        list.add(new Point(x + w - r1 + m4*r1, y, Point.CONTROL_POINT_C));
+        list.add(new Point(x + w, y + r2 - m4*r2, Point.CONTROL_POINT_C));
         list.add(new Point(x + w, y + r2));
 
         list.add(new Point(x + w, y + h - r2));
-        list.add(new Point(x + w, y + h - r2 + m4*r2, Point.CONTROL_POINT));
-        list.add(new Point(x + w - m4*r1, y + h, Point.CONTROL_POINT));
+        list.add(new Point(x + w, y + h - r2 + m4*r2, Point.CONTROL_POINT_C));
+        list.add(new Point(x + w - m4*r1, y + h, Point.CONTROL_POINT_C));
         list.add(new Point(x + w - r1, y + h));
 
         list.add(new Point(x + r1, y + h));
-        list.add(new Point(x + r1 - m4*r1, y + h, Point.CONTROL_POINT));
-        list.add(new Point(x, y + h - m4*r2, Point.CONTROL_POINT));
+        list.add(new Point(x + r1 - m4*r1, y + h, Point.CONTROL_POINT_C));
+        list.add(new Point(x, y + h - m4*r2, Point.CONTROL_POINT_C));
         list.add(new Point(x, y + h - r2));
 
         list.add(new Point(x, y + r2));
-        list.add(new Point(x, y + r2 - m4*r2, Point.CONTROL_POINT));
-        list.add(new Point(x + m4*r1, y, Point.CONTROL_POINT));
+        list.add(new Point(x, y + r2 - m4*r2, Point.CONTROL_POINT_C));
+        list.add(new Point(x + m4*r1, y, Point.CONTROL_POINT_C));
         list.add(new Point(x + r1, y));
         list.add(new Point(x + w - r1, y));
 
@@ -2179,7 +2179,7 @@ final public class Page {
      * Appends the specified array of bytes to the page.
      * @param buffer the array of bytes that is appended.
      */
-    public void append(byte[] buffer) {
+    void append(byte[] buffer) {
         try {
             buf.write(buffer);
         } catch (IOException e) {

@@ -507,11 +507,6 @@ public class TextLine : Drawable {
         return self.y
     }
 
-    /// Returns the y coordinate of this text line.
-    public func getTextY() -> Float {
-        return self.y
-    }
-
     /// Sets the colors used to highlight words in the text.
     @discardableResult
     public func setColorMap(_ colorMap: [String: Int32]?) -> TextLine {

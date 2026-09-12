@@ -460,7 +460,7 @@ public class Table : IDrawable {
                     w += row[j++].GetWidth();
                 }
                 if (page != null) {
-                    page.SetBrushColor(cell.GetBrushColor());
+                    page.SetBrushColor(cell.GetTextColor());
                     if (i == (numOfHeaderRows - 1)) {
                         cell.SetBorder(Border.BOTTOM, true);
                     }
@@ -493,7 +493,7 @@ public class Table : IDrawable {
                     w += row[i++].GetWidth();
                 }
                 if (page != null) {
-                    page.SetBrushColor(cell.GetBrushColor());
+                    page.SetBrushColor(cell.GetTextColor());
                     cell.DrawOn(page, x, y, w, h);
                 }
                 x += w;
@@ -781,7 +781,7 @@ public class Table : IDrawable {
     /// Use this method to find out how many vertically stacked cell are needed after call to wrapAroundCellText.
     /// </summary>
     /// <returns>the number of vertical cells needed to wrap around the cell text.</returns>
-    public int GetNumVerCells(List<Cell> row, int index) {
+    internal int GetNumVerCells(List<Cell> row, int index) {
         Cell cell = row[index];
         int numOfVerCells = 1;
         if (cell.text == null) {
@@ -861,17 +861,18 @@ public class Table : IDrawable {
         return this;
     }
 
-    /// <summary>Adds an empty row and returns its index.</summary>
-    public int AppendRow() {
+    // Adds an empty row and returns its index.
+    internal int AppendRow() {
         List<Cell> row = new List<Cell>();
         tableData.Add(row);         // Add the row
         return tableData.Count - 1; // Return the current index of the new row
     }
 
-    /// <summary>Returns the number of rows.</summary>
-    public int GetRowCount() { return tableData.Count; }
-    /// <summary>Returns the number of cells in the specified row.</summary>
-    public int GetColCount(int row) {
+    // Returns the number of rows.
+    internal int GetRowCount() { return tableData.Count; }
+
+    // Returns the number of cells in the specified row.
+    internal int GetColCount(int row) {
         if (row >= 0 && row < tableData.Count) {
             return tableData[row].Count;
         } else {

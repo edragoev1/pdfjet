@@ -6,39 +6,22 @@
 package pdfjet
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
-	"time"
 )
 
-// ReadTextLines returns the lines of the specified text file. It exits the program if the file cannot be opened.
-func ReadTextLines(filePath string) []string {
-	lines := make([]string, 0)
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Fatal(err)
+// PrintDuration prints how long an example took: the difference between the
+// two times, in milliseconds.
+func PrintDuration(example string, time0, time1 int64) {
+	duration := fmt.Sprintf("%d", time1-time0)
+	if len(duration) == 1 {
+		duration = "    " + duration
+	} else if len(duration) == 2 {
+		duration = "   " + duration
+	} else if len(duration) == 3 {
+		duration = "  " + duration
+	} else if len(duration) == 4 {
+		duration = " " + duration
 	}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		lines = append(lines, line)
-	}
-	return lines
-}
-
-// PrintDuration prints the name of an example and how long it took in milliseconds.
-func PrintDuration(example string, duration time.Duration) {
-	durationAsString := fmt.Sprintf("%.1f", float32(duration.Microseconds())/float32(1000.0))
-	if len(durationAsString) == 3 {
-		durationAsString = "    " + durationAsString
-	} else if len(durationAsString) == 4 {
-		durationAsString = "   " + durationAsString
-	} else if len(durationAsString) == 5 {
-		durationAsString = "  " + durationAsString
-	} else if len(durationAsString) == 6 {
-		durationAsString = " " + durationAsString
-	}
-	fmt.Print(example + " => " + durationAsString + "\n")
+	duration += ".0"
+	fmt.Println(example + " => " + duration)
 }

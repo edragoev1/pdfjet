@@ -66,6 +66,35 @@ namespace PDFjet.NET {
         public uint RawValue => _permissionsFlags;
 
         /// <summary>
+        /// Gets the permissions as <see cref="UserAccess"/> flags.
+        /// </summary>
+        /// <returns>the permissions flags.</returns>
+        public UserAccess GetAccess() {
+            return Access;
+        }
+
+        /// <summary>
+        /// Sets the permissions using the type-safe <see cref="UserAccess"/> enum.
+        /// The value is automatically masked to ensure any invalid bits are cleared.
+        /// </summary>
+        /// <param name="access">the UserAccess values combined with bitwise OR.</param>
+        /// <returns>this Permissions object.</returns>
+        public Permissions SetAccess(UserAccess access) {
+            Access = access;
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the raw 32-bit integer value of the permissions flags.
+        /// All reserved bits are zero. Encryption sets the reserved bits that
+        /// ISO 32000-2 requires to be one when it writes the /P key.
+        /// </summary>
+        /// <returns>the value of the /P key.</returns>
+        public uint GetRawValue() {
+            return _permissionsFlags;
+        }
+
+        /// <summary>
         /// Gets a value indicating whether the user can print the document
         /// (possibly at low quality, unless <see cref="CanPrintHighQuality"/> is true).
         /// </summary>

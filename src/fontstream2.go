@@ -21,7 +21,7 @@ func FontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	addToUnicodeCMapObject2(objects, font)
 
 	// Type0 Font Dictionary
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/Font")
@@ -68,7 +68,7 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	xml := []byte(sb.String())
 
 	// This is the metadata object
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/Metadata")
@@ -77,7 +77,7 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	obj.add("/Length")
 	obj.add(strconv.Itoa(len(xml)))
 	obj.add(">>")
-	obj.SetStream(xml)
+	obj.setStream(xml)
 	obj.number = len(*objects) + 1
 	*objects = append(*objects, obj)
 
@@ -87,7 +87,7 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 func embedFontFile2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	metadataObjNumber := addMetadataObject2(objects, font)
 
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.add("<<")
 	obj.add("/Metadata")
 	obj.add(strconv.Itoa(metadataObjNumber))
@@ -116,14 +116,14 @@ func embedFontFile2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 		}
 	}
 
-	obj.SetStream(buf1)
+	obj.setStream(buf1)
 	obj.number = len(*objects) + 1
 	*objects = append(*objects, obj)
 	font.fileObjNumber = obj.number
 }
 
 func addFontDescriptorObject2(objects *[]*PDFobj, font *Font) {
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/FontDescriptor")
@@ -214,19 +214,19 @@ func addToUnicodeCMapObject2(objects *[]*PDFobj, font *Font) {
 	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
 	sb.WriteString("end\nend")
 
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.add("<<")
 	obj.add("/Length")
 	obj.add(strconv.Itoa(sb.Len()))
 	obj.add(">>")
-	obj.SetStream([]byte(sb.String()))
+	obj.setStream([]byte(sb.String()))
 	obj.number = len(*objects) + 1
 	*objects = append(*objects, obj)
 	font.toUnicodeCMapObjNumber = obj.number
 }
 
 func addCIDFontDictionaryObject2(objects *[]*PDFobj, font *Font) {
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/Font")

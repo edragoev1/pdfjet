@@ -26,7 +26,7 @@ func Example32() {
 	x := float32(50.0)
 	y := float32(50.0)
 	leading := font.GetBodyHeight()
-	lines := pdfjet.ReadTextLines("examples/Example_02.java")
+	lines := pdfjet.ReadLines("examples/Example_02.java")
 	for _, line := range lines {
 		page.DrawStringUsingColorMap(font, nil, font.GetSize(), line, x, y, grayColor, colors)
 		y += leading
@@ -40,7 +40,8 @@ func Example32() {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example32()
-	pdfjet.PrintDuration("Example_32", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_32", time0, time1)
 }

@@ -168,6 +168,17 @@ public class Cell {
     }
 
     /**
+     * Sets the font size of the cell text.
+     *
+     * @param fontSize the font size.
+     * @return this Cell object.
+     */
+    public Cell setFontSize(float fontSize) {
+        this.fontSize = fontSize;
+        return this;
+    }
+
+    /**
      * Sets the image inside this cell.
      *
      * @param image the image.
@@ -189,6 +200,15 @@ public class Cell {
         this.barcode = barcode;
         this.text = null;
         return this;
+    }
+
+    /**
+     * Returns the barcode drawn in this cell.
+     *
+     * @return the barcode.
+     */
+    public Barcode getBarcode() {
+        return this.barcode;
     }
 
     /**
@@ -265,6 +285,15 @@ public class Cell {
     }
 
     /**
+     * Returns the text block drawn inside this cell.
+     *
+     * @return the text block.
+     */
+    public TextBlock getTextBlock() {
+        return this.textBlock;
+    }
+
+    /**
      * Sets the text column drawn inside this cell, and widens the cell to fit it.
      *
      * @param textColumn the text column.
@@ -274,6 +303,15 @@ public class Cell {
         this.textColumn = textColumn;
         this.width = textColumn.getWidth() + this.leftPadding + this.rightPadding;
         return this;
+    }
+
+    /**
+     * Returns the text column drawn inside this cell.
+     *
+     * @return the text column.
+     */
+    public TextColumn getTextColumn() {
+        return this.textColumn;
     }
 
     /**
@@ -313,6 +351,15 @@ public class Cell {
     }
 
     /**
+     * Returns the top padding of this cell.
+     *
+     * @return the top padding.
+     */
+    public float getTopPadding() {
+        return this.topPadding;
+    }
+
+    /**
      * Sets the bottom padding of this cell.
      *
      * @param padding the bottom padding.
@@ -321,6 +368,15 @@ public class Cell {
     public Cell setBottomPadding(float padding) {
         this.bottomPadding = padding;
         return this;
+    }
+
+    /**
+     * Returns the bottom padding of this cell.
+     *
+     * @return the bottom padding.
+     */
+    public float getBottomPadding() {
+        return this.bottomPadding;
     }
 
     /**
@@ -335,6 +391,15 @@ public class Cell {
     }
 
     /**
+     * Returns the left padding of this cell.
+     *
+     * @return the left padding.
+     */
+    public float getLeftPadding() {
+        return this.leftPadding;
+    }
+
+    /**
      * Sets the right padding of this cell.
      *
      * @param padding the right padding.
@@ -343,6 +408,15 @@ public class Cell {
     public Cell setRightPadding(float padding) {
         this.rightPadding = padding;
         return this;
+    }
+
+    /**
+     * Returns the right padding of this cell.
+     *
+     * @return the right padding.
+     */
+    public float getRightPadding() {
+        return this.rightPadding;
     }
 
     /**
@@ -465,17 +539,6 @@ public class Cell {
     }
 
     /**
-     * Sets the text color.
-     *
-     * @param textColor the text color.
-     * @return this Cell object.
-     */
-    public Cell setBrushColor(float[] textColor) {
-        this.textColor = textColor;
-        return this;
-    }
-
-    /**
      * Sets the text color of this cell.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
@@ -498,15 +561,6 @@ public class Cell {
     public Cell setTextColor(float[] textColor) {
         this.textColor = textColor;
         return this;
-    }
-
-    /**
-     * Returns the brush color.
-     *
-     * @return the brush color.
-     */
-    public float[] getBrushColor() {
-        return textColor;
     }
 
     /**
@@ -629,6 +683,82 @@ public class Cell {
             this.properties &= 0x00F0FFFF;
         }
         return this;
+    }
+
+    /**
+     * Sets whether the top border of this cell is drawn.
+     *
+     * @param topBorder true to draw the top border.
+     * @return this Cell object.
+     */
+    public Cell setTopBorder(boolean topBorder) {
+        return setBorder(Border.TOP, topBorder);
+    }
+
+    /**
+     * Returns true if the top border of this cell is drawn.
+     *
+     * @return true if the top border is drawn.
+     */
+    public boolean getTopBorder() {
+        return getBorder(Border.TOP);
+    }
+
+    /**
+     * Sets whether the bottom border of this cell is drawn.
+     *
+     * @param bottomBorder true to draw the bottom border.
+     * @return this Cell object.
+     */
+    public Cell setBottomBorder(boolean bottomBorder) {
+        return setBorder(Border.BOTTOM, bottomBorder);
+    }
+
+    /**
+     * Returns true if the bottom border of this cell is drawn.
+     *
+     * @return true if the bottom border is drawn.
+     */
+    public boolean getBottomBorder() {
+        return getBorder(Border.BOTTOM);
+    }
+
+    /**
+     * Sets whether the left border of this cell is drawn.
+     *
+     * @param leftBorder true to draw the left border.
+     * @return this Cell object.
+     */
+    public Cell setLeftBorder(boolean leftBorder) {
+        return setBorder(Border.LEFT, leftBorder);
+    }
+
+    /**
+     * Returns true if the left border of this cell is drawn.
+     *
+     * @return true if the left border is drawn.
+     */
+    public boolean getLeftBorder() {
+        return getBorder(Border.LEFT);
+    }
+
+    /**
+     * Sets whether the right border of this cell is drawn.
+     *
+     * @param rightBorder true to draw the right border.
+     * @return this Cell object.
+     */
+    public Cell setRightBorder(boolean rightBorder) {
+        return setBorder(Border.RIGHT, rightBorder);
+    }
+
+    /**
+     * Returns true if the right border of this cell is drawn.
+     *
+     * @return true if the right border is drawn.
+     */
+    public boolean getRightBorder() {
+        return getBorder(Border.RIGHT);
     }
 
     /**

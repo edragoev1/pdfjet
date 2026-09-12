@@ -426,6 +426,16 @@ public class Font {
         return ascent + descent;
     }
 
+    /// <summary>Returns the underline thickness at the current font size.</summary>
+    public float GetUnderlineThickness() {
+        return this.underlineThickness;
+    }
+
+    /// <summary>Returns the underline position at the current font size.</summary>
+    public float GetUnderlinePosition() {
+        return this.underlinePosition;
+    }
+
     /// <summary>Returns the underline thickness at the specified font size.</summary>
     public float GetUnderlineThickness(float fontSize) {
         return (fontUnderlineThickness * fontSize / unitsPerEm);

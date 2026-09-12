@@ -155,7 +155,8 @@ func appendMissingCells(tableData [][]*pdfjet.Cell, font *pdfjet.Font) {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example34()
-	pdfjet.PrintDuration("Example_34", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_34", time0, time1)
 }

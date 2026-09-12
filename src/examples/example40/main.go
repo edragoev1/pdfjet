@@ -137,7 +137,8 @@ func AddVerticalBar(
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example40()
-	pdfjet.PrintDuration("Example_40", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_40", time0, time1)
 }

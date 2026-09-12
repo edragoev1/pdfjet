@@ -64,7 +64,8 @@ func Example18() {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example18()
-	pdfjet.PrintDuration("Example_18", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_18", time0, time1)
 }

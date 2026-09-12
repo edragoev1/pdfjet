@@ -35,9 +35,6 @@ final public class Image implements Drawable {
     /** The destination key used by the GoTo action. */
     protected String key;
 
-    private float xBox;
-    private float yBox;
-
     private int degrees = 0;
     private boolean flipUpsideDown = false;
 
@@ -288,16 +285,6 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Places this image in the specified box.
-     *
-     * @param box the specified box.
-     */
-    public void placeIn(Box box) {
-        xBox = box.x;
-        yBox = box.y;
-    }
-
-    /**
      * Sets the URI for the "click box" action.
      *
      * @param uri the URI
@@ -363,10 +350,6 @@ final public class Image implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         page.addBMC(StructElem.P, language, actualText, altDescription);
-
-        x += xBox;
-        y += yBox;
-
         page.saveGraphicsState();
 
         if (degrees == 0) {

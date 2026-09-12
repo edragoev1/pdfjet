@@ -50,7 +50,7 @@ func NewPoint(x, y float32) *Point {
 	point.align = alignment.Right
 	point.strokeWidth = 1.0
 	point.strokeDashPattern = "[] 0"
-	point.pathOperator = "s" // CLOSE_AND_STROKE
+	point.pathOperator = pathoperator.CloseAndStroke
 	return point
 }
 
@@ -81,12 +81,12 @@ func NewControlPointY(x, y float32) *Point {
 	return point
 }
 
-// Copy returns a new Point with the same properties as this point.
+// copy returns a new Point with the same properties as this point.
 // Because all Point fields are value types, the returned copy is
 // fully independent of the original — modifying it will not affect
 // the original point and vice versa.
 // @return a copy of this point.
-func (point *Point) Copy() *Point {
+func (point *Point) copy() *Point {
 	cp := *point
 	return &cp
 }
@@ -307,4 +307,55 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 func (point *Point) SetStrokeWidth(strokeWidth float32) *Point {
 	point.strokeWidth = strokeWidth
 	return point
+}
+
+// GetStrokeWidth returns the width of the lines used to draw this point.
+// @return the stroke width.
+func (point *Point) GetStrokeWidth() float32 {
+	return point.strokeWidth
+}
+
+// SetStrokeDashPattern sets the line dash pattern that controls the pattern
+// of dashes and gaps used to stroke paths.
+// It is specified by a dash array and a dash phase.
+// The elements of the dash array are positive numbers that specify the lengths of
+// alternating dashes and gaps.
+// The dash phase specifies the distance into the dash pattern at which to start the dash.
+// The elements of both the dash array and the dash phase are expressed in user space units.
+//
+// Examples of line dash patterns:
+//
+//	"[Array] Phase"     Appearance          Description
+//	_______________     _________________   ____________________________________
+//
+//	"[] 0"              -----------------   Solid line
+//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//
+// @param strokeDashPattern the line dash pattern.
+func (point *Point) SetStrokeDashPattern(strokeDashPattern string) *Point {
+	point.strokeDashPattern = strokeDashPattern
+	return point
+}
+
+// GetStrokeDashPattern returns the line dash pattern.
+// @return the line dash pattern.
+func (point *Point) GetStrokeDashPattern() string {
+	return point.strokeDashPattern
+}
+
+// SetPathOperator sets the path operator used to draw this point.
+// @param pathOperator the path operator, for example pathoperator.Stroke.
+func (point *Point) SetPathOperator(pathOperator string) *Point {
+	point.pathOperator = pathOperator
+	return point
+}
+
+// GetPathOperator returns the path operator used to draw this point.
+// @return the path operator.
+func (point *Point) GetPathOperator() string {
+	return point.pathOperator
 }

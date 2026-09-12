@@ -90,10 +90,11 @@ func Example33() error {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	err := Example33()
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdfjet.PrintDuration("Example_33", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_33", time0, time1)
 }

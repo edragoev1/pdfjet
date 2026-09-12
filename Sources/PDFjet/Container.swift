@@ -21,7 +21,7 @@ public class Container: Drawable {
     public var scaleY: Float
     private var elements: [Drawable]
     /// The container that holds this container, or nil.
-    public var parent: Container?
+    var parent: Container?
 
     /// Creates a new container with the specified width and height.
     ///
@@ -54,6 +54,13 @@ public class Container: Drawable {
         self.x = x
         self.y = y
         return self
+    }
+
+    /// Sets the rotation angle of this container.
+    ///
+    /// - Parameter degrees: The rotation angle in degrees.
+    public func rotate(_ degrees: Double) {
+        self.rotateDegrees = Float(degrees)
     }
 
     /// Sets the rotation angle.

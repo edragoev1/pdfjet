@@ -32,9 +32,24 @@ public class OptionalContentGroup {
         self.name = name
     }
 
+    /// Returns the name of this group.
+    public func getName() -> String {
+        return self.name!
+    }
+
     /// Adds a drawable to this group.
     public func add(_ drawable: Drawable) {
         components.append(drawable)
+    }
+
+    /// Removes all drawables from this group.
+    public func clear() {
+        components.removeAll()
+    }
+
+    /// Returns the drawables in this group.
+    public func getComponents() -> [Drawable] {
+        return components
     }
 
     /// Sets whether this group is visible.

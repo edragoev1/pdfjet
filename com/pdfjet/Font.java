@@ -393,6 +393,15 @@ final public class Font {
     }
 
     /**
+     * Returns the name of this font.
+     *
+     * @return the name of the font.
+     */
+    public String getName() {
+        return this.name;
+    }
+
+    /**
      * Returns the underline thickness of this font.
      *
      * @return the underline thickness.

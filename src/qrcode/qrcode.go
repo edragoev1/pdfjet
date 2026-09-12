@@ -25,8 +25,8 @@ import (
 
 // QRCode used to create 2D QR Code barcodes. Please see Example_20.
 type QRCode struct {
-	PAD0              int
-	PAD1              int
+	pad0              int
+	pad1              int
 	modules           [][]*bool
 	moduleCount       int
 	errorCorrectLevel int
@@ -42,8 +42,8 @@ type QRCode struct {
 // @param errorCorrectLevel the desired error correction level.
 func NewQRCode(str string, errorCorrectLevel int) *QRCode {
 	qrcode := new(QRCode)
-	qrcode.PAD0 = 0xEC
-	qrcode.PAD1 = 0x11
+	qrcode.pad0 = 0xEC
+	qrcode.pad1 = 0x11
 	qrcode.qrData = []byte(str)
 	qrcode.moduleCount = 33 // Magic Number
 	qrcode.m1 = 2.0
@@ -96,7 +96,8 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) []float32 {
 	return []float32{qrcode.x + w, qrcode.y + h}
 }
 
-func (qrcode *QRCode) getData() [][]*bool {
+// GetData returns the modules of the QR code: true for dark and false for light modules.
+func (qrcode *QRCode) GetData() [][]*bool {
 	return qrcode.modules
 }
 
@@ -298,11 +299,11 @@ func (qrcode *QRCode) createData(errorCorrectLevel int) []byte {
 		if buffer.getLengthInBits() >= totalDataCount*8 {
 			break
 		}
-		buffer.put(qrcode.PAD0, 8)
+		buffer.put(qrcode.pad0, 8)
 		if buffer.getLengthInBits() >= totalDataCount*8 {
 			break
 		}
-		buffer.put(qrcode.PAD1, 8)
+		buffer.put(qrcode.pad1, 8)
 	}
 
 	return qrcode.createBytes(buffer, rsBlocks)

@@ -64,7 +64,7 @@ func getDecryptor(trailer *PDFobj, objects []*PDFobj, password string) (*decrypt
 	var encrypt *PDFobj
 	if trailer.dict[i+1] == "<<" {
 		// The dictionary is in the trailer, so there is no object to skip.
-		encrypt = NewPDFobj()
+		encrypt = newPDFobj()
 		encrypt.number = -1
 		level := 0
 		for j := i + 1; j < len(trailer.dict); j++ {
@@ -99,28 +99,28 @@ func getDecryptor(trailer *PDFobj, objects []*PDFobj, password string) (*decrypt
 
 func newDecryptor(encrypt *PDFobj, id []byte, password string) (*decryptor, error) {
 	d := &decryptor{objNumber: encrypt.number}
-	if encrypt.getValue("/Filter") != "/Standard" {
+	if encrypt.GetValue("/Filter") != "/Standard" {
 		return nil, errors.New("The security handler of the PDF is not supported: " +
-			encrypt.getValue("/Filter"))
+			encrypt.GetValue("/Filter"))
 	}
 	v := getInt(encrypt, "/V")
 	r := getInt(encrypt, "/R")
-	d.encryptMetadata = encrypt.getValue("/EncryptMetadata") != "false"
+	d.encryptMetadata = encrypt.GetValue("/EncryptMetadata") != "false"
 	if v == 1 || v == 2 {
 		d.streamMethod = cryptRC4
 		d.stringMethod = cryptRC4
 	} else if v == 4 || v == 5 {
-		d.streamMethod = getCryptMethod(encrypt, encrypt.getValue("/StmF"))
-		d.stringMethod = getCryptMethod(encrypt, encrypt.getValue("/StrF"))
+		d.streamMethod = getCryptMethod(encrypt, encrypt.GetValue("/StmF"))
+		d.stringMethod = getCryptMethod(encrypt, encrypt.GetValue("/StrF"))
 	} else {
 		return nil, fmt.Errorf("The encryption of the PDF is not supported: /V %d", v)
 	}
-	u := toBytes(encrypt.getValue("/U"))
-	o := toBytes(encrypt.getValue("/O"))
+	u := toBytes(encrypt.GetValue("/U"))
+	o := toBytes(encrypt.GetValue("/O"))
 	var err error
 	if r == 5 || r == 6 {
 		d.key, err = getAES256Key(r, utf8Password(password), u, o,
-			toBytes(encrypt.getValue("/UE")), toBytes(encrypt.getValue("/OE")))
+			toBytes(encrypt.GetValue("/UE")), toBytes(encrypt.GetValue("/OE")))
 	} else if r >= 2 && r <= 4 {
 		length := getInt(encrypt, "/Length") / 8
 		if v == 1 || r == 2 {
@@ -366,7 +366,7 @@ func (d *decryptor) decryptStrings(obj *PDFobj) {
 
 // decryptStream returns the decrypted stream of the object.
 func (d *decryptor) decryptStream(obj *PDFobj, stream []byte) []byte {
-	if !d.encryptMetadata && obj.getValue("/Type") == "/Metadata" {
+	if !d.encryptMetadata && obj.GetValue("/Type") == "/Metadata" {
 		return stream
 	}
 	return d.decrypt(stream, d.streamMethod, obj)
@@ -434,7 +434,7 @@ func rc4Crypt(key, data []byte) []byte {
 // getInt returns the integer value of the key, or 0. /P can be written as an
 // unsigned number.
 func getInt(obj *PDFobj, key string) int {
-	value, err := strconv.ParseInt(obj.getValue(key), 10, 64)
+	value, err := strconv.ParseInt(obj.GetValue(key), 10, 64)
 	if err != nil {
 		return 0
 	}

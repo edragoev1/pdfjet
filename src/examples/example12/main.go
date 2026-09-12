@@ -19,7 +19,7 @@ func Example12() {
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	lines := pdfjet.ReadTextLines("data/Example_12.java")
+	lines := pdfjet.ReadLines("data/Example_12.java")
 	var buf strings.Builder
 	for _, line := range lines {
 		buf.WriteString(line)
@@ -40,7 +40,8 @@ func Example12() {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example12()
-	pdfjet.PrintDuration("Example_12", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_12", time0, time1)
 }

@@ -110,7 +110,8 @@ func getData() [][]*pdfjet.Point {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example39()
-	pdfjet.PrintDuration("Example_39", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_39", time0, time1)
 }

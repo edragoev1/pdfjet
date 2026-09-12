@@ -34,6 +34,7 @@ import (
 type Page struct {
 	pdf           *PDF
 	buf           []byte
+	rotateDegrees float32
 	pageObj       *PDFobj
 	objNumber     int
 	renderingMode int
@@ -71,14 +72,14 @@ type Page struct {
 	mcid int
 }
 
-// Constants from Android's Matrix object:
+// Indices in an Android Matrix value array, for Transform.
 const (
-	mScaleX = iota
-	mSkewX
-	mTransX
-	mScaleY
-	mSkewY
-	mTransY
+	MScaleX = iota // Index of the horizontal scale.
+	MSkewX         // Index of the horizontal skew.
+	MTransX        // Index of the horizontal translation.
+	MSkewY         // Index of the vertical skew.
+	MScaleY        // Index of the vertical scale.
+	MTransY        // Index of the vertical translation.
 )
 
 // NewPage creates a page of the specified size and adds it to the PDF.
@@ -144,7 +145,7 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 // Complete completes adding content to the existing PDF.
 func (page *Page) Complete(objects *[]*PDFobj) {
 	page.RestoreGraphicsState()
-	page.pageObj.addContent(page.getContent(), objects)
+	page.pageObj.AddContent(page.getContent(), objects)
 }
 
 // removeComments removes object dictionary comments.
@@ -171,7 +172,7 @@ func (page *Page) removeComments(obj *PDFobj) *PDFobj {
 
 // AddCoreFontResource adds core font to the PDF objects.
 func (page *Page) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*PDFobj) *Font {
-	return page.pageObj.addCoreFontResource(coreFont, objects)
+	return page.pageObj.AddCoreFontResource(coreFont, objects)
 }
 
 // AddImageResource adds an image to the PDF objects.
@@ -283,7 +284,7 @@ func (page *Page) drawString(
 		return
 	}
 	page.appendString("BT\n")
-	page.SetTextFont(font, fontSize)
+	page.setTextFont(font, fontSize)
 
 	if page.renderingMode != 0 {
 		page.appendInteger(page.renderingMode)
@@ -1281,13 +1282,14 @@ func (page *Page) DrawCircle(x, y, r float32) {
 	page.drawEllipse(x, y, r, r, pathoperator.Stroke)
 }
 
-// FillCircle draws the specified circle on the page and fills it with the current brushColor color.
+// DrawCircleUsingPathOperator draws the specified circle on the page using the path operator.
 //
 // @param x the x coordinate of the center of the circle to be drawn.
 // @param y the y coordinate of the center of the circle to be drawn.
 // @param r the radius of the circle to be drawn.
-func (page *Page) FillCircle(x, y, r float32) {
-	page.drawEllipse(x, y, r, r, pathoperator.Fill)
+// @param pathOperator the path operator, for example pathoperator.Stroke or pathoperator.Fill.
+func (page *Page) DrawCircleUsingPathOperator(x, y, r float32, pathOperator string) {
+	page.drawEllipse(x, y, r, r, pathOperator)
 }
 
 // DrawEllipse draws an ellipse on the page using the current penColor color.
@@ -1563,8 +1565,8 @@ func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 	page.appendString("c\n")
 }
 
-// SetTextFont sets the text font.
-func (page *Page) SetTextFont(font *Font, fontSize float32) *Page {
+// setTextFont sets the text font.
+func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
 	if font.fontID != "" {
 		page.appendByte('/')
 		page.appendString(font.fontID)
@@ -1733,7 +1735,7 @@ func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
 // AddBMC adds BMC to the page.
 func (page *Page) AddBMC(structure, language, actualText, altDescription string) {
 	if page.pdf.compliance == compliance.PDF_UA_1 {
-		element := NewStructElem()
+		element := newStructElem()
 		element.structure = structure
 		element.mcid = page.mcid
 		element.language = language
@@ -1766,14 +1768,14 @@ func (page *Page) AddEMC() {
 	}
 }
 
-// AddAnnotation adds annotation to the page.
-func (page *Page) AddAnnotation(annotation *Annotation) {
+// addAnnotation adds annotation to the page.
+func (page *Page) addAnnotation(annotation *Annotation) {
 	annotation.setDescriptionFallback()
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2
 	page.annots = append(page.annots, annotation)
 	if page.pdf.compliance == compliance.PDF_UA_1 {
-		element := NewStructElem()
+		element := newStructElem()
 		element.structure = structtype.Link
 		element.language = annotation.language
 		element.actualText = annotation.actualText
@@ -1823,11 +1825,12 @@ func (page *Page) DrawContents(
 	page.endTransform()
 }
 
-// DrawArrayOfCharacters draws array of equally spaced characters.
-func (page *Page) DrawArrayOfCharacters(font *Font, text string, x, y, dx float32) {
+// DrawStringUsingSpacing draws the characters of the string dx apart, the
+// first one at (x, y).
+func (page *Page) DrawStringUsingSpacing(font *Font, fontSize float32, text string, x, y, dx float32) {
 	x1 := x
-	for i := 0; i < len(text); i++ {
-		page.DrawStringUsingColorMap(font, nil, font.size, text[i:i+1], x1, y, [3]float32{0.0, 0.0, 0.0}, nil)
+	for _, ch := range text {
+		page.DrawStringUsingFontSize(font, fontSize, string(ch), x1, y)
 		x1 += dx
 	}
 }
@@ -1849,6 +1852,18 @@ func (page *Page) AddWatermark(font *Font, text string) {
 	watermark.DrawOn(page)
 }
 
+// GetContent returns the content stream of this page.
+func (page *Page) GetContent() []byte {
+	return page.buf
+}
+
+// RotateBy sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
+func (page *Page) RotateBy(rotateDegrees float64) {
+	if rotateDegrees == 0 || rotateDegrees == 90 || rotateDegrees == 180 || rotateDegrees == 270 {
+		page.rotateDegrees = float32(rotateDegrees)
+	}
+}
+
 // InvertYAxis inverts the Y axis.
 func (page *Page) InvertYAxis() {
 	page.appendString("1 0 0 -1 0 ")
@@ -1859,22 +1874,22 @@ func (page *Page) InvertYAxis() {
 // Transform use save before, restore afterwards!
 // 9 value array like generated by androids Matrix.getValues()
 func (page *Page) Transform(values []float32) {
-	scalex := values[mScaleX]
-	scaley := values[mScaleY]
-	transx := values[mTransX]
-	transy := values[mTransY]
+	scalex := values[MScaleX]
+	scaley := values[MScaleY]
+	transx := values[MTransX]
+	transy := values[MTransY]
 
 	page.appendFloat32(scalex)
 	page.appendString(" ")
-	page.appendFloat32(values[mSkewX])
+	page.appendFloat32(values[MSkewX])
 	page.appendString(" ")
-	page.appendFloat32(values[mSkewY])
+	page.appendFloat32(values[MSkewY])
 	page.appendString(" ")
 	page.appendFloat32(scaley)
 	page.appendString(" ")
 
-	if math.Asin(float64(values[mSkewY])) != 0.0 {
-		transx -= values[mSkewY] * page.height / scaley
+	if math.Asin(float64(values[MSkewY])) != 0.0 {
+		transx -= values[MSkewY] * page.height / scaley
 	}
 
 	page.appendFloat32(transx)
@@ -1909,18 +1924,18 @@ func (page *Page) AddFooterOffsetBy(textLine *TextLine, offset float32) [2]float
 	return textLine.DrawOn(page)
 }
 
-// BeginText begins text block.
-func (page *Page) BeginText() {
+// beginText begins text block.
+func (page *Page) beginText() {
 	page.appendString("BT\n")
 }
 
-// EndText ends text block.
-func (page *Page) EndText() {
+// endText ends text block.
+func (page *Page) endText() {
 	page.appendString("ET\n")
 }
 
-// SetTextLocation moves the text position to the specified location.
-func (page *Page) SetTextLocation(x, y float32) *Page {
+// setTextLocation moves the text position to the specified location.
+func (page *Page) setTextLocation(x, y float32) *Page {
 	page.appendFloat32(x)
 	page.appendByte(token.Space)
 	page.appendFloat32(page.height - y)
@@ -1928,38 +1943,38 @@ func (page *Page) SetTextLocation(x, y float32) *Page {
 	return page
 }
 
-// SetTextLeading sets the distance between lines of text.
-func (page *Page) SetTextLeading(leading float32) *Page {
+// setTextLeading sets the distance between lines of text.
+func (page *Page) setTextLeading(leading float32) *Page {
 	page.appendFloat32(leading)
 	page.appendString(" TL\n")
 	return page
 }
 
-// NextLine moves the text position to the start of the next line.
-func (page *Page) NextLine() {
+// nextLine moves the text position to the start of the next line.
+func (page *Page) nextLine() {
 	page.appendString("T*\n")
 }
 
-// SetTextScaling sets the horizontal scaling of the text in percent.
-func (page *Page) SetTextScaling(scaling float32) *Page {
+// setTextScaling sets the horizontal scaling of the text in percent.
+func (page *Page) setTextScaling(scaling float32) *Page {
 	page.appendFloat32(scaling)
 	page.appendString(" Tz\n")
 	return page
 }
 
-// SetTextRise moves the text baseline up or down by the specified amount.
-func (page *Page) SetTextRise(rise float32) *Page {
+// setTextRise moves the text baseline up or down by the specified amount.
+func (page *Page) setTextRise(rise float32) *Page {
 	page.appendFloat32(rise)
 	page.appendString(" Ts\n")
 	page.textRise = rise
 	return page
 }
 
-// DrawTextLine draws a string at the specified location using the current font size.
-func (page *Page) DrawTextLine(font *Font, str string, x float32, y float32) {
-	page.BeginText()
-	page.SetTextLocation(x, y)
-	page.SetTextFont(font, font.size)
+// drawTextLine draws a string at the specified location using the current font size.
+func (page *Page) drawTextLine(font *Font, str string, x float32, y float32) {
+	page.beginText()
+	page.setTextLocation(x, y)
+	page.setTextFont(font, font.size)
 	if font.isCoreFont {
 		page.appendString("[<")
 		page.drawASCIIString(font, str)
@@ -1969,7 +1984,7 @@ func (page *Page) DrawTextLine(font *Font, str string, x float32, y float32) {
 		page.drawUnicodeString(font, str)
 		page.appendString("> Tj\n")
 	}
-	page.EndText()
+	page.endText()
 }
 
 func (page *Page) appendInteger(value int) {
@@ -1992,9 +2007,9 @@ func (page *Page) appendByteArray(a []byte) {
 	page.buf = append(page.buf, a...)
 }
 
-// ScaleAndRotate scales content to w by h, rotates it around its center
+// scaleAndRotate scales content to w by h, rotates it around its center
 // and places its top left corner at x, y.
-func (page *Page) ScaleAndRotate(x, y, w, h, degrees float32) {
+func (page *Page) scaleAndRotate(x, y, w, h, degrees float32) {
 	// PDF transformations apply LAST-TO-FIRST (like a stack: last command = first applied)
 
 	// [FINAL POSITIONING - Applied First]
@@ -2031,8 +2046,8 @@ func (page *Page) ScaleAndRotate(x, y, w, h, degrees float32) {
 	page.appendString(" cm\n")
 }
 
-// RotateAroundCenter rotates the coordinate system around the specified center.
-func (page *Page) RotateAroundCenter(centerX, centerY, degrees float32) {
+// rotateAroundCenter rotates the coordinate system around the specified center.
+func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 	page.appendString("1 0 0 1 ")
 	page.appendFloat32(centerX)
 	page.appendString(" ")
@@ -2093,7 +2108,7 @@ func (page *Page) drawTextBlock(
 	}
 	page.appendString("BT\n")
 	page.SetBrushColorRGB(textColor)
-	page.SetTextFont(font, fontSize)
+	page.setTextFont(font, fontSize)
 	yText := y
 	for _, textLine := range textLines {
 		page.appendString("1 0 0 1 ")

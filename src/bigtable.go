@@ -156,7 +156,7 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 		if bt.alignment[i] == alignment.Right {
 			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, text)
 		}
-		bt.page.DrawTextLine(font, text, xText, bt.yText)
+		bt.page.drawTextLine(font, text, xText, bt.yText)
 	}
 }
 

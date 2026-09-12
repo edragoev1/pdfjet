@@ -17,12 +17,12 @@ package qrcode
 
 // QRCode patterns
 const (
-	PATTERN000 = iota
-	PATTERN001
-	PATTERN010
-	PATTERN011
-	PATTERN100
-	PATTERN101
-	PATTERN110
-	PATTERN111
+	pattern000 = iota
+	pattern001
+	pattern010
+	pattern011
+	pattern100
+	pattern101
+	pattern110
+	pattern111
 )

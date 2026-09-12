@@ -29,7 +29,7 @@ public class Example_14 {
                 } else {
                     cell = Cell(f2, "")
                 }
-                cell!.setAllBorders(false)
+                cell!.setBorders(false)
 
                 cell!.setTopPadding(10.0)
                 cell!.setBottomPadding(10.0)

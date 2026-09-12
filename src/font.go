@@ -317,6 +317,11 @@ func (font *Font) GetSize() float32 {
 	return font.size
 }
 
+// GetName returns the name of this font.
+func (font *Font) GetName() string {
+	return font.name
+}
+
 // SetKernPairs sets the kerning for the selected font to 'true' or 'false'
 // depending on the passed value of kernPairs parameter.
 // The kerning is implemented only for the 14 standard fonts.
@@ -367,15 +372,25 @@ func (font *Font) GetBodyHeightAt(fontSize float32) float32 {
 	return font.GetAscentAt(fontSize) + font.GetDescentAt(fontSize)
 }
 
-// GetUnderlineThickness returns the underline thickness at the specified font size.
-func (font *Font) GetUnderlineThickness(fontSize float32) float32 {
+// GetUnderlineThickness returns the underline thickness at the current font size.
+func (font *Font) GetUnderlineThickness() float32 {
+	return font.underlineThickness
+}
+
+// GetUnderlinePosition returns the underline position at the current font size.
+func (font *Font) GetUnderlinePosition() float32 {
+	return font.underlinePosition
+}
+
+// GetUnderlineThicknessAt returns the underline thickness at the specified font size.
+func (font *Font) GetUnderlineThicknessAt(fontSize float32) float32 {
 	return float32(font.fontUnderlineThickness) * fontSize / float32(font.unitsPerEm)
 }
 
-// GetUnderlinePosition returns the underline position at the specified font size.
-func (font *Font) GetUnderlinePosition(fontSize float32) float32 {
+// GetUnderlinePositionAt returns the underline position at the specified font size.
+func (font *Font) GetUnderlinePositionAt(fontSize float32) float32 {
 	return -(float32(font.fontUnderlinePosition) * fontSize / float32(font.unitsPerEm)) +
-		font.GetUnderlineThickness(fontSize)/2.0
+		font.GetUnderlineThicknessAt(fontSize)/2.0
 }
 
 // GetFitChars returns the number of characters from the specified text string

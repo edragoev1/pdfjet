@@ -49,7 +49,7 @@ func Example37(fileName string) {
 }
 
 func main() {
-	start := time.Now()
+	time0 := time.Now().UnixMilli()
 	Example37("data/testPDFs/wirth.pdf")
 	// Example37("../../eBooks/UniversityPhysicsVolume1.pdf")
 	// Example37("../../eBooks/Smalltalk-and-OO.pdf")
@@ -58,5 +58,6 @@ func main() {
 	// Example37("../../eBooks/Greenbook.pdf")
 	// Example37("../../eBooks/Bluebook.pdf")
 	// Example37("../../eBooks/Orangebook.pdf")
-	pdfjet.PrintDuration("Example_37", time.Since(start))
+	time1 := time.Now().UnixMilli()
+	pdfjet.PrintDuration("Example_37", time0, time1)
 }

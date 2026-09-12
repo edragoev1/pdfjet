@@ -145,11 +145,9 @@ func (pdf *PDF) GetCompliance() int {
 	return pdf.compliance
 }
 
-// SetEncryption sets the encryption applied to this document. It does nothing when err is not nil.
-func (pdf *PDF) SetEncryption(encryption *Encryption, err error) *PDF {
-	if err == nil {
-		pdf.encryption = encryption
-	}
+// SetEncryption sets the encryption applied to this document.
+func (pdf *PDF) SetEncryption(encryption *Encryption) *PDF {
+	pdf.encryption = encryption
 	return pdf
 }
 
@@ -736,6 +734,12 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 		pdf.appendFloat32(page.height)
 		pdf.appendString("]\n")
 
+		if page.rotateDegrees != 0.0 {
+			pdf.appendString("/Rotate ")
+			pdf.appendFloat32(page.rotateDegrees)
+			pdf.appendString("\n")
+		}
+
 		if page.cropBox != nil {
 			pdf.addPageBox("CropBox", page, page.cropBox)
 		}
@@ -1262,8 +1266,8 @@ func (pdf *PDF) getSortedObjects(objects []*PDFobj) []*PDFobj {
 	}
 
 	for number := 1; number <= maxObjNumber; number++ {
-		obj := NewPDFobj()
-		obj.SetNumber(number)
+		obj := newPDFobj()
+		obj.setNumber(number)
 		sorted = append(sorted, obj)
 	}
 
@@ -1314,7 +1318,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 
 	objects2 := make([]*PDFobj, 0)
 	for _, obj := range objects1 {
-		objType := obj.getValue("/Type")
+		objType := obj.GetValue("/Type")
 		if objType == "/XRef" {
 			continue // Skip the cross-reference streams.
 		}
@@ -1325,12 +1329,12 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 			dec.decryptStrings(obj)
 		}
 		if contains(obj.dict, "stream") {
-			length := obj.GetLength(objects1)
+			length := obj.getLength(objects1)
 			obj.setStreamAndData(buf, length, dec)
 		}
 
 		if objType == "/ObjStm" {
-			first, err := strconv.Atoi(obj.getValue("/First"))
+			first, err := strconv.Atoi(obj.GetValue("/First"))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -1354,7 +1358,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 					end = first + tmp
 				}
 				o3 := getObject(obj.GetData(), first+off, end)
-				o3.SetNumber(num)
+				o3.setNumber(num)
 				o3.dict = insertStringAt(o3.dict, "obj", 0)
 				o3.dict = insertStringAt(o3.dict, "0", 0)
 				o3.dict = insertStringAt(o3.dict, strconv.Itoa(num), 0)
@@ -1406,13 +1410,13 @@ func trimToken(str string) string {
 // offset is outside of the PDF.
 func getObjectAt(buf []byte, off int) *PDFobj {
 	if off < 0 || off >= len(buf) {
-		return NewPDFobj()
+		return newPDFobj()
 	}
 	return getObject(buf, off, len(buf))
 }
 
 func getObject(buf []byte, off, length int) *PDFobj {
-	obj := NewPDFobj()
+	obj := newPDFobj()
 	obj.offset = off
 
 	var token1 strings.Builder
@@ -1556,13 +1560,13 @@ func getObjects(buf []byte, offset int, objects *[]*PDFobj, depth int) *PDFobj {
 	if depth > 1000 || (!table && !isObject(xref, -1)) {
 		return nil
 	}
-	prev := xref.getValue("/Prev")
+	prev := xref.GetValue("/Prev")
 	if prev != "" && getObjects(buf, toInteger(prev), objects, depth+1) == nil {
 		return nil
 	}
 	if table {
 		// The objects in the table replace those in the /XRefStm stream.
-		xrefStm := xref.getValue("/XRefStm")
+		xrefStm := xref.GetValue("/XRefStm")
 		if xrefStm != "" && !getStreamObjects(buf, getObjectAt(buf, toInteger(xrefStm)), objects) {
 			return nil
 		}
@@ -1606,7 +1610,7 @@ func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 // getStreamObjects adds the objects of a cross-reference stream that are not
 // in object streams, and returns false when an offset is not that of its object.
 func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
-	if !isObject(xref, -1) || xref.getValue("/Type") != "/XRef" || !contains(xref.dict, "stream") {
+	if !isObject(xref, -1) || xref.GetValue("/Type") != "/XRef" || !contains(xref.dict, "stream") {
 		return false
 	}
 	// See page 50 in PDF32000_2008.pdf
@@ -1618,7 +1622,7 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 	n1 := toInteger(dict[w+2]) // Field 1 number of bytes
 	n2 := toInteger(dict[w+3]) // Field 2 number of bytes
 	n3 := toInteger(dict[w+4]) // Field 3 number of bytes
-	length := toInteger(xref.getValue("/Length"))
+	length := toInteger(xref.GetValue("/Length"))
 	if n1 < 0 || n2 < 0 || n3 < 0 || n1+n2+n3 == 0 ||
 		length < 0 || xref.streamOffset+length > len(buf) {
 		return false
@@ -1632,7 +1636,7 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 			index = append(index, toInteger(dict[k]), toInteger(dict[k+1]))
 		}
 	} else {
-		index = append(index, 0, toInteger(xref.getValue("/Size")))
+		index = append(index, 0, toInteger(xref.GetValue("/Size")))
 	}
 
 	// setStreamAndData undoes the predictor, so each entry is a row of the data.
@@ -1679,7 +1683,7 @@ func getObjectsByScanning(buf []byte, objects *[]*PDFobj) *PDFobj {
 			if isObject(obj, -1) {
 				obj.number = toInteger(obj.dict[0])
 				*objects = append(*objects, obj)
-				if obj.getValue("/Type") == "/XRef" {
+				if obj.GetValue("/Type") == "/XRef" {
 					xrefStream = obj
 				}
 				if contains(obj.dict, "stream") {
@@ -1888,7 +1892,7 @@ func (pdf *PDF) AddObjects(objects *[]*PDFobj) {
 
 func (pdf *PDF) getPagesObject(objects []*PDFobj) *PDFobj {
 	for _, obj := range objects {
-		if obj.getValue("/Type") == "/Pages" && obj.getValue("/Parent") == "" {
+		if obj.GetValue("/Type") == "/Pages" && obj.GetValue("/Parent") == "" {
 			return obj
 		}
 	}
@@ -1903,7 +1907,7 @@ func (pdf *PDF) GetPageObjects(objects []*PDFobj) []*PDFobj {
 }
 
 func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFobj) {
-	kids := pdfObj.GetObjectNumbers("/Kids")
+	kids := pdfObj.getObjectNumbers("/Kids")
 	for _, number := range kids {
 		obj := objects[number-1]
 		if isPageObject(obj) {
@@ -2130,7 +2134,7 @@ func (pdf *PDF) addObjectTree(
 	}
 	numbers[objNumber] = true
 	obj := objects[objNumber-1]
-	objType := obj.getValue("/Type")
+	objType := obj.GetValue("/Type")
 	if len(obj.dict) == 0 || objType == "/Page" || objType == "/Pages" || objType == "/Catalog" {
 		return resources
 	}
@@ -2172,7 +2176,7 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 
 	pages := pdf.GetPageObjects(objects)
 	for _, page := range pages {
-		resObj := page.getResourcesObject(objects)
+		resObj := page.GetResourcesObject(objects)
 		fonts := pdf.getFontObjects(resObj, objects)
 		for _, font := range fonts {
 			resources = append(resources, font)

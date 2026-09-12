@@ -17,13 +17,13 @@ type StructElem struct {
 	annotation     *Annotation
 }
 
-// NewStructElem constructor
-func NewStructElem() *StructElem {
+// newStructElem constructor
+func newStructElem() *StructElem {
 	structElem := new(StructElem)
 	return structElem
 }
 
-// GetPageObjNumber returns the object number of the page this element is on.
-func (structElem *StructElem) GetPageObjNumber() int {
+// getPageObjNumber returns the object number of the page this element is on.
+func (structElem *StructElem) getPageObjNumber() int {
 	return structElem.pageObjNumber
 }

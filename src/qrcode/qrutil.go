@@ -37,21 +37,21 @@ func getErrorCorrectPolynomial(errorCorrectLength int) *Polynomial {
 func getMask(maskPattern, i, j int) bool {
 	switch maskPattern {
 
-	case PATTERN000:
+	case pattern000:
 		return (i+j)%2 == 0
-	case PATTERN001:
+	case pattern001:
 		return (i % 2) == 0
-	case PATTERN010:
+	case pattern010:
 		return (j % 3) == 0
-	case PATTERN011:
+	case pattern011:
 		return (i+j)%3 == 0
-	case PATTERN100:
+	case pattern100:
 		return (i/2+j/3)%2 == 0
-	case PATTERN101:
+	case pattern101:
 		return (i*j)%2+(i*j)%3 == 0
-	case PATTERN110:
+	case pattern110:
 		return ((i*j)%2+(i*j)%3)%2 == 0
-	case PATTERN111:
+	case pattern111:
 		return ((i*j)%3+(i+j)%2)%2 == 0
 
 	default:

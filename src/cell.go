@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/border"
 )
 
 // Cell is used to create table cell objects.
@@ -16,6 +17,7 @@ import (
 type Cell struct {
 	font              *Font
 	fallbackFont      *Font
+	fontSize          float32
 	text              string
 	textBlock         *TextBlock
 	textColumn        *TextColumn
@@ -31,11 +33,12 @@ type Cell struct {
 	rightPadding      float32
 	lineWidth         float32
 
-	background    [3]float32
-	hasBackground bool
-	hasPenColor   bool
-	pen           [3]float32
-	textColor     [3]float32
+	backgroundColor    [3]float32
+	hasBackgroundColor bool
+	strokeColor        [3]float32
+	hasStrokeColor     bool
+	strokeWidth        float32
+	textColor          [3]float32
 
 	colspan      int
 	topBorder    bool
@@ -57,6 +60,7 @@ type Cell struct {
 func NewCell(font *Font, text string) *Cell {
 	cell := new(Cell)
 	cell.font = font
+	cell.fontSize = font.size
 	cell.text = text
 	cell.width = 75.0
 	cell.colspan = 1
@@ -78,6 +82,7 @@ func NewCell(font *Font, text string) *Cell {
 // @param font the font.
 func (cell *Cell) SetFont(font *Font) *Cell {
 	cell.font = font
+	cell.fontSize = font.size
 	return cell
 }
 
@@ -110,6 +115,12 @@ func (cell *Cell) SetText(text string) *Cell {
 // GetText returns the cell text.
 func (cell *Cell) GetText() string {
 	return cell.text
+}
+
+// SetFontSize sets the font size of the cell text.
+func (cell *Cell) SetFontSize(fontSize float32) *Cell {
+	cell.fontSize = fontSize
+	return cell
 }
 
 // SetImage sets the image inside this cell.
@@ -216,11 +227,21 @@ func (cell *Cell) SetTopPadding(padding float32) *Cell {
 	return cell
 }
 
+// GetTopPadding returns the top padding of this cell.
+func (cell *Cell) GetTopPadding() float32 {
+	return cell.topPadding
+}
+
 // SetBottomPadding sets the bottom padding of this cell.
 // @param padding the bottom padding.
 func (cell *Cell) SetBottomPadding(padding float32) *Cell {
 	cell.bottomPadding = padding
 	return cell
+}
+
+// GetBottomPadding returns the bottom padding of this cell.
+func (cell *Cell) GetBottomPadding() float32 {
+	return cell.bottomPadding
 }
 
 // SetLeftPadding sets the left padding of this cell.
@@ -294,10 +315,10 @@ func (cell *Cell) GetLineWidth() float32 {
 	return cell.lineWidth
 }
 
-// SetBgColorRGB sets the background to the specified color.
-func (cell *Cell) SetBgColorRGB(color [3]float32) *Cell {
-	cell.background = color
-	cell.hasBackground = true
+// SetBackgroundColorRGB sets the background color from red, green and blue values.
+func (cell *Cell) SetBackgroundColorRGB(color [3]float32) *Cell {
+	cell.backgroundColor = color
+	cell.hasBackgroundColor = true
 	return cell
 }
 
@@ -306,34 +327,45 @@ func (cell *Cell) SetBackgroundColor(color int32) *Cell {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
 	b := float32((color)&0xff) / 255.0
-	cell.background = [3]float32{r, g, b}
-	cell.hasBackground = true
+	cell.backgroundColor = [3]float32{r, g, b}
+	cell.hasBackgroundColor = true
 	return cell
 }
 
-// GetBgColor returns the background color of this cell.
-func (cell *Cell) GetBgColor() [3]float32 {
-	return cell.background
+// GetBackgroundColor returns the background color of this cell.
+func (cell *Cell) GetBackgroundColor() [3]float32 {
+	return cell.backgroundColor
 }
 
-// SetPenColor sets the penColor color.
-func (cell *Cell) SetPenColor(color [3]float32) *Cell {
-	cell.pen = color
-	cell.hasPenColor = true
+// SetStrokeColorRGB sets the color of the cell borders from red, green and blue values.
+func (cell *Cell) SetStrokeColorRGB(color [3]float32) *Cell {
+	cell.strokeColor = color
+	cell.hasStrokeColor = true
 	return cell
 }
 
 // SetStrokeColor sets the color of the cell borders.
 // @param color the color specified as 0xRRGGBB integer.
 func (cell *Cell) SetStrokeColor(color int32) *Cell {
-	cell.pen = colorToRGB(color)
-	cell.hasPenColor = true
+	cell.strokeColor = colorToRGB(color)
+	cell.hasStrokeColor = true
 	return cell
 }
 
-// GetPenColor returns the penColor color.
-func (cell *Cell) GetPenColor() [3]float32 {
-	return cell.pen
+// GetStrokeColor returns the color of the cell borders.
+func (cell *Cell) GetStrokeColor() [3]float32 {
+	return cell.strokeColor
+}
+
+// SetStrokeWidth sets the stroke width.
+func (cell *Cell) SetStrokeWidth(strokeWidth float32) *Cell {
+	cell.strokeWidth = strokeWidth
+	return cell
+}
+
+// GetStrokeWidth returns the stroke width.
+func (cell *Cell) GetStrokeWidth() float32 {
+	return cell.strokeWidth
 }
 
 // SetTextColorRGB sets the text color.
@@ -368,14 +400,46 @@ func (cell *Cell) GetColSpan() int {
 	return cell.colspan
 }
 
-// SetTopBorder sets the cell border object.
-// @param border the border object.
+// SetBorder sets whether the specified borders are drawn.
+// @param b the borders, for example border.Top | border.Bottom.
+// @param visible true to draw the borders.
+func (cell *Cell) SetBorder(b uint32, visible bool) *Cell {
+	if b&border.Top != 0 {
+		cell.topBorder = visible
+	}
+	if b&border.Bottom != 0 {
+		cell.bottomBorder = visible
+	}
+	if b&border.Left != 0 {
+		cell.leftBorder = visible
+	}
+	if b&border.Right != 0 {
+		cell.rightBorder = visible
+	}
+	return cell
+}
+
+// GetBorder returns true if any of the specified borders is drawn.
+// @param b the borders, for example border.Top.
+func (cell *Cell) GetBorder(b uint32) bool {
+	return (b&border.Top != 0 && cell.topBorder) ||
+		(b&border.Bottom != 0 && cell.bottomBorder) ||
+		(b&border.Left != 0 && cell.leftBorder) ||
+		(b&border.Right != 0 && cell.rightBorder)
+}
+
+// SetBorders sets whether all four borders of this cell are drawn.
+func (cell *Cell) SetBorders(visible bool) *Cell {
+	return cell.SetBorder(border.All, visible)
+}
+
+// SetTopBorder sets whether the top border of this cell is drawn.
 func (cell *Cell) SetTopBorder(topBorder bool) *Cell {
 	cell.topBorder = topBorder
 	return cell
 }
 
-// GetTopBorder returns the cell border object.
+// GetTopBorder returns true if the top border of this cell is drawn.
 func (cell *Cell) GetTopBorder() bool {
 	return cell.topBorder
 }
@@ -474,16 +538,16 @@ func (cell *Cell) SetURIAction(uri string) *Cell {
 	return cell
 }
 
-// DrawOn draws the point, text and borders of this cell.
-func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
-	if cell.hasBackground == true {
+// drawOn draws the point, text and borders of this cell.
+func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
+	if cell.hasBackgroundColor {
 		cell.drawBackground(page, x, y, w, h)
 	}
 
 	if cell.text != "" {
 		// Java checks the text first, so a cell that carries both text and a
 		// text box, column or block renders its text.
-		cell.DrawText(page, x, y, w, h)
+		cell.drawText(page, x, y, w, h)
 	} else if cell.textBox != nil {
 		cell.textBox.SetLocation(x+cell.leftPadding, y+cell.topPadding)
 		cell.textBox.SetWidth(w - (cell.leftPadding + cell.rightPadding))
@@ -517,7 +581,7 @@ func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 			cell.barcode.drawOnPageAtLocation(page, (x+w)-(barcodeWidth+cell.leftPadding), y+cell.topPadding)
 		}
 	} else {
-		cell.DrawText(page, x, y, w, h)
+		cell.drawText(page, x, y, w, h)
 	}
 
 	cell.drawBorders(page, x, y, w, h)
@@ -533,7 +597,7 @@ func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 			page.SetBrushColorRGB(cell.point.fillColor)
 		}
 		if cell.point.uri != "" {
-			page.AddAnnotation(&Annotation{
+			page.addAnnotation(&Annotation{
 				annotationType: AnnotationLink,
 				x1:             cell.point.x - cell.point.r,
 				y1:             cell.point.y - cell.point.r,
@@ -549,15 +613,15 @@ func (cell *Cell) DrawOn(page *Page, x, y, w, h float32) {
 
 func (cell *Cell) drawBackground(page *Page, x, y, wCell, hCell float32) {
 	page.AddArtifactBMC()
-	page.SetBrushColorRGB(cell.background)
+	page.SetBrushColorRGB(cell.backgroundColor)
 	page.FillRect(x, y+cell.lineWidth/2, wCell, hCell)
 	page.AddEMC()
 }
 
 func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
-	if cell.hasPenColor {
-		page.SetPenColorRGB(cell.pen)
+	if cell.hasStrokeColor {
+		page.SetPenColorRGB(cell.strokeColor)
 	}
 	page.SetPenWidth(cell.lineWidth)
 	qWidth := cell.lineWidth / 4.0
@@ -584,23 +648,24 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	page.AddEMC()
 }
 
-// DrawText draws the cell text.
-func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
+// drawText draws the cell text.
+func (cell *Cell) drawText(page *Page, x, y, wCell, hCell float32) {
 	var xText float32
 	var yText float32
+	ascent := cell.font.GetAscentAt(cell.fontSize)
 	switch cell.valign {
 	case alignment.Top:
-		yText = y + cell.font.ascent + cell.topPadding
+		yText = y + ascent + cell.topPadding
 	case alignment.Center:
-		yText = y + hCell/2.0 + cell.font.ascent/2.0
+		yText = y + hCell/2.0 + ascent/2.0
 	case alignment.Bottom:
 		yText = (y + hCell) - cell.bottomPadding
 	default:
 		log.Fatal("Invalid vertical text alignment option.")
 	}
 
-	if cell.hasPenColor {
-		page.SetPenColorRGB(cell.pen)
+	if cell.hasStrokeColor {
+		page.SetPenColorRGB(cell.strokeColor)
 	}
 	if cell.GetTextAlignment() == alignment.Left {
 		xText = x + cell.leftPadding
@@ -612,13 +677,13 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		}
 		page.AddBMC("P", "", cell.text, cell.text)
 		page.DrawStringUsingColorMap(
-			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
+			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
 		page.AddEMC()
 		if cell.underline {
-			cell.UnderlineText(page, cell.font, cell.text, xText, yText)
+			cell.underlineText(page, cell.font, cell.text, xText, yText)
 		}
 		if cell.strikeout {
-			cell.StrikeoutText(page, cell.font, cell.text, xText, yText)
+			cell.strikeoutText(page, cell.font, cell.text, xText, yText)
 		}
 	} else if cell.GetTextAlignment() == alignment.Right {
 		if cell.compositeTextLine != nil {
@@ -628,16 +693,16 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 			cell.compositeTextLine.DrawOn(page)
 			return
 		}
-		xText = (x + wCell) - (cell.font.StringWidth(cell.font.size, cell.text) + cell.rightPadding)
+		xText = (x + wCell) - (cell.font.StringWidth(cell.fontSize, cell.text) + cell.rightPadding)
 		page.AddBMC("P", "", cell.text, cell.text)
 		page.DrawStringUsingColorMap(
-			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
+			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
 		page.AddEMC()
 		if cell.underline {
-			cell.UnderlineText(page, cell.font, cell.text, xText, yText)
+			cell.underlineText(page, cell.font, cell.text, xText, yText)
 		}
 		if cell.strikeout {
-			cell.StrikeoutText(page, cell.font, cell.text, xText, yText)
+			cell.strikeoutText(page, cell.font, cell.text, xText, yText)
 		}
 	} else if cell.GetTextAlignment() == alignment.Center {
 		if cell.compositeTextLine != nil {
@@ -649,29 +714,29 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 			return
 		}
 		xText = x + cell.leftPadding +
-			(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.font.StringWidth(cell.font.size, cell.text)) / 2)
+			(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.font.StringWidth(cell.fontSize, cell.text)) / 2)
 		page.AddBMC("P", "", cell.text, cell.text)
 		page.DrawStringUsingColorMap(
-			cell.font, cell.fallbackFont, cell.font.size, cell.text, xText, yText, cell.textColor, nil)
+			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
 		page.AddEMC()
 		if cell.underline {
-			cell.UnderlineText(page, cell.font, cell.text, xText, yText)
+			cell.underlineText(page, cell.font, cell.text, xText, yText)
 		}
 		if cell.strikeout {
-			cell.StrikeoutText(page, cell.font, cell.text, xText, yText)
+			cell.strikeoutText(page, cell.font, cell.text, xText, yText)
 		}
 	} else {
 		log.Fatal("Invalid Text Alignment!")
 	}
 
 	if cell.uri != "" {
-		w := cell.font.StringWidth(cell.font.size, cell.text)
-		page.AddAnnotation(&Annotation{
+		w := cell.font.StringWidth(cell.fontSize, cell.text)
+		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             xText,
-			y1:             yText - cell.font.ascent,
+			y1:             yText - ascent,
 			x2:             xText + w,
-			y2:             yText + cell.font.descent,
+			y2:             yText + cell.font.GetDescentAt(cell.fontSize),
 			vertices:       nil,
 			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
@@ -686,18 +751,20 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 	}
 }
 
-// UnderlineText underlines the cell text.
-func (cell *Cell) UnderlineText(page *Page, font *Font, text string, x, y float32) {
-	page.SetPenWidth(font.underlineThickness)
-	page.MoveTo(x, y+font.descent)
-	page.LineTo(x+font.StringWidth(cell.font.size, text), y+font.descent)
+// underlineText underlines the cell text.
+func (cell *Cell) underlineText(page *Page, font *Font, text string, x, y float32) {
+	descent := font.GetDescentAt(cell.fontSize)
+	page.SetPenWidth(font.GetUnderlineThicknessAt(cell.fontSize))
+	page.MoveTo(x, y+descent)
+	page.LineTo(x+font.StringWidth(cell.fontSize, text), y+descent)
 	page.StrokePath()
 }
 
-// StrikeoutText strikes out the cell text.
-func (cell *Cell) StrikeoutText(page *Page, font *Font, text string, x, y float32) {
-	page.SetPenWidth(font.underlineThickness)
-	page.MoveTo(x, y-font.ascent/3.0)
-	page.LineTo(x+font.StringWidth(cell.font.size, text), y-font.ascent/3.0)
+// strikeoutText strikes out the cell text.
+func (cell *Cell) strikeoutText(page *Page, font *Font, text string, x, y float32) {
+	ascent := font.GetAscentAt(cell.fontSize)
+	page.SetPenWidth(font.GetUnderlineThicknessAt(cell.fontSize))
+	page.MoveTo(x, y-ascent/3.0)
+	page.LineTo(x+font.StringWidth(cell.fontSize, text), y-ascent/3.0)
 	page.StrokePath()
 }

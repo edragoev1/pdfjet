@@ -133,10 +133,22 @@ Pick from the README limitations; the first three are the ones users hit.
 
 ## Week 4 (Oct 2–11): parity audit, docs, release
 
-- ⬜ **B** Public API audit across the four ports: script that lists public
-      types and methods per class in Java, C#, Go and Swift and diffs them.
-      Fix the differences that are not language conventions; document the rest
-      in the README Port differences section.
+- ✅ **B** Public API audit across the four ports: `audit-api.py` lists the
+      public types and members per class in Java, C#, Go and Swift and diffs
+      them. Its first run listed some 60 types and 400 members that were not in
+      every port. Fixed: members missing from a port (Cell borders and
+      paddings, TextBlock background and height, Page transform and rotateBy,
+      PDF.setLanguage in C#, Rect.setLanguage, Font.getName, PDFobj reading
+      members in Go and Swift, Permissions accessors in C#, ...), one-port
+      names renamed to the Java name (Go GetBgColor, C# Size, Swift
+      setAllBorders, ...), one-port duplicates removed (setXY, setBrushColor,
+      SetTextIsArabic, ...), helpers that Java keeps package-private hidden
+      in C#, Go and Swift (Page text state, QR and PDF417 tables, SVG, Util,
+      ...), the PageLayout `RIGTH` typo, and the font constant classes, which
+      named files that do not ship (C# and Swift JetBrainsMono) or missed
+      shipped ones (NotoSans Black and Thin, SourceSerif4 Black). The rest are
+      conventions, documented in the README Port differences section; the
+      script's report now shows only those.
 - ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
 - ⬜ **B** Manual viewer pass: Acrobat Reader on Windows opens Example_30 with
