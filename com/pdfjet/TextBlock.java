@@ -479,9 +479,9 @@ public class TextBlock {
                                     sb.setLength(0);
                                 }
                                 // A word too wide for a line by itself is broken.
-                                String rest = addBrokenWordLines(textLines, word, textAreaWidth);
-                                if (!rest.isEmpty()) {
-                                    sb.append(rest + separator);
+                                int rest = addBrokenWordLines(textLines, word, textAreaWidth);
+                                if (rest < word.length()) {
+                                    sb.append(word.substring(rest) + separator);
                                 }
                             }
                         }
@@ -498,35 +498,47 @@ public class TextBlock {
 
     /**
      * Adds the lines of a word too wide for a line by itself, broken between its
-     * characters, and returns the rest of the word, which fits on a line. No
-     * line starts with a combining mark, or with a Thai or Lao vowel or sign
-     * written after its consonant, and none ends with a Thai or Lao vowel
-     * written before its consonant.
+     * characters, and returns the index where the rest of the word, which fits
+     * on a line, starts. No line starts with a combining mark, or with a Thai
+     * or Lao vowel or sign written after its consonant, and none ends with a
+     * Thai or Lao vowel written before its consonant. Right to left text is
+     * shaped as a whole word, so its letters keep their joined forms at the
+     * breaks.
      */
-    private String addBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
-        while (lineWidth(word) > textAreaWidth) {
+    private int addBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
+        int start = 0;
+        while (lineWidth(word, start) > textAreaWidth) {
             // Each line gets at least one character, however narrow the block.
-            int end = nextCharacterBreak(word, 0);
+            int end = nextCharacterBreak(word, start);
             int next = nextCharacterBreak(word, end);
-            while (next < word.length() && lineWidth(word.substring(0, next)) <= textAreaWidth) {
+            while (next < word.length() && lineWidth(word.substring(0, next), start) <= textAreaWidth) {
                 end = next;
                 next = nextCharacterBreak(word, end);
             }
-            textLines.add(newTextLine(word.substring(0, end)));
-            word = word.substring(end);
+            textLines.add(newTextLine(word.substring(0, end), start));
+            start = end;
         }
-        return word;
+        return start;
     }
 
-    // Returns the width of a line of text, measured after the line is reordered
-    // if the text is right to left.
-    private float lineWidth(String text) {
-        return font.stringWidth(fallbackFont, rightToLeft ? Bidi.reorderVisually(text) : text);
+    // Returns the part of the text from the index on, reordered and shaped in
+    // the context of the whole text if the text is right to left.
+    private String part(String text, int from, int to) {
+        return rightToLeft ? Bidi.reorderVisually(text, from, to) : text.substring(from, to);
     }
 
-    // Returns a line of text, reordered if the text is right to left.
-    private TextLine newTextLine(String text) {
-        return new TextLine(font, rightToLeft ? Bidi.reorderVisually(text) : text);
+    // Returns the width of a line of text from the index on.
+    private float lineWidth(String text, int from) {
+        return font.stringWidth(fallbackFont, part(text, from, text.length()));
+    }
+
+    // Returns a line of the text from the index on, without its trailing spaces.
+    private TextLine newTextLine(String text, int from) {
+        int to = text.length();
+        while (to > from && Character.isWhitespace(text.charAt(to - 1))) {
+            to--;
+        }
+        return new TextLine(font, part(text, from, to));
     }
 
     private static int nextCharacterBreak(String word, int i) {
@@ -567,7 +579,13 @@ public class TextBlock {
      * word too wide for a line by itself is broken between its characters.
      */
     private void addRightToLeftLines(List<TextLine> textLines, String paragraph, float textAreaWidth) {
+        // sb holds the words of the line in logical order. When the line starts
+        // with the rest of a word broken over the lines, sb holds the whole word
+        // and from is where the rest starts: the part before it is not drawn,
+        // but it is the context that gives the first letter of the rest its
+        // joined form.
         StringBuilder sb = new StringBuilder();
+        int from = 0;
         for (String token : paragraph.trim().split("\\s+")) {
             // The words between the zero width spaces of a token are joined
             // with no space.
@@ -575,23 +593,26 @@ public class TextBlock {
             for (int i = 0; i < words.length; i++) {
                 String word = words[i];
                 String separator = (i == words.length - 1) ? " " : "";
-                if (lineWidth(sb.toString() + word) <= textAreaWidth) {
+                if (lineWidth(sb.toString() + word, from) <= textAreaWidth) {
                     sb.append(word);
                     sb.append(separator);
                 } else {
-                    if (sb.length() > 0) {
-                        textLines.add(newTextLine(sb.toString().trim()));
+                    if (sb.length() > from) {
+                        textLines.add(newTextLine(sb.toString(), from));
                         sb.setLength(0);
+                        from = 0;
                     }
                     // A word too wide for a line by itself is broken.
-                    String rest = addBrokenWordLines(textLines, word, textAreaWidth);
-                    if (!rest.isEmpty()) {
-                        sb.append(rest + separator);
+                    int rest = addBrokenWordLines(textLines, word, textAreaWidth);
+                    if (rest < word.length()) {
+                        sb.append(word);
+                        sb.append(separator);
+                        from = rest;
                     }
                 }
             }
         }
-        textLines.add(newTextLine(sb.toString().trim()));
+        textLines.add(newTextLine(sb.toString(), from));
     }
 
     /**

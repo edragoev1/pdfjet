@@ -356,9 +356,9 @@ namespace PDFjet.NET {
                                         sb.Clear();
                                     }
                                     // A word too wide for a line by itself is broken.
-                                    String rest = AddBrokenWordLines(textLines, word, textAreaWidth);
-                                    if (rest.Length > 0) {
-                                        sb.Append(rest).Append(separator);
+                                    int rest = AddBrokenWordLines(textLines, word, textAreaWidth);
+                                    if (rest < word.Length) {
+                                        sb.Append(word.Substring(rest)).Append(separator);
                                     }
                                 }
                             }
@@ -380,30 +380,41 @@ namespace PDFjet.NET {
         /// written after its consonant, and none ends with a Thai or Lao vowel
         /// written before its consonant.
         /// </summary>
-        private String AddBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
-            while (LineWidth(word) > textAreaWidth) {
+        private int AddBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
+            int start = 0;
+            while (LineWidth(word, start) > textAreaWidth) {
                 // Each line gets at least one character, however narrow the block.
-                int end = NextCharacterBreak(word, 0);
+                int end = NextCharacterBreak(word, start);
                 int next = NextCharacterBreak(word, end);
-                while (next < word.Length && LineWidth(word.Substring(0, next)) <= textAreaWidth) {
+                while (next < word.Length && LineWidth(word.Substring(0, next), start) <= textAreaWidth) {
                     end = next;
                     next = NextCharacterBreak(word, end);
                 }
-                textLines.Add(NewTextLine(word.Substring(0, end)));
-                word = word.Substring(end);
+                textLines.Add(NewTextLine(word.Substring(0, end), start));
+                start = end;
             }
-            return word;
+            return start;
+        }
+
+        // Returns the part of the text from the index on, reordered and shaped in
+        // the context of the whole text if the text is right to left.
+        private String Part(String text, int from, int to) {
+            return rightToLeft ? Bidi.ReorderVisually(text, from, to) : text.Substring(from, to - from);
         }
 
         // Returns the width of a line of text, measured after the line is
         // reordered if the text is right to left.
-        private float LineWidth(String text) {
-            return font.StringWidth(fallbackFont, fontSize, rightToLeft ? Bidi.ReorderVisually(text) : text);
+        private float LineWidth(String text, int from) {
+            return font.StringWidth(fallbackFont, fontSize, Part(text, from, text.Length));
         }
 
         // Returns a line of text, reordered if the text is right to left.
-        private TextLine NewTextLine(String text) {
-            return new TextLine(font, rightToLeft ? Bidi.ReorderVisually(text) : text);
+        private TextLine NewTextLine(String text, int from) {
+            int to = text.Length;
+            while (to > from && Char.IsWhiteSpace(text[to - 1])) {
+                to--;
+            }
+            return new TextLine(font, Part(text, from, to));
         }
 
         private static int NextCharacterBreak(String word, int i) {
@@ -448,7 +459,13 @@ namespace PDFjet.NET {
         /// word too wide for a line by itself is broken between its characters.
         /// </summary>
         private void AddRightToLeftLines(List<TextLine> textLines, string paragraph, float textAreaWidth) {
+            // sb holds the words of the line in logical order. When the line
+            // starts with the rest of a word broken over the lines, sb holds the
+            // whole word and from is where the rest starts: the part before it
+            // is not drawn, but it is the context that gives the first letter
+            // of the rest its joined form.
             StringBuilder sb = new StringBuilder();
+            int from = 0;
             foreach (string token in paragraph.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries)) {
                 // The words between the zero width spaces of a token are joined
                 // with no space.
@@ -456,22 +473,24 @@ namespace PDFjet.NET {
                 for (int i = 0; i < words.Length; i++) {
                     String word = words[i];
                     String separator = (i == words.Length - 1) ? " " : "";
-                    if (LineWidth(sb.ToString() + word) <= textAreaWidth) {
+                    if (LineWidth(sb.ToString() + word, from) <= textAreaWidth) {
                         sb.Append(word).Append(separator);
                     } else {
-                        if (sb.Length > 0) {
-                            textLines.Add(NewTextLine(sb.ToString().Trim()));
+                        if (sb.Length > from) {
+                            textLines.Add(NewTextLine(sb.ToString(), from));
                             sb.Clear();
+                            from = 0;
                         }
                         // A word too wide for a line by itself is broken.
-                        String rest = AddBrokenWordLines(textLines, word, textAreaWidth);
-                        if (rest.Length > 0) {
-                            sb.Append(rest).Append(separator);
+                        int rest = AddBrokenWordLines(textLines, word, textAreaWidth);
+                        if (rest < word.Length) {
+                            sb.Append(word).Append(separator);
+                            from = rest;
                         }
                     }
                 }
             }
-            textLines.Add(NewTextLine(sb.ToString().Trim()));
+            textLines.Add(NewTextLine(sb.ToString(), from));
         }
 
         /// <summary>Sets whether the text is underlined.</summary>

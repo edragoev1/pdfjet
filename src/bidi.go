@@ -629,14 +629,31 @@ func fillBidiTypes(types []int, start, end, t int) {
 //
 // Please see Example_27.
 func ReorderVisually(str string) string {
+	return ReorderVisuallyPart(str, 0, len(str))
+}
+
+// ReorderVisuallyPart reorders the string like ReorderVisually, and returns
+// the part of the result that comes from the bytes of the string from the
+// byte index from, inclusive, to the byte index to, exclusive. The letters
+// are shaped in the context of the whole string, so a word that is broken
+// between two lines keeps its joined forms at the break when each line is
+// made this way.
+// @param str the input string.
+// @param from the byte index of the first character to return.
+// @param to the byte index after the last character to return.
+// @return the reordered part of the string.
+func ReorderVisuallyPart(str string, from, to int) string {
 	// Work with code points (runes) so that supplementary characters
 	// are handled correctly. The explicit embedding, override and isolate
 	// controls are left out, since left to right text is only nested one
-	// level deep.
+	// level deep. Each rune keeps the byte index in str it came from, so
+	// that the part asked for can be picked out at the end.
 	var input []rune
-	for _, ch := range str {
+	var indexes []int
+	for i, ch := range str {
 		if !isExplicitFormatting(ch) {
 			input = append(input, ch)
+			indexes = append(indexes, i)
 		}
 	}
 	types := resolveBidiTypes(input)
@@ -645,17 +662,27 @@ func ReorderVisually(str string) string {
 	// right run reversed, so that reversing buf1 below puts the right to left
 	// text in visual order and the left to right runs back in theirs.
 	var buf1, buf2 []rune
-	for j, ch := range input {
-		if types[j] == bidiL {
+	var from1, from2 []int
+	for j := 0; j <= len(input); j++ {
+		var ch rune
+		if j < len(input) {
+			ch = input[j]
+		}
+		if j < len(input) && types[j] == bidiL {
 			if ch != 0x200E { // LRM
 				buf2 = append(buf2, ch)
+				from2 = append(from2, indexes[j])
 			}
 			continue
 		}
 		// An RLM or ALM is left out, but still ends the left to right run.
-		buf1 = appendRunesReversed(buf1, buf2)
+		for k := len(buf2) - 1; k >= 0; k-- {
+			buf1 = append(buf1, buf2[k])
+			from1 = append(from1, from2[k])
+		}
 		buf2 = buf2[:0]
-		if ch == 0x200F || ch == 0x061C { // RLM, ALM
+		from2 = from2[:0]
+		if j == len(input) || ch == 0x200F || ch == 0x061C { // RLM, ALM
 			continue
 		}
 		// Brackets and the other mirrored characters are mirrored in right
@@ -665,17 +692,19 @@ func ReorderVisually(str string) string {
 		// below, so the RLM goes after it here.
 		if m, ok := mirrored(ch); ok {
 			buf1 = append(buf1, m, 0x200F)
+			from1 = append(from1, indexes[j], indexes[j])
 			continue
 		}
 		buf1 = append(buf1, ch)
+		from1 = append(from1, indexes[j])
 	}
-	buf1 = appendRunesReversed(buf1, buf2)
 
 	// Arabic requires the lam-alef ligature.
-	chars := ligateLamAlef(buf1)
+	chars, origins := ligateLamAlef(buf1, from1)
 	n := len(chars)
 
-	var buf3 strings.Builder
+	buf3 := make([]rune, 0, n)
+	from3 := make([]int, 0, n)
 	i := n - 1
 	for i >= 0 {
 		ch := chars[i]
@@ -683,7 +712,8 @@ func ReorderVisually(str string) string {
 		// If this is a transparent character (diacritic) with no
 		// base letter to its right (in buf1 order), emit as-is.
 		if isTransparent(ch) {
-			buf3.WriteRune(ch)
+			buf3 = append(buf3, ch)
+			from3 = append(from3, origins[i])
 			i--
 			continue
 		}
@@ -736,21 +766,23 @@ func ReorderVisually(str string) string {
 					joinsOnRight := canJoinNext && nextJoins
 
 					if !joinsOnLeft && !joinsOnRight {
-						buf3.WriteRune(forms[j+1])
+						buf3 = append(buf3, forms[j+1])
 					} else if joinsOnLeft && !joinsOnRight {
-						buf3.WriteRune(forms[j+2])
+						buf3 = append(buf3, forms[j+2])
 					} else if joinsOnLeft && joinsOnRight {
-						buf3.WriteRune(forms[j+3])
-					} else if !joinsOnLeft && joinsOnRight {
-						buf3.WriteRune(forms[j+4])
+						buf3 = append(buf3, forms[j+3])
+					} else {
+						buf3 = append(buf3, forms[j+4])
 					}
+					from3 = append(from3, origins[i])
 					break
 				}
 			}
 		} else if ch != 0x200C && ch != 0x200D {
 			// A zero width non-joiner or joiner is left out: it only
 			// changes whether the letters on either side of it join.
-			buf3.WriteRune(ch)
+			buf3 = append(buf3, ch)
+			from3 = append(from3, origins[i])
 		}
 
 		// Emit the diacritics that are before this character in buf1. In a
@@ -759,23 +791,33 @@ func ReorderVisually(str string) string {
 		// they belong to the letter before it, so they come out reversed,
 		// before that letter, like the rest of the text.
 		for k := 0; k < diacriticCount; k++ {
-			buf3.WriteRune(chars[i-1-k])
+			buf3 = append(buf3, chars[i-1-k])
+			from3 = append(from3, origins[i-1-k])
 		}
 
 		i = d
 	}
 
-	return buf3.String()
+	var result strings.Builder
+	for k, ch := range buf3 {
+		if from3[k] >= from && from3[k] < to {
+			result.WriteRune(ch)
+		}
+	}
+	return result.String()
 }
 
 // ligateLamAlef replaces each lam followed by an alef with the lam-alef
 // ligature. The right to left text is in logical order here, so the
 // diacritics of the lam and of the alef come after the ligature. A zero
-// width joiner between the two is left out.
-func ligateLamAlef(chars []rune) []rune {
+// width joiner between the two is left out. The origins are the indexes the
+// characters came from; the ligature keeps the lam's.
+func ligateLamAlef(chars []rune, origins []int) ([]rune, []int) {
 	ligated := make([]rune, 0, len(chars))
+	ligatedOrigins := make([]int, 0, len(chars))
 	for i := 0; i < len(chars); i++ {
 		ligated = append(ligated, chars[i])
+		ligatedOrigins = append(ligatedOrigins, origins[i])
 		if chars[i] != 0x0644 { // LAM
 			continue
 		}
@@ -787,14 +829,15 @@ func ligateLamAlef(chars []rune) []rune {
 			continue
 		}
 		ligated[len(ligated)-1] = lamAlefLigature(chars[alef])
-		for _, ch := range chars[i+1 : alef] {
-			if ch != 0x200D {
-				ligated = append(ligated, ch)
+		for k := i + 1; k < alef; k++ {
+			if chars[k] != 0x200D {
+				ligated = append(ligated, chars[k])
+				ligatedOrigins = append(ligatedOrigins, origins[k])
 			}
 		}
 		i = alef
 	}
-	return ligated
+	return ligated, ligatedOrigins
 }
 
 // lettersOf returns the letters that a presentation form put in by

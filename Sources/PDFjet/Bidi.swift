@@ -199,30 +199,59 @@ public class Bidi {
      * - Returns: the reordered string.
      */
     public static func reorderVisually(_ str: String) -> String {
+        return reorderVisually(str, 0, str.unicodeScalars.count)
+    }
+
+    ///
+    /// Reorders the string like reorderVisually(_:), and returns the part of
+    /// the result that comes from the Unicode scalars of the string at the
+    /// offsets from `from`, inclusive, to `to`, exclusive. The letters are
+    /// shaped in the context of the whole string, so a word that is broken
+    /// between two lines keeps its joined forms at the break when each line
+    /// is made this way.
+    ///
+    /// - Parameter str: the input string.
+    /// - Parameter from: the offset of the first scalar to return.
+    /// - Parameter to: the offset after the last scalar to return.
+    /// - Returns: the reordered part of the string.
+    ///
+    public static func reorderVisually(_ str: String, _ from: Int, _ to: Int) -> String {
         // Work with Unicode scalars, as the Java, C# and Go ports work with
         // code points. A Character would hold a letter and its diacritics.
         // The explicit embedding, override and isolate controls are left out,
-        // since left to right text is only nested one level deep.
-        let input = str.unicodeScalars.map { $0.value }.filter { !isExplicitFormatting($0) }
+        // since left to right text is only nested one level deep. Each scalar
+        // keeps its offset in str, so that the part asked for can be picked
+        // out at the end.
+        var input = [UInt32]()
+        var indexes = [Int]()
+        for (offset, scalar) in str.unicodeScalars.enumerated() where !isExplicitFormatting(scalar.value) {
+            input.append(scalar.value)
+            indexes.append(offset)
+        }
         let types = resolveTypes(input)
 
         // buf1 gets the right to left text in logical order and each left to
         // right run reversed, so that reversing buf1 below puts the right to
         // left text in visual order and the left to right runs back in theirs.
         var buf1 = [UInt32]()
+        var from1 = [Int]()
         var buf2 = [UInt32]()
-        for j in 0..<input.count {
-            let ch = input[j]
-            if types[j] == L {
+        var from2 = [Int]()
+        for j in 0...input.count {
+            let ch: UInt32 = (j < input.count) ? input[j] : 0
+            if j < input.count && types[j] == L {
                 if ch != 0x200E {                               // LRM
                     buf2.append(ch)
+                    from2.append(indexes[j])
                 }
                 continue
             }
             // An RLM or ALM is left out, but still ends the left to right run.
             buf1.append(contentsOf: buf2.reversed())
+            from1.append(contentsOf: from2.reversed())
             buf2.removeAll()
-            if ch == 0x200F || ch == 0x061C {                   // RLM, ALM
+            from2.removeAll()
+            if j == input.count || ch == 0x200F || ch == 0x061C {   // RLM, ALM
                 continue
             }
             // Brackets and the other mirrored characters are mirrored in
@@ -233,17 +262,20 @@ public class Bidi {
             if let m = mirrored(ch) {
                 buf1.append(m)
                 buf1.append(0x200F)
+                from1.append(indexes[j])
+                from1.append(indexes[j])
             } else {
                 buf1.append(ch)
+                from1.append(indexes[j])
             }
         }
-        buf1.append(contentsOf: buf2.reversed())
 
         // Arabic requires the lam-alef ligature.
-        let chars = ligateLamAlef(buf1)
+        let (chars, origins) = ligateLamAlef(buf1, from1)
         let n = chars.count
 
-        var buf3 = String.UnicodeScalarView()
+        var buf3 = [UInt32]()
+        var from3 = [Int]()
         var i: Int = n - 1
         while i >= 0 {
             let ch = chars[i]
@@ -251,7 +283,8 @@ public class Bidi {
             // If this is a transparent character (diacritic) with no
             // base letter to its right (in buf1 order), emit as-is.
             if isTransparent(ch) {
-                append(&buf3, ch)
+                buf3.append(ch)
+                from3.append(origins[i])
                 i -= 1
                 continue
             }
@@ -292,21 +325,23 @@ public class Bidi {
                         let joinsOnRight = canJoinNext && nextJoins
 
                         if (!joinsOnLeft && !joinsOnRight) {
-                            append(&buf3, forms[j + 1])
+                            buf3.append(forms[j + 1])
                         } else if (joinsOnLeft && !joinsOnRight) {
-                            append(&buf3, forms[j + 2])
+                            buf3.append(forms[j + 2])
                         } else if (joinsOnLeft && joinsOnRight) {
-                            append(&buf3, forms[j + 3])
-                        } else if (!joinsOnLeft && joinsOnRight) {
-                            append(&buf3, forms[j + 4])
+                            buf3.append(forms[j + 3])
+                        } else {
+                            buf3.append(forms[j + 4])
                         }
+                        from3.append(origins[i])
                         break
                     }
                 }
             } else if ch != 0x200C && ch != 0x200D {
                 // A zero width non-joiner or joiner is left out: it only
                 // changes whether the letters on either side of it join.
-                append(&buf3, ch)
+                buf3.append(ch)
+                from3.append(origins[i])
             }
 
             // Emit the diacritics that are before this character in buf1. In a
@@ -315,24 +350,34 @@ public class Bidi {
             // they belong to the letter before it, so they come out reversed,
             // before that letter, like the rest of the text.
             for k in 0..<diacriticCount {
-                append(&buf3, chars[i - 1 - k])
+                buf3.append(chars[i - 1 - k])
+                from3.append(origins[i - 1 - k])
             }
 
             i = d
         }
-        return String(buf3)
+
+        var result = String.UnicodeScalarView()
+        for k in 0..<buf3.count where from3[k] >= from && from3[k] < to {
+            append(&result, buf3[k])
+        }
+        return String(result)
     }
 
     /// Replaces each lam followed by an alef with the lam-alef ligature. The
     /// right to left text is in logical order here, so the diacritics of the
     /// lam and of the alef come after the ligature. A zero width joiner
-    /// between the two is left out.
-    private static func ligateLamAlef(_ chars: [UInt32]) -> [UInt32] {
+    /// between the two is left out. The origins are the offsets the characters
+    /// came from; the ligature keeps the lam's.
+    private static func ligateLamAlef(_ chars: [UInt32], _ origins: [Int]) -> ([UInt32], [Int]) {
         var ligated = [UInt32]()
+        var ligatedOrigins = [Int]()
         ligated.reserveCapacity(chars.count)
+        ligatedOrigins.reserveCapacity(chars.count)
         var i = 0
         while i < chars.count {
             ligated.append(chars[i])
+            ligatedOrigins.append(origins[i])
             if chars[i] == 0x0644 {                     // LAM
                 var alef = i + 1
                 while alef < chars.count && (isTransparent(chars[alef]) || chars[alef] == 0x200D) {
@@ -340,13 +385,16 @@ public class Bidi {
                 }
                 if alef < chars.count, let ligature = lamAlef(chars[alef]) {
                     ligated[ligated.count - 1] = ligature
-                    ligated.append(contentsOf: chars[(i + 1)..<alef].filter { $0 != 0x200D })
+                    for k in (i + 1)..<alef where chars[k] != 0x200D {
+                        ligated.append(chars[k])
+                        ligatedOrigins.append(origins[k])
+                    }
                     i = alef
                 }
             }
             i += 1
         }
-        return ligated
+        return (ligated, ligatedOrigins)
     }
 
     /// Returns the letters that a presentation form put in by reorderVisually

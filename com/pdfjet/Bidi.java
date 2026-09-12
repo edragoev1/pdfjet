@@ -141,32 +141,70 @@ public class Bidi {
      * @return the reordered string.
      */
     public static String reorderVisually(String str) {
+        return reorderVisually(str, 0, str.length());
+    }
+
+    /**
+     * Reorders the string like {@link #reorderVisually(String)}, and returns
+     * the part of the result that comes from the characters of the string at
+     * the indexes from {@code from}, inclusive, to {@code to}, exclusive. The
+     * letters are shaped in the context of the whole string, so a word that
+     * is broken between two lines keeps its joined forms at the break when
+     * each line is made this way.
+     *
+     * @param str the input string.
+     * @param from the index of the first character to return.
+     * @param to the index after the last character to return.
+     * @return the reordered part of the string.
+     */
+    public static String reorderVisually(String str, int from, int to) {
         // Work with code points so that supplementary characters are
         // handled correctly. The explicit embedding, override and isolate
         // controls are left out, since left to right text is only nested one
-        // level deep.
-        int[] input = str.codePoints().filter(cp -> !isExplicitFormatting(cp)).toArray();
+        // level deep. Each code point keeps the index in str it came from, so
+        // that the part asked for can be picked out at the end.
+        int[] input = new int[str.length()];
+        int[] indexes = new int[str.length()];
+        int n = 0;
+        for (int i = 0; i < str.length(); ) {
+            int cp = str.codePointAt(i);
+            if (!isExplicitFormatting(cp)) {
+                input[n] = cp;
+                indexes[n] = i;
+                n++;
+            }
+            i += Character.charCount(cp);
+        }
+        input = Arrays.copyOf(input, n);
         int[] types = resolveTypes(input);
 
         // buf1 gets the right to left text in logical order and each left to
         // right run reversed, so that reversing buf1 below puts the right to
         // left text in visual order and the left to right runs back in theirs.
-        StringBuilder buf1 = new StringBuilder();
-        StringBuilder buf2 = new StringBuilder();
-        for (int j = 0; j < input.length; j++) {
-            int ch = input[j];
-            if (types[j] == L) {
+        int[] buf1 = new int[2 * n];
+        int[] from1 = new int[2 * n];
+        int n1 = 0;
+        int[] buf2 = new int[n];
+        int[] from2 = new int[n];
+        int n2 = 0;
+        for (int j = 0; j <= n; j++) {
+            int ch = (j < n) ? input[j] : 0;
+            if (j < n && types[j] == L) {
                 if (ch != 0x200E) {                             // LRM
-                    buf2.appendCodePoint(ch);
+                    buf2[n2] = ch;
+                    from2[n2] = indexes[j];
+                    n2++;
                 }
                 continue;
             }
             // An RLM or ALM is left out, but still ends the left to right run.
-            if (buf2.length() > 0) {
-                buf1.append(reverseCodePoints(buf2.toString()));
-                buf2.setLength(0);
+            while (n2 > 0) {
+                n2--;
+                buf1[n1] = buf2[n2];
+                from1[n1] = from2[n2];
+                n1++;
             }
-            if (ch == 0x200F || ch == 0x061C) {                 // RLM, ALM
+            if (j == n || ch == 0x200F || ch == 0x061C) {       // RLM, ALM
                 continue;
             }
             // Brackets and the other mirrored characters are mirrored in
@@ -176,21 +214,27 @@ public class Bidi {
             // text. buf1 is reversed below, so the RLM goes after it here.
             Integer m = mirrored(ch);
             if (m != null) {
-                buf1.appendCodePoint(m);
-                buf1.appendCodePoint(0x200F);
+                buf1[n1] = m;
+                from1[n1] = indexes[j];
+                n1++;
+                buf1[n1] = 0x200F;
+                from1[n1] = indexes[j];
+                n1++;
             } else {
-                buf1.appendCodePoint(ch);
+                buf1[n1] = ch;
+                from1[n1] = indexes[j];
+                n1++;
             }
-        }
-        if (buf2.length() > 0) {
-            buf1.append(reverseCodePoints(buf2.toString()));
         }
 
         // Arabic requires the lam-alef ligature.
-        int[] chars = ligateLamAlef(buf1.codePoints().toArray());
-        int n = chars.length;
+        int[] chars = Arrays.copyOf(buf1, n1);
+        int[] origins = Arrays.copyOf(from1, n1);
+        n = ligateLamAlef(chars, origins);
 
-        StringBuilder buf3 = new StringBuilder();
+        int[] buf3 = new int[n];
+        int[] from3 = new int[n];
+        int n3 = 0;
         int i = n - 1;
         while (i >= 0) {
             int ch = chars[i];
@@ -198,7 +242,9 @@ public class Bidi {
             // If this is a transparent character (diacritic) with no
             // base letter to its right (in buf1 order), emit as-is.
             if (isTransparent(ch)) {
-                buf3.appendCodePoint(ch);
+                buf3[n3] = ch;
+                from3[n3] = origins[i];
+                n3++;
                 i--;
                 continue;
             }
@@ -245,21 +291,25 @@ public class Bidi {
                         boolean joinsOnRight = canJoinNext && nextJoins;
 
                         if (!joinsOnLeft && !joinsOnRight) {
-                            buf3.appendCodePoint(forms[j + 1]);
+                            buf3[n3] = forms[j + 1];
                         } else if (joinsOnLeft && !joinsOnRight) {
-                            buf3.appendCodePoint(forms[j + 2]);
+                            buf3[n3] = forms[j + 2];
                         } else if (joinsOnLeft && joinsOnRight) {
-                            buf3.appendCodePoint(forms[j + 3]);
-                        } else if (!joinsOnLeft && joinsOnRight) {
-                            buf3.appendCodePoint(forms[j + 4]);
+                            buf3[n3] = forms[j + 3];
+                        } else {
+                            buf3[n3] = forms[j + 4];
                         }
+                        from3[n3] = origins[i];
+                        n3++;
                         break;
                     }
                 }
             } else if (ch != 0x200C && ch != 0x200D) {
                 // A zero width non-joiner or joiner is left out: it only
                 // changes whether the letters on either side of it join.
-                buf3.appendCodePoint(ch);
+                buf3[n3] = ch;
+                from3[n3] = origins[i];
+                n3++;
             }
 
             // Emit the diacritics that are before this character in buf1. In a
@@ -268,26 +318,36 @@ public class Bidi {
             // they belong to the letter before it, so they come out reversed,
             // before that letter, like the rest of the text.
             for (int k = 0; k < diacriticCount; k++) {
-                buf3.appendCodePoint(chars[i - 1 - k]);
+                buf3[n3] = chars[i - 1 - k];
+                from3[n3] = origins[i - 1 - k];
+                n3++;
             }
 
             i = d;
         }
 
-        return buf3.toString();
+        StringBuilder result = new StringBuilder(n3);
+        for (int k = 0; k < n3; k++) {
+            if (from3[k] >= from && from3[k] < to) {
+                result.appendCodePoint(buf3[k]);
+            }
+        }
+        return result.toString();
     }
 
     /**
-     * Replaces each lam followed by an alef with the lam-alef ligature. The
-     * right to left text is in logical order here, so the diacritics of the
-     * lam and of the alef come after the ligature. A zero width joiner
-     * between the two is left out.
+     * Replaces each lam followed by an alef with the lam-alef ligature, in
+     * place, and returns the new length. The right to left text is in logical
+     * order here, so the diacritics of the lam and of the alef come after the
+     * ligature. A zero width joiner between the two is left out. The origins
+     * are the indexes the characters came from; the ligature keeps the lam's.
      */
-    private static int[] ligateLamAlef(int[] chars) {
-        int[] ligated = new int[chars.length];
+    private static int ligateLamAlef(int[] chars, int[] origins) {
         int n = 0;
         for (int i = 0; i < chars.length; i++) {
-            ligated[n++] = chars[i];
+            chars[n] = chars[i];
+            origins[n] = origins[i];
+            n++;
             if (chars[i] != 0x0644) {                   // LAM
                 continue;
             }
@@ -298,15 +358,17 @@ public class Bidi {
             if (alef == chars.length || lamAlef(chars[alef]) == 0) {
                 continue;
             }
-            ligated[n - 1] = lamAlef(chars[alef]);
+            chars[n - 1] = lamAlef(chars[alef]);
             for (int k = i + 1; k < alef; k++) {
                 if (chars[k] != 0x200D) {
-                    ligated[n++] = chars[k];
+                    chars[n] = chars[k];
+                    origins[n] = origins[k];
+                    n++;
                 }
             }
             i = alef;
         }
-        return Arrays.copyOf(ligated, n);
+        return n;
     }
 
     /**

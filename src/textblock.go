@@ -356,10 +356,10 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 								sb.Reset()
 							}
 							// A word too wide for a line by itself is broken.
-							var rest string
+							var rest int
 							textLines, rest = textBlock.appendBrokenWordLines(textLines, word, textAreaWidth)
-							if rest != "" {
-								sb.WriteString(rest + separator)
+							if rest < len(word) {
+								sb.WriteString(word[rest:] + separator)
 							}
 						}
 					}
@@ -382,37 +382,52 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 // Lao vowel or sign written after its consonant, and none ends with a Thai or
 // Lao vowel written before its consonant.
 func (textBlock *TextBlock) appendBrokenWordLines(
-	textLines []*TextLine, word string, textAreaWidth float32) ([]*TextLine, string) {
+	textLines []*TextLine, word string, textAreaWidth float32) ([]*TextLine, int) {
 	runes := []rune(word)
-	for textBlock.lineWidth(string(runes)) > textAreaWidth {
+	start := 0 // The rune index where the rest of the word starts
+	for textBlock.lineWidth(string(runes), byteIndex(runes, start)) > textAreaWidth {
 		// Each line gets at least one character, however narrow the block.
-		end := nextCharacterBreak(runes, 0)
+		end := nextCharacterBreak(runes, start)
 		next := nextCharacterBreak(runes, end)
-		for next < len(runes) && textBlock.lineWidth(string(runes[:next])) <= textAreaWidth {
+		for next < len(runes) &&
+			textBlock.lineWidth(string(runes[:next]), byteIndex(runes, start)) <= textAreaWidth {
 			end = next
 			next = nextCharacterBreak(runes, end)
 		}
-		textLines = append(textLines, textBlock.newTextLine(string(runes[:end])))
-		runes = runes[end:]
+		textLines = append(textLines, textBlock.newTextLine(string(runes[:end]), byteIndex(runes, start)))
+		start = end
 	}
-	return textLines, string(runes)
+	return textLines, byteIndex(runes, start)
+}
+
+// byteIndex returns the byte index of the rune at the rune index.
+func byteIndex(runes []rune, runeIndex int) int {
+	return len(string(runes[:runeIndex]))
+}
+
+// part returns the part of the text from the byte index on, reordered and
+// shaped in the context of the whole text if the text is right to left.
+func (textBlock *TextBlock) part(text string, from, to int) string {
+	if textBlock.rightToLeft {
+		return ReorderVisuallyPart(text, from, to)
+	}
+	return text[from:to]
 }
 
 // lineWidth returns the width of a line of text, measured after the line is
 // reordered if the text is right to left.
-func (textBlock *TextBlock) lineWidth(text string) float32 {
-	if textBlock.rightToLeft {
-		text = ReorderVisually(text)
-	}
-	return textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.font.size, text)
+func (textBlock *TextBlock) lineWidth(text string, from int) float32 {
+	return textBlock.font.StringWidthFB(
+		textBlock.fallbackFont, textBlock.font.size, textBlock.part(text, from, len(text)))
 }
 
 // newTextLine returns a line of text, reordered if the text is right to left.
-func (textBlock *TextBlock) newTextLine(text string) *TextLine {
-	if textBlock.rightToLeft {
-		text = ReorderVisually(text)
+func (textBlock *TextBlock) newTextLine(text string, from int) *TextLine {
+	to := len(strings.TrimRightFunc(text, unicode.IsSpace))
+	if to < from {
+		to = from
 	}
-	return NewTextLine(textBlock.font, text)
+	return NewTextLine(textBlock.font, textBlock.part(text, from, to))
 }
 
 func nextCharacterBreak(runes []rune, i int) int {
@@ -451,7 +466,13 @@ func staysWithPrevious(ch rune) bool {
 // word too wide for a line by itself is broken between its characters.
 func (textBlock *TextBlock) appendRightToLeftLines(
 	textLines []*TextLine, paragraph string, textAreaWidth float32) []*TextLine {
+	// sb holds the words of the line in logical order. When the line starts
+	// with the rest of a word broken over the lines, sb holds the whole word
+	// and from is the byte index where the rest starts: the part before it is
+	// not drawn, but it is the context that gives the first letter of the
+	// rest its joined form.
 	var sb strings.Builder
+	from := 0
 	for _, token := range strings.Fields(paragraph) {
 		// The words between the zero width spaces of a token are joined with no
 		// space.
@@ -461,23 +482,25 @@ func (textBlock *TextBlock) appendRightToLeftLines(
 			if i < len(words)-1 {
 				separator = ""
 			}
-			if textBlock.lineWidth(sb.String()+word) <= textAreaWidth {
+			if textBlock.lineWidth(sb.String()+word, from) <= textAreaWidth {
 				sb.WriteString(word + separator)
 			} else {
-				if sb.Len() > 0 {
-					textLines = append(textLines, textBlock.newTextLine(strings.TrimSpace(sb.String())))
+				if sb.Len() > from {
+					textLines = append(textLines, textBlock.newTextLine(sb.String(), from))
 					sb.Reset()
+					from = 0
 				}
 				// A word too wide for a line by itself is broken.
-				var rest string
+				var rest int
 				textLines, rest = textBlock.appendBrokenWordLines(textLines, word, textAreaWidth)
-				if rest != "" {
-					sb.WriteString(rest + separator)
+				if rest < len(word) {
+					sb.WriteString(word + separator)
+					from = rest
 				}
 			}
 		}
 	}
-	return append(textLines, textBlock.newTextLine(strings.TrimSpace(sb.String())))
+	return append(textLines, textBlock.newTextLine(sb.String(), from))
 }
 
 // SetUnderline underlines the text of this text block.

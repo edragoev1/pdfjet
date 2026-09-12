@@ -327,8 +327,8 @@ public class TextBlock : Drawable {
                                 }
                                 // A word too wide for a line by itself is broken.
                                 let rest = addBrokenWordLines(&textLines, word, textAreaWidth)
-                                if !rest.isEmpty {
-                                    sb = rest + separator
+                                if rest < word.unicodeScalars.count {
+                                    sb = TextBlock.string(Array(word.unicodeScalars)[rest...]) + separator
                                 }
                             }
                         }
@@ -351,31 +351,46 @@ public class TextBlock : Drawable {
     /// written after its consonant, and none ends with a Thai or Lao vowel
     /// written before its consonant.
     private func addBrokenWordLines(
-            _ textLines: inout [TextLine], _ word: String, _ textAreaWidth: Float) -> String {
-        var scalars = Array(word.unicodeScalars)
-        while lineWidth(TextBlock.string(scalars[...])) > textAreaWidth {
+            _ textLines: inout [TextLine], _ word: String, _ textAreaWidth: Float) -> Int {
+        let scalars = Array(word.unicodeScalars)
+        var start = 0
+        while lineWidth(word, start) > textAreaWidth {
             // Each line gets at least one character, however narrow the block.
-            var end = TextBlock.nextCharacterBreak(scalars, 0)
+            var end = TextBlock.nextCharacterBreak(scalars, start)
             var next = TextBlock.nextCharacterBreak(scalars, end)
-            while next < scalars.count && lineWidth(TextBlock.string(scalars[..<next])) <= textAreaWidth {
+            while next < scalars.count && lineWidth(TextBlock.string(scalars[..<next]), start) <= textAreaWidth {
                 end = next
                 next = TextBlock.nextCharacterBreak(scalars, end)
             }
-            textLines.append(newTextLine(TextBlock.string(scalars[..<end])))
-            scalars = Array(scalars[end...])
+            textLines.append(newTextLine(TextBlock.string(scalars[..<end]), start))
+            start = end
         }
-        return TextBlock.string(scalars[...])
+        return start
+    }
+
+    // Returns the part of the text from the scalar offset on, reordered and
+    // shaped in the context of the whole text if the text is right to left.
+    private func part(_ text: String, _ from: Int, _ to: Int) -> String {
+        if rightToLeft {
+            return Bidi.reorderVisually(text, from, to)
+        }
+        return TextBlock.string(Array(text.unicodeScalars)[from..<to])
     }
 
     // Returns the width of a line of text, measured after the line is reordered
     // if the text is right to left.
-    private func lineWidth(_ text: String) -> Float {
-        return font.stringWidth(fallbackFont, rightToLeft ? Bidi.reorderVisually(text) : text)
+    private func lineWidth(_ text: String, _ from: Int) -> Float {
+        return font.stringWidth(fallbackFont, part(text, from, text.unicodeScalars.count))
     }
 
     // Returns a line of text, reordered if the text is right to left.
-    private func newTextLine(_ text: String) -> TextLine {
-        return TextLine(font, rightToLeft ? Bidi.reorderVisually(text) : text)
+    private func newTextLine(_ text: String, _ from: Int) -> TextLine {
+        let scalars = Array(text.unicodeScalars)
+        var to = scalars.count
+        while to > from && scalars[to - 1].properties.isWhitespace {
+            to -= 1
+        }
+        return TextLine(font, part(text, from, to))
     }
 
     private static func nextCharacterBreak(_ scalars: [Unicode.Scalar], _ start: Int) -> Int {
@@ -423,30 +438,38 @@ public class TextBlock : Drawable {
     /// word too wide for a line by itself is broken between its characters.
     private func addRightToLeftLines(
             _ textLines: inout [TextLine], _ paragraph: String, _ textAreaWidth: Float) {
+        // sb holds the words of the line in logical order. When the line starts
+        // with the rest of a word broken over the lines, sb holds the whole word
+        // and from is the scalar offset where the rest starts: the part before
+        // it is not drawn, but it is the context that gives the first letter
+        // of the rest its joined form.
         var sb = ""
+        var from = 0
         for token in paragraph.split(whereSeparator: \.isWhitespace).map(String.init) {
             // The words between the zero width spaces of a token are joined
             // with no space.
             let words = token.components(separatedBy: "\u{200B}")
             for (i, word) in words.enumerated() {
                 let separator = (i == words.count - 1) ? " " : ""
-                if lineWidth(sb + word) <= textAreaWidth {
+                if lineWidth(sb + word, from) <= textAreaWidth {
                     sb.append(word)
                     sb.append(separator)
                 } else {
-                    if !sb.isEmpty {
-                        textLines.append(newTextLine(sb.trim()))
+                    if sb.unicodeScalars.count > from {
+                        textLines.append(newTextLine(sb, from))
                         sb = ""
+                        from = 0
                     }
                     // A word too wide for a line by itself is broken.
                     let rest = addBrokenWordLines(&textLines, word, textAreaWidth)
-                    if !rest.isEmpty {
-                        sb = rest + separator
+                    if rest < word.unicodeScalars.count {
+                        sb = word + separator
+                        from = rest
                     }
                 }
             }
         }
-        textLines.append(newTextLine(sb.trim()))
+        textLines.append(newTextLine(sb, from))
     }
 
     /// Sets the URI opened when this text block is clicked.

@@ -135,33 +135,71 @@ namespace PDFjet.NET {
         /// <param name="str">The input string.</param>
         /// <returns>The reordered string.</returns>
         public static string ReorderVisually(string str) {
+            return ReorderVisually(str, 0, str.Length);
+        }
+
+        /// <summary>
+        /// Reorders the string like ReorderVisually(string), and returns the
+        /// part of the result that comes from the characters of the string at
+        /// the indexes from <paramref name="from"/>, inclusive, to
+        /// <paramref name="to"/>, exclusive. The letters are shaped in the
+        /// context of the whole string, so a word that is broken between two
+        /// lines keeps its joined forms at the break when each line is made
+        /// this way.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <param name="from">The index of the first character to return.</param>
+        /// <param name="to">The index after the last character to return.</param>
+        /// <returns>The reordered part of the string.</returns>
+        public static string ReorderVisually(string str, int from, int to) {
             // Work with code points so that supplementary characters are
             // handled correctly. The explicit embedding, override and isolate
             // controls are left out, since left to right text is only nested
-            // one level deep.
-            int[] input = Array.FindAll(StringToCodePoints(str), cp => !IsExplicitFormatting(cp));
+            // one level deep. Each code point keeps the index in str it came
+            // from, so that the part asked for can be picked out at the end.
+            int[] input = new int[str.Length];
+            int[] indexes = new int[str.Length];
+            int n = 0;
+            for (int i = 0; i < str.Length; ) {
+                int cp = char.IsSurrogatePair(str, i) ? char.ConvertToUtf32(str, i) : str[i];
+                if (!IsExplicitFormatting(cp)) {
+                    input[n] = cp;
+                    indexes[n] = i;
+                    n++;
+                }
+                i += (cp > 0xFFFF) ? 2 : 1;
+            }
+            Array.Resize(ref input, n);
             int[] types = ResolveTypes(input);
 
             // buf1 gets the right to left text in logical order and each left
             // to right run reversed, so that reversing buf1 below puts the right
             // to left text in visual order and the left to right runs back in
             // theirs.
-            StringBuilder buf1 = new StringBuilder();
-            StringBuilder buf2 = new StringBuilder();
-            for (int j = 0; j < input.Length; j++) {
-                int ch = input[j];
-                if (types[j] == L) {
+            int[] buf1 = new int[2 * n];
+            int[] from1 = new int[2 * n];
+            int n1 = 0;
+            int[] buf2 = new int[n];
+            int[] from2 = new int[n];
+            int n2 = 0;
+            for (int j = 0; j <= n; j++) {
+                int ch = (j < n) ? input[j] : 0;
+                if (j < n && types[j] == L) {
                     if (ch != 0x200E) {                         // LRM
-                        buf2.AppendCodePoint(ch);
+                        buf2[n2] = ch;
+                        from2[n2] = indexes[j];
+                        n2++;
                     }
                     continue;
                 }
                 // An RLM or ALM is left out, but still ends the left to right run.
-                if (buf2.Length > 0) {
-                    buf1.Append(ReverseCodePoints(buf2.ToString()));
-                    buf2.Length = 0;
+                while (n2 > 0) {
+                    n2--;
+                    buf1[n1] = buf2[n2];
+                    from1[n1] = from2[n2];
+                    n1++;
                 }
-                if (ch == 0x200F || ch == 0x061C) {             // RLM, ALM
+                if (j == n || ch == 0x200F || ch == 0x061C) {   // RLM, ALM
                     continue;
                 }
                 // Brackets and the other mirrored characters are mirrored in
@@ -172,35 +210,45 @@ namespace PDFjet.NET {
                 // it here.
                 int? m = Mirrored(ch);
                 if (m.HasValue) {
-                    buf1.AppendCodePoint(m.Value);
-                    buf1.AppendCodePoint(0x200F);
+                    buf1[n1] = m.Value;
+                    from1[n1] = indexes[j];
+                    n1++;
+                    buf1[n1] = 0x200F;
+                    from1[n1] = indexes[j];
+                    n1++;
                 } else {
-                    buf1.AppendCodePoint(ch);
+                    buf1[n1] = ch;
+                    from1[n1] = indexes[j];
+                    n1++;
                 }
-            }
-            if (buf2.Length > 0) {
-                buf1.Append(ReverseCodePoints(buf2.ToString()));
             }
 
             // Arabic requires the lam-alef ligature.
-            int[] chars = LigateLamAlef(StringToCodePoints(buf1.ToString()));
-            int n = chars.Length;
+            int[] chars = new int[n1];
+            int[] origins = new int[n1];
+            Array.Copy(buf1, chars, n1);
+            Array.Copy(from1, origins, n1);
+            n = LigateLamAlef(chars, origins);
 
-            StringBuilder buf3 = new StringBuilder();
-            int i = n - 1;
-            while (i >= 0) {
-                int ch = chars[i];
+            int[] buf3 = new int[n];
+            int[] from3 = new int[n];
+            int n3 = 0;
+            int i2 = n - 1;
+            while (i2 >= 0) {
+                int ch = chars[i2];
 
                 // If this is a transparent character (diacritic) with no
                 // base letter to its right (in buf1 order), emit as-is.
                 if (IsTransparent(ch)) {
-                    buf3.AppendCodePoint(ch);
-                    i--;
+                    buf3[n3] = ch;
+                    from3[n3] = origins[i2];
+                    n3++;
+                    i2--;
                     continue;
                 }
 
                 int diacriticCount = 0;
-                int d = i - 1;
+                int d = i2 - 1;
                 while (d >= 0) {
                     if (!IsTransparent(chars[d])) {
                         break;
@@ -221,7 +269,7 @@ namespace PDFjet.NET {
                     int prevCh = prevIdx >= 0 ? chars[prevIdx] : 0x0000;
 
                     // Find next non-transparent character (skip diacritics)
-                    int nextIdx = i + 1;
+                    int nextIdx = i2 + 1;
                     while (nextIdx < n) {
                         if (!IsTransparent(chars[nextIdx])) {
                             break;
@@ -241,21 +289,25 @@ namespace PDFjet.NET {
                             bool joinsOnRight = canJoinNext && nextJoins;
 
                             if (!joinsOnLeft && !joinsOnRight) {
-                                buf3.AppendCodePoint(forms[j + 1]);
+                                buf3[n3] = forms[j + 1];
                             } else if (joinsOnLeft && !joinsOnRight) {
-                                buf3.AppendCodePoint(forms[j + 2]);
+                                buf3[n3] = forms[j + 2];
                             } else if (joinsOnLeft && joinsOnRight) {
-                                buf3.AppendCodePoint(forms[j + 3]);
-                            } else if (!joinsOnLeft && joinsOnRight) {
-                                buf3.AppendCodePoint(forms[j + 4]);
+                                buf3[n3] = forms[j + 3];
+                            } else {
+                                buf3[n3] = forms[j + 4];
                             }
+                            from3[n3] = origins[i2];
+                            n3++;
                             break;
                         }
                     }
                 } else if (ch != 0x200C && ch != 0x200D) {
                     // A zero width non-joiner or joiner is left out: it only
                     // changes whether the letters on either side of it join.
-                    buf3.AppendCodePoint(ch);
+                    buf3[n3] = ch;
+                    from3[n3] = origins[i2];
+                    n3++;
                 }
 
                 // Emit the diacritics that are before this character in buf1. In a
@@ -264,26 +316,37 @@ namespace PDFjet.NET {
                 // they belong to the letter before it, so they come out reversed,
                 // before that letter, like the rest of the text.
                 for (int k = 0; k < diacriticCount; k++) {
-                    buf3.AppendCodePoint(chars[i - 1 - k]);
+                    buf3[n3] = chars[i2 - 1 - k];
+                    from3[n3] = origins[i2 - 1 - k];
+                    n3++;
                 }
 
-                i = d;
+                i2 = d;
             }
 
-            return buf3.ToString();
+            StringBuilder result = new StringBuilder(n3);
+            for (int k = 0; k < n3; k++) {
+                if (from3[k] >= from && from3[k] < to) {
+                    result.AppendCodePoint(buf3[k]);
+                }
+            }
+            return result.ToString();
         }
 
         /// <summary>
-        /// Replaces each lam followed by an alef with the lam-alef ligature. The
-        /// right to left text is in logical order here, so the diacritics of the
-        /// lam and of the alef come after the ligature. A zero width joiner
-        /// between the two is left out.
+        /// Replaces each lam followed by an alef with the lam-alef ligature, in
+        /// place, and returns the new length. The right to left text is in
+        /// logical order here, so the diacritics of the lam and of the alef come
+        /// after the ligature. A zero width joiner between the two is left out.
+        /// The origins are the indexes the characters came from; the ligature
+        /// keeps the lam's.
         /// </summary>
-        private static int[] LigateLamAlef(int[] chars) {
-            int[] ligated = new int[chars.Length];
+        private static int LigateLamAlef(int[] chars, int[] origins) {
             int n = 0;
             for (int i = 0; i < chars.Length; i++) {
-                ligated[n++] = chars[i];
+                chars[n] = chars[i];
+                origins[n] = origins[i];
+                n++;
                 if (chars[i] != 0x0644) {                   // LAM
                     continue;
                 }
@@ -294,16 +357,17 @@ namespace PDFjet.NET {
                 if (alef == chars.Length || LamAlef(chars[alef]) == 0) {
                     continue;
                 }
-                ligated[n - 1] = LamAlef(chars[alef]);
+                chars[n - 1] = LamAlef(chars[alef]);
                 for (int k = i + 1; k < alef; k++) {
                     if (chars[k] != 0x200D) {
-                        ligated[n++] = chars[k];
+                        chars[n] = chars[k];
+                        origins[n] = origins[k];
+                        n++;
                     }
                 }
                 i = alef;
             }
-            Array.Resize(ref ligated, n);
-            return ligated;
+            return n;
         }
 
         /// <summary>
