@@ -83,7 +83,6 @@ public class Table : IDrawable {
             foreach (String field in fields) {
                 if (lineNumber == 0) {
                     Cell cell = new Cell(f1, field);
-                    // cell.SetTextBox(new TextBox(f1, field));
                     row.Add(cell);
                 } else {
                     row.Add(new Cell(f2, field));

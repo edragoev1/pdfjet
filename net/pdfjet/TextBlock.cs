@@ -34,14 +34,8 @@ namespace PDFjet.NET {
 
 
         private string language = null;
-//        private string altDescription = "";
         private string uri;
-//        private string key;
-//        private string uriLanguage = "en-US";
-//        private string uriActualText;
-//        private string uriAltDescription;
         private bool underline = false;
-//        private bool strikeout = false;
         private bool rightToLeft = false;
 
         /// <summary>Creates a text block with the specified font and text.</summary>

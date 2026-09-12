@@ -462,7 +462,6 @@ final public class PDF {
             }
             append(Token.END_DICTIONARY);
         }
-        // String state = "/CA 0.5 /ca 0.5";
         if (states.size() > 0) {
             append("/ExtGState <<\n");
             for (Map.Entry<String, Integer> entry : states.entrySet()) {
@@ -2395,8 +2394,6 @@ final public class PDF {
                 append("endobj\n");
             } else {
                 setObjOffset(obj.number, byteCount);
-                // Uncomment to see the format of the objects.
-                // System.out.println(obj.dict);
                 int n = obj.dict.size();
                 String token = null;
                 for (int i = 0; i < n; i++) {

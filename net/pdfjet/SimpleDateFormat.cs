@@ -12,8 +12,6 @@ namespace PDFjet.NET {
 internal class SimpleDateFormat {
     private String format = null;
 
-    // SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMddHHmmss'Z'");
-    // SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     /// <summary>Creates a formatter for the yyyyMMddHHmmss'Z' or the yyyy-MM-dd'T'HH:mm:ss pattern.</summary>
     public SimpleDateFormat(String format) {
         this.format = format;

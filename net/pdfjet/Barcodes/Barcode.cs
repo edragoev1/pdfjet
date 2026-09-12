@@ -442,7 +442,6 @@ public class Barcode : IDrawable {
                 list.Add(GS1_128.FNC_4);
                 list.Add(symchar - 160);    // 128 + 32
             } else {
-                // list.Add(31);            // '?'
                 list.Add(256);              // This will generate an exception.
             }
         }

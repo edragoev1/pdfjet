@@ -635,22 +635,6 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 
 	page.RestoreGraphicsState()
 
-	// You can uncomment and adapt if required.
-	//if textBlock.textdirection == LEFT_TO_RIGHT &&
-	//  (textBlock.uri != "" || textBlock.key != "") {
-	//  page.addAnnotation(Annotation{
-	//      Uri:               t.Uri,
-	//      Key:               t.Key,
-	//      X:                 t.X,
-	//      Y:                 t.Y,
-	//      Width:             t.X + t.Width,
-	//      Height:            t.Y + t.Height,
-	//      UriLanguage:       t.UriLanguage,
-	//      UriActualText:     t.UriActualText,
-	//      UriAltDescription: t.UriAltDescription,
-	//  })
-	//}
-
 	return [2]float32{
 		textBlock.x + textBlock.width,
 		maxFloat32(

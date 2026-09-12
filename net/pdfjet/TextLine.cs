@@ -204,11 +204,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-//    public TextLine SetLineColor(float r, float g, float b) {
-//        this.lineColor = new float[] {r, g, b};
-//        return this;
-//    }
-
     /// <summary>Sets the color of the underline and strikeout lines from an array of red, green and blue values.</summary>
     public TextLine SetLineColor(float[] rgbColor) {
         this.lineColor = rgbColor;

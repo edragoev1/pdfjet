@@ -394,7 +394,6 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 			list = append(list, rune(code128.FNC4))
 			list = append(list, symchar-160) // 128 + 32
 		} else {
-			// list = append(list, rune(31))    // '?'
 			list = append(list, rune(256)) // This will generate an exception.
 		}
 	}

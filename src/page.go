@@ -368,10 +368,8 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
 				if c1 < font.firstChar || c1 > font.lastChar {
-					// page.appendString(fmt.Sprintf("%04X", 0x0020))
 					page.appendCodePointAsHex(0x0020)
 				} else {
-					// page.appendString(fmt.Sprintf("%04X", c1))
 					page.appendCodePointAsHex(int(c1))
 				}
 			}

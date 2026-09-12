@@ -36,17 +36,6 @@ public class Box : IDrawable {
     public Box() {
     }
 
-    /*
-     * Creates a box object.
-     *
-     * @param x the x coordinate of the top left corner of this box when drawn on the page.
-     * @param y the y coordinate of the top left corner of this box when drawn on the page.
-     * @param w the width of this box.
-     * @param h the height of this box.
-     */
-//    public Box(double x, double y, double w, double h) : this((float) x, (float) y, (float) w, (float) h) {
-//    }
-
     /// <summary>
     /// Creates a box object.
     /// </summary>

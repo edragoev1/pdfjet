@@ -46,14 +46,6 @@ public class PNGImage {
                 this.bitDepth = chunk.GetData()[8];             // Bit Depth
                 this.colorType = chunk.GetData()[9];            // Color Type
 
-                // Console.WriteLine(
-                //         "Bit Depth == " + chunk.GetData()[8]);
-                // Console.WriteLine(
-                //         "Color Type == " + chunk.GetData()[9]);
-                // Console.WriteLine(chunk.GetData()[10]);
-                // Console.WriteLine(chunk.GetData()[11]);
-                // Console.WriteLine(chunk.GetData()[12]);
-
                 if (chunk.GetData()[12] == 1) {
                     Console.WriteLine("Interlaced PNG images are not supported.");
                     Console.WriteLine("Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png\n");

@@ -340,8 +340,6 @@ final public class Font {
      */
     public Font(PDF pdf, String fontPath) throws Exception {
         InputStream inputStream = new FileInputStream(fontPath);
-        // InputStream inputStream =
-        // Font.class.getClassLoader().getResourceAsStream(fontPath);
         if (fontPath.endsWith(".stream")) {
             FontStream1.register(pdf, this, inputStream);
         } else {

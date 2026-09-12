@@ -487,12 +487,10 @@ final class Puff {
             self.bitcnt -= 1
             code |= Int(buffer & 1)
 
-            // let count = huffman.count[len]  // number of codes of length len
             let count = huffman.count.withUnsafeBufferPointer { buf -> Int in
                 return buf[len]
             }
             if (code - count) < first {     // if len, return symbol
-                // return huffman.symbol[index + (code - first)]
                 return huffman.symbol.withUnsafeBufferPointer { buf -> Int in
                     return buf[index + (code - first)]
                 }

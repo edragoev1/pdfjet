@@ -459,7 +459,6 @@ public class Barcode : Drawable {
                 list.append(UInt16(GS1_128.FNC_4))
                 list.append(UInt16(symchar.value - 160))    // 128 + 32
             } else {
-                // list.append(UInt16(31))                  // '?'
                 list.append(UInt16(256))                    // This will generate an exception.
             }
         }

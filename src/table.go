@@ -78,7 +78,6 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		for _, field := range fields {
 			if lineNumber == 0 {
 				cell := NewCell(f1, field)
-				// cell.SetTextBlock(NewTextBlock(f1, field))
 				row = append(row, cell)
 			} else {
 				row = append(row, NewCell(f2, field))

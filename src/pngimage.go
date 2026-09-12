@@ -57,12 +57,6 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 			image.bitDepth = int(chunk.ChunkData[8])    // BitDepth
 			image.colorType = int(chunk.ChunkData[9])   // Color Type
 
-			// log.Println("Bit Depth == " + chunk.getData()[8])
-			// log.Println("Color Type == " + chunk.getData()[9])
-			// log.Println(chunk.getData()[10])
-			// log.Println(chunk.getData()[11])
-			// log.Println(chunk.getData()[12])
-
 			if chunk.ChunkData[12] == 1 {
 				log.Println("Interlaced PNG images are not supported.")
 				log.Println("Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")

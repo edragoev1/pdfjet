@@ -78,7 +78,6 @@ The expected output:
         }
 
         id = bin2hex(salsa20_word_specification(a_in));
-        // System.out.println(id);
     }
 
     // Use unsigned right shift >>> !

@@ -435,7 +435,6 @@ public class PDF {
             }
             Append(Token.EndDictionary);
         }
-        // String state = "/CA 0.5 /ca 0.5";
         if (states.Count > 0) {
             Append("/ExtGState <<\n");
             List<KeyValuePair<String, Int32>> entries =

@@ -13,7 +13,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-// import java.math.BigInteger;
 
 import com.pdfjet.*;
 
@@ -250,11 +249,6 @@ public class Encryption {
         if (E.length < 16) {
             throw new IllegalArgumentException("The input array must be at least 16 bytes long.");
         }
-
-        // Alternative code that also works and follows the specification exactly!
-        // BigInteger sum = new BigInteger(1, Arrays.copyOf(E, 16));    // 1 = force positive (unsigned)
-        // BigInteger reminder = sum.mod(new BigInteger("3"));
-        // return reminder.intValueExact();
 
         int sum = 0;
         for (int i = 0; i < 16; i++) {

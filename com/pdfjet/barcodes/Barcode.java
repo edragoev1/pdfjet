@@ -455,7 +455,6 @@ public class Barcode implements Drawable {
                 list.add(GS1_128.FNC_4);
                 list.add(symchar - 160);    // 128 + 32
             } else {
-                // list.add(31);            // '?'
                 list.add(256);              // This will generate an exception.
             }
         }

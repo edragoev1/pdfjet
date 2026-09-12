@@ -52,11 +52,6 @@ public class PNGImage {
                 this.h = toIntValue(chunk.getData(), 4);    // Height
                 this.bitDepth = chunk.getData()[8];         // Bit Depth
                 this.colorType = chunk.getData()[9];        // Color Type
-                // PDF.LOG.warning("Bit Depth == " + chunk.getData()[8]);
-                // PDF.LOG.warning("Color Type == " + chunk.getData()[9]);
-                // PDF.LOG.warning(chunk.getData()[10]);
-                // PDF.LOG.warning(chunk.getData()[11]);
-                // PDF.LOG.warning(chunk.getData()[12]);
                 if (chunk.getData()[12] == 1) {
                     PDF.LOG.warning("Interlaced PNG images are not supported.\nConvert the image using OptiPNG:\noptipng -i0 -o7 myimage.png\n");
                 }

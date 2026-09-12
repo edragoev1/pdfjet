@@ -103,7 +103,6 @@ public class CalendarMonth : Drawable {
                                 y1 + dy/2 + f1!.descent,
                                 x1 + 7*dx,
                                 y1 + dy/2 + f1!.descent)
-                        // line.setWidth(0.5) // only changes width of first line
                         line.drawOn(page!)
                     }
                 } else {

@@ -81,7 +81,6 @@ public class Table : Drawable {
             for field in fields {
                 if lineNumber == 0 {
                     let cell = Cell(f1, field)
-                    // cell.setTextBlock(TextBlock(f1, field))
                     row.append(cell)
                 } else {
                     row.append(Cell(f2, field))

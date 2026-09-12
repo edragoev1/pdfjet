@@ -2242,8 +2242,6 @@ func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
 			pdf.appendString("endobj\n")
 		} else {
 			pdf.setObjOffset(obj.number, pdf.byteCount)
-			// Uncomment to see the format of the objects.
-			// log.Println(obj.dict)
 			n := len(obj.dict)
 			var token1 string
 			for i := 0; i < n; i++ {

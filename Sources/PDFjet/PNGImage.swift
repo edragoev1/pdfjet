@@ -39,7 +39,6 @@ public class PNGImage {
         let chunks = try processPNG(&buffer)
         for chunk in chunks {
             let chunkType = String(bytes: chunk.type!, encoding: .utf8)!
-            // Swift.print(chunkType)
             if chunkType == "IHDR" {
                 self.w = Int(getUInt32(chunk.getData()!, 0))    // Width
                 self.h = Int(getUInt32(chunk.getData()!, 4))    // Height

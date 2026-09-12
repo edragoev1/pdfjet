@@ -95,7 +95,6 @@ public class Table implements Drawable {
                 for (String field : fields) {
                     if (lineNumber == 0) {
                         Cell cell = new Cell(f1, field);
-                        // cell.setTextBlock(new TextBlock(f1, field));
                         row.add(cell);
                     } else {
                         row.add(new Cell(f2, field));

@@ -176,14 +176,6 @@ func (textLine *TextLine) GetLineColor() [3]float32 {
 	return textLine.lineColor
 }
 
-// SetColorRGB sets the penColor color.
-// @param color the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
-// @return this TextLine.
-//func (textLine *TextLine) SetColorRGB(color []int32) *TextLine {
-//  textLine.color = color[0]<<16 | color[1]<<8 | color[2]
-//  return textLine
-//}
-
 // GetTextColor returns the text line color.
 // @return the text line color.
 func (textLine *TextLine) GetTextColor() [3]float32 {
@@ -217,7 +209,6 @@ func (textLine *TextLine) GetStringWidth(text string) float32 {
 // GetHeight returns the height of this TextLine.
 // @return the height.
 func (textLine *TextLine) GetHeight() float32 {
-	// println(textLine.fontSize, textLine.font.GetBodyHeightAt(textLine.fontSize))
 	return textLine.font.GetBodyHeightAt(textLine.fontSize)
 }
 
