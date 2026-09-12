@@ -110,6 +110,9 @@ public class PDF {
 
         let date = Date()
         let dateFormatter1 = DateFormatter()
+        // Gregorian year and ASCII digits whatever the user's locale is, as in the other ports.
+        dateFormatter1.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter1.calendar = Calendar(identifier: .gregorian)
         dateFormatter1.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         self.createDate = dateFormatter1.string(from: date)
 

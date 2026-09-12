@@ -1,8 +1,10 @@
 package com.pdfjet;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -240,7 +242,8 @@ public class BigTable {
         this.alignment = new Alignment[this.numberOfColumns];
 
         int rowNumber = 0;
-        try (BufferedReader reader = new BufferedReader(new FileReader(this.fileName))) {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(this.delimiter);
@@ -285,7 +288,8 @@ public class BigTable {
      * @throws Exception if the data file cannot be read or drawing fails.
      */
     public void complete() throws Exception {
-        try (BufferedReader reader = new BufferedReader(new FileReader(this.fileName))) {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(this.delimiter);

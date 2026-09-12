@@ -84,7 +84,8 @@ final public class Example_34 {
         int currentRow = 0;
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader(fileName));
+            reader = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
             String line = null;
             while ((line = reader.readLine()) != null) {
                 List<Cell> row = new ArrayList<Cell>();

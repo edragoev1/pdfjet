@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/decompressor"
@@ -422,7 +421,7 @@ func (obj *PDFobj) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*
 			token := obj.dict[i]
 			if token == "<<" { // Direct resources object
 				obj.addFontResource(obj, objects, font.fontID, obj2.number)
-			} else if unicode.IsDigit(rune(token[0])) { // Indirect resources object
+			} else if token[0] >= '0' && token[0] <= '9' { // Indirect resources object
 				objNumber, err := strconv.Atoi(token)
 				if err != nil {
 					log.Fatal(err)
@@ -464,7 +463,7 @@ func (obj *PDFobj) addFontResource(obj2 *PDFobj, objects *[]*PDFobj, fontID stri
 				obj2.dict = insertStringAt(obj2.dict, "0", i+4)
 				obj2.dict = insertStringAt(obj2.dict, "R", i+5)
 				return
-			} else if unicode.IsDigit(rune(token[0])) {
+			} else if token[0] >= '0' && token[0] <= '9' {
 				index, err := strconv.Atoi(token)
 				if err != nil {
 					log.Fatal(err)

@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -461,7 +462,7 @@ public class PDFobj {
                 String token = dict.get(++i);
                 if (token.equals("<<")) {                       // Direct resources object
                     addFontResource(this, objects, font.fontID, obj.number);
-                } else if (Character.isDigit(token.charAt(0))) {  // Indirect resources object
+                } else if (token.charAt(0) >= '0' && token.charAt(0) <= '9') {  // Indirect resources object
                     addFontResource(objects.get(Integer.parseInt(token) - 1), objects, font.fontID, obj.number);
                 }
             }
@@ -499,7 +500,7 @@ public class PDFobj {
                     obj.dict.add(i + 4, "0");
                     obj.dict.add(i + 5, "R");
                     return;
-                } else if (Character.isDigit(token.charAt(0))) {
+                } else if (token.charAt(0) >= '0' && token.charAt(0) <= '9') {
                     PDFobj o2 = objects.get(Integer.parseInt(token) - 1);
                     for (int j = 0; j < o2.dict.size(); j++) {
                         if (o2.dict.get(j).equals("<<")) {
@@ -788,7 +789,7 @@ public class PDFobj {
         StringBuilder buf = new StringBuilder();
         buf.append("q\n");
         buf.append("/GS" + String.valueOf(gsNumber + 1) + " gs\n");
-        addPrefixContent(buf.toString().getBytes(), objects);
+        addPrefixContent(buf.toString().getBytes(StandardCharsets.UTF_8), objects);
         return this;
     }
 }

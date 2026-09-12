@@ -574,11 +574,8 @@ public final class PDFobj {
     }
 
     private final func firstCharIsDigit(_ str: String) -> Bool {
-        for scalar in str.unicodeScalars {
-            if CharacterSet.decimalDigits.contains(scalar) {
-                return true
-            }
-            break
+        if let scalar = str.unicodeScalars.first {
+            return scalar >= "0" && scalar <= "9"
         }
         return false
     }

@@ -74,7 +74,7 @@ public class OTF {
                 name[j] = readByte();
             }
             FontTable table = new FontTable();
-            table.name     = new String(name);
+            table.name     = new String(name, StandardCharsets.UTF_8);
             table.checkSum = readUInt32();
             table.offset = (int) readUInt32();
             table.length = (int) readUInt32();

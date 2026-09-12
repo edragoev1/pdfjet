@@ -407,7 +407,7 @@ public class PDFobj {
                 String token = dict[++i];
                 if (token.Equals("<<")) {                   // Direct resources object
                     AddFontResource(this, objects, font.fontID, obj.number);
-                } else if (Char.IsDigit(token[0])) {        // Indirect resources object
+                } else if (token[0] >= '0' && token[0] <= '9') {        // Indirect resources object
                     AddFontResource(objects[Int32.Parse(token) - 1], objects, font.fontID, obj.number);
                 }
             }
@@ -445,7 +445,7 @@ public class PDFobj {
                     obj.dict.Insert(i + 4, "0");
                     obj.dict.Insert(i + 5, "R");
                     return;
-                } else if (Char.IsDigit(token[0])) {
+                } else if (token[0] >= '0' && token[0] <= '9') {
                     PDFobj o2 = objects[Int32.Parse(token) - 1];
                     for (int j = 0; j < o2.dict.Count; j++) {
                         if (o2.dict[j].Equals("<<")) {

@@ -112,7 +112,7 @@ final public class PDF {
         this.compliance = compliance;
 
         Date date = new Date();
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
         createDate = sdf1.format(date);     // XMP metadata
 
         append("%PDF-1.7\n");

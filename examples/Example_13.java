@@ -20,7 +20,8 @@ final public class Example_13 {
         f2.setSize(7f);
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-        BufferedReader reader = new BufferedReader(new FileReader("data/winter-2009.txt"));
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream("data/winter-2009.txt"), "UTF-8"));
         String line;
         while ((line = reader.readLine()) != null) {
             List<Cell> row = new ArrayList<Cell>();
