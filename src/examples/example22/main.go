@@ -51,13 +51,12 @@ func Example22() {
 	text.SetLocation(90.0, 200.0)
 	text.DrawOn(page)
 
-	// Create a box with invisible borders
-	box := pdfjet.NewBoxAt(20.0, 20.0, 20.0, 20.0)
-	box.SetColor(color.White)
-	box.SetGoToAction("dest#1")
-	box.DrawOn(page)
+	// Create a rect with no border that links to destination #1
+	rect := pdfjet.NewRect(20.0, 20.0, 20.0, 20.0)
+	rect.SetGoToAction("dest#1")
+	rect.DrawOn(page)
 
-	// Create an up arrow and place it in the box
+	// Create an up arrow and place it in the rect
 	path := pdfjet.NewPath()
 	path.Add(pdfjet.NewPoint(10.0, 1.0))
 	path.Add(pdfjet.NewPoint(17.0, 9.0))

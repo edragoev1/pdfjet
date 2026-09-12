@@ -48,13 +48,12 @@ public class Example_22 {
         text.setLocation(90f, 200f);
         text.drawOn(page);
 
-        // Create a box with invisible borders
-        Box box = new Box(20f, 20f, 20f, 20f);
-        box.setColor(Color.white);
-        box.setGoToAction("dest#1");
-        box.drawOn(page);
+        // Create a rect with no border that links to destination #1
+        Rect rect = new Rect(20f, 20f, 20f, 20f);
+        rect.setGoToAction("dest#1");
+        rect.drawOn(page);
 
-        // Create an up arrow and place it in the box
+        // Create an up arrow and place it in the rect
         Path path = new Path();
         path.add(new Point(10f,  1f));
         path.add(new Point(17f,  9f));

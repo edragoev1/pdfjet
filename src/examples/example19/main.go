@@ -6,6 +6,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -53,10 +54,9 @@ func Example19() {
 	textBox.SetBorders(true)
 	xy = textBox.DrawOn(page)
 
-	box := pdfjet.NewBox()
-	box.SetLocation(xy[0], xy[1])
-	box.SetSize(20.0, 20.0)
-	box.DrawOn(page)
+	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
+	rect.SetBorderColor(color.Black)
+	rect.DrawOn(page)
 
 	pdf.Complete()
 }

@@ -67,10 +67,9 @@ public class Example_26 {
                 .check(Mark.CHECK)
                 .drawOn(page));
 
-        Box box = new Box();
-        box.setLocation(xy[0], xy[1]);
-        box.setSize(20f, 20f);
-        box.drawOn(page);
+        Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
+        rect.setBorderColor(Color.black);
+        rect.drawOn(page);
 
         pdf.complete();
     }

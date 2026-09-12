@@ -64,10 +64,9 @@ public class Example_26 {
                 .check(Mark.CHECK)
                 .drawOn(page))
 
-        let box = Box()
-        box.setLocation(xy[0], xy[1])
-        box.setSize(20.0, 20.0)
-        box.drawOn(page)
+        let rect = Rect(xy[0], xy[1], 20.0, 20.0)
+        rect.setBorderColor(Color.black)
+        rect.drawOn(page)
 
         pdf.complete()
     }

@@ -20,30 +20,21 @@ public class Example_18 {
         List<Page> pages = new ArrayList<Page>();
         Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        Box box = new Box();
-        box.setLocation(50f, 50f);
-        box.setSize(100.0f, 100.0f);
-        box.setColor(Color.red);
-        box.setFillShape(true);
-        box.drawOn(page);
+        Rect rect = new Rect(50f, 50f, 100f, 100f);
+        rect.setFillColor(Color.red);
+        rect.drawOn(page);
         pages.add(page);
 
         page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        box = new Box();
-        box.setLocation(50f, 50f);
-        box.setSize(100.0f, 100.0f);
-        box.setColor(Color.green);
-        box.setFillShape(true);
-        box.drawOn(page);
+        rect = new Rect(50f, 50f, 100f, 100f);
+        rect.setFillColor(Color.green);
+        rect.drawOn(page);
         pages.add(page);
 
         page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        box = new Box();
-        box.setLocation(50f, 50f);
-        box.setSize(100.0f, 100.0f);
-        box.setColor(Color.blue);
-        box.setFillShape(true);
-        box.drawOn(page);
+        rect = new Rect(50f, 50f, 100f, 100f);
+        rect.setFillColor(Color.blue);
+        rect.drawOn(page);
         pages.add(page);
 
         for (int i = 0; i < pages.size(); i++) {

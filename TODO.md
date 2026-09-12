@@ -157,10 +157,13 @@ Pick from the README limitations; the first three are the ones users hit.
       Chrome and Firefox.
 - ⬜ **B** CHANGELOG `## v9.0.0` entry. Breaking changes first: Go `Drawable`
       and `[2]float32`, `Arc.drawOn`, `UserAccess` values (any code that used
-      raw ints must change), negative `/P`, Go module path `/v9`, and whatever
-      week 1 decides for `Table`/`TextBlock`/`SVGImage`/`DonutChart` and
-      `Stamp`. Then: Swift encryption, random salts, `EncryptMetadata true`,
-      right to left fixes, TODO cleanups.
+      raw ints must change), negative `/P`, Go module path `/v9`, `Box`
+      removed in favor of `Rect` (`setColor` becomes `setBorderColor`, or
+      `setFillColor` with `setFillShape(true)`; `setLineWidth` and `setPattern`
+      become `setBorderWidth` and `setBorderPattern`), and whatever week 1
+      decides for `Table`/`TextBlock`/`SVGImage`/`DonutChart` and `Stamp`.
+      Then: Swift encryption, random salts, `EncryptMetadata true`, right to
+      left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
       `PDF.cs`, `pdf.go`, `PDF.swift`; `package-java.sh` and
       `package-dotnet.sh` archive names; README where 8.7.0 is mentioned.

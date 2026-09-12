@@ -19,30 +19,21 @@ public class Example_18 {
         List<Page> pages = new List<Page>();
         Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        Box box = new Box();
-        box.SetLocation(50f, 50f);
-        box.SetSize(100.0f, 100.0f);
-        box.SetColor(Color.red);
-        box.SetFillShape(true);
-        box.DrawOn(page);
+        Rect rect = new Rect(50f, 50f, 100f, 100f);
+        rect.SetFillColor(Color.red);
+        rect.DrawOn(page);
         pages.Add(page);
 
         page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        box = new Box();
-        box.SetLocation(50f, 50f);
-        box.SetSize(100.0f, 100.0f);
-        box.SetColor(Color.green);
-        box.SetFillShape(true);
-        box.DrawOn(page);
+        rect = new Rect(50f, 50f, 100f, 100f);
+        rect.SetFillColor(Color.green);
+        rect.DrawOn(page);
         pages.Add(page);
 
         page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        box = new Box();
-        box.SetLocation(50f, 50f);
-        box.SetSize(100.0f, 100.0f);
-        box.SetColor(Color.blue);
-        box.SetFillShape(true);
-        box.DrawOn(page);
+        rect = new Rect(50f, 50f, 100f, 100f);
+        rect.SetFillColor(Color.blue);
+        rect.DrawOn(page);
         pages.Add(page);
 
         for (int i = 0; i < pages.Count; i++) {

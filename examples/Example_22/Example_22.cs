@@ -48,13 +48,12 @@ public class Example_22 {
         text.SetLocation(90f, 200f);
         text.DrawOn(page);
 
-        // Create a box with invisible borders
-        Box box = new Box(20f, 20f, 20f, 20f);
-        box.SetColor(Color.white);
-        box.SetGoToAction("dest#1");
-        box.DrawOn(page);
+        // Create a rect with no border that links to destination #1
+        Rect rect = new Rect(20f, 20f, 20f, 20f);
+        rect.SetGoToAction("dest#1");
+        rect.DrawOn(page);
 
-        // Create an up arrow and place it in the box
+        // Create an up arrow and place it in the rect
         PDFjet.NET.Path path = new PDFjet.NET.Path();
         path.Add(new Point(10f,  1f));
         path.Add(new Point(17f,  9f));

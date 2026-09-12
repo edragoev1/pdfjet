@@ -45,13 +45,12 @@ public class Example_22 {
         text.setLocation(90.0, 200.0)
         text.drawOn(page)
 
-        // Create a box with invisible borders
-        let box = Box(20.0, 20.0, 20.0, 20.0)
-        box.setColor(Color.white)
-        box.setGoToAction("dest#1")
-        box.drawOn(page)
+        // Create a rect with no border that links to destination #1
+        let rect = Rect(20.0, 20.0, 20.0, 20.0)
+        rect.setGoToAction("dest#1")
+        rect.drawOn(page)
 
-        // Create an up arrow and place it in the box
+        // Create an up arrow and place it in the rect
         let path = Path()
         path.add(Point(10.0,  1.0))
         path.add(Point(17.0,  9.0))

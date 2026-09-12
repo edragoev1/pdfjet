@@ -14,8 +14,8 @@ constructors and Go New* functions that return the type.
 
 Go has no overloading, so a Go method whose name is a member name of the same
 class in another port followed by a suffix (DrawStringUsingFontSize for
-drawString, NewBoxAt for the Box constructor) counts as that member, and the
-suffix is listed with it. Go constants live in packages (color.Blue,
+drawString, NewFontFromFile for the Font constructor) counts as that member,
+and the suffix is listed with it. Go constants live in packages (color.Blue,
 alignment.Left); a package with at most one exported type is treated as the
 class of the same name.
 

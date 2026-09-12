@@ -67,10 +67,9 @@ public class Example_26 {
                 .Check(Mark.CHECK)
                 .DrawOn(page));
 
-        Box box = new Box();
-        box.SetLocation(xy[0], xy[1]);
-        box.SetSize(20f, 20f);
-        box.DrawOn(page);
+        Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
+        rect.SetBorderColor(Color.black);
+        rect.DrawOn(page);
 
         pdf.Complete();
     }

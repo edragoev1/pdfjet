@@ -103,10 +103,9 @@ func Example23() {
 	textLine3.SetLocation(xy[0]-80.0, xy[1]+30.0)
 	textLine3.DrawOn(page)
 
-	box := pdfjet.NewBox()
-	box.SetLocation(xy[0], xy[1])
-	box.SetSize(20.0, 20.0)
-	box.DrawOn(page)
+	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
+	rect.SetBorderColor(color.Black)
+	rect.DrawOn(page)
 
 	pdf.Complete()
 }
