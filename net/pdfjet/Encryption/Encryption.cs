@@ -122,10 +122,7 @@ public class Encryption {
         perms[9]  = (byte) 'a';
         perms[10] = (byte) 'd';
         perms[11] = (byte) 'b';
-        perms[12] = (byte) '-';
-        perms[13] = (byte) '-';
-        perms[14] = (byte) '-';
-        perms[15] = (byte) '-';
+        RandomNumberGenerator.Fill(perms.AsSpan(12, 4));    // Bytes 12 to 15 are random, and ignored
 
         // A 16-byte string, encrypted with the file encryption key,
         // that contains an encrypted copy of the permissions flags.

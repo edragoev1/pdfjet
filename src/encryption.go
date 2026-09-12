@@ -122,10 +122,9 @@ func NewEncryption(pdf *PDF,
 	perms[9] = 'a'
 	perms[10] = 'd'
 	perms[11] = 'b'
-	perms[12] = '-'
-	perms[13] = '-'
-	perms[14] = '-'
-	perms[15] = '-'
+	if _, err := rand.Read(perms[12:16]); err != nil { // Bytes 12 to 15 are random, and ignored
+		return nil, err
+	}
 
 	// Encrypt permissions block
 	encryptedPermsBlock, err := encryption.EncryptECB(perms, enc.fileEncryptionKey)
