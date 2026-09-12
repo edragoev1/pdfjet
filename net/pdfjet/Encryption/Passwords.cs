@@ -9,8 +9,8 @@ using System;
 namespace PDFjet.NET {
 /// <summary>The user and owner passwords of an encrypted PDF. Please see Example_30.</summary>
 public class Passwords {
-    private String userPassword;
-    private String ownerPassword;
+    private String userPassword = "";
+    private String ownerPassword = "";
 
     /// <summary>Creates an empty set of passwords.</summary>
     public Passwords() {

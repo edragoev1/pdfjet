@@ -171,16 +171,6 @@ func (s *Stamp) CloseFillAndStrokePath() *Stamp {
 	return s
 }
 
-// Rectangle is a TODO stub
-func (s *Stamp) Rectangle() *Stamp {
-	return s
-}
-
-// Draw is a TODO stub
-func (s *Stamp) Draw() *Stamp {
-	return s
-}
-
 // DrawRect draws a rectangle outline
 func (s *Stamp) DrawRect(x, y, w, h float32) *Stamp {
 	s.MoveTo(x, y)

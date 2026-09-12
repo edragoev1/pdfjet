@@ -73,16 +73,8 @@ public class Encryption {
             throw new RuntimeException("SHA algorithm not available", e);
         }
 
-        String userPassword = passwords.getUserPassword();
-        if (userPassword.length() > 127) {
-            userPassword = userPassword.substring(0, 127);
-        }
-        String ownerPassword = passwords.getOwnerPassword();
-        if (ownerPassword.length() > 127) {
-            ownerPassword = ownerPassword.substring(0, 127);
-        }
-        byte[] userPasswordBytes = userPassword.getBytes(StandardCharsets.UTF_8);
-        byte[] ownerPasswordBytes = ownerPassword.getBytes(StandardCharsets.UTF_8);
+        byte[] userPasswordBytes = passwordBytes(passwords.getUserPassword());
+        byte[] ownerPasswordBytes = passwordBytes(passwords.getOwnerPassword());
 
         User user = computeUserKeys(userPasswordBytes);
         Owner owner = computeOwnerKeys(ownerPasswordBytes, user.U);
@@ -179,6 +171,13 @@ public class Encryption {
      */
     public int getObjNumber() {
         return objNumber;
+    }
+
+    // Returns the UTF-8 bytes of the password, at most 127 of them, as
+    // ISO 32000-2 algorithm 2.A says.
+    private static byte[] passwordBytes(String password) {
+        byte[] bytes = password.getBytes(StandardCharsets.UTF_8);
+        return bytes.length > 127 ? Arrays.copyOf(bytes, 127) : bytes;
     }
 
     /**

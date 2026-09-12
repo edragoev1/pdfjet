@@ -200,17 +200,6 @@ public class Stamp : IDrawable {
         return this;
     }
 
-    // TODO:
-    /// <summary>Not implemented yet; does nothing.</summary>
-    public Stamp Rectangle() {
-        return this;
-    }
-
-    /// <summary>Not implemented yet; does nothing.</summary>
-    public Stamp Draw() {
-        return this;
-    }
-
     /// <summary>Draws the outline of a rectangle.</summary>
     public Stamp DrawRect(float x, float y, float w, float h) {
         MoveTo(x, y);

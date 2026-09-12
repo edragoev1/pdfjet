@@ -208,6 +208,16 @@ MD5 and RC4 in `Sources/PDFjet/Cryptography.swift`, which its `Decryptor` uses
 as well. The four ports write the same encryption dictionary, with random salts
 in the password hashes.
 
+A password is used as typed, in UTF-8, and at most 127 bytes of it are used,
+which is where PDF readers cut it too. (The Poppler command line tools, such as
+`pdftotext -upw`, take passwords of at most 32 characters; MuPDF and qpdf take
+the full length.) ISO 32000-2 also asks for the SASLprep
+normalization of the password, which none of the ports applies: Go has no
+Unicode normalization without an external package, and the ports are kept the
+same. Type passwords in precomposed (NFC) form, as keyboards produce them. A
+password that is not set is empty, so a PDF whose user password is not set opens
+without a prompt, with the permissions applied.
+
 ## Port differences
 
 Public setters return the object they were called on, so calls can be chained.

@@ -60,16 +60,8 @@ public class Encryption {
         sha384 = SHA384.Create();
         sha512 = SHA512.Create();
 
-        String userPassword = passwords.GetUserPassword();
-        if (userPassword.Length > 127) {
-            userPassword = userPassword.Substring(0, 127);
-        }
-        String ownerPassword = passwords.GetOwnerPassword();
-        if (ownerPassword.Length > 127) {
-            ownerPassword = ownerPassword.Substring(0, 127);
-        }
-        byte[] userPasswordBytes = Encoding.UTF8.GetBytes(userPassword);
-        byte[] ownerPasswordBytes = Encoding.UTF8.GetBytes(ownerPassword);
+        byte[] userPasswordBytes = PasswordBytes(passwords.GetUserPassword());
+        byte[] ownerPasswordBytes = PasswordBytes(passwords.GetOwnerPassword());
 
         User user = ComputeUserKeys(userPasswordBytes);
         Owner owner = ComputeOwnerKeys(ownerPasswordBytes, user.U);
@@ -158,6 +150,16 @@ public class Encryption {
     /// <summary>Returns the object number of the encryption dictionary.</summary>
     public int GetObjNumber() {
         return objNumber;
+    }
+
+    // Returns the UTF-8 bytes of the password, at most 127 of them, as
+    // ISO 32000-2 algorithm 2.A says.
+    private static byte[] PasswordBytes(String password) {
+        byte[] bytes = Encoding.UTF8.GetBytes(password);
+        if (bytes.Length > 127) {
+            Array.Resize(ref bytes, 127);
+        }
+        return bytes;
     }
 
     /// <summary>

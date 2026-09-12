@@ -281,24 +281,6 @@ public class Stamp implements Drawable {
     }
 
     /**
-     * Not implemented yet; does nothing.
-     *
-     * @return this Stamp object.
-     */
-    public Stamp rectangle() {
-        return this;
-    }
-
-    /**
-     * Not implemented yet; does nothing.
-     *
-     * @return this Stamp object.
-     */
-    public Stamp draw() {
-        return this;
-    }
-
-    /**
      * Draws the outline of a rectangle.
      *
      * @param x the x coordinate of the top left corner.

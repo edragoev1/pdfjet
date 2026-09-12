@@ -5,8 +5,10 @@
 
 package encryption
 
-// Passwords holds user and owner password information for PDF encryption.
-// This version uses exported fields for more idiomatic Go access.
+// Passwords holds the user and owner passwords of an encrypted PDF. A password
+// is used as typed, in UTF-8, and at most 127 bytes of it are used. A password
+// that is not set is empty, so the PDF opens without a prompt when the user
+// password is not set.
 type Passwords struct {
 	UserPassword  string
 	OwnerPassword string

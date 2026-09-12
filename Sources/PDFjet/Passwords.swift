@@ -6,7 +6,10 @@
  */
 
 ///
-/// The user and owner passwords of an encrypted PDF.
+/// The user and owner passwords of an encrypted PDF. A password is used as
+/// typed, in UTF-8, and at most 127 bytes of it are used. A password that is
+/// not set is empty, so the PDF opens without a prompt when the user
+/// password is not set.
 ///
 /// Please see Example_30.
 ///

@@ -195,13 +195,6 @@ public class Stamp : Drawable {
         return self
     }
 
-    // TODO: Implement
-    /// Not implemented yet; does nothing.
-    @discardableResult
-    public func rectangle() -> Stamp {
-        return self
-    }
-
     /// Draws the outline of a rectangle.
     @discardableResult
     public func drawRect(_ x: Float, _ y: Float, _ w: Float, _ h: Float) -> Stamp {
