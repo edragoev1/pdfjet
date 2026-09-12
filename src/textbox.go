@@ -1,11 +1,9 @@
-package pdfjet
+// textbox.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
 
-/**
- * textbox.go
- *
- * Copyright (c) 2026 PDFjet Software
- * Licensed under the MIT License. See LICENSE file in the project root.
- */
+package pdfjet
 
 import (
 	"strings"
@@ -21,19 +19,21 @@ import (
 // TextBox is a box containing line-wrapped text.
 // Defaults: x = 0, y = 0, width = 300, height = 0, alignment left, vertical
 // alignment top, spacing 0, margin 0.
-// Please see Example_19 and Example_30.
+// Please see Example_16 and Example_19.
 type TextBox struct {
-	font          *Font
-	fallbackFont  *Font
-	fontSize      float32
-	text          string
-	x             float32
-	y             float32
-	width         float32
-	height        float32
+	font         *Font
+	fallbackFont *Font
+	fontSize     float32
+	text         string
+	x            float32
+	y            float32
+	width        float32
+	height       float32
+	// True when the height is set, so the text is cut to fit it. Otherwise the
+	// text box grows to fit its text and height is the height drawn last.
+	fixedHeight   bool
 	spacing       float32
 	margin        float32
-	lineWidth     float32
 	fillColor     *[3]float32 // The background fill color
 	textColor     [3]float32
 	strokeWidth   float32
@@ -135,6 +135,7 @@ func (textBox *TextBox) GetLocation() [2]float32 {
 func (textBox *TextBox) SetSize(w, h float32) *TextBox {
 	textBox.width = w
 	textBox.height = h
+	textBox.fixedHeight = h > 0.0
 	return textBox
 }
 
@@ -152,10 +153,12 @@ func (textBox *TextBox) GetWidth() float32 {
 // SetHeight sets the height of this text box.
 func (textBox *TextBox) SetHeight(height float32) *TextBox {
 	textBox.height = height
+	textBox.fixedHeight = height > 0.0
 	return textBox
 }
 
-// GetHeight returns the height of this text box.
+// GetHeight returns the height set with SetHeight or SetSize, or, for a text
+// box that grows to fit its text, the height of the text drawn or measured last.
 func (textBox *TextBox) GetHeight() float32 {
 	return textBox.height
 }
@@ -171,15 +174,15 @@ func (textBox *TextBox) GetMargin() float32 {
 	return textBox.margin
 }
 
-// SetLineWidth sets the border line width.
+// SetLineWidth sets the width of the border lines, as SetStrokeWidth does.
 func (textBox *TextBox) SetLineWidth(lineWidth float32) *TextBox {
-	textBox.lineWidth = lineWidth
+	textBox.strokeWidth = lineWidth
 	return textBox
 }
 
-// GetLineWidth returns the border line width.
+// GetLineWidth returns the width of the border lines.
 func (textBox *TextBox) GetLineWidth() float32 {
-	return textBox.lineWidth
+	return textBox.strokeWidth
 }
 
 // SetSpacing sets the spacing between the lines of text.
@@ -551,7 +554,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	fallbackFont := textBox.fallbackFont
 	fontSize := textBox.fontSize
 	leading := font.GetAscentAt(fontSize) + font.GetDescentAt(fontSize) + textBox.spacing
-	if textBox.height > 0.0 { // TextBox with fixed height
+	if textBox.fixedHeight { // TextBox with fixed height
 		if (float32(len(lines))*leading - textBox.spacing) > (textBox.height - 2*textBox.margin) {
 			list := make([]string, 0)
 			for i, line := range lines {
@@ -677,16 +680,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				y1:             textBox.y,
 				x2:             textBox.x + textBox.width,
 				y2:             textBox.y + textBox.height,
-				vertices:       nil,
-				fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
-				transparency:   0.0,
-				title:          "",
-				contents:       "",
 				uri:            textBox.uri,
-				key:            "",
-				language:       "",
-				actualText:     "",
-				altDescription: "",
 			})
 		}
 		page.SetTextDirection(0)

@@ -35,9 +35,11 @@ public class TextBox : IDrawable {
     internal float y;
     internal float width = 300f;
     internal float height = 0f;
+    // True when the height is set, so the text is cut to fit it. Otherwise the
+    // text box grows to fit its text and height is the height drawn last.
+    private bool fixedHeight = false;
     internal float spacing = 0f;
     internal float margin = 0f;
-    internal float lineWidth = 0f;
 
     private float[] fillColor;  // The background fill color
     private float[] textColor = new float[] {0f, 0f, 0f};
@@ -112,6 +114,7 @@ public class TextBox : IDrawable {
         this.text = text;
         this.width = width;
         this.height = height;
+        this.fixedHeight = height > 0f;
     }
 
     /// <summary>
@@ -191,6 +194,7 @@ public class TextBox : IDrawable {
     public TextBox SetSize(float w, float h) {
         this.width = w;
         this.height = h;
+        this.fixedHeight = h > 0f;
         return this;
     }
 
@@ -235,8 +239,7 @@ public class TextBox : IDrawable {
     /// </summary>
     /// <param name="height">the specified height.</param>
     public TextBox SetHeight(double height) {
-        this.height = (float) height;
-        return this;
+        return SetHeight((float) height);
     }
 
     /// <summary>
@@ -245,11 +248,13 @@ public class TextBox : IDrawable {
     /// <param name="height">the specified height.</param>
     public TextBox SetHeight(float height) {
         this.height = height;
+        this.fixedHeight = height > 0f;
         return this;
     }
 
     /// <summary>
-    /// Returns the text box height.
+    /// Returns the height set with SetHeight or SetSize, or, for a text box that
+    /// grows to fit its text, the height of the text drawn or measured last.
     /// </summary>
     /// <returns>the text box height.</returns>
     public float GetHeight() {
@@ -283,31 +288,31 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>
-    /// Sets the border line width.
+    /// Sets the width of the border lines, as SetStrokeWidth does.
     /// </summary>
-    /// <param name="lineWidth">float</param>
+    /// <param name="lineWidth">the width of the border lines.</param>
     /// <returns>this TextBox object.</returns>
     public TextBox SetLineWidth(double lineWidth) {
-        this.lineWidth = (float) lineWidth;
+        this.strokeWidth = (float) lineWidth;
         return this;
     }
 
     /// <summary>
-    /// Sets the border line width.
+    /// Sets the width of the border lines, as SetStrokeWidth does.
     /// </summary>
-    /// <param name="lineWidth">float</param>
+    /// <param name="lineWidth">the width of the border lines.</param>
     /// <returns>this TextBox object.</returns>
     public TextBox SetLineWidth(float lineWidth) {
-        this.lineWidth = lineWidth;
+        this.strokeWidth = lineWidth;
         return this;
     }
 
     /// <summary>
-    /// Returns the border line width.
+    /// Returns the width of the border lines.
     /// </summary>
-    /// <returns>float the line width.</returns>
+    /// <returns>the width of the border lines.</returns>
     public float GetLineWidth() {
-        return lineWidth;
+        return strokeWidth;
     }
 
     /// <summary>
@@ -729,7 +734,7 @@ public class TextBox : IDrawable {
     public float[] DrawOn(Page page) {
         String[] lines = GetTextLines();
         float leading = font.GetAscent(fontSize) + font.GetDescent(fontSize) + spacing;
-        if (height > 0f) {  // TextBox with fixed height
+        if (fixedHeight) {  // TextBox with fixed height
             if ((lines.Length*leading - spacing) > (height - 2*margin)) {
                 List<String> list = new List<String>();
                 for (int i = 0; i < lines.Length; i++) {

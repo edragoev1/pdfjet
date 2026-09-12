@@ -11,7 +11,7 @@ import Foundation
 /// Defaults: x = 0, y = 0, width = 300, height = 0, alignment Align.LEFT,
 /// vertical alignment Align.TOP, spacing 0, margin 0.
 ///
-/// Please see Example_19 and Example_30.
+/// Please see Example_16 and Example_19.
 ///
 public class TextBox : Drawable {
     var font: Font
@@ -22,9 +22,11 @@ public class TextBox : Drawable {
     var y: Float = 0.0
     var width: Float = 300.0
     var height: Float = 0.0
+    // True when the height is set, so the text is cut to fit it. Otherwise the
+    // text box grows to fit its text and height is the height drawn last.
+    private var fixedHeight = false
     var spacing: Float = 0.0
     var margin: Float = 0.0
-    var lineWidth: Float = 0.0
 
     private var fillColor: [Float]?         // The background fill color
     private var textColor: [Float] = [0.0, 0.0, 0.0]
@@ -81,6 +83,7 @@ public class TextBox : Drawable {
         self.text = text
         self.width = width
         self.height = height
+        self.fixedHeight = height > 0.0
         self.fontSize = font.getSize()
     }
 
@@ -120,6 +123,7 @@ public class TextBox : Drawable {
     public func setSize(_ w: Float, _ h: Float) -> TextBox {
         self.width = w
         self.height = h
+        self.fixedHeight = h > 0.0
         return self
     }
 
@@ -152,10 +156,12 @@ public class TextBox : Drawable {
     @discardableResult
     public func setHeight(_ height: Float) -> TextBox {
         self.height = height
+        self.fixedHeight = height > 0.0
         return self
     }
 
-    /// Returns the height of this text box.
+    /// Returns the height set with setHeight or setSize, or, for a text box that
+    /// grows to fit its text, the height of the text drawn or measured last.
     public func getHeight() -> Float {
         return self.height
     }
@@ -172,16 +178,16 @@ public class TextBox : Drawable {
         return self.margin
     }
 
-    /// Sets the width of the border lines.
+    /// Sets the width of the border lines, as setStrokeWidth does.
     @discardableResult
     public func setLineWidth(_ lineWidth: Float) -> TextBox {
-        self.lineWidth = lineWidth
+        self.strokeWidth = lineWidth
         return self
     }
 
     /// Returns the width of the border lines.
     public func getLineWidth() -> Float {
-        return self.lineWidth
+        return self.strokeWidth
     }
 
     /// Sets the spacing between lines of text.
@@ -549,7 +555,7 @@ public class TextBox : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         var lines = getTextLines()
         let leading = font.getAscent(fontSize) + font.getDescent(fontSize) + spacing
-        if height > 0.0 {   // TextBox with fixed height
+        if fixedHeight {   // TextBox with fixed height
             if (Float(lines.count)*leading - spacing) > (height - 2*margin) {
                 var list = [String]()
                 for i in 0..<lines.count {

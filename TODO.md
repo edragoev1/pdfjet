@@ -187,6 +187,12 @@ Pick from the README limitations; the first three are the ones users hit.
       `getBackgroundColor` returns an optional and `setBackgroundColor(nil)`
       removes the background; the unused Java `colspan` and Java, C# and
       Swift `strokeDashPattern` fields are removed.
+      `TextBox`: `setLineWidth` sets the width the borders are drawn with, as
+      `setStrokeWidth` does, and `getLineWidth` returns it; before, both used
+      a field that nothing drew with; measuring a text box that grows to fit
+      its text with `drawOn(null)`, as `Cell.getHeight` does, or drawing it
+      twice no longer turns it into a text box of fixed height, which could
+      cut its last line to "...".
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
