@@ -281,7 +281,7 @@ public class Arc : IDrawable {
         float centerX = cx;
         float centerY = page.height - cy;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
-        float[] arcPoints = page.DrawArc(
+        page.DrawArc(
                 cx,
                 cy,
                 rx,
@@ -312,7 +312,7 @@ public class Arc : IDrawable {
         page.RestoreGraphicsState();
 
         page.AddEMC();
-        return arcPoints;
+        return new float[] {cx + rx, cy + ry};
     }
 }   // End of Arc.cs
 }   // End of namespace PDFjet.NET

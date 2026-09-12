@@ -204,7 +204,7 @@ func (rect *Rect) ScaleBy(factor float32) {
 // DrawOn draws this rect on the specified page.
 // @param page the page to draw this rect on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (rect *Rect) DrawOn(page *Page) []float32 {
+func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	const k float32 = 0.55228
 
 	// A rectangle carries no text, so it is decorative content.
@@ -295,5 +295,5 @@ func (rect *Rect) DrawOn(page *Page) []float32 {
 		})
 	}
 
-	return []float32{rect.x + rect.width, rect.y + rect.height}
+	return [2]float32{rect.x + rect.width, rect.y + rect.height}
 }

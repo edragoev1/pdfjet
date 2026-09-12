@@ -120,7 +120,7 @@ func (tf *TextFrame) drawBorder(page *Page) {
 
 // DrawOn draws as much of the text as fits in this frame on the page.
 // Call HasMoreText to check whether text is left for another page.
-func (tf *TextFrame) DrawOn(page *Page) []float32 {
+func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 
 	yText := tf.y + tf.f1.GetAscent()
 	for len(tf.paragraphs) > 0 {
@@ -150,7 +150,7 @@ func (tf *TextFrame) DrawOn(page *Page) []float32 {
 			} else {
 				tf.paragraphs = append(tf.paragraphs, tokens)
 				tf.drawBorder(page)
-				return []float32{tf.x + tf.w, tf.y + tf.h}
+				return [2]float32{tf.x + tf.w, tf.y + tf.h}
 			}
 		}
 
@@ -164,5 +164,5 @@ func (tf *TextFrame) DrawOn(page *Page) []float32 {
 	}
 
 	tf.drawBorder(page)
-	return []float32{tf.x + tf.w, tf.y + tf.h}
+	return [2]float32{tf.x + tf.w, tf.y + tf.h}
 }

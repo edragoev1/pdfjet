@@ -131,7 +131,7 @@ func XMarkCheckBox(page *Page, x, y, size float32) {
 // DrawOn draws the CheckBox on the specified Page.
 //
 // @param page the Page where the CheckBox is to be drawn.
-func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
+func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	page.AddBMC(structtype.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
 
 	checkBox.w = checkBox.font.ascent
@@ -202,7 +202,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) []float32 {
 		})
 	}
 
-	return []float32{
+	return [2]float32{
 		checkBox.x + 3.0*checkBox.w + checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
 		checkBox.y + checkBox.font.bodyHeight,
 	}

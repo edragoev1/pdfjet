@@ -182,7 +182,7 @@ func hasOnlyDigits(text string) bool {
 }
 
 // DrawOn draws this barcode on the specified page.
-func (barcode *Barcode) DrawOn(page *Page) []float32 {
+func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 	var xy [2]float32
 	switch barcode.barcodeType {
 	case EAN_13:
@@ -196,7 +196,7 @@ func (barcode *Barcode) DrawOn(page *Page) []float32 {
 	default:
 		log.Println("Unsupported Barcode Type.")
 	}
-	return xy[:]
+	return xy
 }
 
 // drawOnPageAtLocation draws this barcode on the specified page at the specified location.
@@ -279,7 +279,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 	}
 	x = barcode.drawEGuard(page, x, y, barcode.m1, h+8)
 
-	xy := []float32{x, y}
+	xy := [2]float32{x, y}
 	if barcode.font != nil {
 		// Standard UPC-A layout: the leading (number system) digit and the
 		// trailing check digit are printed in the quiet zones outside the
@@ -323,7 +323,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 		return [2]float32{xy[0], xy[1] + barcode.font.GetDescent()}
 	}
 
-	return [2]float32{xy[0], xy[1]}
+	return xy
 }
 
 func (barcode *Barcode) drawEGuard(page *Page, x, y, m1, h float32) float32 {
@@ -430,7 +430,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 		}
 	}
 
-	xy := []float32{x, y}
+	xy := [2]float32{x, y}
 	if barcode.font != nil {
 		if barcode.direction == LeftToRight {
 			text := NewTextLine(barcode.font, barcode.text)
@@ -451,7 +451,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 		}
 	}
 
-	return [2]float32{xy[0], xy[1]}
+	return xy
 }
 
 func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
@@ -460,7 +460,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 	// (e.g. drawing the same barcode on several pages).
 	fullText := "*" + barcode.text + "*"
 
-	xy := []float32{0.0, 0.0}
+	xy := [2]float32{0.0, 0.0}
 
 	x := x1
 	y := y1
@@ -580,7 +580,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		}
 	}
 
-	return [2]float32{xy[0], xy[1]}
+	return xy
 }
 
 func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
@@ -639,7 +639,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 	xRightGroupEnd := x
 	x = barcode.drawEGuard(page, x, y, barcode.m1, h+8)
 
-	xy := []float32{x, y}
+	xy := [2]float32{x, y}
 	if barcode.font != nil {
 		// Standard EAN-13 layout: the leading (number system) digit sits
 		// in the quiet zone to the left of the start guard bars, not
@@ -679,7 +679,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 		return [2]float32{xy[0], xy[1] + barcode.font.GetDescent()}
 	}
 
-	return [2]float32{xy[0], xy[1]}
+	return xy
 }
 
 func (barcode *Barcode) drawVertBar(page *Page, x, y, m1, h float32) {

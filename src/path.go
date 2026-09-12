@@ -140,7 +140,7 @@ func (path *Path) ScaleBy(factor float32) {
 // DrawOn draws this path on the page using the current selected color, penColor width, line pattern and line join style.
 // @param page the page to draw this path on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (path *Path) DrawOn(page *Page) []float32 {
+func (path *Path) DrawOn(page *Page) [2]float32 {
 	for _, point := range path.points {
 		point.x += path.xBox
 		point.y += path.yBox
@@ -178,5 +178,5 @@ func (path *Path) DrawOn(page *Page) []float32 {
 		point.y -= path.yBox
 	}
 
-	return []float32{xMax, yMax}
+	return [2]float32{xMax, yMax}
 }

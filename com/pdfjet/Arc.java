@@ -373,7 +373,7 @@ public class Arc implements Drawable {
         float centerX = cx;
         float centerY = page.height - cy;
         page.rotateAroundCenter(centerX, centerY, rotateDegrees);
-        float[] arcPoints = page.drawArc(
+        page.drawArc(
                 cx,
                 cy,
                 rx,
@@ -402,6 +402,6 @@ public class Arc implements Drawable {
         }
         page.restoreGraphicsState();
         page.addEMC();
-        return arcPoints;
+        return new float[] {cx + rx, cy + ry};
     }
 }   // End of Arc.java

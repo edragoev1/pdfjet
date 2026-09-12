@@ -525,13 +525,13 @@ func maxFloat32(a, b float32) float32 {
 // @param page the Page where the TextBlock is to be drawn.
 // @param draw flag specifying if text block component should actually be drawn on the page.
 // @return x and y coordinates of the bottom right corner of text block component.
-func (textBlock *TextBlock) DrawOn(page *Page) []float32 {
+func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	ascent := textBlock.font.ascent
 	descent := textBlock.font.descent
 	leading := (ascent + descent) * textBlock.lineSpacing
 	textLines := textBlock.getTextLinesWithOffsets()
 	if page == nil {
-		return []float32{
+		return [2]float32{
 			textBlock.x + textBlock.width,
 			maxFloat32(
 				textBlock.y+textBlock.height,
@@ -600,7 +600,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) []float32 {
 	//  })
 	//}
 
-	return []float32{
+	return [2]float32{
 		textBlock.x + textBlock.width,
 		maxFloat32(
 			textBlock.y+textBlock.height,

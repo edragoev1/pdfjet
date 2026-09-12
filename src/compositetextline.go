@@ -244,7 +244,7 @@ func (composite *CompositeTextLine) GetWidth() float32 {
 // DrawOn draws this line on the specified page.
 // @param page the page to draw this line on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (composite *CompositeTextLine) DrawOn(page *Page) []float32 {
+func (composite *CompositeTextLine) DrawOn(page *Page) [2]float32 {
 	var xMax float64
 	var yMax float64
 	// Loop through all the text lines and draw them on the page
@@ -253,5 +253,5 @@ func (composite *CompositeTextLine) DrawOn(page *Page) []float32 {
 		xMax = math.Max(xMax, float64(xy[0]))
 		yMax = math.Max(yMax, float64(xy[1]))
 	}
-	return []float32{float32(xMax), float32(yMax)}
+	return [2]float32{float32(xMax), float32(yMax)}
 }

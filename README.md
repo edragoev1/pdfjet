@@ -213,5 +213,6 @@ chain of setter calls it goes last, right before `DrawOn`:
 image.ScaleBy(0.5).SetLocation(50.0, 50.0).DrawOn(page)
 ```
 
-`DrawOn` returns `[]float32` in Go, like the `float[]` of Java: the bottom right
-corner of the component, or for an `Arc` the six coordinates of its points.
+`DrawOn` returns the x and y coordinates of the bottom right corner of the
+component, as a `float[]` in Java and C#, a `[Float]` in Swift and a
+`[2]float32` in Go.

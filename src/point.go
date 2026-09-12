@@ -280,7 +280,7 @@ func (point *Point) GetAlignment() int {
 // DrawOn draws this point on the specified page.
 // @param page the page to draw this point on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (point *Point) DrawOn(page *Page) []float32 {
+func (point *Point) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 
 	if point.hasFillColor == true && point.hasStrokeColor == true {
@@ -300,7 +300,7 @@ func (point *Point) DrawOn(page *Page) []float32 {
 
 	page.RestoreGraphicsState()
 
-	return []float32{point.x + point.r, point.y + point.r}
+	return [2]float32{point.x + point.r, point.y + point.r}
 }
 
 // SetStrokeWidth sets the width of the lines used to draw this point.

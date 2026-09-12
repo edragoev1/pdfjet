@@ -313,7 +313,7 @@ func (image *Image) SetActualText(actualText string) *Image {
 // DrawOn draws this image on the specified page.
 // @param page the page to draw this image on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (image *Image) DrawOn(page *Page) []float32 {
+func (image *Image) DrawOn(page *Page) [2]float32 {
 	page.AddBMC(structtype.P, image.language, image.actualText, image.altDescription)
 
 	image.x += image.xBox
@@ -411,7 +411,7 @@ func (image *Image) DrawOn(page *Page) []float32 {
 		})
 	}
 
-	return []float32{image.x + image.w, image.y + image.h}
+	return [2]float32{image.x + image.w, image.y + image.h}
 }
 
 // GetWidth returns the width of this image when drawn on the page.

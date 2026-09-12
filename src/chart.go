@@ -248,10 +248,10 @@ func (chart *Chart) SetXYChart(xyChart bool) *Chart {
 
 // DrawOn draws chart on the specified page.
 // @param page the page to draw chart on.
-func (chart *Chart) DrawOn(page *Page) []float32 {
+func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	// Guard against null or empty data
 	if chart.chartData == nil || len(chart.chartData) == 0 {
-		return []float32{chart.x1 + chart.w, chart.y1 + chart.h}
+		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 
 	chart.x2 = chart.x1 + chart.w
@@ -396,7 +396,7 @@ func (chart *Chart) DrawOn(page *Page) []float32 {
 	page.SetDefaultStrokeDashPattern()
 	page.SetPenColor(color.Black)
 
-	return []float32{chart.x1 + chart.w, chart.y1 + chart.h}
+	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 }
 
 func (chart *Chart) formatString() string {

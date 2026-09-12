@@ -339,12 +339,12 @@ func (table *Table) GetColumnAtIndex(index int) []*Cell {
 // DrawOn draws this table on the specified page.
 // @param page the page to draw this table on.
 // @return Point the point on the page where to draw the next component.
-func (table *Table) DrawOn(page *Page) []float32 {
+func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
 	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
-	return xy[:]
+	return xy
 }
 
 // DrawOnPages draws the table on pdf pages with the specified size.

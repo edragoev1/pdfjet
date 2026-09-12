@@ -172,7 +172,7 @@ func (box *Box) ScaleBy(factor float32) {
 // DrawOn draws this box on the specified page.
 // @param page the page to draw this box on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (box *Box) DrawOn(page *Page) []float32 {
+func (box *Box) DrawOn(page *Page) [2]float32 {
 	const k float32 = 0.5517
 
 	page.AddBMC(box.structureType, box.language, box.actualText, box.altDescription)
@@ -236,5 +236,5 @@ func (box *Box) DrawOn(page *Page) []float32 {
 			altDescription: box.altDescription,
 		})
 	}
-	return []float32{box.x + box.w, box.y + box.h + box.width}
+	return [2]float32{box.x + box.w, box.y + box.h + box.width}
 }

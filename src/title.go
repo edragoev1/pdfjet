@@ -50,7 +50,7 @@ func (title *Title) SetLocation(x, y float32) Drawable {
 }
 
 // DrawOn draws the title.
-func (title *Title) DrawOn(page *Page) []float32 {
+func (title *Title) DrawOn(page *Page) [2]float32 {
 	if title.prefix != nil {
 		title.prefix.DrawOn(page)
 	}

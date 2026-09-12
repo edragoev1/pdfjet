@@ -195,7 +195,7 @@ func (arc *Arc) SetScaleFactor(factor float32) *Arc {
 }
 
 // DrawOn draws this arc on the specified page.
-func (arc *Arc) DrawOn(page *Page) []float32 {
+func (arc *Arc) DrawOn(page *Page) [2]float32 {
 	// If a start point was set, calculate center so arc begins there
 	if arc.line != nil {
 		dx := arc.line.x2 - arc.line.x1
@@ -223,7 +223,7 @@ func (arc *Arc) DrawOn(page *Page) []float32 {
 	centerY := page.height - arc.cy
 
 	page.RotateAroundCenter(centerX, centerY, arc.rotateDegrees)
-	arcPoints := page.DrawArc(
+	page.DrawArc(
 		arc.cx,
 		arc.cy,
 		arc.rx,
@@ -256,5 +256,5 @@ func (arc *Arc) DrawOn(page *Page) []float32 {
 	page.RestoreGraphicsState()
 	page.AddEMC()
 
-	return arcPoints
+	return [2]float32{arc.cx + arc.rx, arc.cy + arc.ry}
 }

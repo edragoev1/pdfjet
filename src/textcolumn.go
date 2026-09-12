@@ -131,7 +131,7 @@ func (textColumn *TextColumn) GetSize() *Dimension {
 // @param page the page to draw this text column on.
 // @param draw the boolean value that specified if the text column should actually be drawn on the page.
 // @return the point with x and y coordinates of the location where to draw the next component.
-func (textColumn *TextColumn) DrawOn(page *Page) []float32 {
+func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	var xy []float32
 	for _, paragraph := range textColumn.paragraphs {
 		textColumn.alignment = paragraph.alignment
@@ -142,7 +142,7 @@ func (textColumn *TextColumn) DrawOn(page *Page) []float32 {
 	if textColumn.GetHeight() > xy[1] {
 		xy[1] = textColumn.GetHeight()
 	}
-	return xy
+	return [2]float32{xy[0], xy[1]}
 }
 
 func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) []float32 {

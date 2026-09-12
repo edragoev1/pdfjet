@@ -272,7 +272,7 @@ public class Arc : Drawable {
         let centerX = cx
         let centerY = page!.height - cy
         page!.rotateAroundCenter(centerX, centerY, rotateDegrees)
-        let arcPoints = page!.drawArc(cx, cy, rx, ry, startAngle, sweepDegrees)
+        _ = page!.drawArc(cx, cy, rx, ry, startAngle, sweepDegrees)
         if strokeColor != nil && strokeDashPattern != nil {
             page!.setStrokeDashPattern(strokeDashPattern!)
         }
@@ -295,6 +295,6 @@ public class Arc : Drawable {
         }
         page!.restoreGraphicsState()
         page!.addEMC()
-        return arcPoints
+        return [cx + rx, cy + ry]
     }
 }   // End of Arc.swift

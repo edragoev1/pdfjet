@@ -87,7 +87,7 @@ func (text *Text) SetBorderColorRGB(borderColor [3]float32) *Text {
 }
 
 // DrawOn draws the text on the page.
-func (text *Text) DrawOn(page *Page) []float32 {
+func (text *Text) DrawOn(page *Page) [2]float32 {
 	text.xText = text.x1
 	text.yText = text.y1 + text.paragraphs[0].GetTextLines()[0].GetFont().ascent
 	for _, paragraph := range text.paragraphs {
@@ -118,7 +118,7 @@ func (text *Text) DrawOn(page *Page) []float32 {
 		rect.DrawOn(page)
 	}
 
-	return []float32{text.x1 + text.width, text.y1 + height}
+	return [2]float32{text.x1 + text.width, text.y1 + height}
 }
 
 func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []float32 {

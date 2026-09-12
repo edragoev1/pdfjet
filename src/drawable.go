@@ -12,7 +12,7 @@ type Drawable interface {
 	// DrawOn draws the component implementing this interface on the PDF page.
 	// @param page the page to draw on.
 	// @return x and y coordinates of the bottom right corner of this component.
-	DrawOn(page *Page) []float32
+	DrawOn(page *Page) [2]float32
 
 	// SetLocation sets the location of the component on the page.
 	// It returns the component as a Drawable, so in a chain of setter calls

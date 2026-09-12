@@ -68,7 +68,7 @@ func (attachment *FileAttachment) SetDescription(description string) *FileAttach
 }
 
 // DrawOn draws this component on the page.
-func (attachment *FileAttachment) DrawOn(page *Page) []float32 {
+func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
 	annotation := &Annotation{
 		annotationType: AnnotationFileAttachment,
 		x1:             attachment.x,
@@ -87,5 +87,5 @@ func (attachment *FileAttachment) DrawOn(page *Page) []float32 {
 		altDescription: ""}
 	annotation.fileAttachment = attachment
 	page.AddAnnotation(annotation)
-	return []float32{attachment.x + attachment.h, attachment.y + attachment.h}
+	return [2]float32{attachment.x + attachment.h, attachment.y + attachment.h}
 }

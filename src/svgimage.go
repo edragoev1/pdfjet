@@ -322,7 +322,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 }
 
 // DrawOn draws this SVG image on the specified page.
-func (image *SVGImage) DrawOn(page *Page) []float32 {
+func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {
 		image.drawPath(path, page)
@@ -347,5 +347,5 @@ func (image *SVGImage) DrawOn(page *Page) []float32 {
 			altDescription: image.altDescription,
 		})
 	}
-	return []float32{image.x + image.w, image.y + image.h}
+	return [2]float32{image.x + image.w, image.y + image.h}
 }
