@@ -5,6 +5,10 @@ package com.pdfjet;
  * .ttf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class JetBrainsMono {
+    /** The default constructor */
+    public JetBrainsMono() {
+    }
+
     /** JetBrains Mono Bold */
     public static final String Bold             = "fonts/JetBrainsMono/JetBrainsMono-Bold.ttf.stream";
     /** JetBrains Mono Bold Italic */

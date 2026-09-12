@@ -5,6 +5,10 @@ package com.pdfjet;
  * .ttf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class SourceSerif4 {
+    /** The default constructor */
+    public SourceSerif4() {
+    }
+
     /** Source Serif 4 Black */
     public static final String Black            = "fonts/SourceSerif4/SourceSerif4-Black.ttf.stream";
     /** Source Serif 4 Black Italic */
