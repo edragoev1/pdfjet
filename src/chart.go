@@ -122,7 +122,7 @@ func (chart *Chart) GetData() [][]*Point {
 }
 
 // SetLocation sets the location of chart on the page.
-func (chart *Chart) SetLocation(x, y float32) *Chart {
+func (chart *Chart) SetLocation(x, y float32) Drawable {
 	chart.x1 = x
 	chart.y1 = y
 	return chart
@@ -248,10 +248,10 @@ func (chart *Chart) SetXYChart(xyChart bool) *Chart {
 
 // DrawOn draws chart on the specified page.
 // @param page the page to draw chart on.
-func (chart *Chart) DrawOn(page *Page) {
+func (chart *Chart) DrawOn(page *Page) []float32 {
 	// Guard against null or empty data
 	if chart.chartData == nil || len(chart.chartData) == 0 {
-		return
+		return []float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 
 	chart.x2 = chart.x1 + chart.w
@@ -395,6 +395,8 @@ func (chart *Chart) DrawOn(page *Page) {
 	page.SetDefaultLineWidth()
 	page.SetDefaultStrokeDashPattern()
 	page.SetPenColor(color.Black)
+
+	return []float32{chart.x1 + chart.w, chart.y1 + chart.h}
 }
 
 func (chart *Chart) formatString() string {

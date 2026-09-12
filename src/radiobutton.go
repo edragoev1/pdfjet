@@ -46,7 +46,7 @@ func (radioButton *RadioButton) SetFontSize(fontSize float32) *RadioButton {
 // @param x the x coordinate on the Page.
 // @param y the y coordinate on the Page.
 // @return this RadioButton.
-func (radioButton *RadioButton) SetLocation(x, y float32) *RadioButton {
+func (radioButton *RadioButton) SetLocation(x, y float32) Drawable {
 	radioButton.x = x
 	radioButton.y = y
 	return radioButton

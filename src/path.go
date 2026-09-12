@@ -123,7 +123,7 @@ func (path *Path) GetLineJoinStyle() int {
 }
 
 // SetLocation sets the location of the path.
-func (path *Path) SetLocation(x, y float32) *Path {
+func (path *Path) SetLocation(x, y float32) Drawable {
 	path.xBox += x
 	path.yBox += y
 	return path

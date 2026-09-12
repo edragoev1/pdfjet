@@ -94,7 +94,7 @@ func (point *Point) Copy() *Point {
 // SetLocation sets the location (x, y) of this point.
 // @param x the x coordinate of this point when drawn on the page.
 // @param y the y coordinate of this point when drawn on the page.
-func (point *Point) SetLocation(x, y float32) *Point {
+func (point *Point) SetLocation(x, y float32) Drawable {
 	point.x = x
 	point.y = y
 	return point
@@ -280,7 +280,7 @@ func (point *Point) GetAlignment() int {
 // DrawOn draws this point on the specified page.
 // @param page the page to draw this point on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (point *Point) DrawOn(page *Page) [3]float32 {
+func (point *Point) DrawOn(page *Page) []float32 {
 	page.SaveGraphicsState()
 
 	if point.hasFillColor == true && point.hasStrokeColor == true {
@@ -300,7 +300,7 @@ func (point *Point) DrawOn(page *Page) [3]float32 {
 
 	page.RestoreGraphicsState()
 
-	return [3]float32{point.x + point.r, point.y + point.r}
+	return []float32{point.x + point.r, point.y + point.r}
 }
 
 // SetStrokeWidth sets the width of the lines used to draw this point.

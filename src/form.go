@@ -34,7 +34,7 @@ func NewForm(fields []*Field) *Form {
 }
 
 // SetLocation sets location x and y.
-func (form *Form) SetLocation(x, y float32) *Form {
+func (form *Form) SetLocation(x, y float32) Drawable {
 	form.x = x
 	form.y = y
 	return form
@@ -112,9 +112,6 @@ func (form *Form) SetValueColorRGB(color [3]float32) *Form {
 // @param page the page to draw form on.
 // @return x and y coordinates of the bottom right corner of form component.
 func (form *Form) DrawOn(page *Page) []float32 {
-	if page == nil {
-		return []float32{}
-	}
 
 	yField := float32(0.0)
 	xOffset := float32(3.0)

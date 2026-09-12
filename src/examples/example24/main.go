@@ -23,20 +23,20 @@ func Example24() {
 	textLine1.SetTextDirection(0)
 	textLine1.SetLocation(50.0, 50.0)
 	point := textLine1.DrawOn(page)
-	image1.SetLocation(50.0, point[1]+5.0).ScaleBy(0.25).DrawOn(page)
+	image1.ScaleBy(0.25).SetLocation(50.0, point[1]+5.0).DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait)
 	textLine2 := pdfjet.NewTextLine(font, "This is a PNG image.")
 	textLine2.SetTextDirection(0)
 	textLine2.SetLocation(50.0, 50.0)
 	point = textLine2.DrawOn(page)
-	image2.SetLocation(50.0, point[1]+5.0).ScaleBy(0.75).DrawOn(page)
+	image2.ScaleBy(0.75).SetLocation(50.0, point[1]+5.0).DrawOn(page)
 
 	textLine3 := pdfjet.NewTextLine(font, "This is a BMP image.")
 	textLine3.SetTextDirection(0)
 	textLine3.SetLocation(50.0, 620.0)
 	point = textLine3.DrawOn(page)
-	image3.SetLocation(50.0, point[1]+5.0).ScaleBy(0.75).DrawOn(page)
+	image3.ScaleBy(0.75).SetLocation(50.0, point[1]+5.0).DrawOn(page)
 
 	pdf.Complete()
 }

@@ -107,7 +107,7 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 // SetLocation sets the location (x, y) of the top left corner of table on the page.
 // @param x the x coordinate of the top left point of the table.
 // @param y the y coordinate of the top left point of the table.
-func (table *Table) SetLocation(x, y float32) *Table {
+func (table *Table) SetLocation(x, y float32) Drawable {
 	table.x1 = x
 	table.y1 = y
 	return table
@@ -339,11 +339,12 @@ func (table *Table) GetColumnAtIndex(index int) []*Cell {
 // DrawOn draws this table on the specified page.
 // @param page the page to draw this table on.
 // @return Point the point on the page where to draw the next component.
-func (table *Table) DrawOn(page *Page) [2]float32 {
+func (table *Table) DrawOn(page *Page) []float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
-	return table.drawTableRows(page, table.drawHeaderRows(page, 0))
+	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
+	return xy[:]
 }
 
 // DrawOnPages draws the table on pdf pages with the specified size.

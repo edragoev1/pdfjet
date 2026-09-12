@@ -33,7 +33,7 @@ func NewBaseAnnotation() *BaseAnnotation {
 }
 
 // SetLocation sets the first point of the annotation.
-func (b *BaseAnnotation) SetLocation(x, y float32) *BaseAnnotation {
+func (b *BaseAnnotation) SetLocation(x, y float32) Drawable {
 	b.point1 = [2]float32{x, y}
 	return b
 }
@@ -118,7 +118,7 @@ func rotateAroundCenter(point, center [2]float32, degrees float64) [2]float32 {
 }
 
 // DrawOn draws the annotation on the specified page.
-func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
+func (b *BaseAnnotation) DrawOn(page *Page) []float32 {
 	page.AddAnnotation(&Annotation{
 		annotationType: b.annotationType,
 		x1:             b.point1[0],
@@ -136,5 +136,5 @@ func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
 		actualText:     b.actualText,
 		altDescription: b.altDescription,
 	})
-	return b.point2
+	return b.point2[:]
 }

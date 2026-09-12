@@ -147,7 +147,7 @@ func (composite *CompositeTextLine) AddComponent(textLine *TextLine) {
 // the new location set here.
 // @param x the x coordinate.
 // @param y the y coordinate.
-func (composite *CompositeTextLine) SetLocation(x, y float32) *CompositeTextLine {
+func (composite *CompositeTextLine) SetLocation(x, y float32) Drawable {
 	composite.position[composite.X] = x
 	composite.position[composite.Y] = y
 	composite.current[composite.X] = x

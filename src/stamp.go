@@ -48,7 +48,7 @@ func (s *Stamp) WithFont(font *Font) *Stamp {
 }
 
 // SetLocation sets the location and returns self for chaining
-func (s *Stamp) SetLocation(x, y float32) *Stamp {
+func (s *Stamp) SetLocation(x, y float32) Drawable {
 	s.x = x
 	s.y = y
 	return s
@@ -365,7 +365,7 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 }
 
 // DrawOn draws the stamp on a page
-func (s *Stamp) DrawOn(page *Page) [2]float32 {
+func (s *Stamp) DrawOn(page *Page) []float32 {
 	page.SaveGraphicsState()
 
 	drawX := s.x
@@ -412,5 +412,5 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 
 	page.RestoreGraphicsState()
 
-	return [2]float32{s.x + s.width, s.y + s.height}
+	return []float32{s.x + s.width, s.y + s.height}
 }

@@ -31,7 +31,7 @@ func NewFileAttachment(pdf *PDF, embeddedFile *EmbeddedFile) *FileAttachment {
 }
 
 // SetLocation sets the location.
-func (attachment *FileAttachment) SetLocation(x, y float32) *FileAttachment {
+func (attachment *FileAttachment) SetLocation(x, y float32) Drawable {
 	attachment.x = x
 	attachment.y = y
 	return attachment
@@ -68,7 +68,7 @@ func (attachment *FileAttachment) SetDescription(description string) *FileAttach
 }
 
 // DrawOn draws this component on the page.
-func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
+func (attachment *FileAttachment) DrawOn(page *Page) []float32 {
 	annotation := &Annotation{
 		annotationType: AnnotationFileAttachment,
 		x1:             attachment.x,
@@ -87,5 +87,5 @@ func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
 		altDescription: ""}
 	annotation.fileAttachment = attachment
 	page.AddAnnotation(annotation)
-	return [2]float32{attachment.x + attachment.h, attachment.y + attachment.h}
+	return []float32{attachment.x + attachment.h, attachment.y + attachment.h}
 }

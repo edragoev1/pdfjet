@@ -57,7 +57,7 @@ func NewBoxAt(x, y, w, h float32) *Box {
 // SetLocation sets the location of this box on the page.
 // @param x the x coordinate of the top left corner of this box when drawn on the page.
 // @param y the y coordinate of the top left corner of this box when drawn on the page.
-func (box *Box) SetLocation(x, y float32) *Box {
+func (box *Box) SetLocation(x, y float32) Drawable {
 	box.x = x
 	box.y = y
 	return box

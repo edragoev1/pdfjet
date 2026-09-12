@@ -39,9 +39,14 @@ func Example47() {
 		textFrame.SetLocation(x, y)
 		textFrame.SetWidth(w)
 		textFrame.SetHeight(h)
-		_, err := textFrame.DrawOn(page)
-		if err != nil {
-			return
+		textFrame.DrawOn(page)
+
+		if textFrame.HasMoreText() {
+			x += w + gap
+			textFrame.SetLocation(x, y)
+			textFrame.SetWidth(w)
+			textFrame.SetHeight(h)
+			textFrame.DrawOn(page)
 		}
 
 		if textFrame.HasMoreText() {
@@ -49,21 +54,7 @@ func Example47() {
 			textFrame.SetLocation(x, y)
 			textFrame.SetWidth(w)
 			textFrame.SetHeight(h)
-			_, err := textFrame.DrawOn(page)
-			if err != nil {
-				return
-			}
-		}
-
-		if textFrame.HasMoreText() {
-			x += w + gap
-			textFrame.SetLocation(x, y)
-			textFrame.SetWidth(w)
-			textFrame.SetHeight(h)
-			_, err := textFrame.DrawOn(page)
-			if err != nil {
-				return
-			}
+			textFrame.DrawOn(page)
 		}
 
 		x = 50.0

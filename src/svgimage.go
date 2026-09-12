@@ -248,7 +248,7 @@ func (image *SVGImage) ScaleBy(factor float32) {
 }
 
 // SetLocation sets the location of the top left corner of this image on the page.
-func (image *SVGImage) SetLocation(x, y float32) *SVGImage {
+func (image *SVGImage) SetLocation(x, y float32) Drawable {
 	image.x = x
 	image.y = y
 	return image

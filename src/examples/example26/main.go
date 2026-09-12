@@ -23,35 +23,35 @@ func Example26() {
 	var y float32 = 50.0
 
 	pdfjet.NewCheckBox(f1, "Hello").
-		SetLocation(x, y).
 		SetCheckmark(color.Blue).
 		Check(mark.Check).
+		SetLocation(x, y).
 		DrawOn(page)
 
 	y += 30.0
 	pdfjet.NewCheckBox(f1, "World!").
-		SetLocation(x, y).
 		SetCheckmark(color.Blue).
 		SetURIAction("http://pdfjet.com").
 		Check(mark.Check).
+		SetLocation(x, y).
 		DrawOn(page)
 
 	y += 30.0
 	pdfjet.NewCheckBox(f1, "This is a test.").
-		SetLocation(x, y).
 		SetURIAction("http://pdfjet.com").
+		SetLocation(x, y).
 		DrawOn(page)
 
 	y += 30.0
 	pdfjet.NewRadioButton(f1, "Hello, World!").
-		SetLocation(x, y).
 		SelectButton(true).
+		SetLocation(x, y).
 		DrawOn(page)
 
 	xy := pdfjet.NewRadioButton(f1, "Yes").
-		SetLocation(x+100.0, 50.0).
 		SetURIAction("http://pdfjet.com").
 		SelectButton(true).
+		SetLocation(x+100.0, 50.0).
 		DrawOn(page)
 
 	xy = pdfjet.NewRadioButton(f1, "No").
@@ -59,15 +59,15 @@ func Example26() {
 		DrawOn(page)
 
 	xy = pdfjet.NewCheckBox(f1, "Hello").
-		SetLocation(xy[0], 50.0).
 		SetCheckmark(color.Blue).
 		Check(mark.X).
+		SetLocation(xy[0], 50.0).
 		DrawOn(page)
 
 	xy = pdfjet.NewCheckBox(f1, "Yahoo").
-		SetLocation(xy[0], 50.0).
 		SetCheckmark(color.Blue).
 		Check(mark.Check).
+		SetLocation(xy[0], 50.0).
 		DrawOn(page)
 
 	box := pdfjet.NewBox()

@@ -39,10 +39,20 @@ func (title *Title) SetOffset(offset float32) *Title {
 	return title
 }
 
+// SetLocation sets the location of the title on the page.
+// @param x the x coordinate.
+// @param y the y coordinate.
+// @return this Title.
+func (title *Title) SetLocation(x, y float32) Drawable {
+	title.prefix.SetLocation(x, y)
+	title.textLine.SetLocation(x, y)
+	return title
+}
+
 // DrawOn draws the title.
-func (title *Title) DrawOn(page *Page) {
+func (title *Title) DrawOn(page *Page) []float32 {
 	if title.prefix != nil {
 		title.prefix.DrawOn(page)
 	}
-	title.textLine.DrawOn(page)
+	return title.textLine.DrawOn(page)
 }

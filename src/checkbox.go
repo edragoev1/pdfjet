@@ -71,7 +71,7 @@ func (checkBox *CheckBox) SetCheckmark(checkColor int32) *CheckBox {
 // @param x the x coordinate on the Page.
 // @param y the y coordinate on the Page.
 // @return the CheckBox.
-func (checkBox *CheckBox) SetLocation(x, y float32) *CheckBox {
+func (checkBox *CheckBox) SetLocation(x, y float32) Drawable {
 	checkBox.x = x
 	checkBox.y = y
 	return checkBox

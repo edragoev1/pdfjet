@@ -57,7 +57,7 @@ func NewRect(x, y, w, h float32) *Rect {
 // SetLocation sets the location of this rect on the page.
 // @param x the x coordinate of the top left corner of this rect when drawn on the page.
 // @param y the y coordinate of the top left corner of this rect when drawn on the page.
-func (rect *Rect) SetLocation(x, y float32) *Rect {
+func (rect *Rect) SetLocation(x, y float32) Drawable {
 	rect.x = x
 	rect.y = y
 	return rect
@@ -204,7 +204,7 @@ func (rect *Rect) ScaleBy(factor float32) {
 // DrawOn draws this rect on the specified page.
 // @param page the page to draw this rect on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (rect *Rect) DrawOn(page *Page) [2]float32 {
+func (rect *Rect) DrawOn(page *Page) []float32 {
 	const k float32 = 0.55228
 
 	// A rectangle carries no text, so it is decorative content.
@@ -295,5 +295,5 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 		})
 	}
 
-	return [2]float32{rect.x + rect.width, rect.y + rect.height}
+	return []float32{rect.x + rect.width, rect.y + rect.height}
 }

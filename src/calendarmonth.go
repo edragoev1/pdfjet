@@ -59,7 +59,7 @@ func (calendarMonth *CalendarMonth) SetBodyFont(font *Font) *CalendarMonth {
 }
 
 // SetLocation sets the location of the top left corner of the calendar.
-func (calendarMonth *CalendarMonth) SetLocation(x, y float32) *CalendarMonth {
+func (calendarMonth *CalendarMonth) SetLocation(x, y float32) Drawable {
 	calendarMonth.x1 = x
 	calendarMonth.y1 = y
 	return calendarMonth
@@ -78,7 +78,7 @@ func (calendarMonth *CalendarMonth) SetCellHeight(height float32) *CalendarMonth
 }
 
 // DrawOn draws the calendar month on the page.
-func (calendarMonth *CalendarMonth) DrawOn(page *Page) {
+func (calendarMonth *CalendarMonth) DrawOn(page *Page) []float32 {
 	for row := 0; row < 7; row++ {
 		for col := 0; col < 7; col++ {
 			if row == 0 {
@@ -115,6 +115,7 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) {
 			}
 		}
 	}
+	return []float32{calendarMonth.x1 + 7*calendarMonth.dx, calendarMonth.y1 + 7*calendarMonth.dy}
 }
 
 func (calendarMonth *CalendarMonth) isLeapYear(year int) bool {

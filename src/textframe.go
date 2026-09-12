@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -66,7 +65,7 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 }
 
 // SetLocation sets the location of the top left corner of this text frame.
-func (tf *TextFrame) SetLocation(x, y float32) *TextFrame {
+func (tf *TextFrame) SetLocation(x, y float32) Drawable {
 	tf.x = x
 	tf.y = y
 	return tf
@@ -121,10 +120,7 @@ func (tf *TextFrame) drawBorder(page *Page) {
 
 // DrawOn draws as much of the text as fits in this frame on the page.
 // Call HasMoreText to check whether text is left for another page.
-func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
-	if page == nil {
-		return nil, fmt.Errorf("page cannot be nil")
-	}
+func (tf *TextFrame) DrawOn(page *Page) []float32 {
 
 	yText := tf.y + tf.f1.GetAscent()
 	for len(tf.paragraphs) > 0 {
@@ -154,7 +150,7 @@ func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
 			} else {
 				tf.paragraphs = append(tf.paragraphs, tokens)
 				tf.drawBorder(page)
-				return []float32{tf.x + tf.w, tf.y + tf.h}, nil
+				return []float32{tf.x + tf.w, tf.y + tf.h}
 			}
 		}
 
@@ -168,5 +164,5 @@ func (tf *TextFrame) DrawOn(page *Page) ([]float32, error) {
 	}
 
 	tf.drawBorder(page)
-	return []float32{tf.x + tf.w, tf.y + tf.h}, nil
+	return []float32{tf.x + tf.w, tf.y + tf.h}
 }

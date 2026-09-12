@@ -86,7 +86,7 @@ func (line *Line) SetStartPoint(x, y float32) *Line {
 }
 
 // SetLocation sets the start point of this line.
-func (line *Line) SetLocation(x, y float32) *Line {
+func (line *Line) SetLocation(x, y float32) Drawable {
 	line.x1 = x
 	line.y1 = y
 	return line
@@ -197,7 +197,7 @@ func (line *Line) ScaleBy(factor float32) *Line {
 //
 // @param page the page to draw this line on.
 // @return x and y coordinates of the bottom right corner of this component.
-func (line *Line) DrawOn(page *Page) [2]float32 {
+func (line *Line) DrawOn(page *Page) []float32 {
 	page.AddBMC(structtype.P, line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()
 	page.SetPenColor(line.color)
@@ -210,5 +210,5 @@ func (line *Line) DrawOn(page *Page) [2]float32 {
 
 	xMax := math.Max(float64(line.x1), float64(line.x2))
 	yMax := math.Max(float64(line.y1), float64(line.y2))
-	return [2]float32{float32(xMax), float32(yMax)}
+	return []float32{float32(xMax), float32(yMax)}
 }

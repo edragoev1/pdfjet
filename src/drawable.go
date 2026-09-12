@@ -5,15 +5,20 @@
 
 package pdfjet
 
-// Drawable is interface that is required for components that can be drawn on a PDF page as part of Optional Content Group.
+// Drawable is the interface of the components that can be drawn on a page,
+// which a Container or an OptionalContentGroup can hold.
 // @author Mark Paxton, Evgeni Dragoev
-//
-// Unlike the Java, C# and Swift ports, it does not declare SetLocation: each
-// type's SetLocation returns that type so calls can be chained, and a Go type
-// only satisfies an interface with an exact signature match.
 type Drawable interface {
 	// DrawOn draws the component implementing this interface on the PDF page.
 	// @param page the page to draw on.
 	// @return x and y coordinates of the bottom right corner of this component.
-	DrawOn(page *Page) [2]float32
+	DrawOn(page *Page) []float32
+
+	// SetLocation sets the location of the component on the page.
+	// It returns the component as a Drawable, so in a chain of setter calls
+	// SetLocation goes last, right before DrawOn.
+	// @param x the x coordinate of the top left corner of the component.
+	// @param y the y coordinate of the top left corner of the component.
+	// @return this component.
+	SetLocation(x, y float32) Drawable
 }

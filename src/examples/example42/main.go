@@ -42,9 +42,9 @@ func Example42() {
 		SetLabelFontSize(9.0).
 		SetValueFont(f2).
 		SetValueFontSize(10.0).
-		SetLocation(50.0, 50.0).
 		SetFormWidth(w).
 		SetLineWidth(0.2).
+		SetLocation(50.0, 50.0).
 		DrawOn(page)
 
 	rect := pdfjet.NewRect(xy[0], xy[1], 10.0, 10.0)

@@ -203,7 +203,15 @@ in the password hashes.
 ## Port differences
 
 Public setters return the object they were called on, so calls can be chained.
-In Java, C# and Swift the `Drawable` interface declares `setLocation` as well as
-`drawOn`. In Go it declares only `DrawOn`: a Go type only satisfies an interface
-with an exact signature match, and each Go `SetLocation` returns its own type so
-it can be chained.
+The `Drawable` interface declares `drawOn` and `setLocation` in all four ports.
+Java, C# and Swift let each class return its own type from `setLocation`. Go
+does not: a Go type only satisfies an interface with an exact signature match,
+so in Go the `SetLocation` of a `Drawable` type returns `Drawable`, and in a
+chain of setter calls it goes last, right before `DrawOn`:
+
+```go
+image.ScaleBy(0.5).SetLocation(50.0, 50.0).DrawOn(page)
+```
+
+`DrawOn` returns `[]float32` in Go, like the `float[]` of Java: the bottom right
+corner of the component, or for an `Arc` the six coordinates of its points.

@@ -46,7 +46,7 @@ func NewContainer(width, height float32) *Container {
 // SetLocation sets the location of the container on the page.
 //
 // x is the horizontal coordinate and y is the vertical coordinate.
-func (c *Container) SetLocation(x, y float32) *Container {
+func (c *Container) SetLocation(x, y float32) Drawable {
 	c.X = x
 	c.Y = y
 	return c
@@ -158,7 +158,7 @@ func RotateAroundCenter(point, center []float32, degrees float64) []float32 {
 //
 // Returns a slice containing the bottom-right position of the container.
 // Returns an error if drawing fails.
-func (c *Container) DrawOn(page *Page) [2]float32 {
+func (c *Container) DrawOn(page *Page) []float32 {
 	page.SaveGraphicsState()
 
 	// 1) Translate container to its final position
@@ -237,5 +237,5 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.RestoreGraphicsState()
 
 	// Return bottom-right position of container
-	return [2]float32{c.X + c.Width, c.Y + c.Height}
+	return []float32{c.X + c.Width, c.Y + c.Height}
 }

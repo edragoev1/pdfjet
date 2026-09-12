@@ -40,7 +40,7 @@ func NewArc() *Arc {
 }
 
 // SetLocation sets the center of this arc.
-func (arc *Arc) SetLocation(cx, cy float32) *Arc {
+func (arc *Arc) SetLocation(cx, cy float32) Drawable {
 	arc.SetCenterXY(cx, cy)
 	return arc
 }

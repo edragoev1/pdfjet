@@ -121,7 +121,7 @@ func (textBox *TextBox) GetText() string {
 }
 
 // SetLocation sets the location of this text box.
-func (textBox *TextBox) SetLocation(x, y float32) *TextBox {
+func (textBox *TextBox) SetLocation(x, y float32) Drawable {
 	textBox.x = x
 	textBox.y = y
 	return textBox
@@ -523,7 +523,7 @@ func (textBox *TextBox) getTextLines() []string {
 
 // DrawOn draws this text box on the specified page.
 // Returns the x and y coordinates of the bottom right corner of this component.
-func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
+func (textBox *TextBox) DrawOn(page *Page) []float32 {
 	lines := textBox.getTextLines()
 	font := textBox.font
 	fallbackFont := textBox.fallbackFont
@@ -670,7 +670,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 		}
 		page.SetTextDirection(0)
 	}
-	return [2]float32{textBox.x + textBox.width, textBox.y + textBox.height}
+	return []float32{textBox.x + textBox.width, textBox.y + textBox.height}
 }
 
 func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float32) {
