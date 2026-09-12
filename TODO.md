@@ -160,7 +160,9 @@ Pick from the README limitations; the first three are the ones users hit.
       raw ints must change), negative `/P`, Go module path `/v9`, `Box`
       removed in favor of `Rect` (`setColor` becomes `setBorderColor`, or
       `setFillColor` with `setFillShape(true)`; `setLineWidth` and `setPattern`
-      become `setBorderWidth` and `setBorderPattern`), and whatever week 1
+      become `setBorderWidth` and `setBorderPattern`), `TextFrame`
+      `setBorderColor` turning the border on (as `Text` does) and
+      `drawOn(null)` measuring instead of throwing or exiting, and whatever week 1
       decides for `Table`/`TextBlock`/`SVGImage`/`DonutChart` and `Stamp`.
       Then: Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
