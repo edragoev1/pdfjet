@@ -10,7 +10,7 @@ import Foundation
 /// Used to create path objects.
 /// The path objects may consist of lines, splines or both.
 ///
-/// Please see Example_02.
+/// Please see Example_20 and Example_22.
 ///
 public class Path : Drawable {
     private var color = Color.black
@@ -19,7 +19,7 @@ public class Path : Drawable {
     private var fillShape = false
     private var closePath = false
 
-    private var points: [Point]?
+    private var points = [Point]()
 
     private var xBox: Float = 0.0
     private var yBox: Float = 0.0
@@ -31,17 +31,17 @@ public class Path : Drawable {
     /// The default constructor.
     ///
     public init() {
-        points = Array<Point>()
     }
 
     ///
     /// Adds a point to this path.
     ///
     /// - Parameter point: the point to add.
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func add(_ point: Point) -> Path {
-        points!.append(point)
+        points.append(point)
         return self
     }
 
@@ -69,6 +69,7 @@ public class Path : Drawable {
     /// ```
     ///
     /// - Parameter pattern: the line dash pattern.
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func setPattern(_ pattern: String) -> Path {
@@ -80,6 +81,7 @@ public class Path : Drawable {
     /// Sets the stroke width that will be used to draw the lines and splines that are part of this path.
     ///
     /// - Parameter width: the stroke width.
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func setStrokeWidth(_ width: Float) -> Path {
@@ -90,7 +92,8 @@ public class Path : Drawable {
     ///
     /// Sets the stroke color that will be used to draw this path.
     ///
-    /// - Parameter color: the color is specified as an integer.
+    /// - Parameter color: the color specified as an integer.
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Path {
@@ -99,9 +102,10 @@ public class Path : Drawable {
     }
 
     ///
-    /// Sets the closePath variable.
+    /// Sets whether a line is drawn from the last point of this path back to the first.
     ///
-    /// - Parameter closePath: if closePath is true a line will be draw between the first and last point of this path.
+    /// - Parameter closePath: true to close the path.
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func setClosePath(_ closePath: Bool) -> Path {
@@ -110,10 +114,10 @@ public class Path : Drawable {
     }
 
     ///
-    /// Sets the fillShape private variable.
-    /// If fillShape is true - the shape of the path will be filled with the current brush color.
+    /// Sets whether the shape of this path is filled with the stroke color instead of stroked.
     ///
-    /// - Parameter fillShape: the fillShape flag.
+    /// - Parameter fillShape: true to fill the shape.
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func setFillShape(_ fillShape: Bool) -> Path {
@@ -126,6 +130,7 @@ public class Path : Drawable {
     ///
     /// - Parameter style: the cap style of this path.
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func setLineCapStyle(_ style: CapStyle) -> Path {
@@ -146,6 +151,7 @@ public class Path : Drawable {
     /// Sets the line join style.
     ///
     /// - Parameter style: the line join style code. Supported values: JoinStyle.MITER, JoinStyle.ROUND and JoinStyle.BEVEL
+    /// - Returns: this Path object.
     ///
     @discardableResult
     public func setLineJoinStyle(_ style: JoinStyle) -> Path {
@@ -162,37 +168,46 @@ public class Path : Drawable {
         return self.lineJoinStyle
     }
 
-    /// Adds x and y to the location of this path.
+    ///
+    /// Sets the location of this path: its points are drawn offset by x and y.
+    ///
+    /// - Parameter x: the x offset.
+    /// - Parameter y: the y offset.
+    /// - Returns: this Path object.
+    ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
-        xBox += x
-        yBox += y
+        xBox = x
+        yBox = y
         return self
     }
 
     ///
-    /// Scales the path using the specified factor.
+    /// Scales the points of this path by the specified factor.
     ///
-    /// - Parameter factor: the specified factor.
+    /// - Parameter factor: the factor used to scale the path.
+    /// - Returns: this Path object.
     ///
-    public func scaleBy(_ factor: Float) {
-        for i in 0..<points!.count {
-            let point = points![i]
+    @discardableResult
+    public func scaleBy(_ factor: Float) -> Path {
+        for point in points {
             point.x *= factor
             point.y *= factor
         }
+        return self
     }
 
     ///
-    /// Draws this path on the page using the current selected color, pen width, line pattern and line join style.
+    /// Draws this path on the specified page. If fillShape is set the shape is
+    /// filled with the stroke color; otherwise the path is stroked with its
+    /// width, dash pattern, cap style and join style.
     ///
     /// - Parameter page: the page to draw this path on.
     /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        for i in 0..<points!.count {
-            let point = points![i]
+        for point in points {
             point.x += xBox
             point.y += yBox
         }
@@ -201,7 +216,7 @@ public class Path : Drawable {
         page!.addArtifactBMC()
         if fillShape {
             page!.setBrushColor(self.color)
-            page!.drawPath(points!, PathOperator.fill)
+            page!.drawPath(points, PathOperator.fill)
         } else {
             page!.setPenWidth(self.width)
             page!.setPenColor(self.color)
@@ -209,17 +224,16 @@ public class Path : Drawable {
             page!.setLineCapStyle(self.lineCapStyle)
             page!.setLineJoinStyle(self.lineJoinStyle)
             if closePath {
-                page!.drawPath(points!, PathOperator.closeAndStroke)
+                page!.drawPath(points, PathOperator.closeAndStroke)
             } else {
-                page!.drawPath(points!, PathOperator.stroke)
+                page!.drawPath(points, PathOperator.stroke)
             }
         }
         page!.addEMC()
 
         var xMax: Float = 0.0
         var yMax: Float = 0.0
-        for i in 0..<points!.count {
-            let point = points![i]
+        for point in points {
             if point.x > xMax { xMax = point.x }
             if point.y > yMax { yMax = point.y }
             point.x -= xBox

@@ -12,7 +12,7 @@ namespace PDFjet.NET {
 /// Used to create path objects.
 /// The path objects may consist of lines, splines or both.
 ///
-/// Please see Example_02.
+/// Please see Example_20 and Example_22.
 /// </summary>
 public class Path : IDrawable {
     private int color = Color.black;
@@ -96,7 +96,7 @@ public class Path : IDrawable {
     /// <summary>
     /// Sets the stroke color that will be used to draw this path.
     /// </summary>
-    /// <param name="color">the color is specified as an integer.</param>
+    /// <param name="color">the color specified as an integer.</param>
     /// <returns>this Path object.</returns>
     public Path SetStrokeColor(int color) {
         this.color = color;
@@ -104,9 +104,9 @@ public class Path : IDrawable {
     }
 
     /// <summary>
-    /// Sets the closePath variable.
+    /// Sets whether a line is drawn from the last point of this path back to the first.
     /// </summary>
-    /// <param name="closePath">if closePath is true a line will be draw between the first and last point of this path.</param>
+    /// <param name="closePath">true to close the path.</param>
     /// <returns>this Path object.</returns>
     public Path SetClosePath(bool closePath) {
         this.closePath = closePath;
@@ -114,9 +114,9 @@ public class Path : IDrawable {
     }
 
     /// <summary>
-    /// Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
+    /// Sets whether the shape of this path is filled with the stroke color instead of stroked.
     /// </summary>
-    /// <param name="fillShape">the fillShape flag.</param>
+    /// <param name="fillShape">true to fill the shape.</param>
     /// <returns>this Path object.</returns>
     public Path SetFillShape(bool fillShape) {
         this.fillShape = fillShape;
@@ -165,48 +165,53 @@ public class Path : IDrawable {
     }
 
     /// <summary>
-    /// Sets the path location.
+    /// Sets the location of this path: its points are drawn offset by x and y.
     /// </summary>
-    /// <param name="x">the x coordinate.</param>
-    /// <param name="y">the y coordinate.</param>
-    /// <returns>the path.</returns>
+    /// <param name="x">the x offset.</param>
+    /// <param name="y">the y offset.</param>
+    /// <returns>this Path object.</returns>
     public Path SetLocation(float x, float y) {
-        xBox += x;
-        yBox += y;
+        xBox = x;
+        yBox = y;
         return this;
     }
 
     /// <summary>
-    /// Sets the path location.
+    /// Sets the location of this path: its points are drawn offset by x and y.
     /// </summary>
-    /// <param name="x">the x coordinate.</param>
-    /// <param name="y">the y coordinate.</param>
-    /// <returns>the path.</returns>
+    /// <param name="x">the x offset.</param>
+    /// <param name="y">the y offset.</param>
+    /// <returns>this Path object.</returns>
     public Path SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
     }
 
     /// <summary>
-    ///  Scales the path using the specified factor.
+    /// Scales the points of this path by the specified factor.
     /// </summary>
-    /// <param name="factor">the specified factor.</param>
-    public void ScaleBy(double factor) {
-        ScaleBy((float) factor);
+    /// <param name="factor">the factor used to scale the path.</param>
+    /// <returns>this Path object.</returns>
+    public Path ScaleBy(double factor) {
+        return ScaleBy((float) factor);
     }
 
     /// <summary>
-    ///  Scales the path using the specified factor.
+    /// Scales the points of this path by the specified factor.
     /// </summary>
-    /// <param name="factor">the specified factor.</param>
-    public void ScaleBy(float factor) {
+    /// <param name="factor">the factor used to scale the path.</param>
+    /// <returns>this Path object.</returns>
+    public Path ScaleBy(float factor) {
         foreach (Point point in points) {
             point.x *= factor;
             point.y *= factor;
         }
+        return this;
     }
 
     /// <summary>
-    ///  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
+    /// Draws this path on the specified page. If fillShape is set the shape is
+    /// filled with the stroke color; otherwise the path is stroked with its
+    /// width, dash pattern, cap style and join style.
     /// </summary>
     /// <param name="page">the page to draw this path on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
@@ -246,5 +251,5 @@ public class Path : IDrawable {
 
         return new float[] {xMax, yMax};
     }
-}
 }   // End of Path.cs
+}   // End of namespace PDFjet.NET

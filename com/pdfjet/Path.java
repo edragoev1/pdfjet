@@ -12,7 +12,7 @@ import java.util.*;
  * Used to create path objects.
  * The path objects may consist of lines, splines or both.
  *
- * Please see Example_02.
+ * Please see Example_20 and Example_22.
  */
 public class Path implements Drawable {
     private int color = Color.black;
@@ -67,8 +67,8 @@ public class Path implements Drawable {
      *     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
      * </pre>
      *
-     *  @param pattern the line dash pattern.
-     *  @return this Path object.
+     * @param pattern the line dash pattern.
+     * @return this Path object.
      */
     public Path setPattern(String pattern) {
         this.pattern = pattern;
@@ -100,7 +100,7 @@ public class Path implements Drawable {
     /**
      * Sets the stroke color that will be used to draw this path.
      *
-     * @param color the color is specified as an integer.
+     * @param color the color specified as an integer.
      * @return this Path object.
      */
     public Path setStrokeColor(int color) {
@@ -109,9 +109,9 @@ public class Path implements Drawable {
     }
 
     /**
-     * Sets the closePath variable.
+     * Sets whether a line is drawn from the last point of this path back to the first.
      *
-     * @param closePath if closePath is true a line will be draw between the first and last point of this path.
+     * @param closePath true to close the path.
      * @return this Path object.
      */
     public Path setClosePath(boolean closePath) {
@@ -120,9 +120,9 @@ public class Path implements Drawable {
     }
 
     /**
-     * Sets the fillShape private variable. If fillShape is true - the shape of the path will be filled with the current brush color.
+     * Sets whether the shape of this path is filled with the stroke color instead of stroked.
      *
-     * @param fillShape the fillShape flag.
+     * @param fillShape true to fill the shape.
      * @return this Path object.
      */
     public Path setFillShape(boolean fillShape) {
@@ -172,56 +172,61 @@ public class Path implements Drawable {
     }
 
     /**
-     * Sets the path location.
+     * Sets the location of this path: its points are drawn offset by x and y.
      *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return the path.
+     * @param x the x offset.
+     * @param y the y offset.
+     * @return this Path object.
      */
     public Path setLocation(float x, float y) {
-        xBox += x;
-        yBox += y;
+        xBox = x;
+        yBox = y;
         return this;
     }
 
     /**
-     * Sets the path location.
+     * Sets the location of this path: its points are drawn offset by x and y.
      *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return the path.
+     * @param x the x offset.
+     * @param y the y offset.
+     * @return this Path object.
      */
     public Path setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
     }
 
     /**
-     *  Scales the path using the specified factor.
+     * Scales the points of this path by the specified factor.
      *
-     *  @param factor the specified factor.
+     * @param factor the factor used to scale the path.
+     * @return this Path object.
      */
-    public void scaleBy(double factor) {
-        scaleBy((float) factor);
+    public Path scaleBy(double factor) {
+        return scaleBy((float) factor);
     }
 
     /**
-     *  Scales the path using the specified factor.
+     * Scales the points of this path by the specified factor.
      *
-     *  @param factor the specified factor.
+     * @param factor the factor used to scale the path.
+     * @return this Path object.
      */
-    public void scaleBy(float factor) {
+    public Path scaleBy(float factor) {
         for (Point point : points) {
             point.x *= factor;
             point.y *= factor;
         }
+        return this;
     }
 
     /**
-     *  Draws this path on the page using the current selected color, pen width, line pattern and line join style.
+     * Draws this path on the specified page. If fillShape is set the shape is
+     * filled with the stroke color; otherwise the path is stroked with its
+     * width, dash pattern, cap style and join style.
      *
-     *  @param page the page to draw this path on.
-     *  @return x and y coordinates of the bottom right corner of this component.
-     *  @throws Exception  If an input or output exception occurred
+     * @param page the page to draw this path on.
+     * @return x and y coordinates of the bottom right corner of this component.
+     * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
         for (Point point : points) {
