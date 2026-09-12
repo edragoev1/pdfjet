@@ -270,8 +270,8 @@ public class Encryption {
         SecureRandom random = new SecureRandom();
         random.nextBytes(randomBytes);
 
-        byte[] userValidationSalt = new byte[8];
-        byte[] userKeySalt = new byte[8];
+        byte[] userValidationSalt = Arrays.copyOfRange(randomBytes, 0, 8);
+        byte[] userKeySalt = Arrays.copyOfRange(randomBytes, 8, 16);
         byte[] hash = computeHash(userPasswordBytes, userValidationSalt, new byte[] {});
         byte[] U = concatenate(hash, userValidationSalt, userKeySalt);
 
@@ -289,8 +289,8 @@ public class Encryption {
         SecureRandom random = new SecureRandom();
         random.nextBytes(randomBytes);
 
-        byte[] ownerValidationSalt = new byte[8];
-        byte[] ownerKeySalt = new byte[8];
+        byte[] ownerValidationSalt = Arrays.copyOfRange(randomBytes, 0, 8);
+        byte[] ownerKeySalt = Arrays.copyOfRange(randomBytes, 8, 16);
         byte[] hash = computeHash(ownerPasswordBytes, ownerValidationSalt, U);
         byte[] O = concatenate(hash, ownerValidationSalt, ownerKeySalt);
 

@@ -197,9 +197,8 @@ Java, C# and Go ports use the ciphers and hash functions of their platforms.
 Swift has no cryptography in its standard library on Linux, and this library has
 no dependencies on external packages, so the Swift port has its own AES, SHA-2,
 MD5 and RC4 in `Sources/PDFjet/Cryptography.swift`, which its `Decryptor` uses
-as well. The four ports write the same encryption dictionary, except that the
-Swift port gives the password hashes random salts, as the standard says, while
-the other ports use zero salts.
+as well. The four ports write the same encryption dictionary, with random salts
+in the password hashes.
 
 ## Port differences
 
