@@ -13,22 +13,22 @@ import java.util.*;
  * See the TextColumn class for more information.
  */
 public class Paragraph {
-    /** The xText coordinate. */
+    /** The x coordinate where the text of this paragraph starts. */
     public float xText;
 
-    /** The yText coordinate. */
+    /** The baseline y coordinate of the first line of this paragraph. */
     public float yText;
 
-    /** The x1 coordinate. */
+    /** The x coordinate of the top left corner of this paragraph. */
     public float x1;
 
-    /** The y1 coordinate. */
+    /** The y coordinate of the top left corner of this paragraph. */
     public float y1;
 
-    /** The x2 coordinate. */
+    /** The x coordinate where the last line of this paragraph ends. */
     public float x2;
 
-    /** The xy coordinate. */
+    /** The y coordinate of the bottom of the last line of this paragraph. */
     public float y2;
 
     /** The text lines of this paragraph. */
@@ -67,7 +67,7 @@ public class Paragraph {
     /**
      * Sets the alignment of the text in this paragraph.
      *
-     * @param alignment the alignment code.
+     * @param alignment the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.
      * @return this paragraph.
      */
     public Paragraph setAlignment(int alignment) {

@@ -192,7 +192,7 @@ public class TextColumn : Drawable {
         var list = [TextLine]()
         var lineHeight: Float = 0.0
         var maxAscent: Float = 0.0
-        for line in paragraph.lines! {
+        for line in paragraph.lines {
             if (line.getHeight() * self.lineSpacing) > lineHeight {
                 lineHeight = line.getHeight() * lineSpacing
             }
@@ -209,7 +209,7 @@ public class TextColumn : Drawable {
         }
 
         var runLength: Float = 0.0
-        for line in paragraph.lines! {
+        for line in paragraph.lines {
             let tokens = line.text!.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
             var text: TextLine? = nil
             for token in tokens {

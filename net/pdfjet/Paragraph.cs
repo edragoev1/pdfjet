@@ -53,9 +53,8 @@ public class Paragraph {
     /// <summary>
     /// Sets the alignment of the text in this paragraph.
     /// </summary>
-    /// <param name="alignment">the alignment code.</param>
-    /// <returns>this paragraph.
-    /// <code>Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.</code></returns>
+    /// <param name="alignment">the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.</param>
+    /// <returns>this paragraph.</returns>
     public Paragraph SetAlignment(uint alignment) {
         this.alignment = alignment;
         return this;

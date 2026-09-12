@@ -11,7 +11,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 )
 
-// Paragraph describes paragraph objects.
+// Paragraph is used to create paragraph objects.
 // See the TextColumn class for more information.
 type Paragraph struct {
 	xText, yText, x1, y1, x2, y2 float32
@@ -19,7 +19,7 @@ type Paragraph struct {
 	alignment                    int
 }
 
-// NewParagraph constructor paragraph objects.
+// NewParagraph creates a paragraph.
 func NewParagraph() *Paragraph {
 	paragraph := new(Paragraph)
 	paragraph.lines = make([]*TextLine, 0)
@@ -57,19 +57,14 @@ func (paragraph *Paragraph) GetY2() float32 {
 	return paragraph.y2
 }
 
-// Add is used to add new text lines to the paragraph.
-//
-// @param text the text line to add to the paragraph.
-// @return the paragraph.
+// Add adds a text line to this paragraph.
 func (paragraph *Paragraph) Add(textLine *TextLine) *Paragraph {
 	paragraph.lines = append(paragraph.lines, textLine)
 	return paragraph
 }
 
-// SetAlignment sets the alignment of the text in the paragraph.
-// @param alignment the alignment code.
-// @return the paragraph.
-// Supported values: alignment.Left, alignment.Right, alignment.Center and alignment.Justify.
+// SetAlignment sets the alignment of the text in this paragraph:
+// alignment.Left, alignment.Right, alignment.Center or alignment.Justify.
 func (paragraph *Paragraph) SetAlignment(alignment int) *Paragraph {
 	paragraph.alignment = alignment
 	return paragraph

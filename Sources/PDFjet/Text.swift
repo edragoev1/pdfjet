@@ -26,8 +26,8 @@ public class Text : Drawable {
     /// Creates a text object from the paragraphs.
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
-        self.font = paragraphs[0].lines![0].getFont()
-        self.fallbackFont = paragraphs[0].lines![0].getFallbackFont()
+        self.font = paragraphs[0].lines[0].getFont()
+        self.fallbackFont = paragraphs[0].lines[0].getFallbackFont()
     }
 
     /// Sets the location of the top left corner of this text.
@@ -92,13 +92,13 @@ public class Text : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         self.xText = x1
-        self.yText = y1 + self.paragraphs![0].lines![0].font!.getAscent()
+        self.yText = y1 + self.paragraphs![0].lines[0].font!.getAscent()
         for paragraph in self.paragraphs! {
             paragraph.x1 = x1
-            paragraph.y1 = yText - paragraph.lines![0].font!.getAscent()
+            paragraph.y1 = yText - paragraph.lines[0].font!.getAscent()
             paragraph.xText = self.xText
             paragraph.yText = self.yText
-            for textLine in paragraph.lines! {
+            for textLine in paragraph.lines {
                 let point = drawTextLine(page, xText, yText, textLine)
                 xText = point[0]
                 yText = point[1]
