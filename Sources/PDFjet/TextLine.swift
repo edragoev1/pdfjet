@@ -28,9 +28,6 @@ public class TextLine : Drawable {
 
     private var degrees = 0
 
-    private var xBox: Float = 0.0
-    private var yBox: Float = 0.0
-
     private var textEffect = Effect.NORMAL
     private var verticalOffset: Float = 0.0
 
@@ -258,7 +255,7 @@ public class TextLine : Drawable {
     /// - Returns: the y coordinate of the destination.
     ///
     public func getDestinationY() -> Float {
-        return y - font!.getSize()
+        return y - fontSize
     }
 
     ///
@@ -526,15 +523,11 @@ public class TextLine : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if text == nil || text == "" {
+        if page == nil || text == nil || text == "" {
             return [x, y]
         }
 
         page!.setTextDirection(degrees)
-
-        self.x += xBox
-        self.y += yBox
-
         page!.setBrushColor(textColor)
         // The text is drawn, so it is not given again as actual text, or as its
         // own alternate description: right to left text is drawn in visual
@@ -546,14 +539,14 @@ public class TextLine : Drawable {
 
         let radians = Float.pi * Float(degrees) / 180.0
         if underline {
-            page!.setPenWidth(font!.underlineThickness)
+            page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(lineColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
             if (self.isLastToken) {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
-            let xAdjust = font!.underlinePosition * Float(sin(radians))
-            let yAdjust = font!.underlinePosition * Float(cos(radians)) + verticalOffset
+            let xAdjust = font!.getUnderlinePosition(fontSize) * Float(sin(radians))
+            let yAdjust = font!.getUnderlinePosition(fontSize) * Float(cos(radians)) + verticalOffset
             let x2 = x + lineLength * Float(cos(radians))
             let y2 = y - lineLength * Float(sin(radians))
             page!.addBMC(structureType, language, "", "Underlined text: " + text!)
@@ -564,7 +557,7 @@ public class TextLine : Drawable {
         }
 
         if strikeout {
-            page!.setPenWidth(font!.underlineThickness)
+            page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(lineColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
             if (self.isLastToken) {

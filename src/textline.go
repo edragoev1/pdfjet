@@ -10,6 +10,7 @@ package pdfjet
 import (
 	"math"
 
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/effect"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
@@ -137,37 +138,41 @@ func (textLine *TextLine) GetFallbackFont() *Font {
 	return textLine.fallbackFont
 }
 
-// SetTextColor sets the text color as a 0xRRGGBB value.
-func (textLine *TextLine) SetTextColor(color int32) *TextLine {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+// SetTextColor sets the text color as a 0xRRGGBB value. color.Transparent leaves it unchanged.
+func (textLine *TextLine) SetTextColor(c int32) *TextLine {
+	if c == color.Transparent {
+		return textLine
+	}
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	textLine.color = [3]float32{r, g, b}
 	return textLine
 }
 
-// SetTextColorRGB sets the text color from red, green and blue values.
-func (textLine *TextLine) SetTextColorRGB(color [3]float32) *TextLine {
-	textLine.color = color
+// SetTextColorRGB sets the text color from the red, green and blue components, from 0.0 to 1.0.
+func (textLine *TextLine) SetTextColorRGB(c [3]float32) *TextLine {
+	textLine.color = c
 	return textLine
 }
 
-// SetLineColor sets the color of the underline and strikeout lines.
-// @param color the color is specified as an integer.
-// @return this TextLine.
-func (textLine *TextLine) SetLineColor(color int32) *TextLine {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+// SetLineColor sets the color of the underline and strikeout lines as a 0xRRGGBB value.
+// color.Transparent leaves it unchanged.
+func (textLine *TextLine) SetLineColor(c int32) *TextLine {
+	if c == color.Transparent {
+		return textLine
+	}
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	textLine.lineColor = [3]float32{r, g, b}
 	return textLine
 }
 
-// SetLineColorRGB sets the color of the underline and strikeout lines.
-// @param color the color as an RGB array.
-// @return this TextLine.
-func (textLine *TextLine) SetLineColorRGB(color [3]float32) *TextLine {
-	textLine.lineColor = color
+// SetLineColorRGB sets the color of the underline and strikeout lines from the
+// red, green and blue components, from 0.0 to 1.0.
+func (textLine *TextLine) SetLineColorRGB(c [3]float32) *TextLine {
+	textLine.lineColor = c
 	return textLine
 }
 
@@ -191,7 +196,7 @@ func (textLine *TextLine) GetDestinationX() float32 {
 // GetDestinationY returns the y coordinate of the destination.
 // @return the y coordinate of the destination.
 func (textLine *TextLine) GetDestinationY() float32 {
-	return textLine.y - textLine.font.GetSize()
+	return textLine.y - textLine.fontSize
 }
 
 // GetWidth returns the width of this TextLine.
@@ -378,9 +383,9 @@ func (textLine *TextLine) GetColorMap() map[string]int32 {
 	return textLine.colorMap
 }
 
-// DrawOn draws this text line on the specified page if the draw parameter is true.
-// @param page the page to draw this text line on.
-// @param draw if draw is false - no action is performed.
+// DrawOn draws this text line on the specified page and returns the x and y
+// coordinates of its bottom right corner. It draws nothing when the page is
+// nil or the text is empty.
 func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if page == nil || textLine.text == "" {
 		return [2]float32{textLine.x, textLine.y}

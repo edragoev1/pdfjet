@@ -204,14 +204,13 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the text color. Color.transparent clears it.
+     * Sets the text color. Color.transparent leaves the text color unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextLine object.
      */
     public TextLine setTextColor(int color) {
         if (color == Color.transparent) {
-            this.textColor = null;
             return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
@@ -685,7 +684,7 @@ public class TextLine implements Drawable {
 
         float len = font.stringWidth(fallbackFont, fontSize, text);
         double xMax = Math.max(x, x + len*Math.cos(radians));
-        double yMax = Math.max(y + verticalOffset, ((y + verticalOffset) - len) * Math.sin(radians));
+        double yMax = Math.max(y + verticalOffset, (y + verticalOffset) - len*Math.sin(radians));
 
         return new float[] {(float) xMax, (float) yMax};
     }

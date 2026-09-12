@@ -162,10 +162,9 @@ public class TextLine : IDrawable {
         return this.fallbackFont;
     }
 
-    /// <summary>Sets the text color as a 0xRRGGBB value. Color.transparent clears it.</summary>
+    /// <summary>Sets the text color as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
     public TextLine SetTextColor(int color) {
         if (color == Color.transparent) {
-            this.textColor = null;
             return this;
         }
         float r = ((color >> 16) & 0xff)/255f;
@@ -200,6 +199,12 @@ public class TextLine : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
+        this.lineColor = new float[] {r, g, b};
+        return this;
+    }
+
+    /// <summary>Sets the color of the underline and strikeout lines from red, green and blue values between 0.0 and 1.0.</summary>
+    public TextLine SetLineColor(float r, float g, float b) {
         this.lineColor = new float[] {r, g, b};
         return this;
     }
