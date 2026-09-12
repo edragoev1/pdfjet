@@ -1,83 +1,58 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 
 /**
  * Example_14.java
+ * Drawing Data Matrix barcodes.
  */
 public class Example_14 {
     public Example_14() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_14.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.setSize(7f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(10f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        f2.setSize(7f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Page page = new Page(pdf, A4.PORTRAIT);
+        DataMatrix barcode = new DataMatrix("https://github.com/edragoev1/pdfjet");
+        barcode.setLocation(50f, 50f);
+        barcode.setModuleLength(3f);
+        float[] xy = barcode.drawOn(page);
+        TextLine caption = new TextLine(f1, "A web address");
+        caption.setLocation(50f, xy[1] + 20f);
+        caption.drawOn(page);
 
-        Table table = new Table();
+        barcode = new DataMatrix("Grüße aus München! こんにちは 😀");
+        barcode.setLocation(300f, 50f);
+        barcode.setModuleLength(3f);
+        xy = barcode.drawOn(page);
+        caption = new TextLine(f1, "Text in UTF-8");
+        caption.setLocation(300f, xy[1] + 20f);
+        caption.drawOn(page);
 
-        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
+        barcode = new DataMatrix("PDFjet 9.0.0", DataMatrix.RECTANGLE);
+        barcode.setLocation(50f, 250f);
+        barcode.setModuleLength(4f);
+        barcode.setColor(Color.blue);
+        xy = barcode.drawOn(page);
+        caption = new TextLine(f1, "A rectangular symbol");
+        caption.setLocation(50f, xy[1] + 20f);
+        caption.drawOn(page);
 
-        List<Cell> row = null;
-        Cell cell = null;
-
-        for (int i = 0; i < 5; i++) {
-            row = new ArrayList<Cell>();
-            for (int j = 0; j < 5; j++) {
-                if (i == 0) {
-                    cell = new Cell(f1);
-                } else {
-                    cell = new Cell(f2);
-                }
-                cell.setBorders(false);
-
-                cell.setTopPadding(10f);
-                cell.setBottomPadding(10f);
-                cell.setLeftPadding(10f);
-                cell.setRightPadding(10f);
-
-                cell.setText("Hello " + i + " " + j);
-                if (i == 0) {
-                    cell.setBorder(Border.TOP, true);
-                    cell.setUnderline(true);
-                    cell.setUnderline(false);
-                }
-                if (i == 4) {
-                    cell.setBorder(Border.BOTTOM, true);
-                }
-                if (j == 0) {
-                    cell.setBorder(Border.LEFT, true);
-                }
-                if (j == 4) {
-                    cell.setBorder(Border.RIGHT, true);
-                }
-
-                if (i == 2 && j == 2) {
-                    cell.setBorder(Border.TOP, true);
-                    cell.setBorder(Border.BOTTOM, true);
-                    cell.setBorder(Border.LEFT, true);
-                    cell.setBorder(Border.RIGHT, true);
-
-                    cell.setColSpan(3);
-                    cell.setBackgroundColor(Color.darkseagreen);
-                    cell.setLineWidth(1f);
-                    cell.setTextAlignment(Align.RIGHT);
-                }
-
-                row.add(cell);
-            }
-            tableData.add(row);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i <= 20; i++) {
+            sb.append("Line ").append(i).append(" of a longer text in a larger symbol.\n");
         }
-        table.setData(tableData);
-        table.setCellBordersWidth(0.2f);
-        table.setLocation(70f, 30f);
-        table.drawOn(page);
+        barcode = new DataMatrix(sb.toString());
+        barcode.setLocation(300f, 250f);
+        barcode.setModuleLength(2f);
+        xy = barcode.drawOn(page);
+        caption = new TextLine(f1, "A larger symbol");
+        caption.setLocation(300f, xy[1] + 20f);
+        caption.drawOn(page);
 
         pdf.complete();
     }

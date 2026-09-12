@@ -6,7 +6,7 @@
  */
 
 ///
-/// Please see Example_51 and Example_52
+/// Please see Example_48
 ///
 public class Title : Drawable {
     /// The prefix drawn before the title text, such as a section number.

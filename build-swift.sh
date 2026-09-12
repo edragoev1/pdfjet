@@ -5,7 +5,7 @@ rm -rf .build
 swift build --configuration release -Xswiftc -warnings-as-errors
 bin=$(swift build --configuration release --show-bin-path)
 
-for i in $(seq 1 51);
+for i in $(seq 1 50);
 do
     if [ $i -lt 10 ]; then
         "$bin/Example_0$i"

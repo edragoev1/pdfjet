@@ -2,82 +2,61 @@ package main
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/a4"
-	"github.com/edragoev1/pdfjet/v9/src/alignment"
-	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/datamatrix"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example14 draws a table and sets the borders of the individual cells.
+// Example14 draws Data Matrix barcodes.
 func Example14() {
 	pdf := pdfjet.NewPDFFile("Example_14.pdf")
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f1.SetSize(7.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(10.0)
 
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-	f2.SetSize(7.0)
+	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	barcode := datamatrix.NewDataMatrix("https://github.com/edragoev1/pdfjet")
+	barcode.SetLocation(50.0, 50.0)
+	barcode.SetModuleLength(3.0)
+	xy := barcode.DrawOn(page)
+	caption := pdfjet.NewTextLine(f1, "A web address")
+	caption.SetLocation(50.0, xy[1]+20.0)
+	caption.DrawOn(page)
 
-	table := pdfjet.NewTable()
-	tableData := make([][]*pdfjet.Cell, 0)
-	for i := 0; i < 5; i++ {
-		row := make([]*pdfjet.Cell, 0)
-		for j := 0; j < 5; j++ {
-			var cell *pdfjet.Cell
-			if i == 0 {
-				cell = pdfjet.NewCell(f1, "")
-			} else {
-				cell = pdfjet.NewCell(f2, "")
-			}
-			cell.SetBorders(false)
+	barcode = datamatrix.NewDataMatrix("Grüße aus München! こんにちは 😀")
+	barcode.SetLocation(300.0, 50.0)
+	barcode.SetModuleLength(3.0)
+	xy = barcode.DrawOn(page)
+	caption = pdfjet.NewTextLine(f1, "Text in UTF-8")
+	caption.SetLocation(300.0, xy[1]+20.0)
+	caption.DrawOn(page)
 
-			cell.SetTopPadding(10.0)
-			cell.SetBottomPadding(10.0)
-			cell.SetLeftPadding(10.0)
-			cell.SetRightPadding(10.0)
+	barcode = datamatrix.NewDataMatrixWithShape("PDFjet 9.0.0", datamatrix.Rectangle)
+	barcode.SetLocation(50.0, 250.0)
+	barcode.SetModuleLength(4.0)
+	barcode.SetColor(color.Blue)
+	xy = barcode.DrawOn(page)
+	caption = pdfjet.NewTextLine(f1, "A rectangular symbol")
+	caption.SetLocation(50.0, xy[1]+20.0)
+	caption.DrawOn(page)
 
-			cell.SetText("Hello " + strconv.Itoa(i) + " " + strconv.Itoa(j))
-			if i == 0 {
-				cell.SetBorder(border.Top, true)
-				cell.SetUnderline(true)
-				cell.SetUnderline(false)
-			}
-			if i == 4 {
-				cell.SetBorder(border.Bottom, true)
-			}
-			if j == 0 {
-				cell.SetBorder(border.Left, true)
-			}
-			if j == 4 {
-				cell.SetBorder(border.Right, true)
-			}
-
-			if i == 2 && j == 2 {
-				cell.SetBorder(border.Top, true)
-				cell.SetBorder(border.Bottom, true)
-				cell.SetBorder(border.Left, true)
-				cell.SetBorder(border.Right, true)
-
-				cell.SetColSpan(3)
-				cell.SetBackgroundColor(color.DarkSeaGreen)
-				cell.SetLineWidth(1.0)
-				cell.SetTextAlignment(alignment.Right)
-			}
-
-			row = append(row, cell)
-		}
-		tableData = append(tableData, row)
+	var sb strings.Builder
+	for i := 1; i <= 20; i++ {
+		sb.WriteString("Line " + strconv.Itoa(i) + " of a longer text in a larger symbol.\n")
 	}
-	table.SetData(tableData, pdfjet.TableWith0HeaderRows)
-	table.SetCellBordersWidth(0.2)
-	table.SetLocation(70.0, 30.0)
-	table.DrawOn(page)
+	barcode = datamatrix.NewDataMatrix(sb.String())
+	barcode.SetLocation(300.0, 250.0)
+	barcode.SetModuleLength(2.0)
+	xy = barcode.DrawOn(page)
+	caption = pdfjet.NewTextLine(f1, "A larger symbol")
+	caption.SetLocation(300.0, xy[1]+20.0)
+	caption.DrawOn(page)
 
 	pdf.Complete()
 }

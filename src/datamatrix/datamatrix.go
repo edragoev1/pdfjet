@@ -87,7 +87,7 @@ func init() {
 
 // DataMatrix is used to create 2D Data Matrix barcodes: ECC 200 symbols as
 // specified in ISO/IEC 16022. The text is encoded as UTF-8 in the smallest
-// symbol that holds it. Please see Example_51.
+// symbol that holds it. Please see Example_14.
 type DataMatrix struct {
 	modules [][]bool
 	x, y    float32

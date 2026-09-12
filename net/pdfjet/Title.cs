@@ -8,7 +8,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Please see Example_51 and Example_52
+/// Please see Example_48
 /// </summary>
 public class Title : IDrawable {
     /// <summary>The prefix drawn before the title text, such as a section number.</summary>

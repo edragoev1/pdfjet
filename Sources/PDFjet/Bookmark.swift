@@ -16,7 +16,7 @@ extension String {
 }
 
 ///
-/// Please see Example_51 and Example_52
+/// Please see Example_48
 ///
 public class Bookmark {
     private var destNumber = 0

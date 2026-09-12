@@ -11,7 +11,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to create 2D Data Matrix barcodes: ECC 200 symbols as specified in
 /// ISO/IEC 16022. The text is encoded as UTF-8 in the smallest symbol that holds
-/// it. Please see Example_51.
+/// it. Please see Example_14.
 /// </summary>
 public class DataMatrix : IDrawable {
     /// <summary>Square symbols, from 10x10 to 144x144 modules.</summary>

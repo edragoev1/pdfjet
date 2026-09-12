@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Please see Example_51 and Example_52
+/// Please see Example_48
 /// </summary>
 public class Bookmark {
     private int destNumber = 0;

@@ -15,7 +15,7 @@ rmdir /s /q obj 2>nul
 rmdir /s /q .build 2>nul
 del /f /q *.pdf 2>nul
 
-for /L %%i in (1,1,51) do (
+for /L %%i in (1,1,50) do (
     if %%i lss 10 (
         rmdir /s /q examples\Example_0%%i\bin 2>nul
         rmdir /s /q examples\Example_0%%i\obj 2>nul

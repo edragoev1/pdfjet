@@ -3,82 +3,59 @@ import PDFjet
 
 /**
  * Example_14.swift
+ * Drawing Data Matrix barcodes.
  */
 public class Example_14 {
-    public init() {
+    public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_14.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        f1.setSize(7.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(10.0)
 
-        let f2 = Font(pdf, CoreFont.HELVETICA)
-        f2.setSize(7.0)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        let page = Page(pdf, A4.PORTRAIT)
+        var barcode = DataMatrix("https://github.com/edragoev1/pdfjet")
+        barcode.setLocation(50.0, 50.0)
+        barcode.setModuleLength(3.0)
+        var xy = barcode.drawOn(page)
+        var caption = TextLine(f1, "A web address")
+        caption.setLocation(50.0, xy[1] + 20.0)
+        caption.drawOn(page)
 
-        let table = Table()
+        barcode = DataMatrix("Grüße aus München! こんにちは 😀")
+        barcode.setLocation(300.0, 50.0)
+        barcode.setModuleLength(3.0)
+        xy = barcode.drawOn(page)
+        caption = TextLine(f1, "Text in UTF-8")
+        caption.setLocation(300.0, xy[1] + 20.0)
+        caption.drawOn(page)
 
-        var tableData = [[Cell]]()
-        var row: [Cell]?
-        var cell: Cell?
-        for i in 0..<5 {
-            row = [Cell]()
-            for j in 0..<5 {
-                if i == 0 {
-                    cell = Cell(f1, "")
-                } else {
-                    cell = Cell(f2, "")
-                }
-                cell!.setBorders(false)
+        barcode = DataMatrix("PDFjet 9.0.0", DataMatrix.RECTANGLE)
+        barcode.setLocation(50.0, 250.0)
+        barcode.setModuleLength(4.0)
+        barcode.setColor(Color.blue)
+        xy = barcode.drawOn(page)
+        caption = TextLine(f1, "A rectangular symbol")
+        caption.setLocation(50.0, xy[1] + 20.0)
+        caption.drawOn(page)
 
-                cell!.setTopPadding(10.0)
-                cell!.setBottomPadding(10.0)
-                cell!.setLeftPadding(10.0)
-                cell!.setRightPadding(10.0)
-
-                cell!.setText("Hello \(i) \(j)")
-                if i == 0 {
-                    cell!.setBorder(Border.TOP, true)
-                    cell!.setUnderline(true)
-                    cell!.setUnderline(false)
-                }
-                if i == 4 {
-                    cell!.setBorder(Border.BOTTOM, true)
-                }
-                if j == 0 {
-                    cell!.setBorder(Border.LEFT, true)
-                }
-                if j == 4 {
-                    cell!.setBorder(Border.RIGHT, true)
-                }
-
-                if i == 2 && j == 2 {
-                    cell!.setBorder(Border.TOP, true)
-                    cell!.setBorder(Border.BOTTOM, true)
-                    cell!.setBorder(Border.LEFT, true)
-                    cell!.setBorder(Border.RIGHT, true)
-
-                    cell!.setColSpan(3)
-                    cell!.setBackgroundColor(Color.darkseagreen)
-                    cell!.setLineWidth(1.0)
-                    cell!.setTextAlignment(Align.RIGHT)
-                }
-
-                row!.append(cell!)
-            }
-            tableData.append(row!)
+        var sb = ""
+        for i in 1...20 {
+            sb += "Line \(i) of a longer text in a larger symbol.\n"
         }
-
-        table.setData(tableData)
-        table.setCellBordersWidth(0.2)
-        table.setLocation(70.0, 30.0)
-        table.drawOn(page)
+        barcode = DataMatrix(sb)
+        barcode.setLocation(300.0, 250.0)
+        barcode.setModuleLength(2.0)
+        xy = barcode.drawOn(page)
+        caption = TextLine(f1, "A larger symbol")
+        caption.setLocation(300.0, xy[1] + 20.0)
+        caption.drawOn(page)
 
         pdf.complete()
     }
 }   // End of Example_14.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = Example_14()
+_ = try Example_14()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 TextUtils.printDuration("Example_14", time0, time1)

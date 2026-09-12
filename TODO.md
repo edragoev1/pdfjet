@@ -164,7 +164,7 @@ Pick from the README limitations; the first three are the ones users hit.
       `setBorderColor` turning the border on (as `Text` does) and
       `drawOn(null)` measuring instead of throwing or exiting, and whatever week 1
       decides for `Table`/`TextBlock`/`SVGImage`/`DonutChart` and `Stamp`.
-      Then: Data Matrix barcodes (Example_51), Swift encryption, random salts, `EncryptMetadata true`, right to
+      Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
       `PDF.cs`, `pdf.go`, `PDF.swift`; `package-java.sh` and

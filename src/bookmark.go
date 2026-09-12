@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// Bookmark please see Example_51 and Example_52
+// Bookmark please see Example_48
 type Bookmark struct {
 	destNumber int
 	page       *Page

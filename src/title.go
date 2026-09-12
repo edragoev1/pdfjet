@@ -6,7 +6,7 @@
 package pdfjet
 
 // Title is used to create title objects that have prefix and text.
-// Please see Example_51 and Example_52
+// Please see Example_48
 type Title struct {
 	prefix   *TextLine
 	textLine *TextLine

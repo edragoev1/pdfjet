@@ -3,7 +3,7 @@ cd src
 # The Go compiler has no warnings; go vet reports the suspicious code instead.
 go vet ./...
 
-for i in $(seq 1 51);
+for i in $(seq 1 50);
 do
     if [ $i -lt 10 ]; then
         go build -o ../Example_0$i.exe examples/example0$i/main.go
@@ -14,7 +14,7 @@ done
 
 cd ..
 
-for i in $(seq 1 51);
+for i in $(seq 1 50);
 do
     if [ $i -lt 10 ]; then
         ./Example_0$i.exe

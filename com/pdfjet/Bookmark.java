@@ -9,7 +9,7 @@ package com.pdfjet;
 import java.util.*;
 
 /**
- * Please see Example_51 and Example_52
+ * Please see Example_48
  */
 public class Bookmark {
     /** The page this bookmark points to. */
