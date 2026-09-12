@@ -30,6 +30,7 @@ public class TextLine : Drawable {
 
     private var textEffect = Effect.NORMAL
     private var verticalOffset: Float = 0.0
+    private var explicitOffset = false      // True after setVerticalOffset
 
     private var language: String?
     private var altDescription: String?
@@ -152,18 +153,6 @@ public class TextLine : Drawable {
     @discardableResult
     public func setFallbackFont(_ fallbackFont: Font?) -> TextLine {
         self.fallbackFont = fallbackFont
-        return self
-    }
-
-    ///
-    /// Sets the text line fallback font size.
-    ///
-    /// - Parameter fallbackFontSize: the fallback font size.
-    /// - Returns: the TextLine.
-    ///
-    @discardableResult
-    public func setFallbackFontSize(_ fallbackFontSize: Float) -> TextLine {
-        self.fallbackFont!.setSize(fallbackFontSize)
         return self
     }
 
@@ -393,7 +382,8 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Sets the text effect.
+    /// Sets the text effect. The offset of a superscript or subscript follows
+    /// the font and font size of this text line when it is drawn.
     ///
     /// - Parameter textEffect: Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
     /// - Returns: the TextLine.
@@ -401,13 +391,7 @@ public class TextLine : Drawable {
     @discardableResult
     public func setTextEffect(_ textEffect: Int) -> TextLine {
         self.textEffect = textEffect
-        if textEffect == Effect.NORMAL {
-            verticalOffset = 0.0
-        } else if textEffect == Effect.SUPERSCRIPT {
-            verticalOffset = -font!.getBodyHeight(self.fontSize)/2.0
-        } else if textEffect == Effect.SUBSCRIPT {
-            verticalOffset = font!.getBodyHeight(self.fontSize)/3.0
-        }
+        self.explicitOffset = false
         return self
     }
 
@@ -421,7 +405,8 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Sets the vertical offset of the text.
+    /// Sets the vertical offset of the text, which replaces the offset of the
+    /// text effect until setTextEffect is called again.
     ///
     /// - Parameter verticalOffset: the vertical offset.
     /// - Returns: the TextLine.
@@ -429,16 +414,26 @@ public class TextLine : Drawable {
     @discardableResult
     public func setVerticalOffset(_ verticalOffset: Float) -> TextLine {
         self.verticalOffset = verticalOffset
+        self.explicitOffset = true
         return self
     }
 
     ///
-    /// Returns the vertical text offset.
+    /// Returns the vertical text offset: the one set with setVerticalOffset, or
+    /// that of the text effect at the font and font size of this text line.
     ///
     /// - Returns: the vertical text offset.
     ///
     public func getVerticalOffset() -> Float {
-        return self.verticalOffset
+        if explicitOffset {
+            return self.verticalOffset
+        }
+        if textEffect == Effect.SUPERSCRIPT {
+            return -font!.getBodyHeight(fontSize)/2.0
+        } else if textEffect == Effect.SUBSCRIPT {
+            return font!.getBodyHeight(fontSize)/3.0
+        }
+        return 0.0
     }
 
     /// Sets the language of the text, for example "en-US".
@@ -528,6 +523,7 @@ public class TextLine : Drawable {
             return [x, y]
         }
 
+        let verticalOffset = getVerticalOffset()
         page!.setTextDirection(degrees)
         page!.setBrushColor(textColor)
         // The text is drawn, so it is not given again as actual text, or as its

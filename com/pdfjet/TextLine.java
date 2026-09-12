@@ -39,6 +39,7 @@ public class TextLine implements Drawable {
     private Map<String, Integer> colorMap = null;
     private int textEffect = Effect.NORMAL;
     private float verticalOffset = 0f;
+    private boolean explicitOffset = false;     // True after setVerticalOffset
 
     private String uri;
     private String key;
@@ -180,17 +181,6 @@ public class TextLine implements Drawable {
      */
     public TextLine setFallbackFont(Font fallbackFont) {
         this.fallbackFont = fallbackFont;
-        return this;
-    }
-
-    /**
-     * Sets the fallback font size to use for this text line.
-     *
-     * @param fallbackFontSize the fallback font size.
-     * @return this TextLine.
-     */
-    public TextLine setFallbackFontSize(float fallbackFontSize) {
-        this.fallbackFont.setSize(fallbackFontSize);
         return this;
     }
 
@@ -479,20 +469,15 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the text effect.
+     * Sets the text effect. The offset of a superscript or subscript follows
+     * the font and font size of this text line when it is drawn.
      *
      * @param textEffect Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
      * @return this TextLine.
      */
     public TextLine setTextEffect(int textEffect) {
         this.textEffect = textEffect;
-        if (textEffect == Effect.NORMAL) {
-            verticalOffset = 0f;
-        } else if (textEffect == Effect.SUPERSCRIPT) {
-            verticalOffset = -font.getBodyHeight(this.fontSize)/2f;
-        } else if (textEffect == Effect.SUBSCRIPT) {
-            verticalOffset = font.getBodyHeight(this.fontSize)/3f;
-        }
+        this.explicitOffset = false;
         return this;
     }
 
@@ -506,23 +491,34 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the vertical offset of the text.
+     * Sets the vertical offset of the text, which replaces the offset of the
+     * text effect until setTextEffect is called again.
      *
      * @param verticalOffset the vertical offset.
      * @return this TextLine.
      */
     public TextLine setVerticalOffset(float verticalOffset) {
         this.verticalOffset = verticalOffset;
+        this.explicitOffset = true;
         return this;
     }
 
     /**
-     * Returns the vertical text offset.
+     * Returns the vertical text offset: the one set with setVerticalOffset, or
+     * that of the text effect at the font and font size of this text line.
      *
      * @return the vertical text offset.
      */
     public float getVerticalOffset() {
-        return verticalOffset;
+        if (explicitOffset) {
+            return verticalOffset;
+        }
+        if (textEffect == Effect.SUPERSCRIPT) {
+            return -font.getBodyHeight(fontSize)/2f;
+        } else if (textEffect == Effect.SUBSCRIPT) {
+            return font.getBodyHeight(fontSize)/3f;
+        }
+        return 0f;
     }
 
     /**
@@ -621,6 +617,7 @@ public class TextLine implements Drawable {
             return new float[] {x, y};
         }
 
+        float verticalOffset = getVerticalOffset();
         page.setTextDirection(degrees);
         page.setBrushColor(textColor);
         // The text is drawn, so it is not given again as actual text, or as its

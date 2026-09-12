@@ -29,6 +29,7 @@ public class TextLine : IDrawable {
     private Dictionary<String, int> colorMap = null;
     private int textEffect = Effect.NORMAL;
     private float verticalOffset = 0f;
+    private bool explicitOffset = false;        // True after SetVerticalOffset
 
     private String uri;
     private String key;
@@ -143,14 +144,6 @@ public class TextLine : IDrawable {
     /// <returns>this TextLine.</returns>
     public TextLine SetFallbackFont(Font fallbackFont) {
         this.fallbackFont = fallbackFont;
-        return this;
-    }
-
-    /// <summary>Sets the size of the fallback font.</summary>
-    /// <param name="fallbackFontSize">the fallback font size.</param>
-    /// <returns>this TextLine.</returns>
-    public TextLine SetFallbackFontSize(float fallbackFontSize) {
-        this.fallbackFont.SetSize(fallbackFontSize);
         return this;
     }
 
@@ -370,19 +363,14 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>
-    /// Sets the text effect.
+    /// Sets the text effect. The offset of a superscript or subscript follows
+    /// the font and font size of this text line when it is drawn.
     /// </summary>
     /// <param name="textEffect">Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.</param>
     /// <returns>this TextLine.</returns>
     public TextLine SetTextEffect(int textEffect) {
         this.textEffect = textEffect;
-        if (textEffect == Effect.NORMAL) {
-            verticalOffset = 0f;
-        } else if (textEffect == Effect.SUPERSCRIPT) {
-            verticalOffset = -font.GetBodyHeight(this.fontSize)/2f;
-        } else if (textEffect == Effect.SUBSCRIPT) {
-            verticalOffset = font.GetBodyHeight(this.fontSize)/3f;
-        }
+        this.explicitOffset = false;
         return this;
     }
 
@@ -395,21 +383,32 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>
-    /// Sets the vertical offset of the text.
+    /// Sets the vertical offset of the text, which replaces the offset of the
+    /// text effect until SetTextEffect is called again.
     /// </summary>
     /// <param name="verticalOffset">the vertical offset.</param>
     /// <returns>this TextLine.</returns>
     public TextLine SetVerticalOffset(float verticalOffset) {
         this.verticalOffset = verticalOffset;
+        this.explicitOffset = true;
         return this;
     }
 
     /// <summary>
-    /// Returns the vertical text offset.
+    /// Returns the vertical text offset: the one set with SetVerticalOffset, or
+    /// that of the text effect at the font and font size of this text line.
     /// </summary>
     /// <returns>the vertical text offset.</returns>
     public float GetVerticalOffset() {
-        return verticalOffset;
+        if (explicitOffset) {
+            return verticalOffset;
+        }
+        if (textEffect == Effect.SUPERSCRIPT) {
+            return -font.GetBodyHeight(fontSize)/2f;
+        } else if (textEffect == Effect.SUBSCRIPT) {
+            return font.GetBodyHeight(fontSize)/3f;
+        }
+        return 0f;
     }
 
     /// <summary>Sets the language of the text, for example "en-US".</summary>
@@ -478,6 +477,7 @@ public class TextLine : IDrawable {
             return new float[] {x, y};
         }
 
+        float verticalOffset = GetVerticalOffset();
         page.SetTextDirection(degrees);
         page.SetBrushColor(textColor);
         // The text is drawn, so it is not given again as actual text, or as its

@@ -32,6 +32,7 @@ type TextLine struct {
 	colorMap           map[string]int32
 	textEffect         int
 	verticalOffset     float32
+	explicitOffset     bool // True after SetVerticalOffset
 	uri, key           string
 	language           string
 	altDescription     string
@@ -117,14 +118,6 @@ func (textLine *TextLine) GetFontSize() float32 {
 // @return this TextLine.
 func (textLine *TextLine) SetFallbackFont(fallbackFont *Font) *TextLine {
 	textLine.fallbackFont = fallbackFont
-	return textLine
-}
-
-// SetFallbackFontSize sets the fallback font size to use for this text line.
-// @param fallbackFontSize the fallback font size.
-// @return this TextLine.
-func (textLine *TextLine) SetFallbackFontSize(fallbackFontSize float32) *TextLine {
-	textLine.fallbackFont.SetSize(fallbackFontSize)
 	return textLine
 }
 
@@ -283,18 +276,12 @@ func (textLine *TextLine) GetTextDirection() int {
 	return textLine.degrees
 }
 
-// SetTextEffect sets the text effect.
-// @param textEffect effect.Normal, effect.Subscript or effect.Superscript.
-// @return this TextLine.
+// SetTextEffect sets the text effect: effect.Normal, effect.Subscript or
+// effect.Superscript. The offset of a superscript or subscript follows the font
+// and font size of this text line when it is drawn.
 func (textLine *TextLine) SetTextEffect(textEffect int) *TextLine {
 	textLine.textEffect = textEffect
-	if textEffect == effect.Normal {
-		textLine.verticalOffset = 0.0
-	} else if textEffect == effect.Superscript {
-		textLine.verticalOffset = -textLine.font.GetBodyHeightAt(textLine.fontSize) / 2.0
-	} else if textEffect == effect.Subscript {
-		textLine.verticalOffset = textLine.font.GetBodyHeightAt(textLine.fontSize) / 3.0
-	}
+	textLine.explicitOffset = false
 	return textLine
 }
 
@@ -304,18 +291,27 @@ func (textLine *TextLine) GetTextEffect() int {
 	return textLine.textEffect
 }
 
-// SetVerticalOffset sets the vertical offset of the text.
-// @param verticalOffset the vertical offset.
-// @return this TextLine.
+// SetVerticalOffset sets the vertical offset of the text, which replaces the
+// offset of the text effect until SetTextEffect is called again.
 func (textLine *TextLine) SetVerticalOffset(verticalOffset float32) *TextLine {
 	textLine.verticalOffset = verticalOffset
+	textLine.explicitOffset = true
 	return textLine
 }
 
-// GetVerticalOffset returns the vertical text offset.
-// @return the vertical text offset.
+// GetVerticalOffset returns the vertical text offset: the one set with
+// SetVerticalOffset, or that of the text effect at the font and font size of
+// this text line.
 func (textLine *TextLine) GetVerticalOffset() float32 {
-	return textLine.verticalOffset
+	if textLine.explicitOffset {
+		return textLine.verticalOffset
+	}
+	if textLine.textEffect == effect.Superscript {
+		return -textLine.font.GetBodyHeightAt(textLine.fontSize) / 2.0
+	} else if textLine.textEffect == effect.Subscript {
+		return textLine.font.GetBodyHeightAt(textLine.fontSize) / 3.0
+	}
+	return 0.0
 }
 
 // SetLanguage sets the language of the text, for example "en-US".
@@ -386,6 +382,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		return [2]float32{textLine.x, textLine.y}
 	}
 
+	verticalOffset := textLine.GetVerticalOffset()
 	page.SetTextDirection(textLine.degrees)
 	page.SetBrushColorRGB(textLine.textColor)
 	// The text is drawn, so it is not given again as actual text, or as its own
@@ -402,7 +399,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		textLine.fontSize,
 		textLine.text,
 		textLine.x,
-		textLine.y+textLine.verticalOffset,
+		textLine.y+verticalOffset,
 		textLine.textColor,
 		textLine.colorMap)
 	page.AddEMC()
@@ -417,7 +414,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		}
 		underlinePosition := float64(textLine.font.GetUnderlinePositionAt(textLine.fontSize))
 		xAdjust := underlinePosition * math.Sin(radians)
-		yAdjust := underlinePosition*math.Cos(radians) + float64(textLine.verticalOffset)
+		yAdjust := underlinePosition*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
 		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
 		page.AddBMC(textLine.structureType, textLine.language, "", "Underlined text: "+textLine.text)
@@ -436,7 +433,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		}
 		bodyHeight := float64(textLine.font.GetBodyHeightAt(textLine.fontSize))
 		xAdjust := (bodyHeight / 4.0) * math.Sin(radians)
-		yAdjust := (bodyHeight/4.0)*math.Cos(radians) + float64(textLine.verticalOffset)
+		yAdjust := (bodyHeight/4.0)*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
 		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
 		page.AddBMC(textLine.structureType, textLine.language, "", "Strikethrough text: "+textLine.text)
@@ -450,11 +447,10 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             textLine.x,
-			y1:             (textLine.y + textLine.verticalOffset) - textLine.font.GetAscentAt(textLine.fontSize),
+			y1:             (textLine.y + verticalOffset) - textLine.font.GetAscentAt(textLine.fontSize),
 			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
-			y2:             (textLine.y + textLine.verticalOffset) + textLine.font.GetDescentAt(textLine.fontSize),
+			y2:             (textLine.y + verticalOffset) + textLine.font.GetDescentAt(textLine.fontSize),
 			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
 			title:          "",
 			contents:       "",
@@ -471,8 +467,8 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
 	yMax := math.Max(
-		float64(textLine.y+textLine.verticalOffset),
-		float64(textLine.y+textLine.verticalOffset)-float64(length)*math.Sin(radians))
+		float64(textLine.y+verticalOffset),
+		float64(textLine.y+verticalOffset)-float64(length)*math.Sin(radians))
 
 	return [2]float32{float32(xMax), float32(yMax)}
 }
