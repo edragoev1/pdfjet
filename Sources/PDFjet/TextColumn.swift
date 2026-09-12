@@ -175,7 +175,7 @@ public class TextColumn : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        var xy: [Float] = [0.0, 0.0]
+        var xy: [Float] = [x, y]
         for paragraph in paragraphs {
             self.alignment = paragraph.alignment
             xy = drawParagraphOn(page, paragraph)
@@ -210,39 +210,36 @@ public class TextColumn : Drawable {
 
         var runLength: Float = 0.0
         for line in paragraph.lines! {
-            let tokens = line.text!.components(separatedBy: .whitespaces)
-            var text: TextLine
+            let tokens = line.text!.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
+            var text: TextLine? = nil
             for token in tokens {
-                text = TextLine(line.font!, token + Single.space)
-                text.setFallbackFont(line.getFallbackFont())
-                text.setFontSize(line.getFontSize())
-                text.setTextColor(line.getTextColor())
-                text.setUnderline(line.getUnderline())
-                text.setStrikeout(line.getStrikeout())
-                text.setVerticalOffset(line.getVerticalOffset())
-                text.setURIAction(line.getURIAction())
-                text.setGoToAction(line.getGoToAction())
-                runLength += text.getWidth()
+                let textLine = TextLine(line.font!, token + Single.space)
+                textLine.setFallbackFont(line.getFallbackFont())
+                textLine.setFontSize(line.getFontSize())
+                textLine.setTextColor(line.getTextColor())
+                textLine.setUnderline(line.getUnderline())
+                textLine.setStrikeout(line.getStrikeout())
+                textLine.setVerticalOffset(line.getVerticalOffset())
+                textLine.setURIAction(line.getURIAction())
+                textLine.setGoToAction(line.getGoToAction())
+                text = textLine
+                runLength += textLine.getWidth()
                 if runLength < self.w {
-                    list.append(text)
+                    list.append(textLine)
                 } else {
-                    if page != nil {    // getHeight draws on no page to measure
-                        drawLineOfText(page!, list)
-                    }
+                    drawLineOfText(page, list)
                     moveToNextLine(lineHeight)
                     list.removeAll()
-                    list.append(text)
-                    runLength = text.getWidth()
+                    list.append(textLine)
+                    runLength = textLine.getWidth()
                 }
             }
-            line.isLastToken = true
+            text?.isLastToken = true
         }
-        if page != nil {
-            drawNonJustifiedLine(page!, list)
-        }
+        drawNonJustifiedLine(page, list)
 
         if lineBetweenParagraphs {
-            return moveToNextLine(lineHeight)
+            moveToNextLine(lineHeight)
         }
 
         return moveToNextParagraph(lineHeight * self.paragraphSpacing)
@@ -278,7 +275,7 @@ public class TextColumn : Drawable {
     }
 
     @discardableResult
-    private func drawLineOfText(_ page: Page, _ list: [TextLine]) -> [Float] {
+    private func drawLineOfText(_ page: Page?, _ list: [TextLine]) -> [Float] {
         if alignment == Align.JUSTIFY {
             var sumOfWordWidths: Float = 0.0
             for textLine in list {
@@ -286,27 +283,9 @@ public class TextColumn : Drawable {
             }
 
             let dx = (w - sumOfWordWidths) / Float(list.count - 1)
+            // Each token draws its own link annotation when the line has a URI or GoTo action.
             for textLine in list {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
-                if textLine.getGoToAction() != nil {
-                    page.addAnnotation(Annotation(
-                            Annotation.Link,
-                            x,
-                            y - textLine.font!.ascent,
-                            x + textLine.getWidth(),
-                            y + textLine.font!.descent,
-                            nil,                        // Vertices
-                            nil,                        // Fill Color
-                            0.0,                        // Transparency
-                            nil,                        // Title
-                            nil,                        // Contents
-                            nil,                        // The URI
-                            textLine.getGoToAction(),   // The destination name
-                            nil,
-                            nil,
-                            nil))
-                }
-
                 if rotate == 0 {
                     textLine.setTextDirection(0).drawOn(page)
                     x1 += textLine.getWidth() + dx
@@ -326,7 +305,7 @@ public class TextColumn : Drawable {
     }
 
     @discardableResult
-    private func drawNonJustifiedLine(_ page: Page, _ list: [TextLine]) -> [Float] {
+    private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine]) -> [Float] {
         var runLength: Float = 0.0
         for textLine in list {
             runLength += textLine.getWidth()
@@ -350,26 +329,9 @@ public class TextColumn : Drawable {
             }
         }
 
+        // Each token draws its own link annotation when the line has a URI or GoTo action.
         for textLine in list {
             textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
-            if textLine.getGoToAction() != nil {
-                page.addAnnotation(Annotation(
-                        Annotation.Link,
-                        x,
-                        y - textLine.font!.ascent,
-                        x + textLine.getWidth(),
-                        y + textLine.font!.descent,
-                        nil,                        // Vertices
-                        nil,                        // Fill Color
-                        0.0,                        // Transparency
-                        nil,                        // Title
-                        nil,                        // Contents
-                        nil,                        // The URI
-                        textLine.getGoToAction(),   // The destination name
-                        nil,
-                        nil,
-                        nil))
-            }
             if rotate == 0 {
                 textLine.setTextDirection(0).drawOn(page)
                 x1 += textLine.getWidth()

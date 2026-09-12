@@ -47,9 +47,8 @@ func NewTextColumn(rotateByDegrees int) *TextColumn {
 	return textColumn
 }
 
-// SetLineBetweenParagraphs sets the lineBetweenParagraphs private variable value.
-// If the value is set to true - an empty line will be inserted between the current and next lines.
-// @param lineBetweenParagraphs the specified boolean value.
+// SetLineBetweenParagraphs sets whether an empty line is inserted between the
+// current and next paragraphs.
 func (textColumn *TextColumn) SetLineBetweenParagraphs(lineBetweenParagraphs bool) *TextColumn {
 	textColumn.lineBetweenParagraphs = lineBetweenParagraphs
 	return textColumn
@@ -61,7 +60,7 @@ func (textColumn *TextColumn) SetLineSpacing(lineSpacing float32) *TextColumn {
 	return textColumn
 }
 
-// SetParagraphSpacing sets the space between the lines.
+// SetParagraphSpacing sets the space between paragraphs.
 func (textColumn *TextColumn) SetParagraphSpacing(paragraphSpacing float32) *TextColumn {
 	textColumn.paragraphSpacing = paragraphSpacing
 	return textColumn
@@ -126,13 +125,11 @@ func (textColumn *TextColumn) GetSize() *Dimension {
 	return NewDimension(textColumn.w, xy[1]-textColumn.y)
 }
 
-// DrawOn draws this text column on the specified page if the 'draw' boolean value is 'true'.
-//
-// @param page the page to draw this text column on.
-// @param draw the boolean value that specified if the text column should actually be drawn on the page.
-// @return the point with x and y coordinates of the location where to draw the next component.
+// DrawOn draws this text column on the specified page and returns the x and y
+// coordinates of the location where to draw the next component. With no page
+// nothing is drawn and the location is computed.
 func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
-	var xy []float32
+	xy := []float32{textColumn.x, textColumn.y}
 	for _, paragraph := range textColumn.paragraphs {
 		textColumn.alignment = paragraph.alignment
 		xy = textColumn.drawParagraphOn(page, paragraph)
@@ -167,7 +164,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 
 	var runLength float32
 	for _, line := range paragraph.lines {
-		tokens := strings.Fields(line.text)
+		tokens := strings.FieldsFunc(line.text, isASCIIWhitespace)
 		var text *TextLine
 		for _, token := range tokens {
 			text = NewTextLine(line.font, token+single.Space)
@@ -238,28 +235,9 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 			sumOfWordWidths += textLine.GetWidth()
 		}
 		dx := (textColumn.w - sumOfWordWidths) / float32(len(textLines)-1)
+		// Each token draws its own link annotation when the line has a URI or GoTo action.
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
-			if textLine.GetGoToAction() != "" {
-				page.addAnnotation(&Annotation{
-					annotationType: AnnotationLink,
-					x1:             textColumn.x,
-					y1:             page.height - (textColumn.y - textLine.font.ascent),
-					x2:             textColumn.x + textLine.GetWidth(),
-					y2:             page.height - (textColumn.y + textLine.font.descent),
-					vertices:       nil,
-					fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
-					transparency:   0.0,
-					title:          "",
-					contents:       "",
-					uri:            "",           // The URI
-					key:            textLine.key, // The destination name
-					language:       "",
-					actualText:     "",
-					altDescription: "",
-				})
-			}
-
 			if textColumn.rotate == 0 {
 				textLine.SetTextDirection(0)
 				textLine.DrawOn(page)
@@ -303,28 +281,9 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 		}
 	}
 
+	// Each token draws its own link annotation when the line has a URI or GoTo action.
 	for _, textLine := range textLines {
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
-		if textLine.uri != "" || textLine.key != "" {
-			page.addAnnotation(&Annotation{
-				annotationType: AnnotationLink,
-				x1:             textColumn.x,
-				y1:             textColumn.y - textLine.font.ascent,
-				x2:             textColumn.x + textLine.GetWidth(),
-				y2:             textColumn.y + textLine.font.descent,
-				vertices:       nil,
-				fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
-				transparency:   0.0,
-				title:          "",
-				contents:       "",
-				uri:            "",                       // The URI
-				key:            textLine.GetGoToAction(), // The destination name
-				language:       "",
-				actualText:     "",
-				altDescription: "",
-			})
-		}
-
 		if textColumn.rotate == 0 {
 			textLine.SetTextDirection(0)
 			textLine.DrawOn(page)

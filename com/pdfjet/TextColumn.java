@@ -77,6 +77,17 @@ public class TextColumn implements Drawable {
     }
 
     /**
+     * Sets the space between paragraphs.
+     *
+     * @param paragraphSpacing the paragraph spacing.
+     * @return this TextColumn object.
+     */
+    public TextColumn setParagraphSpacing(double paragraphSpacing) {
+        this.paragraphSpacing = (float) paragraphSpacing;
+        return this;
+    }
+
+    /**
      * Sets the position of this text column on the page.
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
@@ -207,14 +218,15 @@ public class TextColumn implements Drawable {
     }
 
     /**
-     * Draws this text column on the specified page if the 'draw' boolean value is 'true'.
+     * Draws this text column on the specified page. With no page nothing is
+     * drawn and the location of the next component is computed.
      *
      * @param page the page to draw this text column on.
      * @return the point with x and y coordinates of the location where to draw the next component.
      * @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        float[] xy = null;
+        float[] xy = new float[] {x, y};
         for (Paragraph paragraph : paragraphs) {
             this.alignment = paragraph.alignment;
             xy = drawParagraphOn(page, paragraph);
@@ -252,6 +264,9 @@ public class TextColumn implements Drawable {
             String[] tokens = line.text.split("\\s+");
             TextLine text = null;
             for (String token : tokens) {
+                if (token.isEmpty()) {  // Before leading whitespace
+                    continue;
+                }
                 text = new TextLine(line.font, token + Single.space);
                 text.setFallbackFont(line.getFallbackFont());
                 text.setFontSize(line.getFontSize());
@@ -272,7 +287,9 @@ public class TextColumn implements Drawable {
                     runLength = text.getWidth();
                 }
             }
-            text.isLastToken = true;
+            if (text != null) {
+                text.isLastToken = true;
+            }
         }
         drawNonJustifiedLine(page, list);
 
@@ -319,27 +336,9 @@ public class TextColumn implements Drawable {
             }
             float dx = (w - sumOfWordWidths) / (list.size() - 1);
 
+            // Each token draws its own link annotation when the line has a URI or GoTo action.
             for (TextLine textLine : list) {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
-                if (textLine.getGoToAction() != null) {
-                    page.addAnnotation(new Annotation(
-                            Annotation.Link,
-                            x,
-                            y - textLine.font.getAscent(),
-                            x + textLine.getWidth(),
-                            y + textLine.font.getDescent(),
-                            null,                       // Vertices
-                            null,                       // Fill Color
-                            0f,                         // Transparency
-                            null,                       // Title
-                            null,                       // Contents
-                            null,                       // The URI
-                            textLine.getGoToAction(),   // The destination name
-                            null,
-                            null,
-                            null));
-                }
-
                 if (rotate == 0) {
                     textLine.setTextDirection(0);
                     textLine.drawOn(page);
@@ -384,27 +383,9 @@ public class TextColumn implements Drawable {
             }
         }
 
+        // Each token draws its own link annotation when the line has a URI or GoTo action.
         for (TextLine textLine : list) {
             textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
-            if (textLine.getGoToAction() != null) {
-                page.addAnnotation(new Annotation(
-                        Annotation.Link,
-                        x,
-                        y - textLine.font.getAscent(),
-                        x + textLine.getWidth(),
-                        y + textLine.font.getDescent(),
-                        null,                       // Vertices
-                        null,                       // Fill Color
-                        0f,                         // Transparency
-                        null,                       // Title
-                        null,                       // Contents
-                        null,                       // The URI
-                        textLine.getGoToAction(),   // The destination name
-                        null,
-                        null,
-                        null));
-            }
-
             if (rotate == 0) {
                 textLine.setTextDirection(0);
                 textLine.drawOn(page);

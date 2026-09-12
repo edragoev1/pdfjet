@@ -373,7 +373,7 @@ public class TextBlock : Drawable {
     }
 
     // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-    private static func isASCIIWhitespace(_ ch: Character) -> Bool {
+    static func isASCIIWhitespace(_ ch: Character) -> Bool {
         return " \t\n\u{0B}\u{0C}\r".contains(ch)
     }
 

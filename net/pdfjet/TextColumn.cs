@@ -6,7 +6,6 @@
  */
 using System;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
@@ -187,7 +186,7 @@ public class TextColumn : IDrawable {
     /// <param name="page">the page to draw this text column on.</param>
     /// <returns>the point with x and y coordinates of the location where to draw the next component.</returns>
     public float[] DrawOn(Page page) {
-        float[] xy = null;
+        float[] xy = new float[] {x, y};
         foreach (Paragraph paragraph in paragraphs) {
             this.alignment = paragraph.alignment;
             xy = DrawParagraphOn(page, paragraph);
@@ -222,7 +221,9 @@ public class TextColumn : IDrawable {
 
         float runLength = 0f;
         foreach (TextLine line in paragraph.lines) {
-            String[] tokens = Regex.Split(line.text, @"\s+");
+            // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+            String[] tokens = line.text.Split(
+                    new char[] {' ', '\t', '\n', '\x0B', '\f', '\r'}, StringSplitOptions.RemoveEmptyEntries);
             TextLine text = null;
             foreach (String token in tokens) {
                 text = new TextLine(line.font, token + Single.space);
@@ -245,7 +246,9 @@ public class TextColumn : IDrawable {
                     runLength = text.GetWidth();
                 }
             }
-            text.isLastToken = true;
+            if (text != null) {
+                text.isLastToken = true;
+            }
         }
         DrawNonJustifiedLine(page, list);
 
@@ -292,27 +295,9 @@ public class TextColumn : IDrawable {
             }
 
             float dx = (w - sumOfWordWidths) / (list.Count - 1);
+            // Each token draws its own link annotation when the line has a URI or GoTo action.
             foreach (TextLine textLine in list) {
                 textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
-                if (textLine.GetGoToAction() != null) {
-                    page.AddAnnotation(new Annotation(
-                            Annotation.Link,
-                            x,
-                            y - textLine.font.GetAscent(),
-                            x + textLine.GetWidth(),
-                            y + textLine.font.GetDescent(),
-                            null,                       // Vertices
-                            null,                       // Fill Color
-                            0f,                         // Transparency
-                            null,                       // Title
-                            null,                       // Contents
-                            null,                       // The URI
-                            textLine.GetGoToAction(),   // The destination name
-                            null,
-                            null,
-                            null));
-                }
-
                 if (rotate == 0) {
                     textLine.SetTextDirection(0);
                     textLine.DrawOn(page);
@@ -358,27 +343,9 @@ public class TextColumn : IDrawable {
             }
         }
 
+        // Each token draws its own link annotation when the line has a URI or GoTo action.
         foreach (TextLine textLine in list) {
             textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
-            if (textLine.GetGoToAction() != null) {
-                page.AddAnnotation(new Annotation(
-                        Annotation.Link,
-                        x,
-                        y - textLine.font.GetAscent(),
-                        x + textLine.GetWidth(),
-                        y + textLine.font.GetDescent(),
-                        null,                       // Vertices
-                        null,                       // Fill Color
-                        0f,                         // Transparency
-                        null,                       // Title
-                        null,                       // Contents
-                        null,                       // The URI
-                        textLine.GetGoToAction(),   // The destination name
-                        null,
-                        null,
-                        null));
-            }
-
             if (rotate == 0) {
                 textLine.SetTextDirection(0);
                 textLine.DrawOn(page);
