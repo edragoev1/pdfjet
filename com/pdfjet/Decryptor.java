@@ -18,9 +18,10 @@ import com.pdfjet.encryption.AES128;
 
 /**
  * Decrypts the strings and streams of a PDF that is encrypted with the
- * standard security handler and an empty user password, like PDFs that open
- * without a password but restrict printing or copying. RC4 and AES-128
- * (revisions 2 to 4) and AES-256 (revisions 5 and 6) are supported.
+ * standard security handler, given its user or owner password, or no
+ * password for a PDF that opens without one but restricts printing or
+ * copying. RC4 and AES-128 (revisions 2 to 4) and AES-256 (revisions 5 and 6)
+ * are supported.
  */
 final class Decryptor {
     private static final byte[] PADDING = {
@@ -48,9 +49,11 @@ final class Decryptor {
      *
      * @param trailer the trailer, or the cross-reference stream object.
      * @param objects the objects of the PDF.
-     * @throws Exception if the PDF needs a password, or its encryption is not supported.
+     * @param password the user or owner password, or an empty string.
+     * @throws Exception if the password is wrong or missing, or the encryption is not supported.
      */
-    static Decryptor getDecryptor(PDFobj trailer, List<PDFobj> objects) throws Exception {
+    static Decryptor getDecryptor(PDFobj trailer, List<PDFobj> objects, String password)
+            throws Exception {
         int i = (trailer == null) ? -1 : trailer.dict.indexOf("/Encrypt");
         if (i == -1 || i + 1 >= trailer.dict.size()) {
             return null;
@@ -85,10 +88,10 @@ final class Decryptor {
         if (i != -1 && i + 2 < trailer.dict.size() && trailer.dict.get(i + 1).equals("[")) {
             id = toBytes(trailer.dict.get(i + 2));
         }
-        return new Decryptor(encrypt, id);
+        return new Decryptor(encrypt, id, password);
     }
 
-    private Decryptor(PDFobj encrypt, byte[] id) throws Exception {
+    private Decryptor(PDFobj encrypt, byte[] id, String password) throws Exception {
         this.objNumber = encrypt.number;
         if (!encrypt.getValue("/Filter").equals("/Standard")) {
             throw new Exception("The security handler of the PDF is not supported: " +
@@ -107,15 +110,42 @@ final class Decryptor {
             throw new Exception("The encryption of the PDF is not supported: /V " + v);
         }
         byte[] u = toBytes(encrypt.getValue("/U"));
+        byte[] o = toBytes(encrypt.getValue("/O"));
         if (r == 5 || r == 6) {
-            this.key = getKey(r, u, toBytes(encrypt.getValue("/UE")));
+            this.key = getKey(r, utf8Password(password), u, o,
+                    toBytes(encrypt.getValue("/UE")), toBytes(encrypt.getValue("/OE")));
         } else if (r >= 2 && r <= 4) {
             int length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : getInt(encrypt, "/Length") / 8;
-            this.key = getKey(r, Math.max(5, Math.min(length, 16)),
-                    toBytes(encrypt.getValue("/O")), u, getInt(encrypt, "/P"), id, encryptMetadata);
+            this.key = getKey(r, Math.max(5, Math.min(length, 16)), latin1Password(password),
+                    o, u, getInt(encrypt, "/P"), id, encryptMetadata);
         } else {
             throw new Exception("The encryption of the PDF is not supported: /R " + r);
         }
+    }
+
+    // Returns the UTF-8 bytes of the password, at most 127 of them, which is
+    // the password of revisions 5 and 6.
+    private static byte[] utf8Password(String password) {
+        byte[] bytes = password.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return bytes.length > 127 ? Arrays.copyOf(bytes, 127) : bytes;
+    }
+
+    // Returns the password in PDFDocEncoding, which is Latin-1 for the
+    // characters a password is likely to have, at most 32 bytes of it, which
+    // is the password of revisions 2 to 4.
+    private static byte[] latin1Password(String password) {
+        byte[] bytes = new byte[Math.min(password.length(), 32)];
+        for (int i = 0; i < bytes.length; i++) {
+            char c = password.charAt(i);
+            bytes[i] = (byte) (c < 256 ? c : '?');
+        }
+        return bytes;
+    }
+
+    // The exception for a password that does not open the PDF.
+    private static Exception passwordException(byte[] password) {
+        return new Exception(password.length == 0 ?
+                "The PDF needs a password." : "The password of the PDF is not correct.");
     }
 
     // Returns the method of the crypt filter with the name in the /CF dictionary.
@@ -150,13 +180,56 @@ final class Decryptor {
         return NONE;                    // Like /Identity, the default.
     }
 
-    // Algorithm 2 of ISO 32000-2 computes the key of revisions 2 to 4 from
-    // the password, which is checked against /U with algorithms 4 and 5.
+    // Computes the key of revisions 2 to 4 from the password with algorithm 2
+    // of ISO 32000-2, and checks it against /U with algorithms 4 and 5. When
+    // the password is not the user password, it is tried as the owner
+    // password, which algorithm 7 turns into the user password with /O.
     private static byte[] getKey(
-            int r, int length, byte[] o, byte[] u, int p, byte[] id, boolean encryptMetadata)
+            int r, int length, byte[] password, byte[] o, byte[] u, int p, byte[] id,
+            boolean encryptMetadata) throws Exception {
+        byte[] padded = pad(password);
+        byte[] key = computeKey(r, length, padded, o, p, id, encryptMetadata);
+        if (isUserKey(r, length, key, u, id)) {
+            return key;
+        }
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        byte[] hash = md5.digest(padded);
+        if (r >= 3) {
+            for (int i = 0; i < 50; i++) {
+                hash = md5.digest(hash);
+            }
+        }
+        byte[] ownerKey = Arrays.copyOf(hash, length);
+        byte[] userPassword = Arrays.copyOf(o, 32);
+        if (r == 2) {
+            userPassword = rc4(ownerKey, userPassword);
+        } else {
+            for (int i = 19; i >= 0; i--) {
+                userPassword = rc4(xor(ownerKey, i), userPassword);
+            }
+        }
+        key = computeKey(r, length, userPassword, o, p, id, encryptMetadata);
+        if (isUserKey(r, length, key, u, id)) {
+            return key;
+        }
+        throw passwordException(password);
+    }
+
+    // Returns the password padded or cut to 32 bytes, step a of algorithm 2.
+    private static byte[] pad(byte[] password) {
+        byte[] padded = new byte[32];
+        int n = Math.min(password.length, 32);
+        System.arraycopy(password, 0, padded, 0, n);
+        System.arraycopy(PADDING, 0, padded, n, 32 - n);
+        return padded;
+    }
+
+    // Steps b to h of algorithm 2: the key from the padded password.
+    private static byte[] computeKey(
+            int r, int length, byte[] padded, byte[] o, int p, byte[] id, boolean encryptMetadata)
             throws Exception {
         MessageDigest md5 = MessageDigest.getInstance("MD5");
-        md5.update(PADDING);
+        md5.update(padded);
         md5.update(o);
         md5.update(new byte[] {(byte) p, (byte) (p >> 8), (byte) (p >> 16), (byte) (p >> 24)});
         md5.update(id);
@@ -170,56 +243,82 @@ final class Decryptor {
                 hash = md5.digest();
             }
         }
-        byte[] key = Arrays.copyOf(hash, length);
+        return Arrays.copyOf(hash, length);
+    }
+
+    // Algorithms 4 and 5: whether the key computed from a password is the
+    // user key, which /U holds encrypted.
+    private static boolean isUserKey(int r, int length, byte[] key, byte[] u, byte[] id)
+            throws Exception {
         byte[] check;
         int n;
         if (r == 2) {
             check = rc4(key, PADDING);
             n = 32;
         } else {
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
             md5.update(PADDING);
             md5.update(id);
             check = rc4(key, md5.digest());
             for (int i = 1; i <= 19; i++) {
-                byte[] k = new byte[length];
-                for (int j = 0; j < length; j++) {
-                    k[j] = (byte) (key[j] ^ i);
-                }
-                check = rc4(k, check);
+                check = rc4(xor(key, i), check);
             }
             n = 16;
         }
-        if (u.length < n || !Arrays.equals(check, Arrays.copyOf(u, n))) {
-            throw new Exception("The PDF can only be opened with a password, which is not supported.");
-        }
-        return key;
+        return u.length >= n && Arrays.equals(check, Arrays.copyOf(u, n));
     }
 
-    // Algorithms 2.A and 11 of ISO 32000-2 get the key of revisions 5 and 6
-    // from /UE, after checking the password against /U.
-    private static byte[] getKey(int r, byte[] u, byte[] ue) throws Exception {
+    private static byte[] xor(byte[] key, int i) {
+        byte[] k = new byte[key.length];
+        for (int j = 0; j < key.length; j++) {
+            k[j] = (byte) (key[j] ^ i);
+        }
+        return k;
+    }
+
+    // Algorithms 2.A, 11 and 12 of ISO 32000-2 get the key of revisions 5 and
+    // 6 from /UE with the user password, or from /OE with the owner password.
+    private static byte[] getKey(int r, byte[] password, byte[] u, byte[] o, byte[] ue, byte[] oe)
+            throws Exception {
         if (u.length < 48 || ue.length < 32) {
             throw new Exception("The encryption dictionary of the PDF is not valid.");
         }
-        byte[] hash = getHash(r, Arrays.copyOfRange(u, 32, 40));
-        if (!Arrays.equals(hash, Arrays.copyOf(u, 32))) {
-            throw new Exception("The PDF can only be opened with a password, which is not supported.");
+        byte[] none = new byte[0];
+        if (Arrays.equals(getHash(r, password, Arrays.copyOfRange(u, 32, 40), none),
+                Arrays.copyOf(u, 32))) {
+            byte[] hash = getHash(r, password, Arrays.copyOfRange(u, 40, 48), none);
+            return aesDecrypt(hash, new byte[16], Arrays.copyOf(ue, 32));
         }
-        hash = getHash(r, Arrays.copyOfRange(u, 40, 48));
-        return aesDecrypt(hash, new byte[16], Arrays.copyOf(ue, 32));
+        byte[] u48 = Arrays.copyOf(u, 48);
+        if (o.length >= 48 && oe.length >= 32 &&
+                Arrays.equals(getHash(r, password, Arrays.copyOfRange(o, 32, 40), u48),
+                        Arrays.copyOf(o, 32))) {
+            byte[] hash = getHash(r, password, Arrays.copyOfRange(o, 40, 48), u48);
+            return aesDecrypt(hash, new byte[16], Arrays.copyOf(oe, 32));
+        }
+        throw passwordException(password);
     }
 
-    // Returns the hash of the empty password and the salt, which is SHA-256
-    // in revision 5, and algorithm 2.B of ISO 32000-2 in revision 6.
-    private static byte[] getHash(int r, byte[] salt) throws Exception {
-        byte[] k = MessageDigest.getInstance("SHA-256").digest(salt);
+    // Returns the hash of the password, the salt and, for the owner password,
+    // the 48 bytes of /U: SHA-256 in revision 5, and algorithm 2.B of
+    // ISO 32000-2 in revision 6.
+    private static byte[] getHash(int r, byte[] password, byte[] salt, byte[] udata)
+            throws Exception {
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        sha256.update(password);
+        sha256.update(salt);
+        byte[] k = sha256.digest(udata);
         if (r == 5) {
             return k;
         }
         for (int round = 1; ; round++) {
-            byte[] k1 = new byte[64 * k.length];
+            byte[] block = new byte[password.length + k.length + udata.length];
+            System.arraycopy(password, 0, block, 0, password.length);
+            System.arraycopy(k, 0, block, password.length, k.length);
+            System.arraycopy(udata, 0, block, password.length + k.length, udata.length);
+            byte[] k1 = new byte[64 * block.length];
             for (int i = 0; i < 64; i++) {
-                System.arraycopy(k, 0, k1, i * k.length, k.length);
+                System.arraycopy(block, 0, k1, i * block.length, block.length);
             }
             byte[] e = AES128.encryptK1(k1, Arrays.copyOf(k, 16), Arrays.copyOfRange(k, 16, 32));
             int sum = 0;

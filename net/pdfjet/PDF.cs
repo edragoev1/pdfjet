@@ -1316,6 +1316,18 @@ public class PDF {
     /// is decrypted when it opens without a password.
     /// </summary>
     public List<PDFobj> Read(Stream inputStream) {
+        return Read(inputStream, "");
+    }
+
+    /// <summary>
+    /// Reads the objects of an existing PDF from the stream, which holds a PDF
+    /// that is encrypted with the standard security handler. The PDF is
+    /// decrypted with the password, which is its user or its owner password.
+    /// </summary>
+    /// <param name="inputStream">The PDF input stream.</param>
+    /// <param name="password">The user or owner password of the PDF.</param>
+    /// <exception cref="Exception">If the password is not correct.</exception>
+    public List<PDFobj> Read(Stream inputStream, String password) {
         byte[] buf = Content.GetFromStream(inputStream);
 
         List<PDFobj> objects1 = new List<PDFobj>();
@@ -1331,7 +1343,7 @@ public class PDF {
             objects1.Clear();
             trailer = GetObjectsByScanning(buf, objects1);
         }
-        Decryptor decryptor = Decryptor.GetDecryptor(trailer, objects1);
+        Decryptor decryptor = Decryptor.GetDecryptor(trailer, objects1, password);
 
         List<PDFobj> objects2 = new List<PDFobj>();
         foreach (PDFobj obj in objects1) {

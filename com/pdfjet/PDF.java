@@ -1440,6 +1440,22 @@ final public class PDF {
      *  @throws Exception  If an input or output exception occurred
      */
     public List<PDFobj> read(InputStream inputStream) throws Exception {
+        return read(inputStream, "");
+    }
+
+    /**
+     *  Returns a list of objects of type PDFobj read from input stream, which
+     *  holds a PDF that is encrypted with the standard security handler.
+     *  The PDF is decrypted with the password, which is its user or its owner
+     *  password.
+     *
+     *  @param inputStream the PDF input stream.
+     *  @param password the user or owner password of the PDF.
+     *
+     *  @return the list of PDF objects.
+     *  @throws Exception  If the password is not correct, or an input or output exception occurred
+     */
+    public List<PDFobj> read(InputStream inputStream, String password) throws Exception {
         byte[] buf = Content.getFromStream(inputStream);
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
@@ -1455,7 +1471,7 @@ final public class PDF {
             objects1.clear();
             trailer = getObjectsByScanning(buf, objects1);
         }
-        Decryptor decryptor = Decryptor.getDecryptor(trailer, objects1);
+        Decryptor decryptor = Decryptor.getDecryptor(trailer, objects1, password);
 
         List<PDFobj> objects2 = new ArrayList<PDFobj>();
         for (PDFobj obj : objects1) {

@@ -1286,6 +1286,22 @@ public class PDF {
     /// - Returns: [PDFobj] the list of PDF objects.
     ///
     public func read(from stream: InputStream) throws -> [PDFobj] {
+        return try read(from: stream, password: "")
+    }
+
+    ///
+    /// Returns a list of objects of type PDFobj read from input stream, which
+    /// holds a PDF that is encrypted with the standard security handler. The
+    /// PDF is decrypted with the password, which is its user or its owner
+    /// password.
+    ///
+    /// - Parameter stream: the PDF input stream.
+    /// - Parameter password: the user or owner password of the PDF.
+    ///
+    /// - Returns: [PDFobj] the list of PDF objects.
+    /// - Throws: DecryptorError when the password is not correct.
+    ///
+    public func read(from stream: InputStream, password: String) throws -> [PDFobj] {
         var buffer1 = try Content.getFromStream(stream)
         var objects1 = [PDFobj]()
         let startXRef = getStartXRef(buffer1)
@@ -1301,7 +1317,7 @@ public class PDF {
             objects1.removeAll()
             trailer = getObjectsByScanning(buffer1, &objects1)
         }
-        let decryptor = try Decryptor.getDecryptor(trailer, objects1)
+        let decryptor = try Decryptor.getDecryptor(trailer, objects1, password)
 
         var objects2 = [PDFobj]()
         for obj in objects1 {

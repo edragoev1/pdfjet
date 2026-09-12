@@ -218,6 +218,14 @@ same. Type passwords in precomposed (NFC) form, as keyboards produce them. A
 password that is not set is empty, so a PDF whose user password is not set opens
 without a prompt, with the permissions applied.
 
+`PDF.read` also reads encrypted PDFs, made by PDFjet or by other producers:
+RC4 and AES-128 (revisions 2 to 4 of the standard security handler) and AES-256
+(revisions 5 and 6). A PDF that opens without a password is decrypted by the
+plain `read`. For one that needs a password, pass its user or owner password to
+`read(inputStream, password)` in Java and C#, `ReadWithPassword(buf, password)`
+in Go, or `read(from:password:)` in Swift. A wrong password raises an error
+that says so, and so does a missing one.
+
 ## Port differences
 
 Public setters return the object they were called on, so calls can be chained.

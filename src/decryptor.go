@@ -53,7 +53,7 @@ type decryptor struct {
 // getDecryptor returns the decryptor of the PDF, or nil when it is not
 // encrypted. The trailer is the cross-reference stream object when there is
 // no trailer.
-func getDecryptor(trailer *PDFobj, objects []*PDFobj) (*decryptor, error) {
+func getDecryptor(trailer *PDFobj, objects []*PDFobj, password string) (*decryptor, error) {
 	if trailer == nil {
 		return nil, nil
 	}
@@ -94,10 +94,10 @@ func getDecryptor(trailer *PDFobj, objects []*PDFobj) (*decryptor, error) {
 	if i != -1 && i+2 < len(trailer.dict) && trailer.dict[i+1] == "[" {
 		id = toBytes(trailer.dict[i+2])
 	}
-	return newDecryptor(encrypt, id)
+	return newDecryptor(encrypt, id, password)
 }
 
-func newDecryptor(encrypt *PDFobj, id []byte) (*decryptor, error) {
+func newDecryptor(encrypt *PDFobj, id []byte, password string) (*decryptor, error) {
 	d := &decryptor{objNumber: encrypt.number}
 	if encrypt.getValue("/Filter") != "/Standard" {
 		return nil, errors.New("The security handler of the PDF is not supported: " +
@@ -116,9 +116,11 @@ func newDecryptor(encrypt *PDFobj, id []byte) (*decryptor, error) {
 		return nil, fmt.Errorf("The encryption of the PDF is not supported: /V %d", v)
 	}
 	u := toBytes(encrypt.getValue("/U"))
+	o := toBytes(encrypt.getValue("/O"))
 	var err error
 	if r == 5 || r == 6 {
-		d.key, err = getAES256Key(r, u, toBytes(encrypt.getValue("/UE")))
+		d.key, err = getAES256Key(r, utf8Password(password), u, o,
+			toBytes(encrypt.getValue("/UE")), toBytes(encrypt.getValue("/OE")))
 	} else if r >= 2 && r <= 4 {
 		length := getInt(encrypt, "/Length") / 8
 		if v == 1 || r == 2 {
@@ -126,8 +128,8 @@ func newDecryptor(encrypt *PDFobj, id []byte) (*decryptor, error) {
 		} else if v == 4 {
 			length = 16
 		}
-		d.key, err = getRC4Key(r, max(5, min(length, 16)),
-			toBytes(encrypt.getValue("/O")), u, getInt(encrypt, "/P"), id, d.encryptMetadata)
+		d.key, err = getRC4Key(r, max(5, min(length, 16)), latin1Password(password),
+			o, u, getInt(encrypt, "/P"), id, d.encryptMetadata)
 	} else {
 		return nil, fmt.Errorf("The encryption of the PDF is not supported: /R %d", r)
 	}
@@ -171,12 +173,90 @@ func getCryptMethod(encrypt *PDFobj, name string) int {
 	return cryptNone // Like /Identity, the default.
 }
 
+// utf8Password returns the UTF-8 bytes of the password, at most 127 of them,
+// which is the password of revisions 5 and 6.
+func utf8Password(password string) []byte {
+	if len(password) > 127 {
+		password = password[:127]
+	}
+	return []byte(password)
+}
+
+// latin1Password returns the password in PDFDocEncoding, which is Latin-1 for
+// the characters a password is likely to have, at most 32 bytes of it, which
+// is the password of revisions 2 to 4.
+func latin1Password(password string) []byte {
+	bytes := make([]byte, 0, 32)
+	for _, r := range password {
+		if len(bytes) == 32 {
+			break
+		}
+		if r < 256 {
+			bytes = append(bytes, byte(r))
+		} else {
+			bytes = append(bytes, '?')
+		}
+	}
+	return bytes
+}
+
+// passwordError is the error for a password that does not open the PDF.
+func passwordError(password []byte) error {
+	if len(password) == 0 {
+		return errors.New("The PDF needs a password.")
+	}
+	return errors.New("The password of the PDF is not correct.")
+}
+
 // getRC4Key computes the key of revisions 2 to 4 from the password with
-// algorithm 2 of ISO 32000-2, and checks the password against /U with
-// algorithms 4 and 5.
-func getRC4Key(r, length int, o, u []byte, p int, id []byte, encryptMetadata bool) ([]byte, error) {
+// algorithm 2 of ISO 32000-2, and checks it against /U with algorithms 4 and
+// 5. When the password is not the user password, it is tried as the owner
+// password, which algorithm 7 turns into the user password with /O.
+func getRC4Key(r, length int, password, o, u []byte, p int, id []byte, encryptMetadata bool) ([]byte, error) {
+	padded := padPassword(password)
+	key := computeRC4Key(r, length, padded, o, p, id, encryptMetadata)
+	if isUserKey(r, length, key, u, id) {
+		return key, nil
+	}
+	sum := md5.Sum(padded)
+	hash := sum[:]
+	if r >= 3 {
+		for i := 0; i < 50; i++ {
+			sum = md5.Sum(hash)
+			hash = sum[:]
+		}
+	}
+	ownerKey := hash[:length]
+	userPassword := make([]byte, 32)
+	copy(userPassword, o)
+	if r == 2 {
+		userPassword = rc4Crypt(ownerKey, userPassword)
+	} else {
+		for i := 19; i >= 0; i-- {
+			userPassword = rc4Crypt(xorKey(ownerKey, byte(i)), userPassword)
+		}
+	}
+	key = computeRC4Key(r, length, userPassword, o, p, id, encryptMetadata)
+	if isUserKey(r, length, key, u, id) {
+		return key, nil
+	}
+	return nil, passwordError(password)
+}
+
+// padPassword returns the password padded or cut to 32 bytes, step a of
+// algorithm 2.
+func padPassword(password []byte) []byte {
+	padded := make([]byte, 32)
+	n := copy(padded, password)
+	copy(padded[n:], passwordPadding)
+	return padded
+}
+
+// computeRC4Key does steps b to h of algorithm 2: the key from the padded
+// password.
+func computeRC4Key(r, length int, padded, o []byte, p int, id []byte, encryptMetadata bool) []byte {
 	h := md5.New()
-	h.Write(passwordPadding)
+	h.Write(padded)
 	h.Write(o)
 	h.Write([]byte{byte(p), byte(p >> 8), byte(p >> 16), byte(p >> 24)})
 	h.Write(id)
@@ -190,7 +270,12 @@ func getRC4Key(r, length int, o, u []byte, p int, id []byte, encryptMetadata boo
 			hash = sum[:]
 		}
 	}
-	key := slices.Clone(hash[:length])
+	return slices.Clone(hash[:length])
+}
+
+// isUserKey reports whether the key computed from a password is the user key,
+// which /U holds encrypted, with algorithms 4 and 5.
+func isUserKey(r, length int, key, u, id []byte) bool {
 	var check []byte
 	n := 16
 	if r == 2 {
@@ -200,41 +285,47 @@ func getRC4Key(r, length int, o, u []byte, p int, id []byte, encryptMetadata boo
 		sum := md5.Sum(append(slices.Clone(passwordPadding), id...))
 		check = rc4Crypt(key, sum[:])
 		for i := 1; i <= 19; i++ {
-			k := make([]byte, length)
-			for j := range k {
-				k[j] = key[j] ^ byte(i)
-			}
-			check = rc4Crypt(k, check)
+			check = rc4Crypt(xorKey(key, byte(i)), check)
 		}
 	}
-	if len(u) < n || !bytes.Equal(check[:n], u[:n]) {
-		return nil, errors.New("The PDF can only be opened with a password, which is not supported.")
-	}
-	return key, nil
+	return len(u) >= n && bytes.Equal(check[:n], u[:n])
 }
 
-// getAES256Key gets the key of revisions 5 and 6 from /UE with algorithms
-// 2.A and 11 of ISO 32000-2, after checking the password against /U.
-func getAES256Key(r int, u, ue []byte) ([]byte, error) {
+func xorKey(key []byte, i byte) []byte {
+	k := make([]byte, len(key))
+	for j := range k {
+		k[j] = key[j] ^ i
+	}
+	return k
+}
+
+// getAES256Key gets the key of revisions 5 and 6 from /UE with the user
+// password, or from /OE with the owner password, with algorithms 2.A, 11
+// and 12 of ISO 32000-2.
+func getAES256Key(r int, password, u, o, ue, oe []byte) ([]byte, error) {
 	if len(u) < 48 || len(ue) < 32 {
 		return nil, errors.New("The encryption dictionary of the PDF is not valid.")
 	}
-	if !bytes.Equal(getHash(r, u[32:40]), u[:32]) {
-		return nil, errors.New("The PDF can only be opened with a password, which is not supported.")
+	if bytes.Equal(getHash(r, password, u[32:40], nil), u[:32]) {
+		return aesDecrypt(getHash(r, password, u[40:48], nil), make([]byte, 16), ue[:32]), nil
 	}
-	return aesDecrypt(getHash(r, u[40:48]), make([]byte, 16), ue[:32]), nil
+	if len(o) >= 48 && len(oe) >= 32 && bytes.Equal(getHash(r, password, o[32:40], u[:48]), o[:32]) {
+		return aesDecrypt(getHash(r, password, o[40:48], u[:48]), make([]byte, 16), oe[:32]), nil
+	}
+	return nil, passwordError(password)
 }
 
-// getHash returns the hash of the empty password and the salt, which is
-// SHA-256 in revision 5, and algorithm 2.B of ISO 32000-2 in revision 6.
-func getHash(r int, salt []byte) []byte {
-	sum := sha256.Sum256(salt)
+// getHash returns the hash of the password, the salt and, for the owner
+// password, the 48 bytes of /U: SHA-256 in revision 5, and algorithm 2.B of
+// ISO 32000-2 in revision 6.
+func getHash(r int, password, salt, udata []byte) []byte {
+	sum := sha256.Sum256(slices.Concat(password, salt, udata))
 	k := sum[:]
 	if r == 5 {
 		return k
 	}
 	for round := 1; ; round++ {
-		k1 := bytes.Repeat(k, 64)
+		k1 := bytes.Repeat(slices.Concat(password, k, udata), 64)
 		block, _ := aes.NewCipher(k[:16])
 		e := make([]byte, len(k1))
 		cipher.NewCBCEncrypter(block, k[16:32]).CryptBlocks(e, k1)

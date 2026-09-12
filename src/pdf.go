@@ -1283,6 +1283,17 @@ func contains(slice []string, text string) bool {
 // @param inputStream the PDF input stream.
 // @return List<PDFobj> the list of PDF objects.
 func (pdf *PDF) Read(buf []byte) []*PDFobj {
+	return pdf.ReadWithPassword(buf, "")
+}
+
+// ReadWithPassword returns a list of objects of type PDFobj read from the
+// bytes of a PDF that is encrypted with the standard security handler. The
+// PDF is decrypted with the password, which is its user or its owner
+// password.
+// @param buf the bytes of the PDF.
+// @param password the user or owner password of the PDF.
+// @return List<PDFobj> the list of PDF objects.
+func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 	objects1 := make([]*PDFobj, 0)
 	trailer := getObjects(buf, pdf.getStartXRef(buf), &objects1, 0)
 	if trailer == nil || len(objects1) == 0 {
@@ -1291,7 +1302,7 @@ func (pdf *PDF) Read(buf []byte) []*PDFobj {
 		objects1 = objects1[:0]
 		trailer = getObjectsByScanning(buf, &objects1)
 	}
-	dec, err := getDecryptor(trailer, objects1)
+	dec, err := getDecryptor(trailer, objects1, password)
 	if err != nil {
 		log.Fatal(err)
 	}

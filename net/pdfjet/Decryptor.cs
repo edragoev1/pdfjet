@@ -13,9 +13,10 @@ using System.Text;
 namespace PDFjet.NET {
 /// <summary>
 /// Decrypts the strings and streams of a PDF that is encrypted with the
-/// standard security handler and an empty user password, like PDFs that open
-/// without a password but restrict printing or copying. RC4 and AES-128
-/// (revisions 2 to 4) and AES-256 (revisions 5 and 6) are supported.
+/// standard security handler, given its user or owner password, or no
+/// password for a PDF that opens without one but restricts printing or
+/// copying. RC4 and AES-128 (revisions 2 to 4) and AES-256 (revisions 5 and 6)
+/// are supported.
 /// </summary>
 internal sealed class Decryptor {
     private static readonly byte[] PADDING = {
@@ -40,7 +41,7 @@ internal sealed class Decryptor {
 
     // Returns the decryptor of the PDF, or null when it is not encrypted. The
     // trailer is the cross-reference stream object when there is no trailer.
-    internal static Decryptor GetDecryptor(PDFobj trailer, List<PDFobj> objects) {
+    internal static Decryptor GetDecryptor(PDFobj trailer, List<PDFobj> objects, String password) {
         int i = (trailer == null) ? -1 : trailer.dict.IndexOf("/Encrypt");
         if (i == -1 || i + 1 >= trailer.dict.Count) {
             return null;
@@ -75,10 +76,10 @@ internal sealed class Decryptor {
         if (i != -1 && i + 2 < trailer.dict.Count && trailer.dict[i + 1].Equals("[")) {
             id = ToBytes(trailer.dict[i + 2]);
         }
-        return new Decryptor(encrypt, id);
+        return new Decryptor(encrypt, id, password);
     }
 
-    private Decryptor(PDFobj encrypt, byte[] id) {
+    private Decryptor(PDFobj encrypt, byte[] id, String password) {
         this.objNumber = encrypt.number;
         if (!encrypt.GetValue("/Filter").Equals("/Standard")) {
             throw new Exception("The security handler of the PDF is not supported: " +
@@ -97,15 +98,45 @@ internal sealed class Decryptor {
             throw new Exception("The encryption of the PDF is not supported: /V " + v);
         }
         byte[] u = ToBytes(encrypt.GetValue("/U"));
+        byte[] o = ToBytes(encrypt.GetValue("/O"));
         if (r == 5 || r == 6) {
-            this.key = GetKey(r, u, ToBytes(encrypt.GetValue("/UE")));
+            this.key = GetKey(r, Utf8Password(password), u, o,
+                    ToBytes(encrypt.GetValue("/UE")), ToBytes(encrypt.GetValue("/OE")));
         } else if (r >= 2 && r <= 4) {
             int length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : GetInt(encrypt, "/Length") / 8;
-            this.key = GetKey(r, Math.Max(5, Math.Min(length, 16)),
-                    ToBytes(encrypt.GetValue("/O")), u, GetInt(encrypt, "/P"), id, encryptMetadata);
+            this.key = GetKey(r, Math.Max(5, Math.Min(length, 16)), Latin1Password(password),
+                    o, u, GetInt(encrypt, "/P"), id, encryptMetadata);
         } else {
             throw new Exception("The encryption of the PDF is not supported: /R " + r);
         }
+    }
+
+    // Returns the UTF-8 bytes of the password, at most 127 of them, which is
+    // the password of revisions 5 and 6.
+    private static byte[] Utf8Password(String password) {
+        byte[] bytes = Encoding.UTF8.GetBytes(password);
+        if (bytes.Length > 127) {
+            Array.Resize(ref bytes, 127);
+        }
+        return bytes;
+    }
+
+    // Returns the password in PDFDocEncoding, which is Latin-1 for the
+    // characters a password is likely to have, at most 32 bytes of it, which
+    // is the password of revisions 2 to 4.
+    private static byte[] Latin1Password(String password) {
+        byte[] bytes = new byte[Math.Min(password.Length, 32)];
+        for (int i = 0; i < bytes.Length; i++) {
+            char c = password[i];
+            bytes[i] = (byte) (c < 256 ? c : '?');
+        }
+        return bytes;
+    }
+
+    // The exception for a password that does not open the PDF.
+    private static Exception PasswordException(byte[] password) {
+        return new Exception(password.Length == 0 ?
+                "The PDF needs a password." : "The password of the PDF is not correct.");
     }
 
     // Returns the method of the crypt filter with the name in the /CF dictionary.
@@ -140,11 +171,54 @@ internal sealed class Decryptor {
         return NONE;                    // Like /Identity, the default.
     }
 
-    // Algorithm 2 of ISO 32000-2 computes the key of revisions 2 to 4 from
-    // the password, which is checked against /U with algorithms 4 and 5.
+    // Computes the key of revisions 2 to 4 from the password with algorithm 2
+    // of ISO 32000-2, and checks it against /U with algorithms 4 and 5. When
+    // the password is not the user password, it is tried as the owner
+    // password, which algorithm 7 turns into the user password with /O.
     private static byte[] GetKey(
-            int r, int length, byte[] o, byte[] u, int p, byte[] id, bool encryptMetadata) {
-        byte[] hash = MD5.HashData(Concat(PADDING, o,
+            int r, int length, byte[] password, byte[] o, byte[] u, int p, byte[] id,
+            bool encryptMetadata) {
+        byte[] padded = Pad(password);
+        byte[] key = ComputeKey(r, length, padded, o, p, id, encryptMetadata);
+        if (IsUserKey(r, length, key, u, id)) {
+            return key;
+        }
+        byte[] hash = MD5.HashData(padded);
+        if (r >= 3) {
+            for (int i = 0; i < 50; i++) {
+                hash = MD5.HashData(hash);
+            }
+        }
+        byte[] ownerKey = hash.AsSpan(0, length).ToArray();
+        byte[] userPassword = new byte[32];
+        Array.Copy(o, userPassword, Math.Min(o.Length, 32));
+        if (r == 2) {
+            userPassword = RC4Crypt(ownerKey, userPassword);
+        } else {
+            for (int i = 19; i >= 0; i--) {
+                userPassword = RC4Crypt(Xor(ownerKey, i), userPassword);
+            }
+        }
+        key = ComputeKey(r, length, userPassword, o, p, id, encryptMetadata);
+        if (IsUserKey(r, length, key, u, id)) {
+            return key;
+        }
+        throw PasswordException(password);
+    }
+
+    // Returns the password padded or cut to 32 bytes, step a of algorithm 2.
+    private static byte[] Pad(byte[] password) {
+        byte[] padded = new byte[32];
+        int n = Math.Min(password.Length, 32);
+        Array.Copy(password, 0, padded, 0, n);
+        Array.Copy(PADDING, 0, padded, n, 32 - n);
+        return padded;
+    }
+
+    // Steps b to h of algorithm 2: the key from the padded password.
+    private static byte[] ComputeKey(
+            int r, int length, byte[] padded, byte[] o, int p, byte[] id, bool encryptMetadata) {
+        byte[] hash = MD5.HashData(Concat(padded, o,
                 new byte[] {(byte) p, (byte) (p >> 8), (byte) (p >> 16), (byte) (p >> 24)}, id,
                 (r >= 4 && !encryptMetadata) ? new byte[] {0xff, 0xff, 0xff, 0xff} : new byte[0]));
         if (r >= 3) {
@@ -152,7 +226,12 @@ internal sealed class Decryptor {
                 hash = MD5.HashData(hash.AsSpan(0, length));
             }
         }
-        byte[] key = hash.AsSpan(0, length).ToArray();
+        return hash.AsSpan(0, length).ToArray();
+    }
+
+    // Algorithms 4 and 5: whether the key computed from a password is the
+    // user key, which /U holds encrypted.
+    private static bool IsUserKey(int r, int length, byte[] key, byte[] u, byte[] id) {
         byte[] check;
         int n;
         if (r == 2) {
@@ -161,45 +240,54 @@ internal sealed class Decryptor {
         } else {
             check = RC4Crypt(key, MD5.HashData(Concat(PADDING, id)));
             for (int i = 1; i <= 19; i++) {
-                byte[] k = new byte[length];
-                for (int j = 0; j < length; j++) {
-                    k[j] = (byte) (key[j] ^ i);
-                }
-                check = RC4Crypt(k, check);
+                check = RC4Crypt(Xor(key, i), check);
             }
             n = 16;
         }
-        if (u.Length < n || !check.AsSpan(0, n).SequenceEqual(u.AsSpan(0, n))) {
-            throw new Exception("The PDF can only be opened with a password, which is not supported.");
-        }
-        return key;
+        return u.Length >= n && check.AsSpan(0, n).SequenceEqual(u.AsSpan(0, n));
     }
 
-    // Algorithms 2.A and 11 of ISO 32000-2 get the key of revisions 5 and 6
-    // from /UE, after checking the password against /U.
-    private static byte[] GetKey(int r, byte[] u, byte[] ue) {
+    private static byte[] Xor(byte[] key, int i) {
+        byte[] k = new byte[key.Length];
+        for (int j = 0; j < key.Length; j++) {
+            k[j] = (byte) (key[j] ^ i);
+        }
+        return k;
+    }
+
+    // Algorithms 2.A, 11 and 12 of ISO 32000-2 get the key of revisions 5 and
+    // 6 from /UE with the user password, or from /OE with the owner password.
+    private static byte[] GetKey(int r, byte[] password, byte[] u, byte[] o, byte[] ue, byte[] oe) {
         if (u.Length < 48 || ue.Length < 32) {
             throw new Exception("The encryption dictionary of the PDF is not valid.");
         }
-        byte[] hash = GetHash(r, u.AsSpan(32, 8).ToArray());
-        if (!hash.AsSpan().SequenceEqual(u.AsSpan(0, 32))) {
-            throw new Exception("The PDF can only be opened with a password, which is not supported.");
+        byte[] none = new byte[0];
+        if (GetHash(r, password, u.AsSpan(32, 8).ToArray(), none).AsSpan().SequenceEqual(u.AsSpan(0, 32))) {
+            byte[] hash = GetHash(r, password, u.AsSpan(40, 8).ToArray(), none);
+            return AESDecrypt(hash, new byte[16], ue.AsSpan(0, 32).ToArray());
         }
-        hash = GetHash(r, u.AsSpan(40, 8).ToArray());
-        return AESDecrypt(hash, new byte[16], ue.AsSpan(0, 32).ToArray());
+        byte[] u48 = u.AsSpan(0, 48).ToArray();
+        if (o.Length >= 48 && oe.Length >= 32 &&
+                GetHash(r, password, o.AsSpan(32, 8).ToArray(), u48).AsSpan().SequenceEqual(o.AsSpan(0, 32))) {
+            byte[] hash = GetHash(r, password, o.AsSpan(40, 8).ToArray(), u48);
+            return AESDecrypt(hash, new byte[16], oe.AsSpan(0, 32).ToArray());
+        }
+        throw PasswordException(password);
     }
 
-    // Returns the hash of the empty password and the salt, which is SHA-256
-    // in revision 5, and algorithm 2.B of ISO 32000-2 in revision 6.
-    private static byte[] GetHash(int r, byte[] salt) {
-        byte[] k = SHA256.HashData(salt);
+    // Returns the hash of the password, the salt and, for the owner password,
+    // the 48 bytes of /U: SHA-256 in revision 5, and algorithm 2.B of
+    // ISO 32000-2 in revision 6.
+    private static byte[] GetHash(int r, byte[] password, byte[] salt, byte[] udata) {
+        byte[] k = SHA256.HashData(Concat(password, salt, udata));
         if (r == 5) {
             return k;
         }
         for (int round = 1; ; round++) {
-            byte[] k1 = new byte[64 * k.Length];
+            byte[] block = Concat(password, k, udata);
+            byte[] k1 = new byte[64 * block.Length];
             for (int i = 0; i < 64; i++) {
-                Array.Copy(k, 0, k1, i * k.Length, k.Length);
+                Array.Copy(block, 0, k1, i * block.Length, block.Length);
             }
             byte[] e = AES128.EncryptK1(k1, k.AsSpan(0, 16).ToArray(), k.AsSpan(16, 16).ToArray());
             int sum = 0;

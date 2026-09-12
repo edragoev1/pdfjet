@@ -21,9 +21,10 @@ enum DecryptorError: Error, CustomStringConvertible {
 
 ///
 /// Decrypts the strings and streams of a PDF that is encrypted with the
-/// standard security handler and an empty user password, like PDFs that open
-/// without a password but restrict printing or copying. RC4 and AES-128
-/// (revisions 2 to 4) and AES-256 (revisions 5 and 6) are supported.
+/// standard security handler, given its user or owner password, or no
+/// password for a PDF that opens without one but restricts printing or
+/// copying. RC4 and AES-128 (revisions 2 to 4) and AES-256 (revisions 5 and 6)
+/// are supported.
 ///
 final class Decryptor {
     private static let passwordPadding: [UInt8] = [
@@ -52,7 +53,7 @@ final class Decryptor {
     /// Returns the decryptor of the PDF, or nil when it is not encrypted. The
     /// trailer is the cross-reference stream object when there is no trailer.
     ///
-    static func getDecryptor(_ trailer: PDFobj?, _ objects: [PDFobj]) throws -> Decryptor? {
+    static func getDecryptor(_ trailer: PDFobj?, _ objects: [PDFobj], _ password: String) throws -> Decryptor? {
         guard let trailer = trailer,
                 let i = trailer.dict.firstIndex(of: "/Encrypt"),
                 i + 1 < trailer.dict.count else {
@@ -90,10 +91,10 @@ final class Decryptor {
                 trailer.dict[k + 1] == "[" {
             id = toBytes(trailer.dict[k + 2])
         }
-        return try Decryptor(encrypt, id)
+        return try Decryptor(encrypt, id, password)
     }
 
-    private init(_ encrypt: PDFobj, _ id: [UInt8]) throws {
+    private init(_ encrypt: PDFobj, _ id: [UInt8], _ password: String) throws {
         if encrypt.getValue("/Filter") != "/Standard" {
             throw DecryptorError.notSupported(
                     "The security handler of the PDF is not supported: " + encrypt.getValue("/Filter"))
@@ -111,12 +112,15 @@ final class Decryptor {
             throw DecryptorError.notSupported("The encryption of the PDF is not supported: /V \(v)")
         }
         let u = Decryptor.toBytes(encrypt.getValue("/U"))
+        let o = Decryptor.toBytes(encrypt.getValue("/O"))
         if r == 5 || r == 6 {
-            self.key = try Decryptor.getKey(r, u, Decryptor.toBytes(encrypt.getValue("/UE")))
+            self.key = try Decryptor.getKey(r, Decryptor.utf8Password(password), u, o,
+                    Decryptor.toBytes(encrypt.getValue("/UE")),
+                    Decryptor.toBytes(encrypt.getValue("/OE")))
         } else if r >= 2 && r <= 4 {
             let length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : Decryptor.getInt(encrypt, "/Length") / 8
             self.key = try Decryptor.getKey(r, max(5, min(length, 16)),
-                    Decryptor.toBytes(encrypt.getValue("/O")), u,
+                    Decryptor.latin1Password(password), o, u,
                     Decryptor.getInt(encrypt, "/P"), id, encryptMetadata)
         } else {
             throw DecryptorError.notSupported("The encryption of the PDF is not supported: /R \(r)")
@@ -166,17 +170,77 @@ final class Decryptor {
         return .identity            // Like /Identity, the default.
     }
 
-    // Algorithm 2 of ISO 32000-2 computes the key of revisions 2 to 4 from the
-    // password, which is checked against /U with algorithms 4 and 5.
+    // Returns the UTF-8 bytes of the password, at most 127 of them, which is
+    // the password of revisions 5 and 6.
+    private static func utf8Password(_ password: String) -> [UInt8] {
+        let bytes = Array(password.utf8)
+        return bytes.count > 127 ? Array(bytes[0..<127]) : bytes
+    }
+
+    // Returns the password in PDFDocEncoding, which is Latin-1 for the
+    // characters a password is likely to have, at most 32 bytes of it, which
+    // is the password of revisions 2 to 4.
+    private static func latin1Password(_ password: String) -> [UInt8] {
+        return password.unicodeScalars.prefix(32).map { $0.value < 256 ? UInt8($0.value) : UInt8(ascii: "?") }
+    }
+
+    // The error for a password that does not open the PDF.
+    private static func passwordError(_ password: [UInt8]) -> DecryptorError {
+        return DecryptorError.notSupported(password.isEmpty ?
+                "The PDF needs a password." : "The password of the PDF is not correct.")
+    }
+
+    // Computes the key of revisions 2 to 4 from the password with algorithm 2
+    // of ISO 32000-2, and checks it against /U with algorithms 4 and 5. When
+    // the password is not the user password, it is tried as the owner
+    // password, which algorithm 7 turns into the user password with /O.
     private static func getKey(
             _ r: Int,
             _ length: Int,
+            _ password: [UInt8],
             _ o: [UInt8],
             _ u: [UInt8],
             _ p: Int,
             _ id: [UInt8],
             _ encryptMetadata: Bool) throws -> [UInt8] {
-        var input = passwordPadding + o
+        let padded = pad(password)
+        var key = computeKey(r, length, padded, o, p, id, encryptMetadata)
+        if isUserKey(r, length, key, u, id) {
+            return key
+        }
+        var hash = Cryptography.md5(padded)
+        if r >= 3 {
+            for _ in 0..<50 {
+                hash = Cryptography.md5(hash)
+            }
+        }
+        let ownerKey = Array(hash[0..<length])
+        var userPassword = Array(o.prefix(32)) + [UInt8](repeating: 0, count: max(0, 32 - o.count))
+        if r == 2 {
+            userPassword = Cryptography.rc4(ownerKey, userPassword)
+        } else {
+            for i in stride(from: 19, through: 0, by: -1) {
+                userPassword = Cryptography.rc4(ownerKey.map { $0 ^ UInt8(i) }, userPassword)
+            }
+        }
+        key = computeKey(r, length, userPassword, o, p, id, encryptMetadata)
+        if isUserKey(r, length, key, u, id) {
+            return key
+        }
+        throw passwordError(password)
+    }
+
+    // Returns the password padded or cut to 32 bytes, step a of algorithm 2.
+    private static func pad(_ password: [UInt8]) -> [UInt8] {
+        let n = min(password.count, 32)
+        return Array(password[0..<n]) + Array(passwordPadding[0..<(32 - n)])
+    }
+
+    // Steps b to h of algorithm 2: the key from the padded password.
+    private static func computeKey(
+            _ r: Int, _ length: Int, _ padded: [UInt8], _ o: [UInt8], _ p: Int, _ id: [UInt8],
+            _ encryptMetadata: Bool) -> [UInt8] {
+        var input = padded + o
         input += [UInt8(truncatingIfNeeded: p), UInt8(truncatingIfNeeded: p >> 8),
                 UInt8(truncatingIfNeeded: p >> 16), UInt8(truncatingIfNeeded: p >> 24)]
         input += id
@@ -189,7 +253,13 @@ final class Decryptor {
                 hash = Cryptography.md5(Array(hash[0..<length]))
             }
         }
-        let key = Array(hash[0..<length])
+        return Array(hash[0..<length])
+    }
+
+    // Algorithms 4 and 5: whether the key computed from a password is the
+    // user key, which /U holds encrypted.
+    private static func isUserKey(
+            _ r: Int, _ length: Int, _ key: [UInt8], _ u: [UInt8], _ id: [UInt8]) -> Bool {
         var check: [UInt8]
         let n: Int
         if r == 2 {
@@ -202,34 +272,40 @@ final class Decryptor {
             }
             n = 16
         }
-        if u.count < n || check[0..<n] != u[0..<n] {
-            throw DecryptorError.notSupported(
-                    "The PDF can only be opened with a password, which is not supported.")
-        }
-        return key
+        return u.count >= n && check[0..<n] == u[0..<n]
     }
 
-    // Algorithms 2.A and 11 of ISO 32000-2 get the key of revisions 5 and 6
-    // from /UE, after checking the password against /U.
-    private static func getKey(_ r: Int, _ u: [UInt8], _ ue: [UInt8]) throws -> [UInt8] {
+    // Algorithms 2.A, 11 and 12 of ISO 32000-2 get the key of revisions 5 and
+    // 6 from /UE with the user password, or from /OE with the owner password.
+    private static func getKey(
+            _ r: Int, _ password: [UInt8], _ u: [UInt8], _ o: [UInt8], _ ue: [UInt8], _ oe: [UInt8])
+            throws -> [UInt8] {
         if u.count < 48 || ue.count < 32 {
             throw DecryptorError.notSupported("The encryption dictionary of the PDF is not valid.")
         }
-        if getHash(r, Array(u[32..<40])) != Array(u[0..<32]) {
-            throw DecryptorError.notSupported(
-                    "The PDF can only be opened with a password, which is not supported.")
+        let zeroIV = [UInt8](repeating: 0, count: 16)
+        if getHash(r, password, Array(u[32..<40]), []) == Array(u[0..<32]) {
+            return Cryptography.aesDecryptCBC(
+                    Array(ue[0..<32]), getHash(r, password, Array(u[40..<48]), []), zeroIV)
         }
-        return Cryptography.aesDecryptCBC(
-                Array(ue[0..<32]), getHash(r, Array(u[40..<48])), [UInt8](repeating: 0, count: 16))
+        let u48 = Array(u[0..<48])
+        if o.count >= 48 && oe.count >= 32 &&
+                getHash(r, password, Array(o[32..<40]), u48) == Array(o[0..<32]) {
+            return Cryptography.aesDecryptCBC(
+                    Array(oe[0..<32]), getHash(r, password, Array(o[40..<48]), u48), zeroIV)
+        }
+        throw passwordError(password)
     }
 
-    // Returns the hash of the empty password and the salt, which is SHA-256 in
-    // revision 5, and algorithm 2.B of ISO 32000-2 in revision 6.
-    private static func getHash(_ r: Int, _ salt: [UInt8]) -> [UInt8] {
+    // Returns the hash of the password, the salt and, for the owner password,
+    // the 48 bytes of /U: SHA-256 in revision 5, and algorithm 2.B of
+    // ISO 32000-2 in revision 6.
+    private static func getHash(
+            _ r: Int, _ password: [UInt8], _ salt: [UInt8], _ udata: [UInt8]) -> [UInt8] {
         if r == 5 {
-            return Cryptography.sha256(salt)
+            return Cryptography.sha256(password + salt + udata)
         }
-        return Cryptography.hash2B([], salt, [])
+        return Cryptography.hash2B(password, salt, udata)
     }
 
     ///
