@@ -30,13 +30,15 @@ public class TextFrame : IDrawable {
         List<string> list = new List<string>(inputList);
         list.Reverse();
         paragraphs = new List<List<string>>();
-        // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-        char[] whitespace = new char[] {' ', '\t', '\n', '\x0B', '\f', '\r'};
         foreach (string text in list) {
-            List<string> tokens = new List<string>(text.Split(whitespace, StringSplitOptions.RemoveEmptyEntries));
+            List<string> tokens = new List<string>(Util.SplitOnWhitespace(text));
             tokens.Reverse();
             paragraphs.Add(tokens);
         }
+    }
+
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /// <summary>Sets the location of the top left corner of this text frame.</summary>
@@ -83,10 +85,6 @@ public class TextFrame : IDrawable {
         return this.h;
     }
 
-    IDrawable IDrawable.SetLocation(float x, float y) {
-        return SetLocation(x, y);
-    }
-
     /// <summary>Sets whether a border is drawn around this text frame.</summary>
     public TextFrame SetBorder(bool border) {
         this.border = border;
@@ -115,6 +113,7 @@ public class TextFrame : IDrawable {
     /// <summary>
     /// Draws as much of the text as fits in this frame on the page.
     /// Call HasMoreText to check whether text is left for another frame.
+    /// The page must not be null.
     /// </summary>
     public float[] DrawOn(Page page) {
         if (page == null) {
@@ -125,20 +124,16 @@ public class TextFrame : IDrawable {
         while (paragraphs.Count > 0) {
             List<string> tokens = paragraphs[paragraphs.Count - 1];
             paragraphs.RemoveAt(paragraphs.Count - 1);
-            TextLine textLine = null;
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            string token = null;
             while (tokens.Count > 0) {
                 if (yText + f1.GetDescent() < (y + h)) {
-                    token = tokens[tokens.Count - 1];
+                    string token = tokens[tokens.Count - 1];
                     tokens.RemoveAt(tokens.Count - 1);
                     if (f1.StringWidth(sb.ToString() + token) < this.w) {
                         sb.Append(token);
                         sb.Append(Single.space);
                     } else {
-                        textLine = new TextLine(f1, sb.ToString().Trim());
-                        textLine.SetLocation(x, yText);
-                        textLine.DrawOn(page);
+                        new TextLine(f1, Util.Trim(sb.ToString())).SetLocation(x, yText).DrawOn(page);
                         sb.Clear();
                         tokens.Add(token);
                         yText += leading;
@@ -149,10 +144,9 @@ public class TextFrame : IDrawable {
                     return new float[] { this.x + this.w, this.y + this.h };
                 }
             }
-            if (!string.IsNullOrWhiteSpace(sb.ToString())) {
-                textLine = new TextLine(f1, sb.ToString().Trim());
-                textLine.SetLocation(x, yText);
-                textLine.DrawOn(page);
+            String line = Util.Trim(sb.ToString());
+            if (line.Length > 0) {
+                new TextLine(f1, line).SetLocation(x, yText).DrawOn(page);
                 yText += leading;
             }
             yText += leading;

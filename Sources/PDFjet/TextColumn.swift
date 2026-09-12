@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Used to create text column objects and draw them on a page.
 ///
-/// Please see Example_10.
+/// Please see Example_10, Example_29, Example_44 and Example_49.
 ///
 public class TextColumn : Drawable {
     var alignment = Align.LEFT
@@ -60,7 +60,7 @@ public class TextColumn : Drawable {
         return self
     }
 
-    /// Sets the spacing between the lines.
+    /// Sets the spacing between the lines in this text column.
     @discardableResult
     public func setLineSpacing(_ lineSpacing: Float) -> TextColumn {
         self.lineSpacing = lineSpacing
@@ -129,7 +129,7 @@ public class TextColumn : Drawable {
     /// Sets the text alignment.
     ///
     /// - Parameter alignment: the specified alignment code.
-    /// Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
+    /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY
     ///
     @discardableResult
     public func setAlignment(_ alignment: UInt32) -> TextColumn {
@@ -210,9 +210,8 @@ public class TextColumn : Drawable {
 
         var runLength: Float = 0.0
         for line in paragraph.lines {
-            let tokens = line.text!.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
             var text: TextLine? = nil
-            for token in tokens {
+            for token in (line.text ?? "").splitOnWhitespace() {
                 let textLine = TextLine(line.font!, token + Single.space)
                 textLine.setFallbackFont(line.getFallbackFont())
                 textLine.setFontSize(line.getFontSize())
@@ -274,8 +273,7 @@ public class TextColumn : Drawable {
         return [x1, y1]
     }
 
-    @discardableResult
-    private func drawLineOfText(_ page: Page?, _ list: [TextLine]) -> [Float] {
+    private func drawLineOfText(_ page: Page?, _ list: [TextLine]) {
         if alignment == Align.JUSTIFY {
             var sumOfWordWidths: Float = 0.0
             for textLine in list {
@@ -298,14 +296,11 @@ public class TextColumn : Drawable {
                 }
             }
         } else {
-            return drawNonJustifiedLine(page, list)
+            drawNonJustifiedLine(page, list)
         }
-
-        return [x1, y1]
     }
 
-    @discardableResult
-    private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine]) -> [Float] {
+    private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine]) {
         var runLength: Float = 0.0
         for textLine in list {
             runLength += textLine.getWidth()
@@ -343,8 +338,6 @@ public class TextColumn : Drawable {
                 y1 += textLine.getWidth()
             }
         }
-
-        return [x1, y1]
     }
 
     ///

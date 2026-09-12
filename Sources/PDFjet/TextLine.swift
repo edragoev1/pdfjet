@@ -73,7 +73,7 @@ public class TextLine : Drawable {
     /// Sets the text.
     ///
     /// - Parameter text: the text.
-    /// - Returns: self.TextLine.
+    /// - Returns: this TextLine.
     ///
     @discardableResult
     public func setText(_ text: String) -> TextLine {
@@ -96,7 +96,7 @@ public class TextLine : Drawable {
     ///
     /// - Parameter x: the x coordinate of the text line.
     /// - Parameter y: the y coordinate of the text line.
-    /// - Returns: text TextLine.
+    /// - Returns: this TextLine.
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -106,7 +106,7 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Sets the text line font.
+    /// Sets the font to use for this text line.
     ///
     /// - Parameter font: the font to use.
     /// - Returns: the TextLine.
@@ -130,7 +130,7 @@ public class TextLine : Drawable {
     /// Sets the text line font size.
     ///
     /// - Parameter fontSize: the fontSize to use.
-    /// - Returns: text TextLine.
+    /// - Returns: this TextLine.
     ///
     @discardableResult
     public func setFontSize(_ fontSize: Float) -> TextLine {
@@ -264,7 +264,7 @@ public class TextLine : Drawable {
     /// - Returns: the width.
     ///
     public func getWidth() -> Float {
-        return font!.stringWidth(fallbackFont, fontSize, text!)
+        return font!.stringWidth(fallbackFont, fontSize, text ?? "")
     }
 
     ///
@@ -520,6 +520,7 @@ public class TextLine : Drawable {
     /// Draws the text line on the specified page.
     ///
     /// - Parameter page: the page to draw text line on.
+    /// - Returns: the x and y coordinates of the bottom right corner.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -537,21 +538,22 @@ public class TextLine : Drawable {
         page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         page!.addEMC()
 
-        let radians = Float.pi * Float(degrees) / 180.0
+        // The trigonometry is done in double precision, as in the other ports.
+        let radians = Double.pi * Double(degrees) / 180.0
         if underline {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(lineColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
-            if (self.isLastToken) {
+            if self.isLastToken {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
-            let xAdjust = font!.getUnderlinePosition(fontSize) * Float(sin(radians))
-            let yAdjust = font!.getUnderlinePosition(fontSize) * Float(cos(radians)) + verticalOffset
-            let x2 = x + lineLength * Float(cos(radians))
-            let y2 = y - lineLength * Float(sin(radians))
+            let xAdjust = Double(font!.getUnderlinePosition(fontSize)) * sin(radians)
+            let yAdjust = Double(font!.getUnderlinePosition(fontSize)) * cos(radians) + Double(verticalOffset)
+            let x2 = Double(x) + Double(lineLength) * cos(radians)
+            let y2 = Double(y) - Double(lineLength) * sin(radians)
             page!.addBMC(structureType, language, "", "Underlined text: " + text!)
-            page!.moveTo(x + xAdjust, y + yAdjust)
-            page!.lineTo(x2 + xAdjust, y2 + yAdjust)
+            page!.moveTo(Float(Double(x) + xAdjust), Float(Double(y) + yAdjust))
+            page!.lineTo(Float(x2 + xAdjust), Float(y2 + yAdjust))
             page!.strokePath()
             page!.addEMC()
         }
@@ -560,16 +562,16 @@ public class TextLine : Drawable {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(lineColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
-            if (self.isLastToken) {
+            if self.isLastToken {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
             }
-            let xAdjust = (font!.getBodyHeight(fontSize) / 4.0) * Float(sin(radians))
-            let yAdjust = (font!.getBodyHeight(fontSize) / 4.0) * Float(cos(radians)) + verticalOffset
-            let x2 = x + lineLength * Float(cos(radians))
-            let y2 = y - lineLength * Float(sin(radians))
+            let xAdjust = Double(font!.getBodyHeight(fontSize) / 4.0) * sin(radians)
+            let yAdjust = Double(font!.getBodyHeight(fontSize) / 4.0) * cos(radians) + Double(verticalOffset)
+            let x2 = Double(x) + Double(lineLength) * cos(radians)
+            let y2 = Double(y) - Double(lineLength) * sin(radians)
             page!.addBMC(structureType, language, "", "Strikethrough text: " + text!)
-            page!.moveTo(x - xAdjust, y - yAdjust)
-            page!.lineTo(x2 - xAdjust, y2 - yAdjust)
+            page!.moveTo(Float(Double(x) - xAdjust), Float(Double(y) - yAdjust))
+            page!.lineTo(Float(x2 - xAdjust), Float(y2 - yAdjust))
             page!.strokePath()
             page!.addEMC()
         }
@@ -594,10 +596,10 @@ public class TextLine : Drawable {
         }
         page!.setTextDirection(0)
 
-        let len = font!.stringWidth(fallbackFont, fontSize, text!)
-        let xMax = max(x, x + len*Float(cos(radians)))
-        let yMax = max(y + verticalOffset, (y + verticalOffset) - len*Float(sin(radians)))
+        let len = Double(font!.stringWidth(fallbackFont, fontSize, text!))
+        let xMax = max(Double(x), Double(x) + len*cos(radians))
+        let yMax = max(Double(y + verticalOffset), Double(y + verticalOffset) - len*sin(radians))
 
-        return [xMax, yMax]
+        return [Float(xMax), Float(yMax)]
     }
 }   // End of TextLine.swift

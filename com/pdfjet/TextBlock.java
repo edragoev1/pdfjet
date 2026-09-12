@@ -34,10 +34,6 @@ public class TextBlock implements Drawable {
 
     private String language;
     private String uri;
-    private String key;
-    private String uriLanguage;
-    private String uriActualText;
-    private String uriAltDescription;
     private Alignment textAlignment;
     private boolean underline;
     private boolean rightToLeft;
@@ -61,10 +57,10 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the position where this text box will be drawn on the page.
+     * Sets the position where this text block will be drawn on the page.
      *
-     * @param x the x coordinate of the top left corner of the text box.
-     * @param y the y coordinate of the top left corner of the text box.
+     * @param x the x coordinate of the top left corner of the text block.
+     * @param y the y coordinate of the top left corner of the text block.
      * @return this TextBlock object.
      */
     public TextBlock setLocation(double x, double y) {
@@ -185,6 +181,16 @@ public class TextBlock implements Drawable {
     }
 
     /**
+     * Sets the width of this text block and resets its height, so the height fits the text.
+     *
+     * @param w the width.
+     * @return this TextBlock object.
+     */
+    public TextBlock setWidth(double w) {
+        return setWidth((float) w);
+    }
+
+    /**
      * Sets the height of this text block.
      *
      * @param h the height.
@@ -193,6 +199,16 @@ public class TextBlock implements Drawable {
     public TextBlock setHeight(float h) {
         this.height = h;
         return this;
+    }
+
+    /**
+     * Sets the height of this text block.
+     *
+     * @param h the height.
+     * @return this TextBlock object.
+     */
+    public TextBlock setHeight(double h) {
+        return setHeight((float) h);
     }
 
     /**
@@ -433,24 +449,6 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-    private boolean textIsCJK(String str) {
-        // CJK Unified Ideographs Range: 4E00–9FD5
-        // Hiragana Range: 3040–309F
-        // Katakana Range: 30A0–30FF
-        // Hangul Jamo Range: 1100–11FF
-        int numOfCJK = 0;
-        char[] chars = str.toCharArray();
-        for (char ch : chars) {
-            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
-                (ch >= 0x3040 && ch <= 0x309F) ||
-                (ch >= 0x30A0 && ch <= 0x30FF) ||
-                (ch >= 0x1100 && ch <= 0x11FF)) {
-                numOfCJK++;
-            }
-        }
-        return numOfCJK > (chars.length / 2);
-    }
-
     private TextLine[] getTextLines() {
         List<TextLine> textLines = new ArrayList<>();
 
@@ -467,17 +465,21 @@ public class TextBlock implements Drawable {
             if (font.stringWidth(fallbackFont, fontSize, text) <= textAreaWidth) {
                 textLines.add(new TextLine(font, text));
             } else {
-                if (textIsCJK(text)) {
+                if (Util.isCJK(text)) {
                     StringBuilder sb = new StringBuilder();
-                    for (char ch : text.toCharArray()) {
-                        if (font.stringWidth(fallbackFont, fontSize, sb.toString() + ch) <= textAreaWidth) {
-                            sb.append(ch);
+                    int i = 0;
+                    while (i < text.length()) {
+                        int ch = text.codePointAt(i);
+                        i += Character.charCount(ch);
+                        String str = new String(Character.toChars(ch));
+                        if (font.stringWidth(fallbackFont, fontSize, sb.toString() + str) <= textAreaWidth) {
+                            sb.appendCodePoint(ch);
                         } else {
                             if (sb.length() > 0) {  // Don't emit an empty line
                                 textLines.add(new TextLine(font, sb.toString()));
                             }
                             sb.setLength(0);
-                            sb.append(ch);
+                            sb.appendCodePoint(ch);
                         }
                     }
                     if (sb.toString().trim().length() > 0) {
@@ -485,11 +487,8 @@ public class TextBlock implements Drawable {
                     }
                 } else {
                     StringBuilder sb = new StringBuilder();
-                    String[] tokens = line.split("\\s+");
+                    String[] tokens = Util.splitOnWhitespace(line);
                     for (String token : tokens) {
-                        if (token.isEmpty()) {  // Before leading whitespace
-                            continue;
-                        }
                         // The words between the zero width spaces of a token
                         // are joined with no space.
                         String[] words = token.split("\u200B", -1);
@@ -536,7 +535,7 @@ public class TextBlock implements Drawable {
         while (lineWidth(word, start) > textAreaWidth) {
             // Each line gets at least one character, however narrow the block.
             int end = nextCharacterBreak(word, start);
-            int next = nextCharacterBreak(word, end);
+            int next = end < word.length() ? nextCharacterBreak(word, end) : end;
             while (next < word.length() && lineWidth(word.substring(0, next), start) <= textAreaWidth) {
                 end = next;
                 next = nextCharacterBreak(word, end);
@@ -615,7 +614,7 @@ public class TextBlock implements Drawable {
         // joined form.
         StringBuilder sb = new StringBuilder();
         int from = 0;
-        for (String token : paragraph.trim().split("\\s+")) {
+        for (String token : Util.splitOnWhitespace(paragraph)) {
             // The words between the zero width spaces of a token are joined
             // with no space.
             String[] words = token.split("\u200B", -1);
@@ -731,7 +730,7 @@ public class TextBlock implements Drawable {
         page.addEMC();
         page.restoreGraphicsState();
 
-        if (uri != null || key != null) {
+        if (uri != null) {
             page.addAnnotation(new Annotation(
                     Annotation.Link,
                     this.x,
@@ -744,10 +743,10 @@ public class TextBlock implements Drawable {
                     null,   // Title
                     null,   // Contents
                     uri,
-                    key,    // The destination name
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription));
+                    null,   // The destination name
+                    null,   // Language
+                    null,   // Actual text
+                    null)); // Alt description
         }
 
         return new float[] {this.x + this.width, this.y + blockHeight};

@@ -27,7 +27,7 @@ public class TextLine implements Drawable {
     /** True if this is the last token of a line; needed to draw underline and strikeout. */
     protected boolean isLastToken = false;  // We need this for underline and strikeout to work properly!
     /** The horizontal offset from the x coordinate. */
-    protected float xOffset;                // The horizontal offset (from the X coordinate)
+    protected float xOffset;
     /** True if the text is underlined. */
     protected boolean underline = false;
     /** True if the text is struck out. */
@@ -348,6 +348,9 @@ public class TextLine implements Drawable {
      * @return the width.
      */
     public float getWidth() {
+        if (text == null) {
+            return 0f;
+        }
         return font.stringWidth(fallbackFont, this.fontSize, text);
     }
 
@@ -358,6 +361,9 @@ public class TextLine implements Drawable {
      * @return the width.
      */
     public float getStringWidth(String text) {
+        if (text == null) {
+            return 0f;
+        }
         return font.stringWidth(fallbackFont, this.fontSize, text);
     }
 

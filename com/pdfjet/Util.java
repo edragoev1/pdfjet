@@ -7,6 +7,8 @@
 package com.pdfjet;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Utility methods.
@@ -63,5 +65,47 @@ class Util {
         });
 
         return buf.toString();
+    }
+
+    /**
+     * Splits the text on runs of ASCII whitespace: space, tab, line feed,
+     * vertical tab, form feed and carriage return. Empty tokens are dropped,
+     * so leading and trailing whitespace yield no tokens.
+     *
+     * @param text the text.
+     * @return the non-empty tokens.
+     */
+    static String[] splitOnWhitespace(String text) {
+        List<String> tokens = new ArrayList<String>();
+        for (String token : text.split("\\s+")) {
+            if (!token.isEmpty()) {
+                tokens.add(token);
+            }
+        }
+        return tokens.toArray(new String[] {});
+    }
+
+    /**
+     * Returns true if more than half of the code points of the string are CJK:
+     * CJK Unified Ideographs (4E00-9FD5), Hiragana (3040-309F),
+     * Katakana (30A0-30FF) or Hangul Jamo (1100-11FF).
+     *
+     * @param str the string.
+     * @return true if the string is mostly CJK.
+     */
+    static boolean isCJK(String str) {
+        int numOfCJK = 0;
+        int i = 0;
+        while (i < str.length()) {
+            int ch = str.codePointAt(i);
+            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
+                    (ch >= 0x3040 && ch <= 0x309F) ||
+                    (ch >= 0x30A0 && ch <= 0x30FF) ||
+                    (ch >= 0x1100 && ch <= 0x11FF)) {
+                numOfCJK++;
+            }
+            i += Character.charCount(ch);
+        }
+        return numOfCJK > (str.codePointCount(0, str.length()) / 2);
     }
 }

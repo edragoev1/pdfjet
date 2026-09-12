@@ -4,7 +4,6 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-
 import Foundation
 
 ///
@@ -27,8 +26,7 @@ public class TextFrame : Drawable {
         self.f1 = f1
         self.leading = f1.getAscent() + f1.getDescent()
         for text in inputList.reversed() {
-            let tokens = text.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
-            paragraphs.append(tokens.reversed())
+            paragraphs.append(text.splitOnWhitespace().reversed())
         }
     }
 
@@ -106,7 +104,6 @@ public class TextFrame : Drawable {
         var yText = y + f1.getAscent()
         while paragraphs.count > 0 {
             var tokens = paragraphs.removeLast()
-            var textLine: TextLine
             var sb = ""
 
             while tokens.count > 0 {
@@ -116,9 +113,7 @@ public class TextFrame : Drawable {
                         sb.append(token)
                         sb.append(Single.space)
                     } else {
-                        textLine = TextLine(f1, sb.trim())
-                        textLine.setLocation(x, yText)
-                        textLine.drawOn(page)
+                        TextLine(f1, sb.trim()).setLocation(x, yText).drawOn(page)
                         sb = ""
                         tokens.append(token)
                         yText += leading
@@ -131,9 +126,7 @@ public class TextFrame : Drawable {
             }
 
             if !sb.trim().isEmpty {
-                textLine = TextLine(f1, sb.trim())
-                textLine.setLocation(x, yText)
-                textLine.drawOn(page)
+                TextLine(f1, sb.trim()).setLocation(x, yText).drawOn(page)
                 yText += leading
             }
             yText += leading
@@ -142,4 +135,4 @@ public class TextFrame : Drawable {
         drawBorder(page)
         return [x + w, y + h]
     }
-}
+}   // End of TextFrame.swift

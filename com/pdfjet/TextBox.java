@@ -77,10 +77,6 @@ public class TextBox implements Drawable {
     private String language = "en-US";
     private String altDescription = "";
     private String uri = null;
-    private String key = null;
-    private String uriLanguage = null;
-    private String uriActualText = null;
-    private String uriAltDescription = null;
     private Direction textDirection = Direction.LEFT_TO_RIGHT;
 
     /**
@@ -96,8 +92,8 @@ public class TextBox implements Drawable {
     /**
      * Creates a text box and sets the font.
      *
-     * @param text the text.
      * @param font the font.
+     * @param text the text.
      */
     public TextBox(Font font, String text) {
         this.font = font;
@@ -386,12 +382,16 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the background color.
+     * Sets the background color. Color.transparent removes the background.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextBox object.
      */
     public TextBox setFillColor(int color) {
+        if (color == Color.transparent) {
+            this.fillColor = null;
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -411,12 +411,16 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the background color.
+     * Sets the background color. Color.transparent removes the background.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextBox object.
      */
     public TextBox setBackgroundColor(int color) {
+        if (color == Color.transparent) {
+            this.fillColor = null;
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -494,12 +498,16 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the stroke color of the borders.
+     * Sets the stroke color of the borders. Color.transparent clears it, so the borders are drawn in the page's current pen color.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextBox object.
      */
     public TextBox setStrokeColor(int color) {
+        if (color == Color.transparent) {
+            this.strokeColor = null;
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -755,9 +763,9 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the alternate description of this text line.
+     * Sets the alternate description of this text box.
      *
-     * @param altDescription the alternate description of the text line.
+     * @param altDescription the alternate description of the text box.
      * @return this TextBox.
      */
     public TextBox setAltDescription(String altDescription) {
@@ -775,9 +783,6 @@ public class TextBox implements Drawable {
     }
 
     private void drawBorders(Page page) {
-        if (page == null) {
-            return;
-        }
         page.addArtifactBMC();
         page.setPenColor(strokeColor);
         page.setPenWidth(strokeWidth);
@@ -808,24 +813,6 @@ public class TextBox implements Drawable {
         page.addEMC();
     }
 
-    private boolean textIsCJK(String str) {
-        // CJK Unified Ideographs Range: 4E00–9FD5
-        // Hiragana Range: 3040–309F
-        // Katakana Range: 30A0–30FF
-        // Hangul Jamo Range: 1100–11FF
-        int numOfCJK = 0;
-        for (int i = 0; i < str.length(); i++) {
-            char ch = str.charAt(i);
-            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
-                    (ch >= 0x3040 && ch <= 0x309F) ||
-                    (ch >= 0x30A0 && ch <= 0x30FF) ||
-                    (ch >= 0x1100 && ch <= 0x11FF)) {
-                numOfCJK += 1;
-            }
-        }
-        return (numOfCJK > (str.length() / 2));
-    }
-
     private String[] getTextLines() {
         List<String> list = new ArrayList<String>();
 
@@ -835,37 +822,37 @@ public class TextBox implements Drawable {
         } else {
             textAreaWidth = height - 2*margin;
         }
-        // Font.stringWidth(fallbackFont, fontSize, str) is an exact per-character sum
-        // whenever the primary font is not a core font - only the core fonts
-        // apply kerning between adjacent characters, so their width is not
-        // simply the sum of their parts. For the common case (an embedded
-        // TrueType/CJK font) this lets the loops below track the wrapped
-        // line's width incrementally - adding one token/character's width at
-        // a time - instead of re-measuring the whole accumulated line on
-        // every token, which made wrapping a long paragraph an O(n^2)
-        // operation. Core fonts keep the original exact re-measurement so
-        // kerning is still accounted for correctly.
+        // Only the core fonts apply kerning between adjacent characters, so
+        // for every other font the width of a line is the sum of the widths
+        // of its parts. That lets the loops below track the wrapped line's
+        // width incrementally instead of re-measuring the whole accumulated
+        // line on every token, which made wrapping a long paragraph O(n^2).
         boolean additive = !font.isCoreFont;
-        String[] lines = text.split("\\r?\\n", -1);
+        String content = text == null ? "" : text;
+        String[] lines = content.split("\\r?\\n", -1);
         for (String line : lines) {
             if (font.stringWidth(fallbackFont, fontSize, line) <= textAreaWidth) {
                 list.add(line);
             } else {
-                if (textIsCJK(line)) {
+                if (Util.isCJK(line)) {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
-                    for (char ch : line.toCharArray()) {
-                        float chWidth = additive ? font.stringWidth(fallbackFont, fontSize, String.valueOf(ch)) : 0f;
-                        float width = additive ? sbWidth + chWidth : font.stringWidth(fallbackFont, fontSize, sb.toString() + ch);
-                        if (width <= textAreaWidth) {
-                            sb.append(ch);
-                            sbWidth = width;
+                    int i = 0;
+                    while (i < line.length()) {
+                        int ch = line.codePointAt(i);
+                        i += Character.charCount(ch);
+                        String str = new String(Character.toChars(ch));
+                        float chWidth = additive ? font.stringWidth(fallbackFont, fontSize, str) : 0f;
+                        float newWidth = additive ? sbWidth + chWidth : font.stringWidth(fallbackFont, fontSize, sb.toString() + str);
+                        if (newWidth <= textAreaWidth) {
+                            sb.appendCodePoint(ch);
+                            sbWidth = newWidth;
                         } else {
                             if (sb.length() > 0) {  // Don't emit an empty line
                                 list.add(sb.toString());
                             }
                             sb.setLength(0);
-                            sb.append(ch);
+                            sb.appendCodePoint(ch);
                             sbWidth = chWidth;
                         }
                     }
@@ -876,21 +863,18 @@ public class TextBox implements Drawable {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
                     float spaceWidth = additive ? font.stringWidth(fallbackFont, fontSize, " ") : 0f;
-                    String[] tokens = line.split("\\s+");
+                    String[] tokens = Util.splitOnWhitespace(line);
                     for (String token : tokens) {
-                        if (token.isEmpty()) {  // Before leading whitespace
-                            continue;
-                        }
                         float tokenWidth = additive ? font.stringWidth(fallbackFont, fontSize, token) : 0f;
-                        float width;
+                        float newWidth;
                         if (additive) {
-                            width = sb.length() == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
+                            newWidth = sb.length() == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
                         } else {
-                            width = font.stringWidth(fallbackFont, fontSize, sb.toString() + token);
+                            newWidth = font.stringWidth(fallbackFont, fontSize, sb.toString() + token);
                         }
-                        if (width <= textAreaWidth) {
+                        if (newWidth <= textAreaWidth) {
                             sb.append(token + " ");
-                            sbWidth = width;
+                            sbWidth = newWidth;
                         } else {
                             if (sb.length() > 0) {  // Don't emit an empty line
                                 list.add(sb.toString().trim());
@@ -931,8 +915,9 @@ public class TextBox implements Drawable {
                 }
                 if (list.size() > 0) {  // At least one line must fit in the text box
                     String lastLine = list.get(list.size() - 1);
-                    if (lastLine.length() > 3) {
-                        lastLine = lastLine.substring(0, lastLine.length() - 3);
+                    int count = lastLine.codePointCount(0, lastLine.length());
+                    if (count > 3) {
+                        lastLine = lastLine.substring(0, lastLine.offsetByCodePoints(0, count - 3));
                     }
                     list.set(list.size() - 1, lastLine + "...");
                     lines = list.toArray(new String[] {});
@@ -1026,7 +1011,7 @@ public class TextBox implements Drawable {
         }
         if (page != null) {
             drawBorders(page);
-            if (textDirection == Direction.LEFT_TO_RIGHT && (uri != null || key != null)) {
+            if (textDirection == Direction.LEFT_TO_RIGHT && uri != null) {
                 page.addAnnotation(new Annotation(
                         Annotation.Link,
                         x,
@@ -1039,10 +1024,10 @@ public class TextBox implements Drawable {
                         null,   // Title
                         null,   // Contents
                         uri,
-                        key,    // The destination name
-                        uriLanguage,
-                        uriActualText,
-                        uriAltDescription));
+                        null,   // The destination name
+                        null,   // Language
+                        null,   // Actual text
+                        null)); // Alt description
             }
             page.setTextDirection(0);
         }
@@ -1058,9 +1043,7 @@ public class TextBox implements Drawable {
             float yText,
             float[] color,
             Map<String, Integer> colors) {
-        if (altDescription != null) {
-            page.addBMC(StructElem.P, language, text, altDescription);
-        }
+        page.addBMC(StructElem.P, language, text, altDescription);
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page.drawString(font, fallbackFont, fontSize, text, xText, yText, color, colors);
@@ -1073,9 +1056,7 @@ public class TextBox implements Drawable {
                     (yText + width) - (margin + 2*font.getAscent(fontSize)), xText, color, colors);
         }
 
-        if (altDescription != null) {
-            page.addEMC();
-        }
+        page.addEMC();
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             float lineLength = font.stringWidth(fallbackFont, fontSize, text);
@@ -1097,7 +1078,7 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the URI for the "click text line" action.
+     * Sets the URI for the "click text box" action.
      *
      * @param uri the URI
      * @return this TextBox object.

@@ -26,17 +26,13 @@ public class TextBlock : Drawable {
 
     private var language: String?
     private var uri: String?
-    private var key: String?
-    private var uriLanguage: String?
-    private var uriActualText: String?
-    private var uriAltDescription: String?
     private var textAlignment: Alignment = Alignment.LEFT
     private var underline: Bool = false
     private var rightToLeft: Bool = false
 
     private var lineSpacing: Float = 1.0
 
-    private var highlightColors: [String: Int32]?
+    private var keywordHighlightColors: [String: Int32]?
 
     /// Creates a text block with the specified font and text. The font is the fallback font too.
     public init(_ font: Font, _ textContent: String) {
@@ -56,7 +52,7 @@ public class TextBlock : Drawable {
 
     /// Sets the font used for characters the main font does not have.
     @discardableResult
-    public func setFallbackFont(_ font: Font) -> TextBlock {
+    public func setFallbackFont(_ font: Font?) -> TextBlock {
         self.fallbackFont = font
         return self
     }
@@ -68,7 +64,7 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the size of the fallback font, if there is one.
+    /// Sets the size of the fallback font.
     @discardableResult
     public func setFallbackFontSize(_ size: Float) -> TextBlock {
         fallbackFont?.setSize(size)
@@ -108,7 +104,7 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the width of this text block and resets its height to 0.
+    /// Sets the width of this text block and resets its height, so the height fits the text.
     @discardableResult
     public func setWidth(_ w: Float) -> TextBlock {
         self.width = w
@@ -239,6 +235,7 @@ public class TextBlock : Drawable {
 
     ///
     /// Sets the colors used to highlight the specified keywords.
+    /// The keywords are matched ignoring case.
     ///
     /// - Parameter map: the keyword to color map.
     ///
@@ -248,7 +245,7 @@ public class TextBlock : Drawable {
         for (key, value) in map {
             colors[key.lowercased()] = value
         }
-        self.highlightColors = colors
+        self.keywordHighlightColors = colors
         return self
     }
 
@@ -286,20 +283,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-    private func textIsCJK(_ str: String) -> Bool {
-        let chars = Array(str)
-        var numOfCJK = 0
-        for ch in chars {
-            if (ch.unicodeScalars.first!.value >= 0x4E00 && ch.unicodeScalars.first!.value <= 0x9FD5) ||
-                (ch.unicodeScalars.first!.value >= 0x3040 && ch.unicodeScalars.first!.value <= 0x309F) ||
-                (ch.unicodeScalars.first!.value >= 0x30A0 && ch.unicodeScalars.first!.value <= 0x30FF) ||
-                (ch.unicodeScalars.first!.value >= 0x1100 && ch.unicodeScalars.first!.value <= 0x11FF) {
-                numOfCJK += 1
-            }
-        }
-        return numOfCJK > chars.count / 2
-    }
-
     private func getTextLines() -> [TextLine] {
         var textLines = [TextLine]()
 
@@ -322,16 +305,16 @@ public class TextBlock : Drawable {
             if font.stringWidth(fallbackFont, fontSize, text) <= textAreaWidth {
                 textLines.append(TextLine(font, text))
             } else {
-                if textIsCJK(text) {
+                if text.isCJK() {
                     var sb = ""
-                    for ch in text {
-                        if font.stringWidth(fallbackFont, fontSize, sb + String(ch)) <= textAreaWidth {
-                            sb.append(ch)
+                    for scalar in text.unicodeScalars {
+                        if font.stringWidth(fallbackFont, fontSize, sb + String(scalar)) <= textAreaWidth {
+                            sb.unicodeScalars.append(scalar)
                         } else {
                             if !sb.isEmpty {    // Don't emit an empty line
                                 textLines.append(TextLine(font, sb))
                             }
-                            sb = String(ch)
+                            sb = String(scalar)
                         }
                     }
                     if !sb.trim().isEmpty {
@@ -339,8 +322,7 @@ public class TextBlock : Drawable {
                     }
                 } else {
                     var sb = ""
-                    let tokens = line.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
-                    for token in tokens {
+                    for token in line.splitOnWhitespace() {
                         // The words between the zero width spaces of a token
                         // are joined with no space.
                         let words = token.components(separatedBy: "\u{200B}")
@@ -372,11 +354,6 @@ public class TextBlock : Drawable {
         return textLines
     }
 
-    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-    static func isASCIIWhitespace(_ ch: Character) -> Bool {
-        return " \t\n\u{0B}\u{0C}\r".contains(ch)
-    }
-
     /// Adds the lines of a word too wide for a line by itself, broken between its
     /// characters, and returns the rest of the word, which fits on a line. No
     /// line starts with a combining mark, or with a Thai or Lao vowel or sign
@@ -389,7 +366,8 @@ public class TextBlock : Drawable {
         while lineWidth(word, start) > textAreaWidth {
             // Each line gets at least one character, however narrow the block.
             var end = TextBlock.nextCharacterBreak(scalars, start)
-            var next = TextBlock.nextCharacterBreak(scalars, end)
+            // A single cluster wider than the line is the whole word.
+            var next = end < scalars.count ? TextBlock.nextCharacterBreak(scalars, end) : end
             while next < scalars.count && lineWidth(TextBlock.string(scalars[..<next]), start) <= textAreaWidth {
                 end = next
                 next = TextBlock.nextCharacterBreak(scalars, end)
@@ -419,7 +397,7 @@ public class TextBlock : Drawable {
     private func newTextLine(_ text: String, _ from: Int) -> TextLine {
         let scalars = Array(text.unicodeScalars)
         var to = scalars.count
-        while to > from && scalars[to - 1].properties.isWhitespace {
+        while to > from && String.isJavaWhitespace(scalars[to - 1]) {
             to -= 1
         }
         return TextLine(font, part(text, from, to))
@@ -480,7 +458,7 @@ public class TextBlock : Drawable {
         // of the rest its joined form.
         var sb = ""
         var from = 0
-        for token in paragraph.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init) {
+        for token in paragraph.splitOnWhitespace() {
             // The words between the zero width spaces of a token are joined
             // with no space.
             let words = token.components(separatedBy: "\u{200B}")
@@ -509,7 +487,7 @@ public class TextBlock : Drawable {
 
     /// Sets the URI opened when this text block is clicked.
     @discardableResult
-    public func setURIAction(_ uri: String) -> TextBlock {
+    public func setURIAction(_ uri: String?) -> TextBlock {
         self.uri = uri
         return self
     }
@@ -592,13 +570,13 @@ public class TextBlock : Drawable {
             y + textPadding,
             leading,
             textColor,
-            highlightColors,
+            keywordHighlightColors,
             language)
         page!.addEMC()
 
         page!.restoreGraphicsState()
 
-        if uri != nil || key != nil {
+        if uri != nil {
             page!.addAnnotation(Annotation(
                     Annotation.Link,
                     x,
@@ -611,10 +589,10 @@ public class TextBlock : Drawable {
                     nil,    // Title
                     nil,    // Contents
                     uri,
-                    key,    // The destination name
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription))
+                    nil,    // The destination name
+                    nil,
+                    nil,
+                    nil))
         }
 
         return [x + width, y + blockHeight]

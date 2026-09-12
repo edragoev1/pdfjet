@@ -12,12 +12,15 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // TextBox is a box containing line-wrapped text.
+// Defaults: x = 0, y = 0, width = 300, height = 0, alignment left, vertical
+// alignment top, spacing 0, margin 0.
 // Please see Example_19 and Example_30.
 type TextBox struct {
 	font          *Font
@@ -46,15 +49,11 @@ type TextBox struct {
 	// Text Decoration:
 	// bit 22 - underline
 	// bit 23 - strikeout
-	properties        uint32
-	language          string
-	altDescription    string
-	uri               string
-	key               string
-	uriLanguage       string
-	uriActualText     string
-	uriAltDescription string
-	textDirection     direction.Direction
+	properties     uint32
+	language       string
+	altDescription string
+	uri            string
+	textDirection  direction.Direction
 }
 
 // NewTextBox creates a text box and sets the font.
@@ -194,29 +193,53 @@ func (textBox *TextBox) GetSpacing() float32 {
 	return textBox.spacing
 }
 
-func colorToRGB(color int32) [3]float32 {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+// colorToRGB returns the red, green and blue components, from 0.0 to 1.0, of
+// a 0xRRGGBB color.
+func colorToRGB(c int32) [3]float32 {
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	return [3]float32{r, g, b}
 }
 
-// SetBackgroundColor sets the background color of this text box.
-func (textBox *TextBox) SetBackgroundColor(color int32) *TextBox {
-	rgb := colorToRGB(color)
+// SetBackgroundColor sets the background color of this text box as a 0xRRGGBB
+// value. color.Transparent removes the background.
+func (textBox *TextBox) SetBackgroundColor(c int32) *TextBox {
+	if c == color.Transparent {
+		textBox.fillColor = nil
+		return textBox
+	}
+	return textBox.SetBackgroundColorRGB(colorToRGB(c))
+}
+
+// SetBackgroundColorRGB sets the background color of this text box from the
+// red, green and blue components, from 0.0 to 1.0.
+func (textBox *TextBox) SetBackgroundColorRGB(rgb [3]float32) *TextBox {
 	textBox.fillColor = &rgb
 	return textBox
 }
 
-// SetFillColor sets the background color of this text box.
-func (textBox *TextBox) SetFillColor(color int32) *TextBox {
-	textBox.SetBackgroundColor(color)
-	return textBox
+// SetFillColor sets the background color of this text box as a 0xRRGGBB
+// value. color.Transparent removes the background.
+func (textBox *TextBox) SetFillColor(c int32) *TextBox {
+	return textBox.SetBackgroundColor(c)
 }
 
-// SetTextColor sets the text color of this text box.
-func (textBox *TextBox) SetTextColor(color int32) *TextBox {
-	textBox.textColor = colorToRGB(color)
+// SetFillColorRGB sets the background color of this text box from the red,
+// green and blue components, from 0.0 to 1.0.
+func (textBox *TextBox) SetFillColorRGB(rgb [3]float32) *TextBox {
+	return textBox.SetBackgroundColorRGB(rgb)
+}
+
+// SetTextColor sets the text color of this text box as a 0xRRGGBB value.
+func (textBox *TextBox) SetTextColor(c int32) *TextBox {
+	return textBox.SetTextColorRGB(colorToRGB(c))
+}
+
+// SetTextColorRGB sets the text color of this text box from the red, green and
+// blue components, from 0.0 to 1.0.
+func (textBox *TextBox) SetTextColorRGB(rgb [3]float32) *TextBox {
+	textBox.textColor = rgb
 	return textBox
 }
 
@@ -231,9 +254,19 @@ func (textBox *TextBox) SetStrokeWidth(strokeWidth float32) *TextBox {
 	return textBox
 }
 
-// SetStrokeColor sets the color of the border lines.
-func (textBox *TextBox) SetStrokeColor(color int32) *TextBox {
-	rgb := colorToRGB(color)
+// SetStrokeColor sets the color of the border lines as a 0xRRGGBB value.
+// color.Transparent clears it, so the borders are drawn in the page's current pen color.
+func (textBox *TextBox) SetStrokeColor(c int32) *TextBox {
+	if c == color.Transparent {
+		textBox.strokeColor = nil
+		return textBox
+	}
+	return textBox.SetStrokeColorRGB(colorToRGB(c))
+}
+
+// SetStrokeColorRGB sets the color of the border lines from the red, green and
+// blue components, from 0.0 to 1.0.
+func (textBox *TextBox) SetStrokeColorRGB(rgb [3]float32) *TextBox {
 	textBox.strokeColor = &rgb
 	return textBox
 }
@@ -411,25 +444,6 @@ func (textBox *TextBox) drawBorders(page *Page) {
 	page.AddEMC()
 }
 
-func (textBox *TextBox) textIsCJK(str string) bool {
-	// CJK Unified Ideographs Range: 4E00-9FD5
-	// Hiragana Range: 3040-309F
-	// Katakana Range: 30A0-30FF
-	// Hangul Jamo Range: 1100-11FF
-	numOfCJK := 0
-	count := 0
-	for _, ch := range str {
-		count++
-		if (ch >= 0x4E00 && ch <= 0x9FD5) ||
-			(ch >= 0x3040 && ch <= 0x309F) ||
-			(ch >= 0x30A0 && ch <= 0x30FF) ||
-			(ch >= 0x1100 && ch <= 0x11FF) {
-			numOfCJK++
-		}
-	}
-	return numOfCJK > (count / 2)
-}
-
 func (textBox *TextBox) getTextLines() []string {
 	list := make([]string, 0)
 
@@ -454,7 +468,7 @@ func (textBox *TextBox) getTextLines() []string {
 			list = append(list, line)
 			continue
 		}
-		if textBox.textIsCJK(line) {
+		if isCJK(line) {
 			var buf strings.Builder
 			var bufWidth float32
 			for _, ch := range line {
@@ -462,15 +476,15 @@ func (textBox *TextBox) getTextLines() []string {
 				if additive {
 					chWidth = font.StringWidthFB(fallbackFont, fontSize, string(ch))
 				}
-				var lineWidth float32
+				var newWidth float32
 				if additive {
-					lineWidth = bufWidth + chWidth
+					newWidth = bufWidth + chWidth
 				} else {
-					lineWidth = font.StringWidthFB(fallbackFont, fontSize, buf.String()+string(ch))
+					newWidth = font.StringWidthFB(fallbackFont, fontSize, buf.String()+string(ch))
 				}
-				if lineWidth <= textAreaWidth {
+				if newWidth <= textAreaWidth {
 					buf.WriteRune(ch)
-					bufWidth = lineWidth
+					bufWidth = newWidth
 				} else {
 					if buf.Len() > 0 { // Don't emit an empty line
 						list = append(list, buf.String())
@@ -490,32 +504,28 @@ func (textBox *TextBox) getTextLines() []string {
 			if additive {
 				spaceWidth = font.StringWidthFB(fallbackFont, fontSize, single.Space)
 			}
-			// The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-			tokens := strings.FieldsFunc(line, func(r rune) bool {
-				return r == ' ' || r == '\t' || r == '\n' || r == '\v' || r == '\f' || r == '\r'
-			})
-			for _, token := range tokens {
+			for _, token := range splitOnWhitespace(line) {
 				var tokenWidth float32
 				if additive {
 					tokenWidth = font.StringWidthFB(fallbackFont, fontSize, token)
 				}
-				var lineWidth float32
+				var newWidth float32
 				if additive {
 					if buf.Len() == 0 {
-						lineWidth = tokenWidth
+						newWidth = tokenWidth
 					} else {
-						lineWidth = bufWidth + spaceWidth + tokenWidth
+						newWidth = bufWidth + spaceWidth + tokenWidth
 					}
 				} else {
-					lineWidth = font.StringWidthFB(fallbackFont, fontSize, buf.String()+token)
+					newWidth = font.StringWidthFB(fallbackFont, fontSize, buf.String()+token)
 				}
-				if lineWidth <= textAreaWidth {
+				if newWidth <= textAreaWidth {
 					buf.WriteString(token)
 					buf.WriteString(single.Space)
-					bufWidth = lineWidth
+					bufWidth = newWidth
 				} else {
 					if buf.Len() > 0 { // Don't emit an empty line
-						list = append(list, strings.TrimSpace(buf.String()))
+						list = append(list, trimSpace(buf.String()))
 					}
 					buf.Reset()
 					buf.WriteString(token)
@@ -523,7 +533,7 @@ func (textBox *TextBox) getTextLines() []string {
 					bufWidth = tokenWidth
 				}
 			}
-			last := strings.TrimSpace(buf.String())
+			last := trimSpace(buf.String())
 			if last != "" {
 				list = append(list, last)
 			}
@@ -660,8 +670,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	}
 	if page != nil {
 		textBox.drawBorders(page)
-		if textBox.textDirection == direction.LeftToRight &&
-			(textBox.uri != "" || textBox.key != "") {
+		if textBox.textDirection == direction.LeftToRight && textBox.uri != "" {
 			page.addAnnotation(&Annotation{
 				annotationType: AnnotationLink,
 				x1:             textBox.x,
@@ -674,10 +683,10 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				title:          "",
 				contents:       "",
 				uri:            textBox.uri,
-				key:            textBox.key, // The destination name
-				language:       textBox.uriLanguage,
-				actualText:     textBox.uriActualText,
-				altDescription: textBox.uriAltDescription,
+				key:            "",
+				language:       "",
+				actualText:     "",
+				altDescription: "",
 			})
 		}
 		page.SetTextDirection(0)

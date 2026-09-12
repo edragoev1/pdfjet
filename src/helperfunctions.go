@@ -7,6 +7,8 @@ package pdfjet
 
 import (
 	"io"
+	"strings"
+	"unicode"
 )
 
 // insertStringAt inserts the string s1 into a1 at the specified index
@@ -88,4 +90,56 @@ func getNBytes(r io.Reader, n int) []byte {
 	buf := make([]byte, n)
 	io.ReadFull(r, buf)
 	return buf
+}
+
+// isASCIIWhitespace reports the ASCII whitespace that Java's \s matches; a
+// no-break space does not break a line.
+func isASCIIWhitespace(r rune) bool {
+	return r == ' ' || r == '\t' || r == '\n' || r == '\v' || r == '\f' || r == '\r'
+}
+
+// splitOnWhitespace splits the string into the words between its runs of
+// ASCII whitespace, like split("\\s+") in Java, with no empty words.
+func splitOnWhitespace(s string) []string {
+	return strings.FieldsFunc(s, isASCIIWhitespace)
+}
+
+// trimSpace removes the characters up to the space at both ends of the
+// string, like String.trim in Java. strings.TrimSpace also removes Unicode
+// spaces like the no-break space, which Java's does not.
+func trimSpace(s string) string {
+	return strings.TrimFunc(s, func(r rune) bool { return r <= ' ' })
+}
+
+// isJavaWhitespace reports whether the rune is whitespace as
+// Character.isWhitespace in Java defines it: the space separators, line
+// separators and paragraph separators, except the no-break spaces U+00A0,
+// U+2007 and U+202F, and the control characters U+0009 - U+000D and
+// U+001C - U+001F.
+func isJavaWhitespace(r rune) bool {
+	if (r >= 0x09 && r <= 0x0D) || (r >= 0x1C && r <= 0x1F) {
+		return true
+	}
+	if r == 0x00A0 || r == 0x2007 || r == 0x202F {
+		return false
+	}
+	return unicode.In(r, unicode.Zs, unicode.Zl, unicode.Zp)
+}
+
+// isCJK returns true if more than half of the characters of the string are
+// CJK Unified Ideographs (4E00 - 9FD5), Hiragana (3040 - 309F), Katakana
+// (30A0 - 30FF) or Hangul Jamo (1100 - 11FF).
+func isCJK(s string) bool {
+	numOfCJK := 0
+	count := 0
+	for _, ch := range s {
+		count++
+		if (ch >= 0x4E00 && ch <= 0x9FD5) ||
+			(ch >= 0x3040 && ch <= 0x309F) ||
+			(ch >= 0x30A0 && ch <= 0x30FF) ||
+			(ch >= 0x1100 && ch <= 0x11FF) {
+			numOfCJK++
+		}
+	}
+	return numOfCJK > (count / 2)
 }

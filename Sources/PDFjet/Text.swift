@@ -44,13 +44,12 @@ public class Text : Drawable {
 
     /// Sets the vertical distance between paragraphs.
     @discardableResult
-    public func setParagraphLeading(
-            _ paragraphLeading: Float) -> Text {
+    public func setParagraphLeading(_ paragraphLeading: Float) -> Text {
         self.paragraphLeading = paragraphLeading
         return self
     }
 
-    /// Sets the width of the border.
+    /// Sets the border width.
     @discardableResult
     public func setBorderWidth(_ borderWidth: Float) -> Text {
         self.borderWidth = borderWidth
@@ -64,7 +63,7 @@ public class Text : Drawable {
         return self
     }
 
-    /// Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.
+    /// Sets the border color as a 0xRRGGBB value and draws a border around this text. Color.transparent removes the border.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Text {
         if color == Color.transparent {
@@ -97,38 +96,38 @@ public class Text : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         var firstLine = paragraphs[0].lines[0]
-        self.xText = x1
-        self.yText = y1 + firstLine.font!.getAscent(firstLine.fontSize)
-        for paragraph in self.paragraphs {
+        xText = x1
+        yText = y1 + firstLine.font!.getAscent(firstLine.fontSize)
+        for paragraph in paragraphs {
             firstLine = paragraph.lines[0]
             paragraph.x1 = x1
             paragraph.y1 = yText - firstLine.font!.getAscent(firstLine.fontSize)
-            paragraph.xText = self.xText
-            paragraph.yText = self.yText
+            paragraph.xText = xText
+            paragraph.yText = yText
             for textLine in paragraph.lines {
                 let point = drawTextLine(page, xText, yText, textLine)
                 xText = point[0]
                 yText = point[1]
-                paragraph.x2 = self.xText
-                paragraph.y2 = self.yText + textLine.font!.getDescent(textLine.fontSize)
+                paragraph.x2 = xText
+                paragraph.y2 = yText + textLine.font!.getDescent(textLine.fontSize)
             }
-            self.xText = x1
-            self.yText += self.paragraphLeading
+            xText = x1
+            yText += paragraphLeading
         }
 
         let lastParagraph = paragraphs[paragraphs.count - 1]
         let lastTextLine = lastParagraph.getTextLines()[lastParagraph.getTextLines().count - 1]
-        let height = ((self.yText - paragraphLeading) - self.y1) +
+        let height = ((yText - paragraphLeading) - y1) +
                 lastTextLine.font!.getDescent(lastTextLine.fontSize)
-        if self.borderColor != nil {
-            let rect = Rect(x1, y1, self.width, height)
-            rect.setBorderColor(self.borderColor)
-            rect.setBorderWidth(self.borderWidth)
-            rect.setBorderPattern(self.borderPattern)
+        if borderColor != nil {
+            let rect = Rect(x1, y1, width, height)
+            rect.setBorderColor(borderColor)
+            rect.setBorderWidth(borderWidth)
+            rect.setBorderPattern(borderPattern)
             rect.drawOn(page)
         }
 
-        return [self.x1 + self.width, self.y1 + height]
+        return [x1 + width, y1 + height]
     }
 
     // Draws the text line, wrapping it at the width of this text, and returns
@@ -142,10 +141,10 @@ public class Text : Drawable {
         self.yText = y
 
         var tokens: [String]
-        if stringIsCJK(textLine.text!) {
+        if textLine.text!.isCJK() {
             tokens = tokenizeCJK(textLine, self.width)
         } else {
-            tokens = textLine.text!.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
+            tokens = textLine.text!.splitOnWhitespace()
         }
 
         let font = textLine.font!
@@ -153,9 +152,9 @@ public class Text : Drawable {
         let fontSize = textLine.fontSize
         var buf = String()
         for token in tokens {
-            let lineWidth = font.stringWidth(fallbackFont, fontSize, buf)
+            let runLength = font.stringWidth(fallbackFont, fontSize, buf)
             let tokenWidth = font.stringWidth(fallbackFont, fontSize, token + Single.space)
-            if (lineWidth + tokenWidth) < (self.x1 + self.width) - self.xText {
+            if (runLength + tokenWidth) < (self.x1 + self.width) - self.xText {
                 buf.append(token)
                 buf.append(Single.space)
             } else {
@@ -185,40 +184,24 @@ public class Text : Drawable {
                 .drawOn(page)
     }
 
-    private func stringIsCJK(_ str: String) -> Bool {
-        // CJK Unified Ideographs Range: 4E00–9FD5
-        // Hiragana Range: 3040–309F
-        // Katakana Range: 30A0–30FF
-        // Hangul Jamo Range: 1100–11FF
-        var numOfCJK = 0
-        let scalars = [UnicodeScalar](str.unicodeScalars)
-        for scalar in scalars {
-            if (scalar.value >= 0x4E00 && scalar.value <= 0x9FD5) ||
-                    (scalar.value >= 0x3040 && scalar.value <= 0x309F) ||
-                    (scalar.value >= 0x30A0 && scalar.value <= 0x30FF) ||
-                    (scalar.value >= 0x1100 && scalar.value <= 0x11FF) {
-                numOfCJK += 1
-            }
-        }
-        return (numOfCJK > (scalars.count / 2))
-    }
-
+    // Splits CJK text, which has no spaces between its words, into tokens that
+    // fit the width, one character at a time. No token is empty.
     private func tokenizeCJK(
             _ textLine: TextLine,
             _ textWidth: Float) -> [String] {
         var list = [String]()
         var buf = String()
-        let scalars = Array(textLine.text!.unicodeScalars)
-        for scalar in scalars {
+        for scalar in textLine.text!.unicodeScalars {
             if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, buf + String(scalar)) < textWidth {
-                buf.append(String(scalar))
+                buf.unicodeScalars.append(scalar)
             } else {
-                list.append(buf)
-                buf = ""
-                buf.append(String(scalar))
+                if !buf.isEmpty {
+                    list.append(buf)
+                }
+                buf = String(scalar)
             }
         }
-        if buf != "" {
+        if !buf.isEmpty {
             list.append(buf)
         }
         return list
@@ -250,7 +233,7 @@ public class Text : Drawable {
             }
             i += 1
         }
-        if (sb != "") {
+        if !sb.isEmpty {
             textLine.setText(sb)
             paragraph.add(textLine)
             paragraphs.append(paragraph)
@@ -271,7 +254,7 @@ public class Text : Drawable {
                 buffer.append(String(scalar))
             }
         }
-        if buffer.count > 0 {
+        if !buffer.isEmpty {
             lines.append(buffer)
         }
         return lines

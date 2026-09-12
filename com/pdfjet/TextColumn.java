@@ -10,7 +10,7 @@ import java.util.*;
 
 /**
  * Used to create text column objects and draw them on a page.
- * Please see Example_10.
+ * Please see Example_10, Example_29, Example_44 and Example_49.
  */
 public class TextColumn implements Drawable {
     /** The text alignment. */
@@ -157,7 +157,7 @@ public class TextColumn implements Drawable {
      * Sets the text alignment.
      *
      * @param alignment the specified alignment code.
-     *                  Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY
+     *                  Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY
      * @return this TextColumn object.
      */
     public TextColumn setAlignment(int alignment) {
@@ -261,34 +261,32 @@ public class TextColumn implements Drawable {
 
         float runLength = 0f;
         for (TextLine line : paragraph.lines) {
-            String[] tokens = line.text.split("\\s+");
-            TextLine text = null;
+            String text = line.text == null ? "" : line.text;
+            String[] tokens = Util.splitOnWhitespace(text);
+            TextLine textLine = null;
             for (String token : tokens) {
-                if (token.isEmpty()) {  // Before leading whitespace
-                    continue;
-                }
-                text = new TextLine(line.font, token + Single.space);
-                text.setFallbackFont(line.getFallbackFont());
-                text.setFontSize(line.getFontSize());
-                text.setTextColor(line.getTextColor());
-                text.setUnderline(line.getUnderline());
-                text.setStrikeout(line.getStrikeout());
-                text.setVerticalOffset(line.getVerticalOffset());
-                text.setURIAction(line.getURIAction());
-                text.setGoToAction(line.getGoToAction());
-                runLength += text.getWidth();
+                textLine = new TextLine(line.font, token + Single.space);
+                textLine.setFallbackFont(line.getFallbackFont());
+                textLine.setFontSize(line.getFontSize());
+                textLine.setTextColor(line.getTextColor());
+                textLine.setUnderline(line.getUnderline());
+                textLine.setStrikeout(line.getStrikeout());
+                textLine.setVerticalOffset(line.getVerticalOffset());
+                textLine.setURIAction(line.getURIAction());
+                textLine.setGoToAction(line.getGoToAction());
+                runLength += textLine.getWidth();
                 if (runLength < this.w) {
-                    list.add(text);
+                    list.add(textLine);
                 } else {
                     drawLineOfText(page, list);
                     moveToNextLine(lineHeight);
                     list.clear();
-                    list.add(text);
-                    runLength = text.getWidth();
+                    list.add(textLine);
+                    runLength = textLine.getWidth();
                 }
             }
-            if (text != null) {
-                text.isLastToken = true;
+            if (textLine != null) {
+                textLine.isLastToken = true;
             }
         }
         drawNonJustifiedLine(page, list);
@@ -328,7 +326,7 @@ public class TextColumn implements Drawable {
         return new float[] {x1, y1};
     }
 
-    private float[] drawLineOfText(Page page, List<TextLine> list) throws Exception {
+    private void drawLineOfText(Page page, List<TextLine> list) throws Exception {
         if (alignment == Align.JUSTIFY) {
             float sumOfWordWidths = 0f;
             for (TextLine textLine : list) {
@@ -354,12 +352,11 @@ public class TextColumn implements Drawable {
                 }
             }
         } else {
-            return drawNonJustifiedLine(page, list);
+            drawNonJustifiedLine(page, list);
         }
-        return new float[] {x1, y1};
     }
 
-    private float[] drawNonJustifiedLine(Page page, List<TextLine> list) throws Exception {
+    private void drawNonJustifiedLine(Page page, List<TextLine> list) throws Exception {
         float runLength = 0f;
         for (TextLine textLine : list) {
             runLength += textLine.getWidth();
@@ -400,7 +397,6 @@ public class TextColumn implements Drawable {
                 y1 += textLine.getWidth();
             }
         }
-        return new float[] {x1, y1};
     }
 
     /**
@@ -412,15 +408,18 @@ public class TextColumn implements Drawable {
     public void addChineseParagraph(Font font, String chinese) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < chinese.length(); i++) {
-            char ch = chinese.charAt(i);
-            if (font.stringWidth(buf.toString() + ch) > w) {
+        int i = 0;
+        while (i < chinese.length()) {
+            int ch = chinese.codePointAt(i);
+            i += Character.charCount(ch);
+            String str = new String(Character.toChars(ch));
+            if (font.stringWidth(buf.toString() + str) > w) {
                 paragraph = new Paragraph();
                 paragraph.add(new TextLine(font, buf.toString()));
                 addParagraph(paragraph);
                 buf.setLength(0);
             }
-            buf.append(ch);
+            buf.appendCodePoint(ch);
         }
         paragraph = new Paragraph();
         paragraph.add(new TextLine(font, buf.toString()));

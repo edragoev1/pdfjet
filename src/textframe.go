@@ -29,7 +29,6 @@ type TextFrame struct {
 
 // NewTextFrame creates a text frame from a list of paragraphs.
 func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
-	// Clone the input list
 	list := make([]string, len(inputList))
 	copy(list, inputList)
 
@@ -40,15 +39,12 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 		paragraphs:  make([][]string, 0),
 	}
 
-	// Reverse the list (like Java's Collections.reverse)
 	for i, j := 0, len(list)-1; i < j; i, j = i+1, j-1 {
 		list[i], list[j] = list[j], list[i]
 	}
 
-	// Tokenize paragraphs
 	for _, text := range list {
-		tokens := strings.FieldsFunc(text, isASCIIWhitespace)
-		// Reverse tokens (like Java's Collections.reverse)
+		tokens := splitOnWhitespace(text)
 		for i, j := 0, len(tokens)-1; i < j; i, j = i+1, j-1 {
 			tokens[i], tokens[j] = tokens[j], tokens[i]
 		}
@@ -126,20 +122,18 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 		tokens := tf.paragraphs[len(tf.paragraphs)-1]
 		tf.paragraphs = tf.paragraphs[:len(tf.paragraphs)-1]
 
-		var textLine *TextLine
 		sb := strings.Builder{}
-		var token string
 
 		for len(tokens) > 0 {
 			if yText+tf.f1.GetDescent() < tf.y+tf.h {
-				token = tokens[len(tokens)-1]
+				token := tokens[len(tokens)-1]
 				tokens = tokens[:len(tokens)-1]
 
 				if tf.f1.StringWidth(tf.f1.GetSize(), sb.String()+token) < tf.w {
 					sb.WriteString(token)
 					sb.WriteString(single.Space)
 				} else {
-					textLine = NewTextLine(tf.f1, strings.TrimSpace(sb.String()))
+					textLine := NewTextLine(tf.f1, trimSpace(sb.String()))
 					textLine.SetLocation(tf.x, yText)
 					textLine.DrawOn(page)
 					sb.Reset()
@@ -153,8 +147,8 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 			}
 		}
 
-		if strings.TrimSpace(sb.String()) != "" {
-			textLine = NewTextLine(tf.f1, strings.TrimSpace(sb.String()))
+		if trimSpace(sb.String()) != "" {
+			textLine := NewTextLine(tf.f1, trimSpace(sb.String()))
 			textLine.SetLocation(tf.x, yText)
 			textLine.DrawOn(page)
 			yText += tf.leading

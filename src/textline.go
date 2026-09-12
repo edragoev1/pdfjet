@@ -27,7 +27,7 @@ type TextLine struct {
 	underline          bool
 	strikeout          bool
 	degrees            int
-	color              [3]float32
+	textColor          [3]float32
 	lineColor          [3]float32
 	colorMap           map[string]int32
 	textEffect         int
@@ -50,10 +50,6 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.fallbackFont = font
 	textLine.fontSize = font.size
 	textLine.text = text
-	textLine.isLastToken = false
-	textLine.color = [3]float32{0.0, 0.0, 0.0}
-	textLine.textEffect = effect.Normal
-	textLine.verticalOffset = 0.0
 	textLine.altDescription = text
 	textLine.structureType = structtype.P
 	return textLine
@@ -146,13 +142,13 @@ func (textLine *TextLine) SetTextColor(c int32) *TextLine {
 	r := float32((c>>16)&0xff) / 255.0
 	g := float32((c>>8)&0xff) / 255.0
 	b := float32((c)&0xff) / 255.0
-	textLine.color = [3]float32{r, g, b}
+	textLine.textColor = [3]float32{r, g, b}
 	return textLine
 }
 
 // SetTextColorRGB sets the text color from the red, green and blue components, from 0.0 to 1.0.
 func (textLine *TextLine) SetTextColorRGB(c [3]float32) *TextLine {
-	textLine.color = c
+	textLine.textColor = c
 	return textLine
 }
 
@@ -181,10 +177,9 @@ func (textLine *TextLine) GetLineColor() [3]float32 {
 	return textLine.lineColor
 }
 
-// GetTextColor returns the text line color.
-// @return the text line color.
+// GetTextColor returns the text color.
 func (textLine *TextLine) GetTextColor() [3]float32 {
-	return textLine.color
+	return textLine.textColor
 }
 
 // GetDestinationX returns the x coordinate of the destination.
@@ -205,8 +200,7 @@ func (textLine *TextLine) GetWidth() float32 {
 	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 }
 
-// GetStringWidth returns the width of this TextLine.
-// @return the width.
+// GetStringWidth returns the width of the specified string.
 func (textLine *TextLine) GetStringWidth(text string) float32 {
 	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, text)
 }
@@ -324,13 +318,13 @@ func (textLine *TextLine) GetVerticalOffset() float32 {
 	return textLine.verticalOffset
 }
 
-// SetLanguage sets the language.
+// SetLanguage sets the language of the text, for example "en-US".
 func (textLine *TextLine) SetLanguage(language string) *TextLine {
 	textLine.language = language
 	return textLine
 }
 
-// GetLanguage gets the language.
+// GetLanguage returns the language of the text.
 func (textLine *TextLine) GetLanguage() string {
 	return textLine.language
 }
@@ -348,25 +342,26 @@ func (textLine *TextLine) GetAltDescription() string {
 	return textLine.altDescription
 }
 
-// SetURILanguage sets the URI language.
+// SetURILanguage sets the language of the link annotation.
 func (textLine *TextLine) SetURILanguage(uriLanguage string) *TextLine {
 	textLine.uriLanguage = uriLanguage
 	return textLine
 }
 
-// SetURIAltDescription sets the URI alternative description.
+// SetURIAltDescription sets the alternate description of the link annotation.
 func (textLine *TextLine) SetURIAltDescription(uriAltDescription string) *TextLine {
 	textLine.uriAltDescription = uriAltDescription
 	return textLine
 }
 
-// SetURIActualText sets the URI actual text.
+// SetURIActualText sets the actual text of the link annotation.
 func (textLine *TextLine) SetURIActualText(uriActualText string) *TextLine {
 	textLine.uriActualText = uriActualText
 	return textLine
 }
 
-// SetStructureType sets the type of the structure.
+// SetStructureType sets the structure element type of this text line, for
+// example structtype.P or structtype.H1.
 func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
 	textLine.structureType = structureType
 	return textLine
@@ -392,7 +387,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	}
 
 	page.SetTextDirection(textLine.degrees)
-	page.SetBrushColorRGB(textLine.color)
+	page.SetBrushColorRGB(textLine.textColor)
 	// The text is drawn, so it is not given again as actual text, or as its own
 	// alternate description: right to left text is drawn in visual order, and
 	// would be read backwards.
@@ -408,7 +403,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		textLine.text,
 		textLine.x,
 		textLine.y+textLine.verticalOffset,
-		textLine.color,
+		textLine.textColor,
 		textLine.colorMap)
 	page.AddEMC()
 
@@ -420,14 +415,14 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		if textLine.isLastToken {
 			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
 		}
-		underlinePosition := textLine.font.GetUnderlinePositionAt(textLine.fontSize)
-		xAdjust := underlinePosition * float32(math.Sin(radians))
-		yAdjust := underlinePosition*float32(math.Cos(radians)) + textLine.verticalOffset
-		x2 := textLine.x + lineLength*float32(math.Cos(radians))
-		y2 := textLine.y - lineLength*float32(math.Sin(radians))
+		underlinePosition := float64(textLine.font.GetUnderlinePositionAt(textLine.fontSize))
+		xAdjust := underlinePosition * math.Sin(radians)
+		yAdjust := underlinePosition*math.Cos(radians) + float64(textLine.verticalOffset)
+		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
+		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
 		page.AddBMC(textLine.structureType, textLine.language, "", "Underlined text: "+textLine.text)
-		page.MoveTo(textLine.x+xAdjust, textLine.y+yAdjust)
-		page.LineTo(x2+xAdjust, y2+yAdjust)
+		page.MoveTo(float32(float64(textLine.x)+xAdjust), float32(float64(textLine.y)+yAdjust))
+		page.LineTo(float32(x2+xAdjust), float32(y2+yAdjust))
 		page.StrokePath()
 		page.AddEMC()
 	}
@@ -439,14 +434,14 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		if textLine.isLastToken {
 			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
 		}
-		bodyHeight := textLine.font.GetBodyHeightAt(textLine.fontSize)
-		xAdjust := (bodyHeight / 4.0) * float32(math.Sin(radians))
-		yAdjust := (bodyHeight/4.0)*float32(math.Cos(radians)) + textLine.verticalOffset
-		x2 := textLine.x + lineLength*float32(math.Cos(radians))
-		y2 := textLine.y - lineLength*float32(math.Sin(radians))
+		bodyHeight := float64(textLine.font.GetBodyHeightAt(textLine.fontSize))
+		xAdjust := (bodyHeight / 4.0) * math.Sin(radians)
+		yAdjust := (bodyHeight/4.0)*math.Cos(radians) + float64(textLine.verticalOffset)
+		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
+		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
 		page.AddBMC(textLine.structureType, textLine.language, "", "Strikethrough text: "+textLine.text)
-		page.MoveTo(textLine.x-xAdjust, textLine.y-yAdjust)
-		page.LineTo(x2-xAdjust, y2-yAdjust)
+		page.MoveTo(float32(float64(textLine.x)-xAdjust), float32(float64(textLine.y)-yAdjust))
+		page.LineTo(float32(x2-xAdjust), float32(y2-yAdjust))
 		page.StrokePath()
 		page.AddEMC()
 	}

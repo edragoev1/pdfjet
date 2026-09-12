@@ -44,7 +44,7 @@ public class Paragraph {
     }
 
     /**
-     * Constructor for creating paragraph objects.
+     * Creates a paragraph with the specified text line.
      *
      * @param text the text line.
      */
@@ -76,7 +76,7 @@ public class Paragraph {
     }
 
     /**
-     * Returns the text lines.
+     * Returns the text lines of this paragraph.
      *
      * @return the list of text lines.
      */
@@ -85,19 +85,19 @@ public class Paragraph {
     }
 
     /**
-     * Checks if the line starts with the specified token.
+     * Returns true if the first line of this paragraph starts with the specified token.
      *
      * @param token the token.
-     * @return true if the line starts with the specified token.
+     * @return true if the first line starts with the specified token.
      */
     public boolean startsWith(String token) {
         return lines.get(0).getText().startsWith(token);
     }
 
     /**
-     * Sets the text lines color.
+     * Sets the text color of all lines in this paragraph as a 0xRRGGBB value.
      *
-     * @param color the text lines color.
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Paragraph object.
      */
     public Paragraph setColor(int color) {
@@ -108,9 +108,9 @@ public class Paragraph {
     }
 
     /**
-     * Sets the text lines color based on the specified color map.
+     * Sets the word highlight colors of all lines in this paragraph.
      *
-     * @param colorMap the color map.
+     * @param colorMap the words and their 0xRRGGBB colors.
      * @return this Paragraph object.
      */
     public Paragraph setColorMap(Map<String, Integer> colorMap) {

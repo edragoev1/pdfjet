@@ -8,6 +8,8 @@ import Foundation
 
 ///
 /// A box containing line-wrapped text.
+/// Defaults: x = 0, y = 0, width = 300, height = 0, alignment Align.LEFT,
+/// vertical alignment Align.TOP, spacing 0, margin 0.
 ///
 /// Please see Example_19 and Example_30.
 ///
@@ -45,12 +47,8 @@ public class TextBox : Drawable {
     // bit 23 - strikeout
     private var properties: UInt32 = 0x00000001
     private var language: String = "en-US"
-    private var altDescription: String? = ""
+    private var altDescription: String = ""
     private var uri: String?
-    private var key: String?
-    private var uriLanguage: String?
-    private var uriActualText: String?
-    private var uriAltDescription: String?
     private var textDirection = Direction.LEFT_TO_RIGHT
 
     ///
@@ -198,10 +196,10 @@ public class TextBox : Drawable {
         return self.spacing
     }
 
-    /// Sets the background color as a 0xRRGGBB value.
+    /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
     public func setFillColor(_ color: Int32) -> TextBox {
-        self.fillColor = colorArray(color)
+        self.fillColor = color == Color.transparent ? nil : colorArray(color)
         return self
     }
 
@@ -212,10 +210,10 @@ public class TextBox : Drawable {
         return self
     }
 
-    /// Sets the background color as a 0xRRGGBB value.
+    /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
     public func setBackgroundColor(_ color: Int32) -> TextBox {
-        self.fillColor = colorArray(color)
+        self.fillColor = color == Color.transparent ? nil : colorArray(color)
         return self
     }
 
@@ -252,10 +250,10 @@ public class TextBox : Drawable {
         return self
     }
 
-    /// Sets the color of the borders as a 0xRRGGBB value.
+    /// Sets the color of the borders as a 0xRRGGBB value. Color.transparent clears it, so the borders are drawn in the page's current pen color.
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> TextBox {
-        self.strokeColor = colorArray(color)
+        self.strokeColor = color == Color.transparent ? nil : colorArray(color)
         return self
     }
 
@@ -415,7 +413,7 @@ public class TextBox : Drawable {
     }
 
     /// Returns the alternate description of this text box.
-    public func getAltDescription() -> String? {
+    public func getAltDescription() -> String {
         return self.altDescription
     }
 
@@ -457,26 +455,6 @@ public class TextBox : Drawable {
         page.addEMC()
     }
 
-    private func textIsCJK(_ str: String) -> Bool {
-        // CJK Unified Ideographs Range: 4E00-9FD5
-        // Hiragana Range: 3040-309F
-        // Katakana Range: 30A0-30FF
-        // Hangul Jamo Range: 1100-11FF
-        var numOfCJK = 0
-        var count = 0
-        for scalar in str.unicodeScalars {
-            count += 1
-            let ch = scalar.value
-            if (ch >= 0x4E00 && ch <= 0x9FD5) ||
-                    (ch >= 0x3040 && ch <= 0x309F) ||
-                    (ch >= 0x30A0 && ch <= 0x30FF) ||
-                    (ch >= 0x1100 && ch <= 0x11FF) {
-                numOfCJK += 1
-            }
-        }
-        return numOfCJK > (count / 2)
-    }
-
     private func getTextLines() -> [String] {
         var list = [String]()
 
@@ -500,22 +478,23 @@ public class TextBox : Drawable {
             if font.stringWidth(fallbackFont, fontSize, line) <= textAreaWidth {
                 list.append(line)
             } else {
-                if textIsCJK(line) {
+                if line.isCJK() {
                     var sb = String()
                     var sbWidth: Float = 0.0
-                    for ch in line {
+                    for scalar in line.unicodeScalars {
+                        let ch = String(scalar)
                         let chWidth = additive ?
-                                font.stringWidth(fallbackFont, fontSize, String(ch)) : 0.0
-                        let lineWidth = additive ? sbWidth + chWidth :
-                                font.stringWidth(fallbackFont, fontSize, sb + String(ch))
-                        if lineWidth <= textAreaWidth {
-                            sb.append(ch)
-                            sbWidth = lineWidth
+                                font.stringWidth(fallbackFont, fontSize, ch) : 0.0
+                        let newWidth = additive ? sbWidth + chWidth :
+                                font.stringWidth(fallbackFont, fontSize, sb + ch)
+                        if newWidth <= textAreaWidth {
+                            sb.unicodeScalars.append(scalar)
+                            sbWidth = newWidth
                         } else {
                             if !sb.isEmpty {    // Don't emit an empty line
                                 list.append(sb)
                             }
-                            sb = String(ch)
+                            sb = ch
                             sbWidth = chWidth
                         }
                     }
@@ -527,32 +506,29 @@ public class TextBox : Drawable {
                     var sbWidth: Float = 0.0
                     let spaceWidth = additive ?
                             font.stringWidth(fallbackFont, fontSize, Single.space) : 0.0
-                    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-                    let tokens = line.split(whereSeparator: { " \t\n\u{0B}\u{0C}\r".contains($0) })
-                    for token in tokens {
-                        let tokenText = String(token)
+                    for tokenText in line.splitOnWhitespace() {
                         let tokenWidth = additive ?
                                 font.stringWidth(fallbackFont, fontSize, tokenText) : 0.0
-                        var lineWidth: Float
+                        var newWidth: Float
                         if additive {
-                            lineWidth = sb.isEmpty ?
+                            newWidth = sb.isEmpty ?
                                     tokenWidth : sbWidth + spaceWidth + tokenWidth
                         } else {
-                            lineWidth = font.stringWidth(fallbackFont, fontSize, sb + tokenText)
+                            newWidth = font.stringWidth(fallbackFont, fontSize, sb + tokenText)
                         }
-                        if lineWidth <= textAreaWidth {
+                        if newWidth <= textAreaWidth {
                             sb.append(tokenText)
                             sb.append(Single.space)
-                            sbWidth = lineWidth
+                            sbWidth = newWidth
                         } else {
                             if !sb.isEmpty {    // Don't emit an empty line
-                                list.append(sb.trimmingCharacters(in: .whitespaces))
+                                list.append(sb.trim())
                             }
                             sb = tokenText + Single.space
                             sbWidth = tokenWidth
                         }
                     }
-                    let last = sb.trimmingCharacters(in: .whitespaces)
+                    let last = sb.trim()
                     if !last.isEmpty {
                         list.append(last)
                     }
@@ -584,8 +560,9 @@ public class TextBox : Drawable {
                 }
                 if list.count > 0 {  // At least one line must fit in the text box
                     var lastLine = list[list.count - 1]
-                    if lastLine.count > 3 {
-                        lastLine = String(lastLine.prefix(lastLine.count - 3))
+                    let scalars = lastLine.unicodeScalars
+                    if scalars.count > 3 {
+                        lastLine = String(scalars[..<scalars.index(scalars.endIndex, offsetBy: -3)])
                     }
                     list[list.count - 1] = lastLine + "..."
                     lines = list
@@ -682,7 +659,7 @@ public class TextBox : Drawable {
         }
         if page != nil {
             drawBorders(page!)
-            if textDirection == Direction.LEFT_TO_RIGHT && (uri != nil || key != nil) {
+            if textDirection == Direction.LEFT_TO_RIGHT && uri != nil {
                 page!.addAnnotation(Annotation(
                         Annotation.Link,
                         x,
@@ -695,10 +672,10 @@ public class TextBox : Drawable {
                         nil,    // Title
                         nil,    // Contents
                         uri,
-                        key,    // The destination name
-                        uriLanguage,
-                        uriActualText,
-                        uriAltDescription))
+                        nil,    // The destination name
+                        nil,
+                        nil,
+                        nil))
             }
             page!.setTextDirection(0)
         }
@@ -714,9 +691,7 @@ public class TextBox : Drawable {
             _ yText: Float,
             _ color: [Float],
             _ colors: [String : Int32]?) {
-        if altDescription != nil {
-            page.addBMC(StructElem.P, language, text, altDescription!)
-        }
+        page.addBMC(StructElem.P, language, text, altDescription)
 
         if textDirection == Direction.LEFT_TO_RIGHT {
             page.drawString(font, fallbackFont, fontSize, text, xText, yText, color, colors)
@@ -731,9 +706,7 @@ public class TextBox : Drawable {
                     xText, color, colors)
         }
 
-        if altDescription != nil {
-            page.addEMC()
-        }
+        page.addEMC()
 
         if textDirection == Direction.LEFT_TO_RIGHT {
             let lineLength = font.stringWidth(fallbackFont, fontSize, text)
@@ -755,7 +728,7 @@ public class TextBox : Drawable {
     }
 
     ///
-    /// Sets the URI for the "click text line" action.
+    /// Sets the URI for the "click text box" action.
     ///
     @discardableResult
     public func setURIAction(_ uri: String?) -> TextBox {

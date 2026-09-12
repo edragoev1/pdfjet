@@ -56,5 +56,85 @@ internal class Util {
 
         return buf.ToString();
     }
+
+    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+    private static readonly char[] WHITESPACE = {' ', '\t', '\n', '\x0B', '\f', '\r'};
+
+    /// <summary>
+    /// Splits the text on runs of ASCII whitespace, like Java's split("\\s+"),
+    /// except that no empty tokens are returned.
+    /// </summary>
+    internal static String[] SplitOnWhitespace(String text) {
+        return text.Split(WHITESPACE, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    /// <summary>
+    /// Removes the leading and trailing characters with a code of 0x20 or less,
+    /// like Java's String.trim. .NET's Trim also removes U+00A0 and the other
+    /// Unicode spaces, which Java's does not.
+    /// </summary>
+    internal static String Trim(String str) {
+        int start = 0;
+        int end = str.Length;
+        while (start < end && str[start] <= ' ') {
+            start++;
+        }
+        while (end > start && str[end - 1] <= ' ') {
+            end--;
+        }
+        return (start > 0 || end < str.Length) ? str.Substring(start, end - start) : str;
+    }
+
+    /// <summary>
+    /// Returns true if the code point is whitespace as Java's Character.isWhitespace
+    /// defines it: U+0009 to U+000D, U+001C to U+001F, and the space, line and
+    /// paragraph separators except the no-break spaces U+00A0, U+2007 and U+202F.
+    /// </summary>
+    internal static bool IsJavaWhitespace(int codePoint) {
+        if ((codePoint >= 0x09 && codePoint <= 0x0D) || (codePoint >= 0x1C && codePoint <= 0x1F)) {
+            return true;
+        }
+        if (codePoint == 0x00A0 || codePoint == 0x2007 || codePoint == 0x202F) {
+            return false;
+        }
+        UnicodeCategory cat = CharUnicodeInfo.GetUnicodeCategory(codePoint);
+        return cat == UnicodeCategory.SpaceSeparator ||
+                cat == UnicodeCategory.LineSeparator ||
+                cat == UnicodeCategory.ParagraphSeparator;
+    }
+
+    /// <summary>
+    /// Returns true if more than half of the code points of the string are CJK:
+    /// CJK Unified Ideographs (4E00-9FD5), Hiragana (3040-309F), Katakana
+    /// (30A0-30FF) or Hangul Jamo (1100-11FF).
+    /// </summary>
+    internal static bool IsCJK(String str) {
+        int numOfCodePoints = 0;
+        int numOfCJK = 0;
+        for (int i = 0; i < str.Length; i += CharCount(str, i)) {
+            int ch = CodePointAt(str, i);
+            numOfCodePoints++;
+            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
+                    (ch >= 0x3040 && ch <= 0x309F) ||
+                    (ch >= 0x30A0 && ch <= 0x30FF) ||
+                    (ch >= 0x1100 && ch <= 0x11FF)) {
+                numOfCJK++;
+            }
+        }
+        return numOfCJK > (numOfCodePoints / 2);
+    }
+
+    /// <summary>
+    /// Returns the code point at the index, like Java's String.codePointAt: the
+    /// supplementary code point of a surrogate pair, or the char itself.
+    /// </summary>
+    internal static int CodePointAt(String str, int i) {
+        return Char.IsSurrogatePair(str, i) ? Char.ConvertToUtf32(str, i) : str[i];
+    }
+
+    /// <summary>Returns the number of chars, 1 or 2, of the code point at the index.</summary>
+    internal static int CharCount(String str, int i) {
+        return Char.IsSurrogatePair(str, i) ? 2 : 1;
+    }
 }
 }   // End of namespace PDFjet.NET

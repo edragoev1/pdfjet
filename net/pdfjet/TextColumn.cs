@@ -12,13 +12,13 @@ namespace PDFjet.NET {
 /// <summary>
 ///  Used to create text column objects and draw them on a page.
 ///
-///  Please see Example_10 and Example_29.
+///  Please see Example_10, Example_29, Example_44 and Example_49.
 /// </summary>
 public class TextColumn : IDrawable {
     internal uint alignment = Align.LEFT;
     internal int rotate;
-    internal float x;   // This variable keeps it's original value after being initialized.
-    internal float y;   // This variable keeps it's original value after being initialized.
+    internal float x;   // This variable is set in the beginning and only reset after the DrawOn
+    internal float y;   // This variable is set in the beginning and only reset after the DrawOn
     internal float w;
     internal float h;
     private float x1;
@@ -60,7 +60,7 @@ public class TextColumn : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the spacing between the lines.</summary>
+    /// <summary>Sets the spacing between the lines in this text column.</summary>
     public TextColumn SetLineSpacing(float lineSpacing) {
         this.lineSpacing = lineSpacing;
         return this;
@@ -146,7 +146,7 @@ public class TextColumn : IDrawable {
     /// Sets the text alignment.
     /// </summary>
     /// <param name="alignment">the specified alignment code.
-    ///      Supported values: Align.LEFT, Align.RIGHT. Align.CENTER and Align.JUSTIFY</param>
+    ///      Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY</param>
     /// <returns>this TextColumn object.</returns>
     public TextColumn SetAlignment(uint alignment) {
         this.alignment = alignment;
@@ -182,6 +182,7 @@ public class TextColumn : IDrawable {
 
     /// <summary>
     /// Draws this text column on the specified page.
+    /// With no page nothing is drawn and the location of the next component is computed.
     /// </summary>
     /// <param name="page">the page to draw this text column on.</param>
     /// <returns>the point with x and y coordinates of the location where to draw the next component.</returns>
@@ -221,9 +222,7 @@ public class TextColumn : IDrawable {
 
         float runLength = 0f;
         foreach (TextLine line in paragraph.lines) {
-            // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-            String[] tokens = line.text.Split(
-                    new char[] {' ', '\t', '\n', '\x0B', '\f', '\r'}, StringSplitOptions.RemoveEmptyEntries);
+            String[] tokens = Util.SplitOnWhitespace(line.text ?? "");
             TextLine text = null;
             foreach (String token in tokens) {
                 text = new TextLine(line.font, token + Single.space);
@@ -287,7 +286,7 @@ public class TextColumn : IDrawable {
         return new float[] {x1, y1};
     }
 
-    private float[] DrawLineOfText(Page page, List<TextLine> list) {
+    private void DrawLineOfText(Page page, List<TextLine> list) {
         if (alignment == Align.JUSTIFY) {
             float sumOfWordWidths = 0f;
             foreach (TextLine textLine in list) {
@@ -313,13 +312,11 @@ public class TextColumn : IDrawable {
                 }
             }
         } else {
-            return DrawNonJustifiedLine(page, list);
+            DrawNonJustifiedLine(page, list);
         }
-
-        return new float[] {x1, y1};
     }
 
-    private float[] DrawNonJustifiedLine(Page page, List<TextLine> list) {
+    private void DrawNonJustifiedLine(Page page, List<TextLine> list) {
         float runLength = 0f;
         foreach (TextLine textLine in list) {
             runLength += textLine.GetWidth();
@@ -360,8 +357,6 @@ public class TextColumn : IDrawable {
                 y1 += textLine.GetWidth();
             }
         }
-
-        return new float[] {x1, y1};
     }
 
     /// <summary>
@@ -372,7 +367,8 @@ public class TextColumn : IDrawable {
     public void AddChineseParagraph(Font font, String chinese) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
-        foreach (char ch in chinese) {
+        for (int i = 0; i < chinese.Length; i += Util.CharCount(chinese, i)) {
+            String ch = chinese.Substring(i, Util.CharCount(chinese, i));
             if (font.StringWidth(buf.ToString() + ch) > w) {
                 paragraph = new Paragraph();
                 paragraph.Add(new TextLine(font, buf.ToString()));

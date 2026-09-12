@@ -15,9 +15,9 @@ import (
 
 // TextColumn is used to create text column objects and draw them on a page.
 //
-// Please see Example_10.
+// Please see Example_10, Example_29, Example_44 and Example_49.
 type TextColumn struct {
-	alignment             int // = align.Left
+	alignment             int // alignment.Left
 	rotate                int
 	x                     float32 // This variable is set in the beginning and only reset after the DrawOn
 	y                     float32 // This variable is set in the beginning and only reset after the DrawOn
@@ -31,8 +31,8 @@ type TextColumn struct {
 	lineBetweenParagraphs bool
 }
 
-// NewTextColumn used to create a text column object and set the rotation angle.
-// @param rotateByDegrees the specified rotation angle in degrees.
+// NewTextColumn creates a text column object with the specified rotation angle
+// in degrees: 0, 90 or 270. It exits the program for any other angle.
 func NewTextColumn(rotateByDegrees int) *TextColumn {
 	textColumn := new(TextColumn)
 	textColumn.alignment = alignment.Left
@@ -66,9 +66,7 @@ func (textColumn *TextColumn) SetParagraphSpacing(paragraphSpacing float32) *Tex
 	return textColumn
 }
 
-// SetLocation sets the position of this text column on the page.
-// @param x the x coordinate of the top left corner of this text column when drawn on the page.
-// @param y the y coordinate of the top left corner of this text column when drawn on the page.
+// SetLocation sets the location of the top left corner of this text column on the page.
 func (textColumn *TextColumn) SetLocation(x, y float32) Drawable {
 	textColumn.x = x
 	textColumn.y = y
@@ -78,7 +76,6 @@ func (textColumn *TextColumn) SetLocation(x, y float32) Drawable {
 }
 
 // SetWidth sets the desired width of this text column.
-// @param w the width of this text column.
 func (textColumn *TextColumn) SetWidth(w float32) *TextColumn {
 	textColumn.w = w
 	return textColumn
@@ -100,8 +97,8 @@ func (textColumn *TextColumn) GetHeight() float32 {
 	return textColumn.h
 }
 
-// SetAlignment sets the text alignment.
-// Supported values: align.Left, align.Right, align.Center and align.Justify
+// SetAlignment sets the text alignment:
+// alignment.Left, alignment.Right, alignment.Center or alignment.Justify.
 func (textColumn *TextColumn) SetAlignment(alignment int) *TextColumn {
 	textColumn.alignment = alignment
 	return textColumn
@@ -129,7 +126,7 @@ func (textColumn *TextColumn) GetSize() *Dimension {
 // coordinates of the location where to draw the next component. With no page
 // nothing is drawn and the location is computed.
 func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
-	xy := []float32{textColumn.x, textColumn.y}
+	xy := [2]float32{textColumn.x, textColumn.y}
 	for _, paragraph := range textColumn.paragraphs {
 		textColumn.alignment = paragraph.alignment
 		xy = textColumn.drawParagraphOn(page, paragraph)
@@ -139,10 +136,10 @@ func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	if textColumn.GetHeight() > xy[1] {
 		xy[1] = textColumn.GetHeight()
 	}
-	return [2]float32{xy[0], xy[1]}
+	return xy
 }
 
-func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) []float32 {
+func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) [2]float32 {
 	list := make([]*TextLine, 0)
 	var lineHeight = float32(0.0)
 	var maxAscent = float32(0.0)
@@ -150,8 +147,8 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 		if (line.GetHeight() * textColumn.lineSpacing) > lineHeight {
 			lineHeight = line.GetHeight() * textColumn.lineSpacing
 		}
-		if line.font.GetAscentAt(line.GetFontSize()) > maxAscent {
-			maxAscent = line.font.GetAscentAt(line.GetFontSize())
+		if line.font.GetAscentAt(line.fontSize) > maxAscent {
+			maxAscent = line.font.GetAscentAt(line.fontSize)
 		}
 	}
 	if textColumn.rotate == 0 {
@@ -164,9 +161,8 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 
 	var runLength float32
 	for _, line := range paragraph.lines {
-		tokens := strings.FieldsFunc(line.text, isASCIIWhitespace)
 		var text *TextLine
-		for _, token := range tokens {
+		for _, token := range splitOnWhitespace(line.text) {
 			text = NewTextLine(line.font, token+single.Space)
 			text.SetFallbackFont(line.GetFallbackFont())
 			text.SetFontSize(line.GetFontSize())
@@ -200,7 +196,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 	return textColumn.moveToNextParagraph(lineHeight * textColumn.paragraphSpacing)
 }
 
-func (textColumn *TextColumn) moveToNextLine(lineHeight float32) []float32 {
+func (textColumn *TextColumn) moveToNextLine(lineHeight float32) [2]float32 {
 	if textColumn.rotate == 0 {
 		textColumn.x1 = textColumn.x
 		textColumn.y1 += lineHeight
@@ -211,10 +207,10 @@ func (textColumn *TextColumn) moveToNextLine(lineHeight float32) []float32 {
 		textColumn.x1 -= lineHeight
 		textColumn.y1 = textColumn.y
 	}
-	return []float32{textColumn.x1, textColumn.y1}
+	return [2]float32{textColumn.x1, textColumn.y1}
 }
 
-func (textColumn *TextColumn) moveToNextParagraph(paragraphSpacing float32) []float32 {
+func (textColumn *TextColumn) moveToNextParagraph(paragraphSpacing float32) [2]float32 {
 	if textColumn.rotate == 0 {
 		textColumn.x1 = textColumn.x
 		textColumn.y1 += paragraphSpacing
@@ -225,7 +221,7 @@ func (textColumn *TextColumn) moveToNextParagraph(paragraphSpacing float32) []fl
 		textColumn.x1 -= paragraphSpacing
 		textColumn.y1 = textColumn.y
 	}
-	return []float32{textColumn.x1, textColumn.y1}
+	return [2]float32{textColumn.x1, textColumn.y1}
 }
 
 func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) {
@@ -300,18 +296,16 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 	}
 }
 
-// AddChineseParagraph adds a new paragraph with Chinese text to this text column.
-//
-// @param font the font used by this paragraph.
-// @param chinese the Chinese text.
-func (textColumn *TextColumn) AddChineseParagraph(font *Font, text string) {
+// AddChineseParagraph adds a new paragraph with Chinese text, in the specified
+// font, to this text column. The text is wrapped at the width of the column.
+func (textColumn *TextColumn) AddChineseParagraph(font *Font, chinese string) {
 	var paragraph *Paragraph
 	var buf strings.Builder
-	for _, ch := range text {
+	for _, ch := range chinese {
 		if font.StringWidth(font.size, buf.String()+string(ch)) > textColumn.w {
 			paragraph = NewParagraph()
 			paragraph.Add(NewTextLine(font, buf.String()))
-			textColumn.paragraphs = append(textColumn.paragraphs, paragraph)
+			textColumn.AddParagraph(paragraph)
 			buf.Reset()
 		}
 		buf.WriteRune(ch)
@@ -321,9 +315,9 @@ func (textColumn *TextColumn) AddChineseParagraph(font *Font, text string) {
 	textColumn.AddParagraph(paragraph)
 }
 
-// AddJapaneseParagraph adds a new paragraph with Japanese text to this text column.
-// @param font the font used by this paragraph.
-// @param japanese the Japanese text.
-func (textColumn *TextColumn) AddJapaneseParagraph(font *Font, text string) {
-	textColumn.AddChineseParagraph(font, text)
+// AddJapaneseParagraph adds a new paragraph with Japanese text, in the
+// specified font, to this text column. The text is wrapped at the width of the
+// column.
+func (textColumn *TextColumn) AddJapaneseParagraph(font *Font, japanese string) {
+	textColumn.AddChineseParagraph(font, japanese)
 }

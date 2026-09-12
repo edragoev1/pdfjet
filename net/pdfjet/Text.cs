@@ -65,7 +65,7 @@ public class Text : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.</summary>
+    /// <summary>Sets the border color as a 0xRRGGBB value and draws a border around this text. Color.transparent removes the border.</summary>
     public Text SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = null;
@@ -138,20 +138,17 @@ public class Text : IDrawable {
         return new float[] { x1 + width, y1 + height };
     }
 
-    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-    private static readonly char[] whitespace = new char[] {' ', '\t', '\n', '\x0B', '\f', '\r'};
-
     // Draws the text line, wrapping it at the width of this text, and returns where the next text starts.
     private float[] DrawTextLine(
             Page page, float x, float y, TextLine textLine) {
         this.xText = x;
         this.yText = y;
 
-        String[] tokens = null;
-        if (StringIsCJK(textLine.text)) {
+        String[] tokens;
+        if (Util.IsCJK(textLine.text)) {
             tokens = TokenizeCJK(textLine, this.width);
         } else {
-            tokens = textLine.text.Split(whitespace, StringSplitOptions.RemoveEmptyEntries);
+            tokens = Util.SplitOnWhitespace(textLine.text);
         }
 
         Font font = textLine.font;
@@ -162,26 +159,24 @@ public class Text : IDrawable {
             float runLength = font.StringWidth(fallbackFont, fontSize, buf.ToString());
             float tokenWidth = font.StringWidth(fallbackFont, fontSize, token + Single.space);
             if ((runLength + tokenWidth) < (this.x1 + this.width) - this.xText) {
-                buf.Append(token + Single.space);
+                buf.Append(token).Append(Single.space);
             } else {
-                new TextLine(textLine.font, buf.ToString())
-                        .SetFallbackFont(textLine.GetFallbackFont())
-                        .SetFontSize(textLine.GetFontSize())
-                        .SetTextColor(textLine.GetTextColor())
-                        .SetColorMap(textLine.GetColorMap())
-                        .SetUnderline(textLine.GetUnderline())
-                        .SetStrikeout(textLine.GetStrikeout())
-                        .SetLanguage(textLine.GetLanguage())
-                        .SetLocation(xText, yText)
-                        .DrawOn(page);
+                DrawLine(page, textLine, buf.ToString());
                 xText = x1;
                 yText += textLine.GetHeight();
                 buf.Length = 0;
-                buf.Append(token + Single.space);
+                buf.Append(token).Append(Single.space);
             }
         }
-        new TextLine(textLine.font, buf.ToString())
-                .SetFallbackFont(textLine.fallbackFont)
+        DrawLine(page, textLine, buf.ToString());
+
+        return new float[] {xText + font.StringWidth(fallbackFont, fontSize, buf.ToString()), yText};
+    }
+
+    // Draws one wrapped line of the text line at the current text position, with the text line's attributes.
+    private void DrawLine(Page page, TextLine textLine, String str) {
+        new TextLine(textLine.font, str)
+                .SetFallbackFont(textLine.GetFallbackFont())
                 .SetFontSize(textLine.GetFontSize())
                 .SetTextColor(textLine.GetTextColor())
                 .SetColorMap(textLine.GetColorMap())
@@ -190,40 +185,26 @@ public class Text : IDrawable {
                 .SetLanguage(textLine.GetLanguage())
                 .SetLocation(xText, yText)
                 .DrawOn(page);
-
-        return new float[] {xText + font.StringWidth(fallbackFont, fontSize, buf.ToString()), yText};
     }
 
-    private bool StringIsCJK(String str) {
-        // CJK Unified Ideographs Range: 4E00–9FD5
-        // Hiragana Range: 3040–309F
-        // Katakana Range: 30A0–30FF
-        // Hangul Jamo Range: 1100–11FF
-        int numOfCJK = 0;
-        foreach (char ch in str) {
-            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
-                    (ch >= 0x3040 && ch <= 0x309F) ||
-                    (ch >= 0x30A0 && ch <= 0x30FF) ||
-                    (ch >= 0x1100 && ch <= 0x11FF)) {
-                numOfCJK += 1;
-            }
-        }
-        return (numOfCJK > (str.Length / 2));
-    }
-
+    // Splits the CJK text into tokens no wider than the text width, never between the two halves of a surrogate pair.
     private String[] TokenizeCJK(TextLine textLine, float textWidth) {
         List<String> list = new List<String>();
         StringBuilder buf = new StringBuilder();
-        foreach (char ch in textLine.text) {
+        String text = textLine.text;
+        for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
+            String ch = text.Substring(i, Util.CharCount(text, i));
             if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, buf.ToString() + ch) < textWidth) {
                 buf.Append(ch);
             } else {
-                list.Add(buf.ToString());
+                if (buf.Length > 0) {
+                    list.Add(buf.ToString());
+                }
                 buf.Length = 0;
                 buf.Append(ch);
             }
         }
-        if (buf.ToString().Length > 0) {
+        if (buf.Length > 0) {
             list.Add(buf.ToString());
         }
         return list.ToArray();
@@ -252,7 +233,7 @@ public class Text : IDrawable {
                 sb.Append(ch);
             }
         }
-        if (!sb.ToString().Equals("")) {
+        if (sb.Length > 0) {
             textLine.SetText(sb.ToString());
             paragraph.Add(textLine);
             paragraphs.Add(paragraph);

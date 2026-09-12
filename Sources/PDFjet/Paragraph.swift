@@ -52,10 +52,8 @@ public class Paragraph {
     ///
     /// Sets the alignment of the text in this paragraph.
     ///
-    /// - Parameter alignment: the alignment code.
+    /// - Parameter alignment: the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.
     /// - Returns: this paragraph.
-    ///
-    /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
     ///
     @discardableResult
     public func setAlignment(_ alignment: UInt32) -> Paragraph {
@@ -76,15 +74,6 @@ public class Paragraph {
     /// Sets the text color of all lines in this paragraph as a 0xRRGGBB value.
     @discardableResult
     public func setColor(_ color: Int32) -> Paragraph {
-        for line in lines {
-            line.setTextColor(color)
-        }
-        return self
-    }
-
-    /// Sets the text color of all lines in this paragraph from an array of red, green and blue values.
-    @discardableResult
-    public func setColor(_ color: [Float]) -> Paragraph {
         for line in lines {
             line.setTextColor(color)
         }

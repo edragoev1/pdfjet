@@ -58,8 +58,8 @@ func (paragraph *Paragraph) GetY2() float32 {
 }
 
 // Add adds a text line to this paragraph.
-func (paragraph *Paragraph) Add(textLine *TextLine) *Paragraph {
-	paragraph.lines = append(paragraph.lines, textLine)
+func (paragraph *Paragraph) Add(text *TextLine) *Paragraph {
+	paragraph.lines = append(paragraph.lines, text)
 	return paragraph
 }
 

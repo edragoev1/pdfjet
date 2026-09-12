@@ -36,13 +36,7 @@ public class TextFrame implements Drawable {
         Collections.reverse(list);
         paragraphs = new ArrayList<List<String>>();
         for (String text : list) {
-            String[] split = text.trim().split("\\s+");
-            List<String> tokens = new ArrayList<>();
-            for (String token : split) {
-                if (!token.isEmpty()) { // Filter empty tokens
-                    tokens.add(token);
-                }
-            }
+            List<String> tokens = new ArrayList<>(Arrays.asList(Util.splitOnWhitespace(text)));
             Collections.reverse(tokens);
             paragraphs.add(tokens);
         }
@@ -155,7 +149,7 @@ public class TextFrame implements Drawable {
     }
 
     /**
-     * Returns whether some of the text has not been drawn yet.
+     * Returns true if some of the text has not been drawn yet.
      *
      * @return true if there is more text to draw.
      */
@@ -187,19 +181,15 @@ public class TextFrame implements Drawable {
         float yText = y + f1.getAscent();
         while (paragraphs.size() > 0) {
             List<String> tokens = paragraphs.remove(paragraphs.size() - 1);
-            TextLine textLine = null;
             StringBuilder sb = new StringBuilder();
-            String token = null;
             while (tokens.size() > 0) {
                 if (yText + f1.getDescent() < (y + h)) {
-                    token = tokens.remove(tokens.size() - 1);
+                    String token = tokens.remove(tokens.size() - 1);
                     if (f1.stringWidth(sb.toString() + token) < this.w) {
                         sb.append(token);
                         sb.append(Single.space);
                     } else {
-                        textLine = new TextLine(f1, sb.toString().trim());
-                        textLine.setLocation(x, yText);
-                        textLine.drawOn(page);
+                        new TextLine(f1, sb.toString().trim()).setLocation(x, yText).drawOn(page);
                         sb.setLength(0);
                         tokens.add(token);
                         yText += leading;
@@ -211,9 +201,7 @@ public class TextFrame implements Drawable {
                 }
             }
             if (!sb.toString().trim().equals("")) {
-                textLine = new TextLine(f1, sb.toString().trim());
-                textLine.setLocation(x, yText);
-                textLine.drawOn(page);
+                new TextLine(f1, sb.toString().trim()).setLocation(x, yText).drawOn(page);
                 yText += leading;
             }
             yText += leading;

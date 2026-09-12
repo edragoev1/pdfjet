@@ -66,10 +66,6 @@ public class TextBox : IDrawable {
     private String language = "en-US";
     private String altDescription = "";
     private String uri = null;
-    private String key = null;
-    private String uriLanguage = null;
-    private String uriActualText = null;
-    private String uriAltDescription = null;
     private Direction textDirection = Direction.LEFT_TO_RIGHT;
 
     /// <summary>
@@ -84,8 +80,8 @@ public class TextBox : IDrawable {
     /// <summary>
     /// Creates a text box and sets the font.
     /// </summary>
-    /// <param name="text">the text.</param>
     /// <param name="font">the font.</param>
+    /// <param name="text">the text.</param>
     public TextBox(Font font, String text) {
         this.font = font;
         this.fontSize = font.size;
@@ -161,7 +157,7 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>
-    /// Sets the position where this text box will be drawn on the page.
+    /// Sets the location where this text box will be drawn on the page.
     /// </summary>
     /// <param name="x">the x coordinate of the top left corner of the text box.</param>
     /// <param name="y">the y coordinate of the top left corner of the text box.</param>
@@ -342,8 +338,12 @@ public class TextBox : IDrawable {
         return spacing;
     }
 
-    /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
     public TextBox SetFillColor(int color) {
+        if (color == Color.transparent) {
+            this.fillColor = null;
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -357,13 +357,9 @@ public class TextBox : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
     public TextBox SetBackgroundColor(int color) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
-        return this;
+        return SetFillColor(color);
     }
 
     /// <summary>Sets the background color from an array of red, green and blue values.</summary>
@@ -426,8 +422,12 @@ public class TextBox : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the color of the borders as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the color of the borders as a 0xRRGGBB value. Color.transparent clears it, so the borders are drawn in the page's current pen color.</summary>
     public TextBox SetStrokeColor(int color) {
+        if (color == Color.transparent) {
+            this.strokeColor = null;
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -613,9 +613,6 @@ public class TextBox : IDrawable {
     }
 
     private void DrawBorders(Page page) {
-        if (page == null) {
-            return;
-        }
         page.AddArtifactBMC();
         page.SetPenColor(strokeColor);
         page.SetPenWidth(strokeWidth);
@@ -646,24 +643,7 @@ public class TextBox : IDrawable {
         page.AddEMC();
     }
 
-    private bool textIsCJK(String str) {
-        // CJK Unified Ideographs Range: 4E00–9FD5
-        // Hiragana Range: 3040–309F
-        // Katakana Range: 30A0–30FF
-        // Hangul Jamo Range: 1100–11FF
-        int numOfCJK = 0;
-        foreach (char ch in str) {
-            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
-                    (ch >= 0x3040 && ch <= 0x309F) ||
-                    (ch >= 0x30A0 && ch <= 0x30FF) ||
-                    (ch >= 0x1100 && ch <= 0x11FF)) {
-                numOfCJK += 1;
-            }
-        }
-        return (numOfCJK > (str.Length / 2));
-    }
-
-    private String[] getTextLines() {
+    private String[] GetTextLines() {
         List<String> list = new List<String>();
 
         float textAreaWidth;
@@ -672,31 +652,27 @@ public class TextBox : IDrawable {
         } else {
             textAreaWidth = height - 2*margin;
         }
-        // Font.StringWidth(fallbackFont, fontSize, str) is an exact per-character sum
-        // whenever the primary font is not a core font - only the core fonts
-        // apply kerning between adjacent characters, so their width is not
-        // simply the sum of their parts. For the common case (an embedded
-        // TrueType/CJK font) this lets the loops below track the wrapped
-        // line's width incrementally - adding one token/character's width at
-        // a time - instead of re-measuring the whole accumulated line on
-        // every token, which made wrapping a long paragraph an O(n^2)
-        // operation. Core fonts keep the original exact re-measurement so
-        // kerning is still accounted for correctly.
+        // Only the core fonts apply kerning between adjacent characters, so for
+        // every other font the width of a line is the sum of the widths of its
+        // parts. That lets the loops below track the wrapped line's width
+        // incrementally instead of re-measuring the whole accumulated line on
+        // every token, which made wrapping a long paragraph O(n^2).
         bool additive = !font.isCoreFont;
-        String[] lines = text.Split(new String[] {"\r\n", "\n"}, StringSplitOptions.None);
+        String[] lines = (text ?? "").Split(new String[] {"\r\n", "\n"}, StringSplitOptions.None);
         foreach (String line in lines) {
             if (font.StringWidth(fallbackFont, fontSize, line) <= textAreaWidth) {
                 list.Add(line);
             } else {
-                if (textIsCJK(line)) {
+                if (Util.IsCJK(line)) {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
-                    foreach (char ch in line.ToCharArray()) {
-                        float chWidth = additive ? font.StringWidth(fallbackFont, fontSize, ch.ToString()) : 0f;
-                        float width = additive ? sbWidth + chWidth : font.StringWidth(fallbackFont, fontSize, sb.ToString() + ch);
-                        if (width <= textAreaWidth) {
+                    for (int i = 0; i < line.Length; i += Util.CharCount(line, i)) {
+                        String ch = line.Substring(i, Util.CharCount(line, i));
+                        float chWidth = additive ? font.StringWidth(fallbackFont, fontSize, ch) : 0f;
+                        float newWidth = additive ? sbWidth + chWidth : font.StringWidth(fallbackFont, fontSize, sb.ToString() + ch);
+                        if (newWidth <= textAreaWidth) {
                             sb.Append(ch);
-                            sbWidth = width;
+                            sbWidth = newWidth;
                         } else {
                             if (sb.Length > 0) {  // Don't emit an empty line
                                 list.Add(sb.ToString());
@@ -713,33 +689,30 @@ public class TextBox : IDrawable {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
                     float spaceWidth = additive ? font.StringWidth(fallbackFont, fontSize, " ") : 0f;
-                    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
-                    String[] tokens = System.Text.RegularExpressions.Regex.Split(line, "[ \t\n\x0B\f\r]+");
+                    String[] tokens = Util.SplitOnWhitespace(line);
                     foreach (String token in tokens) {
-                        if (token.Length == 0) {    // Before leading or after trailing whitespace
-                            continue;
-                        }
                         float tokenWidth = additive ? font.StringWidth(fallbackFont, fontSize, token) : 0f;
-                        float width;
+                        float newWidth;
                         if (additive) {
-                            width = sb.Length == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
+                            newWidth = sb.Length == 0 ? tokenWidth : sbWidth + spaceWidth + tokenWidth;
                         } else {
-                            width = font.StringWidth(fallbackFont, fontSize, sb.ToString() + token);
+                            newWidth = font.StringWidth(fallbackFont, fontSize, sb.ToString() + token);
                         }
-                        if (width <= textAreaWidth) {
+                        if (newWidth <= textAreaWidth) {
                             sb.Append(token + " ");
-                            sbWidth = width;
+                            sbWidth = newWidth;
                         } else {
                             if (sb.Length > 0) {  // Don't emit an empty line
-                                list.Add(sb.ToString().Trim());
+                                list.Add(Util.Trim(sb.ToString()));
                             }
                             sb.Length = 0;
                             sb.Append(token + " ");
                             sbWidth = tokenWidth;
                         }
                     }
-                    if (sb.ToString().Trim().Length > 0) {
-                        list.Add(sb.ToString().Trim());
+                    String rest = Util.Trim(sb.ToString());
+                    if (rest.Length > 0) {
+                        list.Add(rest);
                     }
                 }
             }
@@ -754,7 +727,7 @@ public class TextBox : IDrawable {
     /// <param name="page">the Page where the TextBox is to be drawn.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        String[] lines = getTextLines();
+        String[] lines = GetTextLines();
         float leading = font.GetAscent(fontSize) + font.GetDescent(fontSize) + spacing;
         if (height > 0f) {  // TextBox with fixed height
             if ((lines.Length*leading - spacing) > (height - 2*margin)) {
@@ -768,8 +741,15 @@ public class TextBox : IDrawable {
                 }
                 if (list.Count > 0) {
                     String lastLine = list[list.Count - 1];
-                    if (lastLine.Length > 3) {
-                        lastLine = lastLine.Substring(0, lastLine.Length - 3);
+                    // Replace the last three code points, never half of a surrogate pair.
+                    int end = lastLine.Length;
+                    int removed = 0;
+                    while (removed < 3 && end > 0) {
+                        end -= (end >= 2 && Char.IsSurrogatePair(lastLine[end - 2], lastLine[end - 1])) ? 2 : 1;
+                        removed++;
+                    }
+                    if (removed == 3 && end > 0) {
+                        lastLine = lastLine.Substring(0, end);
                     }
                     list[list.Count - 1] = lastLine + "...";
                     lines = list.ToArray();
@@ -863,7 +843,7 @@ public class TextBox : IDrawable {
         }
         if (page != null) {
             DrawBorders(page);
-            if (textDirection == Direction.LEFT_TO_RIGHT && (uri != null || key != null)) {
+            if (textDirection == Direction.LEFT_TO_RIGHT && uri != null) {
                 page.AddAnnotation(new Annotation(
                         Annotation.Link,
                         x,
@@ -876,10 +856,10 @@ public class TextBox : IDrawable {
                         null,   // Title
                         null,   // Contents
                         uri,
-                        key,    // The destination name
-                        uriLanguage,
-                        uriActualText,
-                        uriAltDescription));
+                        null,   // The destination name
+                        null,   // Language
+                        null,   // Actual text
+                        null)); // Alt description
             }
             page.SetTextDirection(0);
         }
@@ -895,9 +875,7 @@ public class TextBox : IDrawable {
             float yText,
             float[] color,
             Dictionary<String, Int32> colors) {
-        if (altDescription != null) {
-            page.AddBMC(StructElem.P, language, text, altDescription);
-        }
+        page.AddBMC(StructElem.P, language, text, altDescription);
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText, color, colors);
@@ -910,9 +888,7 @@ public class TextBox : IDrawable {
                     (yText + width) - (margin + 2*font.GetAscent(fontSize)), xText, color, colors);
         }
 
-        if (altDescription != null) {
-            page.AddEMC();
-        }
+        page.AddEMC();
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             float lineLength = font.StringWidth(fallbackFont, fontSize, text);
@@ -934,7 +910,7 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>
-    /// Sets the URI for the "click text line" action.
+    /// Sets the URI for the "click text box" action.
     /// </summary>
     /// <param name="uri">the URI</param>
     /// <returns>this TextBox.</returns>

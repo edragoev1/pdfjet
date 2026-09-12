@@ -252,6 +252,9 @@ public class TextLine : IDrawable {
     /// </summary>
     /// <returns>the width.</returns>
     public float GetWidth() {
+        if (text == null) {
+            return 0f;
+        }
         return font.StringWidth(fallbackFont, this.fontSize, text);
     }
 
@@ -260,6 +263,9 @@ public class TextLine : IDrawable {
     /// </summary>
     /// <returns>the width.</returns>
     public float GetStringWidth(String text) {
+        if (text == null) {
+            return 0f;
+        }
         return font.StringWidth(fallbackFont, this.fontSize, text);
     }
 
@@ -330,10 +336,10 @@ public class TextLine : IDrawable {
     /// Sets the strike variable.
     /// If the value of the strike variable is 'true' - a strike line is drawn through the text.
     /// </summary>
-    /// <param name="strike">the strike value.</param>
+    /// <param name="strikeout">the strike value.</param>
     /// <returns>this TextLine.</returns>
-    public TextLine SetStrikeout(bool strike) {
-        this.strikeout = strike;
+    public TextLine SetStrikeout(bool strikeout) {
+        this.strikeout = strikeout;
         return this;
     }
 
@@ -463,7 +469,7 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>
-    /// Draws this text line on the specified page if is not null.
+    /// Draws this text line on the specified page.
     /// </summary>
     /// <param name="page">the page to draw this text line on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>

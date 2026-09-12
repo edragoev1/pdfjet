@@ -64,7 +64,7 @@ public class Text implements Drawable {
     }
 
     /**
-     * Sets the width of this text. The lines wrap at this width.
+     * Sets the width at which the lines wrap.
      *
      * @param width the width.
      * @return this Text object.
@@ -202,10 +202,10 @@ public class Text implements Drawable {
         this.yText = y;
 
         String[] tokens;
-        if (stringIsCJK(textLine.text)) {
+        if (Util.isCJK(textLine.text)) {
             tokens = tokenizeCJK(textLine, this.width);
         } else {
-            tokens = textLine.text.split("\\s+");
+            tokens = Util.splitOnWhitespace(textLine.text);
         }
 
         Font font = textLine.font;
@@ -213,32 +213,27 @@ public class Text implements Drawable {
         float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
         for (String token : tokens) {
-            if (token.isEmpty()) {  // Before leading whitespace
-                continue;
-            }
             float runLength = font.stringWidth(fallbackFont, fontSize, buf.toString());
             float tokenWidth = font.stringWidth(fallbackFont, fontSize, token + Single.space);
             if ((runLength + tokenWidth) < ((this.x1 + this.width) - this.xText)) {
                 buf.append(token).append(Single.space);
             } else {
-                new TextLine(textLine.font, buf.toString())
-                        .setFallbackFont(textLine.getFallbackFont())
-                        .setFontSize(textLine.getFontSize())
-                        .setTextColor(textLine.getTextColor())
-                        .setColorMap(textLine.getColorMap())
-                        .setUnderline(textLine.getUnderline())
-                        .setStrikeout(textLine.getStrikeout())
-                        .setLanguage(textLine.getLanguage())
-                        .setLocation(xText, yText)
-                        .drawOn(page);
+                drawLine(page, textLine, buf.toString());
                 xText = x1;
                 yText += textLine.getHeight();
                 buf.setLength(0);
                 buf.append(token).append(Single.space);
             }
         }
-        new TextLine(textLine.font, buf.toString())
-                .setFallbackFont(textLine.fallbackFont)
+        drawLine(page, textLine, buf.toString());
+
+        return new float[] {xText + font.stringWidth(fallbackFont, fontSize, buf.toString()), yText};
+    }
+
+    // Draws the string at the current text position, with the attributes of the text line.
+    private void drawLine(Page page, TextLine textLine, String str) throws Exception {
+        new TextLine(textLine.font, str)
+                .setFallbackFont(textLine.getFallbackFont())
                 .setFontSize(textLine.getFontSize())
                 .setTextColor(textLine.getTextColor())
                 .setColorMap(textLine.getColorMap())
@@ -247,42 +242,28 @@ public class Text implements Drawable {
                 .setLanguage(textLine.getLanguage())
                 .setLocation(xText, yText)
                 .drawOn(page);
-
-        return new float[] {xText + font.stringWidth(fallbackFont, fontSize, buf.toString()), yText};
-    }
-
-    private boolean stringIsCJK(String str) {
-        // CJK Unified Ideographs Range: 4E00–9FD5
-        // Hiragana Range: 3040–309F
-        // Katakana Range: 30A0–30FF
-        // Hangul Jamo Range: 1100–11FF
-        int numOfCJK = 0;
-        for (int i = 0; i < str.length(); i++) {
-            char ch = str.charAt(i);
-            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
-                    (ch >= 0x3040 && ch <= 0x309F) ||
-                    (ch >= 0x30A0 && ch <= 0x30FF) ||
-                    (ch >= 0x1100 && ch <= 0x11FF)) {
-                numOfCJK += 1;
-            }
-        }
-        return (numOfCJK > (str.length() / 2));
     }
 
     private String[] tokenizeCJK(TextLine textLine, float textWidth) {
         List<String> list = new ArrayList<>();
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < textLine.text.length(); i++) {
-            char ch = textLine.text.charAt(i);
-            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, buf.toString() + ch) < textWidth) {
-                buf.append(ch);
+        String text = textLine.text;
+        int i = 0;
+        while (i < text.length()) {
+            int ch = text.codePointAt(i);
+            i += Character.charCount(ch);
+            String str = new String(Character.toChars(ch));
+            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, buf.toString() + str) < textWidth) {
+                buf.appendCodePoint(ch);
             } else {
-                list.add(buf.toString());
+                if (buf.length() > 0) {  // Never emit an empty token
+                    list.add(buf.toString());
+                }
                 buf.setLength(0);
-                buf.append(ch);
+                buf.appendCodePoint(ch);
             }
         }
-        if (!buf.toString().isEmpty()) {
+        if (buf.length() > 0) {
             list.add(buf.toString());
         }
         return list.toArray(new String[] {});

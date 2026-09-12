@@ -55,7 +55,7 @@ func (text *Text) SetParagraphLeading(paragraphLeading float32) *Text {
 	return text
 }
 
-// SetBorderWidth sets the width of the border.
+// SetBorderWidth sets the border width.
 func (text *Text) SetBorderWidth(borderWidth float32) *Text {
 	text.borderWidth = borderWidth
 	return text
@@ -71,14 +71,11 @@ func (text *Text) SetBorderPattern(borderPattern string) *Text {
 // around this text. color.Transparent removes the border.
 func (text *Text) SetBorderColor(c int32) *Text {
 	if c == color.Transparent {
+		text.borderColor = [3]float32{}
 		text.hasBorder = false
 		return text
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
-	text.SetBorderColorRGB([3]float32{r, g, b})
-	return text
+	return text.SetBorderColorRGB(colorToRGB(c))
 }
 
 // SetBorderColorRGB sets the border color from red, green and blue values and draws a border around this text.
@@ -132,10 +129,10 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 	text.yText = y
 
 	var tokens []string
-	if text.textIsCJK(textLine.text) {
+	if isCJK(textLine.text) {
 		tokens = text.tokenizeCJK(textLine, text.width)
 	} else {
-		tokens = strings.FieldsFunc(textLine.text, isASCIIWhitespace)
+		tokens = splitOnWhitespace(textLine.text)
 	}
 
 	font := textLine.font
@@ -143,9 +140,9 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 	fontSize := textLine.fontSize
 	var buf strings.Builder
 	for _, token := range tokens {
-		lineWidth := font.StringWidthFB(fallbackFont, fontSize, buf.String())
+		runLength := font.StringWidthFB(fallbackFont, fontSize, buf.String())
 		tokenWidth := font.StringWidthFB(fallbackFont, fontSize, token+single.Space)
-		if (lineWidth + tokenWidth) < (text.x1+text.width)-text.xText {
+		if (runLength + tokenWidth) < (text.x1+text.width)-text.xText {
 			buf.WriteString(token)
 			buf.WriteString(single.Space)
 		} else {
@@ -177,40 +174,27 @@ func (text *Text) drawLine(page *Page, textLine *TextLine, str string) {
 	line.DrawOn(page)
 }
 
-func (text *Text) textIsCJK(str string) bool {
-	// CJK Unified Ideographs Range: 4E00–9FD5
-	// Hiragana Range: 3040–309F
-	// Katakana Range: 30A0–30FF
-	// Hangul Jamo Range: 1100–11FF
-	numOfCJK := 0
-	runes := []rune(str)
-	for _, ch := range runes {
-		if (ch >= 0x4E00 && ch <= 0x9FD5) ||
-			(ch >= 0x3040 && ch <= 0x309F) ||
-			(ch >= 0x30A0 && ch <= 0x30FF) ||
-			(ch >= 0x1100 && ch <= 0x11FF) {
-			numOfCJK++
-		}
-	}
-	return numOfCJK > (len(runes) / 2)
-}
-
+// tokenizeCJK splits the text of the text line, which has no spaces between
+// its words, into the runs of characters that fit in the width. No run is
+// empty.
 func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
-	tokens := make([]string, 0)
-	var sb strings.Builder
+	list := make([]string, 0)
+	var buf strings.Builder
 	for _, ch := range textLine.text {
-		if textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, sb.String()+string(ch)) < textWidth {
-			sb.WriteRune(ch)
+		if textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, buf.String()+string(ch)) < textWidth {
+			buf.WriteRune(ch)
 		} else {
-			tokens = append(tokens, sb.String())
-			sb.Reset()
-			sb.WriteRune(ch)
+			if buf.Len() > 0 {
+				list = append(list, buf.String())
+			}
+			buf.Reset()
+			buf.WriteRune(ch)
 		}
 	}
-	if len(sb.String()) > 0 {
-		tokens = append(tokens, sb.String())
+	if buf.Len() > 0 {
+		list = append(list, buf.String())
 	}
-	return tokens
+	return list
 }
 
 // ReadLines reads the lines of a UTF-8 text file, without carriage returns.
@@ -232,7 +216,9 @@ func ReadLines(filePath string) []string {
 	return lines
 }
 
-// ParagraphsFromFile reads a text file and returns its paragraphs. An empty line separates the paragraphs.
+// ParagraphsFromFile reads a text file and returns its paragraphs. An empty
+// line separates the paragraphs. It exits the program if the file cannot be
+// read.
 func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
 	paragraphs := make([]*Paragraph, 0)
 	paragraph := NewParagraph()

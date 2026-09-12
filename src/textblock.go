@@ -38,10 +38,6 @@ type TextBlock struct {
 
 	language               string
 	uri                    string
-	key                    string
-	uriLanguage            string
-	uriActualText          string
-	uriAltDescription      string
 	textAlignment          int
 	underline              bool
 	keywordHighlightColors map[string]int32
@@ -97,47 +93,38 @@ func (textBlock *TextBlock) SetFallbackFontSize(size float32) *TextBlock {
 	return textBlock
 }
 
-// SetText sets the text block text.
-// @param text the text block text.
+// SetText sets the text of this text block.
 func (textBlock *TextBlock) SetText(text string) *TextBlock {
 	textBlock.textContent = text
 	return textBlock
 }
 
-// GetFont returns the font used by textBlock text block.
-// @return the font.
+// GetFont returns the font of the text.
 func (textBlock *TextBlock) GetFont() *Font {
 	return textBlock.font
 }
 
-// GetText returns the text block text.
-// @return the text block text.
+// GetText returns the text of this text block.
 func (textBlock *TextBlock) GetText() string {
 	return textBlock.textContent
 }
 
-// SetLocation sets the location where textBlock text block will be drawn on the page.
-// @param x the x coordinate of the top left corner of the text block.
-// @param y the y coordinate of the top left corner of the text block.
+// SetLocation sets the location of the top left corner of this text block on the page.
 func (textBlock *TextBlock) SetLocation(x, y float32) Drawable {
 	textBlock.x = x
 	textBlock.y = y
 	return textBlock
 }
 
-// SetSize sets the size of the textBlock.
-// @param w the width of the text block.
-// @param h the height of the text block.
+// SetSize sets the width and height of this text block.
 func (textBlock *TextBlock) SetSize(w, h float32) *TextBlock {
 	textBlock.width = w
 	textBlock.height = h
 	return textBlock
 }
 
-// SetWidth sets the width of the text block.
+// SetWidth sets the width of this text block.
 // The height is adjusted automatically to fit the text.
-// @param w the width of the text block.
-// @param h the height of the text block.
 func (textBlock *TextBlock) SetWidth(w float32) *TextBlock {
 	textBlock.width = w
 	textBlock.height = 0.0
@@ -161,14 +148,12 @@ func (textBlock *TextBlock) GetHeight() float32 {
 }
 
 // SetBorderCornerRadius sets the border corner radius.
-// @param borderRadius float the border corner radius.
 func (textBlock *TextBlock) SetBorderCornerRadius(borderCornerRadius float32) *TextBlock {
 	textBlock.borderCornerRadius = borderCornerRadius
 	return textBlock
 }
 
-// SetTextPadding sets the padding around the block of text.
-// @param padding the padding between the text and the border.
+// SetTextPadding sets the padding between the text and the border.
 func (textBlock *TextBlock) SetTextPadding(padding float32) *TextBlock {
 	textBlock.textPadding = padding
 	return textBlock
@@ -183,14 +168,11 @@ func (textBlock *TextBlock) SetBorderWidth(borderWidth float32) *TextBlock {
 // SetBorderColor sets the border color as a 0xRRGGBB value. color.Transparent removes the border.
 func (textBlock *TextBlock) SetBorderColor(c int32) *TextBlock {
 	if c == color.Transparent {
+		textBlock.borderColor = [3]float32{}
 		textBlock.hasBorderColor = false
 		return textBlock
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
-	textBlock.SetBorderColorRGB([3]float32{r, g, b})
-	return textBlock
+	return textBlock.SetBorderColorRGB(colorToRGB(c))
 }
 
 // SetBorderColorRGB sets the border color from the red, green and blue components, from 0.0 to 1.0.
@@ -214,24 +196,17 @@ func (textBlock *TextBlock) SetTextColorRGB(textColor [3]float32) *TextBlock {
 
 // SetTextColor sets the text color as a 0xRRGGBB value.
 func (textBlock *TextBlock) SetTextColor(c int32) *TextBlock {
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
-	textBlock.textColor = [3]float32{r, g, b}
-	return textBlock
+	return textBlock.SetTextColorRGB(colorToRGB(c))
 }
 
 // SetFillColor sets the background color as a 0xRRGGBB value. color.Transparent removes the background.
 func (textBlock *TextBlock) SetFillColor(c int32) *TextBlock {
 	if c == color.Transparent {
+		textBlock.fillColor = [3]float32{}
 		textBlock.hasFillColor = false
 		return textBlock
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
-	textBlock.SetFillColorRGB([3]float32{r, g, b})
-	return textBlock
+	return textBlock.SetFillColorRGB(colorToRGB(c))
 }
 
 // SetFillColorRGB sets the background color from the red, green and blue components, from 0.0 to 1.0.
@@ -272,30 +247,12 @@ func (textBlock *TextBlock) SetLanguage(language string) *TextBlock {
 
 // SetRightToLeft sets whether the text is right to left, like Arabic and
 // Hebrew text. Each paragraph is wrapped at the width in logical order, and
-// each line is then reordered with ReorderVisually, which also shapes the
+// each line is then reordered with Bidi reordering, which also shapes the
 // Arabic letters, and aligned to the right, unless the text alignment is
 // alignment.Center.
 func (textBlock *TextBlock) SetRightToLeft(rightToLeft bool) *TextBlock {
 	textBlock.rightToLeft = rightToLeft
 	return textBlock
-}
-
-func (textBlock *TextBlock) textIsCJK(str string) bool {
-	// CJK Unified Ideographs Range: 4E00–9FD5
-	// Hiragana Range: 3040–309F
-	// Katakana Range: 30A0–30FF
-	// Hangul Jamo Range: 1100–11FF
-	numOfCJK := 0
-	runes := []rune(str)
-	for _, ch := range runes {
-		if (ch >= 0x4E00 && ch <= 0x9FD5) ||
-			(ch >= 0x3040 && ch <= 0x309F) ||
-			(ch >= 0x30A0 && ch <= 0x30FF) ||
-			(ch >= 0x1100 && ch <= 0x11FF) {
-			numOfCJK++
-		}
-	}
-	return numOfCJK > (len(runes) / 2)
 }
 
 // SetURIAction sets the URI opened when this text block is clicked.
@@ -311,12 +268,6 @@ func (textBlock *TextBlock) SetKeywordHighlightColors(keywordHighlightColors map
 		textBlock.keywordHighlightColors[strings.ToLower(key)] = value
 	}
 	return textBlock
-}
-
-// isASCIIWhitespace reports the ASCII whitespace that Java's \s matches; a
-// no-break space does not break a line.
-func isASCIIWhitespace(r rune) bool {
-	return r == ' ' || r == '\t' || r == '\n' || r == '\v' || r == '\f' || r == '\r'
 }
 
 func (textBlock *TextBlock) getTextLines() []*TextLine {
@@ -342,7 +293,7 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 				textLines,
 				NewTextLine(textBlock.font, text))
 		} else {
-			if textBlock.textIsCJK(text) {
+			if isCJK(text) {
 				var sb strings.Builder
 				for _, ch := range text {
 					if textBlock.font.StringWidthFB(textBlock.fallbackFont,
@@ -358,13 +309,12 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 						sb.WriteRune(ch)
 					}
 				}
-				if strings.TrimSpace(sb.String()) != "" {
-					textLines = append(textLines, NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
+				if last := trimSpace(sb.String()); last != "" {
+					textLines = append(textLines, NewTextLine(textBlock.font, last))
 				}
 			} else {
 				var sb strings.Builder
-				tokens := strings.FieldsFunc(line, isASCIIWhitespace)
-				for _, token := range tokens {
+				for _, token := range splitOnWhitespace(line) {
 					// The words between the zero width spaces of a token are
 					// joined with no space.
 					words := strings.Split(token, "\u200B")
@@ -380,7 +330,7 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 							if sb.Len() > 0 {
 								textLines = append(
 									textLines,
-									NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
+									NewTextLine(textBlock.font, trimSpace(sb.String())))
 								sb.Reset()
 							}
 							// A word too wide for a line by itself is broken.
@@ -392,10 +342,8 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 						}
 					}
 				}
-				if sb.Len() > 0 {
-					textLines = append(
-						textLines,
-						NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
+				if last := trimSpace(sb.String()); last != "" {
+					textLines = append(textLines, NewTextLine(textBlock.font, last))
 				}
 			}
 		}
@@ -416,7 +364,10 @@ func (textBlock *TextBlock) appendBrokenWordLines(
 	for textBlock.lineWidth(string(runes), byteIndex(runes, start)) > textAreaWidth {
 		// Each line gets at least one character, however narrow the block.
 		end := nextCharacterBreak(runes, start)
-		next := nextCharacterBreak(runes, end)
+		next := end
+		if end < len(runes) {
+			next = nextCharacterBreak(runes, end)
+		}
 		for next < len(runes) &&
 			textBlock.lineWidth(string(runes[:next]), byteIndex(runes, start)) <= textAreaWidth {
 			end = next
@@ -451,7 +402,7 @@ func (textBlock *TextBlock) lineWidth(text string, from int) float32 {
 
 // newTextLine returns a line of text, reordered if the text is right to left.
 func (textBlock *TextBlock) newTextLine(text string, from int) *TextLine {
-	to := len(strings.TrimRightFunc(text, unicode.IsSpace))
+	to := len(strings.TrimRightFunc(text, isJavaWhitespace))
 	if to < from {
 		to = from
 	}
@@ -504,7 +455,7 @@ func (textBlock *TextBlock) appendRightToLeftLines(
 	// rest its joined form.
 	var sb strings.Builder
 	from := 0
-	for _, token := range strings.FieldsFunc(paragraph, isASCIIWhitespace) {
+	for _, token := range splitOnWhitespace(paragraph) {
 		// The words between the zero width spaces of a token are joined with no
 		// space.
 		words := strings.Split(token, "\u200B")
@@ -535,7 +486,6 @@ func (textBlock *TextBlock) appendRightToLeftLines(
 }
 
 // SetUnderline underlines the text of this text block.
-// @param underline the underline flag.
 func (textBlock *TextBlock) SetUnderline(underline bool) *TextBlock {
 	textBlock.underline = underline
 	return textBlock
@@ -567,14 +517,6 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	}
 }
 
-// maxFloat32 returns the greater of a and b.
-func maxFloat32(a, b float32) float32 {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 // DrawOn draws this text block on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
@@ -582,7 +524,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	descent := textBlock.font.GetDescentAt(textBlock.fontSize)
 	leading := (ascent + descent) * textBlock.lineSpacing
 	textLines := textBlock.getTextLines()
-	blockHeight := maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding)
+	blockHeight := max(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding)
 	if page == nil {
 		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
 	}
@@ -628,7 +570,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 
 	page.RestoreGraphicsState()
 
-	if textBlock.uri != "" || textBlock.key != "" {
+	if textBlock.uri != "" {
 		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             textBlock.x,
@@ -641,10 +583,10 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 			title:          "",
 			contents:       "",
 			uri:            textBlock.uri,
-			key:            textBlock.key, // The destination name
-			language:       textBlock.uriLanguage,
-			actualText:     textBlock.uriActualText,
-			altDescription: textBlock.uriAltDescription,
+			key:            "",
+			language:       "",
+			actualText:     "",
+			altDescription: "",
 		})
 	}
 
