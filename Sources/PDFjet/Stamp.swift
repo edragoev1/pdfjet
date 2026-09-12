@@ -25,6 +25,9 @@ public class Stamp : Drawable {
     private var rotateDegrees: Float = 0
     private var buf = [UInt8]()
     private var fonts: [Font] = []
+    private var language: String?
+    private var actualText: String = Single.space
+    private var altDescription: String = Single.space
 
     /// Creates a stamp for the specified document.
     public init(_ pdf: PDF) {
@@ -51,6 +54,27 @@ public class Stamp : Drawable {
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
+        return self
+    }
+
+    /// Sets the language of this stamp, used for accessibility, for example "en-US".
+    @discardableResult
+    public func setLanguage(_ language: String) -> Stamp {
+        self.language = language
+        return self
+    }
+
+    /// Sets the alternate description of this stamp.
+    @discardableResult
+    public func setAltDescription(_ altDescription: String) -> Stamp {
+        self.altDescription = altDescription
+        return self
+    }
+
+    /// Sets the actual text for this stamp.
+    @discardableResult
+    public func setActualText(_ actualText: String) -> Stamp {
+        self.actualText = actualText
         return self
     }
 
@@ -398,7 +422,7 @@ public class Stamp : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!
 
-        // Save graphics state
+        page.addBMC(StructElem.P, language, actualText, altDescription)
         page.saveGraphicsState()
 
         let drawX = self.x
@@ -441,8 +465,8 @@ public class Stamp : Drawable {
         // 1. DRAW: draw the object
         page.append("/Fm\(objNumber ?? 0) Do\n")
 
-        // Restore graphics state
         page.restoreGraphicsState()
+        page.addEMC()
 
         return [self.x + width, self.y + height]
     }

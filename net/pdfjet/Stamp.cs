@@ -28,6 +28,9 @@ public class Stamp : IDrawable {
     private float rotateDegrees = 0f;
     private MemoryStream buf = new MemoryStream();
     private List<Font> fonts = new List<Font>();
+    private String language = null;
+    private String actualText = Single.space;
+    private String altDescription = Single.space;
 
     /// <summary>Creates a stamp for the specified document.</summary>
     public Stamp(PDF pdf) {
@@ -61,6 +64,24 @@ public class Stamp : IDrawable {
     /// <summary>Sets the location of the top left corner of this stamp on the page.</summary>
     public Stamp SetLocation(double x, double y) {
         return SetLocation((float) x, (float) y);
+    }
+
+    /// <summary>Sets the language of this stamp, used for accessibility.</summary>
+    public Stamp SetLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /// <summary>Sets the alternate description of this stamp.</summary>
+    public Stamp SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /// <summary>Sets the actual text for this stamp.</summary>
+    public Stamp SetActualText(String actualText) {
+        this.actualText = actualText;
+        return this;
     }
 
     private void Append(float value) {
@@ -389,6 +410,7 @@ public class Stamp : IDrawable {
 
     /// <summary>Draws this stamp on the specified page and returns the x and y coordinates of its bottom right corner.</summary>
     public float[] DrawOn(Page page) {
+        page.AddBMC(StructElem.P, language, actualText, altDescription);
         page.SaveGraphicsState();
 
         float drawX = this.x;
@@ -434,6 +456,7 @@ public class Stamp : IDrawable {
         page.Append(" Do\n");
 
         page.RestoreGraphicsState();
+        page.AddEMC();
 
         return new float[] { this.x + width, this.y + height };
     }

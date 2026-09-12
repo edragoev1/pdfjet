@@ -6,32 +6,39 @@ import (
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
 // Stamp is content that is drawn once, written as a PDF form XObject, and placed on pages with DrawOn.
 // Please see Example_35.
 type Stamp struct {
-	objNumber     int
-	pdf           *PDF
-	x             float32
-	y             float32
-	width         float32
-	height        float32
-	fillColor     []float32
-	strokeColor   []float32
-	strokeWidth   float32
-	rotateDegrees float32
-	buf           *bytes.Buffer
-	fonts         []*Font
+	objNumber      int
+	pdf            *PDF
+	x              float32
+	y              float32
+	width          float32
+	height         float32
+	fillColor      []float32
+	strokeColor    []float32
+	strokeWidth    float32
+	rotateDegrees  float32
+	buf            *bytes.Buffer
+	fonts          []*Font
+	language       string
+	actualText     string
+	altDescription string
 }
 
 // NewStamp creates a stamp for the specified document.
 func NewStamp(pdf *PDF) *Stamp {
 	return &Stamp{
-		pdf:         pdf,
-		buf:         &bytes.Buffer{},
-		strokeWidth: 1.0,
+		pdf:            pdf,
+		buf:            &bytes.Buffer{},
+		strokeWidth:    1.0,
+		actualText:     single.Space,
+		altDescription: single.Space,
 	}
 }
 
@@ -54,6 +61,24 @@ func (s *Stamp) WithFont(font *Font) *Stamp {
 func (s *Stamp) SetLocation(x, y float32) Drawable {
 	s.x = x
 	s.y = y
+	return s
+}
+
+// SetLanguage sets the language of this stamp, used for accessibility, for example "en-US".
+func (s *Stamp) SetLanguage(language string) *Stamp {
+	s.language = language
+	return s
+}
+
+// SetAltDescription sets the alternate description of this stamp.
+func (s *Stamp) SetAltDescription(altDescription string) *Stamp {
+	s.altDescription = altDescription
+	return s
+}
+
+// SetActualText sets the actual text for this stamp.
+func (s *Stamp) SetActualText(actualText string) *Stamp {
+	s.actualText = actualText
 	return s
 }
 
@@ -355,6 +380,7 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 // DrawOn draws this stamp on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (s *Stamp) DrawOn(page *Page) [2]float32 {
+	page.AddBMC(structtype.P, s.language, s.actualText, s.altDescription)
 	page.SaveGraphicsState()
 
 	drawX := s.x
@@ -400,6 +426,7 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	page.appendString(" Do\n")
 
 	page.RestoreGraphicsState()
+	page.AddEMC()
 
 	return [2]float32{s.x + s.width, s.y + s.height}
 }

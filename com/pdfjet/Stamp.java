@@ -29,6 +29,9 @@ public class Stamp implements Drawable {
     private float rotateDegrees = 0f;
     private ByteArrayOutputStream buf = new ByteArrayOutputStream();
     private List<Font> fonts = new ArrayList<Font>();
+    private String language = null;
+    private String actualText = Single.space;
+    private String altDescription = Single.space;
 
     /**
      * Creates a stamp for the specified document.
@@ -85,6 +88,39 @@ public class Stamp implements Drawable {
      */
     public Stamp setLocation(double x, double y) {
         return setLocation((float) x, (float) y);
+    }
+
+    /**
+     * Sets the language of this stamp, used for accessibility.
+     *
+     * @param language the language, for example "en-US".
+     * @return this Stamp object.
+     */
+    public Stamp setLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /**
+     * Sets the alternate description of this stamp.
+     *
+     * @param altDescription the alternate description of the stamp.
+     * @return this Stamp object.
+     */
+    public Stamp setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /**
+     * Sets the actual text for this stamp.
+     *
+     * @param actualText the actual text for the stamp.
+     * @return this Stamp object.
+     */
+    public Stamp setActualText(String actualText) {
+        this.actualText = actualText;
+        return this;
     }
 
     private void append(float value) {
@@ -531,6 +567,7 @@ public class Stamp implements Drawable {
      * @return the x and y coordinates of the bottom right corner of this stamp.
      */
     public float[] drawOn(Page page) {
+        page.addBMC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
 
         float drawX = this.x;
@@ -576,6 +613,7 @@ public class Stamp implements Drawable {
         page.append(" Do\n");
 
         page.restoreGraphicsState();
+        page.addEMC();
 
         return new float[] { this.x + width, this.y + height };
     }
