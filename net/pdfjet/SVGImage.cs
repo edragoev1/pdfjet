@@ -14,7 +14,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to embed SVG images in the PDF document.
 /// </summary>
-public class SVGImage {
+public class SVGImage : IDrawable {
     float x = 0f;
     float y = 0f;
     float w = 0f;       // SVG width
@@ -189,6 +189,10 @@ public class SVGImage {
         this.x = x;
         this.y = y;
         return this;
+    }
+
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /// <summary>Scales this SVG image by the specified factor.</summary>

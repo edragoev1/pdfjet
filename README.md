@@ -245,4 +245,14 @@ image.ScaleBy(0.5).SetLocation(50.0, 50.0).DrawOn(page)
 
 `DrawOn` returns the x and y coordinates of the bottom right corner of the
 component, as a `float[]` in Java and C#, a `[Float]` in Swift and a
-`[2]float32` in Go.
+`[2]float32` in Go. `DonutChart.drawOn` returns the bottom right corner of the
+outer circle of the chart; the slice labels can extend past it.
+
+`Permissions` takes the `UserAccess` values as a typed flags value in C# (a
+`[Flags]` enum) and Go (`UserAccess` with `Has`, `Add` and `Remove`), and as an
+`int` in Java and Swift, where the values of the `UserAccess` enum are combined
+with `|` on `getValue()`, as Example_30 shows. Java has no flags enum, and a
+Swift `OptionSet` is a struct, not an enum, so both ports keep the enum with the
+bit values of the standard and the `int` that `Permissions` masks and checks.
+In all four ports the value is the `/P` entry of the encryption dictionary
+without its reserved bits, so `getRawValue` is the same number everywhere.

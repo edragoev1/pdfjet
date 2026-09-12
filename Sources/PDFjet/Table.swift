@@ -11,7 +11,7 @@ import Foundation
 ///
 /// Please see Example_08.
 ///
-public class Table {
+public class Table : Drawable {
     /// The table has no header rows.
     public static let WITH_0_HEADER_ROWS = 0
     /// The table has 1 header row.
@@ -106,7 +106,7 @@ public class Table {
     /// - Parameter y: the y coordinate of the top left point of the table.
     ///
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> Table {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x1 = x
         self.y1 = y
         return self

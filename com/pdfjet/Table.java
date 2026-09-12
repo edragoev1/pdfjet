@@ -16,7 +16,7 @@ import java.util.*;
  *
  * Please see Example_08.
  */
-public class Table {
+public class Table implements Drawable {
     /** The table has no header rows. */
     public static final int WITH_0_HEADER_ROWS = 0;
     /** The table has 1 header row. */

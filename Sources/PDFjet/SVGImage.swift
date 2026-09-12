@@ -9,7 +9,7 @@ import Foundation
 /**
  * Used to embed SVG images in the PDF document.
  */
-public class SVGImage {
+public class SVGImage : Drawable {
     var x: Float = 0.0  // location x
     var y: Float = 0.0  // location y
     var w: Float = 0.0  // SVG width
@@ -240,7 +240,7 @@ public class SVGImage {
      *  - Returns: this SVG object, to allow method chaining.
      */
     @discardableResult
-    public func setLocation(_ x: Float, _ y: Float) -> SVGImage {
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.x = x
         self.y = y
         return self
@@ -340,7 +340,8 @@ public class SVGImage {
 
     /// Draws this SVG image on the specified page.
     @discardableResult
-    public func drawOn(_ page: Page) -> [Float] {
+    public func drawOn(_ page: Page?) -> [Float] {
+        let page = page!
         page.addBMC(StructElem.P, language, actualText, altDescription)
         for path in paths ?? [] {
             drawPath(path, page)

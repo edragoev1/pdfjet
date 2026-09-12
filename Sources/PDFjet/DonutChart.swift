@@ -11,7 +11,7 @@ import Foundation
 ///
 /// Please see Example_25.swift
 ///
-public class DonutChart {
+public class DonutChart : Drawable {
     var f1: Font?
     var f2: Font?
     var xc: Float = 0.0
@@ -37,7 +37,7 @@ public class DonutChart {
 
     /// Sets the center of this chart.
     @discardableResult
-    public func setLocation(_ xc: Float, _ yc: Float) -> DonutChart {
+    public func setLocation(_ xc: Float, _ yc: Float) -> Self {
         self.xc = xc
         self.yc = yc
         return self
@@ -202,9 +202,15 @@ public class DonutChart {
     }
 
     /// Draws this chart on the specified page.
-    public func drawOn(_ page: Page) {
+    ///
+    /// - Parameter page: the page to draw on.
+    /// - Returns: x and y coordinates of the bottom right corner of the outer
+    ///   circle of this chart. The slice labels can extend past it.
+    @discardableResult
+    public func drawOn(_ page: Page?) -> [Float] {
+        let page = page!
         if slices == nil || slices!.isEmpty {
-            return
+            return [xc + r1, yc + r1]
         }
         let innerR: Float = isDonutChart ? r2 : 0.0
         var angle: Float = 0.0
@@ -233,5 +239,6 @@ public class DonutChart {
                 label.drawOn(page)
             }
         }
+        return [xc + r1, yc + r1]
     }
 }   // End of DonutChart.swift

@@ -18,7 +18,7 @@ import javax.xml.stream.XMLStreamReader;
 /**
  * Used to embed SVG images in the PDF document.
  */
-public class SVGImage {
+public class SVGImage implements Drawable {
     float x = 0f;
     float y = 0f;
     float w = 0f;       // SVG width

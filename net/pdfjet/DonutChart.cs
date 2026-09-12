@@ -13,7 +13,7 @@ namespace PDFjet.NET {
     ///
     /// Please see Example_25.cs
     /// </summary>
-    public class DonutChart {
+    public class DonutChart : IDrawable {
         private readonly Font f1;
         private readonly Font f2;
         private float xc;
@@ -41,6 +41,10 @@ namespace PDFjet.NET {
             this.xc = xc;
             this.yc = yc;
             return this;
+        }
+
+        IDrawable IDrawable.SetLocation(float x, float y) {
+            return SetLocation(x, y);
         }
 
         /// <summary>Sets the outer and inner radius of this chart. A pie chart ignores the inner radius.</summary>
@@ -200,9 +204,12 @@ namespace PDFjet.NET {
         }
 
         /// <summary>Draws this chart on the specified page.</summary>
-        public void DrawOn(Page page) {
+        /// <param name="page">the page to draw on.</param>
+        /// <returns>x and y coordinates of the bottom right corner of the outer circle
+        /// of this chart. The slice labels can extend past it.</returns>
+        public float[] DrawOn(Page page) {
             if (slices == null || slices.Count == 0) {
-                return;
+                return new float[] {xc + r1, yc + r1};
             }
             float innerR = isDonutChart ? r2 : 0.0f;
             float angle = 0.0f;
@@ -233,6 +240,7 @@ namespace PDFjet.NET {
                     label.DrawOn(page);
                 }
             }
+            return new float[] {xc + r1, yc + r1};
         }
 
         // Utility: append points from a control-point block into a list

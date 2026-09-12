@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * A block of text that wraps at its width, with an optional border, background and padding.
  */
-public class TextBlock {
+public class TextBlock implements Drawable {
     float x;
     float y;
     private float width;

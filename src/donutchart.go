@@ -40,7 +40,9 @@ func NewDonutChart(f1, f2 *Font, isDonutChart bool) *DonutChart {
 }
 
 // SetLocation sets the center of this chart.
-func (dc *DonutChart) SetLocation(xc, yc float32) *DonutChart {
+// It returns the chart as a Drawable, so in a chain of setter calls
+// SetLocation goes last, right before DrawOn.
+func (dc *DonutChart) SetLocation(xc, yc float32) Drawable {
 	dc.xc = xc
 	dc.yc = yc
 	return dc
@@ -213,10 +215,12 @@ func (dc *DonutChart) drawLinePointer(
 	}
 }
 
-// DrawOn renders the donut chart onto the given page.
-func (dc *DonutChart) DrawOn(page *Page) error {
+// DrawOn draws this chart on the specified page.
+// It returns the x and y coordinates of the bottom right corner of the outer
+// circle of this chart. The slice labels can extend past it.
+func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	if len(dc.slices) == 0 {
-		return nil
+		return [2]float32{dc.xc + dc.r1, dc.yc + dc.r1}
 	}
 
 	var innerR float32
@@ -256,5 +260,5 @@ func (dc *DonutChart) DrawOn(page *Page) error {
 		}
 	}
 
-	return nil
+	return [2]float32{dc.xc + dc.r1, dc.yc + dc.r1}
 }

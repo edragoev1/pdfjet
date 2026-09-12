@@ -23,16 +23,18 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
       `github.com/edragoev1/pdfjet/v9` in `go.mod`, every import, doc2go and
       the README. Still to do after tagging: `go list -m
       github.com/edragoev1/pdfjet/v9@v9.0.0` from a scratch module.
-- ⬜ **B** Decide `Drawable` for the classes that have `setLocation` and
-      `drawOn` but do not implement it in Java: `Table`, `TextBlock`,
-      `SVGImage`, and `DonutChart` (whose `drawOn` is `void` in Java and returns
-      `error` in Go). Recommended: implement `Drawable` in all four ports and
-      make `DonutChart.drawOn` return the bottom right corner.
+- ✅ **B** `Table`, `TextBlock`, `SVGImage` and `DonutChart` implement
+      `Drawable` in all four ports. `DonutChart.drawOn` returns the bottom
+      right corner of the outer circle (it was `void` in Java, C# and Swift
+      and returned `error` in Go), and Go `DonutChart.SetLocation` returns
+      `Drawable`, so it goes last in a chain like the other Go drawables.
 - ✅ **B** `Stamp.Rectangle()` and `Stamp.Draw()` were empty stubs in Go and C#,
       `rectangle()` and `draw()` in Java, `rectangle()` in Swift. Removed from
       all four ports; nothing used them.
-- ⬜ S Decide whether `Permissions`/`UserAccess` get a typed flags API in Java
-      and Swift like C# and Go, or stay int based. Document the choice.
+- ✅ S `Permissions`/`UserAccess` stay int based in Java and Swift: Java has
+      no flags enum and a Swift `OptionSet` is not an enum, so both keep the
+      enum with the bit values of the standard, combined with `|` on
+      `getValue()`. Documented in the README Port differences section.
 
 ## Week 2 (Sep 18–24): encryption and PDF reading
 

@@ -16,7 +16,7 @@ import java.util.List;
  *
  * Please see Example_25.java
  */
-public class DonutChart {
+public class DonutChart implements Drawable {
     Font f1;
     Font f2;
     float xc = 0.0f;
@@ -223,11 +223,13 @@ public class DonutChart {
      * Draws this chart on the specified page.
      *
      * @param page the page to draw on.
+     * @return x and y coordinates of the bottom right corner of the outer
+     * circle of this chart. The slice labels can extend past it.
      * @throws Exception if an input or output exception occurred.
      */
-    public void drawOn(Page page) throws Exception {
+    public float[] drawOn(Page page) throws Exception {
         if (slices == null || slices.isEmpty()) {
-            return;
+            return new float[] {xc + r1, yc + r1};
         }
         float innerR = isDonutChart ? r2 : 0.0f;
         float angle = 0.0f;
@@ -257,6 +259,7 @@ public class DonutChart {
                 label.drawOn(page);
             }
         }
+        return new float[] {xc + r1, yc + r1};
     }
 
     // Utility: convert float[][] into List<float[]> for convenient addAll

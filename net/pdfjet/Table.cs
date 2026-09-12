@@ -16,7 +16,7 @@ namespace PDFjet.NET {
 ///
 /// Please see Example_08.
 /// </summary>
-public class Table {
+public class Table : IDrawable {
     /// <summary>The table has no header rows.</summary>
     public static readonly int WITH_0_HEADER_ROWS = 0;
     /// <summary>The table has 1 header row.</summary>
@@ -129,6 +129,10 @@ public class Table {
         this.x1 = x;
         this.y1 = y;
         return this;
+    }
+
+    IDrawable IDrawable.SetLocation(float x, float y) {
+        return SetLocation(x, y);
     }
 
     /// <summary>
