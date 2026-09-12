@@ -10,7 +10,7 @@ using System.Globalization;
 
 namespace PDFjet.NET {
 /// <summary>Utility methods.</summary>
-public class Util {
+internal class Util {
     internal static string ToHexString(byte[] data) {
         var sb = new StringBuilder(data.Length * 2);
         foreach (byte b in data) {

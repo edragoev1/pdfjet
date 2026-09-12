@@ -7,7 +7,7 @@
 import Foundation
 
 /// A single path operation: a command and its points.
-public class PathOp {
+class PathOp {
     var cmd: Character
     var x1q: Float = 0.0    // Original quadratic control
     var y1q: Float = 0.0    // point coordinates

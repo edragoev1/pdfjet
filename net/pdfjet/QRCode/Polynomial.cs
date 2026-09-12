@@ -18,7 +18,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>A polynomial over GF(256), used for the Reed-Solomon error correction.</summary>
-public class Polynomial {
+internal class Polynomial {
     private int[] num;
 
     /// <summary>Creates a polynomial from its coefficients.</summary>

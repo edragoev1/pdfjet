@@ -18,10 +18,10 @@ public class PageLayout {
     /// <summary>Displays the pages in two columns, with odd-numbered pages on the left.</summary>
     public const String TWO_COLUMN_LEFT = "TwoColumnLeft";   // Odd-numbered pages on the left
     /// <summary>Displays the pages in two columns, with odd-numbered pages on the right.</summary>
-    public const String TWO_COLUMN_RIGTH = "TwoColumnRight"; // Odd-numbered pages on the right
+    public const String TWO_COLUMN_RIGHT = "TwoColumnRight"; // Odd-numbered pages on the right
     /// <summary>Displays two pages at a time, with odd-numbered pages on the left.</summary>
     public const String TWO_PAGE_LEFT = "TwoPageLeft";       // Odd-numbered pages on the left
     /// <summary>Displays two pages at a time, with odd-numbered pages on the right.</summary>
-    public const String TWO_PAGE_RIGTH = "TwoPageRight";     // Odd-numbered pages on the right
+    public const String TWO_PAGE_RIGHT = "TwoPageRight";     // Odd-numbered pages on the right
 }
 }   // End of namespace PDFjet.NET

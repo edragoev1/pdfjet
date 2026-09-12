@@ -18,7 +18,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>Helper methods for building QR codes.</summary>
-public class QRUtil {
+internal class QRUtil {
     internal static Polynomial GetErrorCorrectPolynomial(int errorCorrectLength) {
         Polynomial a = new Polynomial(new int[] {1});
         for (int i = 0; i < errorCorrectLength; i++) {

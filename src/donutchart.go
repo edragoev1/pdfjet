@@ -231,25 +231,25 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	angle := float32(0.0)
 	for _, slice := range dc.slices {
 		angle = dc.drawSlice(
-			page, slice.color,
+			page, slice.Color,
 			dc.xc, dc.yc,
 			dc.r1, innerR,
-			angle, angle+slice.angle,
+			angle, angle+slice.Angle,
 		)
 		dc.drawLinePointer(
-			page, slice.text,
+			page, slice.Text,
 			dc.xc, dc.yc,
 			dc.r1,
-			angle-slice.angle, angle,
+			angle-slice.Angle, angle,
 		)
 
 		// Percent label inside the slice
-		if dc.f2 != nil && slice.angle >= 15.0 {
-			pct := int(float64(slice.angle) / 360.0 * 100.0)
+		if dc.f2 != nil && slice.Angle >= 15.0 {
+			pct := int(float64(slice.Angle) / 360.0 * 100.0)
 			pctStr := fmt.Sprintf("%d%%", pct)
 			label := NewTextLine(dc.f2, pctStr)
 			label.SetTextColor(color.White)
-			midAngle := angle - slice.angle/2.0 - 90.0
+			midAngle := angle - slice.Angle/2.0 - 90.0
 			midR := (dc.r1 + innerR) / 2.0
 			pos := getPoint(dc.xc, dc.yc, midR, midAngle)
 			label.SetLocation(

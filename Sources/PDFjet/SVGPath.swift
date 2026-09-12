@@ -7,7 +7,7 @@
 import Foundation
 
 /// One SVG path with its PDF path operations, colors and stroke width.
-public class SVGPath {
+class SVGPath {
     var data: String?                       // The SVG path data
     var operations: [PathOp]?               // The PDF path operations
     var fill: Int32 = Color.transparent     // The fill color or nil (don't fill)

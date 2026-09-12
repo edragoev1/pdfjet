@@ -42,7 +42,7 @@ enum PuffError: Error {
 }
 
 /// Decompresses Deflate data. A Swift port of puff.c by Mark Adler.
-public final class Puff {
+final class Puff {
     // Maximums for allocations and loops.
     // It is not useful to change these -- they are fixed by the deflate format.
     let MAXBITS: Int = 15       // maximum bits in a code

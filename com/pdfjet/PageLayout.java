@@ -26,11 +26,11 @@ public class PageLayout {
     public static final String TWO_COLUMN_LEFT = "TwoColumnLeft";
 
     /** Odd-numbered pages on the right */
-    public static final String TWO_COLUMN_RIGTH = "TwoColumnRight";
+    public static final String TWO_COLUMN_RIGHT = "TwoColumnRight";
 
     /** Odd-numbered pages on the left */
     public static final String TWO_PAGE_LEFT = "TwoPageLeft";
 
     /** Odd-numbered pages on the right */
-    public static final String TWO_PAGE_RIGTH = "TwoPageRight";
+    public static final String TWO_PAGE_RIGHT = "TwoPageRight";
 }

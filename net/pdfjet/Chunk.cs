@@ -8,7 +8,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>A chunk of a PNG image.</summary>
-public class Chunk {
+internal class Chunk {
     internal UInt32 length;
     internal byte[] type;
     internal byte[] data;

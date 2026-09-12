@@ -12,6 +12,10 @@ namespace PDFjet.NET {
         public const string Bold             = "fonts/NotoSans/NotoSans-Bold.ttf.stream";
         /// <summary>Noto Sans Bold Italic</summary>
         public const string BoldItalic       = "fonts/NotoSans/NotoSans-BoldItalic.ttf.stream";
+        /// <summary>Noto Sans ExtraBold</summary>
+        public const string ExtraBold        = "fonts/NotoSans/NotoSans-ExtraBold.ttf.stream";
+        /// <summary>Noto Sans ExtraBold Italic</summary>
+        public const string ExtraBoldItalic  = "fonts/NotoSans/NotoSans-ExtraBoldItalic.ttf.stream";
         /// <summary>Noto Sans ExtraLight</summary>
         public const string ExtraLight       = "fonts/NotoSans/NotoSans-ExtraLight.ttf.stream";
         /// <summary>Noto Sans ExtraLight Italic</summary>

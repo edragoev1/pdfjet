@@ -8,7 +8,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>Formats numbers with a minimum and a maximum number of fraction digits.</summary>
-public class NumberFormat {
+internal class NumberFormat {
     int minFractionDigits = 0;
     int maxFractionDigits = 0;
 

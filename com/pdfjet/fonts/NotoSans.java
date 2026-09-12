@@ -5,14 +5,18 @@ package com.pdfjet;
  * .ttf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class NotoSans {
-    /** The default constructor */
-    public NotoSans() {
-    }
-
+    /** Noto Sans Black */
+    public static final String Black            = "fonts/NotoSans/NotoSans-Black.ttf.stream";
+    /** Noto Sans Black Italic */
+    public static final String BlackItalic      = "fonts/NotoSans/NotoSans-BlackItalic.ttf.stream";
     /** Noto Sans Bold */
     public static final String Bold             = "fonts/NotoSans/NotoSans-Bold.ttf.stream";
     /** Noto Sans Bold Italic */
     public static final String BoldItalic       = "fonts/NotoSans/NotoSans-BoldItalic.ttf.stream";
+    /** Noto Sans ExtraBold */
+    public static final String ExtraBold        = "fonts/NotoSans/NotoSans-ExtraBold.ttf.stream";
+    /** Noto Sans ExtraBold Italic */
+    public static final String ExtraBoldItalic  = "fonts/NotoSans/NotoSans-ExtraBoldItalic.ttf.stream";
     /** Noto Sans ExtraLight */
     public static final String ExtraLight       = "fonts/NotoSans/NotoSans-ExtraLight.ttf.stream";
     /** Noto Sans ExtraLight Italic */
@@ -33,4 +37,8 @@ public class NotoSans {
     public static final String SemiBold         = "fonts/NotoSans/NotoSans-SemiBold.ttf.stream";
     /** Noto Sans SemiBold Italic */
     public static final String SemiBoldItalic   = "fonts/NotoSans/NotoSans-SemiBoldItalic.ttf.stream";
+    /** Noto Sans Thin */
+    public static final String Thin             = "fonts/NotoSans/NotoSans-Thin.ttf.stream";
+    /** Noto Sans Thin Italic */
+    public static final String ThinItalic       = "fonts/NotoSans/NotoSans-ThinItalic.ttf.stream";
 }

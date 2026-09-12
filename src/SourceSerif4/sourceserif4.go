@@ -3,6 +3,8 @@ package SourceSerif4
 
 // SourceSerif4 holds the paths to the Source Serif 4 fonts.
 const (
+	Black            = "fonts/SourceSerif4/SourceSerif4-Black.ttf.stream"
+	BlackItalic      = "fonts/SourceSerif4/SourceSerif4-BlackItalic.ttf.stream"
 	Bold             = "fonts/SourceSerif4/SourceSerif4-Bold.ttf.stream"
 	BoldItalic       = "fonts/SourceSerif4/SourceSerif4-BoldItalic.ttf.stream"
 	ExtraLight       = "fonts/SourceSerif4/SourceSerif4-ExtraLight.ttf.stream"

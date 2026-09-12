@@ -17,7 +17,7 @@
 
 namespace PDFjet.NET {
 /// <summary>The eight QR code mask patterns.</summary>
-public class MaskPattern {
+internal class MaskPattern {
     /// <summary>Mask pattern 000.</summary>
     public const int PATTERN000 = 0;
     /// <summary>Mask pattern 001.</summary>

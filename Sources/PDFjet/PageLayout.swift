@@ -17,9 +17,9 @@ public class PageLayout {
     /// Displays the pages in two columns, with odd-numbered pages on the left.
     public static let TWO_COLUMN_LEFT = "TwoColumnLeft"    // Odd-numbered pages on the left
     /// Displays the pages in two columns, with odd-numbered pages on the right.
-    public static let TWO_COLUMN_RIGTH = "TwoColumnRight"  // Odd-numbered pages on the right
+    public static let TWO_COLUMN_RIGHT = "TwoColumnRight"  // Odd-numbered pages on the right
     /// Displays two pages at a time, with odd-numbered pages on the left.
     public static let TWO_PAGE_LEFT = "TwoPageLeft"        // Odd-numbered pages on the left
     /// Displays two pages at a time, with odd-numbered pages on the right.
-    public static let TWO_PAGE_RIGTH = "TwoPageRight"      // Odd-numbered pages on the right
+    public static let TWO_PAGE_RIGHT = "TwoPageRight"      // Odd-numbered pages on the right
 }

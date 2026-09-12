@@ -5,9 +5,9 @@ import java.util.List;
 /**
  * The SVGPath class.
  */
-public class SVGPath {
+class SVGPath {
     /** The default constructor */
-    public SVGPath() {
+    SVGPath() {
     }
 
     String data;                    // The SVG path data

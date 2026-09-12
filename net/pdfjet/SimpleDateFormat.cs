@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>Formats dates for the PDF metadata.</summary>
-public class SimpleDateFormat {
+internal class SimpleDateFormat {
     private String format = null;
 
     // SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMddHHmmss'Z'");

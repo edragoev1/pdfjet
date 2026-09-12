@@ -12,9 +12,9 @@ import java.util.List;
 /**
  * The SVG class.
  */
-public class SVG {
+class SVG {
     /** The default constructor */
-    public SVG() {
+    SVG() {
     }
 
     private static boolean isCommand(char ch) {
@@ -53,7 +53,7 @@ public class SVG {
      * @param path the path.
      * @return the list of SVG path operation.
      */
-    public static List<PathOp> getOperations(String path) {
+    static List<PathOp> getOperations(String path) {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp op = null;
         StringBuilder buf = new StringBuilder();
@@ -105,7 +105,7 @@ public class SVG {
      * @param list the list of SVG path operations.
      * @return the list of PDF path operation.
      */
-    public static List<PathOp> toPDF(List<PathOp> list) {
+    static List<PathOp> toPDF(List<PathOp> list) {
         List<PathOp> operations = new ArrayList<PathOp>();
         PathOp lastOp = null;
         PathOp pathOp = null;

@@ -18,7 +18,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>A growable buffer of bits.</summary>
-public class BitBuffer {
+internal class BitBuffer {
     private byte[] buffer;
     private int length;
     private int increments = 32;

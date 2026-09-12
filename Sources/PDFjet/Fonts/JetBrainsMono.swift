@@ -9,10 +9,10 @@ public struct JetBrainsMono {
     public static let Bold             = "fonts/JetBrainsMono/JetBrainsMono-Bold.ttf.stream"
     /// JetBrains Mono Bold Italic
     public static let BoldItalic       = "fonts/JetBrainsMono/JetBrainsMono-BoldItalic.ttf.stream"
-    /// JetBrains Mono ExtraBold
-    public static let ExtraBold        = "fonts/JetBrainsMono/JetBrainsMono-ExtraBold.ttf.stream"
-    /// JetBrains Mono ExtraBold Italic
-    public static let ExtraBoldItalic  = "fonts/JetBrainsMono/JetBrainsMono-ExtraBoldItalic.ttf.stream"
+    /// JetBrains Mono ExtraLight
+    public static let ExtraLight       = "fonts/JetBrainsMono/JetBrainsMono-ExtraLight.ttf.stream"
+    /// JetBrains Mono ExtraLight Italic
+    public static let ExtraLightItalic = "fonts/JetBrainsMono/JetBrainsMono-ExtraLightItalic.ttf.stream"
     /// JetBrains Mono Italic
     public static let Italic           = "fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream"
     /// JetBrains Mono Light
@@ -29,8 +29,4 @@ public struct JetBrainsMono {
     public static let SemiBold         = "fonts/JetBrainsMono/JetBrainsMono-SemiBold.ttf.stream"
     /// JetBrains Mono SemiBold Italic
     public static let SemiBoldItalic   = "fonts/JetBrainsMono/JetBrainsMono-SemiBoldItalic.ttf.stream"
-    /// JetBrains Mono Thin
-    public static let Thin             = "fonts/JetBrainsMono/JetBrainsMono-Thin.ttf.stream"
-    /// JetBrains Mono Thin Italic
-    public static let ThinItalic       = "fonts/JetBrainsMono/JetBrainsMono-ThinItalic.ttf.stream"
 }

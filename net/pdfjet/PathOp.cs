@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>A single path operation: a command and its points.</summary>
-public class PathOp {
+internal class PathOp {
     /// <summary>The path command, for example 'M' or 'C'.</summary>
     public char cmd;
 

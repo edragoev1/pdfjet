@@ -22,3 +22,5 @@ out
 docs/
 docfx/api/
 *.swp
+.claude/worktrees/
+__pycache__/

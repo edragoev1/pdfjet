@@ -13,6 +13,10 @@ public struct NotoSans {
     public static let Bold             = "fonts/NotoSans/NotoSans-Bold.ttf.stream"
     /// Noto Sans Bold Italic
     public static let BoldItalic       = "fonts/NotoSans/NotoSans-BoldItalic.ttf.stream"
+    /// Noto Sans ExtraBold
+    public static let ExtraBold        = "fonts/NotoSans/NotoSans-ExtraBold.ttf.stream"
+    /// Noto Sans ExtraBold Italic
+    public static let ExtraBoldItalic  = "fonts/NotoSans/NotoSans-ExtraBoldItalic.ttf.stream"
     /// Noto Sans ExtraLight
     public static let ExtraLight       = "fonts/NotoSans/NotoSans-ExtraLight.ttf.stream"
     /// Noto Sans ExtraLight Italic

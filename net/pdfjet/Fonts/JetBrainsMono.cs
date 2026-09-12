@@ -8,10 +8,10 @@ namespace PDFjet.NET {
         public const string Bold             = "fonts/JetBrainsMono/JetBrainsMono-Bold.ttf.stream";
         /// <summary>JetBrains Mono Bold Italic</summary>
         public const string BoldItalic       = "fonts/JetBrainsMono/JetBrainsMono-BoldItalic.ttf.stream";
-        /// <summary>JetBrains Mono ExtraBold</summary>
-        public const string ExtraBold        = "fonts/JetBrainsMono/JetBrainsMono-ExtraBold.ttf.stream";
-        /// <summary>JetBrains Mono ExtraBold Italic</summary>
-        public const string ExtraBoldItalic  = "fonts/JetBrainsMono/JetBrainsMono-ExtraBoldItalic.ttf.stream";
+        /// <summary>JetBrains Mono ExtraLight</summary>
+        public const string ExtraLight       = "fonts/JetBrainsMono/JetBrainsMono-ExtraLight.ttf.stream";
+        /// <summary>JetBrains Mono ExtraLight Italic</summary>
+        public const string ExtraLightItalic = "fonts/JetBrainsMono/JetBrainsMono-ExtraLightItalic.ttf.stream";
         /// <summary>JetBrains Mono Italic</summary>
         public const string Italic           = "fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream";
         /// <summary>JetBrains Mono Light</summary>
@@ -28,9 +28,5 @@ namespace PDFjet.NET {
         public const string SemiBold         = "fonts/JetBrainsMono/JetBrainsMono-SemiBold.ttf.stream";
         /// <summary>JetBrains Mono SemiBold Italic</summary>
         public const string SemiBoldItalic   = "fonts/JetBrainsMono/JetBrainsMono-SemiBoldItalic.ttf.stream";
-        /// <summary>JetBrains Mono Thin</summary>
-        public const string Thin             = "fonts/JetBrainsMono/JetBrainsMono-Thin.ttf.stream";
-        /// <summary>JetBrains Mono Thin Italic</summary>
-        public const string ThinItalic       = "fonts/JetBrainsMono/JetBrainsMono-ThinItalic.ttf.stream";
     }
 }
