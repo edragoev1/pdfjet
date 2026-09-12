@@ -208,7 +208,9 @@ func (cell *Cell) GetTextBlock() *TextBlock {
 // @param width the specified width.
 func (cell *Cell) SetWidth(width float32) *Cell {
 	cell.width = width
-	if cell.textBlock != nil {
+	if cell.textBox != nil {
+		cell.textBox.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
+	} else if cell.textBlock != nil {
 		cell.textBlock.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
 	}
 	return cell

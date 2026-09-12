@@ -164,6 +164,16 @@ Pick from the README limitations; the first three are the ones users hit.
       `setBorderColor` turning the border on (as `Text` does) and
       `drawOn(null)` measuring instead of throwing or exiting, and whatever week 1
       decides for `Table`/`TextBlock`/`SVGImage`/`DonutChart` and `Stamp`.
+      `Table`: the Java file constructor throws `IOException` and keeps the
+      empty fields at the end of a line; Swift `setTextColorInColumn` takes
+      an `Int32` and `setTextAlignInColumn` no longer throws; a table no longer
+      skips as many data rows as it has header rows on the first page and at
+      every page break, and the lines of a wrapped header cell repeat on
+      every page; `rightAlignNumbers` right-aligns the same texts in the four
+      ports (ASCII digits with an optional sign and exponent); the column
+      setters change a cell's `TextBox`, as in Java, not its `TextBlock`;
+      Java and C# `Cell.setBorders(true)`, and so `Table.setCellBorders(true)`,
+      turn the four borders on, as in Go and Swift.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

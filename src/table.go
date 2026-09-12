@@ -8,8 +8,8 @@ package pdfjet
 import (
 	"bufio"
 	"log"
+	"math"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
@@ -18,8 +18,9 @@ import (
 // Table is used to create table objects and draw them on a page.
 // Please see Example_08.
 type Table struct {
-	tableData          [][]*Cell
-	numOfHeaderRows    int
+	tableData       [][]*Cell
+	numOfHeaderRows int
+	// The index of the next row to draw, or -1 when all rows are drawn.
 	rendered           int
 	x1, y1             float32
 	firstPageTopMargin float32
@@ -43,16 +44,17 @@ const (
 // NewTable creates table objects.
 func NewTable() *Table {
 	table := new(Table)
+	table.tableData = make([][]*Cell, 0)
 	table.numOfHeaderRows = 1
+	table.rendered = 1
 	return table
 }
 
-// NewTableFromFile creates a table from a delimited text file.
-// The first line uses f1 and the other lines use f2.
+// NewTableFromFile creates a table from a text file with comma, pipe or tab
+// separated values. The first line is the header row and uses f1; the other
+// lines use f2. Every row gets as many cells as the first line has fields.
 func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
-	table := new(Table)
-	table.numOfHeaderRows = 1
-	table.tableData = make([][]*Cell, 0)
+	table := NewTable()
 	delimiterRegex := ""
 	numberOfFields := 0
 	lineNumber := 0
@@ -67,6 +69,8 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		}
 	}(f)
 	scanner := bufio.NewScanner(f)
+	// A line can be longer than the 64 KB that the scanner reads by default.
+	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if lineNumber == 0 {
@@ -77,8 +81,7 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		fields := strings.Split(line, delimiterRegex)
 		for _, field := range fields {
 			if lineNumber == 0 {
-				cell := NewCell(f1, field)
-				row = append(row, cell)
+				row = append(row, NewCell(f1, field))
 			} else {
 				row = append(row, NewCell(f2, field))
 			}
@@ -100,6 +103,9 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		}
 		lineNumber++
 	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
 	return table
 }
 
@@ -120,47 +126,81 @@ func (table *Table) SetBottomMargin(bottomMargin float32) *Table {
 }
 
 // SetData sets the table data and specifies the number of header rows in table data.
+// The header rows are drawn again at the top of every page.
 func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) *Table {
 	table.tableData = tableData
 	table.numOfHeaderRows = numOfHeaderRows
 	table.rendered = numOfHeaderRows
-	numOfColumns := len(tableData[0])
-	font := tableData[0][0].font
-	for _, row := range tableData {
-		diff := numOfColumns - len(row)
-		for i := 0; i < diff; i++ {
-			row = append(row, NewCell(font, ""))
-		}
-	}
+	table.addCellsToCompleteTheGrid()
 	return table
 }
 
-// RightAlignNumbers sets the alignment of the numbers.
+// addCellsToCompleteTheGrid adds empty cells to the rows that are shorter
+// than the first row.
+func (table *Table) addCellsToCompleteTheGrid() {
+	numOfColumns := len(table.tableData[0])
+	font := table.tableData[0][0].font
+	for i, row := range table.tableData {
+		diff := numOfColumns - len(row)
+		for j := 0; j < diff; j++ {
+			table.tableData[i] = append(table.tableData[i], NewCell(font, ""))
+		}
+	}
+}
+
+// RightAlignNumbers aligns to the right the cells whose text is a number,
+// such as 1,234.50, (1,234.50), -5 or 1.5E+3. The periods, commas and
+// apostrophes are ignored, and the number can be in parentheses.
 func (table *Table) RightAlignNumbers() {
-	var buf strings.Builder
 	for _, row := range table.tableData {
 		for _, cell := range row {
-
-			buf.Reset()
-			runes := []rune(cell.text)
-			var index1 = 0
-			var index2 = len(runes)
-			if len(runes) > 2 && runes[0] == '(' && runes[len(runes)-1] == ')' {
-				index1 = 1
-				index2 = len(runes) - 1
-			}
-			for i := index1; i < index2; i++ {
-				ch := runes[i]
-				if ch != '.' && ch != ',' && ch != '\'' {
-					buf.WriteRune(ch)
-				}
-			}
-			_, err := strconv.ParseFloat(buf.String(), 64)
-			if err == nil {
+			if isNumber(cell.text) {
 				cell.SetTextAlignment(alignment.Right)
 			}
 		}
 	}
+}
+
+// isNumber returns true if the text, without its periods, commas and
+// apostrophes and the parentheses around it, is an optional sign, ASCII
+// digits and an optional exponent, with optional spaces before and after.
+func isNumber(text string) bool {
+	str := text
+	if len(str) >= 2 && str[0] == '(' && str[len(str)-1] == ')' {
+		str = str[1 : len(str)-1]
+	}
+	var buf strings.Builder
+	for _, ch := range str {
+		if ch != '.' && ch != ',' && ch != '\'' {
+			buf.WriteRune(ch)
+		}
+	}
+	number := trimSpace(buf.String())
+	i := 0
+	if i < len(number) && (number[i] == '+' || number[i] == '-') {
+		i++
+	}
+	start := i
+	for i < len(number) && number[i] >= '0' && number[i] <= '9' {
+		i++
+	}
+	if i == start {
+		return false
+	}
+	if i < len(number) && (number[i] == 'e' || number[i] == 'E') {
+		i++
+		if i < len(number) && (number[i] == '+' || number[i] == '-') {
+			i++
+		}
+		start = i
+		for i < len(number) && number[i] >= '0' && number[i] <= '9' {
+			i++
+		}
+		if i == start {
+			return false
+		}
+	}
+	return i == len(number)
 }
 
 // RemoveLineBetweenRows removes the horizontal lines between the rows from index1 to index2.
@@ -187,8 +227,8 @@ func (table *Table) SetTextAlignInColumn(index, alignment int) *Table {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetTextAlignment(alignment)
-			if cell.textBlock != nil {
-				cell.textBlock.SetTextAlignment(alignment)
+			if cell.textBox != nil {
+				cell.textBox.SetTextAlignment(alignment)
 			}
 		}
 	}
@@ -199,13 +239,12 @@ func (table *Table) SetTextAlignInColumn(index, alignment int) *Table {
 // @param index the index of the specified column.
 // @param color the color specified as an integer.
 func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
-	textColor := colorToRGB(color)
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
-			cell.SetTextColorRGB(textColor)
-			if cell.textBlock != nil {
-				cell.textBlock.SetTextColorRGB(textColor)
+			cell.SetTextColor(color)
+			if cell.textBox != nil {
+				cell.textBox.SetTextColor(color)
 			}
 		}
 	}
@@ -220,8 +259,8 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 		if index < len(row) {
 			cell := row[index]
 			cell.font = font
-			if cell.textBlock != nil {
-				cell.textBlock.font = font
+			if cell.textBox != nil {
+				cell.textBox.font = font
 			}
 		}
 	}
@@ -232,13 +271,12 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 // @param index the index of the specified row.
 // @param color the color specified as an integer.
 func (table *Table) SetTextColorInRow(index int, color int32) *Table {
-	textColor := colorToRGB(color)
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
-			cell.SetTextColorRGB(textColor)
-			if cell.textBlock != nil {
-				cell.textBlock.SetTextColorRGB(textColor)
+			cell.SetTextColor(color)
+			if cell.textBox != nil {
+				cell.textBox.SetTextColor(color)
 			}
 		}
 	}
@@ -253,8 +291,8 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 		row := table.tableData[index]
 		for _, cell := range row {
 			cell.font = font
-			if cell.textBlock != nil {
-				cell.textBlock.font = font
+			if cell.textBox != nil {
+				cell.textBox.font = font
 			}
 		}
 	}
@@ -267,11 +305,7 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 func (table *Table) SetColumnWidth(index int, width float32) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
-			cell := row[index]
-			cell.SetWidth(width)
-			if cell.textBlock != nil {
-				cell.textBlock.SetWidth(width - (cell.leftPadding + cell.rightPadding))
-			}
+			row[index].SetWidth(width)
 		}
 	}
 	return table
@@ -281,8 +315,7 @@ func (table *Table) SetColumnWidth(index int, width float32) *Table {
 // @param index the index of the column.
 // @return the width of the column.
 func (table *Table) GetColumnWidth(index int) float32 {
-	cell := table.GetCellAtRowColumn(0, index)
-	return cell.GetWidth()
+	return table.GetCellAtRowColumn(0, index).GetWidth()
 }
 
 // GetCellAt returns the cell at the specified row and column.
@@ -291,8 +324,7 @@ func (table *Table) GetColumnWidth(index int) float32 {
 // @return the cell at the specified row and column.
 func (table *Table) GetCellAt(rowIndex, colIndex int) *Cell {
 	if rowIndex >= 0 {
-		row := table.tableData[rowIndex]
-		return row[colIndex]
+		return table.tableData[rowIndex][colIndex]
 	}
 	return table.tableData[len(table.tableData)+rowIndex][colIndex]
 }
@@ -305,19 +337,19 @@ func (table *Table) GetCellAtRowColumn(rowIndex, colIndex int) *Cell {
 	return table.GetCellAt(rowIndex, colIndex)
 }
 
-// GetRow returns a list of cell for the specified row.
+// GetRow returns a list of cells for the specified row.
 // @param index the index of the specified row.
 // @return the list of cells.
 func (table *Table) GetRow(index int) []*Cell {
 	return table.tableData[index]
 }
 
-// GetRowAtIndex returns the row at the specified index.
+// GetRowAtIndex returns the cells in the specified row. Same as GetRow.
 func (table *Table) GetRowAtIndex(index int) []*Cell {
 	return table.GetRow(index)
 }
 
-// GetColumn returns a list of cell for the specified column.
+// GetColumn returns a list of cells for the specified column.
 // @param index the index of the specified column.
 // @return the list of cells.
 func (table *Table) GetColumn(index int) []*Cell {
@@ -330,7 +362,7 @@ func (table *Table) GetColumn(index int) []*Cell {
 	return column
 }
 
-// GetColumnAtIndex return the column at the specified index.
+// GetColumnAtIndex returns the cells in the specified column. Same as GetColumn.
 func (table *Table) GetColumnAtIndex(index int) []*Cell {
 	return table.GetColumn(index)
 }
@@ -342,11 +374,12 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
-	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
-	return xy
+	return table.drawTableRows(page, table.drawHeaderRows(page, 0))
 }
 
-// DrawOnPages draws the table on pdf pages with the specified size.
+// DrawOnPages draws this table on as many new pages as it needs.
+// The pages are created detached and added to the list; add them to the PDF afterwards.
+// It returns the x and y coordinates below the table on the last page.
 func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [2]float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
@@ -362,11 +395,8 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [
 	return xy
 }
 
-/**
- *  drawHeaderRows draws table on the specified page.
- *  @param page the page to draw table on.
- *  @return Point the point on the page where to draw the next component.
- */
+// drawHeaderRows draws the header rows at the top of the page and returns
+// the point below them.
 func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	x := table.x1
 	y := table.y1
@@ -381,19 +411,20 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 			colspan := cell.GetColSpan()
 			w := float32(0.0)
 			for k := 0; k < colspan; k++ {
-				w += row[j].width
+				w += row[j].GetWidth()
 				j++
 			}
-			page.SetBrushColorRGB(cell.GetTextColor())
-			if i == (table.numOfHeaderRows - 1) {
-				cell.SetBottomBorder(true)
+			if page != nil {
+				page.SetBrushColorRGB(cell.GetTextColor())
+				if i == (table.numOfHeaderRows - 1) {
+					cell.SetBottomBorder(true)
+				}
+				cell.drawOn(page, x, y, w, h)
 			}
-			cell.drawOn(page, x, y, w, h)
 			x += w
 		}
 		x = table.x1
 		y += h
-		table.rendered++
 	}
 	return [2]float32{x, y}
 }
@@ -401,7 +432,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	x := xy[0]
 	y := xy[1]
-	for i := table.rendered; i < len(table.tableData); i++ {
+	for table.rendered < len(table.tableData) {
 		row := table.tableData[table.rendered]
 		h := table.getMaxCellHeight(row)
 		if page != nil && (y+h) > (page.height-table.bottomMargin) {
@@ -441,7 +472,7 @@ func (table *Table) getMaxCellHeight(row []*Cell) float32 {
 	return maxCellHeight
 }
 
-// HasMoreData returns true if the table contains more data that needs to be drawn on a page.
+// hasMoreData returns true if the table contains more data that needs to be drawn on a page.
 func (table *Table) hasMoreData() bool {
 	return table.rendered != -1
 }
@@ -457,8 +488,9 @@ func (table *Table) GetWidth() float32 {
 	return tableWidth
 }
 
-// GetRowsRendered returns the number of data rows that have been rendered so far.
-// @return the number of data rows that have been rendered so far.
+// GetRowsRendered returns the number of rows below the header rows that are
+// drawn so far, counting each line of wrapped cell text as a row, or -1 when
+// all rows are drawn.
 func (table *Table) GetRowsRendered() int {
 	if table.rendered != -1 {
 		return table.rendered - table.numOfHeaderRows
@@ -467,32 +499,28 @@ func (table *Table) GetRowsRendered() int {
 }
 
 // SetCellBorders sets all table cells borders to false or true.
-func (table *Table) SetCellBorders(border bool) *Table {
+func (table *Table) SetCellBorders(borders bool) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetTopBorder(border)
-			cell.SetBottomBorder(border)
-			cell.SetLeftBorder(border)
-			cell.SetRightBorder(border)
+			cell.SetBorders(borders)
 		}
 	}
 	return table
 }
 
-// SetCellBordersColor sets the color of the cell borders.
-// @param color the color of the cell borders.
+// SetCellBordersColor sets the color of the cell border lines.
+// @param color the color of the cell border lines.
 func (table *Table) SetCellBordersColor(color int32) *Table {
-	penColor := colorToRGB(color)
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetStrokeColorRGB(penColor)
+			cell.SetStrokeColor(color)
 		}
 	}
 	return table
 }
 
-// SetCellBordersWidth sets the width of the cell borders.
-// @param width the width of the borders.
+// SetCellBordersWidth sets the width of the cell border lines.
+// @param width the width of the border lines.
 func (table *Table) SetCellBordersWidth(width float32) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
@@ -517,9 +545,7 @@ func (table *Table) setRightBorderOnLastColumn() {
 			cell = row[i]
 			i += cell.GetColSpan()
 		}
-		if cell != nil {
-			cell.SetRightBorder(true)
-		}
+		cell.SetRightBorder(true)
 	}
 }
 
@@ -541,20 +567,16 @@ func (table *Table) setBottomBorderOnLastRow() {
 // SetColumnWidths auto adjusts the widths of all columns so that they are just wide enough to
 // hold the text without truncation.
 func (table *Table) SetColumnWidths() *Table {
-	maxColWidths := []float32{}
-	firstRow := table.tableData[0]
-	for range firstRow {
-		maxColWidths = append(maxColWidths, 0.0)
-	}
+	maxColWidths := make([]float32, len(table.tableData[0]))
 	for _, row := range table.tableData {
 		for i := 0; i < len(row); i++ {
 			cell := row[i]
 			if cell.GetColSpan() == 1 {
-				if cell.textBlock != nil {
-					tokens := strings.Fields(cell.textBlock.GetText())
+				if cell.textBox != nil {
+					tokens := splitOnWhitespace(cell.textBox.text)
 					for _, token := range tokens {
-						tokenWidth := cell.textBlock.font.StringWidthFB(
-							cell.textBlock.fallbackFont, cell.textBlock.font.size, token)
+						tokenWidth := cell.textBox.font.StringWidthFB(
+							cell.textBox.fallbackFont, cell.textBox.font.size, token)
 						tokenWidth += cell.leftPadding + cell.rightPadding
 						if tokenWidth > maxColWidths[i] {
 							maxColWidths[i] = tokenWidth
@@ -588,9 +610,13 @@ func (table *Table) SetColumnWidths() *Table {
 	return table
 }
 
+// addExtraTableRows returns the table data with a row added below each row
+// for every extra line that its wrapped cell text needs. The rows added below
+// a header row are header rows too.
 func (table *Table) addExtraTableRows() [][]*Cell {
 	tableData2 := make([][]*Cell, 0)
-	for _, row := range table.tableData {
+	numOfHeaderRows2 := 0
+	for r, row := range table.tableData {
 		tableData2 = append(tableData2, row) // Add the original row
 		maxNumVerCells := 0
 		for i := 0; i < len(row); i++ {
@@ -613,17 +639,20 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				if cell.hasBackgroundColor {
 					cell2.SetBackgroundColorRGB(cell.GetBackgroundColor())
 				}
+				cell2.SetStrokeWidth(cell.GetStrokeWidth())
 				if cell.hasStrokeColor {
 					cell2.SetStrokeColorRGB(cell.GetStrokeColor())
 				}
 				cell2.SetTextColorRGB(cell.GetTextColor())
+				// Java copies these across with Cell.setProperties()
+				cell2.SetColSpan(cell.GetColSpan())
 				cell2.SetTopBorder(cell.GetTopBorder())
 				cell2.SetBottomBorder(cell.GetBottomBorder())
 				cell2.SetLeftBorder(cell.GetLeftBorder())
 				cell2.SetRightBorder(cell.GetRightBorder())
-				// Java copies these across with Cell.setProperties()
-				cell2.SetColSpan(cell.GetColSpan())
 				cell2.SetTextAlignment(cell.GetTextAlignment())
+				cell2.SetUnderline(cell.GetUnderline())
+				cell2.SetStrikeout(cell.GetStrikeout())
 				cell2.SetVerTextAlignment(cell.GetVerTextAlignment())
 				cell2.SetTopPadding(0.0)
 				cell2.SetTopBorder(false)
@@ -631,7 +660,14 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 			}
 			tableData2 = append(tableData2, row2)
 		}
+		if r < table.numOfHeaderRows {
+			numOfHeaderRows2 = len(tableData2)
+		}
 	}
+	if table.rendered != -1 {
+		table.rendered += numOfHeaderRows2 - table.numOfHeaderRows
+	}
+	table.numOfHeaderRows = numOfHeaderRows2
 	return tableData2
 }
 
@@ -646,7 +682,7 @@ func getTotalWidth(row []*Cell, index int) float32 {
 	return cellWidth
 }
 
-// WrapAroundCellText wraps around the text in all cells so it fits the column width.
+// wrapAroundCellText wraps around the text in all cells so it fits the column width.
 // This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
 func (table *Table) wrapAroundCellText() {
 	tableData2 := table.addExtraTableRows()
@@ -654,14 +690,13 @@ func (table *Table) wrapAroundCellText() {
 		row := tableData2[i]
 		for j := 0; j < len(row); j++ {
 			cell := row[j]
-
 			cellWidth := getTotalWidth(row, j)
-			tokens := strings.Fields(cell.GetText())
+			tokens := splitOnWhitespace(cell.text)
 			var n = 0
 			var buf strings.Builder
 			for _, token := range tokens {
 				if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
-					if len(buf.String()) > 0 {
+					if buf.Len() > 0 {
 						buf.WriteString(" ")
 					}
 					for _, ch := range token {
@@ -675,35 +710,36 @@ func (table *Table) wrapAroundCellText() {
 					}
 				} else {
 					if cell.font.StringWidthFB(cell.fallbackFont,
-						cell.font.size, strings.TrimSpace(buf.String()+" "+token)) > cellWidth {
-						tableData2[i+n][j].SetText(strings.TrimSpace(buf.String()))
+						cell.font.size, trimSpace(buf.String()+" "+token)) > cellWidth {
+						tableData2[i+n][j].SetText(trimSpace(buf.String()))
 						buf.Reset()
 						buf.WriteString(token)
 						n++
 					} else {
-						if len(buf.String()) > 0 {
+						if buf.Len() > 0 {
 							buf.WriteString(" ")
 						}
 						buf.WriteString(token)
 					}
 				}
-
-				tableData2[i+n][j].SetText(strings.TrimSpace(buf.String()))
 			}
+			tableData2[i+n][j].SetText(trimSpace(buf.String()))
 		}
 	}
 	table.tableData = tableData2
 }
 
+// getNumVerCells returns the number of vertically stacked cells that the
+// wrapped text of the cell needs.
 func getNumVerCells(row []*Cell, index int) int {
 	cell := row[index]
 	numOfVerCells := 1
 	cellWidth := getTotalWidth(row, index)
-	tokens := strings.Fields(cell.text)
+	tokens := splitOnWhitespace(cell.text)
 	var buf strings.Builder
 	for _, token := range tokens {
 		if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
-			if len(buf.String()) > 0 {
+			if buf.Len() > 0 {
 				buf.WriteString(" ")
 			}
 			for _, ch := range token {
@@ -716,12 +752,12 @@ func getNumVerCells(row []*Cell, index int) int {
 			}
 		} else {
 			if cell.font.StringWidthFB(cell.fallbackFont,
-				cell.font.size, strings.TrimSpace(buf.String()+" "+token)) > cellWidth {
+				cell.font.size, trimSpace(buf.String()+" "+token)) > cellWidth {
 				numOfVerCells++
 				buf.Reset()
 				buf.WriteString(token)
 			} else {
-				if len(buf.String()) > 0 {
+				if buf.Len() > 0 {
 					buf.WriteString(" ")
 				}
 				buf.WriteString(token)

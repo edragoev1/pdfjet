@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -40,7 +39,8 @@ public class Table : IDrawable {
 
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 1;
-    private int rendered = 0;
+    // The index of the next row to draw, or -1 when all rows are drawn.
+    private int rendered = 1;
     private float x1;
     private float y1;
     private Font f1;
@@ -59,57 +59,60 @@ public class Table : IDrawable {
     public Table(Font f1, Font f2) {
         this.f1 = f1;
         this.f2 = f2;
-    }
-
-    /// <summary>
-    /// Create a table object.
-    /// </summary>
-    public Table(Font f1, Font f2, String fileName) {
-        this.f1 = f1;
-        this.f2 = f2;
         tableData = new List<List<Cell>>();
-        StreamReader reader = new StreamReader(fileName);
-        Char[] delimiterRegex = null;
-        int numberOfFields = 0;
-        int lineNumber = 0;
-        String line;
-        while ((line = reader.ReadLine()) != null) {
-            if (lineNumber == 0) {
-                delimiterRegex = GetDelimiterRegex(line);
-                numberOfFields = line.Split(delimiterRegex).Length;
-            }
-            List<Cell> row = new List<Cell>();
-            String[] fields = line.Split(delimiterRegex);
-            foreach (String field in fields) {
-                if (lineNumber == 0) {
-                    Cell cell = new Cell(f1, field);
-                    row.Add(cell);
-                } else {
-                    row.Add(new Cell(f2, field));
-                }
-            }
-            if (row.Count > numberOfFields) {
-                List<Cell> row2 = new List<Cell>();
-                for (int i = 0; i < numberOfFields; i++) {
-                    row2.Add(row[i]);
-                }
-                tableData.Add(row2);
-            } else if (row.Count < numberOfFields) {
-                int diff = numberOfFields - row.Count;
-                for (int i = 0; i < diff; i++) {
-                    row.Add(new Cell(f2));
-                }
-                tableData.Add(row);
-            } else {
-                tableData.Add(row);
-            }
-            lineNumber++;
-        }
-        reader.Close();
     }
 
     /// <summary>
-    /// Sets the position (x, y) of the top left corner of this table on the page.
+    /// Creates a table from a text file with comma, pipe or tab separated values.
+    /// The first line is the header row and uses f1; the other lines use f2.
+    /// Every row gets as many cells as the first line has fields.
+    /// </summary>
+    /// <param name="f1">the font for the header row.</param>
+    /// <param name="f2">the font for the other rows.</param>
+    /// <param name="fileName">the file name.</param>
+    public Table(Font f1, Font f2, String fileName) {
+        tableData = new List<List<Cell>>();
+        using (StreamReader reader = new StreamReader(fileName)) {
+            Char[] delimiterRegex = null;
+            int numberOfFields = 0;
+            int lineNumber = 0;
+            String line;
+            while ((line = reader.ReadLine()) != null) {
+                if (lineNumber == 0) {
+                    delimiterRegex = GetDelimiterRegex(line);
+                    numberOfFields = line.Split(delimiterRegex).Length;
+                }
+                List<Cell> row = new List<Cell>();
+                String[] fields = line.Split(delimiterRegex);
+                foreach (String field in fields) {
+                    if (lineNumber == 0) {
+                        row.Add(new Cell(f1, field));
+                    } else {
+                        row.Add(new Cell(f2, field));
+                    }
+                }
+                if (row.Count > numberOfFields) {
+                    List<Cell> row2 = new List<Cell>();
+                    for (int i = 0; i < numberOfFields; i++) {
+                        row2.Add(row[i]);
+                    }
+                    tableData.Add(row2);
+                } else if (row.Count < numberOfFields) {
+                    int diff = numberOfFields - row.Count;
+                    for (int i = 0; i < diff; i++) {
+                        row.Add(new Cell(f2, ""));
+                    }
+                    tableData.Add(row);
+                } else {
+                    tableData.Add(row);
+                }
+                lineNumber++;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets the location (x, y) of the top left corner of this table on the page.
     /// </summary>
     /// <param name="x">the x coordinate of the top left point of the table.</param>
     /// <param name="y">the y coordinate of the top left point of the table.</param>
@@ -160,24 +163,12 @@ public class Table : IDrawable {
     /// <param name="tableData">the table data.</param>
     /// <returns>this Table object.</returns>
     public Table SetData(List<List<Cell>> tableData) {
-        this.tableData = tableData;
-        this.numOfHeaderRows = 0;
-        this.rendered = numOfHeaderRows;
-
-        // Add the missing cells.
-        int numOfColumns = tableData[0].Count;
-        Font font = tableData[0][0].font;
-        foreach (List<Cell> row in tableData) {
-            int diff = numOfColumns - row.Count;
-            for (int i = 0; i < diff; i++) {
-                row.Add(new Cell(font, ""));
-            }
-        }
-        return this;
+        return SetData(tableData, 0);
     }
 
     /// <summary>
     /// Sets the table data and specifies the number of header rows in this data.
+    /// The header rows are drawn again at the top of every page.
     /// </summary>
     /// <param name="tableData">the table data.</param>
     /// <param name="numOfHeaderRows">the number of header rows in this data.</param>
@@ -186,35 +177,77 @@ public class Table : IDrawable {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;
+        AddCellsToCompleteTheGrid();
         return this;
     }
 
+    // Adds empty cells to the rows that are shorter than the first row.
+    private void AddCellsToCompleteTheGrid() {
+        int numOfColumns = tableData[0].Count;
+        Font font = tableData[0][0].font;
+        foreach (List<Cell> row in tableData) {
+            int diff = numOfColumns - row.Count;
+            for (int i = 0; i < diff; i++) {
+                row.Add(new Cell(font, ""));
+            }
+        }
+    }
+
     /// <summary>
-    /// Sets the alignment of the numbers to the right.
+    /// Aligns to the right the cells whose text is a number, such as 1,234.50,
+    /// (1,234.50), -5 or 1.5E+3. The periods, commas and apostrophes are ignored,
+    /// and the number can be in parentheses.
     /// </summary>
     public void RightAlignNumbers() {
-        StringBuilder buf = new StringBuilder();
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
-                if (cell.text != null) {
-                    buf.Length = 0;
-                    String str = cell.text;
-                    if (str.StartsWith("(") && str.EndsWith(")")) {
-                        str = str.Substring(1, str.Length - 1);
-                    }
-                    foreach (char ch in str) {
-                        if (ch != '.' && ch != ',' && ch != '\'') {
-                            buf.Append(ch);
-                        }
-                    }
-                    try {
-                        Double.Parse(buf.ToString());
-                        cell.SetTextAlignment(Align.RIGHT);
-                    } catch (Exception) {
-                    }
+                if (cell.text != null && IsNumber(cell.text)) {
+                    cell.SetTextAlignment(Align.RIGHT);
                 }
             }
         }
+    }
+
+    // Returns true if the text, without its periods, commas and apostrophes and
+    // the parentheses around it, is an optional sign, ASCII digits and an
+    // optional exponent, with optional spaces before and after.
+    private static bool IsNumber(String text) {
+        String str = text;
+        if (str.Length >= 2 && str[0] == '(' && str[str.Length - 1] == ')') {
+            str = str.Substring(1, str.Length - 2);
+        }
+        StringBuilder buf = new StringBuilder();
+        foreach (char ch in str) {
+            if (ch != '.' && ch != ',' && ch != '\'') {
+                buf.Append(ch);
+            }
+        }
+        String number = Util.Trim(buf.ToString());
+        int i = 0;
+        if (i < number.Length && (number[i] == '+' || number[i] == '-')) {
+            i++;
+        }
+        int start = i;
+        while (i < number.Length && number[i] >= '0' && number[i] <= '9') {
+            i++;
+        }
+        if (i == start) {
+            return false;
+        }
+        if (i < number.Length && (number[i] == 'e' || number[i] == 'E')) {
+            i++;
+            if (i < number.Length && (number[i] == '+' || number[i] == '-')) {
+                i++;
+            }
+            start = i;
+            while (i < number.Length && number[i] >= '0' && number[i] <= '9') {
+                i++;
+            }
+            if (i == start) {
+                return false;
+            }
+        }
+        return i == number.Length;
     }
 
     /// <summary>
@@ -376,7 +409,7 @@ public class Table : IDrawable {
     }
 
     /// <summary>
-    /// Returns a list of cell for the specified row.
+    /// Returns a list of cells for the specified row.
     /// </summary>
     /// <param name="index">the index of the specified row.</param>
     /// <returns>the list of cells.</returns>
@@ -390,7 +423,7 @@ public class Table : IDrawable {
     }
 
     /// <summary>
-    /// Returns a list of cell for the specified column.
+    /// Returns a list of cells for the specified column.
     /// </summary>
     /// <param name="index">the index of the specified column.</param>
     /// <returns>the list of cells.</returns>
@@ -418,14 +451,17 @@ public class Table : IDrawable {
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
-        float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
-        return xy;
+        return DrawTableRows(page, DrawHeaderRows(page, 0));
     }
 
     /// <summary>
     /// Draws this table on as many new pages as it needs.
-    /// The new pages are added to the list, not to the PDF; add them to the PDF afterwards.
+    /// The pages are created detached and added to the list; add them to the PDF afterwards.
     /// </summary>
+    /// <param name="pdf">the PDF document.</param>
+    /// <param name="pages">the list that receives the new pages.</param>
+    /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
+    /// <returns>the x and y coordinates below the table on the last page.</returns>
     public float[] DrawOn(PDF pdf, List<Page> pages, float[] pageSize) {
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
@@ -469,7 +505,6 @@ public class Table : IDrawable {
             }
             x = x1;
             y += h;
-            rendered++;
         }
         return new float[] {x, y};
     }
@@ -515,11 +550,6 @@ public class Table : IDrawable {
                 maxCellHeight = cellHeight;
             }
         }
-        foreach (Cell cell in row) {
-            if (cell.textBlock != null) {
-                cell.textBlock.SetHeight(maxCellHeight - (cell.topPadding + cell.bottomPadding));
-            }
-        }
         return maxCellHeight;
     }
 
@@ -544,9 +574,11 @@ public class Table : IDrawable {
     }
 
     /// <summary>
-    /// Returns the number of data rows that have been rendered so far.
+    /// Returns the number of rows below the header rows that are drawn so far,
+    /// counting each line of wrapped cell text as a row, or -1 when all rows
+    /// are drawn.
     /// </summary>
-    /// <returns>the number of data rows that have been rendered so far.</returns>
+    /// <returns>the number of rendered rows.</returns>
     public int GetRowsRendered() {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows;
     }
@@ -606,7 +638,7 @@ public class Table : IDrawable {
             int i = 0;
             while (i < row.Count) {
                 cell = row[i];
-                i += (int) cell.GetColSpan();
+                i += cell.GetColSpan();
             }
             cell.SetBorder(Border.RIGHT, true);
         }
@@ -639,7 +671,7 @@ public class Table : IDrawable {
                 Cell cell = row[i];
                 if (cell.GetColSpan() == 1) {
                     if (cell.textBox != null) {
-                        String[] tokens = Regex.Split(cell.textBox.text, "\\s+");
+                        String[] tokens = Util.SplitOnWhitespace(cell.textBox.text);
                         foreach (String token in tokens) {
                             float tokenWidth = cell.textBox.font.StringWidth(cell.textBox.fallbackFont, token);
                             tokenWidth += cell.leftPadding + cell.rightPadding;
@@ -678,9 +710,14 @@ public class Table : IDrawable {
         return this;
     }
 
+    // Returns the table data with a row added below each row for every extra
+    // line that its wrapped cell text needs. The rows added below a header row
+    // are header rows too.
     private List<List<Cell>> AddExtraTableRows() {
         List<List<Cell>> tableData2 = new List<List<Cell>>();
-        foreach (List<Cell> row in tableData) {
+        int numOfHeaderRows2 = 0;
+        for (int r = 0; r < tableData.Count; r++) {
+            List<Cell> row = tableData[r];
             tableData2.Add(row);    // Add the original row
             int maxNumVerCells = 0;
             for (int i = 0; i < row.Count; i++) {
@@ -695,16 +732,16 @@ public class Table : IDrawable {
                     Cell cell2 = new Cell(cell.GetFont());
                     cell2.SetFallbackFont(cell.GetFallbackFont());
                     cell2.SetWidth(cell.GetWidth());
-                    cell2.SetLineWidth(cell.lineWidth);
                     cell2.SetLeftPadding(cell.leftPadding);
                     cell2.SetRightPadding(cell.rightPadding);
-
+                    cell2.SetLineWidth(cell.lineWidth);
                     cell2.SetBackgroundColor(cell.GetBackgroundColor());
-                    cell2.SetTextColor(cell.GetTextColor());
                     cell2.SetStrokeWidth(cell.GetStrokeWidth());
                     cell2.SetStrokeColor(cell.GetStrokeColor());
-
+                    cell2.SetTextColor(cell.GetTextColor());
+                    // The borders, text alignment, underline and strikeout.
                     cell2.SetProperties(cell.GetProperties());
+                    cell2.SetColSpan(cell.GetColSpan());
                     cell2.SetVerTextAlignment(cell.GetVerTextAlignment());
                     cell2.SetTopPadding(0f);
                     cell2.SetBorder(Border.TOP, false);
@@ -712,13 +749,20 @@ public class Table : IDrawable {
                 }
                 tableData2.Add(row2);
             }
+            if (r < numOfHeaderRows) {
+                numOfHeaderRows2 = tableData2.Count;
+            }
         }
+        if (rendered != -1) {
+            rendered += numOfHeaderRows2 - numOfHeaderRows;
+        }
+        numOfHeaderRows = numOfHeaderRows2;
         return tableData2;
     }
 
     private float GetTotalWidth(List<Cell> row, int index) {
         Cell cell = row[index];
-        int colspan = (int) cell.GetColSpan();
+        int colspan = cell.GetColSpan();
         float cellWidth = 0f;
         for (int i = 0; i < colspan; i++) {
             cellWidth += row[index + i].GetWidth();
@@ -739,7 +783,7 @@ public class Table : IDrawable {
                 Cell cell = row[j];
                 if (cell.text != null) {
                     float cellWidth = GetTotalWidth(row, j);
-                    String[] tokens = Regex.Split(cell.text, "\\s+");
+                    String[] tokens = Util.SplitOnWhitespace(cell.text);
                     int n = 0;
                     StringBuilder buf = new StringBuilder();
                     foreach (String token in tokens) {
@@ -756,9 +800,9 @@ public class Table : IDrawable {
                                 buf.Append(ch);
                             }
                         } else {
-                            if (cell.font.StringWidth(cell.fallbackFont, (buf.ToString() + " " + token).Trim()) > cellWidth) {
-                                tableData2[i + n][j].SetText(buf.ToString().Trim());
-                                buf.Clear();
+                            if (cell.font.StringWidth(cell.fallbackFont, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
+                                tableData2[i + n][j].SetText(Util.Trim(buf.ToString()));
+                                buf.Length = 0;
                                 buf.Append(token);
                                 n++;
                             } else {
@@ -769,7 +813,7 @@ public class Table : IDrawable {
                             }
                         }
                     }
-                    tableData2[i + n][j].SetText(buf.ToString().Trim());
+                    tableData2[i + n][j].SetText(Util.Trim(buf.ToString()));
                 }
             }
         }
@@ -787,7 +831,7 @@ public class Table : IDrawable {
             return numOfVerCells;
         }
         float cellWidth = GetTotalWidth(row, index);
-        String[] tokens = Regex.Split(cell.text, "\\s+");
+        String[] tokens = Util.SplitOnWhitespace(cell.text);
         StringBuilder buf = new StringBuilder();
         foreach (String token in tokens) {
             if (cell.font.StringWidth(cell.fallbackFont, token) > cellWidth) {
@@ -802,7 +846,7 @@ public class Table : IDrawable {
                     buf.Append(ch);
                 }
             } else {
-                if (cell.font.StringWidth(cell.fallbackFont, (buf.ToString() + " " + token).Trim()) > cellWidth) {
+                if (cell.font.StringWidth(cell.fallbackFont, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
                     numOfVerCells++;
                     buf.Length = 0;
                     buf.Append(token);
@@ -858,25 +902,6 @@ public class Table : IDrawable {
         }
         tableData = list;
         return this;
-    }
-
-    // Adds an empty row and returns its index.
-    internal int AppendRow() {
-        List<Cell> row = new List<Cell>();
-        tableData.Add(row);         // Add the row
-        return tableData.Count - 1; // Return the current index of the new row
-    }
-
-    // Returns the number of rows.
-    internal int GetRowCount() { return tableData.Count; }
-
-    // Returns the number of cells in the specified row.
-    internal int GetColCount(int row) {
-        if (row >= 0 && row < tableData.Count) {
-            return tableData[row].Count;
-        } else {
-            return 0;
-        }
     }
 
     /// <summary>Sets the top margin on the first page when the table spans several pages.</summary>

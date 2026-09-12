@@ -240,7 +240,9 @@ public class Cell {
     @discardableResult
     public func setWidth(_ width: Float) -> Cell {
         self.width = width
-        if self.textBlock != nil {
+        if self.textBox != nil {
+            self.textBox!.setWidth(self.width - (self.leftPadding + self.rightPadding))
+        } else if self.textBlock != nil {
             self.textBlock!.setWidth(self.width - (self.leftPadding + self.rightPadding))
         }
         return self

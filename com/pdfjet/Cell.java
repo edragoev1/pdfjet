@@ -678,7 +678,7 @@ public class Cell {
      */
     public Cell setBorders(boolean borders) {
         if (borders) {
-            this.properties &= 0x00FFFFFF;
+            this.properties |= 0x000F0000;
         } else {
             this.properties &= 0x00F0FFFF;
         }

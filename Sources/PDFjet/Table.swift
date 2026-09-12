@@ -35,7 +35,8 @@ public class Table : Drawable {
 
     private var tableData: [[Cell]]
     private var numOfHeaderRows = 1
-    private var rendered = 0
+    // The index of the next row to draw, or -1 when all rows are drawn.
+    private var rendered = 1
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var firstPageTopMargin: Float = 0.0
@@ -56,7 +57,13 @@ public class Table : Drawable {
     }
 
     ///
-    /// Create a table object.
+    /// Creates a table from a text file with comma, pipe or tab separated values.
+    /// The first line is the header row and uses f1; the other lines use f2.
+    /// Every row gets as many cells as the first line has fields.
+    ///
+    /// - Parameter f1: the font for the header row.
+    /// - Parameter f2: the font for the other rows.
+    /// - Parameter fileName: the file name.
     ///
     public init(_ f1: Font, _ f2: Font, _ fileName: String) throws {
         tableData = [[Cell]]()
@@ -80,8 +87,7 @@ public class Table : Drawable {
             let fields = line.components(separatedBy: delimiterRegex!)
             for field in fields {
                 if lineNumber == 0 {
-                    let cell = Cell(f1, field)
-                    row.append(cell)
+                    row.append(Cell(f1, field))
                 } else {
                     row.append(Cell(f2, field))
                 }
@@ -140,25 +146,12 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setData(_ tableData: [[Cell]]) -> Table {
-        self.tableData = tableData
-        self.numOfHeaderRows = 0
-        self.rendered = self.numOfHeaderRows
-
-        // Add the missing cells.
-        let numOfColumns = tableData[0].count
-        let font = tableData[0][0].font
-        for i in 0..<tableData.count {
-            var row = tableData[i]
-            let diff = numOfColumns - row.count
-            for _ in 0..<diff {
-                row.append(Cell(font, ""))
-            }
-        }
-        return self
+        return setData(tableData, 0)
     }
 
     ///
     /// Sets the table data and specifies the number of header rows in this data.
+    /// The header rows are drawn again at the top of every page.
     ///
     /// - Parameter tableData: the table data.
     /// - Parameter numOfHeaderRows: the number of header rows in this data.
@@ -168,49 +161,77 @@ public class Table : Drawable {
         self.tableData = tableData
         self.numOfHeaderRows = numOfHeaderRows
         self.rendered = numOfHeaderRows
-
-        // Add the missing cells.
-        let numOfColumns = tableData[0].count
-        let font = tableData[0][0].font
-        for i in 0..<tableData.count {
-            var row = tableData[i]
-            let diff = numOfColumns - row.count
-            for _ in 0..<diff {
-                row.append(Cell(font, ""))
-            }
-        }
+        addCellsToCompleteTheGrid()
         return self
     }
 
+    // Adds empty cells to the rows that are shorter than the first row.
+    private func addCellsToCompleteTheGrid() {
+        let numOfColumns = tableData[0].count
+        let font = tableData[0][0].font
+        for i in 0..<tableData.count {
+            let diff = numOfColumns - tableData[i].count
+            for _ in 0..<max(diff, 0) {
+                tableData[i].append(Cell(font, ""))
+            }
+        }
+    }
+
     ///
-    /// Sets the alignment of the numbers to the right.
+    /// Aligns to the right the cells whose text is a number, such as 1,234.50,
+    /// (1,234.50), -5 or 1.5E+3. The periods, commas and apostrophes are ignored,
+    /// and the number can be in parentheses.
     ///
     public func rightAlignNumbers() {
-        var buf = String()
         for row in tableData {
             for cell in row {
-                if cell.text != nil {
-                    buf = ""
-                    let scalars = [UnicodeScalar](cell.text!.unicodeScalars)
-                    var index1 = 0
-                    var index2 = scalars.count
-                    if scalars.count > 2 && scalars[0] == "(" && scalars[scalars.count-1] == ")" {
-                        index1 = 1
-                        index2 = scalars.count - 1
-                    }
-                    for i in index1..<index2 {
-                        let scalar = scalars[i]
-                        if scalar != "." && scalar != "," && scalar != "'" {
-                            buf.append(String(scalar))
-                        }
-                    }
-                    let value = Double(buf)
-                    if value != nil {
-                        cell.setTextAlignment(Align.RIGHT)
-                    }
+                if cell.text != nil && Table.isNumber(cell.text!) {
+                    cell.setTextAlignment(Align.RIGHT)
                 }
             }
         }
+    }
+
+    // Returns true if the text, without its periods, commas and apostrophes and
+    // the parentheses around it, is an optional sign, ASCII digits and an
+    // optional exponent, with optional spaces before and after.
+    private static func isNumber(_ text: String) -> Bool {
+        var scalars = [Unicode.Scalar](text.unicodeScalars)
+        if scalars.count >= 2 && scalars[0] == "(" && scalars[scalars.count - 1] == ")" {
+            scalars = [Unicode.Scalar](scalars[1..<(scalars.count - 1)])
+        }
+        var buf = String.UnicodeScalarView()
+        for scalar in scalars {
+            if scalar != "." && scalar != "," && scalar != "'" {
+                buf.append(scalar)
+            }
+        }
+        let number = [Unicode.Scalar](String(buf).trim().unicodeScalars)
+        var i = 0
+        if i < number.count && (number[i] == "+" || number[i] == "-") {
+            i += 1
+        }
+        var start = i
+        while i < number.count && number[i].value >= 0x30 && number[i].value <= 0x39 {
+            i += 1
+        }
+        if i == start {
+            return false
+        }
+        if i < number.count && (number[i] == "e" || number[i] == "E") {
+            i += 1
+            if i < number.count && (number[i] == "+" || number[i] == "-") {
+                i += 1
+            }
+            start = i
+            while i < number.count && number[i].value >= 0x30 && number[i].value <= 0x39 {
+                i += 1
+            }
+            if i == start {
+                return false
+            }
+        }
+        return i == number.count
     }
 
     ///
@@ -239,7 +260,7 @@ public class Table : Drawable {
     /// - Parameter alignment: the specified alignment.
     ///
     @discardableResult
-    public func setTextAlignInColumn(_ index: Int, _ alignment: UInt32) throws -> Table {
+    public func setTextAlignInColumn(_ index: Int, _ alignment: UInt32) -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -256,16 +277,16 @@ public class Table : Drawable {
     /// Sets the color of the text in the specified column.
     ///
     /// - Parameter index: the index of the specified column.
-    /// - Parameter textColor: the text color as an array of red, green and blue values.
+    /// - Parameter color: the color specified as an integer.
     ///
     @discardableResult
-    public func setTextColorInColumn(_ index: Int, _ textColor: [Float]) -> Table {
+    public func setTextColorInColumn(_ index: Int, _ color: Int32) -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
-                cell.setTextColor(textColor)
-                if cell.textBlock != nil {
-                    cell.textBlock!.setTextColor(textColor)
+                cell.setTextColor(color)
+                if cell.textBox != nil {
+                    cell.textBox!.setTextColor(color)
                 }
             }
         }
@@ -284,8 +305,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.font = font
-                if cell.textBlock != nil {
-                    cell.textBlock!.font = font
+                if cell.textBox != nil {
+                    cell.textBox!.font = font
                 }
             }
         }
@@ -304,8 +325,8 @@ public class Table : Drawable {
             let row = tableData[index]
             for cell in row {
                 cell.setTextColor(color)
-                if cell.textBlock != nil {
-                    cell.textBlock!.setTextColor(color)
+                if cell.textBox != nil {
+                    cell.textBox!.setTextColor(color)
                 }
             }
         }
@@ -324,8 +345,8 @@ public class Table : Drawable {
             let row = tableData[index]
             for cell in row {
                 cell.font = font
-                if cell.textBlock != nil {
-                    cell.textBlock!.font = font
+                if cell.textBox != nil {
+                    cell.textBox!.font = font
                 }
             }
         }
@@ -342,11 +363,7 @@ public class Table : Drawable {
     public func setColumnWidth(_ index: Int, _ width: Float) -> Table {
         for row in tableData {
             if index < row.count {
-                let cell = row[index]
-                cell.setWidth(width)
-                if cell.textBlock != nil {
-                    cell.textBlock!.setWidth(width - (cell.leftPadding + cell.rightPadding))
-                }
+                row[index].setWidth(width)
             }
         }
         return self
@@ -390,7 +407,7 @@ public class Table : Drawable {
     }
 
     ///
-    /// Returns a list of cell for the specified row.
+    /// Returns a list of cells for the specified row.
     ///
     /// - Parameter index: the index of the specified row.
     ///
@@ -406,7 +423,7 @@ public class Table : Drawable {
     }
 
     ///
-    /// Returns a list of cell for the specified column.
+    /// Returns a list of cells for the specified column.
     ///
     /// - Parameter index: the index of the specified column.
     ///
@@ -444,7 +461,12 @@ public class Table : Drawable {
 
     ///
     /// Draws this table on as many new pages as it needs.
-    /// The new pages are added to the list, not to the PDF; add them to the PDF afterwards.
+    /// The pages are created detached and added to the list; add them to the PDF afterwards.
+    ///
+    /// - Parameter pdf: the PDF document.
+    /// - Parameter pages: the list that receives the new pages.
+    /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
+    /// - Returns: the x and y coordinates below the table on the last page.
     ///
     @discardableResult
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: [Float]) -> [Float] {
@@ -477,7 +499,7 @@ public class Table : Drawable {
                 let colspan = cell.getColSpan()
                 var w: Float = 0.0
                 for _ in 0..<colspan {
-                    w += row[j].width
+                    w += row[j].getWidth()
                     j += 1
                 }
                 if page != nil {
@@ -491,7 +513,6 @@ public class Table : Drawable {
             }
             x = x1
             y += h
-            rendered += 1
         }
         return [x, y]
     }
@@ -530,7 +551,7 @@ public class Table : Drawable {
 
     private func getMaxCellHeight(_ row: [Cell]) -> Float {
         var maxCellHeight: Float = 0.0
-        for i in  0..<row.count {
+        for i in 0..<row.count {
             let cell = row[i]
             let totalWidth = getTotalWidth(row, i)
             let cellHeight = cell.getHeight(totalWidth)
@@ -554,20 +575,22 @@ public class Table : Drawable {
     /// - Returns: the width of this table.
     ///
     public func getWidth() -> Float {
-        var table_width: Float = 0.0
+        var tableWidth: Float = 0.0
         if tableData.count > 0 {
             let row = tableData[0]
             for cell in row {
-                table_width += cell.getWidth()
+                tableWidth += cell.getWidth()
             }
         }
-        return table_width
+        return tableWidth
     }
 
     ///
-    /// Returns the number of data rows that have been rendered so far.
+    /// Returns the number of rows below the header rows that are drawn so far,
+    /// counting each line of wrapped cell text as a row, or -1 when all rows
+    /// are drawn.
     ///
-    /// - Returns: the number of data rows that have been rendered so far.
+    /// - Returns: the number of rendered rows.
     ///
     public func getRowsRendered() -> Int {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows
@@ -577,13 +600,10 @@ public class Table : Drawable {
     /// Sets all table cells borders to `false` or `true`.
     ///
     @discardableResult
-    public func setCellBorders(_ border: Bool) -> Table {
+    public func setCellBorders(_ borders: Bool) -> Table {
         for row in tableData {
             for cell in row {
-                cell.setTopBorder(border)
-                cell.setBottomBorder(border)
-                cell.setLeftBorder(border)
-                cell.setRightBorder(border)
+                cell.setBorders(borders)
             }
         }
         return self
@@ -638,11 +658,11 @@ public class Table : Drawable {
         }
     }
 
-    // Sets the bottom border of all cells in the last row.
+    // Sets the bottom border on all cells in the last row.
     private func setBottomBorderOnLastRow() {
         let firstRow = tableData[0]
         for cell in firstRow {
-            if cell.topBorder == false {
+            if cell.getTopBorder() == false {
                 return
             }
         }
@@ -653,47 +673,44 @@ public class Table : Drawable {
         }
     }
 
-    //
-    // Auto adjusts the widths of all columns so that they are just wide enough to
-    // hold the text without truncation.
-    //
-    /// Adjusts the width of every column to fit its widest text.
+    ///
+    /// Auto adjusts the widths of all columns so that they are just wide enough to
+    /// hold the text without truncation.
+    ///
     @discardableResult
     public func setColumnWidths() -> Table {
         var maxColWidths = [Float](repeating: 0.0, count: tableData[0].count)
         for row in tableData {
-            var i = 0
-            while i < row.count {
+            for i in 0..<row.count {
                 let cell = row[i]
                 if cell.getColSpan() == 1 {
-                    if cell.textBlock != nil {
-                        let tokens = cell.textBlock!.textContent.components(separatedBy: .whitespaces)
+                    if cell.textBox != nil {
+                        let tokens = (cell.textBox!.text ?? "").splitOnWhitespace()
                         for token in tokens {
-                            var tokenWidth = cell.textBlock!.font.stringWidth(cell.textBlock!.fallbackFont, token)
+                            var tokenWidth = cell.textBox!.font.stringWidth(cell.textBox!.fallbackFont, token)
                             tokenWidth += cell.leftPadding + cell.rightPadding
-                            if (tokenWidth > maxColWidths[i]) {
+                            if tokenWidth > maxColWidths[i] {
                                 maxColWidths[i] = tokenWidth
                             }
                         }
                     } else if cell.image != nil {
                         let imageWidth = cell.image!.getWidth() + cell.leftPadding + cell.rightPadding
-                        if (imageWidth > maxColWidths[i]) {
+                        if imageWidth > maxColWidths[i] {
                             maxColWidths[i] = imageWidth
                         }
                     } else if cell.barcode != nil {
                         let barcodeWidth = cell.barcode!.drawOn(nil)[0] + cell.leftPadding + cell.rightPadding
-                        if (barcodeWidth > maxColWidths[i]) {
+                        if barcodeWidth > maxColWidths[i] {
                             maxColWidths[i] = barcodeWidth
                         }
                     } else if cell.text != nil {
                         var textWidth = cell.font!.stringWidth(cell.fallbackFont, cell.text)
                         textWidth += cell.leftPadding + cell.rightPadding
-                        if (textWidth > maxColWidths[i]) {
+                        if textWidth > maxColWidths[i] {
                             maxColWidths[i] = textWidth
                         }
                     }
                 }
-                i += 1
             }
         }
         for row in tableData {
@@ -704,9 +721,14 @@ public class Table : Drawable {
         return self
     }
 
+    // Returns the table data with a row added below each row for every extra
+    // line that its wrapped cell text needs. The rows added below a header row
+    // are header rows too.
     private func addExtraTableRows() -> [[Cell]] {
         var tableData2 = [[Cell]]()
-        for row in tableData {
+        var numOfHeaderRows2 = 0
+        for r in 0..<tableData.count {
+            let row = tableData[r]
             tableData2.append(row)  // Add the original row
             var maxNumVerCells = 0
             for i in 0..<row.count {
@@ -715,32 +737,48 @@ public class Table : Drawable {
                     maxNumVerCells = numVerCells
                 }
             }
-            for _ in 1..<maxNumVerCells {
+            var k = 1
+            while k < maxNumVerCells {
                 var row2 = [Cell]()
                 for cell in row {
-                    let cell2 = Cell(cell.getFont(), "")
+                    let cell2 = Cell(cell.getFont())
                     cell2.setFallbackFont(cell.getFallbackFont())
                     cell2.setWidth(cell.getWidth())
                     cell2.setLeftPadding(cell.getLeftPadding())
                     cell2.setRightPadding(cell.getRightPadding())
                     cell2.setLineWidth(cell.getLineWidth())
-                    cell2.setStrokeWidth(cell.getStrokeWidth())
                     // Java copies a null background across as null, which
                     // leaves the new cell without one.
                     if cell.hasBackground {
                         cell2.setBackgroundColor(cell.getBackgroundColor())
                     }
+                    cell2.setStrokeWidth(cell.getStrokeWidth())
                     cell2.setStrokeColor(cell.getStrokeColor())
                     cell2.setTextColor(cell.getTextColor())
+                    // The column span and text alignment.
                     cell2.setProperties(cell.getProperties())
+                    cell2.setTopBorder(cell.getTopBorder())
+                    cell2.setBottomBorder(cell.getBottomBorder())
+                    cell2.setLeftBorder(cell.getLeftBorder())
+                    cell2.setRightBorder(cell.getRightBorder())
+                    cell2.setUnderline(cell.getUnderline())
+                    cell2.setStrikeout(cell.getStrikeout())
                     cell2.setVerTextAlignment(cell.getVerTextAlignment())
                     cell2.setTopPadding(0.0)
                     cell2.setTopBorder(false)
                     row2.append(cell2)
                 }
                 tableData2.append(row2)
+                k += 1
+            }
+            if r < numOfHeaderRows {
+                numOfHeaderRows2 = tableData2.count
             }
         }
+        if rendered != -1 {
+            rendered += numOfHeaderRows2 - numOfHeaderRows
+        }
+        numOfHeaderRows = numOfHeaderRows2
         return tableData2
     }
 
@@ -765,12 +803,12 @@ public class Table : Drawable {
             for (j, cell) in row.enumerated() {
                 if cell.text != nil {
                     let cellWidth = getTotalWidth(row, j)
-                    let tokens = cell.text!.components(separatedBy: .whitespaces)
+                    let tokens = cell.text!.splitOnWhitespace()
                     var n = 0
                     var buf = String()
                     for token in tokens {
                         if cell.font!.stringWidth(cell.fallbackFont, token) > cellWidth {
-                            if buf.count > 0 {
+                            if !buf.isEmpty {
                                 buf.append(" ")
                             }
                             for scalar in token.unicodeScalars {
@@ -788,7 +826,7 @@ public class Table : Drawable {
                                 buf.append(token)
                                 n += 1
                             } else {
-                                if buf.count > 0 {
+                                if !buf.isEmpty {
                                     buf.append(" ")
                                 }
                                 buf.append(token)
@@ -814,11 +852,11 @@ public class Table : Drawable {
             return numOfVerCells
         }
         let cellWidth = getTotalWidth(row, index)
-        let tokens = cell.text!.components(separatedBy: .whitespaces)
+        let tokens = cell.text!.splitOnWhitespace()
         var buf = String()
         for token in tokens {
             if cell.font!.stringWidth(cell.fallbackFont, token) > cellWidth {
-                if buf.count > 0 {
+                if !buf.isEmpty {
                     buf.append(" ")
                 }
                 for scalar in token.unicodeScalars {
@@ -834,7 +872,7 @@ public class Table : Drawable {
                     buf = ""
                     buf.append(token)
                 } else {
-                    if buf.count > 0 {
+                    if !buf.isEmpty {
                         buf.append(" ")
                     }
                     buf.append(token)

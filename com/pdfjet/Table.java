@@ -42,7 +42,8 @@ public class Table implements Drawable {
 
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 1;
-    private int rendered = 0;
+    // The index of the next row to draw, or -1 when all rows are drawn.
+    private int rendered = 1;
     private float x1;
     private float y1;
     private Font f1;
@@ -66,21 +67,24 @@ public class Table implements Drawable {
     public Table(Font f1, Font f2) {
         this.f1 = f1;
         this.f2 = f2;
+        tableData = new ArrayList<List<Cell>>();
     }
 
     /**
-     * Create a table object.
+     * Creates a table from a text file with comma, pipe or tab separated values.
+     * The first line is the header row and uses f1; the other lines use f2.
+     * Every row gets as many cells as the first line has fields.
      *
-     * @param f1 the primary font.
-     * @param f2 the secondary font.
+     * @param f1 the font for the header row.
+     * @param f2 the font for the other rows.
      * @param fileName the file name.
+     * @throws IOException if the file cannot be read.
      */
-    public Table(Font f1, Font f2, String fileName) {
+    public Table(Font f1, Font f2, String fileName) throws IOException {
         tableData = new ArrayList<List<Cell>>();
-        BufferedReader reader = null;
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
         try {
-            reader = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
             String delimiterRegex = null;
             int numberOfFields = 0;
             int lineNumber = 0;
@@ -88,14 +92,14 @@ public class Table implements Drawable {
             while ((line = reader.readLine()) != null) {
                 if (lineNumber == 0) {
                     delimiterRegex = getDelimiterRegex(line);
-                    numberOfFields = line.split(delimiterRegex).length;
+                    numberOfFields = line.split(delimiterRegex, -1).length;
                 }
                 List<Cell> row = new ArrayList<Cell>();
-                String[] fields = line.split(delimiterRegex);
+                // The limit -1 keeps the empty fields at the end of the line.
+                String[] fields = line.split(delimiterRegex, -1);
                 for (String field : fields) {
                     if (lineNumber == 0) {
-                        Cell cell = new Cell(f1, field);
-                        row.add(cell);
+                        row.add(new Cell(f1, field));
                     } else {
                         row.add(new Cell(f2, field));
                     }
@@ -109,7 +113,7 @@ public class Table implements Drawable {
                 } else if (row.size() < numberOfFields) {
                     int diff = numberOfFields - row.size();
                     for (int i = 0; i < diff; i++) {
-                        row.add(new Cell(f2));
+                        row.add(new Cell(f2, ""));
                     }
                     tableData.add(row);
                 } else {
@@ -117,14 +121,8 @@ public class Table implements Drawable {
                 }
                 lineNumber++;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         } finally {
-            try {
-                reader.close();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
+            reader.close();
         }
     }
 
@@ -187,15 +185,12 @@ public class Table implements Drawable {
      * @return this Table object.
      */
     public Table setData(List<List<Cell>> tableData) {
-        this.tableData = tableData;
-        this.numOfHeaderRows = 0;
-        this.rendered = 0;
-        addCellsToCompleteTheGrid(tableData);
-        return this;
+        return setData(tableData, 0);
     }
 
     /**
      * Sets the table data and specifies the number of header rows in this data.
+     * The header rows are drawn again at the top of every page.
      *
      * @param tableData       the table data.
      * @param numOfHeaderRows the number of header rows in this data.
@@ -205,12 +200,12 @@ public class Table implements Drawable {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;
-        addCellsToCompleteTheGrid(tableData);
+        addCellsToCompleteTheGrid();
         return this;
     }
 
-    private void addCellsToCompleteTheGrid(List<List<Cell>> tableData) {
-        // Add the missing cells.
+    // Adds empty cells to the rows that are shorter than the first row.
+    private void addCellsToCompleteTheGrid() {
         int numOfColumns = tableData.get(0).size();
         Font font = tableData.get(0).get(0).font;
         for (List<Cell> row : tableData) {
@@ -222,32 +217,61 @@ public class Table implements Drawable {
     }
 
     /**
-     * Sets the alignment of the numbers to the right.
+     * Aligns to the right the cells whose text is a number, such as 1,234.50,
+     * (1,234.50), -5 or 1.5E+3. The periods, commas and apostrophes are ignored,
+     * and the number can be in parentheses.
      */
     public void rightAlignNumbers() {
-        StringBuilder buf = new StringBuilder();
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
-                if (cell.text != null) {
-                    buf.setLength(0);
-                    String str = cell.text;
-                    if (str.startsWith("(") && str.endsWith(")")) {
-                        str = str.substring(1, str.length() - 1);
-                    }
-                    for (int i = 0; i < str.length(); i++) {
-                        char ch = str.charAt(i);
-                        if (ch != '.' && ch != ',' && ch != '\'') {
-                            buf.append(ch);
-                        }
-                    }
-                    try {
-                        Double.parseDouble(buf.toString());
-                        cell.setTextAlignment(Align.RIGHT);
-                    } catch (NumberFormatException nfe) {
-                    }
+                if (cell.text != null && isNumber(cell.text)) {
+                    cell.setTextAlignment(Align.RIGHT);
                 }
             }
         }
+    }
+
+    // Returns true if the text, without its periods, commas and apostrophes and
+    // the parentheses around it, is an optional sign, ASCII digits and an
+    // optional exponent, with optional spaces before and after.
+    private static boolean isNumber(String text) {
+        String str = text;
+        if (str.length() >= 2 && str.charAt(0) == '(' && str.charAt(str.length() - 1) == ')') {
+            str = str.substring(1, str.length() - 1);
+        }
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            if (ch != '.' && ch != ',' && ch != '\'') {
+                buf.append(ch);
+            }
+        }
+        String number = buf.toString().trim();
+        int i = 0;
+        if (i < number.length() && (number.charAt(i) == '+' || number.charAt(i) == '-')) {
+            i++;
+        }
+        int start = i;
+        while (i < number.length() && number.charAt(i) >= '0' && number.charAt(i) <= '9') {
+            i++;
+        }
+        if (i == start) {
+            return false;
+        }
+        if (i < number.length() && (number.charAt(i) == 'e' || number.charAt(i) == 'E')) {
+            i++;
+            if (i < number.length() && (number.charAt(i) == '+' || number.charAt(i) == '-')) {
+                i++;
+            }
+            start = i;
+            while (i < number.length() && number.charAt(i) >= '0' && number.charAt(i) <= '9') {
+                i++;
+            }
+            if (i == start) {
+                return false;
+            }
+        }
+        return i == number.length();
     }
 
     /**
@@ -380,11 +404,7 @@ public class Table implements Drawable {
     public Table setColumnWidth(int index, float width) {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
-                Cell cell = row.get(index);
-                cell.setWidth(width);
-                if (cell.textBox != null) {
-                    cell.textBox.setWidth(width - (cell.leftPadding + cell.rightPadding));
-                }
+                row.get(index).setWidth(width);
             }
         }
         return this;
@@ -543,7 +563,6 @@ public class Table implements Drawable {
             }
             x = x1;
             y += h;
-            rendered++;
         }
         return new float[] {x, y};
     }
@@ -617,8 +636,9 @@ public class Table implements Drawable {
     }
 
     /**
-     * Returns the number of table rows that were rendered by the last drawOn,
-     * not counting the header rows.
+     * Returns the number of rows below the header rows that are drawn so far,
+     * counting each line of wrapped cell text as a row, or -1 when all rows
+     * are drawn.
      *
      * @return the number of rendered rows.
      */
@@ -717,7 +737,7 @@ public class Table implements Drawable {
                 Cell cell = row.get(i);
                 if (cell.getColSpan() == 1) {
                     if (cell.textBox != null) {
-                        String[] tokens = cell.textBox.text.split("\\s+");
+                        String[] tokens = Util.splitOnWhitespace(cell.textBox.text);
                         for (String token : tokens) {
                             float tokenWidth = cell.textBox.font.stringWidth(cell.textBox.fallbackFont, token);
                             tokenWidth += cell.leftPadding + cell.rightPadding;
@@ -756,9 +776,14 @@ public class Table implements Drawable {
         return this;
     }
 
+    // Returns the table data with a row added below each row for every extra
+    // line that its wrapped cell text needs. The rows added below a header row
+    // are header rows too.
     private List<List<Cell>> addExtraTableRows() {
         List<List<Cell>> tableData2 = new ArrayList<List<Cell>>();
-        for (List<Cell> row : tableData) {
+        int numOfHeaderRows2 = 0;
+        for (int r = 0; r < tableData.size(); r++) {
+            List<Cell> row = tableData.get(r);
             tableData2.add(row);    // Add the original row
             int maxNumVerCells = 0;
             for (int i = 0; i < row.size(); i++) {
@@ -780,6 +805,7 @@ public class Table implements Drawable {
                     cell2.setStrokeWidth(cell.getStrokeWidth());
                     cell2.setStrokeColor(cell.getStrokeColor());
                     cell2.setTextColor(cell.getTextColor());
+                    // The column span, borders, text alignment, underline and strikeout.
                     cell2.setProperties(cell.getProperties());
                     cell2.setVerTextAlignment(cell.getVerTextAlignment());
                     cell2.setTopPadding(0f);
@@ -788,7 +814,14 @@ public class Table implements Drawable {
                 }
                 tableData2.add(row2);
             }
+            if (r < numOfHeaderRows) {
+                numOfHeaderRows2 = tableData2.size();
+            }
         }
+        if (rendered != -1) {
+            rendered += numOfHeaderRows2 - numOfHeaderRows;
+        }
+        numOfHeaderRows = numOfHeaderRows2;
         return tableData2;
     }
 
@@ -816,7 +849,7 @@ public class Table implements Drawable {
                 Cell cell = row.get(j);
                 if (cell.text != null) {
                     float cellWidth = getTotalWidth(row, j);
-                    String[] tokens = cell.text.split("\\s+");
+                    String[] tokens = Util.splitOnWhitespace(cell.text);
                     int n = 0;
                     StringBuilder buf = new StringBuilder();
                     for (String token : tokens) {
@@ -867,7 +900,7 @@ public class Table implements Drawable {
             return numOfVerCells;
         }
         float cellWidth = getTotalWidth(row, index);
-        String[] tokens = cell.text.split("\\s+");
+        String[] tokens = Util.splitOnWhitespace(cell.text);
         StringBuilder buf = new StringBuilder();
         for (String token : tokens) {
             if (cell.font.stringWidth(cell.fallbackFont, token) > cellWidth) {
