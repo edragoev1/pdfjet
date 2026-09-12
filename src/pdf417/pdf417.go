@@ -45,21 +45,35 @@ const (
 )
 
 // NewPDF417 constructor for 2D barcodes.
+// The symbol has 18 columns and as many rows as the string needs, up to the
+// 928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
+// characters of mixed text, with the error correction level 5 used here.
+// It exits if there are unencodable characters or the string does not fit in a symbol.
 // @param str the specified string.
 func NewPDF417(str string) *PDF417 {
 	barcode := new(PDF417)
 	barcode.str = str
 	barcode.w1 = 0.75
 	barcode.h1 = 3.0 * barcode.w1
-	barcode.rows = 50
 	barcode.cols = 18
-	barcode.codewords = make([]int, barcode.rows*(barcode.cols+2))
 
 	for _, ch := range str {
 		if ch > 126 {
 			log.Fatal("The string contains unencodable characters.")
 		}
 	}
+
+	// The data codewords: the symbol length descriptor and one codeword for two text codewords.
+	list := barcode.textToArrayOfIntegers()
+	dataCodewords := 1 + (len(list)+1)/2
+	barcode.rows = (dataCodewords + len(l5ECCInstance.Table) + barcode.cols - 1) / barcode.cols
+	if barcode.rows < 3 {
+		barcode.rows = 3
+	}
+	if barcode.rows*barcode.cols > 928 {
+		log.Fatal("The string is too long for a PDF417 barcode.")
+	}
+	barcode.codewords = make([]int, barcode.rows*(barcode.cols+2))
 
 	lfBuffer := make([]int, barcode.rows)
 	lrBuffer := make([]int, barcode.rows)
@@ -97,7 +111,7 @@ func NewPDF417(str string) *PDF417 {
 	}
 	buffer[0] = dataLen
 
-	barcode.addData(buffer, dataLen)
+	barcode.addData(buffer, list)
 	barcode.addECC(buffer)
 
 	for i := 0; i < barcode.rows; i++ {
@@ -185,23 +199,16 @@ func (barcode *PDF417) textToArrayOfIntegers() []int {
 	return list
 }
 
-func (barcode *PDF417) addData(buf []int, dataLen int) {
-	list := barcode.textToArrayOfIntegers()
+func (barcode *PDF417) addData(buf []int, list []int) {
 	bi := 1 // buffer index = 1 to skip the Symbol Length Descriptor
-	hi := 0
-	lo := 0
 	for i := 0; i < len(list); i += 2 {
-		hi = list[i]
-		if i+1 == len(list) {
-			lo = shiftToPunct // Pad
-		} else {
+		hi := list[i]
+		lo := shiftToPunct // Pad
+		if i+1 < len(list) {
 			lo = list[i+1]
 		}
-		bi++
-		if bi == dataLen {
-			break
-		}
 		buf[bi] = 30*hi + lo
+		bi++
 	}
 }
 

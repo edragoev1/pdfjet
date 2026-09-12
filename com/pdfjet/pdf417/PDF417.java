@@ -37,21 +37,23 @@ public class PDF417 implements Drawable {
     private float w1 = 0.75f;
     private float h1 = 0f;
 
-    private int rows = 50;
+    private int rows;
     private int cols = 18;
     private int[] codewords;
     private String str;
 
     /**
      * Constructor for PDF417 barcodes.
+     * The symbol has 18 columns and as many rows as the string needs, up to the
+     * 928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
+     * characters of mixed text, with the error correction level 5 used here.
      *
      * @param str the specified string.
-     * @throws Exception if there are unencodable characters.
+     * @throws Exception if there are unencodable characters or the string does not fit in a symbol.
      */
     public PDF417(String str) throws Exception {
         this.str = str;
         this.h1 = 3 * w1;
-        this.codewords = new int[rows * (cols + 2)];
 
         for (int i = 0; i < str.length(); i++) {
             char ch = str.charAt(i);
@@ -59,6 +61,18 @@ public class PDF417 implements Drawable {
                 throw new Exception("The string contains unencodable characters.");
             }
         }
+
+        // The data codewords: the symbol length descriptor and one codeword for two text codewords.
+        List<Integer> list = textToArrayOfIntegers();
+        int dataCodewords = 1 + (list.size() + 1) / 2;
+        rows = (dataCodewords + L5ECC.table.length + cols - 1) / cols;
+        if (rows < 3) {
+            rows = 3;
+        }
+        if (rows * cols > 928) {
+            throw new Exception("The string is too long for a PDF417 barcode.");
+        }
+        this.codewords = new int[rows * (cols + 2)];
 
         int[] lfBuffer = new int[rows];
         int[] lrBuffer = new int[rows];
@@ -95,7 +109,7 @@ public class PDF417 implements Drawable {
         }
         buffer[0] = dataLen;
 
-        addData(buffer, dataLen);
+        addData(buffer, list);
         addECC(buffer);
 
         for (int i = 0; i < rows; i++) {
@@ -204,24 +218,12 @@ public class PDF417 implements Drawable {
         return list;
     }
 
-    private void addData(int[] buffer, int dataLen) {
-        List<Integer> list = textToArrayOfIntegers();
+    private void addData(int[] buffer, List<Integer> list) {
         int bi = 1; // buffer index = 1 to skip the Symbol Length Descriptor
-        int hi = 0;
-        int lo = 0;
         for (int i = 0; i < list.size(); i += 2) {
-            hi = list.get(i);
-            if (i + 1 == list.size()) {
-                lo = SHIFT_TO_PUNCT; // Pad
-            } else {
-                lo = list.get(i + 1);
-            }
-
-            bi++;
-            if (bi == dataLen) {
-                break;
-            }
-            buffer[bi] = 30 * hi + lo;
+            int hi = list.get(i);
+            int lo = (i + 1 == list.size()) ? SHIFT_TO_PUNCT : list.get(i + 1);  // Pad
+            buffer[bi++] = 30 * hi + lo;
         }
     }
 

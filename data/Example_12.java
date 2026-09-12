@@ -14,7 +14,6 @@ public class Example_12 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("PDF417 barcode example");
 
-        // Font font = new Font(pdf, CoreFont.HELVETICA);
         Font font = new Font(pdf, IBMPlexSans.Regular);
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -22,7 +21,6 @@ public class Example_12 {
         StringBuilder buf = new StringBuilder();
         for (String line : lines) {
             buf.append(line);
-            // Both CR and LF are required!
             buf.append("\r\n");
         }
 
@@ -37,12 +35,5 @@ public class Example_12 {
         text.drawOn(page);
 
         pdf.complete();
-    }
-
-    public static void main(String[] args) throws Exception {
-        long time0 = System.currentTimeMillis();
-        new Example_12();
-        long time1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_12", time0, time1);
     }
 }

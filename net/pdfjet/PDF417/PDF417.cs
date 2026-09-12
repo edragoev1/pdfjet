@@ -35,25 +35,40 @@ public class PDF417 : IDrawable {
     // Critical defaults!
     private float w1 = 0.75f;
     private float h1 = 0f;
-    private int rows = 50;
+    private int rows;
     private int cols = 18;
     private int[] codewords = null;
     private String str = null;
 
     /// <summary>
     ///  Constructor for 2D barcodes.
+    ///  The symbol has 18 columns and as many rows as the string needs, up to the
+    ///  928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
+    ///  characters of mixed text, with the error correction level 5 used here.
+    ///  Throws an exception if there are unencodable characters or the string does not fit in a symbol.
     /// </summary>
     /// <param name="str">the specified string.</param>
     public PDF417(String str) {
         this.str = str;
         this.h1 = 3 * w1;
-        this.codewords = new int[rows * (cols + 2)];
 
         foreach (char ch in str) {
             if (ch > 126) {
                 throw new Exception("The string contains unencodable characters.");
             }
         }
+
+        // The data codewords: the symbol length descriptor and one codeword for two text codewords.
+        List<Int32> list = textToArrayOfIntegers();
+        int dataCodewords = 1 + (list.Count + 1) / 2;
+        rows = (dataCodewords + L5ECC.Table.Length + cols - 1) / cols;
+        if (rows < 3) {
+            rows = 3;
+        }
+        if (rows * cols > 928) {
+            throw new Exception("The string is too long for a PDF417 barcode.");
+        }
+        this.codewords = new int[rows * (cols + 2)];
 
         int[] lfBuffer = new int[rows];
         int[] lrBuffer = new int[rows];
@@ -88,7 +103,7 @@ public class PDF417 : IDrawable {
         }
         buffer[0] = dataLen;
 
-        addData(buffer, dataLen);
+        addData(buffer, list);
         addECC(buffer);
 
         for (int i = 0; i < rows; i++) {
@@ -203,22 +218,12 @@ public class PDF417 : IDrawable {
         return list;
     }
 
-    private void addData(int[] buffer, int dataLen) {
-        List<Int32> list = textToArrayOfIntegers();
+    private void addData(int[] buffer, List<Int32> list) {
         int bi = 1; // buffer index = 1 to skip the Symbol Length Descriptor
-        int hi = 0;
-        int lo = 0;
         for (int i = 0; i < list.Count; i += 2) {
-            hi = list[i];
-            if (i + 1 == list.Count) {
-                lo = SHIFT_TO_PUNCT;    // Pad
-            } else {
-                lo = list[i + 1];
-            }
-
-            bi++;
-            if (bi == dataLen) break;
-            buffer[bi] = 30*hi + lo;
+            int hi = list[i];
+            int lo = (i + 1 == list.Count) ? SHIFT_TO_PUNCT : list[i + 1];  // Pad
+            buffer[bi++] = 30*hi + lo;
         }
     }
 

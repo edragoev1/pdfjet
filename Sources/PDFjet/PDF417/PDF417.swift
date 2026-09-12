@@ -8,6 +8,7 @@ import Foundation
 
 enum EncodingError: Error {
     case unencodable
+    case tooLong
 }
 
 /**
@@ -36,20 +37,23 @@ public class PDF417 : Drawable {
     // Critical defaults!
     private var w1: Float = 0.75
     private var h1: Float = 0.0
-    private var rows = 50
+    private var rows = 0
     private var cols = 18
     private var codewords = [Int]()
     private var str: String = ""
 
     /**
      *  Constructor for 2D barcodes.
+     *  The symbol has 18 columns and as many rows as the string needs, up to the
+     *  928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
+     *  characters of mixed text, with the error correction level 5 used here.
+     *  Throws if there are unencodable characters or the string does not fit in a symbol.
      *
      *  - Parameter str: the specified string.
      */
     public init(_ str: String) throws {
         self.str = str
         self.h1 = 3 * w1
-        self.codewords = [Int](repeating: 0, count: rows * (cols + 2))
 
         let scalars = str.unicodeScalars
         for scalar in scalars {
@@ -57,6 +61,18 @@ public class PDF417 : Drawable {
                 throw EncodingError.unencodable
             }
         }
+
+        // The data codewords: the symbol length descriptor and one codeword for two text codewords.
+        let list = textToArrayOfIntegers()
+        let dataCodewords = 1 + (list.count + 1) / 2
+        rows = (dataCodewords + L5ECC.table.count + cols - 1) / cols
+        if rows < 3 {
+            rows = 3
+        }
+        if rows * cols > 928 {
+            throw EncodingError.tooLong
+        }
+        self.codewords = [Int](repeating: 0, count: rows * (cols + 2))
 
         var lfBuffer = [Int](repeating: 0, count: rows)
         var lrBuffer = [Int](repeating: 0, count: rows)
@@ -93,7 +109,7 @@ public class PDF417 : Drawable {
         }
         buffer[0] = dataLen
 
-        addData(&buffer, dataLen)
+        addData(&buffer, list)
         addECC(&buffer)
 
         for i in 0..<rows {
@@ -201,26 +217,15 @@ public class PDF417 : Drawable {
         return list
     }
 
-    private func addData(_ buffer: inout [Int], _ dataLen: Int) {
-        let list = textToArrayOfIntegers()
-
+    private func addData(_ buffer: inout [Int], _ list: [Int]) {
         // buffer index = 1 to skip the Symbol Length Descriptor
         var bi = 1
-        var hi = 0
-        var lo = 0
         var i = 0
         while i < list.count {
-            hi = list[i]
-            if i + 1 == list.count {
-                lo = PDF417.SHIFT_TO_PUNCT       // Pad
-            } else {
-                lo = list[i + 1]
-            }
-            bi += 1
-            if bi == dataLen {
-                break
-            }
+            let hi = list[i]
+            let lo = (i + 1 == list.count) ? PDF417.SHIFT_TO_PUNCT : list[i + 1]    // Pad
             buffer[bi] = 30*hi + lo
+            bi += 1
             i += 2
         }
     }
