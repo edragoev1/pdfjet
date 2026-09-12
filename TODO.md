@@ -91,12 +91,6 @@ Pick from the README limitations; the first three are the ones users hit.
       span, in all four ports; Poppler copies `مرحبا (hello) عالم`, and MuPDF
       keeps `(hello)` together. An `abc (مرحبا) def` line is still laid out as
       a right to left line, as the README says.
-- ✅ S Marks in `.otf.stream`/`.ttf.stream` fonts: users are steered to
-      `.otf`/`.ttf`, as the README Marks and Right to left text sections do
-      and Example_27 shows. The stream format stays as it is for 9.0.0: the
-      anchors would change `FontStream1`/`FontStream2` and the generator in
-      all four ports and every `fonts/**/*.stream` file, for fonts a user can
-      read from the `.otf`/`.ttf` file instead.
 - ✅ S MuPDF spaces inside words with moved marks: reproduced with MuPDF
       1.27.2 on vowelled Arabic and Hebrew drawn from the `.otf` fonts
       (`מִ יד`, `رَسُ ولُ`); Poppler extracts the words whole. A word is
