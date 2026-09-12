@@ -20,7 +20,7 @@ public class Example_32 {
         let x: Float = 50.0
         var y: Float = 50.0
         let leading = font.getBodyHeight()
-        let lines = try Text.readLines("examples/Example_02.java")
+        let lines = try Util.readLines("examples/Example_02.java")
         for line in lines {
             page.drawString(font, font.getSize(), line, x, y, grayColor, colors)
             y += leading

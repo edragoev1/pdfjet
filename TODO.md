@@ -196,7 +196,7 @@ Pick from the README limitations; the first three are the ones users hit.
       `Text` and `TextFrame` keep the vertical offset, including the offset of
       a superscript or subscript, the URI and the GoTo action of a text line
       when they wrap it, as `TextColumn` does; Java and Go
-      `Content.ofTextFile`, and so `Text.readLines` and
+      `Content.ofTextFile`, and so `Util.readLines` and
       `Text.paragraphsFromFile`, drop a byte order mark at the start of the
       file, as C# and Swift do.
       `Line` and `Path` `setWidth` and `setColor` are renamed `setStrokeWidth`
@@ -206,6 +206,9 @@ Pick from the README limitations; the first three are the ones users hit.
       the object they are called on; `Chart.toFloatArray` is no longer
       public, and `Encryption.getObjNumber` is internal in C#, Go and Swift;
       Java `PDF.newobj` and `endobj` are named `newObj` and `endObj`.
+      `Text.readLines` moves to `Util.readLines`, which is public in Java and
+      C# and new in Swift; in Go `pdfjet.ReadLines` is `util.ReadLines` in
+      the new `util` package.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

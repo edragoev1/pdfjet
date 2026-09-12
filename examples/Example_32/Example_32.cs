@@ -26,7 +26,7 @@ public class Example_32 {
         float x = 50f;
         float y = 50f;
         float leading = font.GetBodyHeight();
-        List<String> lines = Text.ReadLines("examples/Example_02.java");
+        List<String> lines = Util.ReadLines("examples/Example_02.java");
         foreach (String line in lines) {
             page.DrawString(font, font.GetSize(), line, x, y, grayColor, colors);
             y += leading;

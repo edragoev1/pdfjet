@@ -17,7 +17,7 @@ public class Example_12 {
         Font font = new Font(pdf, IBMPlexSans.Regular);
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<String> lines = Text.readLines("data/Example_12.java");
+        List<String> lines = Util.readLines("data/Example_12.java");
         StringBuilder buf = new StringBuilder();
         for (String line : lines) {
             buf.append(line);

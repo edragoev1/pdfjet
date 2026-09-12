@@ -9,6 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pdf417"
+	"github.com/edragoev1/pdfjet/v9/src/util"
 )
 
 // Example12 constructs and draws PDF417 barcode.
@@ -19,7 +20,7 @@ func Example12() {
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	page := pdfjet.NewPage(pdf, letter.Portrait)
 
-	lines := pdfjet.ReadLines("data/Example_12.java")
+	lines := util.ReadLines("data/Example_12.java")
 	var buf strings.Builder
 	for _, line := range lines {
 		buf.WriteString(line)

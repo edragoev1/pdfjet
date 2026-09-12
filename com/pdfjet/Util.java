@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +14,33 @@ import java.util.List;
 /**
  * Utility methods.
  */
-class Util {
+public class Util {
     /** The default constructor */
     Util() {
+    }
+
+    /**
+     * Reads the lines of a UTF-8 text file, without carriage returns.
+     *
+     * @param filePath the path of the text file.
+     * @return the lines.
+     * @throws IOException if the file cannot be read.
+     */
+    public static List<String> readLines(String filePath) throws IOException {
+        List<String> lines = new ArrayList<>();
+        StringBuilder buffer = new StringBuilder();
+        for (char ch : Content.ofTextFile(filePath).toCharArray()) {
+            if (ch == '\n') {
+                lines.add(buffer.toString());
+                buffer.setLength(0);
+            } else {
+                buffer.append(ch);
+            }
+        }
+        if (buffer.length() > 0) {
+            lines.add(buffer.toString());
+        }
+        return lines;
     }
 
     /**

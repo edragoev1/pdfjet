@@ -201,25 +201,6 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 	return list
 }
 
-// ReadLines reads the lines of a UTF-8 text file, without carriage returns.
-// It exits the program if the file cannot be read.
-func ReadLines(filePath string) []string {
-	lines := make([]string, 0)
-	var buffer strings.Builder
-	for _, ch := range content.OfTextFile(filePath) {
-		if ch == '\n' {
-			lines = append(lines, buffer.String())
-			buffer.Reset()
-		} else {
-			buffer.WriteRune(ch)
-		}
-	}
-	if buffer.Len() > 0 {
-		lines = append(lines, buffer.String())
-	}
-	return lines
-}
-
 // ParagraphsFromFile reads a text file and returns its paragraphs. An empty
 // line separates the paragraphs. It exits the program if the file cannot be
 // read.

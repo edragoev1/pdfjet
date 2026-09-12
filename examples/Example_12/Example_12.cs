@@ -17,7 +17,7 @@ public class Example_12 {
         Font font = new Font(pdf, IBMPlexSans.Regular);
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<String> lines = Text.ReadLines("data/Example_12.java");
+        List<String> lines = Util.ReadLines("data/Example_12.java");
         StringBuilder buf = new StringBuilder();
         foreach (String line in lines) {
             buf.Append(line);

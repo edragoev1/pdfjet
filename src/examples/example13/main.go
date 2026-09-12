@@ -11,6 +11,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/util"
 )
 
 // Example13 draws a table that spans multiple pages.
@@ -24,7 +25,7 @@ func Example13() {
 	f2.SetSize(7.0)
 
 	tableData := make([][]*pdfjet.Cell, 0)
-	lines := pdfjet.ReadLines("data/winter-2009.txt")
+	lines := util.ReadLines("data/winter-2009.txt")
 	for _, line := range lines {
 		row := make([]*pdfjet.Cell, 0)
 		for _, column := range strings.Split(line, "|") {

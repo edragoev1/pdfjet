@@ -7,6 +7,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/JetBrainsMono"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/util"
 )
 
 // Example32 draws highlighted source code using the draw string method and a color map.
@@ -26,7 +27,7 @@ func Example32() {
 	x := float32(50.0)
 	y := float32(50.0)
 	leading := font.GetBodyHeight()
-	lines := pdfjet.ReadLines("examples/Example_02.java")
+	lines := util.ReadLines("examples/Example_02.java")
 	for _, line := range lines {
 		page.DrawStringUsingColorMap(font, nil, font.GetSize(), line, x, y, grayColor, colors)
 		y += leading

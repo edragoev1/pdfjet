@@ -244,23 +244,4 @@ public class Text : Drawable {
         }
         return paragraphs
     }
-
-    /// Reads the lines of a UTF-8 text file, without carriage returns.
-    public static func readLines(_ filePath: String) throws -> [String] {
-        var lines = [String]()
-        let contents = try Content.ofTextFile(filePath)
-        var buffer = String()
-        for scalar in contents.unicodeScalars {
-            if scalar == "\n" {
-                lines.append(buffer)
-                buffer = ""
-            } else {
-                buffer.append(String(scalar))
-            }
-        }
-        if !buffer.isEmpty {
-            lines.append(buffer)
-        }
-        return lines
-    }
 }   // End of Text.swift

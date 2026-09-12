@@ -244,24 +244,5 @@ public class Text : IDrawable {
         }
         return paragraphs;
     }
-
-    /// <summary>Reads the lines of a UTF-8 text file, without carriage returns.</summary>
-    public static List<String> ReadLines(String filePath) {
-        List<String> lines = new List<String>();
-        String contents = Content.OfTextFile(filePath);
-        StringBuilder buffer = new StringBuilder();
-        foreach (char ch in contents) {
-            if (ch == '\n') {
-                lines.Add(buffer.ToString());
-                buffer.Length = 0;
-            } else {
-                buffer.Append(ch);
-            }
-        }
-        if (buffer.Length > 0) {
-            lines.Add(buffer.ToString());
-        }
-        return lines;
-    }
 }   // End of Text.cs
 }   // End of namespace PDFjet.NET

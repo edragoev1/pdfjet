@@ -12,7 +12,7 @@ public class Example_12 {
         let font = try Font(pdf, IBMPlexSans.Regular)
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let lines = try Text.readLines("data/Example_12.java")
+        let lines = try Util.readLines("data/Example_12.java")
         var buf = String()
         for line in lines {
             buf.append(line)

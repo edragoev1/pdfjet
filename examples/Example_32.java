@@ -25,7 +25,7 @@ public class Example_32 {
         float x = 50f;
         float y = 50f;
         float leading = font.getBodyHeight();
-        List<String> lines = Text.readLines("examples/Example_02.java");
+        List<String> lines = Util.readLines("examples/Example_02.java");
         for (String line : lines) {
             page.drawString(font, font.getSize(), line, x, y, grayColor, colors);
             y += leading;
