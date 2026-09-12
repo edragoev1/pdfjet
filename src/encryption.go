@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/binary"
+	"strconv"
 
 	"github.com/edragoev1/pdfjet/src/encryption"
 )
@@ -107,13 +108,16 @@ func NewEncryption(pdf *PDF,
 
 	pdf.appendString("/EncryptMetadata false\n")
 
-	// Permissions flags
+	// The flags specifying which operations shall be permitted, with the
+	// reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
+	// so the value is negative.
+	p := permissions.GetRawValue() | 0xFFFFF0C0
 	pdf.appendString("/P ")
-	pdf.appendString(intToString(permissions.GetRawValue()))
+	pdf.appendString(strconv.Itoa(int(int32(p))))
 	pdf.appendString("\n")
 
 	// Create the unencrypted block per Algorithm 10
-	perms := createUnencryptedPermsBlock(permissions.GetRawValue())
+	perms := createUnencryptedPermsBlock(p)
 	perms[8] = 'F' // for EncryptMetadata false
 	perms[9] = 'a'
 	perms[10] = 'd'
@@ -331,20 +335,4 @@ func clearBytes(b []byte) {
 	for i := range b {
 		b[i] = 0
 	}
-}
-
-// intToString converts integer to string
-func intToString(n uint32) string {
-	if n == 0 {
-		return "0"
-	}
-
-	var buf [20]byte // Enough for 64-bit numbers
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-	return string(buf[i:])
 }

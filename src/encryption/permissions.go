@@ -11,7 +11,8 @@ import (
 )
 
 // UserAccess represents the user access permissions for an encrypted PDF document as defined in
-// ISO 32000-2 (PDF 2.0) Table 22. Permissions are stored as flags in a 32-bit integer.
+// ISO 32000-2 (PDF 2.0) Table 22. Permissions are stored as flags in a 32-bit integer,
+// whose bit positions are numbered from 1, the low-order bit.
 type UserAccess uint32
 
 const (
@@ -19,28 +20,28 @@ const (
 	None UserAccess = 0
 
 	// Print Bit position: 3
-	Print UserAccess = 1 << 3 // 8
+	Print UserAccess = 1 << 2 // 4
 
 	// ModifyContents Bit position: 4
-	ModifyContents UserAccess = 1 << 4 // 16
+	ModifyContents UserAccess = 1 << 3 // 8
 
 	// CopyContents Bit position: 5
-	CopyContents UserAccess = 1 << 5 // 32
+	CopyContents UserAccess = 1 << 4 // 16
 
 	// ModifyAnnotations Bit position: 6
-	ModifyAnnotations UserAccess = 1 << 6 // 64
+	ModifyAnnotations UserAccess = 1 << 5 // 32
 
 	// FillFormFields Bit position: 9
-	FillFormFields UserAccess = 1 << 9 // 512
+	FillFormFields UserAccess = 1 << 8 // 256
 
 	// ExtractContentsForAccessibility Bit position: 10
-	ExtractContentsForAccessibility UserAccess = 1 << 10 // 1024
+	ExtractContentsForAccessibility UserAccess = 1 << 9 // 512
 
 	// AssembleDocument Bit position: 11
-	AssembleDocument UserAccess = 1 << 11 // 2048
+	AssembleDocument UserAccess = 1 << 10 // 1024
 
 	// PrintHighQuality Bit position: 12
-	PrintHighQuality UserAccess = 1 << 12 // 4096
+	PrintHighQuality UserAccess = 1 << 11 // 2048
 )
 
 // String returns a string representation of the UserAccess flags
@@ -102,7 +103,7 @@ type Permissions struct {
 
 // ValidBitsMask defines the valid bits (3-12) that can be set in the permissions flag.
 // Bits outside this range are reserved and must be zero.
-const ValidBitsMask uint32 = 0b1_1111_1111_1000 // Hex: 0xFFF8
+const ValidBitsMask uint32 = 0b1111_1111_1100 // Hex: 0xFFC
 
 // NewPermissions creates a new instance of Permissions with no permissions granted.
 func NewPermissions() *Permissions {
@@ -133,8 +134,8 @@ func (p *Permissions) SetAccess(access UserAccess) *Permissions {
 }
 
 // GetRawValue returns the raw 32-bit integer value of the permissions flags.
-// This value is suitable for writing to the /P key in a PDF encryption dictionary.
-// All reserved bits are guaranteed to be zero.
+// All reserved bits are zero. Encryption sets the reserved bits that
+// ISO 32000-2 requires to be one when it writes the /P key.
 func (p *Permissions) GetRawValue() uint32 {
 	return p.permissionsFlags
 }

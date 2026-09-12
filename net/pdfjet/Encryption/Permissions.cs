@@ -19,7 +19,7 @@ namespace PDFjet.NET {
         /// A mask that defines the valid bits (3-12) that can be set in the permissions flag.
         /// Bits outside this range are reserved and must be zero.
         /// </summary>
-        private const uint ValidBitsMask = 0b1_1111_1111_1000; // Hex: 0xFFF8
+        private const uint ValidBitsMask = 0b1111_1111_1100; // Hex: 0xFFC
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Permissions"/> class
@@ -60,8 +60,8 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Gets the raw 32-bit integer value of the permissions flags.
-        /// This value is suitable for writing to the /P key in a PDF encryption dictionary.
-        /// All reserved bits are guaranteed to be zero.
+        /// All reserved bits are zero. Encryption sets the reserved bits that
+        /// ISO 32000-2 requires to be one when it writes the /P key.
         /// </summary>
         public uint RawValue => _permissionsFlags;
 

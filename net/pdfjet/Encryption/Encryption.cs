@@ -116,14 +116,16 @@ public class Encryption {
 
         pdf.Append("/EncryptMetadata false\n");
 
-        // A set of flags specifying which operations shall be permitted
-        // when the document is opened with user access (see "Table 22 — User access permissions").
+        // The flags specifying which operations shall be permitted, with the
+        // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
+        // so the value is negative.
+        uint p = permissions.RawValue | 0xFFFFF0C0;
         pdf.Append("/P ");
-        pdf.Append(permissions.RawValue.ToString());
+        pdf.Append(((int) p).ToString());
         pdf.Append("\n");
 
         // Create the unencrypted block per Algorithm 10
-        byte[] perms = CreateUnencryptedPermsBlock(permissions.RawValue);
+        byte[] perms = CreateUnencryptedPermsBlock(p);
         perms[8]  = (byte) 'F'; // for EncryptMetadata false and 'T' for true
         perms[9]  = (byte) 'a';
         perms[10] = (byte) 'd';

@@ -45,8 +45,12 @@ public class Encryption {
         let oe = Encryption.encryptKey(fileEncryptionKey,
                 Cryptography.hash2B(ownerPassword, ownerKeySalt, u))
 
+        // The flags specifying which operations shall be permitted, with the
+        // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
+        // so the value is negative.
+        let p = Int(Int32(bitPattern: UInt32(permissions.getRawValue()) | 0xFFFFF0C0))
+
         // Algorithm 10: the Perms value.
-        let p = permissions.getRawValue()
         var perms = [UInt8](repeating: 0xFF, count: 8)   // P extended to 64 bits
         for i in 0..<4 {
             perms[i] = UInt8(truncatingIfNeeded: p >> (8 * i))    // Little-endian

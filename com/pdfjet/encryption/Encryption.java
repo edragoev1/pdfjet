@@ -131,13 +131,16 @@ public class Encryption {
 
         pdf.append("/EncryptMetadata false\n");
 
-        // A set of flags specifying which operations shall be permitted
+        // The flags specifying which operations shall be permitted, with the
+        // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
+        // so the value is negative.
+        int p = permissions.getRawValue() | 0xFFFFF0C0;
         pdf.append("/P ");
-        pdf.append(String.valueOf(permissions.getRawValue()));
+        pdf.append(String.valueOf(p));
         pdf.append("\n");
 
         // Create the unencrypted block per Algorithm 10
-        byte[] perms = createUnencryptedPermsBlock(permissions.getRawValue());
+        byte[] perms = createUnencryptedPermsBlock(p);
         perms[8]  = (byte) 'F'; // for EncryptMetadata false and 'T' for true
         perms[9]  = (byte) 'a';
         perms[10] = (byte) 'd';

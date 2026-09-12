@@ -18,7 +18,7 @@ public class Permissions {
      * A mask that defines the valid bits (3-12) that can be set in the permissions flag.
      * Bits outside this range are reserved and must be zero.
      */
-    private static final int VALID_BITS_MASK = 0b1_1111_1111_1000; // Hex: 0xFFF8
+    private static final int VALID_BITS_MASK = 0b1111_1111_1100; // Hex: 0xFFC
 
     /**
      * Initializes a new instance of the Permissions class
@@ -63,8 +63,8 @@ public class Permissions {
 
     /**
      * Gets the raw 32-bit integer value of the permissions flags.
-     * This value is suitable for writing to the /P key in a PDF encryption dictionary.
-     * All reserved bits are guaranteed to be zero.
+     * All reserved bits are zero. Encryption sets the reserved bits that
+     * ISO 32000-2 requires to be one when it writes the /P key.
      *
      * @return the value of the /P key.
      */
