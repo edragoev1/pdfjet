@@ -63,18 +63,15 @@ func Example41() {
 	colorMap["Experimentation"] = color.Orange
 	colorMap["science"] = color.Blue
 	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
-	f2size := f2.GetSize()
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {
-			f2.SetSize(24.0)
-			p.GetTextLines()[0].SetFont(f2)
+			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
 			p.GetTextLines()[0].SetTextColor(color.Navy)
 		} else {
 			p.SetColor(color.Gray)
 			p.SetColorMap(colorMap)
 		}
 	}
-	f2.SetSize(f2size)
 
 	text = pdfjet.NewText(paragraphs)
 	text.SetLocation(70.0, 150.0)

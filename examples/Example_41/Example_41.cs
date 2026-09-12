@@ -62,18 +62,15 @@ public class Example_41 {
         colorMap["Experimentation"] = Color.orange;
         colorMap["science"] = Color.blue;
         paragraphs = Text.ParagraphsFromFile(f1, "data/physics.txt");
-        float f2size = f2.GetSize();
         foreach (Paragraph p in paragraphs) {
             if (p.StartsWith("**")) {
-                f2.SetSize(24.0);
-                p.GetTextLines()[0].SetFont(f2);
+                p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
                 p.GetTextLines()[0].SetTextColor(Color.navy);
             } else {
                 p.SetColor(Color.gray);
                 p.SetColorMap(colorMap);
             }
         }
-        f2.SetSize(f2size);
 
         text = new Text(paragraphs);
         text.SetLocation(70f, 150f);

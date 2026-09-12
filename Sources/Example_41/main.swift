@@ -58,18 +58,15 @@ public class Example_41 {
         colorMap["Experimentation"] =  Color.orange
         colorMap["science"] = Color.blue
         paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
-        let f2size = f2.getSize()
         for p in paragraphs {
             if (p.startsWith("**")) {
-                f2.setSize(24.0)
-                p.getTextLines()[0].setFont(f2)
+                p.getTextLines()[0].setFont(f2).setFontSize(24.0)
                 p.getTextLines()[0].setTextColor(Color.navy)
             } else {
                 p.setColor(Color.gray)
                 p.setColorMap(colorMap)
             }
         }
-        f2.setSize(f2size)
 
         text = Text(paragraphs)
         text.setLocation(70.0, 150.0)
