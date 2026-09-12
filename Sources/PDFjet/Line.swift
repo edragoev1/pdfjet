@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Used to create line objects.
 ///
-/// Please see Example_01.
+/// Please see Example_23 and Example_46.
 ///
 public class Line : Drawable {
     private var x1: Float = 0.0
@@ -77,7 +77,13 @@ public class Line : Drawable {
         return self
     }
 
-    /// Sets the start point of this line.
+    ///
+    /// Sets the start point of this line. The end point does not move.
+    ///
+    /// - Parameter x: the x coordinate of the start point.
+    /// - Parameter y: the y coordinate of the start point.
+    /// - Returns: this Line object.
+    ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         setStartPoint(x, y)
@@ -125,7 +131,7 @@ public class Line : Drawable {
     /// Sets the x and y coordinates of the end point.
     ///
     /// - Parameter x: the x coordinate of the end point.
-    /// - Parameter y: the t coordinate of the end point.
+    /// - Parameter y: the y coordinate of the end point.
     /// - Returns: this Line object.
     ///
     @discardableResult
@@ -139,7 +145,7 @@ public class Line : Drawable {
     /// Sets the x and y coordinates of the end point.
     ///
     /// - Parameter x: the x coordinate of the end point.
-    /// - Parameter y: the t coordinate of the end point.
+    /// - Parameter y: the y coordinate of the end point.
     /// - Returns: this Line object.
     ///
     @discardableResult
@@ -261,8 +267,8 @@ public class Line : Drawable {
         page!.restoreGraphicsState()
         page!.addEMC()
 
-        let xMax = Float(max(x1, x2))
-        let yMax = Float(max(y1, y2))
+        let xMax = max(x1, x2)
+        let yMax = max(y1, y2)
         return [xMax, yMax]
     }
 }   // End of Line.swift

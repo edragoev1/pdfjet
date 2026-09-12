@@ -14,7 +14,7 @@ import (
 )
 
 // Line is used to create line objects.
-// Please see Example_01 and Example_02
+// Please see Example_23 and Example_46.
 type Line struct {
 	x1             float32
 	y1             float32
@@ -29,7 +29,7 @@ type Line struct {
 	actualText     string
 }
 
-// NewLine is the constructor used to create a line objects.
+// NewLine creates a line object.
 //
 // @param x1 the x coordinate of the start point.
 // @param y1 the y coordinate of the start point.
@@ -85,7 +85,10 @@ func (line *Line) SetStartPoint(x, y float32) *Line {
 	return line
 }
 
-// SetLocation sets the start point of this line.
+// SetLocation sets the start point of this line. The end point does not move.
+// @param x the x coordinate of the start point.
+// @param y the y coordinate of the start point.
+// @return this Line object.
 func (line *Line) SetLocation(x, y float32) Drawable {
 	line.x1 = x
 	line.y1 = y
@@ -110,7 +113,7 @@ func (line *Line) GetStartPoint() *Point {
 
 // SetEndPoint sets the x and y coordinates of the end point.
 // @param x the x coordinate of the end point.
-// @param y the t coordinate of the end point.
+// @param y the y coordinate of the end point.
 // @return this Line object.
 func (line *Line) SetEndPoint(x, y float32) *Line {
 	line.x2 = x
@@ -120,7 +123,7 @@ func (line *Line) SetEndPoint(x, y float32) *Line {
 
 // SetPointB sets the x and y coordinates of the end point.
 // @param x the x coordinate of the end point.
-// @param y the t coordinate of the end point.
+// @param y the y coordinate of the end point.
 // @return this Line object.
 func (line *Line) SetPointB(x, y float32) *Line {
 	line.x2 = x

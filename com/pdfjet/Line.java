@@ -8,7 +8,7 @@ package com.pdfjet;
 
 /**
  * Used to create line objects.
- * Please see Example_01.
+ * Please see Example_23 and Example_46.
  */
 public class Line implements Drawable {
     /** The x coordinate of the start point. */
@@ -107,6 +107,13 @@ public class Line implements Drawable {
         return this;
     }
 
+    /**
+     *  Sets the start point of this line. The end point does not move.
+     *
+     *  @param x the x coordinate of the start point.
+     *  @param y the y coordinate of the start point.
+     *  @return this Line object.
+     */
     public Line setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
@@ -165,7 +172,7 @@ public class Line implements Drawable {
      *  Sets the x and y coordinates of the end point.
      *
      *  @param x the x coordinate of the end point.
-     *  @param y the t coordinate of the end point.
+     *  @param y the y coordinate of the end point.
      *  @return this Line object.
      */
     public Line setEndPoint(float x, float y) {
@@ -178,7 +185,7 @@ public class Line implements Drawable {
      *  Sets the x and y coordinates of the end point.
      *
      *  @param x the x coordinate of the end point.
-     *  @param y the t coordinate of the end point.
+     *  @param y the y coordinate of the end point.
      *  @return this Line object.
      */
     public Line setPointB(float x, float y) {
@@ -277,9 +284,8 @@ public class Line implements Drawable {
      *
      *  @param factor the factor used to scale the line.
      *  @return this Line object.
-     *  @throws Exception If an input or output exception occurred
      */
-    public Line scaleBy(double factor) throws Exception {
+    public Line scaleBy(double factor) {
         return scaleBy((float) factor);
     }
 

@@ -10,7 +10,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to create line objects.
 ///
-/// Please see Example_01.
+/// Please see Example_23 and Example_46.
 /// </summary>
 public class Line : IDrawable {
     internal float x1;
@@ -87,7 +87,7 @@ public class Line : IDrawable {
     /// Sets the x and y coordinates of the start point.
     /// </summary>
     /// <param name="x">the x coordinate of the start point.</param>
-    /// <param name="y">the t coordinate of the start point.</param>
+    /// <param name="y">the y coordinate of the start point.</param>
     /// <returns>this Line object.</returns>
     public Line SetStartPoint(double x, double y) {
         this.x1 = (float) x;
@@ -99,7 +99,12 @@ public class Line : IDrawable {
         return SetLocation(x, y);
     }
 
-    /// <summary>Sets the start point of this line.</summary>
+    /// <summary>
+    /// Sets the start point of this line. The end point does not move.
+    /// </summary>
+    /// <param name="x">the x coordinate of the start point.</param>
+    /// <param name="y">the y coordinate of the start point.</param>
+    /// <returns>this Line object.</returns>
     public Line SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
@@ -247,15 +252,6 @@ public class Line : IDrawable {
     }
 
     /// <summary>
-    /// Scales this line by the specified factor.
-    /// </summary>
-    /// <param name="factor">the factor used to scale the line.</param>
-    /// <returns>this Line object.</returns>
-    public Line ScaleBy(double factor) {
-        return ScaleBy((float) factor);
-    }
-
-    /// <summary>
     /// Sets the alternate description of this line.
     /// </summary>
     /// <param name="altDescription">the alternate description of the line.</param>
@@ -275,7 +271,20 @@ public class Line : IDrawable {
         return this;
     }
 
-    /// <summary>Scales the coordinates of this line by the specified factor.</summary>
+    /// <summary>
+    /// Scales this line by the specified factor.
+    /// </summary>
+    /// <param name="factor">the factor used to scale the line.</param>
+    /// <returns>this Line object.</returns>
+    public Line ScaleBy(double factor) {
+        return ScaleBy((float) factor);
+    }
+
+    /// <summary>
+    /// Scales this line by the specified factor.
+    /// </summary>
+    /// <param name="factor">the factor used to scale the line.</param>
+    /// <returns>this Line object.</returns>
     public Line ScaleBy(float factor) {
         this.x1 *= factor;
         this.x2 *= factor;
