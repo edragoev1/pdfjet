@@ -33,7 +33,6 @@ public class TextBlock implements Drawable {
     private float borderCornerRadius = 0.0f;
 
     private String language;
-    private String altDescription;
     private String uri;
     private String key;
     private String uriLanguage;
@@ -41,7 +40,6 @@ public class TextBlock implements Drawable {
     private String uriAltDescription;
     private Alignment textAlignment;
     private boolean underline;
-    private boolean strikeout;
     private boolean rightToLeft;
 
     /**
@@ -255,10 +253,6 @@ public class TextBlock implements Drawable {
      * @return this TextBlock object.
      */
     public TextBlock setTextColor(int color) {
-        if (color == Color.transparent) {
-            this.textColor = null;
-            return this;
-        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -318,17 +312,13 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the background color.
+     * Sets the background color. Color.transparent removes the background.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextBlock object.
      */
     public TextBlock setBackgroundColor(int color) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
-        return this;
+        return setFillColor(color);
     }
 
     /**
@@ -474,16 +464,18 @@ public class TextBlock implements Drawable {
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
             String text = line.replace("\u200B", "");
-            if (font.stringWidth(fallbackFont, text) <= textAreaWidth) {
+            if (font.stringWidth(fallbackFont, fontSize, text) <= textAreaWidth) {
                 textLines.add(new TextLine(font, text));
             } else {
                 if (textIsCJK(text)) {
                     StringBuilder sb = new StringBuilder();
                     for (char ch : text.toCharArray()) {
-                        if (font.stringWidth(fallbackFont, sb.toString() + ch) <= textAreaWidth) {
+                        if (font.stringWidth(fallbackFont, fontSize, sb.toString() + ch) <= textAreaWidth) {
                             sb.append(ch);
                         } else {
-                            textLines.add(new TextLine(font, sb.toString()));
+                            if (sb.length() > 0) {  // Don't emit an empty line
+                                textLines.add(new TextLine(font, sb.toString()));
+                            }
                             sb.setLength(0);
                             sb.append(ch);
                         }
@@ -495,13 +487,16 @@ public class TextBlock implements Drawable {
                     StringBuilder sb = new StringBuilder();
                     String[] tokens = line.split("\\s+");
                     for (String token : tokens) {
+                        if (token.isEmpty()) {  // Before leading whitespace
+                            continue;
+                        }
                         // The words between the zero width spaces of a token
                         // are joined with no space.
                         String[] words = token.split("\u200B", -1);
                         for (int i = 0; i < words.length; i++) {
                             String word = words[i];
                             String separator = (i == words.length - 1) ? " " : "";
-                            if (font.stringWidth(fallbackFont, sb.toString() + word) <= textAreaWidth) {
+                            if (font.stringWidth(fallbackFont, fontSize, sb.toString() + word) <= textAreaWidth) {
                                 sb.append(word);
                                 sb.append(separator);
                             } else {
@@ -560,7 +555,7 @@ public class TextBlock implements Drawable {
 
     // Returns the width of a line of text from the index on.
     private float lineWidth(String text, int from) {
-        return font.stringWidth(fallbackFont, part(text, from, text.length()));
+        return font.stringWidth(fallbackFont, fontSize, part(text, from, text.length()));
     }
 
     // Returns a line of the text from the index on, without its trailing spaces.
@@ -664,14 +659,14 @@ public class TextBlock implements Drawable {
     private void rightAlignText(TextLine[] textLines) {
         float textAreaWidth = this.width - 2 * this.textPadding;
         for (TextLine textLine : textLines) {
-            textLine.xOffset = textAreaWidth - font.stringWidth(textLine.text);
+            textLine.xOffset = textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text);
         }
     }
 
     private void centerText(TextLine[] textLines) {
         float textAreaWidth = this.width - 2 * this.textPadding;
         for (TextLine textLine : textLines) {
-            textLine.xOffset = (textAreaWidth - font.stringWidth(textLine.text)) / 2f;
+            textLine.xOffset = (textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text)) / 2f;
         }
     }
 
@@ -693,11 +688,9 @@ public class TextBlock implements Drawable {
         float descent = this.font.getDescent(fontSize);
         float leading = (ascent + descent) * this.lineSpacing;
         TextLine[] textLines = getTextLines();
+        float blockHeight = Math.max(this.height, textLines.length * leading + 2 * this.textPadding);
         if (page == null) {
-            return new float[] {
-                this.width,
-                Math.max(this.height, textLines.length * leading + 2 * this.textPadding)
-            };
+            return new float[] {this.x + this.width, this.y + blockHeight};
         }
 
         page.saveGraphicsState();
@@ -712,11 +705,7 @@ public class TextBlock implements Drawable {
         }
 
         if (borderColor != null || fillColor != null) {
-            Rect rect = new Rect(
-                this.x,
-                this.y,
-                this.width,
-                Math.max(this.height, textLines.length * leading + 2 * this.textPadding));
+            Rect rect = new Rect(this.x, this.y, this.width, blockHeight);
             if (borderColor != null) {
                 rect.setBorderColor(this.borderColor);
                 rect.setBorderWidth(this.borderWidth);
@@ -742,9 +731,25 @@ public class TextBlock implements Drawable {
         page.addEMC();
         page.restoreGraphicsState();
 
-        return new float[] {
-            this.x + this.width,
-            Math.max(this.y + this.height, this.y + textLines.length * leading + 2 * this.textPadding)
-        };
+        if (uri != null || key != null) {
+            page.addAnnotation(new Annotation(
+                    Annotation.Link,
+                    this.x,
+                    this.y,
+                    this.x + this.width,
+                    this.y + blockHeight,
+                    null,   // Vertices
+                    null,   // Fill Color
+                    0f,     // Transparency
+                    null,   // Title
+                    null,   // Contents
+                    uri,
+                    key,    // The destination name
+                    uriLanguage,
+                    uriActualText,
+                    uriAltDescription));
+        }
+
+        return new float[] {this.x + this.width, this.y + blockHeight};
     }
 }

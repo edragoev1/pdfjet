@@ -34,7 +34,11 @@ namespace PDFjet.NET {
 
 
         private string language = null;
-        private string uri;
+        private string uri = null;
+        private string key = null;
+        private string uriLanguage = null;
+        private string uriActualText = null;
+        private string uriAltDescription = null;
         private bool underline = false;
         private bool rightToLeft = false;
 
@@ -121,15 +125,15 @@ namespace PDFjet.NET {
             return this;
         }
 
-        /// <summary>Sets the width of this text block.</summary>
+        /// <summary>Sets the width of this text block and resets its height, so the height fits the text.</summary>
         public TextBlock SetWidth(double width) {
-            this.width = (float) width;
-            return this;
+            return SetWidth((float) width);
         }
 
-        /// <summary>Sets the width of this text block.</summary>
+        /// <summary>Sets the width of this text block and resets its height, so the height fits the text.</summary>
         public TextBlock SetWidth(float width) {
             this.width = width;
+            this.height = 0.0f;
             return this;
         }
 
@@ -190,6 +194,11 @@ namespace PDFjet.NET {
         public TextBlock SetFillColor(float[] rgbColor) {
             this.fillColor = rgbColor;
             return this;
+        }
+
+        /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
+        public TextBlock SetBackgroundColor(int color) {
+            return SetFillColor(color);
         }
 
         /// <summary>Sets the background color from an array of red, green and blue values.</summary>
@@ -300,14 +309,19 @@ namespace PDFjet.NET {
             return numOfCJK > (chars.Length / 2);
         }
 
-        private TextLine[] GetTextLinesWithOffsets() {
+        // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+        private static readonly char[] whitespace = new char[] {' ', '\t', '\n', '\x0B', '\f', '\r'};
+
+        private TextLine[] GetTextLines() {
             List<TextLine> textLines = new List<TextLine>();
 
             float textAreaWidth = this.width - 2 * this.textPadding;
-            this.textContent = this.textContent.Replace("\r\n", "\n").Trim();
-            string[] lines = this.textContent.Split('\n');
-            foreach (String str in lines) {
-                String line = str;
+            // Like String.split in Java: the trailing empty lines are dropped, but an empty text is one empty line.
+            List<string> lines = new List<string>(this.textContent.Replace("\r\n", "\n").Split('\n'));
+            while (lines.Count > 1 && lines[lines.Count - 1].Length == 0) {
+                lines.RemoveAt(lines.Count - 1);
+            }
+            foreach (String line in lines) {
                 if (rightToLeft) {
                     AddRightToLeftLines(textLines, line, textAreaWidth);
                     continue;
@@ -325,7 +339,9 @@ namespace PDFjet.NET {
                             if (font.StringWidth(fallbackFont, fontSize, sb.ToString() + ch) <= textAreaWidth) {
                                 sb.Append(ch);
                             } else {
-                                textLines.Add(new TextLine(font, sb.ToString()));
+                                if (sb.Length > 0) {    // Don't emit an empty line
+                                    textLines.Add(new TextLine(font, sb.ToString()));
+                                }
                                 sb.Clear();
                                 sb.Append(ch);
                             }
@@ -335,7 +351,7 @@ namespace PDFjet.NET {
                         }
                     } else {
                         StringBuilder sb = new StringBuilder();
-                        string[] tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        string[] tokens = line.Split(whitespace, StringSplitOptions.RemoveEmptyEntries);
                         foreach (string token in tokens) {
                             // The words between the zero width spaces of a token
                             // are joined with no space.
@@ -464,7 +480,7 @@ namespace PDFjet.NET {
             // of the rest its joined form.
             StringBuilder sb = new StringBuilder();
             int from = 0;
-            foreach (string token in paragraph.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries)) {
+            foreach (string token in paragraph.Split(whitespace, StringSplitOptions.RemoveEmptyEntries)) {
                 // The words between the zero width spaces of a token are joined
                 // with no space.
                 string[] words = token.Split('\u200B');
@@ -525,12 +541,10 @@ namespace PDFjet.NET {
             float ascent = this.font.GetAscent(fontSize);
             float descent = this.font.GetDescent(fontSize);
             float leading = (ascent + descent) * this.lineSpacing;
-            TextLine[] textLines = GetTextLinesWithOffsets();
+            TextLine[] textLines = GetTextLines();
+            float blockHeight = MathF.Max(this.height, textLines.Length * leading + 2 * this.textPadding);
             if (page == null) {
-                return new float[] {
-                    this.width,
-                    MathF.Max(this.height, textLines.Length * leading + 2 * this.textPadding)
-                };
+                return new float[] {this.x + this.width, this.y + blockHeight};
             }
 
             page.SaveGraphicsState();
@@ -545,11 +559,7 @@ namespace PDFjet.NET {
             }
 
             if (borderColor != null || fillColor != null) {
-                Rect rect = new Rect(
-                    this.x,
-                    this.y,
-                    this.width,
-                    MathF.Max(this.height, textLines.Length * leading + 2 * this.textPadding));
+                Rect rect = new Rect(this.x, this.y, this.width, blockHeight);
                 if (borderColor != null) {
                     rect.SetBorderColor(this.borderColor);
                     rect.SetBorderWidth(this.borderWidth);
@@ -575,10 +585,26 @@ namespace PDFjet.NET {
             page.AddEMC();
             page.RestoreGraphicsState();
 
-            return new float[] {
-                this.x + this.width,
-                MathF.Max(this.y + this.height, this.y + textLines.Length * leading + 2 * this.textPadding)
-            };
+            if (uri != null || key != null) {
+                page.AddAnnotation(new Annotation(
+                        Annotation.Link,
+                        this.x,
+                        this.y,
+                        this.x + this.width,
+                        this.y + blockHeight,
+                        null,   // Vertices
+                        null,   // Fill Color
+                        0f,     // Transparency
+                        null,   // Title
+                        null,   // Contents
+                        uri,
+                        key,    // The destination name
+                        uriLanguage,
+                        uriActualText,
+                        uriAltDescription));
+            }
+
+            return new float[] {this.x + this.width, this.y + blockHeight};
         }
     }
 }

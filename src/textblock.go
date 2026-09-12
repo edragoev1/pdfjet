@@ -10,9 +10,11 @@ import (
 	"unicode"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
-// TextBlock creates block of line-wrapped text.
+// TextBlock is a block of text that wraps at its width, with an optional border, background and padding.
 type TextBlock struct {
 	x            float32
 	y            float32
@@ -35,7 +37,6 @@ type TextBlock struct {
 	borderCornerRadius float32
 
 	language               string
-	altDescription         string
 	uri                    string
 	key                    string
 	uriLanguage            string
@@ -43,21 +44,20 @@ type TextBlock struct {
 	uriAltDescription      string
 	textAlignment          int
 	underline              bool
-	strikeout              bool
 	keywordHighlightColors map[string]int32
 	rightToLeft            bool
 }
 
-// NewTextBlock creates a text block and sets the font.
-//
-//	@param font the font.
+// NewTextBlock creates a text block and sets the font and the text.
+// The font is the fallback font too.
 func NewTextBlock(font *Font, textContent string) *TextBlock {
 	textBlock := new(TextBlock)
 	textBlock.x = 0.0
 	textBlock.y = 0.0
 	textBlock.width = 500.0
-	textBlock.height = 500.0
+	textBlock.height = 0.0
 	textBlock.font = font
+	textBlock.fallbackFont = font
 	textBlock.fontSize = font.size
 
 	textBlock.textContent = textContent
@@ -69,19 +69,13 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 	textBlock.borderWidth = 0.5
 	textBlock.borderCornerRadius = 0.0
 
-	textBlock.language = ""
-	textBlock.altDescription = ""
-	textBlock.underline = false
-	textBlock.strikeout = false
-
 	return textBlock
 }
 
-// SetFont sets the font for textBlock text block.
-//
-// @param font the font.
+// SetFont sets the font of the text. It also becomes the fallback font.
 func (textBlock *TextBlock) SetFont(font *Font) *TextBlock {
 	textBlock.font = font
+	textBlock.fallbackFont = font
 	return textBlock
 }
 
@@ -91,17 +85,13 @@ func (textBlock *TextBlock) SetFallbackFont(fallbackFont *Font) *TextBlock {
 	return textBlock
 }
 
-// SetFontSize sets the font size for the text block.
-//
-// @param size the font size.
+// SetFontSize sets the font size of the text.
 func (textBlock *TextBlock) SetFontSize(size float32) *TextBlock {
-	textBlock.font.SetSize(size)
+	textBlock.fontSize = size
 	return textBlock
 }
 
-// SetFallbackFontSize sets the font size for the text block.
-//
-// @param size the font size.
+// SetFallbackFontSize sets the size of the fallback font.
 func (textBlock *TextBlock) SetFallbackFontSize(size float32) *TextBlock {
 	textBlock.fallbackFont.SetSize(size)
 	return textBlock
@@ -185,86 +175,88 @@ func (textBlock *TextBlock) SetTextPadding(padding float32) *TextBlock {
 }
 
 // SetBorderWidth sets the border width.
-// @param lineWidth float
 func (textBlock *TextBlock) SetBorderWidth(borderWidth float32) *TextBlock {
 	textBlock.borderWidth = borderWidth
 	return textBlock
 }
 
-// SetBorderColor sets the border color as a 0xRRGGBB value.
-func (textBlock *TextBlock) SetBorderColor(color int32) *TextBlock {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+// SetBorderColor sets the border color as a 0xRRGGBB value. color.Transparent removes the border.
+func (textBlock *TextBlock) SetBorderColor(c int32) *TextBlock {
+	if c == color.Transparent {
+		textBlock.hasBorderColor = false
+		return textBlock
+	}
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	textBlock.SetBorderColorRGB([3]float32{r, g, b})
 	return textBlock
 }
 
-// SetBorderColorRGB sets the penColor color.
-// @param color the color specified as 0xRRGGBB integer.
+// SetBorderColorRGB sets the border color from the red, green and blue components, from 0.0 to 1.0.
 func (textBlock *TextBlock) SetBorderColorRGB(borderColor [3]float32) *TextBlock {
 	textBlock.borderColor = borderColor
 	textBlock.hasBorderColor = true
 	return textBlock
 }
 
-// SetLineSpacing sets the extra leading between lines of text.
-// @param lineHeight
+// SetLineSpacing sets the line spacing as a multiple of the font's body height.
 func (textBlock *TextBlock) SetLineSpacing(lineSpacing float32) *TextBlock {
 	textBlock.lineSpacing = lineSpacing
 	return textBlock
 }
 
-// SetTextColorRGB sets the text color.
+// SetTextColorRGB sets the text color from the red, green and blue components, from 0.0 to 1.0.
 func (textBlock *TextBlock) SetTextColorRGB(textColor [3]float32) *TextBlock {
 	textBlock.textColor = textColor
 	return textBlock
 }
 
-// SetTextColor sets the text color.
-// @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetTextColor(color int32) *TextBlock {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+// SetTextColor sets the text color as a 0xRRGGBB value.
+func (textBlock *TextBlock) SetTextColor(c int32) *TextBlock {
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	textBlock.textColor = [3]float32{r, g, b}
 	return textBlock
 }
 
-// SetFillColor sets the text color.
-// @param color the color specified as 0xRRGGBB integer.
-func (textBlock *TextBlock) SetFillColor(fillColor int32) *TextBlock {
-	r := float32((fillColor>>16)&0xff) / 255.0
-	g := float32((fillColor>>8)&0xff) / 255.0
-	b := float32((fillColor)&0xff) / 255.0
+// SetFillColor sets the background color as a 0xRRGGBB value. color.Transparent removes the background.
+func (textBlock *TextBlock) SetFillColor(c int32) *TextBlock {
+	if c == color.Transparent {
+		textBlock.hasFillColor = false
+		return textBlock
+	}
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	textBlock.SetFillColorRGB([3]float32{r, g, b})
 	return textBlock
 }
 
-// SetFillColorRGB sets the fill color from red, green and blue values.
+// SetFillColorRGB sets the background color from the red, green and blue components, from 0.0 to 1.0.
 func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) *TextBlock {
 	textBlock.fillColor = fillColor
 	textBlock.hasFillColor = true
 	return textBlock
 }
 
-// SetBackgroundColor sets the background color as a 0xRRGGBB value.
-func (textBlock *TextBlock) SetBackgroundColor(color int32) *TextBlock {
-	return textBlock.SetFillColor(color)
+// SetBackgroundColor sets the background color as a 0xRRGGBB value. color.Transparent removes the background.
+func (textBlock *TextBlock) SetBackgroundColor(c int32) *TextBlock {
+	return textBlock.SetFillColor(c)
 }
 
-// SetBackgroundColorRGB sets the background color from red, green and blue values.
-func (textBlock *TextBlock) SetBackgroundColorRGB(color [3]float32) *TextBlock {
-	return textBlock.SetFillColorRGB(color)
+// SetBackgroundColorRGB sets the background color from the red, green and blue components, from 0.0 to 1.0.
+func (textBlock *TextBlock) SetBackgroundColorRGB(c [3]float32) *TextBlock {
+	return textBlock.SetFillColorRGB(c)
 }
 
-// GetBackgroundColor returns the background color.
+// GetBackgroundColor returns the background color, or black if none was set.
 func (textBlock *TextBlock) GetBackgroundColor() [3]float32 {
 	return textBlock.fillColor
 }
 
-// SetTextAlignment sets the brushColor color.
-// @param color the color specified as 0xRRGGBB integer.
+// SetTextAlignment sets the horizontal alignment of the text.
 func (textBlock *TextBlock) SetTextAlignment(textAlignment int) *TextBlock {
 	textBlock.textAlignment = textAlignment
 	return textBlock
@@ -321,13 +313,22 @@ func (textBlock *TextBlock) SetKeywordHighlightColors(keywordHighlightColors map
 	return textBlock
 }
 
-func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
+// isASCIIWhitespace reports the ASCII whitespace that Java's \s matches; a
+// no-break space does not break a line.
+func isASCIIWhitespace(r rune) bool {
+	return r == ' ' || r == '\t' || r == '\n' || r == '\v' || r == '\f' || r == '\r'
+}
+
+func (textBlock *TextBlock) getTextLines() []*TextLine {
 	var textLines []*TextLine
 
 	var textAreaWidth = textBlock.width - 2*textBlock.textPadding
-	textBlock.textContent = strings.ReplaceAll(textBlock.textContent, "\r\n", "\n")
-	textBlock.textContent = strings.TrimSpace(textBlock.textContent)
-	lines := strings.Split(textBlock.textContent, "\n")
+	// Like String.split in Java: the trailing empty lines are dropped, but an
+	// empty text is one empty line.
+	lines := strings.Split(strings.ReplaceAll(textBlock.textContent, "\r\n", "\n"), "\n")
+	for len(lines) > 1 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
 	for _, line := range lines {
 		if textBlock.rightToLeft {
 			textLines = textBlock.appendRightToLeftLines(textLines, line, textAreaWidth)
@@ -336,7 +337,7 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 		// A zero width space marks a place where the line may break in text
 		// without spaces between its words, like Thai text. It is not drawn.
 		text := strings.ReplaceAll(line, "\u200B", "")
-		if textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.font.size, text) <= textAreaWidth {
+		if textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.fontSize, text) <= textAreaWidth {
 			textLines = append(
 				textLines,
 				NewTextLine(textBlock.font, text))
@@ -345,22 +346,24 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 				var sb strings.Builder
 				for _, ch := range text {
 					if textBlock.font.StringWidthFB(textBlock.fallbackFont,
-						textBlock.font.size, sb.String()+string(ch)) <= textAreaWidth {
+						textBlock.fontSize, sb.String()+string(ch)) <= textAreaWidth {
 						sb.WriteRune(ch)
 					} else {
-						textLines = append(
-							textLines,
-							NewTextLine(textBlock.font, sb.String()))
+						if sb.Len() > 0 { // Don't emit an empty line
+							textLines = append(
+								textLines,
+								NewTextLine(textBlock.font, sb.String()))
+						}
 						sb.Reset()
 						sb.WriteRune(ch)
 					}
 				}
-				if sb.Len() > 0 {
-					textLines = append(textLines, NewTextLine(textBlock.font, sb.String()))
+				if strings.TrimSpace(sb.String()) != "" {
+					textLines = append(textLines, NewTextLine(textBlock.font, strings.TrimSpace(sb.String())))
 				}
 			} else {
 				var sb strings.Builder
-				tokens := strings.Fields(line) // Split by whitespace
+				tokens := strings.FieldsFunc(line, isASCIIWhitespace)
 				for _, token := range tokens {
 					// The words between the zero width spaces of a token are
 					// joined with no space.
@@ -371,7 +374,7 @@ func (textBlock *TextBlock) getTextLinesWithOffsets() []*TextLine {
 							separator = ""
 						}
 						if textBlock.font.StringWidthFB(textBlock.fallbackFont,
-							textBlock.font.size, sb.String()+word) <= textAreaWidth {
+							textBlock.fontSize, sb.String()+word) <= textAreaWidth {
 							sb.WriteString(word + separator)
 						} else {
 							if sb.Len() > 0 {
@@ -443,7 +446,7 @@ func (textBlock *TextBlock) part(text string, from, to int) string {
 // reordered if the text is right to left.
 func (textBlock *TextBlock) lineWidth(text string, from int) float32 {
 	return textBlock.font.StringWidthFB(
-		textBlock.fallbackFont, textBlock.font.size, textBlock.part(text, from, len(text)))
+		textBlock.fallbackFont, textBlock.fontSize, textBlock.part(text, from, len(text)))
 }
 
 // newTextLine returns a line of text, reordered if the text is right to left.
@@ -501,7 +504,7 @@ func (textBlock *TextBlock) appendRightToLeftLines(
 	// rest its joined form.
 	var sb strings.Builder
 	from := 0
-	for _, token := range strings.Fields(paragraph) {
+	for _, token := range strings.FieldsFunc(paragraph, isASCIIWhitespace) {
 		// The words between the zero width spaces of a token are joined with no
 		// space.
 		words := strings.Split(token, "\u200B")
@@ -550,7 +553,7 @@ func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 	textAreaWidth := textBlock.width - 2*textBlock.textPadding
 	for _, textLine := range textLines {
 		textLine.xOffset = textAreaWidth -
-			textBlock.font.StringWidth(textBlock.font.size, textLine.text)
+			textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.fontSize, textLine.text)
 	}
 }
 
@@ -560,7 +563,7 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	textAreaWidth := textBlock.width - 2*textBlock.textPadding
 	for _, textLine := range textLines {
 		textLine.xOffset = (textAreaWidth -
-			textBlock.font.StringWidth(textBlock.font.size, textLine.text)) / 2.0
+			textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.fontSize, textLine.text)) / 2.0
 	}
 }
 
@@ -572,22 +575,16 @@ func maxFloat32(a, b float32) float32 {
 	return b
 }
 
-// DrawOn draws text block on the specified page at specified location.
-// @param page the Page where the TextBlock is to be drawn.
-// @param draw flag specifying if text block component should actually be drawn on the page.
-// @return x and y coordinates of the bottom right corner of text block component.
+// DrawOn draws this text block on the specified page and returns the x and y
+// coordinates of its bottom right corner.
 func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
-	ascent := textBlock.font.ascent
-	descent := textBlock.font.descent
+	ascent := textBlock.font.GetAscentAt(textBlock.fontSize)
+	descent := textBlock.font.GetDescentAt(textBlock.fontSize)
 	leading := (ascent + descent) * textBlock.lineSpacing
-	textLines := textBlock.getTextLinesWithOffsets()
+	textLines := textBlock.getTextLines()
+	blockHeight := maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding)
 	if page == nil {
-		return [2]float32{
-			textBlock.x + textBlock.width,
-			maxFloat32(
-				textBlock.y+textBlock.height,
-				textBlock.y+(float32(len(textLines))*leading)+2*textBlock.textPadding),
-		}
+		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
 	}
 
 	page.SaveGraphicsState()
@@ -604,11 +601,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	}
 
 	if textBlock.hasBorderColor || textBlock.hasFillColor {
-		rect := NewRect(
-			textBlock.x,
-			textBlock.y,
-			textBlock.width,
-			maxFloat32(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding))
+		rect := NewRect(textBlock.x, textBlock.y, textBlock.width, blockHeight)
 		if textBlock.hasBorderColor {
 			rect.SetBorderColorRGB(textBlock.borderColor)
 			rect.SetBorderWidth(textBlock.borderWidth)
@@ -620,7 +613,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		rect.DrawOn(page)
 	}
 
-	page.AddBMC("P", textBlock.language, textBlock.textContent, "")
+	page.AddBMC(structtype.P, textBlock.language, textBlock.textContent, "")
 	page.drawTextBlock(
 		textBlock.font,
 		textBlock.fontSize,
@@ -635,10 +628,25 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 
 	page.RestoreGraphicsState()
 
-	return [2]float32{
-		textBlock.x + textBlock.width,
-		maxFloat32(
-			textBlock.y+textBlock.height,
-			textBlock.y+(float32(len(textLines))*leading)+2*textBlock.textPadding),
+	if textBlock.uri != "" || textBlock.key != "" {
+		page.addAnnotation(&Annotation{
+			annotationType: AnnotationLink,
+			x1:             textBlock.x,
+			y1:             textBlock.y,
+			x2:             textBlock.x + textBlock.width,
+			y2:             textBlock.y + blockHeight,
+			vertices:       nil,
+			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+			transparency:   0.0,
+			title:          "",
+			contents:       "",
+			uri:            textBlock.uri,
+			key:            textBlock.key, // The destination name
+			language:       textBlock.uriLanguage,
+			actualText:     textBlock.uriActualText,
+			altDescription: textBlock.uriAltDescription,
+		})
 	}
+
+	return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
 }

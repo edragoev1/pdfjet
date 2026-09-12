@@ -11,7 +11,7 @@ public class TextBlock : Drawable {
     internal var x: Float = 0.0
     internal var y: Float = 0.0
     internal var width: Float = 500.0
-    internal var height: Float = 500.0
+    internal var height: Float = 0.0
     internal var font: Font
     internal var fallbackFont: Font?
     internal var fontSize: Float = 12.0
@@ -25,7 +25,6 @@ public class TextBlock : Drawable {
     private var borderCornerRadius: Float = 0.0
 
     private var language: String?
-    private var altDescription: String = ""
     private var uri: String?
     private var key: String?
     private var uriLanguage: String?
@@ -33,24 +32,25 @@ public class TextBlock : Drawable {
     private var uriAltDescription: String?
     private var textAlignment: Alignment = Alignment.LEFT
     private var underline: Bool = false
-    private var strikeout: Bool = false
     private var rightToLeft: Bool = false
 
     private var lineSpacing: Float = 1.0
 
     private var highlightColors: [String: Int32]?
 
-    /// Creates a text block with the specified font and text.
+    /// Creates a text block with the specified font and text. The font is the fallback font too.
     public init(_ font: Font, _ textContent: String) {
         self.font = font
+        self.fallbackFont = font
         self.fontSize = font.size
         self.textContent = textContent
     }
 
-    /// Sets the font of the text.
+    /// Sets the font of the text. It also becomes the fallback font.
     @discardableResult
     public func setFont(_ font: Font) -> TextBlock {
         self.font = font
+        self.fallbackFont = font
         return self
     }
 
@@ -61,10 +61,10 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the size of the font. This changes the size of the Font object itself.
+    /// Sets the font size of the text.
     @discardableResult
     public func setFontSize(_ size: Float) -> TextBlock {
-        self.font.setSize(size)
+        self.fontSize = size
         return self
     }
 
@@ -178,9 +178,13 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the background color as a 0xRRGGBB value.
+    /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
     public func setFillColor(_ color: Int32) -> TextBlock {
+        if color == Color.transparent {
+            self.fillColor = nil
+            return self
+        }
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
@@ -195,7 +199,7 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the background color as a 0xRRGGBB value.
+    /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
     public func setBackgroundColor(_ color: Int32) -> TextBlock {
         return setFillColor(color)
@@ -212,9 +216,13 @@ public class TextBlock : Drawable {
         return self.fillColor
     }
 
-    /// Sets the border color as a 0xRRGGBB value.
+    /// Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> TextBlock {
+        if color == Color.transparent {
+            self.borderColor = nil
+            return self
+        }
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
@@ -296,10 +304,13 @@ public class TextBlock : Drawable {
         var textLines = [TextLine]()
 
         let textAreaWidth = self.width - 2 * self.textPadding
-        // .newlines matches "\r" and "\n" separately, so Windows line endings
-        // are replaced first, or each would split off an empty line.
-        let lines = textContent.replacingOccurrences(of: "\r\n", with: "\n")
-                .components(separatedBy: .newlines)
+        // Like String.split in Java: the trailing empty lines are dropped, but
+        // an empty text is one empty line.
+        var lines = textContent.replacingOccurrences(of: "\r\n", with: "\n")
+                .components(separatedBy: "\n")
+        while lines.count > 1 && lines[lines.count - 1].isEmpty {
+            lines.removeLast()
+        }
         for line in lines {
             if rightToLeft {
                 addRightToLeftLines(&textLines, line, textAreaWidth)
@@ -308,32 +319,34 @@ public class TextBlock : Drawable {
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
             let text = line.replacingOccurrences(of: "\u{200B}", with: "")
-            if font.stringWidth(fallbackFont, text) <= textAreaWidth {
+            if font.stringWidth(fallbackFont, fontSize, text) <= textAreaWidth {
                 textLines.append(TextLine(font, text))
             } else {
                 if textIsCJK(text) {
                     var sb = ""
                     for ch in text {
-                        if font.stringWidth(fallbackFont, sb + String(ch)) <= textAreaWidth {
+                        if font.stringWidth(fallbackFont, fontSize, sb + String(ch)) <= textAreaWidth {
                             sb.append(ch)
                         } else {
-                            textLines.append(TextLine(font, sb))
+                            if !sb.isEmpty {    // Don't emit an empty line
+                                textLines.append(TextLine(font, sb))
+                            }
                             sb = String(ch)
                         }
                     }
-                    if !sb.isEmpty {
-                        textLines.append(TextLine(font, sb))
+                    if !sb.trim().isEmpty {
+                        textLines.append(TextLine(font, sb.trim()))
                     }
                 } else {
                     var sb = ""
-                    let tokens = line.split(whereSeparator: \.isWhitespace).map(String.init)
+                    let tokens = line.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init)
                     for token in tokens {
                         // The words between the zero width spaces of a token
                         // are joined with no space.
                         let words = token.components(separatedBy: "\u{200B}")
                         for (i, word) in words.enumerated() {
                             let separator = (i == words.count - 1) ? " " : ""
-                            if font.stringWidth(fallbackFont, sb + word) <= textAreaWidth {
+                            if font.stringWidth(fallbackFont, fontSize, sb + word) <= textAreaWidth {
                                 sb.append(word)
                                 sb.append(separator)
                             } else {
@@ -355,10 +368,13 @@ public class TextBlock : Drawable {
                 }
             }
         }
-        // We need the following line to match the behaviour of the Java, .NET and Go versions.
-        if textLines.last!.text!.isEmpty { textLines.removeLast() }
 
         return textLines
+    }
+
+    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+    private static func isASCIIWhitespace(_ ch: Character) -> Bool {
+        return " \t\n\u{0B}\u{0C}\r".contains(ch)
     }
 
     /// Adds the lines of a word too wide for a line by itself, broken between its
@@ -396,7 +412,7 @@ public class TextBlock : Drawable {
     // Returns the width of a line of text, measured after the line is reordered
     // if the text is right to left.
     private func lineWidth(_ text: String, _ from: Int) -> Float {
-        return font.stringWidth(fallbackFont, part(text, from, text.unicodeScalars.count))
+        return font.stringWidth(fallbackFont, fontSize, part(text, from, text.unicodeScalars.count))
     }
 
     // Returns a line of text, reordered if the text is right to left.
@@ -464,7 +480,7 @@ public class TextBlock : Drawable {
         // of the rest its joined form.
         var sb = ""
         var from = 0
-        for token in paragraph.split(whereSeparator: \.isWhitespace).map(String.init) {
+        for token in paragraph.split(whereSeparator: TextBlock.isASCIIWhitespace).map(String.init) {
             // The words between the zero width spaces of a token are joined
             // with no space.
             let words = token.components(separatedBy: "\u{200B}")
@@ -513,14 +529,14 @@ public class TextBlock : Drawable {
     private func rightAlignText(_ textLines: [TextLine]) {
         let textAreaWidth = self.width - 2 * self.textPadding
         for textLine in textLines {
-            textLine.xOffset = textAreaWidth - font.stringWidth(textLine.text)
+            textLine.xOffset = textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text)
         }
     }
 
     private func centerText(_ textLines: [TextLine]) {
         let textAreaWidth = self.width - 2 * self.textPadding
         for textLine in textLines {
-            textLine.xOffset = (textAreaWidth - font.stringWidth(textLine.text)) / 2.0
+            textLine.xOffset = (textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text)) / 2.0
         }
     }
 
@@ -537,8 +553,9 @@ public class TextBlock : Drawable {
         let descent = font.getDescent(fontSize)
         let leading = (ascent + descent) * lineSpacing
         let textLines = getTextLines()
+        let blockHeight = max(height, Float(textLines.count) * leading + 2 * textPadding)
         if page == nil {
-            return [width, max(height, Float(textLines.count) * leading + 2 * textPadding)]
+            return [x + width, y + blockHeight]
         }
 
         page!.saveGraphicsState()
@@ -554,11 +571,7 @@ public class TextBlock : Drawable {
         }
 
         if self.borderColor != nil || self.fillColor != nil {
-            let rect = Rect(
-                x,
-                y,
-                width,
-                max(height, Float(textLines.count) * leading + 2 * textPadding))
+            let rect = Rect(x, y, width, blockHeight)
             if self.borderColor != nil {
                 rect.setBorderColor(self.borderColor)
                 rect.setBorderWidth(self.borderWidth)
@@ -585,6 +598,25 @@ public class TextBlock : Drawable {
 
         page!.restoreGraphicsState()
 
-        return [x + width, max(y + height, y + Float(textLines.count) * leading + 2 * textPadding)]
+        if uri != nil || key != nil {
+            page!.addAnnotation(Annotation(
+                    Annotation.Link,
+                    x,
+                    y,
+                    x + width,
+                    y + blockHeight,
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    nil,    // Title
+                    nil,    // Contents
+                    uri,
+                    key,    // The destination name
+                    uriLanguage,
+                    uriActualText,
+                    uriAltDescription))
+        }
+
+        return [x + width, y + blockHeight]
     }
 }
