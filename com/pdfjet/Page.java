@@ -402,11 +402,12 @@ final public class Page {
         } else {
             Font activeFont = font;
             StringBuilder buf = new StringBuilder();
-            for (int i = 0; i < str.length(); i++) {
-                int ch = str.charAt(i);
+            for (int i = 0; i < str.length(); ) {
+                int cp = str.codePointAt(i);
+                int count = Character.charCount(cp);
                 // An RLM, ZWNJ or ZWJ goes with the character after it.
-                int next = (Font.isJoinerOrRLM(ch) && i + 1 < str.length()) ? str.charAt(i + 1) : ch;
-                if (activeFont.unicodeToGID[next] == 0) {
+                int next = (Font.isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
+                if (!hasGlyph(activeFont, next)) {
                     drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
                     x += activeFont.stringWidth(fontSize, buf.toString());
                     buf.setLength(0);
@@ -417,10 +418,17 @@ final public class Page {
                         activeFont = font;
                     }
                 }
-                buf.append((char) ch);
+                buf.append(str, i, i + count);
+                i += count;
             }
             drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
         }
+    }
+
+    // Returns true if the font has a glyph for the character. A character past
+    // the end of the glyph table of the font, like an emoji, has none.
+    private static boolean hasGlyph(Font font, int cp) {
+        return cp < font.unicodeToGID.length && font.unicodeToGID[cp] != 0;
     }
 
     /**
@@ -547,16 +555,17 @@ final public class Page {
     }
 
     private void drawASCIIString(Font font, String str) {
-        for (int i = 0; i < str.length(); i++) {
-            int c1 = str.charAt(i);
+        for (int i = 0; i < str.length(); ) {
+            int c1 = str.codePointAt(i);
+            i += Character.charCount(c1);
             if (c1 < font.firstChar || c1 > font.lastChar) {
                 appendByteAsHex(0x20);
                 continue;
             }
             appendByteAsHex(c1);
-            if (font.isCoreFont && font.kernPairs && i < (str.length() - 1)) {
+            if (font.isCoreFont && font.kernPairs && i < str.length()) {
                 c1 -= 32;
-                int c2 = str.charAt(i + 1);
+                int c2 = str.codePointAt(i);
                 if (c2 < font.firstChar || c2 > font.lastChar) {
                     c2 = 32;
                 }
@@ -1225,6 +1234,7 @@ final public class Page {
      * @return this Page object.
      */
     public Page setDefaultLineWidth() {
+        this.penWidth = 0f;
         append(0f);
         append(" w\n");
         return this;
@@ -1266,7 +1276,8 @@ final public class Page {
      * @return this Page object.
      */
     public Page setDefaultStrokeDashPattern() {
-        append("[] 0");
+        this.strokeDashPattern = "[] 0";
+        append(strokeDashPattern);
         append(" d\n");
         return this;
     }
@@ -1438,7 +1449,7 @@ final public class Page {
      * Fills the specified rectangle on the page.
      * The left and right edges of the rectangle are at x and x + w.
      * The top and bottom edges are at y and y + h.
-     * The rectangle is drawn using the current pen color.
+     * The rectangle is drawn using the current brush color.
      *
      * @param x the x coordinate of the rectangle to be drawn.
      * @param y the y coordinate of the rectangle to be drawn.
@@ -1617,7 +1628,7 @@ final public class Page {
     }
 
     /**
-     * Fills an ellipse on the page using the current pen color.
+     * Fills an ellipse on the page using the current brush color.
      *
      * @param x the x coordinate of the center of the ellipse to be drawn.
      * @param y the y coordinate of the center of the ellipse to be drawn.
@@ -1633,7 +1644,7 @@ final public class Page {
     }
 
     /**
-     * Fills an ellipse on the page using the current pen color.
+     * Fills an ellipse on the page using the current brush color.
      *
      * @param x the x coordinate of the center of the ellipse to be drawn.
      * @param y the y coordinate of the center of the ellipse to be drawn.
@@ -1764,7 +1775,7 @@ final public class Page {
                 list = new ArrayList<Point>();
                 for (int i = 0; i < 10; i++) {
                     double theta = i * 36 * (Math.PI / 180.0);
-                    double radius = (i % 2 == 0) ? p.r*1.147f : p.r*0.38196f*1.147f;
+                    double radius = (i % 2 == 0) ? p.r*1.147 : p.r*0.38196*1.147;
                     double x = p.x + radius * Math.sin(theta);
                     double y = p.y - radius * Math.cos(theta);  // minus because y grows down
                     list.add(new Point(x, y));
@@ -2251,15 +2262,16 @@ final public class Page {
             Map<String, Integer> highlightColors) {
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
-        for (int i = 0; i < str.length(); i++) {
-            char ch = str.charAt(i);
-            if (Character.isLetterOrDigit(ch)) {
+        for (int i = 0; i < str.length(); ) {
+            int cp = str.codePointAt(i);
+            if (Character.isLetterOrDigit(cp)) {
                 drawWord(font, buf2, color, highlightColors);
-                buf1.append(ch);
+                buf1.appendCodePoint(cp);
             } else {
                 drawWord(font, buf1, color, highlightColors);
-                buf2.append(ch);
+                buf2.appendCodePoint(cp);
             }
+            i += Character.charCount(cp);
         }
         drawWord(font, buf1, color, highlightColors);
         drawWord(font, buf2, color, highlightColors);
@@ -2414,9 +2426,11 @@ final public class Page {
     public void drawString(
             Font font, float fontSize, String str, float x, float y, float dx) {
         float x1 = x;
-        for (int i = 0; i < str.length(); i++) {
-            drawString(font, fontSize, str.substring(i, i + 1), x1, y);
+        for (int i = 0; i < str.length(); ) {
+            int count = Character.charCount(str.codePointAt(i));
+            drawString(font, fontSize, str.substring(i, i + count), x1, y);
             x1 += dx;
+            i += count;
         }
     }
 
@@ -2509,7 +2523,7 @@ final public class Page {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] addHeader(TextLine textLine) throws Exception {
-        return addHeader(textLine, 1.5f*textLine.font.ascent);
+        return addHeader(textLine, 1.5f*textLine.font.getAscent(textLine.fontSize));
     }
 
     /**
@@ -2523,7 +2537,7 @@ final public class Page {
     public float[] addHeader(TextLine textLine, float offset) throws Exception {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, offset);
         float[] xy = textLine.drawOn(this);
-        xy[1] += textLine.font.descent;
+        xy[1] += textLine.font.getDescent(textLine.fontSize);
         return xy;
     }
 
@@ -2535,7 +2549,7 @@ final public class Page {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] addFooter(TextLine textLine) throws Exception {
-        return addFooter(textLine, textLine.font.ascent);
+        return addFooter(textLine, textLine.font.getAscent(textLine.fontSize));
     }
 
     /**
@@ -2612,43 +2626,6 @@ final public class Page {
             append("> Tj\n");
         }
         append("ET\n");
-    }
-
-    void scaleAndRotate(float x, float y, float w, float h, float degrees) {
-        // PDF transformations apply LAST-TO-FIRST (like a stack: last command = first applied)
-
-        // [FINAL POSITIONING - Applied First]
-        // Moves rotated/scaled image to target (x,y) on page
-        append("1 0 0 1 ");
-        append(x + w/2);
-        append(" ");
-        append((height - y) - h/2);
-        append(" cm\n");
-
-        // [ROTATION - Applied Second]
-        // Rotates around current origin (0,0) by 'degrees'
-        double radians = degrees * (Math.PI / 180);
-        float cos = (float)Math.cos(radians);
-        float sin = (float)Math.sin(radians);
-        append(FastFloat.toByteArray(cos));
-        append(" ");
-        append(FastFloat.toByteArray(sin));
-        append(" ");
-        append(FastFloat.toByteArray(-sin));
-        append(" ");
-        append(FastFloat.toByteArray(cos));
-        append(" 0 0 cm\n");
-
-        // [ORIGIN SETUP - Applied Last]
-        // Centers image at (0,0) and sets scale
-        append(w);
-        append(" 0 0 ");
-        append(h);
-        append(" ");
-        append(-w/2);
-        append(" ");
-        append(-h/2);
-        append(" cm\n");
     }
 
     void rotateAroundCenter(float centerX, float centerY, float degrees) {

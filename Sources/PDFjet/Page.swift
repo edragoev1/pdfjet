@@ -305,7 +305,7 @@ public class Page {
             for (i, scalar) in scalars.enumerated() {
                 // An RLM, ZWNJ or ZWJ goes with the character after it.
                 let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
-                if activeFont.unicodeToGID[Int(next.value)] == 0 {
+                if !hasGlyph(activeFont, Int(next.value)) {
                     drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
                     x += activeFont.stringWidth(fontSize, buf)
                     buf = ""
@@ -322,13 +322,10 @@ public class Page {
         }
     }
 
-    /// Draws the string in black at the current size of the font.
-    public final func drawString(
-            _ font: Font,
-            _ text: String?,
-            _ x: Float,
-            _ y: Float) {
-        drawString(font, font.size, text, x, y, [0.0, 0.0, 0.0], nil)
+    // Returns true if the font has a glyph for the character. A character past
+    // the end of the glyph table of the font, like an emoji, has none.
+    private func hasGlyph(_ font: Font, _ codePoint: Int) -> Bool {
+        return codePoint < font.unicodeToGID.count && font.unicodeToGID[codePoint] != 0
     }
 
     /// Draws the string in black at the specified font size.
@@ -960,143 +957,85 @@ public class Page {
         append("Q\n")
     }
 
-    // setPenColor sets the pen color using a 24-bit RGB color integer.
-    // - The integer color is expected in the format 0xRRGGBB,
-    //   where R, G, and B are the red, green, and blue components respectively.
-    // - The method converts the integer color to normalized float values
-    //   between 0 and 1 for each RGB component and appends the color
-    //   to the drawing context.
     /// Sets the pen color as a 0xRRGGBB value.
     @discardableResult
     public func setPenColor(_ color: Int32) -> Page {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
-        append(r)
+        return setPenColor([r, g, b])
+    }
+
+    ///
+    /// Sets the pen color as red, green and blue values between 0.0 and 1.0.
+    /// A nil color is ignored, and so is a value out of range, with a warning.
+    ///
+    /// - Parameter rgbColor: the red, green and blue values.
+    /// - Returns: this page.
+    ///
+    @discardableResult
+    public func setPenColor(_ rgbColor: [Float]?) -> Page {
+        guard let rgbColor = rgbColor else {
+            return self
+        }
+        if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
+                rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
+                rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
+            print("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
+            return self
+        }
+        penColor = rgbColor
+        append(rgbColor[0])
         append(Token.space)
-        append(g)
+        append(rgbColor[1])
         append(Token.space)
-        append(b)
+        append(rgbColor[2])
         append(" RG\n")
         return self
     }
 
-    // setPenColor sets the pen color using an RGB color array.
-    // Each element in the array represents the red, green, and blue components
-    // of the color as floating-point values between 0.0 and 1.0.
-    //
-    // Parameters:
-    //   rgbColor: An optional array of 3 Float values representing the
-    //   red, green, and blue color components respectively. Each value should
-    //   be between 0.0 (no intensity) and 1.0 (full intensity). If the value is
-    //   nil, a warning is printed and the method exits early without modifying the color.
-    //
-    // Notes:
-    //   - The method performs a range check to ensure that each color component
-    //     is within the valid range [0.0, 1.0]. If any component is out of range,
-    //     the method prints a warning and exits early without modifying the color.
-    //   - The method then sets the penColor property and appends the color values
-    //     to the output stream (e.g., for a PDF or graphics context).
-    func setPenColor(_ rgbColor: [Float]?) {
-        if rgbColor == nil {
-            return // Early exit if null
-        }
-
-        if rgbColor![0] < 0.0 || rgbColor![0] > 1.0 ||
-           rgbColor![1] < 0.0 || rgbColor![1] > 1.0 ||
-           rgbColor![2] < 0.0 || rgbColor![2] > 1.0 {
-            print("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
-            return // Early exit if out of range
-        }
-
-        // Now set the pen color
-        penColor = rgbColor!
-
-        // Proceed with setting the color (example)
-        append(rgbColor![0])
-        append(Token.space)
-        append(rgbColor![1])
-        append(Token.space)
-        append(rgbColor![2])
-        append(" RG\n")
-    }
-
-    // getPenColor retrieves the current pen color as an array of float values.
-    // - The returned array contains the normalized RGB values (in the range 0.0 to 1.0)
-    //   representing the current pen color.
-    // - The array format is [r, g, b], where r, g, and b are the red, green, and blue
-    //   components of the pen color respectively.
     /// Returns the pen color as red, green and blue values between 0.0 and 1.0.
     public final func getPenColor() -> [Float] {
         return penColor
     }
 
-    // setBrushColor sets the brush color using a 24-bit RGB color integer.
-    // - The integer color is expected in the format 0xRRGGBB,
-    //   where R, G, and B are the red, green, and blue components respectively.
-    // - The method converts the integer color to normalized float values
-    //   between 0 and 1 for each RGB component and appends the color
-    //   to the drawing context for brush-related operations.
     /// Sets the brush color as a 0xRRGGBB value.
     @discardableResult
     public func setBrushColor(_ color: Int32) -> Page {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
-        append(r)
+        return setBrushColor([r, g, b])
+    }
+
+    ///
+    /// Sets the brush color as red, green and blue values between 0.0 and 1.0.
+    /// A nil color is ignored, and so is a value out of range, with a warning.
+    ///
+    /// - Parameter rgbColor: the red, green and blue values.
+    /// - Returns: this page.
+    ///
+    @discardableResult
+    public func setBrushColor(_ rgbColor: [Float]?) -> Page {
+        guard let rgbColor = rgbColor else {
+            return self
+        }
+        if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
+                rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
+                rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
+            print("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
+            return self
+        }
+        brushColor = rgbColor
+        append(rgbColor[0])
         append(Token.space)
-        append(g)
+        append(rgbColor[1])
         append(Token.space)
-        append(b)
+        append(rgbColor[2])
         append(" rg\n")
         return self
     }
 
-    // setBrushColor sets the brush color using an RGB color array.
-    // Each element in the array represents the red, green, and blue components
-    // of the color as floating-point values between 0.0 and 1.0.
-    //
-    // Parameters:
-    //   rgbColor: An optional array of 3 Float values representing the
-    //   red, green, and blue color components respectively. Each value should
-    //   be between 0.0 (no intensity) and 1.0 (full intensity). If the value is
-    //   nil, a warning is printed and the method exits early without modifying the color.
-    //
-    // Notes:
-    //   - The method performs a range check to ensure that each color component
-    //     is within the valid range [0.0, 1.0]. If any component is out of range,
-    //     the method prints a warning and exits early without modifying the color.
-    //   - The method then sets the brushColor property and appends the color values
-    //     to the output stream (e.g., for a PDF or graphics context).
-    func setBrushColor(_ rgbColor: [Float]?) {
-        if rgbColor == nil {
-            return // Early exit if null
-        }
-
-        if rgbColor![0] < 0.0 || rgbColor![0] > 1.0 ||
-           rgbColor![1] < 0.0 || rgbColor![1] > 1.0 ||
-           rgbColor![2] < 0.0 || rgbColor![2] > 1.0 {
-            print("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
-            return // Early exit if out of range
-        }
-
-        // Now set the brush color
-        brushColor = rgbColor!
-
-        // Proceed with setting the color (example)
-        append(rgbColor![0])
-        append(Token.space)
-        append(rgbColor![1])
-        append(Token.space)
-        append(rgbColor![2])
-        append(" rg\n")
-    }
-
-    // getBrushColor retrieves the current brush color as an array of float values.
-    // - The returned array contains the normalized RGB values (in the range 0.0 to 1.0)
-    //   representing the current brush color.
-    // - The array format is [r, g, b], where r, g, and b are the red, green, and blue
-    //   components of the brush color respectively.
     /// Returns the brush color as red, green and blue values between 0.0 and 1.0.
     public func getBrushColor() -> [Float] {
         return brushColor
@@ -1110,8 +1049,10 @@ public class Page {
     /// - Parameter m: the magenta component is Float value from 0.0 to 1.0.
     /// - Parameter y: the yellow component is Float value from 0.0 to 1.0.
     /// - Parameter k: the black component is Float value from 0.0 to 1.0.
+    /// - Returns: this page.
     ///
-    public final func setPenColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
+    @discardableResult
+    public final func setPenColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) -> Page {
         append(c)
         append(Token.space)
         append(m)
@@ -1120,6 +1061,7 @@ public class Page {
         append(Token.space)
         append(k)
         append(" K\n")
+        return self
     }
 
     ///
@@ -1130,8 +1072,10 @@ public class Page {
     /// - Parameter m: the magenta component is Float value from 0.0 to 1.0.
     /// - Parameter y: the yellow component is Float value from 0.0 to 1.0.
     /// - Parameter k: the black component is Float value from 0.0 to 1.0.
+    /// - Returns: this page.
     ///
-    public final func setBrushColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) {
+    @discardableResult
+    public final func setBrushColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) -> Page {
         append(c)
         append(Token.space)
         append(m)
@@ -1140,6 +1084,7 @@ public class Page {
         append(Token.space)
         append(k)
         append(" k\n")
+        return self
     }
 
     ///
@@ -1148,6 +1093,7 @@ public class Page {
     ///
     @discardableResult
     public func setDefaultLineWidth() -> Page {
+        self.penWidth = 0.0
         append("0 w\n")
         return self
     }
@@ -1312,7 +1258,7 @@ public class Page {
     /// Fills the specified rectangle on the page.
     /// The left and right edges of the rectangle are at x and x + w.
     /// The top and bottom edges are at y and y + h.
-    /// The rectangle is drawn using the current pen color.
+    /// The rectangle is drawn using the current brush color.
     ///
     /// - Parameter x: the x coordinate of the rectangle to be drawn.
     /// - Parameter y: the y coordinate of the rectangle to be drawn.
@@ -1415,7 +1361,7 @@ public class Page {
     }
 
     ///
-    /// Fills an ellipse on the page using the current pen color.
+    /// Fills an ellipse on the page using the current brush color.
     ///
     /// - Parameter x: the x coordinate of the center of the ellipse to be drawn.
     /// - Parameter y: the y coordinate of the center of the ellipse to be drawn.
@@ -1549,8 +1495,8 @@ public class Page {
                     let radius = (i % 2 == 0)
                     ? Double(p.r) * 1.147
                     : Double(p.r) * 0.38196 * 1.147
-                    let x = p.x + Float(radius * sin(theta))
-                    let y = p.y - Float(radius * cos(theta))  // minus because y grows down
+                    let x = Float(Double(p.x) + radius * sin(theta))
+                    let y = Float(Double(p.y) - radius * cos(theta))  // minus because y grows down
                     list.append(Point(x, y))
                 }
                 drawPath(list, p.getPathOperator())
@@ -1595,8 +1541,8 @@ public class Page {
         } else if degrees == 360 {
             self.tmx = [ 1.0,  0.0,  0.0,  1.0 ]
         } else {
-            let sinOfAngle = Float(sin(Float(degrees) * (Float.pi / 180.0)))
-            let cosOfAngle = Float(cos(Float(degrees) * (Float.pi / 180.0)))
+            let sinOfAngle = Float(sin(Double(degrees) * (Double.pi / 180.0)))
+            let cosOfAngle = Float(cos(Double(degrees) * (Double.pi / 180.0)))
             self.tmx = [cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle]
         }
         self.tm0 = FastFloat.toByteArray(tmx[0])
@@ -2088,34 +2034,28 @@ public class Page {
     /// Draws the characters of the string one at a time, dx apart.
     public func drawString(
             _ font: Font,
+            _ fontSize: Float,
             _ str: String,
             _ x: Float,
             _ y: Float,
             _ dx: Float) {
-        let scalars = Array(str.unicodeScalars)
         var x1 = x
-        for scalar in scalars {
-            drawString(font, String(scalar), x1, y)
+        for scalar in str.unicodeScalars {
+            drawString(font, fontSize, String(scalar), x1, y)
             x1 += dx
         }
     }
 
+    // Returns true if the character is a letter or a decimal digit of any
+    // script, as Character.isLetterOrDigit does in Java.
     private func isLetterOrDigit(_ scalar: UnicodeScalar) -> Bool {
-        if (scalar.value >= 65 && scalar.value <= 90) ||
-            (scalar.value >= 97 && scalar.value <= 122) ||
-            (scalar.value >= 48 && scalar.value <= 57) {
+        switch scalar.properties.generalCategory {
+        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
+                .decimalNumber:
             return true
+        default:
+            return false
         }
-        return false
-    }
-
-    private func isLetterOrDigit(_ value: Int) -> Bool {
-        if (value >= 65 && value <= 90) ||
-            (value >= 97 && value <= 122) ||
-            (value >= 48 && value <= 57) {
-            return true
-        }
-        return false
     }
 
     private func appendTwoHexDigits(_ number: Int, _ buffer: inout [UInt8]) {
@@ -2155,18 +2095,17 @@ public class Page {
     public func addWatermark(
             _ font: Font,
             _ text: String) throws {
-        let hypotenuse: Float =
-                sqrt(self.height * self.height + self.width * self.width)
+        let hypotenuse = Float(sqrt(Double(self.height * self.height + self.width * self.width)))
         let stringWidth = font.stringWidth(text)
         let offset = (hypotenuse - stringWidth) / 2.0
-        let angle = atan(self.height / self.width)
+        let angle = atan(Double(self.height / self.width))
         let watermark = TextLine(font)
         watermark.setTextColor(Color.lightgrey)
         watermark.setText(text)
         watermark.setLocation(
-                Float(offset * cos(angle)),
-                (self.height - Float(offset * sin(angle))))
-        watermark.setTextDirection(Int((angle * (180.0 / Float.pi))))
+                Float(Double(offset) * cos(angle)),
+                self.height - Float(Double(offset) * sin(angle)))
+        watermark.setTextDirection(Int(angle * (180.0 / Double.pi)))
         watermark.drawOn(self)
     }
 
@@ -2224,7 +2163,7 @@ public class Page {
     /// Draws the text line centered at the top of the page.
     @discardableResult
     public func addHeader(_ textLine: TextLine) throws -> [Float] {
-        return try addHeader(textLine, 1.5*textLine.font!.ascent)
+        return try addHeader(textLine, 1.5*textLine.font!.getAscent(textLine.fontSize))
     }
 
     /// Draws the text line centered at the top of the page, with its baseline at the specified offset.
@@ -2232,14 +2171,14 @@ public class Page {
     public func addHeader(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, offset)
         var xy = textLine.drawOn(self)
-        xy[1] += textLine.font!.descent
+        xy[1] += textLine.font!.getDescent(textLine.fontSize)
         return xy
     }
 
     /// Draws the text line centered at the bottom of the page.
     @discardableResult
     public func addFooter(_ textLine: TextLine) throws -> [Float] {
-        return try addFooter(textLine, textLine.font!.ascent)
+        return try addFooter(textLine, textLine.font!.getAscent(textLine.fontSize))
     }
 
     /// Draws the text line centered at the bottom of the page, with its baseline at the specified offset from the bottom.
@@ -2323,43 +2262,6 @@ public class Page {
         append(Token.endText)
     }
 
-    func scaleAndRotate(_ x: Float, _ y: Float, _ w: Float, _ h: Float, _ degrees: Float) {
-        // PDF transformations apply LAST-TO-FIRST (like a stack: last command = first applied)
-
-        // [FINAL POSITIONING - Applied First]
-        // Moves rotated/scaled image to target (x,y) on page
-        append("1 0 0 1 ")
-        append(x + w/2)
-        append(Token.space)
-        append((height - y) - h/2)
-        append(" cm\n")
-
-        // [ROTATION - Applied Second]
-        // Rotates around current origin (0,0) by 'degrees'
-        let radians = degrees * (Float.pi / 180)
-        let cosValue = Float(cos(radians))
-        let sinValue = Float(sin(radians))
-        append(FastFloat.toByteArray(cosValue))
-        append(Token.space)
-        append(FastFloat.toByteArray(sinValue))
-        append(Token.space)
-        append(FastFloat.toByteArray(-sinValue))
-        append(Token.space)
-        append(FastFloat.toByteArray(cosValue))
-        append(" 0 0 cm\n")
-
-        // [ORIGIN SETUP - Applied Last]
-        // Centers image at (0,0) and sets scale
-        append(w)
-        append(" 0 0 ")
-        append(h)
-        append(Token.space)
-        append(-w/2)
-        append(Token.space)
-        append(-h/2)
-        append(" cm\n")
-    }
-
     func rotateAroundCenter(_ centerX: Float, _ centerY: Float, _ degrees: Float) {
         append("1 0 0 1 ")
         append(centerX)
@@ -2367,7 +2269,7 @@ public class Page {
         append(centerY)
         append(" cm\n")
 
-        let radians = degrees * Float.pi / 180
+        let radians = Double(degrees) * Double.pi / 180
         let cosValue = Float(cos(radians))
         let sinValue = Float(sin(radians))
         append(FastFloat.toByteArray(cosValue))

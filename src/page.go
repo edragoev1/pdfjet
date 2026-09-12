@@ -62,7 +62,6 @@ type Page struct {
 	lineCapStyle      int
 	lineJoinStyle     int
 	strokeDashPattern string
-	savedHeight       float32
 
 	contents     []int
 	annots       []*Annotation
@@ -108,7 +107,6 @@ func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
 	page.width = pageSize[0]
 	page.height = pageSize[1]
 	page.strokeDashPattern = "[] 0"
-	page.savedHeight = math.MaxFloat32
 	page.penWidth = 0.5
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.tm0 = fastfloat.ToByteArray(page.tmx[0])
@@ -128,6 +126,8 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.pageObj = page.removeComments(pageObj)
 	page.width = pageObj.GetPageSize()[0]
 	page.height = pageObj.GetPageSize()[1]
+	page.strokeDashPattern = "[] 0"
+	page.penWidth = 0.5
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.tm0 = fastfloat.ToByteArray(page.tmx[0])
 	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
@@ -236,7 +236,7 @@ func (page *Page) DrawStringUsingFontSize(
 }
 
 // DrawStringUsingColorMap draws the text given by the specified string,
-// using the specified main font and the current brushColor color.
+// using the specified main font and the current brush color.
 // If the main font is missing some glyphs - the fallback font is used.
 // The baseline of the leftmost character is at position (x, y) on the page.
 func (page *Page) DrawStringUsingColorMap(
@@ -253,7 +253,7 @@ func (page *Page) DrawStringUsingColorMap(
 			if isJoinerOrRLM(ch) && i+1 < len(runes) {
 				next = runes[i+1]
 			}
-			if activeFont.unicodeToGID[next] == 0 {
+			if !hasGlyph(activeFont, next) {
 				page.drawString(activeFont, fontSize, buf.String(), x, y, brush, colors)
 				x += activeFont.StringWidth(fontSize, buf.String())
 				buf.Reset()
@@ -270,8 +270,14 @@ func (page *Page) DrawStringUsingColorMap(
 	}
 }
 
+// hasGlyph returns true if the font has a glyph for the character. A character
+// past the end of the glyph table of the font, like an emoji, has none.
+func hasGlyph(font *Font, c rune) bool {
+	return int(c) < len(font.unicodeToGID) && font.unicodeToGID[c] != 0
+}
+
 // drawString draws the text given by the specified string,
-// using the specified font and the current brushColor color.
+// using the specified font and the current brush color.
 // The baseline of the leftmost character is at position (x, y) on the page.
 //
 // @param font the font to use.
@@ -952,7 +958,7 @@ func (page *Page) SetPenColorRGB(rgbColor [3]float32) *Page {
 		return page // Early exit if out of range
 	}
 
-	// Now set the penColor color
+	// Now set the pen color
 	page.penColor = rgbColor
 
 	// Proceed with setting the color (example)
@@ -1053,7 +1059,7 @@ func (page *Page) GetBrushColorRGB() [3]float32 {
 }
 
 // SetPenColorCMYK sets the color for stroking operations using CMYK.
-// The penColor color is used when drawing lines and splines.
+// The pen color is used when drawing lines and splines.
 //
 // @param c the cyan component is float value from 0.0 to 1.0.
 // @param m the magenta component is float value from 0.0 to 1.0.
@@ -1071,7 +1077,7 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 	return page
 }
 
-// SetBrushColorCMYK sets the color for brushColor operations using CMYK.
+// SetBrushColorCMYK sets the color for brush operations using CMYK.
 // This is the color used when drawing regular text and filling shapes.
 // @param c the cyan component is float value from 0.0 to 1.0.
 // @param m the magenta component is float value from 0.0 to 1.0.
@@ -1092,6 +1098,7 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 // SetDefaultLineWidth sets the line width to the default.
 // The default is the finest line width.
 func (page *Page) SetDefaultLineWidth() *Page {
+	page.penWidth = 0.0
 	page.appendFloat32(0.0)
 	page.appendString(" w\n")
 	return page
@@ -1132,7 +1139,7 @@ func (page *Page) SetDefaultStrokeDashPattern() *Page {
 	return page
 }
 
-// SetPenWidth sets the penColor width that will be used to draw lines and splines on this page.
+// SetPenWidth sets the pen width that will be used to draw lines and splines on this page.
 func (page *Page) SetPenWidth(width float32) *Page {
 	page.penWidth = width
 	page.appendFloat32(width)
@@ -1163,10 +1170,10 @@ func (page *Page) SetLineJoinStyle(style int) *Page {
 	return page
 }
 
-// MoveTo moves the penColor to the point with coordinates (x, y) on the page.
+// MoveTo moves the pen to the point with coordinates (x, y) on the page.
 //
-// @param x the x coordinate of new penColor position.
-// @param y the y coordinate of new penColor position.
+// @param x the x coordinate of new pen position.
+// @param y the y coordinate of new pen position.
 func (page *Page) MoveTo(x, y float32) {
 	page.appendFloat32(x)
 	page.appendString(" ")
@@ -1174,8 +1181,8 @@ func (page *Page) MoveTo(x, y float32) {
 	page.appendString(" m\n")
 }
 
-// LineTo draws a line from the current penColor position to the point with coordinates (x, y),
-// using the current penColor width and stroke color.
+// LineTo draws a line from the current pen position to the point with coordinates (x, y),
+// using the current pen width and stroke color.
 // Make sure you call strokePath(), closePath() or fillPath() after the last call to this method.
 func (page *Page) LineTo(x, y float32) {
 	page.appendFloat32(x)
@@ -1184,17 +1191,17 @@ func (page *Page) LineTo(x, y float32) {
 	page.appendString(" l\n")
 }
 
-// StrokePath draws the path using the current penColor color.
+// StrokePath draws the path using the current pen color.
 func (page *Page) StrokePath() {
 	page.appendString("S\n")
 }
 
-// ClosePath closes the path and draws it using the current penColor color.
+// ClosePath closes the path and draws it using the current pen color.
 func (page *Page) ClosePath() {
 	page.appendString("s\n")
 }
 
-// FillPath closes and fills the path with the current brushColor color.
+// FillPath closes and fills the path with the current brush color.
 func (page *Page) FillPath() {
 	page.appendString("f\n")
 }
@@ -1202,7 +1209,7 @@ func (page *Page) FillPath() {
 // DrawRect draws the outline of the specified rectangle on the page.
 // The left and right edges of the rectangle are at x and x + w.
 // The top and bottom edges are at y and y + h.
-// The rectangle is drawn using the current penColor color.
+// The rectangle is drawn using the current pen color.
 // @param x the x coordinate of the rectangle to be drawn.
 // @param y the y coordinate of the rectangle to be drawn.
 // @param w the width of the rectangle to be drawn.
@@ -1218,7 +1225,7 @@ func (page *Page) DrawRect(x, y, w, h float32) {
 // FillRect fills the specified rectangle on the page.
 // The left and right edges of the rectangle are at x and x + w.
 // The top and bottom edges are at y and y + h.
-// The rectangle is drawn using the current penColor color.
+// The rectangle is drawn using the current brush color.
 // @param x the x coordinate of the rectangle to be drawn.
 // @param y the y coordinate of the rectangle to be drawn.
 // @param w the width of the rectangle to be drawn.
@@ -1268,7 +1275,7 @@ func (page *Page) DrawPath(path []*Point, pathOperator string) {
 
 // DrawCircle draws a circle on the page.
 //
-// The outline of the circle is drawn using the current penColor color.
+// The outline of the circle is drawn using the current pen color.
 //
 // @param x the x coordinate of the center of the circle to be drawn.
 // @param y the y coordinate of the center of the circle to be drawn.
@@ -1287,7 +1294,7 @@ func (page *Page) DrawCircleUsingPathOperator(x, y, r float32, pathOperator stri
 	page.drawEllipse(x, y, r, r, pathOperator)
 }
 
-// DrawEllipse draws an ellipse on the page using the current penColor color.
+// DrawEllipse draws an ellipse on the page using the current pen color.
 // @param x the x coordinate of the center of the ellipse to be drawn.
 // @param y the y coordinate of the center of the ellipse to be drawn.
 // @param r1 the horizontal radius of the ellipse to be drawn.
@@ -1296,7 +1303,7 @@ func (page *Page) DrawEllipse(x, y, r1, r2 float32) {
 	page.drawEllipse(x, y, r1, r2, pathoperator.Stroke)
 }
 
-// FillEllipse fills an ellipse on the page using the current penColor color.
+// FillEllipse fills an ellipse on the page using the current brush color.
 // @param x the x coordinate of the center of the ellipse to be drawn.
 // @param y the y coordinate of the center of the ellipse to be drawn.
 // @param r1 the horizontal radius of the ellipse to be drawn.
@@ -1305,7 +1312,7 @@ func (page *Page) FillEllipse(x, y, r1, r2 float32) {
 	page.drawEllipse(x, y, r1, r2, pathoperator.Fill)
 }
 
-// drawEllipse draws an ellipse on the page and fills it using the current brushColor color.
+// drawEllipse draws an ellipse on the page and fills it using the current brush color.
 // @param x the x coordinate of the center of the ellipse to be drawn.
 // @param y the y coordinate of the center of the ellipse to be drawn.
 // @param r1 the horizontal radius of the ellipse to be drawn.
@@ -1342,7 +1349,7 @@ func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator string) {
 	page.appendString("\n")
 }
 
-// DrawPoint draws a point on the page using the current penColor color.
+// DrawPoint draws a point on the page using the current pen color.
 // @param p the point.
 func (page *Page) DrawPoint(p *Point) {
 	if p.shape != shape.Invisible {
@@ -1841,8 +1848,8 @@ func (page *Page) AddWatermark(font *Font, text string) {
 	watermark.SetTextColor(color.LightGray)
 	watermark.SetText(text)
 	watermark.SetLocation(
-		offset*float32(math.Cos(angle)),
-		page.height-offset*float32(math.Sin(angle)))
+		float32(float64(offset)*math.Cos(angle)),
+		page.height-float32(float64(offset)*math.Sin(angle)))
 	watermark.SetTextDirection((int)(angle * (180.0 / math.Pi)))
 	watermark.DrawOn(page)
 }
@@ -1897,20 +1904,20 @@ func (page *Page) Transform(values []float32) {
 
 // AddHeader adds header to this page.
 func (page *Page) AddHeader(textLine *TextLine) [2]float32 {
-	return page.AddHeaderOffsetBy(textLine, 1.5*textLine.font.ascent)
+	return page.AddHeaderOffsetBy(textLine, 1.5*textLine.font.GetAscentAt(textLine.fontSize))
 }
 
 // AddHeaderOffsetBy adds header to this page offset by the specified value.
 func (page *Page) AddHeaderOffsetBy(textLine *TextLine, offset float32) [2]float32 {
 	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, offset)
 	xy := textLine.DrawOn(page)
-	xy[1] += textLine.font.descent
+	xy[1] += textLine.font.GetDescentAt(textLine.fontSize)
 	return xy
 }
 
 // AddFooter adds footer to this page.
 func (page *Page) AddFooter(textLine *TextLine) [2]float32 {
-	return page.AddFooterOffsetBy(textLine, textLine.font.ascent)
+	return page.AddFooterOffsetBy(textLine, textLine.font.GetAscentAt(textLine.fontSize))
 }
 
 // AddFooterOffsetBy adds footer to this page offset by the specified value.
@@ -2002,45 +2009,6 @@ func (page *Page) appendByteArray(a []byte) {
 	page.buf = append(page.buf, a...)
 }
 
-// scaleAndRotate scales content to w by h, rotates it around its center
-// and places its top left corner at x, y.
-func (page *Page) scaleAndRotate(x, y, w, h, degrees float32) {
-	// PDF transformations apply LAST-TO-FIRST (like a stack: last command = first applied)
-
-	// [FINAL POSITIONING - Applied First]
-	// Moves rotated/scaled image to target (x,y) on page
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(x + w/2)
-	page.appendString(" ")
-	page.appendFloat32((page.height - y) - h/2)
-	page.appendString(" cm\n")
-
-	// [ROTATION - Applied Second]
-	// Rotates around current origin (0,0) by 'degrees'
-	radians := degrees * (math.Pi / 180)
-	cos := float32(math.Cos(float64(radians)))
-	sin := float32(math.Sin(float64(radians)))
-	page.appendByteArray(fastfloat.ToByteArray(cos))
-	page.appendString(" ")
-	page.appendByteArray(fastfloat.ToByteArray(sin))
-	page.appendString(" ")
-	page.appendByteArray(fastfloat.ToByteArray(-sin))
-	page.appendString(" ")
-	page.appendByteArray(fastfloat.ToByteArray(cos))
-	page.appendString(" 0 0 cm\n")
-
-	// [ORIGIN SETUP - Applied Last]
-	// Centers image at (0,0) and sets scale
-	page.appendFloat32(w)
-	page.appendString(" 0 0 ")
-	page.appendFloat32(h)
-	page.appendString(" ")
-	page.appendFloat32(-w / 2)
-	page.appendString(" ")
-	page.appendFloat32(-h / 2)
-	page.appendString(" cm\n")
-}
-
 // rotateAroundCenter rotates the coordinate system around the specified center.
 func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 	page.appendString("1 0 0 1 ")
@@ -2049,9 +2017,9 @@ func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 	page.appendFloat32(centerY)
 	page.appendString(" cm\n")
 
-	radians := degrees * (math.Pi / 180)
-	cos := float32(math.Cos(float64(radians)))
-	sin := float32(math.Sin(float64(radians)))
+	radians := float64(degrees) * math.Pi / 180
+	cos := float32(math.Cos(radians))
+	sin := float32(math.Sin(radians))
 	page.appendByteArray(fastfloat.ToByteArray(cos))
 	page.appendString(" ")
 	page.appendByteArray(fastfloat.ToByteArray(sin))
@@ -2109,7 +2077,7 @@ func (page *Page) drawTextBlock(
 		page.appendString("1 0 0 1 ")
 		page.appendFloat32(x + textLine.xOffset)
 		page.appendString(" ")
-		page.appendFloat32(page.height - (yText + font.ascent))
+		page.appendFloat32(page.height - (yText + font.GetAscentAt(fontSize)))
 		page.appendString(" Tm\n")
 		if highlightColors == nil {
 			if font.isCoreFont {

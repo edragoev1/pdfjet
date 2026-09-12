@@ -22,7 +22,7 @@ namespace PDFjet.NET {
 /// </summary>
 public class Page {
     /// <summary>Pass to the Page constructor to create a page that is not added to the PDF right away.</summary>
-    public static bool DETACHED = false;
+    public const bool DETACHED = false;
 
     /// <summary>Index of the horizontal scale in an Android Matrix value array.</summary>
     public const int MSCALE_X = 0;
@@ -71,10 +71,10 @@ public class Page {
 
     internal float rotateDegrees = 0f;
 
-    internal readonly List<Int32> contents;
-    internal readonly List<Annotation> annots;
-    internal readonly List<Destination> destinations;
-    internal readonly List<StructElem> structures;
+    internal readonly List<Int32> contents = new List<Int32>();
+    internal readonly List<Annotation> annots = new List<Annotation>();
+    internal readonly List<Destination> destinations = new List<Destination>();
+    internal readonly List<StructElem> structures = new List<StructElem>();
 
     private int mcid;
 
@@ -108,10 +108,6 @@ public class Page {
     /// <param name="addPageToPDF">bool flag.</param>
     public Page(PDF pdf, float[] pageSize, bool addPageToPDF) {
         this.pdf = pdf;
-        this.contents = new List<Int32>();
-        this.annots = new List<Annotation>();
-        this.destinations = new List<Destination>();
-        this.structures = new List<StructElem>();
         this.width = pageSize[0];
         this.height = pageSize[1];
         this.buf = new MemoryStream(8192);
@@ -127,7 +123,6 @@ public class Page {
     /// <summary>Creates a page from a page object read from an existing PDF.</summary>
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
-        this.structures = new List<StructElem>();
         this.pageObj = RemoveComments(pageObj);
         this.width = pageObj.GetPageSize()[0];
         this.height = pageObj.GetPageSize()[1];
@@ -136,7 +131,7 @@ public class Page {
         this.tm1 = FastFloat.ToByteArray(tmx[1]);
         this.tm2 = FastFloat.ToByteArray(tmx[2]);
         this.tm3 = FastFloat.ToByteArray(tmx[3]);
-        SaveGraphicsState();    // Why do we need this?
+        SaveGraphicsState();
         if (pageObj.gsNumber != -1) {
             Append("/GS");
             Append(pageObj.gsNumber + 1);
@@ -280,13 +275,13 @@ public class Page {
     public float[] AddHeader(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, offset);
         float[] xy = textLine.DrawOn(this);
-        xy[1] += textLine.font.GetDescent();
+        xy[1] += textLine.font.GetDescent(textLine.fontSize);
         return xy;
     }
 
     /// <summary>Draws the text line centered at the bottom of the page.</summary>
     public float[] AddFooter(TextLine textLine) {
-        return AddFooter(textLine, textLine.font.GetAscent());
+        return AddFooter(textLine, textLine.font.GetAscent(textLine.fontSize));
     }
 
     /// <summary>Draws the text line centered at the bottom of the page, with its baseline at the specified offset from the bottom.</summary>
@@ -383,11 +378,6 @@ public class Page {
         return height;
     }
 
-    /// <summary>Returns the current stroke dash pattern.</summary>
-    internal String GetStrokeDashPattern() {
-        return this.strokeDashPattern;
-    }
-
     /// <summary>
     /// Draws a line on the page, using the current color, between the points (x1, y1) and (x2, y2).
     /// </summary>
@@ -463,11 +453,12 @@ public class Page {
         } else {
             Font activeFont = font;
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < str.Length; i++) {
-                int ch = str[i];
+            for (int i = 0; i < str.Length; ) {
+                int ch = Util.CodePointAt(str, i);
+                int count = (ch > 0xFFFF) ? 2 : 1;
                 // An RLM, ZWNJ or ZWJ goes with the character after it.
-                int next = (Font.IsJoinerOrRLM(ch) && i + 1 < str.Length) ? str[i + 1] : ch;
-                if (activeFont.unicodeToGID[next] == 0) {
+                int next = (Font.IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
+                if (!HasGlyph(activeFont, next)) {
                     DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
                     x += activeFont.StringWidth(fontSize, sb.ToString());
                     sb.Length = 0;
@@ -478,10 +469,17 @@ public class Page {
                         activeFont = font;
                     }
                 }
-                sb.Append((char) ch);
+                sb.Append(str, i, count);
+                i += count;
             }
             DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
         }
+    }
+
+    // Returns true if the font has a glyph for the character. A character past
+    // the end of the glyph table of the font, like an emoji, has none.
+    private static bool HasGlyph(Font font, int codePoint) {
+        return codePoint < font.unicodeToGID.Length && font.unicodeToGID[codePoint] != 0;
     }
 
     /// <summary>
@@ -596,17 +594,17 @@ public class Page {
     }
 
     private void DrawASCIIString(Font font, String str) {
-        int len = str.Length;
-        for (int i = 0; i < len; i++) {
-            int c1 = str[i];
+        for (int i = 0; i < str.Length; ) {
+            int c1 = Util.CodePointAt(str, i);
+            i += (c1 > 0xFFFF) ? 2 : 1;
             if (c1 < font.firstChar || c1 > font.lastChar) {
                 AppendByteAsHex(0x20);
                 continue;
             }
             AppendByteAsHex(c1);
-            if (font.isCoreFont && font.kernPairs && i < (str.Length - 1)) {
+            if (font.isCoreFont && font.kernPairs && i < str.Length) {
                 c1 -= 32;
-                int c2 = str[i + 1];
+                int c2 = Util.CodePointAt(str, i);
                 if (c2 < font.firstChar || c2 > font.lastChar) {
                     c2 = 32;
                 }
@@ -1274,6 +1272,7 @@ public class Page {
     /// </summary>
     /// <returns>this Page object.</returns>
     public Page SetDefaultLineWidth() {
+        this.penWidth = 0f;
         Append("0 w\n");
         return this;
     }
@@ -1313,7 +1312,8 @@ public class Page {
     /// </summary>
     /// <returns>this Page object.</returns>
     public Page SetDefaultStrokeDashPattern() {
-        Append("[] 0");
+        this.strokeDashPattern = "[] 0";
+        Append(strokeDashPattern);
         Append(" d\n");
         return this;
     }
@@ -1443,8 +1443,8 @@ public class Page {
     /// <summary>
     /// Draws the outline of a rectangle using the current pen color.
     /// </summary>
-    /// <param name="x">X‑coordinate of the lower‑left corner.</param>
-    /// <param name="y">Y‑coordinate of the lower‑left corner.</param>
+    /// <param name="x">X‑coordinate of the top left corner.</param>
+    /// <param name="y">Y‑coordinate of the top left corner.</param>
     /// <param name="w">Rectangle width.</param>
     /// <param name="h">Rectangle height.</param>
     public void DrawRect(double x, double y, double w, double h) {
@@ -1458,8 +1458,8 @@ public class Page {
     /// <summary>
     /// Fills a rectangle using the current brush color.
     /// </summary>
-    /// <param name="x">X‑coordinate of the lower‑left corner.</param>
-    /// <param name="y">Y‑coordinate of the lower‑left corner.</param>
+    /// <param name="x">X‑coordinate of the top left corner.</param>
+    /// <param name="y">Y‑coordinate of the top left corner.</param>
     /// <param name="w">Rectangle width.</param>
     /// <param name="h">Rectangle height.</param>
     public void FillRect(double x, double y, double w, double h) {
@@ -1557,18 +1557,18 @@ public class Page {
     }
 
     /// <summary>
-    /// Draws an ellipse on the page and fills it using the current brush color.
+    /// Draws an ellipse on the page using the current pen color.
     /// </summary>
     /// <param name="x">the x coordinate of the center of the ellipse to be drawn.</param>
     /// <param name="y">the y coordinate of the center of the ellipse to be drawn.</param>
-    /// <param name="rx">the horizontal radius of the ellipse to be drawn.</param>
-    /// <param name="ry">the vertical radius of the ellipse to be drawn.</param>
+    /// <param name="r1">the horizontal radius of the ellipse to be drawn.</param>
+    /// <param name="r2">the vertical radius of the ellipse to be drawn.</param>
     public void DrawEllipse(
             float x,
             float y,
-            float rx,
-            float ry) {
-        DrawArc(x, y, rx, ry, 0f, 360f);
+            float r1,
+            float r2) {
+        DrawEllipse(x, y, r1, r2, PathOperator.Stroke);
     }
 
     /// <summary>
@@ -1728,7 +1728,7 @@ public class Page {
                 list = new List<Point>();
                 for (int i = 0; i < 10; i++) {
                     double theta = i * 36 * (Math.PI / 180.0);
-                    double radius = (i % 2 == 0) ? p.r*1.147f : p.r*0.38196f*1.147f;
+                    double radius = (i % 2 == 0) ? p.r*1.147 : p.r*0.38196*1.147;
                     double x = p.x + radius * Math.Sin(theta);
                     double y = p.y - radius * Math.Cos(theta);  // minus because y grows down
                     list.Add(new Point(x, y));
@@ -2125,14 +2125,16 @@ public class Page {
             Dictionary<String, Int32> highlightColors) {
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
-        foreach (char ch in str) {
-            if (Char.IsLetterOrDigit(ch)) {
+        for (int i = 0; i < str.Length; ) {
+            int count = (Util.CodePointAt(str, i) > 0xFFFF) ? 2 : 1;
+            if (Char.IsLetterOrDigit(str, i)) {
                 DrawWord(font, buf2, color, highlightColors);
-                buf1.Append(ch);
+                buf1.Append(str, i, count);
             } else {
                 DrawWord(font, buf1, color, highlightColors);
-                buf2.Append(ch);
+                buf2.Append(str, i, count);
             }
+            i += count;
         }
         DrawWord(font, buf1, color, highlightColors);
         DrawWord(font, buf2, color, highlightColors);
@@ -2244,9 +2246,11 @@ public class Page {
     public void DrawString(
             Font font, float fontSize, String str, float x, float y, float dx) {
         float x1 = x;
-        for (int i = 0; i < str.Length; i++) {
-            DrawString(font, fontSize, str.Substring(i, 1), x1, y);
+        for (int i = 0; i < str.Length; ) {
+            int count = (Util.CodePointAt(str, i) > 0xFFFF) ? 2 : 1;
+            DrawString(font, fontSize, str.Substring(i, count), x1, y);
             x1 += dx;
+            i += count;
         }
     }
 
