@@ -2047,13 +2047,12 @@ final public class Page {
      * @return this Page object.
      */
     public Page setGraphicsState(GraphicsState gs) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("/CA ");
-        sb.append(gs.getAlphaStroking());
-        sb.append(" ");
-        sb.append("/ca ");
-        sb.append(gs.getAlphaNonStroking());
-        String state = sb.toString();
+        // The alphas are written like the other numbers of the PDF: with a
+        // dot whatever the locale, at most two decimals and no exponent.
+        String state = "/CA " +
+                new String(FastFloat.toByteArray(gs.getAlphaStroking()), StandardCharsets.US_ASCII) +
+                " /ca " +
+                new String(FastFloat.toByteArray(gs.getAlphaNonStroking()), StandardCharsets.US_ASCII);
         Integer n;
         if (pdf.states.containsKey(state)) {
             n = pdf.states.get(state);

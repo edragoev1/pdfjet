@@ -934,22 +934,25 @@ public class Page {
     /// Sets the graphics state. Please see Example_31.
     ///
     /// - Parameter gs: the graphics state to use.
+    /// - Returns: this page.
     ///
-    public final func setGraphicsState(_ gs: GraphicsState) {
-        var sb = String()
-        sb.append("/CA ")
-        sb.append(String(gs.getAlphaStroking()))
-        sb.append(" ")
-        sb.append("/ca ")
-        sb.append(String(gs.getAlphaNonStroking()))
-        var n = pdf.states[sb]
+    @discardableResult
+    public final func setGraphicsState(_ gs: GraphicsState) -> Page {
+        // The alphas are written like the other numbers of the PDF: with a
+        // dot whatever the locale, at most two decimals and no exponent.
+        let state = "/CA " +
+                String(decoding: FastFloat.toByteArray(gs.getAlphaStroking()), as: UTF8.self) +
+                " /ca " +
+                String(decoding: FastFloat.toByteArray(gs.getAlphaNonStroking()), as: UTF8.self)
+        var n = pdf.states[state]
         if n == nil {
             n = pdf.states.count + 1
-            pdf.states[sb] = n
+            pdf.states[state] = n
         }
         append("/GS")
         append(n!)
         append(" gs\n")
+        return self
     }
 
     /// Restores the last saved graphics state. Please see Example_31.

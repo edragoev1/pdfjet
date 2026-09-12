@@ -884,13 +884,10 @@ func (page *Page) SaveGraphicsState() {
 // SetGraphicsState sets the graphics state. Please see Example_31.
 // @param gs the graphics state to use.
 func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
-	var sb strings.Builder
-	sb.WriteString("/CA ")
-	sb.WriteString(fmt.Sprintf("%.2f", gs.GetAlphaStroking()))
-	sb.WriteString(" ")
-	sb.WriteString("/ca ")
-	sb.WriteString(fmt.Sprintf("%.2f", gs.GetAlphaNonStroking()))
-	state := sb.String()
+	// The alphas are written like the other numbers of the PDF: with a
+	// dot whatever the locale, at most two decimals and no exponent.
+	state := "/CA " + string(fastfloat.ToByteArray(gs.GetAlphaStroking())) +
+		" /ca " + string(fastfloat.ToByteArray(gs.GetAlphaNonStroking()))
 	n, ok := page.pdf.states[state]
 	if !ok {
 		n = len(page.pdf.states) + 1

@@ -1993,13 +1993,12 @@ public class Page {
     /// <param name="gs">the graphics state to use.</param>
     /// <returns>this Page object.</returns>
     public Page SetGraphicsState(GraphicsState gs) {
-        StringBuilder sb = new StringBuilder();
-        sb.Append("/CA ");
-        sb.Append(gs.GetAlphaStroking());
-        sb.Append(" ");
-        sb.Append("/ca ");
-        sb.Append(gs.GetAlphaNonStroking());
-        String state = sb.ToString();
+        // The alphas are written like the other numbers of the PDF: with a
+        // dot whatever the locale, at most two decimals and no exponent.
+        String state = "/CA " +
+                Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaStroking())) +
+                " /ca " +
+                Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaNonStroking()));
         Int32 n;
         if (pdf.states.ContainsKey(state)) {
             n = pdf.states[state];

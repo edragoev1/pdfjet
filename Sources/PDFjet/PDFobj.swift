@@ -750,8 +750,9 @@ public final class PDFobj {
         let name = "/GS" + String(gsNumber + 1)
         resources.dict.insert(contentsOf: [
                 name, "<<",
-                "/CA", String(gs.getAlphaStroking()),
-                "/ca", String(gs.getAlphaNonStroking()), ">>"], at: index)
+                "/CA", String(decoding: FastFloat.toByteArray(gs.getAlphaStroking()), as: UTF8.self),
+                "/ca", String(decoding: FastFloat.toByteArray(gs.getAlphaNonStroking()), as: UTF8.self),
+                ">>"], at: index)
         var content = Array("q\n\(name) gs\n".utf8)
         addPrefixContent(&content, &objects)
         return self

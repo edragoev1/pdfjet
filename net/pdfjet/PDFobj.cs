@@ -671,8 +671,9 @@ public class PDFobj {
         String name = "/GS" + (gsNumber + 1).ToString();
         obj.dict.InsertRange(index, new String[] {
                 name, "<<",
-                "/CA", gs.GetAlphaStroking().ToString(CultureInfo.InvariantCulture),
-                "/ca", gs.GetAlphaNonStroking().ToString(CultureInfo.InvariantCulture), ">>"});
+                "/CA", Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaStroking())),
+                "/ca", Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaNonStroking())),
+                ">>"});
         AddPrefixContent(Encoding.ASCII.GetBytes("q\n" + name + " gs\n"), objects);
         return this;
     }

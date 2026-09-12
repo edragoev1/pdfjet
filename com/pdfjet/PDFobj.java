@@ -778,8 +778,9 @@ public class PDFobj {
         String name = "/GS" + (gsNumber + 1);
         obj.dict.addAll(index, Arrays.asList(
                 name, "<<",
-                "/CA", String.valueOf(gs.getAlphaStroking()),
-                "/ca", String.valueOf(gs.getAlphaNonStroking()), ">>"));
+                "/CA", new String(FastFloat.toByteArray(gs.getAlphaStroking()), StandardCharsets.US_ASCII),
+                "/ca", new String(FastFloat.toByteArray(gs.getAlphaNonStroking()), StandardCharsets.US_ASCII),
+                ">>"));
         addPrefixContent(("q\n" + name + " gs\n").getBytes(StandardCharsets.UTF_8), objects);
         return this;
     }

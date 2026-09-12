@@ -13,6 +13,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -754,14 +755,9 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 	name := "/GS" + strconv.Itoa(obj.gsNumber+1)
 	resources.dict = insertArrayAt(resources.dict, []string{
 		name, "<<",
-		"/CA", formatFloat32(gs.GetAlphaStroking()),
-		"/ca", formatFloat32(gs.GetAlphaNonStroking()), ">>"}, index)
+		"/CA", string(fastfloat.ToByteArray(gs.GetAlphaStroking())),
+		"/ca", string(fastfloat.ToByteArray(gs.GetAlphaNonStroking())),
+		">>"}, index)
 	obj.AddPrefixContent([]byte("q\n"+name+" gs\n"), objects)
 	return obj
-}
-
-// formatFloat32 formats a float the way the Java and .NET editions do,
-// with the shortest representation that round-trips - "0.75", not "0.750000".
-func formatFloat32(value float32) string {
-	return strconv.FormatFloat(float64(value), 'g', -1, 32)
 }
