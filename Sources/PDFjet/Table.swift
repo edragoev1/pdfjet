@@ -50,13 +50,6 @@ public class Table : Drawable {
     }
 
     ///
-    /// Creates a table that uses f1 for the header rows and f2 for the other rows.
-    ///
-    public init(_ f1: Font, _ f2: Font) {
-        tableData = [[Cell]]()
-    }
-
-    ///
     /// Creates a table from a text file with comma, pipe or tab separated values.
     /// The first line is the header row and uses f1; the other lines use f2.
     /// Every row gets as many cells as the first line has fields.

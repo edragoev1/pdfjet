@@ -46,8 +46,6 @@ public class Table implements Drawable {
     private int rendered = 1;
     private float x1;
     private float y1;
-    private Font f1;
-    private Font f2;
     private float firstPageTopMargin;
     private float bottomMargin;
 
@@ -55,18 +53,6 @@ public class Table implements Drawable {
      * Create a table object.
      */
     public Table() {
-        tableData = new ArrayList<List<Cell>>();
-    }
-
-    /**
-     * Creates a table that uses the specified fonts.
-     *
-     * @param f1 the font for the header rows.
-     * @param f2 the font for the other rows.
-     */
-    public Table(Font f1, Font f2) {
-        this.f1 = f1;
-        this.f2 = f2;
         tableData = new ArrayList<List<Cell>>();
     }
 

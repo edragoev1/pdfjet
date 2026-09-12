@@ -173,7 +173,8 @@ Pick from the README limitations; the first three are the ones users hit.
       ports (ASCII digits with an optional sign and exponent); the column
       setters change a cell's `TextBox`, as in Java, not its `TextBlock`;
       Java and C# `Cell.setBorders(true)`, and so `Table.setCellBorders(true)`,
-      turn the four borders on, as in Go and Swift.
+      turn the four borders on, as in Go and Swift; the `Table(f1, f2)`
+      constructor, which ignored its fonts, is removed from Java, C# and Swift.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

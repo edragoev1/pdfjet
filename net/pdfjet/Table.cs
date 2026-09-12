@@ -43,8 +43,6 @@ public class Table : IDrawable {
     private int rendered = 1;
     private float x1;
     private float y1;
-    private Font f1;
-    private Font f2;
     private float firstPageTopMargin;
     private float bottomMargin;
 
@@ -52,13 +50,6 @@ public class Table : IDrawable {
     /// Create a table object.
     /// </summary>
     public Table() {
-        tableData = new List<List<Cell>>();
-    }
-
-    /// <summary>Creates a table that uses f1 for the header rows and f2 for the other rows.</summary>
-    public Table(Font f1, Font f2) {
-        this.f1 = f1;
-        this.f2 = f2;
         tableData = new List<List<Cell>>();
     }
 

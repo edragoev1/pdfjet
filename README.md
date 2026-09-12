@@ -307,7 +307,7 @@ overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewPageDetached` for
 the `Font` constructor. Where the other ports have an overload with fewer
 arguments, Go has the full form only: `NewCell(font, text)`,
 `NewDestination(name, x, y)`, `NewLine`, `NewRect` and `NewPoint` with their
-coordinates, `NewParagraph()`, `NewTable()`, `NewTextColumn(rotation)`,
+coordinates, `NewParagraph()`, `NewTextColumn(rotation)`,
 `Table.SetData(data, headerRows)` and `Page.AddBMC` with the language.
 `content.GetFromReader` is `Content.getFromStream`. Java's `PDF` keeps
 `append`, `newobj`, `endobj` and `getObjNumber` public, which the other ports
