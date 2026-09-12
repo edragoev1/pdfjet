@@ -140,6 +140,11 @@ func (pdf *PDF) SetCompliance(compliance int) *PDF {
 	return pdf
 }
 
+// GetCompliance returns the PDF/UA or PDF/A compliance of this document. See the compliance package.
+func (pdf *PDF) GetCompliance() int {
+	return pdf.compliance
+}
+
 // SetEncryption sets the encryption applied to this document. It does nothing when err is not nil.
 func (pdf *PDF) SetEncryption(encryption *Encryption, err error) *PDF {
 	if err == nil {

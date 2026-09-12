@@ -137,6 +137,15 @@ final public class PDF {
     }
 
     /**
+     * Returns the PDF document compliance.
+     *
+     * @return the compliance level.
+     */
+    public Compliance getCompliance() {
+        return compliance;
+    }
+
+    /**
      * Sets the encryption applied to this document.
      *
      * @param encryption the encryption.

@@ -230,6 +230,20 @@ plain `read`. For one that needs a password, pass its user or owner password to
 in Go, or `read(from:password:)` in Swift. A wrong password raises an error
 that says so, and so does a missing one.
 
+A PDF/UA file may be encrypted; a PDF/A file may not. ISO 14289-1 requires an
+encrypted PDF/UA file to grant the permission to extract content for
+accessibility, so `Encryption` grants it when the compliance is PDF/UA, whatever
+the `Permissions` say. Set the compliance before the encryption for this to
+apply. Such a file passes veraPDF's ua1 check with `--password` in all four
+ports. veraPDF 1.30.2 computes a wrong file key for about one in forty AES-256
+files, whichever producer made them, because the loop of its password hash
+(ISO 32000-2 Algorithm 2.B) runs one round too many when the last byte of the
+round's output is exactly the round number minus 31; it then reports *Can't
+decrypt string* and a metadata parsing failure. Poppler and MuPDF open
+those files, and so does `PDF.read`. The Swift AES in `Cryptography.swift`
+encrypts about 40 MB per second in a release build and 1 MB per second in a
+debug build.
+
 ## Port differences
 
 Public setters return the object they were called on, so calls can be chained.

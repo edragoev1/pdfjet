@@ -130,6 +130,11 @@ public class PDF {
         return self
     }
 
+    /// Returns the PDF document compliance.
+    public func getCompliance() -> Compliance {
+        return compliance
+    }
+
     ///
     /// Sets the encryption applied to this document.
     ///

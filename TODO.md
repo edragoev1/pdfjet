@@ -53,12 +53,16 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
       checked as user then owner password for revisions 2 to 6. Example_30
       and qpdf-made R2, R3, R4 and R6 files read back with either password in
       all four ports; a wrong or missing password raises a clear error.
-- ⬜ Swift AES speed: the pure Swift cipher runs per block on `[UInt8]`. Time
-      Example_30 with a 1 MB font in release and debug builds; if release is
-      over a second, switch to a T-table implementation.
-- ⬜ Check that an encrypted PDF/UA file passes veraPDF ua1 in all four ports
-      (encryption is allowed in PDF/UA, forbidden in PDF/A) and note it in the
-      README Encryption section.
+- ✅ Swift AES speed: 26 ms per MiB in a release build, 1.2 s per MiB in a
+      debug build (`swiftc -O` / `-Onone`, `Cryptography.aesEncryptCBC`).
+      Example_30 with the 7 MB NotoSansTC-Regular.ttf takes 0.47 s in release
+      and 11.6 s in debug, so the cipher stays as it is; no T-table.
+- ✅ An encrypted PDF/UA file (Example_22 plus the Example_30 passwords)
+      failed veraPDF ua1 in all four ports on ISO 14289-1 7.16: bit 10 of
+      `/P` (extract for accessibility) must be set. `Encryption` now grants it
+      when the compliance is PDF/UA, and the files pass with `--password` in
+      all four ports. Noted in the README, with the veraPDF 1.30.2 hash loop
+      bug that rejects about one in forty AES-256 files from any producer.
 
 ## Week 3 (Sep 25–Oct 1): right to left text, marks and code TODOs
 

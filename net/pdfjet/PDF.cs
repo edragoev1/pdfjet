@@ -130,6 +130,11 @@ public class PDF {
         return this;
     }
 
+    /// <summary>Returns the PDF document compliance.</summary>
+    public Compliance GetCompliance() {
+        return compliance;
+    }
+
     /// <summary>Sets the encryption applied to this document.</summary>
     public PDF SetEncryption(Encryption encryption) {
         this.encryption = encryption;
