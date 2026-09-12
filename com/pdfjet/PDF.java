@@ -50,7 +50,7 @@ final public class PDF {
     private String uuid = (new Salsa20()).getID();
     private final List<String> importedFonts = new ArrayList<String>();
     private final List<String> importedXObjects = new ArrayList<String>();
-    private String extGState = "";
+    private final List<String> importedExtGStates = new ArrayList<String>();
     private Page prevPage = null;
     private boolean contentStreamsCompression = true;
 
@@ -111,9 +111,10 @@ final public class PDF {
         this.os = os;
         this.compliance = compliance;
 
-        Date date = new Date();
+        // The creation date is in UTC, so the XMP metadata says so with a Z.
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-        createDate = sdf1.format(date);     // XMP metadata
+        sdf1.setTimeZone(TimeZone.getTimeZone("UTC"));
+        createDate = sdf1.format(new Date()) + "Z";     // XMP metadata
 
         append("%PDF-1.7\n");
         append('%');
@@ -255,36 +256,36 @@ final public class PDF {
 
             if (title != null) {
                 sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
-                sb.append(title);
+                sb.append(escapeXML(title));
                 sb.append("</rdf:li></rdf:Alt></dc:title>\n");
             }
 
             if (author != null) {
                 sb.append("  <dc:creator><rdf:Seq><rdf:li>");
-                sb.append(author);
+                sb.append(escapeXML(author));
                 sb.append("</rdf:li></rdf:Seq></dc:creator>\n");
             }
 
             if (subject != null) {
                 sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">");
-                sb.append(subject);
+                sb.append(escapeXML(subject));
                 sb.append("</rdf:li></rdf:Alt></dc:description>\n");
             }
 
             if (keywords != null) {
                 sb.append("  <pdf:Keywords>");
-                sb.append(keywords);
+                sb.append(escapeXML(keywords));
                 sb.append("</pdf:Keywords>\n");
             }
 
             if (creator != null) {
                 sb.append("  <xmp:CreatorTool>");
-                sb.append(creator);
+                sb.append(escapeXML(creator));
                 sb.append("</xmp:CreatorTool>\n");
             }
 
             sb.append("  <xmp:CreateDate>");
-            sb.append(createDate + "-05:00");       // Append the time zone.
+            sb.append(createDate);
             sb.append("</xmp:CreateDate>\n");
 
             sb.append("  <xapMM:DocumentID>uuid:");
@@ -335,6 +336,11 @@ final public class PDF {
         endobj();
 
         return getObjNumber();
+    }
+
+    // Returns the text with the characters that have a meaning in XML escaped.
+    private static String escapeXML(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private int addOutputIntentObject() throws Exception {
@@ -413,9 +419,6 @@ final public class PDF {
     private int addResourcesObject() throws Exception {
         newobj();
         append(Token.BEGIN_DICTIONARY);
-        if (!extGState.equals("")) {
-            appendToken(extGState);
-        }
         if (fonts.size() > 0 || importedFonts.size() > 0) {
             append("/Font\n");
             append(Token.BEGIN_DICTIONARY);
@@ -462,8 +465,11 @@ final public class PDF {
             }
             append(Token.END_DICTIONARY);
         }
-        if (states.size() > 0) {
+        // The graphics states of a PDF that was read and those of the pages
+        // go in the same dictionary.
+        if (states.size() > 0 || importedExtGStates.size() > 0) {
             append("/ExtGState <<\n");
+            appendImportedEntries(importedExtGStates);
             for (Map.Entry<String, Integer> entry : states.entrySet()) {
                 append("/GS");
                 append(entry.getValue());
@@ -2078,70 +2084,55 @@ final public class PDF {
         return false;
     }
 
-    private String getExtGState(PDFobj resources) {
-        StringBuilder buf = new StringBuilder();
-        List<String> dict = resources.getDict();
-        int level = 0;
-        for (int i = 0; i < dict.size(); i++) {
-            if (dict.get(i).equals("/ExtGState")) {
-                buf.append("/ExtGState << ");
-                ++i;
-                ++level;
-                while (level > 0) {
-                    String token = dict.get(++i);
+    // Adds the entries of the /ExtGState dictionary of the resources, which can
+    // be an object of its own, with the names that an earlier page did not add.
+    private void addExtGStates(PDFobj resources, List<PDFobj> objects) {
+        List<String> entries = getResourceEntries(resources, "/ExtGState", objects);
+        int i = 0;
+        while (i < entries.size()) {
+            // The value after the name is a dictionary, a reference or one token.
+            int end = i + 1;
+            if (end < entries.size() && entries.get(end).equals("<<")) {
+                int level = 0;
+                do {
+                    String token = entries.get(end++);
                     if (token.equals("<<")) {
-                        ++level;
+                        level++;
                     } else if (token.equals(">>")) {
-                        --level;
+                        level--;
                     }
-                    buf.append(token);
-                    if (level > 0) {
-                        // Token.SPACE and Token.NEWLINE are bytes, and appending
-                        // a byte to a StringBuilder writes its number, not the
-                        // character. The other ports already use literals here.
-                        buf.append(' ');
-                    } else {
-                        buf.append('\n');
-                    }
-                }
-                break;
+                } while (level > 0 && end < entries.size());
+            } else if (end + 2 < entries.size() && entries.get(end + 2).equals("R")) {
+                end += 3;
+            } else {
+                end = Math.min(end + 1, entries.size());
             }
+            if (!importedExtGStates.contains(entries.get(i))) {
+                importedExtGStates.addAll(entries.subList(i, end));
+            }
+            i = end;
         }
-        return buf.toString();
     }
 
     private List<PDFobj> getFontObjects(PDFobj resources, List<PDFobj> objects) {
         List<PDFobj> fonts = new ArrayList<PDFobj>();
-
-        List<String> dict = resources.getDict();
+        // The /Font dictionary holds one "/Name number 0 R" entry per font, and
+        // can be an object of its own. Every entry is written to the resources
+        // object, so every font it names is collected here.
+        List<String> entries = getResourceEntries(resources, "/Font", objects);
         int i = 0;
-        while (i < dict.size() && !dict.get(i).equals("/Font")) {
-            i += 1;
-        }
-        i += 2;     // Skip over "/Font" and the "<<" that follows it.
-
-        // The sub-dictionary holds one "/Name <number> 0 R" entry per font.
-        // Every one of them is re-emitted in the resources object, so every
-        // one of them has to be collected here - taking only the first left
-        // the rest of the references dangling.
-        while (i < dict.size() && !dict.get(i).equals(">>")) {
-            String token = dict.get(i);
-            if (token.startsWith("/") && (i + 3) < dict.size()
-                    && dict.get(i + 3).equals("R")) {
+        while (i < entries.size()) {
+            String token = entries.get(i);
+            if (token.startsWith("/") && (i + 3) < entries.size() && entries.get(i + 3).equals("R")) {
                 // Pages can carry separate resource dictionaries that name the
                 // same fonts. They are merged into one /Font dictionary here,
                 // so a name that is already present must not be added twice.
-                if (importedFonts.contains(token)) {
-                    i += 4;
-                    continue;
-                }
-                importedFonts.add(token);
-                importedFonts.add(dict.get(i + 1));
-                importedFonts.add(dict.get(i + 2));
-                importedFonts.add(dict.get(i + 3));
-                int number = Integer.parseInt(dict.get(i + 1));
-                if (number > 0 && number <= objects.size()) {
-                    fonts.add(objects.get(number - 1));
+                if (!importedFonts.contains(token)) {
+                    importedFonts.addAll(entries.subList(i, i + 4));
+                    int number = toInteger(entries.get(i + 1));
+                    if (number > 0 && number <= objects.size()) {
+                        fonts.add(objects.get(number - 1));
+                    }
                 }
                 i += 4;
                 continue;
@@ -2149,11 +2140,7 @@ final public class PDF {
             importedFonts.add(token);
             i += 1;
         }
-
-        if (fonts.isEmpty()) {
-            return null;
-        }
-        return fonts;
+        return fonts.isEmpty() ? null : fonts;
     }
 
     private List<PDFobj> getDescendantFonts(PDFobj font, List<PDFobj> objects) {
@@ -2174,8 +2161,9 @@ final public class PDF {
         List<String> dict = obj.getDict();
         for (int i = 0; i < dict.size() - 1; i++) {
             if (dict.get(i).equals(name)) {
-                String token = dict.get(i + 1);
-                return objects.get(Integer.parseInt(token) - 1);
+                // A value that is not a reference to an object, like a name, has no object.
+                int number = toInteger(dict.get(i + 1));
+                return (number > 0 && number <= objects.size()) ? objects.get(number - 1) : null;
             }
         }
         return null;
@@ -2241,7 +2229,7 @@ final public class PDF {
             return false;
         }
         for (int i = 0; i < token.length(); i++) {
-            if (!Character.isDigit(token.charAt(i))) {
+            if (token.charAt(i) < '0' || token.charAt(i) > '9') {
                 return false;
             }
         }
@@ -2311,9 +2299,10 @@ final public class PDF {
     }
 
     /**
-     * Adds the specified objects to the PDF.
+     * Adds the fonts, images and graphics states used by the pages of a PDF
+     * that was read to this document.
      *
-     * @param objects the objects.
+     * @param objects the objects of the PDF that was read.
      * @throws Exception if there is an issue.
      */
     public void addResourceObjects(List<PDFobj> objects) throws Exception {
@@ -2342,9 +2331,9 @@ final public class PDF {
                 }
             }
             addXObjects(resObj, objects, numbers, resources);
-            extGState = getExtGState(resObj);
-            // The /ExtGState dictionary is copied as it is, so the objects
-            // that its entries refer to have to be copied too.
+            addExtGStates(resObj, objects);
+            // The /ExtGState entries are copied as they are, so the objects
+            // that they refer to have to be copied too.
             for (int number : getReferences(getResourceEntries(resObj, "/ExtGState", objects))) {
                 addObjectTree(number, objects, numbers, resources);
             }
@@ -2367,7 +2356,7 @@ final public class PDF {
      * @param objects the objects.
      * @throws Exception if there is an issue.
      */
-    public void addObjectsToPDF(List<PDFobj> objects) throws Exception {
+    private void addObjectsToPDF(List<PDFobj> objects) throws Exception {
         for (PDFobj obj : objects) {
             if (obj.offset == 0) {
                 // Create new object.

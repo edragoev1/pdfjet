@@ -48,7 +48,6 @@ type PDF struct {
 	producer                  string
 	creator                   string
 	createDate                string
-	creationDate              string
 	pagesObjNumber            int
 	pageLayout                string
 	pageMode                  string
@@ -56,11 +55,12 @@ type PDF struct {
 	toc                       *Bookmark
 	importedFonts             []string
 	importedXObjects          []string
-	extGState                 string
+	importedExtGStates        []string
 	uuid                      string
 	prevPage                  *Page
 	structElements            []*StructElem
 	contentStreamsCompression bool
+	file                      *os.File
 }
 
 // OCG holds an object number and a name.
@@ -69,7 +69,7 @@ type OCG struct {
 	name      string
 }
 
-// NewPDF the constructor.
+// NewPDF creates a PDF document that is written to the writer.
 // Here is the layout of the PDF document:
 //
 // Metadata Object
@@ -98,14 +98,9 @@ type OCG struct {
 // Root
 // xref table
 // Trailer
-/**
- *  Creates a PDF object that represents a PDF document.
- *  Use this constructor to create PDF/A compliant PDF documents.
- *  Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
- *
- *  @param os the associated output stream.
- *  @param compliance must be: compliance.PDF_UA_1 or compliance.PDF_A_1A to compliance.PDF_A_3B
- */
+//
+// SetCompliance makes it a PDF/UA or PDF/A document; PDF/A requires all fonts
+// to be embedded.
 func NewPDF(w *bufio.Writer) *PDF {
 	pdf := new(PDF)
 	pdf.contentStreamsCompression = true
@@ -116,8 +111,8 @@ func NewPDF(w *bufio.Writer) *PDF {
 	pdf.destinations = make(map[string]*Destination)
 	pdf.uuid = djb.Salsa20()
 
-	// createDate format: "yyyy-MM-ddTHH:mm:ss"
-	pdf.createDate = time.Now().Format(time.RFC3339)[0:19]
+	// The creation date is in UTC, so the XMP metadata says so with a Z.
+	pdf.createDate = time.Now().UTC().Format("2006-01-02T15:04:05") + "Z"
 
 	pdf.states = make(map[string]int)
 	pdf.stamps = make([]*Stamp, 0)
@@ -157,7 +152,9 @@ func NewPDFFile(filePath string) *PDF {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return NewPDF(bufio.NewWriter(file))
+	pdf := NewPDF(bufio.NewWriter(file))
+	pdf.file = file
+	return pdf
 }
 
 func (pdf *PDF) newobj() {
@@ -242,36 +239,36 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 
 		if pdf.title != "" {
 			sb.WriteString("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-			sb.WriteString(pdf.title)
+			sb.WriteString(escapeXML(pdf.title))
 			sb.WriteString("</rdf:li></rdf:Alt></dc:title>\n")
 		}
 
 		if pdf.author != "" {
 			sb.WriteString("  <dc:creator><rdf:Seq><rdf:li>")
-			sb.WriteString(pdf.author)
+			sb.WriteString(escapeXML(pdf.author))
 			sb.WriteString("</rdf:li></rdf:Seq></dc:creator>\n")
 		}
 
 		if pdf.subject != "" {
 			sb.WriteString("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-			sb.WriteString(pdf.subject)
+			sb.WriteString(escapeXML(pdf.subject))
 			sb.WriteString("</rdf:li></rdf:Alt></dc:description>\n")
 		}
 
 		if pdf.keywords != "" {
 			sb.WriteString("  <pdf:Keywords>")
-			sb.WriteString(pdf.keywords)
+			sb.WriteString(escapeXML(pdf.keywords))
 			sb.WriteString("</pdf:Keywords>\n")
 		}
 
 		if pdf.creator != "" {
 			sb.WriteString("  <xmp:CreatorTool>")
-			sb.WriteString(pdf.creator)
+			sb.WriteString(escapeXML(pdf.creator))
 			sb.WriteString("</xmp:CreatorTool>\n")
 		}
 
 		sb.WriteString("  <xmp:CreateDate>")
-		sb.WriteString(pdf.createDate + "-05:00") // Append the time zone.
+		sb.WriteString(pdf.createDate)
 		sb.WriteString("</xmp:CreateDate>\n")
 
 		sb.WriteString("  <xapMM:DocumentID>uuid:")
@@ -318,6 +315,12 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	pdf.endobj()
 
 	return pdf.getObjNumber()
+}
+
+// escapeXML returns the text with the characters that have a meaning in XML
+// escaped.
+func escapeXML(text string) string {
+	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(text)
 }
 
 func (pdf *PDF) addOutputIntentObject() int {
@@ -388,9 +391,6 @@ func (pdf *PDF) appendImportedEntries(tokens []string) {
 func (pdf *PDF) addResourcesObject() int {
 	pdf.newobj()
 	pdf.appendByteArray(token.BeginDictionary)
-	if pdf.extGState != "" {
-		pdf.appendString(pdf.extGState)
-	}
 	if len(pdf.fonts) > 0 || len(pdf.importedFonts) > 0 {
 		pdf.appendString("/Font\n")
 		pdf.appendByteArray(token.BeginDictionary)
@@ -436,9 +436,11 @@ func (pdf *PDF) addResourcesObject() int {
 		}
 		pdf.appendByteArray(token.EndDictionary)
 	}
-	// String state = "/CA 0.5 /ca 0.5"
-	if len(pdf.states) > 0 {
+	// The graphics states of a PDF that was read and those of the pages go in
+	// the same dictionary.
+	if len(pdf.states) > 0 || len(pdf.importedExtGStates) > 0 {
 		pdf.appendString("/ExtGState <<\n")
+		pdf.appendImportedEntries(pdf.importedExtGStates)
 		keys := make([]string, 0, len(pdf.states))
 		for key := range pdf.states {
 			keys = append(keys, key)
@@ -525,7 +527,7 @@ func (pdf *PDF) addStructElementObjects() {
 		pdf.appendString(element.structure)
 		pdf.appendString("\n/P ")
 		pdf.appendInteger(structTreeRootObjNumber + 2) // Use the document struct as parent!
-		pdf.appendString(" 0 R\n/Pg ")
+		pdf.appendString(" 0 R /Pg ")
 		pdf.appendInteger(element.pageObjNumber)
 		pdf.appendString(" 0 R\n")
 
@@ -1200,10 +1202,15 @@ func (pdf *PDF) Complete() {
 	pdf.appendString("\n")
 	pdf.appendString("%%EOF\n")
 
-	err := pdf.writer.Flush()
-	if err != nil {
+	if err := pdf.writer.Flush(); err != nil {
 		log.Printf("failed to flush PDF writer: %v\n", err)
-		return
+	}
+	// The file that NewPDFFile created is closed, as the other ports close
+	// their output stream.
+	if pdf.file != nil {
+		if err := pdf.file.Close(); err != nil {
+			log.Printf("failed to close PDF file: %v\n", err)
+		}
 	}
 }
 
@@ -1928,67 +1935,59 @@ func isPageObject(obj *PDFobj) bool {
 	return isPage
 }
 
-func (pdf *PDF) getExtGState(resources *PDFobj) string {
-	var buf strings.Builder
-	dict := resources.GetDict()
-	level := 0
-	for i := 0; i < len(dict); i++ {
-		if dict[i] == "/ExtGState" {
-			buf.WriteString("/ExtGState << ")
-			i++
-			level++
-			for level > 0 {
-				i++
-				token1 := dict[i]
+// addExtGStates adds the entries of the /ExtGState dictionary of the
+// resources, which can be an object of its own, with the names that an earlier
+// page did not add.
+func (pdf *PDF) addExtGStates(resources *PDFobj, objects []*PDFobj) {
+	entries := pdf.getResourceEntries(resources, "/ExtGState", objects)
+	i := 0
+	for i < len(entries) {
+		// The value after the name is a dictionary, a reference or one token.
+		end := i + 1
+		if end < len(entries) && entries[end] == "<<" {
+			level := 0
+			for {
+				token1 := entries[end]
+				end++
 				if token1 == "<<" {
 					level++
 				} else if token1 == ">>" {
 					level--
 				}
-				buf.WriteString(token1)
-				if level > 0 {
-					buf.WriteString(" ")
-				} else {
-					buf.WriteString("\n")
+				if level <= 0 || end >= len(entries) {
+					break
 				}
 			}
-			break
+		} else if end+2 < len(entries) && entries[end+2] == "R" {
+			end += 3
+		} else {
+			end = min(end+1, len(entries))
 		}
+		if !slices.Contains(pdf.importedExtGStates, entries[i]) {
+			pdf.importedExtGStates = append(pdf.importedExtGStates, entries[i:end]...)
+		}
+		i = end
 	}
-	return buf.String()
 }
 
 func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 	fonts := make([]*PDFobj, 0)
-
-	dict := resources.GetDict()
+	// The /Font dictionary holds one "/Name number 0 R" entry per font, and can
+	// be an object of its own. Every entry is written to the resources object,
+	// so every font it names is collected here.
+	entries := pdf.getResourceEntries(resources, "/Font", objects)
 	i := 0
-	for i < len(dict) && dict[i] != "/Font" {
-		i++
-	}
-	i += 2 // Skip over "/Font" and the "<<" that follows it.
-
-	// The sub-dictionary holds one "/Name <number> 0 R" entry per font. Every
-	// one of them is re-emitted in the resources object, so every one of them
-	// has to be collected here - taking only the first left the rest of the
-	// references dangling.
-	for i < len(dict) && dict[i] != ">>" {
-		token1 := dict[i]
-		if strings.HasPrefix(token1, "/") && i+3 < len(dict) && dict[i+3] == "R" {
+	for i < len(entries) {
+		token1 := entries[i]
+		if strings.HasPrefix(token1, "/") && i+3 < len(entries) && entries[i+3] == "R" {
 			// Pages can carry separate resource dictionaries that name the same
 			// fonts. They are merged into one /Font dictionary here, so a name
 			// that is already present must not be added twice.
-			if slices.Contains(pdf.importedFonts, token1) {
-				i += 4
-				continue
-			}
-			pdf.importedFonts = append(pdf.importedFonts,
-				token1, dict[i+1], dict[i+2], dict[i+3])
-			objNumber, err := strconv.Atoi(dict[i+1])
-			if err != nil {
-				log.Fatal(err)
-			} else if objNumber > 0 && objNumber <= len(objects) {
-				fonts = append(fonts, objects[objNumber-1])
+			if !slices.Contains(pdf.importedFonts, token1) {
+				pdf.importedFonts = append(pdf.importedFonts, entries[i:i+4]...)
+				if objNumber := toInteger(entries[i+1]); objNumber > 0 && objNumber <= len(objects) {
+					fonts = append(fonts, objects[objNumber-1])
+				}
 			}
 			i += 4
 			continue
@@ -1996,7 +1995,6 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 		pdf.importedFonts = append(pdf.importedFonts, token1)
 		i++
 	}
-
 	if len(fonts) == 0 {
 		return nil
 	}
@@ -2026,19 +2024,16 @@ func (pdf *PDF) getObjectFromObjects(name string, obj *PDFobj, objects []*PDFobj
 	dict := obj.GetDict()
 	for i, token1 := range dict {
 		if token1 == name && i+1 < len(dict) {
-			token1 = dict[i+1]
-			objNumber, err := strconv.Atoi(token1)
-			if err != nil {
-				log.Println("NumberFormatException: " + token1)
-			} else {
+			// A value that is not a reference to an object, like a name, has no object.
+			if objNumber := toInteger(dict[i+1]); objNumber > 0 && objNumber <= len(objects) {
 				return objects[objNumber-1]
 			}
+			return nil
 		}
 	}
 	return nil
 }
 
-// AddResourceObjects adds the resource objects to the PDF.
 // addFontDescriptor collects the font descriptor of the given font, together
 // with whichever embedded font program it carries.
 func (pdf *PDF) addFontDescriptor(
@@ -2194,9 +2189,9 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 			}
 		}
 		resources = pdf.addXObjects(resObj, objects, numbers, resources)
-		pdf.extGState = pdf.getExtGState(resObj)
-		// The /ExtGState dictionary is copied as it is, so the objects that its
-		// entries refer to have to be copied too.
+		pdf.addExtGStates(resObj, objects)
+		// The /ExtGState entries are copied as they are, so the objects that
+		// they refer to have to be copied too.
 		for _, objNumber := range pdf.getReferences(pdf.getResourceEntries(resObj, "/ExtGState", objects)) {
 			resources = pdf.addObjectTree(objNumber, objects, numbers, resources)
 		}

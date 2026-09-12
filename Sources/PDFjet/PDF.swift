@@ -21,8 +21,7 @@ public class PDF {
     var toc: Bookmark?
     var importedFonts = [String]()
     var importedXObjects = [String]()
-    var extGState = ""
-    let floatFormat = "%.2f"
+    var importedExtGStates = [String]()
 
     private var metadataObjNumber = 0
     private var outputIntentObjNumber = 0
@@ -114,7 +113,9 @@ public class PDF {
         dateFormatter1.locale = Locale(identifier: "en_US_POSIX")
         dateFormatter1.calendar = Calendar(identifier: .gregorian)
         dateFormatter1.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        self.createDate = dateFormatter1.string(from: date)
+        // The creation date is in UTC, so the XMP metadata says so with a Z.
+        dateFormatter1.timeZone = TimeZone(identifier: "UTC")
+        self.createDate = dateFormatter1.string(from: date) + "Z"
 
         append("%PDF-1.7\n")
         append("%")
@@ -250,36 +251,36 @@ public class PDF {
 
             if title != nil {
                 sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-                sb.append(title!)
+                sb.append(escapeXML(title!))
                 sb.append("</rdf:li></rdf:Alt></dc:title>\n")
             }
 
             if author != nil {
                 sb.append("  <dc:creator><rdf:Seq><rdf:li>")
-                sb.append(author!)
+                sb.append(escapeXML(author!))
                 sb.append("</rdf:li></rdf:Seq></dc:creator>\n")
             }
 
             if subject != nil {
                 sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-                sb.append(subject!)
+                sb.append(escapeXML(subject!))
                 sb.append("</rdf:li></rdf:Alt></dc:description>\n")
             }
 
             if keywords != nil {
                 sb.append("  <pdf:Keywords>")
-                sb.append(keywords!)
+                sb.append(escapeXML(keywords!))
                 sb.append("</pdf:Keywords>\n")
             }
 
             if creator != nil {
                 sb.append("  <xmp:CreatorTool>")
-                sb.append(creator!)
+                sb.append(escapeXML(creator!))
                 sb.append("</xmp:CreatorTool>\n")
             }
 
             sb.append("  <xmp:CreateDate>")
-            sb.append(createDate! + "-05:00")   // Append the time zone.
+            sb.append(createDate!)
             sb.append("</xmp:CreateDate>\n")
 
             sb.append("  <xapMM:DocumentID>uuid:")
@@ -327,6 +328,13 @@ public class PDF {
         endobj()
 
         return self.getObjNumber()
+    }
+
+    // Returns the text with the characters that have a meaning in XML escaped.
+    private func escapeXML(_ text: String) -> String {
+        return text.replacingOccurrences(of: "&", with: "&amp;")
+                .replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
     }
 
     func addOutputIntentObject() -> Int {
@@ -396,9 +404,6 @@ public class PDF {
     private func addResourcesObject() -> Int {
         newobj()
         append(Token.beginDictionary)
-        if extGState != "" {
-            appendToken(extGState)
-        }
         if fonts.count > 0 || importedFonts.count > 0 {
             append("/Font\n")
             append(Token.beginDictionary)
@@ -445,9 +450,11 @@ public class PDF {
             }
             append(Token.endDictionary)
         }
-        // String state = "/CA 0.5 /ca 0.5"
-        if states.count > 0 {
+        // The graphics states of a PDF that was read and those of the pages
+        // go in the same dictionary.
+        if states.count > 0 || importedExtGStates.count > 0 {
             append("/ExtGState <<\n")
+            appendImportedEntries(importedExtGStates)
             for (state, number) in states.sorted(by: { $0.value < $1.value }) {
                 append("/GS")
                 append(number)
@@ -680,22 +687,18 @@ public class PDF {
         return getObjNumber()
     }
 
-    private func addPageBox(
-            _ buffer: inout String,
-            _ boxName: String,
-            _ page: Page,
-            _ rect: [Float]) {
-        buffer.append("/")
-        buffer.append(boxName)
-        buffer.append(" [")
-        buffer.append(String(rect[0]))
-        buffer.append(" ")
-        buffer.append(String(page.height - rect[3]))
-        buffer.append(" ")
-        buffer.append(String(rect[2]))
-        buffer.append(" ")
-        buffer.append(String(page.height - rect[1]))
-        buffer.append("]\n")
+    private func addPageBox(_ boxName: String, _ page: Page, _ rect: [Float]) {
+        append("/")
+        append(boxName)
+        append(" [")
+        append(rect[0])
+        append(Token.space)
+        append(page.height - rect[3])
+        append(Token.space)
+        append(rect[2])
+        append(Token.space)
+        append(page.height - rect[1])
+        append("]\n")
     }
 
     private func setDestinationObjNumbers() {
@@ -720,64 +723,64 @@ public class PDF {
         for (i, page) in pages.enumerated() {
             // Page object
             newobj()
-            var buffer = String()
             page.objNumber = getObjNumber()
-            buffer.append("<<\n")
-            buffer.append("/Type /Page\n")
-            buffer.append("/Parent ")
-            buffer.append(String(pagesObjNumber))
-            buffer.append(" 0 R\n")
-            buffer.append("/MediaBox [0 0 ")
-            buffer.append(String(Int(page.width)))
-            buffer.append(" ")
-            buffer.append(String(Int(page.height)))
-            buffer.append("]\n")
+            append(Token.beginDictionary)
+            append("/Type /Page\n")
+            append("/Parent ")
+            append(pagesObjNumber)
+            append(Token.objRef)
+            append("/MediaBox [0 0 ")
+            append(page.width)
+            append(Token.space)
+            append(page.height)
+            append("]\n")
 
             if page.rotateDegrees != 0.0 {
-                buffer.append("/Rotate ")
-                buffer.append(String(Int(page.rotateDegrees)))
-                buffer.append("\n")
+                append("/Rotate ")
+                append(page.rotateDegrees)
+                append("\n")
             }
 
-            if page.cropBox != nil {
-                addPageBox(&buffer, "CropBox", page, page.cropBox!)
+            if let cropBox = page.cropBox {
+                addPageBox("CropBox", page, cropBox)
             }
-            if page.bleedBox != nil {
-                addPageBox(&buffer, "BleedBox", page, page.bleedBox!)
+            if let bleedBox = page.bleedBox {
+                addPageBox("BleedBox", page, bleedBox)
             }
-            if page.trimBox != nil {
-                addPageBox(&buffer, "TrimBox", page, page.trimBox!)
+            if let trimBox = page.trimBox {
+                addPageBox("TrimBox", page, trimBox)
             }
-            if page.artBox != nil {
-                addPageBox(&buffer, "ArtBox", page, page.artBox!)
+            if let artBox = page.artBox {
+                addPageBox("ArtBox", page, artBox)
             }
 
-            buffer.append("/Resources ")
-            buffer.append(String(resObjNumber))
-            buffer.append(" 0 R\n")
+            append("/Resources ")
+            append(resObjNumber)
+            append(Token.objRef)
 
-            buffer.append("/Contents [ ")
+            append("/Contents [ ")
             for n in page.contents {
-                buffer.append(String(n))
-                buffer.append(" 0 R ")
+                append(n)
+                append(" 0 R ")
             }
-            buffer.append("]\n")
+            append("]\n")
             if page.annots.count > 0 {
-                buffer.append("/Annots [ ")
+                append("/Annots [ ")
                 for annot in page.annots {
-                    buffer.append(String(annot.objNumber))
-                    buffer.append(" 0 R ")
+                    append(annot.objNumber)
+                    append(" 0 R ")
                 }
-                buffer.append("]\n")
+                append("]\n")
             }
+
             if compliance != Compliance.PDF_17 {
-                buffer.append("/Tabs /S\n")
-                buffer.append("/StructParents ")
-                buffer.append(String(i))
-                buffer.append("\n")
+                append("/Tabs /S\n")
+                append("/StructParents ")
+                append(i)
+                append("\n")
             }
-            buffer.append(">>\n")
-            append(buffer)
+
+            append(Token.endDictionary)
             endobj()
         }
     }
@@ -853,12 +856,16 @@ public class PDF {
             append(annot.fileAttachment!.icon)
             append("\n")
 
-            if annot.fileAttachment != nil {
+            let title = toHexString(annot.fileAttachment!.title)
+            if !title.isEmpty {
                 append("/T <")
-                append(toHexString(annot.fileAttachment!.title))
+                append(title)
                 append(">\n")
+            }
+            let contents = toHexString(annot.fileAttachment!.contents)
+            if !contents.isEmpty {
                 append("/Contents <")
-                append(toHexString(annot.fileAttachment!.contents))
+                append(contents)
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Link {
@@ -1280,7 +1287,7 @@ public class PDF {
                 maxObjNumber = obj.number
             }
         }
-        for number in 1...maxObjNumber {
+        for number in stride(from: 1, through: maxObjNumber, by: 1) {
             let obj = PDFobj()
             obj.setNumber(number)
             sorted.append(obj)
@@ -1970,69 +1977,58 @@ public class PDF {
         return isPage
     }
 
-    private func getExtGState(_ resources: PDFobj) -> String {
-        var buf = String()
-        let dict = resources.getDict()
-        var level = 0
+    // Adds the entries of the /ExtGState dictionary of the resources, which can
+    // be an object of its own, with the names that an earlier page did not add.
+    private func addExtGStates(_ resources: PDFobj, _ objects: inout [PDFobj]) {
+        let entries = getResourceEntries(resources, "/ExtGState", &objects)
         var i = 0
-        while i < dict.count {
-            if dict[i] == "/ExtGState" {
-                buf.append("/ExtGState << ")
-                i += 1
-                level += 1
-                while level > 0 {
-                    i += 1
-                    let token = dict[i]
+        while i < entries.count {
+            // The value after the name is a dictionary, a reference or one token.
+            var end = i + 1
+            if end < entries.count && entries[end] == "<<" {
+                var level = 0
+                repeat {
+                    let token = entries[end]
+                    end += 1
                     if token == "<<" {
                         level += 1
                     } else if token == ">>" {
                         level -= 1
                     }
-                    buf.append(token)
-                    if level > 0 {
-                        buf.append(" ")
-                    } else {
-                        buf.append("\n")
-                    }
-                }
-                break
+                } while level > 0 && end < entries.count
+            } else if end + 2 < entries.count && entries[end + 2] == "R" {
+                end += 3
+            } else {
+                end = min(end + 1, entries.count)
             }
-            i += 1
+            if !importedExtGStates.contains(entries[i]) {
+                importedExtGStates.append(contentsOf: entries[i..<end])
+            }
+            i = end
         }
-        return buf
     }
 
     private func getFontObjects(
             _ resources: PDFobj,
             _ objects: inout [PDFobj]) -> [PDFobj] {
         var fonts = [PDFobj]()
-        let dict = resources.getDict()
+        // The /Font dictionary holds one "/Name number 0 R" entry per font, and
+        // can be an object of its own. Every entry is written to the resources
+        // object, so every font it names is collected here.
+        let entries = getResourceEntries(resources, "/Font", &objects)
         var i = 0
-        while i < dict.count && dict[i] != "/Font" {
-            i += 1
-        }
-        i += 2  // Skip over "/Font" and the "<<" that follows it.
-
-        // The sub-dictionary holds one "/Name <number> 0 R" entry per font.
-        // Every one of them is re-emitted in the resources object, so every
-        // one of them has to be collected here - taking only the first left
-        // the rest of the references dangling.
-        while i < dict.count && dict[i] != ">>" {
-            let token = dict[i]
-            if token.hasPrefix("/") && (i + 3) < dict.count && dict[i + 3] == "R" {
+        while i < entries.count {
+            let token = entries[i]
+            if token.hasPrefix("/") && (i + 3) < entries.count && entries[i + 3] == "R" {
                 // Pages can carry separate resource dictionaries that name the
                 // same fonts. They are merged into one /Font dictionary here,
                 // so a name that is already present must not be added twice.
-                if importedFonts.contains(token) {
-                    i += 4
-                    continue
-                }
-                importedFonts.append(token)
-                importedFonts.append(dict[i + 1])
-                importedFonts.append(dict[i + 2])
-                importedFonts.append(dict[i + 3])
-                if let number = Int(dict[i + 1]), number > 0, number <= objects.count {
-                    fonts.append(objects[number - 1])
+                if !importedFonts.contains(token) {
+                    importedFonts.append(contentsOf: entries[i..<i + 4])
+                    let number = toInteger(entries[i + 1])
+                    if number > 0 && number <= objects.count {
+                        fonts.append(objects[number - 1])
+                    }
                 }
                 i += 4
                 continue
@@ -2040,7 +2036,6 @@ public class PDF {
             importedFonts.append(token)
             i += 1
         }
-
         return fonts
     }
 
@@ -2068,8 +2063,9 @@ public class PDF {
         let dict = object.getDict()
         for i in 0..<max(dict.count - 1, 0) {
             if dict[i] == name {
-                let token = dict[i  + 1]
-                return objects[Int(token)! - 1]
+                // A value that is not a reference to an object, like a name, has no object.
+                let number = toInteger(dict[i + 1])
+                return (number > 0 && number <= objects.count) ? objects[number - 1] : nil
             }
         }
         return nil
@@ -2239,9 +2235,9 @@ public class PDF {
                 }
             }
             addXObjects(resObj, &objects, &numbers, &resources)
-            extGState = getExtGState(resObj)
-            // The /ExtGState dictionary is copied as it is, so the objects
-            // that its entries refer to have to be copied too.
+            addExtGStates(resObj, &objects)
+            // The /ExtGState entries are copied as they are, so the objects
+            // that they refer to have to be copied too.
             for number in getReferences(getResourceEntries(resObj, "/ExtGState", &objects)) {
                 addObjectTree(number, &objects, &numbers, &resources)
             }

@@ -9,7 +9,6 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -22,7 +21,6 @@ public class PDF {
     internal Dictionary<String, Int32> states = new Dictionary<String, Int32>();
     internal List<Stamp> stamps = new List<Stamp>();
     internal List<StructElem> structElements = new List<StructElem>();
-    internal static readonly CultureInfo culture_en_us = new CultureInfo("en-US");
     internal Compliance compliance = Compliance.PDF_1_7;
     internal Bookmark toc = null;
     internal Encryption encryption = null;
@@ -48,7 +46,7 @@ public class PDF {
     private String language = "en-US";
     private List<String> importedFonts = new List<String>();
     private List<String> importedXObjects = new List<String>();
-    private String extGState = "";
+    private List<String> importedExtGStates = new List<String>();
     private Page prevPage = null;
     private bool contentStreamsCompression = true;
 
@@ -96,17 +94,11 @@ public class PDF {
     /// <param name="os">the associated output stream.</param>
     /// <param name="compliance">must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B</param>
     public PDF(Stream os, Compliance compliance) {
-        this.compliance = compliance;
-        SetOutputStream(os);
-    }
-
-    /// <summary>Sets the stream the document is written to.</summary>
-    internal PDF SetOutputStream(Stream os) {
         this.os = os;
+        this.compliance = compliance;
 
-        DateTime date = new DateTime(DateTime.Now.Ticks);
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        createDate = sdf1.Format(date);     // XMP metadata
+        // The creation date is in UTC, so the XMP metadata says so with a Z.
+        createDate = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture) + "Z";
 
         Append("%PDF-1.7\n");
         Append('%');
@@ -116,12 +108,6 @@ public class PDF {
         Append((byte) 0xF5);
         Append((byte) 0xF6);
         Append(Token.Newline);
-        return this;
-    }
-
-    /// <summary>Returns the stream the document is written to.</summary>
-    internal Stream GetOutputStream() {
-        return this.os;
     }
 
     /// <summary>Sets the PDF/UA or PDF/A compliance of this document.</summary>
@@ -225,36 +211,36 @@ public class PDF {
 
             if (title != null) {
                 sb.Append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">");
-                sb.Append(title);
+                sb.Append(EscapeXML(title));
                 sb.Append("</rdf:li></rdf:Alt></dc:title>\n");
             }
 
             if (author != null) {
                 sb.Append("  <dc:creator><rdf:Seq><rdf:li>");
-                sb.Append(author);
+                sb.Append(EscapeXML(author));
                 sb.Append("</rdf:li></rdf:Seq></dc:creator>\n");
             }
 
             if (subject != null) {
                 sb.Append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">");
-                sb.Append(subject);
+                sb.Append(EscapeXML(subject));
                 sb.Append("</rdf:li></rdf:Alt></dc:description>\n");
             }
 
             if (keywords != null) {
                 sb.Append("  <pdf:Keywords>");
-                sb.Append(keywords);
+                sb.Append(EscapeXML(keywords));
                 sb.Append("</pdf:Keywords>\n");
             }
 
             if (creator != null) {
                 sb.Append("  <xmp:CreatorTool>");
-                sb.Append(creator);
+                sb.Append(EscapeXML(creator));
                 sb.Append("</xmp:CreatorTool>\n");
             }
 
             sb.Append("  <xmp:CreateDate>");
-            sb.Append(createDate + "-05:00");       // Append the time zone.
+            sb.Append(createDate);
             sb.Append("</xmp:CreateDate>\n");
 
             sb.Append("  <xapMM:DocumentID>uuid:");
@@ -305,6 +291,11 @@ public class PDF {
         EndObj();
 
         return GetObjNumber();
+    }
+
+    // Returns the text with the characters that have a meaning in XML escaped.
+    private static String EscapeXML(String text) {
+        return text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
     }
 
     private int AddOutputIntentObject() {
@@ -383,12 +374,9 @@ public class PDF {
     private int AddResourcesObject() {
         NewObj();
         Append(Token.BeginDictionary);
-        if (!extGState.Equals("")) {
-            AppendToken(extGState);
-        }
-
         if (fonts.Count > 0 || importedFonts.Count > 0) {
-            Append("/Font <<\n");
+            Append("/Font\n");
+            Append(Token.BeginDictionary);
             AppendImportedEntries(importedFonts);
             foreach (Font font in fonts) {
                 Append("/F");
@@ -400,11 +388,10 @@ public class PDF {
             Append(Token.EndDictionary);
         }
 
-        // Check if we have any XObjects
         if (images.Count > 0 || stamps.Count > 0 || importedXObjects.Count > 0) {
-            Append("/XObject <<\n"); // Write the key and open the dictionary ONCE
+            Append("/XObject\n");
+            Append(Token.BeginDictionary);
             AppendImportedEntries(importedXObjects);
-            // Add all Images to the same dictionary
             foreach (Image image in images) {
                 Append("/Im");
                 Append(image.objNumber);
@@ -419,7 +406,7 @@ public class PDF {
                 Append(stamp.objNumber);
                 Append(" 0 R\n");
             }
-            Append(">>\n"); // Close the dictionary
+            Append(Token.EndDictionary);
         }
 
         if (groups.Count > 0) {
@@ -435,8 +422,11 @@ public class PDF {
             }
             Append(Token.EndDictionary);
         }
-        if (states.Count > 0) {
+        // The graphics states of a PDF that was read and those of the pages
+        // go in the same dictionary.
+        if (states.Count > 0 || importedExtGStates.Count > 0) {
             Append("/ExtGState <<\n");
+            AppendImportedEntries(importedExtGStates);
             List<KeyValuePair<String, Int32>> entries =
                     new List<KeyValuePair<String, Int32>>(states);
             entries.Sort(delegate(KeyValuePair<String, Int32> e1,
@@ -523,7 +513,7 @@ public class PDF {
             Append(element.structure);
             Append("\n/P ");
             Append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
-            Append(" 0 R\n/Pg ");
+            Append(" 0 R /Pg ");
             Append(element.pageObjNumber);
             Append(Token.ObjRef);
 
@@ -906,8 +896,8 @@ public class PDF {
                 Append(">\n");
                 Append(">>\n");
             } else if (annot.key != null) {
-                Destination destination = destinations[annot.key];
-                if (destination != null) {
+                Destination destination;
+                if (destinations.TryGetValue(annot.key, out destination)) {
                     Append("/F 4\n");
                     Append("/Dest [");
                     Append(destination.pageObjNumber);
@@ -1935,68 +1925,55 @@ public class PDF {
         return isPage;
     }
 
-    private String GetExtGState(PDFobj resources) {
-        StringBuilder buf = new StringBuilder();
-        List<String> dict = resources.GetDict();
-        int level = 0;
-        for (int i = 0; i < dict.Count; i++) {
-            if (dict[i].Equals("/ExtGState")) {
-                buf.Append("/ExtGState << ");
-                ++i;
-                ++level;
-                while (level > 0) {
-                    String token = dict[++i];
+    // Adds the entries of the /ExtGState dictionary of the resources, which can
+    // be an object of its own, with the names that an earlier page did not add.
+    private void AddExtGStates(PDFobj resources, List<PDFobj> objects) {
+        List<String> entries = GetResourceEntries(resources, "/ExtGState", objects);
+        int i = 0;
+        while (i < entries.Count) {
+            // The value after the name is a dictionary, a reference or one token.
+            int end = i + 1;
+            if (end < entries.Count && entries[end].Equals("<<")) {
+                int level = 0;
+                do {
+                    String token = entries[end++];
                     if (token.Equals("<<")) {
-                        ++level;
+                        level++;
                     } else if (token.Equals(">>")) {
-                        --level;
+                        level--;
                     }
-                    buf.Append(token);
-                    if (level > 0) {
-                        buf.Append(' ');
-                    } else {
-                        buf.Append('\n');
-                    }
-                }
-                break;
+                } while (level > 0 && end < entries.Count);
+            } else if (end + 2 < entries.Count && entries[end + 2].Equals("R")) {
+                end += 3;
+            } else {
+                end = Math.Min(end + 1, entries.Count);
             }
+            if (!importedExtGStates.Contains(entries[i])) {
+                importedExtGStates.AddRange(entries.GetRange(i, end - i));
+            }
+            i = end;
         }
-        return buf.ToString();
     }
 
-    private List<PDFobj> GetFontObjects(
-            PDFobj resources, List<PDFobj> objects) {
+    private List<PDFobj> GetFontObjects(PDFobj resources, List<PDFobj> objects) {
         List<PDFobj> fonts = new List<PDFobj>();
-
-        List<String> dict = resources.GetDict();
+        // The /Font dictionary holds one "/Name number 0 R" entry per font, and
+        // can be an object of its own. Every entry is written to the resources
+        // object, so every font it names is collected here.
+        List<String> entries = GetResourceEntries(resources, "/Font", objects);
         int i = 0;
-        while (i < dict.Count && !dict[i].Equals("/Font")) {
-            i += 1;
-        }
-        i += 2;     // Skip over "/Font" and the "<<" that follows it.
-
-        // The sub-dictionary holds one "/Name <number> 0 R" entry per font.
-        // Every one of them is re-emitted in the resources object, so every
-        // one of them has to be collected here - taking only the first left
-        // the rest of the references dangling.
-        while (i < dict.Count && !dict[i].Equals(">>")) {
-            String token = dict[i];
-            if (token.StartsWith("/") && (i + 3) < dict.Count
-                    && dict[i + 3].Equals("R")) {
+        while (i < entries.Count) {
+            String token = entries[i];
+            if (token.StartsWith("/") && (i + 3) < entries.Count && entries[i + 3].Equals("R")) {
                 // Pages can carry separate resource dictionaries that name the
                 // same fonts. They are merged into one /Font dictionary here,
                 // so a name that is already present must not be added twice.
-                if (importedFonts.Contains(token)) {
-                    i += 4;
-                    continue;
-                }
-                importedFonts.Add(token);
-                importedFonts.Add(dict[i + 1]);
-                importedFonts.Add(dict[i + 2]);
-                importedFonts.Add(dict[i + 3]);
-                int number = Int32.Parse(dict[i + 1]);
-                if (number > 0 && number <= objects.Count) {
-                    fonts.Add(objects[number - 1]);
+                if (!importedFonts.Contains(token)) {
+                    importedFonts.AddRange(entries.GetRange(i, 4));
+                    int number = ToInteger(entries[i + 1]);
+                    if (number > 0 && number <= objects.Count) {
+                        fonts.Add(objects[number - 1]);
+                    }
                 }
                 i += 4;
                 continue;
@@ -2004,11 +1981,7 @@ public class PDF {
             importedFonts.Add(token);
             i += 1;
         }
-
-        if (fonts.Count == 0) {
-            return null;
-        }
-        return fonts;
+        return (fonts.Count == 0) ? null : fonts;
     }
 
     private List<PDFobj> GetDescendantFonts(PDFobj font, List<PDFobj> objects) {
@@ -2029,8 +2002,9 @@ public class PDF {
         List<String> dict = obj.GetDict();
         for (int i = 0; i < dict.Count - 1; i++) {
             if (dict[i].Equals(name)) {
-                String token = dict[i + 1];
-                return objects[Int32.Parse(token) - 1];
+                // A value that is not a reference to an object, like a name, has no object.
+                int number = ToInteger(dict[i + 1]);
+                return (number > 0 && number <= objects.Count) ? objects[number - 1] : null;
             }
         }
         return null;
@@ -2191,9 +2165,9 @@ public class PDF {
                 }
             }
             AddXObjects(resObj, objects, numbers, resources);
-            extGState = GetExtGState(resObj);
-            // The /ExtGState dictionary is copied as it is, so the objects
-            // that its entries refer to have to be copied too.
+            AddExtGStates(resObj, objects);
+            // The /ExtGState entries are copied as they are, so the objects
+            // that they refer to have to be copied too.
             foreach (int number in GetReferences(GetResourceEntries(resObj, "/ExtGState", objects))) {
                 AddObjectTree(number, objects, numbers, resources);
             }

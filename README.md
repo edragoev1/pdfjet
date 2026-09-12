@@ -309,7 +309,11 @@ arguments, Go has the full form only: `NewCell(font, text)`,
 `NewDestination(name, x, y)`, `NewLine`, `NewRect` and `NewPoint` with their
 coordinates, `NewParagraph()`, `NewTable()`, `NewTextColumn(rotation)`,
 `Table.SetData(data, headerRows)` and `Page.AddBMC` with the language.
-`content.GetFromReader` is `Content.getFromStream`.
+`content.GetFromReader` is `Content.getFromStream`. Java's `PDF` keeps
+`append`, `newobj`, `endobj` and `getObjNumber` public, which the other ports
+keep internal: the `com.pdfjet.encryption` package writes the encryption
+dictionary with them, and Java has no visibility between package-private and
+public.
 
 ### Constants and fields in Go
 
