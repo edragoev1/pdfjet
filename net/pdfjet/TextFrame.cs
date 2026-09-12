@@ -6,11 +6,11 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Please see Example_47
+/// A frame that draws as much of its paragraphs as fits, so text flows from
+/// frame to frame. Please see Example_47.
 /// </summary>
 public class TextFrame : IDrawable {
     private Font f1;
@@ -30,14 +30,10 @@ public class TextFrame : IDrawable {
         List<string> list = new List<string>(inputList);
         list.Reverse();
         paragraphs = new List<List<string>>();
+        // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+        char[] whitespace = new char[] {' ', '\t', '\n', '\x0B', '\f', '\r'};
         foreach (string text in list) {
-            String[] split = Regex.Split(text.Trim(), "\\s+");
-            List<string> tokens = new List<string>();
-            foreach (string token in split) {
-                if (!string.IsNullOrEmpty(token)) { // Filter empty tokens
-                    tokens.Add(token);
-                }
-            }
+            List<string> tokens = new List<string>(text.Split(whitespace, StringSplitOptions.RemoveEmptyEntries));
             tokens.Reverse();
             paragraphs.Add(tokens);
         }
@@ -118,11 +114,11 @@ public class TextFrame : IDrawable {
 
     /// <summary>
     /// Draws as much of the text as fits in this frame on the page.
-    /// Call HasMoreText to check whether text is left for another page.
+    /// Call HasMoreText to check whether text is left for another frame.
     /// </summary>
     public float[] DrawOn(Page page) {
         if (page == null) {
-            throw new NullReferenceException("Page cannot be null");
+            throw new ArgumentNullException(nameof(page), "Page cannot be null");
         }
 
         float yText = y + f1.GetAscent();

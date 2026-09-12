@@ -9,7 +9,8 @@ package com.pdfjet;
 import java.util.*;
 
 /**
- * Please see Example_47
+ * A frame that draws as much of its paragraphs as fits, so text flows from
+ * frame to frame. Please see Example_47.
  */
 public class TextFrame implements Drawable {
     private Font f1;
@@ -47,6 +48,13 @@ public class TextFrame implements Drawable {
         }
     }
 
+    /**
+     * Sets the location of the top left corner of this text frame.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this TextFrame object.
+     */
     public TextFrame setLocation(float x, float y) {
         this.x = x;
         this.y = y;
@@ -163,6 +171,14 @@ public class TextFrame implements Drawable {
         }
     }
 
+    /**
+     * Draws as much of the text as fits in this frame on the page.
+     * Call hasMoreText to check whether text is left for another frame.
+     *
+     * @param page the page to draw on.
+     * @return the x and y coordinates of the bottom right corner of this frame.
+     * @throws Exception if the page is null or an input or output exception occurred.
+     */
     public float[] drawOn(Page page) throws Exception {
         if (page == null) {
             throw new NullPointerException("Page cannot be null");

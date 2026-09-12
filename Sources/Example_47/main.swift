@@ -30,14 +30,14 @@ public class Example_47 {
             textFrame.setLocation(x, y)
             textFrame.setWidth(w)
             textFrame.setHeight(h)
-            _ = textFrame.drawOn(page)
+            textFrame.drawOn(page)
 
             if (textFrame.hasMoreText()) {
                 x += w + gap
                 textFrame.setLocation(x, y)
                 textFrame.setWidth(w)
                 textFrame.setHeight(h)
-                _ = textFrame.drawOn(page)
+                textFrame.drawOn(page)
             }
 
             if (textFrame.hasMoreText()) {
@@ -45,7 +45,7 @@ public class Example_47 {
                 textFrame.setLocation(x, y)
                 textFrame.setWidth(w)
                 textFrame.setHeight(h)
-                _ = textFrame.drawOn(page)
+                textFrame.drawOn(page)
             }
 
             x = 50.0

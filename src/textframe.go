@@ -6,14 +6,15 @@
 package pdfjet
 
 import (
-	"regexp"
+	"log"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 )
 
-// TextFrame Please see Example_47
+// TextFrame is a frame that draws as much of its paragraphs as fits, so text
+// flows from frame to frame. Please see Example_47.
 type TextFrame struct {
 	f1          *Font
 	x           float32
@@ -45,15 +46,8 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 	}
 
 	// Tokenize paragraphs
-	re := regexp.MustCompile(`\s+`)
 	for _, text := range list {
-		split := re.Split(strings.TrimSpace(text), -1)
-		tokens := make([]string, 0)
-		for _, token := range split {
-			if token != "" {
-				tokens = append(tokens, token)
-			}
-		}
+		tokens := strings.FieldsFunc(text, isASCIIWhitespace)
 		// Reverse tokens (like Java's Collections.reverse)
 		for i, j := 0, len(tokens)-1; i < j; i, j = i+1, j-1 {
 			tokens[i], tokens[j] = tokens[j], tokens[i]
@@ -118,9 +112,14 @@ func (tf *TextFrame) drawBorder(page *Page) {
 	}
 }
 
-// DrawOn draws as much of the text as fits in this frame on the page.
-// Call HasMoreText to check whether text is left for another page.
+// DrawOn draws as much of the text as fits in this frame on the page and
+// returns the x and y coordinates of the bottom right corner of the frame.
+// Call HasMoreText to check whether text is left for another frame. It exits
+// the program when the page is nil.
 func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		log.Fatal("Page cannot be nil")
+	}
 
 	yText := tf.y + tf.f1.GetAscent()
 	for len(tf.paragraphs) > 0 {
